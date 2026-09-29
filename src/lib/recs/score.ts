@@ -126,7 +126,30 @@ export type FitInputs = {
   ownedSupport: number;
   /** The support list's size. Null OR non-positive means no synergy reading. */
   edhrecTotal: number | null;
+  /**
+   * What each role is measured against: this commander's MEASURED targets where the index has
+   * them, `ROLE_TARGETS` where it does not — always `pickRoleTargets`' answer
+   * (`profile/build.ts`), so the score grades a commander against the figures its deck is
+   * built to (brief 2026-09-28 §5.4). Required rather than defaulted: a caller that forgot it
+   * would score against the flat constants in silence, which is the defect this field ends.
+   */
+  roleTargets: Record<RoleName, number>;
 };
+
+/**
+ * A measured target is a MEAN, and a fractional target cannot be met by whole cards, so it is
+ * rounded the way the fill rounds its floors (`roleFloors` in `decks/fill.ts`); a commander whose
+ * decks average 8.4 ramp is met at 8, as the fill builds it. A target that rounds to 0 asks for
+ * nothing and is met by construction, where dividing by it would make the whole score NaN.
+ */
+export function wholeTarget(target: number): number {
+  return Math.round(target);
+}
+
+function roleShare(have: number, target: number): number {
+  const t = wholeTarget(target);
+  return t <= 0 ? 1 : Math.min(have, t) / t;
+}
 
 export type Fit = {
   fitPool: number;
@@ -165,8 +188,8 @@ export function computeFit(i: FitInputs): Fit {
   const total = i.edhrecTotal != null && i.edhrecTotal > 0 ? i.edhrecTotal : null;
   const overlapRatio = total ? i.ownedSupport / total : 0;
   const roleCoverage =
-    (Object.keys(ROLE_TARGETS) as (keyof typeof ROLE_TARGETS)[])
-      .reduce((sum, r) => sum + Math.min(i.roleCounts[r], ROLE_TARGETS[r]) / ROLE_TARGETS[r], 0) /
+    (Object.keys(ROLE_TARGETS) as RoleName[])
+      .reduce((sum, r) => sum + roleShare(i.roleCounts[r], i.roleTargets[r]), 0) /
     Object.keys(ROLE_TARGETS).length;
   const poolFactor = Math.min(i.poolSize / POOL_FULL_AT, 1);
 
@@ -310,6 +333,8 @@ export function byInclusionThenName(a: RoleCard, b: RoleCard): number {
 export function scoreCommander(args: {
   commander: PoolCard;
   collection: PoolCard[];
+  /** `pickRoleTargets`' answer for this commander. See `FitInputs.roleTargets`. */
+  roleTargets: Record<RoleName, number>;
   /**
    * The STORED support list, from `commander_support` — never the live EDHREC
    * payload. Ruling D: every Fit reads one source, because the two disagreed on
@@ -379,8 +404,8 @@ export function scoreCommander(args: {
   for (const list of Object.values(roleCards)) {
     if (list.some((c) => c.inclusionPct !== null)) list.sort(byInclusionThenName);
   }
-  const roleGaps = (Object.keys(ROLE_TARGETS) as (keyof typeof ROLE_TARGETS)[])
-    .filter((r) => roleCounts[r] < ROLE_TARGETS[r]);
+  const roleGaps = (Object.keys(ROLE_TARGETS) as RoleName[])
+    .filter((r) => roleCounts[r] < wholeTarget(args.roleTargets[r]));
 
   let edhrecOwnedCount: number | null = null;
   let edhrecTotal: number | null = null;
@@ -424,6 +449,7 @@ export function scoreCommander(args: {
     roleCounts,
     ownedSupport: edhrecOwnedCount ?? 0,
     edhrecTotal,
+    roleTargets: args.roleTargets,
   });
   const { fitPool, fitRoles, fitSynergy, score, measurableTotal, rankScore } = fit;
 

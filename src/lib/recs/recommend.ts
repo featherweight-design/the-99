@@ -7,6 +7,7 @@ import { commanderSlug } from "../edhrec/slug";
 import { readEdhrecCache, resolveEdhrecData } from "../edhrec/client";
 import { supportOverlap } from "../edhrec/support-overlap";
 import { loadSupportLists } from "../edhrec/support-read";
+import { loadRoleTargetsForCommanders } from "../profile/load";
 import { scoringSynergyState, type SynergyState } from "./synergy-state";
 import { committedSupport, readCommittedDecks, withCommitted } from "../decks/committed";
 import {
@@ -265,9 +266,10 @@ export async function recommendCommanders(
   // The live read still happens, for `inclusionByName` and for `synergyState`:
   // the role chips keep the fresher figures, and an EDHREC outage still has to
   // be describable. What moved to the index is the SCORE — Ruling D.
-  const [edhrecCache, supportLists] = await Promise.all([
+  const [edhrecCache, supportLists, roleTargets] = await Promise.all([
     readEdhrecCache(candidates.map((c) => c.oracleId)),
     loadSupportLists(candidates.map((c) => c.oracleId)),
+    loadRoleTargetsForCommanders(candidates),
   ]);
 
   // Fetch EDHREC data with bounded concurrency: sequential awaits would make
@@ -283,6 +285,7 @@ export async function recommendCommanders(
         const support = supportLists.get(commander.oracleId) ?? null;
         const scored = scoreCommander({
           commander, collection,
+          roleTargets: roleTargets.get(commander.oracleId)!.targets,
           support,
           inclusionByName: result.data?.inclusionByName ?? null,
         });
@@ -349,9 +352,10 @@ export async function scoreOneCommander(
     collection.find((c) => c.oracleId === oracleId) ?? (await loadPoolCard(oracleId));
   if (!commander) return null;
 
-  const [edhrecCache, supportLists] = await Promise.all([
+  const [edhrecCache, supportLists, roleTargets] = await Promise.all([
     readEdhrecCache([oracleId]),
     loadSupportLists([oracleId]),
+    loadRoleTargetsForCommanders([commander]),
   ]);
   const support = supportLists.get(oracleId) ?? null;
   const [result, committed] = await Promise.all([
@@ -360,6 +364,7 @@ export async function scoreOneCommander(
   ]);
   const scored = scoreCommander({
     commander, collection: pool ?? collection,
+    roleTargets: roleTargets.get(oracleId)!.targets,
     support,
     inclusionByName: result.data?.inclusionByName ?? null,
   });

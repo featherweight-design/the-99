@@ -19,9 +19,8 @@ import { cacheForUser } from "../cache/user-lists";
 import { canonicalPair } from "../edhrec/pair";
 import { COMBO_DETECTION, isInfiniteOrGameEnding } from "../spellbook/combo-features";
 import { countCondition, identityCondition } from "../staples/condition";
-import { buildDeckProfile, type ProfileCardRow, type ProfileInput } from "./build";
+import { buildDeckProfile, pickRoleTargets, type ProfileCardRow, type ProfileInput } from "./build";
 import { profileFingerprint } from "./fingerprint";
-import { ROLE_TARGETS } from "../recs/roles";
 import type {
   BracketPopulation,
   ComboRef,
@@ -29,6 +28,7 @@ import type {
   DeckProfile,
   FlagSource,
   StapleRef,
+  ProfileRoleTargets,
   ProfileSkeleton,
 } from "./types";
 
@@ -276,7 +276,9 @@ function compositionFrom(row: CompositionRow | undefined) {
  * turns "nobody measured this" into "this deck wants no wipes". Read INDEPENDENTLY of the
  * composition: a commander indexed before the role pass carries one and not the other.
  */
-function roleTargetsFrom(row: CompositionRow | undefined) {
+function roleTargetsFrom(
+  row: Pick<CompositionRow, "avgRamp" | "avgDraw" | "avgRemoval" | "avgWipes" | "withRoles"> | undefined,
+) {
   if (!row) return null;
   // The BUCKET rows carry their own denominator and it is the only honest test for them — see
   // `withRoles` above. A commander or pair row omits the field entirely, and nullity is the
@@ -550,6 +552,52 @@ async function loadCompositionRow(condition: string): Promise<CompositionRow | n
   return row ?? null;
 }
 
+/**
+ * Role targets for MANY single commanders at once, for the ranked lists: the fit score across a
+ * whole collection's candidates, where `loadSkeletonForCommanders`' four reads per commander
+ * would be thousands. Two reads instead, the commanders' own rows and the buckets they fall to,
+ * and then the SAME `roleTargetsFrom` and `pickRoleTargets` the skeleton applies, rung for rung,
+ * so a commander ranked here is measured against the figures its deck is built to. No pair rung:
+ * a ranked row is one commander.
+ */
+export async function loadRoleTargetsForCommanders(
+  commanders: readonly { oracleId: string; colorIdentity: readonly string[] }[],
+): Promise<Map<string, ProfileRoleTargets>> {
+  if (commanders.length === 0) return new Map();
+  const conditions = new Set<string>();
+  for (const c of commanders) {
+    conditions.add(identityCondition([...c.colorIdentity]));
+    conditions.add(countCondition(c.colorIdentity.length));
+  }
+  const [own, buckets] = await Promise.all([
+    db
+      .select({
+        oracleId: commanderSupport.commanderOracleId,
+        avgRamp: commanderSupport.avgRamp, avgDraw: commanderSupport.avgDraw,
+        avgRemoval: commanderSupport.avgRemoval, avgWipes: commanderSupport.avgWipes,
+      })
+      .from(commanderSupport)
+      .where(inArray(commanderSupport.commanderOracleId, commanders.map((c) => c.oracleId))),
+    db
+      .select({
+        condition: identityComposition.condition,
+        avgRamp: identityComposition.avgRamp, avgDraw: identityComposition.avgDraw,
+        avgRemoval: identityComposition.avgRemoval, avgWipes: identityComposition.avgWipes,
+        withRoles: identityComposition.withRoles,
+      })
+      .from(identityComposition)
+      .where(inArray(identityComposition.condition, [...conditions])),
+  ]);
+  const ownBy = new Map(own.map((r) => [r.oracleId, r]));
+  const bucketBy = new Map(buckets.map((r) => [r.condition, r]));
+  return new Map(commanders.map((c) => [c.oracleId, pickRoleTargets({
+    pair: null,
+    commander: roleTargetsFrom(ownBy.get(c.oracleId)),
+    identity: roleTargetsFrom(bucketBy.get(identityCondition([...c.colorIdentity]))),
+    count: roleTargetsFrom(bucketBy.get(countCondition(c.colorIdentity.length))),
+  })]));
+}
+
 /** The floor, and WHICH bucket served it. Exact identity first, colour count second. */
 async function loadStaples(
   exactCondition: string,
@@ -692,21 +740,18 @@ export async function loadSkeletonForCommanders(
   ] as const;
   const hit = chain.find(([, value]) => value != null);
 
-  const roleChain = [
-    ["pair", roleTargetsFrom(pairRow ?? undefined)],
-    ["commander", roleTargetsFrom(commanderRow ?? undefined)],
-    ["identity", identityRoles],
-    ["count", countRoles],
-  ] as const;
-  const roleHit = roleChain.find(([, value]) => value != null);
+  const roleTargets = pickRoleTargets({
+    pair: roleTargetsFrom(pairRow ?? undefined),
+    commander: roleTargetsFrom(commanderRow ?? undefined),
+    identity: identityRoles,
+    count: countRoles,
+  });
 
   const commanderDeckCount = pairRow?.deckCount ?? commanderRow?.deckCount ?? null;
   return {
     skeleton: {
       composition: hit ? { of: hit[0], ...hit[1]! } : null,
-      roleTargets: roleHit
-        ? { of: roleHit[0], targets: roleHit[1]! }
-        : { of: "flat", targets: { ...ROLE_TARGETS } },
+      roleTargets,
       thinCondition,
       condition,
       staples,

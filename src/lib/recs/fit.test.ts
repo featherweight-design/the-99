@@ -30,7 +30,7 @@ describe("computeFit · a non-positive total is NO READING, not a zero ratio", (
   // decides `measurableTotal`, so an empty support list is scored out of 40
   // rather than told it managed 0 of 60.
   it.each([null, 0, -1])("scores out of 40 when the total is %s", (edhrecTotal) => {
-    const fit = computeFit({ poolSize: 0, roleCounts: noRoles, ownedSupport: 0, edhrecTotal });
+    const fit = computeFit({ roleTargets: ROLE_TARGETS, poolSize: 0, roleCounts: noRoles, ownedSupport: 0, edhrecTotal });
 
     expect(fit.fitSynergy).toBeNull();
     expect(fit.measurableTotal).toBe(100 - SYNERGY_WEIGHT);
@@ -39,7 +39,7 @@ describe("computeFit · a non-positive total is NO READING, not a zero ratio", (
   // A POSITIVE total with no overlap is the case that must NOT collapse into the
   // above: the reading exists and is zero, so the denominator stays 100.
   it("scores out of 100 when the total is positive and the overlap is empty", () => {
-    const fit = computeFit({ poolSize: 0, roleCounts: noRoles, ownedSupport: 0, edhrecTotal: 400 });
+    const fit = computeFit({ roleTargets: ROLE_TARGETS, poolSize: 0, roleCounts: noRoles, ownedSupport: 0, edhrecTotal: 400 });
 
     expect(fit.fitSynergy).toBe(0);
     expect(fit.measurableTotal).toBe(100);
@@ -58,7 +58,7 @@ describe("computeFit · a non-positive total is NO READING, not a zero ratio", (
   // and asserting 100 would now assert the defect. It is the ORDER that matters:
   // the rank is the printed figure, and pool and roles alone are worth 40.
   it("ranks an unmeasurable commander on the figure it prints, not a rescale", () => {
-    const fit = computeFit({ poolSize: 400, roleCounts: full, ownedSupport: 9, edhrecTotal: null });
+    const fit = computeFit({ roleTargets: ROLE_TARGETS, poolSize: 400, roleCounts: full, ownedSupport: 9, edhrecTotal: null });
 
     expect(fit.score).toBe(POOL_WEIGHT + ROLES_WEIGHT);
     expect(fit.rankScore).toBe(fit.score);
@@ -67,10 +67,10 @@ describe("computeFit · a non-positive total is NO READING, not a zero ratio", (
   // The mirror, so the case above is not passing on a constant: a tracked
   // commander scoring above 40 must out-rank it.
   it("lets a tracked commander above 40 out-rank an untracked one", () => {
-    const untracked = computeFit({
+    const untracked = computeFit({ roleTargets: ROLE_TARGETS,
       poolSize: 400, roleCounts: full, ownedSupport: 9, edhrecTotal: null,
     });
-    const tracked = computeFit({
+    const tracked = computeFit({ roleTargets: ROLE_TARGETS,
       poolSize: 400, roleCounts: full, ownedSupport: 50, edhrecTotal: 100,
     });
 
@@ -91,7 +91,7 @@ describe("computeFit · the ratio is deliberately unclamped", () => {
   // correct build. The component overflowing and the headline overflowing are
   // separate claims.
   it("lets an overfull overlap exceed the synergy weight, and the total with it", () => {
-    const fit = computeFit({
+    const fit = computeFit({ roleTargets: ROLE_TARGETS,
       poolSize: POOL_FULL_AT, roleCounts: full, ownedSupport: 11, edhrecTotal: 10,
     });
 
@@ -100,7 +100,7 @@ describe("computeFit · the ratio is deliberately unclamped", () => {
   });
 
   it("still sums its own parts when it does", () => {
-    const fit = computeFit({
+    const fit = computeFit({ roleTargets: ROLE_TARGETS,
       poolSize: 400, roleCounts: full, ownedSupport: 11, edhrecTotal: 10,
     });
 
@@ -112,11 +112,11 @@ describe("computeFit · the pool factor", () => {
   // The extraction dropped a `collection.length ? … : 0` guard as a second
   // spelling of `0 / 200`. This pins the claim at the boundary it was about.
   it("is zero for an empty pool and caps at the full mark", () => {
-    const empty = computeFit({ poolSize: 0, roleCounts: noRoles, ownedSupport: 0, edhrecTotal: 1 });
-    const over = computeFit({
+    const empty = computeFit({ roleTargets: ROLE_TARGETS, poolSize: 0, roleCounts: noRoles, ownedSupport: 0, edhrecTotal: 1 });
+    const over = computeFit({ roleTargets: ROLE_TARGETS,
       poolSize: POOL_FULL_AT * 3, roleCounts: noRoles, ownedSupport: 0, edhrecTotal: 1,
     });
-    const at = computeFit({
+    const at = computeFit({ roleTargets: ROLE_TARGETS,
       poolSize: POOL_FULL_AT, roleCounts: noRoles, ownedSupport: 0, edhrecTotal: 1,
     });
 
@@ -125,10 +125,42 @@ describe("computeFit · the pool factor", () => {
   });
 
   it("gives full role credit at the targets and none at zero", () => {
-    const met = computeFit({ poolSize: 0, roleCounts: full, ownedSupport: 0, edhrecTotal: 1 });
-    const none = computeFit({ poolSize: 0, roleCounts: noRoles, ownedSupport: 0, edhrecTotal: 1 });
+    const met = computeFit({ roleTargets: ROLE_TARGETS, poolSize: 0, roleCounts: full, ownedSupport: 0, edhrecTotal: 1 });
+    const none = computeFit({ roleTargets: ROLE_TARGETS, poolSize: 0, roleCounts: noRoles, ownedSupport: 0, edhrecTotal: 1 });
 
     expect(met.fitRoles).toBe(ROLES_WEIGHT);
     expect(none.fitRoles).toBe(0);
+  });
+});
+
+// Brief 2026-09-28 §5.4: the Roles part is graded against the targets the caller hands in,
+// `pickRoleTargets`' answer, never the flat constants behind its back.
+describe("computeFit · the Roles part reads the targets it is given", () => {
+  const at = (roleCounts: Record<keyof typeof ROLE_TARGETS, number>, roleTargets: Record<keyof typeof ROLE_TARGETS, number>) =>
+    computeFit({ roleTargets, poolSize: 0, roleCounts, ownedSupport: 0, edhrecTotal: null }).fitRoles;
+
+  it("is full when every count meets its MEASURED target, though short of the flat ones", () => {
+    const measured = { ramp: 6, draw: 5, removal: 4, wipes: 1 };
+    expect(at(measured, measured)).toBe(ROLES_WEIGHT);
+    expect(at(measured, ROLE_TARGETS)).toBeLessThan(ROLES_WEIGHT);
+  });
+
+  it("is short when a measured target sits ABOVE the flat one the counts meet", () => {
+    expect(at(full, { ...ROLE_TARGETS, ramp: ROLE_TARGETS.ramp * 2 })).toBeLessThan(ROLES_WEIGHT);
+  });
+
+  // A mean is fractional and whole cards meet it the way the fill builds: 8.4 is met at 8.
+  it("rounds a measured mean the way the fill rounds its floors", () => {
+    const counts = { ramp: 8, draw: 8, removal: 8, wipes: 3 };
+    expect(at(counts, { ramp: 8.4, draw: 8.4, removal: 8.4, wipes: 3.4 })).toBe(ROLES_WEIGHT);
+    expect(at(counts, { ramp: 8.6, draw: 8, removal: 8, wipes: 3 })).toBeLessThan(ROLES_WEIGHT);
+  });
+
+  // A role whose decks average under half a card asks for nothing. Dividing by the rounded 0
+  // would make the whole score NaN, which sorts nowhere and prints as nothing.
+  it("counts a target that rounds to 0 as met rather than dividing by it", () => {
+    const fit = computeFit({ roleTargets: { ...ROLE_TARGETS, wipes: 0.3 }, poolSize: 0, roleCounts: { ...full, wipes: 0 }, ownedSupport: 0, edhrecTotal: null });
+    expect(Number.isFinite(fit.score)).toBe(true);
+    expect(fit.fitRoles).toBe(ROLES_WEIGHT);
   });
 });

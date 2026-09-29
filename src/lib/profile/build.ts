@@ -10,6 +10,7 @@ import type {
   DeckProfile,
   DetectionCoverage,
   FlagSource,
+  ProfileRoleTargets,
   ProfileColours,
   ProfileCounts,
   ProfileRoles,
@@ -60,6 +61,35 @@ export type RoleCandidates = {
   count: RoleFour | null;
 };
 type RoleFour = { ramp: number; draw: number; removal: number; wipes: number };
+
+/**
+ * THE role-target selector: the chain's first measured hit, pair → commander → identity →
+ * count, or the asserted `ROLE_TARGETS` when none was measured.
+ *
+ * ONE of these, deliberately (brief 2026-09-28 §5.4). The skeleton, the create path's
+ * `loadSkeletonForCommanders`, and the commander surfaces (the fit score, Role Coverage, the
+ * thinnest role) all take their targets from here, so a deck is never built to one set of
+ * figures and graded, ranked or described against another.
+ *
+ * Read SEPARATELY from the composition chain: folding the two would let a missing role figure
+ * drag a perfectly good composition to `flat`, and a missing composition hide role figures that
+ * were measured — the two populations differ until one index run has covered both.
+ *
+ * Never null: `ROLE_TARGETS` is a real answer rather than an absence, and a reader measured
+ * against it is being told something true about what it is measured against.
+ */
+export function pickRoleTargets(roles: RoleCandidates): ProfileRoleTargets {
+  const roleChain = [
+    ["pair", roles.pair],
+    ["commander", roles.commander],
+    ["identity", roles.identity],
+    ["count", roles.count],
+  ] as const;
+  const roleHit = roleChain.find(([, value]) => value != null);
+  return roleHit
+    ? { of: roleHit[0], targets: roleHit[1]! }
+    : { of: "flat", targets: { ...ROLE_TARGETS } };
+}
 
 export type ProfileInput = {
   deckId: string;
@@ -292,25 +322,9 @@ function skeleton(input: ProfileInput): ProfileSkeleton {
   ] as const;
   const hit = chain.find(([, value]) => value != null);
 
-  // THE SAME ORDER, READ SEPARATELY. Folding the two would let a missing role figure drag a
-  // perfectly good composition to `flat`, and a missing composition hide role figures that
-  // were measured — the two populations differ until one index run has covered both.
-  const roleChain = [
-    ["pair", input.roles.pair],
-    ["commander", input.roles.commander],
-    ["identity", input.roles.identity],
-    ["count", input.roles.count],
-  ] as const;
-  const roleHit = roleChain.find(([, value]) => value != null);
-
   return {
     composition: hit ? { of: hit[0], ...hit[1]! } : null,
-    // Never null: `ROLE_TARGETS` is a real answer rather than an absence — the asserted
-    // baseline this sub-project replaces — and a deck falling back to it is being told
-    // something true about what it is measured against.
-    roleTargets: roleHit
-      ? { of: roleHit[0], targets: roleHit[1]! }
-      : { of: "flat", targets: { ...ROLE_TARGETS } },
+    roleTargets: pickRoleTargets(input.roles),
     thinCondition: input.thinCondition,
     condition: input.condition,
     staples: input.staples,

@@ -50,6 +50,7 @@ import { loadCandidates } from "../src/lib/discovery/candidates";
 import { loadSupportLists } from "../src/lib/edhrec/support-read";
 import { loadCollectionPool } from "../src/lib/recs/recommend";
 import { SYNERGY_WEIGHT, scoreCommander, type PoolCard } from "../src/lib/recs/score";
+import { ROLE_TARGETS } from "../src/lib/recs/roles";
 
 /** Below this many compared commanders a run proves too little to trust. A
     question about the fixture, never about the code. */
@@ -205,6 +206,9 @@ const rows: Row[] = population.map((c) => {
   const scored = scoreCommander({
     commander,
     collection,
+    // Not what this probe measures: the synergy figure is its whole subject, and the role
+    // component does not enter it.
+    roleTargets: ROLE_TARGETS,
     support: supportLists.get(c.oracleId) ?? null,
     // Not read by the allocation. The synergy figure is the whole subject here.
     inclusionByName: null,

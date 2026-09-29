@@ -112,14 +112,14 @@ export const howItWorksRowsCopy = {
         "decks in your colors, then decks with as many colors. With none, it falls back to " +
         `${f.ramp} ramp, ${f.draw} draw, ${f.removal} removal, ${f.wipes} wipes and ${f.land} ` +
         `lands (${f.land - 1} beside a partner), and the strip says which it used.`,
-      // Brief §5.4: whichever PR moves these three surfaces onto the measured targets changes this
-      // sentence in the same diff (recs/score.ts, commanders/coverage-section.tsx,
-      // recs/weakest-role.ts).
+      // Brief §5.4, in two PRs: 5.4a moved the fit score (recs/score.ts) onto the measured targets;
+      // 5.4b moves Role Coverage (commanders/coverage-section.tsx) and the thinnest role
+      // (recs/weakest-role.ts), and changes this sentence again in its own diff.
       refresh: `Roles are read live. The measured targets update ${INDEX_CADENCE}. The fallback never moves.`,
       exact:
-        "Partial. We state no miss rate for the role reading. The fit score, Role Coverage on a " +
-        "commander’s page and the thinnest role in Why this commander all use the fallback, " +
-        "never the measured targets.",
+        "Partial. We state no miss rate for the role reading. The fit score uses these targets. " +
+        "Role Coverage on a commander’s page and the thinnest role in Why this commander still " +
+        "use the fallback.",
     },
     {
       id: "how-themes",
@@ -150,7 +150,7 @@ export const howItWorksRowsCopy = {
         `the top ${READY_COUNT}, changing daily at midnight UTC, and all of them when ` +
         `${word(READY_SHOWN)} or fewer qualify.`,
       refresh: `Your collection is read live. The lists update ${INDEX_CADENCE}.`,
-      exact: "The arithmetic is exact. Its Roles part uses the fallback targets.",
+      exact: "The arithmetic is exact. Its Roles part uses the same targets as your deck, measured where we can.",
     },
     {
       id: "how-availability",

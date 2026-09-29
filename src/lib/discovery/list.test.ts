@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildPoolRollup } from "../recs/pool-rollup";
-import type { PoolCard } from "../recs/score";
+import { ROLES_WEIGHT, type PoolCard } from "../recs/score";
 import { assembleDiscovery, assembleDiscoveryWithIds, discoveryKey } from "./list";
 
 // `collectionSupport` defaults to `ownedSupport` — the two are equal for every
@@ -33,6 +33,7 @@ describe("assembleDiscovery", () => {
     cardsRead: 2805,
     freePoolSize: 2805,
     availOk: true,
+    roleTargets: new Map(),
     priceOk: true,
   };
 
@@ -97,6 +98,23 @@ describe("assembleDiscovery", () => {
     // prints. They differ only when the ranked pool is narrower than the
     // collection, which is the case this fixture builds by hand.
     //
+    // Brief §5.4: the row's Roles part is graded against the commander's own targets, looked up
+    // by oracle id. A row wired to the flat constants reads the same fitRoles either way. Targets
+    // of 0 ask for nothing and are met by construction, so they read full marks against a pool
+    // that the flat targets grade well short.
+    it("grades Roles against the commander's own targets", () => {
+      const flat = assembled();
+      const measured = assembleDiscovery({
+        ...base,
+        rollup: buildPoolRollup(pool, new Map()),
+        candidates: [candidate({ oracleId: "a", name: "A", edhrecTotal: 100, ownedSupport: 30 })],
+        roleTargets: new Map([["a", { ramp: 0, draw: 0, removal: 0, wipes: 0 }]]),
+        sort: "fit",
+      }).items[0];
+      expect(measured!.fitRoles).toBe(ROLES_WEIGHT);
+      expect(flat!.fitRoles).toBeLessThan(ROLES_WEIGHT);
+    });
+
     // `collectionSupport` is the FLOOR's numerator and `ownedSupport` is Fit's.
     // A row wired to the wrong one agrees with the detail page only while the
     // two pools are the same.
@@ -342,6 +360,7 @@ describe("assembleDiscoveryWithIds", () => {
       cardsRead: 2805,
       freePoolSize: 2805,
       availOk: true,
+    roleTargets: new Map(),
       priceOk: true,
       sort: "fit",
     });
