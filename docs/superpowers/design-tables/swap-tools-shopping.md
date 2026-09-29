@@ -6,7 +6,7 @@
 3. `Shopping View.dc.html` (the JSX `renderVals` and the markup), for exact values.
 4. `swap-tools · copy strings.ts`, for which key each element renders.
 
-**Widths:** Mobile is the `phone` prop (390, below `md`). Desktop is `wide` (drawn at 1300, applies from `md`, 768px, up). **One exception:** below `lg` (1024px), phone included, a row's `over $X` is stacked directly above its buy tag, right-aligned, 2px apart, 10px mono `--warning` (Hugh, 2026-09-26 for 768–1023px; extended to the phone 2026-09-28). It is inline after the figure only from `lg`. This replaced F12 ruling (b)'s own-line form. The row tables below give the `lg` form as Desktop and note the band.
+**Widths:** Mobile is the `phone` prop (390, below `md`). Desktop is `wide` (drawn at 1300). A Shopping row keeps the phone's two-line layout up to `lg` (1024px): its pips and EDHREC figure stay on the meta line under the name at 768–1023px (Hugh, 2026-09-26, #1047), and the desktop one-line form applies from `lg`. **One exception:** below `lg` (1024px), phone included, a row's `over $X` is stacked directly above its buy tag, right-aligned, 2px apart, 10px mono `--warning` (Hugh, 2026-09-26 for 768–1023px; extended to the phone 2026-09-28). It is inline after the figure only from `lg`. This replaced F12 ruling (b)'s own-line form. The row tables below give the `lg` form as Desktop and note the band.
 "same" means the value is identical at both widths. Copy is recorded as the **key rendered**, never as its words.
 
 **R1 → R2 overrides applied in this table:**

@@ -11,8 +11,8 @@
  *   - the name keeps its width with `over $X` on the row (audit F12, ruling b): the line costs the
  *     name nothing at 390 and 768, where it stacks on the buy tag (Hugh, 2026-09-28; it took a line
  *     of its own at 390 before), and the name keeps the 131px
- *     Design costed for Plateau at 390, whole, and a 40px floor at 1024 and 1300, where a long name
- *     ellipsizes. At 768 every Shopping row is two lines (#1047), its figure under its name. The room
+ *     Design costed for Plateau at 390, and a 40px floor at 1024 and 1300; a longer name may
+ *     ellipsize past either. At 768 every Shopping row is two lines (#1047), its figure under its name. The room
  *     itself at 768 is the grid's.
  *
  * FIXTURE. A brew under the signed-in account holding cards it does NOT own, chosen by their live
@@ -51,10 +51,11 @@ const pool = new Pool({ connectionString: DATABASE_URL });
 
 const WIDTHS = [
   // `maxCost`: the most room the `over $X` line may take from a name. `nameFloor`: the room an over
-  // row's name must keep. `whole`: the name must also be uncut there. Design costed Plateau WHOLE at
-  // "about 131px" at 390, and only a 40px floor on desktop, where a long name ellipsizes by design.
-  // None at 768, where the grid itself overflows (see F12 below).
-  { label: 390, viewport: { width: 390, height: 844 }, edit: true, maxCost: 0, nameFloor: 131, whole: true },
+  // row's name must keep: Design costed "about 131px" at 390 (Plateau's width) and a 40px floor on
+  // desktop. The fixture's names are whatever the price bands hold, so a longer one than Plateau may
+  // ellipsize past the floor; the floor is what is asserted, and cut names are printed. None at 768,
+  // where the grid itself overflows (see F12 below).
+  { label: 390, viewport: { width: 390, height: 844 }, edit: true, maxCost: 0, nameFloor: 131 },
   // F12, ruling b: up to lg the line stacks on the buy tag, so at 768 it costs the name nothing.
   // 1024 is the first width that draws it inline.
   { label: 768, viewport: { width: 768, height: 900 }, edit: false, maxCost: 0, nameFloor: null },
@@ -280,7 +281,7 @@ try {
     if (w.nameFloor) {
       const narrowest = Math.min(...overNames.map((n) => rows[n]?.room ?? 0));
       const cut = overNames.filter((n) => rows[n]?.cut);
-      report(`${tag} name room on an over row (F12)`, narrowest >= w.nameFloor && (!w.whole || cut.length === 0),
+      report(`${tag} name room on an over row (F12)`, narrowest >= w.nameFloor,
         `narrowest ${narrowest}px against ${w.nameFloor}px; cut: ${cut.join(", ") || "none"}`);
     }
 
