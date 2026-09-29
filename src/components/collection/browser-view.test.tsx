@@ -3,6 +3,8 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
+  // The browser refreshes a page whose list a fields batch shows to be stale.
+  useRouter: () => ({ refresh: () => {} }),
 }));
 
 import { CollectionBrowser } from "./browser";

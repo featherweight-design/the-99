@@ -32,17 +32,24 @@ export function RowsView({
   onShowMore,
   onOpen,
   pendingOracleId = null,
+  busy = false,
 }: {
   cards: BrowseListCard[];
   totalCards: number;
   onShowMore: () => void;
+  /**
+   * The rows a filter or `Show more` asked for are still arriving (list payload plan, PR 4): the
+   * list keeps the rows it drew and says so with `aria-busy`, and `Show more` ignores a press
+   * while it waits. No drawn waiting state: the rows land in about one round trip.
+   */
+  busy?: boolean;
   onOpen: (oracleId: string) => void;
   /** The row whose card is being fetched, which shows the click landed. */
   pendingOracleId?: string | null;
 }) {
   return (
     // §Rows Scroll Container: flex-1, padding 2px 12px 12px mobile / 12px 34px 34px desktop, flex column, gap 6/7px
-    <div className="flex-1 flex flex-col gap-[6px] md:gap-[7px] px-[12px] md:px-[34px] pt-[2px] md:pt-[12px] pb-[12px] md:pb-[34px]">
+    <div aria-busy={busy || undefined} className="flex-1 flex flex-col gap-[6px] md:gap-[7px] px-[12px] md:px-[34px] pt-[2px] md:pt-[12px] pb-[12px] md:pb-[34px]">
       {/* The gloss travels WITH the view: a surface drawing a wordless mark carries the
           thing that decodes it, rather than trusting a caller to mount one above. */}
       <CollectionMarkKey />
@@ -204,7 +211,8 @@ export function RowsView({
       {cards.length < totalCards && (
         <GhostButton
           type="button"
-          onClick={onShowMore}
+          onClick={busy ? undefined : onShowMore}
+          aria-busy={busy || undefined}
           className="mt-[6px] mx-auto text-[13px] px-[16px] py-[9px]"
         >
           Show more ({(totalCards - cards.length).toLocaleString()} more)

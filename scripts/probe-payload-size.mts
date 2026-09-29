@@ -31,7 +31,8 @@ import { discoveryRows } from "../src/lib/discovery/window";
 import { REVEAL_STEP } from "../src/lib/commanders/reveal-step";
 import { loadCommanderRankings } from "../src/lib/commanders/rankings";
 import { loadBrowseCards } from "../src/lib/collection/browse";
-import { encodeCollection } from "../src/lib/collection/list-wire";
+import { cutCollectionWindow, encodeCollection } from "../src/lib/collection/list-wire";
+import { firstWindowIds, parseBrowseParams } from "../src/lib/collection/window";
 import { loadAvailability } from "../src/lib/decks/availability-query";
 import { gzipSync } from "node:zlib";
 
@@ -52,14 +53,14 @@ const CEILING_BYTES = 2_000_000;
 const BUDGET_BYTES = 1_600_000;
 
 /**
- * `/collection`'s SHIPPED list, the encoded wire, as raw JSON. Not the cache's ceiling (the
- * cached entry is the unencoded list, held to BUDGET_BYTES above) but what the reader's
- * connection pays for, which is the list payload plan's subject
- * (plans/2026-09-28-list-payload-shrink.md, PR 2). Set a little over the worst account measured
- * when it landed, so a field added back to every card fails here rather than on a phone. The run
- * prints the figure; read it there.
+ * `/collection`'s SHIPPED list, the encoded wire, as raw JSON, for a URL with no filter: every
+ * card's list columns, and the draw fields for the first window only (list payload plan, PR 4;
+ * the wire itself is PR 2's). Not the cache's ceiling (the cached entry is the unencoded list, held
+ * to BUDGET_BYTES above) but what the reader's connection pays for. Set a little over the worst
+ * account measured when it landed, so a field added back to every card fails here rather than on
+ * a phone. The run prints the figure; read it there.
  */
-const COLLECTION_WIRE_BUDGET_BYTES = 1_250_000;
+const COLLECTION_WIRE_BUDGET_BYTES = 1_050_000;
 
 /**
  * `/discover`'s SHIPPED payload for a URL with no search, colour or set: every row's list columns,
@@ -266,7 +267,9 @@ async function main() {
       const list = await loadBrowseCards(account.user_id);
       const availability = await loadAvailability(account.user_id);
       const entry = Buffer.byteLength(JSON.stringify(list));
-      const wireText = JSON.stringify(encodeCollection(list, availability));
+      // The page's own cut, for a URL with no filter.
+      const keep = firstWindowIds(list, parseBrowseParams(() => null, availability !== null));
+      const wireText = JSON.stringify(cutCollectionWindow(encodeCollection(list, availability), keep));
       const wire = Buffer.byteLength(wireText);
       if (entry > worstEntry.bytes) worstEntry = { bytes: entry, cards: list.length };
       if (wire > worstWire.bytes) worstWire = { bytes: wire, gzip: gzipSync(wireText, { level: 9 }).length, cards: list.length };

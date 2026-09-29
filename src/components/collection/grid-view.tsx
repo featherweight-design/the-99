@@ -32,10 +32,17 @@ export function GridView({
   onShowMore,
   onOpen,
   pendingOracleId = null,
+  busy = false,
 }: {
   cards: BrowseListCard[];
   totalCards: number;
   onShowMore: () => void;
+  /**
+   * The rows a filter or `Show more` asked for are still arriving (list payload plan, PR 4): the
+   * list keeps the rows it drew and says so with `aria-busy`, and `Show more` ignores a press
+   * while it waits. No drawn waiting state: the rows land in about one round trip.
+   */
+  busy?: boolean;
   onOpen: (oracleId: string) => void;
   /** The tile whose card is being fetched, which shows the click landed. */
   pendingOracleId?: string | null;
@@ -51,7 +58,7 @@ export function GridView({
        The phone keeps an explicit 2-up. At 390px the track is 362px, which one
        178px floor plus a gap already exceeds, so auto-fill there would collapse
        to a single column. */
-    <div className="grid grid-cols-2 md:grid-cols-[repeat(auto-fill,minmax(178px,1fr))] gap-[12px] md:gap-[20px] px-[14px] md:px-[34px] pt-[4px] md:pt-[20px] pb-[14px] md:pb-[34px]">
+    <div aria-busy={busy || undefined} className="grid grid-cols-2 md:grid-cols-[repeat(auto-fill,minmax(178px,1fr))] gap-[12px] md:gap-[20px] px-[14px] md:px-[34px] pt-[4px] md:pt-[20px] pb-[14px] md:pb-[34px]">
       {/* The gloss travels WITH the view: a surface drawing a wordless mark carries the
           thing that decodes it, rather than trusting a caller to mount one above. */}
       <CollectionMarkKey className="col-span-full" />
@@ -236,7 +243,8 @@ export function GridView({
       {cards.length < totalCards && (
         <GhostButton
           type="button"
-          onClick={onShowMore}
+          onClick={busy ? undefined : onShowMore}
+          aria-busy={busy || undefined}
           className="col-span-full mx-auto text-[13px] px-[16px] py-[9px] mt-[6px]"
         >
           Show more ({(totalCards - cards.length).toLocaleString()} more)

@@ -7,11 +7,13 @@
 
 import { requireUserId } from "../../lib/auth";
 import { getCollectionLastUpdated, getCollectionStats } from "../../lib/home/summary";
-import { loadBrowseCards, loadOwnedSetMeta } from "../../lib/collection/browse";
+import { loadOwnedSetMeta } from "../../lib/collection/browse";
 import { CardFan } from "../../components/marks";
 import { CollectionClient } from "../../components/collection/collection-client";
-import { cacheForUser } from "../../lib/cache/user-lists";
-import { encodeCollection } from "../../lib/collection/list-wire";
+import { cutCollectionWindow, encodeCollection } from "../../lib/collection/list-wire";
+import { loadCollectionList } from "../../lib/collection/payload";
+import { firstWindowIds, parseBrowseParams } from "../../lib/collection/window";
+import { searchParamsToQuery } from "../../lib/commanders/search-params";
 import { loadAvailability } from "../../lib/decks/availability-query";
 import {
   EmptyState,
@@ -21,7 +23,11 @@ import {
 import { PrimaryButton } from "../../components/ui/button";
 import { CollectionPlaceHead } from "../../components/collection/collection-place-head";
 
-export default async function CollectionPage() {
+export default async function CollectionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const userId = await requireUserId();
   const [stats, cards, lastUpdated, ownedSets, availability] = await Promise.all([
     getCollectionStats(userId),
@@ -48,7 +54,7 @@ export default async function CollectionPage() {
     // `revalidateClaims`, which calls `revalidateUserLists`, which drops exactly the tag
     // `cacheForUser` put on this entry. Building a deck holding both pieces retires the
     // clause on the spot rather than at the hour ceiling.
-    cacheForUser(userId, ["browse-5"], () => loadBrowseCards(userId)),
+    loadCollectionList(userId),
     getCollectionLastUpdated(userId),
     // Set names + release dates for the Set ▾ panel (#86).
     loadOwnedSetMeta(userId),
@@ -62,7 +68,14 @@ export default async function CollectionPage() {
   // boundary as a prop, and every consumer below wants one card's entry. Encoded
   // on the way (`list-wire.ts`): each deck a claim names crosses once, and each
   // image as its Scryfall id and stamp. The client decodes it back.
-  const wire = encodeCollection(cards, availability);
+  // THE URL'S OWN FIRST WINDOW keeps its draw fields and every other card ships without them
+  // (list payload plan, PR 4): the art, the facts and the combo partners were most of what a card
+  // carries, and a window draws 200 of about 2,800. The window is found by the browser's own steps
+  // (`lib/collection/window`) over the same list, so the cards it draws first are the ones shipped
+  // whole; the rest arrive in the background from `/api/collection-fields`.
+  const query = searchParamsToQuery(await searchParams);
+  const keep = firstWindowIds(cards, parseBrowseParams((key) => query.get(key), availability !== null));
+  const wire = cutCollectionWindow(encodeCollection(cards, availability), keep);
 
   const head = <CollectionPlaceHead current="cards" stats={stats} lastUpdated={lastUpdated} />;
 
