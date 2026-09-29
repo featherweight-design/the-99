@@ -603,6 +603,13 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
      */
     const slotsForBasics = landCeilingAfterModals - counts.land;
     const allocated = splitByWeight(colors, pips, slotsForBasics);
+    //
+    // NOT INDEPENDENTLY FALSIFIABLE, and recorded as such rather than claimed as tested. Setting
+    // this floor to zero leaves every test green, because the fallback sweep below then finds the
+    // base one slot short and takes a basic for the starved colour anyway. The floor is kept
+    // because it makes the allocation EXACT before any take, so which colour gets the slot is
+    // decided by this rule rather than by the candidate pool's order — but a mutation cannot see
+    // the difference, and pretending otherwise would be the kind of green that means nothing.
     const zero = colors.filter((c) => allocated.get(c)! === 0);
     for (const color of zero) {
       // Taken from the largest allocation, so the floor costs the colour that can spare it.
