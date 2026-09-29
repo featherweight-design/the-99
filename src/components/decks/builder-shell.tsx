@@ -824,6 +824,9 @@ export function BuilderShell({
   // after the server answered, which is the whole window the undo row exists
   // for. So the row calls `markSpent` straight from the click, outside `run`,
   // and leaves only the optimistic dispatch inside it.
+  // A refused Undo's message, held here because the receipt that asked has unmounted: see
+  // `reportUndoFailure` below.
+  const [undoFailure, setUndoFailure] = useState<{ oracleId: string; message: string } | null>(null);
   const markSpent = useCallback(
     (card: DeckDetailCard) => {
       // One undo row at a time: this removal settles whatever the last one left,
@@ -886,7 +889,6 @@ export function BuilderShell({
   // A refused Undo outlives the receipt that asked, which the optimistic re-add unmounted. Keyed on
   // the card, and cleared by the next removal rather than by the next server list: a refusal can
   // arrive in the same render as a revalidation, and clearing on that would erase it unread.
-  const [undoFailure, setUndoFailure] = useState<{ oracleId: string; message: string } | null>(null);
   const reportUndoFailure = useCallback((oracleId: string, message: string) => {
     setUndoFailure({ oracleId, message });
   }, []);
