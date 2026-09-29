@@ -392,6 +392,30 @@ describe("planFill", () => {
     expect(["plains", "island", "swamp", "mountain", "forest"].reduce((n, id) => n + q(id), 0)).toBe(37);
   });
 
+  it("takes a basic the player owns NO copies of", () => {
+    // ITEM 2's actual point, and the Thorin case: Mountain was in the pool with nothing to hand,
+    // and gating on `ownedQuantity` dropped red out of the split entirely. A basic is never a buy.
+    const plan = planFill([
+      c({ oracleId: "w0", manaCost: "{W}" }), c({ oracleId: "r0", manaCost: "{R}" }),
+      basic("plains", 40, "Plains"), basic("mountain", 0, "Mountain"),
+    ], boros as never);
+    const q = (id: string) => plan.rows.find((r) => r.oracleId === id)?.quantity ?? 0;
+    expect(q("mountain")).toBeGreaterThan(0);
+    expect(q("plains") + q("mountain")).toBe(37);
+  });
+
+  it("gives a zero-weight identity colour its floor of one, out of the largest share", () => {
+    // Two colours, every pip white. Red rounds to zero and must still be castable, and the one
+    // slot comes from white rather than from the total — so the base still adds up.
+    const plan = planFill([
+      ...Array.from({ length: 5 }, (_, i) => c({ oracleId: `w${i}`, manaCost: "{W}", inclusionPct: 90 - i })),
+      basic("plains", 40, "Plains"), basic("mountain", 40, "Mountain"),
+    ], boros as never);
+    const q = (id: string) => plan.rows.find((r) => r.oracleId === id)?.quantity ?? 0;
+    expect(q("mountain")).toBe(1);
+    expect(q("plains")).toBe(36);
+  });
+
   it("counts every HELD spell in the census, not only the ones it chose", () => {
     // The case my own harness got wrong: with `inclusionPct` null the candidate order falls back
     // to NAME, so a role cap can take an all-red sample of a mixed pool. The census has to read
