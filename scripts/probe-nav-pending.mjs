@@ -12,8 +12,8 @@
 //      1.5px strip has no whole device pixel there). A screenshot of the button is saved.
 //   4. A kept route (a deck's import page, by its header button, which reports): its own screen
 //      shows and the escalation never does.
-//   5. /collection's "By set" inline link, which carries only a PendingReporter: a slow press still
-//      escalates, and no mark is painted.
+//   5. An inline TEXT link that carries only a PendingReporter (/about's route link to /discover):
+//      a slow press still escalates, and no mark is painted.
 //
 // Mutations it is built to fail: the shell's <Suspense> removed (check 1 reads no screen), and the
 // 400ms gate set to 0 (check 2 reads the screen before the pip).
@@ -205,18 +205,19 @@ async function run(browser, state, width) {
     await page.close();
   }
 
-  // 5. An inline link with no mark (PR 2's `PendingReporter`): /collection's "By set" link still
-  //    escalates to its route's screen, and paints no mark of its own.
+  // 5. An inline text link with no mark (PR 2's `PendingReporter`): an About entry's route link
+  //    (plain mono text, no chrome) still escalates to its route's screen, and paints no mark of its
+  //    own. /collection's "By set" link is not the subject: it is drawn as a bordered chip.
   {
     const { page, throttle } = await slowPage(context);
-    await page.goto(`${BASE}/collection`, { waitUntil: "domcontentloaded", timeout: 120_000 });
-    const link = page.locator('main a[href="/collection/sets"]').filter({ visible: true }).first();
+    await page.goto(`${BASE}/about`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+    const link = page.locator('main a[href="/discover"]').filter({ hasText: "/discover", visible: true }).first();
     await link.waitFor({ state: "visible", timeout: 120_000 });
     await page.waitForFunction(() => window.next?.router, null, { timeout: 120_000 });
     await throttle(true);
     await page.evaluate(() => window.__navArm());
     await link.click();
-    await page.waitForURL((u) => u.pathname === "/collection/sets", { timeout: 120_000 });
+    await page.waitForURL((u) => u.pathname === "/discover", { timeout: 120_000 });
     const nav = await page.evaluate(() => window.__nav);
     report(nav.overlay != null && nav.overlay >= 390, "an inline link's slow press escalates to its screen", nav.overlay == null ? "never" : `screen at ${Math.round(nav.overlay)}ms`);
     report(nav.mark == null, "and draws no mark of its own", nav.mark == null ? "" : `mark at ${Math.round(nav.mark)}ms`);
