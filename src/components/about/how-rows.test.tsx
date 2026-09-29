@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { aboutEntries } from "../../lib/copy/about";
 import { bracketSubRows, howItWorksRowsCopy as copy } from "../../lib/copy/how-it-works";
 import { HowItWorks } from "./how-it-works";
 
@@ -11,7 +12,7 @@ afterEach(() => {
 
 describe("HowItWorks", () => {
   it("keys all five methods, in order, with their definitions", () => {
-    const { container } = render(<HowItWorks />);
+    const { container } = render(<HowItWorks entries={aboutEntries} />);
     const key = container.querySelector("dl")!;
     expect([...key.querySelectorAll("[data-method]")].map((e) => e.getAttribute("data-method"))).toEqual([
       "rules", "decks", "model", "you", "list",
@@ -20,7 +21,7 @@ describe("HowItWorks", () => {
   });
 
   it("draws eight closed rows, each a heading holding its disclosure", () => {
-    render(<HowItWorks />);
+    render(<HowItWorks entries={aboutEntries} />);
     for (const r of copy.rows) {
       const b = head(r.title);
       expect(b.getAttribute("aria-expanded")).toBe("false");
@@ -31,7 +32,7 @@ describe("HowItWorks", () => {
   });
 
   it("opens and closes a row on a press, and keeps others open", () => {
-    render(<HowItWorks />);
+    render(<HowItWorks entries={aboutEntries} />);
     const roles = copy.rows.find((r) => r.id === "how-roles")!;
     const prices = copy.rows.find((r) => r.id === "how-prices")!;
     fireEvent.click(head(roles.title));
@@ -46,7 +47,7 @@ describe("HowItWorks", () => {
   });
 
   it("gives Brackets its five sub-rows in place of a single statement", () => {
-    render(<HowItWorks />);
+    render(<HowItWorks entries={aboutEntries} />);
     fireEvent.click(head("Brackets"));
     const body = document.getElementById("how-brackets-body")!;
     expect(body.textContent).toContain(copy.bracketsLead);
@@ -64,7 +65,7 @@ describe("HowItWorks", () => {
     const scroll = vi.fn();
     Element.prototype.scrollIntoView = scroll;
     window.history.replaceState(null, "", "/about#how-written");
-    render(<HowItWorks />);
+    render(<HowItWorks entries={aboutEntries} />);
     expect(document.getElementById("how-written-body")).not.toBeNull();
     expect(scroll).toHaveBeenCalledTimes(1);
     expect(scroll.mock.instances[0]).toBe(document.getElementById("how-written"));
@@ -72,7 +73,7 @@ describe("HowItWorks", () => {
 
   it("opens a row when the hash moves to it, and ignores a hash that names no row", () => {
     Element.prototype.scrollIntoView = vi.fn();
-    render(<HowItWorks />);
+    render(<HowItWorks entries={aboutEntries} />);
     act(() => {
       window.history.replaceState(null, "", "/about#chapter-01");
       window.dispatchEvent(new HashChangeEvent("hashchange"));
@@ -91,7 +92,7 @@ describe("HowItWorks", () => {
     const scroll = vi.fn();
     Element.prototype.scrollIntoView = scroll;
     window.history.replaceState(null, "", "/about#how-prices");
-    render(<HowItWorks />);
+    render(<HowItWorks entries={aboutEntries} />);
     act(() => {
       window.history.replaceState(null, "", "/about#how-written");
       window.dispatchEvent(new HashChangeEvent("hashchange"));
@@ -109,7 +110,7 @@ describe("HowItWorks", () => {
   });
 
   it("carries the jump mark's title line on each row, so JumpMark can wash and focus it", () => {
-    render(<HowItWorks />);
+    render(<HowItWorks entries={aboutEntries} />);
     for (const r of copy.rows) {
       const line = document.getElementById(r.id)!.querySelector("[data-entry-title]")!;
       expect(line.querySelector("h3")!.getAttribute("tabindex")).toBe("-1");

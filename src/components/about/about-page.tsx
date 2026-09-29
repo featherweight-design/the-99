@@ -23,7 +23,8 @@ import { ContentsListR6, ContentsRailR6 } from "./contents-r6";
 import { JumpMark } from "./jump-mark";
 import { HowItWorks } from "./how-it-works";
 import { howItWorksEnabled } from "../../lib/about/how-it-works-flag";
-import { introWithAppendix } from "../../lib/copy/how-it-works";
+import { howItWorksRowsCopy, introWithAppendix } from "../../lib/copy/how-it-works";
+import { entryRow, HOW_IT_WORKS_ID, howItWorksLinksCopy } from "../../lib/copy/how-it-works-links";
 import { RecordVisit } from "./record-visit";
 import { unseenEntries, visibleEntries, type SeenState } from "../../lib/about/visible";
 import {
@@ -79,11 +80,15 @@ function Entry({
   entry,
   marked,
   sheetMode,
+  howItWorks,
 }: {
   entry: AboutEntry;
   marked: boolean;
   sheetMode: boolean;
+  /** `HOW_IT_WORKS_ENABLED`: an entry the appendix explains links to its row. */
+  howItWorks: boolean;
 }) {
+  const row = howItWorks ? entryRow[entry.id] : undefined;
   const Figure = FIGURES[entry.id];
   const inset = entry.width === "inset" && Figure;
   // R6 §P0: a new entry's top rule is 2px of accent at both widths, and on a
@@ -189,6 +194,22 @@ function Entry({
             </li>
           ))}
         </ol>
+      )}
+      {/* The line to the appendix row that explains this entry, in the Analysis sheet opener's
+          quiet tone. A plain hash link, so Back returns here. */}
+      {row && (
+        <div className="mt-[10px]">
+          <a
+            href={`#${row}`}
+            data-entry-link=""
+            className="inline-flex min-h-[44px] items-center gap-[8px] font-mono text-[10.5px] text-[color:var(--fg-faint)] md:min-h-0"
+          >
+            <span className="border-b border-dotted border-[color:var(--border-dashed)]">
+              {howItWorksLinksCopy.entryLink}
+            </span>
+            <span aria-hidden="true">↓</span>
+          </a>
+        </div>
       )}
     </li>
   );
@@ -298,6 +319,15 @@ export function AboutPage({
       .filter((e) => e.chapter === c.id)
       .map((e) => ({ id: e.id, title: e.title, isNew: isNew(e) })),
   }));
+  // The appendix's group in the contents, only while its switch is on. Titles only: the rail is a
+  // client component, and the rows' prose stays on the server.
+  const contentsAppendix = howItWorks
+    ? {
+        id: HOW_IT_WORKS_ID,
+        title: howItWorksLinksCopy.group,
+        rows: howItWorksRowsCopy.rows.map((r) => ({ id: r.id, title: r.title })),
+      }
+    : undefined;
   const destinationClause =
     destination === "/"
       ? aboutCopy.dismissDestinationHome
@@ -345,7 +375,7 @@ export function AboutPage({
       {(sheetMode || howItWorks) && <JumpMark />}
 
       {sheetMode ? (
-        <ContentsListR6 chapters={contentsChapters} />
+        <ContentsListR6 chapters={contentsChapters} appendix={contentsAppendix} />
       ) : (
         <ContentsList chapters={railChapters} />
       )}
@@ -375,13 +405,14 @@ export function AboutPage({
                   entry={entry}
                   marked={isNew(entry)}
                   sheetMode={sheetMode}
+                  howItWorks={howItWorks}
                 />
               ))}
           </ul>
         </section>
       ))}
 
-      {howItWorks && <HowItWorks />}
+      {howItWorks && <HowItWorks entries={visible} />}
 
       {/* The pinned bar's own height, given back to the document.
           `<main>` reserves `--tabbar-h` and nothing more, so the bar sat ON
@@ -423,7 +454,7 @@ export function AboutPage({
       </article>
 
       {sheetMode ? (
-        <ContentsRailR6 chapters={contentsChapters} />
+        <ContentsRailR6 chapters={contentsChapters} appendix={contentsAppendix} />
       ) : (
         <ContentsRail
           chapters={railChapters}

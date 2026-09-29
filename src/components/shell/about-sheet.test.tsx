@@ -164,3 +164,13 @@ describe("the sheet's copy binds The 99 (copy review, 2026-09-25)", () => {
     }
   });
 });
+
+describe("the appendix's one line", () => {
+  it("is drawn under the titles when the proxy added it, and not otherwise", () => {
+    const { container, unmount } = render(<AboutSheet state={{ kind: "behind", entries: entries(2), appendix: true }} />);
+    expect(container.querySelectorAll("[data-appendix-line]")).toHaveLength(1);
+    unmount();
+    const plain = render(<AboutSheet state={{ kind: "behind", entries: entries(2) }} />);
+    expect(plain.container.querySelector("[data-appendix-line]")).toBeNull();
+  });
+});

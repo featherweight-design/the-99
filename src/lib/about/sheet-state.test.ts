@@ -5,6 +5,16 @@ import { readSheetState } from "./sheet-state";
 const h = (v?: string) => new Headers(v === undefined ? {} : { "x-about-sheet": v });
 
 describe("readSheetState", () => {
+  it("reads the appendix's line beside entries, and draws nothing from it alone", () => {
+    const id = aboutEntries[0].id;
+    expect(readSheetState(h(`${id},how-it-works`))).toEqual({
+      kind: "behind",
+      entries: [{ id, title: aboutEntries[0].title }],
+      appendix: true,
+    });
+    expect(readSheetState(h("how-it-works"))).toEqual({ kind: "none" });
+  });
+
   it("draws nothing without the proxy's header", () => {
     expect(readSheetState(h())).toEqual({ kind: "none" });
   });

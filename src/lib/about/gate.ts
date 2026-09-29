@@ -4,6 +4,7 @@
 // Pure so it can be tested: the proxy itself needs a request, a session and a
 // Postgres connection, and none of the rules below need any of the three.
 
+import { HOW_IT_WORKS_ID } from "../copy/how-it-works-links";
 import { ABOUT_VERSION, type AboutEntry } from "../copy/about";
 import { isFirstRun, switchedIds, unseenEntries, type SeenState } from "./visible";
 
@@ -224,10 +225,15 @@ export function sheetDecision(args: {
   seen: SeenState;
   visible: readonly AboutEntry[];
   version?: number;
+  /** `HOW_IT_WORKS_ENABLED`. The appendix's line rides a sheet that is already drawing. */
+  appendix?: boolean;
 }): SheetDecision {
   const cookie = sheetCookieValue(args.userId, args.visible, args.version ?? ABOUT_VERSION);
   if (isFirstRun(args.seen)) return { show: true, header: "0", cookie };
   const unseen = unseenEntries(args.visible, args.seen);
+  // Decided on the ENTRIES alone, before the appendix is looked at: the line never summons a sheet.
   if (unseen.length === 0) return { show: false, cookie };
-  return { show: true, header: unseen.map((e) => e.id).join(","), cookie };
+  const ids = unseen.map((e) => e.id);
+  if (args.appendix && !args.seen.ids.includes(HOW_IT_WORKS_ID)) ids.push(HOW_IT_WORKS_ID);
+  return { show: true, header: ids.join(","), cookie };
 }

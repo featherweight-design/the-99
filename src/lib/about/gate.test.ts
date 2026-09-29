@@ -160,6 +160,28 @@ describe("gateDecision", () => {
   });
 });
 
+describe("the appendix's line on the sheet (plan 2026-09-28, PR C)", () => {
+  const all = aboutEntries.filter((e) => !e.switch);
+  const seen = (version: number, ids: string[] = []) => ({ version, ids });
+
+  it("rides a sheet already drawing, after its entries", () => {
+    const d = sheetDecision({ userId: "u", seen: seen(8), visible: all, version: 9, appendix: true });
+    expect(d.show && d.header.split(",").at(-1)).toBe("how-it-works");
+  });
+
+  it("never summons a sheet on its own", () => {
+    expect(sheetDecision({ userId: "u", seen: seen(9), visible: all, version: 9, appendix: true }).show).toBe(false);
+  });
+
+  it("stays off a first-run sheet, a reader who has seen it, and a deployment with the switch off", () => {
+    expect(sheetDecision({ userId: "u", seen: seen(0), visible: all, version: 9, appendix: true })).toMatchObject({ header: "0" });
+    const seenIt = sheetDecision({ userId: "u", seen: seen(8, ["how-it-works"]), visible: all, version: 9, appendix: true });
+    expect(seenIt.show && seenIt.header).not.toContain("how-it-works");
+    const off = sheetDecision({ userId: "u", seen: seen(8), visible: all, version: 9 });
+    expect(off.show && off.header).not.toContain("how-it-works");
+  });
+});
+
 describe("the sheet (R6)", () => {
   // The page with every feature switch off: an entry tied to one is not drawn.
   const all = aboutEntries.filter((e) => !e.switch);

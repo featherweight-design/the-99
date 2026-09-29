@@ -17,12 +17,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { aboutCopy, type AboutChapter } from "../../lib/copy/about";
 import { filterChapters, matchTitle } from "../../lib/about/search";
+import { howItWorksLinksCopy } from "../../lib/copy/how-it-works-links";
 import { GhostButton } from "../ui/button";
 import { SearchField } from "../ui/text-field";
 import { CURRENT_BAND, type RailChapter } from "./contents-rail";
 
 export type ContentsEntry = { id: string; title: string; isNew: boolean };
 export type ContentsChapter = RailChapter & { entries: ContentsEntry[] };
+/**
+ * "How the app reaches its answers", a group after the chapters (plan 2026-09-28, PR C). Its own
+ * shape rather than a fifth chapter: chapters are keyed on `AboutChapter`, and a row is not an entry.
+ */
+export type ContentsAppendix = { id: string; title: string; rows: { id: string; title: string }[] };
 
 const copy = aboutCopy.contents;
 
@@ -31,7 +37,7 @@ const copy = aboutCopy.contents;
  * order that sits in the upper band. Accumulated across callbacks, because an
  * observer reports only what CHANGED (see `useCurrentChapter`).
  */
-function useCurrentPlace(chapters: readonly ContentsChapter[]) {
+function useCurrentPlace(chapters: readonly ContentsChapter[], appendix?: ContentsAppendix) {
   const [place, setPlace] = useState<{ chapter: AboutChapter | null; entry: string | null }>({
     chapter: chapters[0]?.id ?? null,
     entry: null,
@@ -41,7 +47,10 @@ function useCurrentPlace(chapters: readonly ContentsChapter[]) {
   useEffect(() => {
     if (typeof IntersectionObserver === "undefined") return;
     const chapterIds = chapters.map((c) => `chapter-${c.id}`);
-    const entryIds = chapters.flatMap((c) => c.entries.map((e) => e.id));
+    // The appendix's section, then its rows, after the entries: document order, which `findLast`
+    // below relies on. A row, or the section's head, is a place in no chapter.
+    const appendixIds = appendix ? [appendix.id, ...appendix.rows.map((r) => r.id)] : [];
+    const entryIds = [...chapters.flatMap((c) => c.entries.map((e) => e.id)), ...appendixIds];
     const chapterOf = new Map(chapters.flatMap((c) => c.entries.map((e) => [e.id, c.id] as const)));
     const targets = [...chapterIds, ...entryIds]
       .map((id) => document.getElementById(id))
@@ -61,14 +70,16 @@ function useCurrentPlace(chapters: readonly ContentsChapter[]) {
       // first entry, and opening the section's chapter would hide that entry.
       setPlace((prev) => ({
         chapter:
-          (entry ? chapterOf.get(entry) : undefined) ??
-          (chapter ? (chapter.replace("chapter-", "") as AboutChapter) : prev.chapter),
+          entry && appendixIds.includes(entry)
+            ? null
+            : ((entry ? chapterOf.get(entry) : undefined) ??
+              (chapter ? (chapter.replace("chapter-", "") as AboutChapter) : prev.chapter)),
         entry,
       }));
     }, CURRENT_BAND);
     for (const t of targets) observer.observe(t);
     return () => observer.disconnect();
-  }, [chapters]);
+  }, [chapters, appendix]);
 
   return place;
 }
@@ -76,10 +87,21 @@ function useCurrentPlace(chapters: readonly ContentsChapter[]) {
 function useSearch(
   chapters: readonly ContentsChapter[],
   list: React.RefObject<HTMLDivElement | null>,
+  appendix?: ContentsAppendix,
 ) {
   const [query, setQuery] = useState("");
   const searching = query.trim().length > 0;
-  const result = useMemo(() => filterChapters(chapters, query), [chapters, query]);
+  const result = useMemo(() => {
+    const found = filterChapters(chapters, query);
+    // Row titles are searched too, and count in both halves of "N of M".
+    const rows = appendix ? appendix.rows.filter((r) => matchTitle(r.title, query).matched) : [];
+    return {
+      ...found,
+      rows,
+      count: found.count + rows.length,
+      total: found.total + (appendix?.rows.length ?? 0),
+    };
+  }, [chapters, query, appendix]);
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Escape") {
@@ -87,7 +109,7 @@ function useSearch(
       setQuery("");
     } else if (e.key === "Enter" && searching) {
       e.preventDefault();
-      const first = result.chapters[0]?.entries[0];
+      const first = result.chapters[0]?.entries[0] ?? result.rows[0];
       if (!first) return;
       // Press the row rather than set the hash: setting the hash the address
       // already carries does nothing at all, so a second Enter on the same
@@ -189,10 +211,16 @@ function Nothing({ query, onClear, tall }: { query: string; onClear: () => void;
 }
 
 /** Sticky beside the reading column, from the page's wide stop up (§Q1–Q3). */
-export function ContentsRailR6({ chapters }: { chapters: readonly ContentsChapter[] }) {
-  const place = useCurrentPlace(chapters);
+export function ContentsRailR6({
+  chapters,
+  appendix,
+}: {
+  chapters: readonly ContentsChapter[];
+  appendix?: ContentsAppendix;
+}) {
+  const place = useCurrentPlace(chapters, appendix);
   const list = useRef<HTMLDivElement>(null);
-  const search = useSearch(chapters, list);
+  const search = useSearch(chapters, list, appendix);
   const { searching, result, query, setQuery } = search;
   const shown = searching ? result.chapters : chapters;
 
@@ -292,6 +320,44 @@ export function ContentsRailR6({ chapters }: { chapters: readonly ContentsChapte
                 </li>
               );
             })}
+            {appendix && (!searching || result.rows.length > 0) && (
+              <li className="mt-[8px] border-t border-solid border-[color:var(--border)] pt-[8px]">
+                <a
+                  href={`#${appendix.id}`}
+                  aria-current={place.entry === appendix.id ? "true" : undefined}
+                  className={`flex items-center rounded-[6px] px-[10px] py-[7px] text-[13px] ${
+                    place.entry === appendix.id
+                      ? "bg-[color:var(--elevated)] text-[color:var(--fg)]"
+                      : "text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]"
+                  }`}
+                >
+                  <span className="min-w-0 truncate">{appendix.title}</span>
+                </a>
+                <ol className="list-none p-0">
+                  {(searching ? result.rows : appendix.rows).map((row) => {
+                    const current = row.id === place.entry;
+                    return (
+                      <li key={row.id}>
+                        <a
+                          data-entry-row=""
+                          href={`#${row.id}`}
+                          aria-current={current ? "true" : undefined}
+                          className={`flex items-baseline rounded-[6px] py-[4px] pr-[10px] pl-[30px] text-[12.5px] leading-[1.35] ${
+                            current
+                              ? "bg-[color:var(--elevated)] text-[color:var(--fg)]"
+                              : "text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]"
+                          }`}
+                        >
+                          <span className="min-w-0 flex-1">
+                            <Title title={row.title} query={query} />
+                          </span>
+                        </a>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </li>
+            )}
           </ol>
         )}
       </div>
@@ -300,10 +366,17 @@ export function ContentsRailR6({ chapters }: { chapters: readonly ContentsChapte
 }
 
 /** In flow, below the wide stop (§Q4–Q7). Chapters are disclosures, closed at first. */
-export function ContentsListR6({ chapters }: { chapters: readonly ContentsChapter[] }) {
-  const place = useCurrentPlace(chapters);
+export function ContentsListR6({
+  chapters,
+  appendix,
+}: {
+  chapters: readonly ContentsChapter[];
+  appendix?: ContentsAppendix;
+}) {
+  const place = useCurrentPlace(chapters, appendix);
   const list = useRef<HTMLDivElement>(null);
-  const search = useSearch(chapters, list);
+  const search = useSearch(chapters, list, appendix);
+  const [appendixOpen, setAppendixOpen] = useState(false);
   const { searching, result, query, setQuery } = search;
   // The reader's own open chapters. A search shows its matches without touching
   // this, so clearing it restores exactly what they had open (§R6).
@@ -406,9 +479,91 @@ export function ContentsListR6({ chapters }: { chapters: readonly ContentsChapte
                 </li>
               );
             })}
+            {appendix && (!searching || result.rows.length > 0) && (
+              <AppendixListRow
+                appendix={appendix}
+                rows={searching ? result.rows : appendix.rows}
+                open={searching || appendixOpen}
+                searching={searching}
+                current={place.entry !== null && place.chapter === null}
+                query={query}
+                onToggle={() => setAppendixOpen((o) => !o)}
+              />
+            )}
           </ol>
         )}
       </div>
     </nav>
+  );
+}
+
+/** The phone list's fifth row: the appendix, a disclosure like a chapter's, opened by a match. */
+function AppendixListRow({
+  appendix,
+  rows,
+  open,
+  searching,
+  current,
+  query,
+  onToggle,
+}: {
+  appendix: ContentsAppendix;
+  rows: { id: string; title: string }[];
+  open: boolean;
+  searching: boolean;
+  current: boolean;
+  query: string;
+  onToggle: () => void;
+}) {
+  const panel = `contents-entries-${appendix.id}`;
+  const figure = searching ? String(rows.length) : howItWorksLinksCopy.groupCount(appendix.rows.length);
+  return (
+    <li className="border-t border-b border-solid border-t-[color:var(--border-strong)] border-b-[color:var(--border)]">
+      <div className="flex items-stretch">
+        <a
+          href={`#${appendix.id}`}
+          aria-current={current ? "true" : undefined}
+          className="flex min-h-[44px] min-w-0 flex-1 items-center text-[14px] text-[color:var(--accent)]"
+        >
+          <span>{appendix.title}</span>
+        </a>
+        {searching ? (
+          <span className="flex min-h-[44px] flex-none items-center font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+            {figure}
+          </span>
+        ) : (
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-controls={open ? panel : undefined}
+            aria-label={copy.toggle(appendix.title)}
+            onClick={onToggle}
+            className="flex min-h-[44px] min-w-[44px] flex-none items-center justify-end gap-[8px]"
+          >
+            <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{figure}</span>
+            <span aria-hidden className={`text-[11px] text-[color:var(--fg-faint)] ${open ? "rotate-180" : ""}`}>
+              ▾
+            </span>
+          </button>
+        )}
+      </div>
+      {open && (
+        <ol id={panel} className="list-none p-0 pb-[6px]">
+          {rows.map((row) => (
+            <li key={row.id}>
+              <a
+                data-entry-row=""
+                href={`#${row.id}`}
+                className="flex min-h-[44px] items-center pl-[26px] text-[13.5px] text-[color:var(--fg-body)]"
+              >
+                <span className="min-w-0 flex-1">
+                  <Title title={row.title} query={query} />
+                </span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      )}
+    </li>
   );
 }

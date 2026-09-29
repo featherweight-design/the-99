@@ -21,10 +21,13 @@ export function HowRows({
   rows,
   subRows,
   labels,
+  explained = {},
 }: {
   rows: readonly HowRowCopy[];
   subRows: SubRow[];
   labels: HowRowLabels;
+  /** Each row's entries, by row id: the `explained in` links back up the page. */
+  explained?: Record<string, { id: string; title: string }[]>;
 }) {
   const [open, setOpen] = useState<ReadonlySet<string>>(() => new Set());
   const pendingScroll = useRef<string | null>(null);
@@ -80,6 +83,7 @@ export function HowRows({
           open={open.has(r.id)}
           onToggle={() => toggle(r.id)}
           labels={labels}
+          explainedBy={explained[r.id] ?? []}
           subRows={r.id === "how-brackets" ? subRows : null}
         />
       ))}
@@ -93,12 +97,14 @@ function HowRow({
   onToggle,
   subRows,
   labels: copy,
+  explainedBy,
 }: {
   row: HowRowCopy;
   open: boolean;
   onToggle: () => void;
   subRows: SubRow[] | null;
   labels: HowRowLabels;
+  explainedBy: { id: string; title: string }[];
 }) {
   const bodyId = `${row.id}-body`;
   const fields: [label: string, text: string][] = [
@@ -178,6 +184,21 @@ function HowRow({
               row.exact
             )}
           </Field>
+          {explainedBy.length > 0 && (
+            <Field label={copy.explainedIn}>
+              <span className="flex flex-col min-[1000px]:flex-row min-[1000px]:flex-wrap min-[1000px]:gap-x-[14px] min-[1000px]:gap-y-[4px]">
+                {explainedBy.map((e) => (
+                  <a
+                    key={e.id}
+                    href={`#${e.id}`}
+                    className="flex min-h-[44px] items-center text-[13.5px] text-[color:var(--accent)] min-[1000px]:inline min-[1000px]:min-h-0 min-[1000px]:text-[13px]"
+                  >
+                    {e.title}
+                  </a>
+                ))}
+              </span>
+            </Field>
+          )}
         </dl>
       )}
     </li>

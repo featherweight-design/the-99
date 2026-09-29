@@ -1,4 +1,5 @@
-import { howItWorksCopy, type HowMethod } from "../../lib/copy/about";
+import { howItWorksCopy, type AboutEntry, type HowMethod } from "../../lib/copy/about";
+import { entryRow, HOW_IT_WORKS_ID } from "../../lib/copy/how-it-works-links";
 import { bracketSubRows, howItWorksRowsCopy as copy } from "../../lib/copy/how-it-works";
 import { MethodTag } from "../ui/method-tag";
 import { HowRows } from "./how-rows";
@@ -13,10 +14,17 @@ const KEY_ORDER = Object.keys(howItWorksCopy.methods) as HowMethod[];
  * A server component: the key and every sentence are static. The rows are the one client part,
  * because a row opens and closes, and a hash naming one opens it before the jump lands.
  */
-export function HowItWorks() {
+export function HowItWorks({ entries }: { entries: readonly AboutEntry[] }) {
+  // Each row's `explained in` links: the entries this deployment draws that point at it, in page
+  // order. An entry whose switch is off is not drawn, so it is not linked.
+  const explained: Record<string, { id: string; title: string }[]> = {};
+  for (const e of entries) {
+    const row = entryRow[e.id];
+    if (row) (explained[row] ??= []).push({ id: e.id, title: e.title });
+  }
   return (
     <section
-      id="how-it-works"
+      id={HOW_IT_WORKS_ID}
       className="mt-[18px] border-t border-solid border-[color:var(--border)] pt-[18px] scroll-mt-[20px] min-[1000px]:mt-[28px]"
     >
       <h2 className="font-display text-[16px] font-bold text-[color:var(--fg)] min-[1000px]:text-[21px]">
@@ -48,7 +56,8 @@ export function HowItWorks() {
       <HowRows
         rows={copy.rows}
         subRows={bracketSubRows()}
-        labels={{ fields: copy.fields, verdicts: copy.verdicts, bracketsLead: copy.bracketsLead }}
+        explained={explained}
+        labels={{ fields: copy.fields, verdicts: copy.verdicts, bracketsLead: copy.bracketsLead, explainedIn: copy.explainedIn }}
       />
     </section>
   );
