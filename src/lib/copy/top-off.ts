@@ -25,6 +25,14 @@ import type { CompositionTargets } from "../profile/types";
 const plural = (n: string, one: string, many: string) =>
   `${n} ${n === '1' ? one : many}`;
 
+/** 1st, 2nd, 3rd, 4th … 11th, 12th, 13th, 21st. */
+function ordinal(i: string): string {
+  const n = Number(i);
+  const teen = n % 100 >= 11 && n % 100 <= 13;
+  const suffix = teen ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[n % 10] ?? 'th';
+  return `${i}${suffix}`;
+}
+
 export const topOffCopy = {
   // ── The strip, closed ─────────────────────────────────────────────────
   strip: {
@@ -374,7 +382,7 @@ export const topOffCopy = {
   // the player to work out whether the undo has expired. It has not, ever.
   //
   // Every line states a COUNT OF CARDS, never a percentage and never a bare
-  // number: 'the seed' and 'top-off 2' are labels, '68 cards' is the figure.
+  // number: 'the seed' and '2nd top-off' are labels, '68 cards' is the figure.
   ledger: {
     header: (total: string) =>
       total === '1'
@@ -386,9 +394,12 @@ export const topOffCopy = {
     headerMetaOne: (buy: string) => `one pass · ${buy} to buy`,
 
     /** Pass labels. Ordinals are STABLE and never renumber when a pass is
-     *  undone — 'top-off 3' can exist with no 'top-off 1' above it. */
+     *  undone — '3rd top-off' can exist with no '1st top-off' above it.
+     *
+     *  An ordinal WORD, not a bare numeral after the noun: 'top-off 1' sat beside
+     *  '50 cards you chose…' and read as a count of one (Hugh, 2026-09-28). */
     seedLabel: 'the seed',
-    passLabel: (i: string) => `top-off ${i}`,
+    passLabel: (i: string) => `${ordinal(i)} top-off`,
 
     /** The seed's sentence — the shipped provenance wording, recast as a line. */
     seedLine: (n: string, buy: string) =>
