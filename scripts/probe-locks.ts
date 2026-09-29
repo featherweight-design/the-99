@@ -3,6 +3,7 @@
 // `liveLockedIds`. What no unit test here can reach is what the transactions and the trigger WROTE:
 // the `after insert` trigger on `deck_cards` that ends a dormant lock, the discard that wakes one
 // before its reinsert, and the commit that clears them (D2, and Hugh's Q1 ruling, 2026-09-25).
+// Section 13 proves the other thing a commit clears: the `auto` flag (Hugh, 2026-09-28).
 //
 // It writes a fixture under a per-run user_id and deletes it in a finally (deck_locks, deck_cards
 // and deck_versions all cascade off decks). No begin/rollback: the functions under test go through
@@ -245,6 +246,23 @@ async function main() {
       const otherClaim = ((await loadAvailability(USER, { oracleIds: [X] })).get(X)?.claims ?? [])
         .find((c) => c.id === other.id);
       check("12 · a deck that did not lock it is not marked", otherClaim?.locked, false);
+    }
+
+    // 13. A commit retires `auto` (Hugh, 2026-09-28), on every commit and not only the first, and
+    //     only on the deck it commits. Another deck's auto rows are a different player decision.
+    {
+      const d = await freshDeck("auto");
+      const other = await freshDeck("auto-other");
+      await fixture.execute(sql`update deck_cards set auto = true where deck_id in (${d.id}, ${other.id})`);
+      const autoIds = async (deckId: string) => (await fixture.execute<{ oracle_id: string }>(sql`
+        select oracle_id from deck_cards where deck_id = ${deckId} and auto order by oracle_id`)).rows
+        .map((r) => r.oracle_id);
+      check("13 · the fixture holds three auto rows", (await autoIds(d.id)).length, 3);
+      await commitVersion(d.id, null);
+      check("13 · the second commit leaves no auto row", await autoIds(d.id), []);
+      check("13 · and leaves the other deck's auto rows alone", (await autoIds(other.id)).length, 3);
+      check("13 · every row is still in the draft", (await fixture.execute(sql`
+        select 1 from deck_cards where deck_id = ${d.id}`)).rows.length, 3);
     }
   } finally {
     await fixture.execute(sql`delete from decks where user_id = ${USER}`);

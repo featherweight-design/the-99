@@ -658,8 +658,9 @@ export function DecklistRow({
           </span>
         ) : tag === "buy" ? buyTag : null}
 
-        {/* Auto tag — one per stack */}
-        {card.auto && <AutoTag deckId={deckId} oracleId={card.oracleId} name={card.name} />}
+        {/* Auto tag — one per stack. Not in Shopping (Hugh, 2026-09-28): where a card came from is
+            nothing a buying trip needs, and that row is the busiest in the app. */}
+        {card.auto && !inShopping && <AutoTag deckId={deckId} oracleId={card.oracleId} name={card.name} />}
 
         {/* The ledger is marking this pass. Additive to the card's own button
             name rather than a replacement for it: the row has no aria-label to
