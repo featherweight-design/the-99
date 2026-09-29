@@ -94,10 +94,14 @@ async function signIn(browser) {
 // track at non-zero opacity, the escalation screen at non-zero opacity, and the frame it is gone.
 const WATCH = () => {
   window.__navArm = () => {
-    const t0 = performance.now();
-    const seen = (window.__nav = { t0, mark: null, overlay: null, overlayGone: null, busy: [], hit: null });
+    const seen = (window.__nav = { t0: performance.now(), mark: null, overlay: null, overlayGone: null, busy: [], hit: null });
+    // The clock restarts at the press itself, not at the arm: a Playwright click spends time on
+    // actionability and dispatch before the event fires, and counting that would let a mark whose
+    // delay was cut short still read past 120ms. Capture phase, once, so it fires first and only
+    // for the press being measured. A code-started push has no click and keeps the arm's clock.
+    document.addEventListener("click", () => { seen.t0 = performance.now(); }, { capture: true, once: true });
     const tick = () => {
-      const now = performance.now() - t0;
+      const now = performance.now() - seen.t0;
       const mark = document.querySelector("[data-pending]");
       if (seen.mark == null && mark && Number(getComputedStyle(mark).opacity) > 0) seen.mark = now;
       const overlay = document.querySelector('[data-testid="pending-overlay"]');
@@ -165,7 +169,7 @@ async function run(browser, state, width, userId) {
     await page.waitForURL((u) => u.pathname === "/commanders", { timeout: 120_000 });
     await page.waitForFunction(() => window.__nav.overlayGone != null || performance.now() - window.__nav.t0 > 60_000, null, { timeout: 120_000, polling: 50 });
     const nav = await page.evaluate(() => window.__nav);
-    report(nav.mark != null && nav.mark >= 110, "the pip paints at 120ms, never before", `pip at ${Math.round(nav.mark)}ms`);
+    report(nav.mark != null && nav.mark >= 120, "the pip paints at 120ms, never before", `pip at ${Math.round(nav.mark)}ms`);
     report(nav.overlay != null && nav.overlay >= 390 && nav.overlay <= 700, "the screen is up by ~550ms and not before 400ms", `screen at ${nav.overlay == null ? "never" : `${Math.round(nav.overlay)}ms`}`);
     report(nav.overlay == null || nav.mark < nav.overlay, "the pip paints before the screen", "");
     report(nav.busy.length === 1 && nav.busy[0] === "main", "aria-busy is on the shell's <main> alone", nav.busy.join(",") || "none");
@@ -305,7 +309,7 @@ async function run(browser, state, width, userId) {
       }, selector, { timeout: 5_000, polling: 16 })
       .then((h) => h.jsonValue(), () => null);
     report(
-      inRow != null && inRow.inRow && inRow.mark >= 110,
+      inRow != null && inRow.inRow && inRow.mark >= 120,
       `a ${path === "/commanders" ? "commander" : "set"} row's track paints inside the row, at 120ms or later`,
       inRow == null ? "no mark" : `mark at ${Math.round(inRow.mark)}ms${inRow.inRow ? ", painted inside the row" : `, ${inRow.why}`}`,
     );
