@@ -317,7 +317,7 @@ function Mark({ half, newestAsOf }: { half: CandidateHalf; newestAsOf: Date | nu
   }
   // Row density sets no type of its own and rides its host; here the host is the row's sans, so the
   // marker is given the mono 10.5px every other mark on this line carries (table §4.4).
-  return <AvailabilityMarker availability={half.availability} density="row" className="flex-none font-mono text-[10.5px]" />;
+  return <AvailabilityMarker bareOne availability={half.availability} density="row" className="flex-none font-mono text-[10.5px]" />;
 }
 
 function Thumb({ halves }: { halves: CandidateHalf[] }) {
@@ -631,7 +631,7 @@ function InFate({ half, body, newestAsOf }: { half: CandidateHalf; body: number;
   if (!half.availability) return null;
   return half.availability.free > 0
     ? <>{copy.sheet.free}</>
-    : <AvailabilityMarker availability={half.availability} density="row" />;
+    : <AvailabilityMarker bareOne availability={half.availability} density="row" />;
 }
 
 function Confirm({

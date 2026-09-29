@@ -597,7 +597,7 @@ export function DecklistRow({
             the mark beside it, and the two views would disagree about one card
             one toggle apart. */}
         {card.availability && tag !== "proxy" && (
-          <AvailabilityMarker
+          <AvailabilityMarker bareOne
             availability={card.availability}
             seam="var(--row-bg)"
             selfExcluded

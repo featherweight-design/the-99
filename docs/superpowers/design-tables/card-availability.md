@@ -124,10 +124,10 @@ Self-exclusion (A2RM:141–172, RD2:47–76): on a deck's own decklist the marke
 | 1.11 | `marker.hardMulti` | `0 free — across ${deckCount} decks` | CP:40 |
 | 1.12 | `marker.hardAria` | `no free copies; this one is in your ${deckName} deck` | CP:41 |
 | 1.13 | `marker.hardMultiAria` | `no free copies; they are on ${deckCount} of your committed decks` | CP:42–43 |
-| 1.14 | `marker.over` | `short` at one copy, `short ${shortBy}` above one (**amended 2026-09-26**, Hugh: the figure is drawn only when it is over one; the same rule governs 1.15 and 1.17, and every aria string still speaks the count) | CP:46 |
-| 1.15 | `marker.overWithDemand` | `short, also in 1 deck` / `short, also in ${deckCount} decks` at one copy; `short ${shortBy}, also in …` above one (**amended 2026-09-26**, see 1.14; drawn originally as `short ${shortBy} — ${deckCount} decks want it`) | CP:47 |
+| 1.14 | `marker.over` | `short ${shortBy}` at every count, `short 1` included; a bare `short` at one copy ON THE DECK PAGE ONLY (`/decks/[id]` and its `/changes`), through the marker's `bareOne` (**amended 2026-09-28**, Hugh: "Deck Details is the only area that should show 'short'". This narrowed 2026-09-26's "only above one" to that page; the same rule governs 1.15 and 1.17, and every aria string still speaks the count) | CP:46 |
+| 1.15 | `marker.overWithDemand` | `short ${shortBy}, also in 1 deck` / `…, also in ${deckCount} decks`; `short, also in …` at one copy on the deck page (**amended 2026-09-28**, see 1.14; drawn originally as `short ${shortBy} — ${deckCount} decks want it`) | CP:47 |
 | 1.16 | `marker.overAria` | `${deckCount} of your committed decks include this card and you own ${shortBy} too few` | CP:48 |
-| 1.17 | `marker.overAlsoIn` | `short, also in ${otherDeck}` at one copy; `short ${shortBy}, also in ${otherDeck}` above one (**amended 2026-09-26**, see 1.14; drawn originally as `short ${shortBy} — also in ${otherDeck}`) | CP:49 |
+| 1.17 | `marker.overAlsoIn` | `short ${shortBy}, also in ${otherDeck}`; `short, also in ${otherDeck}` at one copy on the deck page (**amended 2026-09-28**, see 1.14; drawn originally as `short ${shortBy} — also in ${otherDeck}`) | CP:49 |
 | 1.18 | `marker.overAlsoInAria` | `your ${otherDeck} deck also includes this card and you don’t own enough for both` | CP:50–51 |
 | 1.19 | `marker.tileInUse` | `in use — ${deckName}` | CP:54 |
 | 1.20 | `marker.tileOver` | `${deckCount} decks want it` | CP:55 |

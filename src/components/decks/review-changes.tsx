@@ -880,7 +880,7 @@ export function ReviewChanges({
   return (
     // The rows open the card modal, and the builder's provider does not reach
     // this route — the review page is its own page, as the update diff is.
-    <CardDetailProvider>
+    <CardDetailProvider deckPage>
       {/* `w-full` is load-bearing: the shell's `<main>` is a flex column, and a
           flex item with `margin-inline: auto` loses `align-items: stretch` and
           sizes to its content. Without it this page drew ~870px wide on a

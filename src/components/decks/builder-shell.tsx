@@ -1113,6 +1113,7 @@ export function BuilderShell({
     // scopes the sheet's proxy control. A card opened from `/collection` has no
     // deck and draws no control — that provider passes none.
     <CardDetailProvider
+      deckPage
       deckId={deck.id}
       deckName={deck.name}
       deckOracleIds={proxyEligibleIds}

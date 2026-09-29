@@ -247,7 +247,7 @@ export function SuggestionTile({
             applied tile: "already sleeved elsewhere" is exactly what a player
             needs to know about a card they have just added. */}
         {suggestion.availability && (
-          <AvailabilityMarker
+          <AvailabilityMarker bareOne
             availability={suggestion.availability}
             density="chip"
             selfExcluded={selfClaimed}

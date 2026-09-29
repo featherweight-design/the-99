@@ -112,7 +112,7 @@ export function CardSearchRowBody({
   const a = result.availability;
   const marker =
     a && availabilityState(a, { selfExcluded }) !== "free" ? (
-      <AvailabilityMarker availability={a} seam={seam} selfExcluded={selfExcluded} />
+      <AvailabilityMarker bareOne availability={a} seam={seam} selfExcluded={selfExcluded} />
     ) : null;
   // Design 3.2: the separator between the shipped meta and the marker is the
   // border colour, not the text colour — it must not read as another word.

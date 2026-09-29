@@ -347,7 +347,7 @@ export function DeckCardTile({
                 <ProxyTag variant="band" plate={false} />
               ) : card.owned ? (
                 card.availability && (
-                  <AvailabilityMarker
+                  <AvailabilityMarker bareOne
                     availability={card.availability}
                     density="chip"
                     plate={false}

@@ -261,7 +261,7 @@ function claimLabel(claim: DeckClaim, allocated: number, contested: boolean): st
   return `${holds} · ${c.detailClaimGets}`;
 }
 
-function AvailabilityDetail({ card }: { card: BrowseCard }) {
+function AvailabilityDetail({ card, deckPage }: { card: BrowseCard; deckPage: boolean }) {
   const a = card.availability;
   if (!a) return null;
   const state = availabilityState(a);
@@ -316,6 +316,7 @@ function AvailabilityDetail({ card }: { card: BrowseCard }) {
               availability={a}
               density="row"
               nameless
+              bareOne={deckPage}
               className="font-mono text-[12px]"
             />
           </>
@@ -431,6 +432,7 @@ export function CardModal({
   openAtPrinting = null,
   deckId = null,
   deckName = null,
+  deckPage = false,
   deckHolds = false,
   onProxyWrite,
   onSelectCard,
@@ -498,6 +500,9 @@ export function CardModal({
    *  everywhere but the deck page — see `CardDetailProvider.deckId`. */
   deckId?: string | null;
   deckName?: string | null;
+  /** Opened on `/decks/[id]` or its `/changes`, where a one-copy shortfall reads a bare `short`
+   *  (Hugh, 2026-09-28). Everywhere else it reads `short 1`. */
+  deckPage?: boolean;
   /** Whether that deck holds THIS card. The provider wraps surfaces that open
    *  cards the deck does not hold — Consider, search — and the control refuses
    *  every one of them, so it must not be drawn for them. */
@@ -1795,7 +1800,7 @@ export function CardModal({
               deckName={deckName}
               onSelectPartner={onSelectCard}
             />
-            <AvailabilityDetail card={card} />
+            <AvailabilityDetail card={card} deckPage={deckPage} />
             <ProxyDetail card={card} />
 
             {/* Deck-scoped, and absent without a deck: opened from `/collection`

@@ -251,7 +251,7 @@ function AvailabilitySlot({
   }
   if (!card.availability) return null;
   return (
-    <AvailabilityMarker
+    <AvailabilityMarker bareOne
       availability={card.availability}
       seam={SEAM}
       selfExcluded={selfClaimed}
