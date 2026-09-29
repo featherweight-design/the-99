@@ -46,7 +46,7 @@
 
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { neon } from "@neondatabase/serverless";
-import { readFileSync, statSync, writeFileSync } from "node:fs";
+import { readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { chromium } from "playwright";
@@ -388,9 +388,12 @@ async function main() {
       for (const width of WIDTHS) run[width.label] = await one(browser, state, width, routes, sql);
       runs.push(run);
       // Written after EVERY run, not once at the end: a slow-profile run of seven takes over an
-      // hour, and a run stopped part-way (to hand a shared machine back) used to lose every run
-      // it had finished.
-      writeFileSync(OUT, JSON.stringify({ base: BASE, at: new Date().toISOString(), complete: i + 1 === RUNS, runs }, null, 2));
+      // hour, and a run stopped part-way (to hand a shared machine back) used to lose the raw
+      // figures of every run it had finished. Only the raw JSON survives a stop; the median table
+      // below prints only once the loop ends. Written to a temporary file and renamed over OUT,
+      // so a stop that lands mid-write leaves the previous run's file whole rather than truncated.
+      writeFileSync(`${OUT}.tmp`, JSON.stringify({ base: BASE, at: new Date().toISOString(), complete: i + 1 === RUNS, runs }, null, 2));
+      renameSync(`${OUT}.tmp`, OUT);
       console.error(`run ${i + 1} of ${RUNS} done — ${OUT}`);
     }
     console.log(table(runs, routes));
