@@ -58,6 +58,9 @@ describe("DeckCardTile — art", () => {
     const img = document.querySelector("img");
     expect(img?.getAttribute("src")).toBe(card.imageUri);
     expect(img?.getAttribute("loading")).toBe("lazy");
+    // And no background beside it, which would fetch eagerly whatever the img does.
+    const box = img?.parentElement as HTMLElement;
+    expect(box.getAttribute("style") ?? "").not.toContain("url(");
   });
 });
 

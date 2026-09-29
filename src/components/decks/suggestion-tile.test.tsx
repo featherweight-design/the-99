@@ -104,6 +104,9 @@ describe("SuggestionTile — art", () => {
     const img = document.querySelector("img");
     expect(img?.getAttribute("src")).toBe("https://cards.example/test.jpg");
     expect(img?.getAttribute("loading")).toBe("lazy");
+    // And no background beside it, which would fetch eagerly whatever the img does.
+    const box = img?.parentElement as HTMLElement;
+    expect(box.getAttribute("style") ?? "").not.toContain("url(");
   });
 });
 
