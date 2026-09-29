@@ -114,7 +114,7 @@ export function ConfirmModal({
         </div>
 
         {/* §1.10 Body — names how to go back */}
-        <p className="m-0 mt-[16px] md:mt-[18px] text-[13.5px] md:text-[15px] leading-[1.6] md:leading-[1.65] text-pretty text-[color:var(--fg-body)]">
+        <p className="m-0 mt-[16px] md:mt-[18px] text-[13.5px] md:text-[15px] leading-[1.6] md:leading-[1.65] text-pretty [overflow-wrap:anywhere] text-[color:var(--fg-body)]">
           <span className="md:hidden">{words.bodyShort}</span>
           <span className="hidden md:inline">{words.body}</span>
         </p>
@@ -168,7 +168,9 @@ function Figure({
     <div className="min-w-0">
       <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--fg-faint)]">{label}</div>
       <div className="mt-[3px] md:mt-[4px] font-mono text-[19px] md:text-[21px] font-semibold text-[color:var(--fg)]">{value}</div>
-      <div className="mt-[2px] text-[11.5px] md:text-[12px] text-[color:var(--fg-muted)]">
+      {/* A filename has no length cap and often no spaces, so it breaks anywhere rather than
+          push the pair out of the sheet. */}
+      <div className="mt-[2px] text-[11.5px] md:text-[12px] [overflow-wrap:anywhere] text-[color:var(--fg-muted)]">
         <span className="md:hidden">{captionShort}</span>
         <span className="hidden md:inline">{caption}</span>
       </div>

@@ -46,7 +46,7 @@ export function FirstRunStepOne({ fan }: { fan: React.ReactNode }) {
             {c.step1Title}
           </span>
           {reviewing && (
-            <span className="mt-[4px] font-mono text-[10px] tracking-[0.04em] uppercase text-[color:var(--fg-faint)] md:hidden">
+            <span className="mt-[4px] font-mono text-[10px] tracking-[0.04em] uppercase [overflow-wrap:anywhere] text-[color:var(--fg-faint)] md:hidden">
               {c.step1Reviewing(reviewing.file, reviewing.rows)}
             </span>
           )}

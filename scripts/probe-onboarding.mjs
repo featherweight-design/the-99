@@ -424,9 +424,30 @@ async function calmReplace(browser, vp) {
     report(await note.isVisible(), "D10 the note shows over a collection", await note.innerText().catch(() => "none"));
     const noteInk = await note.evaluate((el) => {
       const cs = getComputedStyle(el);
-      return { bg: cs.backgroundColor, left: cs.borderLeftWidth, text: el.textContent };
+      const probe = document.createElement("div");
+      document.body.append(probe);
+      probe.style.backgroundColor = "var(--surface-sunken)";
+      probe.style.color = "var(--border)";
+      const want = getComputedStyle(probe);
+      const sunken = want.backgroundColor;
+      const border = want.color;
+      probe.remove();
+      return {
+        bg: cs.backgroundColor,
+        sunken,
+        leftColor: cs.borderLeftColor,
+        topColor: cs.borderTopColor,
+        border,
+        left: cs.borderLeftWidth,
+        text: el.textContent,
+      };
     });
-    report(noteInk.left === "1px" && !/⚠/.test(noteInk.text), "D10 a plain note: no amber rule, no icon", `left border ${noteInk.left}`);
+    report(
+      noteInk.left === "1px" && noteInk.leftColor === noteInk.border && noteInk.topColor === noteInk.border && !/⚠/.test(noteInk.text),
+      "D10 a plain note: a 1px --border all round, no amber rule, no icon",
+      `left ${noteInk.left} ${noteInk.leftColor}, --border ${noteInk.border}`,
+    );
+    report(noteInk.bg === noteInk.sunken, "D10 the note sits on --surface-sunken", `${noteInk.bg} vs ${noteInk.sunken}`);
     await pasteToReview(page, "3 Sol Ring");
     if (vp.phone) {
       report(!(await onPageRole(page, "button", "Back to upload").count()), "D11 5b the ‹ is gone");
