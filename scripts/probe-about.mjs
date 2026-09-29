@@ -12,7 +12,7 @@
 // THE FLIP WALK. An entry tied to a feature switch is announced by turning the switch on
 // (Hugh, 2026-09-25), and a switch is read when the server starts, so the walk OWNS its server:
 // it starts `next dev` with every switch off, then restarts it with Change commander on, then
-// with Locked cards on as well, then Help me choose, then swap tools, then with all four off. Next 16 allows one `next dev` per project,
+// with Locked cards on as well, then Help me choose, then swap tools, then the Analysis tab, then with all five off. Next 16 allows one `next dev` per project,
 // so stop any dev server running in this worktree first. What it proves, in order:
 //   F1  every switch off: a reader at the current version sees nothing, and the browser is marked
 //       (every returning reader sits there, and each launch entry's \`since\` equals it, so a
@@ -24,8 +24,8 @@
 //   F4b Help me choose on third: named alone, though it sits first on the page;
 //   F4c swap tools on fourth: ONE switch announces TWO entries, named together in page order;
 //   F4d the Analysis tab on fifth: its two entries, named together in page order;
-//   F5  the five figures draw at 390 and 1300 without overflowing the page;
-//   F6  all off again: none of the five entries is on the page.
+//   F5  the seven figures draw at 390 and 1300 without overflowing the page;
+//   F6  all off again: none of the seven entries is on the page.
 // It shares the fixture account with every other probe: one that calls `clearAboutSheet` mid-walk
 // marks every entry seen and fails F2–F4 on a working build. Re-run before believing that red.
 // The database needs migration 0066 (`about_seen_ids`); local-dev may be behind, so point the
@@ -461,6 +461,8 @@ async function figureFacts(page) {
     const choose = within("help-me-choose");
     const fits = within("fits-your-decks");
     const standIns = within("stand-ins");
+    const analysis = within("deck-analysis");
+    const marks = within("card-marks");
     return {
       locked: locked && {
         inside: locked.inside,
@@ -510,6 +512,8 @@ async function figureFacts(page) {
         rows: standIns.li.querySelectorAll("[data-testid=stand-in-row]").length,
         showAll: [...standIns.li.querySelectorAll("button")].filter((b) => /^Show all 6 lands/.test(b.textContent.trim())).length,
       },
+      analysis: analysis && { inside: analysis.inside },
+      marks: marks && { inside: marks.inside },
       pageOverflow: document.documentElement.scrollWidth - innerWidth,
     };
   });
@@ -608,7 +612,7 @@ async function flipWalk(browser, who) {
     );
     await visitAbout(page, userId, "card-marks");
 
-    // F5. The five figures, drawn by the page's own components, at both widths.
+    // F5. The seven figures, drawn by the page's own components, at both widths.
     for (const viewport of [{ width: 1300, height: 820 }, { width: 390, height: 844 }]) {
       await page.setViewportSize(viewport);
       await page.goto(`${BASE}/about#locked-cards`, { waitUntil: "networkidle" });
@@ -646,7 +650,7 @@ async function flipWalk(browser, who) {
       );
       report(
         `F5 ${w}: no figure overflows its entry or the page`,
-        f.locked?.inside && f.change?.inside && f.choose?.inside && f.fits?.inside && f.standIns?.inside && f.pageOverflow <= 0,
+        f.locked?.inside && f.change?.inside && f.choose?.inside && f.fits?.inside && f.standIns?.inside && f.analysis?.inside && f.marks?.inside && f.pageOverflow <= 0,
         `overflow ${f.pageOverflow}`,
       );
     }

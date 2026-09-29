@@ -1755,7 +1755,7 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   worktree first. It proves the cookie a browser held from before a flip does not hide the sheet,
   that the sheet names only the entry just switched on, that the visit records it by id, and that a
   later flip names only the second entry and a third only the third, while a fourth names BOTH
-  of swap tools' entries in page order and a fifth both of the Analysis tab's; it also measures all five figures at 390 and 1300. Keying the
+  of swap tools' entries in page order and a fifth both of the Analysis tab's; it also measures all seven figures at 390 and 1300. Keying the
   sheet cookie on `<user>.<version>` alone fails it at F2 and F4. It needs migration 0066
   (`about_seen_ids`), so point the worktree's `.env` at a migrated database.
 

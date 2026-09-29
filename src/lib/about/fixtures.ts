@@ -1104,7 +1104,7 @@ const ANALYSIS_CARD = (oracleId: string, name: string, typeLine: string, cmc: nu
   commanderLegal: true,
 });
 
-const YURIKO = ANALYSIS_CARD("about-yuriko", "Yuriko, the Tiger's Shadow", "Legendary Creature — Human Ninja", 2, "{1}{U}{B}");
+const YURIKO = ANALYSIS_CARD("about-yuriko", "Yuriko, the Tiger's Shadow", "Legendary Creature — Human Ninja", 3, "{1}{U}{B}");
 
 const ANALYSIS_POPULATION: BracketPopulation = {
   counts: { "1": 120, "2": 1406, "3": 3320, "4": 3884, "5": 1000 },

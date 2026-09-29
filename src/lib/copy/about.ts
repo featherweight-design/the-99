@@ -412,8 +412,8 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'a range is two brackets the cards allow; the chips under it are the only question on the page.',
       'the climb states, the findings open: every figure with cards behind it is a button, a zero is not.',
-      'after an edit the header and the tile keep the last bracket, and the tab says the deck has changed since it was analyzed and offers Re-analyze. It never guesses whether the edit mattered.',
-      'a single bracket can carry a lean: one sentence naming the two-card combo that decided it, and whether the deck can find both halves, from its library or its command zone, or has to draw them. `see the reasoning` shows what finds each half.',
+      'the date line names the analysis shown. After an edit it adds `before your changes`, the header and the tile keep the last bracket, and the tab offers Re-analyze. It never guesses whether the edit mattered.',
+      'the line under the face says what separates the two. A single bracket carries a lean there instead: the two-card combo that decided it, and whether the deck can find both halves or has to draw them. `see the reasoning` shows what finds each half.',
     ],
     // The version current when it was written: an entry tied to a switch is announced by the
     // switch, and nothing bumps the version for it.
