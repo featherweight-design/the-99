@@ -745,6 +745,9 @@ export function BuilderShell({
   // things — Undo accepted, the next removal, or leaving the builder route
   // (this component unmounting). Never by a timer.
   const [spentSlot, setSpentSlot] = useState<DeckDetailCard | null>(null);
+  // Whether the server has shown the slot's card GONE since the slot was set: its removal landed.
+  // Only then can the card coming back mean an undo succeeded rather than a list from before it.
+  const [slotLanded, setSlotLanded] = useState(false);
 
   // The swept rows from a clearAutoCards action. Null means no sweep has run
   // (or it has been undone/navigated away). Lives beside spentSlot: it is decklist
@@ -836,6 +839,7 @@ export function BuilderShell({
       // One undo row at a time: this removal settles whatever the last one left,
       // including a refused undo's message.
       setSpentSlot(card.quantity <= 1 ? card : null);
+      setSlotLanded(false);
       setUndoFailure(null);
       removalRef.current += 1;
       setRemoval(removalRef.current);
@@ -888,9 +892,13 @@ export function BuilderShell({
     // once the optimistic re-add let go. A refusal needs the slot standing too:
     // the reverted prediction draws the receipt again, and it reads the message
     // from `undoFailure`. A revalidation that still lacks the card — the removal
-    // itself — leaves the slot standing.
-    if (spentSlot && deck.cards.some((c) => c.oracleId === spentSlot.oracleId)) {
-      setSpentSlot(null);
+    // itself — leaves the slot standing. So does a list that holds the card before this slot's own
+    // removal has landed: an undo overtaken by a newer removal answers with the card present, and
+    // settling on that would take the newer receipt away.
+    if (spentSlot) {
+      const back = deck.cards.some((c) => c.oracleId === spentSlot.oracleId);
+      if (!back) setSlotLanded(true);
+      else if (slotLanded) setSpentSlot(null);
     }
   }
   // A refused Undo outlives the receipt that asked, which the optimistic re-add unmounted. Keyed on

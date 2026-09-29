@@ -579,6 +579,33 @@ describe("undo row lifetime (#185)", () => {
     ).toBeInTheDocument();
   });
 
+  // The success half of the same race: the stale undo's own payload holds the card, and it must not
+  // settle the newer receipt, whose removal has not landed yet.
+  it("keeps a newer removal's receipt when an overtaken undo succeeds", async () => {
+    removeCardFromDeck.mockResolvedValue(undefined);
+    const add = deferred<DeckMutationResult>();
+    addCardToDeck.mockReturnValue(add.promise);
+
+    const { revalidate } = renderBuilder();
+    await removeFromBuilder("Sol Ring");
+    await revalidate([arcaneSignet]);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }));
+    });
+    await removeFromBuilder("Sol Ring");
+    await act(async () => {
+      add.resolve({ ok: true });
+    });
+    // The undo's payload: the card is back. The removal pressed after it has not landed.
+    await revalidate([solRing, arcaneSignet]);
+    // Then it does.
+    await revalidate([arcaneSignet]);
+
+    expect(
+      screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }),
+    ).toBeInTheDocument();
+  });
+
   // A fresh add is never auto, so the card the undo puts back draws no auto tag while it waits.
   it("puts an auto card back as the server will write it, not auto", async () => {
     removeCardFromDeck.mockResolvedValue(undefined);
