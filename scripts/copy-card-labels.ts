@@ -15,7 +15,7 @@ import { cardLabels } from "../src/db/schema";
 import { planCopy, type SourceLabel, type TargetHash } from "../src/lib/labels/copy";
 import { LABEL_PROMPT_VERSION, labelInputHash } from "../src/lib/labels/prompt";
 import {
-  publishOnTarget, readSourceSnapshot, runCopyMain, withCopyPair, type CopyPair,
+  publishOnTarget, readSourceSnapshot, runCopyMain, withCopyPair, type CopyDb, type CopyPair, type CopyTx,
 } from "./lib/catalog-copy";
 
 /**
@@ -41,12 +41,6 @@ async function main({ source, sourceUrl, target, sourceBranch, targetBranch, dry
   }));
   console.log(`source holds ${src.length} label(s)`);
 
-  // The TARGET's own hashes, computed from the target's catalog — which is the whole point. A
-  // label is installed only when it describes the card as THIS database holds it.
-  const rows = await target.execute<CardRow>(sql`
-    select oracle_id as "oracleId", name, mana_cost, type_line, oracle_text, layout
-      from cards where commander_legal = true`);
-  const catalog = (rows as { rows?: CardRow[] }).rows ?? (rows as unknown as CardRow[]);
   // A row generated under a DIFFERENT prompt version can never match, because the version is in
   // the hash and `labelInputHash` uses the running checkout's. That is correct — the label was
   // produced by a different prompt — but it is not a catalog difference, and reporting it as one
@@ -80,21 +74,36 @@ async function main({ source, sourceUrl, target, sourceBranch, targetBranch, dry
       + `full price by the target's next build. Set LABEL_MODEL to match, or re-generate.`);
   }
 
-  const labelledByTarget = new Set(usable.map((r) => r.oracleId));
-  const targetHashes: TargetHash[] = [];
-  for (const c of catalog) {
-    if (!labelledByTarget.has(c.oracleId)) continue; // nothing comparable from the source
-    targetHashes.push({ oracleId: c.oracleId, inputHash: labelInputHash(c, TARGET_MODEL) });
-  }
+  // Every read of the TARGET happens in `planFor`, against whatever handle it is given: once
+  // unlocked, to decide whether there is anything to do, and again INSIDE the locked target
+  // transaction before writing, so a catalog refresh landing between the two can never make
+  // this install labels hashed against a catalog the target no longer holds.
+  const planFor = async (db: CopyDb | CopyTx) => {
+    // The TARGET's own hashes, computed from the target's catalog — which is the whole point. A
+    // label is installed only when it describes the card as THIS database holds it.
+    const rows = await db.execute<CardRow>(sql`
+      select oracle_id as "oracleId", name, mana_cost, type_line, oracle_text, layout
+        from cards where commander_legal = true`);
+    const catalog = (rows as { rows?: CardRow[] }).rows ?? (rows as unknown as CardRow[]);
+    const labelledByTarget = new Set(usable.map((r) => r.oracleId));
+    const targetHashes: TargetHash[] = [];
+    for (const c of catalog) {
+      if (!labelledByTarget.has(c.oracleId)) continue; // nothing comparable from the source
+      targetHashes.push({ oracleId: c.oracleId, inputHash: labelInputHash(c, TARGET_MODEL) });
+    }
 
-  // What the target holds, MINUS anything the source has under a stale prompt version or another
-  // model. Those are reported in their own buckets; leaving them here made the summary claim the
-  // target had a row "absent from the source" when the source has it and simply cannot be
-  // compared — one fact in two buckets, and the wrong one.
-  const otherwiseKnown = new Set([...staleVersion, ...differentModel].map((r) => r.oracleId));
-  const held = new Set((await target.select({ id: cardLabels.oracleId }).from(cardLabels))
-    .map((r) => r.id).filter((id) => !otherwiseKnown.has(id)));
-  const plan = planCopy(usable, targetHashes, held);
+    // What the target holds, MINUS anything the source has under a stale prompt version or another
+    // model. Those are reported in their own buckets; leaving them here made the summary claim the
+    // target had a row "absent from the source" when the source has it and simply cannot be
+    // compared — one fact in two buckets, and the wrong one.
+    const otherwiseKnown = new Set([...staleVersion, ...differentModel].map((r) => r.oracleId));
+    const held = new Set((await db.select({ id: cardLabels.oracleId }).from(cardLabels))
+      .map((r) => r.id).filter((id) => !otherwiseKnown.has(id)));
+    const plan = planCopy(usable, targetHashes, held);
+    return plan;
+  };
+
+  const plan = await planFor(target);
 
   console.log(`  install ${plan.install.length}`);
   console.log(`  mismatched ${plan.mismatched.length} — the source's label describes a different `
@@ -112,12 +121,16 @@ async function main({ source, sourceUrl, target, sourceBranch, targetBranch, dry
 
   if (dryRun) { console.log("\ndry run — nothing written"); return; }
   if (plan.install.length === 0) { console.log("\nnothing to install"); return; }
+  let installed = 0;
 
   // Batched, and upserted: the copy is idempotent, so running it twice installs the same rows and
   // changes nothing the second time. All of it one target transaction, with the catalog stamp.
   await publishOnTarget(target, async (tx) => {
-    for (let i = 0; i < plan.install.length; i += 500) {
-      await tx.insert(cardLabels).values(plan.install.slice(i, i + 500).map((r) => ({
+    // Re-planned under the lock: the plan above only decided that there was work to do.
+    const locked = await planFor(tx);
+    installed = locked.install.length;
+    for (let i = 0; i < locked.install.length; i += 500) {
+      await tx.insert(cardLabels).values(locked.install.slice(i, i + 500).map((r) => ({
         oracleId: r.oracleId, labels: r.labels, model: r.model,
         promptVersion: r.promptVersion, inputHash: r.inputHash,
       }))).onConflictDoUpdate({
@@ -130,7 +143,7 @@ async function main({ source, sourceUrl, target, sourceBranch, targetBranch, dry
       });
     }
   });
-  console.log(`\ninstalled ${plan.install.length} label(s)`);
+  console.log(`\ninstalled ${installed} label(s)`);
 }
 
 runCopyMain(() => withCopyPair(main));

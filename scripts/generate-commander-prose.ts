@@ -70,6 +70,12 @@ async function complete(prompt: string): Promise<string | null> {
 const dryRun = process.argv.includes("--dry-run");
 const capArg = process.argv.indexOf("--max-commanders");
 const capText = capArg >= 0 ? process.argv[capArg + 1] : process.env.PROSE_MAX_COMMANDERS;
+// The flag without a value would read as no cap at all, silently. A spend ceiling asked for and
+// not given is refused rather than dropped.
+if (capArg >= 0 && (!capText || capText.startsWith("--"))) {
+  console.error("generate-commander-prose: --max-commanders needs a whole number after it");
+  process.exit(1);
+}
 const maxCommanders = capText ? Number(capText) : undefined;
 if (maxCommanders !== undefined && !(Number.isInteger(maxCommanders) && maxCommanders >= 0)) {
   console.error(`generate-commander-prose: --max-commanders must be a whole number, not ${capText}`);
