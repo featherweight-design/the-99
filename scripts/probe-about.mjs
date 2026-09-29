@@ -453,7 +453,8 @@ async function sheetTitles(page, card) {
 /** Waits for the visit /about records, which lands after the page has streamed in. */
 async function visitAbout(page, userId, id) {
   await page.goto(`${BASE}/about`, { waitUntil: "networkidle" });
-  await page.locator(`li#${id}`).waitFor({ timeout: 30_000 }).catch(() => {});
+  // By id alone: an entry is an `li`, the appendix a `section`, and `li#how-it-works` never matched.
+  await page.locator(`#${id}`).waitFor({ timeout: 30_000 }).catch(() => {});
   for (let i = 0; i < 20; i++) {
     if ((await readRow(userId))?.about_seen_ids?.includes(id)) return;
     await page.waitForTimeout(250);
