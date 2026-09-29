@@ -218,7 +218,9 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   vouch for an index build that failed before it. Each step also stamps its PHASE first in its row's report
   (`phaseReport`), and `db:copy:index` accepts only a newest row whose phase is `staples`: between
   the two steps the newest row is an ok `index` phase over the PREVIOUS staples, and a copy then
-  would publish a mixed generation. Every run, by hand
+  would publish a mixed generation. The staples row also INHERITS the index row's catalog fingerprint rather
+  than reading its own, so a catalog refresh landing during the hours-long index step leaves the
+  build vouching for the catalog it was derived from, and the copy refuses it. Every run, by hand
   included, leaves a newer row. Without that, a hand-run ingest that
   replaced the flags and died before the variants left an older `ok` row vouching for tables that
   had moved under it, over an unchanged catalog fingerprint, and the copy would publish them.

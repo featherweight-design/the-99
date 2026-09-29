@@ -676,7 +676,9 @@ latestBuild(db, "index")
           `Run db:build:index to success first; a staples row now would vouch for that index.`,
       );
     }
-    return recordBuild(db, "index", main, () => phaseReport("staples"));
+    // The index step's fingerprint, not today's: this row vouches for the catalog the index was
+    // derived from, so a catalog refresh that landed during the index build stays a refusal.
+    return recordBuild(db, "index", main, () => phaseReport("staples"), undefined, prev.catalogFingerprint);
   })
   .then(() => process.exit(0))
   .catch((err) => { console.error(err instanceof Error ? err.message : err); process.exit(1); });
