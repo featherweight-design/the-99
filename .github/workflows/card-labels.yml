@@ -17,9 +17,9 @@ on:
     # DAILY at 14:00 UTC. The CRON's run id is keyed to the ISO WEEK; a dispatch may name its own — and the daily cadence is what makes
     # a timeout recoverable rather than abandoned.
     #
-    # Monday's run is the one that finds work: it is after `Catalog refresh` (09:00) and `Combo
-    # refresh` (13:00), because a card the catalog has not ingested cannot be labelled. Every other
-    # day is a no-op costing one query, because the hash skip finds nothing to do.
+    # A run finds work on a day the catalog took new cards: it is after `Catalog refresh` (09:00,
+    # daily), because a card the catalog has not ingested cannot be labelled. Any other day is a
+    # no-op costing one query, because the hash skip finds nothing to do.
     #
     # The reason it is not weekly: batches can take up to the provider's 24-hour ceiling, and a job
     # that times out mid-run leaves intents recorded under that week's id. Weekly, the next
@@ -361,6 +361,9 @@ jobs:
       CATALOG_COPY_TARGET_URL: ${{ secrets.CATALOG_DATABASE_URL }}
       # Production's Neon branch. A guard, not a credential: the target must report exactly this.
       CATALOG_COPY_TARGET_BRANCH: br-noisy-violet-a6vw4ess
+      # The harness's stamp module imports `src/db`, which throws at load without this; nothing
+      # queries through it.
+      DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
     steps:
       - name: Fail loudly without the copy secret
         run: |

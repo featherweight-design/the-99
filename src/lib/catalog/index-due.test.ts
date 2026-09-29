@@ -50,11 +50,12 @@ describe("indexDue", () => {
     expect(indexDue(at("2026-11-03"), FRA, builds).reasons).toEqual(["monthly: no ok index build since 2026-11-01"]);
   });
 
-  it("leaves out reprint boxes, digital sets and undated sets", () => {
+  // An undated set is left out too, by the guard in `indexDue`; not asserted here, because a null
+  // date would also read as never due without it.
+  it("leaves out reprint boxes and digital sets", () => {
     const quiet = [
       set("mbc", "2026-10-02", "draft_innovation"),
       set("yfra", "2026-10-02", "expansion", true),
-      { code: "tbd", setType: "expansion", releasedAt: null, digital: false },
     ];
     expect(indexDue(at("2026-10-20"), quiet, [OCT_MONTHLY]).due).toBe(false);
   });
@@ -65,8 +66,11 @@ describe("indexDue", () => {
     expect(indexDue(at("2026-10-03"), SETS, [at("2026-10-01")]).due).toBe(false);
   });
 
+  // On an empty ledger every old release reads due, which is the first run's catch-up: a set
+  // released in August is due on 1 October by the RELEASE rule, before the monthly one opens.
   it("is due on an empty ledger, which is the first run's catch-up", () => {
-    expect(indexDue(at("2026-10-01"), SETS, []).due).toBe(false);
-    expect(indexDue(at("2026-10-20"), SETS, []).due).toBe(true);
+    const r = indexDue(at("2026-10-01"), [set("old", "2026-08-01")], []);
+    expect(r.due).toBe(true);
+    expect(r.reasons).toEqual(["release: old (released 2026-08-01) due 2026-08-15"]);
   });
 });

@@ -1,16 +1,15 @@
 name: Upstream contract checks
 
-# The catalog refresh only runs weekly, so an upstream shape change would otherwise surface as
-# a failed refresh up to 7 days later (#103). This canary hits the bulk-data index and the first
-# line of each bulk download daily. No database, no secrets.
+# Runs ahead of the daily catalog refresh, so an upstream shape change is known before the ingest
+# fails on it (#103, when the refresh was weekly and a break could surface 7 days late). This canary
+# hits the bulk-data index and the first line of each bulk download daily. No database, no secrets.
 #
 # The ManaPool check rides along rather than taking a workflow of its own: same daily cadence,
-# same "an ingest that runs weekly needs a faster alarm than the ingest itself" reasoning, and
-# neither check needs a secret.
+# same reasoning, and neither check needs a secret.
 on:
   schedule:
-    # 07:00 UTC daily — two hours ahead of the weekly refresh, so a break on a Monday is known
-    # before the refresh itself runs.
+    # 07:00 UTC daily, two hours ahead of the 09:00 catalog refresh, so a break is known before
+    # the refresh itself runs.
     - cron: '0 7 * * *'
   workflow_dispatch:
 
@@ -34,7 +33,7 @@ jobs:
       - name: Check the ManaPool contract
         if: always()
         # The canary buffers and parses the whole ~51MB feed, so it needs the
-        # same headroom the weekly ingest gets. Without it a growing feed would
+        # same headroom the daily ingest gets. Without it a growing feed would
         # OOM here and report a crash where it should report a clean contract break.
         env:
           NODE_OPTIONS: --max-old-space-size=4096

@@ -85,12 +85,12 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   every production deploy failed for five hours, across seven deployments and five merged PRs.
   Nothing was down — the running build kept serving — but nothing new shipped either.
 - `GET /api/health` (public, unauthenticated) reports migration state — 200 when the schema matches the build or is ahead of it, 503 when migrations are pending or the ledger is unreadable. Use it to confirm a deploy instead of loading a page that depends on the schema.
-- `pnpm check:scryfall` validates Scryfall's bulk-data contract (index shape + first entry's required fields) without touching a database. The `Upstream contract checks` workflow runs it daily, because the catalog refresh is weekly and an upstream shape change would otherwise go unnoticed until it failed.
+- `pnpm check:scryfall` validates Scryfall's bulk-data contract (index shape + first entry's required fields) without touching a database. The `Upstream contract checks` workflow runs it daily at 07:00, two hours ahead of the daily catalog refresh, so an upstream shape change is known before the ingest that would fail on it.
 - `pnpm check:manapool` validates ManaPool's price-feed contract (payload shape, a real parse, and
   the `scryfall_id` duplication ratio) without touching a database, and runs daily in that same
   workflow. `/prices/singles` is a documented endpoint of the Mana Pool Public API, but those docs
-  warn v1 "is subject to change without notice" and the ingest is weekly, so a silent shape change
-  would otherwise sit unnoticed for days.
+  warn v1 "is subject to change without notice", and the check runs ahead of the daily ingest so a
+  shape change is known before that ingest fails on it.
 - `pnpm db:seed:prices` refreshes `printing_prices` from ManaPool. It runs as the LAST step of each
   `Catalog refresh` leg, daily, so a day's prices always follow that day's catalog on both sides
   (card-data replicate plan, 2026-09-28). The `Price refresh` workflow lost its cron in the same
@@ -141,8 +141,8 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   `--max-commanders` / `PROSE_MAX_COMMANDERS` ceiling (default 2,000 in the workflow) stands beside
   it. What a ceiling defers is written by the next run, since a written row reads as fresh.
   `--dry-run` counts what a run would generate and calls nothing; the staging job prints that
-  count to its summary before the real run. Its last three runs averaged 1.15 attempts per
-  commander (40 sentences from 46 attempts, 38 from 45, 19 from 24). A row whose stored `prose_input_hash` still matches its inputs is skipped,
+  count to its summary before the real run. Its last three runs took 1.15, 1.18 and 1.26 attempts per
+  commander (40 sentences from 46 attempts, 38 from 45, 19 from 24), 1.19 pooled. A row whose stored `prose_input_hash` still matches its inputs is skipped,
   so a re-run costs nothing for a commander whose tags have not moved, and an interrupted run
   resumes by being dispatched again. A commander whose every attempt fails the accept contract
   keeps its null and renders with no paragraph — the state the design draws, and never a truncated
@@ -1462,7 +1462,7 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   draws came from the same place; this is that set extended to the 59 symbols a mana cost can
   contain, filtered on Scryfall's own `appears_in_mana_costs` so tap, energy and loyalty never
   land here. The manifest exists because that list GROWS: a set with a new symbol arrives in the
-  weekly catalog refresh while these files move only when someone runs this, so the large pip
+  daily catalog refresh while these files move only when someone runs this, so the large pip
   falls back to a lettered disc for a symbol it has no art for rather than drawing a 26px hole.
   The script asserts per symbol that its slug equals Scryfall's own filename, which is the one
   way a rename would otherwise ship as a silent 404.
