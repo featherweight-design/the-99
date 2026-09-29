@@ -26,7 +26,8 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import ws from "ws";
 
-import { planFill, type FillCandidate } from "../src/lib/decks/fill";
+import { planFill, type FillCandidate, type FillPlan, type FillRow } from "../src/lib/decks/fill";
+import type { ProfileSkeleton } from "../src/lib/profile/types";
 import { landTarget } from "../src/lib/decks/deck-size";
 import { loadSkeletonForCommanders } from "../src/lib/profile/load";
 import { castFaceText, playableAsLand } from "../src/lib/cards/facet";
@@ -108,6 +109,32 @@ const rolesOf = (r: CardRow): Role[] => classifyRoles({
   oracleText: castFaceText(r.oracle_text, r.layout),
   keywords: r.keywords ?? [],
 });
+
+/**
+ * A modal fixture the fill actually SLEEVES, found by building with each candidate in turn.
+ *
+ * Having a non-land role is not enough: the role pass fills a role only up to its floor and the
+ * residual only to the body, so a card whose role is already satisfied is refused and the case
+ * reports "never placed" about a build that is working. Krenko's own skeleton fills `removal` to
+ * ZERO out of a target of 7 — the same on this branch and on `origin/main` — so every removal
+ * candidate is unplaceable there, which is exactly what this search walks past.
+ *
+ * It was flaky-green before. The pool's `limit 400` was unordered, so the fixture changed per run
+ * and a placeable card turned up often enough to hide it; ordering the pool made the failure
+ * permanent rather than causing it.
+ */
+const placeableModal = (
+  candidates: CardRow[], basePool: FillCandidate[], skeleton: ProfileSkeleton,
+): { card: CardRow; plan: FillPlan; row: FillRow } | null => {
+  for (const card of candidates) {
+    if (!playableAsLand(card.type_line, card.layout)) continue;
+    if (!rolesOf(card).some((x) => x !== "land")) continue;
+    const plan = planFill([fixtureCard(card), ...basePool], { hasPartner: false, skeleton });
+    const row = plan.rows.find((r) => r.oracleId === card.oracle_id);
+    if (row) return { card, plan, row };
+  }
+  return null;
+};
 
 async function main() {
   // A commander the index actually carries a composition for, so the skeleton has something to
@@ -239,10 +266,17 @@ async function main() {
 
   // ---- 3 · modal credits, transform does not --------------------------------------------
   console.log("\n3 · a modal land back credits the land target and a transform back does not");
+  // ON THE COMMANDER'S IDENTITY, exactly as `pool400` is. An off-identity card is not castable, so
+  // the fill refuses it and the case reports "never placed" about a build that is working. That was
+  // invisible while the pool was unordered — the fixture picked a different modal card per run —
+  // and became permanent the moment the ORDER BY above made the choice deterministic: a green card
+  // for a mono-red commander, every run, on this branch and on `origin/main` alike.
   const modalCandidates = await rows<CardRow>(sql`
     select oracle_id, name, type_line, oracle_text, keywords, mana_cost, layout
     from cards where layout = 'modal_dfc' and commander_legal
-      and type_line not ilike 'land%' and type_line ilike '% // %land%' order by oracle_id limit 40`);
+      and type_line not ilike 'land%' and type_line ilike '% // %land%'
+      and (color_identity <@ ${`{${cmd.color_identity.join(",")}}`}::text[] or cardinality(color_identity) = 0)
+    order by oracle_id limit 40`);
   const xformCandidates = await rows<CardRow>(sql`
     select oracle_id, name, type_line, oracle_text, keywords, mana_cost, layout
     from cards where layout = 'transform' and commander_legal
@@ -250,26 +284,20 @@ async function main() {
   // A modal card the fill can actually SLEEVE: one the classifier gives a non-land role, or
   // the role pass and the residual both skip it and the case reports "never placed" about a
   // build that is working.
-  const modal = modalCandidates.find(
-    (r) => playableAsLand(r.type_line, r.layout) && rolesOf(r).some((x) => x !== "land"),
-  );
+  const found = placeableModal(modalCandidates, basePool, skeleton);
   const xform = xformCandidates.find((r) => r.layout === "transform");
-  if (!modal) {
-    fail("3 · the fixture", "no commander-legal modal_dfc with a land back that the classifier gives a role");
+  if (!found) {
+    fail("3 · the fixture", "no commander-legal modal_dfc with a land back that this fill will sleeve");
   } else {
+    const { card: modal, plan: withModal, row: modalRow } = found;
+    console.log(`  fixture card: ${modal.name}`);
     truthy("the catalog's own modal card is land-capable", playableAsLand(modal.type_line, modal.layout));
-    const withModal = planFill([fixtureCard(modal), ...basePool], { hasPartner: false, skeleton });
-    const modalRow = withModal.rows.find((r) => r.oracleId === modal.oracle_id);
-    if (!modalRow) {
-      fail("3 · the modal card", `${modal.name} was never placed, so nothing here is measured`);
-    } else {
-      // Placed on a NON-land role and still counted as a land drop. Never `role: "land"`, or
-      // the same card would take a role slot and a land slot — the §2.5a double credit.
-      check("it is placed on a non-land role", modalRow.role !== "land", true);
-      truthy("and credits landCapable above the land count",
-        withModal.landCapable > withModal.rows.filter((r) => r.role === "land")
-          .reduce((n, r) => n + r.quantity, 0));
-    }
+    // Placed on a NON-land role and still counted as a land drop. Never `role: "land"`, or
+    // the same card would take a role slot and a land slot — the §2.5a double credit.
+    check("it is placed on a non-land role", modalRow.role !== "land", true);
+    truthy("and credits landCapable above the land count",
+      withModal.landCapable > withModal.rows.filter((r) => r.role === "land")
+        .reduce((n, r) => n + r.quantity, 0));
   }
   if (xform) {
     truthy("a transform card with a land back is NOT land-capable",
@@ -287,22 +315,16 @@ async function main() {
     select oracle_id, name, type_line, oracle_text, keywords, mana_cost, layout
     from cards where layout = 'modal_dfc' and commander_legal
       and type_line not ilike 'land%' and type_line ilike '% // %land%'
-      and oracle_text ilike '%: add %' order by oracle_id limit 40`);
+      and oracle_text ilike '%: add %'
+      and (color_identity <@ ${`{${cmd.color_identity.join(",")}}`}::text[] or cardinality(color_identity) = 0)
+    order by oracle_id limit 40`);
   // The back must tap for mana AND the front must be something the fill will sleeve, or the
   // card is never placed and the case measures nothing either way.
-  const rampLooking = rampLookingCandidates.find(
-    (r) => playableAsLand(r.type_line, r.layout) && rolesOf(r).some((x) => x !== "land"),
-  );
-  if (!rampLooking) {
-    fail("4 · the fixture", "no commander-legal modal card whose back taps for mana and whose front has a role");
+  const rampFound = placeableModal(rampLookingCandidates, basePool, skeleton);
+  if (!rampFound) {
+    fail("4 · the fixture", "no commander-legal modal card whose back taps for mana that this fill will sleeve");
   } else {
-    const plan = planFill([fixtureCard(rampLooking), ...basePool], { hasPartner: false, skeleton });
-    const row = plan.rows.find((r) => r.oracleId === rampLooking.oracle_id);
-    if (!row) {
-      fail("4 · the card", "was never placed, so nothing here is measured");
-    } else {
-      check(`${rampLooking.name} is not sleeved as ramp`, row.role === "ramp", false);
-    }
+    check(`${rampFound.card.name} is not sleeved as ramp`, rampFound.row.role === "ramp", false);
   }
 
   // ---- 5 · the residual follows the REAL synergy ranking -----------------------------------
