@@ -112,6 +112,17 @@ export async function buildFillPlan(
      *  read throws rather than widening the pool to copies another deck may hold. The create reads
      *  that throw as a failed fill and leaves its retry. Every other sleeveable caller degrades. */
     failClosed?: boolean;
+    /** The costs of cards the CALLER will put in the deck itself, for the pip census only.
+     *
+     * `createDeck` inserts its selection beside the plan's rows, and every selected card is in
+     * `excludeOracleIds` — so it is stripped from the candidate pool and appears in neither
+     * `held` nor `rows`. Its pips were therefore missing from the census that weights the basics,
+     * and a selection carrying several pips could produce a split the finished deck contradicts.
+     * The same defect the commanders had, by a different route.
+     *
+     * CENSUS ONLY, like `commanderCosts`: these cards are already placed, so counting them
+     * toward a role floor would spend a slot on work the caller has done. */
+    selectedCosts?: readonly (string | null)[];
   } = {},
 ): Promise<FillPlan> {
   const commander = commanders[0];
@@ -243,7 +254,7 @@ export async function buildFillPlan(
     excludeOracleIds,
   );
 
-  const { answers, ...fillOptions } = options;
+  const { answers, selectedCosts, ...fillOptions } = options;
   const candidates: FillCandidate[] = [
     ...pool.map((c) => ({
       oracleId: c.oracleId, name: c.name, typeLine: c.typeLine,
@@ -272,7 +283,10 @@ export async function buildFillPlan(
   // support lists that never contain them — but a `{2}{R}{W}` commander is the most reliable
   // colour signal the deck has, and leaving it out of the pip census scored HD - Thorin at zero
   // red and gave a Boros deck one Mountain.
-  const commanderCosts = commanders.map((c) => c.manaCost ?? null);
+  const commanderCosts = [
+    ...commanders.map((c) => c.manaCost ?? null),
+    ...(selectedCosts ?? []),
+  ];
   return planFill(candidates, {
     hasPartner, skeleton, synergyRank, ...fillOptions, gate, identity, commanderCosts,
   });
@@ -371,6 +385,10 @@ export async function createDeck(
             commanderLegal: cards.commanderLegal,
             colorIdentity: cards.colorIdentity,
             typeLine: cards.typeLine,
+            // For the pip census alone. A selected card is inserted into the deck BESIDE the
+            // fill's rows, so its pips are part of the finished deck's mana base — and this read
+            // is the only place its cost is available.
+            manaCost: cards.manaCost,
           })
           .from(cards)
           .where(inArray(cards.oracleId, requested))
@@ -416,11 +434,21 @@ export async function createDeck(
           : []),
       ],
       selectedSet,
-      asked === null ? {} : {
-        answers: { budgetCents: answerColumns.answerBudgetCents ?? null, bracket: asked.bracket, cardOracleId: card?.oracleId ?? null },
-        // Only cards I own (three answers §3): the 99 from what the collection can supply. Nothing
-        // is bought for it, so the budget has only the placed card to charge.
-        ...(asked.pool === "own" ? { pool: "sleeveable" as const, failClosed: true } : {}),
+      {
+        // CENSUS ONLY, and passed on every path rather than only the asked one: the selection is
+        // inserted beside the fill's rows below, so its pips belong to the finished deck's mana
+        // base whether or not Help me choose was involved. `selectedSet` rather than `candidates`
+        // — a requested card that failed validation is never placed, so its cost is not the
+        // deck's.
+        selectedCosts: candidates
+          .filter((c) => selectedSet.has(c.oracleId))
+          .map((c) => c.manaCost ?? null),
+        ...(asked === null ? {} : {
+          answers: { budgetCents: answerColumns.answerBudgetCents ?? null, bracket: asked.bracket, cardOracleId: card?.oracleId ?? null },
+          // Only cards I own (three answers §3): the 99 from what the collection can supply.
+          // Nothing is bought for it, so the budget has only the placed card to charge.
+          ...(asked.pool === "own" ? { pool: "sleeveable" as const, failClosed: true } : {}),
+        }),
       },
     );
     deckId = await db.transaction(async (tx) => {

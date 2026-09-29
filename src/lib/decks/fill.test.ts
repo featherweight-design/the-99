@@ -519,6 +519,29 @@ describe("planFill", () => {
     expect(plan.landCapable).toBeLessThanOrEqual(37);
   });
 
+  /**
+   * A SELECTED CARD IS IN THE FINISHED DECK, so its pips weight the basics. `createDeck` inserts
+   * its selection beside the plan's rows, and every selected card is in `excludeOracleIds` — so
+   * it is stripped from the candidate pool and reaches neither `held` nor `rows`. Its costs ride
+   * in on `commanderCosts`, which is the census's own input, and `actions.ts` fills it from
+   * `selectedSet`.
+   */
+  it("counts a SELECTED card's pips in the census", () => {
+    const pool = [basic("plains", 40, "Plains"), basic("mountain", 40, "Mountain")];
+    const args = { hasPartner: false, skeleton: null, identity: ["R", "W"] } as const;
+    const q = (plan: FillPlan, id: string) =>
+      plan.rows.filter((r) => r.oracleId === id).reduce((n, r) => n + r.quantity, 0);
+    // A white commander and nothing else: white leads the split.
+    const white = planFill(pool, { ...args, commanderCosts: ["{W}{W}"] });
+    expect(q(white, "plains")).toBeGreaterThan(q(white, "mountain"));
+    // The same deck and the same commander, plus nine red cards the CALLER places. Red must now
+    // lead — which it can only do if those costs reached the census, since nothing else changed.
+    const selected = planFill(pool, {
+      ...args, commanderCosts: ["{W}{W}", ...Array.from({ length: 9 }, () => "{R}{R}")],
+    });
+    expect(q(selected, "mountain")).toBeGreaterThan(q(selected, "plains"));
+  });
+
   it("counts the COMMANDERS' pips in the census", () => {
     // The deck's only coloured pips are the commander's. Without it the census is empty, the split
     // falls back to even, and a red-heavy commander gets a white-equal base. `{R}{R}{W}` is
