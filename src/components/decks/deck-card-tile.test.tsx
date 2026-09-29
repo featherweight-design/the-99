@@ -121,7 +121,8 @@ describe("DeckCardTile — the four states of Matrix 2", () => {
       </CardDetailProvider>,
     );
 
-    expect(screen.getByText(availabilityCopy.marker.over(1))).toBeInTheDocument();
+    // The deck page's own reading: one missing copy is a bare `short`.
+    expect(screen.getByText(availabilityCopy.marker.over(1, true))).toBeInTheDocument();
     expect(container.querySelector("[class*='avail-over-border']")).not.toBeNull();
   });
 });

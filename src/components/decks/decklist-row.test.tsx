@@ -267,9 +267,9 @@ describe("DecklistRow availability marker (#43)", () => {
     render(
       <RowsView
         cards={[{
-          oracleId: "o1", name: "Smothering Tithe", typeLine: "Enchantment", manaCost: "{3}{W}", cmc: 4,
-          keywords: [], rarity: "rare", colorIdentity: ["W"], imageUri: null, printedName: null,
-          quantity: 1, setCounts: [], setCodes: ["RVR"], primarySetCode: "RVR", preferredPrinting: null,
+          oracleId: "o1", name: "Smothering Tithe", typeLine: "Enchantment", manaCost: "{3}{W}",
+          rarity: "rare", colorIdentity: ["W"], imageUri: null, printedName: null,
+          quantity: 1, setCounts: [], primarySetCode: "RVR",
           availability: { owned: 1, hard: 2, soft: 0, free: -1, claims: shortOne.claims },
         }]}
         totalCards={1}
