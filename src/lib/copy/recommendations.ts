@@ -243,9 +243,10 @@ export const recommendationsCopy = {
     // Desktop absence: an em dash reads fine inline because the name is beside
     // it; a full sentence there would be visually heavy on a 34px row.
     rowNoFigureDesktop: '—',
-    footer: (n: string, auto: string) => `${n} cards to buy · all ${auto} auto`,
-    footerMixed: (n: string, auto: string) =>
-      `${n} cards to buy · ${auto} auto`,
+    // The trip, and not where the cards came from. The auto clause went with the Shopping row's
+    // auto tag (Hugh, 2026-09-28): nothing on this list marks a card auto any more, so a count of
+    // them would name a mark the reader cannot find.
+    footer: (n: string) => `${plural(n, 'card', 'cards')} to buy`,
     // Expressive moment 2 — a covered collection is a win, and says so.
     // Shown only when the deck was actually filled (deck.filled === true); an
     // unfilled deck that happens to own everything it lists gets emptyUncovered
@@ -300,11 +301,7 @@ export const recommendationsCopy = {
     // The middle clause agrees with its own count — `2 a 2nd copy` is not a
     // phrase — and borrows `footerOnlySpokenFor`'s spelled-out noun rather than
     // the plate's `2nd`, which cannot take a plural without reading as a date.
-    footerSplit: (n: string, missing: string, spokenFor: string, auto: string) =>
-      `${n} cards · ${missing} to buy · ${spokenFor} ${secondCopies(spokenFor)} · ${auto} auto`,
-    // 390px cannot hold four clauses on one mono line. The auto clause drops:
-    // it describes provenance, and the other three describe the trip.
-    footerSplitShort: (n: string, missing: string, spokenFor: string) =>
+    footerSplit: (n: string, missing: string, spokenFor: string) =>
       `${n} cards · ${missing} to buy · ${spokenFor} ${secondCopies(spokenFor)}`,
     // Nothing unowned. `{n} cards to buy` would be wrong about all of them.
     footerOnlySpokenFor: (n: string) =>

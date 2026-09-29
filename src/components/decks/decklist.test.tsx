@@ -431,21 +431,38 @@ describe("a basic land never appears in Shopping", () => {
   });
 });
 
-describe("the footer takes the all-auto branch when every to-buy card is auto", () => {
-  it("renders shopping.footer when all unowned cards are auto", () => {
+describe("the Shopping footer counts the trip and not where the cards came from", () => {
+  it("reads the same whether every to-buy card is auto or not", () => {
+    // Every to-buy card auto: the branch that used to append "all N auto".
     renderDecklist([rampOwned, rampUnowned]);
-    // rampUnowned has auto=true — all to-buy are auto
-    const footer = recommendationsCopy.shopping.footer("1", "1");
-    expect(screen.getByText(footer)).toBeInTheDocument();
+    expect(screen.getByText(recommendationsCopy.shopping.footer("1"))).toBeInTheDocument();
+    expect(screen.queryByText(/ auto$/)).not.toBeInTheDocument();
+    cleanup();
+    // Some auto and some not: the branch that used to append "N auto".
+    renderDecklist([drawOwned, drawUnowned, drawUnownedManual]);
+    expect(screen.getByText(recommendationsCopy.shopping.footer("2"))).toBeInTheDocument();
+    expect(screen.queryByText(/ auto$/)).not.toBeInTheDocument();
+  });
+
+  // The mixed trip: an unowned auto card beside a second copy. The split footer is three clauses,
+  // and the old one carried a fourth naming how many were auto.
+  it("reads the split footer with no auto clause when the list mixes both kinds of purchase", () => {
+    renderDecklist([rampUnowned, rampSpokenFor]);
+    expect(screen.getByText(recommendationsCopy.shopping.footerSplit("2", "1", "1"))).toBeInTheDocument();
+    expect(screen.queryByText(/auto/)).not.toBeInTheDocument();
   });
 });
 
-describe("the footer takes the mixed branch otherwise", () => {
-  it("renders shopping.footerMixed when some unowned cards are not auto", () => {
-    // drawUnownedManual has auto=false
-    renderDecklist([drawOwned, drawUnowned, drawUnownedManual]);
-    const footer = recommendationsCopy.shopping.footerMixed("2", "1");
-    expect(screen.getByText(footer)).toBeInTheDocument();
+describe("Shopping draws no auto tag", () => {
+  it("leaves the tag off an auto row there, and keeps it on the same row in the deck", () => {
+    renderDecklist([rampOwned, rampUnowned]);
+    // rampUnowned has auto=true.
+    expect(screen.queryByText(recommendationsCopy.auto.tag)).not.toBeInTheDocument();
+  });
+
+  it("keeps the tag on the same row in the deck's own list", () => {
+    renderDecklist([rampOwned, rampUnowned], { filter: "all" });
+    expect(screen.getAllByText(recommendationsCopy.auto.tag).length).toBeGreaterThan(0);
   });
 });
 

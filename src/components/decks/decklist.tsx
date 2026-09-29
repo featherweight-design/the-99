@@ -898,34 +898,11 @@ export function Decklist({
             className="pt-[10px] mt-[4px] font-mono text-[10.5px]"
             style={{ color: "var(--fg-faint)", borderTop: "1px solid var(--border)" }}
           >
-            {spokenForN === 0 ? (
-              allAuto
-                ? recommendationsCopy.shopping.footer(String(n), String(autoN))
-                : recommendationsCopy.shopping.footerMixed(String(n), String(autoN))
-            ) : missingN === 0 ? (
-              recommendationsCopy.shopping.footerOnlySpokenFor(String(spokenForN))
-            ) : (
-              <>
-                {/* 390px cannot hold four clauses on one mono line, so the auto
-                    clause — the one about provenance rather than the trip —
-                    drops there. Two strings, so two spans. */}
-                <span className="md:hidden">
-                  {recommendationsCopy.shopping.footerSplitShort(
-                    String(n),
-                    String(missingN),
-                    String(spokenForN),
-                  )}
-                </span>
-                <span className="hidden md:inline">
-                  {recommendationsCopy.shopping.footerSplit(
-                    String(n),
-                    String(missingN),
-                    String(spokenForN),
-                    String(autoN),
-                  )}
-                </span>
-              </>
-            )}
+            {spokenForN === 0
+              ? recommendationsCopy.shopping.footer(String(n))
+              : missingN === 0
+                ? recommendationsCopy.shopping.footerOnlySpokenFor(String(spokenForN))
+                : recommendationsCopy.shopping.footerSplit(String(n), String(missingN), String(spokenForN))}
           </div>
         </HoverPreviewProvider>
       </div>

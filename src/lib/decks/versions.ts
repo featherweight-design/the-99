@@ -237,6 +237,14 @@ async function commitVersionIn(
   // A COMMIT ENDS A REMOVED CARD'S LOCK: the removal stayed (L1), so nothing may revive it now.
   // A live lock on a card the version holds is untouched: locks are not versioned.
   await clearDormantLocks(tx, deckId);
+  // A COMMIT RETIRES `auto`. The flag marks a card the app placed and the player has not yet
+  // confirmed, and committing the list is that confirmation, whole: every card in it is now one the
+  // player chose to keep. So the chips, Keep all and Clear all auto go with it, on the first commit
+  // and every later one (Hugh, 2026-09-28). After the snapshot above, so the rows it locked are the
+  // rows this clears.
+  await tx.update(deckCards)
+    .set({ auto: false })
+    .where(and(eq(deckCards.deckId, deckId), eq(deckCards.auto, true)));
 
   // Counted off the rows this just snapshotted, and returned rather than left to
   // the caller's own read of `deck_cards`. A path that INSERTS a card the deck
