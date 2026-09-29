@@ -24,16 +24,14 @@ vi.mock("../../lib/about/visible", async (importOriginal) => {
 const { dismissAbout, recordAboutVisit } = await import("./actions");
 const { ABOUT_VERSION } = await import("../../lib/copy/about");
 
-/** `redirect` throws by design, so every call here is expected to. */
+/** The dismiss RETURNS where the reader goes; the page navigates there itself. */
 async function dismiss(next?: string): Promise<string> {
   const form = new FormData();
   if (next !== undefined) form.set("next", next);
-  try {
-    await dismissAbout(form);
-  } catch (e) {
-    return (e as Error).message.replace("REDIRECT:", "");
-  }
-  throw new Error("the action returned without redirecting");
+  const to = await dismissAbout(form);
+  // It never redirects: a server redirect would give the page nothing to report as pending.
+  expect(redirect).not.toHaveBeenCalled();
+  return to;
 }
 
 beforeEach(() => {
@@ -51,7 +49,7 @@ describe("dismissAbout", () => {
     expect(to).toBe("/decks?sort=name");
   });
 
-  it("validates `next` HERE, because this is what calls redirect", async () => {
+  it("validates `next` HERE, because this is what decides the destination", async () => {
     // The page validates it too, but the field is a hidden input in a form the
     // reader's browser owns — the page's copy of the value proves nothing about
     // what arrives.

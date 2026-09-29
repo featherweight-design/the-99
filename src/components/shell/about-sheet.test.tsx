@@ -3,6 +3,18 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 
 const push = vi.fn();
 let pathname = "/decks";
+// Records the push the sheet starts through `usePendingPush`, which hands it to the
+// navigation-pending provider; the router mock still sees it.
+const pushed = vi.hoisted(() => [] as string[]);
+vi.mock("./pending-push", async () => {
+  const { useRouter } = await import("next/navigation");
+  return {
+    usePendingPush: () => {
+      const router = useRouter();
+      return { go: (href: string) => { pushed.push(href); router.push(href); } };
+    },
+  };
+});
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push }),
   usePathname: () => pathname,
@@ -63,6 +75,7 @@ describe("AboutSheet", () => {
     render(<AboutSheet state={{ kind: "behind", entries: entries(1) }} />);
     fireEvent.click(screen.getByRole("button", { name: "Show me" }));
     expect(push).toHaveBeenCalledWith("/about");
+    expect(pushed).toContain("/about");
     expect(screen.queryByRole("region")).toBeNull();
   });
 

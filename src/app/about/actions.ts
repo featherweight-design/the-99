@@ -1,6 +1,5 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { requireUserId } from "../../lib/auth";
 import { ABOUT_VERSION } from "../../lib/copy/about";
 import { safeNext } from "../../lib/about/gate";
@@ -10,21 +9,23 @@ import { howItWorksEnabled } from "../../lib/about/how-it-works-flag";
 import { HOW_IT_WORKS_ID } from "../../lib/copy/how-it-works-links";
 
 /**
- * The dismiss. Records the acknowledgement against the account and sends the
- * reader where they were going.
+ * The dismiss. Records the acknowledgement against the account and returns
+ * where the reader was going, which `DismissForm` then navigates to through the
+ * navigation-pending provider: a `redirect()` here gives the page nothing to
+ * report until the new page has already committed.
  *
  * `next` arrives from a hidden field on the form, which came from the URL the
  * gate built, so it is attacker-controlled twice over — `safeNext` is applied
  * HERE rather than trusted from the page, because this is the function that
- * hands a value to `redirect()`.
+ * decides the destination.
  *
  * No `revalidatePath`: nothing cached renders the acknowledged version. The
  * gate reads the row directly, and the page is rendered per request.
  */
-export async function dismissAbout(formData: FormData) {
+export async function dismissAbout(formData: FormData): Promise<string> {
   const userId = await requireUserId();
   await markAboutSeen(userId, ABOUT_VERSION);
-  redirect(safeNext(formData.get("next")?.toString()));
+  return safeNext(formData.get("next")?.toString());
 }
 
 /**

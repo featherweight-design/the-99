@@ -17,6 +17,7 @@
 import { useEffect, useRef, useState } from "react";
 import { aboutCopy, type AboutChapter } from "../../lib/copy/about";
 import { PrimaryButton } from "../ui/button";
+import { DismissForm } from "./dismiss-form";
 
 export type RailChapter = {
   id: AboutChapter;
@@ -106,7 +107,6 @@ export function ContentsRail({
    * `about-page.tsx`. Exactly one is in the document at any width.
    */
   dismiss: {
-    action: (formData: FormData) => void | Promise<void>;
     destination: string;
     clause: string;
   } | null;
@@ -158,8 +158,7 @@ export function ContentsRail({
       </ol>
 
       {dismiss && (
-        <form action={dismiss.action} className="mt-[18px]">
-          <input type="hidden" name="next" value={dismiss.destination} />
+        <DismissForm destination={dismiss.destination} className="mt-[18px]">
           {/* `px-[18px]`: the button base carries NO horizontal padding — every
               other caller supplies its own — so at `w-auto` the label filled
               the box edge to edge and read as a clipped word. */}
@@ -173,7 +172,7 @@ export function ContentsRail({
           <span className="mt-[6px] block font-mono text-[10.5px] text-[color:var(--fg-faint)]">
             {dismiss.clause}
           </span>
-        </form>
+        </DismissForm>
       )}
     </nav>
   );

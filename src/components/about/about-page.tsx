@@ -14,7 +14,7 @@
 
 import Link from "next/link";
 import { PrimaryButton } from "../ui/button";
-import { dismissAbout } from "../../app/about/actions";
+import { DismissForm } from "./dismiss-form";
 import { safeNext } from "../../lib/about/gate";
 import { FIGURES } from "./figures";
 import { KeyNumeral } from "./numeral";
@@ -440,12 +440,11 @@ export function AboutPage({
           `--tabbar-h` is the shell's own reserved strip at this width, so the
           bar sits ON it rather than over the tab bar's targets. */}
       {offerDismiss && (
-        <form
-          action={dismissAbout}
+        <DismissForm
+          destination={destination}
           className="fixed inset-x-0 z-30 border-t border-solid border-[color:var(--border)] bg-[color:var(--bg)] px-[16px] pt-[10px] pb-[12px] min-[1000px]:hidden"
           style={{ bottom: "var(--tabbar-h)" }}
         >
-          <input type="hidden" name="next" value={destination} />
           <PrimaryButton
             type="submit"
             className="min-h-[44px] w-full px-[18px]"
@@ -453,7 +452,7 @@ export function AboutPage({
           >
             {aboutCopy.dismiss}
           </PrimaryButton>
-        </form>
+        </DismissForm>
       )}
       </article>
 
@@ -464,7 +463,7 @@ export function AboutPage({
           chapters={railChapters}
           dismiss={
             offerDismiss
-              ? { action: dismissAbout, destination, clause: destinationClause }
+              ? { destination, clause: destinationClause }
               : null
           }
         />
