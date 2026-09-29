@@ -391,6 +391,9 @@ async function calmReplace(browser, vp) {
       );
     } else {
       report(!(await reviewing.isVisible().catch(() => false)), "D11 desktop keeps the card as it was: no REVIEWING line");
+      // The rest-state card clips nothing; the phone's clip for the flush foot must not reach here.
+      const overflow = await card.evaluate((el) => getComputedStyle(el).overflow);
+      report(overflow === "visible", "D11 desktop the reviewing card clips nothing", overflow);
     }
     const cancel = onPageRole(page, "button", "Cancel");
     const cont = onPageRole(page, "button", /^Continue to (import|replace)/);

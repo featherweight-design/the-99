@@ -2426,9 +2426,9 @@ Drawn only when the collection has cards; the count span sits between the two pa
 | body | 13px / 1.55, var(--fg-body) | 13.5px / 1.55, var(--fg-body) |
 | CTA | `GhostButton`, full width | `GhostButton`, auto width |
 
-> **Step 3 (type-to-confirm) is deliberately untouched.** Replacing a collection
-> is destructive; the mock states "Type-to-confirm stays dead straight —
-> destructive, no crab." `confirm-modal.tsx` is absent from this change.
+> **Step 3 stays straight: no crown here.** Surfaces v2 left the confirm alone. Its later redraw
+> (first-run redesign D9) removed the typed token and every red and amber, and is recorded in
+> "Component: Replace Flow — Step 3 (Replace Confirm)" above.
 
 ### Replace — Step 3 Copy
 - Title: `Replace your collection?`

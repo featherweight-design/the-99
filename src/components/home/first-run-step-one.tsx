@@ -26,7 +26,7 @@ export function FirstRunStepOne({ fan }: { fan: React.ReactNode }) {
       // Every reviewing override stops at `md`, where the review draws its own filename line and
       // its desktop bar; below that the card carries the file itself (640px included).
       className={`flex flex-none flex-col gap-[12px] rounded-[14px] border border-[color:var(--accent)] bg-[color:var(--surface-inset)] sm:flex-row sm:items-start sm:gap-[18px] sm:text-left ${
-        reviewing ? "items-start overflow-hidden p-0 text-left md:p-[18px]" : "items-center p-[18px_16px] text-center sm:p-[18px]"
+        reviewing ? "items-start overflow-hidden p-0 text-left md:overflow-visible md:p-[18px]" : "items-center p-[18px_16px] text-center sm:p-[18px]"
       }`}
       data-reviewing={reviewing ? "" : undefined}
     >
