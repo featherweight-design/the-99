@@ -608,17 +608,25 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     // are taken after this loop — so without the reserve here the guard under-counts the base and
     // admits modal cards past the ceiling (measured: `landCapable` 70 against a ceiling of 36).
     //
-    // But counting it with `>=` refuses every modal card instead, because the reserve fills the
-    // ceiling exactly by construction. A land-backed modal card IS a land drop, so admitting one
-    // means the basics need one fewer: the reserve gives up a slot rather than the card being
-    // turned away. `>` and the decrement below keep the total at the ceiling either way.
+    // THE RESERVE IS COUNTED, AND THE TEST IS `>=`. This restructure moved WHEN the basics' colours
+    // are decided, never HOW MANY basics there are: the land composition has to come out exactly as
+    // it does before it. The reserve is what the basics will take, so counting it here is standing
+    // in for the rows this guard used to read out of `counts.land` — and the residual then admits
+    // exactly the land drops it admitted when the basics were already placed, which on a 40-modal
+    // pool is none.
+    //
+    // Both other readings are silent, and both were measured. Dropping the reserve bounds the
+    // drops against an empty base, so the residual takes every land slot: 0 basics and 37 drops
+    // where `origin/main` composes 27 and 10. Keeping the reserve but testing `>` with the
+    // decrement below lets the two cancel exactly, so the guard can never fire at all and
+    // `landCapable` reaches 65 against a ceiling of 37.
     if (playableAsLand(candidate.typeLine, candidate.layout)
-      && counts.land + basicsReserve + modalDrops + residualDrops > landCeiling) continue;
+      && counts.land + basicsReserve + modalDrops + residualDrops >= landCeiling) continue;
     if (!admits(candidate)) continue;
     if (playableAsLand(candidate.typeLine, candidate.layout)) {
       residualDrops += 1;
-      // The basics need one slot fewer, because this card is one of the land drops they were
-      // reserved to cover.
+      // The basics need one BODY slot fewer, because this card is one of the land drops they were
+      // reserved to cover. This is the slot budget on `limit`, never the land ceiling above.
       basicsReserve = Math.max(0, basicsReserve - 1);
     }
     spent.add(candidate.oracleId);
@@ -672,6 +680,14 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
    * ONLY COLOURS IN THE IDENTITY. A basic for a colour the deck cannot cast is never right, and
    * the pool's own filter admits one whenever the identity is wider than the deck's costs.
    */
+  /**
+   * The land ceiling as the BASICS see it. The residual above may have sleeved land-backed modal
+   * cards, and each one is a land drop the basics no longer have to supply. `landCeilingAfterModals`
+   * counts only the drops known before the residual ran, so allocating against it would add those
+   * cards on top of a full basic count rather than in place of part of it.
+   */
+  const landCeilingAfterDrops = Math.max(0, landCeilingAfterModals - residualDrops);
+
   const basicsByColor = new Map<string, FillCandidate[]>();
   for (const candidate of lands) {
     if (spent.has(candidate.oracleId) || !isBasicLand(candidate.typeLine)) continue;
@@ -680,13 +696,13 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     basicsByColor.set(color, [...(basicsByColor.get(color) ?? []), candidate]);
   }
   const colors = [...basicsByColor.keys()].sort();
-  if (colors.length > 0 && counts.land < landCeilingAfterModals) {
+  if (colors.length > 0 && counts.land < landCeilingAfterDrops) {
     /**
      * EVERY IDENTITY COLOUR GETS AT LEAST ONE, where there is room for one (Hugh, 2026-09-28).
      * A colour whose pips round to a zero share still has to be castable, and a mana base that
      * omits a colour the deck plays is worse than one that under-weights it.
      */
-    const slotsForBasics = landCeilingAfterModals - counts.land;
+    const slotsForBasics = landCeilingAfterDrops - counts.land;
     const allocated = splitByWeight(colors, pips, slotsForBasics);
     //
     // WHY POOL ORDER MUST NOT DECIDE THIS. With ONE starved colour the rule is invisible: drop it,
@@ -744,7 +760,7 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   // which a mutation of the floor rule is what surfaced: the floor looked untested because THIS
   // sweep was quietly supplying the missing basic.
   for (const candidate of lands) {
-    if (counts.land >= landCeilingAfterModals) break;
+    if (counts.land >= landCeilingAfterDrops) break;
     if (filledSoFar() >= limit) break;
     if (spent.has(candidate.oracleId)) continue;
     const basicColor = isBasicLand(candidate.typeLine) ? basicLandColor(candidate.name) : null;

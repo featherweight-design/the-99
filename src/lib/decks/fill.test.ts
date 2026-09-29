@@ -473,12 +473,52 @@ describe("planFill", () => {
     expect(q("plains")).toBe(35);
   });
 
-  // OPEN: modal land drops past the ceiling. A pool of 40 land-backed `modal_dfc` cards reports
-  // `landCapable` 65 against a ceiling of 37 on THIS branch. The excess is placed by the ROLE
-  // pass, not the residual, so the residual's reserve-aware guard does not govern it. Whether
-  // `origin/main` reads 36 on the identical pool — and therefore whether this is a regression here
-  // or a pre-existing hole — is NOT established, and the test that would pin it is deliberately
-  // absent rather than written to pass. See the PR body.
+  /**
+   * NEVER PAST THE CEILING, however many land-backed modal cards the pool holds. The residual runs
+   * BEFORE the basics here, so its guard cannot read the basics out of `counts.land` the way it
+   * could when they were already placed — and every wrong way to bridge that gap is silent. Both
+   * figures are `origin/main`'s on this identical pool, measured: 37 flat, 36 under a 36 skeleton.
+   */
+  it("never admits land drops past the ceiling, whatever the pool holds", () => {
+    const modalPool = () => [
+      ...Array.from({ length: 40 }, (_, i) => c({
+        oracleId: `m${i}`, name: `m${i}`, inclusionPct: 95 - i,
+        typeLine: "Sorcery // Land", layout: "modal_dfc", oracleText: "Draw a card.",
+      })),
+      basic("mountain", 40, "Mountain"),
+      ...Array.from({ length: 30 }, (_, i) =>
+        c({ oracleId: `f${i}`, name: `f${i}`, manaCost: "{R}", inclusionPct: 40 - i })),
+    ];
+    const flat = planFill(modalPool(), { ...FLAT, identity: ["R"] } as never);
+    const sk36 = planFill(modalPool(), {
+      hasPartner: false, skeleton: skeletonWithLand(36), identity: ["R"],
+    } as never);
+    // The COMPOSITION, not just the total: 27 basics and 10 modal drops under the flat ceiling,
+    // 26 and 10 under a 36 skeleton. A residual allowed to spend the reserved basic slots reaches
+    // the same total on drops alone (0 and 37), which the totals below cannot tell apart.
+    expect([countRole(flat, "land"), flat.landCapable]).toEqual([27, 37]);
+    expect([countRole(sk36, "land"), sk36.landCapable]).toEqual([26, 36]);
+  });
+
+  /**
+   * THE SWEEP HAS TO SEE THE RESIDUAL'S OWN DROPS. With no basic the deck can cast, the reserve is
+   * zero and the residual is free to take land-backed modal cards up to the ceiling — and the
+   * fallback sweep below it takes ANY unspent land, so a ceiling that still reads as though those
+   * drops had not happened lets it add a second full base on top of them.
+   */
+  it("the fallback sweep counts the land drops the residual already took", () => {
+    const plan = planFill([
+      ...Array.from({ length: 40 }, (_, i) => c({
+        oracleId: `m${i}`, name: `m${i}`, inclusionPct: 95 - i,
+        typeLine: "Sorcery // Land", layout: "modal_dfc", oracleText: "Draw a card.",
+      })),
+      ...Array.from({ length: 40 }, (_, i) => nonBasicLand(`nb${i}`)),
+      ...Array.from({ length: 30 }, (_, i) =>
+        c({ oracleId: `f${i}`, name: `f${i}`, manaCost: "{R}", inclusionPct: 40 - i })),
+    ], { ...FLAT, identity: ["R"] } as never);
+    expect(plan.landCapable).toBeLessThanOrEqual(37);
+  });
+
   it("counts the COMMANDERS' pips in the census", () => {
     // The deck's only coloured pips are the commander's. Without it the census is empty, the split
     // falls back to even, and a red-heavy commander gets a white-equal base. `{R}{R}{W}` is
