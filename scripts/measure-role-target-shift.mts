@@ -64,6 +64,19 @@ function printTop(label: string, before: Ranked[], after: Ranked[]) {
 
 const byScore = (a: Ranked, b: Ranked) => b.score - a.score || a.id.localeCompare(b.id);
 
+/** How many printed scores moved, and the spread of the move. A ranking can hold still while its
+ *  figures move (/discover's fit order sorts on owned support, not the score), so the order alone
+ *  says nothing about what a reader sees. */
+function scoreShift(label: string, before: Ranked[], after: Ranked[]) {
+  const was = new Map(before.map((r) => [r.id, r.score]));
+  const deltas = after.map((r) => r.score - (was.get(r.id) ?? r.score)).filter((d) => d !== 0);
+  const up = deltas.filter((d) => d > 0).length;
+  console.log(
+    `  ${label}: ${deltas.length} of ${after.length} printed scores move` +
+      (deltas.length ? ` (${up} up, ${deltas.length - up} down, ${Math.min(...deltas)} to +${Math.max(...deltas)})` : ""),
+  );
+}
+
 const { rows: tops } = await db.execute<{ user_id: string; decks: number }>(sql`
   select user_id, count(*)::int as decks from decks group by user_id order by decks desc
 `);
@@ -98,28 +111,38 @@ if (owned.length === 0) {
         }).score,
       }))
       .sort(byScore);
-  printTop("/commanders (owned lane, stored rows)", grade(() => ROLE_TARGETS), grade((id) => measured.get(id)!.targets));
+  const flatOwned = grade(() => ROLE_TARGETS);
+  const measOwned = grade((id) => measured.get(id)!.targets);
+  printTop("/commanders (owned lane, stored rows)", flatOwned, measOwned);
+  scoreShift("/commanders", flatOwned, measOwned);
 
   const sources = new Map<string, number>();
   for (const t of measured.values()) sources.set(t.of, (sources.get(t.of) ?? 0) + 1);
   console.log(`\n  targets came from: ${[...sources].map(([k, n]) => `${k} ${n}`).join(", ")}`);
 
-  console.log(`\n== Role Coverage headers whose figure changes (first 12) ==`);
+  // The header's STATE is what a reader sees change: short, at, or past. A figure moving inside
+  // "well past" (121 against 10, then against 7) reads the same, so those are counted apart.
   const line = (have: number, target: number) =>
     have > target ? `well past ${target}` : have === target ? `at ${target}` : `${target - have} short of ${target}`;
-  let shown = 0;
+  const state = (have: number, target: number) => (have > target ? "past" : have === target ? "at" : "short");
+  const flips: string[] = [];
+  let figureOnly = 0;
+  let headers = 0;
   for (const r of owned) {
     const t = measured.get(r.id)!;
-    if (t.of === "flat") continue;
     for (const role of ROLES) {
+      headers++;
       const flat = ROLE_TARGETS[role];
       const meas = wholeTarget(t.targets[role]);
-      if (flat === meas || shown >= 12) continue;
+      if (flat === meas) continue;
       const have = r.roleCounts[role];
-      console.log(`  ${r.name.padEnd(34)} ${role.padEnd(8)} have ${String(have).padStart(2)} · ${line(have, flat).padEnd(16)} → ${line(have, meas)}  (${t.of} ${t.targets[role].toFixed(1)})`);
-      shown++;
+      if (state(have, flat) === state(have, meas)) { figureOnly++; continue; }
+      flips.push(`  ${r.name.padEnd(34)} ${role.padEnd(8)} have ${String(have).padStart(3)} · ${line(have, flat).padEnd(16)} → ${line(have, meas)}  (${t.of} ${t.targets[role].toFixed(1)})`);
     }
   }
+  console.log(`\n== Role Coverage headers (${headers} across ${owned.length} commanders) ==`);
+  console.log(`  ${flips.length} change state (short / at / past); ${figureOnly} change only the figure inside the same state`);
+  for (const f of flips.slice(0, 12)) console.log(f);
 }
 
 // ---- /discover: the shipped assembly, twice -------------------------------------------------
@@ -137,10 +160,12 @@ const assemble = (roleTargets: Map<string, Record<RoleName, number>>) =>
     rollup: buildPoolRollup(collection, availability), cardsRead: collection.length,
     freePoolSize: collection.length, sort: "fit", roleTargets,
   }).items.map((i) => ({ id: i.slug, name: i.name, score: i.score }));
-printTop(
-  "/discover (fit order)",
-  assemble(new Map()),
-  assemble(new Map([...targets].map(([id, t]) => [id, t.targets]))),
-);
+const flatDiscover = assemble(new Map());
+const measDiscover = assemble(new Map([...targets].map(([id, t]) => [id, t.targets])));
+printTop("/discover (fit order, which sorts on owned support, not the score)", flatDiscover, measDiscover);
+scoreShift("/discover", flatDiscover, measDiscover);
+const discoverSources = new Map<string, number>();
+for (const t of targets.values()) discoverSources.set(t.of, (discoverSources.get(t.of) ?? 0) + 1);
+console.log(`  targets came from: ${[...discoverSources].map(([k, n]) => `${k} ${n}`).join(", ")}`);
 
 process.exit(0);
