@@ -191,8 +191,9 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   `DATABASE_URL` names, and writes `due=true|false` to `$GITHUB_OUTPUT`. The rule is `indexDue`
   (`src/lib/catalog/index-due.ts`), pure over the catalog's `sets` and the ledger's `ok` index
   builds, and unit tested on the Reality Fracture and Star Trek dates. The release set types are
-  one constant, `RELEASE_SET_TYPES`; `draft_innovation` reprint boxes are left out. On an empty
-  ledger every old set reads due, which is the first run's catch-up.
+  one constant, `RELEASE_SET_TYPES`; `draft_innovation` reprint boxes are left out. A ledger
+  with no `ok` index build answers NOT due (`no baseline`), so switching the chain on never starts
+  a backfill: the first build is a dispatched catch-up, which builds whatever the gate says.
 - **Catalog builds are made once, on staging, and COPIED to production** (plan
   `2026-09-28-card-data-replicate.md`, Hugh 2026-09-28). Fetching the same EDHREC and Spellbook
   data twice was the waste; the copy is what replaces the second fetch. Every copy goes through
