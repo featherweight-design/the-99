@@ -16,7 +16,9 @@ async function main() {
   const builds = await db.select({ startedAt: catalogBuilds.startedAt }).from(catalogBuilds)
     .where(and(eq(catalogBuilds.kind, "index"), eq(catalogBuilds.ok, true)));
   const r = indexDue(new Date(), setRows, builds.map((b) => b.startedAt));
-  console.log(r.due ? `index due:\n  ${r.reasons.join("\n  ")}` : "index not due");
+  console.log(r.due
+    ? `index due:\n  ${r.reasons.join("\n  ")}`
+    : `index not due${r.reasons.length > 0 ? `:\n  ${r.reasons.join("\n  ")}` : ""}`);
   if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `due=${r.due}\n`);
 }
 

@@ -66,10 +66,16 @@ describe("indexDue", () => {
     expect(indexDue(at("2026-10-03"), SETS, [at("2026-10-01")]).due).toBe(false);
   });
 
-  // On an empty ledger every old release reads due, which is the first run's catch-up: a set
-  // released in August is due on 1 October by the RELEASE rule, before the monthly one opens.
-  it("is due on an empty ledger, which is the first run's catch-up", () => {
-    const r = indexDue(at("2026-10-01"), [set("old", "2026-08-01")], []);
+  // No baseline, no build: on a ledger with no ok index build, an old release that WOULD read due
+  // does not, and neither does the monthly rule. The first build is a dispatched catch-up.
+  it("is not due on a ledger with no ok build, and says why", () => {
+    const r = indexDue(at("2026-10-05"), [set("old", "2026-08-01")], []);
+    expect(r.due).toBe(false);
+    expect(r.reasons).toEqual(["no baseline: no ok index build on record; the first build is a dispatched catch-up"]);
+  });
+
+  it("applies the release rule once a baseline exists", () => {
+    const r = indexDue(at("2026-10-01"), [set("old", "2026-08-01")], [at("2026-08-10")]);
     expect(r.due).toBe(true);
     expect(r.reasons).toEqual(["release: old (released 2026-08-01) due 2026-08-15"]);
   });

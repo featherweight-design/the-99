@@ -12,6 +12,11 @@
  *   the 2nd comes due on the 16th, where the monthly rule alone would wait for the 3rd of the next
  *   month.
  *
+ * **No baseline, no build.** A ledger holding no `ok` index build answers NOT due, with the reason
+ * `no baseline`: every old release would otherwise read due, and a backfill would start as an
+ * accident of switching the chain on rather than as a decision. The first build is a dispatched
+ * catch-up, which the workflow runs whatever this says.
+ *
  * Pure over the catalog's own `sets` rows and the ledger's `ok` index builds, so the dates come
  * from the data and never from a hardcoded set.
  */
@@ -40,6 +45,9 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
  * @param okBuilds when each `ok` index build STARTED
  */
 export function indexDue(now: Date, sets: readonly ReleasedSet[], okBuilds: readonly Date[]): IndexDue {
+  if (okBuilds.length === 0) {
+    return { due: false, reasons: ["no baseline: no ok index build on record; the first build is a dispatched catch-up"] };
+  }
   const reasons: string[] = [];
   const since = (from: Date) => okBuilds.some((b) => b.getTime() >= from.getTime());
 
