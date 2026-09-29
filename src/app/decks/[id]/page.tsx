@@ -58,8 +58,10 @@ import { isUuid } from "../../../lib/uuid";
 // `deck_cards.auto`, the game log, or nothing at all, none of which either payload
 // reads.
 //
-// The leading element of each key is a version, bumped when a deployment changes
-// what the payload says for unchanged rows — see the note on `cacheForUser`.
+// The leading element of each key is a version, bumped when a deployment changed
+// what the payload says for unchanged rows. Since the deployment joined every
+// `cacheForUser` key (`cache/deployment.ts`) a deploy retires old entries on its own, so
+// these versions are history rather than a rule, and no new bump is owed.
 // Bumped to "2" when `mix` joined the payload: an entry cached under "1" holds no mix, and
 // a reader destructuring one would hand the strip `undefined` and throw on its first cell.
 // A payload's key travels with its SHAPE, not only with its inputs.

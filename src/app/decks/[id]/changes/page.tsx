@@ -16,8 +16,9 @@ import { admitsReview } from "./admits-review";
 import { isUuid } from "../../../../lib/uuid";
 import { commanderKeyParts } from "../../../../lib/commander-change/mix-key";
 
-// Versioned like every other cached payload here: the key travels with the SHAPE of what it
-// stores, so a mix that grows a field is never read back from an entry that lacks it.
+// Versioned like every other cached payload here, though since the deployment joined every
+// `cacheForUser` key (`cache/deployment.ts`) a deploy already keeps a mix that grows a field
+// from being read back out of an entry that lacks it; the version is kept, not relied on.
 //
 // WHY A DECK ID IS A SAFE KEY. The mix is a function of the deck's commanders and of the
 // commander index, and neither can move under this entry:
