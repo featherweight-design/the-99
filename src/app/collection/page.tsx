@@ -62,7 +62,7 @@ export default async function CollectionPage() {
     // Same reason as "browse-3" before it, which added `facts`, and "browse-2" before that:
     // an entry written by the previous deploy carries no such field, so every card would
     // draw no clause until the hour ceiling expired it, with the loader never running. The
-    // key is the version.
+    // key WAS the version then; the deployment id does that job now.
     //
     // THE DECK-DEPENDENT HALF IS INVALIDATED, and an earlier revision of this comment said
     // the opposite at length. `comboPartner` means "both halves owned AND no single deck

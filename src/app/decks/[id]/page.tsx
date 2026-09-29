@@ -75,9 +75,9 @@ const SUGGESTIONS_KEY = ["deck-suggestions", "2"];
 // "2" since the pair branch: `readSynergyCards` now answers from `commander_pair_support_cards`
 // for a two-commander deck, so the payload says something different for UNCHANGED rows. The
 // cache helper's own rule — a deployment that changes what a payload says for unchanged rows is
-// an input to the key — and without the bump an entry assembled by the previous deployment goes
-// on being served for up to the hour ceiling, to a reader who writes nothing, with the pair
-// branch invisible after deploy.
+// an input to the key — and at the time, without the bump, an entry assembled by the previous
+// deployment would have gone on being served for up to the hour ceiling. The deployment id in
+// the key now covers that; the bump is kept as history.
 const SYNERGY_KEY = ["deck-synergy", "2"];
 
 // Suggested changes runs as a Server Action invoked from this page, so the page's limit bounds
