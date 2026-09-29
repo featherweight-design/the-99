@@ -7,7 +7,21 @@
 // more turn on a skeleton assembled from five database reads down a four-rung chain. A fixture
 // that stated those facts would be asserting the answer it was built to check.
 //
-// Seven checks, and the mutation each one exists to catch is in the table at the foot.
+// Eight sections, each naming the mutation it exists to catch in its own block.
+//
+// Section 8 is the basics split, against the real catalog. It reproduces HD - Thorin: a `{R,W}`
+// deck whose top-off produced 18 Plains, 6 Wastes and NO Mountains. Wastes reaches every pool
+// because its colour identity is EMPTY and `[].every(…)` is true, and the spare-redistribution
+// loop then handed a capped Plains allocation's leftovers to the only other colour with copies on
+// the shelf. What dropped red out of the split was the CENSUS scoring zero red pips, not the
+// shelf: the basics were chosen before the residual ran, so the pips of the commanders and of
+// every residual row were missing from it.
+//
+// Its fixture owns ZERO Mountains on purpose all the same, to pin a second and separate property
+// — that the shelf quantity does not decide whether a colour is in the mana base. Note this is a
+// state production cannot reach through `ownedColorLegalPool`, which builds the pool
+// `.from(collectionItems)`: a basic the player holds no collection row for is absent from the
+// candidate pool entirely, and no split can supply what it never sees.
 //
 // It writes a fixture under a per-run `user_id` and deletes it in a `finally`. Point it at
 // `local-dev` or a scratch Neon branch, NEVER production.
@@ -19,7 +33,8 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import ws from "ws";
 
-import { planFill, type FillCandidate } from "../src/lib/decks/fill";
+import { planFill, type FillCandidate, type FillPlan, type FillRow } from "../src/lib/decks/fill";
+import type { ProfileSkeleton } from "../src/lib/profile/types";
 import { landTarget } from "../src/lib/decks/deck-size";
 import { loadSkeletonForCommanders } from "../src/lib/profile/load";
 import { castFaceText, playableAsLand } from "../src/lib/cards/facet";
@@ -102,6 +117,32 @@ const rolesOf = (r: CardRow): Role[] => classifyRoles({
   keywords: r.keywords ?? [],
 });
 
+/**
+ * A modal fixture the fill actually SLEEVES, found by building with each candidate in turn.
+ *
+ * Having a non-land role is not enough: the role pass fills a role only up to its floor and the
+ * residual only to the body, so a card whose role is already satisfied is refused and the case
+ * reports "never placed" about a build that is working. Krenko's own skeleton fills `removal` to
+ * ZERO out of a target of 7 — the same on this branch and on `origin/main` — so every removal
+ * candidate is unplaceable there, which is exactly what this search walks past.
+ *
+ * It was flaky-green before. The pool's `limit 400` was unordered, so the fixture changed per run
+ * and a placeable card turned up often enough to hide it; ordering the pool made the failure
+ * permanent rather than causing it.
+ */
+const placeableModal = (
+  candidates: CardRow[], basePool: FillCandidate[], skeleton: ProfileSkeleton,
+): { card: CardRow; plan: FillPlan; row: FillRow } | null => {
+  for (const card of candidates) {
+    if (!playableAsLand(card.type_line, card.layout)) continue;
+    if (!rolesOf(card).some((x) => x !== "land")) continue;
+    const plan = planFill([fixtureCard(card), ...basePool], { hasPartner: false, skeleton });
+    const row = plan.rows.find((r) => r.oracleId === card.oracle_id);
+    if (row) return { card, plan, row };
+  }
+  return null;
+};
+
 async function main() {
   // A commander the index actually carries a composition for, so the skeleton has something to
   // resolve. Found BY QUERY rather than by a name that rots with the catalog.
@@ -161,6 +202,11 @@ async function main() {
     from cards
     where commander_legal
       and (color_identity <@ ${`{${cmd.color_identity.join(",")}}`}::text[] or cardinality(color_identity) = 0)
+    -- ORDERED, and that is not tidiness. An unordered limit lets Postgres return any 400 rows, so
+    -- whether a land-backed modal card lands in the pool — and therefore whether the land ceiling
+    -- is the measured figure or one lower — varied between runs on the same database. Check 8d
+    -- asserts that ceiling exactly, so it could fail on a correct build.
+    order by oracle_id
     limit 400`);
   const basics = await rows<CardRow>(sql`
     select oracle_id, name, type_line, oracle_text, keywords, mana_cost, layout
@@ -227,10 +273,17 @@ async function main() {
 
   // ---- 3 · modal credits, transform does not --------------------------------------------
   console.log("\n3 · a modal land back credits the land target and a transform back does not");
+  // ON THE COMMANDER'S IDENTITY, exactly as `pool400` is. An off-identity card is not castable, so
+  // the fill refuses it and the case reports "never placed" about a build that is working. That was
+  // invisible while the pool was unordered — the fixture picked a different modal card per run —
+  // and became permanent the moment the ORDER BY above made the choice deterministic: a green card
+  // for a mono-red commander, every run, on this branch and on `origin/main` alike.
   const modalCandidates = await rows<CardRow>(sql`
     select oracle_id, name, type_line, oracle_text, keywords, mana_cost, layout
     from cards where layout = 'modal_dfc' and commander_legal
-      and type_line not ilike 'land%' and type_line ilike '% // %land%' order by oracle_id limit 40`);
+      and type_line not ilike 'land%' and type_line ilike '% // %land%'
+      and (color_identity <@ ${`{${cmd.color_identity.join(",")}}`}::text[] or cardinality(color_identity) = 0)
+    order by oracle_id limit 40`);
   const xformCandidates = await rows<CardRow>(sql`
     select oracle_id, name, type_line, oracle_text, keywords, mana_cost, layout
     from cards where layout = 'transform' and commander_legal
@@ -238,26 +291,20 @@ async function main() {
   // A modal card the fill can actually SLEEVE: one the classifier gives a non-land role, or
   // the role pass and the residual both skip it and the case reports "never placed" about a
   // build that is working.
-  const modal = modalCandidates.find(
-    (r) => playableAsLand(r.type_line, r.layout) && rolesOf(r).some((x) => x !== "land"),
-  );
+  const found = placeableModal(modalCandidates, basePool, skeleton);
   const xform = xformCandidates.find((r) => r.layout === "transform");
-  if (!modal) {
-    fail("3 · the fixture", "no commander-legal modal_dfc with a land back that the classifier gives a role");
+  if (!found) {
+    fail("3 · the fixture", "no commander-legal modal_dfc with a land back that this fill will sleeve");
   } else {
+    const { card: modal, plan: withModal, row: modalRow } = found;
+    console.log(`  fixture card: ${modal.name}`);
     truthy("the catalog's own modal card is land-capable", playableAsLand(modal.type_line, modal.layout));
-    const withModal = planFill([fixtureCard(modal), ...basePool], { hasPartner: false, skeleton });
-    const modalRow = withModal.rows.find((r) => r.oracleId === modal.oracle_id);
-    if (!modalRow) {
-      fail("3 · the modal card", `${modal.name} was never placed, so nothing here is measured`);
-    } else {
-      // Placed on a NON-land role and still counted as a land drop. Never `role: "land"`, or
-      // the same card would take a role slot and a land slot — the §2.5a double credit.
-      check("it is placed on a non-land role", modalRow.role !== "land", true);
-      truthy("and credits landCapable above the land count",
-        withModal.landCapable > withModal.rows.filter((r) => r.role === "land")
-          .reduce((n, r) => n + r.quantity, 0));
-    }
+    // Placed on a NON-land role and still counted as a land drop. Never `role: "land"`, or
+    // the same card would take a role slot and a land slot — the §2.5a double credit.
+    check("it is placed on a non-land role", modalRow.role !== "land", true);
+    truthy("and credits landCapable above the land count",
+      withModal.landCapable > withModal.rows.filter((r) => r.role === "land")
+        .reduce((n, r) => n + r.quantity, 0));
   }
   if (xform) {
     truthy("a transform card with a land back is NOT land-capable",
@@ -275,22 +322,16 @@ async function main() {
     select oracle_id, name, type_line, oracle_text, keywords, mana_cost, layout
     from cards where layout = 'modal_dfc' and commander_legal
       and type_line not ilike 'land%' and type_line ilike '% // %land%'
-      and oracle_text ilike '%: add %' order by oracle_id limit 40`);
+      and oracle_text ilike '%: add %'
+      and (color_identity <@ ${`{${cmd.color_identity.join(",")}}`}::text[] or cardinality(color_identity) = 0)
+    order by oracle_id limit 40`);
   // The back must tap for mana AND the front must be something the fill will sleeve, or the
   // card is never placed and the case measures nothing either way.
-  const rampLooking = rampLookingCandidates.find(
-    (r) => playableAsLand(r.type_line, r.layout) && rolesOf(r).some((x) => x !== "land"),
-  );
-  if (!rampLooking) {
-    fail("4 · the fixture", "no commander-legal modal card whose back taps for mana and whose front has a role");
+  const rampFound = placeableModal(rampLookingCandidates, basePool, skeleton);
+  if (!rampFound) {
+    fail("4 · the fixture", "no commander-legal modal card whose back taps for mana that this fill will sleeve");
   } else {
-    const plan = planFill([fixtureCard(rampLooking), ...basePool], { hasPartner: false, skeleton });
-    const row = plan.rows.find((r) => r.oracleId === rampLooking.oracle_id);
-    if (!row) {
-      fail("4 · the card", "was never placed, so nothing here is measured");
-    } else {
-      check(`${rampLooking.name} is not sleeved as ramp`, row.role === "ramp", false);
-    }
+    check(`${rampFound.card.name} is not sleeved as ramp`, rampFound.row.role === "ramp", false);
   }
 
   // ---- 5 · the residual follows the REAL synergy ranking -----------------------------------
@@ -372,6 +413,72 @@ async function main() {
   }).length;
   check("landCapable is the land count plus the modal cards sleeved elsewhere",
     built.landCapable, landRows + modalPlaced);
+
+  // ---- 8 · the basics follow the deck's IDENTITY, not the shelf ---------------------------
+  console.log("\n8 · a Boros deck's basics");
+  // HD - Thorin, reproduced against the real catalog. Its top-off gave a `{R,W}` deck 18 Plains,
+  // 6 Wastes and NO Mountains: Wastes is admitted to every pool because its colour identity is
+  // empty and `[].every(…)` is true, and the spare-redistribution loop then handed a capped
+  // Plains allocation's leftovers to the only other colour with copies on the shelf.
+  //
+  // WHAT DROPPED RED was the pip census, not the shelf: Thorin's owner had 81 Mountains, and the
+  // census saw neither the commanders nor the residual, so red scored zero pips. This fixture
+  // owns **Mountain in ZERO copies** for a separate reason: it checks that the split does not
+  // depend on the shelf either, which is a synthetic case rather than a reproduction of Thorin.
+  // Rows are found BY QUERY rather than by a name that rots with the catalog.
+  const [plainsRow] = await rows<CardRow>(sql`
+    select oracle_id, name, type_line, oracle_text, keywords, mana_cost, layout
+    from cards where name = 'Plains' and type_line ilike 'basic land%' limit 1`);
+  const [mountainRow] = await rows<CardRow>(sql`
+    select oracle_id, name, type_line, oracle_text, keywords, mana_cost, layout
+    from cards where name = 'Mountain' and type_line ilike 'basic land%' limit 1`);
+  const [wastesRow] = await rows<CardRow>(sql`
+    select oracle_id, name, type_line, oracle_text, keywords, mana_cost, layout
+    from cards where name = 'Wastes' and type_line ilike 'basic land%' limit 1`);
+  if (!plainsRow || !mountainRow || !wastesRow) {
+    fail("8 · the fixture", "Plains, Mountain or Wastes missing from the catalog — is it seeded?");
+  } else {
+    const borosPool = [
+      ...pool400.map((r) => candidate(r)),
+      candidate(plainsRow, true, 18),
+      // ZERO copies owned, deliberately: a basic is never a buy, so the shelf must not decide
+      // whether a colour is in the mana base. With the fix reverted this is what vanishes.
+      candidate(mountainRow, true, 0),
+      candidate(wastesRow, true, 9),
+    ];
+    const boros = planFill(borosPool, {
+      hasPartner: false, skeleton, identity: ["R", "W"],
+    });
+    const qty = (id: string) => boros.rows
+      .filter((r) => r.oracleId === id).reduce((n, r) => n + r.quantity, 0);
+    const plains = qty(plainsRow.oracle_id);
+    const mountain = qty(mountainRow.oracle_id);
+    const wastes = qty(wastesRow.oracle_id);
+    console.log(`  Plains ${plains} · Mountain ${mountain} · Wastes ${wastes}`);
+    check("8a · no Wastes in a Boros deck", wastes, 0);
+    truthy("8b · Mountains present despite zero owned", mountain > 0);
+    truthy("8c · Plains present", plains > 0);
+    // THE BASE IS STILL COMPLETE, which is the check the other three cannot make. Excluding
+    // Wastes is only half the ruling: a fix that dropped it and left the mana base six lands short
+    // would pass 8a, 8b and 8c and be worse than the bug. `8d` was first written as
+    // `plains + mountain > 0 && wastes === 0`, which is implied by the three above and could not
+    // fail on its own — a check that restates its neighbours.
+    const landTotal = boros.rows
+      .filter((r) => r.role === "land").reduce((n, r) => n + r.quantity, 0);
+    // MINUS THE MODAL DROPS, computed the way section 7 computes them. The basics fill to
+    // `landCeiling - modalDrops`, never to the ceiling, so asserting the bare target fails on a
+    // correct build the moment the ordered 400 happens to contain a land-backed modal card placed
+    // on a non-land role. Ordering the pool made that outcome stable per catalog, not correct: a
+    // refresh that inserts such a card into the first 400 flips it.
+    const borosModalDrops = boros.rows.filter((r) => {
+      if (r.role === "land") return false;
+      const card = borosPool.find((x) => x.oracleId === r.oracleId);
+      return card ? playableAsLand(card.typeLine, card.layout) : false;
+    }).length;
+    // `measuredLand`, not `landTarget(false)`: this probe passes a real skeleton, so the ceiling is
+    // the measured figure and the flat default would be a different number on any indexed database.
+    check("8d · the base is filled to the land target", landTotal, measuredLand - borosModalDrops);
+  }
 }
 
 main()

@@ -42,15 +42,20 @@ async function main() {
   const { isInfiniteOrGameEnding } = await import("../src/lib/spellbook/combo-features");
   const rows = async <T>(q: ReturnType<typeof sql>) => (await db.execute(q)).rows as T[];
 
-  const [cmd] = await rows<{ oracle_id: string; name: string; color_identity: string[] }>(sql`
-    select oracle_id, name, color_identity from cards where name = ${COMMANDER}`);
+  const [cmd] = await rows<{ oracle_id: string; name: string; color_identity: string[]; mana_cost: string | null }>(sql`
+    select oracle_id, name, color_identity, mana_cost from cards where name = ${COMMANDER}`);
   if (!cmd) throw new Error(`no commander named ${COMMANDER}`);
-  const commanders = [{ oracleId: cmd.oracle_id, name: cmd.name, colorIdentity: cmd.color_identity }];
+  // `manaCost` feeds the basics pip census. It is a required field precisely so this probe cannot
+  // pass a commander with no cost and quietly measure a deck whose colour signal is missing.
+  const commanders = [{
+    oracleId: cmd.oracle_id, name: cmd.name, colorIdentity: cmd.color_identity,
+    manaCost: cmd.mana_cost ?? null,
+  }];
 
-  const plain = await buildFillPlan(USER, commanders);
-  const budgeted = await buildFillPlan(USER, commanders, new Set(), { answers: { budgetCents: BUDGET_CENTS, bracket: null, cardOracleId: null } });
-  const bracketed = await buildFillPlan(USER, commanders, new Set(), { answers: { budgetCents: null, bracket: 2, cardOracleId: null } });
-  const unasked = await buildFillPlan(USER, commanders, new Set(), { answers: { budgetCents: null, bracket: 4, cardOracleId: null } });
+  const plain = await buildFillPlan(USER, commanders, new Set(), { selectedCosts: [] });
+  const budgeted = await buildFillPlan(USER, commanders, new Set(), { selectedCosts: [], answers: { budgetCents: BUDGET_CENTS, bracket: null, cardOracleId: null } });
+  const bracketed = await buildFillPlan(USER, commanders, new Set(), { selectedCosts: [], answers: { budgetCents: null, bracket: 2, cardOracleId: null } });
+  const unasked = await buildFillPlan(USER, commanders, new Set(), { selectedCosts: [], answers: { budgetCents: null, bracket: 4, cardOracleId: null } });
 
   console.log("\n1. The budget, priced independently");
   const ids = (p: typeof plain) => p.rows.map((r) => r.oracleId);
@@ -78,8 +83,9 @@ async function main() {
     .filter((r) => !owned.has(r.oracleId) && (prices.get(r.oracleId)?.liveCents ?? 0) <= BUDGET_CENTS)
     .sort((a, b) => (prices.get(b.oracleId)?.liveCents ?? 0) - (prices.get(a.oracleId)?.liveCents ?? 0))[0];
   const selCents = prices.get(selection.oracleId)?.liveCents ?? 0;
+  const { costsOf } = await import("../src/lib/decks/costs-of");
   const withSelection = await buildFillPlan(USER, commanders, new Set([selection.oracleId]),
-    { answers: { budgetCents: BUDGET_CENTS, bracket: null, cardOracleId: null } });
+    { selectedCosts: await costsOf([selection.oracleId]), answers: { budgetCents: BUDGET_CENTS, bracket: null, cardOracleId: null } });
   check("a placed selection is charged: it and the fill's buys fit the cap together", selCents + spend(withSelection) <= BUDGET_CENTS,
     `selection $${(selCents / 100).toFixed(2)} + fill $${(spend(withSelection) / 100).toFixed(2)} against $${BUDGET_CENTS / 100}`);
 

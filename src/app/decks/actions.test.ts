@@ -417,6 +417,12 @@ vi.mock("../commanders/[slug]/synergy-read", () => ({
 // The commit snapshot's two reads. Stubbed rather than run: `cachedDeckProfile` assembles a whole
 // profile — 630ms against a real database — and what is under test is whether the snapshot
 // REACHES `commitVersion`, which is exactly what shipped broken.
+// Pass-through, so every create and retry still reads the stubbed catalog, and a test can ask
+// WHICH ids a fill asked the costs of.
+vi.mock("../../lib/decks/costs-of", async (importActual) => {
+  const actual = await importActual<typeof import("../../lib/decks/costs-of")>();
+  return { costsOf: vi.fn(actual.costsOf) };
+});
 vi.mock("../../lib/profile/load", () => ({ cachedDeckProfile: vi.fn() }));
 // The pin after a commit (ruling 2) is a whole analysis; what these tests own is that the commit
 // SCHEDULES it, off its own path, for the version it wrote.
@@ -461,6 +467,7 @@ import {
   versionLiveAt,
 } from "../../lib/decks/versions";
 import { loadAvailability } from "../../lib/decks/availability-query";
+import { costsOf } from "../../lib/decks/costs-of";
 import { writePullRelease } from "../../lib/decks/pull-release";
 import { loadDraftState } from "../../lib/decks/draft-state";
 import { deckBodySize } from "../../lib/decks/deck-size";
@@ -2514,6 +2521,23 @@ describe("createDeck — Help me choose's answers (F1, F2)", () => {
     // The card is placed first; the cap on the body is `capToBody`'s, pinned in fill.test.ts.
     expect(inserted[0].oracleId).toBe("card-build-around");
     expect(inserted.reduce((n, r) => n + r.quantity, 0)).toBeLessThanOrEqual(99);
+  });
+
+  it("retries with the build-around card's cost in the census, as the create had it", async () => {
+    // The card is placed beside the plan and excluded from its pool, so its pips reach the basics
+    // split only through `selectedCosts`. The retry left it out, and a retried create could split
+    // the basics differently from the create it replays.
+    stub.state.decks.push({
+      id: "deck-4", userId: "user_1", commanderOracleId: COMMANDER_ORACLE,
+      answerCardOracleId: "card-build-around", answerBracket: 4, answerBudgetCents: null,
+    });
+    stub.state.cards.push(commanderCard());
+    stub.state.collectionItems.push(...Array.from({ length: 10 }, (_, i) => rampCard(i)));
+    vi.mocked(costsOf).mockClear();
+
+    await fillDeck("deck-4");
+
+    expect(vi.mocked(costsOf).mock.calls.map((c) => [...c[0]])).toContainEqual(["card-build-around"]);
   });
 
   it("retries an own-only deck from free copies alone, and fails closed when the claim read does", async () => {

@@ -34,6 +34,16 @@ describe("trialFillRows", () => {
     expect(q).toContain("c.commander_legal and cs.synergy_state = 'ok'");
   });
 
+  it("reads the commander's mana cost and hands it to the trial", async () => {
+    // It feeds the basics pip census. Dropped from the query, the trial reads `undefined` and
+    // weights the mana base as though the commander were colourless, and every other assertion
+    // here still passes.
+    stub.execute.mockResolvedValueOnce({ rows: [{ oracle_id: LEGAL, name: "Gishath", color_identity: ["R", "G", "W"], mana_cost: "{4}{R}{G}{W}" }] });
+    await trialFillRows([LEGAL], "?t=dinosaurs");
+    expect(text(stub.execute.mock.calls[0][0])).toContain("c.mana_cost");
+    expect(stub.trial.mock.calls[0][1]).toMatchObject({ manaCost: "{4}{R}{G}{W}" });
+  });
+
   it("answers an id the rule does not return with null, and runs no fill for it", async () => {
     const out = await trialFillRows([LEGAL, FORGED], "?t=dinosaurs");
     expect(out[FORGED]).toBeNull();

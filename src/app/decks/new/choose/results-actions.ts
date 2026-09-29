@@ -73,10 +73,14 @@ export async function trialFillRows(commanderOracleIds: string[], queryString: s
   // Only a commander the search could list is filled: an id naming any other card, or a commander
   // this player has already built, comes back null without a fill being run for it.
   const found = ids.length === 0 ? [] : (await db.execute(sql`
-    select c.oracle_id, c.name, c.color_identity
+    -- mana_cost feeds the basics pip census through trialFill; without it a trial deck has its
+    -- mana base weighted as though its commander were colourless. No backticks in a sql template.
+    select c.oracle_id, c.name, c.color_identity, c.mana_cost
     from commander_support cs join cards c on c.oracle_id = cs.commander_oracle_id
     where cs.commander_oracle_id = any(${sql.param(ids)}::uuid[]) and ${isCandidate(userId)}
-  `)).rows as { oracle_id: string; name: string; color_identity: string[] | null }[];
+  `)).rows as {
+    oracle_id: string; name: string; color_identity: string[] | null; mana_cost: string | null;
+  }[];
   const byId = new Map(found.map((c) => [c.oracle_id, c]));
   // The card through the search's own rule: a card the search drops (a basic, one not legal, one
   // gone) is dropped here too, or the figures would count a card the results never applied.
@@ -92,7 +96,11 @@ export async function trialFillRows(commanderOracleIds: string[], queryString: s
     for (let id = queue.shift(); id !== undefined; id = queue.shift()) {
       const c = byId.get(id);
       out[id] = c
-        ? await trialFill(userId, { oracleId: id, name: c.name, colorIdentity: c.color_identity ?? [] }, answers).catch(() => null)
+        ? await trialFill(
+          userId,
+          { oracleId: id, name: c.name, colorIdentity: c.color_identity ?? [], manaCost: c.mana_cost },
+          answers,
+        ).catch(() => null)
         : null;
     }
   };
