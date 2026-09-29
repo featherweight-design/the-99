@@ -140,17 +140,19 @@ Every new or changed string goes through `/copy-review` in lane before the PR th
 
 | Surface | 390 | 1300 | PR |
 |---|---|---|---|
-| "How we make these decisions" sheet with tags (Analysis tab) | ☐ | ☐ | A |
-| `/about` appendix: heading, key, eight closed rows | ☐ | ☐ | B |
-| One open row per method (Roles, Recommendations, Written text, Availability, Brackets, Prices) | ☐ | ☐ | B |
-| `/about#how-roles`: landed, open, washed | ☐ | ☐ | B |
-| An entry's link line, and the round trip back | ☐ | ☐ | C |
-| Contents: the rail group (1300), the phone list's fifth row, open (390) | ☐ | ☐ | C |
-| Search matching a row title | ☐ | ☐ | C |
-| The About sheet carrying the one line | ☐ | ☐ | C |
-| All of the above with the switch off: unchanged | ☐ | ☐ | B, C |
+| "How we make these decisions" sheet with tags (Analysis tab) | ☑ | ☑ | A |
+| `/about` appendix: heading, key, eight closed rows | ☑ | ☑ | B |
+| One open row per method (Roles, Recommendations, Written text, Availability, Brackets, Prices) | ☑ | ☑ | B |
+| `/about#how-roles`: landed, open, washed | ☑ | ☑ | B |
+| An entry's link line, and the round trip back | ☑ | ☑ | C |
+| Contents: the rail group (1300), the phone list's fifth row, open (390) | ☑ | ☑ | C |
+| Search matching a row title | ☑ | ☑ | C |
+| The About sheet carrying the one line | ☑ | ☑ | C |
+| All of the above with the switch off: unchanged | ☑ | ☑ | B, C |
 
 Inventory: `docs/superpowers/inventories/about-how-it-works.json`, with the switch on, and `clearAbout`.
+
+**Walked at close (2026-09-29), against the running app.** Every row but the sheet was photographed by the contact sheet at both widths on #1137's branch. The sheet line was walked by `probe:about --flip` F7 (#1139), which is the only walk that can build that state. The off row was covered by `probe:about-how-it-works`'s off pass at both widths, plus `how-it-works-off.test.tsx`. One deviation: a row near the page's foot cannot land 20px from the top, because the document ends first. It lands with its opened body on screen instead. That is noted in the gap report and left to Design.
 
 ## The About entry rule
 
