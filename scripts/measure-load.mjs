@@ -387,9 +387,12 @@ async function main() {
       const run = {};
       for (const width of WIDTHS) run[width.label] = await one(browser, state, width, routes, sql);
       runs.push(run);
-      console.error(`run ${i + 1} of ${RUNS} done`);
+      // Written after EVERY run, not once at the end: a slow-profile run of seven takes over an
+      // hour, and a run stopped part-way (to hand a shared machine back) used to lose every run
+      // it had finished.
+      writeFileSync(OUT, JSON.stringify({ base: BASE, at: new Date().toISOString(), complete: i + 1 === RUNS, runs }, null, 2));
+      console.error(`run ${i + 1} of ${RUNS} done — ${OUT}`);
     }
-    writeFileSync(OUT, JSON.stringify({ base: BASE, at: new Date().toISOString(), runs }, null, 2));
     console.log(table(runs, routes));
     console.log(`\nRaw figures, server spans and the top statements: ${OUT}`);
   } finally {
