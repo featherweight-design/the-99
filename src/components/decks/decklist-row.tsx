@@ -518,16 +518,6 @@ export function DecklistRow({
                   {figureTextPhone}
                 </span>
               ) : null}
-              {overText ? (
-                <>
-                  {cost || hasShoppingMeta ? (
-                    <span aria-hidden className="md:hidden" style={{ color: "var(--border-strong)" }}>·</span>
-                  ) : null}
-                  <span className="md:hidden font-mono text-[10px] whitespace-nowrap" style={{ color: "var(--warning)" }}>
-                    {overText}
-                  </span>
-                </>
-              ) : null}
             </span>
             {hasShoppingMeta ? (
               <span
@@ -645,13 +635,13 @@ export function DecklistRow({
             printing this card and that they must buy it is the one state in this
             feature nobody has drawn. */}
         {tag === "proxy" && <ProxyTag variant="row" />}
-        {/* From md to lg, `over $X` and the buy tag are ONE group, the limit stacked above the tag
-            (Hugh, 2026-09-26): the name keeps the row's width, and the limit stays beside the
-            price it is about. Below md it rides the meta line, and from lg it sits inline after
-            the figure, so this copy is drawn only in the band between. */}
+        {/* Below lg, `over $X` and the buy tag are ONE group, the limit stacked above the tag
+            (Hugh, 2026-09-26, from md; extended to the phone 2026-09-28, "particularly on mobile"):
+            the name keeps the row's width, and the limit stays beside the price it is about. From
+            lg it sits inline after the figure, so this copy is drawn only below that. */}
         {overText ? (
           <span className="flex flex-none flex-col items-end gap-[2px]">
-            <span className="hidden md:block lg:hidden font-mono text-[10px] leading-none whitespace-nowrap" style={{ color: "var(--warning)" }}>
+            <span className="block lg:hidden font-mono text-[10px] leading-none whitespace-nowrap" style={{ color: "var(--warning)" }}>
               {overText}
             </span>
             {tag === "buy" ? buyTag : null}

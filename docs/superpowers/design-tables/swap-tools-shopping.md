@@ -6,7 +6,7 @@
 3. `Shopping View.dc.html` (the JSX `renderVals` and the markup), for exact values.
 4. `swap-tools · copy strings.ts`, for which key each element renders.
 
-**Widths:** Mobile is the `phone` prop (390, below `md`). Desktop is `wide` (drawn at 1300, applies from `md`, 768px, up). **One exception, F12 ruling (b):** a row's `over $X` meta takes the phone's own-line form from `md` up to `lg` (768 to 1023px), and is inline only from `lg`. The row tables below give the `lg` form as Desktop and note the band.
+**Widths:** Mobile is the `phone` prop (390, below `md`). Desktop is `wide` (drawn at 1300, applies from `md`, 768px, up). **One exception:** below `lg` (1024px), phone included, a row's `over $X` is stacked directly above its buy tag, right-aligned, 2px apart, 10px mono `--warning` (Hugh, 2026-09-26 for 768–1023px; extended to the phone 2026-09-28). It is inline after the figure only from `lg`. This replaced F12 ruling (b)'s own-line form. The row tables below give the `lg` form as Desktop and note the band.
 "same" means the value is identical at both widths. Copy is recorded as the **key rendered**, never as its words.
 
 **R1 → R2 overrides applied in this table:**
@@ -213,10 +213,10 @@ Not shipped in PR 3. The key glosses the row's ⇄, and the ⇄ lands with the s
 | Property | Mobile | Desktop |
 |---|---|---|
 | Name block layout | Column, justify center, gap 3px, `flex: 1 1 auto`, min-width 0 | Row, align center, gap 6px, `flex: 1 1 auto`, min-width 0 |
-| Meta placement | Second line under the name | Inline on the name's line (the `over` item alone drops to its own line from `md` to `lg`; see below) |
+| Meta placement | Second line under the name | Inline on the name's line (the `over` item alone stacks on the buy tag below `lg`; see below) |
 | Meta container | flex, align center, gap 5px, min-width 0, `flex: none` | same |
 | Meta items, under | pips · `·` · figure | figure |
-| Meta items, over | pips · `·` · figure · `·` · over | figure · `·` · over |
+| Meta items, over | pips · `·` · figure (the `over` item stacks on the buy tag instead, 2026-09-28) | figure · `·` · over |
 | Figure item | mono 10px `--fg-faint`, nowrap | same |
 | Name | 12.5px `--fg`, nowrap, ellipsis | 13.5px `--fg`, nowrap, ellipsis |
 
@@ -231,7 +231,7 @@ Not shipped in PR 3. The key glosses the row's ⇄, and the ⇄ lands with the s
 | color | `--warning` | `--warning` |
 | white-space | nowrap | nowrap |
 | Rule amended | The meta line gains a third item beyond the cost and the figure | same |
-| Placement, `md` to `lg` (768–1023px) | — | F12 ruling (b): on its own line under the name, with no preceding `·`. Only an over row wraps; its figure stays beside the name |
+| Placement below `lg` | Stacked above the buy tag, right-aligned, `gap 2px`, `leading-none` (2026-09-28) | 768–1023px: the same stack (Hugh, 2026-09-26, which replaced F12 ruling (b)'s own line under the name) |
 
 ### BuyTag (over-limit ring)
 | Property | Mobile | Desktop |
