@@ -450,6 +450,29 @@ describe("planFill", () => {
     expect(plan.rows.filter((r) => r.role === "land")).toHaveLength(0);
   });
 
+  it("gives EACH starved colour its floor, not two slots to whichever sorts first", () => {
+    // THE CASE THAT MAKES THE FLOOR RULE FALSIFIABLE, and it took a while to find. With one
+    // starved colour the rule looks untested: drop it and the base comes out one short, the
+    // fallback sweep takes the next unspent land, and that happens to be the starved colour's
+    // basic — same answer by luck.
+    //
+    // With TWO starved colours and two printings of the first one ahead of the second in the pool,
+    // luck runs out. Without the floor the base is two short and the fallback takes the first two
+    // unspent lands, which are BOTH Islands — so black never gets a source. The floor assigns one
+    // slot per starved colour before any take, so pool order cannot decide it.
+    const plan = planFill([
+      ...Array.from({ length: 5 }, (_, i) => c({ oracleId: `w${i}`, manaCost: "{W}", inclusionPct: 90 - i })),
+      basic("plains", 40, "Plains"),
+      basic("island-a", 40, "Island"), basic("island-b", 40, "Island"),
+      basic("swamp", 40, "Swamp"),
+    ], { ...FLAT, identity: ["W", "U", "B"] } as never);
+    const q = (id: string) => plan.rows.find((r) => r.oracleId === id)?.quantity ?? 0;
+    const islands = q("island-a") + q("island-b");
+    expect(islands).toBe(1);
+    expect(q("swamp")).toBe(1);
+    expect(q("plains")).toBe(35);
+  });
+
   it("counts every HELD spell in the census, not only the ones it chose", () => {
     // The case my own harness got wrong: with `inclusionPct` null the candidate order falls back
     // to NAME, so a role cap can take an all-red sample of a mixed pool. The census has to read

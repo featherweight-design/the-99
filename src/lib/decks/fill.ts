@@ -606,12 +606,14 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     const slotsForBasics = landCeilingAfterModals - counts.land;
     const allocated = splitByWeight(colors, pips, slotsForBasics);
     //
-    // NOT INDEPENDENTLY FALSIFIABLE, and recorded as such rather than claimed as tested. Setting
-    // this floor to zero leaves every test green, because the fallback sweep below then finds the
-    // base one slot short and takes a basic for the starved colour anyway. The floor is kept
-    // because it makes the allocation EXACT before any take, so which colour gets the slot is
-    // decided by this rule rather than by the candidate pool's order — but a mutation cannot see
-    // the difference, and pretending otherwise would be the kind of green that means nothing.
+    // WHY POOL ORDER MUST NOT DECIDE THIS. With ONE starved colour the rule is invisible: drop it,
+    // the base comes out a slot short, and the fallback sweep below takes the next unspent land —
+    // which happens to be that colour's basic. Same answer by luck.
+    //
+    // With TWO starved colours it stops being luck. Two printings of the first sit ahead of the
+    // second in the pool, the base is two short, and the fallback takes both of the FIRST colour —
+    // so the second never gets a source. Assigning one slot per starved colour here, before any
+    // take, is what makes the outcome a rule rather than an artefact of candidate order.
     const zero = colors.filter((c) => allocated.get(c)! === 0);
     for (const color of zero) {
       // Taken from the largest allocation, so the floor costs the colour that can spare it.
