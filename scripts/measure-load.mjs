@@ -33,6 +33,15 @@
 //     runs on the deck's loaded page) and run only the client navigation pass. The table then
 //     prints the soft figures alone. With MEASURE_ROUTES=discover,home that pass goes Home, /discover, Home, so Home's soft
 //     first visit is the one a /discover list is still mounted under.
+//   - MEASURE_PRESS_AT=<ms>: the startup pass, instead of every other figure. Each route loads
+//     cold, and at a FIXED time after the navigation starts (or at hydration, if that is later) a
+//     navigation to MEASURE_PRESS_TO (default /decks, or / from /decks) is pushed and timed to its
+//     content. A press "N seconds after ready" lands at a different moment on builds that load in
+//     different times, so it cannot compare them; a fixed time can. Ready is HYDRATION, read as a
+//     React fiber on <main>: `window.next.router` exists before the app router's first render, and
+//     a push then throws E668 and never navigates. It also prints what the page downloaded before
+//     it hydrated and what was still arriving at the press, by owner (the app's own JS, Clerk,
+//     fonts, CSS, images, the document) and by who asked for it.
 // The table also prints, per route, the card images a cold load ASKED for and the kilobytes that
 // landed, because an image is not in any RSC figure and can still be most of what a page costs.
 //
@@ -84,6 +93,9 @@ if (ONLY_WIDTHS && MEASURED_WIDTHS.length !== ONLY_WIDTHS.size) throw new Error(
 const LOADS_ENV = process.env.MEASURE_LOADS ?? "1";
 if (LOADS_ENV !== "0" && LOADS_ENV !== "1") throw new Error(`MEASURE_LOADS is 0 or 1, not ${LOADS_ENV}.`);
 const LOADS = LOADS_ENV === "1";
+const PRESS_AT = process.env.MEASURE_PRESS_AT == null ? null : Number(process.env.MEASURE_PRESS_AT);
+if (PRESS_AT != null && !(PRESS_AT >= 0)) throw new Error(`MEASURE_PRESS_AT is a number of milliseconds, not ${process.env.MEASURE_PRESS_AT}.`);
+const PRESS_TO = process.env.MEASURE_PRESS_TO ?? "/decks";
 const ONLY = process.env.MEASURE_ROUTES ? new Set(process.env.MEASURE_ROUTES.split(",").map((r) => r.trim())) : null;
 
 /** Chrome DevTools' own Slow 4G preset, and the 4x CPU throttle the brief paired it with. */
@@ -210,6 +222,110 @@ function serverSpans(from, pattern) {
   return line ? line.slice(7) : null;
 }
 const logSize = () => (SERVER_LOG ? statSync(SERVER_LOG).size : 0);
+
+/** Who a startup request belongs to, for the startup pass's breakdown. */
+function ownerOf(url, type) {
+  if (/(^|\.)clerk\.|clerk\.(accounts\.dev|com)|\/npm\/@clerk\//.test(url) || /clerk/i.test(new URL(url).hostname)) return "clerk";
+  if (type === "Font" || /\.woff2?(\?|$)/.test(url)) return "fonts";
+  if (IMAGE_HOSTS.test(url) || type === "Image") return "images";
+  if (type === "Stylesheet") return "css";
+  if (type === "Document" || url.includes("_rsc=")) return "document";
+  if (url.startsWith(BASE) && type === "Script") return "app js";
+  return type === "Script" ? "other js" : "other";
+}
+
+/**
+ * The startup pass for one route (MEASURE_PRESS_AT): cold load, hydration, a push at the fixed
+ * time, the arrival, and what the page was downloading. Times are page time (ms from the
+ * navigation's start); CDP's monotonic timestamps are mapped onto it through each request's
+ * `wallTime` and the page's `performance.timeOrigin`.
+ */
+async function pressRun(browser, state, width, route) {
+  const context = await browser.newContext({ viewport: width.viewport, isMobile: width.isMobile, hasTouch: width.hasTouch, storageState: state });
+  await context.addInitScript(CONTENT_PROBE);
+  const page = await context.newPage();
+  const cdp = await context.newCDPSession(page);
+  await cdp.send("Network.enable");
+  await cdp.send("Network.clearBrowserCache");
+  await throttle(cdp);
+  const reqs = new Map();
+  let wallOffset = null;
+  cdp.on("Network.requestWillBeSent", (e) => {
+    if (wallOffset == null && e.wallTime) wallOffset = e.wallTime - e.timestamp;
+    if (reqs.has(e.requestId)) return;
+    const by = e.initiator?.url ?? e.initiator?.stack?.callFrames?.[0]?.url ?? e.initiator?.type ?? null;
+    reqs.set(e.requestId, { url: e.request.url, type: e.type, start: e.timestamp, by });
+  });
+  cdp.on("Network.loadingFinished", (e) => { const r = reqs.get(e.requestId); if (r) { r.end = e.timestamp; r.bytes = e.encodedDataLength; } });
+  cdp.on("Network.dataReceived", (e) => { const r = reqs.get(e.requestId); if (r) r.partial = (r.partial ?? 0) + (e.encodedDataLength || e.dataLength); });
+  const target = route.path === PRESS_TO ? "/" : PRESS_TO;
+  await page.goto(`${BASE}${route.path}`, { waitUntil: "commit", timeout: 120_000 });
+  const hydrated = await page
+    .waitForFunction(() => {
+      const main = document.querySelector("main");
+      return main && Object.keys(main).some((k) => k.startsWith("__reactFiber$")) ? performance.now() : null;
+    }, null, { timeout: 120_000, polling: 50 })
+    .then((h) => h.jsonValue(), () => null);
+  const timeOrigin = await page.evaluate(() => performance.timeOrigin);
+  const pageMs = (t) => (t == null || wallOffset == null ? null : Math.round((t + wallOffset) * 1000 - timeOrigin));
+  let pressedAt = null;
+  let arrived = null;
+  if (hydrated != null) {
+    const at = Math.max(PRESS_AT, hydrated);
+    const now = await page.evaluate(() => performance.now());
+    if (at > now) await page.waitForTimeout(at - now);
+    pressedAt = await page.evaluate((u) => {
+      const t = performance.now();
+      window.next.router.push(u);
+      return t;
+    }, target);
+    arrived = await page
+      .waitForFunction((path) => {
+        const main = document.querySelector("main");
+        return location.pathname === path && main && !main.querySelector('[role="status"][class*="min-h-[420px]"]') && main.innerText.trim().length > 40
+          ? performance.now()
+          : null;
+      }, target.split("?")[0], { timeout: 120_000, polling: 16 })
+      .then((h) => h.jsonValue(), () => null);
+  }
+  const all = [...reqs.values()].map((r) => ({ ...r, startMs: pageMs(r.start), endMs: pageMs(r.end), owner: ownerOf(r.url, r.type) }));
+  const beforeHydration = all.filter((r) => hydrated != null && r.startMs != null && r.startMs <= hydrated);
+  const inFlightAtPress = all.filter((r) => pressedAt != null && r.startMs != null && r.startMs <= pressedAt && (r.endMs == null || r.endMs > pressedAt));
+  const byOwner = (list, bytes) => {
+    const out = {};
+    for (const r of list) out[r.owner] = (out[r.owner] ?? 0) + bytes(r);
+    return Object.fromEntries(Object.entries(out).map(([k, v]) => [k, Math.round(v / 1024)]));
+  };
+  await context.close();
+  return {
+    hydrated: hydrated == null ? null : Math.round(hydrated),
+    pressedAt: pressedAt == null ? null : Math.round(pressedAt),
+    arrival: arrived == null || pressedAt == null ? null : Math.round(arrived - pressedAt),
+    beforeHydrationKb: byOwner(beforeHydration, (r) => r.bytes ?? r.partial ?? 0),
+    inFlightAtPressKb: byOwner(inFlightAtPress, (r) => r.bytes ?? 0),
+    largest: beforeHydration
+      .map((r) => ({ kb: Math.round((r.bytes ?? r.partial ?? 0) / 1024), owner: r.owner, url: r.url.replace(BASE, ""), by: r.by?.replace(BASE, "") ?? null, startMs: r.startMs, endMs: r.endMs }))
+      .sort((a, b) => b.kb - a.kb)
+      .slice(0, 12),
+  };
+}
+
+function pressTable(runs, routes) {
+  const lines = [];
+  for (const width of MEASURED_WIDTHS) {
+    const per = runs.map((r) => r[width.label]);
+    const m = (f) => median(per.map(f));
+    lines.push(`\n**${width.label}**, press at ${PRESS_AT}ms or hydration (median of ${runs.length})\n`);
+    lines.push("| Route | Hydrated | Pressed | Arrival after press | KB before hydration, by owner | KB in flight at the press |");
+    lines.push("|---|---|---|---|---|---|");
+    for (const route of routes) {
+      const owners = [...new Set(per.flatMap((p) => Object.keys({ ...p[route.label]?.beforeHydrationKb, ...p[route.label]?.inFlightAtPressKb })))].sort();
+      const kb = (key) => owners.map((o) => [o, m((p) => p[route.label]?.[key]?.[o] ?? 0)]).filter(([, v]) => v).map(([o, v]) => `${o} ${v}`).join(" · ") || "none";
+      lines.push(`| ${route.label} | ${m((p) => p[route.label]?.hydrated)} | ${m((p) => p[route.label]?.pressedAt)} | ${m((p) => p[route.label]?.arrival)} | ${kb("beforeHydrationKb")} | ${kb("inFlightAtPressKb")} |`);
+    }
+  }
+  return lines.join("\n");
+}
 
 async function load(page, cap, url) {
   cap.reset();
@@ -399,11 +515,17 @@ async function main() {
       if (unknown.length) throw new Error(`MEASURE_ROUTES names no route: ${unknown.join(", ")}.`);
       routes.splice(0, routes.length, ...routes.filter((r) => ONLY.has(r.label)));
     }
-    console.error(`profile ${PROFILE}, routes ${routes.map((r) => r.label).join(", ")}`);
+    console.error(`profile ${PROFILE}, routes ${routes.map((r) => r.label).join(", ")}${PRESS_AT == null ? "" : `, startup pass: press at ${PRESS_AT}ms to ${PRESS_TO}`}`);
     const runs = [];
     for (let i = 0; i < RUNS; i += 1) {
       const run = {};
-      for (const width of MEASURED_WIDTHS) run[width.label] = await one(browser, state, width, routes, sql);
+      for (const width of MEASURED_WIDTHS) {
+        if (PRESS_AT == null) run[width.label] = await one(browser, state, width, routes, sql);
+        else {
+          run[width.label] = {};
+          for (const route of routes) run[width.label][route.label] = await pressRun(browser, state, width, route);
+        }
+      }
       runs.push(run);
       // Written after EVERY run, not once at the end: a slow-profile run of seven takes over an
       // hour, and a run stopped part-way (to hand a shared machine back) used to lose the raw
@@ -414,7 +536,7 @@ async function main() {
       renameSync(`${OUT}.tmp`, OUT);
       console.error(`run ${i + 1} of ${RUNS} done — ${OUT}`);
     }
-    console.log(table(runs, routes));
+    console.log(PRESS_AT == null ? table(runs, routes) : pressTable(runs, routes));
     console.log(`\nRaw figures, server spans and the top statements: ${OUT}`);
   } finally {
     await browser.close();
