@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AccountMenu } from "./account-menu";
 import { NavIcon, type NavHref } from "./nav-icons";
+import { PendingPip } from "./pending-pip";
 import { Crowned99 } from "../marks";
 import { refreshCopy } from "../../lib/copy/refresh";
 import type { ThemeKey } from "../../lib/theme/themes";
@@ -90,6 +91,8 @@ function LockGlyph() {
 type NavSlotProps = {
   href: NavHref;
   active: boolean;
+  // Where the pending pip sits: 2px up in the 38px rail slot, 1px in the 52px tab slot.
+  pipBottom: 1 | 2;
   className: string;
   children: React.ReactNode;
 } & (
@@ -102,7 +105,7 @@ type NavSlotProps = {
   | { isLocked: false; name: string | undefined }
 );
 
-function NavSlot({ isLocked, href, name, active, className, children }: NavSlotProps) {
+function NavSlot({ isLocked, href, name, active, pipBottom, className, children }: NavSlotProps) {
   if (isLocked) {
     return (
       // A locked route is still reachable — /collection with no cards renders
@@ -127,9 +130,10 @@ function NavSlot({ isLocked, href, name, active, className, children }: NavSlotP
       title={name}
       aria-label={name}
       aria-current={active ? "page" : undefined}
-      className={className}
+      className={`relative ${className}`}
     >
       {children}
+      <PendingPip href={href} bottom={pipBottom} />
     </Link>
   );
 }
@@ -190,12 +194,15 @@ export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey })
               // whole of what a rail slot shows. Only the padlock beside it,
               // which repeats a state already in the accessible name, is dim
               // enough to sit under the contrast floor.
-              className={`flex h-[38px] w-[38px] items-center justify-center rounded-[10px] transition-colors ${
+              pipBottom={2}
+              // No `transition-colors`: the pending fill below must clear the frame the new page
+              // lands, not fade out over it (audit correction 4).
+              className={`flex h-[38px] w-[38px] items-center justify-center rounded-[10px] ${
                 isLocked
                   ? "bg-transparent text-[color:var(--fg-locked)]"
                   : active
                     ? "bg-elevated text-[color:var(--fg)]"
-                    : "bg-transparent text-[color:var(--fg-faint)] hover:bg-elevated-hover"
+                    : "bg-transparent text-[color:var(--fg-faint)] hover:bg-elevated-hover has-[[data-pending]]:bg-elevated-hover has-[[data-pending]]:text-[color:var(--fg)]"
               }`}
             >
               <NavIcon href={href} />
@@ -270,12 +277,13 @@ export function TabBar({ locked }: { locked: boolean }) {
             // `--fg-locked` for the same reason as the rail, and more so: one
             // `color` serves the icon and a visible label, and a label under
             // the 3:1 floor is unreadable however truthful its name.
+            pipBottom={1}
             className={`flex h-[52px] flex-1 flex-col items-center justify-center gap-[3px] rounded-[12px] ${
               isLocked
                 ? "bg-transparent text-[color:var(--fg-locked)]"
                 : active
                   ? "bg-[color:var(--surface-inset)] text-[color:var(--fg)]"
-                  : "bg-transparent text-[color:var(--fg-faint)]"
+                  : "bg-transparent text-[color:var(--fg-faint)] has-[[data-pending]]:text-[color:var(--fg)]"
             }`}
           >
             <NavIcon href={href} />

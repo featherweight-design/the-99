@@ -742,6 +742,45 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 /* There is no exit animation. The layer unmounts on close — see the note at
    `closeZoom` in `cards/card-modal.tsx` for why the 160ms fade was dropped. */
 
+/* Navigation pending (the navigation-pending handoff and its escalation addendum). The marks
+   appear after 120ms of CSS delay, not a timer, so a navigation shorter than that paints nothing.
+   `both` holds each at its first frame through the delay; without it the segment paints at rest
+   for 120ms before the sweep starts (audit correction 3). */
+@keyframes pending-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes pending-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(250%); }
+}
+.anim-pending-in { animation: pending-in 160ms ease-out 120ms both; }
+/* The pulse starts at its peak rather than its trough (escalation correction 6). */
+.anim-pending-pip { animation: dots 1.2s ease-in-out -320ms infinite; }
+.anim-pending-sweep { animation: pending-sweep 900ms linear -260ms infinite; }
+.pending-track { height: 1.5px; }
+/* A 1.5px strip has no whole device pixel to land on at 1x and smears there, so it is drawn at
+   2px up to 1.5dppx (escalation correction 8). At 2x it is exactly 3 device pixels; at other
+   high densities the rasterizer rounds it, and at 3x a 4.5px strip is too fine to smear visibly. */
+@media (max-resolution: 1.5dppx) {
+  .pending-track { height: 2px; }
+}
+
+/* The escalation screen fades in over the page it is leaving and out over the page that
+   landed. Both fades are kept under reduced motion, a deliberate departure from the list below
+   (escalation correction 7): a screen that cuts in and out over a whole page is a harder change
+   of scene than a short fade, and neither fade moves anything. */
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes overlay-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+.anim-overlay-in { animation: overlay-in 150ms ease-out both; }
+.anim-overlay-out { animation: overlay-out 120ms ease-out both; }
+
 @media (prefers-reduced-motion: reduce) {
   .anim-bob,
   .anim-dots,
@@ -776,6 +815,19 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   /* Opening, still (§8, 8a): the loader's row rests at half ink, so it never reads as the ring's
      answered marks, and only the word says it is loading. */
   .anim-at-wave.at-wave-rest { opacity: 0.5; }
+
+  /* The pending marks keep their 120ms delay and lose their motion (parent correction 5): an
+     `animation: none` would drop the delay too and flash a mark on a 95ms navigation. The pip is
+     drawn still at full ink, and the track as a still `--fg-muted` hairline. */
+  .anim-pending-in { animation: pending-in 0s linear 120ms both; }
+  .anim-pending-pip { animation: none; opacity: 1; }
+  .anim-pending-sweep { animation: none; width: 100%; }
+
+  /* The escalation screen's fades are KEPT (escalation correction 7), restated here so the choice
+     is on record where the others are: an opacity fade moves nothing, and a whole-page screen that
+     cuts in and out is the harsher change. */
+  .anim-overlay-in { animation: overlay-in 150ms ease-out both; }
+  .anim-overlay-out { animation: overlay-out 120ms ease-out both; }
 }
 
 /* The wash trades legibility against drama. A reader who has asked for less

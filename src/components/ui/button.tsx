@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { twMerge } from "tailwind-merge";
 
+import { PendingTrack } from "../shell/pending-track";
+
 // Shared CTA primitives per docs/superpowers/design-tables/appshell.md
 // §404: Primary CTA and §404: Secondary CTA — the canonical statement of the
 // accent and ghost contracts.
@@ -75,6 +77,17 @@ type ButtonProps = SharedProps &
       >)
   );
 
+// A pending ghost link takes the canvas's pending fill rather than its accent hover, because
+// accent is status; a primary link keeps its own fill under the track (audit correction 1).
+const PENDING: Record<string, string> = {
+  // Stated twice so pending also beats the accent hover when the pointer is still on the link:
+  // `has-` and `hover:` are equally specific, and stylesheet order would otherwise decide.
+  [GHOST]:
+    "has-[[data-pending]]:bg-[color:var(--elevated-hover)] has-[[data-pending]]:[border-color:var(--border-strong)] " +
+    "has-[[data-pending]]:[color:var(--fg)] hover:has-[[data-pending]]:[border-color:var(--border-strong)] " +
+    "hover:has-[[data-pending]]:[color:var(--fg)]",
+};
+
 function renderButton(variant: string, props: ButtonProps) {
   const { className, children, ...rest } = props;
   // Dropped at runtime as well as in the types: the type ban is erased at the
@@ -87,9 +100,13 @@ function renderButton(variant: string, props: ButtonProps) {
 
   if (rest.href !== undefined) {
     const { href, ...linkProps } = rest;
+    // `relative overflow-hidden` holds the pending track inside the border box
+    // (navigation-pending handoff, P2).
+    const pendingClasses = twMerge(classes, "relative overflow-hidden", PENDING[variant] ?? "");
     return (
-      <Link href={href} className={classes} {...linkProps}>
+      <Link href={href} className={pendingClasses} {...linkProps}>
         {children}
+        <PendingTrack href={typeof href === "string" ? href : (href.pathname ?? "?")} />
       </Link>
     );
   }

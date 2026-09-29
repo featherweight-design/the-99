@@ -14,6 +14,7 @@ import { EmptyState, EmptyStateBody, EmptyStateTitle } from "../ui/empty-state";
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { setsIndexCopy } from "../../lib/copy/set-collections";
 import { SetIcon } from "./set-icon";
+import { PendingTrack } from "../shell/pending-track";
 import type { SetIndexRow } from "../../lib/sets/read";
 
 function CompletionBar({ percent, complete }: { percent: number; complete: boolean }) {
@@ -67,9 +68,10 @@ function Row({ set }: { set: SetIndexRow }) {
       <Link
         href={`/collection/sets/${set.code}`}
         aria-label={ratioAria}
-        className="flex items-center gap-[12px] rounded-[10px] px-[12px] py-[11px] min-h-[44px]
-                   md:min-h-[auto] transition-colors hover:bg-[color:var(--elevated)]"
+        className="relative overflow-hidden flex items-center gap-[12px] rounded-[10px] px-[12px] py-[11px] min-h-[44px]
+                   md:min-h-[auto] transition-colors hover:bg-[color:var(--elevated)] has-[[data-pending]]:bg-[color:var(--elevated)]"
       >
+        <PendingTrack href={`/collection/sets/${set.code}`} />
         <SetIcon
           uri={set.iconSvgUri}
           size={26}

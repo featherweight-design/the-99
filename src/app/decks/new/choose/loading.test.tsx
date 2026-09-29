@@ -9,7 +9,7 @@ const nav = vi.hoisted(() => ({ qs: "", path: "/decks/new/choose" }));
 vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams(nav.qs), usePathname: () => nav.path }));
 
 const { default: Loading } = await import("./loading");
-const { default: ParentLoading } = await import("../loading");
+const { ShellLoading } = await import("../../../../components/shell/shell-loading");
 
 describe("the choose route's loading screen", () => {
   it("draws 5c on a results address, with no bar, no order sub and nothing of the deckNew screen", () => {
@@ -25,15 +25,15 @@ describe("the choose route's loading screen", () => {
     expect(screen.getByRole("link").getAttribute("href")).toBe("/decks/new/choose?t=dinosaurs&b=150");
   });
 
-  it("is what /decks/new's own loading screen draws on the way into the route, and nowhere else", () => {
+  it("is what the shell's page-load fallback draws for the route, and nowhere else", () => {
     nav.qs = "t=dinosaurs&v=results";
     nav.path = "/decks/new/choose";
-    const { unmount } = render(<ParentLoading />);
+    const { unmount } = render(<ShellLoading />);
     expect(screen.getByTestId("choose-loading")).toBeTruthy();
     expect(screen.queryByText("Clearing a space")).toBeNull();
     unmount();
     nav.path = "/decks/new";
-    render(<ParentLoading />);
+    render(<ShellLoading />);
     expect(screen.queryByTestId("choose-loading")).toBeNull();
     expect(screen.getByText("Clearing a space")).toBeTruthy();
     nav.path = "/decks/new/choose";

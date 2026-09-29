@@ -1949,7 +1949,13 @@ See collection empty state card-fan specs above. Mobile: 100×110px container. D
 
 ---
 
-## Component: Global Loading State (`app/loading.tsx`)
+## Component: Global Loading State (`LoadingScreen`)
+
+Since navigation pending (2026-09-28) this screen is drawn by the shell rather than by a
+`loading.tsx` per segment: `ShellLoading` streams it on a direct load or refresh, and the pending
+overlay draws it over the page being left when a press is still pending at 400ms. Four deck routes
+keep their own `loading.tsx` (`decks/[id]`, `decks/[id]/changes`, `decks/[id]/import`,
+`decks/new/choose`). The markup below is unchanged.
 
 ### Loading page container
 

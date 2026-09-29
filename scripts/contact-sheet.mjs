@@ -114,8 +114,20 @@ function expand(value, where, { forRegex = false } = {}) {
   });
 }
 
+// Chromium's own "Slow 4G" figures, as `measure:load`'s slow profile uses them.
+const SLOW_4G = { offline: false, latency: 562.5, downloadThroughput: (1.6 * 1e6) / 8 * 0.9, uploadThroughput: (750 * 1e3) / 8 * 0.9 };
+
 async function run(page, steps) {
   for (const step of steps ?? []) {
+    // `throttle: "slow"` puts the page on Slow 4G for the steps after it: a state that exists
+    // only while a navigation is pending (the pip, the track, the escalation screen) is gone in
+    // a frame on a local server, and a sheet taken there photographs the page it landed on.
+    if (step.throttle !== undefined) {
+      if (step.throttle !== "slow") throw new Error(`throttle takes "slow", not ${JSON.stringify(step.throttle)}`);
+      const cdp = await page.context().newCDPSession(page);
+      await cdp.send("Network.enable");
+      await cdp.send("Network.emulateNetworkConditions", SLOW_4G);
+    }
     if (step.goto !== undefined) {
       const url = expand(step.goto, step.goto);
       await page.goto(`${BASE}${url}`, { waitUntil: "domcontentloaded" });

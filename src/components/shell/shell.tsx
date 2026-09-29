@@ -6,6 +6,7 @@ import type { ThemeKey } from "../../lib/theme/themes";
 import { aboutSheetEnabled } from "../../lib/about/flag";
 import { readSheetState } from "../../lib/about/sheet-state";
 import { AboutSheet } from "./about-sheet";
+import { NavigationPendingProvider, ShellMain } from "./navigation-pending";
 
 /**
  * Server component. Signed-out users get the bare page (Task 8 renders the
@@ -41,24 +42,26 @@ export default async function Shell({
   const sheet = aboutSheetEnabled() ? readSheetState(await headers()) : null;
 
   return (
-    <div className="flex min-h-screen flex-1">
-      <NavRail locked={locked} theme={theme} />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <MobileHeader theme={theme} />
-        {/* The bottom padding on mobile leaves room for the fixed tab bar, which
-            is held to exactly --tabbar-h so this reservation is not an estimate. */}
-        {/* `flex flex-col` continues the stretch chain the rail already starts,
-            so a route child can claim the leftover height with flex-1 instead
-            of guessing at the header/tab-bar offsets in a calc(). */}
-        {/* `--about-sheet-h` is set by the About sheet while it is open on a
-            phone, so the foot of the page scrolls clear of it (R6 §N5). */}
-        <main className="flex min-w-0 flex-1 flex-col pb-[calc(var(--tabbar-h)+var(--about-sheet-h,0px))] md:pb-0">
-          {children}
-        </main>
+    <NavigationPendingProvider>
+      <div className="flex min-h-screen flex-1">
+        <NavRail locked={locked} theme={theme} />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <MobileHeader theme={theme} />
+          {/* The bottom padding on mobile leaves room for the fixed tab bar, which
+              is held to exactly --tabbar-h so this reservation is not an estimate. */}
+          {/* `flex flex-col` continues the stretch chain the rail already starts,
+              so a route child can claim the leftover height with flex-1 instead
+              of guessing at the header/tab-bar offsets in a calc(). */}
+          {/* `--about-sheet-h` is set by the About sheet while it is open on a
+              phone, so the foot of the page scrolls clear of it (R6 §N5). */}
+          <ShellMain className="flex min-w-0 flex-1 flex-col pb-[calc(var(--tabbar-h)+var(--about-sheet-h,0px))] md:pb-0">
+            {children}
+          </ShellMain>
+        </div>
+        <TabBar locked={locked} />
+        {/* Last in the tree, so it is reached after the page in tab order (§N10). */}
+        {sheet && <AboutSheet state={sheet} />}
       </div>
-      <TabBar locked={locked} />
-      {/* Last in the tree, so it is reached after the page in tab order (§N10). */}
-      {sheet && <AboutSheet state={sheet} />}
-    </div>
+    </NavigationPendingProvider>
   );
 }

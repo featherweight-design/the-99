@@ -2,9 +2,10 @@ import { Crown } from "../ui/crown";
 import type { LoadingCopy } from "../../lib/copy/shell";
 
 /**
- * The one loading skeleton, parameterised by copy. Each route segment owns a
- * loading.tsx that picks its own entry from shellCopy.loading — the markup is
- * shared so the eight segments can't drift apart visually.
+ * The one loading skeleton, parameterised by copy. The shell draws it for every
+ * route but four (`ShellLoading` on a direct load, the pending overlay on a slow
+ * press), and those four deck routes draw it from their own loading.tsx — the
+ * markup is shared so no route's screen can drift apart visually.
  *
  * `still` is for a segment whose design forbids motion — the version rail, where
  * READINESS 19 allows the commit sheet's open and close and nothing else. The
