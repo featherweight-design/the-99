@@ -6,16 +6,16 @@ const LABELS = ["Home", "Collection", "Commanders", "Discover", "Decks"];
 
 let pathname = "/collection";
 const push = vi.fn();
-// Records every report a code-started navigation makes, so a push can be asserted as reaching
-// the provider (the navigation-pending plan's PR 3) without mounting it.
-const reports = vi.hoisted(() => [] as [string, boolean][]);
-vi.mock("./pending-report", async (importOriginal) => {
-  const real = await importOriginal<typeof import("./pending-report")>();
+// Records every code-started navigation the component starts through `usePendingPush`, which is
+// what hands it to the navigation-pending provider (the plan's PR 3). The push still reaches the
+// router mock, so the cases that assert it are unchanged.
+const pushed = vi.hoisted(() => [] as string[]);
+vi.mock("./pending-push", async () => {
+  const { useRouter } = await import("next/navigation");
   return {
-    ...real,
-    useReportPending: (href: string, pending: boolean) => {
-      reports.push([href, pending]);
-      return real.useReportPending(href, pending);
+    usePendingPush: () => {
+      const router = useRouter();
+      return { go: (href: string) => { pushed.push(href); router.push(href); } };
     },
   };
 });
@@ -376,7 +376,7 @@ describe("The lock, desktop rail", () => {
     fireEvent.pointerEnter(decks);
     fireEvent.click(within(noteOf(decks)).getByRole("button", { name: "Go to step 1" }));
     expect(push).toHaveBeenCalledWith("/collection/replace");
-    expect(reports).toContainEqual(["/collection/replace", true]);
+    expect(pushed).toContain("/collection/replace");
     expect(isOpen(decks)).toBe(false);
   });
 

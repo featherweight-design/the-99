@@ -3,16 +3,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { UploadPreview } from "../../app/collection/actions";
 
 const push = vi.fn();
-// Records every report a code-started navigation makes, so the case below can assert the push
-// reached the provider (the navigation-pending plan's PR 3) without mounting it.
-const reports = vi.hoisted(() => [] as [string, boolean][]);
-vi.mock("../shell/pending-report", async (importOriginal) => {
-  const real = await importOriginal<typeof import("../shell/pending-report")>();
+// Records every code-started navigation the component starts through `usePendingPush`, which is
+// what hands it to the navigation-pending provider (the plan's PR 3). The push still reaches the
+// router mock, so the cases that assert it are unchanged.
+const pushed = vi.hoisted(() => [] as string[]);
+vi.mock("../shell/pending-push", async () => {
+  const { useRouter } = await import("next/navigation");
   return {
-    ...real,
-    useReportPending: (href: string, pending: boolean) => {
-      reports.push([href, pending]);
-      return real.useReportPending(href, pending);
+    usePendingPush: () => {
+      const router = useRouter();
+      return { go: (href: string) => { pushed.push(href); router.push(href); } };
     },
   };
 });
@@ -70,12 +70,12 @@ describe("ReplaceFlow — the first import (prod walk 2026-09-28, item 5a)", () 
     expect(push).toHaveBeenCalledWith("/collection/replace/summary/up_1");
   });
 
-  it("reports the push to the receipt, so a slow arrival reaches the navigation screen", async () => {
+  it("starts the push to the receipt through the navigation-pending hook", async () => {
     confirmUpload.mockResolvedValueOnce(undefined);
-    reports.length = 0;
+    pushed.length = 0;
     const cont = await reachReview(0);
     await act(async () => fireEvent.click(cont));
-    expect(reports).toContainEqual(["/collection/replace/summary/up_1", true]);
+    expect(pushed).toContain("/collection/replace/summary/up_1");
   });
 
   it("holds Continue at Importing… while a first import runs, since no modal carries the wait", async () => {

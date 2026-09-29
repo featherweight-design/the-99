@@ -289,20 +289,20 @@ describe("AccountMenu items", () => {
     expect(screen.queryByRole("menu")).toBeNull();
   });
 
-  it("reports the About navigation from the menu, which outlives the row", () => {
-    // The press unmounts the row and its link with it, so a reporter inside the link ends the run
-    // before the 400ms screen could draw. The menu runs the push as a transition and reports it.
+  it("hands the About navigation to the provider, which outlives the menu and its row", () => {
+    // The press unmounts the row and its link with it, so the navigation cannot be the row's to
+    // report: it goes to the navigation-pending provider, which reports it and outlives both.
     push.mockClear();
-    const reports: [string, boolean][] = [];
+    const providerPush = vi.fn();
     render(
-      <Report.Provider value={{ report: (_id, href, pending) => reports.push([href, pending]), pathname: "/" }}>
+      <Report.Provider value={{ report: () => {}, pathname: "/", push: providerPush }}>
         <AccountMenu panel="popover" theme="amonkhet" />
       </Report.Provider>,
     );
     fireEvent.click(trigger());
     fireEvent.click(screen.getByRole("menuitem", { name: "About The 99" }));
-    expect(push).toHaveBeenCalledWith("/about");
-    expect(reports).toContainEqual(["/about", true]);
+    expect(providerPush).toHaveBeenCalledWith("/about");
+    expect(push).not.toHaveBeenCalled();
   });
 
   it("only closes the menu when About is pressed on /about", () => {

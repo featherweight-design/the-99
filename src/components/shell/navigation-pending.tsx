@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   createContext,
   Suspense,
@@ -10,11 +10,12 @@ import {
   useMemo,
   useRef,
   useState,
+  useTransition,
   type ReactNode,
 } from "react";
 
 import { pendingRouteFor, type LoadingKey } from "../../lib/shell/pending-routes";
-import { Report, targetOf, type Reporter } from "./pending-report";
+import { Report, targetOf, useReportPending, type Reporter } from "./pending-report";
 import { PendingOverlay } from "./pending-overlay";
 import { ShellLoading } from "./shell-loading";
 
@@ -31,6 +32,7 @@ import { ShellLoading } from "./shell-loading";
  * run, and neither does a link into a kept route, whose own `loading.tsx` commits at press.
  */
 export const OVERLAY_AFTER_MS = 400;
+
 
 const MainRef = createContext<React.RefObject<HTMLElement | null> | null>(null);
 
@@ -103,7 +105,16 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
     }, OVERLAY_AFTER_MS);
   }, [reports, pathname, end]);
 
-  const context = useMemo(() => ({ report, pathname }), [report, pathname]);
+  // Code-started navigations (`usePendingPush`) run in `CodePushes`, which this provider mounts,
+  // rather than in the component that starts them: that component can unmount before the new page
+  // commits (on Home's first run the import's own revalidation swaps the checklist holding the
+  // replace flow for the dashboard), and a report it owned would end with it.
+  const runPush = useRef<((href: string) => void) | null>(null);
+  const push = useCallback((href: string) => runPush.current?.(href), []);
+  const registerPush = useCallback((run: ((href: string) => void) | null) => {
+    runPush.current = run;
+  }, []);
+  const context = useMemo(() => ({ report, pathname, push }), [report, pathname, push]);
 
   const onLeft = useCallback(() => {
     setShown(null);
@@ -138,6 +149,7 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
 
   return (
     <Report.Provider value={context}>
+      <CodePushes register={registerPush} />
       <MainRef.Provider value={mainRef}>
         {children}
         {screen ? (
@@ -151,6 +163,25 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
       </MainRef.Provider>
     </Report.Provider>
   );
+}
+
+/**
+ * Runs the provider's code-started pushes. Each push is a transition, and this reports it the way a
+ * link's reporter does; it is mounted by the provider, so it outlives whatever page started it.
+ */
+function CodePushes({ register }: { register: (run: ((href: string) => void) | null) => void }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [target, setTarget] = useState<string | null>(null);
+  useReportPending(target ?? "", pending && target !== null);
+  useEffect(() => {
+    register((href: string) => {
+      setTarget(href);
+      startTransition(() => router.push(href));
+    });
+    return () => register(null);
+  }, [register, router]);
+  return null;
 }
 
 /**

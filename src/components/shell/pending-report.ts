@@ -12,8 +12,12 @@ import { pathOf } from "../../lib/shell/pending-routes";
  */
 export type Reporter = (id: string, href: string, pending: boolean) => void;
 
-/** What the provider hands its marks: where to report, and the page the press is leaving. */
-export type PendingContext = { report: Reporter; pathname: string };
+/**
+ * What the provider hands its marks: where to report, and the page the press is leaving. `push`
+ * runs a code-started navigation from the provider itself (`usePendingPush`), which outlives any
+ * component that starts one.
+ */
+export type PendingContext = { report: Reporter; pathname: string; push?: (href: string) => void };
 
 export const Report = createContext<PendingContext | null>(null);
 

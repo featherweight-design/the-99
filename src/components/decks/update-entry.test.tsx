@@ -10,16 +10,16 @@ const previewDeckUpdate = vi.fn();
 const updateDeckFromList = vi.fn();
 const push = vi.fn();
 
-// Records every report a code-started navigation makes, so the case below can assert the push
-// reached the provider (the navigation-pending plan's PR 3) without mounting it.
-const reports = vi.hoisted(() => [] as [string, boolean][]);
-vi.mock("../shell/pending-report", async (importOriginal) => {
-  const real = await importOriginal<typeof import("../shell/pending-report")>();
+// Records every code-started navigation the component starts through `usePendingPush`, which is
+// what hands it to the navigation-pending provider (the plan's PR 3). The push still reaches the
+// router mock, so the cases that assert it are unchanged.
+const pushed = vi.hoisted(() => [] as string[]);
+vi.mock("../shell/pending-push", async () => {
+  const { useRouter } = await import("next/navigation");
   return {
-    ...real,
-    useReportPending: (href: string, pending: boolean) => {
-      reports.push([href, pending]);
-      return real.useReportPending(href, pending);
+    usePendingPush: () => {
+      const router = useRouter();
+      return { go: (href: string) => { pushed.push(href); router.push(href); } };
     },
   };
 });
@@ -199,7 +199,7 @@ describe("the terminal steps", () => {
     compare();
     fireEvent.click(await screen.findByRole("button", { name: copy.conflict.primary }));
     expect(push).toHaveBeenCalledWith("/decks/import");
-    expect(reports).toContainEqual(["/decks/import", true]);
+    expect(pushed).toContain("/decks/import");
   });
 
   // None of the three terminal screens is an error, so none of them is an alert.

@@ -9,16 +9,16 @@ import { DECK_IMPORT_FILE_MAX_BYTES } from "../../lib/upload-limits";
 const importDeck = vi.fn();
 const push = vi.fn();
 
-// Records every report a code-started navigation makes, so the case below can assert the push
-// reached the provider (the navigation-pending plan's PR 3) without mounting it.
-const reports = vi.hoisted(() => [] as [string, boolean][]);
-vi.mock("../shell/pending-report", async (importOriginal) => {
-  const real = await importOriginal<typeof import("../shell/pending-report")>();
+// Records every code-started navigation the component starts through `usePendingPush`, which is
+// what hands it to the navigation-pending provider (the plan's PR 3). The push still reaches the
+// router mock, so the cases that assert it are unchanged.
+const pushed = vi.hoisted(() => [] as string[]);
+vi.mock("../shell/pending-push", async () => {
+  const { useRouter } = await import("next/navigation");
   return {
-    ...real,
-    useReportPending: (href: string, pending: boolean) => {
-      reports.push([href, pending]);
-      return real.useReportPending(href, pending);
+    usePendingPush: () => {
+      const router = useRouter();
+      return { go: (href: string) => { pushed.push(href); router.push(href); } };
     },
   };
 });
@@ -364,6 +364,6 @@ describe("state 12 — no legendary creature", () => {
     await screen.findByRole("button", { name: "Start from a commander instead →" });
     fireEvent.click(screen.getByRole("button", { name: "Start from a commander instead →" }));
     expect(push).toHaveBeenCalledWith("/decks/new");
-    expect(reports).toContainEqual(["/decks/new", true]);
+    expect(pushed).toContain("/decks/new");
   });
 });
