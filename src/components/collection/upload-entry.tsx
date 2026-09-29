@@ -161,6 +161,8 @@ export function UploadEntry({
           <div className="mt-[2px] flex w-full flex-col gap-[8px] sm:mt-[4px] sm:w-auto sm:flex-row">
             {fileInput}
             <PrimaryButton
+              // What the locked nav's "Go to step 1" finds, scrolls to and focuses.
+              data-step1-upload
               disabled={pending}
               onClick={() => fileInputRef.current?.click()}
               className="flex h-[44px] items-center justify-center rounded-[10px] text-[14px] disabled:opacity-60 disabled:cursor-wait sm:h-[32px] sm:justify-start sm:rounded-[8px] sm:px-[14px] sm:text-[12.5px]"

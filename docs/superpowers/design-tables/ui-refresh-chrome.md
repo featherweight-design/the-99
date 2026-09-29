@@ -80,16 +80,18 @@ Amonkhet, and this app has six themes.
 
 ### Nav item — locked
 
+The rail and the tab bar share one locked-slot contract (first-run-locked-nav.md §1a, §4a.8, O3).
+
 | Property | Mobile | Desktop |
 |---|---|---|
-| color | — | frame: bare Amonkhet hex → **shipped as `var(--fg-locked)`** |
-| background | — | transparent |
-| hover | — | none |
-| focusable | — | no — "not focusable as links" |
-| role | — | link |
-| aria-disabled | — | "true" |
-| aria-current | — | "page" on its own route — a locked route still renders |
-| accessible name | — | `firstRun.lockedItemAria(label)` — label + the unlock reason |
+| color | `var(--fg-locked)` | frame: bare Amonkhet hex → **shipped as `var(--fg-locked)`** |
+| background | transparent | transparent |
+| hover | none | none |
+| focusable | yes — a `<button>` in the tab order that raises the lock's note (superseded by first-run-locked-nav.md, O3) | yes — a `<button>` in the tab order that opens the lock's note (superseded by first-run-locked-nav.md, O3) |
+| role | button, `aria-expanded` / `aria-controls` / `aria-describedby` the note | button, `aria-expanded` / `aria-controls` / `aria-describedby` the note |
+| aria-disabled | none | none |
+| aria-current | "page" on its own route | "page" on its own route — a locked route still renders |
+| accessible name | `firstRun.lockedItemAria(label)`: "{label}, locked" | `firstRun.lockedItemAria(label)`: "{label}, locked"; the reason is the note it describes |
 
 ### Locked divider
 

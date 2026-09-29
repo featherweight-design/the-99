@@ -10,6 +10,7 @@
 
 import { FirstRunStepOne } from "./first-run-step-one";
 import { refreshCopy } from "../../lib/copy/refresh";
+import { Padlock } from "../shell/padlock";
 
 /**
  * Three overlapping cards, the front one carrying the numeral. Decorative:
@@ -36,28 +37,6 @@ function CardFan() {
   );
 }
 
-/** Drawn in the frame as a bare rounded rect; a real padlock at those dimensions. */
-function Padlock() {
-  return (
-    <svg
-      width="12"
-      height="14"
-      viewBox="0 0 12 14"
-      fill="none"
-      stroke="var(--border-strong)"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      focusable="false"
-      className="flex-none"
-    >
-      <rect x="0.75" y="5.75" width="10.5" height="7.5" rx="3" />
-      <path d="M3.25 5.75V4a2.75 2.75 0 0 1 5.5 0v1.75" />
-    </svg>
-  );
-}
-
 function LockedStep({ n, title, reason }: { n: number; title: string; reason: string }) {
   // Derived from `n` rather than `useId`, which would make this a client
   // component for two strings. The checklist is the whole page when it renders
@@ -73,11 +52,10 @@ function LockedStep({ n, title, reason }: { n: number; title: string; reason: st
     // user the step is locked rather than merely dim.
     //
     // Named from its own two visible strings rather than
-    // `firstRun.lockedItemAria`, which hard-codes the collection as the reason.
-    // That is true of the rail and the tab bar, whose locked items all wait on
-    // the same thing, and true of step 2 — but step 3 waits on a commander, and
-    // a name that said otherwise would be wrong out loud while the card beside
-    // it read correctly.
+    // `firstRun.lockedItemAria`, which names a nav slot ("{label}, locked") and
+    // leaves the reason to the note it describes. A step card has no note, so its
+    // name carries its own reason: step 3 waits on a commander, not the
+    // collection, and a borrowed reason would be wrong out loud.
     <div
       role="group"
       aria-labelledby={`${titleId} ${reasonId}`}
@@ -105,7 +83,8 @@ function LockedStep({ n, title, reason }: { n: number; title: string; reason: st
           {reason}
         </span>
       </div>
-      <Padlock />
+      {/* The lock's 12x14 glyph, shared with the rail's well and the page line. */}
+      <Padlock stroke="var(--border-strong)" className="flex-none" />
     </div>
   );
 }
@@ -130,6 +109,17 @@ export function FirstRunChecklist() {
         <h1 className="m-0 font-display text-[23px] font-bold leading-[1.15] text-[color:var(--fg)] sm:text-[27px] sm:leading-none">
           {c.heading}
         </h1>
+        {/* The lock's page line (first-run-locked-nav 2.x): desktop only, where
+            the rail shows (`md`), since the phone's tab-bar bracket carries the
+            same reason. On first run only: an account with decks and no
+            collection sees the dashboard, and no line. */}
+        <p
+          data-lock-page-line
+          className="m-0 mt-[12px] hidden items-center gap-[8px] text-[12.5px] text-[color:var(--fg-muted)] md:flex"
+        >
+          <Padlock stroke="var(--fg-locked)" className="flex-none" />
+          {c.lock.pageLine}
+        </p>
       </div>
 
       <div className="flex min-h-0 flex-auto flex-col gap-[11px] p-[16px_16px_0] sm:gap-[12px] sm:p-[20px_28px_26px]">

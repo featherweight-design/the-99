@@ -30,8 +30,8 @@ describe("FirstRunChecklist", () => {
 
   it("says what each locked step is waiting for", () => {
     render(<FirstRunChecklist />);
-    expect(screen.getByText("Unlocks once a collection is read")).toBeInTheDocument();
-    expect(screen.getByText("Unlocks with a commander")).toBeInTheDocument();
+    expect(screen.getByText("Opens once your cards are in")).toBeInTheDocument();
+    expect(screen.getByText("Opens once you pick a commander")).toBeInTheDocument();
   });
 
   it("names each locked step in the accessibility tree, not just on a div", () => {
@@ -41,10 +41,10 @@ describe("FirstRunChecklist", () => {
     // Each step's name is its own reason — step 3 waits on a commander, not on
     // the collection.
     expect(
-      screen.getByRole("group", { name: "Pick a commander or import a deck Unlocks once a collection is read" }),
+      screen.getByRole("group", { name: "Pick a commander or import a deck Opens once your cards are in" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("group", { name: "Build the 99 Unlocks with a commander" }),
+      screen.getByRole("group", { name: "Build the 99 Opens once you pick a commander" }),
     ).toBeInTheDocument();
   });
 
@@ -131,5 +131,25 @@ describe("FirstRunChecklist", () => {
     expect(screen.queryByText(/^Reviewing ·/)).toBeNull();
     expect(container.querySelector("[data-reviewing]")).toBeNull();
     expect(screen.getAllByRole("button", { name: /^Paste a list/ }).length).toBeGreaterThan(0);
+  });
+
+  // The lock's page line (first-run-locked-nav 2.x): under the H1, desktop only
+  // (the rail shows from `md`; the phone's bracket carries the reason).
+  it("draws the lock's page line under the heading, from md only", () => {
+    const { container } = render(<FirstRunChecklist />);
+    const line = container.querySelector<HTMLElement>("[data-lock-page-line]")!;
+    expect(line).toHaveTextContent(
+      "Collection, Commanders, Discover and Decks open once your cards are in.",
+    );
+    expect(line.className).toContain("hidden");
+    expect(line.className).toContain("md:flex");
+    const heading = screen.getByRole("heading", { name: "Welcome to The 99" });
+    expect(heading.nextElementSibling).toBe(line);
+    expect(line.querySelector('svg[stroke="var(--fg-locked)"]')).not.toBeNull();
+  });
+
+  it("marks Upload a CSV as the target of the nav's Go to step 1", () => {
+    render(<FirstRunChecklist />);
+    expect(screen.getByRole("button", { name: "Upload a CSV" })).toHaveAttribute("data-step1-upload");
   });
 });
