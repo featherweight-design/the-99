@@ -1,6 +1,6 @@
 {
   "feature": "First-run redesign \u2014 an account with no collection",
-  "note": "Signed in as an account with no collection and no decks (the onboarding probe account). Photographs first run's checklist, the locked chrome it sits in (the rail's well at 1300, the bracket over the tab bar at 390), the locked chrome on /collection where a locked slot is also the current route, and first run's embedded review of a pasted list. The chrome is outside <main>, so no step can press it; the note, its caret and Go to step 1 are measured by `pnpm probe:locked-nav`, and the unlock by `pnpm probe:onboarding`.",
+  "note": "Signed in as an account with no collection and no decks (the onboarding probe account). Photographs first run's checklist, the locked chrome it sits in (the rail's well at 1300, the bracket over the tab bar at 390), the locked chrome on /collection where a locked slot is also the current route. First run's embedded review of a pasted list is probe-only (`pnpm probe:onboarding`), since no step here pastes one. The chrome is outside <main>, so no step can press it; the note, its caret and Go to step 1 are measured by `pnpm probe:locked-nav`, and the unlock by `pnpm probe:onboarding`.",
   "rows": [
     {
       "id": "home-first-run",

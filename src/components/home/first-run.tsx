@@ -100,7 +100,8 @@ export function FirstRunChecklist() {
       {/* While step 1's review is open on the phone (5a), the page keeps the kicker and gives the
           heading's room to the review: the card's `data-reviewing` reaches these through `:has`,
           since the heading is drawn here and the review state lives in the step card. Stops at
-          `md`, with every other reviewing override. */}
+          `md`, with every other reviewing override. Visually hidden rather than removed: the
+          review draws no heading of its own on the phone, so this stays the page's one heading. */}
       <div className="p-[16px_16px_0] sm:p-[26px_28px_0] max-md:group-has-[[data-reviewing]]/first-run:pt-[10px]">
         {/* The kicker replaces the shipped "Three steps to your first
             recommendations." — it says the same thing in four words, and the
@@ -110,7 +111,7 @@ export function FirstRunChecklist() {
         </p>
         {/* No Crown above this: the card fan is the brand moment now, and two
             marks stacked over one heading is one too many. */}
-        <h1 className="m-0 max-md:group-has-[[data-reviewing]]/first-run:hidden font-display text-[23px] font-bold leading-[1.15] text-[color:var(--fg)] sm:text-[27px] sm:leading-none">
+        <h1 className="m-0 max-md:group-has-[[data-reviewing]]/first-run:sr-only font-display text-[23px] font-bold leading-[1.15] text-[color:var(--fg)] sm:text-[27px] sm:leading-none">
           {c.heading}
         </h1>
         {/* The lock's page line (first-run-locked-nav 2.x): desktop only, where

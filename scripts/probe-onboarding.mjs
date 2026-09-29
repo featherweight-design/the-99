@@ -385,12 +385,13 @@ async function calmReplace(browser, vp) {
         const kicker = root?.querySelector("p.font-mono");
         const k = kicker?.getBoundingClientRect();
         return {
-          h1: h1 ? getComputedStyle(h1).display : "missing",
+          // Visually hidden, never removed: it is the page's one heading while the review is open.
+          h1: h1 ? { box: Math.max(h1.getBoundingClientRect().width, h1.getBoundingClientRect().height), display: getComputedStyle(h1).display } : null,
           kickerPad: kicker ? parseFloat(getComputedStyle(kicker.parentElement).paddingTop) : -1,
           gap: k ? el.getBoundingClientRect().top - k.bottom : -1,
         };
       });
-      report(head.h1 === "none", "D11 5a the page heading steps aside for the review", head.h1);
+      report(head.h1 && head.h1.display !== "none" && head.h1.box <= 1, "D11 5a the page heading steps aside visually and stays a heading", head.h1 ? `${head.h1.display}, ${head.h1.box}px` : "missing");
       report(head.kickerPad === 10 && Math.abs(head.gap - 8) <= 0.5, "D11 5a the kicker is 10px down and the card 8px under it", `pad ${head.kickerPad}px, gap ${head.gap.toFixed(1)}px`);
       // The bar is the card's FOOT: flush to its sides and bottom, inside its 1px border.
       const flush = await onPageRole(page, "button", "Cancel").evaluate((c) => {
