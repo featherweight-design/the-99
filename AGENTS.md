@@ -1468,12 +1468,10 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 - `pnpm probe:mana-symbols` proves the two pip rulings in a real browser at 1300x900 and
   390x844: that the card modal's cost draws printed symbols at its 26/22px box, and that the
   deck's card view draws none. Both are facts about painted pixels — the unit tests can say
-  which file a pip ASKS for and that a tile renders no run, and neither of those says the art
+  which sprite cell a pip ASKS for and that a tile renders no run, and neither of those says the art
   RESOLVED. A sheet that failed to load leaves markup identical to the working build's, so the
   probe reads back the served bytes and requires a 200 with an SVG body for the sprite, and a
-  window on each pip that lands on a WHOLE cell of it (a window half a cell out fails it). Scoped to the cost's files rather than every `/mana/` request the page
-  made, because the filter control draws the five hues on `/collection` too: a sweep of all
-  requests reports five healthy files over a modal whose every pip failed. It reads the pips
+  window on each pip that lands on a WHOLE cell of it (a window half a cell out fails it). It reads the pips
   as the children of the run inside `[data-testid="modal-mana-cost"]`, never every span in
   that slot — the slot also holds the run's container and the sr-only cost, and a sweep of
   all three reads a 57px box and a lettered string belonging to neither pip, which is a probe
@@ -1506,8 +1504,10 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   wants the printing picker expanded.
 
   Seven mutations were run against it and all seven fail: the tile's pips restored, the symbol art
-  suppressed, a typo in the slug — that one passing every DOM assertion while serving 404s, which
-  is the failure it exists for — the front half drawn alone, a background put on the separator,
+  suppressed, a typo in the slug (written for the per-file build, where it passed every DOM
+  assertion while serving 404s; since the sprite a bad slug falls back to a letter, and the pip's
+  window is read for a whole cell instead, which a window half a cell out fails), the front half
+  drawn alone, a background put on the separator,
   `flex-wrap` dropped from the header row, and a `flex-1` put on the name block, which leaves the
   class list reading correctly while the row shrinks the name instead of wrapping. It makes no
   writes. Point it at `local-dev`.

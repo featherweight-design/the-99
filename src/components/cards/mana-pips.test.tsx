@@ -1,8 +1,8 @@
 // The large cost pip draws Scryfall's printed symbol. What is asserted is the
-// FILE each pip asks for, not that art was used: a run that reached for
-// `/mana/W.svg` where the cost says `{U}` would satisfy any check that only
-// counted backgrounds, and so would one that drew every symbol as the same
-// placeholder.
+// CELL each pip draws, not that art was used: every pip draws the same sprite,
+// so a run that showed `{W}`'s cell where the cost says `{U}` would satisfy any
+// check that only counted backgrounds or read the URL, and so would one that
+// drew every symbol as the same placeholder.
 import { manaSpriteBackground } from "../../lib/cards/mana-sprite";
 import { describe, expect, it } from "vitest";
 import { cleanup, render } from "@testing-library/react";
@@ -13,17 +13,18 @@ import { ManaCost } from "./mana-pips";
 
 afterEach(cleanup);
 
-/** Every `url(...)` a pip asks for, in drawn order. */
+/** The window each pip draws, in drawn order: the sprite cell it shows. */
 function sources(container: HTMLElement): string[] {
-  return [...container.querySelectorAll<HTMLElement>("span[style*='url(']")].map((el) => el.style.background);
+  return [...container.querySelectorAll<HTMLElement>("span[style*='url(']")].map(
+    (el) => `${el.style.backgroundImage} ${el.style.backgroundPosition} / ${el.style.backgroundSize}`,
+  );
 }
 
-/** A symbol's sprite cell, as jsdom reads back the background the component set. Every pip draws the
- *  same sheet, so the cell's position, not the URL, is what says which symbol it is. */
+/** A symbol's sprite cell, read back from an element carrying its style the way the pips' are. */
 function cell(slug: string): string {
   const probe = document.createElement("span");
-  probe.style.background = manaSpriteBackground(slug) ?? "";
-  return probe.style.background;
+  Object.assign(probe.style, manaSpriteBackground(slug));
+  return `${probe.style.backgroundImage} ${probe.style.backgroundPosition} / ${probe.style.backgroundSize}`;
 }
 
 describe("ManaCost", () => {
@@ -31,6 +32,8 @@ describe("ManaCost", () => {
     const { container } = render(<ManaCost cost="{2}{W}{U}" />);
 
     expect(sources(container)).toEqual([cell("2"), cell("W"), cell("U")]);
+    // The cells read back apart, or every assertion in this file passes whichever cell is drawn.
+    expect(new Set([cell("2"), cell("W"), cell("U")]).size).toBe(3);
   });
 
   // The symbols say nothing to a screen reader, where the retired discs at

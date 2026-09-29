@@ -29,16 +29,36 @@ function byCode(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-/** The sheet's cell order: the manifest's slugs, sorted. The build and the reader share it. */
-export const MANA_SPRITE_ORDER: readonly string[] = [...MANA_SYMBOL_SLUGS].sort(byCode);
+/** A sheet's cell order: its slugs, sorted by code unit. The build and the reader share the rule. */
+export function spriteOrder(slugs: Iterable<string>): string[] {
+  return [...slugs].sort(byCode);
+}
+
+/** The reader's cell order: the manifest's slugs. The committed sheet is built from the same files. */
+export const MANA_SPRITE_ORDER: readonly string[] = spriteOrder(MANA_SYMBOL_SLUGS);
 
 const INDEX = new Map(MANA_SPRITE_ORDER.map((slug, i) => [slug, i]));
 
 /**
- * The CSS `background` that draws one symbol out of the sheet, or null for a slug it does not hold.
- * Sized in percentages of the pip's own box, so a 12px dot and a 26px pip read the same value.
+ * The style that draws one symbol out of the sheet: the four `background` longhands. Longhands
+ * rather than the shorthand because jsdom's parser drops a position from the shorthand, so a test
+ * reading the shorthand back sees the same value for every cell.
  */
-export function manaSpriteBackground(slug: string, order: readonly string[] = MANA_SPRITE_ORDER): string | null {
+export type ManaSpriteStyle = {
+  backgroundImage: string;
+  backgroundPosition: string;
+  backgroundSize: string;
+  backgroundRepeat: string;
+};
+
+/**
+ * One symbol's window onto the sheet, or null for a slug it does not hold. Sized in percentages of
+ * the pip's own box, so a 12px dot and a 26px pip read the same value.
+ */
+export function manaSpriteBackground(
+  slug: string,
+  order: readonly string[] = MANA_SPRITE_ORDER,
+): ManaSpriteStyle | null {
   const i = order === MANA_SPRITE_ORDER ? INDEX.get(slug) : order.indexOf(slug);
   if (i === undefined || i < 0) return null;
   const width = order.length * STRIDE - GAP;
@@ -46,7 +66,12 @@ export function manaSpriteBackground(slug: string, order: readonly string[] = MA
   // Percentage positions align the same fraction of image and box: the offset that puts cell i at
   // the box's left edge is i·STRIDE over the sheet's overhang, width − CELL.
   const x = order.length > 1 ? ((i * STRIDE) / (width - CELL)) * 100 : 0;
-  return `url(${MANA_SPRITE_PATH}) ${round(x)}% 0 / ${round(size)}% 100% no-repeat`;
+  return {
+    backgroundImage: `url(${MANA_SPRITE_PATH})`,
+    backgroundPosition: `${round(x)}% 0%`,
+    backgroundSize: `${round(size)}% 100%`,
+    backgroundRepeat: "no-repeat",
+  };
 }
 
 function round(n: number): string {

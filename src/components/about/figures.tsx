@@ -469,7 +469,7 @@ function SetsFigure({ width }: { width: AboutWidth }) {
             <span
               key={code}
               className="h-[16px] w-[16px] rounded-full"
-              style={{ background: PIP_BACKGROUND[code] }}
+              style={PIP_BACKGROUND[code]}
             />
           ))}
         </span>

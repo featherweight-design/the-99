@@ -26,19 +26,25 @@ describe("the mana sprite", () => {
   });
 
   it("is what the cost pips and the colour pips both draw", () => {
-    expect(manaSymbolBackground("2/R")).toBe(manaSpriteBackground("2R"));
+    expect(manaSymbolBackground("2/R")).toEqual(manaSpriteBackground("2R"));
     expect(manaSymbolBackground("{nonsense}")).toBeNull();
     expect(Object.values(PIP_BACKGROUND)).toEqual(["W", "U", "B", "R", "G"].map((s) => manaSpriteBackground(s)));
-    expect(PIP_BACKGROUND.W).toContain(`url(${MANA_SPRITE_PATH})`);
+    expect(PIP_BACKGROUND.W.backgroundImage).toBe(`url(${MANA_SPRITE_PATH})`);
   });
 
   // The arithmetic a pip's window rests on, on a three-cell sheet: 100-unit cells 10 apart make a
   // 320-unit sheet, drawn at 320% of the box; cell i's left edge is at i·110 of a 220-unit overhang.
   it("places each cell's window by percentages that hold at any box size", () => {
     const order = ["A", "B", "C"];
-    expect(manaSpriteBackground("A", order)).toBe(`url(${MANA_SPRITE_PATH}) 0% 0 / 320% 100% no-repeat`);
-    expect(manaSpriteBackground("B", order)).toBe(`url(${MANA_SPRITE_PATH}) 50% 0 / 320% 100% no-repeat`);
-    expect(manaSpriteBackground("C", order)).toBe(`url(${MANA_SPRITE_PATH}) 100% 0 / 320% 100% no-repeat`);
+    const at = (x: string) => ({
+      backgroundImage: `url(${MANA_SPRITE_PATH})`,
+      backgroundPosition: `${x}% 0%`,
+      backgroundSize: "320% 100%",
+      backgroundRepeat: "no-repeat",
+    });
+    expect(manaSpriteBackground("A", order)).toEqual(at("0"));
+    expect(manaSpriteBackground("B", order)).toEqual(at("50"));
+    expect(manaSpriteBackground("C", order)).toEqual(at("100"));
     expect(manaSpriteBackground("D", order)).toBeNull();
     expect(MANA_SPRITE_ORDER.length).toBe(MANA_SYMBOL_SLUGS.size);
   });

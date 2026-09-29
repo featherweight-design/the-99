@@ -94,7 +94,7 @@ function ManaPip({ symbol }: { symbol: string }) {
     return (
       <span
         className={`${BOX} flex-none`}
-        style={{ background }}
+        style={background}
       />
     );
   }

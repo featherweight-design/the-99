@@ -144,8 +144,9 @@ export function ColourPips({ value, onToggle, form, unavailable, legend }: Colou
             style={{
               width: size,
               height: size,
-              // eslint-disable-next-line no-restricted-syntax -- one of five per-hue sprite cells; Tailwind cannot compile an interpolated class, and a pip has no hover state for an inline background to outrank
-              background: PIP_BACKGROUND[code],
+              // One of five sprite cells. Tailwind cannot compile an interpolated class, and the
+              // longhands set only the image, so nothing here outranks a hover colour.
+              ...PIP_BACKGROUND[code],
             }}
           />
         );

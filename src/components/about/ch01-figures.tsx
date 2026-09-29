@@ -577,7 +577,7 @@ export function DeckPageFigureBody() {
             <span
               key={code}
               className="h-[8px] w-[8px] rounded-[2px]"
-              style={{ background: PIP_BACKGROUND[code as PipCode] }}
+              style={PIP_BACKGROUND[code as PipCode]}
             />
           ))}
         </span>

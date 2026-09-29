@@ -3,21 +3,22 @@
 // Every pip is a cell of ONE sprite (`src/lib/cards/mana-sprite.ts`) that the root layout preloads.
 // What this proves is timing and paint, which jsdom has neither of:
 //
-//   1. On a cold cache, the sprite has ARRIVED before the page's first contentful paint, on
-//      `/commanders` (the colour control's five pips are in the server's markup). Every request is
-//      held 150ms by `page.route`, because on localhost everything lands before the first paint
-//      whether or not it was preloaded, and that says nothing about a real connection. With the
-//      preload, the sprite is asked for from the head beside the stylesheet; without it, a CSS
-//      background is asked for only once style is computed, and lands after the paint.
+//   1. On a cold cache, the sprite has ARRIVED before the first pip is even in the document, on
+//      `/commanders` (the colour control's five pips are in the server's markup), which is before
+//      that pip can paint. A MutationObserver installed before the document parses stamps the
+//      moment. Every request is held 150ms by `page.route`, because on localhost everything lands
+//      before the first paint whether or not it was preloaded, and that says nothing about a real
+//      connection. With the preload, the sprite is asked for from the head beside the stylesheet;
+//      without it, a CSS background is asked for only once style is computed, after the pip exists.
 //   2. No pip asks for a per-symbol file: the old `/mana/W.svg` requests are what popped.
 //   3. The card modal's cost draws from the sprite the page already holds: opened after load, the
 //      sprite is not fetched again.
-//   5. The deck page's commander art is asked for by its preload, not found later by style.
 //   4. Each pip PAINTS its symbol, in Chromium and WebKit alike. A pip is a window onto the sheet
 //      placed by percentages, and a wrong size draws the whole sheet as a thin strip with markup
 //      identical to a working build: the first design (SVG `<view>` fragments) did exactly that. So
 //      each pip's window is redrawn to a canvas from its own computed size and position, and must
-//      cover most of its box with opaque pixels.
+//      cover half its box with opaque pixels (a round symbol covers about three quarters).
+//   5. The deck page's commander art is asked for by its preload, not found later by style.
 //
 // Signs in once, then measures in a FRESH context per engine and width, so each run has an empty
 // HTTP cache. Writes only the account's About row (captured and restored). Point it at `local-dev`,
@@ -191,7 +192,7 @@ async function measure(browser, storage, engine, vp) {
     });
     check(`${where}: the modal's cost draws from the sprite`, costUrls.length > 0 && costUrls.every((u) => u.endsWith("/mana/sprite.svg")),
       costUrls.join(", ") || "no cost drawn — open a costed card");
-    check(`${where}: and does not fetch it again`, spriteFetches.length - before <= 1,
+    check(`${where}: and does not fetch it again`, spriteFetches.length === before,
       `${spriteFetches.length - before} sprite request(s) after the page's own`);
     check(`${where}: no pip asks for a per-symbol file`, perFile.length === 0, perFile.join(", ") || "none");
 

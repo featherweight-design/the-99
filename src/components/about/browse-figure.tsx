@@ -171,7 +171,7 @@ export function BrowseFigureBody() {
             <span
               key={code}
               className="h-[15px] w-[15px] rounded-full"
-              style={{ background: PIP_BACKGROUND[code] }}
+              style={PIP_BACKGROUND[code]}
             />
           ))}
         </span>

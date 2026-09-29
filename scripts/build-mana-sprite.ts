@@ -4,7 +4,7 @@
  * database and no network. See `src/lib/cards/mana-sprite.ts` for why the sprite exists.
  */
 import { readdir, readFile, writeFile } from "node:fs/promises";
-import { buildManaSprite } from "../src/lib/cards/mana-sprite";
+import { buildManaSprite, spriteOrder } from "../src/lib/cards/mana-sprite";
 
 const DIR = "public/mana";
 
@@ -13,7 +13,10 @@ export async function writeManaSprite(): Promise<number> {
   const symbols = await Promise.all(
     files.map(async (f) => ({ slug: f.slice(0, -4), svg: await readFile(`${DIR}/${f}`, "utf8") })),
   );
-  await writeFile(`${DIR}/sprite.svg`, buildManaSprite(symbols));
+  // The order comes from the files on disk, never the imported manifest: `fetch:mana` rewrites the
+  // manifest in the same run, after this module has read it, so a symbol it just added would be
+  // missing from a sheet built to the manifest this process loaded.
+  await writeFile(`${DIR}/sprite.svg`, buildManaSprite(symbols, spriteOrder(symbols.map((s) => s.slug))));
   return symbols.length;
 }
 

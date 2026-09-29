@@ -280,17 +280,9 @@ async function run() {
         (cost ?? []).map((p) => `${p.w}x${p.h}`).join(", ") || "nothing measured",
       );
 
-      // The bytes, and specifically THIS COST'S bytes. Markup alone cannot tell a
-      // resolved symbol from a 404, and a 404 is what a slug that drifted from
-      // its filename produces. Asked of the cost's own files rather than of
-      // everything under `/mana/` the page fetched: the filter control draws the
-      // five hues on `/collection` too, so a sweep of all requests reports five
-      // healthy files over a modal whose every pip failed.
-      // Resolved against BASE. `getComputedStyle` returns these ABSOLUTE, which is
-      // why the reading works and why the slug mutation named `/mana/3-typo.svg`
-      // rather than throwing — but a relative value would make `new URL` throw
-      // `Invalid URL` and take the whole check down with it, and a base costs
-      // nothing to pass and cannot change an already-absolute URL.
+      // The bytes. Markup alone cannot tell a sheet that loaded from one that did
+      // not. Resolved against BASE: `getComputedStyle` returns these absolute, but
+      // a relative value would make `new URL` throw and take the check down.
       // Since 2026-09-28 every pip is a window onto ONE sprite (`mana-sprite.ts`), so "its own file"
       // is the sheet, served as SVG, and a window that lands on a whole cell of it. A slug the
       // manifest does not hold has no cell and falls back to a letter, which the check above fails.
