@@ -177,6 +177,30 @@
           "settle": 300
         }
       ]
+    },
+    {
+      "id": "appendix-recommendations",
+      "label": "/about#how-recommendations \u2014 Commander recommendations open",
+      "view": "src/components/about/how-rows.tsx",
+      "steps": [
+        {
+          "goto": "/about#how-recommendations",
+          "wait": "#how-recommendations-body",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "appendix-availability",
+      "label": "/about#how-availability \u2014 Availability and claims open",
+      "view": "src/components/about/how-rows.tsx",
+      "steps": [
+        {
+          "goto": "/about#how-availability",
+          "wait": "#how-availability-body",
+          "settle": 800
+        }
+      ]
     }
   ]
 }
