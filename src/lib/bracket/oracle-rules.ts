@@ -183,12 +183,18 @@ export const EXTRA_TURN_DETECTION = {
 /**
  * The tutor reading. One mechanism: Spellbook's estimate has no tutor answer, and the stored flag
  * is sourced to `oracle_rule` alone. Both figures are `pnpm measure:tutors` against staging's
- * catalog (2026-09-29): its named fixture, 22 of 22 agreeing, and the 974 cards whose text
- * searches a library. The fixture shows no miss, so there is no `knownMisses`, and the sheet says
- * how small the set is instead of implying the reading is exact.
+ * catalog (2026-09-29).
+ *
+ * `basis` is its named fixture, 22 of 22 agreeing. The fixture scores the parsed TARGET, and the
+ * verdict the Tutors count reads (`isTutor`) is `isTutorTarget` of that target, so a right target
+ * is a right verdict: that includes the land searches and the hate cards the app does not call
+ * tutors. `tutors` is the corpus's `tutors` line, what `isTutor` counts; its `matched` line (974)
+ * also counts every fetch land and ramp spell, and is not the population this row describes.
+ * The fixture shows no miss, so there is no `knownMisses`; the sheet says how small the set is
+ * instead of implying the reading is exact.
  */
 export const TUTOR_DETECTION = {
   methods: ["our reading of the rules text"],
   basis: "right on all 22 cards of a curated set",
-  searchers: 974,
+  tutors: 415,
 } as const;

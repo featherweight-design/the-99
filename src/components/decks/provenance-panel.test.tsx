@@ -51,7 +51,7 @@ describe("How we make these decisions", () => {
   it("gives tutors a row with the measured basis and the size of the set", () => {
     draw();
     expect(screen.getByText(copy.detection.tutors.from).textContent).toContain(TUTOR_DETECTION.basis);
-    expect(screen.getByText(copy.detection.tutors.misses).textContent).toContain("974");
+    expect(screen.getByText(copy.detection.tutors.misses).textContent).toContain(String(TUTOR_DETECTION.tutors));
   });
 
   // The rules are a blog post and can move, so the row links the post and dates the last read.

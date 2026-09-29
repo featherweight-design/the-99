@@ -533,7 +533,7 @@ export const deckAnalysisCopy = {
    * "How we make these decisions" — four rows, one per rule, and a fifth for tutors (brief §5.5).
    *
    * Game changers carries NO misses line, deliberately: it is the contrast that makes the other
-   * three legible. A reader who sees three caveats and one flat statement learns which figure is
+   * four legible. A reader who sees four caveats and one flat statement learns which figure is
    * exact without being told.
    */
   detection: {
@@ -578,12 +578,12 @@ export const deckAnalysisCopy = {
       // (`TUTOR_DETECTION`); the misses line names the set's size because the set shows no miss.
       from: `We read the rules text, and it is ${TUTOR_DETECTION.basis}.`,
       misses:
-        `That set is small: ${TUTOR_DETECTION.searchers.toLocaleString("en-US")} cards search a ` +
-        "library, and we have not checked the rest one by one.",
+        `That set is small: we count ${TUTOR_DETECTION.tutors} cards as tutors, and have not ` +
+        "checked the rest one by one.",
     },
     why:
       "If someone at the table disagrees with your bracket, the argument is usually about one " +
-      "of these four. Knowing which one we are least sure of is how you settle it.",
+      "of these five. Knowing which one we are least sure of is how you settle it.",
   },
 
   /**

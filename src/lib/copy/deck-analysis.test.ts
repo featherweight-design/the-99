@@ -75,13 +75,13 @@ describe("the detection statements", () => {
   });
 
   it("gives game changers no misses line", () => {
-    // The contrast is what makes the other three legible: one flat statement beside three
+    // The contrast is what makes the other four legible: one flat statement beside four
     // caveats tells a reader which figure is exact without saying so.
     expect(deckAnalysisCopy.detection.gameChangers).not.toHaveProperty("misses");
   });
 
   it("says why the panel exists", () => {
-    // Without it the four rows read as trivia.
+    // Without it the five rows read as trivia.
     expect(deckAnalysisCopy.detection.why).toContain("disagrees");
   });
 });

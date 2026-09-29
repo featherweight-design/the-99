@@ -222,7 +222,7 @@ The "plus" tags come from AUDIT correction 8. It does not state their order.
 | Label | 12.5px / 600 `--fg` | 12.5px / 600 `--fg` | README:112; canvas:408 |
 | Sentence | block, margin-top 2px (inherits the `dd` type) | block, margin-top 2px | canvas:408 |
 | Game Changers tag | `published list` | same | AUDIT:10-12 |
-| Tutors text | "Read from the rules text. We have not measured how often it misses." The canvas's "Not measured yet." was a placeholder waiting on brief §5.5; this is the shipped statement of the same fact, set in copy review | same | README:224-225; AUDIT:67-68 |
+| Tutors text | The decisions sheet's Tutors row, read from the same keys as the other four: `detection.tutors.from` then `detection.tutors.misses`. Brief §5.5 measured it (`TUTOR_DETECTION`), replacing the canvas's "Not measured yet." placeholder | same | README:224-225; AUDIT:67-68; brief §5.5 |
 
 ## `explained in` field
 

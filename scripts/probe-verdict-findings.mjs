@@ -355,7 +355,7 @@ async function walk(page, label, width) {
     return { text: dds.map((dd) => dd.innerText).join(" "), cut, h };
   });
   report(`${label}px · the tutors row states its basis and the set's size, uncut`,
-    !!tutors && /22 cards of a curated set/.test(tutors.text) && /974/.test(tutors.text) && !tutors.cut && tutors.h > 0,
+    !!tutors && /22 cards of a curated set/.test(tutors.text) && /we count \d+ cards as tutors/.test(tutors.text) && !tutors.cut && tutors.h > 0,
     tutors ? `cut ${tutors.cut}, ${Math.round(tutors.h)}px, "${tutors.text.slice(0, 60)}…"` : "no tutors row");
   const pbox = await sheet.boundingBox();
   if (phone) {
