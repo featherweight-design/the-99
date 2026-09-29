@@ -28,7 +28,7 @@ describe("the mana sprite", () => {
   });
 
   it("is what the cost pips and the colour pips both point at", () => {
-    expect(manaSymbolSrc("{2/R}")).toBe(manaSpriteHref("2R"));
+    expect(manaSymbolSrc("2/R")).toBe(manaSpriteHref("2R"));
     expect(Object.values(PIP_SRC)).toEqual(["W", "U", "B", "R", "G"].map(manaSpriteHref));
   });
 
