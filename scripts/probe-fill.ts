@@ -7,7 +7,14 @@
 // more turn on a skeleton assembled from five database reads down a four-rung chain. A fixture
 // that stated those facts would be asserting the answer it was built to check.
 //
-// Seven checks, and the mutation each one exists to catch is in the table at the foot.
+// Seven sections, and the mutation each one exists to catch is in the table at the foot.
+//
+// Section 8 is the basics split, against the real catalog. It reproduces HD - Thorin: a `{R,W}`
+// deck whose top-off produced 18 Plains, 6 Wastes and NO Mountains. Wastes reaches every pool
+// because its colour identity is EMPTY and `[].every(…)` is true, and the spare-redistribution
+// loop then handed a capped Plains allocation's leftovers to the only other colour with copies on
+// the shelf. Its fixture owns ZERO Mountains on purpose — that is what dropped red out of the
+// split, and a tidy fixture would hide it.
 //
 // It writes a fixture under a per-run `user_id` and deletes it in a `finally`. Point it at
 // `local-dev` or a scratch Neon branch, NEVER production.
@@ -357,6 +364,54 @@ async function main() {
   truthy("the fill reaches the body on the asserted baseline", flat.filled >= 90);
   check("and says the floors were not measured", flat.measured, false);
   check("while the measured build says they were", built.measured, true);
+
+  // ---- 8 · the basics follow the deck's IDENTITY, not the shelf ---------------------------
+  console.log("\n8 · a Boros deck's basics");
+  // HD - Thorin, reproduced against the real catalog. Its top-off gave a `{R,W}` deck 18 Plains,
+  // 6 Wastes and NO Mountains: Wastes is admitted to every pool because its colour identity is
+  // empty and `[].every(…)` is true, and the spare-redistribution loop then handed a capped
+  // Plains allocation's leftovers to the only other colour with copies on the shelf.
+  //
+  // The fixture is the shape that produced it, not a tidy one: **Mountain owned in ZERO copies**,
+  // which is what dropped red out of the split entirely. Rows are found BY QUERY rather than by a
+  // name that rots with the catalog.
+  const [plainsRow] = await rows<CardRow>(sql`
+    select oracle_id, name, type_line, oracle_text, keywords, mana_cost, layout
+    from cards where name = 'Plains' and type_line ilike 'basic land%' limit 1`);
+  const [mountainRow] = await rows<CardRow>(sql`
+    select oracle_id, name, type_line, oracle_text, keywords, mana_cost, layout
+    from cards where name = 'Mountain' and type_line ilike 'basic land%' limit 1`);
+  const [wastesRow] = await rows<CardRow>(sql`
+    select oracle_id, name, type_line, oracle_text, keywords, mana_cost, layout
+    from cards where name = 'Wastes' and type_line ilike 'basic land%' limit 1`);
+  if (!plainsRow || !mountainRow || !wastesRow) {
+    fail("8 · the fixture", "Plains, Mountain or Wastes missing from the catalog — is it seeded?");
+  } else {
+    const borosPool = [
+      ...pool400.map((r) => candidate(r)),
+      candidate(plainsRow, true, 18),
+      // ZERO copies owned, deliberately: a basic is never a buy, so the shelf must not decide
+      // whether a colour is in the mana base. With the fix reverted this is what vanishes.
+      candidate(mountainRow, true, 0),
+      candidate(wastesRow, true, 9),
+    ];
+    const boros = planFill(borosPool, {
+      hasPartner: false, skeleton, identity: ["R", "W"],
+    });
+    const qty = (id: string) => boros.rows
+      .filter((r) => r.oracleId === id).reduce((n, r) => n + r.quantity, 0);
+    const plains = qty(plainsRow.oracle_id);
+    const mountain = qty(mountainRow.oracle_id);
+    const wastes = qty(wastesRow.oracle_id);
+    console.log(`  Plains ${plains} · Mountain ${mountain} · Wastes ${wastes}`);
+    check("8a · no Wastes in a Boros deck", wastes, 0);
+    truthy("8b · Mountains present despite zero owned", mountain > 0);
+    truthy("8c · Plains present", plains > 0);
+    // Both colours, which is the ruling: an even split unless the pips tilt. The `pool400` spells
+    // decide the tilt, so the shares are not asserted — only that neither colour is starved, which
+    // is what "0 Mountains" violated.
+    truthy("8d · the base is all identity basics", plains + mountain > 0 && wastes === 0);
+  }
 
   // ---- 7 · landCapable against land on the built deck ------------------------------------
   console.log("\n7 · the built deck's land-capable count");
