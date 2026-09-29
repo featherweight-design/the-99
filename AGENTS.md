@@ -215,7 +215,10 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   failed, and so do both index steps, `db:build:index` and then `db:build:staples`, so the
   staples row is the newest and a failed derivation leaves it failed. `db:build:staples` refuses
   to run at all unless the newest `index` row is a finished `ok`, so a staples run by hand cannot
-  vouch for an index build that failed before it. Every run, by hand
+  vouch for an index build that failed before it. Each step also stamps its PHASE first in its row's report
+  (`phaseReport`), and `db:copy:index` accepts only a newest row whose phase is `staples`: between
+  the two steps the newest row is an ok `index` phase over the PREVIOUS staples, and a copy then
+  would publish a mixed generation. Every run, by hand
   included, leaves a newer row. Without that, a hand-run ingest that
   replaced the flags and died before the variants left an older `ok` row vouching for tables that
   had moved under it, over an unchanged catalog fingerprint, and the copy would publish them.

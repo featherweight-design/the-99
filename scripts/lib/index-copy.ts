@@ -11,6 +11,7 @@ import {
   formatStaples,
   identityComposition,
 } from "../../src/db/schema";
+import { phaseOf } from "../../src/lib/catalog/builds";
 import { canonicalPair } from "../../src/lib/edhrec/pair";
 import { LEGAL_PAIR_FLOOR } from "../../src/lib/edhrec/pair-enumerate";
 import { roleTargetsPublishable } from "../../src/lib/edhrec/role-targets";
@@ -68,6 +69,9 @@ async function insertAll<T extends PgTable>(
 const SUPPORT_KEY = ["commander_oracle_id"];
 const PAIR_KEY = ["commander_oracle_id", "partner_oracle_id"];
 
+/** The step whose finished row makes an index build whole. */
+export const INDEX_FINAL_PHASE = "staples";
+
 export const indexCopySpec: CopySpec<IndexSnapshot> = {
   kind: "index",
   tables: [
@@ -90,6 +94,14 @@ export const indexCopySpec: CopySpec<IndexSnapshot> = {
   // targets reaching under ROLE_TARGET_FLOOR of the ok commanders or (when any pair is ok) of the ok
   // pairs, fewer pairs than LEGAL_PAIR_FLOOR, and an empty staples derivation. An empty composition is legitimate (`db:build:staples` publishes
   // one), so it is not a floor.
+  // The index is two steps, and between them the newest row is an ok `index` phase over the
+  // PREVIOUS staples and composition. Only a build whose last step, staples, finished is whole.
+  buildAccepted: (build) => {
+    const phase = phaseOf(build.report);
+    return phase === INDEX_FINAL_PHASE ? null
+      : `the newest index build is its ${phase ?? "unmarked"} step; staples has not finished after it, ` +
+        "so the source holds a new index over the previous staples";
+  },
   floors: (s) => {
     const below: string[] = [];
     const ok = s.support.filter((r) => r.synergyState === "ok");
@@ -122,8 +134,10 @@ export const indexCopySpec: CopySpec<IndexSnapshot> = {
       .selectDistinct({ a: decks.commanderOracleId, b: decks.partnerOracleId })
       .from(decks)
       .where(sql`${decks.partnerOracleId} is not null`);
-    const gap = built
+    // Deduplicated AFTER canonicalizing: decks holding a pair as A/B and as B/A are one pair.
+    const gap = [...new Map(built
       .map((r) => canonicalPair(r.a, r.b!))
+      .map((p) => [`${p.commanderOracleId}|${p.partnerOracleId}`, p] as const)).values()]
       .filter((p) => !sourcePairs.has(`${p.commanderOracleId}|${p.partnerOracleId}`));
     console.log(gap.length === 0
       ? "pairs: every pair the target's decks hold is in the copy"

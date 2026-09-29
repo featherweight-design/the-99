@@ -17,7 +17,7 @@ import { requireEnv } from "./lib/env.mjs";
 requireEnv(["DATABASE_URL"]);
 import { sql } from "drizzle-orm";
 import { db } from "../src/db";
-import { latestBuild, recordBuild } from "../src/lib/catalog/builds";
+import { latestBuild, phaseReport, recordBuild } from "../src/lib/catalog/builds";
 import { formatStaples, identityComposition } from "../src/db/schema";
 import {
   MIN_COMMANDERS_PER_CONDITION, THIN_COLOR_COUNTS, thinCondition,
@@ -676,7 +676,7 @@ latestBuild(db, "index")
           `Run db:build:index to success first; a staples row now would vouch for that index.`,
       );
     }
-    return recordBuild(db, "index", main);
+    return recordBuild(db, "index", main, () => phaseReport("staples"));
   })
   .then(() => process.exit(0))
   .catch((err) => { console.error(err instanceof Error ? err.message : err); process.exit(1); });

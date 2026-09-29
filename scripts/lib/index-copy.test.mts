@@ -54,3 +54,17 @@ describe("the index copy's floors", () => {
     expect(indexCopySpec.floors({ ...whole(), staples: [] })).toContain("format_staples is empty");
   });
 });
+
+describe("the index copy's build step", () => {
+  const row = (report: string | null) => ({ report }) as Parameters<NonNullable<typeof indexCopySpec.buildAccepted>>[0];
+  it("accepts a build whose staples step finished last", () => {
+    expect(indexCopySpec.buildAccepted!(row("phase=staples"))).toBeNull();
+  });
+  // Between the two steps the newest row is the index phase over the previous staples.
+  it("refuses a build whose newest row is the index step", () => {
+    expect(indexCopySpec.buildAccepted!(row("phase=index; 3382 commanders, 1717 pairs"))).toMatch(/staples has not finished/);
+  });
+  it("refuses an unmarked row", () => {
+    expect(indexCopySpec.buildAccepted!(row(null))).toMatch(/unmarked step/);
+  });
+});

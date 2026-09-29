@@ -115,6 +115,11 @@ export type CopySpec<S> = {
   tables: readonly CopyTable[];
   /** Every read of the source, inside its repeatable-read snapshot. */
   readSource: (tx: CopyTx) => Promise<S>;
+  /**
+   * A further refusal on the build row, for a build made of steps: null accepts it. Runs after the
+   * shared ledger check, so the row is always a finished ok one here.
+   */
+  buildAccepted?: (build: BuildRow) => string | null;
   /** The builders' own floors, re-checked on the snapshot. Empty means publish. */
   floors: (snapshot: S) => string[];
   /** The writes, inside the target transaction, after the lock and the fingerprint re-check. */
@@ -173,6 +178,8 @@ export async function runCopy<S>(spec: CopySpec<S>, log: (line: string) => void 
 
     const refusal = buildRefusal(snap.build, snap.fingerprint, targetFingerprint);
     if (refusal) throw new CopyRefused(refusal);
+    const stepRefusal = snap.build && spec.buildAccepted ? spec.buildAccepted(snap.build) : null;
+    if (stepRefusal) throw new CopyRefused(stepRefusal);
     const below = spec.floors(snap.data);
     if (below.length > 0) throw new CopyRefused(`the source is under the builders' floors: ${below.join("; ")}`);
     if (dryRun) {

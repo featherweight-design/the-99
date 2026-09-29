@@ -17,6 +17,17 @@ type Db = NeonDatabase<typeof schema>;
 
 export type BuildRow = typeof catalogBuilds.$inferSelect;
 
+/**
+ * A build made of several steps stamps each step's row with its PHASE, first in its report, so a
+ * copy can tell the last step's row from an earlier one's: the index is `db:build:index` and then
+ * `db:build:staples`, and between them the newest row is an ok `index` phase over the previous
+ * staples. `phaseOf` reads it back; a row with no stamp has no phase.
+ */
+export const phaseReport = (phase: string, detail: string | null = null): string =>
+  detail ? `phase=${phase}; ${detail}` : `phase=${phase}`;
+export const phaseOf = (report: string | null): string | null =>
+  report?.match(/^phase=([a-z]+)/)?.[1] ?? null;
+
 export async function startBuild(db: Db, kind: BuildKind): Promise<BuildRow> {
   const fingerprint = await readCatalogFingerprint(db);
   const [row] = await db.insert(catalogBuilds)

@@ -19,7 +19,7 @@ import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import ws from "ws";
 import * as schema from "../src/db/schema";
-import { finishBuild, startBuild } from "../src/lib/catalog/builds";
+import { finishBuild, phaseReport, startBuild } from "../src/lib/catalog/builds";
 import { withCatalogIngestLock } from "../src/lib/catalog/ingest-lock";
 import { CopyRefused, readTableFigure, runCopy, type CopySpec } from "./lib/catalog-copy";
 import { combosCopySpec, type CombosSnapshot } from "./lib/combos-copy";
@@ -85,9 +85,9 @@ const same = (a: Record<string, string>, b: Record<string, string>) =>
 const branchOf = async (db: typeof target.db) =>
   ((await db.execute(sql`select current_setting('neon.branch_id', true) as b`)).rows[0] as { b: string }).b;
 
-async function recordBuild(ok: boolean, kind: "combos" | "index" = "combos") {
+async function recordBuild(ok: boolean, kind: "combos" | "index" = "combos", report: string | null = null) {
   const row = await startBuild(source.db, kind);
-  await finishBuild(source.db, row.id, kind, ok, null);
+  await finishBuild(source.db, row.id, kind, ok, report);
 }
 
 async function main() {
@@ -105,7 +105,7 @@ async function main() {
   ) as { rows: { oracle_id: string; oracle_text: string }[] };
 
   let spareCommander: string | null = null;
-  let heldProse: { id: string; prose: string | null; hash: string | null; version: number | null } | null = null;
+  let heldProse: { id: string; prose: string | null; hash: string | null; version: number | null; total: number | null } | null = null;
 
   try {
     // ---- 1 · identity ------------------------------------------------------------------------
@@ -278,9 +278,10 @@ async function main() {
         select 1 from commander_support s where s.commander_oracle_id = c.oracle_id)
       order by oracle_id limit 1`) as { rows: { oracle_id: string }[] };
     const { rows: [shared] } = await target.db.execute(sql`
-      select commander_oracle_id as id, prose, prose_input_hash as hash, prose_prompt_version as version
+      select commander_oracle_id as id, prose, prose_input_hash as hash, prose_prompt_version as version,
+        edhrec_total as total
       from commander_support order by commander_oracle_id limit 1`) as
-      { rows: { id: string; prose: string | null; hash: string | null; version: number | null }[] };
+      { rows: { id: string; prose: string | null; hash: string | null; version: number | null; total: number | null }[] };
     heldProse = shared;
     const { rows: [pair] } = await target.db.execute(sql`
       select a.oracle_id as a, b.oracle_id as b from cards a join cards b on a.oracle_id < b.oracle_id
@@ -301,7 +302,11 @@ async function main() {
     await target.db.execute(sql`insert into decks (user_id, name, commander_oracle_id, partner_oracle_id)
       values (${PROBE_USER}, 'probe pair', ${pair.b}, ${pair.a})`);
 
-    await recordBuild(true, "index");
+    // Between the index's two steps the newest row is its `index` phase, over the previous staples.
+    await recordBuild(true, "index", phaseReport("index"));
+    check("an index build whose staples step has not finished is refused",
+      (await attempt(indexCopySpec)).includes("staples has not finished"));
+    await recordBuild(true, "index", phaseReport("staples"));
     const sourceIndex = await figures(source.db, idx);
     check("the index fixture makes the target differ", !same(sourceIndex, await figures(target.db, idx)));
 
@@ -336,7 +341,8 @@ async function main() {
     await target.db.execute(sql`delete from commander_scores where user_id = ${PROBE_USER}`);
     if (spareCommander) await target.db.execute(sql`delete from commander_support where commander_oracle_id = ${spareCommander}`);
     if (heldProse) await target.db.execute(sql`update commander_support set prose = ${heldProse.prose},
-      prose_input_hash = ${heldProse.hash}, prose_prompt_version = ${heldProse.version}
+      prose_input_hash = ${heldProse.hash}, prose_prompt_version = ${heldProse.version},
+      edhrec_total = ${heldProse.total}
       where commander_oracle_id = ${heldProse.id}`);
     await target.db.execute(sql`update cards set oracle_text = ${card.oracle_text} where oracle_id = ${card.oracle_id}`);
     await source.db.execute(sql`update cards set oracle_text = ${card.oracle_text} where oracle_id = ${card.oracle_id}`);

@@ -29,6 +29,6 @@ describe("catalog writers hold the ingest lock", () => {
 
   it("build-staples.ts refuses unless the newest index build finished ok", () => {
     const src = readFileSync(join(import.meta.dirname, "..", "build-staples.ts"), "utf8");
-    expect(src).toMatch(/latestBuild\(db, "index"\)[\s\S]*prev\.ok !== true[\s\S]*recordBuild\(db, "index", main\)/);
+    expect(src).toMatch(/latestBuild\(db, "index"\)[\s\S]*prev\.ok !== true[\s\S]*recordBuild\(db, "index", main, \(\) => phaseReport\("staples"\)\)/);
   });
 });
