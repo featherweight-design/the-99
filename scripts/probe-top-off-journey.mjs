@@ -370,7 +370,7 @@ async function repeat(page, w) {
   await shot(page, `${w}-10-recounted`);
 
   // Step 11: undo the rest. The kept card survives its pass.
-  const undoLast = page.getByRole("button", { name: /Undo the .* from top-off \d+/ }).last();
+  const undoLast = page.getByRole("button", { name: /Undo the .* from \d+(st|nd|rd|th) top-off/ }).last();
   await undoLast.click();
   await page.waitForTimeout(5000);
   const [survived] = await sql`

@@ -13,6 +13,7 @@
  */
 
 import { synergyCopy } from "./synergy-discovery";
+import { ordinal } from "./deck-analysis";
 // TYPE-ONLY, so this copy module still imports no runtime code but the noun table's
 // completeness is the type system's claim rather than a comment's.
 import type { CompositionTargets } from "../profile/types";
@@ -24,14 +25,6 @@ import type { CompositionTargets } from "../profile/types";
 // of full otherwise reads "Add 1 cards" and "1 slots stay open".
 const plural = (n: string, one: string, many: string) =>
   `${n} ${n === '1' ? one : many}`;
-
-/** 1st, 2nd, 3rd, 4th … 11th, 12th, 13th, 21st. */
-function ordinal(i: string): string {
-  const n = Number(i);
-  const teen = n % 100 >= 11 && n % 100 <= 13;
-  const suffix = teen ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[n % 10] ?? 'th';
-  return `${i}${suffix}`;
-}
 
 export const topOffCopy = {
   // ── The strip, closed ─────────────────────────────────────────────────
@@ -399,7 +392,8 @@ export const topOffCopy = {
      *  An ordinal WORD, not a bare numeral after the noun: 'top-off 1' sat beside
      *  '50 cards you chose…' and read as a count of one (Hugh, 2026-09-28). */
     seedLabel: 'the seed',
-    passLabel: (i: string) => `${ordinal(i)} top-off`,
+    // The app's one ordinal formatter (`deck-analysis.ts`), not a second one to drift from it.
+    passLabel: (i: string) => `${ordinal(Number(i))} top-off`,
 
     /** The seed's sentence — the shipped provenance wording, recast as a line. */
     seedLine: (n: string, buy: string) =>
