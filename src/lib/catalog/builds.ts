@@ -17,10 +17,26 @@ type Db = NeonDatabase<typeof schema>;
 
 export type BuildRow = typeof catalogBuilds.$inferSelect;
 
-export async function startBuild(db: Db, kind: BuildKind): Promise<BuildRow> {
-  const fingerprint = await readCatalogFingerprint(db);
+/**
+ * A build made of several steps stamps each step's row with its PHASE, first in its report, so a
+ * copy can tell the last step's row from an earlier one's: the index is `db:build:index` and then
+ * `db:build:staples`, and between them the newest row is an ok `index` phase over the previous
+ * staples. `phaseOf` reads it back; a row with no stamp has no phase.
+ */
+export const phaseReport = (phase: string, detail: string | null = null): string =>
+  detail ? `phase=${phase}; ${detail}` : `phase=${phase}`;
+export const phaseOf = (report: string | null): string | null =>
+  report?.match(/^phase=([a-z]+)/)?.[1] ?? null;
+
+/**
+ * `inherit` carries an earlier step's catalog fingerprint instead of reading today's: the last
+ * step of a build made of steps must vouch for the catalog the FIRST step derived from, or a catalog
+ * refresh landing mid-build would be recorded as the build's catalog and pass every copy check.
+ */
+export async function startBuild(db: Db, kind: BuildKind, inherit?: string): Promise<BuildRow> {
+  const catalogFingerprint = inherit ?? fingerprintKey(await readCatalogFingerprint(db));
   const [row] = await db.insert(catalogBuilds)
-    .values({ kind, catalogFingerprint: fingerprintKey(fingerprint) })
+    .values({ kind, catalogFingerprint })
     .returning();
   return row;
 }
@@ -90,10 +106,11 @@ export async function recordBuild<T>(
   run: () => Promise<T>,
   report: (result: T) => string | null = () => null,
   deps: { start: typeof startBuild; finish: typeof finishBuild } = { start: startBuild, finish: finishBuild },
+  inherit?: string,
 ): Promise<T> {
   let row: BuildRow;
   try {
-    row = await deps.start(db, kind);
+    row = await deps.start(db, kind, inherit);
   } catch (err) {
     // A database migrations have not reached (0074): the build runs unrecorded, with a warning,
     // as `catalog_refreshes` is written. That is safe because a copy reads the same table and

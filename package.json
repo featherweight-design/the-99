@@ -142,6 +142,7 @@
     "db:copy:labels": "tsx scripts/copy-card-labels.ts",
     "db:catalog-build": "tsx scripts/catalog-build.ts",
     "db:copy:combos": "tsx scripts/copy-combos.ts",
+    "db:copy:index": "tsx scripts/copy-index.ts",
     "probe:catalog-copy": "tsx scripts/probe-catalog-copy.ts",
     "db:build:staples": "tsx scripts/build-staples.ts",
     "measure:tutors": "tsx scripts/measure-tutor-targets.mts",

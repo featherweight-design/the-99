@@ -19,13 +19,15 @@ import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import ws from "ws";
 import * as schema from "../src/db/schema";
-import { finishBuild, startBuild } from "../src/lib/catalog/builds";
+import { finishBuild, phaseReport, startBuild } from "../src/lib/catalog/builds";
 import { withCatalogIngestLock } from "../src/lib/catalog/ingest-lock";
 import { CopyRefused, readTableFigure, runCopy, type CopySpec } from "./lib/catalog-copy";
 import { combosCopySpec, type CombosSnapshot } from "./lib/combos-copy";
+import { indexCopySpec, type IndexSnapshot } from "./lib/index-copy";
 
 neonConfig.webSocketConstructor = ws;
 
+const PROBE_USER = `probe-catalog-copy-${Date.now()}`;
 const NEVER = new Set(["br-noisy-violet-a6vw4ess", "br-polished-pond-a6e63y0b", "br-patient-hall-a6nbonvo"]);
 
 const need = (name: string) => {
@@ -69,10 +71,9 @@ async function attempt<S>(spec: CopySpec<S>): Promise<string> {
   }
 }
 
-const TABLES = combosCopySpec.tables;
-const figures = async (db: typeof target.db) => {
+const figures = async (db: typeof target.db, tables: CopySpec<unknown>["tables"] = combosCopySpec.tables) => {
   const out: Record<string, string> = {};
-  for (const t of TABLES) {
+  for (const t of tables) {
     const f = await readTableFigure(db, t.name, t.cols);
     out[t.name] = `${f.rows}:${f.md5}`;
   }
@@ -84,9 +85,9 @@ const same = (a: Record<string, string>, b: Record<string, string>) =>
 const branchOf = async (db: typeof target.db) =>
   ((await db.execute(sql`select current_setting('neon.branch_id', true) as b`)).rows[0] as { b: string }).b;
 
-async function recordBuild(ok: boolean, kind: "combos" | "index" = "combos") {
+async function recordBuild(ok: boolean, kind: "combos" | "index" = "combos", report: string | null = null) {
   const row = await startBuild(source.db, kind);
-  await finishBuild(source.db, row.id, kind, ok, null);
+  await finishBuild(source.db, row.id, kind, ok, report);
 }
 
 async function main() {
@@ -102,6 +103,9 @@ async function main() {
   const { rows: [card] } = await target.db.execute(
     sql`select oracle_id, oracle_text from cards where oracle_text is not null order by oracle_id limit 1`,
   ) as { rows: { oracle_id: string; oracle_text: string }[] };
+
+  let spareCommander: string | null = null;
+  let heldProse: { id: string; prose: string | null; hash: string | null; version: number | null; total: number | null } | null = null;
 
   try {
     // ---- 1 · identity ------------------------------------------------------------------------
@@ -263,7 +267,83 @@ async function main() {
       check("a copy through the read-only role publishes", (await attempt(combosCopySpec)) === "copied");
       setEnv();
     }
+
+    // ---- 9 · the commander index (db:copy:index) ----------------------------------------------
+    // Target state no staging build would hold: a commander only the target lists (dated ahead,
+    // so it would pin max(computed_at)), a header column moved, a sentence on a row both sides
+    // hold, a stored score, and a pair only a target deck holds.
+    const idx = indexCopySpec.tables;
+    const { rows: [spare] } = await target.db.execute(sql`
+      select oracle_id from cards c where not exists (
+        select 1 from commander_support s where s.commander_oracle_id = c.oracle_id)
+      order by oracle_id limit 1`) as { rows: { oracle_id: string }[] };
+    const { rows: [shared] } = await target.db.execute(sql`
+      select commander_oracle_id as id, prose, prose_input_hash as hash, prose_prompt_version as version,
+        edhrec_total as total
+      from commander_support order by commander_oracle_id limit 1`) as
+      { rows: { id: string; prose: string | null; hash: string | null; version: number | null; total: number | null }[] };
+    heldProse = shared;
+    const { rows: [pair] } = await target.db.execute(sql`
+      select a.oracle_id as a, b.oracle_id as b from cards a join cards b on a.oracle_id < b.oracle_id
+      where not exists (select 1 from commander_pair_support p
+        where p.commander_oracle_id = a.oracle_id and p.partner_oracle_id = b.oracle_id)
+      order by a.oracle_id, b.oracle_id limit 1`) as { rows: { a: string; b: string }[] };
+
+    spareCommander = spare.oracle_id;
+    await target.db.execute(sql`insert into commander_support
+      (commander_oracle_id, synergy_state, tags, bracket_counts, budget_counts, similar_oracle_ids, computed_at)
+      values (${spare.oracle_id}, 'absent', '[]', '{}', '{}', '{}', now() + interval '1 day')`);
+    await target.db.execute(sql`update commander_support set edhrec_total = coalesce(edhrec_total, 0) + 1,
+      prose = 'probe sentence', prose_input_hash = 'probe', prose_prompt_version = 1
+      where commander_oracle_id = ${shared.id}`);
+    await target.db.execute(sql`insert into commander_scores
+      (user_id, oracle_id, slug, score, fit_pool, fit_roles, synergy_state, receipts, color_pool_size, role_counts)
+      values (${PROBE_USER}, ${shared.id}, 'probe', 1, 1, 1, 'absent', '[]', 0, '{}')`);
+    await target.db.execute(sql`insert into decks (user_id, name, commander_oracle_id, partner_oracle_id)
+      values (${PROBE_USER}, 'probe pair', ${pair.b}, ${pair.a})`);
+
+    // Between the index's two steps the newest row is its `index` phase, over the previous staples.
+    await recordBuild(true, "index", phaseReport("index"));
+    check("an index build whose staples step has not finished is refused",
+      (await attempt(indexCopySpec)).includes("staples has not finished"));
+    await recordBuild(true, "index", phaseReport("staples"));
+    const sourceIndex = await figures(source.db, idx);
+    check("the index fixture makes the target differ", !same(sourceIndex, await figures(target.db, idx)));
+
+    // A publish that verifies wrong rolls back the score clear with everything else.
+    const badIndex: CopySpec<IndexSnapshot> = {
+      ...indexCopySpec,
+      publish: async (tx, snap) => {
+        await indexCopySpec.publish(tx, snap);
+        await tx.execute(sql`delete from format_staples where oracle_id = (select oracle_id from format_staples order by oracle_id, condition limit 1)`);
+      },
+    };
+    check("a bad index publish is refused", (await attempt(badIndex)).includes("verification failed"));
+    const scoresAfterBad = Number(((await target.db.execute(sql`select count(*)::int as n from commander_scores where user_id = ${PROBE_USER}`)).rows[0] as { n: number }).n);
+    check("and its score clear rolled back with it", scoresAfterBad === 1, `${scoresAfterBad} fixture score row(s)`);
+
+    const lines: string[] = [];
+    const log = console.log;
+    console.log = (...a: unknown[]) => { lines.push(a.join(" ")); };
+    let indexOutcome = "";
+    try { indexOutcome = await attempt(indexCopySpec); } finally { console.log = log; }
+    check("a copy of a successful index build publishes", indexOutcome === "copied", indexOutcome);
+    check("the six index tables now equal the source's", same(sourceIndex, await figures(target.db, idx)));
+    const gone = Number(((await target.db.execute(sql`select count(*)::int as n from commander_support where commander_oracle_id = ${spare.oracle_id}`)).rows[0] as { n: number }).n);
+    check("a commander only the target listed is deleted", gone === 0);
+    const [after] = (await target.db.execute(sql`select prose from commander_support where commander_oracle_id = ${shared.id}`)).rows as { prose: string | null }[];
+    check("the target's sentence on a shared row is untouched", after.prose === "probe sentence");
+    const scores = Number(((await target.db.execute(sql`select count(*)::int as n from commander_scores`)).rows[0] as { n: number }).n);
+    check("the target's commander_scores are cleared", scores === 0, `${scores} row(s)`);
+    check("a pair only a target deck holds is reported", lines.some((l) => l.includes(`${pair.a}+${pair.b}`)));
   } finally {
+    await target.db.execute(sql`delete from decks where user_id = ${PROBE_USER}`);
+    await target.db.execute(sql`delete from commander_scores where user_id = ${PROBE_USER}`);
+    if (spareCommander) await target.db.execute(sql`delete from commander_support where commander_oracle_id = ${spareCommander}`);
+    if (heldProse) await target.db.execute(sql`update commander_support set prose = ${heldProse.prose},
+      prose_input_hash = ${heldProse.hash}, prose_prompt_version = ${heldProse.version},
+      edhrec_total = ${heldProse.total}
+      where commander_oracle_id = ${heldProse.id}`);
     await target.db.execute(sql`update cards set oracle_text = ${card.oracle_text} where oracle_id = ${card.oracle_id}`);
     await source.db.execute(sql`update cards set oracle_text = ${card.oracle_text} where oracle_id = ${card.oracle_id}`);
     await Promise.all([source.pool.end(), target.pool.end()]);

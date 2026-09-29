@@ -67,4 +67,11 @@ describe("recordBuild", () => {
     await expect(recordBuild({} as never, "combos", run, () => null, deps)).rejects.toThrow("denied");
     expect(run).not.toHaveBeenCalled();
   });
+
+  // The last step of a build vouches for the catalog its first step derived from.
+  it("starts the row with an inherited fingerprint when one is given", async () => {
+    const { deps } = ledger();
+    await recordBuild({} as never, "index", async () => 1, () => null, deps, "35572:abc");
+    expect((deps as { start: ReturnType<typeof vi.fn> }).start).toHaveBeenCalledWith({}, "index", "35572:abc");
+  });
 });

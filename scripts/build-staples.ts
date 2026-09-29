@@ -17,6 +17,7 @@ import { requireEnv } from "./lib/env.mjs";
 requireEnv(["DATABASE_URL"]);
 import { sql } from "drizzle-orm";
 import { db } from "../src/db";
+import { latestBuild, phaseReport, recordBuild } from "../src/lib/catalog/builds";
 import { formatStaples, identityComposition } from "../src/db/schema";
 import {
   MIN_COMMANDERS_PER_CONDITION, THIN_COLOR_COUNTS, thinCondition,
@@ -584,12 +585,11 @@ async function main() {
   // A derivation that produced nothing must not CLEAR the previous floors. An empty result is
   // either an empty index or a broken query, and neither is a reason to delete a good table.
   if (stapleRows.length === 0) {
-    console.error(
+    throw new Error(
       `\nbuild-staples REFUSED: the derivation produced no staples. The previous floors ` +
         `stand. An empty result means the commander index is empty or this query is broken; ` +
         `either way, publishing it would delete a good table behind a green job.`,
     );
-    process.exit(1);
   }
 
   await db.transaction(async (tx) => {
@@ -661,8 +661,24 @@ async function main() {
   // as every other ingest's stamp is.
   const { stampCatalogRefresh } = await import("../src/lib/cache/stamp-catalog");
   await stampCatalogRefresh();
-
-  process.exit(0);
 }
 
-main().catch((err) => { console.error(err); process.exit(1); });
+// Between its own ledger rows, as `db:build:index` is: this step runs after the index it derives
+// from, so its row is the newest `index` row, and a refused or failed derivation leaves that
+// newest row failed for a copy to refuse.
+// Only over an index build that finished ok: this step's own row becomes the newest `index` row,
+// so an ok here after a failed or unfinished `db:build:index` would vouch for a partial index.
+latestBuild(db, "index")
+  .then((prev) => {
+    if (!prev || prev.finishedAt === null || prev.ok !== true) {
+      throw new Error(
+        `build-staples REFUSED: the newest index build is ${prev ? (prev.finishedAt ? "failed" : "unfinished") : "missing"}. ` +
+          `Run db:build:index to success first; a staples row now would vouch for that index.`,
+      );
+    }
+    // The index step's fingerprint, not today's: this row vouches for the catalog the index was
+    // derived from, so a catalog refresh that landed during the index build stays a refusal.
+    return recordBuild(db, "index", main, () => phaseReport("staples"), undefined, prev.catalogFingerprint);
+  })
+  .then(() => process.exit(0))
+  .catch((err) => { console.error(err instanceof Error ? err.message : err); process.exit(1); });
