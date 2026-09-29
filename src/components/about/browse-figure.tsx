@@ -12,7 +12,7 @@
 // figure without anyone editing it.
 
 import { collectionChassisCopy, collectionFilterCopy } from "../../lib/copy/collection";
-import { chassisCopy, PIP_ORDER, PIP_SRC } from "../../lib/copy/filter-chassis";
+import { chassisCopy, PIP_ORDER, PIP_BACKGROUND } from "../../lib/copy/filter-chassis";
 import { setPageCopy } from "../../lib/copy/set-collections";
 import { sortOrderLabel } from "../../lib/collection/sort-options";
 import { CardTileCaption } from "../ui/card-tile-caption";
@@ -171,7 +171,7 @@ export function BrowseFigureBody() {
             <span
               key={code}
               className="h-[15px] w-[15px] rounded-full"
-              style={{ background: `center / contain no-repeat url(${PIP_SRC[code]})` }}
+              style={PIP_BACKGROUND[code]}
             />
           ))}
         </span>

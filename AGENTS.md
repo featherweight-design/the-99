@@ -1439,15 +1439,39 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   The script asserts per symbol that its slug equals Scryfall's own filename, which is the one
   way a rename would otherwise ship as a silent 404.
 
+- `pnpm build:mana-sprite` rebuilds `public/mana/sprite.svg`, the ONE file every pip draws from,
+  preloaded in the head of every document by the root layout (Hugh, 2026-09-28: pips popped in,
+  because a symbol drawn as a CSS background is fetched only when its pip paints). It is a CLASSIC
+  sprite: every symbol in its own 100-unit square cell of one row, 10 apart, and a pip picks its
+  cell with `background-size` and `background-position` in percentages (`manaSpriteBackground`),
+  which hold at any box size. NOT SVG `<view>` fragments, which was the first build: a fragment
+  changes what the image shows but not its intrinsic size, so `contain` drew the whole sheet into
+  every pip as a thin strip, in Chromium and WebKit alike, with markup identical to a working build.
+  `fetch:mana` runs it after writing the files; run it by hand after editing one.
+  `mana-sprite.test.ts` fails when the committed sprite is not the build of the committed files, or
+  holds a cell for anything but the manifest's slugs; the build and the reader share one sorted order.
+
+- `pnpm probe:pip-preload` proves the sprite ends the pop, in Chromium AND WebKit at 390x844 and
+  1300x900, each on an empty HTTP cache: on `/commanders` the sprite has arrived before the first
+  pip is drawn (stamped by a MutationObserver installed before the document parses), every pip
+  draws from it, each pip's window PAINTS its symbol (redrawn to a canvas from its own computed size
+  and position, and required to cover half its box: the fragment build covered none of it), no
+  per-symbol file is fetched, and the card modal's cost reuses the sprite. It also reads the deck
+  page's commander art as a `link`-initiated request, which the page's high-priority preload makes it
+  (~700ms against ~1,700ms when style finds it). Every request is held 150ms by `page.route`,
+  because on localhost everything lands before the first paint preloaded or not, and the phone waits
+  for `networkidle` before pressing the filter sheet open, since `load` fires before hydration on a
+  held connection. Three mutations fail it: the sprite preload removed, the window sized with
+  `contain`, and the art preload removed. Writes only the About row, captured and restored. Point it
+  at `local-dev`.
+
 - `pnpm probe:mana-symbols` proves the two pip rulings in a real browser at 1300x900 and
   390x844: that the card modal's cost draws printed symbols at its 26/22px box, and that the
   deck's card view draws none. Both are facts about painted pixels — the unit tests can say
-  which file a pip ASKS for and that a tile renders no run, and neither of those says the art
-  RESOLVED. A 404 on `/mana/2R.svg` leaves markup identical to the working build's, so the
-  probe reads back the served bytes and requires a 200 with an SVG body for each of that
-  cost's own files. Scoped to the cost's files rather than every `/mana/` request the page
-  made, because the filter control draws the five hues on `/collection` too: a sweep of all
-  requests reports five healthy files over a modal whose every pip failed. It reads the pips
+  which sprite cell a pip ASKS for and that a tile renders no run, and neither of those says the art
+  RESOLVED. A sheet that failed to load leaves markup identical to the working build's, so the
+  probe reads back the served bytes and requires a 200 with an SVG body for the sprite, and a
+  window on each pip that lands on a WHOLE cell of it (a window half a cell out fails it). It reads the pips
   as the children of the run inside `[data-testid="modal-mana-cost"]`, never every span in
   that slot — the slot also holds the run's container and the sr-only cost, and a sweep of
   all three reads a 57px box and a lettered string belonging to neither pip, which is a probe
@@ -1480,8 +1504,10 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   wants the printing picker expanded.
 
   Seven mutations were run against it and all seven fail: the tile's pips restored, the symbol art
-  suppressed, a typo in the slug — that one passing every DOM assertion while serving 404s, which
-  is the failure it exists for — the front half drawn alone, a background put on the separator,
+  suppressed, a typo in the slug (written for the per-file build, where it passed every DOM
+  assertion while serving 404s; since the sprite a bad slug falls back to a letter, and the pip's
+  window is read for a whole cell instead, which a window half a cell out fails), the front half
+  drawn alone, a background put on the separator,
   `flex-wrap` dropped from the header row, and a `flex-1` put on the name block, which leaves the
   class list reading correctly while the row shrinks the name instead of wrapping. It makes no
   writes. Point it at `local-dev`.

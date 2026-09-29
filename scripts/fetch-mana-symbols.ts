@@ -20,7 +20,8 @@
  *
  *   pnpm fetch:mana
  */
-import { writeFile } from "node:fs/promises";
+import { readdir, unlink, writeFile } from "node:fs/promises";
+import { writeManaSprite } from "./build-mana-sprite";
 
 import { manaSymbolSlug } from "../src/lib/cards/mana-symbols";
 import { SCRYFALL_HEADERS } from "../src/lib/scryfall/http";
@@ -58,6 +59,17 @@ async function main(): Promise<void> {
   }
 
   slugs.sort();
+  // A symbol Scryfall dropped, or no longer prints in a cost, leaves its old file behind. The sheet
+  // is built from the files on disk, so a stale one would add a cell the manifest does not hold and
+  // shift every pip after it onto its neighbour's symbol. Removed here, before the sheet is built.
+  const current = new Set(slugs);
+  for (const file of await readdir(OUT_DIR)) {
+    if (!file.endsWith(".svg") || file === "sprite.svg") continue;
+    if (!current.has(file.slice(0, -4))) {
+      await unlink(`${OUT_DIR}/${file}`);
+      console.log(`Removed ${OUT_DIR}/${file}: no longer a cost symbol.`);
+    }
+  }
   await writeFile(
     MANIFEST,
     [
@@ -74,6 +86,8 @@ async function main(): Promise<void> {
   );
 
   console.log(`Wrote ${slugs.length} symbols to ${OUT_DIR}/ and ${MANIFEST}.`);
+  // The one file the app actually loads, rebuilt from the files just written.
+  console.log(`Rebuilt the sprite from ${await writeManaSprite()} symbols.`);
 }
 
 main().catch((err) => { console.error(err); process.exit(1); });

@@ -23,7 +23,7 @@ import { Fragment } from "react";
 
 import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { faceCosts } from "../../lib/cards/faces";
-import { manaSymbolSrc } from "../../lib/cards/mana-symbols";
+import { manaSymbolBackground } from "../../lib/cards/mana-symbols";
 import { manaCopy, spokenFullManaCost } from "../../lib/copy/card-surfaces";
 // One parser for both pip treatments. This file carried a second copy of the
 // same regex — the two never disagreed, they simply had no reason not to — and a
@@ -84,8 +84,8 @@ export function ManaCost({ cost }: { cost: string | null }) {
 const BOX = "inline-flex items-center justify-center rounded-full w-[22px] h-[22px] md:w-[26px] md:h-[26px]";
 
 function ManaPip({ symbol }: { symbol: string }) {
-  const src = manaSymbolSrc(symbol);
-  if (src) {
+  const background = manaSymbolBackground(symbol);
+  if (background) {
     // A background rather than an `<img>`, matching `ColourPips`: the symbol is
     // decorative — the spoken cost beside it carries the meaning — and every
     // other art surface here draws through `background` for the same reason.
@@ -94,7 +94,7 @@ function ManaPip({ symbol }: { symbol: string }) {
     return (
       <span
         className={`${BOX} flex-none`}
-        style={{ background: `center / contain no-repeat url(${src})` }}
+        style={background}
       />
     );
   }
