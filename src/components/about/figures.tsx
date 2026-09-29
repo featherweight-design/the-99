@@ -724,7 +724,7 @@ function DeckAnalysisFigure({ width }: { width: AboutWidth }) {
   );
 }
 
-/** The decklist's mark key above two rows that carry the four bracket facts between them. */
+/** The decklist's mark key above two rows that carry three of the four bracket facts between them. */
 function CardMarksFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="card-marks" width={width}>

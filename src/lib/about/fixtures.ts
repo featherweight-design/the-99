@@ -1028,7 +1028,7 @@ export const DECKLIST_MARK_ROWS: DeckDetailCard[] = [
 ];
 
 /**
- * `card-marks` — two decklist rows carrying the four bracket facts between them.
+ * `card-marks` — two decklist rows carrying three of the four bracket facts between them.
  *
  * TWO ROWS, because the order rule (`CARD_FACTS`) only shows on a card with two marks: Demonic
  * Tutor carries the Game Changer mark and the tutor mark, in that order. Time Warp carries one.
@@ -1127,6 +1127,11 @@ const ANALYSIS_PROFILE = buildDeckProfile({
     ANALYSIS_CARD("about-merchant", "Merchant Scroll", "Sorcery", 2, "{1}{U}"),
     ANALYSIS_CARD("about-wishclaw", "Wishclaw Talisman", "Artifact", 2, "{1}{B}"),
     ANALYSIS_CARD("about-infiltrator", "Dimir Infiltrator", "Creature — Spirit", 2, "{U}{B}"),
+    // Padded to a WHOLE deck, the probe fixtures' rule: Analyze runs only on a full 99
+    // (`deckLegality`, `profile/stored.ts`), so a specimen short of one would show a reading the app
+    // could never produce. Wastes, not a colored basic: colorless, so it moves no bracket or color
+    // fact. 9 cards above plus 90 Wastes is the 99 under Yuriko.
+    { ...ANALYSIS_CARD("about-wastes", "Wastes", "Basic Land", 0, ""), quantity: 90 },
   ],
   commanderOracleIds: [YURIKO.oracleId],
   identity: ["U", "B"],
