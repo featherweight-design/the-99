@@ -53,7 +53,8 @@ export type AboutSwitch =
   | 'SWAP_TOOLS_ENABLED'
   | 'HELP_ME_CHOOSE_ENABLED'
   | 'CHANGE_COMMANDER_ENABLED'
-  | 'ANALYSIS_TAB_ENABLED';
+  | 'ANALYSIS_TAB_ENABLED'
+  | 'HOW_IT_WORKS_ENABLED';
 
 export interface AboutEntry {
   id: string;
