@@ -368,7 +368,12 @@ A label is a list of `Job`s. For the stand-in comparison each job is read as:
   kind, and shares with nothing (the E1 rule: a stand-in keeps ramp only in a kind it shares).
 - **its deck relevance, for a job that points at the player's OWN cards** (`affects: self` or `null`): a job whose
   `restrictedTo` names a creature type is a job for this deck only when it is the deck's `keyType`; one naming a
-  noncreature subtype only when the deck holds or makes it (`DeckLens.held`). This is `honestJobs`' rule
+  noncreature subtype only when the deck holds or makes it (`DeckLens.held`); and one naming a CARD TYPE
+  (`artifact`, `enchantment`, `land`, `creature`, `planeswalker`, `instant`, `sorcery`, the forms the prompt allows,
+  `prompt.ts:76-78`) only when the deck holds at least one card of that type besides the card being replaced. The
+  lens gains that one fact, **`DeckLens.heldTypes`**: the card types the deck's other cards carry, from the rows
+  `loadStandIns` already reads, the same way `held` is built. A restriction the lens cannot classify (none of the
+  three) is kept, never dropped: an unreadable limit must not cost the reader a job. This is `honestJobs`' rule
   (`honest.ts:162`) read off a field instead of a regex, and it is where the Warg's Wolf counters stop counting in a
   Dinosaur deck.
 - **a job that points at OPPONENTS' cards** (`affects: opponents` or `each`) is never dropped for its restriction:

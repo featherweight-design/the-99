@@ -68,8 +68,8 @@ It must answer, concretely enough that Task 2 falls out of it:
     land early and inert, and labels light it up later.
   - **It degrades to correct, never to wrong.** A partially labelled catalog produces fewer
     upgraded comparisons, not a mixture of two standards.
-- **Copy entries for every new kind**, through `/copy-review` with a picture, never a
-  description.
+- **Copy entries for every new kind**, through `/copy-review` in the lane, which is the whole
+  process for copy (d9, 2026-10-02; it superseded "with a picture").
 
 **Then, and only then:** derive the exact list of label fields stand-ins needs. That list is
 Task 2's input, and a field absent from it does not get built.
@@ -128,13 +128,15 @@ battlefield.
 
 ### `method: destroy | exile | bounce | shrink` — the GIVES-UP LINE, not a gate (Hugh, 2026-09-28)
 
-**Bounce for exile is ALLOWED**, and the row's "gives up" line names what is lost — "returns to
-hand, not exiled" — in the same honest register as the existing rows. So `method` is built, and
-it feeds that line rather than `sameJob`. A reader is told the difference and decides; the engine
-does not decide for them.
+**Bounce for exile is ALLOWED**, and the row names what is lost, in the same honest register as the
+existing rows. So `method` is built, and it feeds the row's `loses` group rather than `sameJob`. A
+reader is told the difference and decides; the engine does not decide for them.
 
-The visible wording goes through `/copy-review` with a picture. **Any change to the stand-in
-row's box goes to Design**, not into this plan.
+**The wording is `LOSES exile`** (the lost method named), not "returns to hand, not exiled": the
+row comma-joins each group's items, so a tag with its own comma reads as two losses. Ruled in
+`/copy-review` on 2026-10-02 and recorded in the run plan's Task 5 ("What the row draws"), which
+is the one place the copy is specified. The review in this lane is the whole process for it
+(d9, 2026-10-02). **Any change to the stand-in row's box goes to Design**, not into this plan.
 
 The reviewer measured **65 of 74 bounce cards labelled removal**. Bounce is removal that gives the card back;
 exile is removal that answers recursion. A stand-in that treats them as equal is wrong against
