@@ -75,7 +75,7 @@ It must answer, concretely enough that Task 2 falls out of it:
 Task 2's input, and a field absent from it does not get built.
 
 - [x] Write the amendment.
-- [ ] Take the copy through `/copy-review`. (Wording reviewed 2026-10-02, in the run plan's Task 5; the PICTURE is owed by the consumer's PR, the first build that draws the row.)
+- [x] Take the copy through `/copy-review`. (2026-10-02, in the run plan's Task 5. The review in this lane is the whole process: d9, 2026-10-02.)
 - [x] Publish the derived field list as the first section of Task 2.
 
 **PR 1 — spec only, no code.**

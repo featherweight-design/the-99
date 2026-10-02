@@ -337,6 +337,8 @@ ONE input, not two:
 - **A server switch, `STAND_IN_LABELS_ENABLED`.** Off (the default, and production until Hugh flips it), `readLabels`
   is not called and the map is empty. `CARD_LABELS_ENABLED` is the labelling workflow's cron kill switch, a
   repository variable, and gating the app on it would tie whether players see labels to whether the cron runs.
+  **Release order (d9, 2026-10-02):** after `SWAP_TOOLS_ENABLED` and after the backfill is published to production.
+  It changes the QUALITY of stand-ins, not what the app can do, so it owes no About entry.
 
 ### Q1 — which reading compares a PAIR
 
@@ -417,7 +419,7 @@ keeps none of the original's deck-relevant jobs is not offered, as today (E1 rul
 
 The row's `keeps` / `gains` / `loses` tags (`sheet-model.ts:208-213`) are built from the same three lists as today:
 `shared`, `extra` and `missing`. A labelled pair fills them from labelled jobs, named with the existing `job` copy.
-Two additions, both in the `loses` group. Their wording passed `/copy-review` here; the PICTURE the vocabulary plan asks for is taken in the consumer's PR, the first build that can draw the row, and the review is re-read against it there:
+Two additions, both in the `loses` group. Their wording passed `/copy-review` here, which is the whole of its process (d9, 2026-10-02):
 
 - **A method downgrade (Q3).** The `loses` group names the METHOD the stand-in does not have, so a bounce kept for
   an exile reads **KEEPS removal  LOSES exile** (the groups sit apart by `GROUP_GAP_CLASS`, with no separator glyph; `stand-ins-sheet.tsx:266-285`). Keys: `swapToolsCopy.sheet.method` =
