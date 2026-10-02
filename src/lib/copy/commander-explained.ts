@@ -217,9 +217,9 @@ export const explainedCopy = {
       label: "Roles",
       weight: (w: number) => `${w} pts`,
       body:
-        "Whether you own enough ramp, draw, removal and board wipes to field a deck at all. Measured against a per-role baseline, not against this commander.",
+        "Whether you own enough ramp, draw, removal and board wipes to field a deck at all. Measured against what this commander’s decks run, or a per-role baseline where we have no figures for it.",
       bodyMobile:
-        "Enough ramp, draw, removal and wipes to field a deck. Against a per-role baseline.",
+        "Enough ramp, draw, removal and wipes to field a deck. Against what its decks run, where we know.",
     },
     synergy: {
       label: "Synergy",

@@ -45,6 +45,20 @@ vi.mock("../edhrec/client", () => ({
 const support = vi.hoisted(() => ({
   lists: new Map<string, { total: number | null; oracleIds: string[] }>(),
 }));
+// The role-target read is its own module and not what these tests are about: every commander
+// answers the flat targets, as one with nothing measured does.
+// Flat by default. `measured` switches every commander to targets of 0, which meet every role,
+// so a case can see the loaded figure reach the score rather than the flat constants.
+const roleTargetMock = vi.hoisted(() => ({ measured: false }));
+vi.mock("../profile/role-targets", async () => {
+  const { ROLE_TARGETS } = await vi.importActual<typeof import("./roles")>("./roles");
+  return {
+    loadRoleTargetsForCommanders: async (cs: { oracleId: string }[]) =>
+      new Map(cs.map((c) => [c.oracleId, roleTargetMock.measured
+        ? { of: "commander", targets: { ramp: 0, draw: 0, removal: 0, wipes: 0 } }
+        : { of: "flat", targets: { ...ROLE_TARGETS } }])),
+  };
+});
 vi.mock("../edhrec/support-read", () => ({
   loadSupportLists: vi.fn(async () => support.lists),
 }));
@@ -80,6 +94,21 @@ describe("scoreOneCommander", () => {
     // The one owned card is colour-legal and is not the commander, so the pool
     // is 1: nothing is subtracted for a commander that was never in it.
     expect(got!.colorPoolSize).toBe(1);
+  });
+
+  // The page's score and its role panels read one set of targets, and the score is the half a
+  // flat constant could stand in for unseen.
+  it("grades the roles against the targets the reader loaded", async () => {
+    pool.collection = [card({ oracleId: "owned-1", name: "Owned" })];
+    pool.card = [card({ oracleId: "unowned", name: "Atraxa, Praetors' Voice" })];
+    const flat = await scoreOneCommander("user-targets-flat", "unowned", "atraxa");
+    roleTargetMock.measured = true;
+    try {
+      const measured = await scoreOneCommander("user-targets-measured", "unowned", "atraxa");
+      expect(measured!.fitRoles).toBeGreaterThan(flat!.fitRoles);
+    } finally {
+      roleTargetMock.measured = false;
+    }
   });
 
   it("returns null for a commander-legal card that cannot be a commander", async () => {

@@ -772,8 +772,15 @@ export const RANK_SCORE_UNWRITTEN = -1;
  * row says it should not be there: the same rows, a different verdict on which of
  * them may exist. Refusing version 5 makes the next read recompute, and
  * `persistScores` deletes every row it does not name.
+ *
+ * Version 7 grades the role component against each commander's MEASURED role targets rather
+ * than the flat `ROLE_TARGETS` (brief 2026-09-28 §5.4): the same `pickRoleTargets` answer the
+ * deck's strip and the fill read. `fit_roles`, `score` and `rank_score` all move, over rows of
+ * the same shape — the blindness this mechanism exists for — so a version-6 set is refused and
+ * recomputed on its next read. A warm cached payload built from one needs no bump of its own:
+ * the deployment rides in every cache key (`cache/deployment.ts`).
  */
-export const SCORE_WRITER_CURRENT = 6;
+export const SCORE_WRITER_CURRENT = 7;
 
 export const commanderScores = pgTable("commander_scores", {
   userId: text("user_id").notNull(),

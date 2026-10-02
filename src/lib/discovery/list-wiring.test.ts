@@ -45,6 +45,20 @@ vi.mock("../decks/availability-query", () => ({
   loadAvailability: (...args: unknown[]) =>
     (loadAvailability as unknown as (...a: unknown[]) => unknown)(...args),
 }));
+// The role-target read is its own module and not what these tests are about: every commander
+// answers the flat targets, as one with nothing measured does.
+// Flat by default. `measured` switches every commander to targets of 0, which meet every role,
+// so a case can see the loaded figure reach the score rather than the flat constants.
+const roleTargetMock = vi.hoisted(() => ({ measured: false }));
+vi.mock("../profile/role-targets", async () => {
+  const { ROLE_TARGETS } = await vi.importActual<typeof import("../recs/roles")>("../recs/roles");
+  return {
+    loadRoleTargetsForCommanders: async (cs: { oracleId: string }[]) =>
+      new Map(cs.map((c) => [c.oracleId, roleTargetMock.measured
+        ? { of: "commander", targets: { ramp: 0, draw: 0, removal: 0, wipes: 0 } }
+        : { of: "flat", targets: { ...ROLE_TARGETS } }])),
+  };
+});
 vi.mock("./candidates", () => ({
   loadCandidates: (...args: unknown[]) =>
     (loadCandidates as unknown as (...a: unknown[]) => unknown)(...args),
@@ -110,6 +124,21 @@ describe("loadDiscovery — wiring", () => {
     expect(got.availOk).toBe(false);
     // The ranking survives a failed read: only the receipt was ever at stake.
     expect(got.items).toHaveLength(1);
+  });
+
+  // The fit score reads the commander's loaded targets, not the flat constants. Swapping the
+  // loaded map for anything else passes the pure assembly test, which injects its own.
+  it("scores against the targets the reader loaded", async () => {
+    const flat = await loadDiscovery("user-1", { sort: "fit" });
+    roleTargetMock.measured = true;
+    try {
+      const measured = await loadDiscovery("user-1", { sort: "fit" });
+      expect(measured.items.length).toBeGreaterThan(0);
+      const roles = (l: typeof flat) => l.items.map((i) => i.fitRoles).reduce((a, b) => a + b, 0);
+      expect(roles(measured)).toBeGreaterThan(roles(flat));
+    } finally {
+      roleTargetMock.measured = false;
+    }
   });
 
   it("reads the subtitle's collection size off the whole collection", async () => {

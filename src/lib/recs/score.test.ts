@@ -200,30 +200,41 @@ describe("scoreCommander", () => {
   ];
 
   it("counts only color-legal cards in the pool", () => {
-    const s = scoreCommander({ commander, collection, support: support(["Sol Ring", "Cultivate"]), inclusionByName: null });
+    const s = scoreCommander({ roleTargets: ROLE_TARGETS, commander, collection, support: support(["Sol Ring", "Cultivate"]), inclusionByName: null });
     expect(s.colorPoolSize).toBe(3); // Bolt excluded
   });
 
   it("counts owned stored support cards (color-legal only)", () => {
-    const s = scoreCommander({ commander, collection, support: support(["Sol Ring", "Lightning Bolt", "Craterhoof Behemoth"]), inclusionByName: null });
+    const s = scoreCommander({ roleTargets: ROLE_TARGETS, commander, collection, support: support(["Sol Ring", "Lightning Bolt", "Craterhoof Behemoth"]), inclusionByName: null });
     expect(s.edhrecOwnedCount).toBe(1);
     expect(s.edhrecTotal).toBe(3);
   });
 
   it("reports role counts and gaps against targets", () => {
-    const s = scoreCommander({ commander, collection, support: support(null), inclusionByName: null });
+    const s = scoreCommander({ roleTargets: ROLE_TARGETS, commander, collection, support: support(null), inclusionByName: null });
     expect(s.roleCounts).toEqual({ ramp: 2, draw: 1, removal: 0, wipes: 0 });
     expect(s.roleGaps).toEqual(["ramp", "draw", "removal", "wipes"]);
   });
 
+  // Brief §5.4: a gap is a count short of the commander's OWN target, not the flat one. This
+  // collection's two ramp and one draw meet a commander whose decks run that little, and fall
+  // well short of 10/10/8/3.
+  it("names a role as a gap against the targets it was given", () => {
+    const s = scoreCommander({
+      roleTargets: { ramp: 2, draw: 1, removal: 0, wipes: 0 },
+      commander, collection, support: support(null), inclusionByName: null,
+    });
+    expect(s.roleGaps).toEqual([]);
+  });
+
   it("degrades: null edhrec fields but still scores by pool+roles", () => {
-    const s = scoreCommander({ commander, collection, support: support(null), inclusionByName: null });
+    const s = scoreCommander({ roleTargets: ROLE_TARGETS, commander, collection, support: support(null), inclusionByName: null });
     expect(s.edhrecOwnedCount).toBeNull();
     expect(s.score).toBeGreaterThan(0);
   });
 
   it("treats an empty stored support list as no synergy data", () => {
-    const s = scoreCommander({ commander, collection, support: support([]), inclusionByName: null });
+    const s = scoreCommander({ roleTargets: ROLE_TARGETS, commander, collection, support: support([]), inclusionByName: null });
     expect(s.edhrecTotal).toBeNull();
     expect(s.edhrecOwnedCount).toBeNull();
     expect(s.fitSynergy).toBeNull();
@@ -231,8 +242,8 @@ describe("scoreCommander", () => {
   });
 
   it("ranks a commander with more EDHREC overlap higher, all else equal", () => {
-    const low = scoreCommander({ commander, collection, support: support(["Craterhoof Behemoth"]), inclusionByName: null });
-    const high = scoreCommander({ commander, collection, support: support(["Sol Ring", "Cultivate", "Read the Bones"]), inclusionByName: null });
+    const low = scoreCommander({ roleTargets: ROLE_TARGETS, commander, collection, support: support(["Craterhoof Behemoth"]), inclusionByName: null });
+    const high = scoreCommander({ roleTargets: ROLE_TARGETS, commander, collection, support: support(["Sol Ring", "Cultivate", "Read the Bones"]), inclusionByName: null });
     expect(high.score).toBeGreaterThan(low.score);
   });
 
@@ -242,7 +253,7 @@ describe("scoreCommander", () => {
   // rather than its own rounding.
   it("segments are integers and add up to the printed score", () => {
     for (const topCards of [null, [], ["Sol Ring"], ["Sol Ring", "Cultivate", "Craterhoof Behemoth"]]) {
-      const s = scoreCommander({ commander, collection, support: support(topCards), inclusionByName: null });
+      const s = scoreCommander({ roleTargets: ROLE_TARGETS, commander, collection, support: support(topCards), inclusionByName: null });
       expect(Number.isInteger(s.fitPool)).toBe(true);
       expect(Number.isInteger(s.fitRoles)).toBe(true);
       if (s.fitSynergy !== null) expect(Number.isInteger(s.fitSynergy)).toBe(true);
@@ -251,14 +262,14 @@ describe("scoreCommander", () => {
   });
 
   it("scores a commander EDHREC does not index out of pool and roles alone", () => {
-    const s = scoreCommander({ commander, collection, support: support(null), inclusionByName: null });
+    const s = scoreCommander({ roleTargets: ROLE_TARGETS, commander, collection, support: support(null), inclusionByName: null });
     expect(s.fitSynergy).toBeNull();
     expect(s.measurableTotal).toBe(POOL_WEIGHT + ROLES_WEIGHT);
     expect(s.score).toBeLessThanOrEqual(s.measurableTotal);
   });
 
   it("scores a commander with a synergy read out of the full scale", () => {
-    const s = scoreCommander({ commander, collection, support: support(["Sol Ring"]), inclusionByName: null });
+    const s = scoreCommander({ roleTargets: ROLE_TARGETS, commander, collection, support: support(["Sol Ring"]), inclusionByName: null });
     expect(s.measurableTotal).toBe(POOL_WEIGHT + ROLES_WEIGHT + SYNERGY_WEIGHT);
   });
 
@@ -269,7 +280,7 @@ describe("scoreCommander", () => {
   // perfect 40/40 beside a note saying fit came from pool and roles alone. Ruled
   // 2026-09-16.
   it("ranks an unindexed commander by the score it prints", () => {
-    const unindexed = scoreCommander({ commander, collection, support: support(null), inclusionByName: null });
+    const unindexed = scoreCommander({ roleTargets: ROLE_TARGETS, commander, collection, support: support(null), inclusionByName: null });
     expect(unindexed.rankScore).toBe(unindexed.score);
     expect(unindexed.rankScore).toBeLessThanOrEqual(POOL_WEIGHT + ROLES_WEIGHT);
   });
@@ -279,7 +290,7 @@ describe("scoreCommander", () => {
   // here to state that the field now has no formula of its own, so a future change that
   // gives it one has to break this as well as the case above.
   it("leaves an indexed commander's rank where its score is", () => {
-    const indexed = scoreCommander({ commander, collection, support: support(["Sol Ring"]), inclusionByName: null });
+    const indexed = scoreCommander({ roleTargets: ROLE_TARGETS, commander, collection, support: support(["Sol Ring"]), inclusionByName: null });
     expect(indexed.rankScore).toBe(indexed.score);
   });
 
@@ -303,7 +314,7 @@ describe("scoreCommander", () => {
     ];
     while (maxed.length < 200) maxed.push(card({}));
 
-    const untracked = scoreCommander({ commander, collection: maxed, support: support(null), inclusionByName: null });
+    const untracked = scoreCommander({ roleTargets: ROLE_TARGETS, commander, collection: maxed, support: support(null), inclusionByName: null });
     expect(untracked.score).toBe(POOL_WEIGHT + ROLES_WEIGHT);
     // Under the rescale this read 100 — the highest rank the list can award, given to the
     // commander it knows least about.
@@ -311,14 +322,14 @@ describe("scoreCommander", () => {
   });
 
   it("passes commander colorIdentity and imageUri through onto the score", () => {
-    const s = scoreCommander({ commander, collection, support: support(null), inclusionByName: null });
+    const s = scoreCommander({ roleTargets: ROLE_TARGETS, commander, collection, support: support(null), inclusionByName: null });
     expect(s.colorIdentity).toEqual(["B", "G"]);
     expect(s.imageUri).toBe("https://cards.example/golgari.jpg");
   });
 
   // Task 2: roleCards
   it("roleCards.ramp contains a ramp card name", () => {
-    const s = scoreCommander({ commander, collection, support: support(null), inclusionByName: null });
+    const s = scoreCommander({ roleTargets: ROLE_TARGETS, commander, collection, support: support(null), inclusionByName: null });
     // Sol Ring and Cultivate are both ramp
     expect(s.roleCards.ramp.map((c) => c.name)).toContain("Sol Ring");
     expect(s.roleCards.ramp.map((c) => c.name)).toContain("Cultivate");
@@ -327,7 +338,7 @@ describe("scoreCommander", () => {
   // The chips on the commander detail page open card detail, which takes an
   // oracle id and nothing else — a name-only role list cannot be clicked.
   it("carries each role card's oracle id alongside its name", () => {
-    const s = scoreCommander({ commander, collection, support: support(null), inclusionByName: null });
+    const s = scoreCommander({ roleTargets: ROLE_TARGETS, commander, collection, support: support(null), inclusionByName: null });
     const solRing = s.roleCards.ramp.find((c) => c.name === "Sol Ring");
     expect(solRing?.oracleId).toBe(
       collection.find((c) => c.name === "Sol Ring")!.oracleId,
@@ -347,7 +358,7 @@ describe("scoreCommander", () => {
       typeLine: "Legendary Creature",
       colorIdentity: ["W", "U", "B", "G"],
     });
-    const s = scoreCommander({ commander: commanderW, collection: colWithWrath, support: support(null), inclusionByName: null });
+    const s = scoreCommander({ roleTargets: ROLE_TARGETS, commander: commanderW, collection: colWithWrath, support: support(null), inclusionByName: null });
     expect(s.roleCards.wipes.map((c) => c.name)).toContain("Wrath of God");
     expect(s.roleCards.removal.map((c) => c.name)).not.toContain("Wrath of God");
   });
@@ -364,7 +375,7 @@ describe("scoreCommander", () => {
   // a stored list names, IN THE LIST'S ORDER, since `overlapOwned` feeds
   // `receiptsPreview` and that prints the first three.
   it("overlapOwned holds the pool's support cards in the support list's order", () => {
-    const s = scoreCommander({
+    const s = scoreCommander({ roleTargets: ROLE_TARGETS,
       commander,
       collection,
       // Read the Bones and Cultivate are both in the pool, listed in that order;
@@ -381,14 +392,14 @@ describe("scoreCommander", () => {
   });
 
   it("overlapOwned is [] when there is no stored support list", () => {
-    const s = scoreCommander({ commander, collection, support: support(null), inclusionByName: null });
+    const s = scoreCommander({ roleTargets: ROLE_TARGETS, commander, collection, support: support(null), inclusionByName: null });
     expect(s.overlapOwned).toEqual([]);
     expect(s).not.toHaveProperty("overlapMissing");
   });
 
   // #333: no synergy data is NOT rescaled back up to a 100-point denominator.
   it("fitSynergy is null with no stored support list, and the score is not rescaled", () => {
-    const s = scoreCommander({ commander, collection, support: support(null), inclusionByName: null });
+    const s = scoreCommander({ roleTargets: ROLE_TARGETS, commander, collection, support: support(null), inclusionByName: null });
     expect(s.fitSynergy).toBeNull();
     expect(s.fitPool).toBeLessThanOrEqual(15);
     expect(s.fitRoles).toBeLessThanOrEqual(25);
@@ -412,7 +423,7 @@ describe("scoreCommander", () => {
     ];
     while (maxed.length < 200) maxed.push(card({}));
 
-    const s = scoreCommander({ commander, collection: maxed, support: support(null), inclusionByName: null });
+    const s = scoreCommander({ roleTargets: ROLE_TARGETS, commander, collection: maxed, support: support(null), inclusionByName: null });
     expect(s.fitSynergy).toBeNull();
     expect(s.fitPool).toBe(15);
     expect(s.fitRoles).toBe(25);
@@ -421,8 +432,8 @@ describe("scoreCommander", () => {
 
   // The ranking consequence the issue's acceptance criteria asks for.
   it("ranks a measured commander above an unmeasured one with the same pool and roles", () => {
-    const unmeasured = scoreCommander({ commander, collection, support: support(null), inclusionByName: null });
-    const measured = scoreCommander({
+    const unmeasured = scoreCommander({ roleTargets: ROLE_TARGETS, commander, collection, support: support(null), inclusionByName: null });
+    const measured = scoreCommander({ roleTargets: ROLE_TARGETS,
       commander,
       collection,
       support: support(["Sol Ring", "Cultivate", "Read the Bones"]),
@@ -433,7 +444,7 @@ describe("scoreCommander", () => {
 
   // Task 2: with synergy present
   it("score is sum of fit components when synergy is present", () => {
-    const s = scoreCommander({
+    const s = scoreCommander({ roleTargets: ROLE_TARGETS,
       commander,
       collection,
       support: support(["Sol Ring", "Cultivate", "Read the Bones"]),
@@ -459,7 +470,7 @@ describe("roleCards", () => {
   });
 
   it("carries oracle id, name, and the EDHREC figure", () => {
-    const s = scoreCommander({
+    const s = scoreCommander({ roleTargets: ROLE_TARGETS,
       commander, collection: [rampA],
       support: support(null), inclusionByName: { "sol ring": 82 },
     });
@@ -471,7 +482,7 @@ describe("roleCards", () => {
   });
 
   it("orders by inclusion descending with absent figures last", () => {
-    const s = scoreCommander({
+    const s = scoreCommander({ roleTargets: ROLE_TARGETS,
       commander, collection: [rampB, rampA, rampC],
       support: support(null), inclusionByName: { "sol ring": 82, "arcane signet": 61 },
     });
@@ -488,7 +499,7 @@ describe("roleCards", () => {
       typeLine: "Legendary Creature — Human Wizard // Legendary Planeswalker — Jace",
       oracleText: "Draw a card, then discard a card.",
     });
-    const s = scoreCommander({
+    const s = scoreCommander({ roleTargets: ROLE_TARGETS,
       commander, collection: [dfc],
       support: support(null), inclusionByName: { "jace, vryn's prodigy": 44 },
     });
@@ -496,14 +507,14 @@ describe("roleCards", () => {
   });
 
   it("leaves every figure null when there is no inclusion map", () => {
-    const s = scoreCommander({
+    const s = scoreCommander({ roleTargets: ROLE_TARGETS,
       commander, collection: [rampA], support: support(null), inclusionByName: null,
     });
     expect(s.roleCards.ramp[0]?.inclusionPct).toBeNull();
   });
 
   it("keeps pool order when there is no inclusion map at all", () => {
-    const s = scoreCommander({
+    const s = scoreCommander({ roleTargets: ROLE_TARGETS,
       commander, collection: [rampC, rampA, rampB], support: support(null), inclusionByName: null,
     });
     expect(s.roleCards.ramp.map((c) => c.name))
@@ -515,7 +526,7 @@ describe("roleCards", () => {
     // carrying topCards and no inclusion numbers arrives as {}. Every figure is
     // null, and sorting would present the panel alphabetically as though the
     // order meant something.
-    const s = scoreCommander({
+    const s = scoreCommander({ roleTargets: ROLE_TARGETS,
       commander, collection: [rampC, rampA, rampB], support: support(null), inclusionByName: {},
     });
     expect(s.roleCards.ramp.map((c) => c.name))
@@ -523,7 +534,7 @@ describe("roleCards", () => {
   });
 
   it("keeps pool order when the map holds no figure for any card in the pool", () => {
-    const s = scoreCommander({
+    const s = scoreCommander({ roleTargets: ROLE_TARGETS,
       commander, collection: [rampC, rampA, rampB],
       support: support(null), inclusionByName: { "some other card": 70 },
     });
@@ -543,7 +554,7 @@ describe("roleCards", () => {
       oracleId: "y", name: "Ancient Craving", typeLine: "Sorcery",
       oracleText: "Draw three cards.",
     });
-    const s = scoreCommander({
+    const s = scoreCommander({ roleTargets: ROLE_TARGETS,
       commander, collection: [rampC, rampA, drawA, drawB],
       support: support(null), inclusionByName: { "sol ring": 82 },
     });
@@ -553,7 +564,7 @@ describe("roleCards", () => {
   });
 
   it("breaks an inclusion tie on name so the order is stable", () => {
-    const s = scoreCommander({
+    const s = scoreCommander({ roleTargets: ROLE_TARGETS,
       commander, collection: [rampC, rampB],
       support: support(null), inclusionByName: { "arcane signet": 50, "fellwar stone": 50 },
     });

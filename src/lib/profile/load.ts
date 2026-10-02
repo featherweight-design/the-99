@@ -19,9 +19,9 @@ import { cacheForUser } from "../cache/user-lists";
 import { canonicalPair } from "../edhrec/pair";
 import { COMBO_DETECTION, isInfiniteOrGameEnding } from "../spellbook/combo-features";
 import { countCondition, identityCondition } from "../staples/condition";
-import { buildDeckProfile, type ProfileCardRow, type ProfileInput } from "./build";
+import { buildDeckProfile, pickRoleTargets, type ProfileCardRow, type ProfileInput } from "./build";
+import { roleTargetsFrom } from "./role-targets";
 import { profileFingerprint } from "./fingerprint";
-import { ROLE_TARGETS } from "../recs/roles";
 import type {
   BracketPopulation,
   ComboRef,
@@ -269,29 +269,6 @@ function compositionFrom(row: CompositionRow | undefined) {
   return { targets: targets as CompositionTargets, averageCurve: row.avgCurve };
 }
 
-/**
- * The four role figures off a candidate row, or null when the row carries none.
- *
- * ALL-OR-NOTHING like the composition, and for the same reason — a 0 substituted for a null
- * turns "nobody measured this" into "this deck wants no wipes". Read INDEPENDENTLY of the
- * composition: a commander indexed before the role pass carries one and not the other.
- */
-function roleTargetsFrom(row: CompositionRow | undefined) {
-  if (!row) return null;
-  // The BUCKET rows carry their own denominator and it is the only honest test for them — see
-  // `withRoles` above. A commander or pair row omits the field entirely, and nullity is the
-  // right test there because its columns are nullable.
-  if (row.withRoles !== undefined && row.withRoles <= 0) return null;
-  const { avgRamp: ramp, avgDraw: draw, avgRemoval: removal, avgWipes: wipes } = row;
-  // FINITE, not merely non-null. A null is what the database returns for "not derived", but a
-  // row that reaches here malformed — undefined fields, a NaN out of a bad cast — walks past a
-  // null check, and what a non-finite floor costs is not a wrong target: every
-  // `counts[role] < floor` comparison against NaN is false, so the role pass finds no role
-  // open and places NOTHING. The whole deck falls to the residual, silently.
-  const four = [ramp, draw, removal, wipes];
-  if (!four.every((v): v is number => typeof v === "number" && Number.isFinite(v))) return null;
-  return { ramp: four[0]!, draw: four[1]!, removal: four[2]!, wipes: four[3]! };
-}
 
 /**
  * The expensive half. Builds FROM the head's rows and NEVER re-reads `deck_cards`.
@@ -692,21 +669,23 @@ export async function loadSkeletonForCommanders(
   ] as const;
   const hit = chain.find(([, value]) => value != null);
 
-  const roleChain = [
-    ["pair", roleTargetsFrom(pairRow ?? undefined)],
-    ["commander", roleTargetsFrom(commanderRow ?? undefined)],
-    ["identity", identityRoles],
-    ["count", countRoles],
-  ] as const;
-  const roleHit = roleChain.find(([, value]) => value != null);
+  // The rungs are built ONCE and handed both to this skeleton and to the profile path's
+  // `candidates`: two copies of the same four reads could drop a rung from one while the other,
+  // which `probe:bracket` walks, kept it, and a created deck would be built to different targets
+  // than the profile then grades it against.
+  const roles = {
+    pair: roleTargetsFrom(pairRow ?? undefined),
+    commander: roleTargetsFrom(commanderRow ?? undefined),
+    identity: identityRoles,
+    count: countRoles,
+  };
+  const roleTargets = pickRoleTargets(roles);
 
   const commanderDeckCount = pairRow?.deckCount ?? commanderRow?.deckCount ?? null;
   return {
     skeleton: {
       composition: hit ? { of: hit[0], ...hit[1]! } : null,
-      roleTargets: roleHit
-        ? { of: roleHit[0], targets: roleHit[1]! }
-        : { of: "flat", targets: { ...ROLE_TARGETS } },
+      roleTargets,
       thinCondition,
       condition,
       staples,
@@ -719,12 +698,7 @@ export async function loadSkeletonForCommanders(
         identity: compositionFrom(identityRow ?? undefined),
         count: compositionFrom(countRow ?? undefined),
       },
-      roles: {
-        pair: roleTargetsFrom(pairRow ?? undefined),
-        commander: roleTargetsFrom(commanderRow ?? undefined),
-        identity: identityRoles,
-        count: countRoles,
-      },
+      roles,
       thinCondition,
     },
     condition,

@@ -4,7 +4,9 @@ import { loadCollectionPool } from "../recs/recommend";
 import { buildPoolRollup, rollupFor, type PoolRollup } from "../recs/pool-rollup";
 import { loadCandidates, type CandidateRow } from "./candidates";
 import { readPrices, slotFor, type PriceAggRow, type PriceSlot } from "./price";
-import { computeFit } from "../recs/score";
+import { computeFit, type RoleName } from "../recs/score";
+import { ROLE_TARGETS } from "../recs/roles";
+import { loadRoleTargetsForCommanders } from "../profile/role-targets";
 import { gapSlotFor, type GapSlot } from "../edhrec/gap-slot";
 import { assignDiscoverySlugs } from "./slugs";
 import {
@@ -166,6 +168,9 @@ type AssembleInput = {
   freePoolSize: number;
   sort: "fit" | "new";
   availOk: boolean;
+  /** Each candidate's `pickRoleTargets` answer, by oracle id: the fit score's role component
+   *  is graded against these, exactly as the owned lane's is (brief 2026-09-28 §5.4). */
+  roleTargets: Map<string, Record<RoleName, number>>;
 };
 
 export function assembleDiscovery(input: AssembleInput): DiscoveryList {
@@ -221,6 +226,7 @@ export function assembleDiscoveryWithIds(input: AssembleInput): { list: Discover
         roleCounts: rollup.roleCounts,
         ownedSupport: c.ownedSupport,
         edhrecTotal: c.edhrecTotal,
+        roleTargets: input.roleTargets.get(c.oracleId) ?? ROLE_TARGETS,
       })),
     };
   });
@@ -442,13 +448,15 @@ export async function loadDiscoveryWithIds(
     collection.map((c) => c.oracleId),
   );
 
-  const [priceRead, playedTags] = await Promise.all([
+  const [priceRead, playedTags, roleTargets] = await Promise.all([
     readPrices(candidates.map((c) => c.oracleId)),
     loadPlayedTags(userId),
+    loadRoleTargetsForCommanders(candidates),
   ]);
 
   return assembleDiscoveryWithIds({
     availOk,
+    roleTargets: new Map([...roleTargets].map(([id, t]) => [id, t.targets])),
     candidates,
     playedTags,
     prices: priceRead.prices,
