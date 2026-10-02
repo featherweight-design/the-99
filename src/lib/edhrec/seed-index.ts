@@ -637,6 +637,8 @@ export async function buildCommanderIndex(
   r.roleTargets = roles.written;
   r.pairRoleTargets = roles.pairsWritten;
 
+  // The shipped pass clears inside its own publish transaction; this covers an injected one,
+  // and costs one empty delete otherwise.
   // AND CLEAR AGAIN, because the fit score reads these figures (brief 2026-09-28 §5.4) and
   // the clear above ran before them. A /commanders or Home load between the two persists
   // scores against the PREVIOUS role targets, and nothing else retires those rows: the role
@@ -700,6 +702,9 @@ async function clearRolesFor(written: RunWrites) {
         .where(sql`(${commanderPairSupport.commanderOracleId}, ${commanderPairSupport.partnerOracleId}) in (${sql.join(keys, sql`, `)})`)
         .returning({ id: commanderPairSupport.commanderOracleId });
     }
+    // The roles just moved (to null), so the scores graded against them go in the same
+    // transaction, for the reason the publish gives.
+    await clearPersistedScoresIn(tx);
     return { commanders: c.length, pairs: p.length };
   });
 }
@@ -904,6 +909,12 @@ export async function deriveAndWriteRoleTargets(
             as v(id, partner, ramp, draw, removal, wipes)
          where ps.commander_oracle_id = v.id and ps.partner_oracle_id = v.partner`);
     }
+
+    // AND THE SCORES, in this same transaction: the fit score reads these figures (brief
+    // 2026-09-28 §5.4), so a clear in a transaction of its own would let a reader find the new
+    // figures beside scores graded against the old ones until it ran. Exclusive under
+    // `SCORE_INDEX_LOCK`, so a score write already past its guard lands first and goes too.
+    await clearPersistedScoresIn(tx);
   });
 
   return {
