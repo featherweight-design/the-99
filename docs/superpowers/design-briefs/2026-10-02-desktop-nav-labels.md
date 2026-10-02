@@ -53,8 +53,9 @@ Design picks one, or proposes a third that meets the same bar, and says why.
    - **Pending:** the navigation-pending pip (`pending-pip.tsx`, the nav-pending handoff), a 4px
      diamond under a pressed destination that is still loading. Its horizontal centering is a
      separate open bug (H5, the diamonds sit right of their icons), so draw it centered.
-   - **First-run locked:** before a collection exists, the four lockable slots draw as padlocks in a
-     sunken 48px group, each opening a note naming the slot (`nav.tsx`, `RailLock`).
+   - **First-run locked:** before a collection exists, the four lockable slots keep their icons,
+     dimmed, in a sunken 48px well with one shared padlock at its foot, and each opens a note
+     naming the slot (`nav.tsx`, `RailLock`).
      A label for a locked slot must not read as an invitation the note then refuses.
 4. **Parity with the phone.** The tab bar's labels are the vocabulary. The rail uses the same five
    words (`ITEMS` in `nav.tsx`), and nothing new.
