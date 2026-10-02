@@ -74,15 +74,30 @@ It must answer, concretely enough that Task 2 falls out of it:
 **Then, and only then:** derive the exact list of label fields stand-ins needs. That list is
 Task 2's input, and a field absent from it does not get built.
 
-- [ ] Write the amendment.
-- [ ] Take the copy through `/copy-review`.
-- [ ] Publish the derived field list as the first section of Task 2.
+- [x] Write the amendment.
+- [ ] Take the copy through `/copy-review`. (Wording reviewed 2026-10-02, in the run plan's Task 5; the PICTURE is owed by the consumer's PR, the first build that draws the row.)
+- [x] Publish the derived field list as the first section of Task 2.
 
 **PR 1 — spec only, no code.**
 
 ---
 
 ## Task 2 — The schema, derived from Task 1
+
+### The derived field list (Task 1, 2026-10-02)
+
+From the consumer spec, `2026-09-25-card-labels-run.md` Task 5, "The field list this spec reads". Only these are
+built:
+
+- **new:** `affects: self | opponents | each | null` (gate, Q2); `to: hand | battlefield | top | null` (gate where
+  both cards carry one); `method: destroy | exile | bounce | shrink | null` (ranks lower and names the lost method,
+  Q3);
+- **kept, read as before:** `space`, `kind`, `rampKind` (gate), `restrictedTo` (redefined: what the effect touches;
+  read against the deck for an own-cards job, against the original's restriction for an opponents job), `trigger` and `recurrence` (rank lower), `modal` (counting);
+- **kept, read by nothing:** `threshold`. Not extended. It stays only because existing rows carry it;
+- **new roles, label-owned:** `tutor`, `counterspell`.
+
+The candidates below were the input to that list, and stay as its reasoning.
 
 **Rule: include a field only if the consumer spec reads it.** The candidates below come from the
 cold review, with its measurements against staging's 10,128 staged labels. I have not

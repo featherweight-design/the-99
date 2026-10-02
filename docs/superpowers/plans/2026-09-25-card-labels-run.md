@@ -313,68 +313,208 @@ read it.
 
 ## Task 5 — consumers: how E1 reads the labels
 
-**Files:** modify `src/lib/swaps/gather.ts` and `src/lib/swaps/stand-ins.ts`; create
-`src/lib/labels/read.ts`.
+> **AMENDED 2026-10-02 (the vocabulary plan's Task 1, `2026-09-28-card-label-vocabulary.md`).** This is the consumer
+> spec the label schema is derived from, written before any schema change. It carries Hugh's four rulings on #1088
+> (2026-09-28): **Q1** compare by text when either card is unlabelled; **Q2** `affects` must match; **Q3** a bounce
+> is allowed and its row says so; **Q4** `tutor` is held to ≥0.9 precision and recall in the gold set. The field list
+> at the end of this task is the input to the vocabulary plan's Task 2, and a field absent from it is not built.
+> Line references are to `origin/main` on 2026-10-02.
 
-**The boundary has to move, and that is the bulk of this PR.** `loadStandIns`
-(`gather.ts:110`) does the database work and calls `rankStandIns`
-(`stand-ins.ts:238`), which today receives `original`, `candidates`, `priced` and
-the catalog's creature subtypes — **neither the labels nor any deck context**. The
-`restrictedTo` rule below needs the deck's key creature type, which is deck context.
-So:
+### The boundary
 
-- `loadStandIns` additionally reads the label rows for the original and every
-  candidate (one query, keyed on the oracle ids it already has), and derives the
-  deck's key creature type from the deck it already loaded.
-- `rankStandIns` takes two new inputs: a `Map<oracleId, Job[]>` and the deck's key
-  creature type (nullable — a deck with no tribal lean restricts nothing).
-- It stays PURE, so every rule below is unit-testable without a database, which is
-  what makes the fallback behaviour assertable at all.
+`loadStandIns` (`gather.ts:132`) already does the database work and calls `rankStandIns` (`stand-ins.ts:253`), which
+already receives the deck as a `DeckLens` (`honest.ts:43`, built at `gather.ts:199-204`). The first version of this task
+said `rankStandIns` had no deck context. That was true when it was written and is not now, so the boundary moves by
+ONE input, not two:
 
-Without that, PR 5 cannot consume the labels no matter what the matching rules say.
+- **`src/lib/labels/read.ts` (new).** `readLabels(oracleIds): Promise<Map<string, Job[]>>`, one query on
+  `card_labels`. A row whose `input_hash` no longer equals `labelInputHash(card, row.model)` (`prompt.ts:264`) of
+  the card's current inputs is **absent** from the map, never returned stale: a stale label describes text the card
+  no longer has.
+- **`loadStandIns`** calls it once, for the original and every candidate it already holds.
+- **`rankStandIns`** takes the map as one more argument and stays PURE, so every rule below is unit-testable with no
+  database, which is what makes the fallback assertable at all.
+- **A server switch, `STAND_IN_LABELS_ENABLED`.** Off (the default, and production until Hugh flips it), `readLabels`
+  is not called and the map is empty. `CARD_LABELS_ENABLED` is the labelling workflow's cron kill switch, a
+  repository variable, and gating the app on it would tie whether players see labels to whether the cron runs.
 
-A stand-in currently matches on a job KIND. With labels it must agree on the limits
-too, in this order of strictness:
+### Q1 — which reading compares a PAIR
 
-1. **`rampKind` must be equal.** d9's ruling: each kind matches only itself. A
-   `burstMana` never matches `makesTreasure` or `tapsForMana`. This alone kills the
-   Warg-vs-Runadi ramp match.
-2. **`restrictedTo` must be compatible with the DECK**, not merely equal to the
-   original's. A Wolf-restricted counter is a real job in a Wolf deck and dead in a
-   Dinosaur one, so the test is against the deck's key creature type (2b's ruling a),
-   not against the card being replaced.
-3. **`trigger` and `recurrence`** are advisory: a mismatch DOWNRANKS rather than
-   excludes. They were the limits the two models disagreed about most (and the
-   report's blind sheet is mostly trigger disagreements), so treating them as hard
-   gates would spend the models' weakest signal on refusals.
-4. **`modal` matters for counting, not matching.** A modal job is one the card does
-   INSTEAD of another; anything summing a card's jobs must not credit both.
+**A pair is compared by labels only when BOTH cards carry a fresh label. Otherwise both are compared by text**
+(`jobOf`, `sameJob`, `honestJobs`, exactly as today). Always like with like, decided per pair, never per card or
+per job:
 
-**The fallback must apply `frontFaceOracle`,** as `stand-ins.ts:47` already does.
-Measuring the baseline without it understated the text rules in the sample, and
-shipping a fallback without it would let a land back score `ramp` for an Aura.
+- a labelled original against an unlabelled candidate: text, both sides;
+- an unlabelled original: text against every candidate, whatever they carry;
+- no card is hidden for lacking a label.
 
-**Text rules stay as the FALLBACK**, per card and per job: a card with no label row,
-or whose label row is stale by hash, is matched by `classifyRoles`/`cardThemes`
-exactly as today. That keeps the feature working on a database this pass has never
-run against — which is every database until it does — and makes the rollout
-reversible by ignoring one table.
+Two consequences, both deliberate:
 
-**`restrictedTo` is the weakness to watch, and it is why the model choice is
-Sonnet.** Measured 0.864 for Sonnet on the gating subset against 0.767 for Haiku —
-so roughly one gating restriction in seven is still missed on the recommended model,
-and just under one in four on the cheaper one. TRIBAL restrictions are 1.000 on both
-and need no watching.
+- **It ships before any label exists.** With the map empty (switch off, or no rows) every pair takes the text path,
+  which is today's behaviour byte for byte. The consumer can land inert and labels light it up later.
+- **It degrades to correct, never to wrong.** A partially labelled catalog gives fewer upgraded pairs, never a pair
+  judged by two standards at once.
 
-Two failure directions, costing different things, and both are measured:
+The first version of this task fell back "per card and per job". That mixes standards inside one comparison, and Q1
+rules it out.
 
-- a **missed** restriction is the original bug returning — a card matched into a
-  deck it is dead in (Sonnet 6 of 44 wrong, Haiku 10 of 43);
-- an **invented** restriction refuses a stand-in that would have been fine (Sonnet
-  5, Haiku 7).
+### The labelled job, and what "for this deck" means
 
-If false matches survive this pass, look here first; the gold re-score in Task 6 is
-what tells you whether the stored labels or the matching rule is at fault.
+A label is a list of `Job`s. For the stand-in comparison each job is read as:
+
+- **its key:** `space` + `kind`, plus `rampKind` for ramp. A `role/ramp` job with a null `rampKind` is ramp of no
+  kind, and shares with nothing (the E1 rule: a stand-in keeps ramp only in a kind it shares).
+- **its deck relevance, for a job that points at the player's OWN cards** (`affects: self` or `null`): a job whose
+  `restrictedTo` names a creature type is a job for this deck only when it is the deck's `keyType`; one naming a
+  noncreature subtype only when the deck holds or makes it (`DeckLens.held`). This is `honestJobs`' rule
+  (`honest.ts:162`) read off a field instead of a regex, and it is where the Warg's Wolf counters stop counting in a
+  Dinosaur deck.
+- **a job that points at OPPONENTS' cards** (`affects: opponents` or `each`) is never dropped for its restriction:
+  there `restrictedTo` is what the effect TOUCHES (the vocabulary plan's redefinition, Task 2), the type of the
+  target, and a "destroy target Dragon" does its job in any deck facing Dragons. Its restriction is compared between
+  the two cards instead (gate 4 below). Today's `offTypeLine` regex drops such a line in every deck but a Dragon
+  deck; this is a deliberate change on the labelled path only.
+- **a job that does nothing for the deck is dropped from BOTH cards** before anything is compared, exactly as a
+  limited line is today. It is neither kept, gained nor lost.
+
+### `sameJob` with labels — what must match, and what only ranks
+
+A candidate keeps an original's job when it carries a job with the same key that passes every GATE. A candidate that
+keeps none of the original's deck-relevant jobs is not offered, as today (E1 ruling d).
+
+**Gates. A mismatch means the job is not kept:**
+
+1. **`rampKind` equal** (d9, 2026-09-25). Each kind matches only itself, so `burstMana` never stands in for
+   `tapsForMana`. This alone ends the Warg-for-Runadi ramp match.
+2. **`affects` equal (Q2).** Self-mill is never kept for opponent-mill, nor self-discard for opponent-discard.
+   `null` (a job with no direction) matches only `null`.
+3. **`to` equal where both carry one.** A reanimation (`battlefield`) is not a regrowth (`hand`), and a tutor to the
+   battlefield is not a tutor to hand. `top` is a destination of its own. *(The vocabulary plan's Task 2 says these
+   are "not interchangeable" without saying gate or advice; this spec reads it as a gate and says so, so it can be
+   overruled in one place.)*
+
+4. **A target restriction no NARROWER than the original's**, for a job that points at opponents' cards. The
+   candidate's `restrictedTo` must be `null` or equal to the original's: "destroy target creature" is not kept by
+   "destroy target Dragon", and the reverse is kept (it does more).
+
+**Advice. A mismatch keeps the job and ranks the row lower:**
+
+5. **`trigger` and `recurrence`.** These were the limits the two models disagreed about most, so treating them as
+   hard gates would spend the weakest signal on refusals. A kept job whose trigger or recurrence differs from the
+   original's sorts below one that matches, inside the same `shared` count.
+6. **`method` (Q3).** Bounce stands in for exile or destroy. The job is kept, the row ranks below one with the same
+   method, and its **loses** tags name what is lost (below). The reader is told and decides; the engine does not
+   decide for them.
+
+**Counting:**
+
+7. **`modal`.** A modal job is one the card does INSTEAD of another. When a candidate keeps two of the original's
+   jobs only through two modal jobs of its own, it is credited ONE in the `shared` count that orders the rows. Both
+   still show as kept, since the card can do either.
+8. **`threshold`** is not read. Nothing in the consumer compares it, so Task 2 does not build anything new for it.
+
+### What the row draws
+
+The row's `keeps` / `gains` / `loses` tags (`sheet-model.ts:208-213`) are built from the same three lists as today:
+`shared`, `extra` and `missing`. A labelled pair fills them from labelled jobs, named with the existing `job` copy.
+Two additions, both in the `loses` group. Their wording passed `/copy-review` here; the PICTURE the vocabulary plan asks for is taken in the consumer's PR, the first build that can draw the row, and the review is re-read against it there:
+
+- **A method downgrade (Q3).** The `loses` group names the METHOD the stand-in does not have, so a bounce kept for
+  an exile reads **KEEPS removal  LOSES exile** (the groups sit apart by `GROUP_GAP_CLASS`, with no separator glyph; `stand-ins-sheet.tsx:266-285`). Keys: `swapToolsCopy.sheet.method` =
+  `{ destroy: "destroy", exile: "exile", bounce: "bounce", shrink: "shrink" }`, drawn as the loss only when the
+  original's method is `destroy` or `exile` and the stand-in's differs.
+
+  *`/copy-review`, 2026-10-02:* the vocabulary plan's example wording, `returns to hand, not exiled`, cannot go in this
+  slot. The row joins each group's items with commas (`stand-ins-sheet.tsx:278`, drawn in `COMMA_CLASS`), so a tag carrying its own comma
+  reads as two losses, `returns to hand` and `not exiled`. Naming the lost method keeps one item per fact, and
+  matches what the group already says for a lost job (`loses draw`). Hugh's ruling is what is said, not this
+  phrasing: the row tells the reader the stand-in gives up the exile.
+- **A trigger or recurrence difference**, which ranks lower (rule 5), draws no tag. Naming every advisory difference
+  would make most rows read as losses. The order already says it.
+
+The row's box, its tags' styling and its states do not change, so this needs no Design round.
+
+### Pool admission — a label-only candidate has to reach the comparison
+
+`spellPool` (`gather.ts:260-299`) picks the cheapest unlisted slice in SQL by `roleWords` over the front face's text
+(`:279`), BEFORE any comparison. A card that only its LABEL recognises as doing the job never enters the pool, and a
+label-driven matcher over a text-selected pool is incomplete by construction.
+
+So when the switch is on and the original is labelled, the pool gains a SECOND unlisted slice beside today's:
+
+- **the text slice, unchanged:** `roleWords` of the original's TEXT roles, cut to the cheapest `UNLISTED_POOL`
+  (600), exactly as today;
+- **the label slice:** cards with a label row carrying ANY of the original's deck-relevant job keys, one jsonb
+  containment test per key, OR-joined (`l.labels @> '[{"space":"role","kind":"removal"}]' or l.labels @> …`; a
+  single `@>` against the whole list would demand EVERY job), cut to its own cheapest 600.
+
+The pool is the UNION of the two. Two slices rather than one OR'd slice, because both feed a `limit`: one slice of
+600 over both arms would let cheaper label-admitted cards push out text-admitted cards today's sheet offers, and an
+unlabelled stand-in could vanish when the switch went on. With two slices, every card today's pool holds is still
+held, so the pool only ever grows. A label row stale by hash can admit a card through the label slice; that card
+then compares by text (Q1) and is dropped if its text does not match, so a stale row never puts a wrong card on
+the sheet.
+
+**A labelled original with no TEXT job.** Today `loadStandIns` skips the pool when `jobOf(original)` is `none`
+(`gather.ts:169`), and `rankStandIns` returns early on it (`stand-ins.ts:272`). With the switch on and the original
+labelled, the original's job is read from its label: a spell whose label carries a non-land role or theme is a
+`spell` job for that gate, its mana value from the card. Without this, the cards labels most help (whose text the
+regexes miss) would never get a sheet at all.
+
+**Pool words for the two new roles**, in `ROLE_WORDS`' register (so the TEXT arm finds them too once the app's
+`Role` union learns them; until then the label slice alone finds them):
+
+- `tutor`: `search your library for (?![^.]*\mland\M)[^.]*\mcard` (a non-land search, as the vocabulary defines it);
+- `counterspell`: `\mcounter target\M`. `removal`'s words already contain `counter target`, deliberately left alone
+  (Hugh: leave `REMOVAL_PATTERNS` alone).
+
+### Inertness, checkable rather than asserted
+
+With the switch off, or `card_labels` empty:
+
+- `readLabels` is not called, or returns an empty map, so every pair takes the text path;
+- the label slice is not queried (switch off) or matches nothing (no rows), so the pool is exactly today's rows;
+- **`pnpm test` and `probe:swap-engine` produce identical output to `origin/main`**, which the consumer's PR shows.
+
+### The test that tells this feature from a no-op
+
+**A label-only candidate reaches the sheet:** a card whose front face carries none of the role words, whose label
+says it does the original's job, is admitted by the pool and offered as a stand-in. Every other assertion here could
+pass on a build that never reads a label.
+
+### Two-faced cards
+
+A label describes the face the prompt was sent: `castFaceText` (`facet.ts:127`, applied by `renderCard`, `prompt.ts:115-130`), which drops the back face
+of a `modal_dfc` or `transform` card and keeps both halves of an adventure or split card. A labelled pair needs no
+face step of its own. The TEXT path keeps applying `frontFaceOracle` (`stand-ins.ts:53`), so a land back still cannot
+score `ramp` for an Aura on either path.
+
+### `restrictedTo` is the weakness to watch
+
+Measured 0.864 for Sonnet on the gating subset. Two failure directions, costing different things:
+
+- a **missed** restriction is the original bug returning: a card matched into a deck it is dead in;
+- an **invented** restriction refuses a stand-in that would have been fine.
+
+If false matches survive, look here first; the gold re-score in Task 6 says whether the stored labels or the rule
+is at fault.
+
+### The field list this spec reads — the input to the vocabulary plan's Task 2
+
+| Field | Read by | As |
+|---|---|---|
+| `space`, `kind` | every rule | the job's key |
+| `rampKind` | rule 1 | gate |
+| `restrictedTo` (redefined: what the effect touches) | deck relevance; gate 4 | drop an own-cards job the deck does not use; a target restriction may not narrow |
+| **`affects`: `self \| opponents \| each \| null`** (new) | rule 2 (Q2); which restriction reading applies | gate |
+| **`to`: `hand \| battlefield \| top \| null`** (new) | rule 3 | gate where both carry one |
+| **`method`: `destroy \| exile \| bounce \| shrink \| null`** (new) | rule 6 (Q3) | ranks lower, and the `loses` tag |
+| `trigger`, `recurrence` | rule 5 | ranks lower |
+| `modal` | rule 7 | counting |
+| `threshold` | nothing | **not extended**; kept only because existing rows carry it |
+
+New roles the consumer names: **`tutor`** and **`counterspell`**, label-owned (vocabulary plan, Task 2's
+decoupling), each with a `job` copy entry: **`a tutor`** and **`a counterspell`** (`/copy-review`, 2026-10-02: countable nouns take the article in this map, as `a finisher` and `a sacrifice outlet` do; both are already shipped strings: `tutor` in `card-mark.ts`, `a counterspell` in `src/lib/swaps/land.ts:295`).
 
 ## Task 6 — validation: re-score a gold subset
 
