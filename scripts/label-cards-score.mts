@@ -26,7 +26,7 @@ import { FIELD_BARS, fieldBars, jobBars, restrictionPair, stops, type Bar, type 
 import { GOLD } from "./lib/card-labels-gold.mjs";
 import { bestPairing } from "./lib/card-labels-pairing.mjs";
 import { ALL_MODELS, MODELS } from "./lib/card-labels-pricing.mjs";
-import { publishArtifacts } from "./lib/card-labels-publish.mjs";
+import { labelsRunMismatch, publishArtifacts, publishingResample, publishModels } from "./lib/card-labels-publish.mjs";
 import { METHOD_KINDS, TO_KINDS, type Job } from "../src/lib/labels/types.js";
 
 // The SHARED `Job`, not a local one. This file declared its own — a fourth description of
@@ -307,14 +307,20 @@ for (const [model, byCard] of Object.entries(predictions)) {
 }
 
 mkdirSync("out", { recursive: true });
-// PUBLISHING a one-model report would commit a comparison that is not one. The skip
-// above is for exploratory runs; with `--publish` both models must be present and
-// complete, or the committed artifact silently loses a column the report quotes.
+// PUBLISHING an incomplete report would commit a comparison that is not one. The skip
+// above is for exploratory runs; with `--publish` every model the target describes must be
+// present and complete (both for the first sample, Sonnet alone for LABEL_PUBLISH=resample),
+// or the committed artifact silently loses a column the report quotes.
 if (process.argv.includes("--publish")) {
-  for (const m of ["haiku", "sonnet"]) {
+  // The re-sample's score must be of the SUBMITTED run's labels, not a previous run's left on disk.
+  const stale = publishingResample() ? labelsRunMismatch(publishModels()) : null;
+  if (stale) die(`refusing to publish: ${stale}`);
+  for (const m of publishModels()) {
     const rows = predictions[m];
     if (!rows) die(`refusing to publish: out/labels-${m}.json is missing, so the comparison is incomplete`);
-    const answered = Object.values(rows).filter((v) => Array.isArray(v)).length;
+    // GOLD cards answered, by name: a re-sample's labels file also holds the random and strata cards, so a
+    // count over the whole file passes however many gold cards are missing.
+    const answered = GOLD.filter((r) => Array.isArray(rows[r.name])).length;
     if (answered < GOLD.length) die(`refusing to publish: ${m} answered ${answered} of ${GOLD.length} gold cards`);
   }
 }

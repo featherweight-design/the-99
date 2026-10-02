@@ -17,13 +17,22 @@ import Anthropic from "@anthropic-ai/sdk";
 import { neon } from "@neondatabase/serverless";
 
 import { GOLD } from "./lib/card-labels-gold.mjs";
+import { STRATA, STRATUM_SIZE } from "./lib/card-labels-strata.mjs";
 import { clearIntent, ledgerTotal, readLedger, unreconciled, writeIntent, writeReservation } from "./lib/card-labels-ledger.mjs";
 import { ALL_MODELS, costOf, MODELS, PRICING } from "./lib/card-labels-pricing.mjs";
 import { buildRequest, MAX_TOKENS_PER_BATCH, renderBody, SENDS_CACHE_BREAKPOINT, SYSTEM } from "../src/lib/labels/prompt.js";
 
-const CAP_USD = 5;
+// $5 was d9's cap for the first sample. A later run states its own, approved before it is dispatched
+// (d9's spend rule): `LABEL_CAP_USD`, still bound on the worst case plus what the ledger already holds.
+const CAP_USD = Number(process.env.LABEL_CAP_USD ?? 5);
+// A cap that is not a positive number refuses rather than reads as no cap: every comparison against NaN
+// is false, so a mistyped LABEL_CAP_USD would otherwise pass the spend check below whatever the estimate.
+if (!Number.isFinite(CAP_USD) || CAP_USD <= 0) {
+  console.error(`REFUSING: LABEL_CAP_USD must be a positive number of dollars, got ${JSON.stringify(process.env.LABEL_CAP_USD)}.`);
+  process.exit(2);
+}
 const CARDS_PER_BATCH = 12;   // ~12 cards keeps a reply inside max_tokens with room
-const RANDOM_N = Number(process.env.RANDOM_N ?? 400);
+const RANDOM_N = Number(process.env.RANDOM_N ?? 500);
 
 const dryRun = process.argv.includes("--dry-run");
 
@@ -69,7 +78,34 @@ const random = (await sql`
   where commander_legal and oracle_text is not null and name <> all(${goldNames})
   order by md5(name || 'label-sample') limit ${RANDOM_N}`) as CatalogCard[];
 
-const all = [...gold, ...random];
+// THE STRATA (the vocabulary plan's Task 5): about STRATUM_SIZE regex-chosen cards per new job, so a job
+// that appears on one card in two hundred is put in front of the model often enough to READ. They carry no
+// gold answers, so the bars score the gold set alone; the strata feed the free gates (label-cards-gates)
+// and the committed per-card labels a reader audits. Matched on the FIRST face's text (split_part), so a
+// split card's second half chooses nothing; the model is still sent the whole card. Drawn after the random set and
+// disjoint from it and from gold, so each card belongs to exactly one set and the random set's empty rate
+// stays an honest reading of the catalog.
+const taken = new Set([...goldNames, ...random.map((c) => c.name)]);
+const strata: Record<string, CatalogCard[]> = {};
+for (const [job, pattern] of Object.entries(STRATA)) {
+  const rows = (await sql`
+    select name, mana_cost, type_line, oracle_text, layout from cards
+    where commander_legal and oracle_text is not null and name <> all(${[...taken]})
+      and split_part(oracle_text, E'\n//\n', 1) ~* ${pattern}
+    order by md5(name || ${`label-strata-${job}`}) limit ${STRATUM_SIZE}`) as CatalogCard[];
+  for (const r of rows) taken.add(r.name);
+  strata[job] = rows;
+}
+const stratified = Object.values(strata).flat();
+
+const all = [...gold, ...random, ...stratified];
+// Which set each card came from, for the free gates (the empty rate reads the random set alone): never pooled.
+// Written only beside a SUBMISSION and stamped with its run id (below), never by a dry run or a refused one:
+// a membership file from another draw would put the wrong random set under the labels the gates read.
+const membership = {
+  gold: gold.map((c) => c.name), random: random.map((c) => c.name),
+  strata: Object.fromEntries(Object.entries(strata).map(([k, v]) => [k, v.map((c) => c.name)])),
+};
 const batches = chunk(all, CARDS_PER_BATCH);
 
 // ---- estimate, and refuse rather than truncate ------------------------------
@@ -133,8 +169,9 @@ for (const m of Object.keys(chosen) as (keyof typeof MODELS)[]) {
 const ledger = readLedger();
 const spentBefore = ledgerTotal(ledger);
 
-console.log(`cards: ${all.length} (gold ${gold.length}, random ${random.length}) in ${batches.length} batches of ${CARDS_PER_BATCH}`);
-console.log(`system block: ${sysTokens} estimated tokens (1,215 as billed); caching ${SENDS_CACHE_BREAKPOINT ? (PRICING.sonnet.caches ? "engages for sonnet only" : "engages for neither model") : "not requested"}, measured a net loss — see the note atop src/lib/labels/prompt.ts`);
+console.log(`cards: ${all.length} (gold ${gold.length}, random ${random.length}, strata ${stratified.length}) in ${batches.length} batches of ${CARDS_PER_BATCH}`);
+console.log(`  strata: ${Object.entries(strata).map(([k, v]) => `${k} ${v.length}`).join(", ")}`);
+console.log(`system block: ${sysTokens} estimated tokens; caching ${SENDS_CACHE_BREAKPOINT ? (PRICING.sonnet.caches ? "engages for sonnet only" : "engages for neither model") : "not requested"}, measured a net loss — see the note atop src/lib/labels/prompt.ts`);
 console.log("ESTIMATE (batch rates, both models):");
 lines.forEach((l) => console.log(l));
 console.log(`  TOTAL   $${estTotal.toFixed(3)} expected, $${worstTotal.toFixed(3)} worst case`);
@@ -217,6 +254,7 @@ for (const [key, model] of Object.entries(chosen) as [keyof typeof MODELS, strin
   // to strand a submitted batch: the ledger held its id, the collector never saw it,
   // and the next run submitted that model again.
   writeFileSync("out/batches.json", JSON.stringify({ runId, submitted, batches: batches.map((b) => b.map((c) => c.name)) }, null, 1));
+  writeFileSync("out/sample.json", JSON.stringify({ runId, ...membership }, null, 1));
   console.log(`${key}: submitted batch ${batch.id} (${requests.length} requests)`);
 }
 console.log("\nbatch ids written to out/batches.json — poll with `pnpm tsx scripts/label-cards-collect.mts`");

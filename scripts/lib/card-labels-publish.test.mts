@@ -1,10 +1,10 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { chdir, cwd } from "node:process";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { publishArtifacts } from "./card-labels-publish.mjs";
+import { labelsRunMismatch, publishArtifacts } from "./card-labels-publish.mjs";
 
 /**
  * The gate that stops an opt-in subset run replacing the baseline.
@@ -58,6 +58,48 @@ describe("publishing refuses an artifact that is not the default run", () => {
   it("passes an artifact that names no models", () => {
     writeFileSync("out/agreement.json", JSON.stringify({ cards: 400, sameJobs: 200 }));
     expect(() => publishArtifacts(["out/agreement.json"], true)).not.toThrow();
+  });
+
+  describe("the re-sample (LABEL_PUBLISH=resample)", () => {
+    beforeEach(() => { process.env.LABEL_PUBLISH = "resample"; });
+    afterEach(() => { delete process.env.LABEL_PUBLISH; });
+
+    it("publishes Sonnet alone to its own dated paths, never over the first sample", () => {
+      write({ sonnet: {} });
+      writeFileSync("out/labels-sonnet.json", JSON.stringify({ "Sol Ring": [] }));
+      publishArtifacts(["out/cost.json", "out/labels-sonnet.json"], true);
+      expect(existsSync("docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-cost.json")).toBe(true);
+      expect(existsSync("docs/superpowers/benchmarks/2026-09-25-card-labels-cost.json")).toBe(false);
+    });
+
+    it("copies nothing when any one source would refuse", () => {
+      writeFileSync("out/gates.json", "{}");
+      writeFileSync("out/labels-haiku.json", "{}");
+      expect(() => publishArtifacts(["out/gates.json", "out/labels-haiku.json"], true)).toThrow(/no committed path/);
+      expect(existsSync("docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-gates.json")).toBe(false);
+    });
+
+    it("refuses the default two-model run, which is not what the re-sample ran", () => {
+      write({ haiku: {}, sonnet: {} });
+      expect(() => publishArtifacts(["out/cost.json"], true)).toThrow(/covers haiku, sonnet/);
+    });
+  });
+
+  it("refuses an artifact the first sample never published, and an unknown target", () => {
+    writeFileSync("out/gates.json", "{}");
+    expect(() => publishArtifacts(["out/gates.json"], true)).toThrow(/no committed path is declared/);
+    process.env.LABEL_PUBLISH = "second";
+    try { expect(() => publishArtifacts(["out/gates.json"], true)).toThrow(/must be "first" or "resample"/); }
+    finally { delete process.env.LABEL_PUBLISH; }
+  });
+
+  it("binds labels to the submitted run by the collector's stamp", () => {
+    writeFileSync("out/batches.json", JSON.stringify({ runId: "A" }));
+    writeFileSync("out/labels-sonnet.run.json", JSON.stringify({ runId: "B" }));
+    expect(labelsRunMismatch(["sonnet"])).toMatch(/answers run B, not A/);
+    writeFileSync("out/labels-sonnet.run.json", JSON.stringify({ runId: "A" }));
+    expect(labelsRunMismatch(["sonnet"])).toBeNull();
+    expect(labelsRunMismatch(["haiku"])).toMatch(/unstamped/);
   });
 
   it("still writes nothing without --publish", () => {
