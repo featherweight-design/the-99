@@ -54,10 +54,10 @@ const isCreatureTypeName = (w: string, isCreatureType: (w: string) => boolean) =
   typeWords(w).every((t) => isCreatureType(t));
 
 /**
- * A type's words in the catalog's case: the catalog prints "Goblin", while the scorer, like the gate, reads
- * a restriction without case, so a "goblin" the model wrote is the same restriction.
+ * A type's words, exactly as printed ("Assembly-Worker", "Time Lord"): the prompt asks for the type as the
+ * card prints it, and the catalog's list holds it that way, so no case is changed here.
  */
-const typeWords = (w: string) => w.trim().split(/\s+/).map((t) => t.charAt(0).toUpperCase() + t.slice(1).toLowerCase());
+const typeWords = (w: string) => w.trim().split(/\s+/);
 
 /**
  * A restriction's alternatives: the prompt joins two types with "or" ("Dwarf or Vehicle"), and the
