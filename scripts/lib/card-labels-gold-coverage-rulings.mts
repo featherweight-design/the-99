@@ -21,7 +21,7 @@ export const COVERAGE_RULINGS: GoldRow[] = [
       j("role", "ramp", { rk: "multiplies", rt: "land", af: "self" }),
       j("theme", "pump", { rt: "creature", af: "self" }),
     ],
-    why: "Each land you tap adds one more of the same type: multiplies, restricted to land; mana is never doublers (d9, 2026-10-02). Trigger none, matching that precedent: the bonus rides every tap. Anthem is pump.",
+    why: "Each land you tap adds one more of the same type: multiplies, restricted to land; mana is never doublers (d9, 2026-10-02). Trigger none: the bonus rides every tap. Anthem is pump.",
   },
   {
     name: "Mana Flare", klass: "multiplies",
@@ -57,11 +57,10 @@ export const COVERAGE_RULINGS: GoldRow[] = [
     name: "Vorinclex, Voice of Hunger", klass: "multiplies",
     jobs: [
       j("role", "ramp", { rk: "multiplies", rt: "land", af: "self" }),
-      j("theme", "doublers", { af: "self" }),
       j("theme", "stax", { rt: "land", af: "opponents", tr: "other" }),
       j("theme", "evasion", { rt: "creature", af: "self" }),
     ],
-    why: "Your lands add one more of the same type: multiplies and doublers (the Mirari's Wake half). An opponent's land tapped for mana doesn't untap next turn: stax, on an opponent's tap (trigger other). Trample is evasion.",
+    why: "Your lands add one more of the same type: multiplies, restricted to land; mana is never doublers (d9, 2026-10-02). An opponent's land tapped for mana doesn't untap next turn: stax, on an opponent's tap (trigger other). Trample is evasion.",
   },
   {
     name: "Arcane Signet", klass: "multipliesNeg",
@@ -288,7 +287,7 @@ export const COVERAGE_RULINGS: GoldRow[] = [
   },
   {
     name: "Root Snare", klass: "protectionNeg",
-    jobs: [j("theme", "fog", { af: "self", ...once })],
+    jobs: [j("theme", "fog", { af: "each", ...once })],
     why: "A HARD NEGATIVE for protection: it prevents all combat damage this turn, which protects you in effect, but that is a fog and a fog is not protection.",
   },
   {

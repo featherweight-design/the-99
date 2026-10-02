@@ -22,7 +22,7 @@ import { frontFaceOracle } from "../src/lib/recs/faces";
 import { classifyRoles } from "../src/lib/recs/roles";
 import { loadCreatureTypes } from "../src/lib/swaps/gather";
 import { cardThemes } from "../src/lib/recs/themes";
-import { FIELD_BARS, fieldBars, NON_GATING, jobBars, restrictionPair, stops, type Bar, type Field } from "./lib/card-labels-bars.mjs";
+import { FIELD_BARS, fieldBars, gates, jobBars, restrictionPair, stops, type Bar, type Field } from "./lib/card-labels-bars.mjs";
 import { GOLD } from "./lib/card-labels-gold.mjs";
 import { bestPairing } from "./lib/card-labels-pairing.mjs";
 import { ALL_MODELS, MODELS } from "./lib/card-labels-pricing.mjs";
@@ -257,14 +257,14 @@ for (const [model, byCard] of Object.entries(predictions)) {
         // The subset that gates: a named creature type, or a card type a deck may
         // simply not play (artifact, land, Vehicle).
         if (f === "restrictedTo") {
-          if (!NON_GATING.has(gv)) {
+          if (gates(gv)) {
             const t = limits["restrictedTo(gating)"];
             if (gv === pv) { t.right++; t.infRight++; } else { t.wrong++; t.infWrong++; }
             if (isTribal(gv)) {
               const b = limits["restrictedTo(tribal)"];
               if (gv === pv) { b.right++; b.infRight++; } else { b.wrong++; b.infWrong++; }
             }
-          } else if (gv === "none" && !NON_GATING.has(pv)) {
+          } else if (gv === "none" && gates(pv)) {
             // INVENTED: gold records NO restriction at all and the model named a
             // type. Scoped to `gv === "none"` deliberately. The earlier version
             // fired whenever gold was in NON_GATING, which includes `creature` (49

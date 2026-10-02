@@ -114,8 +114,8 @@ THEMES (space "theme"): ${THEMES.join(", ")}
                   OWN death is not deathTrigger: label the job it does, with
                   trigger "dies".
   lifegain      — gains you life.
-  drain         — damage or life loss aimed ONLY at opponents. A Shock, which can
-                  hit any target, is not drain.
+  drain         — damage or life loss aimed ONLY at opponents. A burn spell that
+                  can hit any target is not drain.
   spellslinger  — rewards casting instants and sorceries, or noncreature
                   spells. "Whenever you cast a spell" alone is not spellslinger.
   landfall      — does something when a land enters under your control. Label
@@ -165,7 +165,9 @@ EVERY JOB CARRIES:
                  burstMana    — one-time mana from a source the cost consumes
                                 (sacrifice this creature/token/land for mana, a
                                 Spawn, Scion or Gold token), or a ritual spell.
-                                Never from a trigger
+                                A trigger that creates a Spawn or Scion is
+                                burstMana with that trigger; a trigger that
+                                adds mana directly is not
                  costReduction— makes OTHER spells you cast cost less. A card
                                 that reduces only ITS OWN cost (affinity,
                                 improvise, convoke) is not ramp; casting a
@@ -200,7 +202,8 @@ EVERY JOB CARRIES:
                combat damage, a tax on every player's spells, every player
                gaining control of something.
                  self      = clones (the copy is yours), pump, protection,
-                             fog, recursion (even from any graveyard), a land.
+                             recursion (even from any graveyard), a land.
+                 each      = fog, which prevents combat damage to everyone.
                  opponents = removal, counterspell, theft, graveyardHate.
                "Target player" discards, mills or loses life: opponents,
                unless the card plainly means you (a self-mill for value).

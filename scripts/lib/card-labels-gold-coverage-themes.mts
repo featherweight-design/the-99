@@ -456,8 +456,11 @@ export const COVERAGE_THEMES: GoldRow[] = [
   },
   {
     name: "Venerated Rotpriest", klass: "poison",
-    jobs: [j("theme", "poison", { af: "opponents" })],
-    why: "TOXIC 1 plus a target-opponent poison counter whenever your creature is targeted. One poison job covers both (judgement: the trigger is 'other', the keyword static).",
+    jobs: [
+      j("theme", "poison", { af: "opponents" }),
+      j("theme", "poison", { af: "opponents", tr: "other" }),
+    ],
+    why: "TOXIC 1, and a target-opponent poison counter whenever your creature is targeted: two abilities, so two poison jobs, the keyword static and the trigger 'other'.",
   },
   {
     name: "Bloated Contaminator", klass: "poison",
@@ -469,8 +472,11 @@ export const COVERAGE_THEMES: GoldRow[] = [
   },
   {
     name: "Ichor Rats", klass: "poison",
-    jobs: [j("theme", "poison", { af: "each" })],
-    why: "Infect, plus an ETB that gives EACH player a poison counter, you included. One poison job, affects each, which covers both clauses (judgement: the infect alone would be opponents).",
+    jobs: [
+      j("theme", "poison", { af: "opponents" }),
+      j("theme", "poison", { af: "each", tr: "etb", rec: "oneShot" }),
+    ],
+    why: "Infect, and an ETB that gives EACH player a poison counter, you included: two abilities, so two poison jobs. The infect is opponents; the ETB is each.",
   },
   {
     name: "Vishgraz, the Doomhive", klass: "poison",
@@ -667,38 +673,38 @@ export const COVERAGE_THEMES: GoldRow[] = [
   // ---- fog ----------------------------------------------------------------------------------
   {
     name: "Holy Day", klass: "fog",
-    jobs: [j("theme", "fog", { af: "self", rec: "oneShot" })],
+    jobs: [j("theme", "fog", { af: "each", rec: "oneShot" })],
     why: "Fog in white, the colour-shift check. Also a HARD NEGATIVE for protection.",
   },
   {
     name: "Darkness", klass: "fog",
-    jobs: [j("theme", "fog", { af: "self", rec: "oneShot" })],
+    jobs: [j("theme", "fog", { af: "each", rec: "oneShot" })],
     why: "Fog in black, the colour-shift check again. Also a HARD NEGATIVE for protection.",
   },
   {
     name: "Moment's Peace", klass: "fog",
-    jobs: [j("theme", "fog", { af: "self", rec: "oneShot" })],
+    jobs: [j("theme", "fog", { af: "each", rec: "oneShot" })],
     why: "Fog with flashback: castable twice, oneShot per the flashback convention.",
   },
   {
     name: "Constant Mists", klass: "fog",
-    jobs: [j("theme", "fog", { af: "self" })],
+    jobs: [j("theme", "fog", { af: "each" })],
     why: "Fog with buyback (sacrifice a land): it returns to hand and can be cast every turn, so repeatable (judgement: buyback is unbounded where flashback is a second cast).",
   },
   {
     name: "Spore Frog", klass: "fog",
-    jobs: [j("theme", "fog", { af: "self", tr: "activated", rec: "oneShot" })],
+    jobs: [j("theme", "fog", { af: "each", tr: "activated", rec: "oneShot" })],
     why: "A fog on a creature that sacrifices itself: activated, oneShot.",
   },
   {
     name: "Tangle", klass: "fog",
-    jobs: [j("theme", "fog", { af: "self", rec: "oneShot" })],
+    jobs: [j("theme", "fog", { af: "each", rec: "oneShot" })],
     why: "Fog, and attackers don't untap next turn. Judgement: that rider is not stax, being one untap step for creatures that attacked.",
   },
   {
     name: "Dawn Charm", klass: "fog",
     jobs: [
-      j("theme", "fog", { af: "self", rec: "oneShot", modal: true }),
+      j("theme", "fog", { af: "each", rec: "oneShot", modal: true }),
       j("theme", "protection", { rt: "creature", af: "self", rec: "oneShot", modal: true }),
       j("role", "counterspell", { af: "opponents", rec: "oneShot", modal: true }),
     ],
@@ -734,7 +740,7 @@ export const COVERAGE_THEMES: GoldRow[] = [
   {
     name: "Respite", klass: "fog",
     jobs: [
-      j("theme", "fog", { af: "self", rec: "oneShot" }),
+      j("theme", "fog", { af: "each", rec: "oneShot" }),
       j("theme", "lifegain", { af: "self", rec: "oneShot" }),
     ],
     why: "Fog that also gains 1 life per attacking creature.",
@@ -836,8 +842,11 @@ export const COVERAGE_THEMES: GoldRow[] = [
   },
   {
     name: "Asceticism", klass: "protection",
-    jobs: [j("theme", "protection", { rt: "creature", af: "self" })],
-    why: "Team hexproof plus REGENERATE for {1}{G}: both protection forms, one job (judgement: the regenerate is activated, the hexproof static; recorded static).",
+    jobs: [
+      j("theme", "protection", { rt: "creature", af: "self" }),
+      j("theme", "protection", { rt: "creature", af: "self", tr: "activated" }),
+    ],
+    why: "Team hexproof, and REGENERATE for {1}{G}: two abilities, so two protection jobs, the hexproof static and the regenerate activated.",
   },
   {
     name: "Guardian of Faith", klass: "protection",

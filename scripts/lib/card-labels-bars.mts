@@ -45,7 +45,7 @@ export const FIELD_VALUES: Record<Field, readonly string[]> = {
  * restrictions (a creature type, artifact, land, Vehicle) are barred. Compared without case, as the matcher does.
  */
 export const NON_GATING: ReadonlySet<string> = new Set(["creature", "permanent", "spell", "player", "none"]);
-const gates = (v: string) => !NON_GATING.has(v.toLowerCase());
+export const gates = (v: string) => !NON_GATING.has(v.toLowerCase());
 
 /**
  * A restriction is free text, so it is barred as a GATING restriction present and right. A wrong one is a miss
