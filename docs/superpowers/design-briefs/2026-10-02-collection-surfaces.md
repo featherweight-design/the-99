@@ -62,10 +62,12 @@ is a bug fixed separately), the card details sheet, and the replace flow.
 
 Two changes to this route are being built now, and the design has to work with both:
 
-- **The first window (performance lane, 2b, PR 4).** The collection list ships its first window of
-  cards with the page and fetches the rest after, so a large collection paints quickly. Whatever the
-  head does, it must not depend on the whole list being in the document at first paint. A count in
-  the head, for example, reads the total from the server, not from the cards drawn.
+- **The first window (performance lane, 2b, PR 4).** Every card's ROW ships with the page, so
+  search, filters, sorts and counts still run over the whole collection at once. What waits is each
+  row's DRAWN fields (art, facts, combo partners) outside the first window, fetched as rows come
+  into view (`plans/2026-09-28-list-payload-shrink.md`). So the head can count and filter as it does
+  today, but a tile it brings into view may briefly draw without its art: the 3-up tile needs a
+  state for that.
 - **The view drawn on the server (d8, the list-then-grid flash).** On desktop the page now draws the
   reader's chosen view (grid or rows) on the server, from a cookie that mirrors the stored choice,
   and the cookieless first visit draws both and lets CSS pick by width. So the view's container
