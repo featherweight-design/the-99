@@ -11,6 +11,8 @@ import { priceOf, priceState, type PriceFact } from "../decks/price";
 import { frontFaceOracle } from "../recs/faces";
 import { classifyRoles, type Role } from "../recs/roles";
 import { type Theme } from "../recs/themes";
+import { hasLabelledJob, labelledKeys, matchLabels } from "../labels/match";
+import { THEMES, type Job as LabelJob, type Method } from "../labels/types";
 import { honestJobs, type DeckLens, type SwapRole } from "./honest";
 import {
   colorSource, drawbacks, fetchFinds, givesUp, landCatch, landColors, landColorsOnce, type BasicType, type Color, type Drawback, type Finds, type GivenUp,
@@ -140,6 +142,15 @@ export type StandIn = {
   extra: (SwapRole | Theme)[];
   /** The original's jobs this spell does not do, roles then themes: the row's `gives up …` (R1). */
   missing: (SwapRole | Theme)[];
+  /**
+   * What the shared jobs are worth in the sort: their count, except that two kept only through a labelled
+   * stand-in's modal alternatives count once (the run plan's Task 5, rule 7).
+   */
+  credit: number;
+  /** Advisory mismatches among the kept jobs, labelled pairs only (rules 5 and 6): ranks lower, never drops. */
+  advisory: number;
+  /** The permanent answers the original removes by that this stand-in does not (Q3): drawn among `loses`. */
+  lostMethods: Method[];
   /** The job's colors this land makes only once, by sacrificing itself; its row names them. */
   once: Color[];
   /** A land's rung on the ladder (`landRung`); null for a spell. Orders the sheet, never drawn in B. */
@@ -228,7 +239,6 @@ const byPrice = (a: StandIn, b: StandIn) =>
  */
 const bySynergy = (a: StandIn, b: StandIn) =>
   (b.synergy ?? -Infinity) - (a.synergy ?? -Infinity) || byPrice(a, b);
-const sharing = (s: StandIn) => s.shared.length + s.sharedThemes.length;
 /** A staple's figure describes every commander, so it has no synergy here to rank on: it goes last. */
 const staplesLast = (a: StandIn, b: StandIn) => Number(a.isUniversal) - Number(b.isUniversal);
 /**
@@ -236,9 +246,53 @@ const staplesLast = (a: StandIn, b: StandIn) => Number(a.isUniversal) - Number(b
  * (Q6), so a creature that ramps and grows counters outranks a sorcery that only ramps; then synergy;
  * then price.
  */
-const bySharing = (a: StandIn, b: StandIn) => staplesLast(a, b) || sharing(b) - sharing(a) || bySynergy(a, b);
+const bySharing = (a: StandIn, b: StandIn) =>
+  staplesLast(a, b) || b.credit - a.credit || a.advisory - b.advisory || bySynergy(a, b);
 /** Lands on the ladder (item 2): the rung first, then synergy, then price, never the alphabet. */
 const byLadder = (a: StandIn, b: StandIn) => staplesLast(a, b) || (a.rung ?? 1) - (b.rung ?? 1) || bySynergy(a, b);
+
+const NO_LABELS: ReadonlyMap<string, readonly LabelJob[]> = new Map();
+
+const THEME_KEYS: ReadonlySet<string> = new Set(THEMES);
+const asRolesThenThemes = (keys: readonly string[]) =>
+  [...keys.filter((k) => !THEME_KEYS.has(k)), ...keys.filter((k) => THEME_KEYS.has(k))] as (SwapRole | Theme)[];
+
+/** The text comparison's half of a row: what `honestJobs` says both cards do for this deck. */
+function textSharing(
+  shared: SwapRole[], roles: SwapRole[], themes: Theme[], originalRoles: SwapRole[], originalThemes: Theme[], isLand: boolean,
+): Pick<StandIn, "sharedThemes" | "extra" | "missing" | "credit" | "advisory" | "lostMethods"> {
+  const sharedThemes = themes.filter((t) => originalThemes.includes(t));
+  return {
+    sharedThemes,
+    extra: [...roles.filter((r) => !originalRoles.includes(r)), ...themes.filter((t) => !originalThemes.includes(t))],
+    missing: isLand ? [] : [...originalRoles.filter((r) => !roles.includes(r)), ...originalThemes.filter((t) => !themes.includes(t))],
+    credit: shared.length + sharedThemes.length,
+    advisory: 0,
+    lostMethods: [],
+  };
+}
+
+/**
+ * The labelled comparison's half of a row (the run plan's Task 5), or null when the stand-in keeps none of
+ * the original's jobs for this deck, or costs more than it.
+ */
+function labelRow(
+  original: readonly LabelJob[], candidate: readonly LabelJob[], card: CardRow, job: Job, deck: DeckLens | null,
+  isCreatureType: (w: string) => boolean,
+): (Pick<StandIn, "shared" | "sharedThemes" | "extra" | "missing" | "credit" | "advisory" | "lostMethods">) | null {
+  if (job.kind !== "spell" || isLandFace(card.typeLine) || card.cmc > job.mv) return null;
+  const m = matchLabels(original, candidate, deck, isCreatureType);
+  if (m.shared.length === 0) return null;
+  return {
+    shared: m.shared.filter((k) => !THEME_KEYS.has(k)) as SwapRole[],
+    sharedThemes: m.shared.filter((k) => THEME_KEYS.has(k)) as Theme[],
+    extra: asRolesThenThemes(m.extra),
+    missing: asRolesThenThemes(m.missing),
+    credit: m.credit,
+    advisory: m.advisory,
+    lostMethods: m.lostMethods,
+  };
+}
 
 /**
  * The stand-ins for one original, in the type groups the sheet draws (ranking-rebuild addendum §1b).
@@ -264,14 +318,30 @@ export function rankStandIns(
    * gained or given up.
    */
   deck: DeckLens | null,
+  /**
+   * Fresh card labels by oracle id (`readLabels`); empty while `STAND_IN_LABELS_ENABLED` is off, which leaves
+   * every row exactly as the text comparison draws it. A pair is compared by its labels only when BOTH cards
+   * carry one (Q1); every other pair by text.
+   */
+  labels: ReadonlyMap<string, readonly LabelJob[]> = NO_LABELS,
 ): StandInGroups {
-  const job = jobOf(original);
+  const originalLabels = labels.get(original.oracleId);
+  const textJob = jobOf(original);
+  // A labelled spell whose text names no job is a spell job from its label: only a labelled stand-in can match it.
+  const job: Job = textJob.kind === "none" && originalLabels && !isLandFace(original.typeLine)
+    && hasLabelledJob(originalLabels, deck, isCreatureType)
+    ? { kind: "spell", roles: [], mv: original.cmc }
+    : textJob;
   // E1: a spell is matched on what it does for THIS deck, ramp read as its kind (`honestJobs`).
   const originalJobs = job.kind === "spell" ? honestJobs(original, isCreatureType, deck) : { roles: [], themes: [] };
   const originalThemes = originalJobs.themes;
   const originalRoles = originalJobs.roles;
   const originalPrice = stocked(original.oracleId, priced);
-  const read: StandInGroups = { job, originalCents: originalPrice?.cents ?? null, groups: [], jobRoles: originalRoles };
+  // A labelled original's header names what its label says it does here (roles, ramp by its kind).
+  const jobRoles = originalLabels && job.kind === "spell"
+    ? labelledKeys(originalLabels, deck, isCreatureType).filter((k) => !THEME_KEYS.has(k)) as SwapRole[]
+    : originalRoles;
+  const read: StandInGroups = { job, originalCents: originalPrice?.cents ?? null, groups: [], jobRoles };
   if (job.kind === "none") return read;
 
   const isLand = job.kind !== "spell";
@@ -280,13 +350,17 @@ export function rankStandIns(
   const other: StandIn[] = [];
   for (const c of candidates) {
     if (c.oracleId === original.oracleId) continue;
-    const match = sameJob(job, c);
-    if (!match) continue;
+    const candLabels = isLand ? undefined : labels.get(c.oracleId);
+    const labelled = originalLabels && candLabels
+      ? labelRow(originalLabels, candLabels, c, job, deck, isCreatureType)
+      : null;
+    if (originalLabels && candLabels && !labelled) continue;
+    if (!labelled && !sameJob(job, c)) continue;
     const jobs = isLand ? { roles: [], themes: [] } : honestJobs(c, isCreatureType, deck);
     // Sharing a coarse role is not enough: a stand-in keeps a job only when it does it for this deck,
     // and a ramp only in the same kind. One that keeps no role is not offered (E1 ruling d: Warg).
-    const shared: SwapRole[] = isLand ? [] : jobs.roles.filter((r) => originalRoles.includes(r));
-    if (!isLand && shared.length === 0) continue;
+    const shared: SwapRole[] = labelled ? labelled.shared : isLand ? [] : jobs.roles.filter((r) => originalRoles.includes(r));
+    if (!isLand && !labelled && shared.length === 0) continue;
     const price = stocked(c.oracleId, priced);
     const free = freeAfterTake(c, c.owned, c.free);
     if (!free && !(price && originalPrice && price.cents < originalPrice.cents)) continue;
@@ -302,12 +376,7 @@ export function rankStandIns(
       synergy: c.synergy,
       isUniversal: c.isUniversal,
       shared,
-      sharedThemes: themes.filter((t) => originalThemes.includes(t)),
-      extra: [...roles.filter((r) => !originalRoles.includes(r)), ...themes.filter((t) => !originalThemes.includes(t))],
-      missing: isLand ? [] : [
-        ...originalRoles.filter((r) => !roles.includes(r)),
-        ...originalThemes.filter((t) => !themes.includes(t)),
-      ],
+      ...(labelled ?? textSharing(shared, roles, themes, originalRoles, originalThemes, isLand)),
       drawbacks: isLand ? drawbacks(c) : [],
       once: job.kind === "land" ? job.colors.filter((color) => landColorsOnce(c).has(color)) : [],
       // A fetch finds its types rather than making colors, so only a land's colors are read for freeness.

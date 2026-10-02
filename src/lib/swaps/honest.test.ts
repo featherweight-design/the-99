@@ -33,7 +33,7 @@ const WOLF_DRUID = {
 const TYPES = new Set(["Wolf", "Dinosaur", "Elf", "Druid", "Cat", "Shaman", "Goblin", "Pirate", "Elemental"]);
 const isType = (w: string) => TYPES.has(w);
 const SUBTYPES = new Set(["Equipment", "Gate", "Treasure", "Food"]);
-const lens = (keyType: string | null, held: string[] = []): DeckLens => ({ keyType, isSubtype: (w) => SUBTYPES.has(w), held: new Set(held) });
+const lens = (keyType: string | null, held: string[] = []): DeckLens => ({ keyType, isSubtype: (w) => SUBTYPES.has(w), held: new Set(held), heldTypes: new Set() });
 const jobs = (c: { name: string; typeLine: string; oracleText: string }, key: string | null = "Dinosaur", held: string[] = []) =>
   honestJobs({ ...c, keywords: [] }, isType, lens(key, held));
 

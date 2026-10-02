@@ -10,7 +10,7 @@ const card = (name: string, typeLine = "Instant", oracleText = "", cmc = 2): Car
   ({ oracleId: `id-${name}`, name, typeLine, oracleText, keywords: [], cmc, imageUri: null });
 const standIn = (name: string, over: Partial<StandIn> = {}): StandIn => ({
   card: card(name), free: false, soft: 0, owned: 0, cents: 300, foilOnly: false, inclusion: null,
-  synergy: null, isUniversal: false, shared: ["removal"], sharedThemes: [], extra: [], missing: [], once: [], rung: null, drawbacks: [], givesUp: [], ...over,
+  synergy: null, isUniversal: false, shared: ["removal"], sharedThemes: [], extra: [], missing: [], once: [], rung: null, drawbacks: [], givesUp: [], credit: 1, advisory: 0, lostMethods: [], ...over,
 } as StandIn);
 const read = (over: Partial<StandInsRead>): StandInsRead => ({
   job: { kind: "spell", roles: ["removal"], mv: 2 }, originalCents: 1500, jobRoles: ["removal"],
@@ -368,5 +368,13 @@ describe("the stand-ins sheet's model", () => {
       expect(m.lead).toBe(copy.leadLands("white"));
       expect(m.groups[0].rows.map((r) => r.muted)).toEqual([[copy.givesUp("uncounterable spells")], [copy.givesUp("card draw")]]);
     });
+  });
+});
+
+describe("a labelled stand-in's lost method (Q3)", () => {
+  it("is named among the row's loses, after the jobs it gives up", () => {
+    const m = sheetModel(read({ groups: [same([standIn("Unsummon", { lostMethods: ["exile"], missing: ["draw"] })])] }));
+    expect(m.groups[0].rows[0].compare?.keeps).toEqual([copy.job.removal]);
+    expect(m.groups[0].rows[0].compare?.loses).toEqual([copy.job.draw, copy.method.exile]);
   });
 });

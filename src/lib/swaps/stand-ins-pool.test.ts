@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
+import { sql } from "drizzle-orm";
+import { PgDialect } from "drizzle-orm/pg-core";
+
 import { classifyRoles } from "../recs/roles";
-import { ROLE_WORDS, roleWords } from "./gather";
+import { ROLE_WORDS, roleWords, spellPool } from "./gather";
+import type { SpellRole } from "./stand-ins";
 
 // One text per pattern in `classifyRoles` (roles.ts), each shaped the way the catalog words it. The
 // unlisted pool is chosen by `ROLE_WORDS` in SQL before roles are read, so a role the words miss is
@@ -41,5 +45,35 @@ describe("ROLE_WORDS", () => {
     ]) {
       expect(js(roleWords(["ramp", "draw", "removal", "wipes"])).test(text), text).toBe(false);
     }
+  });
+});
+
+describe("spellPool's label slice (the run plan's Task 5)", () => {
+  const dialect = new PgDialect();
+  const args = {
+    deck: { commander: "00000000-0000-4000-8000-000000000001", partner: null }, userId: "user_1",
+    identity: sql.param(["G"]), draft: sql.param([]), cut: "00000000-0000-4000-8000-000000000002",
+    staples: sql.param([]), mv: 3,
+  };
+  const compile = (roles: SpellRole[], labels: string[]) => dialect.sqlToQuery(spellPool({ ...args, roles, labels }));
+
+  it("reads no label when it is given none, so the switch off leaves the text pool alone", () => {
+    expect(compile(["removal"], []).sql).not.toMatch(/card_labels|labelled/);
+  });
+
+  it("adds one containment per pattern, OR-joined, as its own slice", () => {
+    const patterns = [JSON.stringify([{ space: "role", kind: "removal" }]), JSON.stringify([{ space: "role", kind: "draw" }])];
+    const q = compile(["removal"], patterns);
+    expect(q.sql).toMatch(/labelled as \(/);
+    expect(q.sql.match(/cl\.labels @> \$\d+::jsonb/g)).toHaveLength(2);
+    expect(q.sql).toMatch(/cl\.labels @> \$\d+::jsonb or cl\.labels @> \$\d+::jsonb/);
+    expect(q.sql).toMatch(/c\.oracle_id in \(select oracle_id from labelled\)/);
+    expect(q.params).toEqual(expect.arrayContaining(patterns));
+  });
+
+  it("an original with no role words has an empty text slice, never the whole catalog", () => {
+    const q = compile([], [JSON.stringify([{ space: "role", kind: "removal" }])]);
+    expect(q.sql).not.toMatch(/split_part\(u\.oracle_text/);
+    expect(q.sql).toMatch(/and false/);
   });
 });

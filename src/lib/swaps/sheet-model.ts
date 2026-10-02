@@ -208,7 +208,11 @@ export function sheetModel(read: StandInsRead): SheetModel {
       const keeps = jobWords([...s.shared, ...s.sharedThemes]);
       const gains: string[] = jobWords(s.extra).filter((w) => !keeps.includes(w));
       if (s.card.cmc < job.mv) gains.push(copy.mvGain(s.card.cmc));
-      const loses = jobWords(s.missing).filter((w) => !keeps.includes(w) && !gains.includes(w));
+      // Q3: a stand-in that keeps removal but not the original's permanent answer says which it gives up.
+      const loses = [
+        ...jobWords(s.missing).filter((w) => !keeps.includes(w) && !gains.includes(w)),
+        ...s.lostMethods.map((m) => copy.method[m]),
+      ];
       const type = [...(same ? [] : [mainType(s.card.typeLine)]), ...(s.isUniversal ? [copy.compare.staple] : [])].join(" · ");
       return { body: [], muted: [], compare: fitCompare({ type: type || null, keeps, gains, loses }) };
     }

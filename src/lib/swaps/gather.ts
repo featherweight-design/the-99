@@ -12,6 +12,8 @@
  * its figure), the player's own copies (free ones lead), and the cheapest unlisted cards. So the
  * pool is exactly those three, with the unlisted half cut to the `UNLISTED_POOL` cheapest live
  * cards whose text carries a role's words; `rankStandIns` then keeps the ones that share a role.
+ * With `STAND_IN_LABELS_ENABLED` on and the original labelled, the unlisted half gains a second slice
+ * of the same size, chosen by the original's labelled jobs (the run plan's Task 5).
  * The cheapest-first order is only used to choose that pool; every figure the sheet draws comes
  * from `loadPrices`, the same read the buy tag uses.
  */
@@ -22,6 +24,10 @@ import { loadAvailability } from "../decks/availability-query";
 import { loadPrices } from "../decks/price-query";
 import { keyCreatureType } from "../recs/themes";
 import { loadUniversalStaples } from "../staples/universal";
+import { heldCardTypes, labelPatterns } from "../labels/match";
+import { readLabels, standInLabelsEnabled } from "../labels/read";
+import type { Job as LabelJob } from "../labels/types";
+import { isLandFace } from "../cards/facet";
 import { heldSubtypes } from "./honest";
 import { jobOf, rankStandIns, STAND_IN_GROUP_CAP, type Candidate, type CardRow, type SpellRole, type StandInGroups } from "./stand-ins";
 
@@ -164,22 +170,38 @@ export async function loadStandIns(deckId: string, userId: string, cutOracleId: 
   const identity = sql.param([...new Set(cmdrRows.rows.flatMap((r) => r.color_identity))]);
   const draft = sql.param([...new Set([...draftRows.rows.map((r) => r.oracle_id), ...commanderIds])]);
 
+  // Off, no label is read and the pool and every comparison are the text path's, unchanged.
+  const labelsOn = standInLabelsEnabled();
+  const originalLabels: readonly LabelJob[] | undefined = labelsOn && !isLandFace(original.typeLine)
+    ? (await readLabels([cutOracleId])).get(cutOracleId)
+    : undefined;
+  const patterns = originalLabels ? labelPatterns(originalLabels) : [];
   const job = jobOf(original);
+  // A labelled spell whose text names no job still gets a spell pool, from its label slice alone;
+  // whether its label does a job for this deck is `rankStandIns`'s call.
+  const spell = job.kind === "spell" || (job.kind === "none" && patterns.length > 0);
   const [candidates, creatureTypes, noncreatureSubtypes] = await Promise.all([
-    job.kind === "none" ? [] : db.execute<Row>(
-      job.kind === "spell"
-        ? spellPool({ deck, userId, identity, draft, mv: job.mv, roles: job.roles, cut: cutOracleId, staples: sql.param([...staples]) })
+    !spell && job.kind === "none" ? [] : db.execute<Row>(
+      spell
+        ? spellPool({
+          deck, userId, identity, draft, mv: original.cmc, roles: job.kind === "spell" ? job.roles : [],
+          labels: patterns, cut: cutOracleId, staples: sql.param([...staples]),
+        })
         : landPool({ deck, userId, identity, draft, cut: cutOracleId }),
     ).then((r) => r.rows),
     // Only a spell is matched on themes, so only a spell needs the tribal theme's type list.
-    job.kind === "spell" ? loadCreatureTypes() : new Set<string>(),
-    job.kind === "spell" ? loadNoncreatureSubtypes() : new Set<string>(),
+    spell ? loadCreatureTypes() : new Set<string>(),
+    spell ? loadNoncreatureSubtypes() : new Set<string>(),
   ]);
 
   const ownedIds = candidates.filter((r) => (r.owned ?? 0) > 0).map((r) => r.oracle_id);
-  const [availability, priced] = await Promise.all([
+  const [availability, priced, labels] = await Promise.all([
     ownedIds.length > 0 ? loadAvailability(userId, { oracleIds: ownedIds, excludeDeckId: deckId }) : new Map(),
     loadPrices([cutOracleId, ...candidates.map((r) => r.oracle_id)]),
+    // The candidates' labels, beside the original's: a pair is compared by its labels only when both carry one.
+    originalLabels
+      ? readLabels(candidates.map((r) => r.oracle_id)).then((m) => m.set(cutOracleId, [...originalLabels]))
+      : new Map<string, LabelJob[]>(),
   ]);
 
   const pool: Candidate[] = candidates.map((r) => {
@@ -202,7 +224,8 @@ export async function loadStandIns(deckId: string, userId: string, cutOracleId: 
       // The card being replaced is leaving, so what it holds does not count (d9).
       held: heldSubtypes([...draftRows.rows, ...cmdrRows.rows].filter((r) => r.oracle_id !== cutOracleId)
         .map((r) => ({ typeLine: r.type_line, oracleText: r.oracle_text }))),
-    }),
+      heldTypes: heldCardTypes([...draftRows.rows, ...cmdrRows.rows].filter((r) => r.oracle_id !== cutOracleId).map((r) => r.type_line)),
+    }, labels),
     original,
     commanders,
     newestAsOf: priced.newestAsOf,
@@ -256,8 +279,12 @@ function landPool(a: PoolArgs) {
   `;
 }
 
-/** The commander's list, the player's own copies, the cheapest unlisted cards (header), and every universal staple. */
-function spellPool(a: PoolArgs & { mv: number; roles: SpellRole[]; staples: ReturnType<typeof sql.param> }) {
+/**
+ * The commander's list, the player's own copies, the cheapest unlisted cards (header), and every universal staple.
+ * With `labels` (the switch on and the original labelled), a second unlisted slice by those labels beside the
+ * text's. A label-only original has no role words, so its text slice is empty rather than everything.
+ */
+export function spellPool(a: PoolArgs & { mv: number; roles: SpellRole[]; labels: readonly string[]; staples: ReturnType<typeof sql.param> }) {
   const guards = (alias: string) => sql.raw(`
     ${alias}.commander_legal
     and ${alias}.type_line !~* '^[^/]*\\mland\\M'
@@ -276,13 +303,31 @@ function spellPool(a: PoolArgs & { mv: number; roles: SpellRole[]; staples: Retu
         and u.oracle_id <> all(${a.draft}::uuid[])
         -- The FRONT face's text, as the role reader reads it: a spell whose back face is a land
         -- would otherwise spend a place on words only its back face carries.
-        and split_part(u.oracle_text, E'\\n//\\n', 1) ~* ${roleWords(a.roles)}
+        and ${a.roles.length > 0 ? sql`split_part(u.oracle_text, E'\\n//\\n', 1) ~* ${roleWords(a.roles)}` : sql`false`}
       group by p.oracle_id
       -- Ties broken by NAME, the order the sheet draws within a price, so the pool is the first
       -- rows the sheet would show rather than a uuid-ordered slice of a large tie at the floor.
       order by min(coalesce(pp.price_cents, pp.price_cents_foil, pp.price_cents_etched)) asc, min(u.name)
       limit ${UNLISTED_POOL}
-    )
+    )${a.labels.length > 0 ? sql`,
+    -- The label slice (the run plan's Task 5): its own cheapest slice, by the original's labelled
+    -- jobs, so a stand-in no role word finds can still reach the sheet. One containment per key.
+    labelled as (
+      select p.oracle_id
+      from printing_prices pp
+      join printings p on p.scryfall_id = pp.scryfall_id
+      join cards u on u.oracle_id = p.oracle_id
+      join card_labels cl on cl.oracle_id = u.oracle_id
+      where pp.as_of = (select as_of from newest)
+        and ${guards("u")}
+        and u.color_identity <@ ${a.identity}::text[]
+        and u.cmc <= ${a.mv}
+        and u.oracle_id <> all(${a.draft}::uuid[])
+        and (${sql.join(a.labels.map((pattern) => sql`cl.labels @> ${pattern}::jsonb`), sql` or `)})
+      group by p.oracle_id
+      order by min(coalesce(pp.price_cents, pp.price_cents_foil, pp.price_cents_etched)) asc, min(u.name)
+      limit ${UNLISTED_POOL}
+    )` : sql``}
     select ${COLUMNS}
     from cards c
     ${inclusionJoin(a.deck)}
@@ -295,6 +340,7 @@ function spellPool(a: PoolArgs & { mv: number; roles: SpellRole[]; staples: Retu
       -- Every universal staple is admitted by id, under the same guards: it is the one card the
       -- sheet names as a staple, so leaving it to the price slice would drop it silently (H4).
       and (s.oracle_id is not null or coalesce(o.owned, 0) > 0 or c.oracle_id in (select oracle_id from unlisted)
+        ${a.labels.length > 0 ? sql`or c.oracle_id in (select oracle_id from labelled)` : sql``}
         or c.oracle_id = any(${a.staples}::uuid[]))
   `;
 }

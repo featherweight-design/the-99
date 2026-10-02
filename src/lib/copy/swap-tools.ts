@@ -146,6 +146,11 @@ export const swapToolsCopy = {
       landfall: "landfall", tribal: "tribal",
     },
     /**
+     * Q3 (the run plan's Task 5, rule 6): the permanent answer a labelled stand-in does not keep, among a
+     * row's `loses` ("keeps removal  loses exile"). Owed to /copy-review.
+     */
+    method: { destroy: "destroy", exile: "exile", bounce: "bounce", shrink: "shrink" },
+    /**
      * H3: what a stand-in for a utility land gives up, the ability named or counted. E2 (d9, 2026-09-26): it reads
      * `loses`, the spell rows' word, so both kinds of row share one vocabulary. Owed to /copy-review.
      */

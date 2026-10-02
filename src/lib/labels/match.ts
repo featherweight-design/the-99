@@ -1,0 +1,144 @@
+/**
+ * The stand-ins comparison read off LABELS (the run plan's Task 5, amended 2026-10-02). Pure: every rule
+ * here is unit-tested with no database. `rankStandIns` calls it only for a pair where BOTH cards carry a
+ * fresh label (Q1); every other pair is compared by text, exactly as before.
+ */
+import type { DeckLens } from "../swaps/honest";
+import type { Job, Method } from "./types";
+
+/** A job's identity for sharing: ramp by its kind (E1), every other job by its name. */
+export function keyOf(job: Job): string | null {
+  if (job.space === "role" && job.kind === "ramp") return job.rampKind ?? null;
+  return job.kind;
+}
+
+/** The card types a `restrictedTo` may name (`prompt.ts`'s "artifact", "land", "creature"…). */
+const CARD_TYPES = new Set(["artifact", "battle", "creature", "enchantment", "instant", "land", "planeswalker", "sorcery"]);
+
+/** The card types a deck's cards carry (`DeckLens.heldTypes`), read off the type line's front, before any dash. */
+export function heldCardTypes(typeLines: readonly string[]): Set<string> {
+  const out = new Set<string>();
+  for (const line of typeLines) {
+    for (const face of line.split("//")) {
+      for (const w of face.split(/[—-]/)[0].toLowerCase().split(/\s+/)) if (CARD_TYPES.has(w)) out.add(w);
+    }
+  }
+  return out;
+}
+
+const pointsAtOpponents = (j: Job) => j.affects === "opponents" || j.affects === "each";
+
+/**
+ * Whether a job does anything for THIS deck. A job on the player's own cards (`affects` self or null)
+ * limited to a creature type counts only when it is the deck's key type; to a noncreature subtype, only
+ * when the deck holds or makes one; to a card type, only when the deck holds another card of it. A
+ * restriction none of those reads is KEPT: an unreadable limit must not cost the reader a job. A job
+ * aimed at opponents' cards is never dropped for its restriction, which names the TARGET there.
+ */
+export function relevant(job: Job, deck: DeckLens | null, isCreatureType: (w: string) => boolean): boolean {
+  const r = job.restrictedTo;
+  if (r === null || pointsAtOpponents(job)) return true;
+  if (CARD_TYPES.has(r.toLowerCase())) return deck !== null && deck.heldTypes.has(r.toLowerCase());
+  if (isCreatureType(r)) return deck !== null && deck.keyType === r;
+  if (deck !== null && deck.isSubtype(r)) return deck.held.has(r);
+  return true;
+}
+
+/** A card's jobs for this deck, by key. A Treasure maker's `treasure` theme is its ramp kind, named once. */
+function jobsByKey(jobs: readonly Job[], deck: DeckLens | null, isCreatureType: (w: string) => boolean): Map<string, Job[]> {
+  const out = new Map<string, Job[]>();
+  for (const j of jobs) {
+    if (!relevant(j, deck, isCreatureType)) continue;
+    const k = keyOf(j);
+    if (k === null || k === "land") continue;
+    out.set(k, [...(out.get(k) ?? []), j]);
+  }
+  if (out.has("makesTreasure")) out.delete("treasure");
+  return out;
+}
+
+/** The GATES: a mismatch means the candidate's job does not keep the original's. */
+function passes(orig: Job, cand: Job): boolean {
+  if ((orig.affects ?? null) !== (cand.affects ?? null)) return false;
+  if (orig.to !== null && cand.to !== null && orig.to !== cand.to) return false;
+  if (pointsAtOpponents(orig) && cand.restrictedTo !== null
+    && cand.restrictedTo.toLowerCase() !== (orig.restrictedTo ?? "").toLowerCase()) return false;
+  return true;
+}
+
+const PERMANENT_ANSWERS: readonly Method[] = ["destroy", "exile"];
+
+export type LabelMatch = {
+  /** The original's job keys the candidate keeps. */
+  shared: string[];
+  /** The candidate's job keys the original does not have. */
+  extra: string[];
+  /** The original's job keys the candidate does not keep. */
+  missing: string[];
+  /** Methods the original removes by that the candidate does not (Q3): the row's `loses`. */
+  lostMethods: Method[];
+  /** Advisory mismatches among the kept jobs (trigger, recurrence, method): ranks lower, never drops. */
+  advisory: number;
+  /** What the kept jobs are worth in the sort: two kept only through modal alternatives count once. */
+  credit: number;
+};
+
+export function matchLabels(
+  original: readonly Job[],
+  candidate: readonly Job[],
+  deck: DeckLens | null,
+  isCreatureType: (w: string) => boolean,
+): LabelMatch {
+  const orig = jobsByKey(original, deck, isCreatureType);
+  const cand = jobsByKey(candidate, deck, isCreatureType);
+  const shared: string[] = [];
+  const missing: string[] = [];
+  const lostMethods: Method[] = [];
+  let advisory = 0;
+  let plain = 0;
+  let modal = 0;
+  for (const [key, origJobs] of orig) {
+    let best: { o: Job; c: Job; cost: number } | null = null;
+    for (const o of origJobs) {
+      for (const c of cand.get(key) ?? []) {
+        if (!passes(o, c)) continue;
+        const methodLost = o.method !== null && PERMANENT_ANSWERS.includes(o.method) && c.method !== null && c.method !== o.method;
+        const cost = Number(o.trigger !== c.trigger || o.recurrence !== c.recurrence) + Number(methodLost);
+        if (!best || cost < best.cost) best = { o, c, cost };
+      }
+    }
+    if (!best) { missing.push(key); continue; }
+    shared.push(key);
+    advisory += best.cost;
+    if (best.o.method !== null && PERMANENT_ANSWERS.includes(best.o.method) && best.c.method !== null && best.c.method !== best.o.method
+      && !lostMethods.includes(best.o.method)) lostMethods.push(best.o.method);
+    if (best.c.modal) modal += 1; else plain += 1;
+  }
+  const extra = [...cand.keys()].filter((k) => !orig.has(k));
+  return { shared, extra, missing, lostMethods, advisory, credit: plain + Math.min(1, modal) };
+}
+
+/** A labelled card's job keys for this deck, in label order: roles and ramp kinds then themes, as the header names them. */
+export function labelledKeys(jobs: readonly Job[], deck: DeckLens | null, isCreatureType: (w: string) => boolean): string[] {
+  return [...jobsByKey(jobs, deck, isCreatureType).keys()];
+}
+
+/**
+ * The `card_labels.labels @>` patterns that admit a stand-in for any of these jobs (the pool's label
+ * slice): one per key, a ramp job by its kind. A superset of what matches, deliberately: the deck's
+ * relevance and the gates are `matchLabels`'s, on the rows the pool returns.
+ */
+export function labelPatterns(jobs: readonly Job[]): string[] {
+  const out = new Set<string>();
+  for (const j of jobs) {
+    const k = keyOf(j);
+    if (k === null || k === "land") continue;
+    out.add(JSON.stringify([j.space === "role" && j.kind === "ramp" ? { space: "role", kind: "ramp", rampKind: k } : { space: j.space, kind: k }]));
+  }
+  return [...out];
+}
+
+/** Whether a labelled card has any job a stand-in could keep for this deck (for an original whose text names none). */
+export function hasLabelledJob(jobs: readonly Job[], deck: DeckLens | null, isCreatureType: (w: string) => boolean): boolean {
+  return jobsByKey(jobs, deck, isCreatureType).size > 0;
+}
