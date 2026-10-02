@@ -12,7 +12,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { jobKey, validateJob } from "../../src/lib/labels/schema.js";
-import { ROLES, THEMES, type Job } from "../../src/lib/labels/types.js";
+import { METHOD_KINDS, RAMP_KINDS, ROLES, THEMES, TO_KINDS, type Job } from "../../src/lib/labels/types.js";
 
 /** The union in the source file is the authority, not the RULES table beside it. */
 const unionMembers = (file: string, decl: string) => {
@@ -291,13 +291,71 @@ describe("the gold set", () => {
     }
   });
 
-  it("covers all four ramp kinds, including the one it found", async () => {
+  // The prompt's "By job" rule for `affects`, which gate 2 depends on: a gold row that answers a kind
+  // differently from the instruction would score a model wrong for following it. `each` is always allowed,
+  // because the rule yields to a card that does the same for every player.
+  it("answers affects by job, as the prompt instructs", async () => {
+    const { GOLD } = await import("./card-labels-gold.mjs");
+    const byJob: Record<string, string> = {
+      clones: "self", pump: "self", protection: "self", fog: "self", recursion: "self", land: "self",
+      removal: "opponents", counterspell: "opponents", theft: "opponents", graveyardHate: "opponents",
+    };
+    const off = GOLD.flatMap((r) => r.jobs
+      .filter((x) => x.kind in byJob && x.affects !== byJob[x.kind] && x.affects !== "each")
+      .map((x) => `${r.name} [${x.kind}=${x.affects}]`));
+    expect(off).toEqual([]);
+  });
+
+  // A bar is a fact about the gold set: a job with few positives has a precision nobody can trust, and one
+  // with no HARD NEGATIVES cannot measure over-labelling at all. The vocabulary plan's Task 4 floor, for every
+  // job new or redefined by Task 3, every value d9 ruled in, and the five that had no gold case before.
+  // A hard negative is a row picked FOR that job (`klass: "<key>Neg"`) that does not carry it.
+  it("holds 8 positives and 4 hard negatives for every new, redefined or uncovered job", async () => {
+    const { GOLD } = await import("./card-labels-gold.mjs");
+    const keys = [
+      "tutor", "counterspell", "graveyardHate", "discard", "stax", "clones", "theft", "poison", "goad",
+      "doublers", "fog", "costReduction", "extraLandDrop", "multiplies", "sacrifice", "bottom",
+      "drain", "removal", "protection", "castFree", "finisher", "tribal", "etbDraw", "blink", "deathTrigger",
+    ];
+    const carries = (r: (typeof GOLD)[number], k: string) =>
+      (r.jobs as { kind: string; rampKind?: string | null; method?: string | null }[])
+        .some((x) => x.kind === k || x.rampKind === k || x.method === k);
+    const short = keys.flatMap((k) => {
+      const positives = GOLD.filter((r) => carries(r, k)).length;
+      const negatives = GOLD.filter((r) => r.klass === `${k}Neg` && !carries(r, k)).length;
+      return positives >= 8 && negatives >= 4 ? [] : [`${k}: ${positives} positives, ${negatives} hard negatives`];
+    });
+    expect(short).toEqual([]);
+  });
+
+  // Every bar the scorer computes needs at least one gold case, or `stops` names it "unmeasured" on every
+  // run and the gate can never be met, whatever the model answers. A null `affects` bar did exactly that
+  // once the by-job rule left no gold row answering null.
+  it("gives every job bar and every field bar at least one gold case", async () => {
+    const { GOLD } = await import("./card-labels-gold.mjs");
+    const { FIELD_VALUES, VOCABULARY_KEYS } = await import("./card-labels-bars.mjs");
+    const jobs = GOLD.flatMap((r) => r.jobs as (Job & { rampKind?: string | null })[]);
+    const seen = (f: string, v: string) => jobs.some((x) => {
+      if (f === "rampKind") return x.kind === "ramp" && (x.rampKind ?? "none") === v;
+      if (f === "to" && !TO_KINDS.includes(x.kind)) return false;
+      if (f === "method" && !METHOD_KINDS.includes(x.kind)) return false;
+      if (f === "restrictedTo") return (x.restrictedTo == null ? "none" : "restricted") === v;
+      return String((x as Record<string, unknown>)[f] ?? "none") === v;
+    });
+    const unmeasured = [
+      ...VOCABULARY_KEYS.filter((k) => !jobs.some((x) => `${x.space}:${x.kind}` === k)),
+      ...Object.entries(FIELD_VALUES).flatMap(([f, vs]) => vs.filter((v) => !seen(f, v)).map((v) => `${f}=${v}`)),
+    ];
+    expect(unmeasured).toEqual([]);
+  });
+
+  it("covers every ramp kind, including the one it found", async () => {
     const { GOLD } = await import("./card-labels-gold.mjs");
     const kinds = new Set(
       GOLD.flatMap((r) => r.jobs as { rampKind?: string | null }[])
         .map((j) => j.rampKind)
         .filter(Boolean),
     );
-    expect([...kinds].sort()).toEqual(["burstMana", "fetchesLand", "makesTreasure", "tapsForMana"]);
+    expect([...kinds].sort()).toEqual([...RAMP_KINDS].sort());
   });
 });
