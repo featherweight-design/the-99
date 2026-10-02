@@ -23,6 +23,30 @@ export const PUBLISHED = {
 };
 
 /**
+ * The vocabulary plan's re-sample (Task 5), published beside the plan it measures and never over the first
+ * sample's evidence. Sonnet alone, so its own model set. Chosen with `LABEL_PUBLISH=resample`. The per-card
+ * labels and the sample's set membership are committed too: the first sample's stayed in an uncommitted
+ * `out/`, and the empty-answer question could not be asked of them afterwards.
+ */
+const RESAMPLE = "docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample";
+export const RESAMPLE_PUBLISHED = {
+  "out/score.json": `${RESAMPLE}-score.json`,
+  "out/cost.json": `${RESAMPLE}-cost.json`,
+  "out/gates.json": `${RESAMPLE}-gates.json`,
+  "out/sample.json": `${RESAMPLE}-sample.json`,
+  "out/labels-sonnet.json": `${RESAMPLE}-labels-sonnet.json`,
+};
+const RESAMPLE_MODELS = ["sonnet"];
+
+/** Which committed set this run publishes to, and the models that set describes. */
+function target() {
+  const name = process.env.LABEL_PUBLISH ?? "first";
+  if (name === "first") return { paths: PUBLISHED, models: Object.keys(MODELS) };
+  if (name === "resample") return { paths: RESAMPLE_PUBLISHED, models: RESAMPLE_MODELS };
+  throw new Error(`LABEL_PUBLISH must be "first" or "resample", got ${JSON.stringify(name)}`);
+}
+
+/**
  * Which model keys an artifact's own content covers, for the sources that say.
  *
  * The committed artifacts describe the DEFAULT two-model run, and every figure the report
@@ -56,12 +80,13 @@ export function publishArtifacts(sources, publish) {
     console.log(`(not published — pass --publish to copy into docs/: ${sources.join(", ")})`);
     return;
   }
+  const { paths, models } = target();
   for (const src of sources) {
-    const dest = PUBLISHED[src];
-    if (!dest) throw new Error(`no committed path is declared for ${src}`);
+    const dest = paths[src];
+    if (!dest) throw new Error(`no committed path is declared for ${src} (LABEL_PUBLISH=${process.env.LABEL_PUBLISH ?? "first"})`);
     if (!existsSync(src)) throw new Error(`${src} was not written — refusing to publish a stale copy`);
     const covered = modelsCovered(src);
-    const expected = Object.keys(MODELS).sort();
+    const expected = [...models].sort();
     if (covered !== null && covered.sort().join(",") !== expected.join(",")) {
       throw new Error(
         `${src} covers ${covered.join(", ") || "no models"} but the committed artifact is the ` +
