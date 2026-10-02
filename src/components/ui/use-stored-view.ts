@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { readRaw, subscribeToKey, writeRaw } from "./local-store";
+import { writeViewCookie } from "./view-cookie";
 
 // Which of a `ViewToggle`'s two segments the player last chose, kept across
 // visits. Both surfaces that carry the toggle held the choice for one visit
@@ -29,24 +30,51 @@ import { readRaw, subscribeToKey, writeRaw } from "./local-store";
 export function useStoredView<T extends string>(
   key: string,
   isValid: (value: string) => value is T,
+  /**
+   * OPT-IN, for a surface whose server render must draw the stored choice (`/collection`, whose
+   * rows-then-grid flash was this hook's `null` server snapshot). `serverValue` is what the page
+   * read from `cookie` and becomes the server snapshot, so the server and the hydration pass
+   * agree on the choice rather than on its absence; every choose mirrors itself into the cookie.
+   * A caller passing nothing behaves exactly as before, which the tests pin.
+   */
+  mirror?: { cookie: string; serverValue: T | null },
 ): [T | null, (next: T) => void] {
   const subscribe = useCallback(
     (onStoreChange: () => void) => subscribeToKey(key, onStoreChange),
     [key],
   );
+  const serverValue = mirror?.serverValue ?? null;
+  const cookie = mirror?.cookie;
 
   const chosen = useSyncExternalStore(
     subscribe,
     // A stored value that is no longer one of the segments — a view that was
-    // renamed, or a key another build wrote — is absence, not a crash.
+    // renamed, or a key another build wrote — is absence, not a crash. With a mirror, the
+    // cookie's answer stands in for an empty store, so a browser whose storage was cleared
+    // but whose cookie survived does not flip after hydration.
     () => {
       const raw = readRaw(key);
-      return raw !== null && isValid(raw) ? raw : null;
+      return raw !== null && isValid(raw) ? raw : serverValue;
     },
-    () => null,
+    () => serverValue,
   );
 
-  const choose = useCallback((next: T) => writeRaw(key, next), [key]);
+  // A reader who chose before the mirror existed holds the choice in storage and no cookie, so
+  // the server cannot see it yet. Writing it once here makes their NEXT visit draw it. Keyed on
+  // the stored value and the cookie's, so it writes only when the two disagree.
+  useEffect(() => {
+    if (!cookie) return;
+    const raw = readRaw(key);
+    if (raw !== null && isValid(raw) && raw !== serverValue) writeViewCookie(cookie, raw);
+  }, [cookie, key, isValid, serverValue]);
+
+  const choose = useCallback(
+    (next: T) => {
+      writeRaw(key, next);
+      if (cookie) writeViewCookie(cookie, next);
+    },
+    [key, cookie],
+  );
 
   return [chosen, choose];
 }
