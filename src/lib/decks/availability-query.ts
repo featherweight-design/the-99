@@ -690,19 +690,15 @@ export type DeckBuyRow = { deckId: string; oracleId: string; quantity: number };
  * Rats with one in the box buys three, and this roll-up feeds a price total, so
  * returning the ask would charge for a copy already on the shelf.
  *
- * A DECK NEVER BUYS ITS OWN COMMANDERS HERE, and that is a LIMITATION rather
- * than a principle — see #470, which is the ticket to lift it. A commander is
- * real senior demand: a legend sleeved as another deck's commander really is
- * holding that copy, which is why `all_claims` unions both columns, and a player
- * who does not own their commander genuinely has one to buy. But no surface can
- * currently say so. `DeckDetail.commander` and `DeckDetail.partner` carry no
- * owned flag, both are absent from `DeckDetail.cards`, and `built` and
- * `ownedCount` count `deck_cards` alone, so
- * emitting a commander row would put a purchase on the tile and the roll-up that
- * the deck page has no row to show — the exact cross-surface disagreement this
- * change exists to end. Rows are therefore driven off the decklist while
- * seniority is measured against every claim there is, and the commander is
- * admitted here only once the deck page can render its ownership.
+ * A DECK BUYS ITS OWN COMMANDERS TOO (H28, which closes #470). Both are real
+ * demand: a legend sleeved as another deck's commander really is holding that
+ * copy, which is why `all_claims` unions both columns, and a player who does not
+ * own their commander has one to buy. They used to be left out because no
+ * surface could show them: `DeckDetail.commander` carried no owned flag, so a
+ * commander row would have put a purchase on the tile and the roll-up that the
+ * deck page had no row for. The deck page now carries the commanders' ownership,
+ * availability and price, and its Shopping list draws them in a Commander group
+ * through the same predicate, so this roll-up and that list bill one basket.
  */
 export async function loadDeckBuyRows(
   userId: string,
@@ -725,7 +721,7 @@ export async function loadDeckBuyRows(
     quantity: number;
   }>(sql`
     with ${claimModel(userId)},
-    -- The DRAFT decklist alone, both commanders excluded. This is what a deck
+    -- The DRAFT decklist and both commanders. This is what a deck
     -- can be told to go and buy — the preview the player acts on — while
     -- seniority below is measured against what is sleeved. The two diverging
     -- is the feature, which is why the join in supply is a LEFT join.
@@ -735,16 +731,31 @@ export async function loadDeckBuyRows(
     -- all_claims does nothing for it. Without this line a proxied card keeps a
     -- positive buy row and the Shopping list, the price strip, the deck's cost
     -- stat and both Mana Pool hrefs all bill a card the player has printed.
+    --
+    -- BOTH COMMANDERS TOO (H28), from the deck's live columns, the draft's own commanders.
+    -- Neither is a deck_cards row, so without these arms a deck never bought its commander and
+    -- the Shopping list left out the one card a player cannot start without.
     list_claims as (
-      select dc.deck_id, dc.oracle_id, sum(dc.quantity)::int as quantity
-      from deck_cards dc
-      join decks d on d.id = dc.deck_id
-      where d.user_id = ${userId}
-        and not exists (
-          select 1 from deck_proxies p
-          where p.deck_id = dc.deck_id and p.oracle_id = dc.oracle_id
-        )
-      group by dc.deck_id, dc.oracle_id
+      select t.deck_id, t.oracle_id, sum(t.quantity)::int as quantity
+      from (
+        select dc.deck_id, dc.oracle_id, dc.quantity
+        from deck_cards dc
+        join decks d on d.id = dc.deck_id
+        where d.user_id = ${userId}
+        union all
+        select d.id, d.commander_oracle_id, 1
+        from decks d
+        where d.user_id = ${userId}
+        union all
+        select d.id, d.partner_oracle_id, 1
+        from decks d
+        where d.user_id = ${userId} and d.partner_oracle_id is not null
+      ) t
+      where not exists (
+        select 1 from deck_proxies p
+        where p.deck_id = t.deck_id and p.oracle_id = t.oracle_id
+      )
+      group by t.deck_id, t.oracle_id
     ),
     -- Every decklist claim, beside the supply and the copies the decks ahead of
     -- it have already taken. A card owned in no copies has no owned row at all

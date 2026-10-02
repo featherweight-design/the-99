@@ -36,4 +36,12 @@ describe("deckDetailReads", () => {
     expect(projection).toContain(`"decks"."partner_oracle_id"`);
     expect(reads.deck.toSQL().sql).not.toContain("commander_oracle_id");
   });
+
+  it("reads each commander's ownership against the commander's own row (H28)", () => {
+    // A correlated subquery in a projection: both sides qualified, or `"oracle_id" = "oracle_id"`
+    // compares the collection row to itself and every commander reads as owned.
+    const q = reads.commanders.toSQL();
+    expect(q.sql).toContain(`"collection_items"."oracle_id" = "cards"."oracle_id"`);
+    expect(q.sql).toContain(`"collection_items"."user_id" = $`);
+  });
 });

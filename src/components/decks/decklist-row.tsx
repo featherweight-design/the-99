@@ -201,10 +201,14 @@ export function DecklistRow({
   // Over the deck's Shopping limit (swap tools): the buy tag gains a ring and an `over $X`, stacked
   // on it below `lg` and beside it from `lg`. Shopping only, and only where the tools are on
   // (`swapTools` is null otherwise).
+  //
+  // Never on a COMMANDER's Shopping row (H28): the stand-ins exist to cut the card, and a deck
+  // cannot cut its commander from a buying list, so neither the ring, the ⇄ nor the door draws.
+  const commanderRow = card.commander === true;
   const swapTools = useSwapTools();
-  const overLimit = swapTools !== null && inShopping && isOverLimit(card.price, newestAsOf, swapTools.limitCents);
+  const overLimit = swapTools !== null && inShopping && !commanderRow && isOverLimit(card.price, newestAsOf, swapTools.limitCents);
   // From a Shopping row with the swap tools on, the card draws the door to its stand-ins (audit F17).
-  const opensDoor = swapTools !== null && inShopping;
+  const opensDoor = swapTools !== null && inShopping && !commanderRow;
   const overText = overLimit ? swapToolsCopy.row.over(formatLimit(swapTools!.limitCents)) : null;
   // `over $X` never rides the meta line (it stacks on the buy tag), so being over the limit is no
   // reason to draw one.
@@ -752,6 +756,16 @@ export function DecklistRow({
               <LockMark open={!locked} tone="mode" />
             </span>
           </button>
+        ) : commanderRow ? (
+        /* A commander's row has no ✕ (H28): the commander is not a list card, and removing it is
+            Change commander's job. The glyph is kept, invisible and out of the accessibility tree,
+            so the buy tag stays in the column every other row's ✕ holds it in. */
+        <span
+          aria-hidden="true"
+          className="invisible flex-none flex items-center justify-center w-[44px] h-[44px] md:w-auto md:h-auto text-[13px] leading-none"
+        >
+          {addPanelCopy.row.remove}
+        </span>
         ) : (
         /* Remove ✕ — at both widths now. The glyph stays 13px at both: the
             phone target is the padding around it. */

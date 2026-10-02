@@ -291,6 +291,9 @@ export const recommendationsCopy = {
     // arithmetic: the card is already inside the role's own baseline, so buying
     // a second copy closes nothing.
     spokenForGroupLabel: 'Spoken for',
+    // The group an unowned or spoken-for commander heads the list in (H28), above every role or
+    // type section. It carries no clause: a commander closes no role's gap.
+    commanderGroupLabel: (n: number) => (n > 1 ? 'Commanders' : 'Commander'),
     spokenForGroupClause: (n: string) => `${n} · already in the deck`,
 
     // "can’t cover" rather than "does not have": the collection does have these

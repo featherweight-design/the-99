@@ -50,6 +50,9 @@ const USER_D = `probe-door-${Date.now()}`;
 // And the release a Pull it writes (Hugh, 2026-09-27) gets a sixth: a pull that edits the source's draft and
 // leaves its version standing, with the copy freed through a release row both readers subtract.
 const USER_P = `probe-pull-${Date.now()}`;
+// The commander buy rows (H28) get their own user too: every figure is a deck's own bill for its
+// commander, and the seniority fixture's decks would hold the same legends.
+const USER_K = `probe-commander-buy-${Date.now()}`;
 
 let failures = 0;
 const check = (label: string, actual: unknown, expected: unknown) => {
@@ -825,6 +828,61 @@ async function changesDoorSection() {
   }
 }
 
+// ── A DECK BUYS ITS COMMANDER (H28) ──────────────────────────────────────────────
+//
+// `loadDeckBuyRows` drives the tile, the roll-up and the status pill, and it used to read
+// `deck_cards` alone, so an unowned commander was a purchase no surface billed. Both commander
+// columns now join `list_claims`. Each case below is the commander's own buy row, read through the
+// real reader, and the first is the one Hugh's walk found.
+async function commanderBuySection() {
+  const { rows: legends } = await fixture.execute<{ oracle_id: string }>(sql`
+    select oracle_id from cards
+    where type_line ~ 'Legendary Creature' and type_line !~ '\\mBasic\\M'
+    order by oracle_id limit 2
+  `);
+  const cmd = legends[0].oracle_id;
+  const partner = legends[1].oracle_id;
+  const owes = async (deckId: string, oracleId: string) =>
+    (await loadDeckBuyRows(USER_K, [deckId])).find((r) => r.oracleId === oracleId)?.quantity ?? 0;
+  const deck = async (name: string, partnerId: string | null = null) => {
+    const { rows: [d] } = await fixture.execute<{ id: string }>(sql`
+      insert into decks (user_id, name, commander_oracle_id, partner_oracle_id)
+      values (${USER_K}, ${name}, ${cmd}, ${partnerId}) returning id
+    `);
+    return d.id;
+  };
+  try {
+    const brew = await deck("Commander buy brew");
+    check("an unowned commander is a buy row", await owes(brew, cmd), 1);
+
+    await fixture.execute(sql`
+      insert into collection_items (user_id, oracle_id, quantity, set_code)
+      values (${USER_K}, ${cmd}, 1, 'probe')
+    `);
+    check("an owned commander is not", await owes(brew, cmd), 0);
+
+    // SPOKEN FOR: a committed deck led by the same legend holds the one copy, so the brew buys.
+    const senior = await deck("Commander buy senior");
+    await fixture.execute(sql`
+      insert into deck_versions (deck_id, number, committed_at, commander_oracle_id, commander_since)
+      values (${senior}, 1, now() - interval '1 hour', ${cmd}, now() - interval '1 hour')
+    `);
+    check("a commander sleeved by a senior deck is bought by the junior one", await owes(brew, cmd), 1);
+    check("and not by the senior deck holding it", await owes(senior, cmd), 0);
+
+    // A PRINTED commander asks nothing of the collection, the anti-join the list cards have.
+    await fixture.execute(sql`insert into deck_proxies (deck_id, oracle_id) values (${brew}, ${cmd})`);
+    check("a proxied commander is not bought", await owes(brew, cmd), 0);
+
+    // THE PARTNER is the second arm, and a pair deck owing only its partner proves it is read.
+    const pair = await deck("Commander buy pair", partner);
+    check("an unowned partner is a buy row", await owes(pair, partner), 1);
+  } finally {
+    await fixture.execute(sql`delete from decks where user_id = ${USER_K}`);
+    await fixture.execute(sql`delete from collection_items where user_id = ${USER_K}`);
+  }
+}
+
 // ── PULL IT: A DRAFT AND A RELEASE ─────────────────────────────────────────────
 //
 // Hugh's ruling of 2026-09-27: a pull takes the card out of the SOURCE deck's draft and commits
@@ -1163,6 +1221,7 @@ try {
   await assignmentWriteSection();
   await changesDoorSection();
   await pullReleaseSection();
+  await commanderBuySection();
 } finally {
   // Ordered by dependency; deck_versions and deck_cards cascade off decks.
   await fixture.execute(sql`delete from decks where user_id = ${USER}`);

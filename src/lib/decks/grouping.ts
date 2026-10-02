@@ -102,6 +102,13 @@ export type DeckDetailCard = {
    * for this to fail — see `lib/cards/faces.ts`.
    */
   layout?: string | null;
+  /**
+   * This row is the deck's COMMANDER (or partner), not a `deck_cards` row. Only the Shopping
+   * list builds one, through `commanderShoppingRows`, so an unowned or spoken-for commander is
+   * billed beside the list it leads (H28). Such a row is never removable and offers no swap
+   * tools: a deck cannot cut its commander from a buying list. Absent on every list row.
+   */
+  commander?: true;
 };
 
 /**

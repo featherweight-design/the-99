@@ -296,6 +296,10 @@ export default async function DeckBuilderPage({
     perf.timed("prices", () => loadPrices([
       ...new Set([
         ...detail.cards.map((c) => c.oracleId),
+        // The commanders too (H28): an unowned or spoken-for commander is on the Shopping list,
+        // and its row carries a price like every other row there.
+        detail.commander.oracleId,
+        ...(detail.partner ? [detail.partner.oracleId] : []),
         ...suggestions.map((s) => s.oracleId),
         ...candidateCards.filter((c) => !c.owned).map((c) => c.oracleId),
       ]),
@@ -341,6 +345,10 @@ export default async function DeckBuilderPage({
     price: priced?.prices.get(card.oracleId) ?? null,
   });
   const cards = detail.cards.map(withPrice);
+  // The commanders carry a price for the same reason, and on the same rule: the Shopping list
+  // draws an unowned or spoken-for commander in its own group, priced like the rows below it.
+  const commander = withPrice(detail.commander);
+  const partner = detail.partner ? withPrice(detail.partner) : null;
   // Owned tiles only, for the reason the read above is scoped that way: an
   // unowned oracle id can never come back from the collection.
   const pricedSuggestions = suggestions.map((s) => ({
@@ -398,7 +406,7 @@ export default async function DeckBuilderPage({
   const shell = (
     <BuilderShell
       mix={mix}
-      deck={{ ...detail, cards }}
+      deck={{ ...detail, cards, commander, partner }}
       suggestions={pricedSuggestions}
       newestAsOf={priced?.newestAsOf ?? null}
       // Derived here and passed as a form, never as a clock. provenanceForm

@@ -869,9 +869,11 @@ export const commanderScores = pgTable("commander_scores", {
  * cascades when the deck is deleted.
  *
  * Commander copies are never reservable. A commander claim bounds what may be
- * reserved rather than joining the queue ahead of it (see `claimModel`), because
- * `loadDeckBuyRows` emits no commander row (#470), so a deck left short of its own
- * commander is short in a way no surface can draw.
+ * reserved rather than joining the queue ahead of it (see `claimModel`). That was
+ * decided while `loadDeckBuyRows` emitted no commander row (#470), when a deck left
+ * short of its own commander was short in a way no surface could draw. Since H28 the
+ * Shopping list draws it, and the rule stands unchanged: no surface offers to reserve
+ * a commander copy.
  */
 export const cardAssignments = pgTable("card_assignments", {
   userId: text("user_id").notNull(),

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { isShoppingCard, isSpokenFor } from "./shopping";
+import { commanderShoppingRows, isShoppingCard, isSpokenFor } from "./shopping";
 import type { DeckDetailCard } from "./grouping";
+import type { DeckCommander } from "./read";
 
 function card(over: Partial<DeckDetailCard>): DeckDetailCard {
   return {
@@ -96,5 +97,67 @@ describe("a printed card is not shopping", () => {
 
   it("still shops for the same card when it is not printed", () => {
     expect(isShoppingCard(card({ owned: false, proxied: false }))).toBe(true);
+  });
+});
+
+// H28: a commander is not a `deck_cards` row, so the list never billed it while
+// `loadDeckBuyRows` did. Its rows go through the same predicate as every list row.
+describe("commanderShoppingRows", () => {
+  function commander(over: Partial<DeckCommander>): DeckCommander {
+    return {
+      oracleId: "cmd",
+      name: "Atraxa, Praetors' Voice",
+      colorIdentity: ["W", "U", "B", "G"],
+      manaCost: "{G}{W}{U}{B}",
+      typeLine: "Legendary Creature — Phyrexian Angel Horror",
+      oracleText: null,
+      imageUri: null,
+      artCropUri: null,
+      ...over,
+    };
+  }
+
+  it("bills an unowned commander, as a commander row of one copy", () => {
+    const rows = commanderShoppingRows(commander({ owned: false }), null);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ oracleId: "cmd", quantity: 1, owned: false, commander: true });
+  });
+
+  it("bills nothing for an owned commander with a copy to spare", () => {
+    expect(commanderShoppingRows(commander({ owned: true, availability: yours }), null)).toEqual([]);
+  });
+
+  it("bills nothing for a proxied commander the player does not own", () => {
+    expect(commanderShoppingRows(commander({ owned: false, proxied: true }), null)).toEqual([]);
+  });
+
+  it("bills an owned commander whose copies are spoken for elsewhere, as spoken for", () => {
+    const rows = commanderShoppingRows(commander({ owned: true, availability: spokenFor }), null);
+    expect(rows).toHaveLength(1);
+    expect(isSpokenFor(rows[0])).toBe(true);
+  });
+
+  // Absent means owned: a fixture with no collection behind it must bill nothing, which is
+  // what every surface assumed before the deck page carried the flag.
+  it("reads an absent ownership flag as owned", () => {
+    expect(commanderShoppingRows(commander({}), null)).toEqual([]);
+  });
+
+  it("bills both of a pair in the pair's order, each on its own answer", () => {
+    const rows = commanderShoppingRows(
+      commander({ oracleId: "a", owned: false }),
+      commander({ oracleId: "b", owned: false }),
+    );
+    expect(rows.map((r) => r.oracleId)).toEqual(["a", "b"]);
+    expect(
+      commanderShoppingRows(commander({ oracleId: "a", owned: true, availability: yours }), commander({ oracleId: "b", owned: false }))
+        .map((r) => r.oracleId),
+    ).toEqual(["b"]);
+  });
+
+  it("carries the price, so the strip totals the commander", () => {
+    const price = { cents: 1234, foilCents: null, etchedCents: null, asOf: new Date("2026-10-01T00:00:00Z") };
+    const [row] = commanderShoppingRows(commander({ owned: false, price }), null);
+    expect(row.price).toBe(price);
   });
 });

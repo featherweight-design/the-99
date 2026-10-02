@@ -33,7 +33,8 @@ import { deckBodySize } from "./deck-size";
 import { changeCommanderEnabled } from "../commander-change/flag";
 import { deckCommanderMovedSql } from "../commander-change/pending";
 import { inUseElsewhereByDeck } from "./in-use-elsewhere";
-import { toUtcInstant } from "./price";
+import { toUtcInstant, type PriceFact } from "./price";
+import type { Availability } from "./availability";
 import {
   cardTypeGroup,
   deckCounts,
@@ -169,6 +170,27 @@ export type DeckCommander = {
    * `DeckCommander` literals that never touch the catalog, and absent means null.
    */
   printedName?: string | null;
+  /**
+   * The player owns at least one copy of this commander, by the same test a decklist row's
+   * `owned` is. Optional for the reason `proxied` is: fixtures build `DeckCommander` literals
+   * that never touch the collection, and ABSENT MEANS OWNED, which is what every surface
+   * assumed before the deck page could bill a commander (H28).
+   */
+  owned?: boolean;
+  /**
+   * This deck's vantage on the commander's copies, exactly as `DeckDetailCard.availability`
+   * is: read with the deck excluded, so an owned commander held by an older committed deck's
+   * claim reads `over` and goes on the Shopping list. Null for an unowned commander, and for a
+   * failed read, which degrades to the free rendering as a decklist row does.
+   */
+  availability?: Availability | null;
+  /**
+   * Attached by the deck page beside every decklist row's price, for the commander's Shopping
+   * row. Absent and null both mean the bare `buy` tag.
+   */
+  price?: PriceFact | null;
+  /** Scryfall's converted cost, so a commander's Shopping row sorts by mana value like any row. */
+  cmc?: number;
 };
 
 export type DeckDetail = {
@@ -273,6 +295,7 @@ export function deckDetailReads(deckId: string, userId: string) {
         oracleText: cards.oracleText,
         imageUri: cards.imageUri,
         artCropUri: cards.artCropUri,
+        cmc: cards.cmc,
         // COMMANDERS ARE CARDS. The bracket rules count a Game Changer in the command zone
         // against every limit, so the card note's ordinal has to count it too — and this is
         // the one card on the page that is a column on `decks` rather than a `deck_cards` row.
@@ -282,6 +305,11 @@ export function deckDetailReads(deckId: string, userId: string) {
         // pairs; the page names its commanders from these columns, never from the deck row's.
         deckCommanderOracleId: decks.commanderOracleId,
         deckPartnerOracleId: decks.partnerOracleId,
+        // The same ownership test the card query below makes, so a commander the player does not
+        // own can go on the Shopping list (H28). LAST in the projection: its subquery carries a
+        // `from` of its own, and the pair columns above are read out of the projection by tests
+        // that end it at the first one.
+        owned: ownedSql,
       })
       .from(cards)
       .innerJoin(decks, and(
@@ -411,9 +439,17 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
   // flags read that can succeed while this one fails, so a flattened failure introduces a
   // correctly-detected mass land denial as `your 1st` to a deck already holding three.
   const ownedIds = cardRows.filter((r) => r.owned).map((r) => r.oracleId);
+  // The OWNED commanders ride along in the availability read (H28): an owned commander sleeved
+  // into an older committed deck is spoken for from this deck's vantage, and the Shopping list
+  // draws it exactly as it draws a spoken-for list card. Owned only, for the reason the list's
+  // ids are: an unowned id can never come back from the collection.
+  const ownedCommanderIds = commanderRows
+    .filter((r) => r.owned && commanderIds.includes(r.oracleId))
+    .map((r) => r.oracleId);
+  const availabilityIds = [...new Set([...ownedIds, ...ownedCommanderIds])];
   const [availability, resolved, bracketFlags] = await Promise.all([
-    ownedIds.length > 0
-      ? loadAvailability(userId, { excludeDeckId: deckId, oracleIds: ownedIds }).catch(() => {
+    availabilityIds.length > 0
+      ? loadAvailability(userId, { excludeDeckId: deckId, oracleIds: availabilityIds }).catch(() => {
           recordSoftFailure();
           return null;
         })
@@ -428,6 +464,8 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     return {
       ...row,
       proxied: proxiedIds.has(row.oracleId),
+      owned: row.owned,
+      availability: row.owned ? (availability?.get(row.oracleId) ?? null) : null,
       // Belt and braces on the right-hand side of each, and deliberately so: the
       // oracle-level fallback for a printing ingested before `printings.art_crop_uri`
       // existed already lives in `resolveArtCropUri`, which is where it belongs — one
