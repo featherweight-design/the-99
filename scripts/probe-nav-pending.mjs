@@ -22,6 +22,9 @@
 //      pass on a build with no 400ms gate. Checks 1 and 2 prove the gate. Needs a server with
 //      ABOUT_SHEET_ENABLED off, the only mode that offers the dismiss; on one with it on, the
 //      check fails and says so, and the rest of the run carries on.
+//   8. A row link's track, on a commander row (/commanders) and a set row (/collection/sets): the
+//      track paints inside the pressed row at 120ms or later. A screenshot cannot hold it, since
+//      the window between 120ms and the 400ms screen is too short to shoot reliably.
 //
 // Mutations it is built to fail: the shell's <Suspense> removed (check 1 reads no screen), and the
 // 400ms gate set to 0 (check 2 reads the screen before the pip).
@@ -91,10 +94,14 @@ async function signIn(browser) {
 // track at non-zero opacity, the escalation screen at non-zero opacity, and the frame it is gone.
 const WATCH = () => {
   window.__navArm = () => {
-    const t0 = performance.now();
-    const seen = (window.__nav = { t0, mark: null, overlay: null, overlayGone: null, busy: [], hit: null });
+    const seen = (window.__nav = { t0: performance.now(), mark: null, overlay: null, overlayGone: null, busy: [], hit: null });
+    // The clock restarts at the press itself, not at the arm: a Playwright click spends time on
+    // actionability and dispatch before the event fires, and counting that would let a mark whose
+    // delay was cut short still read past 120ms. Capture phase, once, so it fires first and only
+    // for the press being measured. A code-started push has no click and keeps the arm's clock.
+    document.addEventListener("click", () => { seen.t0 = performance.now(); }, { capture: true, once: true });
     const tick = () => {
-      const now = performance.now() - t0;
+      const now = performance.now() - seen.t0;
       const mark = document.querySelector("[data-pending]");
       if (seen.mark == null && mark && Number(getComputedStyle(mark).opacity) > 0) seen.mark = now;
       const overlay = document.querySelector('[data-testid="pending-overlay"]');
@@ -162,7 +169,7 @@ async function run(browser, state, width, userId) {
     await page.waitForURL((u) => u.pathname === "/commanders", { timeout: 120_000 });
     await page.waitForFunction(() => window.__nav.overlayGone != null || performance.now() - window.__nav.t0 > 60_000, null, { timeout: 120_000, polling: 50 });
     const nav = await page.evaluate(() => window.__nav);
-    report(nav.mark != null && nav.mark >= 110, "the pip paints at 120ms, never before", `pip at ${Math.round(nav.mark)}ms`);
+    report(nav.mark != null && nav.mark >= 120, "the pip paints at 120ms, never before", `pip at ${Math.round(nav.mark)}ms`);
     report(nav.overlay != null && nav.overlay >= 390 && nav.overlay <= 700, "the screen is up by ~550ms and not before 400ms", `screen at ${nav.overlay == null ? "never" : `${Math.round(nav.overlay)}ms`}`);
     report(nav.overlay == null || nav.mark < nav.overlay, "the pip paints before the screen", "");
     report(nav.busy.length === 1 && nav.busy[0] === "main", "aria-busy is on the shell's <main> alone", nav.busy.join(",") || "none");
@@ -256,6 +263,56 @@ async function run(browser, state, width, userId) {
     await page.waitForURL((u) => u.pathname === "/about", { timeout: 120_000 });
     const nav = await page.evaluate(() => window.__nav);
     report(nav.overlay != null && nav.overlay >= 390, "the account menu's About press escalates after the menu closes", nav.overlay == null ? "never" : `screen at ${Math.round(nav.overlay)}ms`);
+    await throttle(false);
+    await page.close();
+  }
+
+  // 8. A row link's track: pressed on a commander row and a set row, it paints INSIDE that row, at
+  //    120ms or later, like the ghost link's in check 3 and the nav slot's pip in check 2.
+  for (const [path, selector] of [
+    ["/commanders", "a[href^='/commanders/']"],
+    ["/collection/sets", "a[href^='/collection/sets/']"],
+  ]) {
+    const { page, throttle } = await slowPage(context);
+    await page.goto(`${BASE}${path}`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+    const row = page.locator(`main ${selector}`).filter({ visible: true }).first();
+    await row.waitFor({ state: "visible", timeout: 120_000 });
+    await page.waitForFunction(() => window.next?.router, null, { timeout: 120_000 });
+    await throttle(true);
+    await page.evaluate(() => window.__navArm());
+    await row.click();
+    // Painted, not merely present: the strip has a real box inside the pressed link's own rect, and
+    // its sweeping segment overlaps the strip with a background that is not transparent. A track
+    // with no height, or a segment with no fill, leaves `[data-pending]` in the DOM and draws nothing.
+    const inRow = await page
+      .waitForFunction((sel) => {
+        const nav = window.__nav;
+        if (nav.mark == null) return null;
+        const link = [...document.querySelectorAll(`main ${sel}`)].find((a) => a.querySelector("[data-pending]"));
+        if (!link) return { mark: nav.mark, inRow: false, why: "no track in the pressed row" };
+        const track = link.querySelector("[data-pending]");
+        const seg = track.firstElementChild;
+        const l = link.getBoundingClientRect();
+        const t = track.getBoundingClientRect();
+        const g = seg?.getBoundingClientRect();
+        const overlap = g ? Math.max(0, Math.min(g.right, t.right) - Math.max(g.left, t.left)) * Math.max(0, Math.min(g.bottom, t.bottom) - Math.max(g.top, t.top)) : 0;
+        const fill = seg ? getComputedStyle(seg).backgroundColor : "";
+        const alpha = /rgba\([^)]*,\s*([\d.]+)\)/.exec(fill)?.[1];
+        const visibleFill = fill !== "" && fill !== "transparent" && (alpha == null || Number(alpha) > 0);
+        const withinLink = t.left >= l.left - 0.5 && t.right <= l.right + 0.5 && t.bottom <= l.bottom + 0.5 && t.top >= l.top - 0.5;
+        const ok = t.height > 0 && t.width > 0 && withinLink && overlap > 0 && visibleFill;
+        return {
+          mark: nav.mark,
+          inRow: ok,
+          why: ok ? "" : `track ${t.width.toFixed(0)}x${t.height.toFixed(1)}, within the row ${withinLink}, segment overlap ${overlap.toFixed(1)}, fill ${fill}`,
+        };
+      }, selector, { timeout: 5_000, polling: 16 })
+      .then((h) => h.jsonValue(), () => null);
+    report(
+      inRow != null && inRow.inRow && inRow.mark >= 120,
+      `a ${path === "/commanders" ? "commander" : "set"} row's track paints inside the row, at 120ms or later`,
+      inRow == null ? "no mark" : `mark at ${Math.round(inRow.mark)}ms${inRow.inRow ? ", painted inside the row" : `, ${inRow.why}`}`,
+    );
     await throttle(false);
     await page.close();
   }
