@@ -22,7 +22,7 @@ import { frontFaceOracle } from "../src/lib/recs/faces";
 import { classifyRoles } from "../src/lib/recs/roles";
 import { loadCreatureTypes } from "../src/lib/swaps/gather";
 import { cardThemes } from "../src/lib/recs/themes";
-import { FIELD_BARS, fieldBars, jobBars, restrictionPair, stops, type Bar, type Field } from "./lib/card-labels-bars.mjs";
+import { FIELD_BARS, fieldBars, NON_GATING, jobBars, restrictionPair, stops, type Bar, type Field } from "./lib/card-labels-bars.mjs";
 import { GOLD } from "./lib/card-labels-gold.mjs";
 import { bestPairing } from "./lib/card-labels-pairing.mjs";
 import { ALL_MODELS, MODELS } from "./lib/card-labels-pricing.mjs";
@@ -125,7 +125,6 @@ const limitValue = (j: Job, f: string) =>
 // about the card. Both figures are reported: the gold labels are left as they
 // are, and `restrictedTo(gating)` is scored separately on the subset that
 // actually decides a match.
-const NON_GATING = new Set(["creature", "permanent", "spell", "player", "none"]);
 
 const DEFAULTS: Record<string, string> = {
   rampKind: "none", restrictedTo: "none", affects: "none", to: "none", method: "none", trigger: "none",

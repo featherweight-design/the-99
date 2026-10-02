@@ -11,27 +11,24 @@ export const COVERAGE_RULINGS: GoldRow[] = [
     name: "Nyxbloom Ancient", klass: "multiplies",
     jobs: [
       j("role", "ramp", { rk: "multiplies", af: "self" }),
-      j("theme", "doublers", { af: "self" }),
       j("theme", "evasion", { rt: "creature", af: "self" }),
     ],
-    why: "Any permanent you tap for mana produces three times as much: multiplies mana you already make, unrestricted by type (rt null). Judgement: also doublers, since tripling is more than 'twice the mana'. Trigger none: a static replacement. Trample on itself is evasion.",
+    why: "Any permanent you tap for mana produces three times as much: multiplies mana you already make, unrestricted by type (rt null). Not doublers: mana is multiplies alone (d9, 2026-10-02). Trigger none: a static replacement. Trample on itself is evasion.",
   },
   {
     name: "Mirari's Wake", klass: "multiplies",
     jobs: [
       j("role", "ramp", { rk: "multiplies", rt: "land", af: "self" }),
-      j("theme", "doublers", { af: "self" }),
       j("theme", "pump", { rt: "creature", af: "self" }),
     ],
-    why: "Each land you tap adds one more of the same type: multiplies, restricted to land, and doublers on the Zendikar Resurgent precedent (twice the mana from lands). Trigger none, matching that precedent: the bonus rides every tap. Anthem is pump.",
+    why: "Each land you tap adds one more of the same type: multiplies, restricted to land; mana is never doublers (d9, 2026-10-02). Trigger none, matching that precedent: the bonus rides every tap. Anthem is pump.",
   },
   {
     name: "Mana Flare", klass: "multiplies",
     jobs: [
       j("role", "ramp", { rk: "multiplies", rt: "land", af: "each" }),
-      j("theme", "doublers", { af: "each" }),
     ],
-    why: "Every player's lands add one more of the same type: multiplies AND doublers, affects EACH because opponents get it too, which is the whole difference from Mirari's Wake. Judgement: affects each on a ramp job, where nearly every ramp is self.",
+    why: "Every player's lands add one more of the same type: multiplies (never doublers: d9, 2026-10-02), affects EACH because opponents get it too, which is the whole difference from Mirari's Wake. Judgement: affects each on a ramp job, where nearly every ramp is self.",
   },
   {
     name: "Wild Growth", klass: "multiplies",
@@ -47,10 +44,9 @@ export const COVERAGE_RULINGS: GoldRow[] = [
     name: "Caged Sun", klass: "multiplies",
     jobs: [
       j("role", "ramp", { rk: "multiplies", rt: "land", af: "self" }),
-      j("theme", "doublers", { af: "self" }),
       j("theme", "pump", { rt: "creature", af: "self" }),
     ],
-    why: "A land's mana of the chosen colour gets an additional one: multiplies, and doublers on the Zendikar Resurgent precedent (lands of that colour make twice the mana). Judgement: the colour gate is not a type, so rt is land. Creatures of the colour get +1/+1: pump.",
+    why: "A land's mana of the chosen colour gets an additional one: multiplies alone, since mana is never doublers (d9, 2026-10-02). Judgement: the colour gate is not a type, so rt is land. Creatures of the colour get +1/+1: pump.",
   },
   {
     name: "Mana Echoes", klass: "multiplies",
@@ -363,4 +359,15 @@ export const COVERAGE_RULINGS: GoldRow[] = [
     why: "A HARD NEGATIVE for castFree: flashback lets you cast the card again from your graveyard, but you pay its mana cost. Recursion with no destination, since the card is cast from the graveyard rather than returned anywhere (judgement).",
   },
 
+  // ---- doublers without mana (d9's ruling of 2026-10-02 took the mana doublers out) -----------------
+  {
+    name: "Branching Evolution", klass: "doublers",
+    jobs: [j("theme", "doublers", { rt: "creature", af: "self" })],
+    why: "Twice the +1/+1 counters on your creatures: doublers by its counters clause, restricted as Corpsejack Menace.",
+  },
+  {
+    name: "Furnace of Rath", klass: "doublers",
+    jobs: [j("theme", "doublers", { af: "each" })],
+    why: "Every source deals double damage, to every permanent and player: doublers by its damage clause, affects each since it is symmetric.",
+  },
 ];

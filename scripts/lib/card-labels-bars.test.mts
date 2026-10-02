@@ -65,16 +65,19 @@ describe("the per-field bars", () => {
     ]);
   });
 
-  it("bar a restriction as present and right, compared without case as the matcher compares it", () => {
-    expect(restrictionPair("artifact", "Artifact")).toEqual(["restricted", "restricted"]);
-    expect(restrictionPair("Knight", "Elf")).toEqual(["restricted", "other"]);
-    expect(restrictionPair("none", "Elf")).toEqual(["none", "restricted"]);
-    expect(restrictionPair("Knight", "none")).toEqual(["restricted", "none"]);
+  it("bar a GATING restriction as present and right, and leave creature or permanent unbarred", () => {
+    expect(restrictionPair("artifact", "Artifact")).toEqual(["gating", "gating"]);
+    expect(restrictionPair("Knight", "Elf")).toEqual(["gating", "other"]);
+    expect(restrictionPair("none", "Elf")).toEqual(["ungated", "gating"]);
+    expect(restrictionPair("Knight", "none")).toEqual(["gating", "ungated"]);
+    expect(restrictionPair("creature", "none")).toEqual(["ungated", "ungated"]);
+    expect(restrictionPair("Creature", "Permanent")).toEqual(["ungated", "ungated"]);
     const wrong = Array.from({ length: 4 }, () => restrictionPair("Knight", "Elf"));
     expect(stops(fieldBars({ ...clean, restrictedTo: [...clean.restrictedTo, ...wrong] }))).toEqual([
-      "restrictedTo=restricted: precision 1 recall 0.714 under 0.8 (14 cases)",
+      "restrictedTo=gating: precision 1 recall 0.714 under 0.8 (14 cases)",
     ]);
   });
+
 
   it("fail a value with no gold cases", () => {
     expect(stops(fieldBars({ ...clean, method: every(FIELD_VALUES.method.filter((v) => v !== "shrink")) }))).toEqual([

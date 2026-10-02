@@ -90,14 +90,20 @@ THEMES (space "theme"): ${THEMES.join(", ")}
                   whose library.
   sacOutlet     — a repeatable way to sacrifice OTHER permanents.
   deathTrigger  — does something when ANOTHER creature dies, or whenever any
-                  creature dies. A card's trigger on its OWN death is not
-                  deathTrigger: label the job it does, with trigger "dies".
+                  creature dies (an enchanted or equipped creature dying
+                  counts). Label it IN ADDITION to the job the death causes:
+                  "whenever a creature you control dies, each opponent loses
+                  1 life" is deathTrigger AND drain. A card's trigger on its
+                  OWN death is not deathTrigger: label the job it does, with
+                  trigger "dies".
   lifegain      — gains you life.
   drain         — damage or life loss aimed ONLY at opponents. A Shock, which can
                   hit any target, is not drain.
   spellslinger  — rewards casting instants and sorceries.
   landfall      — does something when a land enters under your control.
-  tribal        — cares about one creature type.
+  tribal        — cares about one creature type. A job restricted to a
+                  creature type (a lord that pumps Elves, a counter only for
+                  Knights) ALSO earns tribal, beside the job itself.
   graveyardHate — exiles cards from graveyards, or stops cards leaving them.
   discard       — makes a player discard.
   stax          — taxes or locks opponents: their spells cost more, their
@@ -111,7 +117,8 @@ THEMES (space "theme"): ${THEMES.join(", ")}
   goad          — forces a creature to attack ("goad", "attacks each combat if
                   able").
   doublers      — DOUBLES what you get: twice the tokens, twice the counters,
-                  twice the mana, or an extra time for each trigger.
+                  twice the damage, or an extra time for each trigger. Twice
+                  the MANA is not doublers: it is ramp of kind multiplies.
   fog           — prevents combat damage for a turn. A fog is not protection.
 
 Use ONLY these names. Do not invent a job. If a card does something with no job
@@ -133,12 +140,16 @@ EVERY JOB CARRIES:
                                 spell for nothing is castFree.
                  extraLandDrop— lets you play additional lands each turn
                  multiplies   — doubles or adds to mana you already make, or
-                                makes mana when something else happens
-                                (Mana Reflection, Nyxbloom Ancient, Waste Not)
+                                makes mana when something else happens (lands
+                                that tap for twice as much; a creature that adds
+                                mana whenever an opponent discards)
                These match only themselves. A Treasure is never tapsForMana.
   restrictedTo the creature type or card type the effect is limited to, exactly
                as printed ("Wolf", "Dinosaur", "artifact", "land", "creature"),
-               or null when it applies to anything.
+               or null when it applies to anything. A job that reaches only a
+               creature type, a card type or a subtype (Equipment, Vehicle)
+               MUST carry it; two together are joined with "or" ("Dwarf or
+               Vehicle"). "creature" too is a restriction: write it.
   affects      whose cards, library, life or mana the job points at: one of
                ${AFFECTS.join(", ")}, or null.
                self      = yours: a mana rock or a Treasure you make, counters
@@ -151,7 +162,10 @@ EVERY JOB CARRIES:
                null      = ONLY when the job points at no player at all,
                            which is rare.
                By job, so the same job always answers the same way, unless
-               it does the same for EVERY player, which is each:
+               it does the same for EVERY player, which is each. A symmetric
+               effect is each even where it mostly helps you: preventing ALL
+               combat damage, a tax on every player's spells, every player
+               gaining control of something.
                  self      = clones (the copy is yours), pump, protection,
                              fog, recursion (even from any graveyard), a land.
                  opponents = removal, counterspell, theft, graveyardHate.
@@ -172,7 +186,14 @@ EVERY JOB CARRIES:
                permanent (theft) has no method: null. Otherwise null.
   trigger      one of: ${TRIGGERS.join(", ")}
                  "none" = static or on resolution; "activated" = a cost you
-                 choose to pay; the rest are events you must wait for.
+                 choose to pay; the rest are events you must wait for:
+                 "upkeep" = the beginning of an upkeep, and ONLY an upkeep;
+                 "landfall" = a land entering; "attacks" = a creature
+                 attacking; "combatDamage" = combat damage being dealt;
+                 "cast" = a spell being cast; "dies" = a creature dying;
+                 "etb" = this or another permanent entering. Any other
+                 event or step, the END STEP and beginning of combat
+                 included, is "other".
   recurrence   one of: ${RECURRENCE.join(", ")}
                  "oneShot" = the card can do this at most once (an ETB, a spell
                  resolving, a cost that sacrifices the source).
@@ -342,6 +363,8 @@ export const buildRequest = (customId: string, model: string, cards: CardForProm
  * version still moves with every SYSTEM edit (pinned in `prompt.test.ts`): it is the human-readable
  * reason a run was owed, and what the label copy reads to tell a prompt change from a catalog one.
  */
+// "5": the re-sample's prompt fixes (2026-10-02): triggers defined, deathTrigger and tribal labelled beside
+// the job they come with, symmetric effects are each.
 // "4": deathTrigger is another creature dying; a card's own death is the job's `dies` trigger (Task 4 review).
 // "3": the vocabulary plan's Task 3 vocabulary and definitions. SYSTEM's hash alone already stales
 // every row; the version moves with it because `copy-card-labels.ts` reads a version mismatch as "a
@@ -349,7 +372,7 @@ export const buildRequest = (customId: string, model: string, cards: CardForProm
 // with no bump would be misreported as the latter, so `prompt.test.ts` pins SYSTEM's hash to this version.
 // "2": every job now carries `affects`, `to` and `method` (the vocabulary plan's Task 2), so a row
 // labelled under "1" has none of them and must read stale rather than current.
-export const LABEL_PROMPT_VERSION = "4";
+export const LABEL_PROMPT_VERSION = "5";
 
 /**
  * Whether a stored label still describes its card, mirroring `proseInputHash`.

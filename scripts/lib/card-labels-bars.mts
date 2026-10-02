@@ -36,17 +36,27 @@ export const VOCABULARY_KEYS: readonly string[] = [...ROLES.map((r) => `role:${r
  */
 export const FIELD_VALUES: Record<Field, readonly string[]> = {
   affects: AFFECTS, to: [...DESTINATIONS, "none"], method: [...METHODS, "none"], rampKind: RAMP_KINDS,
-  restrictedTo: ["restricted", "none"], trigger: TRIGGERS, recurrence: RECURRENCE, modal: ["true", "false"],
+  restrictedTo: ["gating"], trigger: TRIGGERS, recurrence: RECURRENCE, modal: ["true", "false"],
 };
 
 /**
- * A restriction is free text, so it is barred as present-and-right rather than per string. Compared without
- * case, as the matcher compares it. A restriction the model got wrong is a miss for `restricted` and lands on
- * the unbarred `other`; one it invented where gold has none is a false positive for `restricted`.
+ * Restrictions that GATE nothing (d9, 2026-10-02): "creature" or "permanent" on a job the matcher reads as
+ * "anything of that kind", so a model dropping one changes no match. The scorer reports them; only the gating
+ * restrictions (a creature type, artifact, land, Vehicle) are barred. Compared without case, as the matcher does.
+ */
+export const NON_GATING: ReadonlySet<string> = new Set(["creature", "permanent", "spell", "player", "none"]);
+const gates = (v: string) => !NON_GATING.has(v.toLowerCase());
+
+/**
+ * A restriction is free text, so it is barred as a GATING restriction present and right. A wrong one is a miss
+ * for `gating` and lands on the unbarred `other`; a gating restriction invented where gold has none is a false
+ * positive for `gating`; non-gating values on both sides are `ungated` and unbarred.
  */
 export function restrictionPair(gold: string, predicted: string): [string, string] {
-  if (gold === "none" || predicted === "none") return [gold === "none" ? "none" : "restricted", predicted === "none" ? "none" : "restricted"];
-  return ["restricted", gold.toLowerCase() === predicted.toLowerCase() ? "restricted" : "other"];
+  const g = gates(gold), p = gates(predicted);
+  if (!g) return ["ungated", p ? "gating" : "ungated"];
+  if (!p) return ["gating", "ungated"];
+  return ["gating", gold.toLowerCase() === predicted.toLowerCase() ? "gating" : "other"];
 }
 
 export type Bar = { key: string; bar: number; precision: number | null; recall: number | null; cases: number; pass: boolean };

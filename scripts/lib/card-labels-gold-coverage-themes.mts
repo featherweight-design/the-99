@@ -605,9 +605,9 @@ export const COVERAGE_THEMES: GoldRow[] = [
     why: "Parallel Lives in white: twice the tokens.",
   },
   {
-    name: "Mana Reflection", klass: "doublers",
-    jobs: [j("theme", "doublers", { af: "self" }), j("role", "ramp", { rk: "multiplies", af: "self" })],
-    why: "Twice the mana: the doublers theme, and ramp of kind multiplies (d9's ruling of 2026-10-02), since it adds to mana your permanents already make.",
+    name: "Mana Reflection", klass: "doublersNeg",
+    jobs: [j("role", "ramp", { rk: "multiplies", af: "self" })],
+    why: "A HARD NEGATIVE for doublers (d9, 2026-10-02): twice the MANA is ramp of kind multiplies alone. doublers is for tokens, counters, damage or triggers, so a mana doubler never stands in for Doubling Season.",
   },
   {
     name: "Panharmonicon", klass: "doublers",
@@ -628,13 +628,12 @@ export const COVERAGE_THEMES: GoldRow[] = [
     why: "Death triggers fire an extra time: doublers. Lifelink for your creature tokens is lifegain. Judgement: NOT deathTrigger, because it does nothing itself when a creature dies; it multiplies cards that do.",
   },
   {
-    name: "Zendikar Resurgent", klass: "doublers",
+    name: "Zendikar Resurgent", klass: "doublersNeg",
     jobs: [
-      j("theme", "doublers", { af: "self" }),
       j("role", "ramp", { rk: "multiplies", af: "self" }),
       j("role", "draw", { af: "self", tr: "cast" }),
     ],
-    why: "Each land tapped for mana adds one more of that type: twice the mana from lands, ramp of kind multiplies as Mana Reflection. Draws on creature spells cast, which is an etbDraw NEAR-MISS (cast, not enters).",
+    why: "Each land tapped for mana adds one more of that type: twice the mana from lands, ramp of kind multiplies as Mana Reflection, and a HARD NEGATIVE for doublers: mana is multiplies alone (d9, 2026-10-02). Draws on creature spells cast, which is an etbDraw NEAR-MISS (cast, not enters).",
   },
   {
     name: "Hardened Scales", klass: "doublersNeg",
