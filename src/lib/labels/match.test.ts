@@ -38,6 +38,13 @@ describe("relevant: a job on your own cards counts only for what the deck plays"
     expect(relevant(recur, null, isType)).toBe(false);
   });
 
+  it("reads Kindred as a card type, and the legacy Tribal spelling as Kindred", () => {
+    const recur = job({ space: "theme", kind: "recursion", affects: "self", restrictedTo: "Kindred" });
+    expect(relevant(recur, lens(), isType)).toBe(false);
+    expect(relevant(recur, lens({ heldTypes: heldCardTypes(["Tribal Instant — Elf"]) }), isType)).toBe(true);
+    expect([...heldCardTypes(["Kindred Sorcery — Goblin"])].sort()).toEqual(["kindred", "sorcery"]);
+  });
+
   it("keeps a restriction it cannot read, and never drops a job aimed at opponents for its target", () => {
     expect(relevant(draw({ restrictedTo: "something odd" }), lens(), isType)).toBe(true);
     expect(relevant(removal({ affects: "opponents", restrictedTo: "artifact" }), lens(), isType)).toBe(true);

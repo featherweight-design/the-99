@@ -13,14 +13,19 @@ export function keyOf(job: Job): string | null {
 }
 
 /** The card types a `restrictedTo` may name (`prompt.ts`'s "artifact", "land", "creature"…). */
-const CARD_TYPES = new Set(["artifact", "battle", "creature", "enchantment", "instant", "land", "planeswalker", "sorcery"]);
+const CARD_TYPES = new Set(["artifact", "battle", "creature", "enchantment", "instant", "kindred", "land", "planeswalker", "sorcery"]);
+/** A card type by its current name: `Tribal` was renamed `Kindred`, and older type lines still print it. */
+const cardType = (word: string) => {
+  const w = word.toLowerCase();
+  return w === "tribal" ? "kindred" : w;
+};
 
 /** The card types a deck's cards carry (`DeckLens.heldTypes`), read off the type line's front, before any dash. */
 export function heldCardTypes(typeLines: readonly string[]): Set<string> {
   const out = new Set<string>();
   for (const line of typeLines) {
     for (const face of line.split("//")) {
-      for (const w of face.split(/[—-]/)[0].toLowerCase().split(/\s+/)) if (CARD_TYPES.has(w)) out.add(w);
+      for (const w of face.split(/[—-]/)[0].split(/\s+/).map(cardType)) if (CARD_TYPES.has(w)) out.add(w);
     }
   }
   return out;
@@ -38,7 +43,7 @@ const pointsAtOpponents = (j: Job) => j.affects === "opponents" || j.affects ===
 export function relevant(job: Job, deck: DeckLens | null, isCreatureType: (w: string) => boolean): boolean {
   const r = job.restrictedTo;
   if (r === null || pointsAtOpponents(job)) return true;
-  if (CARD_TYPES.has(r.toLowerCase())) return deck !== null && deck.heldTypes.has(r.toLowerCase());
+  if (CARD_TYPES.has(cardType(r))) return deck !== null && deck.heldTypes.has(cardType(r));
   if (isCreatureType(r)) return deck !== null && deck.keyType === r;
   if (deck !== null && deck.isSubtype(r)) return deck.held.has(r);
   return true;

@@ -9,7 +9,7 @@
 // relation, because a gather returning every card, or none, passes a one-sided check.
 //
 // It writes a fixture under a per-run `user_id` (decks, deck cards, collection rows) and one pair
-// sentinel in the catalog, seeds three `card_labels` rows (section 10, captured first and put back),
+// sentinel in the catalog, seeds three `card_labels` rows on cards that had none (section 10),
 // and deletes all of it in a `finally`. Point it at `local-dev` or a scratch branch, never production.
 import { requireEnv } from "./lib/env.mjs";
 import { Pool, neonConfig } from "@neondatabase/serverless";
@@ -80,10 +80,11 @@ async function timed<T>(label: string, run: () => Promise<T>): Promise<T> {
 
 let pairCleanup: { a: string; b: string; card: string } | null = null;
 /**
- * The `card_labels` rows section 10 overwrote, captured BEFORE its write: the table is the shared catalog,
- * so the `finally` deletes the seeds and puts these back as they were.
+ * The cards section 10 seeded `card_labels` on. It seeds ONLY cards with no label row, so it never
+ * overwrites a real one and has nothing to put back: a capture held in this process would be lost with
+ * it if the run died before restoring. Cleanup deletes its own rows, by id AND its own model name.
  */
-let labelCleanup: { ids: string[]; captured: Record<string, unknown>[] } | null = null;
+let labelCleanup: string[] | null = null;
 const LABEL_MODEL = "probe-swap-engine";
 
 async function main() {
@@ -276,8 +277,16 @@ async function main() {
   //     leaves, one labelled with an extra theme gains it, and every unlabelled row is the text path's.
   const offRead = await loadStandIns(deckId, USER, vault.oracle_id, true);
   const offRows = all(offRead!).filter((s) => !s.isUniversal);
-  if (offRows.length < 3) throw new Error(`Mana Vault has ${offRows.length} non-staple stand-ins; section 10 needs 3`);
-  const [gated, gainer] = offRows;
+  // Seeds go only where no label row exists. Debris from a run that died before its cleanup carries this
+  // model, which no real label does, so sweeping it can never remove anyone's label.
+  await fixture.execute(sql`delete from card_labels where model = ${LABEL_MODEL}`);
+  const labelled = new Set((await rows<{ oracle_id: string }>(sql`
+    select oracle_id from card_labels where oracle_id = any(${sql.param([vault.oracle_id, ...offRows.map((s) => s.card.oracleId)])}::uuid[])`))
+    .map((r) => r.oracle_id));
+  if (labelled.has(vault.oracle_id)) throw new Error("Mana Vault already carries a label; section 10 seeds only unlabelled cards");
+  const free = offRows.filter((s) => !labelled.has(s.card.oracleId));
+  if (free.length < 3) throw new Error(`Mana Vault has ${free.length} unlabelled non-staple stand-ins; section 10 needs 3`);
+  const [gated, gainer] = free;
   const rampJob = (rampKind: string): LabelJob => ({
     space: "role", kind: "ramp", rampKind, restrictedTo: null, affects: "self", to: null, method: null,
     trigger: "none", recurrence: "repeatable", threshold: null, modal: false,
@@ -289,19 +298,14 @@ async function main() {
     [gainer.card.oracleId, [rampJob("tapsForMana"), tokens]],
   ]);
   const ids = [...seeds.keys()];
-  // Debris from a run whose restore failed: a real label never carries this model.
-  await fixture.execute(sql`delete from card_labels where model = ${LABEL_MODEL}`);
-  labelCleanup = { ids, captured: [] };
-  labelCleanup.captured = await rows(sql`select * from card_labels where oracle_id = any(${sql.param(ids)}::uuid[])`);
+  labelCleanup = ids;
   const inputs = await rows<{ oracle_id: string; name: string; mana_cost: string | null; type_line: string; oracle_text: string | null; layout: string }>(sql`
     select oracle_id, name, mana_cost, type_line, oracle_text, layout from cards where oracle_id = any(${sql.param(ids)}::uuid[])`);
   for (const c of inputs) {
     const hash = labelInputHash({ oracleId: c.oracle_id, name: c.name, mana_cost: c.mana_cost, type_line: c.type_line, oracle_text: c.oracle_text, layout: c.layout }, LABEL_MODEL);
     await fixture.execute(sql`
       insert into card_labels (oracle_id, labels, model, prompt_version, input_hash)
-      values (${c.oracle_id}::uuid, ${JSON.stringify(seeds.get(c.oracle_id))}::jsonb, ${LABEL_MODEL}, ${LABEL_PROMPT_VERSION}, ${hash})
-      on conflict (oracle_id) do update set labels = excluded.labels, model = excluded.model,
-        prompt_version = excluded.prompt_version, input_hash = excluded.input_hash`);
+      values (${c.oracle_id}::uuid, ${JSON.stringify(seeds.get(c.oracle_id))}::jsonb, ${LABEL_MODEL}, ${LABEL_PROMPT_VERSION}, ${hash})`);
   }
   const offAgain = await loadStandIns(deckId, USER, vault.oracle_id, true);
   check("labels: with the switch OFF, seeded labels change nothing",
@@ -340,20 +344,9 @@ try {
     await fixture.execute(sql`delete from commander_pair_support_cards where commander_oracle_id = ${pair.a}::uuid and partner_oracle_id = ${pair.b}::uuid`);
     await fixture.execute(sql`delete from commander_pair_support where commander_oracle_id = ${pair.a}::uuid and partner_oracle_id = ${pair.b}::uuid`);
   }
-  const labels = labelCleanup as { ids: string[]; captured: Record<string, unknown>[] } | null;
-  if (labels) {
-    // ONE transaction: a restore that fails rolls the delete back with it, so the shared catalog is left
-    // holding the seeds rather than missing real rows. The seeds carry LABEL_MODEL, which the next run
-    // sweeps before it captures anything, so they are never mistaken for rows to put back.
-    await fixture.transaction(async (tx) => {
-      await tx.execute(sql`delete from card_labels where oracle_id = any(${sql.param(labels.ids)}::uuid[])`);
-      for (const r of labels.captured) {
-        await tx.execute(sql`
-          insert into card_labels (oracle_id, labels, model, prompt_version, input_hash, labelled_at)
-          values (${r.oracle_id as string}::uuid, ${JSON.stringify(r.labels)}::jsonb, ${r.model as string},
-            ${r.prompt_version as string}, ${r.input_hash as string}, ${r.labelled_at as Date})`);
-      }
-    });
+  const seeded = labelCleanup as string[] | null;
+  if (seeded) {
+    await fixture.execute(sql`delete from card_labels where oracle_id = any(${sql.param(seeded)}::uuid[]) and model = ${LABEL_MODEL}`);
   }
   await fixture.execute(sql`delete from decks where user_id = ${USER}`);
   await fixture.execute(sql`delete from collection_items where user_id = ${USER}`);
