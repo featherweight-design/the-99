@@ -20,7 +20,10 @@
 //   * a pair sentinel is INSERTED (local-dev carries no pair rows at all, so without one the
 //     pair half of the writer is asserted by nobody) and deleted;
 //   * the refusal case inserts throwaway `synergy_state = 'ok'` commander rows carrying no
-//     support cards, which is what pushes the derivation under its floor, and deletes them.
+//     support cards, which is what pushes the derivation under its floor, and deletes them;
+//   * the publish and the refusal now clear `commander_scores` WHOLESALE, for every user, as
+//     the shipped pass does. That is not put back: a cleared score is recomputed on the next
+//     load. A score planted under a per-run user is what the clear is read against.
 //
 // A KILLED RUN ORPHANS ROWS, and that is not hypothetical — one of the mutation runs behind
 // this probe was cut off by a timeout part-way through section 2, and its `finally` never ran.
@@ -94,6 +97,24 @@ let commanderRoles: RoleRow[] | null = null;
 let pairRoles: RoleRow[] | null = null;
 let pairSentinel: { a: string; b: string } | null = null;
 const fakeCommanders: string[] = [];
+
+// A STORED SCORE, so the clear has something to delete. Under a per-run user, which the
+// `finally` removes if a clear did not; any commander id serves, since only its deletion is read.
+const SCORE_USER = `probe-role-targets-${process.pid}-${Date.now()}`;
+async function plantScore() {
+  await db.execute(sql`
+    insert into commander_scores
+      (user_id, oracle_id, slug, score, rank_score, fit_pool, fit_roles, fit_synergy,
+       synergy_state, receipts, color_pool_size, role_counts)
+    select ${SCORE_USER}, commander_oracle_id, 'probe-role-targets', 50, 50, 0, 0, 0, 'ok', '', 1,
+           '{"ramp":0,"draw":0,"removal":0,"wipes":0}'::jsonb
+      from commander_support order by commander_oracle_id limit 1`);
+}
+async function scoreCount() {
+  const [{ n }] = await rows<{ n: number }>(sql`
+    select count(*)::int as n from commander_scores where user_id = ${SCORE_USER}`);
+  return n;
+}
 
 async function main() {
   // BEFORE the `ok` count is taken: a leftover fixture row is an ok commander, so counting
@@ -172,8 +193,10 @@ async function main() {
     select count(avg_ramp)::int as n from commander_support`);
   check("the fixture starts with no role values at all", blanked, 0);
 
+  await plantScore();
   const first = await deriveAndWriteRoleTargets(OWNS_NOTHING);
   check("the pass writes a value for every ok commander", first.written, ok);
+  check("the publish clears the stored scores in its own transaction", await scoreCount(), 0);
 
   const [filled] = await rows<{ n: number; neg: number; ramp: number }>(sql`
     select count(avg_ramp)::int as n,
@@ -385,6 +408,7 @@ async function main() {
       update commander_support set avg_ramp = 9
       where commander_oracle_id in (${owned.id}::uuid, ${other.id}::uuid)`);
 
+    await plantScore();
     let threw = false;
     try {
       await deriveAndWriteRoleTargets({ commanders: [owned.id], pairs: [] });
@@ -400,6 +424,7 @@ async function main() {
              (select avg_ramp from commander_support where commander_oracle_id = ${other.id}::uuid) as other`);
     check("the row this run rewrote loses its roles", after.owned, null);
     check("the row it never touched keeps them", after.other, 9);
+    check("the refusal clears the stored scores with the roles it nulled", await scoreCount(), 0);
   }
 
   if (!fakeCommanders.length && !pairSentinel) note("nothing was inserted into the catalog");
@@ -411,6 +436,9 @@ main()
     // EVERY step runs even when an earlier one throws — a cleanup that stops at the first
     // failure poisons the next run of itself.
     for (const [label, step] of [
+      ["the planted score", async () => {
+        await db.execute(sql`delete from commander_scores where user_id = ${SCORE_USER}`);
+      }],
       ["the pair sentinel", async () => {
         if (!pairSentinel) return;
         const { a, b } = pairSentinel;

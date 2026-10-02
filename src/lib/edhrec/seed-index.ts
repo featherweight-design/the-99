@@ -2,7 +2,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
   cards, commanderScores, commanderSupport, commanderSupportCards,
-  commanderPairSupport, commanderPairSupportCards, decks,
+  commanderPairSupport, commanderPairSupportCards, decks, identityComposition,
 } from "../../db/schema";
 import { SCORE_INDEX_LOCK } from "../recs/store";
 import { choosePairs, LEGAL_PAIR_FLOOR, legalPairs, pairKey, type IndexPair } from "./pair-enumerate";
@@ -339,6 +339,25 @@ export async function clearPersistedScoresIn(tx: Pick<typeof db, "execute" | "de
 }
 
 /**
+ * Replaces `identity_composition` and retires every stored score, in the caller's transaction.
+ *
+ * TOGETHER, because the fit score reads this table's role figures (brief 2026-09-28 §5.4): a
+ * commander with no measured row of its own is graded against its identity or colour-count
+ * bucket, and `db:build:staples` rewrites those buckets AFTER the index build has already
+ * cleared the scores. A /commanders or Home load in between persists scores against the old
+ * buckets, and nothing else retires them. Doing the clear in the same transaction as the
+ * rewrite means no reader sees the new buckets beside scores computed from the old ones.
+ */
+export async function replaceCompositionIn(
+  tx: Pick<typeof db, "execute" | "delete" | "insert">,
+  rows: (typeof identityComposition.$inferInsert)[],
+): Promise<void> {
+  await tx.delete(identityComposition);
+  await tx.insert(identityComposition).values(rows);
+  await clearPersistedScoresIn(tx);
+}
+
+/**
  * Rebuilds `commander_support` and `commander_support_cards` for every card that
  * can legally be a commander.
  *
@@ -538,6 +557,21 @@ export async function buildCommanderIndex(
       // Reported, never rethrown: the original failure is the one the operator needs.
       console.error("commander-index: the post-failure role clear ALSO failed", cleanupErr);
     }
+    // The role figures just moved (to null), so the scores a load persisted against the
+    // previous ones since the first clear go too. Both role refusals throw into this catch, so
+    // this is the one place that covers them and every other failure after the writes. Its own
+    // try, so a failed role clear cannot skip it. Only when the run wrote rows: one that moved
+    // nothing has no roles to clear and no reason to cost every reader a cold recompute.
+    // Or when the role pass published: a resume run that skipped every commander still writes
+    // targets, and a throw after that (the clear itself) must not leave their scores standing.
+    if (writtenCommanders.length > 0 || writtenPairs.length > 0 || r.roleTargets > 0 || r.pairRoleTargets > 0) {
+      try {
+        await clearScores();
+        console.error("commander-index: cleared persisted commander scores after the failed run");
+      } catch (clearErr) {
+        console.error("commander-index: the post-failure score clear ALSO failed", clearErr);
+      }
+    }
     throw err;
   }
 
@@ -602,6 +636,20 @@ export async function buildCommanderIndex(
   const roles = await deriveRoles({ commanders: writtenCommanders, pairs: writtenPairs });
   r.roleTargets = roles.written;
   r.pairRoleTargets = roles.pairsWritten;
+
+  // The shipped pass clears inside its own publish transaction; this covers an injected one,
+  // and costs one empty delete otherwise.
+  // AND CLEAR AGAIN, because the fit score reads these figures (brief 2026-09-28 §5.4) and
+  // the clear above ran before them. A /commanders or Home load between the two persists
+  // scores against the PREVIOUS role targets, and nothing else retires those rows: the role
+  // write leaves `computed_at` where it was, so the rows keep the current writer version and
+  // the current index generation's timestamps. The clear takes `SCORE_INDEX_LOCK` exclusively,
+  // so a write already past its guard lands before it and is deleted, and one after it re-reads
+  // a generation whose role term has moved (`cache/index-generation.ts`) and is dropped.
+  if (roles.written > 0 || roles.pairsWritten > 0) {
+    await clearScores();
+    console.log("commander-index: cleared persisted commander scores again, after the role targets");
+  }
   console.log(
     `commander-index: role targets written for ${roles.written} commander(s) and ` +
     `${roles.pairsWritten} pair(s) · ${roles.zeroWipes} measure exactly 0 wipes`,
@@ -654,6 +702,9 @@ async function clearRolesFor(written: RunWrites) {
         .where(sql`(${commanderPairSupport.commanderOracleId}, ${commanderPairSupport.partnerOracleId}) in (${sql.join(keys, sql`, `)})`)
         .returning({ id: commanderPairSupport.commanderOracleId });
     }
+    // The roles just moved (to null), so the scores graded against them go in the same
+    // transaction, for the reason the publish gives.
+    await clearPersistedScoresIn(tx);
     return { commanders: c.length, pairs: p.length };
   });
 }
@@ -858,6 +909,12 @@ export async function deriveAndWriteRoleTargets(
             as v(id, partner, ramp, draw, removal, wipes)
          where ps.commander_oracle_id = v.id and ps.partner_oracle_id = v.partner`);
     }
+
+    // AND THE SCORES, in this same transaction: the fit score reads these figures (brief
+    // 2026-09-28 §5.4), so a clear in a transaction of its own would let a reader find the new
+    // figures beside scores graded against the old ones until it ran. Exclusive under
+    // `SCORE_INDEX_LOCK`, so a score write already past its guard lands first and goes too.
+    await clearPersistedScoresIn(tx);
   });
 
   return {

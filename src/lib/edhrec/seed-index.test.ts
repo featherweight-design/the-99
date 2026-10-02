@@ -10,8 +10,9 @@ const stub = vi.hoisted(() => ({ db: {} as Record<string, unknown> }));
 vi.mock("../../db", () => ({ db: stub.db }));
 
 import { buildCommanderIndex,
-  pairNameFilter, pairRunProblem, type BuildIndexResult,
+  pairNameFilter, pairRunProblem, replaceCompositionIn, type BuildIndexResult,
 } from "./seed-index";
+import { commanderScores, identityComposition } from "../../db/schema";
 
 const commander = (name: string, oracleId: string) => ({
   oracleId, name,
@@ -482,7 +483,9 @@ describe("the score clear runs before the pair pass", () => {
         delayMs: 0,
       }),
     ).rejects.toThrow("pair query failed");
-    expect(cleared).toBe(1);
+    // Once before the pair pass, and once more on the error path, because the failed run
+    // cleared the roles of the commander it had written.
+    expect(cleared).toBe(2);
   });
 
   // The counterpart, unchanged: a run that moved nothing must not throw away every reader's
@@ -616,5 +619,80 @@ describe("pairRunProblem", () => {
 
   it("passes a run with nothing to attempt", () => {
     expect(pairRunProblem(run({ pairsSkipped: 1717 }))).toBeNull();
+  });
+});
+
+// Brief 2026-09-28 §5.4: the fit score reads the role targets, and the first clear runs
+// BEFORE the role pass writes them. A load between the two persists scores against the old
+// figures, and the role write moves no timestamp that would retire them. So a pass that wrote
+// roles clears again, AFTER writing: the order is the whole point, and is what this asserts.
+it("clears again after the role pass writes targets", async () => {
+  const order: string[] = [];
+  await buildCommanderIndex({
+    loadPairs: async () => [],
+    deriveRoleTargets: async () => { order.push("roles"); return { written: 1, pairsWritten: 0, zeroWipes: 0 }; },
+    loadCommanders: async () => [commander("A", "a")],
+    loadNameIndex: async () => [],
+    fetch: async () => okResult(["Sol Ring"]),
+    write: async () => {},
+    clearScores: async () => { order.push("clear"); },
+    delayMs: 0,
+  });
+  expect(order).toEqual(["clear", "roles", "clear"]);
+});
+
+// A refused or failed role pass nulls the roles it rewrote, which moves the figures the
+// scores were graded against just as a successful one does.
+it("clears again when the role pass refuses", async () => {
+  const order: string[] = [];
+  await expect(buildCommanderIndex({
+    loadPairs: async () => [],
+    deriveRoleTargets: async () => { order.push("roles"); throw new Error("role targets REFUSED"); },
+    loadCommanders: async () => [commander("A", "a")],
+    loadNameIndex: async () => [],
+    fetch: async () => okResult(["Sol Ring"]),
+    write: async () => {},
+    clearScores: async () => { order.push("clear"); },
+    delayMs: 0,
+  })).rejects.toThrow(/REFUSED/);
+  expect(order).toEqual(["clear", "roles", "clear"]);
+});
+
+// A resume run that skipped every commander writes no support rows, but its role pass still
+// publishes targets. If the clear after it throws, the error path must try once more rather
+// than reading "wrote nothing" and leaving scores graded against the previous figures.
+it("retries the clear on the error path when only the role pass published", async () => {
+  const order: string[] = [];
+  let clears = 0;
+  await expect(buildCommanderIndex({
+    loadPairs: async () => [],
+    deriveRoleTargets: async () => { order.push("roles"); return { written: 3279, pairsWritten: 0, zeroWipes: 0 }; },
+    loadCommanders: async () => [],
+    loadNameIndex: async () => [],
+    clearScores: async () => {
+      clears++;
+      order.push("clear");
+      if (clears === 1) throw new Error("clear failed");
+    },
+    delayMs: 0,
+  })).rejects.toThrow("clear failed");
+  expect(order).toEqual(["roles", "clear", "clear"]);
+});
+
+// And the staples step's half: `db:build:staples` rewrites the identity buckets after the
+// index build's clears, so replacing them retires the scores in the same transaction.
+describe("replaceCompositionIn", () => {
+  it("replaces the buckets and then clears the scores under the exclusive lock, in one transaction", async () => {
+    const steps: string[] = [];
+    const tx = {
+      delete: (t: unknown) => { steps.push(t === identityComposition ? "delete:composition" : t === commanderScores ? "delete:scores" : "delete:?"); return Promise.resolve(); },
+      insert: (t: unknown) => ({ values: async () => { steps.push(t === identityComposition ? "insert:composition" : "insert:?"); } }),
+      execute: async (q: unknown) => {
+        const text = new PgDialect().sqlToQuery(q as Parameters<PgDialect["sqlToQuery"]>[0]).sql;
+        steps.push(text.includes("pg_advisory_xact_lock(") ? "lock:exclusive" : "execute");
+      },
+    };
+    await replaceCompositionIn(tx as never, []);
+    expect(steps).toEqual(["delete:composition", "insert:composition", "lock:exclusive", "delete:scores"]);
   });
 });

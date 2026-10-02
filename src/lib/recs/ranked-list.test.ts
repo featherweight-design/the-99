@@ -12,7 +12,7 @@ const collectionGeneration = vi.fn<(userId: string) => Promise<number>>(async ()
 // The commander-index fingerprint, alongside the collection's: `persistScores`
 // drops a write whose index moved mid-compute, and `getRankedList` captures
 // both before the read they describe.
-const indexGeneration = vi.fn<() => Promise<number>>(async () => 42);
+const indexGeneration = vi.fn<() => Promise<string>>(async () => "42");
 const recommendCommanders = vi.fn<(userId: string) => Promise<unknown>>();
 const getCollectionStats = vi.fn<(userId: string) => Promise<{ uniqueCards: number }>>(async () => ({
   uniqueCards: 10,
@@ -123,7 +123,7 @@ describe("getRankedList", () => {
 
     const call = persistScores.mock.calls[0];
     expect(call?.[2]).toBe(1); // collectionGeneration's value
-    expect(call?.[3]).toBe(42); // indexGeneration's value
+    expect(call?.[3]).toBe("42"); // indexGeneration's value
   });
 
   // And both are captured BEFORE the compute reads what they fingerprint. Taken
@@ -133,7 +133,7 @@ describe("getRankedList", () => {
   it("captures both fingerprints before the compute reads anything", async () => {
     const order: string[] = [];
     collectionGeneration.mockImplementation(async () => { order.push("collection"); return 1; });
-    indexGeneration.mockImplementation(async () => { order.push("index"); return 42; });
+    indexGeneration.mockImplementation(async () => { order.push("index"); return "42"; });
     loadScores.mockResolvedValue({ items: [], degradedOracleIds: [] });
     recommendCommanders.mockImplementation(async () => {
       order.push("compute");

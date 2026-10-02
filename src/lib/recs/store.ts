@@ -1,13 +1,15 @@
 import { and, desc, eq, notInArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
-  cards, commanderScores, commanderSupport, csvUploads, SCORE_WRITER_CURRENT, type RoleCounts,
+  cards, commanderScores, csvUploads, SCORE_WRITER_CURRENT, type RoleCounts,
 } from "../../db/schema";
 import { receiptsPreview } from "./format";
 import { measurableTotalFor } from "./score";
 import type { CommanderListItem, RankedCommander } from "./recommend";
 import type { SynergyState } from "./synergy-state";
 import { notBuiltBy } from "../decks/built";
+import { readIndexGeneration } from "../cache/index-generation";
+import { recordSoftFailure } from "../cache/soft-failure";
 
 // Postgres codes meaning the schema is behind the code: 42P01 undefined_table,
 // 42703 undefined_column. commander_scores is a cache and both readers already
@@ -129,20 +131,34 @@ export const SCORE_INDEX_LOCK = "commander-scores:commander-index";
  * `writer_version` cannot express this. It says which CODE wrote a row, and the
  * rebuild changes the DATA under identical code.
  *
- * Read as the newest `computed_at` rather than a counter, exactly as the
- * collection's is read from `max(confirmed_at)`: the index build stamps that
- * column in the same transaction as each write, so the newest one identifies
- * the generation without a table to maintain.
+ * Read as the WHOLE index token (`readIndexGeneration`), not `max(computed_at)` alone,
+ * since the fit score reads the measured role targets (brief 2026-09-28 §5.4). The role
+ * pass writes those without moving `computed_at`, and `db:build:staples` rewrites the
+ * identity buckets after the build; a guard on the timestamp alone passed a score
+ * computed against either input's previous figures. The token moves with both, and it
+ * is the same one the deck pages' caches key on, so the two cannot disagree about what
+ * an index change is.
+ *
+ * UNCACHED, deliberately: `cache/index-generation.ts`'s `indexGeneration` holds its
+ * answer for 60 seconds, and a guard read from a cache compares two stale readings.
  *
  * Callers capture it BEFORE reading support and hand it to `persistScores`,
  * which re-reads it inside its own transaction and drops the write if it moved.
  */
-export async function indexGeneration(): Promise<number | null> {
-  const [row] = await db
-    .select({ at: sql<Date | null>`max(${commanderSupport.computedAt})` })
-    .from(commanderSupport);
-  return row?.at ? new Date(row.at).getTime() : null;
+export async function indexGeneration(): Promise<string> {
+  try {
+    return await readIndexGeneration(db, { strict: true });
+  } catch {
+    // Not the unstamped token: that is a real reading (nothing built), and two failed reads
+    // answering it would compare equal and pass the guard. This one never matches a reading,
+    // so `persistScores` declines the write. Recorded, since it sits on Home's cached path.
+    recordSoftFailure();
+    return INDEX_UNREADABLE;
+  }
 }
+
+/** What `indexGeneration` answers when the index could not be read. No reading equals it. */
+export const INDEX_UNREADABLE = "unreadable";
 
 /**
  * Upsert rather than delete-then-insert: the after() warm and an inline compute
@@ -177,12 +193,10 @@ export async function persistScores(
    * whose index has moved since is dropped, which closes the rebuild race — see
    * `indexGeneration`.
    *
-   * THREE VALUES, NOT TWO, because `null` already means something here.
    * `undefined` — omitted — is "do not check", the behaviour every caller had
-   * before this existed. `null` is a real reading: an index with no rows at all,
-   * which must compare equal to itself rather than being read as "no opinion".
-   * Collapsing those onto one value is how a guard comes to skip the case it was
-   * written for.
+   * before this existed. Every reading is a string: an index with no rows at all
+   * reads as the token's own unstamped constant, which compares equal to itself,
+   * so "empty" stays a real reading rather than collapsing onto "no opinion".
    *
    * NO PRODUCTION CALLER OMITS IT, and the omitted path cannot be closed by
    * making the parameter required, because what still reaches it is a PREVIOUS
@@ -190,8 +204,10 @@ export async function persistScores(
    * closed by `SCORE_WRITER_CURRENT`, which version 4 bumps for this reason
    * alone: rows an unguarded writer leaves behind announce 3 and are refused.
    */
-  indexGen?: number | null,
+  indexGen?: string,
 ): Promise<void> {
+  // A token taken over a failed read guards nothing, so there is nothing to compare against.
+  if (indexGen === INDEX_UNREADABLE) return;
   const rows = ranked.map((r) => toScoreRow(userId, r));
   const keep = rows.map((r) => r.oracleId);
   await db.transaction(async (tx) => {
@@ -250,11 +266,8 @@ export async function persistScores(
     // writes have no reason to serialise against EACH OTHER; the one exclusive
     // taker is the rebuild.
     if (indexGen !== undefined) {
-      const [ig] = await tx
-        .select({ at: sql<Date | null>`max(${commanderSupport.computedAt})` })
-        .from(commanderSupport);
-      const currentIndex = ig?.at ? new Date(ig.at).getTime() : null;
-      if (currentIndex !== indexGen) return;
+      // Strict: a failed re-read throws and abandons the write, never reads as a match.
+      if ((await readIndexGeneration(tx, { strict: true })) !== indexGen) return;
     }
     await tx.delete(commanderScores).where(
       keep.length === 0
