@@ -93,9 +93,8 @@ const AUDITED: GoldRow[] = [
     jobs: [
       j("theme", "counters", { rt: "Knight", af: "self", tr: "dies", rec: "oneShot" }),
       j("theme", "tribal", { rt: "Knight", af: "self", tr: "dies", rec: "oneShot" }),
-      j("theme", "deathTrigger", { af: "self", tr: "dies", rec: "oneShot" }),
     ],
-    why: "Knight-restricted, and it has to DIE first — a trigger the controller does not choose. oneShot for the same reason. Task 4 re-audit: gains `tribal` (Knight) and `deathTrigger` (it does something when it dies), both newly defined jobs that had no gold coverage.",
+    why: "Knight-restricted, and it has to DIE first — a trigger the controller does not choose. oneShot for the same reason. Task 4 re-audit: gains `tribal` (Knight). Its OWN death is the trigger (trigger `dies`), not the deathTrigger theme, which is for another creature dying.",
   },
   {
     name: "Stromkirk Bloodthief", klass: "restrictedCounter",
@@ -473,20 +472,18 @@ const AUDITED: GoldRow[] = [
     jobs: [
       j("role", "draw", { rt: "land", af: "self", tr: "cast" }),
       j("theme", "recursion", { rt: "Spirit", af: "self", dest: "hand", tr: "dies", rec: "oneShot", th: mv(2, "<=") }),
-      j("theme", "deathTrigger", { af: "self", tr: "dies", rec: "oneShot" }),
       j("theme", "tribal", { rt: "Spirit", af: "self", tr: "cast" }),
     ],
-    why: "Lands only, to HAND, gated on casting a Spirit or Arcane spell. Not ramp: nothing reaches the battlefield. A card the ramp rules would plausibly over-claim. Task 4 re-audit: theme `draw` becomes role `draw` (lands from the library into hand; the theme now means rewarding draws). Gains the soulshift the first labelling missed — `recursion` to hand and `deathTrigger` — and `tribal` (Spirit), a judgement since the trigger also accepts Arcane spells.",
+    why: "Lands only, to HAND, gated on casting a Spirit or Arcane spell. Not ramp: nothing reaches the battlefield. A card the ramp rules would plausibly over-claim. Task 4 re-audit: theme `draw` becomes role `draw` (lands from the library into hand; the theme now means rewarding draws). Gains the soulshift the first labelling missed — `recursion` to hand on its own death (trigger `dies`, not the deathTrigger theme) — and `tribal` (Spirit), a judgement since the trigger also accepts Arcane spells.",
   },
   {
     name: "Scuttling Death", klass: "thresholds",
     jobs: [
       j("role", "removal", { rt: "creature", af: "opponents", meth: "shrink", tr: "activated", rec: "oneShot" }),
       j("theme", "recursion", { rt: "Spirit", af: "self", dest: "hand", tr: "dies", rec: "oneShot", th: mv(4, "<=") }),
-      j("theme", "deathTrigger", { af: "self", tr: "dies", rec: "oneShot" }),
       j("theme", "tribal", { rt: "Spirit", af: "self", tr: "dies", rec: "oneShot" }),
     ],
-    why: "-1/-1 until end of turn is removal only against a 1-toughness creature — weak removal, still removal. Sacrifices itself, so oneShot. Task 4 re-audit: `sacOutlet` removed (it sacrifices only itself); gains the soulshift the first labelling missed — `recursion` to hand and `deathTrigger` — and `tribal` (Spirit), a judgement since soulshift is its only Spirit clause.",
+    why: "-1/-1 until end of turn is removal only against a 1-toughness creature — weak removal, still removal. Sacrifices itself, so oneShot. Task 4 re-audit: `sacOutlet` removed (it sacrifices only itself); gains the soulshift the first labelling missed — `recursion` to hand on its own death (trigger `dies`, not the deathTrigger theme) — and `tribal` (Spirit), a judgement since soulshift is its only Spirit clause.",
   },
   {
     name: "Hedge Whisperer", klass: "thresholds",

@@ -65,10 +65,10 @@ export const COVERAGE_FIELDS: GoldRow[] = [
   {
     name: "Spark Double", klass: "affectsSelf",
     jobs: [
-      j("theme", "clones", { rt: "creature", af: "self", tr: "etb", rec: "oneShot" }),
+      j("theme", "clones", { rt: null, af: "self", tr: "etb", rec: "oneShot" }),
       j("theme", "counters", { af: "self", tr: "etb", rec: "oneShot" }),
     ],
-    why: "A clone limited to 'a creature or planeswalker YOU control', so affects self, the same answer Clone's 'any creature' gets by the by-job rule. rt 'creature' is a judgement: it may also copy a planeswalker, and the +1/+1 counter applies only when it copies a creature.",
+    why: "A clone limited to 'a creature or planeswalker YOU control', so affects self, the same answer Clone's 'any creature' gets by the by-job rule. rt null: it copies a creature OR a planeswalker, two types, as Phyrexian Metamorph.",
   },
 
   // ---- affects: opponents ------------------------------------------------------

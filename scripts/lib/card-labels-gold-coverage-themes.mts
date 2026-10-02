@@ -70,10 +70,10 @@ export const COVERAGE_THEMES: GoldRow[] = [
   {
     name: "Thought Scour", klass: "graveyardHateNeg",
     jobs: [
-      j("theme", "mill", { af: "self", rec: "oneShot" }),
+      j("theme", "mill", { af: "opponents", rec: "oneShot" }),
       j("role", "draw", { af: "self", rec: "oneShot" }),
     ],
-    why: "A HARD NEGATIVE for graveyardHate: it FILLS a graveyard. 'Target player mills' recorded as self, because the card is played as self-mill; that affects value is a judgement call, and opponents is defensible.",
+    why: "A HARD NEGATIVE for graveyardHate: it FILLS a graveyard. 'Target player mills' is opponents by the prompt's rule, since the card does not plainly mean you, though it is often played as self-mill.",
   },
 
   {
@@ -87,10 +87,10 @@ export const COVERAGE_THEMES: GoldRow[] = [
   {
     name: "Faerie Macabre", klass: "graveyardHate",
     jobs: [
-      j("theme", "graveyardHate", { af: "each", tr: "activated", rec: "oneShot" }),
+      j("theme", "graveyardHate", { af: "opponents", tr: "activated", rec: "oneShot" }),
       j("theme", "evasion", { rt: "creature", af: "self" }),
     ],
-    why: "Discarded from hand, exiles up to two cards from ANY graveyards: hate that costs no mana. Affects each. Flying when cast as a creature.",
+    why: "Discarded from hand, exiles up to two cards from ANY graveyards: hate that costs no mana. Affects opponents by the by-job rule: it exiles the cards chosen, which is not the same thing done to every player. Flying when cast as a creature.",
   },
   {
     name: "Mental Note", klass: "graveyardHateNeg",
@@ -410,8 +410,8 @@ export const COVERAGE_THEMES: GoldRow[] = [
   },
   {
     name: "Beacon of Unrest", klass: "theftNeg",
-    jobs: [j("theme", "recursion", { af: "each", dest: "battlefield", rec: "oneShot" })],
-    why: "A HARD NEGATIVE for theft: it can take an artifact or creature from an OPPONENT'S graveyard, but a card in a graveyard is neither a permanent they control nor a card cast. Recursion from any graveyard (affects each, judgement); two types, no restrictedTo. It shuffles itself back, a re-draw and not repeatable in play.",
+    jobs: [j("theme", "recursion", { af: "self", dest: "battlefield", rec: "oneShot" })],
+    why: "A HARD NEGATIVE for theft: it can take an artifact or creature from an OPPONENT'S graveyard, but a card in a graveyard is neither a permanent they control nor a card cast. Recursion from any graveyard, self by the by-job rule; two types, no restrictedTo. It shuffles itself back, a re-draw and not repeatable in play.",
   },
 
   // ---- poison -------------------------------------------------------------------------------

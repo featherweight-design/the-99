@@ -205,7 +205,13 @@ for (const [model, byCard] of Object.entries(predictions)) {
 
   for (const row of GOLD) {
     const predicted = byCard[row.name];
-    if (predicted == null) { notReturned++; jobs.fn += row.jobs.length; continue; }
+    // A card the model never returned misses EVERY one of its jobs, per job as well as in the aggregate, or a
+    // model could skip the cards holding a job and keep that job's recall whole.
+    if (predicted == null) {
+      notReturned++;
+      for (const k of row.jobs.map(kindKey)) { jobs.fn++; perKind[k] ??= blankTally(); perKind[k].fn++; }
+      continue;
+    }
 
     const goldKinds = row.jobs.map(kindKey);
     const predKinds = predicted.map(kindKey);

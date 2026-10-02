@@ -189,18 +189,18 @@ export const COVERAGE_ROLES: GoldRow[] = [
   {
     name: "Control Magic", klass: "removal",
     jobs: [
-      j("role", "removal", { rt: "creature", af: "opponents", meth: null }),
-      j("theme", "theft", { rt: "creature", af: "opponents" }),
+      j("role", "removal", { rt: "creature", af: "opponents", meth: null, rec: "oneShot" }),
+      j("theme", "theft", { rt: "creature", af: "opponents", rec: "oneShot" }),
     ],
-    why: "THEFT as removal: the definition says gaining control of a permanent is removal. JUDGEMENT: METHODS has no 'gain control' value, so method is null (no method describes a change of control); recurrence repeatable because the Aura holds the creature for as long as it stays. Theft theme too.",
+    why: "THEFT as removal: the definition says gaining control of a permanent is removal. JUDGEMENT: METHODS has no 'gain control' value, so method is null (no method describes a change of control); oneShot, as Mind Control: the Aura takes one creature, once, however long it holds it. Theft theme too.",
   },
   {
     name: "Confiscate", klass: "removal",
     jobs: [
-      j("role", "removal", { rt: "permanent", af: "opponents", meth: null }),
-      j("theme", "theft", { rt: "permanent", af: "opponents" }),
+      j("role", "removal", { rt: "permanent", af: "opponents", meth: null, rec: "oneShot" }),
+      j("theme", "theft", { rt: "permanent", af: "opponents", rec: "oneShot" }),
     ],
-    why: "Theft of any PERMANENT, not just a creature. Same method-null judgement as Control Magic: no method value names gaining control.",
+    why: "Theft of any PERMANENT, not just a creature. Same method-null judgement as Control Magic: no method value names gaining control. oneShot, as Control Magic.",
   },
   {
     name: "Conclave Tribunal", klass: "removal",

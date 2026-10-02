@@ -89,7 +89,9 @@ THEMES (space "theme"): ${THEMES.join(", ")}
   mill          — puts cards from a library into a graveyard. Use affects to say
                   whose library.
   sacOutlet     — a repeatable way to sacrifice OTHER permanents.
-  deathTrigger  — does something when a creature dies.
+  deathTrigger  — does something when ANOTHER creature dies, or whenever any
+                  creature dies. A card's trigger on its OWN death is not
+                  deathTrigger: label the job it does, with trigger "dies".
   lifegain      — gains you life.
   drain         — damage or life loss aimed ONLY at opponents. A Shock, which can
                   hit any target, is not drain.
@@ -340,13 +342,14 @@ export const buildRequest = (customId: string, model: string, cards: CardForProm
  * version still moves with every SYSTEM edit (pinned in `prompt.test.ts`): it is the human-readable
  * reason a run was owed, and what the label copy reads to tell a prompt change from a catalog one.
  */
+// "4": deathTrigger is another creature dying; a card's own death is the job's `dies` trigger (Task 4 review).
 // "3": the vocabulary plan's Task 3 vocabulary and definitions. SYSTEM's hash alone already stales
 // every row; the version moves with it because `copy-card-labels.ts` reads a version mismatch as "a
 // different prompt" and a hash mismatch under an EQUAL version as a catalog difference. A SYSTEM edit
 // with no bump would be misreported as the latter, so `prompt.test.ts` pins SYSTEM's hash to this version.
 // "2": every job now carries `affects`, `to` and `method` (the vocabulary plan's Task 2), so a row
 // labelled under "1" has none of them and must read stale rather than current.
-export const LABEL_PROMPT_VERSION = "3";
+export const LABEL_PROMPT_VERSION = "4";
 
 /**
  * Whether a stored label still describes its card, mirroring `proseInputHash`.

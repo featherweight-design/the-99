@@ -22,6 +22,12 @@ describe("the per-job bars", () => {
     expect(stops(jobBars(rest))).toEqual(["theme:goad: no gold cases, so unmeasured"]);
   });
 
+  it("judge the unrounded ratio: 0.8996 is under a 0.9 bar though it prints as 0.9", () => {
+    const [b] = jobBars({ "role:tutor": { tp: 8996, fp: 0, fn: 1004 } }).filter((x) => x.key === "role:tutor");
+    expect(b.recall).toBe(0.9);
+    expect(b.pass).toBe(false);
+  });
+
   it("fail on precision alone: a model that labels everything a tutor finds every tutor", () => {
     expect(stops(jobBars({ ...perfect, "role:tutor": { tp: 10, fp: 10, fn: 0 } }))[0]).toMatch(/^role:tutor: precision 0.5 recall 1/);
   });

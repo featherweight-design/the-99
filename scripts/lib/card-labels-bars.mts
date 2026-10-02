@@ -36,15 +36,18 @@ export const FIELD_VALUES: Record<Field, readonly string[]> = {
 
 export type Bar = { key: string; bar: number; precision: number | null; recall: number | null; cases: number; pass: boolean };
 
-const ratio = (a: number, b: number) => (b ? +(a / b).toFixed(3) : null);
+const ratio = (a: number, b: number) => (b ? a / b : null);
+const shown = (r: number | null) => (r === null ? null : +r.toFixed(3));
 
 function bar(key: string, need: number, t: Tally | undefined): Bar {
   const tally = t ?? { tp: 0, fp: 0, fn: 0 };
   const precision = ratio(tally.tp, tally.tp + tally.fp);
   const recall = ratio(tally.tp, tally.tp + tally.fn);
   const cases = tally.tp + tally.fn;
+  // Judged on the UNROUNDED ratios: 0.8996 is under a 0.9 bar, though it prints as 0.9. Rounded only for
+  // the report.
   const pass = cases > 0 && precision !== null && recall !== null && precision >= need && recall >= need;
-  return { key, bar: need, precision, recall, cases, pass };
+  return { key, bar: need, precision: shown(precision), recall: shown(recall), cases, pass };
 }
 
 /** One bar per vocabulary job, whether or not the model or the gold set mentioned it. */
