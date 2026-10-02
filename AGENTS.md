@@ -2475,10 +2475,13 @@ after a push to `/decks`, and in 3 of 4 cases the reader never left (1f's startu
 - **A write equal to the live URL is not made.** It changes nothing a reader sees, and it is the
   write that was adopted over the pending push. A path check alone does not catch it, because
   the path has not moved while the push is pending.
-- **A write naming a different path than the live one is not made.** A mirror describes the page
-  it is on and never moves it. After a browser Back or Forward the address is already the
-  destination when Next's popstate handler runs, so a late write from the page being left would
-  put its own path back over it.
+- **A write is made only on the page it describes.** Its path must be the live one, and the live
+  one must be the path the router has committed, which the provider reports from `usePathname()`
+  in a layout effect. A browser Back or Forward moves the address before Next commits the new
+  page, so a late write from the page being left would otherwise land over the destination,
+  whether it named its own path or read `location.pathname`. Next writes the address in an
+  insertion effect, before the provider's layout effect, and every mirror runs in a passive
+  effect after both, so a page's own first write sees its own path.
 - **No write while a navigation is pending**, as the shell's `NavigationPendingProvider` reports
   it. The last write asked for is held and made when the navigation ends without leaving the path
   it was asked on; one that leaves has made it moot.

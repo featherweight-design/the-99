@@ -159,17 +159,38 @@ describe("NavigationPendingProvider", () => {
 });
 
 describe("the URL mirrors stand down while a navigation is pending", () => {
+  // The provider reports the router's committed path. After a Back or Forward the address is the
+  // destination while the router still names the page being left, and that page's mirror, even one
+  // that reads the live path, must not write over the destination.
+  it("blocks a mirror whose page the router has not committed to the address", () => {
+    state.path = "/discover";
+    act(() => rerender(<App links={LINKS} />));
+    window.history.pushState(null, "", "/decks");
+    const replace = vi.spyOn(window.history, "replaceState");
+    try {
+      mirrorUrl(`${window.location.pathname}?o=new`);
+      expect(replace).not.toHaveBeenCalled();
+    } finally {
+      replace.mockRestore();
+    }
+  });
+
   // `lib/url/mirror` takes its pending state from this provider alone: a mirror write the router
   // adopted mid-navigation dropped the navigation on main (1f's startup diagnostic, 2026-09-29).
   it("holds a mirror write through a pressed link and makes it when the run ends on the page", () => {
+    state.path = "/collection";
+    act(() => rerender(<App links={LINKS} />));
     window.history.replaceState(null, "", "/collection");
     const replace = vi.spyOn(window.history, "replaceState");
-    press("/commanders");
-    mirrorUrl("/collection?sort=set");
-    expect(replace).not.toHaveBeenCalled();
-    press("/commanders", false);
-    expect(replace).toHaveBeenCalledWith(null, "", "/collection?sort=set");
-    replace.mockRestore();
+    try {
+      press("/commanders");
+      mirrorUrl("/collection?sort=set");
+      expect(replace).not.toHaveBeenCalled();
+      press("/commanders", false);
+      expect(replace).toHaveBeenCalledWith(null, "", "/collection?sort=set");
+    } finally {
+      replace.mockRestore();
+    }
   });
 });
 

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mirrorUrl, setNavigationPending } from "./mirror";
+import { mirrorUrl, setNavigationPending, setRoutePath } from "./mirror";
 
 let replace: ReturnType<typeof vi.spyOn>;
 
@@ -9,6 +9,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   setNavigationPending(false);
+  setRoutePath(null);
   replace.mockRestore();
 });
 
@@ -46,6 +47,22 @@ describe("mirrorUrl", () => {
     mirrorUrl("/collection?sort=set");
     expect(replace).not.toHaveBeenCalled();
     expect(window.location.pathname).toBe("/decks");
+  });
+
+  // Round 3: a mirror that builds its href from the LIVE path passes the check above by
+  // construction. The router's committed path is what still names the page being left.
+  it("makes no write while the address is not the router's committed page", () => {
+    setRoutePath("/discover");
+    window.history.pushState(null, "", "/decks");
+    mirrorUrl(`${window.location.pathname}?o=new`);
+    expect(replace).not.toHaveBeenCalled();
+    expect(window.location.href).toMatch(/\/decks$/);
+  });
+
+  it("writes once the router has committed the page the address names", () => {
+    setRoutePath("/collection");
+    mirrorUrl("/collection?sort=set");
+    expect(window.location.search).toBe("?sort=set");
   });
 
   // Rule 3: a legitimate write racing a tap stands down while the navigation is pending.
