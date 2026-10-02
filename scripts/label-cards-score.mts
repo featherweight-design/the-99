@@ -22,11 +22,12 @@ import { frontFaceOracle } from "../src/lib/recs/faces";
 import { classifyRoles } from "../src/lib/recs/roles";
 import { loadCreatureTypes } from "../src/lib/swaps/gather";
 import { cardThemes } from "../src/lib/recs/themes";
+import { fieldBars, jobBars, stops, type Bar, type Field } from "./lib/card-labels-bars.mjs";
 import { GOLD } from "./lib/card-labels-gold.mjs";
 import { bestPairing } from "./lib/card-labels-pairing.mjs";
 import { ALL_MODELS, MODELS } from "./lib/card-labels-pricing.mjs";
 import { publishArtifacts } from "./lib/card-labels-publish.mjs";
-import type { Job } from "../src/lib/labels/types.js";
+import { METHOD_KINDS, TO_KINDS, type Job } from "../src/lib/labels/types.js";
 
 // The SHARED `Job`, not a local one. This file declared its own — a fourth description of
 // a job, beside the validator's, the stored type's and the pairing module's — and two of
@@ -100,7 +101,7 @@ const textRuleJobs = (card: CardRow): Job[] => {
 const kindKey = (j: Job) => `${j.space}:${j.kind}`;
 
 
-const LIMITS = ["rampKind", "restrictedTo", "trigger", "recurrence", "threshold", "modal"] as const;
+const LIMITS = ["rampKind", "restrictedTo", "affects", "to", "method", "trigger", "recurrence", "threshold", "modal"] as const;
 const limitValue = (j: Job, f: string) =>
   f === "threshold"
     ? (j.threshold ? `${j.threshold.stat}${j.threshold.op}${j.threshold.value}` : "none")
@@ -127,7 +128,7 @@ const limitValue = (j: Job, f: string) =>
 const NON_GATING = new Set(["creature", "permanent", "spell", "player", "none"]);
 
 const DEFAULTS: Record<string, string> = {
-  rampKind: "none", restrictedTo: "none", trigger: "none",
+  rampKind: "none", restrictedTo: "none", affects: "none", to: "none", method: "none", trigger: "none",
   recurrence: "repeatable", threshold: "none", modal: "false",
 };
 
@@ -179,7 +180,10 @@ const predictions: Record<string, Record<string, Job[] | null>> = Object.fromEnt
 ].filter(([, v]) => v != null) as [string, Record<string, Job[] | null>][]);
 
 type LimitStat = { accuracy: number | null; informativeAccuracy: number | null; right: number; wrong: number; infRight: number; infWrong: number };
-type ModelReport = { notReturned: number; spuriousRestrictions: number; jobs: Record<string, number | null>; limits: Record<string, LimitStat>; worstKinds: unknown[] };
+type ModelReport = {
+  notReturned: number; spuriousRestrictions: number; jobs: Record<string, number | null>; limits: Record<string, LimitStat>;
+  worstKinds: unknown[]; bars: Bar[]; stops: string[];
+};
 const report: { scoredAt: string; goldCards: number; models: Record<string, ModelReport> } = { scoredAt: new Date().toISOString(), goldCards: GOLD.length, models: {} };
 const disagreements: Record<string, unknown>[] = [];
 
@@ -196,6 +200,8 @@ for (const [model, byCard] of Object.entries(predictions)) {
   // bug this lane exists to fix, so it is counted rather than left invisible.
   let spurious = 0;
   let notReturned = 0;
+  // The consumer-read fields' (gold, predicted) values on matched jobs, for their own per-value bars.
+  const fieldPairs: Record<Field, [string, string][]> = { affects: [], to: [], method: [], rampKind: [] };
 
   for (const row of GOLD) {
     const predicted = byCard[row.name];
@@ -230,7 +236,12 @@ for (const [model, byCard] of Object.entries(predictions)) {
     for (const [g, p] of pairs) {
       for (const f of LIMITS) {
         if (f === "rampKind" && !(g.kind === "ramp" && g.space === "role")) continue;
+        // `to` and `method` exist only on their own kinds (the schema's rule), so a job that cannot carry
+        // one is no evidence about either.
+        if (f === "to" && !TO_KINDS.includes(g.kind)) continue;
+        if (f === "method" && !METHOD_KINDS.includes(g.kind)) continue;
         const gv = limitValue(g as Job, f), pv = limitValue(p, f);
+        if (f === "affects" || f === "to" || f === "method" || f === "rampKind") fieldPairs[f].push([gv, pv]);
         const informative = gv !== DEFAULTS[f];
         if (gv === pv) { limits[f].right++; if (informative) limits[f].infRight++; }
         else {
@@ -268,7 +279,11 @@ for (const [model, byCard] of Object.entries(predictions)) {
     precision: t.tp + t.fp ? +(t.tp / (t.tp + t.fp)).toFixed(3) : null,
     recall: t.tp + t.fn ? +(t.tp / (t.tp + t.fn)).toFixed(3) : null,
   });
+  // The text rules emit no limits and cannot name the new jobs; they are scored for contrast, never gated.
+  const bars = [...jobBars(perKind), ...fieldBars(fieldPairs)];
   report.models[model] = {
+    bars,
+    stops: model === "textRules" ? [] : stops(bars),
     notReturned,
     spuriousRestrictions: spurious,
     jobs: { ...pr(jobs), ...jobs },
@@ -309,6 +324,12 @@ for (const [m, r] of Object.entries(report.models)) {
     const inf = v.informativeAccuracy === null ? "n/a" : String(v.informativeAccuracy);
     console.log(`  ${f.padEnd(13)} accuracy ${String(v.accuracy ?? "-").padEnd(5)} | NON-DEFAULT ${inf.padEnd(5)} (${v.infRight}/${v.infRight + v.infWrong})`);
   }
+}
+for (const [m, r] of Object.entries(report.models)) {
+  if (m === "textRules") continue;
+  console.log(r.stops.length === 0
+    ? `\n${m}: every job and field bar met.`
+    : `\n${m}: STOP, ${r.stops.length} bar(s) not met; the prompt goes back for these before any run:\n  ${r.stops.join("\n  ")}`);
 }
 console.log(`\n${disagreements.length} disagreements -> out/disagreements.json`);
 
