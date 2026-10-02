@@ -71,6 +71,14 @@ describe("HydratedImg", () => {
     expect(img.getAttribute("src")).toBe(SRC);
   });
 
+  it("loads at once where there is no observer to wait on, rather than never", () => {
+    vi.stubGlobal("IntersectionObserver", undefined);
+    // The server has no observer either, and must still leave the src out.
+    expect(renderToString(<HydratedImg src={SRC} alt="" />)).not.toContain(SRC);
+    const { container } = render(<HydratedImg src={SRC} alt="" />);
+    expect(container.querySelector("img")!.getAttribute("src")).toBe(SRC);
+  });
+
   it("draws eager art at once, never waiting on the viewport", () => {
     const { container } = render(<HydratedImg src={SRC} alt="" eager />);
     expect(container.querySelector("img")!.getAttribute("src")).toBe(SRC);

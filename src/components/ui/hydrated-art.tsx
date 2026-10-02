@@ -44,7 +44,7 @@ export function useNearViewport(ref: RefObject<Element | null>, enabled: boolean
   const [near, setNear] = useState(false);
   useEffect(() => {
     const el = ref.current;
-    if (!enabled || near || !el) return;
+    if (!enabled || near || !el || typeof IntersectionObserver === "undefined") return;
     const io = new IntersectionObserver(
       (entries) => {
         if (entries.some((e) => e.isIntersecting)) {
@@ -57,7 +57,10 @@ export function useNearViewport(ref: RefObject<Element | null>, enabled: boolean
     io.observe(el);
     return () => io.disconnect();
   }, [ref, enabled, near, margin]);
-  return near;
+  // No observer to ask (an old engine, a test environment): load rather than never load. Read only
+  // once hydrated, because the server has no observer either, and a src there is the fetch this waits on.
+  const hydrated = useHydrated();
+  return near || (enabled && hydrated && typeof IntersectionObserver === "undefined");
 }
 
 /**
