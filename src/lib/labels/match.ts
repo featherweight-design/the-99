@@ -116,8 +116,11 @@ const COVERS: Record<string, (narrow: string, isCreatureType: (w: string) => boo
 /** Whether a restriction alternative `broad` reaches everything `narrow` does. */
 export function covers(broad: string, narrow: string, isCreatureType: (w: string) => boolean): boolean {
   const b = cardType(broad), n = cardType(narrow);
-  // `narrow` goes to the entry as written: a creature type is read with its own case ("Time Lord").
-  return b === n || (COVERS[b]?.(narrow.trim(), isCreatureType) ?? false);
+  // Card types and the broad words compare without case, as printed type lines vary ("Artifact"); a
+  // creature type or subtype compares exactly as printed, the way the catalog holds it.
+  const keyword = (w: string) => CARD_TYPES.has(w) || w in COVERS || NOT_PERMANENT.has(w);
+  const same = keyword(b) && keyword(n) ? b === n : broad.trim() === narrow.trim();
+  return same || (COVERS[b]?.(narrow.trim(), isCreatureType) ?? false);
 }
 
 /** The GATES: a mismatch means the candidate's job does not keep the original's. */

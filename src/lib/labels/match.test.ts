@@ -131,6 +131,8 @@ describe("matchLabels: the gates drop, the advice ranks", () => {
     expect(covers("spell", "player", isType)).toBe(false);
     expect(covers("player", "spell", isType)).toBe(false);
     expect(covers("Artifact", "artifact", isType)).toBe(true);
+    expect(covers("Goblin", "Goblin", isType)).toBe(true);
+    expect(covers("goblin", "Goblin", isType)).toBe(false);
     expect(covers("artifact", "permanent", isType)).toBe(false);
   });
 
