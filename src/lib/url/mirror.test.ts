@@ -39,7 +39,16 @@ describe("mirrorUrl", () => {
     expect(replace).toHaveBeenCalledWith(state, "", "/collection?sort=set");
   });
 
-  // Rule 2: a legitimate write racing a tap stands down while the navigation is pending.
+  // Rule 2: a mirror never moves the page. After a Back or Forward the address is already the
+  // destination, so a late write from the page being left must not put its own path back.
+  it("makes no write naming a path other than the live one", () => {
+    window.history.pushState(null, "", "/decks");
+    mirrorUrl("/collection?sort=set");
+    expect(replace).not.toHaveBeenCalled();
+    expect(window.location.pathname).toBe("/decks");
+  });
+
+  // Rule 3: a legitimate write racing a tap stands down while the navigation is pending.
   it("makes no write while a navigation is pending", () => {
     setNavigationPending(true);
     mirrorUrl("/collection?sort=set");

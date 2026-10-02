@@ -2470,14 +2470,24 @@ never `history.replaceState` directly. Next patches `replaceState` so its router
 it is given, and adopting a URL while a navigation is pending DROPS that navigation: on main,
 `/collection`'s and `/discover`'s mirror effects re-wrote the page's own current URL about 700ms
 after a push to `/decks`, and in 3 of 4 cases the reader never left (1f's startup diagnostic,
-2026-09-29). `mirrorUrl` makes two rules one definition:
+2026-09-29). `mirrorUrl` makes three rules one definition:
 
 - **A write equal to the live URL is not made.** It changes nothing a reader sees, and it is the
   write that was adopted over the pending push. A path check alone does not catch it, because
   the path has not moved while the push is pending.
+- **A write naming a different path than the live one is not made.** A mirror describes the page
+  it is on and never moves it. After a browser Back or Forward the address is already the
+  destination when Next's popstate handler runs, so a late write from the page being left would
+  put its own path back over it.
 - **No write while a navigation is pending**, as the shell's `NavigationPendingProvider` reports
   it. The last write asked for is held and made when the navigation ends without leaving the path
   it was asked on; one that leaves has made it moot.
+
+  The pending signal covers navigations that REPORT: every `<Link>`, and code pushes made through
+  `usePendingPush`. A bare `router.push` is invisible to it. The direct pushes left in `src` all
+  target kept routes and wait for them to join the provider (navigation-pending plan, item 7), and
+  none sits on a page with a mirror that can fire during the push. A new code push on a page that
+  mirrors its URL goes through `usePendingPush`.
 
 `src/lib/a11y/dialog.ts` is the one `replaceState` outside it, deliberately: it puts back the URL
 a history POP moved, which is a restore rather than a mirror, and it already skips an equal

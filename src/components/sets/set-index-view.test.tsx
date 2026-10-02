@@ -8,7 +8,12 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(search),
 }));
 
-beforeEach(() => { search = ""; });
+beforeEach(() => {
+  search = "";
+  // This page's own path: `mirrorUrl` makes no write naming another path, as a mirror never moves
+  // the page.
+  window.history.pushState(null, "", "/collection/sets");
+});
 
 const set = (over: Partial<SetIndexRow>): SetIndexRow => ({
   code: "eoe", name: "Edge of Eternities", releasedAt: "2026-08-01",
@@ -284,6 +289,8 @@ describe("SetIndexView — recovering from a failed search", () => {
   });
 
   it("does not leave a whitespace query in the URL", () => {
+    // A query is standing, so clearing it to whitespace has a URL to write: the bare path.
+    window.history.pushState(null, "", "/collection/sets?q=dusk");
     const replaceState = vi.spyOn(window.history, "replaceState");
     render(<SetIndexView sets={[set({})]} cardCount={1} onSearch={() => Promise.resolve([])} />);
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "   " } });

@@ -5,11 +5,15 @@
 // a URL while a navigation is pending DROPS that navigation. Measured on main (1f's startup
 // diagnostic, 2026-09-29): a push to /decks, then /collection's and /discover's mirror effects
 // re-wrote the page's OWN current URL ~700ms later, and in 3 of 4 cases the reader never left.
-// So every mirror goes through here, under two rules:
+// So every mirror goes through here, under three rules:
 //
 //   1. A write equal to the live URL is not made. It changes nothing a reader can see, and it is
 //      the write that was adopted over the pending push.
-//   2. While a navigation is pending (the shell's `NavigationPendingProvider` says so), no write
+//   2. A write naming a different PATH than the live one is not made. A mirror describes the page
+//      it is on and never moves it; a browser Back or Forward has already changed the address when
+//      Next's popstate handler runs, so a late write from the page being left would put that
+//      page's own path back over the destination.
+//   3. While a navigation is pending (the shell's `NavigationPendingProvider` says so), no write
 //      is made. The last one asked for is kept, and made when the navigation ends without leaving
 //      the path it was asked on; a navigation that leaves has made it moot.
 
@@ -28,7 +32,7 @@ export function mirrorUrl(href: string | URL, state: unknown = null): void {
     deferred = { href: typeof href === "string" ? href : url.href, state, path: window.location.pathname };
     return;
   }
-  if (sameAsLive(url)) return;
+  if (sameAsLive(url) || url.pathname !== window.location.pathname) return;
   // The caller's own form, so a relative `?query` stays relative exactly as it was written.
   window.history.replaceState(state, "", href);
 }
