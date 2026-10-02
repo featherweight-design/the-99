@@ -1,7 +1,7 @@
 "use client";
 
 import { useLinkStatus } from "next/link";
-import { createContext, useContext, useId, useLayoutEffect } from "react";
+import { createContext, useContext, useEffect, useId } from "react";
 
 import { pathOf } from "../../lib/shell/pending-routes";
 
@@ -48,15 +48,9 @@ export function useReportPending(href: string, linkPending: boolean): boolean {
   const pending = linkPending && (!ctx || targetOf(href, ctx.pathname) !== ctx.pathname);
   const report = ctx?.report;
   const id = useId();
-  // The provider hears the RAW state: it applies the same-page rule itself for its screens, and
-  // still needs a same-page press for the URL mirrors (`lib/url/mirror`), which must not write
-  // over that navigation either. A LAYOUT effect: every layout effect in a commit runs before any
-  // passive one, so a page's mirror sees the press whatever the tree order. In the phone shell
-  // `<main>` renders before the tab bar, so a passive report from a tab ran after the page's
-  // mirror in the same commit.
-  useLayoutEffect(() => {
-    report?.(id, href, linkPending);
-  }, [report, id, href, linkPending]);
-  useLayoutEffect(() => () => report?.(id, href, false), [report, id, href]);
+  useEffect(() => {
+    report?.(id, href, pending);
+  }, [report, id, href, pending]);
+  useEffect(() => () => report?.(id, href, false), [report, id, href]);
   return pending;
 }

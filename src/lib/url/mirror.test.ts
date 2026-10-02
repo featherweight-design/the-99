@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mirrorUrl, setNavigationPending, setRoutePath } from "./mirror";
+import { mirrorUrl, setRoutePath } from "./mirror";
 
 let replace: ReturnType<typeof vi.spyOn>;
 
@@ -8,7 +8,6 @@ beforeEach(() => {
   replace = vi.spyOn(window.history, "replaceState");
 });
 afterEach(() => {
-  setNavigationPending(false);
   setRoutePath(null);
   replace.mockRestore();
 });
@@ -61,33 +60,6 @@ describe("mirrorUrl", () => {
 
   it("writes once the router has committed the page the address names", () => {
     setRoutePath("/collection");
-    mirrorUrl("/collection?sort=set");
-    expect(window.location.search).toBe("?sort=set");
-  });
-
-  // Rule 3: a legitimate write racing a tap stands down while the navigation is pending.
-  it("makes no write while a navigation is pending", () => {
-    setNavigationPending(true);
-    mirrorUrl("/collection?sort=set");
-    expect(replace).not.toHaveBeenCalled();
-    expect(window.location.search).toBe("?sort=name");
-  });
-
-  // Nothing is kept for later (round 7). A same-page navigation that only clears the query would
-  // otherwise have the page's old query replayed over it the moment it lands.
-  it("replays nothing when a same-page navigation lands, so a cleared query stays cleared", () => {
-    setNavigationPending(true);
-    mirrorUrl("/collection?sort=set");
-    window.history.pushState(null, "", "/collection");
-    setNavigationPending(false);
-    expect(replace).not.toHaveBeenCalled();
-    expect(window.location.search).toBe("");
-  });
-
-  it("writes again once the navigation has ended", () => {
-    setNavigationPending(true);
-    mirrorUrl("/collection?sort=set");
-    setNavigationPending(false);
     mirrorUrl("/collection?sort=set");
     expect(window.location.search).toBe("?sort=set");
   });

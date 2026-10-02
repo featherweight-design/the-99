@@ -2470,7 +2470,7 @@ never `history.replaceState` directly. Next patches `replaceState` so its router
 it is given, and adopting a URL while a navigation is pending DROPS that navigation: on main,
 `/collection`'s and `/discover`'s mirror effects re-wrote the page's own current URL about 700ms
 after a push to `/decks`, and in 3 of 4 cases the reader never left (1f's startup diagnostic,
-2026-09-29). `mirrorUrl` makes three rules one definition:
+2026-09-29). `mirrorUrl` makes two rules one definition:
 
 - **A write equal to the live URL is not made.** It changes nothing a reader sees, and it is the
   write that was adopted over the pending push. A path check alone does not catch it, because
@@ -2482,23 +2482,10 @@ after a push to `/decks`, and in 3 of 4 cases the reader never left (1f's startu
   whether it named its own path or read `location.pathname`. Next writes the address in an
   insertion effect, before the provider's layout effect, and every mirror runs in a passive
   effect after both, so a page's own first write sees its own path.
-- **No write while a navigation is pending**, as the shell's `NavigationPendingProvider` reports
-  it, and nothing is kept for later. A navigation that leaves the page makes a held write moot,
-  and one that stays on it (a press that only clears the query) makes it stale: replaying the
-  page's old query would undo it. A write asked for during a navigation that then goes nowhere is
-  lost until the page's state moves again. The provider publishes `true` the moment a link
-  reports a pending destination, from a layout effect, so a mirror in the same commit already
-  sees it whatever the tree order, and clears it the same way when the last one stops: the page
-  a link lands on runs its mount effects before the provider's own effect, and a one-time strip
-  there (`?notices=1`) must see the navigation over. A same-page
-  press counts: reporters hand the provider their RAW link state, and the provider applies the
-  same-page rule to its screens alone.
-
-  The pending signal covers navigations that REPORT: every `<Link>`, and code pushes made through
-  `usePendingPush`. A bare `router.push` is invisible to it. The direct pushes left in `src` all
-  target kept routes and wait for them to join the provider (navigation-pending plan, item 7), and
-  none sits on a page with a mirror that can fire during the push. A new code push on a page that
-  mirrors its URL goes through `usePendingPush`.
+- **No rule about pending navigations.** One was built and dropped (#1145, rounds 4 to 9): every
+  fix to when the pending state was published exposed the next timing edge, and no measured case
+  showed a legitimate write racing a tap. The two rules above cover every dropped navigation 1f's
+  diagnostic logged on main.
 
 `src/lib/a11y/dialog.ts` is the one `replaceState` outside it, deliberately: it puts back the URL
 a history POP moved, which is a restore rather than a mirror, and it already skips an equal
