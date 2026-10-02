@@ -113,16 +113,21 @@ export function ReplaceFlow({
             </div>
           </>
         )}
-        <UploadEntry
-        currentCardCount={knownCount}
-        entry={entry}
-        onPreview={(p) => {
-          setConfirmError(null);
-          setConfirming(false);
-          setPreview(p);
-          setKnownCount(p.currentCollectionCount);
-        }}
-        />
+        {/* The phone's gutter (H6): the entry's own column pads itself from `md` only, so on
+            the route it ran edge to edge under a header inset 18px. The same 18px here, and none
+            when embedded, where the first-run card around it already pads. */}
+        <div className={embedded ? undefined : "px-[18px] pt-[16px] pb-[24px] md:p-0"}>
+          <UploadEntry
+            currentCardCount={knownCount}
+            entry={entry}
+            onPreview={(p) => {
+              setConfirmError(null);
+              setConfirming(false);
+              setPreview(p);
+              setKnownCount(p.currentCollectionCount);
+            }}
+          />
+        </div>
       </>
     );
   }

@@ -8,6 +8,7 @@
 
 import { faceCosts } from "../../lib/cards/faces";
 import Link from "next/link";
+import { PendingReporter } from "../shell/pending-reporter";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { CostPips } from "../ui/cost-pips";
@@ -95,8 +96,13 @@ export function ProxyListView({
     // and a nested main landmark is invalid — it exposes two ambiguous main
     // regions to a screen reader.
     <section className="mx-auto w-full max-w-[900px] px-[16px] py-[20px] md:px-[34px] md:py-[28px]">
+      {/* The way back (H19): the breadcrumb is a link to the collection, as a set
+          page's breadcrumb links to the set index. */}
       <p className="font-mono text-[11px] mb-[6px]" style={{ color: "var(--fg-faint)" }}>
-        {proxyCopy.page.breadcrumb}
+        <Link href="/collection">
+          {proxyCopy.page.breadcrumb}
+          <PendingReporter href="/collection" />
+        </Link>
       </p>
       <h1 className="font-display text-[24px] md:text-[28px]" style={{ color: "var(--fg)" }}>
         {proxyCopy.page.title}
@@ -156,17 +162,19 @@ export function ProxyListView({
               {rows.map((row) => (
                 <li
                   key={row.oracleId}
-                  className="flex items-center gap-[12px] rounded-[10px] px-[12px] py-[11px] min-h-[44px] hover:bg-[color:var(--elevated)]"
+                  className="relative flex items-center gap-[12px] rounded-[10px] px-[12px] py-[11px] min-h-[44px] hover:bg-[color:var(--elevated)]"
                 >
                   <span className="min-w-0 flex-1">
-                    {/* The row is a CONTAINER, never a button: the card name
-                        opens the sheet and each deck name is its own link, so a
-                        row-level target would swallow both. */}
+                    {/* The whole row opens the card (H20): the card name's
+                        button is stretched over the row by its `::after`, and
+                        each deck link sits above that stretch on its own layer,
+                        so neither swallows the other. The row itself stays a
+                        container, never a button: a button cannot hold links. */}
                     <CardDetailTrigger
                       oracleId={row.oracleId}
                       name={row.name}
                       ariaLabel={proxyCopy.row.cardAria(row.name)}
-                      className="text-[13px] block truncate text-left"
+                      className="text-[13px] block truncate text-left after:absolute after:inset-0 after:rounded-[10px] after:content-['']"
                     >
                       {row.name}
                     </CardDetailTrigger>
@@ -184,7 +192,7 @@ export function ProxyListView({
                           key={deck.id}
                           href={`/decks/${deck.id}`}
                           aria-label={proxyCopy.row.deckAria(deck.name)}
-                          className="truncate text-[color:var(--fg-muted)] underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current"
+                          className="relative z-[1] truncate text-[color:var(--fg-muted)] underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current"
                         >
                           {deck.name}
                         </Link>
@@ -194,7 +202,7 @@ export function ProxyListView({
                       {row.commander && (
                         <span
                           title={proxyCopy.row.commanderAria}
-                          className="rounded-[4px] px-[5px] py-[1px] text-[color:var(--fg-muted)] border border-[color:var(--border-strong)]"
+                          className="relative z-[1] rounded-[4px] px-[5px] py-[1px] text-[color:var(--fg-muted)] border border-[color:var(--border-strong)]"
                         >
                           {proxyCopy.row.commander}
                         </span>
