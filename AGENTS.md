@@ -2398,6 +2398,20 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   timing module keyed its spans on it, and the card-details action logged its total with none of
   its spans. So `perfRoute` returns an explicit tracker instead.
 
+- `pnpm probe:view-flash` proves a cold desktop `/collection` draws its real view from the
+  server: at 1300x900 on the slow profile (Slow 4G and a 4x CPU throttle, `measure:load`'s), rows
+  are never laid out before the grid. The server could not see a reader's width or stored view, so
+  it drew rows and the grid replaced them at hydration, on every cold desktop visit. Two cookies
+  now carry those facts (`src/components/ui/view-cookie.ts`, parsed to a closed set, anything else
+  absent), and a visit with neither draws both views split by CSS until hydration picks one. An
+  init script stamps the first LAID-OUT frame of each view, so the CSS split's hidden rows never
+  count. Three cases, each from exactly the cookies it names: `bare`, `stored`
+  (`collection_view=grid`) and `hinted` (`collection_wide=1`). The selectors are the two views'
+  root classes, and a case where the grid never lays out FAILS rather than passing about nothing.
+  Run against main, all three fail (rows on screen 4.1s to 7.8s before the grid, under load). It
+  prints each case's median hydration, read on a quiet machine, for the before/after. Makes no
+  writes; point it at a server for the worktree under test.
+
 - `pnpm probe:grid-art` proves the `/collection` grid asks only for the art it can show, at
   1300x900 and at 390x844 with `?view=grid`. The tile's art was a CSS background, which a browser
   fetches for every rendered element on screen or not, so the grid asked for all 200 windowed
