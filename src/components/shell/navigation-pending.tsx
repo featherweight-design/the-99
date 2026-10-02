@@ -87,12 +87,13 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
       // The mirrors stand down for ANY pending navigation, a same-page one included (a press on
       // the open nav item clears its query), though the screens above ignore those. Published at
       // once, not in the decision effect a render later: a page's mirror in the same passive flush
-      // as this report would otherwise still see no navigation pending. Clearing waits for that
-      // effect, so a press moving between links never reads as idle.
-      if (isPending) {
-        navigating.current.add(id);
-        setNavigationPending(true);
-      } else navigating.current.delete(id);
+      // as this report would otherwise still see no navigation pending. Cleared here too: the page a
+      // link lands on runs its mount effects before that decision effect, and a one-time strip
+      // there (`?notices=1`) must see the navigation over. Reports arrive in layout effects, which
+      // all settle before any passive mirror runs, so a press moving between links never reads idle.
+      if (isPending) navigating.current.add(id);
+      else navigating.current.delete(id);
+      setNavigationPending(navigating.current.size > 0);
       setReports((n) => n + 1);
     },
     [pathname],
@@ -101,7 +102,6 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
   useEffect(() => {
     // The URL mirrors stand down while a navigation is pending (`lib/url/mirror`): a write the
     // router adopts mid-navigation drops the navigation.
-    setNavigationPending(navigating.current.size > 0);
     if (pending.current.size === 0) {
       if (running.current) end();
       return;

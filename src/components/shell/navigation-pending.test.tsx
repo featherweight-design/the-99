@@ -300,6 +300,38 @@ describe("the pending flag reaches a mirror rendered BEFORE the pressed link", (
   });
 });
 
+describe("the page a link lands on writes in the commit that ends the navigation", () => {
+  // Its mount effects run before the provider's own effect, so a one-time strip there
+  // (`?notices=1` on the deck page) must already see the navigation over (round 8).
+  it("makes the destination's arrival write in the same commit the link stops pending", () => {
+    state.path = "/collection";
+    act(() => rerender(<App links={LINKS} />));
+    window.history.replaceState(null, "", "/collection?notices=1");
+    const replace = vi.spyOn(window.history, "replaceState");
+    const Landing = ({ write }: { write: string | null }) => (
+      <NavigationPendingProvider>
+        <ShellMain className="">
+          {LINKS.map((href) => (
+            <Link key={href} href={href}>
+              <Reporter href={href} />
+            </Link>
+          ))}
+          <MirrorInCommit write={write} />
+        </ShellMain>
+      </NavigationPendingProvider>
+    );
+    try {
+      state.pending.set("/commanders", true);
+      act(() => rerender(<Landing write={null} />));
+      state.pending.set("/commanders", false);
+      act(() => rerender(<Landing write="/collection" />));
+      expect(replace).toHaveBeenCalledWith(null, "", "/collection");
+    } finally {
+      replace.mockRestore();
+    }
+  });
+});
+
 describe("a code-started push", () => {
   // What a slow navigation looks like to React: the push's update suspends, so the transition it
   // runs in stays pending until the new page arrives, which here it never does.

@@ -2488,7 +2488,9 @@ after a push to `/decks`, and in 3 of 4 cases the reader never left (1f's startu
   page's old query would undo it. A write asked for during a navigation that then goes nowhere is
   lost until the page's state moves again. The provider publishes `true` the moment a link
   reports a pending destination, from a layout effect, so a mirror in the same commit already
-  sees it whatever the tree order, and clears it only from its decision effect. A same-page
+  sees it whatever the tree order, and clears it the same way when the last one stops: the page
+  a link lands on runs its mount effects before the provider's own effect, and a one-time strip
+  there (`?notices=1`) must see the navigation over. A same-page
   press counts: reporters hand the provider their RAW link state, and the provider applies the
   same-page rule to its screens alone.
 
