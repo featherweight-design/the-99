@@ -20,16 +20,20 @@ export const COVERAGE_THEMES: GoldRow[] = [
   // ---- graveyardHate ------------------------------------------------------------------------
   {
     name: "Rest in Peace", klass: "graveyardHate",
-    jobs: [j("theme", "graveyardHate", { af: "each" })],
-    why: "Exiles all graveyards on entry and replaces every trip to a graveyard with exile, for every player including you, so affects each. One standing job; the ETB clause is part of it rather than a separate oneShot.",
+    jobs: [
+      j("theme", "graveyardHate", { af: "each", tr: "etb", rec: "oneShot" }),
+      j("theme", "graveyardHate", { af: "each" }),
+    ],
+    why: "Exiles all graveyards on entry and replaces every trip to a graveyard with exile, for every player including you, so affects each. Two abilities, two jobs (each ability is its own job): the ETB exile, oneShot, and the standing replacement.",
   },
   {
     name: "Relic of Progenitus", klass: "graveyardHate",
     jobs: [
-      j("theme", "graveyardHate", { af: "each", tr: "activated" }),
+      j("theme", "graveyardHate", { af: "opponents", tr: "activated" }),
+      j("theme", "graveyardHate", { af: "each", tr: "activated", rec: "oneShot" }),
       j("role", "draw", { af: "self", tr: "activated", rec: "oneShot" }),
     ],
-    why: "Two graveyard-exile abilities: the tap one targets any player (repeatable), the sacrifice one exiles all graveyards. Affects each covers both. The draw rides on the one-shot exile-all.",
+    why: "Two graveyard-exile abilities: the tap one targets any player (repeatable), the sacrifice one exiles all graveyards. One job per ability: the tap targets a player (opponents by intent), the sacrifice hits every graveyard (each, oneShot). The draw rides on the one-shot exile-all.",
   },
   {
     name: "Tormod's Crypt", klass: "graveyardHate",
@@ -80,9 +84,10 @@ export const COVERAGE_THEMES: GoldRow[] = [
     name: "Soul-Guide Lantern", klass: "graveyardHate",
     jobs: [
       j("theme", "graveyardHate", { af: "opponents", tr: "etb", rec: "oneShot" }),
+      j("theme", "graveyardHate", { af: "opponents", tr: "activated", rec: "oneShot" }),
       j("role", "draw", { af: "self", tr: "activated", rec: "oneShot" }),
     ],
-    why: "ETB exiles one card from any graveyard, and it sacrifices to exile each OPPONENT'S graveyard; one job, affects opponents (judgement: the ETB can hit any graveyard). The third mode sacrifices it to draw. All oneShot: each mode costs the artifact.",
+    why: "ETB exiles one card from any graveyard, and it sacrifices to exile each OPPONENT'S graveyard; one job per ability, both opponents (judgement: the ETB can hit any graveyard). The third mode sacrifices it to draw. All oneShot: each mode costs the artifact.",
   },
   {
     name: "Faerie Macabre", klass: "graveyardHate",

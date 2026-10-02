@@ -488,10 +488,9 @@ const AUDITED: GoldRow[] = [
   {
     name: "Hedge Whisperer", klass: "thresholds",
     jobs: [
-      j("theme", "pump", { rt: "land", af: "self", tr: "activated" }),
       j("theme", "haste", { rt: "land", af: "self", tr: "activated" }),
     ],
-    why: "A HARD NEGATIVE for ramp: it animates a land, adding no mana. Collect evidence 4 is a threshold on the graveyard the schema records nowhere. Task 4 re-audit: gains `haste` — the animated land has haste, which the first labelling missed.",
+    why: "A HARD NEGATIVE for ramp: it animates a land, adding no mana. Collect evidence 4 is a threshold on the graveyard the schema records nowhere. Task 4 re-audit: gains `haste` — the animated land has haste, which the first labelling missed. Re-sample review: `pump` removed, since setting a land's power and toughness is not +X/+X.",
   },
 
   // ---- modal: jobs that are ALTERNATIVES, never a sum -------------------------
@@ -717,9 +716,8 @@ const AUDITED: GoldRow[] = [
     name: "Wandering Fumarole", klass: "lands",
     jobs: [
       j("role", "land", { af: "self" }),
-      j("theme", "pump", { rt: "land", af: "self", tr: "activated", rec: "oneShot" }),
     ],
-    why: "Animates itself. Not a creature job — the land becomes the creature.",
+    why: "Animates itself. Not a creature job: the land becomes the creature, and setting its power and toughness is not pump (re-sample review).",
   },
   {
     name: "Kjeldoran Outpost", klass: "lands",

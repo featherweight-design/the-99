@@ -54,8 +54,11 @@ Label the limits as carefully as the kind.
 
 ROLES (space "role"): ${ROLES.join(", ")}
   ramp         — accelerates mana. NEVER label a land with ramp; a land's role
-                 is "land". A ritual (one-time mana from a spell) is ramp,
-                 rampKind burstMana.
+                 is "land", even a land that sacrifices itself to search for
+                 another. A ritual (one-time mana from a spell) is ramp,
+                 rampKind burstMana. Tokens that make mana are ramp. NOT ramp:
+                 mana that lasts only until end of combat, untapping your
+                 lands, and playing lands from the top of your library.
   draw         — puts cards into your hand from your library. Becoming the
                  monarch is repeatable draw. A tutor is NOT draw.
   removal      — takes an opponent's permanent away from them: destroys,
@@ -63,7 +66,8 @@ ROLES (space "role"): ${ROLES.join(", ")}
                  A counterspell, a tapper and hand attack are NOT removal.
   wipes        — hits ALL or most creatures at once ("destroy all creatures",
                  "destroy each creature", "all creatures get -3/-3").
-  land         — the card is a land. Its affects is self: a land makes your mana.
+  land         — the card is a land: its type line says Land, and ONLY then. A
+                 nonland permanent that adds mana is ramp. Affects self.
   tutor        — searches your library for a card that is NOT a land. A search
                  for a land is ramp (fetchesLand), never tutor.
   counterspell — counters a spell or ability. Its affects is opponents.
@@ -71,13 +75,23 @@ ROLES (space "role"): ${ROLES.join(", ")}
 THEMES (space "theme"): ${THEMES.join(", ")}
   counters      — +1/+1 counters ONLY. A lore counter, a charge counter, a -1/-1
                   counter and a flying counter are NOT this theme.
-  pump          — gives creatures +X/+X, permanently or until end of turn.
+  pump          — gives creatures +X/+X or +X/+0, permanently or until end of
+                  turn. NOT pump: a keyword grant (double strike, first strike),
+                  a +1/+1 counter (that is counters), a penalty (-X/-X, -X/-0,
+                  +X/-X), a land or noncreature becoming a creature, and a
+                  creature growing only itself from a count. -X/-X on an
+                  opponent's creature is removal, method shrink.
   haste         — gives haste.
   evasion       — flying, trample, menace, or can't be blocked.
-  etbDraw       — draws a card when a creature enters.
-  draw          — cares about drawing: rewards you for the cards you draw.
+  etbDraw       — draws a card when a creature enters, its OWN entry included.
+                  Label it IN ADDITION to role draw. Drawing when a creature
+                  spell is CAST is not etbDraw.
+  draw          — cares about drawing: any reward triggered by you drawing
+                  ("whenever you draw", "your second card each turn"), whatever
+                  the reward is. It is role draw only if cards also go to hand.
   tokens        — creates creature tokens.
-  treasure      — creates Treasure tokens.
+  treasure      — creates Treasure tokens. ALWAYS two jobs: this theme AND role
+                  ramp, rampKind makesTreasure, an extra Treasure included.
   protection    — hexproof, shroud, indestructible, ward, protection from,
                   regenerate, phasing out, and totem or umbra armor; and
                   giving YOU hexproof or shroud.
@@ -85,7 +99,10 @@ THEMES (space "theme"): ${THEMES.join(", ")}
   blink         — exiles a permanent and returns it.
   finisher      — ends the game: a large attack, an extra combat, an extra turn,
                   or a win-the-game clause.
-  castFree      — casts a spell without paying its mana cost.
+  castFree      — casts a spell without paying its mana cost (from hand, exile
+                  or itself). Putting a card onto the battlefield is not
+                  casting it; exiling a card you may play by paying its cost
+                  is not castFree.
   mill          — puts cards from a library into a graveyard. Use affects to say
                   whose library.
   sacOutlet     — a repeatable way to sacrifice OTHER permanents.
@@ -99,12 +116,16 @@ THEMES (space "theme"): ${THEMES.join(", ")}
   lifegain      — gains you life.
   drain         — damage or life loss aimed ONLY at opponents. A Shock, which can
                   hit any target, is not drain.
-  spellslinger  — rewards casting instants and sorceries.
-  landfall      — does something when a land enters under your control.
+  spellslinger  — rewards casting instants and sorceries, or noncreature
+                  spells. "Whenever you cast a spell" alone is not spellslinger.
+  landfall      — does something when a land enters under your control. Label
+                  it IN ADDITION to the job that trigger does.
   tribal        — cares about one creature type. A job restricted to a
                   creature type (a lord that pumps Elves, a counter only for
                   Knights) ALSO earns tribal, beside the job itself.
-  graveyardHate — exiles cards from graveyards, or stops cards leaving them.
+  graveyardHate — exiles cards from graveyards, or stops cards leaving them;
+                  exiling from an opponent's graveyard counts even when you
+                  then use the card.
   discard       — makes a player discard.
   stax          — taxes or locks opponents: their spells cost more, their
                   permanents don't untap, they can't cast or search. Mass land
@@ -118,27 +139,39 @@ THEMES (space "theme"): ${THEMES.join(", ")}
                   able").
   doublers      — DOUBLES what you get: twice the tokens, twice the counters,
                   twice the damage, or an extra time for each trigger. Twice
-                  the MANA is not doublers: it is ramp of kind multiplies.
+                  the MANA is not doublers: it is ramp of kind multiplies. One
+                  ADDITIONAL token or counter is not doublers either.
   fog           — prevents combat damage for a turn. A fog is not protection.
 
 Use ONLY these names. Do not invent a job. If a card does something with no job
-in this list, say nothing about it. Scry and surveil are NOT jobs.
+in this list, say nothing about it. Scry and surveil are NOT jobs. Each separate
+ability is its own job, even when two abilities do the same kind; merge only the
+clauses of ONE ability.
 
 EVERY JOB CARRIES:
   space        "role" or "theme"
   kind         a name from that space's list
   rampKind     ONLY on a role "ramp" job, one of: ${RAMP_KINDS.join(", ")}
-                 tapsForMana  — mana every turn from a permanent's tap ability
-                 fetchesLand  — searches a land onto the battlefield or into hand
+                 tapsForMana  — mana every turn from a permanent's tap ability,
+                                an extra cost that does not sacrifice it
+                                included; also a token that taps for mana, and
+                                mana a permanent makes from its own repeating
+                                trigger ("whenever this attacks")
+                 fetchesLand  — SEARCHES for a land onto the battlefield or into
+                                hand. Landcycling, a land put on TOP of your
+                                library, and lands revealed into hand (draw)
+                                are not fetchesLand
                  makesTreasure— creates a Treasure token
                  burstMana    — one-time mana from a source the cost consumes
-                                (sacrifice this creature/token/land for mana),
-                                or a ritual spell
+                                (sacrifice this creature/token/land for mana, a
+                                Spawn, Scion or Gold token), or a ritual spell.
+                                Never from a trigger
                  costReduction— makes OTHER spells you cast cost less. A card
                                 that reduces only ITS OWN cost (affinity,
                                 improvise, convoke) is not ramp; casting a
-                                spell for nothing is castFree.
-                 extraLandDrop— lets you play additional lands each turn
+                                spell for nothing is castFree; an alternative
+                                cost ("rather than pay") lowers no cost.
+                 extraLandDrop— lets you play ADDITIONAL lands each turn
                  multiplies   — doubles or adds to mana you already make, or
                                 makes mana when something else happens (lands
                                 that tap for twice as much; a creature that adds
@@ -177,12 +210,14 @@ EVERY JOB CARRIES:
                mills" is opponents, "mill three" of your own library is self.
   to           ONLY on a tutor or recursion job, where the card goes: one of
                ${DESTINATIONS.join(", ")}. Returning a creature to the
-               battlefield is battlefield; to your hand is hand. Otherwise null.
+               battlefield is battlefield; to your hand is hand. A card CAST
+               from a graveyard moves to no zone: null. Otherwise null.
   method       ONLY on a removal or wipes job, how it removes: one of
                ${METHODS.join(", ")} ("shrink" = -X/-X or damage). Returning a
-               permanent to its owner's hand is bounce; making a player
+               permanent to its owner's HAND is bounce; making a player
                sacrifice one (an edict) is sacrifice; putting it on the bottom
-               of its owner's library (a tuck) is bottom. Gaining control of a
+               of its owner's library (a tuck) is bottom. Shuffling it into a
+               library, or putting it on top, is null. Gaining control of a
                permanent (theft) has no method: null. Otherwise null.
   trigger      one of: ${TRIGGERS.join(", ")}
                  "none" = static or on resolution; "activated" = a cost you
@@ -198,7 +233,7 @@ EVERY JOB CARRIES:
                  "oneShot" = the card can do this at most once (an ETB, a spell
                  resolving, a cost that sacrifices the source).
                  "repeatable" = it can happen again.
-  threshold    {"stat","op","value"} when a NUMBER gates the job — e.g. Runadi's
+  threshold    {"stat","op","value"} when a NUMBER gates the job — e.g. a
                "creature spell with mana value 5 or greater" is
                {"stat":"mv","op":">=","value":5}. Otherwise null.
                stat is one of: ${THRESHOLD_STATS.join(", ")}
@@ -210,10 +245,14 @@ EVERY JOB CARRIES:
 Return ONLY a JSON array, one object per card, in the order given. Every job
 object uses EXACTLY these keys, spelled this way — "space", not "role":
 
-[{"name":"Bejeweled Warg","jobs":[
+[{"name":"Example Wolf","jobs":[
   {"space":"theme","kind":"counters","restrictedTo":"Wolf","affects":"self","to":null,"method":null,"trigger":"combatDamage","recurrence":"repeatable","threshold":null,"modal":true},
+  {"space":"theme","kind":"tribal","restrictedTo":"Wolf","affects":"self","to":null,"method":null,"trigger":"combatDamage","recurrence":"repeatable","threshold":null,"modal":true},
+  {"space":"theme","kind":"treasure","restrictedTo":null,"affects":"self","to":null,"method":null,"trigger":"combatDamage","recurrence":"repeatable","threshold":null,"modal":true},
   {"space":"role","kind":"ramp","rampKind":"makesTreasure","restrictedTo":null,"affects":"self","to":null,"method":null,"trigger":"combatDamage","recurrence":"repeatable","threshold":null,"modal":true}
 ]}]
+(An invented card, for the shape only: "Whenever this deals combat damage, choose one:
+put a +1/+1 counter on target Wolf you control; or create a Treasure token.")
 
 Omit "rampKind" entirely on any job that is not a role "ramp" job (a null is
 accepted there too).
