@@ -18,7 +18,7 @@ OS, not by us.
 
 Adjudication #1 originally made the rail Diamond plus label, with no icons. The 2026-09-07
 refresh retired that on client instruction, adding 19px stroke icons. At 62px there was no room
-for labels, so they moved into `aria-label` and `title` (`nav.tsx`, the comment above `NAV`; source:
+for labels, so they moved into `aria-label` and `title` (`nav.tsx`, the comment above `ITEMS`; source:
 `design/design_handoff_the99_refresh/CHROME-rail-and-tabs.md`). That comment also records the
 constraint this brief has to answer: **"If the ruling is ever reinstated, the rail widens to hold
 labels and the icons come out. A 62px rail with labels is not a third option."** This brief
@@ -48,22 +48,23 @@ Design picks one, or proposes a third that meets the same bar, and says why.
    are today. Focus must reveal the same label. Touch-capable desktops (a tablet at `md` and up)
    have no hover: say what they see.
 3. **The states the rail already has**, which every option must keep:
-   - **Active:** the diamond marker beside the current destination. Its horizontal centering is a
+   - **Active:** the current destination's slot takes a surface fill (`bg-elevated`, the `active`
+     branch in `NavRail`), never a colored label.
+   - **Pending:** the navigation-pending pip (`pending-pip.tsx`, the nav-pending handoff), a 4px
+     diamond under a pressed destination that is still loading. Its horizontal centering is a
      separate open bug (H5, the diamonds sit right of their icons), so draw it centered.
-   - **Pending:** the navigation-pending pip (`pending-pip.tsx`, the nav-pending handoff), which
-     marks a pressed destination still loading.
    - **First-run locked:** before a collection exists, the four lockable slots draw as padlocks in a
      sunken 48px group, each opening a note naming the slot (`nav.tsx`, `RailLock`).
      A label for a locked slot must not read as an invitation the note then refuses.
 4. **Parity with the phone.** The tab bar's labels are the vocabulary. The rail uses the same five
-   words (`NAV` in `nav.tsx`), and nothing new.
+   words (`ITEMS` in `nav.tsx`), and nothing new.
 
 Out of scope: the phone tab bar (unchanged), the account menu's contents, the order of the
 destinations, and any new destination.
 
 ## Where it lives
 
-- `src/components/shell/nav.tsx`: `NAV`, `NavSlot` (the `title` and `aria-label`), `NavRail`, the locked group (`RailLock`).
+- `src/components/shell/nav.tsx`: `ITEMS`, `NavSlot` (the `title` and `aria-label`), `NavRail`, the locked group (`RailLock`).
 - `src/components/shell/nav-icons.tsx`: the five 19px glyphs.
 - `src/components/shell/pending-pip.tsx`: the pending mark.
 - `src/components/shell/shell.tsx`: where the rail sits beside `<main>`.
