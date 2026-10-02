@@ -254,6 +254,40 @@ describe("the pending flag reaches a mirror in the same commit as the press", ()
   });
 });
 
+describe("the pending flag reaches a mirror rendered BEFORE the pressed link", () => {
+  // The phone shell's order: `<main>`, holding the page and its mirrors, renders before the tab bar,
+  // so a passive report from a tab would run after the page's mirror in the same commit.
+  it("holds a mirror write in main when a tab after it is pressed in the same commit", () => {
+    state.path = "/collection";
+    act(() => rerender(<App links={LINKS} />));
+    window.history.replaceState(null, "", "/collection");
+    const replace = vi.spyOn(window.history, "replaceState");
+    const PhoneOrder = ({ write }: { write: string | null }) => (
+      <NavigationPendingProvider>
+        <ShellMain className="">
+          <MirrorInCommit write={write} />
+        </ShellMain>
+        {LINKS.map((href) => (
+          <Link key={href} href={href}>
+            <Reporter href={href} />
+          </Link>
+        ))}
+      </NavigationPendingProvider>
+    );
+    try {
+      act(() => rerender(<PhoneOrder write={null} />));
+      state.pending.set("/commanders", true);
+      act(() => rerender(<PhoneOrder write="/collection?sort=set" />));
+      expect(replace).not.toHaveBeenCalled();
+      state.pending.set("/commanders", false);
+      act(() => rerender(<PhoneOrder write="/collection?sort=set" />));
+      expect(replace).toHaveBeenCalledWith(null, "", "/collection?sort=set");
+    } finally {
+      replace.mockRestore();
+    }
+  });
+});
+
 describe("a code-started push", () => {
   // What a slow navigation looks like to React: the push's update suspends, so the transition it
   // runs in stays pending until the new page arrives, which here it never does.
