@@ -4,6 +4,7 @@
 // Every figure here is one the ranking already computed; nothing is derived at
 // this call site and no string is written here (plan ruling 5).
 
+import Link from "next/link";
 import { PrimaryButton } from "@/components/ui/button";
 import { commanderDisplayName } from "../../lib/cards/printed-name";
 import { ArtWash, INK_SHADOW } from "@/components/ui/art-wash";
@@ -126,6 +127,18 @@ export function HeroCommander({ item, inUse }: { item: CommanderListItem; inUse:
             </div>
           </div>
         </div>
+        {/* The art opens the commander's page (H4), the same destination as See the
+            pool below. One extra press target over the whole band, drawn last so it
+            sits above the block. Hidden from the accessibility tree and out of the tab
+            order: See the pool is the named link to the same place, and a second one
+            would be read twice. */}
+        <Link
+          href={`/commanders/${item.slug}`}
+          aria-hidden
+          tabIndex={-1}
+          data-testid="hero-art-link"
+          className="absolute inset-0 z-[1]"
+        />
       </div>
 
       {/* §4 — below the divider, on flat ground: the pool clause and the actions. */}

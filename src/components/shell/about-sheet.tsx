@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { setAboutSheetUp } from "./about-sheet-presence";
 import { usePathname } from "next/navigation";
 import type { SheetState } from "../../lib/about/sheet-state";
 import { aboutSheetCopy as copy } from "../../lib/copy/about";
@@ -61,6 +62,14 @@ export function AboutSheet({ state }: { state: SheetState }) {
     const t = window.setTimeout(() => setAnnounce(heading), 0);
     return () => window.clearTimeout(t);
   }, [drawn, heading]);
+
+  // The tab bar's locked-slot note waits while this is up (H1): both sit in the
+  // same place on a phone, and this one holds it.
+  useEffect(() => {
+    if (!drawn) return;
+    setAboutSheetUp(true);
+    return () => setAboutSheetUp(false);
+  }, [drawn]);
 
   useEffect(() => {
     const el = card.current;

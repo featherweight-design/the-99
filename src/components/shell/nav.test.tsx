@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { NavRail, TabBar } from "./nav";
+import { setAboutSheetUp } from "./about-sheet-presence";
 
 const LABELS = ["Home", "Collection", "Commanders", "Discover", "Decks"];
 
@@ -431,6 +432,21 @@ describe("The lock, phone tab bar", () => {
       "Collection opens once your cards are in. So do Commanders, Discover and Decks.",
     );
     expect(collection.className).toContain("gap-[5px]");
+  });
+
+  it("waits for the About sheet: a tap under it opens the note once it closes (H1)", () => {
+    // At 390 the sheet and this note sit in the same place, and the sheet holds it.
+    act(() => setAboutSheetUp(true));
+    try {
+      render(<TabBar locked />);
+      const decks = slot("Decks");
+      fireEvent.click(decks);
+      expect(isOpen(decks)).toBe(false);
+      act(() => setAboutSheetUp(false));
+      expect(isOpen(decks)).toBe(true);
+    } finally {
+      act(() => setAboutSheetUp(false));
+    }
   });
 
   it("opens on a tap only, and a second tap closes it", () => {

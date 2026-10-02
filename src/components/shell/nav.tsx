@@ -7,6 +7,7 @@ import { AccountMenu } from "./account-menu";
 import { NavIcon, type NavHref } from "./nav-icons";
 import { Padlock } from "./padlock";
 import { PendingPip } from "./pending-pip";
+import { useAboutSheetUp } from "./about-sheet-presence";
 import { usePendingPush } from "./pending-push";
 import { Crowned99 } from "../marks";
 import { refreshCopy } from "../../lib/copy/refresh";
@@ -324,6 +325,9 @@ function LockedSlotAndNote({ children }: { children: React.ReactNode }) {
  */
 function TabLockSlots({ pathname, liveHome }: { pathname: string; liveHome: React.ReactNode }) {
   const { open, show, close, slots, notes } = useLockNotes(tabPlace);
+  // The About sheet holds this slot while it is up (H1): a tapped note stays
+  // open in state and is drawn once the sheet closes.
+  const sheetUp = useAboutSheetUp();
   const goToStep1 = useGoToStep1();
   const baseId = useId();
 
@@ -331,7 +335,7 @@ function TabLockSlots({ pathname, liveHome }: { pathname: string; liveHome: Reac
     <div className="flex w-full items-center">
       {liveHome}
       {LOCKABLE.map(({ href, label }) => {
-        const isOpen = open?.href === href;
+        const isOpen = open?.href === href && !sheetUp;
         const noteId = `${baseId}-note-${label}`;
         const sentenceId = `${noteId}-sentence`;
         return (
