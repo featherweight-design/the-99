@@ -333,13 +333,13 @@ describe("the gold set", () => {
   // once the by-job rule left no gold row answering null.
   it("gives every job bar and every field bar at least one gold case", async () => {
     const { GOLD } = await import("./card-labels-gold.mjs");
-    const { FIELD_VALUES, NON_GATING, VOCABULARY_KEYS } = await import("./card-labels-bars.mjs");
+    const { FIELD_VALUES, VOCABULARY_KEYS } = await import("./card-labels-bars.mjs");
     const jobs = GOLD.flatMap((r) => r.jobs as (Job & { rampKind?: string | null })[]);
     const seen = (f: string, v: string) => jobs.some((x) => {
       if (f === "rampKind") return x.kind === "ramp" && (x.rampKind ?? "none") === v;
       if (f === "to" && !TO_KINDS.includes(x.kind)) return false;
       if (f === "method" && !METHOD_KINDS.includes(x.kind)) return false;
-      if (f === "restrictedTo") return v === "gating" && x.restrictedTo != null && !NON_GATING.has(x.restrictedTo.toLowerCase());
+      if (f === "restrictedTo") return (x.restrictedTo == null ? "none" : "restricted") === v;
       return String((x as Record<string, unknown>)[f] ?? "none") === v;
     });
     const unmeasured = [

@@ -75,7 +75,7 @@ ROLES (space "role"): ${ROLES.join(", ")}
 THEMES (space "theme"): ${THEMES.join(", ")}
   counters      — +1/+1 counters ONLY. A lore counter, a charge counter, a -1/-1
                   counter and a flying counter are NOT this theme.
-  pump          — gives creatures +X/+X or +X/+0, permanently or until end of
+  pump          — gives creatures +X/+X, +X/+0 or +0/+X, permanently or until end of
                   turn. NOT pump: a keyword grant (double strike, first strike),
                   a +1/+1 counter (that is counters), a penalty (-X/-X, -X/-0,
                   +X/-X), a land or noncreature becoming a creature, and a
@@ -185,6 +185,10 @@ EVERY JOB CARRIES:
                creature type, a card type or a subtype (Equipment, Vehicle)
                MUST carry it; two together are joined with "or" ("Dwarf or
                Vehicle"). "creature" too is a restriction: write it.
+               "creature" and "permanent" are DIFFERENT: "destroy target
+               creature" is "creature"; "exile target nonland permanent" or
+               "destroy target permanent" is "permanent". Write the word the
+               card prints, never the narrower or the broader one.
   affects      whose cards, library, life or mana the job points at: one of
                ${AFFECTS.join(", ")}, or null.
                self      = yours: a mana rock or a Treasure you make, counters

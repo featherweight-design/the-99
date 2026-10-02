@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { DeckLens } from "../swaps/honest";
-import { hasLabelledJob, heldCardTypes, labelPatterns, matchLabels, relevant, type JobRef } from "./match";
+import { covers, hasLabelledJob, heldCardTypes, labelPatterns, matchLabels, relevant, type JobRef } from "./match";
 import type { Job } from "./types";
 
 /** A job with every limit at its "says nothing" value, overridden per case. */
@@ -43,6 +43,13 @@ describe("relevant: a job on your own cards counts only for what the deck plays"
     expect(relevant(recur, lens(), isType)).toBe(false);
     expect(relevant(recur, lens({ heldTypes: heldCardTypes(["Tribal Instant — Elf"]) }), isType)).toBe(true);
     expect([...heldCardTypes(["Kindred Sorcery — Goblin"])].sort()).toEqual(["kindred", "sorcery"]);
+  });
+
+  it("keeps a job joined with 'or' when the deck plays any of its alternatives", () => {
+    const draw2 = draw({ restrictedTo: "Goblin or Equipment" });
+    expect(relevant(draw2, lens({ keyType: "Elf" }), isType)).toBe(false);
+    expect(relevant(draw2, lens({ keyType: "Goblin" }), isType)).toBe(true);
+    expect(relevant(draw({ restrictedTo: "Goblin or artifact" }), lens({ keyType: "Elf", heldTypes: new Set(["artifact"]) }), isType)).toBe(true);
   });
 
   it("keeps a restriction it cannot read, and never drops a job aimed at opponents for its target", () => {
@@ -90,6 +97,38 @@ describe("matchLabels: the gates drop, the advice ranks", () => {
     expect(m([any], [artifactsOnly]).shared).toEqual([]);
     expect(m([artifactsOnly], [any]).shared).toEqual(["removal"]);
     expect(m([artifactsOnly], [removal({ affects: "opponents", restrictedTo: "Artifact" })]).shared).toEqual(["removal"]);
+  });
+
+  it("gate 4: a broader restriction stands in, a narrower one never does", () => {
+    const creatures = removal({ affects: "opponents", restrictedTo: "creature" });
+    const permanents = removal({ affects: "opponents", restrictedTo: "permanent" });
+    const goblins = removal({ affects: "opponents", restrictedTo: "Goblin" });
+    expect(m([creatures], [permanents]).shared).toEqual(["removal"]);
+    expect(m([permanents], [creatures]).shared).toEqual([]);
+    expect(m([goblins], [creatures]).shared).toEqual(["removal"]);
+    expect(m([creatures], [goblins]).shared).toEqual([]);
+  });
+
+  it("the lattice: permanent, creature and spell cover what they name; player only itself", () => {
+    expect(covers("permanent", "artifact", isType)).toBe(true);
+    expect(covers("permanent", "Goblin", isType)).toBe(true);
+    expect(covers("permanent", "instant", isType)).toBe(false);
+    expect(covers("permanent", "player", isType)).toBe(false);
+    expect(covers("creature", "Elf", isType)).toBe(true);
+    expect(covers("creature", "artifact", isType)).toBe(false);
+    expect(covers("spell", "instant", isType)).toBe(true);
+    expect(covers("spell", "player", isType)).toBe(false);
+    expect(covers("player", "spell", isType)).toBe(false);
+    expect(covers("Artifact", "artifact", isType)).toBe(true);
+    expect(covers("artifact", "permanent", isType)).toBe(false);
+  });
+
+  it("gate 4 reads a restriction joined with 'or' as its alternatives", () => {
+    const either = removal({ affects: "opponents", restrictedTo: "artifact or enchantment" });
+    const artifactsOnly = removal({ affects: "opponents", restrictedTo: "artifact" });
+    expect(m([either], [artifactsOnly]).shared).toEqual([]);
+    expect(m([artifactsOnly], [either]).shared).toEqual(["removal"]);
+    expect(m([either], [removal({ affects: "opponents", restrictedTo: "Enchantment or Artifact" })]).shared).toEqual(["removal"]);
   });
 
   it("advice: a different trigger or recurrence ranks lower and is never a drop", () => {

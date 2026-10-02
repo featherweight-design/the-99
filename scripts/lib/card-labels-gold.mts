@@ -138,7 +138,7 @@ const AUDITED: GoldRow[] = [
     name: "Omnath, Locus of the Roil", klass: "restrictedCounter",
     jobs: [
       j("theme", "counters", { rt: "Elemental", af: "self", tr: "landfall" }),
-      j("theme", "landfall", { af: "self" }),
+      j("theme", "landfall", { af: "self", tr: "landfall" }),
       j("role", "removal", { af: "opponents", meth: "shrink", tr: "etb", rec: "oneShot" }),
       j("role", "draw", { af: "self", tr: "landfall", th: { stat: "other", op: ">=", value: 8 } }),
       j("theme", "tribal", { rt: "Elemental", af: "self", tr: "landfall" }),
@@ -509,7 +509,7 @@ const AUDITED: GoldRow[] = [
     jobs: [
       j("theme", "counters", { rt: "creature", af: "self", tr: "landfall", modal: true }),
       j("theme", "lifegain", { af: "self", tr: "landfall", modal: true }),
-      j("theme", "landfall", { af: "self" }),
+      j("theme", "landfall", { af: "self", tr: "landfall" }),
     ],
     why: "Modal on every landfall, so the choice recurs — modal and repeatable together, which is not a contradiction.",
   },
@@ -859,7 +859,7 @@ const AUDITED: GoldRow[] = [
     name: "Earthbender Ascension", klass: "easy",
     jobs: [
       j("role", "ramp", { rk: "fetchesLand", rt: "land", af: "self", tr: "etb", rec: "oneShot" }),
-      j("theme", "landfall", { af: "self" }),
+      j("theme", "landfall", { af: "self", tr: "landfall" }),
       j("theme", "counters", { rt: "creature", af: "self", tr: "landfall", th: { stat: "counters", op: ">=", value: 4 } }),
       j("theme", "evasion", { rt: "creature", af: "self", tr: "landfall", rec: "oneShot" }),
     ],

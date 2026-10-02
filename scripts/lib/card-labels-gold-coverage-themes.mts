@@ -1009,7 +1009,7 @@ export const COVERAGE_THEMES: GoldRow[] = [
   {
     name: "Tatyova, Benthic Druid", klass: "etbDrawNeg",
     jobs: [
-      j("theme", "landfall", { af: "self" }),
+      j("theme", "landfall", { af: "self", tr: "landfall" }),
       j("theme", "lifegain", { af: "self", tr: "landfall" }),
       j("role", "draw", { af: "self", tr: "landfall" }),
     ],
