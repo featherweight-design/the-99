@@ -23,6 +23,7 @@ const { usePendingReport } = await import("./pending-report");
 const { OVERLAY_OUT_MS } = await import("./pending-overlay");
 const { use, useEffect, useLayoutEffect, useState } = await import("react");
 const { usePendingPush } = await import("./pending-push");
+const { mirrorUrl } = await import("../../lib/url/mirror");
 
 function Reporter({ href }: { href: string }) {
   return usePendingReport(href) ? <span data-testid={`mark ${href}`} /> : null;
@@ -154,6 +155,24 @@ describe("NavigationPendingProvider", () => {
     act(() => rerender(<App links={LINKS} />));
     act(() => vi.advanceTimersByTime(OVERLAY_OUT_MS));
     expect(overlay()).toBeNull();
+  });
+});
+
+describe("the URL mirrors write only on the router's committed page", () => {
+  // The provider reports the router's committed path. After a Back or Forward the address is the
+  // destination while the router still names the page being left, and that page's mirror, even one
+  // that reads the live path, must not write over the destination.
+  it("blocks a mirror whose page the router has not committed to the address", () => {
+    state.path = "/discover";
+    act(() => rerender(<App links={LINKS} />));
+    window.history.pushState(null, "", "/decks");
+    const replace = vi.spyOn(window.history, "replaceState");
+    try {
+      mirrorUrl(`${window.location.pathname}?o=new`);
+      expect(replace).not.toHaveBeenCalled();
+    } finally {
+      replace.mockRestore();
+    }
   });
 });
 

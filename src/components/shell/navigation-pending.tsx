@@ -19,6 +19,7 @@ import { pendingRouteFor, type LoadingKey } from "../../lib/shell/pending-routes
 import { Report, targetOf, useReportPending, type Reporter } from "./pending-report";
 import { PendingOverlay } from "./pending-overlay";
 import { ShellLoading } from "./shell-loading";
+import { setRoutePath } from "../../lib/url/mirror";
 
 /**
  * Navigation pending, and its escalation to the full screen (the navigation-pending handoff and its
@@ -40,6 +41,13 @@ const MainRef = createContext<React.RefObject<HTMLElement | null> | null>(null);
 export function NavigationPendingProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const mainRef = useRef<HTMLElement | null>(null);
+  // The router's committed path, for the URL mirrors (`lib/url/mirror`). A layout effect: Next
+  // writes the address in an insertion effect at the same commit, before this runs, and every
+  // page's mirror runs in a passive effect after it.
+  useLayoutEffect(() => {
+    setRoutePath(pathname);
+    return () => setRoutePath(null);
+  }, [pathname]);
   // Which reporters are pending, and where each goes. A Map so a press that moves from one link to
   // another (only the last link stays pending) ends the first without ending the run.
   const pending = useRef(new Map<string, string>());

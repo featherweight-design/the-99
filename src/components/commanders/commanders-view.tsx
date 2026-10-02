@@ -40,6 +40,7 @@ import { FilteredEmpty, FreeEmpty, OwnedSearchEmpty } from "./filtered-empty";
 import {
   REVEAL_STEP, RevealControl, EndOfRanking, revealAnnouncement,
 } from "./reveal-control";
+import { mirrorUrl } from "../../lib/url/mirror";
 
 export type AvailMode = "all" | "free";
 
@@ -280,7 +281,7 @@ export function CommandersView({
       const base = edit && edit.query === live.toString() ? edit.params : fromUrl(live);
       const resolved = typeof next === "function" ? next(base) : next;
       const { written, query } = queryFor(live, resolved);
-      window.history.replaceState(null, "", `${window.location.pathname}${written}`);
+      mirrorUrl(`${window.location.pathname}${written}`);
       setEdit({ query, params: resolved });
     },
     [edit, fromUrl, queryFor],
@@ -316,7 +317,7 @@ export function CommandersView({
     // already correct and leaves it alone. What it is here for is the render-time
     // climb-down below, which changes `params` without an event to write from.
     if (query === new URLSearchParams(live).toString()) return;
-    window.history.replaceState(null, "", `${pathname}${written}`);
+    mirrorUrl(`${pathname}${written}`);
   }, [params, queryFor]);
 
   // Which list is on screen. Falling back to `results` when the free ranking is

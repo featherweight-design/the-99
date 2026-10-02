@@ -60,6 +60,11 @@ function view(
   // above — passed rather than duplicating the whole render for one null.
   releasedAt: string | null = "2026-09-01",
 ) {
+  // The address bar holds what the mocked search params say, on this page's own path, as it does
+  // in the app: `mirrorUrl` skips a write equal to the live URL or naming another path, so a bar
+  // left at another test's URL would turn this page's real writes into skipped ones. `pushState`,
+  // so the spy on `replaceState` sees only the component's own writes.
+  window.history.pushState(null, "", `/collection/sets/dsk${search ? `?${search}` : ""}`);
   const holdings = ownedNumbers.map((n) => ({
     oracleId: `o-${n}`, collectorNumber: n, finish: "nonfoil" as const,
   }));
@@ -1089,7 +1094,9 @@ describe("SetGridView — the name search", () => {
       fireEvent.click(screen.getByRole("button", { name: "Clear the search" }));
       act(() => void vi.advanceTimersByTime(300));
       expect((field() as HTMLInputElement).value).toBe("");
-      expect(replaceState).toHaveBeenLastCalledWith(null, "", "/collection/sets/dsk");
+      // The keystroke never landed, so the bar is still bare and nothing wrote the dropped query.
+      expect(window.location.pathname + window.location.search).toBe("/collection/sets/dsk");
+      expect(replaceState).not.toHaveBeenCalledWith(null, "", "/collection/sets/dsk?q=plains");
     } finally {
       vi.useRealTimers();
     }

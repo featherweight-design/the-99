@@ -46,6 +46,7 @@ import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { addCardToDeck } from "../../app/decks/actions";
 import { DiffRowIn, DiffRowOut } from "./update-diff-row";
 import { proxyCopy } from "../../lib/copy/proxies";
+import { mirrorUrl } from "../../lib/url/mirror";
 
 /** Every write to this draft, as one state. See the latch in `ReviewChanges`. */
 type WriteState = "idle" | "writing" | "unknown";
@@ -521,7 +522,7 @@ export function ReviewChanges({
     const url = new URL(window.location.href);
     if (!url.searchParams.has("commit")) return;
     url.searchParams.delete("commit");
-    history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+    mirrorUrl(url);
   }, []);
   // Phone only, and it decides which column is on screen rather than which one
   // is drawn twice: both columns are in the markup once, and the inactive one is

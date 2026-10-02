@@ -88,6 +88,7 @@ import { deckIdentity } from "../../lib/decks/format";
 import { openNotices, peekNotices } from "../../lib/notices/actions";
 import { NOTICES_PARAM } from "../../lib/notices/arrival";
 import type { DeckNotices } from "../../lib/notices/read";
+import { mirrorUrl } from "../../lib/url/mirror";
 
 // Shared by both shelf paths — the one that is already on Consider and the one
 // that has to switch views first — so they land identically.
@@ -533,7 +534,7 @@ export function BuilderShell({
     const url = new URL(window.location.href);
     if (url.searchParams.has(NOTICES_PARAM)) {
       url.searchParams.delete(NOTICES_PARAM);
-      window.history.replaceState(window.history.state, "", url);
+      mirrorUrl(url, window.history.state);
     }
     const id = deck.id;
     noticesOpenFor.current = id;

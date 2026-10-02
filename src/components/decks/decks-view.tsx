@@ -74,6 +74,7 @@ import { ImportDeckButton } from "./import-deck-button";
 import { NewDeckButton } from "./new-deck-button";
 import { SearchIcon } from "./search-icon";
 import { DecksMarkKey } from "./decks-mark-key";
+import { mirrorUrl } from "../../lib/url/mirror";
 
 export type DecksViewProps = {
   decks: DeckListItem[];
@@ -409,7 +410,7 @@ export function DecksView({
     // just set, so removing this line costs a render per filter click and
     // changes nothing on screen. Mutation-checked, and no test fails without it.
     setSeenQuery(query);
-    window.history.replaceState(null, "", query ? `?${query}` : window.location.pathname);
+    mirrorUrl(query ? `?${query}` : window.location.pathname);
   }, []);
 
   const onFilters = useCallback(
@@ -561,7 +562,7 @@ export function DecksView({
     }
     live.delete(FOLDER_PARAM);
     const query = live.toString();
-    window.history.replaceState(null, "", query ? `?${query}` : window.location.pathname);
+    mirrorUrl(query ? `?${query}` : window.location.pathname);
   }, [folders]);
 
   // Focus for a shelf that left under a delete or a refused rename, once it has

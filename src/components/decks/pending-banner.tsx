@@ -19,6 +19,7 @@ import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips } from "../ui/cost-pi
 import { DiscardConfirm, DiscardTrigger, useDiscardConfirm } from "./discard-draft";
 import { COMMIT_RECEIPT_HASH, DISCARD_RECEIPT_HASH } from "./draft-announcer";
 import { CommanderNameLine, CommanderSentence, commanderZoneHint } from "./change-commander-banner";
+import { mirrorUrl } from "../../lib/url/mirror";
 
 const copy = deckVersioningCopy.pending;
 
@@ -250,7 +251,7 @@ function VersionLine({ text }: { text: string }) {
     ref.current?.focus();
     // `replaceState`, so the receipt does not become an entry the reader can go
     // back to and re-fire.
-    history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+    mirrorUrl(`${window.location.pathname}${window.location.search}`);
   }, []);
   return (
     <span

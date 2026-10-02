@@ -56,6 +56,7 @@ import { useStoredView } from "../ui/use-stored-view";
 import { NoResults } from "./no-results";
 import { useCardDetail } from "../cards/card-detail-provider";
 import { parseColors } from "../../lib/color-param";
+import { mirrorUrl } from "../../lib/url/mirror";
 
 const PAGE_SIZE = 200;
 
@@ -554,7 +555,7 @@ export function CollectionBrowser({
       // own can arrive after mount and must survive the next filter change.
       window.location.search,
     );
-    window.history.replaceState(null, "", `/collection${qs}`);
+    mirrorUrl(`/collection${qs}`);
   }, [filters, sort, sortDirection, view, openOracleId, openInList]);
 
   return (

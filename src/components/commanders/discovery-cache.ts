@@ -7,6 +7,7 @@ import { laneQuery, type LaneParams } from "../../lib/commanders/lane-params";
 // pulls the neon driver in with it. A type-only clause is erased at compile
 // time, so none of that reaches the client bundle.
 import type { DecodedDiscovery } from "../../lib/discovery/encode";
+import { mirrorUrl } from "../../lib/url/mirror";
 
 export type SortKey = "fit" | "new";
 
@@ -71,7 +72,7 @@ export function useDiscoveryCache(served: DecodedDiscovery) {
 
       const { pathname, search } = window.location;
       const next = laneQuery(new URLSearchParams(search), params, "discover");
-      window.history.replaceState(null, "", `${pathname}${next}`);
+      mirrorUrl(`${pathname}${next}`);
 
       setView(hit);
       return true;

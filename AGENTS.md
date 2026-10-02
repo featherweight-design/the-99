@@ -2462,6 +2462,35 @@ sql<number>`(
   both tab-row figures for exactly that reason. When a count reads 0 and should not, print
   `.toSQL()` first.
 
+## Writing the address bar without navigating
+
+Every `history.replaceState` a page makes to mirror its own state (a filter, a sort, a view, an
+open card) or to strip a one-time parameter goes through `mirrorUrl` (`src/lib/url/mirror.ts`),
+never `history.replaceState` directly. Next patches `replaceState` so its router adopts the URL
+it is given, and adopting a URL while a navigation is pending DROPS that navigation: on main,
+`/collection`'s and `/discover`'s mirror effects re-wrote the page's own current URL about 700ms
+after a push to `/decks`, and in 3 of 4 cases the reader never left (1f's startup diagnostic,
+2026-09-29). `mirrorUrl` makes two rules one definition:
+
+- **A write equal to the live URL is not made.** It changes nothing a reader sees, and it is the
+  write that was adopted over the pending push. A path check alone does not catch it, because
+  the path has not moved while the push is pending.
+- **A write is made only on the page it describes.** Its path must be the live one, and the live
+  one must be the path the router has committed, which the provider reports from `usePathname()`
+  in a layout effect. A browser Back or Forward moves the address before Next commits the new
+  page, so a late write from the page being left would otherwise land over the destination,
+  whether it named its own path or read `location.pathname`. Next writes the address in an
+  insertion effect, before the provider's layout effect, and every mirror runs in a passive
+  effect after both, so a page's own first write sees its own path.
+- **No rule about pending navigations.** One was built and dropped (#1145, rounds 4 to 9): every
+  fix to when the pending state was published exposed the next timing edge, and no measured case
+  showed a legitimate write racing a tap. The two rules above cover every dropped navigation 1f's
+  diagnostic logged on main.
+
+`src/lib/a11y/dialog.ts` is the one `replaceState` outside it, deliberately: it puts back the URL
+a history POP moved, which is a restore rather than a mirror, and it already skips an equal
+write.
+
 ## Caching a list a reader flips between
 
 When a control re-fetches the same list under different parameters — a sort order, an
@@ -2480,7 +2509,7 @@ in one payload when the set of parameters is small enough to precompute.
 - **A fresh server payload always wins** over a cached entry for the same key, and is filed
   on its way past. Adjust that during render, not in an effect, or the previous list paints
   once before being corrected.
-- **A cache hit still writes the URL**, via `history.replaceState` rather than the router —
+- **A cache hit still writes the URL**, via `mirrorUrl` rather than the router —
   routing is the request being avoided. Serialise defaults as absences, exactly as the
   navigating path does, and read every parameter you do not own back off the live URL rather
   than rebuilding it.

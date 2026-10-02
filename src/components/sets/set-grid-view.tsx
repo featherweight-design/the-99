@@ -46,6 +46,7 @@ import { SearchField } from "../ui/text-field";
 import { CostStrip } from "./cost-strip";
 import { DeltaStrip } from "./delta-strip";
 import { useHeadCollapse } from "./use-head-collapse";
+import { mirrorUrl } from "../../lib/url/mirror";
 
 export type SetGridViewProps = {
   code: string;
@@ -282,10 +283,7 @@ export function SetGridView(props: SetGridViewProps) {
     for (const key of ["c", "r", "m", "q"]) live.delete(key);
     for (const [key, value] of serialiseFilters(next)) live.set(key, value);
     const qs = live.toString();
-    window.history.replaceState(
-      null, "",
-      qs ? `/collection/sets/${code}?${qs}` : `/collection/sets/${code}`,
-    );
+    mirrorUrl(qs ? `/collection/sets/${code}?${qs}` : `/collection/sets/${code}`);
     setLocal(next);
   }
 
