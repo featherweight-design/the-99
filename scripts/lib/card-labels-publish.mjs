@@ -38,6 +38,9 @@ export const RESAMPLE_PUBLISHED = {
 };
 const RESAMPLE_MODELS = ["sonnet"];
 
+/** The models the committed set this run publishes to describes: the scorer's publish gate requires exactly these. */
+export const publishModels = () => target().models;
+
 /** Which committed set this run publishes to, and the models that set describes. */
 function target() {
   const name = process.env.LABEL_PUBLISH ?? "first";

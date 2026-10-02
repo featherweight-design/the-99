@@ -37,7 +37,7 @@ export function flagAgreement(labels: Labels, flags: Record<string, Flags>) {
 // A TAPPER keeps a permanent from acting without taking it away. A card whose text also removes (destroys,
 // exiles, deals damage, shrinks, returns, sacrifices or takes control) is not only a tapper, so it is left out.
 const TAPS = /\btap target\b|\bdoesn't untap\b|\bdon't untap\b/i;
-const REMOVES = /\bdestroy\b|\bexile\b|\bdamage\b|[-−]\d+\/[-−]\d+|\breturn target\b|\bsacrifices?\b|\bgain control\b/i;
+const REMOVES = /\bdestroys?\b|\bexiles?\b|\bdamage\b|[-−]\d+\/[-−]\d+|\breturns?\b[^.]*\bowner'?s hand\b|\bsacrifices?\b|\bgain control\b/i;
 
 /**
  * Task 3 took counterspells, tappers and hand attack OUT of `removal`. A card labelled removal beside a

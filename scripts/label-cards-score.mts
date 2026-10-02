@@ -26,7 +26,7 @@ import { FIELD_BARS, fieldBars, jobBars, restrictionPair, stops, type Bar, type 
 import { GOLD } from "./lib/card-labels-gold.mjs";
 import { bestPairing } from "./lib/card-labels-pairing.mjs";
 import { ALL_MODELS, MODELS } from "./lib/card-labels-pricing.mjs";
-import { publishArtifacts } from "./lib/card-labels-publish.mjs";
+import { publishArtifacts, publishModels } from "./lib/card-labels-publish.mjs";
 import { METHOD_KINDS, TO_KINDS, type Job } from "../src/lib/labels/types.js";
 
 // The SHARED `Job`, not a local one. This file declared its own — a fourth description of
@@ -307,11 +307,12 @@ for (const [model, byCard] of Object.entries(predictions)) {
 }
 
 mkdirSync("out", { recursive: true });
-// PUBLISHING a one-model report would commit a comparison that is not one. The skip
-// above is for exploratory runs; with `--publish` both models must be present and
-// complete, or the committed artifact silently loses a column the report quotes.
+// PUBLISHING an incomplete report would commit a comparison that is not one. The skip
+// above is for exploratory runs; with `--publish` every model the target describes must be
+// present and complete (both for the first sample, Sonnet alone for LABEL_PUBLISH=resample),
+// or the committed artifact silently loses a column the report quotes.
 if (process.argv.includes("--publish")) {
-  for (const m of ["haiku", "sonnet"]) {
+  for (const m of publishModels()) {
     const rows = predictions[m];
     if (!rows) die(`refusing to publish: out/labels-${m}.json is missing, so the comparison is incomplete`);
     const answered = Object.values(rows).filter((v) => Array.isArray(v)).length;

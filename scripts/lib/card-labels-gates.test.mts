@@ -45,6 +45,10 @@ describe("removal leaks", () => {
   it("does not call a card a tapper when it also removes", () => {
     const labels = { "Pulse of the Grid": [job("role", "removal")] };
     expect(removalLeaks(labels, { "Pulse of the Grid": "Tap target creature. It deals 2 damage to itself." }).tapper).toEqual([]);
+    for (const t of [
+      "Tap target creature. At the beginning of the end step, exiles it.",
+      "Tap target creature, then return it to its owner's hand.",
+    ]) expect(removalLeaks({ x: [job("role", "removal")] }, { x: t }).tapper).toEqual([]);
   });
 });
 

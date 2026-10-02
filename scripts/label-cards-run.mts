@@ -79,7 +79,10 @@ const random = (await sql`
   order by md5(name || 'label-sample') limit ${RANDOM_N}`) as CatalogCard[];
 
 // THE STRATA (the vocabulary plan's Task 5): about STRATUM_SIZE regex-chosen cards per new job, so a job
-// that appears on one card in two hundred has enough instances to score. Drawn after the random set and
+// that appears on one card in two hundred is put in front of the model often enough to READ. They carry no
+// gold answers, so the bars score the gold set alone; the strata feed the free gates (label-cards-gates)
+// and the committed per-card labels a reader audits. Matched on the FIRST face's text (split_part), so a
+// split card's second half chooses nothing; the model is still sent the whole card. Drawn after the random set and
 // disjoint from it and from gold, so each card belongs to exactly one set and the random set's empty rate
 // stays an honest reading of the catalog.
 const taken = new Set([...goldNames, ...random.map((c) => c.name)]);
@@ -96,7 +99,7 @@ for (const [job, pattern] of Object.entries(STRATA)) {
 const stratified = Object.values(strata).flat();
 
 const all = [...gold, ...random, ...stratified];
-// Which set each card came from, for the scorer and the empty-rate gate: never pooled.
+// Which set each card came from, for the free gates (the empty rate reads the random set alone): never pooled.
 mkdirSync("out", { recursive: true });
 writeFileSync("out/sample.json", JSON.stringify({
   gold: gold.map((c) => c.name), random: random.map((c) => c.name),

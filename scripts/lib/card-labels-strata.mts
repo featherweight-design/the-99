@@ -1,11 +1,12 @@
 // THE STRATIFIED RE-SAMPLE (the vocabulary plan's Task 5): about 40 regex-selected cards per new job,
 // beside the random 500. A random draw gives a job that appears on one card in two hundred almost no
-// instances to score; the regex is what puts enough of each in front of the model. The random half is what
+// instances; the regex is what puts enough of each in front of the model. There are no gold answers for
+// them: the bars score the gold set, and the strata are read through the free gates and by hand. The random half is what
 // keeps the empty rate honest, so the two are reported apart and never pooled.
 //
 // The regexes CHOOSE candidates and decide nothing: the model labels what it is sent, and a card a pattern
 // admits that does not do the job is exactly the hard negative the stratum needs. Postgres AREs, matched
-// case-insensitively against the cast face's text.
+// case-insensitively against the FIRST face's text, so a split card's second half chooses nothing.
 export const STRATUM_SIZE = 40;
 
 export const STRATA: Record<string, string> = {
