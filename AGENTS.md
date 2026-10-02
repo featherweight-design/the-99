@@ -1690,6 +1690,12 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   visuals, as on `/discover`. `probe:payload` holds the shipped wire to 1.05MB (0.959MB measured,
   153.6KB gzipped, against 1.122MB with every card whole).
 
+  **Its grid's art waits for the page**, except the first screen's: once the server draws the grid
+  (`?view=grid`, or a desktop default), a lazy img still starts on the HTML parse, and on the slow
+  profile ~2.4MB of art landed before hydration and held the page at ~20s against ~6s. The tile
+  draws `HydratedImg` with the first `GRID_EAGER_TILES` (12) eager; the server cannot know the
+  width, so that is a fixed count rather than columns times rows.
+
 - `pnpm probe:collection-window` proves that at 1300x900 and 390x844 with the fields route HELD:
   six URLs, each with its own view, sort, direction, search and availability, arrive drawn (200
   cards, or what a search or a filter leaves) and not busy; `Show more` draws nothing new, stays busy, ignores a second
@@ -2387,11 +2393,14 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 - `pnpm probe:grid-art` proves the `/collection` grid asks only for the art it can show, at
   1300x900 and at 390x844 with `?view=grid`. The tile's art was a CSS background, which a browser
   fetches for every rendered element on screen or not, so the grid asked for all 200 windowed
-  tiles' `normal` images at once. It is a native `loading="lazy"` img now: it starts on the HTML
-  parse, before hydration, where a script-driven observer would wait for the bundle. The probe
-  counts the Scryfall requests the page made, never an attribute, and holds them under half the
-  window: Chrome loads a lazy image within a FIXED distance of the viewport (1250px fast, 2500px
-  slow), so a first load asks for rows below the fold by design (66 of 200 at 1300, 22 at 390).
+  tiles' `normal` images at once. It became a native `loading="lazy"` img, which still starts on
+  the HTML parse, and once the server drew the grid (`?view=grid`) ~2.4MB of art landed before
+  hydration on the slow profile and held the page at ~20s. Since the list payload plan's PR 4 the
+  /collection tile draws `HydratedImg` (`ui/hydrated-art`): the first `GRID_EAGER_TILES` (12)
+  ask for their art in the server HTML and the rest wait until they come within 600px of the
+  viewport, which they can only learn after hydration. The deck page's tiles are still native
+  lazy imgs. The probe counts the Scryfall requests the page made, never an attribute, and holds
+  them under half the window.
   It also reads the first tile's art as painted, `cover` and centred, under the 1px inner edge,
   which moved onto an overlay because an inset shadow on the art box would paint under its img.
   And every tile brought into view must paint. `probe:printing-pick` and `probe:card-art-corners`

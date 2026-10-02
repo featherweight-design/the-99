@@ -25,6 +25,14 @@ import { CollectionMarkKey } from "./collection-mark-key";
 import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { CardTileCaption, TILE_ART_CLIP } from "../ui/card-tile-caption";
 import { GhostButton } from "../ui/button";
+import { HydratedImg } from "../ui/hydrated-art";
+
+/**
+ * Tiles whose art the server HTML asks for: about the first screen. The server cannot know the
+ * width, so this is a fixed count rather than columns times rows: 12 covers two rows at the
+ * widest common desktop (six columns) and six rows on a phone, where the grid has two.
+ */
+export const GRID_EAGER_TILES = 12;
 
 export function GridView({
   cards,
@@ -62,7 +70,7 @@ export function GridView({
       {/* The gloss travels WITH the view: a surface drawing a wordless mark carries the
           thing that decodes it, rather than trusting a caller to mount one above. */}
       <CollectionMarkKey className="col-span-full" />
-      {cards.map((c) => {
+      {cards.map((c, i) => {
         const state = c.availability ? availabilityState(c.availability) : "free";
         // Addendum 2 §2, matching the row: over-committed keeps its border tint
         // and nothing else.
@@ -101,22 +109,22 @@ export function GridView({
               background: c.imageUri ? undefined : identityGradient(c.colorIdentity),
             }}
           >
-            {/* AN IMG, LOADED LAZILY — not a CSS background. A browser fetches a CSS
-                background for every rendered element whether or not it is on screen, so
-                opening the grid asked for all 200 windowed tiles' art at once: about 22MB
-                of Scryfall `normal` images, which on a slow link kept the page's load
-                event out past 90s (plans/2026-09-28-list-payload-shrink.md, PR 1). A
-                native `loading="lazy"` img asks only near the viewport, and it still
-                starts on the HTML parse, before hydration, where a script-driven observer
-                would wait for the bundle. `object-fit: cover` centred is exactly what
-                `background-size: cover` centred drew. The FILE stays `normal`: `small`
-                is 146px against a 175-178px tile, soft at any density. */}
+            {/* THE ART WAITS FOR THE PAGE, except the first screen's. A CSS background is
+                fetched for every rendered tile, on screen or not, which asked for all 200
+                windowed tiles' art at once (list payload plan, PR 1). A native lazy img fixed
+                that, but it still starts on the HTML parse: on a slow link, once the server
+                draws the grid, ~2.4MB of Scryfall `normal` images landed BEFORE hydration
+                and the page became usable at ~20s instead of ~6s (PR 4's measurement, on
+                `?view=grid`). `HydratedImg` (`ui/hydrated-art`) withholds `src` until the
+                tile is near the viewport, which it can only learn after hydration; the first
+                screen's tiles are `eager` and ask for their art in the server HTML. The FILE
+                stays `normal`: `small` is 146px against a 175-178px tile, soft at any
+                density. `object-fit: cover` centred is what `background-size: cover` drew. */}
             {c.imageUri && (
-              // eslint-disable-next-line @next/next/no-img-element -- Scryfall art is remote; next/image would need a loader per host and would re-encode art the CDN already sizes
-              <img
+              <HydratedImg
+                eager={i < GRID_EAGER_TILES}
                 src={c.imageUri}
                 alt=""
-                loading="lazy"
                 decoding="async"
                 className="absolute inset-0 h-full w-full object-cover object-center"
               />
