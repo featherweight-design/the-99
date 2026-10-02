@@ -106,6 +106,9 @@ describe("scoreOneCommander", () => {
     try {
       const measured = await scoreOneCommander("user-targets-measured", "unowned", "atraxa");
       expect(measured!.fitRoles).toBeGreaterThan(flat!.fitRoles);
+      // And it RETURNS them, so Role Coverage and the thinnest role read the same ones (§5.4b).
+      expect(measured!.roleTargets.of).toBe("commander");
+      expect(flat!.roleTargets.of).toBe("flat");
     } finally {
       roleTargetMock.measured = false;
     }

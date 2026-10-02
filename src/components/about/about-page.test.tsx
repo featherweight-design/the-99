@@ -1709,9 +1709,10 @@ describe("figures that draw what their keys name", () => {
   it("role-coverage draws the commander page's group heads, not the retired chips", () => {
     const { container } = render(<AboutPage seen={0} />);
     const el = specimen(container, "role-coverage");
-    // Wipes: 1 owned against a baseline of 3. Both layouts are mounted, so the text is doubled.
+    // Wipes: 1 owned against the 3 the specimen commander's decks run (its measured target).
     expect(el.textContent).toContain("1 owned");
-    expect(el.textContent).toContain("2 short of baseline");
+    expect(el.textContent).toContain("2 short of the 3 its decks run");
+    expect(el.textContent).not.toMatch(/short of baseline/);
     expect(el.textContent).not.toMatch(/\b1\/3\b/);
   });
 

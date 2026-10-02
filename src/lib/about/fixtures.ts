@@ -1,3 +1,4 @@
+import type { ProfileRoleTargets } from "../profile/types";
 import type { BuilderTabSpec } from "../../components/decks/builder-tabs";
 import { addPanelCopy } from "../copy/decks-builder";
 import { gameLogCopy } from "../copy/game-log";
@@ -283,11 +284,17 @@ export const SET_CELLS: Cell[] = [
 // server/client boundary — which React refuses, and which no unit test in this
 // repository can see.
 
-/** Role counts against their baselines — one short, one at, one over. */
-// Against ROLE_TARGETS { ramp: 10, draw: 10, removal: 8, wipes: 3 }: ramp over,
-// draw and removal at, wipes short. ONE gap, because the entry's line is "a 1/3
+/** Role counts against the specimen commander's targets — one short, two at, one over. */
+// Against ROLE_TARGETS_MEASURED below { ramp: 11, draw: 9.6 (10), removal: 8, wipes: 3 }:
+// ramp over, draw and removal at, wipes short. ONE gap, because the entry's line is "a 1/3
 // on board wipes tells you what to fix" — two gaps teach a different sentence.
 export const ROLE_COUNTS = { ramp: 12, draw: 10, removal: 8, wipes: 1 };
+/** The specimen commander's own measured targets, as the page reads them: past on ramp, at on
+ *  draw (9.6 rounds to 10, as the fit score rounds it) and removal, two short on wipes. */
+export const ROLE_TARGETS_MEASURED: ProfileRoleTargets = {
+  of: "commander",
+  targets: { ramp: 11, draw: 9.6, removal: 8, wipes: 3 },
+};
 
 /**
  * Two axes at the far ends of the log: one the deck keeps winning on, one that

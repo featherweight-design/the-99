@@ -44,6 +44,7 @@ const synergyCards: SynergyCard[] = [
 function commander(overrides: Partial<CommanderDetailScore> = {}): CommanderDetailScore {
   return {
     oracleId: "oracle-1",
+    roleTargets: { of: "flat", targets: { ramp: 10, draw: 10, removal: 8, wipes: 3 } },
     name: "Krenko, Mob Boss",
     colorIdentity: ["R"],
     imageUri: null,

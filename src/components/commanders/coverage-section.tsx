@@ -17,9 +17,9 @@ import {
   type CoverageSortKey,
 } from "./coverage-sort";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
-import { ROLE_TARGETS } from "../../lib/recs/roles";
+import type { ProfileRoleTargets } from "../../lib/profile/types";
 import { roleAnchorId, ROLE_ANCHOR_SCROLL_MARGIN } from "./role-anchor";
-import type { RoleCard, RoleName } from "../../lib/recs/score";
+import { wholeTarget, type RoleCard, type RoleName } from "../../lib/recs/score";
 
 type RoleOrder = readonly RoleName[];
 const ROLE_ORDER: RoleOrder = ["ramp", "draw", "removal", "wipes"] as const;
@@ -131,20 +131,21 @@ export function RoleGroupHeader({
   layout,
   role,
   count,
+  targets,
   listId,
 }: {
   layout: "desktop" | "phone";
   role: RoleName;
   count: number;
+  /** The commander's role targets and where they came from — the ones its fit score used. */
+  targets: ProfileRoleTargets;
   listId: string;
 }): JSX.Element {
-  const target = ROLE_TARGETS[role];
-  const gap =
-    count > target
-      ? `Well past the ${target}-source baseline`
-      : count === target
-        ? `At the ${target}-source baseline`
-        : `${target - count} short of baseline`;
+  const gap = recommendationsCopy.coverage.gap(
+    count,
+    wholeTarget(targets.targets[role]),
+    targets.of !== "flat",
+  );
   const name = (
     <h3 id={`${listId}-name`} className="font-sans font-[600] m-0" style={{ fontSize: 15, color: "var(--fg)" }}>
       {ROLE_LABELS[role]}
@@ -157,7 +158,7 @@ export function RoleGroupHeader({
         <span className="font-mono" style={{ fontSize: 12, color: "var(--success)" }}>
           {count} owned
         </span>
-        <span className="font-mono" style={{ fontSize: 12, color: "var(--fg-faint)", marginLeft: "auto" }}>
+        <span data-role-gap={role} data-owned={count} className="font-mono" style={{ fontSize: 12, color: "var(--fg-faint)", marginLeft: "auto" }}>
           {gap}
         </span>
       </div>
@@ -171,7 +172,7 @@ export function RoleGroupHeader({
           {count} owned
         </span>
       </div>
-      <p className="font-mono m-0" style={{ fontSize: 10.5, color: "var(--fg-faint)", marginBottom: 9 }}>
+      <p data-role-gap={role} data-owned={count} className="font-mono m-0" style={{ fontSize: 10.5, color: "var(--fg-faint)", marginBottom: 9 }}>
         {gap}
       </p>
     </>
@@ -182,6 +183,7 @@ function RolePanelDesktop({
   role,
   cards,
   count,
+  targets,
   showFigures,
   expanded,
   onToggle,
@@ -190,6 +192,7 @@ function RolePanelDesktop({
   role: RoleName;
   cards: RoleCard[];
   count: number;
+  targets: ProfileRoleTargets;
   showFigures: boolean;
   expanded: boolean;
   onToggle: () => void;
@@ -235,7 +238,7 @@ function RolePanelDesktop({
       }}
     >
       {/* Header row */}
-      <RoleGroupHeader layout="desktop" role={role} count={count} listId={listId} />
+      <RoleGroupHeader layout="desktop" role={role} count={count} targets={targets} listId={listId} />
 
       {/* Card chips */}
       {cards.length === 0 ? (
@@ -292,6 +295,7 @@ function RolePanelPhone({
   role,
   cards,
   count,
+  targets,
   showFigures,
   expanded,
   onToggle,
@@ -300,6 +304,7 @@ function RolePanelPhone({
   role: RoleName;
   cards: RoleCard[];
   count: number;
+  targets: ProfileRoleTargets;
   showFigures: boolean;
   expanded: boolean;
   onToggle: () => void;
@@ -346,7 +351,7 @@ function RolePanelPhone({
     >
       {/* Header — the gap clause takes its own line here, because at phone width
           a role name, a count and a full sentence do not fit on one. */}
-      <RoleGroupHeader layout="phone" role={role} count={count} listId={listId} />
+      <RoleGroupHeader layout="phone" role={role} count={count} targets={targets} listId={listId} />
 
       {/* Rows */}
       <div
@@ -405,6 +410,8 @@ export type CoverageSectionProps = {
   slug: string;
   roleCards: Record<RoleName, RoleCard[]>;
   roleCounts: Record<RoleName, number>;
+  /** The role targets the commander's fit score was graded against. Each group head reads them. */
+  roleTargets: ProfileRoleTargets;
   synergyState: "ok" | "absent" | "degraded";
   /**
    * Whether a marker is on screen outside the role panels — see `DotKey`.
@@ -433,6 +440,7 @@ export function CoverageSection({
   slug,
   roleCards: initialRoleCards,
   roleCounts,
+  roleTargets,
   synergyState,
   markerElsewhere,
   avail,
@@ -683,6 +691,7 @@ export function CoverageSection({
               role={role}
               cards={cards}
               count={roleCounts[role]}
+              targets={roleTargets}
               showFigures={showFigures}
               expanded={expanded}
               onToggle={() => toggleRole(role)}
@@ -694,6 +703,7 @@ export function CoverageSection({
               role={role}
               cards={cards}
               count={roleCounts[role]}
+              targets={roleTargets}
               showFigures={showFigures}
               expanded={expanded}
               onToggle={() => toggleRole(role)}

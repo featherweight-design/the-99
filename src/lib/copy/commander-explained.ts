@@ -106,7 +106,8 @@ export const explainedCopy = {
 
     /** Sentence 3 — the single largest gap, naming the weakest role AND NOTHING ELSE.
         No price, no card names, no buy prompt (must-not 4). Omitted entirely when no role is
-        short of baseline. The linked span is the figures clause.
+        short of the commander's role target (its measured figure, else the baseline); a measured
+        target of 0 is never short. The linked span is the figures clause.
 
         THE ROLE NOUN COMES FROM ITS OWN MAP, NOT ROLE_NOUNS. coverage-section.tsx:26-31 ships
         ROLE_NOUNS in the SINGULAR — `wipes: "board wipe"` — because its only consumer is
@@ -116,8 +117,10 @@ export const explainedCopy = {
     gap: (role: RoleKey) => `${ROLE_SUBJECTS[role]} ${ROLE_COPULA[role]} where you are thinnest`,
     /** `target` goes through spellOut for the same reason `owned` does — both are prose, and
         the canvas draws "a ten-source baseline". R1's key emitted "10-source". */
-    gapFigures: (owned: number, target: number) =>
-      `${spellOut(owned)} owned against a ${spellOut(target)}-source baseline`,
+    gapFigures: (owned: number, target: number, measured: boolean) =>
+      measured
+        ? `${spellOut(owned)} owned against the ${spellOut(target)} its decks run`
+        : `${spellOut(owned)} owned against a ${spellOut(target)}-source baseline`,
 
     /** Sentence 3's two fragments are joined by " \u2014 " and the paragraph's terminal period is
         added by the renderer, not by either fragment. Stated as a key so the punctuation belongs

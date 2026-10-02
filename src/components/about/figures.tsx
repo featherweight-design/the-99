@@ -78,6 +78,7 @@ import {
   COMMITMENTS,
   COMMITMENTS_TOTAL_CARDS,
   ROLE_COUNTS,
+  ROLE_TARGETS_MEASURED,
   SHOPPING,
   SET_CELLS,
   SET_HEAD,
@@ -578,7 +579,7 @@ function CardDetailFigure({ width }: { width: AboutWidth }) {
 }
 
 /**
- * The four roles a deck is measured on, each against its own baseline — which
+ * The four roles a deck is measured on, each against what this commander's decks run — which
  * is what the entry is about: a short role is the one thing on the page that
  * names what to do next, and the fixture is short on wipes alone so the figure
  * teaches one gap rather than a list of them.
@@ -589,14 +590,14 @@ function RoleCoverageFigure({ width }: { width: AboutWidth }) {
       {/* The commander page's own group heads (`RoleGroupHeader`), one per role, in the form the
           page draws at narrow widths: this is an inset, about 250px of content from 1000px up, and
           the desktop head is one unwrapping row sized for the page's full column. Wipes is the
-          entry's subject: 1 owned, 2 short of the baseline, is what to fix before you build. */}
+          entry's subject: 1 owned, 2 short of the 3 its decks run, is what to fix before you build. */}
       <div className="flex flex-col gap-[10px]">
         {(Object.keys(ROLE_COUNTS) as (keyof typeof ROLE_COUNTS)[]).map((role) => (
           <div
             key={role}
             className="rounded-[10px] border border-solid border-[color:var(--border)] px-[14px] py-[11px]"
           >
-            <RoleGroupHeader layout="phone" role={role} count={ROLE_COUNTS[role]} listId={`about-role-${role}`} />
+            <RoleGroupHeader layout="phone" role={role} count={ROLE_COUNTS[role]} targets={ROLE_TARGETS_MEASURED} listId={`about-role-${role}`} />
           </div>
         ))}
       </div>
