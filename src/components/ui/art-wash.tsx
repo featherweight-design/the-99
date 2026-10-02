@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import { cssUrl } from "../../lib/collection/browse";
 import { commanderGradient } from "../../lib/collection/gradients";
+import { NearViewportArt } from "./art-wash-near";
 
 const tint = (token: string, pct: number) =>
   `color-mix(in oklab, var(${token}) ${pct}%, transparent)`;
@@ -237,6 +238,10 @@ const portrait = (
 type ArtProps = {
   artCropUri: string | null;
   colorIdentity: string[];
+  /** Ask for the crop only after hydration, once the band nears the viewport. A list sets it on
+      every row below its first screen: on the slow profile, /discover's eager crops held its
+      hydration at 14.2s at 390, and deferring all but the first five rows brought it to 6.8s. */
+  deferArt?: boolean;
 };
 
 export type ArtWashProps = ArtProps &
@@ -326,7 +331,21 @@ export function ArtWash(props: ArtWashProps) {
             style={{ ...reducible(1, false), background: commanderGradient(colorIdentity) }}
           />
         )}
-        {artCropUri ? (
+        {artCropUri && props.deferArt ? (
+          <NearViewportArt
+            uri={cssUrl(artCropUri)}
+            className="art-wash-art absolute inset-y-0 left-0"
+            style={{
+              ...reducible(p.sharpOpacity, true),
+              width: `${p.width}px`,
+              backgroundSize: p.size,
+              backgroundPosition: p.position,
+              backgroundRepeat: "no-repeat",
+              maskImage: p.mask,
+              WebkitMaskImage: p.mask,
+            }}
+          />
+        ) : artCropUri ? (
           <div
             className="art-wash-art absolute inset-y-0 left-0"
             style={{
