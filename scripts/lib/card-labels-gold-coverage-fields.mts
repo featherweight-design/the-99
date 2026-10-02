@@ -263,12 +263,14 @@ export const COVERAGE_FIELDS: GoldRow[] = [
   {
     name: "Deathrite Shaman", klass: "affectsByJob",
     jobs: [
-      j("theme", "graveyardHate", { af: "opponents", tr: "activated" }),
+      j("theme", "graveyardHate", { rt: "land", af: "opponents", tr: "activated" }),
+      j("theme", "graveyardHate", { rt: "instant or sorcery", af: "opponents", tr: "activated" }),
+      j("theme", "graveyardHate", { rt: "creature", af: "opponents", tr: "activated" }),
       j("role", "ramp", { rk: "tapsForMana", af: "self", tr: "activated" }),
       j("theme", "drain", { af: "opponents", tr: "activated" }),
       j("theme", "lifegain", { af: "self", tr: "activated" }),
     ],
-    why: "All three abilities exile from 'a graveyard', any player's: graveyardHate, opponents by the by-job rule. The first taps for mana (tapsForMana, judgement: it needs a land card in some graveyard), the second makes each opponent lose 2 (drain), the third gains you 2. Three separate abilities, not modal.",
+    why: "All three abilities exile from 'a graveyard', any player's: graveyardHate, opponents by the by-job rule. The first taps for mana (tapsForMana, judgement: it needs a land card in some graveyard), the second makes each opponent lose 2 (drain), the third gains you 2. Three separate abilities, not modal, so three graveyardHate jobs, each restricted to the card type it exiles.",
   },
   {
     name: "Clone", klass: "affectsByJob",

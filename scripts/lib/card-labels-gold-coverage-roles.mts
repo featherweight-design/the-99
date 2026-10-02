@@ -204,7 +204,7 @@ export const COVERAGE_ROLES: GoldRow[] = [
   },
   {
     name: "Conclave Tribunal", klass: "removal",
-    jobs: [j("role", "removal", { rt: "nonland permanent", af: "opponents", meth: "exile", tr: "etb", ...once })],
+    jobs: [j("role", "removal", { rt: "permanent", af: "opponents", meth: "exile", tr: "etb", ...once })],
     why: "Exile removal on an ETB, and also a costReduction HARD NEGATIVE: convoke lowers only its OWN cost, which the definition says is not ramp. The text names 'an opponent controls', so affects is opponents by the card as well as by the ruling.",
   },
 

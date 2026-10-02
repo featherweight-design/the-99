@@ -43,8 +43,33 @@ const pointsAtOpponents = (j: Job) => j.affects === "opponents" || j.affects ===
 export function relevant(job: Job, deck: DeckLens | null, isCreatureType: (w: string) => boolean): boolean {
   const r = job.restrictedTo;
   if (r === null || pointsAtOpponents(job)) return true;
+  return alternatives(r).some((a) => relevantTo(a, deck, isCreatureType));
+}
+
+/**
+ * A creature type, including one of more than one word ("Time Lord"): the catalog's type list is read off
+ * the type line word by word (`loadCreatureTypes`), so a multi-word type is known by its words.
+ */
+const isCreatureTypeName = (w: string, isCreatureType: (w: string) => boolean) =>
+  typeWords(w).every((t) => isCreatureType(t));
+
+/**
+ * A type's words, exactly as printed ("Assembly-Worker", "Time Lord"): the prompt asks for the type as the
+ * card prints it, and the catalog's list holds it that way, so no case is changed here.
+ */
+const typeWords = (w: string) => w.trim().split(/\s+/);
+
+/**
+ * A restriction's alternatives: the prompt joins two types with "or" ("Dwarf or Vehicle"), and the
+ * job reaches either, so each is read on its own.
+ */
+const alternatives = (r: string) => r.split(/\s+or\s+/i).map((a) => a.trim()).filter(Boolean);
+
+function relevantTo(r: string, deck: DeckLens | null, isCreatureType: (w: string) => boolean): boolean {
   if (CARD_TYPES.has(cardType(r))) return deck !== null && deck.heldTypes.has(cardType(r));
-  if (isCreatureType(r)) return deck !== null && deck.keyType === r;
+  // A deck's key type is read word by word too (`keyCreatureType`), so "Time Lord" is the key of a deck
+  // keyed on either of its words.
+  if (isCreatureTypeName(r, isCreatureType)) return deck !== null && deck.keyType !== null && typeWords(r).includes(deck.keyType);
   if (deck !== null && deck.isSubtype(r)) return deck.held.has(r);
   return true;
 }
@@ -74,12 +99,40 @@ function jobsByKey(jobs: readonly Job[], deck: DeckLens | null, isCreatureType: 
   return out;
 }
 
+/**
+ * Which restrictions are BROADER than which: a stand-in's target may be broader than or equal to the
+ * original's, never narrower (#1146). Each entry says what one broad value covers besides itself. A
+ * permanent covers every permanent type and every subtype; a creature covers its creature types; a
+ * spell covers everything but a player. A player is its own branch, covering only itself. Any other
+ * value covers only itself.
+ */
+const NOT_PERMANENT = new Set(["player", "spell", "instant", "sorcery"]);
+const COVERS: Record<string, (narrow: string, isCreatureType: (w: string) => boolean) => boolean> = {
+  permanent: (n) => !NOT_PERMANENT.has(cardType(n)),
+  creature: (n, isCreatureType) => isCreatureTypeName(n, isCreatureType),
+  spell: (n) => cardType(n) !== "player",
+};
+
+/** Whether a restriction alternative `broad` reaches everything `narrow` does. */
+export function covers(broad: string, narrow: string, isCreatureType: (w: string) => boolean): boolean {
+  const b = cardType(broad), n = cardType(narrow);
+  // Card types and the broad words compare without case, as printed type lines vary ("Artifact"); a
+  // creature type or subtype compares exactly as printed, the way the catalog holds it.
+  const keyword = (w: string) => CARD_TYPES.has(w) || w in COVERS || NOT_PERMANENT.has(w);
+  const same = keyword(b) && keyword(n) ? b === n : broad.trim() === narrow.trim();
+  return same || (COVERS[b]?.(narrow.trim(), isCreatureType) ?? false);
+}
+
 /** The GATES: a mismatch means the candidate's job does not keep the original's. */
-function passes(orig: Job, cand: Job): boolean {
+function passes(orig: Job, cand: Job, isCreatureType: (w: string) => boolean): boolean {
   if ((orig.affects ?? null) !== (cand.affects ?? null)) return false;
   if (orig.to !== null && cand.to !== null && orig.to !== cand.to) return false;
-  if (pointsAtOpponents(orig) && cand.restrictedTo !== null
-    && cand.restrictedTo.toLowerCase() !== (orig.restrictedTo ?? "").toLowerCase()) return false;
+  if (pointsAtOpponents(orig) && cand.restrictedTo !== null) {
+    // Never narrower: every alternative the original reaches, some alternative of the stand-in covers.
+    const reach = alternatives(cand.restrictedTo);
+    if (orig.restrictedTo === null
+      || !alternatives(orig.restrictedTo).every((n) => reach.some((b) => covers(b, n, isCreatureType)))) return false;
+  }
   return true;
 }
 
@@ -118,7 +171,7 @@ export function matchLabels(
   for (const [key, origJobs] of orig) {
     // EVERY pair that passes the gates, not one best pair: a key can carry several jobs (a card that both
     // destroys and exiles), and the row has to say what the candidate keeps across all of them.
-    const pairs = origJobs.flatMap((o) => (cand.get(key) ?? []).filter((c) => passes(o, c)).map((c) => ({ o, c })));
+    const pairs = origJobs.flatMap((o) => (cand.get(key) ?? []).filter((c) => passes(o, c, isCreatureType)).map((c) => ({ o, c })));
     if (pairs.length === 0) { missing.push(refOf(key)); continue; }
     shared.push(refOf(key));
     // A permanent answer the original gives is lost when no kept candidate job gives the same one. A candidate

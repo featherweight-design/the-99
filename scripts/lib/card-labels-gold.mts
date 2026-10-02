@@ -138,7 +138,7 @@ const AUDITED: GoldRow[] = [
     name: "Omnath, Locus of the Roil", klass: "restrictedCounter",
     jobs: [
       j("theme", "counters", { rt: "Elemental", af: "self", tr: "landfall" }),
-      j("theme", "landfall", { af: "self" }),
+      j("theme", "landfall", { af: "self", tr: "landfall" }),
       j("role", "removal", { af: "opponents", meth: "shrink", tr: "etb", rec: "oneShot" }),
       j("role", "draw", { af: "self", tr: "landfall", th: { stat: "other", op: ">=", value: 8 } }),
       j("theme", "tribal", { rt: "Elemental", af: "self", tr: "landfall" }),
@@ -488,10 +488,9 @@ const AUDITED: GoldRow[] = [
   {
     name: "Hedge Whisperer", klass: "thresholds",
     jobs: [
-      j("theme", "pump", { rt: "land", af: "self", tr: "activated" }),
       j("theme", "haste", { rt: "land", af: "self", tr: "activated" }),
     ],
-    why: "A HARD NEGATIVE for ramp: it animates a land, adding no mana. Collect evidence 4 is a threshold on the graveyard the schema records nowhere. Task 4 re-audit: gains `haste` — the animated land has haste, which the first labelling missed.",
+    why: "A HARD NEGATIVE for ramp: it animates a land, adding no mana. Collect evidence 4 is a threshold on the graveyard the schema records nowhere. Task 4 re-audit: gains `haste` — the animated land has haste, which the first labelling missed. Re-sample review: `pump` removed, since setting a land's power and toughness is not +X/+X.",
   },
 
   // ---- modal: jobs that are ALTERNATIVES, never a sum -------------------------
@@ -510,7 +509,7 @@ const AUDITED: GoldRow[] = [
     jobs: [
       j("theme", "counters", { rt: "creature", af: "self", tr: "landfall", modal: true }),
       j("theme", "lifegain", { af: "self", tr: "landfall", modal: true }),
-      j("theme", "landfall", { af: "self" }),
+      j("theme", "landfall", { af: "self", tr: "landfall" }),
     ],
     why: "Modal on every landfall, so the choice recurs — modal and repeatable together, which is not a contradiction.",
   },
@@ -717,9 +716,8 @@ const AUDITED: GoldRow[] = [
     name: "Wandering Fumarole", klass: "lands",
     jobs: [
       j("role", "land", { af: "self" }),
-      j("theme", "pump", { rt: "land", af: "self", tr: "activated", rec: "oneShot" }),
     ],
-    why: "Animates itself. Not a creature job — the land becomes the creature.",
+    why: "Animates itself. Not a creature job: the land becomes the creature, and setting its power and toughness is not pump (re-sample review).",
   },
   {
     name: "Kjeldoran Outpost", klass: "lands",
@@ -861,7 +859,7 @@ const AUDITED: GoldRow[] = [
     name: "Earthbender Ascension", klass: "easy",
     jobs: [
       j("role", "ramp", { rk: "fetchesLand", rt: "land", af: "self", tr: "etb", rec: "oneShot" }),
-      j("theme", "landfall", { af: "self" }),
+      j("theme", "landfall", { af: "self", tr: "landfall" }),
       j("theme", "counters", { rt: "creature", af: "self", tr: "landfall", th: { stat: "counters", op: ">=", value: 4 } }),
       j("theme", "evasion", { rt: "creature", af: "self", tr: "landfall", rec: "oneShot" }),
     ],

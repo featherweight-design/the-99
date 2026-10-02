@@ -20,16 +20,20 @@ export const COVERAGE_THEMES: GoldRow[] = [
   // ---- graveyardHate ------------------------------------------------------------------------
   {
     name: "Rest in Peace", klass: "graveyardHate",
-    jobs: [j("theme", "graveyardHate", { af: "each" })],
-    why: "Exiles all graveyards on entry and replaces every trip to a graveyard with exile, for every player including you, so affects each. One standing job; the ETB clause is part of it rather than a separate oneShot.",
+    jobs: [
+      j("theme", "graveyardHate", { af: "each", tr: "etb", rec: "oneShot" }),
+      j("theme", "graveyardHate", { af: "each" }),
+    ],
+    why: "Exiles all graveyards on entry and replaces every trip to a graveyard with exile, for every player including you, so affects each. Two abilities, two jobs (each ability is its own job): the ETB exile, oneShot, and the standing replacement.",
   },
   {
     name: "Relic of Progenitus", klass: "graveyardHate",
     jobs: [
-      j("theme", "graveyardHate", { af: "each", tr: "activated" }),
+      j("theme", "graveyardHate", { af: "opponents", tr: "activated" }),
+      j("theme", "graveyardHate", { af: "each", tr: "activated", rec: "oneShot" }),
       j("role", "draw", { af: "self", tr: "activated", rec: "oneShot" }),
     ],
-    why: "Two graveyard-exile abilities: the tap one targets any player (repeatable), the sacrifice one exiles all graveyards. Affects each covers both. The draw rides on the one-shot exile-all.",
+    why: "Two graveyard-exile abilities: the tap one targets any player (repeatable), the sacrifice one exiles all graveyards. One job per ability: the tap targets a player (opponents by intent), the sacrifice hits every graveyard (each, oneShot). The draw rides on the one-shot exile-all.",
   },
   {
     name: "Tormod's Crypt", klass: "graveyardHate",
@@ -80,9 +84,10 @@ export const COVERAGE_THEMES: GoldRow[] = [
     name: "Soul-Guide Lantern", klass: "graveyardHate",
     jobs: [
       j("theme", "graveyardHate", { af: "opponents", tr: "etb", rec: "oneShot" }),
+      j("theme", "graveyardHate", { af: "opponents", tr: "activated", rec: "oneShot" }),
       j("role", "draw", { af: "self", tr: "activated", rec: "oneShot" }),
     ],
-    why: "ETB exiles one card from any graveyard, and it sacrifices to exile each OPPONENT'S graveyard; one job, affects opponents (judgement: the ETB can hit any graveyard). The third mode sacrifices it to draw. All oneShot: each mode costs the artifact.",
+    why: "ETB exiles one card from any graveyard, and it sacrifices to exile each OPPONENT'S graveyard; one job per ability, both opponents (judgement: the ETB can hit any graveyard). The third mode sacrifices it to draw. All oneShot: each mode costs the artifact.",
   },
   {
     name: "Faerie Macabre", klass: "graveyardHate",
@@ -451,8 +456,11 @@ export const COVERAGE_THEMES: GoldRow[] = [
   },
   {
     name: "Venerated Rotpriest", klass: "poison",
-    jobs: [j("theme", "poison", { af: "opponents" })],
-    why: "TOXIC 1 plus a target-opponent poison counter whenever your creature is targeted. One poison job covers both (judgement: the trigger is 'other', the keyword static).",
+    jobs: [
+      j("theme", "poison", { af: "opponents" }),
+      j("theme", "poison", { af: "opponents", tr: "other" }),
+    ],
+    why: "TOXIC 1, and a target-opponent poison counter whenever your creature is targeted: two abilities, so two poison jobs, the keyword static and the trigger 'other'.",
   },
   {
     name: "Bloated Contaminator", klass: "poison",
@@ -464,8 +472,11 @@ export const COVERAGE_THEMES: GoldRow[] = [
   },
   {
     name: "Ichor Rats", klass: "poison",
-    jobs: [j("theme", "poison", { af: "each" })],
-    why: "Infect, plus an ETB that gives EACH player a poison counter, you included. One poison job, affects each, which covers both clauses (judgement: the infect alone would be opponents).",
+    jobs: [
+      j("theme", "poison", { af: "opponents" }),
+      j("theme", "poison", { af: "each", tr: "etb", rec: "oneShot" }),
+    ],
+    why: "Infect, and an ETB that gives EACH player a poison counter, you included: two abilities, so two poison jobs. The infect is opponents; the ETB is each.",
   },
   {
     name: "Vishgraz, the Doomhive", klass: "poison",
@@ -605,9 +616,9 @@ export const COVERAGE_THEMES: GoldRow[] = [
     why: "Parallel Lives in white: twice the tokens.",
   },
   {
-    name: "Mana Reflection", klass: "doublers",
-    jobs: [j("theme", "doublers", { af: "self" }), j("role", "ramp", { rk: "multiplies", af: "self" })],
-    why: "Twice the mana: the doublers theme, and ramp of kind multiplies (d9's ruling of 2026-10-02), since it adds to mana your permanents already make.",
+    name: "Mana Reflection", klass: "doublersNeg",
+    jobs: [j("role", "ramp", { rk: "multiplies", rt: "permanent", af: "self" })],
+    why: "A HARD NEGATIVE for doublers (d9, 2026-10-02): twice the MANA is ramp of kind multiplies alone. doublers is for tokens, counters, damage or triggers, so a mana doubler never stands in for Doubling Season.",
   },
   {
     name: "Panharmonicon", klass: "doublers",
@@ -628,13 +639,12 @@ export const COVERAGE_THEMES: GoldRow[] = [
     why: "Death triggers fire an extra time: doublers. Lifelink for your creature tokens is lifegain. Judgement: NOT deathTrigger, because it does nothing itself when a creature dies; it multiplies cards that do.",
   },
   {
-    name: "Zendikar Resurgent", klass: "doublers",
+    name: "Zendikar Resurgent", klass: "doublersNeg",
     jobs: [
-      j("theme", "doublers", { af: "self" }),
-      j("role", "ramp", { rk: "multiplies", af: "self" }),
+      j("role", "ramp", { rk: "multiplies", rt: "land", af: "self" }),
       j("role", "draw", { af: "self", tr: "cast" }),
     ],
-    why: "Each land tapped for mana adds one more of that type: twice the mana from lands, ramp of kind multiplies as Mana Reflection. Draws on creature spells cast, which is an etbDraw NEAR-MISS (cast, not enters).",
+    why: "Each land tapped for mana adds one more of that type: twice the mana from lands, ramp of kind multiplies as Mana Reflection, and a HARD NEGATIVE for doublers: mana is multiplies alone (d9, 2026-10-02). Draws on creature spells cast, which is an etbDraw NEAR-MISS (cast, not enters).",
   },
   {
     name: "Hardened Scales", klass: "doublersNeg",
@@ -663,38 +673,38 @@ export const COVERAGE_THEMES: GoldRow[] = [
   // ---- fog ----------------------------------------------------------------------------------
   {
     name: "Holy Day", klass: "fog",
-    jobs: [j("theme", "fog", { af: "self", rec: "oneShot" })],
+    jobs: [j("theme", "fog", { af: "each", rec: "oneShot" })],
     why: "Fog in white, the colour-shift check. Also a HARD NEGATIVE for protection.",
   },
   {
     name: "Darkness", klass: "fog",
-    jobs: [j("theme", "fog", { af: "self", rec: "oneShot" })],
+    jobs: [j("theme", "fog", { af: "each", rec: "oneShot" })],
     why: "Fog in black, the colour-shift check again. Also a HARD NEGATIVE for protection.",
   },
   {
     name: "Moment's Peace", klass: "fog",
-    jobs: [j("theme", "fog", { af: "self", rec: "oneShot" })],
+    jobs: [j("theme", "fog", { af: "each", rec: "oneShot" })],
     why: "Fog with flashback: castable twice, oneShot per the flashback convention.",
   },
   {
     name: "Constant Mists", klass: "fog",
-    jobs: [j("theme", "fog", { af: "self" })],
+    jobs: [j("theme", "fog", { af: "each" })],
     why: "Fog with buyback (sacrifice a land): it returns to hand and can be cast every turn, so repeatable (judgement: buyback is unbounded where flashback is a second cast).",
   },
   {
     name: "Spore Frog", klass: "fog",
-    jobs: [j("theme", "fog", { af: "self", tr: "activated", rec: "oneShot" })],
+    jobs: [j("theme", "fog", { af: "each", tr: "activated", rec: "oneShot" })],
     why: "A fog on a creature that sacrifices itself: activated, oneShot.",
   },
   {
     name: "Tangle", klass: "fog",
-    jobs: [j("theme", "fog", { af: "self", rec: "oneShot" })],
+    jobs: [j("theme", "fog", { af: "each", rec: "oneShot" })],
     why: "Fog, and attackers don't untap next turn. Judgement: that rider is not stax, being one untap step for creatures that attacked.",
   },
   {
     name: "Dawn Charm", klass: "fog",
     jobs: [
-      j("theme", "fog", { af: "self", rec: "oneShot", modal: true }),
+      j("theme", "fog", { af: "each", rec: "oneShot", modal: true }),
       j("theme", "protection", { rt: "creature", af: "self", rec: "oneShot", modal: true }),
       j("role", "counterspell", { af: "opponents", rec: "oneShot", modal: true }),
     ],
@@ -730,7 +740,7 @@ export const COVERAGE_THEMES: GoldRow[] = [
   {
     name: "Respite", klass: "fog",
     jobs: [
-      j("theme", "fog", { af: "self", rec: "oneShot" }),
+      j("theme", "fog", { af: "each", rec: "oneShot" }),
       j("theme", "lifegain", { af: "self", rec: "oneShot" }),
     ],
     why: "Fog that also gains 1 life per attacking creature.",
@@ -832,8 +842,11 @@ export const COVERAGE_THEMES: GoldRow[] = [
   },
   {
     name: "Asceticism", klass: "protection",
-    jobs: [j("theme", "protection", { rt: "creature", af: "self" })],
-    why: "Team hexproof plus REGENERATE for {1}{G}: both protection forms, one job (judgement: the regenerate is activated, the hexproof static; recorded static).",
+    jobs: [
+      j("theme", "protection", { rt: "creature", af: "self" }),
+      j("theme", "protection", { rt: "creature", af: "self", tr: "activated" }),
+    ],
+    why: "Team hexproof, and REGENERATE for {1}{G}: two abilities, so two protection jobs, the hexproof static and the regenerate activated.",
   },
   {
     name: "Guardian of Faith", klass: "protection",
@@ -996,7 +1009,7 @@ export const COVERAGE_THEMES: GoldRow[] = [
   {
     name: "Tatyova, Benthic Druid", klass: "etbDrawNeg",
     jobs: [
-      j("theme", "landfall", { af: "self" }),
+      j("theme", "landfall", { af: "self", tr: "landfall" }),
       j("theme", "lifegain", { af: "self", tr: "landfall" }),
       j("role", "draw", { af: "self", tr: "landfall" }),
     ],
