@@ -1,3 +1,5 @@
+import type { JobKey } from "../swaps/stand-ins";
+
 /**
  * The swap tools' words (sub-project 4): cheaper stand-ins in Shopping, and Fits your decks.
  * Transcribed from the handoff's `swap-tools · copy strings.ts` (Design R4), one surface at a time as
@@ -144,12 +146,17 @@ export const swapToolsCopy = {
       finisher: "a finisher", castFree: "free casts", mill: "mill", sacOutlet: "a sacrifice outlet",
       deathTrigger: "death triggers", lifegain: "life gain", drain: "drain", spellslinger: "spells matter",
       landfall: "landfall", tribal: "tribal",
-    },
+      // Label-only kinds (the vocabulary plan's Task 3): only a labelled card can name one. Through /copy-review 2026-10-02.
+      tutor: "a tutor", counterspell: "a counterspell",
+      costReduction: "cheaper spells", extraLandDrop: "extra land drops", multiplies: "more mana",
+      graveyardHate: "graveyard hate", discard: "discard", stax: "stax", clones: "clones", theft: "theft",
+      poison: "poison", goad: "goad", doublers: "doublers", fog: "a fog",
+    } satisfies Record<JobKey | "ramp", string>,
     /**
      * Q3 (the run plan's Task 5, rule 6): the permanent answer a labelled stand-in does not keep, among a
      * row's `loses` ("keeps removal  loses exile"). Through /copy-review 2026-10-02.
      */
-    method: { destroy: "destroy", exile: "exile", bounce: "bounce", shrink: "shrink" },
+    method: { destroy: "destroy", exile: "exile", bounce: "bounce", shrink: "shrink", sacrifice: "sacrifice", bottom: "tuck" },
     /**
      * H3: what a stand-in for a utility land gives up, the ability named or counted. E2 (d9, 2026-09-26): it reads
      * `loses`, the spell rows' word, so both kinds of row share one vocabulary. Owed to /copy-review.

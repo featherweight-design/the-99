@@ -86,6 +86,13 @@ describe("labelInputHash", () => {
     });
   }
 
+  // The vocabulary plan's Task 3: the SYSTEM prompt is in the payload, so a widened vocabulary or a
+  // reworded definition marks every stored label stale rather than leaving it reading fresh.
+  it("changes when the SYSTEM prompt changes, and defaults to the shipped one", () => {
+    expect(labelInputHash(card, "m", `${SYSTEM}\n`)).not.toBe(labelInputHash(card, "m"));
+    expect(labelInputHash(card, "m", SYSTEM)).toBe(labelInputHash(card, "m"));
+  });
+
   // The model is in the payload so switching models relabels rather than silently mixing
   // two models' output in one table.
   it("changes when the model changes", () => {
@@ -134,7 +141,9 @@ describe("labelInputHash", () => {
   // `LABEL_PROMPT_VERSION` deleted from the payload entirely.
   it("reads the prompt version, and the documented payload is the real one", () => {
     const expected = createHash("sha256")
-      .update(JSON.stringify([card.oracleId, renderCard(card), LABEL_PROMPT_VERSION, "m"]))
+      .update(JSON.stringify([
+        card.oracleId, renderCard(card), LABEL_PROMPT_VERSION, "m", createHash("sha256").update(SYSTEM).digest("hex"),
+      ]))
       .digest("hex");
     expect(labelInputHash(card, "m")).toBe(expected);
   });

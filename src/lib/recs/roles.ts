@@ -15,6 +15,10 @@ const DRAW_PATTERNS = [/draw (a|one|two|three|four|x) cards?/];
 // Mass removal is its own role (design baseline 3); these patterns move OUT of
 // the removal set so a wrath doesn't inflate both chips.
 const WIPE_PATTERNS = [/destroy all/, /exile all/, /all creatures get [-−]\d/];
+// `counter target` stays in removal HERE, deliberately, while card labels separate a role
+// `counterspell` from removal (the vocabulary plan's Task 3; mirrored at the labels' SYSTEM prompt).
+// This classifier feeds ROLE_TARGETS, and removal's target of 8 was measured with counterspells
+// counted: taking them out here would move every deck's removal count under a bar set with them in.
 const REMOVAL_PATTERNS = [
   /destroy target/, /exile target/,
   /counter target/, /deals? \d+ damage to (any target|target creature)/,

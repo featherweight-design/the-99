@@ -22,6 +22,9 @@
 //
 // Revisit only if the instruction block grows past ~2,048 tokens AND batches are
 // submitted sequentially enough for reads to dominate -- BOTH conditions, not either.
+// The figures above are from the block BEFORE the vocabulary plan's Task 3, which grew it
+// to 10,177 characters; Task 6 re-measures its billed tokens. That may meet the first
+// condition. The second still fails, because batches are still submitted in parallel.
 // The breakpoint was left in place through the sample because it was free to leave;
 // it is removed now because "free to leave" stops being true the moment a 32,000-card
 // run multiplies the write premium by 2,650 batches.
@@ -37,6 +40,10 @@ import {
   AFFECTS, DESTINATIONS, METHODS, RAMP_KINDS, RECURRENCE, ROLES, THEMES, THRESHOLD_OPS, THRESHOLD_STATS, TRIGGERS,
 } from "./types";
 
+// `counterspell` is its own role here and is NOT removal, while the app's text classifier
+// (`REMOVAL_PATTERNS` in src/lib/recs/roles.ts) still counts `counter target` as removal. The
+// difference is deliberate, recorded on both sides: that classifier's removal target of 8 was
+// measured with counterspells counted, and a label can name the finer job without moving it.
 export const SYSTEM = `You label Magic: the Gathering cards with the JOBS they do and the LIMITS on each job.
 
 A job's KIND is only half the answer. The limits are the point: two cards can both
@@ -46,24 +53,67 @@ Treasure when it connects in combat is not a land that taps for mana every turn.
 Label the limits as carefully as the kind.
 
 ROLES (space "role"): ${ROLES.join(", ")}
-  ramp     — accelerates mana. NEVER label a land with ramp; a land's role is "land".
-  draw     — puts cards into your hand.
-  removal  — destroys, exiles, bounces or shrinks an opponent's permanent.
-  wipes    — hits ALL or most creatures at once.
-  land     — the card is a land.
+  ramp         — accelerates mana. NEVER label a land with ramp; a land's role
+                 is "land". A ritual (one-time mana from a spell) is ramp,
+                 rampKind burstMana.
+  draw         — puts cards into your hand from your library. Becoming the
+                 monarch is repeatable draw. A tutor is NOT draw.
+  removal      — takes an opponent's permanent away from them: destroys,
+                 exiles, bounces or shrinks it, or gains control of it.
+                 A counterspell, a tapper and hand attack are NOT removal.
+  wipes        — hits ALL or most creatures at once ("destroy all creatures",
+                 "destroy each creature", "all creatures get -3/-3").
+  land         — the card is a land. Its affects is self: a land makes your mana.
+  tutor        — searches your library for a card that is NOT a land. A search
+                 for a land is ramp (fetchesLand), never tutor.
+  counterspell — counters a spell or ability. Its affects is opponents.
 
 THEMES (space "theme"): ${THEMES.join(", ")}
-  counters — +1/+1 counters ONLY. A lore counter, a charge counter, a -1/-1
-             counter and a flying counter are NOT this theme.
-  pump     — gives creatures +X/+X, permanently or until end of turn.
-  haste, evasion (flying/trample/menace/unblockable), etbDraw, draw, tokens,
-  treasure, protection (hexproof/indestructible/ward/protection from),
-  recursion (from graveyard), blink, finisher, castFree (without paying its
-  mana cost), mill, sacOutlet (a repeatable outlet for OTHER permanents),
-  deathTrigger, lifegain, drain, spellslinger, landfall, tribal.
+  counters      — +1/+1 counters ONLY. A lore counter, a charge counter, a -1/-1
+                  counter and a flying counter are NOT this theme.
+  pump          — gives creatures +X/+X, permanently or until end of turn.
+  haste         — gives haste.
+  evasion       — flying, trample, menace, or can't be blocked.
+  etbDraw       — draws a card when a creature enters.
+  draw          — cares about drawing: rewards you for the cards you draw.
+  tokens        — creates creature tokens.
+  treasure      — creates Treasure tokens.
+  protection    — hexproof, shroud, indestructible, ward, protection from,
+                  regenerate, phasing out, and totem or umbra armor; and
+                  giving YOU hexproof or shroud.
+  recursion     — returns a card from a graveyard.
+  blink         — exiles a permanent and returns it.
+  finisher      — ends the game: a large attack, an extra combat, an extra turn,
+                  or a win-the-game clause.
+  castFree      — casts a spell without paying its mana cost.
+  mill          — puts cards from a library into a graveyard. Use affects to say
+                  whose library.
+  sacOutlet     — a repeatable way to sacrifice OTHER permanents.
+  deathTrigger  — does something when a creature dies.
+  lifegain      — gains you life.
+  drain         — damage or life loss aimed ONLY at opponents. A Shock, which can
+                  hit any target, is not drain.
+  spellslinger  — rewards casting instants and sorceries.
+  landfall      — does something when a land enters under your control.
+  tribal        — cares about one creature type.
+  graveyardHate — exiles cards from graveyards, or stops cards leaving them.
+  discard       — makes a player discard.
+  stax          — taxes or locks opponents: their spells cost more, their
+                  permanents don't untap, they can't cast or search. Mass land
+                  denial (destroy all lands, lands don't untap) is stax.
+  clones        — a permanent enters as a copy of another permanent. Making a
+                  TOKEN that is a copy is tokens, not clones.
+  theft         — gains control of an opponent's permanent or casts an
+                  opponent's card.
+  poison        — gives poison counters, or infect or toxic.
+  goad          — forces a creature to attack ("goad", "attacks each combat if
+                  able").
+  doublers      — DOUBLES what you get: twice the tokens, twice the counters,
+                  twice the mana, or an extra time for each trigger.
+  fog           — prevents combat damage for a turn. A fog is not protection.
 
 Use ONLY these names. Do not invent a job. If a card does something with no job
-in this list, say nothing about it.
+in this list, say nothing about it. Scry and surveil are NOT jobs.
 
 EVERY JOB CARRIES:
   space        "role" or "theme"
@@ -73,7 +123,16 @@ EVERY JOB CARRIES:
                  fetchesLand  — searches a land onto the battlefield or into hand
                  makesTreasure— creates a Treasure token
                  burstMana    — one-time mana from a source the cost consumes
-                                (sacrifice this creature/token/land for mana)
+                                (sacrifice this creature/token/land for mana),
+                                or a ritual spell
+                 costReduction— makes OTHER spells you cast cost less. A card
+                                that reduces only ITS OWN cost (affinity,
+                                improvise, convoke) is not ramp; casting a
+                                spell for nothing is castFree.
+                 extraLandDrop— lets you play additional lands each turn
+                 multiplies   — doubles or adds to mana you already make, or
+                                makes mana when something else happens
+                                (Mana Reflection, Nyxbloom Ancient, Waste Not)
                These match only themselves. A Treasure is never tapsForMana.
   restrictedTo the creature type or card type the effect is limited to, exactly
                as printed ("Wolf", "Dinosaur", "artifact", "land", "creature"),
@@ -89,6 +148,15 @@ EVERY JOB CARRIES:
                            creatures", "each player draws a card".
                null      = ONLY when the job points at no player at all,
                            which is rare.
+               By job, so the same job always answers the same way, unless
+               it does the same for EVERY player, which is each:
+                 self      = clones (the copy is yours), pump, protection,
+                             fog, recursion (even from any graveyard), a land.
+                 opponents = removal, counterspell, theft, graveyardHate.
+               "Target player" discards, mills or loses life: opponents,
+               unless the card plainly means you (a self-mill for value).
+               A steal that lasts only until end of turn is theft, not
+               removal.
                Mill and discard are where it matters most: "each opponent
                mills" is opponents, "mill three" of your own library is self.
   to           ONLY on a tutor or recursion job, where the card goes: one of
@@ -96,7 +164,10 @@ EVERY JOB CARRIES:
                battlefield is battlefield; to your hand is hand. Otherwise null.
   method       ONLY on a removal or wipes job, how it removes: one of
                ${METHODS.join(", ")} ("shrink" = -X/-X or damage). Returning a
-               permanent to its owner's hand is bounce. Otherwise null.
+               permanent to its owner's hand is bounce; making a player
+               sacrifice one (an edict) is sacrifice; putting it on the bottom
+               of its owner's library (a tuck) is bottom. Gaining control of a
+               permanent (theft) has no method: null. Otherwise null.
   trigger      one of: ${TRIGGERS.join(", ")}
                  "none" = static or on resolution; "activated" = a cost you
                  choose to pay; the rest are events you must wait for.
@@ -259,8 +330,16 @@ export const buildRequest = (customId: string, model: string, cards: CardForProm
  *
  * It is in `labelInputHash` below, so a bump marks every row stale and the next build
  * relabels — which costs a full run, and is therefore a deliberate act rather than a
- * side effect of editing a comment. Reword freely; bump when the INSTRUCTION changes.
+ * side effect of editing a comment.
+ *
+ * Since the vocabulary plan's Task 3 the SYSTEM prompt is hashed too, so this constant is
+ * no longer the only thing standing between a widened vocabulary and labels that predate it:
+ * ANY edit to `SYSTEM`, a reworded definition included, marks every row stale. That is the
+ * point (a label written against an older instruction is not the label a fresh call makes),
+ * and it means a SYSTEM edit is a full run's spend, decided rather than incidental. The
+ * version stays as the human-readable reason a run was owed.
  */
+// "3" is not needed for Task 3's vocabulary: SYSTEM is hashed now, and that change alone stales every row.
 // "2": every job now carries `affects`, `to` and `method` (the vocabulary plan's Task 2), so a row
 // labelled under "1" has none of them and must read stale rather than current.
 export const LABEL_PROMPT_VERSION = "2";
@@ -287,20 +366,24 @@ export const LABEL_PROMPT_VERSION = "2";
  *   direction: hashing both faces would mark a row stale whenever a back face changed
  *   without changing anything the label was derived from;
  * - the PROMPT VERSION and the MODEL, so switching either relabels rather than silently
- *   mixing two models' output in one table.
+ *   mixing two models' output in one table;
+ * - the SYSTEM prompt itself (the vocabulary plan's Task 3), because the vocabulary reached
+ *   the hash only through the hand-kept version: widening it without a bump left
+ *   old-vocabulary labels reading fresh, and `cardsNeedingLabels` would have skipped them.
  *
  * **The payload is derived from `renderCard`, not assembled beside it.** Anything
  * `renderCard` sends and this omits is a field a card can change under a fixed oracle id
  * while the row is still called fresh — so the two are pinned together by a test that
  * renders a card, mutates each sent field in turn, and requires the hash to move.
  */
-export function labelInputHash(card: CardForPrompt & { oracleId: string }, model: string): string {
+export function labelInputHash(card: CardForPrompt & { oracleId: string }, model: string, system: string = SYSTEM): string {
   const payload = JSON.stringify([
     card.oracleId,
     // EXACTLY the string the model is sent, so no sent field can be forgotten here.
     renderCard(card),
     LABEL_PROMPT_VERSION,
     model,
+    createHash("sha256").update(system).digest("hex"),
   ]);
   return createHash("sha256").update(payload).digest("hex");
 }

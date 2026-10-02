@@ -4,10 +4,10 @@
  * fresh label (Q1); every other pair is compared by text, exactly as before.
  */
 import type { DeckLens } from "../swaps/honest";
-import { ROLES, type Job, type Method } from "./types";
+import { ROLES, type Job, type LabelKey, type Method } from "./types";
 
 /** A job's identity for sharing: ramp by its kind (E1), every other job by its name. */
-export function keyOf(job: Job): string | null {
+export function keyOf(job: Job): LabelKey | "land" | null {
   if (job.space === "role" && job.kind === "ramp") return job.rampKind ?? null;
   return job.kind;
 }
@@ -54,10 +54,10 @@ export function relevant(job: Job, deck: DeckLens | null, isCreatureType: (w: st
  * (it draws you cards) and a theme (it rewards drawing), and the two are different jobs; keyed by the bare
  * name they merge, and a role draw is filed and worded as the theme.
  */
-export type JobRef = { space: "role" | "theme"; key: string };
+export type JobRef = { space: "role" | "theme"; key: LabelKey };
 const refOf = (id: string): JobRef => {
   const at = id.indexOf(":");
-  return { space: id.slice(0, at) as JobRef["space"], key: id.slice(at + 1) };
+  return { space: id.slice(0, at) as JobRef["space"], key: id.slice(at + 1) as LabelKey };
 };
 
 /** A card's jobs for this deck, by `space:key`. A Treasure maker's `treasure` theme is its ramp kind, named once. */
@@ -83,7 +83,8 @@ function passes(orig: Job, cand: Job): boolean {
   return true;
 }
 
-const PERMANENT_ANSWERS: readonly Method[] = ["destroy", "exile"];
+/** The answers that leave the permanent gone for good: a stand-in that keeps the removal but not one of these names it (Q3). */
+const PERMANENT_ANSWERS: readonly Method[] = ["destroy", "exile", "sacrifice", "bottom"];
 
 export type LabelMatch = {
   /** The original's jobs the candidate keeps. */
