@@ -47,6 +47,13 @@ export function relevant(job: Job, deck: DeckLens | null, isCreatureType: (w: st
 }
 
 /**
+ * A creature type, including one of more than one word ("Time Lord"): the catalog's type list is read off
+ * the type line word by word (`loadCreatureTypes`), so a multi-word type is known by its words.
+ */
+const isCreatureTypeName = (w: string, isCreatureType: (w: string) => boolean) =>
+  isCreatureType(w) || (/\s/.test(w) && w.split(/\s+/).every(isCreatureType));
+
+/**
  * A restriction's alternatives: the prompt joins two types with "or" ("Dwarf or Vehicle"), and the
  * job reaches either, so each is read on its own.
  */
@@ -54,7 +61,7 @@ const alternatives = (r: string) => r.split(/\s+or\s+/i).map((a) => a.trim()).fi
 
 function relevantTo(r: string, deck: DeckLens | null, isCreatureType: (w: string) => boolean): boolean {
   if (CARD_TYPES.has(cardType(r))) return deck !== null && deck.heldTypes.has(cardType(r));
-  if (isCreatureType(r)) return deck !== null && deck.keyType === r;
+  if (isCreatureTypeName(r, isCreatureType)) return deck !== null && deck.keyType === r;
   if (deck !== null && deck.isSubtype(r)) return deck.held.has(r);
   return true;
 }
@@ -93,15 +100,16 @@ function jobsByKey(jobs: readonly Job[], deck: DeckLens | null, isCreatureType: 
  */
 const NOT_PERMANENT = new Set(["player", "spell", "instant", "sorcery"]);
 const COVERS: Record<string, (narrow: string, isCreatureType: (w: string) => boolean) => boolean> = {
-  permanent: (n) => !NOT_PERMANENT.has(n),
-  creature: (n, isCreatureType) => isCreatureType(n) || isCreatureType(n.replace(/^./, (c) => c.toUpperCase())),
-  spell: (n) => n !== "player",
+  permanent: (n) => !NOT_PERMANENT.has(cardType(n)),
+  creature: (n, isCreatureType) => isCreatureTypeName(n, isCreatureType),
+  spell: (n) => cardType(n) !== "player",
 };
 
 /** Whether a restriction alternative `broad` reaches everything `narrow` does. */
 export function covers(broad: string, narrow: string, isCreatureType: (w: string) => boolean): boolean {
   const b = cardType(broad), n = cardType(narrow);
-  return b === n || (COVERS[b]?.(n, isCreatureType) ?? false);
+  // `narrow` goes to the entry as written: a creature type is read with its own case ("Time Lord").
+  return b === n || (COVERS[b]?.(narrow.trim(), isCreatureType) ?? false);
 }
 
 /** The GATES: a mismatch means the candidate's job does not keep the original's. */

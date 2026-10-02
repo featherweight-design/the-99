@@ -12,7 +12,7 @@ const job = (over: Record<string, unknown>): Job => ({
 const removal = (over: Record<string, unknown> = {}) => job({ space: "role", kind: "removal", method: "destroy", ...over });
 const draw = (over: Record<string, unknown> = {}) => job({ space: "role", kind: "draw", affects: "self", ...over });
 
-const TYPES = new Set(["Elf", "Goblin"]);
+const TYPES = new Set(["Elf", "Goblin", "Time", "Lord"]);
 const isType = (w: string) => TYPES.has(w);
 const lens = (over: Partial<DeckLens> = {}): DeckLens => ({
   keyType: "Elf", isSubtype: (w) => w === "Equipment" || w === "Aura", held: new Set(), heldTypes: new Set(["creature"]), ...over,
@@ -116,6 +116,8 @@ describe("matchLabels: the gates drop, the advice ranks", () => {
     expect(covers("permanent", "player", isType)).toBe(false);
     expect(covers("creature", "Elf", isType)).toBe(true);
     expect(covers("creature", "artifact", isType)).toBe(false);
+    expect(covers("creature", "Time Lord", isType)).toBe(true);
+    expect(covers("Creature", "Goblin", isType)).toBe(true);
     expect(covers("spell", "instant", isType)).toBe(true);
     expect(covers("spell", "player", isType)).toBe(false);
     expect(covers("player", "spell", isType)).toBe(false);

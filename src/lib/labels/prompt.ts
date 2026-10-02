@@ -66,7 +66,8 @@ ROLES (space "role"): ${ROLES.join(", ")}
                  A counterspell, a tapper and hand attack are NOT removal.
   wipes        — hits ALL or most creatures at once ("destroy all creatures",
                  "destroy each creature", "all creatures get -3/-3").
-  land         — the card is a land: its type line says Land, and ONLY then. A
+  land         — the card is a land: its FRONT face's type line says Land, and
+                 ONLY then. A spell whose back face is a land is not land. A
                  nonland permanent that adds mana is ramp. Affects self.
   tutor        — searches your library for a card that is NOT a land. A search
                  for a land is ramp (fetchesLand), never tutor.

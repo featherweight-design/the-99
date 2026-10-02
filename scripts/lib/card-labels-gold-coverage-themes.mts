@@ -617,7 +617,7 @@ export const COVERAGE_THEMES: GoldRow[] = [
   },
   {
     name: "Mana Reflection", klass: "doublersNeg",
-    jobs: [j("role", "ramp", { rk: "multiplies", af: "self" })],
+    jobs: [j("role", "ramp", { rk: "multiplies", rt: "permanent", af: "self" })],
     why: "A HARD NEGATIVE for doublers (d9, 2026-10-02): twice the MANA is ramp of kind multiplies alone. doublers is for tokens, counters, damage or triggers, so a mana doubler never stands in for Doubling Season.",
   },
   {
@@ -641,7 +641,7 @@ export const COVERAGE_THEMES: GoldRow[] = [
   {
     name: "Zendikar Resurgent", klass: "doublersNeg",
     jobs: [
-      j("role", "ramp", { rk: "multiplies", af: "self" }),
+      j("role", "ramp", { rk: "multiplies", rt: "land", af: "self" }),
       j("role", "draw", { af: "self", tr: "cast" }),
     ],
     why: "Each land tapped for mana adds one more of that type: twice the mana from lands, ramp of kind multiplies as Mana Reflection, and a HARD NEGATIVE for doublers: mana is multiplies alone (d9, 2026-10-02). Draws on creature spells cast, which is an etbDraw NEAR-MISS (cast, not enters).",

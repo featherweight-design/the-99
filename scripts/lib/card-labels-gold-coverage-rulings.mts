@@ -10,10 +10,10 @@ export const COVERAGE_RULINGS: GoldRow[] = [
   {
     name: "Nyxbloom Ancient", klass: "multiplies",
     jobs: [
-      j("role", "ramp", { rk: "multiplies", af: "self" }),
+      j("role", "ramp", { rk: "multiplies", rt: "permanent", af: "self" }),
       j("theme", "evasion", { rt: "creature", af: "self" }),
     ],
-    why: "Any permanent you tap for mana produces three times as much: multiplies mana you already make, unrestricted by type (rt null). Not doublers: mana is multiplies alone (d9, 2026-10-02). Trigger none: a static replacement. Trample on itself is evasion.",
+    why: "Any permanent you tap for mana produces three times as much: multiplies mana you already make, from a permanent tapped for mana (rt permanent). Not doublers: mana is multiplies alone (d9, 2026-10-02). Trigger none: a static replacement. Trample on itself is evasion.",
   },
   {
     name: "Mirari's Wake", klass: "multiplies",
