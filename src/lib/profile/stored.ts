@@ -276,6 +276,11 @@ export async function computeAndStoreProfile(
   // pending, the press answers from the store exactly as before.
   const isPress = !pinTo && !rebuildOf;
   const sameAnswer = row && row.profileVersion === PROFILE_VERSION && row.fingerprint === list;
+  // A COMMIT ONLY PINS A READING OF THE LIST IT WROTE (H32, Hugh's walk). When the stored reading
+  // describes another list, the commit leaves it stale and unpinned: computing here would re-analyze
+  // the new list behind the player's back and draw it fresh, so the banner offering the press never
+  // shows. The next press names this version through `versionHolding`.
+  if (pinTo && !sameAnswer) return null;
   // Behind the notices switch (Hugh's release ruling): off, a press keeps ruling 5 unamended.
   const dataMoved = Boolean(isPress && sameAnswer && row && noticesEnabled() && (await readingMoved({
     seenSeq: row.seenSeq,

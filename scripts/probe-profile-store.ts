@@ -287,6 +287,25 @@ async function run() {
     { computes, v: (await storedRow(deck.id))?.profile_version }, { computes: 6, v: PROFILE_VERSION - 1 });
   await computeAndStoreProfile(deck.id, USER, deps);
 
+  // 10c2 · A COMMIT OF A CHANGED LIST PINS NOTHING AND COMPUTES NOTHING (H32, Hugh's walk). The
+  // stored reading describes an older list (an edit since the last press), and the commit's pin
+  // must leave it stale and unpinned, so the banner offers the press, rather than quietly
+  // re-analyzing the new list and reading fresh.
+  {
+    await fixture.execute(sql`update deck_profiles set fingerprint = 'an-older-list', dirty = true, version_id = null
+      where deck_id = ${deck.id}::uuid`);
+    const { version: changed } = await commitVersion(deck.id, null);
+    const before = computes;
+    await pinAnalysisToVersion(deck.id, USER, { versionId: changed.id, list: listFingerprint(head) }, deps);
+    const after = await readStoredReading(deck.id, USER, deps);
+    check("a commit of a changed list computes nothing and pins nothing",
+      { computed: computes - before, pin: (await storedRow(deck.id))?.version_id ?? null },
+      { computed: 0, pin: null });
+    check("and the reading stays stale, so the banner offers the press", after?.fresh, false);
+    // Put the reading back as a press would, for the steps after this one.
+    await computeAndStoreProfile(deck.id, USER, deps);
+  }
+
   // 10d · ONLY THE NEWEST VERSION IS PINNED: an older commit's `after()` pin landing last is refused.
   const { version: v2 } = await commitVersion(deck.id, null);
   await pinAnalysisToVersion(deck.id, USER, { versionId: v2.id, list: listFingerprint(head) }, deps);
