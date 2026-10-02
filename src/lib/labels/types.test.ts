@@ -89,6 +89,30 @@ describe("Job encodes the space-to-kind relationship the validator enforces", ()
     expect(bad.kind).toBe("draw");
   });
 
+  it("allows `method` only on removal and wipes, and `to` only on recursion", () => {
+    const exile: Job = { space: "role", kind: "removal", ...limits, method: "exile" };
+    const regrowth: Job = { space: "theme", kind: "recursion", ...limits, to: "hand" };
+    expect([exile.method, regrowth.to]).toEqual(["exile", "hand"]);
+  });
+
+  it("rejects a `method` on a ramp job", () => {
+    // @ts-expect-error — the validator refuses `method on a ramp job`
+    const bad: Job = { space: "role", kind: "ramp", rampKind: "tapsForMana", ...limits, method: "exile" };
+    expect(bad.kind).toBe("ramp");
+  });
+
+  it("rejects a `to` on a removal job", () => {
+    // @ts-expect-error — the validator refuses `to on a removal job`
+    const bad: Job = { space: "role", kind: "removal", ...limits, to: "hand" };
+    expect(bad.kind).toBe("removal");
+  });
+
+  it("rejects a `method` on a theme other than its own kinds", () => {
+    // @ts-expect-error — no theme carries a method
+    const bad: Job = { space: "theme", kind: "tokens", ...limits, method: "destroy" };
+    expect(bad.kind).toBe("tokens");
+  });
+
   // An explicit null IS accepted off the ramp role, which is why those arms are `?: null`
   // rather than `?: never` — the first fix used `never` and would have rejected this.
   it("accepts an explicit null rampKind off the ramp role", () => {

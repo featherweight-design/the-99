@@ -109,11 +109,13 @@ export const DESTINATIONS = ["hand", "battlefield", "top"] as const;
 export const METHODS = ["destroy", "exile", "bounce", "shrink"] as const;
 
 /** The kinds that may carry a `to`. `tutor` is listed ahead of its arrival in `ROLES` (Task 3),
- *  so the rule needs no edit then; until then no job can carry it. */
-export const TO_KINDS: readonly string[] = ["recursion", "tutor"];
+ *  so neither the rule nor `Job` needs an edit then; until then no job can carry it. */
+const TO_KIND_LIST = ["recursion", "tutor"] as const;
+export const TO_KINDS: readonly string[] = TO_KIND_LIST;
 
 /** The kinds that may carry a `method`. */
-export const METHOD_KINDS: readonly string[] = ["removal", "wipes"];
+const METHOD_KIND_LIST = ["removal", "wipes"] as const;
+export const METHOD_KINDS: readonly string[] = METHOD_KIND_LIST;
 
 export type LabelRole = (typeof ROLES)[number];
 export type LabelTheme = (typeof THEMES)[number];
@@ -157,15 +159,27 @@ export type Threshold = { stat: ThresholdStat; op: ThresholdOp; value: number };
 type Limits = {
   restrictedTo: string | null;
   affects: Affects | null;
-  to: Destination | null;
-  method: Method | null;
   trigger: Trigger;
   recurrence: Recurrence;
   threshold: Threshold | null;
   modal: boolean;
 };
 
+/**
+ * One arm per kind, so `to` and `method` follow the kind as `validateJob` does: a value only on a kind in
+ * `TO_KINDS` / `METHOD_KINDS`, and `null` on every other. The same rule as `rampKind`, one field over: a
+ * ramp job carrying `method: "exile"` is a shape the wire contract calls invalid.
+ */
+type Arm<S extends Space, K extends string> = K extends unknown
+  ? Limits & {
+    space: S;
+    kind: K;
+    to: K extends (typeof TO_KIND_LIST)[number] ? Destination | null : null;
+    method: K extends (typeof METHOD_KIND_LIST)[number] ? Method | null : null;
+  }
+  : never;
+
 export type Job =
-  | (Limits & { space: "role"; kind: "ramp"; rampKind: RampKind | null })
-  | (Limits & { space: "role"; kind: Exclude<LabelRole, "ramp">; rampKind?: null })
-  | (Limits & { space: "theme"; kind: LabelTheme; rampKind?: null });
+  | (Arm<"role", "ramp"> & { rampKind: RampKind | null })
+  | (Arm<"role", Exclude<LabelRole, "ramp">> & { rampKind?: null })
+  | (Arm<"theme", LabelTheme> & { rampKind?: null });

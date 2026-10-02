@@ -22,13 +22,24 @@ const unionMembers = (file: string, decl: string) => {
   return [...src.slice(at, src.indexOf(";", at)).matchAll(/"([a-zA-Z]+)"/g)].map((m) => m[1]);
 };
 
+// The label owns its vocabulary (the vocabulary plan's Task 2): it may name a kind the app's text
+// reader does not (`tutor`, `counterspell`), but it must still carry every app member, in order.
+const appMembersOf = (labels: readonly string[], app: string[]) => labels.filter((k) => app.includes(k));
+
 describe("the label vocabulary is 2b's", () => {
-  it("matches Role in src/lib/recs/roles.ts, in order", () => {
-    expect(ROLES).toEqual(unionMembers("src/lib/recs/roles.ts", "export type Role ="));
+  it("carries every Role in src/lib/recs/roles.ts, in order, beside any label-only role", () => {
+    const app = unionMembers("src/lib/recs/roles.ts", "export type Role =");
+    expect(appMembersOf(ROLES, app)).toEqual(app);
   });
 
-  it("matches Theme in src/lib/recs/themes.ts, in order", () => {
-    expect(THEMES).toEqual(unionMembers("src/lib/recs/themes.ts", "export type Theme ="));
+  it("carries every Theme in src/lib/recs/themes.ts, in order, beside any label-only theme", () => {
+    const app = unionMembers("src/lib/recs/themes.ts", "export type Theme =");
+    expect(appMembersOf(THEMES, app)).toEqual(app);
+  });
+
+  it("would still pass with a label-only member added, and fails when an app member is dropped", () => {
+    expect(appMembersOf(["ramp", "tutor", "draw"], ["ramp", "draw"])).toEqual(["ramp", "draw"]);
+    expect(appMembersOf(["ramp"], ["ramp", "draw"])).not.toEqual(["ramp", "draw"]);
   });
 
   // `draw` is deliberately in both, which is why a job carries its space. If this
@@ -151,8 +162,10 @@ describe("jobKey", () => {
   // reanimation, a bounce and an exile are different jobs, and a key that dropped one would merge them.
   it("separates jobs that differ only in affects, to or method", () => {
     expect(jobKey({ ...base, affects: "self" })).not.toBe(jobKey({ ...base, affects: "opponents" }));
-    expect(jobKey({ ...base, to: "hand" })).not.toBe(jobKey({ ...base, to: "battlefield" }));
-    expect(jobKey({ ...base, method: "bounce" })).not.toBe(jobKey({ ...base, method: "exile" }));
+    const recursion = { ...base, space: "theme", kind: "recursion", rampKind: undefined } as const;
+    const removal = { ...base, space: "role", kind: "removal", rampKind: undefined } as const;
+    expect(jobKey({ ...recursion, to: "hand" })).not.toBe(jobKey({ ...recursion, to: "battlefield" }));
+    expect(jobKey({ ...removal, method: "bounce" })).not.toBe(jobKey({ ...removal, method: "exile" }));
     expect(jobKey({ ...base, affects: null })).not.toBe(jobKey({ ...base, affects: "each" }));
   });
 
