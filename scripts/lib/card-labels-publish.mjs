@@ -116,10 +116,10 @@ export function publishArtifacts(sources, publish) {
     const expected = [...models].sort();
     if (covered !== null && covered.sort().join(",") !== expected.join(",")) {
       throw new Error(
-        `${src} covers ${covered.join(", ") || "no models"} but the committed artifact is the ` +
-        `default run (${expected.join(", ")}). Refusing to publish: a subset run would replace ` +
-        `the baseline every figure in the report is cited against. Publish an opt-in model's ` +
-        `figures to their own dated path instead, as the Sonnet 5 sample did.`,
+        `${src} covers ${covered.join(", ") || "no models"} but the LABEL_PUBLISH=` +
+        `${process.env.LABEL_PUBLISH ?? "first"} set describes ${expected.join(", ")}. Refusing to ` +
+        `publish: a different model set would replace the artifact every figure cited from it rests ` +
+        `on. Publish another run's figures to its own declared path, as the Sonnet 5 sample did.`,
       );
     }
     return [src, dest];

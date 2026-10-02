@@ -42,6 +42,12 @@ describe("removal leaks", () => {
     expect(removalLeaks(labels, text)).toEqual({ counterspell: ["Counterspell"], discard: ["Thoughtseize"], tapper: ["Frost Breath"] });
   });
 
+  it("reads a tap with a number before its target, with no untap clause to lean on", () => {
+    for (const t of ["Tap two target creatures.", "Tap up to two target creatures. Draw a card."]) {
+      expect(removalLeaks({ x: [job("role", "removal")] }, { x: t }).tapper).toEqual(["x"]);
+    }
+  });
+
   it("does not call a card a tapper when it also removes", () => {
     const labels = { "Pulse of the Grid": [job("role", "removal")] };
     expect(removalLeaks(labels, { "Pulse of the Grid": "Tap target creature. It deals 2 damage to itself." }).tapper).toEqual([]);
