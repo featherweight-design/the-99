@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { FIELD_VALUES, fieldBars, jobBars, stops, VOCABULARY_KEYS } from "./card-labels-bars.mjs";
+import { FIELD_VALUES, fieldBars, jobBars, restrictionPair, stops, VOCABULARY_KEYS } from "./card-labels-bars.mjs";
 
 const perfect = Object.fromEntries(VOCABULARY_KEYS.map((k) => [k, { tp: 10, fp: 0, fn: 0 }]));
 
@@ -35,12 +35,9 @@ describe("the per-job bars", () => {
 
 describe("the per-field bars", () => {
   const every = (values: readonly string[]) => values.flatMap((v) => Array.from({ length: 10 }, () => [v, v] as [string, string]));
-  const clean = {
-    affects: every(FIELD_VALUES.affects),
-    to: every(FIELD_VALUES.to),
-    method: every(FIELD_VALUES.method),
-    rampKind: every(FIELD_VALUES.rampKind),
-  };
+  const clean = Object.fromEntries(
+    Object.entries(FIELD_VALUES).map(([f, values]) => [f, every(values)]),
+  ) as Record<keyof typeof FIELD_VALUES, [string, string][]>;
 
   it("pass when every value is measured and right", () => {
     expect(stops(fieldBars(clean))).toEqual([]);
@@ -65,6 +62,17 @@ describe("the per-field bars", () => {
     expect(stops(fieldBars({ ...clean, rampKind: confused }))).toEqual([
       "rampKind=tapsForMana: precision 0.714 recall 1 under 0.8 (10 cases)",
       "rampKind=multiplies: precision 1 recall 0.714 under 0.8 (14 cases)",
+    ]);
+  });
+
+  it("bar a restriction as present and right, compared without case as the matcher compares it", () => {
+    expect(restrictionPair("artifact", "Artifact")).toEqual(["restricted", "restricted"]);
+    expect(restrictionPair("Knight", "Elf")).toEqual(["restricted", "other"]);
+    expect(restrictionPair("none", "Elf")).toEqual(["none", "restricted"]);
+    expect(restrictionPair("Knight", "none")).toEqual(["restricted", "none"]);
+    const wrong = Array.from({ length: 4 }, () => restrictionPair("Knight", "Elf"));
+    expect(stops(fieldBars({ ...clean, restrictedTo: [...clean.restrictedTo, ...wrong] }))).toEqual([
+      "restrictedTo=restricted: precision 1 recall 0.714 under 0.8 (14 cases)",
     ]);
   });
 

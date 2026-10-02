@@ -22,7 +22,7 @@ import { frontFaceOracle } from "../src/lib/recs/faces";
 import { classifyRoles } from "../src/lib/recs/roles";
 import { loadCreatureTypes } from "../src/lib/swaps/gather";
 import { cardThemes } from "../src/lib/recs/themes";
-import { fieldBars, jobBars, stops, type Bar, type Field } from "./lib/card-labels-bars.mjs";
+import { FIELD_BARS, fieldBars, jobBars, restrictionPair, stops, type Bar, type Field } from "./lib/card-labels-bars.mjs";
 import { GOLD } from "./lib/card-labels-gold.mjs";
 import { bestPairing } from "./lib/card-labels-pairing.mjs";
 import { ALL_MODELS, MODELS } from "./lib/card-labels-pricing.mjs";
@@ -201,7 +201,7 @@ for (const [model, byCard] of Object.entries(predictions)) {
   let spurious = 0;
   let notReturned = 0;
   // The consumer-read fields' (gold, predicted) values on matched jobs, for their own per-value bars.
-  const fieldPairs: Record<Field, [string, string][]> = { affects: [], to: [], method: [], rampKind: [] };
+  const fieldPairs = Object.fromEntries(Object.keys(FIELD_BARS).map((f) => [f, []])) as unknown as Record<Field, [string, string][]>;
 
   for (const row of GOLD) {
     const predicted = byCard[row.name];
@@ -247,7 +247,7 @@ for (const [model, byCard] of Object.entries(predictions)) {
         if (f === "to" && !TO_KINDS.includes(g.kind)) continue;
         if (f === "method" && !METHOD_KINDS.includes(g.kind)) continue;
         const gv = limitValue(g as Job, f), pv = limitValue(p, f);
-        if (f === "affects" || f === "to" || f === "method" || f === "rampKind") fieldPairs[f].push([gv, pv]);
+        if (f in FIELD_BARS) fieldPairs[f as Field].push(f === "restrictedTo" ? restrictionPair(gv, pv) : [gv, pv]);
         const informative = gv !== DEFAULTS[f];
         if (gv === pv) { limits[f].right++; if (informative) limits[f].infRight++; }
         else {

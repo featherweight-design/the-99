@@ -339,7 +339,8 @@ describe("the gold set", () => {
       if (f === "rampKind") return x.kind === "ramp" && (x.rampKind ?? "none") === v;
       if (f === "to" && !TO_KINDS.includes(x.kind)) return false;
       if (f === "method" && !METHOD_KINDS.includes(x.kind)) return false;
-      return ((x as Record<string, unknown>)[f] ?? "none") === v;
+      if (f === "restrictedTo") return (x.restrictedTo == null ? "none" : "restricted") === v;
+      return String((x as Record<string, unknown>)[f] ?? "none") === v;
     });
     const unmeasured = [
       ...VOCABULARY_KEYS.filter((k) => !jobs.some((x) => `${x.space}:${x.kind}` === k)),

@@ -236,8 +236,8 @@ export const COVERAGE_THEMES: GoldRow[] = [
   },
   {
     name: "Goblin Electromancer", klass: "staxNeg",
-    jobs: [j("role", "ramp", { rk: "costReduction", rt: "instant", af: "self" })],
-    why: "A HARD NEGATIVE for stax: a cost CHANGE, but down and only for your own spells. Ramp costReduction; judgement: restrictedTo 'instant', the field holding one type where the card names instants and sorceries.",
+    jobs: [j("role", "ramp", { rk: "costReduction", rt: "instant or sorcery", af: "self" })],
+    why: "A HARD NEGATIVE for stax: a cost CHANGE, but down and only for your own spells. Ramp costReduction, restrictedTo 'instant or sorcery' as printed (the scope Spellseeker and Ral carry).",
   },
   {
     name: "Frost Titan", klass: "staxNeg",
@@ -554,7 +554,7 @@ export const COVERAGE_THEMES: GoldRow[] = [
       j("theme", "treasure", { af: "self", tr: "attacks" }),
       j("role", "ramp", { rk: "makesTreasure", af: "self", tr: "attacks" }),
     ],
-    why: "An Aura that goads and pumps the enchanted creature, cast on an opponent's (goad opponents by intent; pump null as it names no player). You get a Treasure whenever it attacks.",
+    why: "An Aura that goads and pumps the enchanted creature, cast on an opponent's (goad opponents by intent; pump self by the by-job rule). You get a Treasure whenever it attacks.",
   },
   {
     name: "Agitator Ant", klass: "goad",
@@ -828,7 +828,7 @@ export const COVERAGE_THEMES: GoldRow[] = [
       j("theme", "protection", { rt: "creature", af: "self" }),
       j("theme", "pump", { rt: "creature", af: "self" }),
     ],
-    why: "UMBRA ARMOR (totem armor), one of the definition's named forms, plus +1/+1. Enchant creature names no player, so null; first strike is no job.",
+    why: "UMBRA ARMOR (totem armor), one of the definition's named forms, plus +1/+1. Protection and pump are self by the by-job rule; first strike is no job.",
   },
   {
     name: "Asceticism", klass: "protection",
@@ -907,7 +907,7 @@ export const COVERAGE_THEMES: GoldRow[] = [
   {
     name: "Giant Growth", klass: "finisherNeg",
     jobs: [j("theme", "pump", { rt: "creature", af: "self", rec: "oneShot" })],
-    why: "A HARD NEGATIVE for finisher: +3/+3 on ONE creature. Target creature names no player, so null.",
+    why: "A HARD NEGATIVE for finisher: +3/+3 on ONE creature. Pump is self by the by-job rule.",
   },
   {
     name: "Fervor", klass: "finisherNeg",

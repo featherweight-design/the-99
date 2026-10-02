@@ -11,7 +11,7 @@
 //
 // A job or value with NO gold cases fails as unmeasured. A bar nothing can be scored against would pass by
 // being unmeasurable, which is the one way a bar is worse than no bar.
-import { AFFECTS, DESTINATIONS, METHODS, RAMP_KINDS, ROLES, THEMES } from "../../src/lib/labels/types.js";
+import { AFFECTS, DESTINATIONS, METHODS, RAMP_KINDS, RECURRENCE, ROLES, THEMES, TRIGGERS } from "../../src/lib/labels/types.js";
 
 export type Tally = { tp: number; fp: number; fn: number };
 
@@ -19,7 +19,11 @@ export const JOB_BAR = 0.8;
 export const TUTOR_BAR = 0.9;
 // `rampKind` is matching's gate 1 (a ramp job is kept only in its own kind), so it is barred like the
 // other consumer-read fields; at 0.8, the bar every job but tutor carries.
-export const FIELD_BARS = { affects: 0.9, to: 0.8, method: 0.8, rampKind: 0.8 } as const;
+// `restrictedTo` decides gate 4 and whether a job counts for the deck; `trigger` and `recurrence` rank the
+// advice; `modal` decides the credit. Each is read by the matcher, so each is barred at 0.8 too.
+export const FIELD_BARS = {
+  affects: 0.9, to: 0.8, method: 0.8, rampKind: 0.8, restrictedTo: 0.8, trigger: 0.8, recurrence: 0.8, modal: 0.8,
+} as const;
 export type Field = keyof typeof FIELD_BARS;
 
 /** Every job the vocabulary names, by the scorer's key (`space:kind`). */
@@ -32,7 +36,18 @@ export const VOCABULARY_KEYS: readonly string[] = [...ROLES.map((r) => `role:${r
  */
 export const FIELD_VALUES: Record<Field, readonly string[]> = {
   affects: AFFECTS, to: [...DESTINATIONS, "none"], method: [...METHODS, "none"], rampKind: RAMP_KINDS,
+  restrictedTo: ["restricted", "none"], trigger: TRIGGERS, recurrence: RECURRENCE, modal: ["true", "false"],
 };
+
+/**
+ * A restriction is free text, so it is barred as present-and-right rather than per string. Compared without
+ * case, as the matcher compares it. A restriction the model got wrong is a miss for `restricted` and lands on
+ * the unbarred `other`; one it invented where gold has none is a false positive for `restricted`.
+ */
+export function restrictionPair(gold: string, predicted: string): [string, string] {
+  if (gold === "none" || predicted === "none") return [gold === "none" ? "none" : "restricted", predicted === "none" ? "none" : "restricted"];
+  return ["restricted", gold.toLowerCase() === predicted.toLowerCase() ? "restricted" : "other"];
+}
 
 export type Bar = { key: string; bar: number; precision: number | null; recall: number | null; cases: number; pass: boolean };
 
