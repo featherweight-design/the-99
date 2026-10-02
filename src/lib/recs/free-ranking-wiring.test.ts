@@ -51,11 +51,16 @@ vi.mock("../edhrec/client", () => ({
 // Ruling D: the stored index is where the score's synergy comes from now.
 // The role-target read is its own module and not what these tests are about: every commander
 // answers the flat targets, as one with nothing measured does.
+// Flat by default. `measured` switches every commander to targets of 0, which meet every role,
+// so a case can see the loaded figure reach the score rather than the flat constants.
+const roleTargetMock = vi.hoisted(() => ({ measured: false }));
 vi.mock("../profile/role-targets", async () => {
   const { ROLE_TARGETS } = await vi.importActual<typeof import("./roles")>("./roles");
   return {
     loadRoleTargetsForCommanders: async (cs: { oracleId: string }[]) =>
-      new Map(cs.map((c) => [c.oracleId, { of: "flat", targets: { ...ROLE_TARGETS } }])),
+      new Map(cs.map((c) => [c.oracleId, roleTargetMock.measured
+        ? { of: "commander", targets: { ramp: 0, draw: 0, removal: 0, wipes: 0 } }
+        : { of: "flat", targets: { ...ROLE_TARGETS } }])),
   };
 });
 vi.mock("../edhrec/support-read", () => ({ loadSupportLists: async () => new Map() }));
@@ -114,6 +119,18 @@ describe("rankFree — wiring", () => {
   // The round-3 defect: a second, later read of the decks table could drop a
   // commander canonical still lists, so flipping a control that promises only to
   // rescore would make a row vanish.
+  it("scores free mode against the targets the reader loaded", async () => {
+    const flat = await rankFree("user-flat-targets", [item("korvold")]);
+    roleTargetMock.measured = true;
+    try {
+      const measured = await rankFree("user-measured-targets", [item("korvold")]);
+      expect(flat.ok && measured.ok).toBe(true);
+      expect(measured.items[0].fitRoles).toBeGreaterThan(flat.items[0].fitRoles);
+    } finally {
+      roleTargetMock.measured = false;
+    }
+  });
+
   it("returns exactly the canonical membership, never more and never less", async () => {
     const result = await rankFree("user-1", [item("korvold"), item("atraxa")]);
     expect(result.ok).toBe(true);

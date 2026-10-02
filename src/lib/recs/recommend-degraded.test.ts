@@ -40,11 +40,16 @@ const support = vi.hoisted(() => ({
 }));
 // The role-target read is its own module and not what these tests are about: every commander
 // answers the flat targets, as one with nothing measured does.
+// Flat by default. `measured` switches every commander to targets of 0, which meet every role,
+// so a case can see the loaded figure reach the score rather than the flat constants.
+const roleTargetMock = vi.hoisted(() => ({ measured: false }));
 vi.mock("../profile/role-targets", async () => {
   const { ROLE_TARGETS } = await vi.importActual<typeof import("./roles")>("./roles");
   return {
     loadRoleTargetsForCommanders: async (cs: { oracleId: string }[]) =>
-      new Map(cs.map((c) => [c.oracleId, { of: "flat", targets: { ...ROLE_TARGETS } }])),
+      new Map(cs.map((c) => [c.oracleId, roleTargetMock.measured
+        ? { of: "commander", targets: { ramp: 0, draw: 0, removal: 0, wipes: 0 } }
+        : { of: "flat", targets: { ...ROLE_TARGETS } }])),
   };
 });
 vi.mock("../edhrec/support-read", () => ({ loadSupportLists: async () => support.lists }));
@@ -121,6 +126,21 @@ describe("recommendCommanders — the degraded flag", () => {
         const { results, degraded } = await recommendCommanders("u4");
         expect(degraded).toBe(results.some((r) => r.synergyState === "degraded"));
       }
+    }
+  });
+});
+
+// The owned list's half of How it works §5.4a: every ranked row grades its roles against the
+// targets loaded for it, never the flat constants.
+describe("recommendCommanders — the role targets", () => {
+  it("scores each commander against the targets the reader loaded", async () => {
+    const flat = await recommendCommanders("u-targets-flat");
+    roleTargetMock.measured = true;
+    try {
+      const measured = await recommendCommanders("u-targets-measured");
+      expect(measured.results[0].fitRoles).toBeGreaterThan(flat.results[0].fitRoles);
+    } finally {
+      roleTargetMock.measured = false;
     }
   });
 });
