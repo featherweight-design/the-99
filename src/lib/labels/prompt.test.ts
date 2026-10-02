@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-import { buildRequest, labelInputHash, LABEL_PROMPT_VERSION, renderCard, SENDS_CACHE_BREAKPOINT } from "./prompt";
+import {
+  buildRequest, labelInputHash, LABEL_PROMPT_VERSION, renderCard, SENDS_CACHE_BREAKPOINT, SYSTEM, SYSTEM_TOKENS_BOUND,
+} from "./prompt";
 
 const card = {
   oracleId: "11111111-1111-4111-8111-111111111111",
@@ -48,6 +53,17 @@ describe("the request asks for no prompt caching", () => {
     const req = buildRequest("b-0", "claude-sonnet-4-5", [card]);
     const sends = req.params.system.some((b) => "cache_control" in b);
     expect(sends).toBe(SENDS_CACHE_BREAKPOINT);
+  });
+});
+
+describe("SYSTEM_TOKENS_BOUND", () => {
+  // The build's hard stop is booked on this. A figure under the block's length is no bound, and
+  // the build must read this one rather than keep a constant measured on an older block.
+  it("is at least one token per character, and is what the build books", () => {
+    expect(SYSTEM_TOKENS_BOUND).toBeGreaterThanOrEqual(SYSTEM.length);
+    // import.meta.url, not __dirname: Vitest runs tests as ESM.
+    const build = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../../scripts/build-card-labels.ts"), "utf8");
+    expect(build).toMatch(/const SYSTEM_TOKENS = SYSTEM_TOKENS_BOUND;/);
   });
 });
 
@@ -98,6 +114,17 @@ describe("labelInputHash", () => {
     const a = { ...card, layout: "split", oracle_text: "Fire deals 2\n//\nIce taps" };
     const b = { ...card, layout: "split", oracle_text: "Fire deals 2\n//\nIce draws" };
     expect(labelInputHash(a, "m")).not.toBe(labelInputHash(b, "m"));
+  });
+
+  // Version "2" is what makes every row labelled before `affects`, `to` and `method` existed read STALE.
+  // Recomputing the payload with the constant itself cannot see a revert to "1", so the literal is pinned
+  // and a row hashed under "1" is shown not to match.
+  it("is version 2, so a row hashed under version 1 reads stale", () => {
+    expect(LABEL_PROMPT_VERSION).toBe("2");
+    const underV1 = createHash("sha256")
+      .update(JSON.stringify([card.oracleId, renderCard(card), "1", "m"]))
+      .digest("hex");
+    expect(labelInputHash(card, "m")).not.toBe(underV1);
   });
 
   // The version has to be READ, not merely exported. A hash computed over a payload with

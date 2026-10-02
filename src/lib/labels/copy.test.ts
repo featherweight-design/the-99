@@ -5,7 +5,7 @@ import { labelInputHash } from "./prompt";
 import type { Job } from "./types";
 
 const JOB: Job = {
-  space: "role", kind: "ramp", rampKind: "tapsForMana", restrictedTo: null,
+  space: "role", kind: "ramp", rampKind: "tapsForMana", restrictedTo: null, affects: null, to: null, method: null,
   trigger: "none", recurrence: "repeatable", threshold: null, modal: false,
 };
 const row = (oracleId: string, inputHash: string): SourceLabel =>

@@ -22,13 +22,24 @@ const unionMembers = (file: string, decl: string) => {
   return [...src.slice(at, src.indexOf(";", at)).matchAll(/"([a-zA-Z]+)"/g)].map((m) => m[1]);
 };
 
+// The label owns its vocabulary (the vocabulary plan's Task 2): it may name a kind the app's text
+// reader does not (`tutor`, `counterspell`), but it must still carry every app member, in order.
+const appMembersOf = (labels: readonly string[], app: string[]) => labels.filter((k) => app.includes(k));
+
 describe("the label vocabulary is 2b's", () => {
-  it("matches Role in src/lib/recs/roles.ts, in order", () => {
-    expect(ROLES).toEqual(unionMembers("src/lib/recs/roles.ts", "export type Role ="));
+  it("carries every Role in src/lib/recs/roles.ts, in order, beside any label-only role", () => {
+    const app = unionMembers("src/lib/recs/roles.ts", "export type Role =");
+    expect(appMembersOf(ROLES, app)).toEqual(app);
   });
 
-  it("matches Theme in src/lib/recs/themes.ts, in order", () => {
-    expect(THEMES).toEqual(unionMembers("src/lib/recs/themes.ts", "export type Theme ="));
+  it("carries every Theme in src/lib/recs/themes.ts, in order, beside any label-only theme", () => {
+    const app = unionMembers("src/lib/recs/themes.ts", "export type Theme =");
+    expect(appMembersOf(THEMES, app)).toEqual(app);
+  });
+
+  it("would still pass with a label-only member added, and fails when an app member is dropped", () => {
+    expect(appMembersOf(["ramp", "tutor", "draw"], ["ramp", "draw"])).toEqual(["ramp", "draw"]);
+    expect(appMembersOf(["ramp"], ["ramp", "draw"])).not.toEqual(["ramp", "draw"]);
   });
 
   // `draw` is deliberately in both, which is why a job carries its space. If this
@@ -43,9 +54,35 @@ describe("the label vocabulary is 2b's", () => {
 describe("validateJob", () => {
   const warg = {
     space: "role" as const, kind: "ramp", rampKind: "makesTreasure",
-    restrictedTo: null, trigger: "combatDamage", recurrence: "oneShot",
+    restrictedTo: null, affects: null, to: null, method: null, trigger: "combatDamage", recurrence: "oneShot",
     threshold: null, modal: true,
   };
+
+  // `affects`, `to` and `method` (the vocabulary plan's Task 2) are REQUIRED and nullable, like
+  // `restrictedTo`: an omitted key is an unanswered question, and the consumer gates on two of them.
+  it("requires affects, to and method, and accepts null for each", () => {
+    for (const field of ["affects", "to", "method"] as const) {
+      const { [field]: _, ...missing } = warg;
+      expect(validateJob(missing).some((p) => p.startsWith(`${field} is missing`))).toBe(true);
+      expect(validateJob({ ...warg, [field]: null })).toEqual([]);
+      expect(validateJob({ ...warg, [field]: "sideways" })).toContain(`${field} "sideways"`);
+    }
+  });
+
+  it("accepts each value the consumer reads, on the jobs it belongs to", () => {
+    const recursion = { ...warg, space: "theme" as const, kind: "recursion", rampKind: undefined };
+    const removal = { ...warg, kind: "removal", rampKind: undefined };
+    for (const affects of ["self", "opponents", "each"]) expect(validateJob({ ...warg, affects })).toEqual([]);
+    for (const to of ["hand", "battlefield", "top"]) expect(validateJob({ ...recursion, to })).toEqual([]);
+    for (const method of ["destroy", "exile", "bounce", "shrink"]) expect(validateJob({ ...removal, method })).toEqual([]);
+  });
+
+  // As `rampKind` is ramp's alone: the consumer gates on `to`, so one on a draw job would refuse a
+  // stand-in for a reason the card does not have.
+  it("refuses a to or a method on a job that cannot carry one", () => {
+    expect(validateJob({ ...warg, to: "hand" })).toContain("to on a ramp job");
+    expect(validateJob({ ...warg, method: "exile" })).toContain("method on a ramp job");
+  });
 
   it("accepts the Bejeweled Warg ramp job", () => {
     expect(validateJob(warg)).toEqual([]);
@@ -97,7 +134,7 @@ describe("validateJob", () => {
 
 describe("jobKey", () => {
   const base: Job = {
-    space: "role", kind: "ramp", rampKind: "tapsForMana", restrictedTo: null,
+    space: "role", kind: "ramp", rampKind: "tapsForMana", restrictedTo: null, affects: null, to: null, method: null,
     trigger: "none", recurrence: "repeatable", threshold: null, modal: false,
   };
 
@@ -119,6 +156,17 @@ describe("jobKey", () => {
 
   it("is equal for two jobs that genuinely agree", () => {
     expect(jobKey(base)).toBe(jobKey({ ...base }));
+  });
+
+  // The three consumer fields are part of a job's identity: self-mill and opponent-mill, a regrowth and a
+  // reanimation, a bounce and an exile are different jobs, and a key that dropped one would merge them.
+  it("separates jobs that differ only in affects, to or method", () => {
+    expect(jobKey({ ...base, affects: "self" })).not.toBe(jobKey({ ...base, affects: "opponents" }));
+    const recursion = { ...base, space: "theme", kind: "recursion", rampKind: undefined } as const;
+    const removal = { ...base, space: "role", kind: "removal", rampKind: undefined } as const;
+    expect(jobKey({ ...recursion, to: "hand" })).not.toBe(jobKey({ ...recursion, to: "battlefield" }));
+    expect(jobKey({ ...removal, method: "bounce" })).not.toBe(jobKey({ ...removal, method: "exile" }));
+    expect(jobKey({ ...base, affects: null })).not.toBe(jobKey({ ...base, affects: "each" }));
   });
 
   // INJECTIVITY. The joined form rendered `restrictedTo: null` and the literal string "-"

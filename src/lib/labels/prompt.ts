@@ -33,7 +33,9 @@
 import { createHash } from "node:crypto";
 
 import { castFaceText } from "../cards/facet";
-import { RAMP_KINDS, RECURRENCE, ROLES, THEMES, THRESHOLD_OPS, THRESHOLD_STATS, TRIGGERS } from "./types";
+import {
+  AFFECTS, DESTINATIONS, METHODS, RAMP_KINDS, RECURRENCE, ROLES, THEMES, THRESHOLD_OPS, THRESHOLD_STATS, TRIGGERS,
+} from "./types";
 
 export const SYSTEM = `You label Magic: the Gathering cards with the JOBS they do and the LIMITS on each job.
 
@@ -76,6 +78,25 @@ EVERY JOB CARRIES:
   restrictedTo the creature type or card type the effect is limited to, exactly
                as printed ("Wolf", "Dinosaur", "artifact", "land", "creature"),
                or null when it applies to anything.
+  affects      whose cards, library, life or mana the job points at: one of
+               ${AFFECTS.join(", ")}, or null.
+               self      = yours: a mana rock or a Treasure you make, counters
+                           on your own creatures, cards you draw, your library.
+               opponents = an opponent's. EVERY removal job is opponents, even
+                           where the rules would let you target your own
+                           permanent: "destroy target creature" is opponents.
+               each      = every player, you included: "destroy all
+                           creatures", "each player draws a card".
+               null      = ONLY when the job points at no player at all,
+                           which is rare.
+               Mill and discard are where it matters most: "each opponent
+               mills" is opponents, "mill three" of your own library is self.
+  to           ONLY on a tutor or recursion job, where the card goes: one of
+               ${DESTINATIONS.join(", ")}. Returning a creature to the
+               battlefield is battlefield; to your hand is hand. Otherwise null.
+  method       ONLY on a removal or wipes job, how it removes: one of
+               ${METHODS.join(", ")} ("shrink" = -X/-X or damage). Returning a
+               permanent to its owner's hand is bounce. Otherwise null.
   trigger      one of: ${TRIGGERS.join(", ")}
                  "none" = static or on resolution; "activated" = a cost you
                  choose to pay; the rest are events you must wait for.
@@ -96,13 +117,23 @@ Return ONLY a JSON array, one object per card, in the order given. Every job
 object uses EXACTLY these keys, spelled this way — "space", not "role":
 
 [{"name":"Bejeweled Warg","jobs":[
-  {"space":"theme","kind":"counters","restrictedTo":"Wolf","trigger":"combatDamage","recurrence":"repeatable","threshold":null,"modal":true},
-  {"space":"role","kind":"ramp","rampKind":"makesTreasure","restrictedTo":null,"trigger":"combatDamage","recurrence":"repeatable","threshold":null,"modal":true}
+  {"space":"theme","kind":"counters","restrictedTo":"Wolf","affects":"self","to":null,"method":null,"trigger":"combatDamage","recurrence":"repeatable","threshold":null,"modal":true},
+  {"space":"role","kind":"ramp","rampKind":"makesTreasure","restrictedTo":null,"affects":"self","to":null,"method":null,"trigger":"combatDamage","recurrence":"repeatable","threshold":null,"modal":true}
 ]}]
 
 Omit "rampKind" entirely on any job that is not a role "ramp" job (a null is
 accepted there too).
 A card with no job in the vocabulary gets "jobs": []. No prose, no markdown fence.`;
+
+/**
+ * What the SYSTEM block can cost, in tokens, as a CEILING the build's hard stop is enforced against:
+ * ONE TOKEN PER CHARACTER, a provable upper bound since no tokenizer emits more tokens than the string
+ * has characters. The measured 1,215 billed tokens was for the block BEFORE Task 2 widened it, and a
+ * measurement of an older string is not a bound on this one. It overstates about fourfold, which only
+ * shrinks waves and pauses a run sooner; it can never let one spend past its cap. The vocabulary plan's
+ * Task 6 re-measures the billed count against a snapshot of SYSTEM and replaces this.
+ */
+export const SYSTEM_TOKENS_BOUND = SYSTEM.length;
 
 type CardForPrompt = {
   name: string; mana_cost: string | null; type_line: string;
@@ -230,7 +261,9 @@ export const buildRequest = (customId: string, model: string, cards: CardForProm
  * relabels — which costs a full run, and is therefore a deliberate act rather than a
  * side effect of editing a comment. Reword freely; bump when the INSTRUCTION changes.
  */
-export const LABEL_PROMPT_VERSION = "1";
+// "2": every job now carries `affects`, `to` and `method` (the vocabulary plan's Task 2), so a row
+// labelled under "1" has none of them and must read stale rather than current.
+export const LABEL_PROMPT_VERSION = "2";
 
 /**
  * Whether a stored label still describes its card, mirroring `proseInputHash`.

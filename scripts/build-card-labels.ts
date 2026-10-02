@@ -37,7 +37,7 @@ import {
   type Chunk,
 } from "../src/lib/labels/plan";
 import {
-  buildRequest, labelInputHash, LABEL_PROMPT_VERSION, MAX_TOKENS_PER_BATCH, renderBody,
+  buildRequest, labelInputHash, LABEL_PROMPT_VERSION, MAX_TOKENS_PER_BATCH, renderBody, SYSTEM_TOKENS_BOUND,
 } from "../src/lib/labels/prompt";
 // `CardRow` comes from the same module as the read that returns it — two structurally identical
 // row types drift, and the day one gains a field the other lacks the shared helper silently stops
@@ -489,8 +489,9 @@ async function submit(chunks: Chunk[]): Promise<void> {
  * This matters more than it looks: `waveSize` and `withinCap` bound Hugh's $55 hard stop on
  * these numbers, so a figure that is merely typical makes the bound merely typical too.
  *
- * `SYSTEM_TOKENS` is the block as BILLED (1,215), not as `SYSTEM.length / 4` estimates it
- * (1,084) — `prompt.ts` records both, and the billed one is the one the cap must respect.
+ * `SYSTEM_TOKENS` is `SYSTEM_TOKENS_BOUND`, one token per character of the block as it is NOW. It was
+ * the BILLED 1,215, measured on the block before the vocabulary plan's Task 2 widened it, and a
+ * measurement of an older string is no ceiling on a longer one. Task 6 re-measures it.
  *
  * `PER_CARD_TOKENS` is the MAXIMUM a commander-legal card renders to, measured over all 31,830
  * of them: 892 characters, so 223 tokens at four characters each. The mean is 51 and the 99th
@@ -498,7 +499,7 @@ async function submit(chunks: Chunk[]): Promise<void> {
  * of what the cap reserved for it. An average is the right basis for a projection and the wrong
  * one for a ceiling, and these two are ceilings.
  */
-const SYSTEM_TOKENS = 1215;
+const SYSTEM_TOKENS = SYSTEM_TOKENS_BOUND;
 /**
  * ONE TOKEN PER CHARACTER for the variable text, which is a provable upper bound rather than an
  * estimate: no tokenizer emits more tokens than the string has characters.
@@ -509,9 +510,8 @@ const SYSTEM_TOKENS = 1215;
  *
  * It costs almost nothing to be this conservative, which is why there is no argument for
  * precision here: input is a small share of the worst case, so over all 2,653 requests the
- * difference between 4 chars a token and 1 is $174.90 against $206.85. `SYSTEM_TOKENS` stays at
- * the MEASURED 1,215 because that block is a fixed string somebody billed, and a measurement of
- * the actual thing beats a bound over it.
+ * difference between 4 chars a token and 1 is $174.90 against $206.85. `SYSTEM_TOKENS` is the same
+ * kind of bound until Task 6 replaces it with a billed count measured on the current block.
  */
 const PER_CARD_TOKENS = 892;
 

@@ -26,7 +26,7 @@ describe("Job's fields are the wire format's fields", () => {
     // assertion blind to a reorder of `JOB_FIELDS` — which is explicitly the wire key
     // order, so a reorder is the one change it exists to catch.
     const job: Required<Job> = {
-      space: "role", kind: "ramp", rampKind: "tapsForMana", restrictedTo: null,
+      space: "role", kind: "ramp", rampKind: "tapsForMana", restrictedTo: null, affects: null, to: null, method: null,
       trigger: "none", recurrence: "oneShot", threshold: null, modal: false,
     };
     expect(Object.keys(job)).toEqual([...JOB_FIELDS]);
@@ -42,7 +42,7 @@ describe("Job's fields are the wire format's fields", () => {
  */
 describe("Job encodes the space-to-kind relationship the validator enforces", () => {
   const limits = {
-    restrictedTo: null, trigger: "none", recurrence: "oneShot", threshold: null, modal: false,
+    restrictedTo: null, affects: null, to: null, method: null, trigger: "none", recurrence: "oneShot", threshold: null, modal: false,
   } as const;
 
   it("accepts a role kind in role space and a theme kind in theme space", () => {
@@ -87,6 +87,30 @@ describe("Job encodes the space-to-kind relationship the validator enforces", ()
     // @ts-expect-error — the validator accepts only undefined or null off the ramp role
     const bad: Job = { space: "role", kind: "draw", rampKind: "tapsForMana", ...limits };
     expect(bad.kind).toBe("draw");
+  });
+
+  it("allows `method` only on removal and wipes, and `to` only on recursion", () => {
+    const exile: Job = { space: "role", kind: "removal", ...limits, method: "exile" };
+    const regrowth: Job = { space: "theme", kind: "recursion", ...limits, to: "hand" };
+    expect([exile.method, regrowth.to]).toEqual(["exile", "hand"]);
+  });
+
+  it("rejects a `method` on a ramp job", () => {
+    // @ts-expect-error — the validator refuses `method on a ramp job`
+    const bad: Job = { space: "role", kind: "ramp", rampKind: "tapsForMana", ...limits, method: "exile" };
+    expect(bad.kind).toBe("ramp");
+  });
+
+  it("rejects a `to` on a removal job", () => {
+    // @ts-expect-error — the validator refuses `to on a removal job`
+    const bad: Job = { space: "role", kind: "removal", ...limits, to: "hand" };
+    expect(bad.kind).toBe("removal");
+  });
+
+  it("rejects a `method` on a theme other than its own kinds", () => {
+    // @ts-expect-error — no theme carries a method
+    const bad: Job = { space: "theme", kind: "tokens", ...limits, method: "destroy" };
+    expect(bad.kind).toBe("tokens");
   });
 
   // An explicit null IS accepted off the ramp role, which is why those arms are `?: null`
