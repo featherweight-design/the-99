@@ -61,15 +61,16 @@ export function useNearViewport(ref: RefObject<Element | null>, enabled: boolean
 }
 
 /**
- * An <img> whose `src` is withheld until the page has hydrated AND the img has come within 600px
- * of the viewport, unless `eager`, which asks for it in the server HTML. Everything else passes
- * through, so a surface keeps its own box: before its source arrives the img still takes its size,
+ * An <img> whose `src` and `srcSet` are withheld until the page has hydrated AND the img has come
+ * within 600px of the viewport, unless `eager`, which asks for them in the server HTML. A `srcSet`
+ * left on the element would let the browser pick and fetch a candidate with no `src` at all, past
+ * both gates. Everything else passes through, so a surface keeps its own box: before its source arrives the img still takes its size,
  * and the ground behind it shows.
  */
-export function HydratedImg({ eager = false, src, alt = "", ...rest }: ImgHTMLAttributes<HTMLImageElement> & { eager?: boolean }) {
+export function HydratedImg({ eager = false, src, srcSet, alt = "", ...rest }: ImgHTMLAttributes<HTMLImageElement> & { eager?: boolean }) {
   const ref = useRef<HTMLImageElement | null>(null);
   const near = useNearViewport(ref, !eager);
   const show = eager || near;
   // eslint-disable-next-line @next/next/no-img-element -- card art is a remote Scryfall image drawn at the size the surface gives it
-  return <img ref={ref} alt={alt} src={show ? src : undefined} {...rest} />;
+  return <img ref={ref} alt={alt} src={show ? src : undefined} srcSet={show ? srcSet : undefined} {...rest} />;
 }

@@ -29,6 +29,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 const SRC = "https://cards.scryfall.io/art_crop/front/a/b/ab.jpg";
+const SRCSET = "https://cards.scryfall.io/large/front/a/b/ab.jpg 2x";
 
 describe("useHydrated", () => {
   function Probe() {
@@ -49,6 +50,15 @@ describe("HydratedImg", () => {
   it("asks for nothing in the server render unless it is eager", () => {
     expect(renderToString(<HydratedImg src={SRC} alt="" />)).not.toContain(SRC);
     expect(renderToString(<HydratedImg src={SRC} alt="" eager />)).toContain(SRC);
+  });
+
+  it("withholds a srcSet with its src, which the browser would otherwise fetch on its own", () => {
+    expect(renderToString(<HydratedImg src={SRC} srcSet={SRCSET} alt="" />)).not.toContain(SRCSET);
+    const { container } = render(<HydratedImg src={SRC} srcSet={SRCSET} alt="" />);
+    const img = container.querySelector("img")!;
+    expect(img.getAttribute("srcset")).toBeNull();
+    bringIntoView();
+    expect(img.getAttribute("srcset")).toBe(SRCSET);
   });
 
   it("asks for its art only once it nears the viewport, which no server render can be", () => {
