@@ -115,22 +115,21 @@ export function matchLabels(
   let plain = 0;
   let modal = 0;
   for (const [key, origJobs] of orig) {
-    let best: { o: Job; c: Job; cost: number } | null = null;
-    for (const o of origJobs) {
-      for (const c of cand.get(key) ?? []) {
-        if (!passes(o, c)) continue;
-        // A candidate with no method keeps no permanent answer either: null is a loss, never a match.
-        const methodLost = o.method !== null && PERMANENT_ANSWERS.includes(o.method) && c.method !== o.method;
-        const cost = Number(o.trigger !== c.trigger || o.recurrence !== c.recurrence) + Number(methodLost);
-        if (!best || cost < best.cost) best = { o, c, cost };
-      }
-    }
-    if (!best) { missing.push(refOf(key)); continue; }
+    // EVERY pair that passes the gates, not one best pair: a key can carry several jobs (a card that both
+    // destroys and exiles), and the row has to say what the candidate keeps across all of them.
+    const pairs = origJobs.flatMap((o) => (cand.get(key) ?? []).filter((c) => passes(o, c)).map((c) => ({ o, c })));
+    if (pairs.length === 0) { missing.push(refOf(key)); continue; }
     shared.push(refOf(key));
-    advisory += best.cost;
-    if (best.o.method !== null && PERMANENT_ANSWERS.includes(best.o.method) && best.c.method !== best.o.method
-      && !lostMethods.includes(best.o.method)) lostMethods.push(best.o.method);
-    if (best.c.modal) modal += 1; else plain += 1;
+    // A permanent answer the original gives is lost when no kept candidate job gives the same one. A candidate
+    // with no method keeps no permanent answer either: null is a loss, never a match.
+    const kept = new Set(pairs.map((p) => p.c.method));
+    const lost = [...new Set(pairs.map((p) => p.o.method))]
+      .filter((m): m is Method => m !== null && PERMANENT_ANSWERS.includes(m) && !kept.has(m));
+    for (const m of lost) if (!lostMethods.includes(m)) lostMethods.push(m);
+    const timing = Math.min(...pairs.map((p) => Number(p.o.trigger !== p.c.trigger || p.o.recurrence !== p.c.recurrence)));
+    advisory += timing + Number(lost.length > 0);
+    // Kept plainly if ANY passing candidate job is not a modal alternative, whatever order they are listed in.
+    if (pairs.some((p) => !p.c.modal)) plain += 1; else modal += 1;
   }
   const extra = [...cand.keys()].filter((k) => !orig.has(k)).map(refOf);
   return { shared, extra, missing, lostMethods, advisory, credit: plain + Math.min(1, modal) };

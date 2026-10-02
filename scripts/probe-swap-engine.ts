@@ -285,7 +285,7 @@ async function main() {
     .map((r) => r.oracle_id));
   if (labelled.has(vault.oracle_id)) throw new Error("Mana Vault already carries a label; section 10 seeds only unlabelled cards");
   const free = offRows.filter((s) => !labelled.has(s.card.oracleId));
-  if (free.length < 3) throw new Error(`Mana Vault has ${free.length} unlabelled non-staple stand-ins; section 10 needs 3`);
+  if (free.length < 2) throw new Error(`Mana Vault has ${free.length} unlabelled non-staple stand-ins; section 10 needs 2`);
   const [gated, gainer] = free;
   const rampJob = (rampKind: string): LabelJob => ({
     space: "role", kind: "ramp", rampKind, restrictedTo: null, affects: "self", to: null, method: null,
@@ -326,8 +326,9 @@ async function main() {
     !gainer.extra.includes("tokens") && gainedOn?.extra.includes("tokens") === true && gainedOn.shared.includes("tapsForMana"),
     `${gainer.card.name}: off [${gainer.extra.join(", ")}], on [${gainedOn?.extra.join(", ")}]`);
   const unlabelled = (r: StandIn[]) => r.filter((s) => !seeds.has(s.card.oracleId)).map((s) => `${s.card.oracleId}:${s.shared}:${s.extra}`);
+  // Non-empty: with no unlabelled row left, this would compare two empty lists and pass about nothing.
   check("labels: every unlabelled stand-in reads as the text path's (Q1)",
-    JSON.stringify(unlabelled(onRows).sort()) === JSON.stringify(unlabelled(all(offRead!)).sort()),
+    unlabelled(onRows).length > 0 && JSON.stringify(unlabelled(onRows).sort()) === JSON.stringify(unlabelled(all(offRead!)).sort()),
     `${unlabelled(onRows).length} unlabelled rows`);
 }
 

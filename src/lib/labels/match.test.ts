@@ -115,6 +115,20 @@ describe("matchLabels: the gates drop, the advice ranks", () => {
     expect(r.advisory).toBe(1);
   });
 
+  it("names every permanent answer the original gives that the candidate does not keep", () => {
+    const r = m([removal({ method: "destroy" }), removal({ method: "exile" })], [removal({ method: "destroy" })]);
+    expect(r.shared).toEqual(["removal"]);
+    expect(r.lostMethods).toEqual(["exile"]);
+    expect(r.advisory).toBe(1);
+  });
+
+  it("credits a key kept plainly whatever order the candidate lists its jobs in", () => {
+    const both = [removal({ modal: true }), removal()];
+    expect(m([removal()], both).credit).toBe(1);
+    expect(m([removal(), draw()], [...both, draw({ modal: true })]).credit).toBe(2);
+    expect(m([removal(), draw()], [...[...both].reverse(), draw({ modal: true })]).credit).toBe(2);
+  });
+
   it("prefers the candidate's job that keeps the method, when it has two", () => {
     const r = m([removal({ method: "exile" })], [removal({ method: "bounce" }), removal({ method: "exile" })]);
     expect(r.lostMethods).toEqual([]);
