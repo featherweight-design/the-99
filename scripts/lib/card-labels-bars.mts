@@ -42,20 +42,35 @@ export const FIELD_VALUES: Record<Field, readonly string[]> = {
 /**
  * The broad restrictions: "creature", "permanent", "spell", "player", or none. Every restriction affects
  * matching (the matcher's broader-or-equal lattice, `match.ts`), so all of `restrictedTo` is barred; the
- * scorer also REPORTS the narrower subset, a creature type, artifact, land or Vehicle, unbarred. Compared
- * without case, as the matcher does.
+ * scorer also REPORTS the narrower subset, a creature type, artifact, land or Vehicle, unbarred. These are
+ * keywords, so they are compared without case, as the matcher does.
  */
 export const NON_GATING: ReadonlySet<string> = new Set(["creature", "permanent", "spell", "player", "none"]);
 export const gates = (v: string) => !NON_GATING.has(v.toLowerCase());
 
+/** The restriction words the matcher reads without case: the card types and the broad words. */
+const KEYWORDS = new Set(["artifact", "battle", "creature", "enchantment", "instant", "kindred", "tribal", "land",
+  "planeswalker", "sorcery", "permanent", "spell", "player"]);
 /**
- * A restriction is free text, so it is barred as present-and-right rather than per string. Compared without
- * case, as the matcher compares it. A restriction the model got wrong is a miss for `restricted` and lands on
- * the unbarred `other`; one it invented where gold has none is a false positive for `restricted`.
+ * Whether two restrictions are the same as the matcher reads them (`covers` in `match.ts`): each "or"
+ * alternative a keyword compared without case, a creature type or subtype exactly as printed.
+ */
+function sameRestriction(gold: string, predicted: string): boolean {
+  const parts = (r: string) => r.split(/\s+or\s+/i).map((a) => a.trim());
+  const g = parts(gold), p = parts(predicted);
+  const same = (a: string, b: string) =>
+    KEYWORDS.has(a.toLowerCase()) && KEYWORDS.has(b.toLowerCase()) ? a.toLowerCase() === b.toLowerCase() : a === b;
+  return g.length === p.length && g.every((a) => p.some((b) => same(a, b)));
+}
+
+/**
+ * A restriction is free text, so it is barred as present-and-right rather than per string, and compared as
+ * the matcher compares it (`sameRestriction`). A restriction the model got wrong is a miss for `restricted`
+ * and lands on the unbarred `other`; one it invented where gold has none is a false positive for `restricted`.
  */
 export function restrictionPair(gold: string, predicted: string): [string, string] {
   if (gold === "none" || predicted === "none") return [gold === "none" ? "none" : "restricted", predicted === "none" ? "none" : "restricted"];
-  return ["restricted", gold.toLowerCase() === predicted.toLowerCase() ? "restricted" : "other"];
+  return ["restricted", sameRestriction(gold, predicted) ? "restricted" : "other"];
 }
 
 export type Bar = { key: string; bar: number; precision: number | null; recall: number | null; cases: number; pass: boolean };

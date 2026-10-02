@@ -68,6 +68,8 @@ describe("the per-field bars", () => {
   it("bar a restriction as present and right, compared without case as the matcher compares it", () => {
     expect(restrictionPair("artifact", "Artifact")).toEqual(["restricted", "restricted"]);
     expect(restrictionPair("Knight", "Elf")).toEqual(["restricted", "other"]);
+    expect(restrictionPair("Goblin", "goblin")).toEqual(["restricted", "other"]);
+    expect(restrictionPair("Dwarf or Vehicle", "Dwarf or Vehicle")).toEqual(["restricted", "restricted"]);
     expect(restrictionPair("none", "Elf")).toEqual(["none", "restricted"]);
     expect(restrictionPair("Knight", "none")).toEqual(["restricted", "none"]);
     const wrong = Array.from({ length: 4 }, () => restrictionPair("Knight", "Elf"));
