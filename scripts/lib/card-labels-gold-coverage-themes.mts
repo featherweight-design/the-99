@@ -335,7 +335,7 @@ export const COVERAGE_THEMES: GoldRow[] = [
       j("theme", "theft", { rt: "creature", af: "opponents", rec: "oneShot" }),
       j("role", "removal", { rt: "creature", af: "opponents", meth: null, rec: "oneShot" }),
     ],
-    why: "An Aura that steals the enchanted creature for good: theft, and removal with method null (control is none of the four methods), oneShot. It also untaps five lands on entry. Judgement: the untap is left unlabelled, since it refunds the cost rather than casting free or fitting a ramp kind cleanly (burstMana is the nearest); flagged.",
+    why: "An Aura that steals the enchanted creature for good: theft, and removal with method null (no method describes a change of control), oneShot. It also untaps five lands on entry. Judgement: the untap is left unlabelled, since it refunds the cost rather than casting free or fitting a ramp kind cleanly (burstMana is the nearest); flagged.",
   },
   {
     name: "Act of Treason", klass: "theft",
@@ -406,7 +406,7 @@ export const COVERAGE_THEMES: GoldRow[] = [
       j("theme", "theft", { rt: "creature", af: "opponents", rec: "oneShot" }),
       j("role", "removal", { rt: "creature", af: "opponents", meth: null, rec: "oneShot" }),
     ],
-    why: "Permanent control change: theft, and removal by the role's 'or gains control of it'. Method null, control being none of the four methods. oneShot (judgement): the Aura takes one creature, once.",
+    why: "Permanent control change: theft, and removal by the role's 'or gains control of it'. Method null, since no method describes a change of control. oneShot (judgement): the Aura takes one creature, once.",
   },
   {
     name: "Beacon of Unrest", klass: "theftNeg",
@@ -519,7 +519,7 @@ export const COVERAGE_THEMES: GoldRow[] = [
       j("theme", "goad", { af: "opponents", tr: "activated" }),
       j("theme", "pump", { rt: "creature", af: "self" }),
     ],
-    why: "Equipment that goads, attached to an opponent's creature for {1}. Judgement: +2/+0 is labelled pump with affects null, since it lands on whichever creature carries it.",
+    why: "Equipment that goads, attached to an opponent's creature for {1}. Judgement: +2/+0 is labelled pump, affects self by the by-job rule, though it lands on whichever creature carries it.",
   },
   {
     name: "Vengeful Ancestor", klass: "goad",

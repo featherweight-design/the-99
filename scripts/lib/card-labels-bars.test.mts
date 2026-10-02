@@ -41,10 +41,10 @@ describe("the per-field bars", () => {
   });
 
   it("charge a wrong value to both sides: a miss for the gold value, a false positive for the predicted one", () => {
-    const wrong = { ...clean, affects: [...clean.affects, ["self", "none"] as [string, string], ["self", "none"] as [string, string]] };
+    const wrong = { ...clean, affects: [...clean.affects, ["self", "each"] as [string, string], ["self", "each"] as [string, string]] };
     expect(stops(fieldBars(wrong))).toEqual([
       "affects=self: precision 1 recall 0.833 under 0.9 (12 cases)",
-      "affects=none: precision 0.833 recall 1 under 0.9 (10 cases)",
+      "affects=each: precision 0.833 recall 1 under 0.9 (10 cases)",
     ]);
   });
 

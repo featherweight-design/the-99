@@ -100,8 +100,8 @@ const AUDITED: GoldRow[] = [
   {
     name: "Stromkirk Bloodthief", klass: "restrictedCounter",
     jobs: [
-      j("theme", "counters", { rt: "Vampire", af: "self", tr: "upkeep" }),
-      j("theme", "tribal", { rt: "Vampire", af: "self", tr: "upkeep" }),
+      j("theme", "counters", { rt: "Vampire", af: "self", tr: "other" }),
+      j("theme", "tribal", { rt: "Vampire", af: "self", tr: "other" }),
     ],
     why: "Vampire-restricted, on a turn-based trigger with a further condition (an opponent lost life). Repeatable, once a turn at most. Task 4 re-audit: gains `tribal` (Vampire) under the new definition.",
   },
@@ -190,21 +190,21 @@ const AUDITED: GoldRow[] = [
     name: "Admiral Beckett Brass", klass: "tribalStatic",
     jobs: [
       j("theme", "pump", { rt: "Pirate", af: "self" }),
-      j("role", "removal", { rt: "permanent", af: "opponents", meth: null, tr: "upkeep" }),
-      j("theme", "theft", { rt: "permanent", af: "opponents", tr: "upkeep" }),
+      j("role", "removal", { rt: "permanent", af: "opponents", meth: null, tr: "other" }),
+      j("theme", "theft", { rt: "permanent", af: "opponents", tr: "other" }),
       j("theme", "tribal", { rt: "Pirate", af: "self" }),
     ],
-    why: "Pirate lord. The end-step theft needs THREE Pirates to have connected — a condition no text rule expresses, and closer to removal than anything else in the vocabulary. Task 4 re-audit: the removal now carries the new `theft` theme beside it (removal includes gaining control). Method null, a judgement: none of destroy/exile/bounce/shrink describes a steal. Gains `tribal` (Pirate).",
+    why: "Pirate lord. The end-step theft needs THREE Pirates to have connected — a condition no text rule expresses, and closer to removal than anything else in the vocabulary. Task 4 re-audit: the removal now carries the new `theft` theme beside it (removal includes gaining control). Method null, a judgement: no method describes a steal. Gains `tribal` (Pirate). Trigger `other`: the end step has no trigger value of its own.",
   },
   {
     name: "Liliana's Devotee", klass: "tribalStatic",
     jobs: [
       j("theme", "pump", { rt: "Zombie", af: "self" }),
-      j("theme", "tokens", { af: "self", tr: "upkeep" }),
+      j("theme", "tokens", { af: "self", tr: "other" }),
       j("theme", "tribal", { rt: "Zombie", af: "self" }),
-      j("theme", "deathTrigger", { af: "each", tr: "upkeep" }),
+      j("theme", "deathTrigger", { af: "each", tr: "other" }),
     ],
-    why: "Zombie lord, +1/+0 only. Token needs a creature to have died and {1}{B} paid. Task 4 re-audit: gains `tribal` (Zombie), and `deathTrigger` affects each — a judgement call, since it fires at end step IF any creature died rather than on the death itself.",
+    why: "Zombie lord, +1/+0 only. Token needs a creature to have died and {1}{B} paid. Task 4 re-audit: gains `tribal` (Zombie), and `deathTrigger` affects each — a judgement call, since it fires at end step IF any creature died rather than on the death itself. Trigger `other` for the end step.",
   },
   {
     name: "Sigarda, Heron's Grace", klass: "tribalStatic",
@@ -550,8 +550,8 @@ const AUDITED: GoldRow[] = [
   {
     name: "Sylvan Scavenging", klass: "modal",
     jobs: [
-      j("theme", "counters", { rt: "creature", af: "self", tr: "upkeep", modal: true }),
-      j("theme", "tokens", { af: "self", tr: "upkeep", modal: true, th: { stat: "power", op: ">=", value: 4 } }),
+      j("theme", "counters", { rt: "creature", af: "self", tr: "other", modal: true }),
+      j("theme", "tokens", { af: "self", tr: "other", modal: true, th: { stat: "power", op: ">=", value: 4 } }),
     ],
     why: "One mode carries its OWN threshold (a creature with power 4+) while the other does not — per-job limits, not per-card.",
   },

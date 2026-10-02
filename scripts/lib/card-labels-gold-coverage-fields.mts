@@ -11,8 +11,9 @@
 //   - `affects` on REMOVAL is `opponents` even where the rules let you target your own permanent,
 //     because removal is defined as taking an opponent's permanent. A wipe ("destroy all
 //     creatures") hits every player's, so it is `each`.
-//   - `null` is only for a job with no direction at all. Here that is a card taken from "a
-//     graveyard" (any player's) and a clone of "any creature on the battlefield".
+//   - `affects` is answered BY JOB (the prompt's rule): recursion and clones are `self` even from
+//     "a graveyard" or of "any creature", and graveyard hate is `opponents` even on "any graveyard".
+//     `null` is left for a job pointing at no player at all, and no row here needs it.
 //
 // A card's OWN dies-trigger is labelled by the job's `trigger: "dies"`, not by the deathTrigger
 // theme, which is kept for cards that care about OTHER creatures dying. Flashback and escape stay
@@ -67,7 +68,7 @@ export const COVERAGE_FIELDS: GoldRow[] = [
       j("theme", "clones", { rt: "creature", af: "self", tr: "etb", rec: "oneShot" }),
       j("theme", "counters", { af: "self", tr: "etb", rec: "oneShot" }),
     ],
-    why: "A clone limited to 'a creature or planeswalker YOU control', so affects self, against Clone's 'any creature' (null). rt 'creature' is a judgement: it may also copy a planeswalker, and the +1/+1 counter applies only when it copies a creature.",
+    why: "A clone limited to 'a creature or planeswalker YOU control', so affects self, the same answer Clone's 'any creature' gets by the by-job rule. rt 'creature' is a judgement: it may also copy a planeswalker, and the +1/+1 counter applies only when it copies a creature.",
   },
 
   // ---- affects: opponents ------------------------------------------------------
@@ -220,69 +221,69 @@ export const COVERAGE_FIELDS: GoldRow[] = [
     why: "A HARD NEGATIVE for drain. 'Each player loses a third of their life' includes you, and drain is life loss aimed ONLY at opponents, so it is not drain, against Gray Merchant and Kokusho. Menace is evasion; deathtouch is no job.",
   },
 
-  // ---- affects: null (no direction) --------------------------------------------
+  // ---- affects by job: 'a graveyard' and 'any creature' --------------------------
   {
-    name: "Reanimate", klass: "affectsNull",
+    name: "Reanimate", klass: "affectsByJob",
     jobs: [j("theme", "recursion", { rt: "creature", af: "self", dest: "battlefield", rec: "oneShot" })],
-    why: "Reanimation from 'a graveyard', ANY player's, so no direction: affects null (judgement: the definition reserves null for a job naming no player, and 'a graveyard' names none). Against Zombify's 'your graveyard' (self). The life loss is your own and no job.",
+    why: "Reanimation from 'a graveyard', ANY player's: recursion is self by the by-job rule, wherever the card comes from. The life loss is your own and no job.",
   },
   {
-    name: "Animate Dead", klass: "affectsNull",
+    name: "Animate Dead", klass: "affectsByJob",
     jobs: [j("theme", "recursion", { rt: "creature", af: "self", dest: "battlefield", tr: "etb", rec: "oneShot" })],
-    why: "Enchant 'creature card in a graveyard', any player's: reanimation with no direction, null (judgement, as Reanimate). The -1/-0 is no job.",
+    why: "Enchant 'creature card in a graveyard', any player's: reanimation, self by the by-job rule (as Reanimate). The -1/-0 is no job.",
   },
   {
-    name: "Necromancy", klass: "affectsNull",
+    name: "Necromancy", klass: "affectsByJob",
     jobs: [j("theme", "recursion", { rt: "creature", af: "self", dest: "battlefield", tr: "etb", rec: "oneShot" })],
-    why: "'Target creature card from a graveyard' onto the battlefield: reanimation, any graveyard, null (judgement, as Reanimate).",
+    why: "'Target creature card from a graveyard' onto the battlefield: reanimation from any graveyard, self by the by-job rule (as Reanimate).",
   },
   {
-    name: "Noxious Revival", klass: "affectsNull",
+    name: "Noxious Revival", klass: "affectsByJob",
     jobs: [j("theme", "recursion", { af: "self", dest: "top", rec: "oneShot" })],
-    why: "'Target card from a graveyard on top of its OWNER's library': recursion to top, from any graveyard, so null (judgement). Usually your own card, but it can as easily undo an opponent's dead creature; against Reclaim's 'your graveyard' (self).",
+    why: "'Target card from a graveyard on top of its OWNER's library': recursion to top, from any graveyard, self by the by-job rule. It can as easily undo an opponent's dead creature, which the rule deliberately does not split out.",
   },
   {
-    name: "Scavenging Ooze", klass: "affectsNull",
+    name: "Scavenging Ooze", klass: "affectsByJob",
     jobs: [
       j("theme", "graveyardHate", { af: "opponents", tr: "activated" }),
       j("theme", "counters", { af: "self", tr: "activated" }),
       j("theme", "lifegain", { af: "self", tr: "activated" }),
     ],
-    why: "'Exile target card from a graveyard', any graveyard: graveyardHate with no direction, null. The +1/+1 counter and the life are yours, conditional on a creature card.",
+    why: "'Exile target card from a graveyard', any graveyard: graveyardHate, opponents by the by-job rule. The +1/+1 counter and the life are yours, conditional on a creature card.",
   },
   {
-    name: "Cling to Dust", klass: "affectsNull",
+    name: "Cling to Dust", klass: "affectsByJob",
     jobs: [
       j("theme", "graveyardHate", { af: "opponents", rec: "oneShot" }),
       j("theme", "lifegain", { af: "self", rec: "oneShot" }),
       j("role", "draw", { af: "self", rec: "oneShot" }),
     ],
-    why: "Exile a card from any graveyard, null. Then gain 3 life OR draw a card depending on what it hit, a condition rather than a choice, so not modal (judgement). Escape makes it re-castable, kept oneShot per the flashback precedent.",
+    why: "Exile a card from any graveyard: graveyardHate, opponents by the by-job rule. Then gain 3 life OR draw a card depending on what it hit, a condition rather than a choice, so not modal (judgement). Escape makes it re-castable, kept oneShot per the flashback precedent.",
   },
   {
-    name: "Deathrite Shaman", klass: "affectsNull",
+    name: "Deathrite Shaman", klass: "affectsByJob",
     jobs: [
       j("theme", "graveyardHate", { af: "opponents", tr: "activated" }),
       j("role", "ramp", { rk: "tapsForMana", af: "self", tr: "activated" }),
       j("theme", "drain", { af: "opponents", tr: "activated" }),
       j("theme", "lifegain", { af: "self", tr: "activated" }),
     ],
-    why: "All three abilities exile from 'a graveyard', any player's: graveyardHate null. The first taps for mana (tapsForMana, judgement: it needs a land card in some graveyard), the second makes each opponent lose 2 (drain), the third gains you 2. Three separate abilities, not modal.",
+    why: "All three abilities exile from 'a graveyard', any player's: graveyardHate, opponents by the by-job rule. The first taps for mana (tapsForMana, judgement: it needs a land card in some graveyard), the second makes each opponent lose 2 (drain), the third gains you 2. Three separate abilities, not modal.",
   },
   {
-    name: "Clone", klass: "affectsNull",
+    name: "Clone", klass: "affectsByJob",
     jobs: [j("theme", "clones", { rt: "creature", af: "self", tr: "etb", rec: "oneShot" })],
-    why: "'A copy of ANY creature on the battlefield': yours or an opponent's, so no direction, null. Against Spark Double, which copies only your own (self).",
+    why: "'A copy of ANY creature on the battlefield', yours or an opponent's: clones, self by the by-job rule (the copy is yours). Spark Double, which copies only your own, answers the same.",
   },
   {
-    name: "Phantasmal Image", klass: "affectsNull",
+    name: "Phantasmal Image", klass: "affectsByJob",
     jobs: [j("theme", "clones", { rt: "creature", af: "self", tr: "etb", rec: "oneShot" })],
-    why: "Copies any creature on the battlefield: null, as Clone. The sacrifice-when-targeted drawback is no job.",
+    why: "Copies any creature on the battlefield: clones, self, as Clone. The sacrifice-when-targeted drawback is no job.",
   },
   {
-    name: "Phyrexian Metamorph", klass: "affectsNull",
+    name: "Phyrexian Metamorph", klass: "affectsByJob",
     jobs: [j("theme", "clones", { af: "self", tr: "etb", rec: "oneShot" })],
-    why: "Copies any artifact OR creature on the battlefield, either side: null. restrictedTo left null because it spans two types (judgement).",
+    why: "Copies any artifact OR creature on the battlefield, either side: clones, self, as Clone. restrictedTo left null because it spans two types (judgement).",
   },
 
   // ---- to: recursion -----------------------------------------------------------

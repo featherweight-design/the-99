@@ -192,7 +192,7 @@ export const COVERAGE_ROLES: GoldRow[] = [
       j("role", "removal", { rt: "creature", af: "opponents", meth: null }),
       j("theme", "theft", { rt: "creature", af: "opponents" }),
     ],
-    why: "THEFT as removal: the definition says gaining control of a permanent is removal. JUDGEMENT: METHODS has no 'gain control' value, so method is null (none of destroy, exile, bounce, shrink fits); recurrence repeatable because the Aura holds the creature for as long as it stays. Theft theme too.",
+    why: "THEFT as removal: the definition says gaining control of a permanent is removal. JUDGEMENT: METHODS has no 'gain control' value, so method is null (no method describes a change of control); recurrence repeatable because the Aura holds the creature for as long as it stays. Theft theme too.",
   },
   {
     name: "Confiscate", klass: "removal",

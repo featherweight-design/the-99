@@ -12,7 +12,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { jobKey, validateJob } from "../../src/lib/labels/schema.js";
-import { RAMP_KINDS, ROLES, THEMES, type Job } from "../../src/lib/labels/types.js";
+import { METHOD_KINDS, RAMP_KINDS, ROLES, THEMES, TO_KINDS, type Job } from "../../src/lib/labels/types.js";
 
 /** The union in the source file is the authority, not the RULES table beside it. */
 const unionMembers = (file: string, decl: string) => {
@@ -326,6 +326,26 @@ describe("the gold set", () => {
       return positives >= 8 && negatives >= 4 ? [] : [`${k}: ${positives} positives, ${negatives} hard negatives`];
     });
     expect(short).toEqual([]);
+  });
+
+  // Every bar the scorer computes needs at least one gold case, or `stops` names it "unmeasured" on every
+  // run and the gate can never be met, whatever the model answers. A null `affects` bar did exactly that
+  // once the by-job rule left no gold row answering null.
+  it("gives every job bar and every field bar at least one gold case", async () => {
+    const { GOLD } = await import("./card-labels-gold.mjs");
+    const { FIELD_VALUES, VOCABULARY_KEYS } = await import("./card-labels-bars.mjs");
+    const jobs = GOLD.flatMap((r) => r.jobs as (Job & { rampKind?: string | null })[]);
+    const seen = (f: string, v: string) => jobs.some((x) => {
+      if (f === "rampKind") return x.kind === "ramp" && (x.rampKind ?? "none") === v;
+      if (f === "to" && !TO_KINDS.includes(x.kind)) return false;
+      if (f === "method" && !METHOD_KINDS.includes(x.kind)) return false;
+      return ((x as Record<string, unknown>)[f] ?? "none") === v;
+    });
+    const unmeasured = [
+      ...VOCABULARY_KEYS.filter((k) => !jobs.some((x) => `${x.space}:${x.kind}` === k)),
+      ...Object.entries(FIELD_VALUES).flatMap(([f, vs]) => vs.filter((v) => !seen(f, v)).map((v) => `${f}=${v}`)),
+    ];
+    expect(unmeasured).toEqual([]);
   });
 
   it("covers every ramp kind, including the one it found", async () => {

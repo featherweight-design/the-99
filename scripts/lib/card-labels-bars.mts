@@ -25,12 +25,13 @@ export type Field = keyof typeof FIELD_BARS;
 /** Every job the vocabulary names, by the scorer's key (`space:kind`). */
 export const VOCABULARY_KEYS: readonly string[] = [...ROLES.map((r) => `role:${r}`), ...THEMES.map((t) => `theme:${t}`)];
 /**
- * Every value of each consumer-read field, `null` scored as the value "none". A ramp job's null kind ("no
- * kind fits") has no bar: the gold set never answers it, and a model's stray null is still charged as a
- * miss against the gold kind.
+ * Every value of each consumer-read field that the gold set answers, `null` scored as the value "none".
+ * A null `affects` (a job pointing at no player) and a null ramp kind ("no kind fits") have no bar: under
+ * the prompt's by-job rule the gold set never answers either, and a bar with no cases stops every run. A
+ * model's stray null is still charged, as a miss against the gold value.
  */
 export const FIELD_VALUES: Record<Field, readonly string[]> = {
-  affects: [...AFFECTS, "none"], to: [...DESTINATIONS, "none"], method: [...METHODS, "none"], rampKind: RAMP_KINDS,
+  affects: AFFECTS, to: [...DESTINATIONS, "none"], method: [...METHODS, "none"], rampKind: RAMP_KINDS,
 };
 
 export type Bar = { key: string; bar: number; precision: number | null; recall: number | null; cases: number; pass: boolean };
