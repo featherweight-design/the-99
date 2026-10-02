@@ -27,7 +27,7 @@ type Row = {
  * - it has no `card_labels` row;
  * - its row is STALE: `input_hash` no longer equals what the card's current inputs produce under the
  *   row's own model (`labelInputHash`), so the label describes text the card no longer has, or a
- *   prompt version the row predates;
+ *   prompt (its version or its SYSTEM instruction) the row predates;
  * - any of its jobs fails `validateJob`, so a malformed row is never half-read.
  *
  * Absent means the text path compares that card's pairs (the run plan's Task 5, Q1).

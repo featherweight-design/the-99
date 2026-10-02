@@ -12,7 +12,7 @@ import { frontFaceOracle } from "../recs/faces";
 import { classifyRoles, type Role } from "../recs/roles";
 import { type Theme } from "../recs/themes";
 import { hasLabelledJob, labelledKeys, matchLabels, type JobRef } from "../labels/match";
-import type { Job as LabelJob, Method } from "../labels/types";
+import type { Job as LabelJob, LabelKey, Method } from "../labels/types";
 import { honestJobs, type DeckLens, type SwapRole } from "./honest";
 import {
   colorSource, drawbacks, fetchFinds, givesUp, landCatch, landColors, landColorsOnce, type BasicType, type Color, type Drawback, type Finds, type GivenUp,
@@ -135,13 +135,13 @@ export type StandIn = {
   synergy: number | null;
   isUniversal: boolean;
   /** The roles it shares with the original, ramp read as its kind (`honestJobs`, E1). */
-  shared: SwapRole[];
+  shared: JobKey[];
   /** The themes it shares with the original (`honestJobs`): a spell's second match, beside its roles (Q6). */
-  sharedThemes: Theme[];
+  sharedThemes: JobKey[];
   /** A spell's jobs beyond the original's, roles then themes: the row's `also …` (addendum R1). */
-  extra: (SwapRole | Theme)[];
+  extra: JobKey[];
   /** The original's jobs this spell does not do, roles then themes: the row's `gives up …` (R1). */
-  missing: (SwapRole | Theme)[];
+  missing: JobKey[];
   /**
    * What the shared jobs are worth in the sort: their count, except that two kept only through a labelled
    * stand-in's modal alternatives count once (the run plan's Task 5, rule 7).
@@ -178,8 +178,15 @@ export type StandInGroups = {
   /** `same` first, then `other`; a group with no rows is left out. */
   groups: StandInGroup[];
   /** The original's jobs as a stand-in must keep them (`honestJobs`, ramp by kind); empty for a land. */
-  jobRoles: SwapRole[];
+  jobRoles: JobKey[];
 };
+
+/**
+ * Every job a row can name: the text reader's roles (ramp by kind) and themes, and a label's, which add
+ * kinds the text never reads (`tutor`, `fog`…). `swapToolsCopy.sheet.job` is checked against this, so a
+ * label kind with no words is a compile error rather than an `undefined` on a row.
+ */
+export type JobKey = SwapRole | Theme | LabelKey;
 
 type Priced = { prices: Map<string, PriceFact>; newestAsOf: Date | null };
 
@@ -254,11 +261,11 @@ const byLadder = (a: StandIn, b: StandIn) => staplesLast(a, b) || (a.rung ?? 1) 
 const NO_LABELS: ReadonlyMap<string, readonly LabelJob[]> = new Map();
 
 const asRolesThenThemes = (keys: readonly JobRef[]) =>
-  [...keys.filter((k) => k.space === "role"), ...keys.filter((k) => k.space === "theme")].map((k) => k.key) as (SwapRole | Theme)[];
+  [...keys.filter((k) => k.space === "role"), ...keys.filter((k) => k.space === "theme")].map((k) => k.key);
 
 /** The text comparison's half of a row: what `honestJobs` says both cards do for this deck. */
 function textSharing(
-  shared: SwapRole[], roles: SwapRole[], themes: Theme[], originalRoles: SwapRole[], originalThemes: Theme[], isLand: boolean,
+  shared: JobKey[], roles: SwapRole[], themes: Theme[], originalRoles: SwapRole[], originalThemes: Theme[], isLand: boolean,
 ): Pick<StandIn, "sharedThemes" | "extra" | "missing" | "credit" | "advisory" | "lostMethods"> {
   const sharedThemes = themes.filter((t) => originalThemes.includes(t));
   return {
@@ -283,8 +290,8 @@ function labelRow(
   const m = matchLabels(original, candidate, deck, isCreatureType);
   if (m.shared.length === 0) return null;
   return {
-    shared: m.shared.filter((k) => k.space === "role").map((k) => k.key) as SwapRole[],
-    sharedThemes: m.shared.filter((k) => k.space === "theme").map((k) => k.key) as Theme[],
+    shared: m.shared.filter((k) => k.space === "role").map((k) => k.key),
+    sharedThemes: m.shared.filter((k) => k.space === "theme").map((k) => k.key),
     extra: asRolesThenThemes(m.extra),
     missing: asRolesThenThemes(m.missing),
     credit: m.credit,
@@ -341,11 +348,11 @@ export function rankStandIns(
   // still jobs the sheet is offering stand-ins for. A label whose every job is a theme names its themes,
   // since an empty list is the sheet's "no job here".
   const labelledRefs = originalLabels && job.kind === "spell" ? labelledKeys(originalLabels, deck, isCreatureType) : [];
-  const labelledRoles = labelledRefs.filter((k) => k.space === "role").map((k) => k.key as SwapRole);
+  const labelledRoles = labelledRefs.filter((k) => k.space === "role").map((k) => k.key);
   const unionRoles = [...new Set([...originalRoles, ...labelledRoles])];
   const jobRoles = unionRoles.length > 0 || labelledRefs.length === 0
     ? unionRoles
-    : [...new Set(labelledRefs.map((k) => k.key))] as SwapRole[];
+    : [...new Set(labelledRefs.map((k) => k.key))];
   const read: StandInGroups = { job, originalCents: originalPrice?.cents ?? null, groups: [], jobRoles };
   if (job.kind === "none") return read;
 
@@ -364,7 +371,7 @@ export function rankStandIns(
     const jobs = isLand ? { roles: [], themes: [] } : honestJobs(c, isCreatureType, deck);
     // Sharing a coarse role is not enough: a stand-in keeps a job only when it does it for this deck,
     // and a ramp only in the same kind. One that keeps no role is not offered (E1 ruling d: Warg).
-    const shared: SwapRole[] = labelled ? labelled.shared : isLand ? [] : jobs.roles.filter((r) => originalRoles.includes(r));
+    const shared: JobKey[] = labelled ? labelled.shared : isLand ? [] : jobs.roles.filter((r) => originalRoles.includes(r));
     if (!isLand && !labelled && shared.length === 0) continue;
     const price = stocked(c.oracleId, priced);
     const free = freeAfterTake(c, c.owned, c.free);

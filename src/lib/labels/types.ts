@@ -30,7 +30,7 @@ export type { Role, Theme };
 
 /**
  * The job kinds in `role` space. LABEL-OWNED: it holds every `Role` in src/lib/recs/roles.ts
- * and may hold more (`tutor` and `counterspell` arrive with the vocabulary plan's Task 3).
+ * and may hold more: `tutor` and `counterspell` are label-only (the vocabulary plan's Task 3).
  *
  * The ONE tie to `Role` is the exhaustiveness check below (`_EveryRoleIsListed`): it resolves
  * to `never` only when every `Role` is present, so a role added upstream is a compile error
@@ -39,7 +39,7 @@ export type { Role, Theme };
  * `labels/types.ts(67,35): error TS2344: Type '"fog"' does not satisfy the constraint 'never'`,
  * and adding `"tutor"` to this array compiled.
  */
-export const ROLES = ["ramp", "draw", "removal", "wipes", "land"] as const;
+export const ROLES = ["ramp", "draw", "removal", "wipes", "land", "tutor", "counterspell"] as const;
 
 /**
  * The job kinds in `theme` space: every `Theme` in src/lib/recs/themes.ts, in THEME_ORDER
@@ -51,6 +51,8 @@ export const THEMES = [
   "counters", "pump", "haste", "evasion", "etbDraw", "draw", "tokens", "treasure",
   "protection", "recursion", "blink", "finisher", "castFree", "mill", "sacOutlet",
   "deathTrigger", "lifegain", "drain", "spellslinger", "landfall", "tribal",
+  // Label-only (the vocabulary plan's Task 3, Hugh's members): the text reader names none of these.
+  "graveyardHate", "discard", "stax", "clones", "theft", "poison", "goad", "doublers", "fog",
 ] as const;
 
 /**
@@ -75,7 +77,9 @@ export const SPACES = ["role", "theme"] as const;
  * matches only itself (d9, 2026-09-25), which is the rule that stops a Treasure maker
  * standing in for a mana dork.
  */
-export const RAMP_KINDS = ["tapsForMana", "fetchesLand", "makesTreasure", "burstMana"] as const;
+export const RAMP_KINDS = [
+  "tapsForMana", "fetchesLand", "makesTreasure", "burstMana", "costReduction", "extraLandDrop", "multiplies",
+] as const;
 
 export const TRIGGERS = [
   "none", "etb", "combatDamage", "attacks", "cast", "dies", "activated", "upkeep", "landfall", "other",
@@ -110,10 +114,11 @@ export const DESTINATIONS = ["hand", "battlefield", "top"] as const;
 /** HOW a removal or wipe job removes. Not a gate (Hugh's Q3): a bounce is kept for an exile, and
  *  the stand-in row names the method it loses. `null` on every other job, which `validateJob`
  *  enforces (`METHOD_KINDS`). */
-export const METHODS = ["destroy", "exile", "bounce", "shrink"] as const;
+// `sacrifice` (an edict) and `bottom` (a tuck) since d9's ruling of 2026-10-02, so the stand-in row can name them.
+export const METHODS = ["destroy", "exile", "bounce", "shrink", "sacrifice", "bottom"] as const;
 
-/** The kinds that may carry a `to`. `tutor` is listed ahead of its arrival in `ROLES` (Task 3),
- *  so neither the rule nor `Job` needs an edit then; until then no job can carry it. */
+/** The kinds that may carry a `to`: where a recursion returns a card, and where a tutor puts the one it
+ *  finds. */
 const TO_KIND_LIST = ["recursion", "tutor"] as const;
 export const TO_KINDS: readonly string[] = TO_KIND_LIST;
 
@@ -132,6 +137,12 @@ export type Trigger = (typeof TRIGGERS)[number];
 export type Recurrence = (typeof RECURRENCE)[number];
 export type ThresholdOp = (typeof THRESHOLD_OPS)[number];
 export type ThresholdStat = (typeof THRESHOLD_STATS)[number];
+
+/**
+ * A job's identity for sharing and for its words (`keyOf` in match.ts): a ramp job by its kind, every
+ * other job by its name. `land` is never one, since a stand-in for a land is matched on the ladder.
+ */
+export type LabelKey = Exclude<LabelRole, "ramp" | "land"> | RampKind | LabelTheme;
 
 export type Threshold = { stat: ThresholdStat; op: ThresholdOp; value: number };
 
