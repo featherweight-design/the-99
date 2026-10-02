@@ -78,10 +78,13 @@ EVERY JOB CARRIES:
   restrictedTo the creature type or card type the effect is limited to, exactly
                as printed ("Wolf", "Dinosaur", "artifact", "land", "creature"),
                or null when it applies to anything.
-  affects      whose cards or life the job points at: ${AFFECTS.join(", ")}, or
-               null when it has no direction. Mill and discard are where it
-               matters: "each opponent mills" is opponents, "mill three" of
-               your own library is self.
+  affects      whose cards, library, life or mana the job points at: one of
+               ${AFFECTS.join(", ")}, or null ONLY when the job names no player
+               at all ("destroy target creature", which can hit anyone's).
+               self = your own: a mana rock or a Treasure you make, counters
+               on your own creatures, cards you draw, your own library.
+               Mill and discard are where it matters most: "each opponent
+               mills" is opponents, "mill three" of your own library is self.
   to           ONLY on a tutor or recursion job, where the card goes: one of
                ${DESTINATIONS.join(", ")}. Returning a creature to the
                battlefield is battlefield; to your hand is hand. Otherwise null.
