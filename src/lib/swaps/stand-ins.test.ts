@@ -201,7 +201,7 @@ describe("rankStandIns", () => {
     const orig = card("Elf Lord", "Creature — Elf", "{T}: Add {G} for each Elf you control.\nOther Elves you control get +1/+1.", 3);
     const other = card("Elf Friend", "Creature — Elf", "{T}: Add {G}.\nElves you control have haste.", 1);
     const priced = { newestAsOf: NOW, prices: new Map([[orig.oracleId, fact(3000)], [other.oracleId, fact(90)]]) };
-    const typed = rankStandIns(orig, [cand(other)], priced, (w) => w === "Elf", STAND_IN_GROUP_CAP, { keyType: "Elf", isSubtype: () => false, held: new Set() });
+    const typed = rankStandIns(orig, [cand(other)], priced, (w) => w === "Elf", STAND_IN_GROUP_CAP, { keyType: "Elf", isSubtype: () => false, held: new Set(), heldTypes: new Set() });
     expect(rows(typed)[0].sharedThemes).toContain("tribal");
     expect(rows(rank(orig, [cand(other)], priced))[0].sharedThemes).not.toContain("tribal");
   });

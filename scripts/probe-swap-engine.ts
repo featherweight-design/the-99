@@ -9,8 +9,8 @@
 // relation, because a gather returning every card, or none, passes a one-sided check.
 //
 // It writes a fixture under a per-run `user_id` (decks, deck cards, collection rows) and one pair
-// sentinel in the catalog, and deletes all of it in a `finally`. Point it at `local-dev` or a
-// scratch branch, never production.
+// sentinel in the catalog, seeds three `card_labels` rows on cards that had none (section 10),
+// and deletes all of it in a `finally`. Point it at `local-dev` or a scratch branch, never production.
 import { requireEnv } from "./lib/env.mjs";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
@@ -24,6 +24,8 @@ import { loadCreatureTypes, loadNoncreatureSubtypes, loadStandIns, type StandIns
 import { fetchFinds, landColors, landColorsOnce } from "../src/lib/swaps/land";
 import { jobOf, mainType, type StandIn } from "../src/lib/swaps/stand-ins";
 import { classifyRoles } from "../src/lib/recs/roles";
+import { labelInputHash, LABEL_PROMPT_VERSION } from "../src/lib/labels/prompt";
+import type { Job as LabelJob } from "../src/lib/labels/types";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -77,6 +79,18 @@ async function timed<T>(label: string, run: () => Promise<T>): Promise<T> {
 }
 
 let pairCleanup: { a: string; b: string; card: string } | null = null;
+/**
+ * The cards section 10 seeded `card_labels` on. It seeds ONLY cards with no label row, so it never
+ * overwrites a real one and has nothing to put back: a capture held in this process would be lost with
+ * it if the run died before restoring. Cleanup deletes its own rows, by id AND its own model name.
+ */
+let labelCleanup: string[] | null = null;
+const LABEL_MODEL = "probe-swap-engine";
+
+// Every section but 10's switch-on read runs with the label switch OFF, whatever the caller's `.env` says:
+// those sections prove the text path, and a caller with the switch on would run them through labels.
+const callerLabels = process.env.STAND_IN_LABELS_ENABLED;
+delete process.env.STAND_IN_LABELS_ENABLED;
 
 async function main() {
   // A Naya commander, found by query rather than named, so the fixture follows the catalog.
@@ -261,6 +275,66 @@ async function main() {
       pairRow?.inclusion === 77.5 && all(pairRead!).filter((s) => s.inclusion !== null).every((s) => s.card.oracleId === ramp.card.oracleId),
       `${ramp.card.name} at ${pairRow?.inclusion}; listed ${all(pairRead!).filter((s) => s.inclusion !== null).length}`);
   }
+
+  // 10. The labels are LIVE with the switch on (the run plan's Task 5). Everything above ran with it off,
+  //     which proves the label path inert and nothing more. Seeded labels for Mana Vault and two of its
+  //     stand-ins must change the read: one stand-in labelled as burst mana fails the ramp-kind gate and
+  //     leaves, one labelled with an extra theme gains it, and every unlabelled row is the text path's.
+  const offRead = await loadStandIns(deckId, USER, vault.oracle_id, true);
+  const offRows = all(offRead!).filter((s) => !s.isUniversal);
+  // Seeds go only where no label row exists. Debris from a run that died before its cleanup carries this
+  // model, which no real label does, so sweeping it can never remove anyone's label.
+  await fixture.execute(sql`delete from card_labels where model = ${LABEL_MODEL}`);
+  const labelled = new Set((await rows<{ oracle_id: string }>(sql`
+    select oracle_id from card_labels where oracle_id = any(${sql.param([vault.oracle_id, ...offRows.map((s) => s.card.oracleId)])}::uuid[])`))
+    .map((r) => r.oracle_id));
+  if (labelled.has(vault.oracle_id)) throw new Error("Mana Vault already carries a label; section 10 seeds only unlabelled cards");
+  const free = offRows.filter((s) => !labelled.has(s.card.oracleId));
+  if (free.length < 2) throw new Error(`Mana Vault has ${free.length} unlabelled non-staple stand-ins; section 10 needs 2`);
+  const [gated, gainer] = free;
+  const rampJob = (rampKind: string): LabelJob => ({
+    space: "role", kind: "ramp", rampKind, restrictedTo: null, affects: "self", to: null, method: null,
+    trigger: "none", recurrence: "repeatable", threshold: null, modal: false,
+  } as LabelJob);
+  const tokens = { ...rampJob("tapsForMana"), space: "theme", kind: "tokens", rampKind: undefined } as unknown as LabelJob;
+  const seeds = new Map<string, LabelJob[]>([
+    [vault.oracle_id, [rampJob("tapsForMana")]],
+    [gated.card.oracleId, [rampJob("burstMana")]],
+    [gainer.card.oracleId, [rampJob("tapsForMana"), tokens]],
+  ]);
+  const ids = [...seeds.keys()];
+  labelCleanup = ids;
+  const inputs = await rows<{ oracle_id: string; name: string; mana_cost: string | null; type_line: string; oracle_text: string | null; layout: string }>(sql`
+    select oracle_id, name, mana_cost, type_line, oracle_text, layout from cards where oracle_id = any(${sql.param(ids)}::uuid[])`);
+  for (const c of inputs) {
+    const hash = labelInputHash({ oracleId: c.oracle_id, name: c.name, mana_cost: c.mana_cost, type_line: c.type_line, oracle_text: c.oracle_text, layout: c.layout }, LABEL_MODEL);
+    await fixture.execute(sql`
+      insert into card_labels (oracle_id, labels, model, prompt_version, input_hash)
+      values (${c.oracle_id}::uuid, ${JSON.stringify(seeds.get(c.oracle_id))}::jsonb, ${LABEL_MODEL}, ${LABEL_PROMPT_VERSION}, ${hash})`);
+  }
+  const offAgain = await loadStandIns(deckId, USER, vault.oracle_id, true);
+  check("labels: with the switch OFF, seeded labels change nothing",
+    JSON.stringify(offAgain) === JSON.stringify(offRead), `${all(offAgain!).length} rows, as before the seed`);
+  process.env.STAND_IN_LABELS_ENABLED = "true";
+  let onRead: StandInsRead | null;
+  try {
+    onRead = await loadStandIns(deckId, USER, vault.oracle_id, true);
+  } finally {
+    delete process.env.STAND_IN_LABELS_ENABLED;
+  }
+  const onRows = all(onRead!);
+  check("labels: a labelled stand-in that fails the ramp-kind gate leaves the sheet",
+    offRows.some((s) => s.card.oracleId === gated.card.oracleId) && !onRows.some((s) => s.card.oracleId === gated.card.oracleId),
+    `${gated.card.name}: off ${offRows.some((s) => s.card.oracleId === gated.card.oracleId)}, on ${onRows.some((s) => s.card.oracleId === gated.card.oracleId)}`);
+  const gainedOn = onRows.find((s) => s.card.oracleId === gainer.card.oracleId);
+  check("labels: a labelled stand-in's reasons are its label's (it gains the tokens theme it was given)",
+    !gainer.extra.includes("tokens") && gainedOn?.extra.includes("tokens") === true && gainedOn.shared.includes("tapsForMana"),
+    `${gainer.card.name}: off [${gainer.extra.join(", ")}], on [${gainedOn?.extra.join(", ")}]`);
+  const unlabelled = (r: StandIn[]) => r.filter((s) => !seeds.has(s.card.oracleId)).map((s) => `${s.card.oracleId}:${s.shared}:${s.extra}`);
+  // Non-empty: with no unlabelled row left, this would compare two empty lists and pass about nothing.
+  check("labels: every unlabelled stand-in reads as the text path's (Q1)",
+    unlabelled(onRows).length > 0 && JSON.stringify(unlabelled(onRows).sort()) === JSON.stringify(unlabelled(all(offRead!)).sort()),
+    `${unlabelled(onRows).length} unlabelled rows`);
 }
 
 void (async () => {
@@ -270,11 +344,17 @@ try {
   failures += 1;
   console.log(`FAIL  the run threw — ${(e as Error).message}`);
 } finally {
+  if (callerLabels === undefined) delete process.env.STAND_IN_LABELS_ENABLED;
+  else process.env.STAND_IN_LABELS_ENABLED = callerLabels;
   // Assigned inside `main`, which flow analysis cannot see from here.
   const pair = pairCleanup as { a: string; b: string } | null;
   if (pair) {
     await fixture.execute(sql`delete from commander_pair_support_cards where commander_oracle_id = ${pair.a}::uuid and partner_oracle_id = ${pair.b}::uuid`);
     await fixture.execute(sql`delete from commander_pair_support where commander_oracle_id = ${pair.a}::uuid and partner_oracle_id = ${pair.b}::uuid`);
+  }
+  const seeded = labelCleanup as string[] | null;
+  if (seeded) {
+    await fixture.execute(sql`delete from card_labels where oracle_id = any(${sql.param(seeded)}::uuid[]) and model = ${LABEL_MODEL}`);
   }
   await fixture.execute(sql`delete from decks where user_id = ${USER}`);
   await fixture.execute(sql`delete from collection_items where user_id = ${USER}`);

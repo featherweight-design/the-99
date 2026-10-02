@@ -47,6 +47,12 @@ export type DeckLens = {
   isSubtype: (word: string) => boolean;
   /** The noncreature subtypes the deck holds or makes, without the card being replaced (`heldSubtypes`). */
   held: ReadonlySet<string>;
+  /**
+   * The card types (lowercase: `artifact`, `land`…) the deck's other cards carry, without the card being
+   * replaced. Read only by the labelled comparison, for a job limited to a card type (the run plan's
+   * Task 5); the text path's regexes do not read card-type limits.
+   */
+  heldTypes: ReadonlySet<string>;
 };
 
 /**
