@@ -106,7 +106,8 @@ export const explainedCopy = {
 
     /** Sentence 3 — the single largest gap, naming the weakest role AND NOTHING ELSE.
         No price, no card names, no buy prompt (must-not 4). Omitted entirely when no role is
-        short of baseline. The linked span is the figures clause.
+        short of the commander's role target (its measured figure, else the baseline); a measured
+        target of 0 is never short. The linked span is the figures clause.
 
         THE ROLE NOUN COMES FROM ITS OWN MAP, NOT ROLE_NOUNS. coverage-section.tsx:26-31 ships
         ROLE_NOUNS in the SINGULAR — `wipes: "board wipe"` — because its only consumer is

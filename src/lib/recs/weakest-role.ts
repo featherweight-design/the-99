@@ -16,9 +16,10 @@ export type WeakestRole = {
  * The role the paragraph names as thinnest: the largest **proportional** shortfall,
  * `(target - have) / target`, not the largest absolute gap.
  *
- * The targets are not equal — wipes asks for 3 where ramp asks for 10 — so an absolute
- * gap makes a collection two board wipes short look healthier than one four cards short
- * on ramp, when the wipes shortfall is the one that stops a deck being fielded.
+ * The targets are not equal — on the fallback wipes asks for 3 where ramp asks for 10, and a
+ * commander's measured targets differ by role too — so an absolute gap makes a collection two
+ * board wipes short look healthier than one four cards short on ramp, when the wipes shortfall
+ * is the one that stops a deck being fielded.
  *
  * Null when every role is at or past its target: there is no gap to name.
  *

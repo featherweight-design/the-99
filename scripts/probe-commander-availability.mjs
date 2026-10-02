@@ -31,8 +31,10 @@ import { recommendationsCopy } from "../src/lib/copy/recommendations";
 
 // A MEASURED SENTINEL for the page's commander (How it works §5.4b). local-dev carries no role
 // figures, so without one every head reads the fallback and the measured wording is asserted by
-// nobody. Chosen to reach all four outcomes: ramp 4.4 rounds to 4 (past, on any fixture that owns
-// ramp), draw 9.6 rounds to 10, removal 2, and wipes 0, which must read as never short.
+// nobody. Every head is compared with the shipped wording for its own count, so the check holds
+// whichever of short, at or past a head lands on; WHICH it lands on depends on what the account
+// owns (ramp 4.4 rounds to 4, draw 9.6 to 10), and the run prints the outcomes it reached. Wipes 0
+// is the one outcome the sentinel guarantees, and it must read as never short.
 const SENTINEL = { ramp: 4.4, draw: 9.6, removal: 2, wipes: 0 };
 let heldTargets = null;
 async function restoreTargets() {
@@ -799,6 +801,9 @@ async function run() {
           const want = recommendationsCopy.coverage.gap(h.owned, wholeTarget(SENTINEL[h.role]), true);
           report(`${h.role} head reads the measured target`, h.text === want, `"${h.text}" against "${want}"`);
         }
+        const outcome = (t) => (/short/.test(t) ? "short" : /^At /.test(t) ? "at" : /past/.test(t) ? "past" : "none");
+        const outcomes = [...new Set(heads.map((h) => `${h.role} ${outcome(h.text)}`))].join(", ");
+        console.log(`  note outcomes reached at this width: ${outcomes}`);
         const wipes = heads.find((h) => h.role === "wipes");
         report("a measured 0 never reads short", !!wipes && !/short/.test(wipes.text), wipes ? `"${wipes.text}"` : "no wipes head");
       }
