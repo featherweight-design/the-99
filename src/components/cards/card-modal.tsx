@@ -284,7 +284,9 @@ function AvailabilityDetail({ card, deckPage }: { card: BrowseCard; deckPage: bo
   const note =
     state === "hard" ? c.detailHardNote
     : state === "soft" ? c.detailSoftNote(a.claims.filter((cl) => !cl.mature).length)
-    : state === "over" ? c.detailOverNote
+    // No note for `over` (H21, Hugh's walk 2026-10-02): the block above already names the
+    // decks that want it and the shortfall, and the reassurance it used to add is the kind
+    // of line refresh.ts's voice rule forbids.
     : null;
   return (
     // Mirrors the oracle-text block's chrome so the two read as one column.

@@ -105,9 +105,10 @@ describe("CardModal availability detail", () => {
     expect(screen.getByText(availabilityCopy.collection.detailSoftNote(1))).toBeInTheDocument();
   });
 
-  it("reads an over-commitment as a shopping decision", () => {
+  it("adds no reassurance under an over-commitment (H21)", () => {
     mount({ ...card, availability: avail(1, 2, 0, ["Atraxa", "Kykar"]) });
-    expect(screen.getByText(availabilityCopy.collection.detailOverNote)).toBeInTheDocument();
+    expect(screen.queryByText(/shopping decision/)).toBeNull();
+    expect(screen.queryByText(/Nothing’s broken/)).toBeNull();
   });
 
   // `hardDecks` carries an id and a name and nothing else, so a pill here would be
