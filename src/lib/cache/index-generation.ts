@@ -40,8 +40,8 @@ const UNSTAMPED = "0";
  * `loadCompositionRow` and `loadStaples` — so these are its four tables and there is no
  * fifth:
  *
- *   commander_support        timestamp + role count
- *   commander_pair_support   timestamp + role count
+ *   commander_support        timestamp + role count + role sum
+ *   commander_pair_support   timestamp + role count + role sum
  *   identity_composition     timestamp
  *   format_staples           NO TIMESTAMP COLUMN EXISTS, so its own figures are the
  *                            observable: a row count and the sum of `commanders`.
@@ -74,8 +74,8 @@ const UNSTAMPED = "0";
  * The role COUNTS close that. They go 0 to ~3,279 at the flip and move on any later
  * re-derivation that reaches a different number of commanders, which is every one that
  * matters. Not a checksum — two derivations covering the same commanders with different
- * figures read alike — and the timestamps carry those, since a re-derivation is part of an
- * index run that stamps them.
+ * figures read alike — and the role write moves no timestamp either, so the role SUMS carry
+ * those: one term per support table, the four averages summed over every row.
  *
  * Epoch millis computed in SQL, because the columns carry no zone and a `Date` built from
  * their rendering takes the reading host's clock with it.
@@ -98,9 +98,11 @@ export async function readIndexGeneration(
       // written; a later re-derivation writes new figures onto the SAME rows and moves neither
       // count nor timestamp, and since the fit score reads these figures (brief 2026-09-28
       // §5.4) a stored score computed against the previous ones would otherwise pass the
-      // guard. Rounded in SQL so a float's last digits cannot make one token read two ways.
-      supportRoleSum: sql<string | null>`(select round(coalesce(sum(avg_ramp + avg_draw + avg_removal + avg_wipes), 0)::numeric, 3) from commander_support)`,
-      pairRoleSum: sql<string | null>`(select round(coalesce(sum(avg_ramp + avg_draw + avg_removal + avg_wipes), 0)::numeric, 3) from commander_pair_support)`,
+      // guard. Summed as float8: the columns are `real`, and a float4 sum near 72,000 holds
+      // only about one decimal place, so a small re-derivation would leave it unchanged. Rounded
+      // to 3 places so the order the rows are summed in cannot make one token read two ways.
+      supportRoleSum: sql<string | null>`(select round(coalesce(sum(avg_ramp::float8 + avg_draw::float8 + avg_removal::float8 + avg_wipes::float8), 0)::numeric, 3) from commander_support)`,
+      pairRoleSum: sql<string | null>`(select round(coalesce(sum(avg_ramp::float8 + avg_draw::float8 + avg_removal::float8 + avg_wipes::float8), 0)::numeric, 3) from commander_pair_support)`,
     }).from(sql`(select 1) as _`);
 
     const parts = [

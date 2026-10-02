@@ -639,6 +639,23 @@ it("clears again after the role pass writes targets", async () => {
   expect(order).toEqual(["clear", "roles", "clear"]);
 });
 
+// A refused or failed role pass nulls the roles it rewrote, which moves the figures the
+// scores were graded against just as a successful one does.
+it("clears again when the role pass refuses", async () => {
+  const order: string[] = [];
+  await expect(buildCommanderIndex({
+    loadPairs: async () => [],
+    deriveRoleTargets: async () => { order.push("roles"); throw new Error("role targets REFUSED"); },
+    loadCommanders: async () => [commander("A", "a")],
+    loadNameIndex: async () => [],
+    fetch: async () => okResult(["Sol Ring"]),
+    write: async () => {},
+    clearScores: async () => { order.push("clear"); },
+    delayMs: 0,
+  })).rejects.toThrow(/REFUSED/);
+  expect(order).toEqual(["clear", "roles", "clear"]);
+});
+
 // And the staples step's half: `db:build:staples` rewrites the identity buckets after the
 // index build's clears, so replacing them retires the scores in the same transaction.
 describe("replaceCompositionIn", () => {
