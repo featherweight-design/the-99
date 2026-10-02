@@ -26,7 +26,7 @@ describe("Job's fields are the wire format's fields", () => {
     // assertion blind to a reorder of `JOB_FIELDS` — which is explicitly the wire key
     // order, so a reorder is the one change it exists to catch.
     const job: Required<Job> = {
-      space: "role", kind: "ramp", rampKind: "tapsForMana", restrictedTo: null,
+      space: "role", kind: "ramp", rampKind: "tapsForMana", restrictedTo: null, affects: null, to: null, method: null,
       trigger: "none", recurrence: "oneShot", threshold: null, modal: false,
     };
     expect(Object.keys(job)).toEqual([...JOB_FIELDS]);
@@ -42,7 +42,7 @@ describe("Job's fields are the wire format's fields", () => {
  */
 describe("Job encodes the space-to-kind relationship the validator enforces", () => {
   const limits = {
-    restrictedTo: null, trigger: "none", recurrence: "oneShot", threshold: null, modal: false,
+    restrictedTo: null, affects: null, to: null, method: null, trigger: "none", recurrence: "oneShot", threshold: null, modal: false,
   } as const;
 
   it("accepts a role kind in role space and a theme kind in theme space", () => {

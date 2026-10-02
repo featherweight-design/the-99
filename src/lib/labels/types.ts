@@ -1,10 +1,10 @@
 /**
  * The stored card label: what a card DOES, and the limits on each of those jobs.
  *
- * Nothing writes this yet. It is written per card by the label build (Task 2 of
- * `docs/superpowers/plans/2026-09-25-card-labels-run.md`, not yet shipped) and read by
- * the stand-in matcher; `card_labels` exists ahead of both so the storage can be
- * reviewed on its own.
+ * Written per card by the label build (`scripts/build-card-labels.ts`, published by
+ * `publish.ts`) and read by the stand-in matcher, whose rules are the run plan's Task 5
+ * (`docs/superpowers/plans/2026-09-25-card-labels-run.md`). Every field here is one that
+ * consumer reads, or one existing rows already carry (`threshold`).
  *
  * The vocabulary is CANONICAL here, and `schema.ts` beside it is the validator that
  * enforces it. There is one copy: `scripts/lib/card-labels-schema.mjs` held a second for
@@ -12,9 +12,12 @@
  * TypeScript, and a parity test held the two together. That whole graph is `.mts` now and
  * the duplicate is deleted, so nothing here needs a guard.
  *
- * `Role` and `Theme` come from `src/lib/recs`, tied by `satisfies` AND by an exhaustiveness
- * assertion — `satisfies` alone rejects a member that is not a `Role` and says nothing
- * about one that is missing.
+ * THE VOCABULARY IS LABEL-OWNED (Hugh, 2026-09-28), tied to the app's `Role` and `Theme` in
+ * ONE direction: every app role and theme must be labelable (an exhaustiveness assertion
+ * below fails to compile, naming the member, when one is missing), while a label may name a
+ * job the app has no union member for. That is what lets the vocabulary grow (`tutor`,
+ * `counterspell`) without widening `Role`, which is a database change with Role Coverage
+ * consequences and its own plan. `LabelRole` and `LabelTheme` are the label's own types.
  */
 
 import type { Role } from "../recs/roles";
@@ -26,27 +29,29 @@ import type { Theme } from "../recs/themes";
 export type { Role, Theme };
 
 /**
- * The five job kinds in `role` space, tied to `Role` in src/lib/recs/roles.ts.
+ * The job kinds in `role` space. LABEL-OWNED: it holds every `Role` in src/lib/recs/roles.ts
+ * and may hold more (`tutor` and `counterspell` arrive with the vocabulary plan's Task 3).
  *
- * **`satisfies` alone is NOT enough, and the first version of this claimed otherwise.**
- * It rejects a member that is not a `Role` and says nothing about a `Role` that is
- * missing — so a role added to `roles.ts` would have left this array stale, the parity
- * test would still have passed (both copies omitting it), and the validator would simply
- * never accept the new role. `Missing` below is the other half: it resolves to `never`
- * only when every `Role` is present, so an addition upstream is a compile error here.
+ * The ONE tie to `Role` is the exhaustiveness check below (`_EveryRoleIsListed`): it resolves
+ * to `never` only when every `Role` is present, so a role added upstream is a compile error
+ * here, naming it. There is deliberately no `satisfies readonly Role[]`, which would forbid a
+ * label-only member. Verified by revert (2026-10-02): adding `"fog"` to `Theme` failed with
+ * `labels/types.ts(67,35): error TS2344: Type '"fog"' does not satisfy the constraint 'never'`,
+ * and adding `"tutor"` to this array compiled.
  */
-export const ROLES = ["ramp", "draw", "removal", "wipes", "land"] as const satisfies readonly Role[];
+export const ROLES = ["ramp", "draw", "removal", "wipes", "land"] as const;
 
 /**
- * `Theme` in src/lib/recs/themes.ts, in THEME_ORDER order. `tribal` last, as there, and
- * `satisfies` ties the membership — `THEME_ORDER` is derived from `RULES`, so a rule
- * added there would otherwise leave this a stale third copy with nothing failing.
+ * The job kinds in `theme` space: every `Theme` in src/lib/recs/themes.ts, in THEME_ORDER
+ * order with `tribal` last, as there. Label-owned like `ROLES`: tied to `Theme` only by the
+ * exhaustiveness check below, so a theme added to `RULES` is a compile error here while a
+ * label-only theme is allowed.
  */
 export const THEMES = [
   "counters", "pump", "haste", "evasion", "etbDraw", "draw", "tokens", "treasure",
   "protection", "recursion", "blink", "finisher", "castFree", "mill", "sacOutlet",
   "deathTrigger", "lifegain", "drain", "spellslinger", "landfall", "tribal",
-] as const satisfies readonly Theme[];
+] as const;
 
 /**
  * EXHAUSTIVENESS, which `satisfies` does not give. Each of these is `never` when the
@@ -84,6 +89,37 @@ export const THRESHOLD_STATS = [
   "mv", "power", "counters", "cardsInGraveyard", "artifacts", "creatures", "life", "other",
 ] as const;
 
+/**
+ * WHAT THE EFFECT POINTS AT, by player (the vocabulary plan's Task 2; Hugh's Q2, 2026-09-28). A
+ * match gate in the stand-ins consumer: self-mill is never kept for opponent-mill. `self` for a job on
+ * the controller's own cards, library, life or mana (a mana rock, counters on your own creatures,
+ * as the prompt's Bejeweled Warg example labels both); `null` only when the job names no player at
+ * all ("destroy target creature", which can hit anyone's).
+ */
+export const AFFECTS = ["self", "opponents", "each"] as const;
+
+/** WHERE a tutor or a recursion job puts the card. A match gate where both cards carry one: a
+ *  reanimation is not a regrowth. `null` on every other job, which `validateJob` enforces
+ *  (`TO_KINDS`). */
+export const DESTINATIONS = ["hand", "battlefield", "top"] as const;
+
+/** HOW a removal or wipe job removes. Not a gate (Hugh's Q3): a bounce is kept for an exile, and
+ *  the stand-in row names the method it loses. `null` on every other job, which `validateJob`
+ *  enforces (`METHOD_KINDS`). */
+export const METHODS = ["destroy", "exile", "bounce", "shrink"] as const;
+
+/** The kinds that may carry a `to`. `tutor` is listed ahead of its arrival in `ROLES` (Task 3),
+ *  so the rule needs no edit then; until then no job can carry it. */
+export const TO_KINDS: readonly string[] = ["recursion", "tutor"];
+
+/** The kinds that may carry a `method`. */
+export const METHOD_KINDS: readonly string[] = ["removal", "wipes"];
+
+export type LabelRole = (typeof ROLES)[number];
+export type LabelTheme = (typeof THEMES)[number];
+export type Affects = (typeof AFFECTS)[number];
+export type Destination = (typeof DESTINATIONS)[number];
+export type Method = (typeof METHODS)[number];
 export type Space = (typeof SPACES)[number];
 export type RampKind = (typeof RAMP_KINDS)[number];
 export type Trigger = (typeof TRIGGERS)[number];
@@ -98,8 +134,8 @@ export type Threshold = { stat: ThresholdStat; op: ThresholdOp; value: number };
  *
  * **Every field but `rampKind` is REQUIRED**, and that is `validateJob`'s rule rather
  * than a preference: it rejects `undefined` for `trigger`, `recurrence`, `restrictedTo`,
- * `modal` and `threshold` alike, so `{space, kind}` alone is scored malformed on five
- * counts. Where a limit does not apply the value is NULL, not absent — `threshold`
+ * `affects`, `to`, `method`, `modal` and `threshold` alike, so `{space, kind}` alone is
+ * scored malformed on eight counts. Where a limit does not apply the value is NULL, not absent — `threshold`
  * specifically pushes "threshold is missing; it must be an object or null", because a
  * missing one renders as the default and a model that forgot the field would be read as
  * having answered it.
@@ -120,6 +156,9 @@ export type Threshold = { stat: ThresholdStat; op: ThresholdOp; value: number };
  */
 type Limits = {
   restrictedTo: string | null;
+  affects: Affects | null;
+  to: Destination | null;
+  method: Method | null;
   trigger: Trigger;
   recurrence: Recurrence;
   threshold: Threshold | null;
@@ -128,5 +167,5 @@ type Limits = {
 
 export type Job =
   | (Limits & { space: "role"; kind: "ramp"; rampKind: RampKind | null })
-  | (Limits & { space: "role"; kind: Exclude<Role, "ramp">; rampKind?: null })
-  | (Limits & { space: "theme"; kind: Theme; rampKind?: null });
+  | (Limits & { space: "role"; kind: Exclude<LabelRole, "ramp">; rampKind?: null })
+  | (Limits & { space: "theme"; kind: LabelTheme; rampKind?: null });

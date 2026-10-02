@@ -16,8 +16,8 @@
  */
 
 import {
-  RAMP_KINDS, RECURRENCE, ROLES, SPACES, THEMES, THRESHOLD_OPS, THRESHOLD_STATS, TRIGGERS,
-  type Job,
+  AFFECTS, DESTINATIONS, METHOD_KINDS, METHODS, RAMP_KINDS, TO_KINDS, RECURRENCE, ROLES, SPACES, THEMES, THRESHOLD_OPS,
+  THRESHOLD_STATS, TRIGGERS, type Job,
 } from "./types";
 
 /**
@@ -25,7 +25,8 @@ import {
  * thing as `Job`'s optionality — `types.test.ts` ties the two together.
  */
 export const JOB_FIELDS = [
-  "space", "kind", "rampKind", "restrictedTo", "trigger", "recurrence", "threshold", "modal",
+  "space", "kind", "rampKind", "restrictedTo", "affects", "to", "method",
+  "trigger", "recurrence", "threshold", "modal",
 ] as const;
 
 /** A model's answer, before validation says whether it is a `Job`. */
@@ -67,6 +68,22 @@ export function validateJob(job: unknown): string[] {
   if (!has(RECURRENCE, j.recurrence)) bad.push(`recurrence "${String(j.recurrence)}"`);
   if (j.restrictedTo !== null && typeof j.restrictedTo !== "string") bad.push(`restrictedTo`);
   if (typeof j.modal !== "boolean") bad.push(`modal`);
+  // REQUIRED, null where they do not apply, like `restrictedTo`: an omitted key is an unanswered
+  // question, and reading it as null would credit a model that forgot the field with the commonest
+  // answer. The consumer gates on `affects` and `to`, so the difference is a wrong stand-in.
+  const nullableOf = (field: string, list: readonly string[]) => {
+    const v = j[field];
+    if (v === undefined) bad.push(`${field} is missing; it must be one of ${list.join(", ")} or null`);
+    else if (v !== null && !has(list, v)) bad.push(`${field} "${String(v)}"`);
+  };
+  nullableOf("affects", AFFECTS);
+  nullableOf("to", DESTINATIONS);
+  nullableOf("method", METHODS);
+  // `to` and `method` belong to particular jobs, as `rampKind` belongs to ramp: the consumer GATES on
+  // `to`, so a destination a model put on a draw job would refuse a stand-in for a reason the card
+  // does not have.
+  if (j.to != null && !(typeof j.kind === "string" && TO_KINDS.includes(j.kind))) bad.push(`to on a ${String(j.kind)} job`);
+  if (j.method != null && !(typeof j.kind === "string" && METHOD_KINDS.includes(j.kind))) bad.push(`method on a ${String(j.kind)} job`);
 
   // `undefined` is NOT equivalent to `null` here. The prompt requires the key, and
   // `limitValue` renders a missing threshold as "none" -- the default -- so letting it
@@ -110,7 +127,8 @@ export const isJob = (job: unknown): job is Job => validateJob(job).length === 0
 export function jobKey(job: Job): string {
   return JSON.stringify([
     job.space, job.kind, job.rampKind ?? null,
-    job.restrictedTo ?? null, job.trigger, job.recurrence,
+    job.restrictedTo ?? null, job.affects ?? null, job.to ?? null, job.method ?? null,
+    job.trigger, job.recurrence,
     job.threshold ? [job.threshold.stat, job.threshold.op, job.threshold.value] : null,
     job.modal,
   ]);

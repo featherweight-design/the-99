@@ -33,7 +33,9 @@
 import { createHash } from "node:crypto";
 
 import { castFaceText } from "../cards/facet";
-import { RAMP_KINDS, RECURRENCE, ROLES, THEMES, THRESHOLD_OPS, THRESHOLD_STATS, TRIGGERS } from "./types";
+import {
+  AFFECTS, DESTINATIONS, METHODS, RAMP_KINDS, RECURRENCE, ROLES, THEMES, THRESHOLD_OPS, THRESHOLD_STATS, TRIGGERS,
+} from "./types";
 
 export const SYSTEM = `You label Magic: the Gathering cards with the JOBS they do and the LIMITS on each job.
 
@@ -76,6 +78,16 @@ EVERY JOB CARRIES:
   restrictedTo the creature type or card type the effect is limited to, exactly
                as printed ("Wolf", "Dinosaur", "artifact", "land", "creature"),
                or null when it applies to anything.
+  affects      whose cards or life the job points at: ${AFFECTS.join(", ")}, or
+               null when it has no direction. Mill and discard are where it
+               matters: "each opponent mills" is opponents, "mill three" of
+               your own library is self.
+  to           ONLY on a tutor or recursion job, where the card goes: one of
+               ${DESTINATIONS.join(", ")}. Returning a creature to the
+               battlefield is battlefield; to your hand is hand. Otherwise null.
+  method       ONLY on a removal or wipes job, how it removes: one of
+               ${METHODS.join(", ")} ("shrink" = -X/-X or damage). Returning a
+               permanent to its owner's hand is bounce. Otherwise null.
   trigger      one of: ${TRIGGERS.join(", ")}
                  "none" = static or on resolution; "activated" = a cost you
                  choose to pay; the rest are events you must wait for.
@@ -96,8 +108,8 @@ Return ONLY a JSON array, one object per card, in the order given. Every job
 object uses EXACTLY these keys, spelled this way — "space", not "role":
 
 [{"name":"Bejeweled Warg","jobs":[
-  {"space":"theme","kind":"counters","restrictedTo":"Wolf","trigger":"combatDamage","recurrence":"repeatable","threshold":null,"modal":true},
-  {"space":"role","kind":"ramp","rampKind":"makesTreasure","restrictedTo":null,"trigger":"combatDamage","recurrence":"repeatable","threshold":null,"modal":true}
+  {"space":"theme","kind":"counters","restrictedTo":"Wolf","affects":"self","to":null,"method":null,"trigger":"combatDamage","recurrence":"repeatable","threshold":null,"modal":true},
+  {"space":"role","kind":"ramp","rampKind":"makesTreasure","restrictedTo":null,"affects":"self","to":null,"method":null,"trigger":"combatDamage","recurrence":"repeatable","threshold":null,"modal":true}
 ]}]
 
 Omit "rampKind" entirely on any job that is not a role "ramp" job (a null is
@@ -230,7 +242,9 @@ export const buildRequest = (customId: string, model: string, cards: CardForProm
  * relabels — which costs a full run, and is therefore a deliberate act rather than a
  * side effect of editing a comment. Reword freely; bump when the INSTRUCTION changes.
  */
-export const LABEL_PROMPT_VERSION = "1";
+// "2": every job now carries `affects`, `to` and `method` (the vocabulary plan's Task 2), so a row
+// labelled under "1" has none of them and must read stale rather than current.
+export const LABEL_PROMPT_VERSION = "2";
 
 /**
  * Whether a stored label still describes its card, mirroring `proseInputHash`.

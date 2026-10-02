@@ -687,7 +687,11 @@ export function validateGold(rows = GOLD) {
     seen.add(row.name);
     if (!row.why || row.why.length < 20) bad.push(`${row.name}: no reasoning recorded`);
     for (const job of row.jobs) {
-      const problems = validateJob(job);
+      // THIS SET PREDATES `affects`, `to` and `method` (the vocabulary plan's Task 2), and its rows were
+      // never judged on them. It is the frozen record of the paid sample (#1034) and is rebuilt on the new
+      // schema by that plan's Task 4. Filling the three fields in here would invent answers nobody gave, so
+      // their "missing" complaints alone are excused; every other rule still binds.
+      const problems = validateJob(job).filter((p) => !/^(affects|to|method) is missing/.test(p));
       if (problems.length) bad.push(`${row.name} [${job.kind}]: ${problems.join(", ")}`);
       // A null kind was legal while the gap was open; d9 closed it on 2026-09-25
       // with `burstMana`. A null now means a kind none of the four fits, which is

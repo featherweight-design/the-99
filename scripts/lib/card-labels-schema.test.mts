@@ -43,9 +43,35 @@ describe("the label vocabulary is 2b's", () => {
 describe("validateJob", () => {
   const warg = {
     space: "role" as const, kind: "ramp", rampKind: "makesTreasure",
-    restrictedTo: null, trigger: "combatDamage", recurrence: "oneShot",
+    restrictedTo: null, affects: null, to: null, method: null, trigger: "combatDamage", recurrence: "oneShot",
     threshold: null, modal: true,
   };
+
+  // `affects`, `to` and `method` (the vocabulary plan's Task 2) are REQUIRED and nullable, like
+  // `restrictedTo`: an omitted key is an unanswered question, and the consumer gates on two of them.
+  it("requires affects, to and method, and accepts null for each", () => {
+    for (const field of ["affects", "to", "method"] as const) {
+      const { [field]: _, ...missing } = warg;
+      expect(validateJob(missing).some((p) => p.startsWith(`${field} is missing`))).toBe(true);
+      expect(validateJob({ ...warg, [field]: null })).toEqual([]);
+      expect(validateJob({ ...warg, [field]: "sideways" })).toContain(`${field} "sideways"`);
+    }
+  });
+
+  it("accepts each value the consumer reads, on the jobs it belongs to", () => {
+    const recursion = { ...warg, space: "theme" as const, kind: "recursion", rampKind: undefined };
+    const removal = { ...warg, kind: "removal", rampKind: undefined };
+    for (const affects of ["self", "opponents", "each"]) expect(validateJob({ ...warg, affects })).toEqual([]);
+    for (const to of ["hand", "battlefield", "top"]) expect(validateJob({ ...recursion, to })).toEqual([]);
+    for (const method of ["destroy", "exile", "bounce", "shrink"]) expect(validateJob({ ...removal, method })).toEqual([]);
+  });
+
+  // As `rampKind` is ramp's alone: the consumer gates on `to`, so one on a draw job would refuse a
+  // stand-in for a reason the card does not have.
+  it("refuses a to or a method on a job that cannot carry one", () => {
+    expect(validateJob({ ...warg, to: "hand" })).toContain("to on a ramp job");
+    expect(validateJob({ ...warg, method: "exile" })).toContain("method on a ramp job");
+  });
 
   it("accepts the Bejeweled Warg ramp job", () => {
     expect(validateJob(warg)).toEqual([]);
@@ -97,7 +123,7 @@ describe("validateJob", () => {
 
 describe("jobKey", () => {
   const base: Job = {
-    space: "role", kind: "ramp", rampKind: "tapsForMana", restrictedTo: null,
+    space: "role", kind: "ramp", rampKind: "tapsForMana", restrictedTo: null, affects: null, to: null, method: null,
     trigger: "none", recurrence: "repeatable", threshold: null, modal: false,
   };
 
@@ -119,6 +145,15 @@ describe("jobKey", () => {
 
   it("is equal for two jobs that genuinely agree", () => {
     expect(jobKey(base)).toBe(jobKey({ ...base }));
+  });
+
+  // The three consumer fields are part of a job's identity: self-mill and opponent-mill, a regrowth and a
+  // reanimation, a bounce and an exile are different jobs, and a key that dropped one would merge them.
+  it("separates jobs that differ only in affects, to or method", () => {
+    expect(jobKey({ ...base, affects: "self" })).not.toBe(jobKey({ ...base, affects: "opponents" }));
+    expect(jobKey({ ...base, to: "hand" })).not.toBe(jobKey({ ...base, to: "battlefield" }));
+    expect(jobKey({ ...base, method: "bounce" })).not.toBe(jobKey({ ...base, method: "exile" }));
+    expect(jobKey({ ...base, affects: null })).not.toBe(jobKey({ ...base, affects: "each" }));
   });
 
   // INJECTIVITY. The joined form rendered `restrictedTo: null` and the literal string "-"
