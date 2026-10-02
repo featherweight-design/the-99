@@ -30,7 +30,7 @@ export type { Role, Theme };
 
 /**
  * The job kinds in `role` space. LABEL-OWNED: it holds every `Role` in src/lib/recs/roles.ts
- * and may hold more (`tutor` and `counterspell` arrive with the vocabulary plan's Task 3).
+ * and may hold more: `tutor` and `counterspell` are label-only (the vocabulary plan's Task 3).
  *
  * The ONE tie to `Role` is the exhaustiveness check below (`_EveryRoleIsListed`): it resolves
  * to `never` only when every `Role` is present, so a role added upstream is a compile error

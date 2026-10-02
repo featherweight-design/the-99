@@ -337,12 +337,16 @@ export const buildRequest = (customId: string, model: string, cards: CardForProm
  * ANY edit to `SYSTEM`, a reworded definition included, marks every row stale. That is the
  * point (a label written against an older instruction is not the label a fresh call makes),
  * and it means a SYSTEM edit is a full run's spend, decided rather than incidental. The
- * version stays as the human-readable reason a run was owed.
+ * version still moves with every SYSTEM edit (pinned in `prompt.test.ts`): it is the human-readable
+ * reason a run was owed, and what the label copy reads to tell a prompt change from a catalog one.
  */
-// "3" is not needed for Task 3's vocabulary: SYSTEM is hashed now, and that change alone stales every row.
+// "3": the vocabulary plan's Task 3 vocabulary and definitions. SYSTEM's hash alone already stales
+// every row; the version moves with it because `copy-card-labels.ts` reads a version mismatch as "a
+// different prompt" and a hash mismatch under an EQUAL version as a catalog difference. A SYSTEM edit
+// with no bump would be misreported as the latter, so `prompt.test.ts` pins SYSTEM's hash to this version.
 // "2": every job now carries `affects`, `to` and `method` (the vocabulary plan's Task 2), so a row
 // labelled under "1" has none of them and must read stale rather than current.
-export const LABEL_PROMPT_VERSION = "2";
+export const LABEL_PROMPT_VERSION = "3";
 
 /**
  * Whether a stored label still describes its card, mirroring `proseInputHash`.

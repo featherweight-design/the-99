@@ -123,15 +123,26 @@ describe("labelInputHash", () => {
     expect(labelInputHash(a, "m")).not.toBe(labelInputHash(b, "m"));
   });
 
-  // Version "2" is what makes every row labelled before `affects`, `to` and `method` existed read STALE.
-  // Recomputing the payload with the constant itself cannot see a revert to "1", so the literal is pinned
-  // and a row hashed under "1" is shown not to match.
-  it("is version 2, so a row hashed under version 1 reads stale", () => {
-    expect(LABEL_PROMPT_VERSION).toBe("2");
-    const underV1 = createHash("sha256")
-      .update(JSON.stringify([card.oracleId, renderCard(card), "1", "m"]))
+  // Version "3" is the vocabulary plan's Task 3. Recomputing the payload with the constant itself cannot
+  // see a revert, so the literal is pinned and a row hashed under "2" with this SYSTEM is shown not to match.
+  it("is version 3, so a row hashed under version 2 reads stale", () => {
+    expect(LABEL_PROMPT_VERSION).toBe("3");
+    const underV2 = createHash("sha256")
+      .update(JSON.stringify([
+        card.oracleId, renderCard(card), "2", "m", createHash("sha256").update(SYSTEM).digest("hex"),
+      ]))
       .digest("hex");
-    expect(labelInputHash(card, "m")).not.toBe(underV1);
+    expect(labelInputHash(card, "m")).not.toBe(underV2);
+  });
+
+  // A SYSTEM edit must move the version with it. `copy-card-labels.ts` tells a prompt change from a
+  // catalog change by the stored version alone, so an edit that left the version where it was would
+  // install nothing and report every label as a catalog difference. When this fails: bump
+  // LABEL_PROMPT_VERSION, then re-pin both literals here together.
+  it("pins SYSTEM to the version it was written under", () => {
+    const pinned = { version: "3", system: "25c8449680d49e28c696441fc26478a592f7929837d46d943a22646c8b409491" };
+    expect({ version: LABEL_PROMPT_VERSION, system: createHash("sha256").update(SYSTEM).digest("hex") })
+      .toEqual(pinned);
   });
 
   // The version has to be READ, not merely exported. A hash computed over a payload with
