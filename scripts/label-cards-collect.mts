@@ -152,6 +152,9 @@ for (const [key, id] of Object.entries(submitted)) {
 
   const missing = Object.entries(labels).filter(([, v]) => v === null).length;
   writeFileSync(`out/labels-${key}.json`, JSON.stringify(labels, null, 1));
+  // Which run these labels answer. The file itself is a card-name map, so the stamp sits beside it; the gates
+  // refuse labels whose stamp is not the run out/batches.json and out/sample.json name.
+  writeFileSync(`out/labels-${key}.run.json`, JSON.stringify({ runId }));
   writeFileSync(`out/malformed-${key}.txt`, malformed.join("\n"));
   console.log(`${key}: ${Object.keys(labels).length} cards (${missing} not returned), ${malformed.length} rejected jobs, ${unexpected.length} unexpected names, ${errored} failed requests`);
   if (unexpected.length) console.log(`  unexpected: ${unexpected.slice(0, 5).join(", ")}${unexpected.length > 5 ? " …" : ""}`);

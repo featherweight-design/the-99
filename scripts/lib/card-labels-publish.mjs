@@ -84,7 +84,9 @@ export function publishArtifacts(sources, publish) {
     return;
   }
   const { paths, models } = target();
-  for (const src of sources) {
+  // EVERY source is checked before ANY is copied: a refusal part-way through would leave the committed set
+  // holding some of this run's artifacts beside the previous run's others.
+  const plan = sources.map((src) => {
     const dest = paths[src];
     if (!dest) throw new Error(`no committed path is declared for ${src} (LABEL_PUBLISH=${process.env.LABEL_PUBLISH ?? "first"})`);
     if (!existsSync(src)) throw new Error(`${src} was not written — refusing to publish a stale copy`);
@@ -98,6 +100,9 @@ export function publishArtifacts(sources, publish) {
         `figures to their own dated path instead, as the Sonnet 5 sample did.`,
       );
     }
+    return [src, dest];
+  });
+  for (const [src, dest] of plan) {
     mkdirSync(dirname(dest), { recursive: true });
     copyFileSync(src, dest);
     console.log(`published ${src} -> ${dest}`);

@@ -72,6 +72,13 @@ describe("publishing refuses an artifact that is not the default run", () => {
       expect(existsSync("docs/superpowers/benchmarks/2026-09-25-card-labels-cost.json")).toBe(false);
     });
 
+    it("copies nothing when any one source would refuse", () => {
+      writeFileSync("out/gates.json", "{}");
+      writeFileSync("out/labels-haiku.json", "{}");
+      expect(() => publishArtifacts(["out/gates.json", "out/labels-haiku.json"], true)).toThrow(/no committed path/);
+      expect(existsSync("docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-gates.json")).toBe(false);
+    });
+
     it("refuses the default two-model run, which is not what the re-sample ran", () => {
       write({ haiku: {}, sonnet: {} });
       expect(() => publishArtifacts(["out/cost.json"], true)).toThrow(/covers haiku, sonnet/);

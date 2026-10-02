@@ -25,7 +25,17 @@ const sample: { runId?: string; random: string[] } = JSON.parse(readFileSync("ou
 // be that same run's, or the empty rate reads some other draw's random set.
 const { runId } = JSON.parse(readFileSync("out/batches.json", "utf8")) as { runId?: string };
 if (!runId || sample.runId !== runId) {
-  console.error(`REFUSING: out/sample.json is from run ${sample.runId ?? "(none)"}, the labels from ${runId ?? "(none)"}.`);
+  console.error(`REFUSING: out/sample.json is from run ${sample.runId ?? "(none)"}, out/batches.json from ${runId ?? "(none)"}.`);
+  process.exit(2);
+}
+// The labels file is left as it was while a batch is still pending, so it can be an EARLIER run's. The
+// collector stamps the run beside it.
+const labelsRun = (() => {
+  try { return (JSON.parse(readFileSync(`out/labels-${model}.run.json`, "utf8")) as { runId?: string }).runId; }
+  catch { return undefined; }
+})();
+if (labelsRun !== runId) {
+  console.error(`REFUSING: out/labels-${model}.json answers run ${labelsRun ?? "(unstamped)"}, not ${runId}. Collect this run first.`);
   process.exit(2);
 }
 
