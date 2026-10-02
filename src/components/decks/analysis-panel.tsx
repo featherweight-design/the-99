@@ -260,7 +260,7 @@ function Verdict({
           />
         </div>
         <div data-testid="climb-cell" className={`flex min-w-0 flex-col md:col-start-1 md:gap-[26px] ${overview ? "md:row-start-2" : "md:row-start-1"}`}>
-          <BracketClimb verdict={verdict} profile={profile} locked={locked} />
+          <BracketClimb verdict={verdict} profile={profile} locked={locked} declared={declaration?.declared ?? null} />
         </div>
       </div>
       <FindingsBlock profile={profile} art={art} />

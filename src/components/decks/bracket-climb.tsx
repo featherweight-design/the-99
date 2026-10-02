@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 
 import { climb } from "../../lib/bracket/climb";
+import { declarationAsk } from "../../lib/bracket/declaration-ask";
 import type { Bracket, BracketLimitReport, BracketVerdict, RuleId } from "../../lib/bracket/types";
 import { upgradePath, type UpgradePath } from "../../lib/bracket/upgrade";
 import type { DeckProfile } from "../../lib/profile/types";
@@ -45,14 +46,24 @@ export function BracketClimb({
   verdict,
   profile,
   locked,
+  declared = null,
 }: {
   verdict: BracketVerdict;
   profile: DeckProfile;
   /** The deck's locked cards, for the path's sheet (Locked, D5). */
   locked: ReadonlySet<string>;
+  /**
+   * The bracket the player declared, or null. Read through `declarationAsk`, the rule the verdict
+   * block reads, so the climb and the block cannot disagree about whether the range is answered.
+   */
+  declared?: Bracket | null;
 }) {
   const copy = deckAnalysisCopy.climb;
   const rungs = climb(verdict.permits);
+  // AN ANSWERED RANGE STOPS ASKING (H34). The declare rung points at the block's chips, and once
+  // the player has chosen there is nothing left for it to point at: `[4,5]` declared reads as the
+  // plain rung above. How the climb marks the declared bracket itself is not drawn yet.
+  const answered = declared !== null && declarationAsk(verdict.permits, declared).kind === "answered";
   // THE PATH'S SHEET. Local, not persisted; the dialog returns focus to the rung's opener.
   const [open, setOpen] = useState(false);
   // THE REFERENCE SHEET's own, separate from the path's: the two never open together.
@@ -71,6 +82,7 @@ export function BracketClimb({
             role={rung.role}
             verdict={verdict}
             profile={profile}
+            answered={answered}
             path={
               rung.role === "below" && targets.length > 0
                 ? { onOpen: () => setOpen(true) }
@@ -116,12 +128,15 @@ function Rung({
   role,
   verdict,
   profile,
+  answered,
   path,
 }: {
   bracket: Bracket;
   role: "below" | "yours" | "above";
   verdict: BracketVerdict;
   profile: DeckProfile;
+  /** The range is answered, so the declare rung has nothing left to ask. */
+  answered: boolean;
   /** The lower rung's sheet opener, or null on every other rung. */
   path: { onOpen: () => void } | null;
 }) {
@@ -133,7 +148,8 @@ function Rung({
   // at the BOTTOM of the range and the verdict block's own sub-line carries it. Keying this on
   // "the above rung of any range" put the 4-5 sentence on a `[1,2]` deck's rung at 2, claiming
   // two brackets share limits that differ.
-  const declares = role === "above" && verdict.permits.length > 1 && verdict.permits[0] === 4;
+  const declares =
+    role === "above" && verdict.permits.length > 1 && verdict.permits[0] === 4 && !answered;
   return (
     <div
       data-testid="climb-rung"

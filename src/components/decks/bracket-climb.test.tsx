@@ -5,6 +5,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { slotDeck } from "../../lib/bracket/slot";
+import type { Bracket } from "../../lib/bracket/types";
 import type { ComboRef, FlagSource } from "../../lib/profile/types";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { BracketClimb, NEIGHBOUR_OPACITY, YOURS_TINT } from "./bracket-climb";
@@ -59,10 +60,10 @@ const SHAPES = {
     }),
 };
 
-const draw = (key: keyof typeof SHAPES) => {
+const draw = (key: keyof typeof SHAPES, declared: Bracket | null = null) => {
   const profile = SHAPES[key]();
   const verdict = slotDeck(profile);
-  render(<BracketClimb verdict={verdict} profile={profile} locked={new Set()} />);
+  render(<BracketClimb verdict={verdict} profile={profile} locked={new Set()} declared={declared} />);
   return verdict;
 };
 
@@ -187,6 +188,23 @@ describe("the rung above", () => {
     expect(within(above).queryByRole("img")).toBeNull();
     expect(within(above).queryByText("?")).toBeNull();
     expect(within(above).getByText(copy.roleDeclare)).toBeTruthy();
+  });
+
+  // H34: once the range is answered the rung has nothing to ask, so it reads as the plain rung
+  // above. A declaration OUTSIDE the range is drift, which leaves the ask standing.
+  it("stops asking once the range is answered", () => {
+    draw("4,5", 5);
+    const above = rungs().find((r) => r.dataset.role === "above")!;
+    expect(within(above).queryByText(copy.declare)).toBeNull();
+    expect(within(above).queryByText(copy.roleDeclare)).toBeNull();
+    expect(within(above).getByText(copy.roleAbove)).toBeTruthy();
+    expect(above.className).not.toContain("border-dashed");
+  });
+
+  it("keeps asking over a declaration the range does not permit", () => {
+    draw("4,5", 2);
+    const above = rungs().find((r) => r.dataset.role === "above")!;
+    expect(within(above).getByText(copy.declare)).toBeTruthy();
   });
 
   it("carries no declare line where the range does not reach it", () => {
