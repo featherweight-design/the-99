@@ -277,7 +277,7 @@ describe("CostStrip — the accessible name with no send link", () => {
       <CostStrip cost={cost()} href="https://manapool.com/add-deck?x=1" sendCount={99} sendCapped />,
     );
     expect(container.querySelector("[data-set-cost-cap]")?.textContent).toBe(
-      "A send holds up to 99 cards, and 214 are missing here. Narrow the grid to send the rest.",
+      "One send holds up to 99 cards. Filter the grid to send the rest.",
     );
     rerender(<CostStrip cost={cost()} href="https://manapool.com/add-deck?x=1" sendCount={99} />);
     expect(container.querySelector("[data-set-cost-cap]")).toBeNull();

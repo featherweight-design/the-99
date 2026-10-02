@@ -204,7 +204,7 @@ export function CostStrip({
           className="basis-full font-mono text-[10px]"
           style={{ color: "var(--fg-locked)" }}
         >
-          {setPageCopy.cost.capNote(sending, cost.missingCount)}
+          {setPageCopy.cost.capNote(sending)}
         </span>
       ) : null}
 
