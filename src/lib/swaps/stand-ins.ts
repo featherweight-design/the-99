@@ -11,8 +11,8 @@ import { priceOf, priceState, type PriceFact } from "../decks/price";
 import { frontFaceOracle } from "../recs/faces";
 import { classifyRoles, type Role } from "../recs/roles";
 import { type Theme } from "../recs/themes";
-import { hasLabelledJob, labelledKeys, matchLabels } from "../labels/match";
-import { THEMES, type Job as LabelJob, type Method } from "../labels/types";
+import { hasLabelledJob, labelledKeys, matchLabels, type JobRef } from "../labels/match";
+import type { Job as LabelJob, Method } from "../labels/types";
 import { honestJobs, type DeckLens, type SwapRole } from "./honest";
 import {
   colorSource, drawbacks, fetchFinds, givesUp, landCatch, landColors, landColorsOnce, type BasicType, type Color, type Drawback, type Finds, type GivenUp,
@@ -253,9 +253,8 @@ const byLadder = (a: StandIn, b: StandIn) => staplesLast(a, b) || (a.rung ?? 1) 
 
 const NO_LABELS: ReadonlyMap<string, readonly LabelJob[]> = new Map();
 
-const THEME_KEYS: ReadonlySet<string> = new Set(THEMES);
-const asRolesThenThemes = (keys: readonly string[]) =>
-  [...keys.filter((k) => !THEME_KEYS.has(k)), ...keys.filter((k) => THEME_KEYS.has(k))] as (SwapRole | Theme)[];
+const asRolesThenThemes = (keys: readonly JobRef[]) =>
+  [...keys.filter((k) => k.space === "role"), ...keys.filter((k) => k.space === "theme")].map((k) => k.key) as (SwapRole | Theme)[];
 
 /** The text comparison's half of a row: what `honestJobs` says both cards do for this deck. */
 function textSharing(
@@ -284,8 +283,8 @@ function labelRow(
   const m = matchLabels(original, candidate, deck, isCreatureType);
   if (m.shared.length === 0) return null;
   return {
-    shared: m.shared.filter((k) => !THEME_KEYS.has(k)) as SwapRole[],
-    sharedThemes: m.shared.filter((k) => THEME_KEYS.has(k)) as Theme[],
+    shared: m.shared.filter((k) => k.space === "role").map((k) => k.key) as SwapRole[],
+    sharedThemes: m.shared.filter((k) => k.space === "theme").map((k) => k.key) as Theme[],
     extra: asRolesThenThemes(m.extra),
     missing: asRolesThenThemes(m.missing),
     credit: m.credit,
@@ -339,7 +338,7 @@ export function rankStandIns(
   const originalPrice = stocked(original.oracleId, priced);
   // A labelled original's header names what its label says it does here (roles, ramp by its kind).
   const jobRoles = originalLabels && job.kind === "spell"
-    ? labelledKeys(originalLabels, deck, isCreatureType).filter((k) => !THEME_KEYS.has(k)) as SwapRole[]
+    ? labelledKeys(originalLabels, deck, isCreatureType).filter((k) => k.space === "role").map((k) => k.key) as SwapRole[]
     : originalRoles;
   const read: StandInGroups = { job, originalCents: originalPrice?.cents ?? null, groups: [], jobRoles };
   if (job.kind === "none") return read;

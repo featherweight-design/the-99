@@ -83,6 +83,15 @@ describe("stand-ins read labels only where both cards carry one (Q1)", () => {
     expect(names(read)).toEqual([]);
   });
 
+  it("files a kept role draw as a role, and names it in the header (role draw is not the draw theme)", () => {
+    const divination = card("Divination", "Sorcery", "Draw two cards.", 3);
+    const opt = card("Opt", "Instant", "Scry 1.\nDraw a card.", 1);
+    const roleDraw = job({ space: "role", kind: "draw", affects: "self" });
+    const read = rank(divination, [opt], new Map([[divination.oracleId, [roleDraw]], [opt.oracleId, [roleDraw]]]));
+    expect(read.jobRoles).toEqual(["draw"]);
+    expect(all(read).map((s) => [s.shared, s.sharedThemes])).toEqual([[["draw"], []]]);
+  });
+
   it("modal alternatives count once in the sort", () => {
     const charm = card("Charm", "Instant", "Choose one —\n• Destroy target creature.\n• Draw a card.", 2);
     const both = card("Both", "Instant", "Destroy target creature. Draw a card.", 2);

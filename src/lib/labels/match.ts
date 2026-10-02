@@ -44,16 +44,28 @@ export function relevant(job: Job, deck: DeckLens | null, isCreatureType: (w: st
   return true;
 }
 
-/** A card's jobs for this deck, by key. A Treasure maker's `treasure` theme is its ramp kind, named once. */
+/**
+ * A job's place for sharing: its SPACE and its key. The space is part of it because `draw` is both a role
+ * (it draws you cards) and a theme (it rewards drawing), and the two are different jobs; keyed by the bare
+ * name they merge, and a role draw is filed and worded as the theme.
+ */
+export type JobRef = { space: "role" | "theme"; key: string };
+const refOf = (id: string): JobRef => {
+  const at = id.indexOf(":");
+  return { space: id.slice(0, at) as JobRef["space"], key: id.slice(at + 1) };
+};
+
+/** A card's jobs for this deck, by `space:key`. A Treasure maker's `treasure` theme is its ramp kind, named once. */
 function jobsByKey(jobs: readonly Job[], deck: DeckLens | null, isCreatureType: (w: string) => boolean): Map<string, Job[]> {
   const out = new Map<string, Job[]>();
   for (const j of jobs) {
     if (!relevant(j, deck, isCreatureType)) continue;
     const k = keyOf(j);
     if (k === null || k === "land") continue;
-    out.set(k, [...(out.get(k) ?? []), j]);
+    const id = `${j.space}:${k}`;
+    out.set(id, [...(out.get(id) ?? []), j]);
   }
-  if (out.has("makesTreasure")) out.delete("treasure");
+  if (out.has("role:makesTreasure")) out.delete("theme:treasure");
   return out;
 }
 
@@ -69,12 +81,12 @@ function passes(orig: Job, cand: Job): boolean {
 const PERMANENT_ANSWERS: readonly Method[] = ["destroy", "exile"];
 
 export type LabelMatch = {
-  /** The original's job keys the candidate keeps. */
-  shared: string[];
-  /** The candidate's job keys the original does not have. */
-  extra: string[];
-  /** The original's job keys the candidate does not keep. */
-  missing: string[];
+  /** The original's jobs the candidate keeps. */
+  shared: JobRef[];
+  /** The candidate's jobs the original does not have. */
+  extra: JobRef[];
+  /** The original's jobs the candidate does not keep. */
+  missing: JobRef[];
   /** Methods the original removes by that the candidate does not (Q3): the row's `loses`. */
   lostMethods: Method[];
   /** Advisory mismatches among the kept jobs (trigger, recurrence, method): ranks lower, never drops. */
@@ -91,8 +103,8 @@ export function matchLabels(
 ): LabelMatch {
   const orig = jobsByKey(original, deck, isCreatureType);
   const cand = jobsByKey(candidate, deck, isCreatureType);
-  const shared: string[] = [];
-  const missing: string[] = [];
+  const shared: JobRef[] = [];
+  const missing: JobRef[] = [];
   const lostMethods: Method[] = [];
   let advisory = 0;
   let plain = 0;
@@ -107,20 +119,20 @@ export function matchLabels(
         if (!best || cost < best.cost) best = { o, c, cost };
       }
     }
-    if (!best) { missing.push(key); continue; }
-    shared.push(key);
+    if (!best) { missing.push(refOf(key)); continue; }
+    shared.push(refOf(key));
     advisory += best.cost;
     if (best.o.method !== null && PERMANENT_ANSWERS.includes(best.o.method) && best.c.method !== null && best.c.method !== best.o.method
       && !lostMethods.includes(best.o.method)) lostMethods.push(best.o.method);
     if (best.c.modal) modal += 1; else plain += 1;
   }
-  const extra = [...cand.keys()].filter((k) => !orig.has(k));
+  const extra = [...cand.keys()].filter((k) => !orig.has(k)).map(refOf);
   return { shared, extra, missing, lostMethods, advisory, credit: plain + Math.min(1, modal) };
 }
 
 /** A labelled card's job keys for this deck, in label order: roles and ramp kinds then themes, as the header names them. */
-export function labelledKeys(jobs: readonly Job[], deck: DeckLens | null, isCreatureType: (w: string) => boolean): string[] {
-  return [...jobsByKey(jobs, deck, isCreatureType).keys()];
+export function labelledKeys(jobs: readonly Job[], deck: DeckLens | null, isCreatureType: (w: string) => boolean): JobRef[] {
+  return [...jobsByKey(jobs, deck, isCreatureType).keys()].map(refOf);
 }
 
 /**
