@@ -25,6 +25,14 @@ describe("relevant: a job on your own cards counts only for what the deck plays"
     expect(relevant(pump, lens({ keyType: "Goblin" }), isType)).toBe(false);
   });
 
+  it("reads a creature type without case, and a multi-word type by its words", () => {
+    expect(relevant(job({ space: "theme", kind: "pump", affects: "self", restrictedTo: "elf" }), lens(), isType)).toBe(true);
+    expect(relevant(job({ space: "theme", kind: "pump", affects: "self", restrictedTo: "goblin" }), lens(), isType)).toBe(false);
+    const lords = job({ space: "theme", kind: "pump", affects: "self", restrictedTo: "Time Lord" });
+    expect(relevant(lords, lens({ keyType: "Time" }), isType)).toBe(true);
+    expect(relevant(lords, lens(), isType)).toBe(false);
+  });
+
   it("keeps a noncreature subtype only when the deck holds one", () => {
     const tutor = job({ space: "theme", kind: "recursion", affects: "self", restrictedTo: "Equipment" });
     expect(relevant(tutor, lens(), isType)).toBe(false);
@@ -118,6 +126,7 @@ describe("matchLabels: the gates drop, the advice ranks", () => {
     expect(covers("creature", "artifact", isType)).toBe(false);
     expect(covers("creature", "Time Lord", isType)).toBe(true);
     expect(covers("Creature", "Goblin", isType)).toBe(true);
+    expect(covers("creature", "goblin", isType)).toBe(true);
     expect(covers("spell", "instant", isType)).toBe(true);
     expect(covers("spell", "player", isType)).toBe(false);
     expect(covers("player", "spell", isType)).toBe(false);

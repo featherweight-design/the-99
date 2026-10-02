@@ -51,7 +51,13 @@ export function relevant(job: Job, deck: DeckLens | null, isCreatureType: (w: st
  * the type line word by word (`loadCreatureTypes`), so a multi-word type is known by its words.
  */
 const isCreatureTypeName = (w: string, isCreatureType: (w: string) => boolean) =>
-  isCreatureType(w) || (/\s/.test(w) && w.split(/\s+/).every(isCreatureType));
+  typeWords(w).every((t) => isCreatureType(t));
+
+/**
+ * A type's words in the catalog's case: the catalog prints "Goblin", while the scorer, like the gate, reads
+ * a restriction without case, so a "goblin" the model wrote is the same restriction.
+ */
+const typeWords = (w: string) => w.trim().split(/\s+/).map((t) => t.charAt(0).toUpperCase() + t.slice(1).toLowerCase());
 
 /**
  * A restriction's alternatives: the prompt joins two types with "or" ("Dwarf or Vehicle"), and the
@@ -61,7 +67,9 @@ const alternatives = (r: string) => r.split(/\s+or\s+/i).map((a) => a.trim()).fi
 
 function relevantTo(r: string, deck: DeckLens | null, isCreatureType: (w: string) => boolean): boolean {
   if (CARD_TYPES.has(cardType(r))) return deck !== null && deck.heldTypes.has(cardType(r));
-  if (isCreatureTypeName(r, isCreatureType)) return deck !== null && deck.keyType === r;
+  // A deck's key type is read word by word too (`keyCreatureType`), so "Time Lord" is the key of a deck
+  // keyed on either of its words.
+  if (isCreatureTypeName(r, isCreatureType)) return deck !== null && deck.keyType !== null && typeWords(r).includes(deck.keyType);
   if (deck !== null && deck.isSubtype(r)) return deck.held.has(r);
   return true;
 }
