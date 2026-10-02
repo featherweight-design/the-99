@@ -2836,6 +2836,32 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     expect(isShy(container)).toBe(true);
   });
 
+  // H17: a POINTER press leaves focus behind too (the cost strip's toggles take focus on
+  // every press), and holding the head open for it left the phone's head unpinned after the
+  // strip opened and closed. Only keyboard focus holds it. jsdom cannot tell the two kinds of
+  // focus apart, so `:focus-visible` is answered here the way a browser answers it after a tap.
+  it("collapses over focus a pointer press left behind (H17)", () => {
+    stubDesktop(true);
+    const { container } = view([p("1", { booster: true }), p("2", { booster: false })], []);
+    const hidden = container.querySelector(
+      '[data-set-shy-hides] a[href="#extras"]',
+    ) as HTMLElement;
+    const matches = Element.prototype.matches;
+    const spy = vi.spyOn(Element.prototype, "matches").mockImplementation(function (
+      this: Element,
+      selector: string,
+    ) {
+      return selector === ":focus-visible" ? false : matches.call(this, selector);
+    });
+    try {
+      hidden.focus();
+      scrollTo(2000);
+      expect(isShy(container)).toBe(true);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   // The rack row's marker is CONDITIONAL — present below `md`, absent at it — so the desktop
   // case above cannot see it at all. On the phone that row hides on collapse and carries the
   // search field, which is the case the gate was added for; without this, removing the

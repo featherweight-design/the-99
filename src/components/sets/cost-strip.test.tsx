@@ -271,4 +271,33 @@ describe("CostStrip — the accessible name with no send link", () => {
     render(<CostStrip cost={cost({ absentCount: 2 })} href={null} />);
     expect(opener()?.getAttribute("aria-label")).toMatch(/1 note/);
   });
+
+  it("explains the cap when it bites, and only then (H15)", () => {
+    const { rerender, container } = render(
+      <CostStrip cost={cost()} href="https://manapool.com/add-deck?x=1" sendCount={99} sendCapped />,
+    );
+    expect(container.querySelector("[data-set-cost-cap]")?.textContent).toBe(
+      "A send holds up to 99 cards, and 214 are missing here. Narrow the grid to send the rest.",
+    );
+    rerender(<CostStrip cost={cost()} href="https://manapool.com/add-deck?x=1" sendCount={99} />);
+    expect(container.querySelector("[data-set-cost-cap]")).toBeNull();
+  });
+
+  it("keeps the phone's close control where the open control was (H15)", () => {
+    const { container } = render(<CostStrip cost={cost()} href="https://manapool.com/add-deck?x=1" />);
+    fireEvent.click(container.querySelector("[data-set-cost-toggle]")!);
+    const close = container.querySelector("[data-set-cost-toggle]") as HTMLElement;
+    expect(close.getAttribute("aria-expanded")).toBe("true");
+    // Pinned to the strip's top right, not wrapped to a full-width row at its foot.
+    expect(close.className).toMatch(/absolute right-0 top-0/);
+    expect(close.className).not.toMatch(/w-full/);
+    expect((container.querySelector("[data-set-cost]") as HTMLElement).className).toMatch(/\brelative\b/);
+  });
+
+  it("puts the send button at the left on the phone and the right from md (H15)", () => {
+    render(<CostStrip cost={cost()} href="https://manapool.com/add-deck?x=1" />);
+    const send = screen.getByRole("link");
+    expect(send.className).toMatch(/md:ml-auto/);
+    expect(send.className).not.toMatch(/(^|\s)ml-auto/);
+  });
 });

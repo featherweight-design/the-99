@@ -20,6 +20,16 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
  * asked for no motion gets the two heights and the step between them, with nothing drawn in
  * between.
  */
+function keyboardFocused(el: Element | null): boolean {
+  if (el === null) return false;
+  try {
+    return el.matches(":focus-visible");
+  } catch {
+    // An engine without the selector: keep the old, safer rule and hold on any focus.
+    return true;
+  }
+}
+
 function prefersReducedMotion(): boolean {
   return typeof window !== "undefined"
     && typeof window.matchMedia === "function"
@@ -380,7 +390,16 @@ export function useHeadCollapse({
     // Only ever a reason NOT to collapse. A reader who is already looking at the bar and
     // tabs into the row must not have the head open itself underneath them, which is why
     // this gates the open→shy edge alone and never the restore.
+    //
+    // KEYBOARD focus only (H17, Hugh's walk 2026-10-02). The cost strip's toggles take
+    // focus on every press so a keyboard reader lands on the control that replaced the one
+    // they pressed, and a TAP does the same. Held on any focus, a tap on the strip's
+    // disclosure left focus inside a hidden member, so the head never collapsed and so
+    // never pinned, until the reader happened to focus something else. A pointer press
+    // leaves no keyboard to take away, and `:focus-visible` is the browser's own answer to
+    // which kind of focus this is.
     const holdsFocus = head !== null
+      && keyboardFocused(document.activeElement)
       && [...head.querySelectorAll("[data-set-shy-hides]")]
         .some((member) => member.contains(document.activeElement));
     // Read as a function of the CURRENT state, which is what makes this hysteresis rather

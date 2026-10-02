@@ -83,7 +83,7 @@ export function CostStrip({
   return (
     <div
       data-set-cost
-      className="rounded-[10px]"
+      className="relative rounded-[10px]"
       style={{ background: "var(--surface-sunken)", border: "1px solid var(--border)" }}
     >
       {/* The phone's collapsed row. `md:hidden` and unmounted above it rather than styled
@@ -123,7 +123,8 @@ export function CostStrip({
               {caveats}
             </span>
           ) : null}
-          <span aria-hidden="true" className="shrink-0 font-mono text-[11px]"
+          {/* 14px (H15): at 11px the glyph read as punctuation, not as a control. */}
+          <span aria-hidden="true" className="shrink-0 font-mono text-[14px] leading-none"
             style={{ color: "var(--fg-muted)" }}
           >
             ▾
@@ -135,7 +136,7 @@ export function CostStrip({
           on tap, in place. */}
       <div
         className={`${expanded ? "flex" : "hidden"} md:flex flex-wrap items-center
-                    gap-x-[14px] gap-y-[8px] px-[12px] py-[10px]`}
+                    gap-x-[14px] gap-y-[8px] py-[10px] pl-[12px] pr-[44px] md:pr-[12px]`}
       >
       <span className="flex min-w-0 flex-col">
         <span className="font-mono text-[10px] tracking-[0.08em]" style={{ color: "var(--fg-faint)" }}>
@@ -188,12 +189,23 @@ export function CostStrip({
         aria-label={sendCapped
           ? setPageCopy.cost.sendCappedAria(sending)
           : setPageCopy.cost.sendAria(sending, total)}
-        className="ml-auto inline-flex min-h-[44px] md:min-h-[32px] items-center rounded-[8px]
+        // Left-aligned on the phone (H15), where it wraps onto its own line and a
+        // right-pinned button sat apart from everything it acts on; right from `md`.
+        className="md:ml-auto inline-flex min-h-[44px] md:min-h-[32px] items-center rounded-[8px]
                    px-[14px] text-[13px] bg-[color:var(--fg)] text-[color:var(--bg)]
                    hover:opacity-90"
       >
         {sendCapped ? setPageCopy.cost.sendCapped(sending) : setPageCopy.cost.send(sending)}
       </a>
+      ) : null}
+      {href && sendCapped ? (
+        <span
+          data-set-cost-cap
+          className="basis-full font-mono text-[10px]"
+          style={{ color: "var(--fg-locked)" }}
+        >
+          {setPageCopy.cost.capNote(sending, cost.missingCount)}
+        </span>
       ) : null}
 
       {/* The way back, phone only — the desktop form has never been closable and does not
@@ -209,8 +221,11 @@ export function CostStrip({
           }}
           aria-expanded
           aria-label={setPageCopy.cost.collapseAria}
-          className="flex h-[44px] w-full items-center justify-center font-mono text-[11px]
-                     text-[color:var(--fg-muted)] md:hidden"
+          // Pinned where the collapsed row's ▾ was (H15): it used to wrap to a full-width
+          // row at the strip's foot, so the control that opened the strip moved the moment
+          // it was pressed. The block above reserves its 44px.
+          className="absolute right-0 top-0 flex h-[44px] w-[44px] items-center justify-center
+                     font-mono text-[14px] leading-none text-[color:var(--fg-muted)] md:hidden"
         >
           <span aria-hidden="true">▴</span>
         </button>
