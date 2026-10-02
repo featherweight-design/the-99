@@ -177,7 +177,7 @@ describe("the URL mirrors stand down while a navigation is pending", () => {
 
   // `lib/url/mirror` takes its pending state from this provider alone: a mirror write the router
   // adopted mid-navigation dropped the navigation on main (1f's startup diagnostic, 2026-09-29).
-  it("holds a mirror write through a pressed link and makes it when the run ends on the page", () => {
+  it("makes no mirror write through a pressed link, and writes again once the run ends", () => {
     state.path = "/collection";
     act(() => rerender(<App links={LINKS} />));
     window.history.replaceState(null, "", "/collection");
@@ -187,6 +187,9 @@ describe("the URL mirrors stand down while a navigation is pending", () => {
       mirrorUrl("/collection?sort=set");
       expect(replace).not.toHaveBeenCalled();
       press("/commanders", false);
+      // Nothing is replayed when the run ends; the next write the page asks for is made.
+      expect(replace).not.toHaveBeenCalled();
+      mirrorUrl("/collection?sort=set");
       expect(replace).toHaveBeenCalledWith(null, "", "/collection?sort=set");
     } finally {
       replace.mockRestore();
@@ -206,7 +209,7 @@ function MirrorInCommit({ write }: { write: string | null }) {
 describe("a same-page press holds the mirrors though it draws no screen", () => {
   // The open nav item clears its page's query: a navigation the screens ignore by design, and one a
   // mirror must not write over all the same.
-  it("holds a mirror write while a link to the page already open is pending", () => {
+  it("makes no mirror write while a link to the page already open is pending", () => {
     window.history.replaceState(null, "", "/?sort=name");
     const replace = vi.spyOn(window.history, "replaceState");
     try {
@@ -215,6 +218,9 @@ describe("a same-page press holds the mirrors though it draws no screen", () => 
       expect(replace).not.toHaveBeenCalled();
       expect(overlay()).toBeNull();
       press("/", false);
+      // Nothing is replayed when the run ends; the next write the page asks for is made.
+      expect(replace).not.toHaveBeenCalled();
+      mirrorUrl("/?sort=set");
       expect(replace).toHaveBeenCalledWith(null, "", "/?sort=set");
     } finally {
       replace.mockRestore();
@@ -223,7 +229,7 @@ describe("a same-page press holds the mirrors though it draws no screen", () => 
 });
 
 describe("the pending flag reaches a mirror in the same commit as the press", () => {
-  it("holds a mirror write fired by a sibling effect as the link reports", () => {
+  it("makes no mirror write fired by a sibling effect as the link reports", () => {
     state.path = "/collection";
     act(() => rerender(<App links={LINKS} />));
     window.history.replaceState(null, "", "/collection");
@@ -247,6 +253,9 @@ describe("the pending flag reaches a mirror in the same commit as the press", ()
       expect(replace).not.toHaveBeenCalled();
       state.pending.set("/commanders", false);
       act(() => rerender(<Both write="/collection?sort=set" />));
+      // Nothing is replayed when the run ends; the next write the page asks for is made.
+      expect(replace).not.toHaveBeenCalled();
+      mirrorUrl("/collection?sort=set");
       expect(replace).toHaveBeenCalledWith(null, "", "/collection?sort=set");
     } finally {
       replace.mockRestore();
@@ -257,7 +266,7 @@ describe("the pending flag reaches a mirror in the same commit as the press", ()
 describe("the pending flag reaches a mirror rendered BEFORE the pressed link", () => {
   // The phone shell's order: `<main>`, holding the page and its mirrors, renders before the tab bar,
   // so a passive report from a tab would run after the page's mirror in the same commit.
-  it("holds a mirror write in main when a tab after it is pressed in the same commit", () => {
+  it("makes no mirror write in main when a tab after it is pressed in the same commit", () => {
     state.path = "/collection";
     act(() => rerender(<App links={LINKS} />));
     window.history.replaceState(null, "", "/collection");
@@ -281,6 +290,9 @@ describe("the pending flag reaches a mirror rendered BEFORE the pressed link", (
       expect(replace).not.toHaveBeenCalled();
       state.pending.set("/commanders", false);
       act(() => rerender(<PhoneOrder write="/collection?sort=set" />));
+      // Nothing is replayed when the run ends; the next write the page asks for is made.
+      expect(replace).not.toHaveBeenCalled();
+      mirrorUrl("/collection?sort=set");
       expect(replace).toHaveBeenCalledWith(null, "", "/collection?sort=set");
     } finally {
       replace.mockRestore();

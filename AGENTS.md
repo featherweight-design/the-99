@@ -2483,11 +2483,14 @@ after a push to `/decks`, and in 3 of 4 cases the reader never left (1f's startu
   insertion effect, before the provider's layout effect, and every mirror runs in a passive
   effect after both, so a page's own first write sees its own path.
 - **No write while a navigation is pending**, as the shell's `NavigationPendingProvider` reports
-  it: `true` the moment a link reports a pending destination, so a mirror in the same passive
-  flush as the press already sees it, and cleared only by the provider's decision effect. A
-  same-page press counts: reporters hand the provider their RAW link state, and the provider
-  applies the same-page rule to its screens alone. The last write asked for is held and made when the navigation ends without leaving the path
-  it was asked on; one that leaves has made it moot.
+  it, and nothing is kept for later. A navigation that leaves the page makes a held write moot,
+  and one that stays on it (a press that only clears the query) makes it stale: replaying the
+  page's old query would undo it. A write asked for during a navigation that then goes nowhere is
+  lost until the page's state moves again. The provider publishes `true` the moment a link
+  reports a pending destination, from a layout effect, so a mirror in the same commit already
+  sees it whatever the tree order, and clears it only from its decision effect. A same-page
+  press counts: reporters hand the provider their RAW link state, and the provider applies the
+  same-page rule to its screens alone.
 
   The pending signal covers navigations that REPORT: every `<Link>`, and code pushes made through
   `usePendingPush`. A bare `router.push` is invisible to it. The direct pushes left in `src` all

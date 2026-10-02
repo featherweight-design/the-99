@@ -73,21 +73,22 @@ describe("mirrorUrl", () => {
     expect(window.location.search).toBe("?sort=name");
   });
 
-  it("makes the last held write when the navigation ends on the same path", () => {
+  // Nothing is kept for later (round 7). A same-page navigation that only clears the query would
+  // otherwise have the page's old query replayed over it the moment it lands.
+  it("replays nothing when a same-page navigation lands, so a cleared query stays cleared", () => {
     setNavigationPending(true);
     mirrorUrl("/collection?sort=set");
-    mirrorUrl("/collection?sort=quantity");
-    setNavigationPending(false);
-    expect(replace).toHaveBeenCalledTimes(1);
-    expect(window.location.search).toBe("?sort=quantity");
-  });
-
-  it("drops the held write when the navigation left the path", () => {
-    setNavigationPending(true);
-    mirrorUrl("/collection?sort=set");
-    window.history.pushState(null, "", "/decks");
+    window.history.pushState(null, "", "/collection");
     setNavigationPending(false);
     expect(replace).not.toHaveBeenCalled();
-    expect(window.location.pathname).toBe("/decks");
+    expect(window.location.search).toBe("");
+  });
+
+  it("writes again once the navigation has ended", () => {
+    setNavigationPending(true);
+    mirrorUrl("/collection?sort=set");
+    setNavigationPending(false);
+    mirrorUrl("/collection?sort=set");
+    expect(window.location.search).toBe("?sort=set");
   });
 });

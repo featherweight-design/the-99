@@ -14,15 +14,16 @@
 //      address before Next commits the new page, so a late write from the page being left would
 //      otherwise land over the destination, whether it named its own path or read the live one.
 //   3. While a navigation is pending (the shell's `NavigationPendingProvider` says so), no write
-//      is made. The last one asked for is kept, and made when the navigation ends without leaving
-//      the path it was asked on; a navigation that leaves has made it moot.
+//      is made, and none is kept for later. A navigation that leaves the page makes a held write
+//      moot, and one that stays on it (a press that only clears the query) makes it stale:
+//      replaying the query the page held before would undo that navigation. A write asked for
+//      during a navigation that then goes nowhere is lost until the page's state moves again.
 
 let pending = false;
 // The route the router has committed, as the shell's provider reads it from `usePathname()`; null
 // outside the provider. It stays on the page being left until Next commits a Back or Forward,
 // while `location` has already moved to the destination.
 let routePath: string | null = null;
-let deferred: { href: string; state: unknown; path: string } | null = null;
 
 const sameAsLive = (url: URL) =>
   url.pathname === window.location.pathname &&
@@ -31,11 +32,8 @@ const sameAsLive = (url: URL) =>
 
 /** Mirror `href` into the address bar, unless it is already there or a navigation is pending. */
 export function mirrorUrl(href: string | URL, state: unknown = null): void {
+  if (pending) return;
   const url = new URL(href, window.location.href);
-  if (pending) {
-    deferred = { href: typeof href === "string" ? href : url.href, state, path: window.location.pathname };
-    return;
-  }
   if (sameAsLive(url) || url.pathname !== window.location.pathname) return;
   // The live address must be the router's own page. A mirror that builds its href from
   // `location.pathname` passes the line above by construction, so this is what stops it after a
@@ -53,8 +51,4 @@ export function setRoutePath(next: string | null): void {
 /** The shell's navigation-pending provider reports each change of its pending state here. */
 export function setNavigationPending(next: boolean): void {
   pending = next;
-  if (next || deferred === null) return;
-  const held = deferred;
-  deferred = null;
-  if (window.location.pathname === held.path) mirrorUrl(held.href, held.state);
 }
