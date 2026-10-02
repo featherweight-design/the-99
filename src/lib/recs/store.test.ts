@@ -7,8 +7,19 @@ vi.mock("../../db", () => ({ db: stub.db }));
 // The guard's in-transaction re-read is the index TOKEN (`readIndexGeneration`), read on the
 // transaction it is handed. Answered here off that transaction's own index read, so each case
 // still states its index as a date and the trace still records the read where it happens.
+// `indexRead.fails` stands for a token read that fails; it throws only when the caller asks for
+// a strict read, as the real reader does, and answers the soft "0" otherwise.
+const indexRead = vi.hoisted(() => ({ fails: false, strictSeen: [] as boolean[] }));
 vi.mock("../cache/index-generation", () => ({
-  readIndexGeneration: async (q: { select: (x?: unknown) => { from: () => PromiseLike<{ at: Date | null }[]> } }) => {
+  readIndexGeneration: async (
+    q: { select: (x?: unknown) => { from: () => PromiseLike<{ at: Date | null }[]> } },
+    opts: { strict?: boolean } = {},
+  ) => {
+    indexRead.strictSeen.push(opts.strict === true);
+    if (indexRead.fails) {
+      if (opts.strict) throw new Error("relation does not exist");
+      return "0";
+    }
     const [row] = await q.select({}).from();
     return row?.at ? String(row.at.getTime()) : "0";
   },
@@ -16,6 +27,8 @@ vi.mock("../cache/index-generation", () => ({
 
 import {
   findScoredCommander,
+  INDEX_UNREADABLE,
+  indexGeneration,
   isSchemaLagError,
   loadScores,
   persistScores,
@@ -285,6 +298,44 @@ describe("persistScores generation guard", () => {
     await persistScores("user_1", [ranked()], collection.getTime(), "0");
 
     expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
+  });
+
+  // A FAILED read is not an empty index. Read softly, two failures would both answer "0",
+  // compare equal, and let the write through with no guard at all.
+  it("abandons the write when the in-transaction re-read fails", async () => {
+    const collection = new Date("2026-07-24T12:00:00Z");
+    const fake = fakeDb(collection, null);
+    stub.db.transaction = fake.db.transaction;
+    indexRead.fails = true;
+    try {
+      await expect(persistScores("user_1", [ranked()], collection.getTime(), "0"))
+        .rejects.toThrow("relation does not exist");
+    } finally {
+      indexRead.fails = false;
+    }
+    expect(fake.wrote()).toEqual({ deleted: false, insertedRows: 0 });
+  });
+
+  it("reads the token before the compute strictly, and answers one no reading can equal", async () => {
+    indexRead.fails = true;
+    indexRead.strictSeen.length = 0;
+    try {
+      expect(await indexGeneration()).toBe(INDEX_UNREADABLE);
+    } finally {
+      indexRead.fails = false;
+    }
+    expect(indexRead.strictSeen).toEqual([true]);
+  });
+
+  it("writes nothing over a token taken from a failed read", async () => {
+    const collection = new Date("2026-07-24T12:00:00Z");
+    const fake = fakeDb(collection, null);
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], collection.getTime(), INDEX_UNREADABLE);
+
+    expect(fake.wrote()).toEqual({ deleted: false, insertedRows: 0 });
+    expect(fake.trace()).toEqual([]);
   });
 
   // And the asymmetry that proves "0" is compared rather than ignored: the

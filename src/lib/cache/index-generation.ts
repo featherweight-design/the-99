@@ -40,8 +40,8 @@ const UNSTAMPED = "0";
  * `loadCompositionRow` and `loadStaples` — so these are its four tables and there is no
  * fifth:
  *
- *   commander_support        timestamp + role count + role sum
- *   commander_pair_support   timestamp + role count + role sum
+ *   commander_support        timestamp + role count + role digest
+ *   commander_pair_support   timestamp + role count + role digest
  *   identity_composition     timestamp
  *   format_staples           NO TIMESTAMP COLUMN EXISTS, so its own figures are the
  *                            observable: a row count and the sum of `commanders`.
@@ -74,8 +74,8 @@ const UNSTAMPED = "0";
  * The role COUNTS close that. They go 0 to ~3,279 at the flip and move on any later
  * re-derivation that reaches a different number of commanders, which is every one that
  * matters. Not a checksum — two derivations covering the same commanders with different
- * figures read alike — and the role write moves no timestamp either, so the role SUMS carry
- * those: one term per support table, the four averages summed over every row.
+ * figures read alike — and the role write moves no timestamp either, so the role DIGESTS
+ * carry those: one term per support table, an md5 over every row's key and four averages.
  *
  * Epoch millis computed in SQL, because the columns carry no zone and a `Date` built from
  * their rendering takes the reading host's clock with it.
@@ -84,6 +84,10 @@ export async function readIndexGeneration(
   /** The connection to read on. `persistScores` passes its own transaction, so the guard's
    *  re-read happens under the shared score lock it has already taken. */
   q: Pick<typeof db, "select"> = db,
+  /** Throw on a failed read instead of answering `UNSTAMPED`. The score guard needs it: two
+   *  failed reads would otherwise compare equal, as the empty index's token, and let a write
+   *  through with no guard at all. A cache key is better served by the soft answer. */
+  { strict = false }: { strict?: boolean } = {},
 ): Promise<string> {
   try {
     const [row] = await q.select({
@@ -98,11 +102,12 @@ export async function readIndexGeneration(
       // written; a later re-derivation writes new figures onto the SAME rows and moves neither
       // count nor timestamp, and since the fit score reads these figures (brief 2026-09-28
       // §5.4) a stored score computed against the previous ones would otherwise pass the
-      // guard. Summed as float8: the columns are `real`, and a float4 sum near 72,000 holds
-      // only about one decimal place, so a small re-derivation would leave it unchanged. Rounded
-      // to 3 places so the order the rows are summed in cannot make one token read two ways.
-      supportRoleSum: sql<string | null>`(select round(coalesce(sum(avg_ramp::float8 + avg_draw::float8 + avg_removal::float8 + avg_wipes::float8), 0)::numeric, 3) from commander_support)`,
-      pairRoleSum: sql<string | null>`(select round(coalesce(sum(avg_ramp::float8 + avg_draw::float8 + avg_removal::float8 + avg_wipes::float8), 0)::numeric, 3) from commander_pair_support)`,
+      // guard. A DIGEST keyed by row, not a sum: a sum misses offsetting changes (ramp +0.5 and
+      // draw -0.5, or two commanders trading figures), and the score reads each figure on its
+      // own. Ordered by key so it is one value for one table, and `real::text` prints the
+      // shortest exact form, so one figure has one spelling.
+      supportRoleDigest: sql<string | null>`(select md5(string_agg(commander_oracle_id::text || ':' || coalesce(avg_ramp::text, '') || ',' || coalesce(avg_draw::text, '') || ',' || coalesce(avg_removal::text, '') || ',' || coalesce(avg_wipes::text, ''), ';' order by commander_oracle_id)) from commander_support)`,
+      pairRoleDigest: sql<string | null>`(select md5(string_agg(commander_oracle_id::text || '+' || partner_oracle_id::text || ':' || coalesce(avg_ramp::text, '') || ',' || coalesce(avg_draw::text, '') || ',' || coalesce(avg_removal::text, '') || ',' || coalesce(avg_wipes::text, ''), ';' order by commander_oracle_id, partner_oracle_id)) from commander_pair_support)`,
     }).from(sql`(select 1) as _`);
 
     const parts = [
@@ -113,14 +118,16 @@ export async function readIndexGeneration(
       generationKey(row?.staplesWeight),
       generationKey(row?.supportRoles),
       generationKey(row?.pairRoles),
-      generationKey(row?.supportRoleSum),
-      generationKey(row?.pairRoleSum),
+      // A digest is not a number, so it skips `generationKey`; an empty table reads null.
+      row?.supportRoleDigest ?? UNSTAMPED,
+      row?.pairRoleDigest ?? UNSTAMPED,
     ];
     // All of them unstamped is the same answer the whole token gives when nothing has been
     // built, so it collapses to the constant rather than to "0.0.0.0" — one spelling for
     // one state.
     return parts.every((p) => p === UNSTAMPED) ? UNSTAMPED : parts.join(".");
-  } catch {
+  } catch (err) {
+    if (strict) throw err;
     // RECORDED, because this module sits on Home's cached path since the score guard reads
     // it (`recs/store.ts`): a page built over an unreadable token must not be stored as if
     // the read had succeeded (`check:list-cache`).

@@ -562,7 +562,9 @@ export async function buildCommanderIndex(
     // this is the one place that covers them and every other failure after the writes. Its own
     // try, so a failed role clear cannot skip it. Only when the run wrote rows: one that moved
     // nothing has no roles to clear and no reason to cost every reader a cold recompute.
-    if (writtenCommanders.length > 0 || writtenPairs.length > 0) {
+    // Or when the role pass published: a resume run that skipped every commander still writes
+    // targets, and a throw after that (the clear itself) must not leave their scores standing.
+    if (writtenCommanders.length > 0 || writtenPairs.length > 0 || r.roleTargets > 0 || r.pairRoleTargets > 0) {
       try {
         await clearScores();
         console.error("commander-index: cleared persisted commander scores after the failed run");

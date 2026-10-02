@@ -658,6 +658,27 @@ it("clears again when the role pass refuses", async () => {
   expect(order).toEqual(["clear", "roles", "clear"]);
 });
 
+// A resume run that skipped every commander writes no support rows, but its role pass still
+// publishes targets. If the clear after it throws, the error path must try once more rather
+// than reading "wrote nothing" and leaving scores graded against the previous figures.
+it("retries the clear on the error path when only the role pass published", async () => {
+  const order: string[] = [];
+  let clears = 0;
+  await expect(buildCommanderIndex({
+    loadPairs: async () => [],
+    deriveRoleTargets: async () => { order.push("roles"); return { written: 3279, pairsWritten: 0, zeroWipes: 0 }; },
+    loadCommanders: async () => [],
+    loadNameIndex: async () => [],
+    clearScores: async () => {
+      clears++;
+      order.push("clear");
+      if (clears === 1) throw new Error("clear failed");
+    },
+    delayMs: 0,
+  })).rejects.toThrow("clear failed");
+  expect(order).toEqual(["roles", "clear", "clear"]);
+});
+
 // And the staples step's half: `db:build:staples` rewrites the identity buckets after the
 // index build's clears, so replacing them retires the scores in the same transaction.
 describe("replaceCompositionIn", () => {

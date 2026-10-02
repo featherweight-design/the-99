@@ -9,6 +9,7 @@ import type { CommanderListItem, RankedCommander } from "./recommend";
 import type { SynergyState } from "./synergy-state";
 import { notBuiltBy } from "../decks/built";
 import { readIndexGeneration } from "../cache/index-generation";
+import { recordSoftFailure } from "../cache/soft-failure";
 
 // Postgres codes meaning the schema is behind the code: 42P01 undefined_table,
 // 42703 undefined_column. commander_scores is a cache and both readers already
@@ -145,8 +146,19 @@ export const SCORE_INDEX_LOCK = "commander-scores:commander-index";
  * which re-reads it inside its own transaction and drops the write if it moved.
  */
 export async function indexGeneration(): Promise<string> {
-  return readIndexGeneration();
+  try {
+    return await readIndexGeneration(db, { strict: true });
+  } catch {
+    // Not the unstamped token: that is a real reading (nothing built), and two failed reads
+    // answering it would compare equal and pass the guard. This one never matches a reading,
+    // so `persistScores` declines the write. Recorded, since it sits on Home's cached path.
+    recordSoftFailure();
+    return INDEX_UNREADABLE;
+  }
 }
+
+/** What `indexGeneration` answers when the index could not be read. No reading equals it. */
+export const INDEX_UNREADABLE = "unreadable";
 
 /**
  * Upsert rather than delete-then-insert: the after() warm and an inline compute
@@ -194,6 +206,8 @@ export async function persistScores(
    */
   indexGen?: string,
 ): Promise<void> {
+  // A token taken over a failed read guards nothing, so there is nothing to compare against.
+  if (indexGen === INDEX_UNREADABLE) return;
   const rows = ranked.map((r) => toScoreRow(userId, r));
   const keep = rows.map((r) => r.oracleId);
   await db.transaction(async (tx) => {
@@ -252,7 +266,8 @@ export async function persistScores(
     // writes have no reason to serialise against EACH OTHER; the one exclusive
     // taker is the rebuild.
     if (indexGen !== undefined) {
-      if ((await readIndexGeneration(tx)) !== indexGen) return;
+      // Strict: a failed re-read throws and abandons the write, never reads as a match.
+      if ((await readIndexGeneration(tx, { strict: true })) !== indexGen) return;
     }
     await tx.delete(commanderScores).where(
       keep.length === 0
