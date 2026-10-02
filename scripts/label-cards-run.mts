@@ -100,11 +100,12 @@ const stratified = Object.values(strata).flat();
 
 const all = [...gold, ...random, ...stratified];
 // Which set each card came from, for the free gates (the empty rate reads the random set alone): never pooled.
-mkdirSync("out", { recursive: true });
-writeFileSync("out/sample.json", JSON.stringify({
+// Written only beside a SUBMISSION and stamped with its run id (below), never by a dry run or a refused one:
+// a membership file from another draw would put the wrong random set under the labels the gates read.
+const membership = {
   gold: gold.map((c) => c.name), random: random.map((c) => c.name),
   strata: Object.fromEntries(Object.entries(strata).map(([k, v]) => [k, v.map((c) => c.name)])),
-}, null, 1));
+};
 const batches = chunk(all, CARDS_PER_BATCH);
 
 // ---- estimate, and refuse rather than truncate ------------------------------
@@ -253,6 +254,7 @@ for (const [key, model] of Object.entries(chosen) as [keyof typeof MODELS, strin
   // to strand a submitted batch: the ledger held its id, the collector never saw it,
   // and the next run submitted that model again.
   writeFileSync("out/batches.json", JSON.stringify({ runId, submitted, batches: batches.map((b) => b.map((c) => c.name)) }, null, 1));
+  writeFileSync("out/sample.json", JSON.stringify({ runId, ...membership }, null, 1));
   console.log(`${key}: submitted batch ${batch.id} (${requests.length} requests)`);
 }
 console.log("\nbatch ids written to out/batches.json — poll with `pnpm tsx scripts/label-cards-collect.mts`");

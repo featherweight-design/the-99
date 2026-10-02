@@ -315,7 +315,9 @@ if (process.argv.includes("--publish")) {
   for (const m of publishModels()) {
     const rows = predictions[m];
     if (!rows) die(`refusing to publish: out/labels-${m}.json is missing, so the comparison is incomplete`);
-    const answered = Object.values(rows).filter((v) => Array.isArray(v)).length;
+    // GOLD cards answered, by name: a re-sample's labels file also holds the random and strata cards, so a
+    // count over the whole file passes however many gold cards are missing.
+    const answered = GOLD.filter((r) => Array.isArray(rows[r.name])).length;
     if (answered < GOLD.length) die(`refusing to publish: ${m} answered ${answered} of ${GOLD.length} gold cards`);
   }
 }

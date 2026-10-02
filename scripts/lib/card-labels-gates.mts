@@ -4,10 +4,13 @@
 // is a reading, never a rule.
 import type { Job } from "../../src/lib/labels/types.js";
 
-export type Labels = Record<string, Job[]>;
+/** A card's labels, or `null` where the collector recorded no answer (failed, malformed or not returned). */
+export type Labels = Record<string, Job[] | null>;
 export type Flags = { tutor: boolean; massLandDenial: boolean; extraTurn: boolean };
 
-const has = (jobs: Job[], space: Job["space"], kind: string) => jobs.some((j) => j.space === space && j.kind === kind);
+const has = (jobs: Job[] | null, space: Job["space"], kind: string) => !!jobs?.some((j) => j.space === space && j.kind === kind);
+/** The cards the model answered: an unanswered card is no evidence for or against any gate. */
+const answered = (labels: Labels) => Object.entries(labels).filter((e): e is [string, Job[]] => Array.isArray(e[1]));
 
 /**
  * Agreement with `card_bracket_flags`, the bracket system's own classifiers, on the cards both read.
@@ -23,7 +26,7 @@ export function flagAgreement(labels: Labels, flags: Record<string, Flags>) {
   ];
   return Object.fromEntries(pairs.map((p) => {
     const both: string[] = [], flagOnly: string[] = [], labelOnly: string[] = [];
-    for (const [name, jobs] of Object.entries(labels)) {
+    for (const [name, jobs] of answered(labels)) {
       const f = flags[name];
       const flagged = f ? p.flag(f) : false, labelled = p.label(jobs);
       if (flagged && labelled) both.push(name);
@@ -45,7 +48,7 @@ const REMOVES = /\bdestroys?\b|\bexiles?\b|\bdamage\b|[-−]\d+\/[-−]\d+|\bret
  */
 export function removalLeaks(labels: Labels, text: Record<string, string>) {
   const out = { counterspell: [] as string[], discard: [] as string[], tapper: [] as string[] };
-  for (const [name, jobs] of Object.entries(labels)) {
+  for (const [name, jobs] of answered(labels)) {
     if (!has(jobs, "role", "removal")) continue;
     if (has(jobs, "role", "counterspell")) out.counterspell.push(name);
     if (has(jobs, "theme", "discard")) out.discard.push(name);
@@ -57,15 +60,15 @@ export function removalLeaks(labels: Labels, text: Record<string, string>) {
 
 /** Task 3 took tutors out of `draw`: a card labelled both is listed to be read, since a few do both. */
 export const tutorsInDraw = (labels: Labels) =>
-  Object.entries(labels).filter(([, j]) => has(j, "role", "tutor") && has(j, "role", "draw")).map(([n]) => n);
+  answered(labels).filter(([, j]) => has(j, "role", "tutor") && has(j, "role", "draw")).map(([n]) => n);
 
 /** The first backfill's empty rate on staging (d9, 2026-09-28): 464 of 3,792 collected cards. */
 export const EMPTY_BASELINE = 464 / 3792;
 
 /** The share of the RANDOM set answered with no job, against the baseline. Gold and strata are chosen, not drawn. */
 export function emptyRate(labels: Labels, random: readonly string[]) {
-  const returned = random.filter((n) => n in labels);
-  const empty = returned.filter((n) => labels[n].length === 0).length;
+  const returned = random.filter((n) => Array.isArray(labels[n]));
+  const empty = returned.filter((n) => labels[n]!.length === 0).length;
   const rate = returned.length ? empty / returned.length : null;
   return { random: random.length, returned: returned.length, empty, rate, baseline: EMPTY_BASELINE,
     deltaPoints: rate === null ? null : +((rate - EMPTY_BASELINE) * 100).toFixed(1) };

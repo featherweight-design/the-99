@@ -20,10 +20,17 @@ import { publishArtifacts } from "./lib/card-labels-publish.mjs";
 
 const model = process.env.LABEL_MODELS?.split(",")[0]?.trim() || "sonnet";
 const labels: Labels = JSON.parse(readFileSync(`out/labels-${model}.json`, "utf8"));
-const sample: { random: string[] } = JSON.parse(readFileSync("out/sample.json", "utf8"));
+const sample: { runId?: string; random: string[] } = JSON.parse(readFileSync("out/sample.json", "utf8"));
+// The labels belong to the run `out/batches.json` names (the collector reads it), and the membership must
+// be that same run's, or the empty rate reads some other draw's random set.
+const { runId } = JSON.parse(readFileSync("out/batches.json", "utf8")) as { runId?: string };
+if (!runId || sample.runId !== runId) {
+  console.error(`REFUSING: out/sample.json is from run ${sample.runId ?? "(none)"}, the labels from ${runId ?? "(none)"}.`);
+  process.exit(2);
+}
 
 const sql = neon(process.env.DATABASE_URL!);
-const names = Object.keys(labels);
+const names = Object.keys(labels).filter((n) => Array.isArray(labels[n]));
 const rows = (await sql`
   select c.name, c.oracle_text, coalesce(f.tutor, false) tutor,
          coalesce(f.mass_land_denial, false) mld, coalesce(f.extra_turn, false) extra_turn

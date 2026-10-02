@@ -59,6 +59,16 @@ describe("tutors and draw", () => {
   });
 });
 
+describe("an unanswered card (null) is no evidence", () => {
+  it("is skipped by every gate rather than aborting the run", () => {
+    const labels = { ok: [job("role", "removal"), job("role", "counterspell")], lost: null };
+    expect(removalLeaks(labels, { lost: "Tap target creature." }).counterspell).toEqual(["ok"]);
+    expect(flagAgreement(labels, { lost: flags({ tutor: true }) }).tutor.flagOnly).toEqual([]);
+    expect(tutorsInDraw(labels)).toEqual([]);
+    expect(emptyRate({ a: [], lost: null }, ["a", "lost"])).toMatchObject({ returned: 1, empty: 1 });
+  });
+});
+
 describe("the empty rate", () => {
   it("reads the random set alone, over the cards the model returned, against 464 of 3,792", () => {
     const labels = { a: [], b: [job("role", "draw")], c: [job("role", "ramp")], d: [job("theme", "tokens")], gold: [] };
