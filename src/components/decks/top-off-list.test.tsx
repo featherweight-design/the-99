@@ -1070,9 +1070,10 @@ describe("TopOffList — the desktop row", () => {
   it("states the card's type", () => {
     desktop();
 
-    // The bucket word, which is the synergy panel's own `all`-facet rule: this
-    // list has no facet filter, so every row here is that case.
-    expect(rowOf("owned-1")).toHaveTextContent("Spell");
+    // The card's own type (H27): an instant reads "Instant", never the
+    // synergy panel's merged "Spell" bucket.
+    expect(rowOf("owned-1")).toHaveTextContent("Instant");
+    expect(rowOf("owned-1")).not.toHaveTextContent("Spell");
   });
 
   it("draws neither on a phone", () => {
@@ -1085,7 +1086,7 @@ describe("TopOffList — the desktop row", () => {
     expect(
       screen.queryByRole("button", { name: cardDetailCopy.triggerAria("owned-1") }),
     ).toBeNull();
-    expect(rowOf("owned-1")).not.toHaveTextContent("Spell");
+    expect(rowOf("owned-1")).not.toHaveTextContent("Instant");
   });
 
   it("lights under the pointer, and never on a row that cannot be ticked", () => {

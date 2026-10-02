@@ -55,7 +55,7 @@ import {
   type PriceFact,
 } from "../../lib/decks/price";
 import { availabilityState } from "../../lib/decks/availability";
-import { FACET_TYPE_LABEL } from "../../lib/cards/facet";
+import { typeWord } from "../../lib/cards/facet";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips } from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
@@ -198,7 +198,7 @@ function rowLabel(
   // served by matching them, and the card's type is as true on a phone as on a
   // desktop. It leads, beside the cost, because both are facts about the card
   // rather than about this player's copy of it.
-  const type = FACET_TYPE_LABEL[c.facet];
+  const type = typeWord(c.typeLine);
   const inclusion =
     c.inclusionPct === null
       ? synergyCopy.figure.inclusionNone
@@ -1571,7 +1571,7 @@ function CandidateRow({
             className="md:order-3 flex-none truncate font-mono text-[11px]"
             style={{ width: TYPE_COL, color: "var(--fg-faint)" }}
           >
-            {FACET_TYPE_LABEL[c.facet]}
+            {typeWord(c.typeLine)}
           </span>
         )}
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { cardFacet, castFaceText, FACET_TYPE_LABEL, isLandFace, playableAsLand } from "./facet";
+import { cardFacet, castFaceText, FACET_TYPE_LABEL, isLandFace, playableAsLand, typeWord } from "./facet";
 
 describe("cardFacet", () => {
   it("buckets the six plain cases", () => {
@@ -134,5 +134,22 @@ describe("castFaceText", () => {
   // silently lose its text to an empty first half.
   it("passes a separator-less two-faced text through unchanged", () => {
     expect(castFaceText("Draw a card.", "modal_dfc")).toBe("Draw a card.");
+  });
+});
+
+describe("typeWord", () => {
+  // H27: the top-off row named both an instant and a sorcery "Spell", the synergy panel's bucket.
+  it("names an instant and a sorcery as themselves", () => {
+    expect(typeWord("Instant")).toBe("Instant");
+    expect(typeWord("Sorcery")).toBe("Sorcery");
+    expect(typeWord("Kindred Instant — Elf")).toBe("Instant");
+  });
+  it("reads the front face of a split or modal card", () => {
+    expect(typeWord("Sorcery // Instant")).toBe("Sorcery");
+  });
+  it("keeps the facet label for every other type", () => {
+    expect(typeWord("Legendary Creature — Dwarf")).toBe("Creature");
+    expect(typeWord("Artifact")).toBe("Artifact");
+    expect(typeWord("Land")).toBe("Land");
   });
 });
