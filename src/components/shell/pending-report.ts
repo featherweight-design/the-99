@@ -48,9 +48,12 @@ export function useReportPending(href: string, linkPending: boolean): boolean {
   const pending = linkPending && (!ctx || targetOf(href, ctx.pathname) !== ctx.pathname);
   const report = ctx?.report;
   const id = useId();
+  // The provider hears the RAW state: it applies the same-page rule itself for its screens, and
+  // still needs a same-page press for the URL mirrors (`lib/url/mirror`), which must not write
+  // over that navigation either.
   useEffect(() => {
-    report?.(id, href, pending);
-  }, [report, id, href, pending]);
+    report?.(id, href, linkPending);
+  }, [report, id, href, linkPending]);
   useEffect(() => () => report?.(id, href, false), [report, id, href]);
   return pending;
 }

@@ -51,6 +51,8 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
   // Which reporters are pending, and where each goes. A Map so a press that moves from one link to
   // another (only the last link stays pending) ends the first without ending the run.
   const pending = useRef(new Map<string, string>());
+  // Every reporter whose link is pending, whatever page it goes to: what the URL mirrors read.
+  const navigating = useRef(new Set<string>());
   const running = useRef(false);
   // The run has been pending 400ms: from here any overlay route it points at shows at once.
   const due = useRef(false);
@@ -80,13 +82,17 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
   const report = useCallback<Reporter>(
     (id, href, isPending) => {
       const to = targetOf(href, pathname);
-      if (isPending && to !== pathname) {
-        pending.current.set(id, to);
-        // Published at once, not in the decision effect a render later: a page's mirror in the
-        // same passive flush as this report would otherwise still see no navigation pending.
-        // Clearing waits for that effect, so a press moving between links never reads as idle.
+      if (isPending && to !== pathname) pending.current.set(id, to);
+      else pending.current.delete(id);
+      // The mirrors stand down for ANY pending navigation, a same-page one included (a press on
+      // the open nav item clears its query), though the screens above ignore those. Published at
+      // once, not in the decision effect a render later: a page's mirror in the same passive flush
+      // as this report would otherwise still see no navigation pending. Clearing waits for that
+      // effect, so a press moving between links never reads as idle.
+      if (isPending) {
+        navigating.current.add(id);
         setNavigationPending(true);
-      } else pending.current.delete(id);
+      } else navigating.current.delete(id);
       setReports((n) => n + 1);
     },
     [pathname],
@@ -95,7 +101,7 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
   useEffect(() => {
     // The URL mirrors stand down while a navigation is pending (`lib/url/mirror`): a write the
     // router adopts mid-navigation drops the navigation.
-    setNavigationPending(pending.current.size > 0);
+    setNavigationPending(navigating.current.size > 0);
     if (pending.current.size === 0) {
       if (running.current) end();
       return;

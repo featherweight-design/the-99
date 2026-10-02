@@ -203,6 +203,25 @@ function MirrorInCommit({ write }: { write: string | null }) {
   return null;
 }
 
+describe("a same-page press holds the mirrors though it draws no screen", () => {
+  // The open nav item clears its page's query: a navigation the screens ignore by design, and one a
+  // mirror must not write over all the same.
+  it("holds a mirror write while a link to the page already open is pending", () => {
+    window.history.replaceState(null, "", "/?sort=name");
+    const replace = vi.spyOn(window.history, "replaceState");
+    try {
+      press("/");
+      mirrorUrl("/?sort=set");
+      expect(replace).not.toHaveBeenCalled();
+      expect(overlay()).toBeNull();
+      press("/", false);
+      expect(replace).toHaveBeenCalledWith(null, "", "/?sort=set");
+    } finally {
+      replace.mockRestore();
+    }
+  });
+});
+
 describe("the pending flag reaches a mirror in the same commit as the press", () => {
   it("holds a mirror write fired by a sibling effect as the link reports", () => {
     state.path = "/collection";
