@@ -26,7 +26,7 @@ import { FIELD_BARS, fieldBars, jobBars, restrictionPair, stops, type Bar, type 
 import { GOLD } from "./lib/card-labels-gold.mjs";
 import { bestPairing } from "./lib/card-labels-pairing.mjs";
 import { ALL_MODELS, MODELS } from "./lib/card-labels-pricing.mjs";
-import { publishArtifacts, publishModels } from "./lib/card-labels-publish.mjs";
+import { labelsRunMismatch, publishArtifacts, publishingResample, publishModels } from "./lib/card-labels-publish.mjs";
 import { METHOD_KINDS, TO_KINDS, type Job } from "../src/lib/labels/types.js";
 
 // The SHARED `Job`, not a local one. This file declared its own — a fourth description of
@@ -312,6 +312,9 @@ mkdirSync("out", { recursive: true });
 // present and complete (both for the first sample, Sonnet alone for LABEL_PUBLISH=resample),
 // or the committed artifact silently loses a column the report quotes.
 if (process.argv.includes("--publish")) {
+  // The re-sample's score must be of the SUBMITTED run's labels, not a previous run's left on disk.
+  const stale = publishingResample() ? labelsRunMismatch(publishModels()) : null;
+  if (stale) die(`refusing to publish: ${stale}`);
   for (const m of publishModels()) {
     const rows = predictions[m];
     if (!rows) die(`refusing to publish: out/labels-${m}.json is missing, so the comparison is incomplete`);

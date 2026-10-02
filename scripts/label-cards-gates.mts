@@ -16,7 +16,7 @@ import "./lib/env.mjs";
 import { neon } from "@neondatabase/serverless";
 
 import { emptyRate, flagAgreement, removalLeaks, tutorsInDraw, type Flags, type Labels } from "./lib/card-labels-gates.mjs";
-import { publishArtifacts } from "./lib/card-labels-publish.mjs";
+import { labelsRunMismatch, publishArtifacts } from "./lib/card-labels-publish.mjs";
 
 const model = process.env.LABEL_MODELS?.split(",")[0]?.trim() || "sonnet";
 const labels: Labels = JSON.parse(readFileSync(`out/labels-${model}.json`, "utf8"));
@@ -28,16 +28,9 @@ if (!runId || sample.runId !== runId) {
   console.error(`REFUSING: out/sample.json is from run ${sample.runId ?? "(none)"}, out/batches.json from ${runId ?? "(none)"}.`);
   process.exit(2);
 }
-// The labels file is left as it was while a batch is still pending, so it can be an EARLIER run's. The
-// collector stamps the run beside it.
-const labelsRun = (() => {
-  try { return (JSON.parse(readFileSync(`out/labels-${model}.run.json`, "utf8")) as { runId?: string }).runId; }
-  catch { return undefined; }
-})();
-if (labelsRun !== runId) {
-  console.error(`REFUSING: out/labels-${model}.json answers run ${labelsRun ?? "(unstamped)"}, not ${runId}. Collect this run first.`);
-  process.exit(2);
-}
+// The labels file is left as it was while a batch is still pending, so it can be an EARLIER run's.
+const stale = labelsRunMismatch([model]);
+if (stale) { console.error(`REFUSING: ${stale}`); process.exit(2); }
 
 const sql = neon(process.env.DATABASE_URL!);
 const names = Object.keys(labels).filter((n) => Array.isArray(labels[n]));

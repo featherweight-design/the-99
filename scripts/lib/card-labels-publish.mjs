@@ -38,8 +38,30 @@ export const RESAMPLE_PUBLISHED = {
 };
 const RESAMPLE_MODELS = ["sonnet"];
 
+/**
+ * Why the labels on disk cannot be published as the submitted run's, or null when they can. The labels file
+ * is left untouched while a batch is pending, so after a new submission it can still hold an EARLIER run's
+ * answers; the collector stamps its run beside each file (`out/labels-<model>.run.json`), and that stamp must
+ * equal the run `out/batches.json` names. Every reader that publishes the re-sample calls this one rule.
+ *
+ * @param {string[]} models
+ * @returns {string | null}
+ */
+export function labelsRunMismatch(models) {
+  const read = (path) => { try { return JSON.parse(readFileSync(path, "utf8")).runId; } catch { return undefined; } };
+  const runId = read("out/batches.json");
+  if (!runId) return "out/batches.json names no run";
+  for (const m of models) {
+    const stamp = read(`out/labels-${m}.run.json`);
+    if (stamp !== runId) return `out/labels-${m}.json answers run ${stamp ?? "(unstamped)"}, not ${runId}. Collect this run first.`;
+  }
+  return null;
+}
+
 /** The models the committed set this run publishes to describes: the scorer's publish gate requires exactly these. */
 export const publishModels = () => target().models;
+/** True when this run publishes the re-sample, whose labels must carry the submitted run's stamp. */
+export const publishingResample = () => (process.env.LABEL_PUBLISH ?? "first") === "resample";
 
 /** Which committed set this run publishes to, and the models that set describes. */
 function target() {
