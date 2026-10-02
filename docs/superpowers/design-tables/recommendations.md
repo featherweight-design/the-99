@@ -545,7 +545,7 @@ from the prose files; nothing is inferred from the codebase.
 
 | State | Triggering condition | What renders | Key data required |
 |---|---|---|---|
-| **1** — role at/above target | A role whose owned count meets or exceeds the commander's role target (measured, else `ROLE_TARGETS`), EDHREC figures present | Role panel; owned count in `--success`; the at/past gap clause (`coverage.gap`); chips (desktop) or 44px rows (phone) with figure plates, sorted `inclusionPct` desc | Per-role owned cards with `oracleId`, `name`, `inclusionPct`; role baseline |
+| **1** — role at/above target | A role whose owned count meets or exceeds the commander's role target (measured, else `ROLE_TARGETS`), EDHREC figures present | Role panel; owned count in `--success`; the at/past gap clause (`coverage.gap`); chips (desktop) or 44px rows (phone) with figure plates, sorted `inclusionPct` desc | Per-role owned cards with `oracleId`, `name`, `inclusionPct`; the commander's `roleTargets` |
 | **2** — role below target | Owned count < target, and the target is not a measured 0 | Same panel; the short gap clause (`coverage.gap`); header stacks at phone | Owned count, the commander's `roleTargets` |
 | **3** — role with an empty pool | Zero owned cards in the role | Shipped `No {role} cards in your pool` (mono 11px #6E6353); no list, no disclosure | Owned count = 0 |
 | **4** — a chip whose figure is absent | Some cards in a role have no `inclusionPct` while siblings do | Em dash in `--fg-locked`, plate removed, chip padding `0 10px`; absent chips sort last; legend `— = no EDHREC figure for this card` (phone: `— = no EDHREC figure`) | Nullable `inclusionPct` per card |

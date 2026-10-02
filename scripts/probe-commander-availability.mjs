@@ -40,13 +40,15 @@ let heldTargets = null;
 async function restoreTargets() {
   if (!heldTargets) return;
   const h = heldTargets;
-  heldTargets = null;
   try {
     await pool.query(
       `update commander_support set avg_ramp = $2, avg_draw = $3, avg_removal = $4, avg_wipes = $5
         where commander_oracle_id = $1`,
       [h.oracle_id, h.avg_ramp, h.avg_draw, h.avg_removal, h.avg_wipes],
     );
+    // Cleared only once the row is back, so a failed restore leaves the handle for the next door
+    // (a signal, or `beforeExit`) to try again.
+    heldTargets = null;
     console.log(`\n  put the commander's role figures back (${h.oracle_id})`);
   } catch (err) {
     console.error(`\n  COULD NOT RESTORE the role figures on ${h.oracle_id} — they were`, h, err);
