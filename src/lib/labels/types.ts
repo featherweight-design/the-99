@@ -93,8 +93,12 @@ export const THRESHOLD_STATS = [
  * WHAT THE EFFECT POINTS AT, by player (the vocabulary plan's Task 2; Hugh's Q2, 2026-09-28). A
  * match gate in the stand-ins consumer: self-mill is never kept for opponent-mill. `self` for a job on
  * the controller's own cards, library, life or mana (a mana rock, counters on your own creatures,
- * as the prompt's Bejeweled Warg example labels both); `null` only when the job names no player at
- * all ("destroy target creature", which can hit anyone's).
+ * as the prompt's Bejeweled Warg example labels both). `opponents` for every REMOVAL job, even where
+ * the rules would let it target your own permanent ("destroy target creature"): removal takes an
+ * opponent's permanent by definition, and the consumer reads a `self` or `null` job's restriction as
+ * one on the deck's OWN cards, so labelling removal null would drop "destroy target artifact" from a
+ * deck with no artifacts. `each` for every player, you included ("destroy all creatures"); `null` only
+ * when the job points at no player at all, which is rare.
  */
 export const AFFECTS = ["self", "opponents", "each"] as const;
 

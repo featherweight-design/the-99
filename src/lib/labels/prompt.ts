@@ -79,10 +79,16 @@ EVERY JOB CARRIES:
                as printed ("Wolf", "Dinosaur", "artifact", "land", "creature"),
                or null when it applies to anything.
   affects      whose cards, library, life or mana the job points at: one of
-               ${AFFECTS.join(", ")}, or null ONLY when the job names no player
-               at all ("destroy target creature", which can hit anyone's).
-               self = your own: a mana rock or a Treasure you make, counters
-               on your own creatures, cards you draw, your own library.
+               ${AFFECTS.join(", ")}, or null.
+               self      = yours: a mana rock or a Treasure you make, counters
+                           on your own creatures, cards you draw, your library.
+               opponents = an opponent's. EVERY removal job is opponents, even
+                           where the rules would let you target your own
+                           permanent: "destroy target creature" is opponents.
+               each      = every player, you included: "destroy all
+                           creatures", "each player draws a card".
+               null      = ONLY when the job points at no player at all,
+                           which is rare.
                Mill and discard are where it matters most: "each opponent
                mills" is opponents, "mill three" of your own library is self.
   to           ONLY on a tutor or recursion job, where the card goes: one of

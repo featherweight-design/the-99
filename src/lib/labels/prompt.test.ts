@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import {
   buildRequest, labelInputHash, LABEL_PROMPT_VERSION, renderCard, SENDS_CACHE_BREAKPOINT, SYSTEM, SYSTEM_TOKENS_BOUND,
@@ -60,7 +61,8 @@ describe("SYSTEM_TOKENS_BOUND", () => {
   // the build must read this one rather than keep a constant measured on an older block.
   it("is at least one token per character, and is what the build books", () => {
     expect(SYSTEM_TOKENS_BOUND).toBeGreaterThanOrEqual(SYSTEM.length);
-    const build = readFileSync(join(__dirname, "../../../scripts/build-card-labels.ts"), "utf8");
+    // import.meta.url, not __dirname: Vitest runs tests as ESM.
+    const build = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../../scripts/build-card-labels.ts"), "utf8");
     expect(build).toMatch(/const SYSTEM_TOKENS = SYSTEM_TOKENS_BOUND;/);
   });
 });
