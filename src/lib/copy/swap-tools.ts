@@ -147,7 +147,7 @@ export const swapToolsCopy = {
     },
     /**
      * Q3 (the run plan's Task 5, rule 6): the permanent answer a labelled stand-in does not keep, among a
-     * row's `loses` ("keeps removal  loses exile"). Owed to /copy-review.
+     * row's `loses` ("keeps removal  loses exile"). Through /copy-review 2026-10-02.
      */
     method: { destroy: "destroy", exile: "exile", bounce: "bounce", shrink: "shrink" },
     /**
