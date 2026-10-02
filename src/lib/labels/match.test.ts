@@ -108,6 +108,17 @@ describe("matchLabels: the gates drop, the advice ranks", () => {
     expect(m([removal({ method: "bounce" })], [removal({ method: "shrink" })]).lostMethods).toEqual([]);
   });
 
+  it("names an edict and a tuck as permanent answers a bounce or a methodless removal does not keep", () => {
+    for (const method of ["sacrifice", "bottom"] as const) {
+      for (const kept of ["bounce", null] as const) {
+        const r = m([removal({ method })], [removal({ method: kept })]);
+        expect(r.lostMethods).toEqual([method]);
+        expect(r.advisory).toBe(1);
+      }
+      expect(m([removal({ method })], [removal({ method })]).lostMethods).toEqual([]);
+    }
+  });
+
   it("a candidate removal with no method keeps no permanent answer: it ranks lower and names the loss", () => {
     const r = m([removal({ method: "exile" })], [removal({ method: null })]);
     expect(r.shared).toEqual(["removal"]);
