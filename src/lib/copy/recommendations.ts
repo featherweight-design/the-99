@@ -5,8 +5,6 @@
 // straight; the three expressive moments are marked.
 //
 // Existing strings this block does NOT touch, and must not duplicate:
-//   detail.tsx:312-316  `{n} short of baseline` / `At the {n}-source baseline`
-//                       / `Well past the {n}-source baseline`
 //   detail.tsx:330      `No {role} cards in your pool`
 //   mix.ts               mixSourceLine() — derived per deck now, so it states what it
 //                        is measured against rather than asserting EDHREC
@@ -28,6 +26,19 @@ const plural = (n: string, one: string, many: string) =>
 export const recommendationsCopy = {
   // ── Surface A · Role Coverage ─────────────────────────────────────────
   coverage: {
+    // A role group's head: what the reader owns against the role's target. MEASURED is what
+    // this commander's decks run (its own figure, or its color bucket's), rounded to whole
+    // cards the way the fit score rounds it; FLAT is the per-role baseline we fall back to
+    // when no figure exists. A measured target of 0 says so and is never "short": its decks
+    // run none of that role, so a reader owning none is not missing anything.
+    gap: (count: number, target: number, measured: boolean): string => {
+      if (measured && target <= 0) return 'Its decks run none';
+      const of = measured ? `the ${target} its decks run` : `the ${target}-source baseline`;
+      if (count > target) return `Well past ${of}`;
+      if (count === target) return `At ${of}`;
+      return measured ? `${target - count} short of ${of}` : `${target - count} short of baseline`;
+    },
+
     // Replaces the shipped sub-caption "Your owned cards by role" ONLY when
     // figures are available. See REPLACES note at the bottom of this file.
     subcaption: 'Your owned cards by role · figures from EDHREC',

@@ -2,12 +2,14 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
 import { WhySection } from "./why-section";
+import type { ProfileRoleTargets } from "../../lib/profile/types";
 
 const PROSE =
   "Kess decks tend to cast the same few spells twice, leaning on cheap draw and graveyard value rather than one combo line.";
 
 // Every role at or past its target, so the gap sentence is absent unless a test says otherwise.
 const AT_BASELINE = { ...ROLE_TARGETS };
+const FLAT_TARGETS: ProfileRoleTargets = { of: "flat", targets: { ...ROLE_TARGETS } };
 
 function renderSection(props: Partial<Parameters<typeof WhySection>[0]> = {}) {
   return render(
@@ -16,6 +18,7 @@ function renderSection(props: Partial<Parameters<typeof WhySection>[0]> = {}) {
       edhrecOwnedCount={40}
       edhrecTotal={100}
       roleCounts={AT_BASELINE}
+      roleTargets={FLAT_TARGETS}
       width="desktop"
       {...props}
     />,
@@ -113,5 +116,29 @@ describe("WhySection committed-deck clause", () => {
   it("falls back when there is no deck to name", () => {
     renderSection({ committedSupport: { count: 4, topDeck: null } });
     expect(screen.queryByText(/already in your/)).toBeNull();
+  });
+
+  // How it works §5.4b: the thinnest role is the one the fit score docked, so it is graded
+  // against the commander's own targets, and says so.
+  describe("against the commander's measured targets", () => {
+    const measured = (t: ProfileRoleTargets["targets"]): ProfileRoleTargets => ({ of: "commander", targets: t });
+
+    it("names the role its own decks make it short on, and the figure they run", () => {
+      // Flat, removal would be the thinnest (4 of 8); against these targets it is wipes.
+      renderSection({
+        roleCounts: { ramp: 10, draw: 10, removal: 4, wipes: 0 },
+        roleTargets: measured({ ramp: 9, draw: 9, removal: 4, wipes: 1.6 }),
+      });
+      expect(screen.getByText(/Board wipes are where you are thinnest/)).toBeInTheDocument();
+      expect(screen.getByRole("link")).toHaveTextContent("zero owned against the two its decks run");
+    });
+
+    it("never names a role its decks run none of", () => {
+      renderSection({
+        roleCounts: { ramp: 10, draw: 10, removal: 8, wipes: 0 },
+        roleTargets: measured({ ramp: 10, draw: 10, removal: 8, wipes: 0.2 }),
+      });
+      expect(screen.queryByText(/where you are thinnest/)).toBeNull();
+    });
   });
 });

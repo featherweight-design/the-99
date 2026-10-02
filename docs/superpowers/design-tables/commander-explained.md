@@ -102,7 +102,7 @@ New section on `/commanders/[slug]`, between the Fit Hero and The Pool.
 | border-bottom | `1px solid var(--accent-shadow)` (the shipped Retry ink) | same |
 | aria-label | `prose.gapLinkAria(roleLabel)` — "Jump to {role}" | same |
 | Scroll behaviour | — (no `scrollIntoView`, no smooth scroll, no focus management beyond the browser's) | same |
-| Conditional rendering | present only when at least one role is short of baseline | same |
+| Conditional rendering | present only when at least one role is short of the commander's role target (measured, else the baseline). A measured target of 0 is never short | same |
 
 ### Anchor target (role `<section>`)
 
@@ -585,8 +585,8 @@ anything to say.
 
 | State | Triggering condition | Component rendered | Key props required |
 |---|---|---|---|
-| Gap named | at least one role short of baseline | sentence 3 names the weakest role and its figures; anchor links to that role's `<section>` | weakest role = largest **proportional** shortfall `(target − have) / target`, ties by `ROLE_ORDER` |
-| All at baseline | all four roles at or past baseline | sentence 3 **omitted**; no anchor; paragraph is two sentences | `roleCounts`, `ROLE_TARGETS` |
+| Gap named | at least one role short of its target | sentence 3 names the weakest role and its figures (`gapFigures(owned, target, measured)`: "… against the two its decks run", or "… against a three-source baseline" on the fallback); anchor links to that role's `<section>` | weakest role = largest **proportional** shortfall `(target − have) / target` over the commander's `roleTargets`, rounded with `wholeTarget`; a target of 0 is skipped; ties by `ROLE_ORDER` |
+| All at target | all four roles at or past their targets | sentence 3 **omitted**; no anchor; paragraph is two sentences | `roleCounts`, `roleTargets` |
 | No role data | role data missing | sentence 3 omitted; no anchor | — |
 | Prose absent × anchor | prose `null` but figures present | sentences 2–3 still render, so **the anchor still exists** (it lives in the templated sentence) | — |
 

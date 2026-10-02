@@ -159,6 +159,7 @@ import type { CommanderDetailScore } from "../../lib/recs/recommend";
 function detailCommander(): CommanderDetailScore {
   return {
     oracleId: "oracle-1",
+    roleTargets: { of: "flat", targets: { ramp: 10, draw: 10, removal: 8, wipes: 3 } },
     name: "Krenko, Mob Boss",
     colorIdentity: ["R"],
     imageUri: null,

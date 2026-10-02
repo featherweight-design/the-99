@@ -24,7 +24,32 @@ import { onPage, onPageRole } from "./lib/surface.mjs";
 // no reader can produce — and a second copy of the rule written here drifts from
 // it a round at a time, which is the whole argument against re-deriving the
 // commander from its slug a few lines below.
-import { isCommanderCandidate } from "../src/lib/recs/score";
+import { isCommanderCandidate, wholeTarget } from "../src/lib/recs/score";
+// The group heads' wording, imported for the same reason: the check compares the page with the
+// shipped function rather than with a copy of its rules.
+import { recommendationsCopy } from "../src/lib/copy/recommendations";
+
+// A MEASURED SENTINEL for the page's commander (How it works §5.4b). local-dev carries no role
+// figures, so without one every head reads the fallback and the measured wording is asserted by
+// nobody. Chosen to reach all four outcomes: ramp 4.4 rounds to 4 (past, on any fixture that owns
+// ramp), draw 9.6 rounds to 10, removal 2, and wipes 0, which must read as never short.
+const SENTINEL = { ramp: 4.4, draw: 9.6, removal: 2, wipes: 0 };
+let heldTargets = null;
+async function restoreTargets() {
+  if (!heldTargets) return;
+  const h = heldTargets;
+  heldTargets = null;
+  try {
+    await pool.query(
+      `update commander_support set avg_ramp = $2, avg_draw = $3, avg_removal = $4, avg_wipes = $5
+        where commander_oracle_id = $1`,
+      [h.oracle_id, h.avg_ramp, h.avg_draw, h.avg_removal, h.avg_wipes],
+    );
+    console.log(`\n  put the commander's role figures back (${h.oracle_id})`);
+  } catch (err) {
+    console.error(`\n  COULD NOT RESTORE the role figures on ${h.oracle_id} — they were`, h, err);
+  }
+}
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
   "E2E_AUDIT_USER_EMAIL",
@@ -408,15 +433,41 @@ async function run() {
   let heldDeckId = null;
 
   try {
-    const { slug, userId } = await (async () => {
+    const { slug, userId, commanderName } = await (async () => {
       const c = await browser.newContext({ viewport: WIDTHS[0].viewport });
       const p = await c.newPage();
       const uid = await signIn(p);
       const s = await findCommanderSlug(p);
+      await goto(p, `/commanders/${s}`);
+      // The route's loading screen draws an h1 of its own ("Consulting the council"), so the
+      // name is read only once a group head exists, which the page draws and the loader does not.
+      await onPage(p, "[data-role-gap]").first().waitFor({ state: "attached", timeout: 30_000 });
+      const h1 = onPage(p, "h1").first();
+      const name = (await h1.innerText()).trim();
       await c.close();
-      return { slug: s, userId: uid };
+      return { slug: s, userId: uid, commanderName: name };
     })();
     console.log(`fixture: /commanders/${slug}`);
+
+    // Captured BEFORE the write, so the `finally` puts back what was there.
+    const { rows: targetRows } = await pool.query(
+      `select cs.commander_oracle_id as oracle_id, cs.avg_ramp, cs.avg_draw, cs.avg_removal, cs.avg_wipes
+         from commander_support cs join cards c on c.oracle_id = cs.commander_oracle_id
+        where c.name = $1
+           or c.oracle_id in (select oracle_id from printings where flavor_name = $1)`,
+      [commanderName],
+    );
+    if (targetRows.length === 1) {
+      heldTargets = targetRows[0];
+      await pool.query(
+        `update commander_support set avg_ramp = $2, avg_draw = $3, avg_removal = $4, avg_wipes = $5
+          where commander_oracle_id = $1`,
+        [heldTargets.oracle_id, SENTINEL.ramp, SENTINEL.draw, SENTINEL.removal, SENTINEL.wipes],
+      );
+    } else {
+      report("the measured sentinel", false,
+        `found ${targetRows.length} commander_support rows for "${commanderName}"; the group-head check lost its subject, NOT a pass`);
+    }
 
     // Force a HARD claim so the slot's marker states are reachable at all. The
     // dev account's claims are all soft, so without this the marker reading is
@@ -731,9 +782,31 @@ async function run() {
         }
       }
 
+      // ── 5. the group heads grade against the commander's measured targets ─────
+      //
+      // How it works §5.4b. Every head on screen at this width, read through its own hook, against
+      // the shipped wording for the sentinel's targets. The wipes head is the case that matters: a
+      // measured 0 never reads short, whatever the reader owns.
+      if (heldTargets) {
+        const heads = await onPage(page, "[data-role-gap]").evaluateAll((els) =>
+          els
+            .filter((el) => el.getClientRects().length > 0)
+            .map((el) => ({ role: el.dataset.roleGap, owned: Number(el.dataset.owned), text: el.textContent.trim() })),
+        );
+        const roles = heads.map((h) => h.role).sort().join(",");
+        report("a head for each of the four roles", roles === "draw,ramp,removal,wipes", `drawn: ${roles || "none"}`);
+        for (const h of heads) {
+          const want = recommendationsCopy.coverage.gap(h.owned, wholeTarget(SENTINEL[h.role]), true);
+          report(`${h.role} head reads the measured target`, h.text === want, `"${h.text}" against "${want}"`);
+        }
+        const wipes = heads.find((h) => h.role === "wipes");
+        report("a measured 0 never reads short", !!wipes && !/short/.test(wipes.text), wipes ? `"${wipes.text}"` : "no wipes head");
+      }
+
       await context.close();
     }
   } finally {
+    await restoreTargets();
     // The deck goes whatever happened above; versions and version cards cascade.
     // Attempted independently of the browser shutdown, so one failing does not
     // strand the other — and the deck is a write on a shared account, which is
@@ -777,6 +850,7 @@ async function run() {
  * changes every availability reading taken afterwards.
  */
 async function sweepFixture() {
+  await restoreTargets();
   if (!fixtureDeckId) return;
   const id = fixtureDeckId;
   fixtureDeckId = null;

@@ -8,6 +8,7 @@ import { readEdhrecCache, resolveEdhrecData } from "../edhrec/client";
 import { supportOverlap } from "../edhrec/support-overlap";
 import { loadSupportLists } from "../edhrec/support-read";
 import { loadRoleTargetsForCommanders } from "../profile/role-targets";
+import type { ProfileRoleTargets } from "../profile/types";
 import { scoringSynergyState, type SynergyState } from "./synergy-state";
 import { committedSupport, readCommittedDecks, withCommitted } from "../decks/committed";
 import {
@@ -37,6 +38,12 @@ export type CommanderDetailScore = RankedCommander & {
    * `/discover` links here too.
    */
   printedName?: string | null;
+  /**
+   * The role targets the score was graded against, and where they came from. Role Coverage
+   * and "Why this commander" read the same ones, so the page cannot grade the fit against one
+   * standard and draw its role panels against another.
+   */
+  roleTargets: ProfileRoleTargets;
 };
 
 /**
@@ -358,13 +365,14 @@ export async function scoreOneCommander(
     loadRoleTargetsForCommanders([commander]),
   ]);
   const support = supportLists.get(oracleId) ?? null;
+  const targets = roleTargets.get(oracleId)!;
   const [result, committed] = await Promise.all([
     resolveEdhrecData(oracleId, commander.name, edhrecCache.get(oracleId)),
     readCommittedDecks(userId),
   ]);
   const scored = scoreCommander({
     commander, collection: pool ?? collection,
-    roleTargets: roleTargets.get(oracleId)!.targets,
+    roleTargets: targets.targets,
     support,
     inclusionByName: result.data?.inclusionByName ?? null,
   });
@@ -390,5 +398,6 @@ export async function scoreOneCommander(
     slug,
     synergyState: scoringSynergyState(result, scored.fitSynergy !== null),
     committedSupport: committedSupport(ownedOverlapIds, committed),
+    roleTargets: targets,
   };
 }

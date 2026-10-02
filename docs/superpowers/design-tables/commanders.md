@@ -1433,7 +1433,7 @@
 | font-size | — | 12px |
 | color | — | #6FA368 |
 
-### Role note (e.g. "Well past the 10-source baseline")
+### Role note (e.g. "Well past the 10 its decks run", or "Well past the 10-source baseline" on the fallback)
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | margin-left | — | auto |

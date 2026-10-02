@@ -9,6 +9,7 @@ import type { JSX, ReactNode } from "react";
 import { explainedCopy, ROLE_SUBJECTS, spellOut } from "../../lib/copy/commander-explained";
 import type { RoleName } from "../../lib/recs/score";
 import { weakestRole } from "../../lib/recs/weakest-role";
+import type { ProfileRoleTargets } from "../../lib/profile/types";
 import { roleAnchorId } from "./role-anchor";
 
 /**
@@ -42,6 +43,9 @@ type WhySectionProps = {
   edhrecOwnedCount: number | null;
   edhrecTotal: number | null;
   roleCounts: Record<RoleName, number>;
+  /** The role targets the commander's fit score was graded against, so the role this names as
+      thinnest is the one the score docked. */
+  roleTargets: ProfileRoleTargets;
   /** The deck holding the most of the owned support, and how many it holds —
       both counted over that one deck. `topDeck` null means there is none. */
   committedSupport?: { count: number; topDeck: string | null };
@@ -53,6 +57,7 @@ export function WhySection({
   edhrecOwnedCount,
   edhrecTotal,
   roleCounts,
+  roleTargets,
   committedSupport = { count: 0, topDeck: null },
   width,
 }: WhySectionProps): JSX.Element | null {
@@ -73,7 +78,8 @@ export function WhySection({
           )
         : explainedCopy.prose.standing(edhrecOwnedCount, edhrecTotal)
       : null;
-  const weakest = weakestRole(roleCounts);
+  const weakest = weakestRole(roleCounts, roleTargets.targets);
+  const measured = roleTargets.of !== "flat";
 
   // State 4: nothing stored and nothing to template. The heading would be a promise the
   // paragraph does not keep, so the whole section goes.
@@ -122,7 +128,7 @@ export function WhySection({
               {/* The figures here are not drawn at --fg like the ones in sentence 2: this
                   clause is the link, and a run inside it that changed colour would read as
                   two links. The link ink is the emphasis. */}
-              {explainedCopy.prose.gapFigures(weakest.have, weakest.target)}
+              {explainedCopy.prose.gapFigures(weakest.have, weakest.target, measured)}
             </a>
             {explainedCopy.prose.sentenceEnd}
           </>

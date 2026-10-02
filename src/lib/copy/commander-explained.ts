@@ -116,8 +116,10 @@ export const explainedCopy = {
     gap: (role: RoleKey) => `${ROLE_SUBJECTS[role]} ${ROLE_COPULA[role]} where you are thinnest`,
     /** `target` goes through spellOut for the same reason `owned` does — both are prose, and
         the canvas draws "a ten-source baseline". R1's key emitted "10-source". */
-    gapFigures: (owned: number, target: number) =>
-      `${spellOut(owned)} owned against a ${spellOut(target)}-source baseline`,
+    gapFigures: (owned: number, target: number, measured: boolean) =>
+      measured
+        ? `${spellOut(owned)} owned against the ${spellOut(target)} its decks run`
+        : `${spellOut(owned)} owned against a ${spellOut(target)}-source baseline`,
 
     /** Sentence 3's two fragments are joined by " \u2014 " and the paragraph's terminal period is
         added by the renderer, not by either fragment. Stated as a key so the punctuation belongs

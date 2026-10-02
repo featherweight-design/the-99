@@ -422,6 +422,7 @@ export function CommanderDetail({
           edhrecOwnedCount={c.edhrecOwnedCount}
           edhrecTotal={c.edhrecTotal}
           roleCounts={c.roleCounts}
+          roleTargets={c.roleTargets}
           committedSupport={c.committedSupport}
           width="phone"
         />
@@ -465,6 +466,7 @@ export function CommanderDetail({
           markerElsewhere={markerElsewhere}
           roleCards={c.roleCards}
           roleCounts={c.roleCounts}
+          roleTargets={c.roleTargets}
           synergyState={c.synergyState}
           avail={avail}
           retryCoverageFigures={retryCoverageFigures}
@@ -670,6 +672,7 @@ export function CommanderDetail({
             edhrecOwnedCount={c.edhrecOwnedCount}
             edhrecTotal={c.edhrecTotal}
             roleCounts={c.roleCounts}
+            roleTargets={c.roleTargets}
             committedSupport={c.committedSupport}
             width="desktop"
           />
@@ -711,6 +714,7 @@ export function CommanderDetail({
             markerElsewhere={markerElsewhere}
             roleCards={c.roleCards}
             roleCounts={c.roleCounts}
+            roleTargets={c.roleTargets}
             synergyState={c.synergyState}
             avail={avail}
             retryCoverageFigures={retryCoverageFigures}

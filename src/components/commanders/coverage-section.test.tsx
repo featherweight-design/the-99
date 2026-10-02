@@ -13,12 +13,14 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 const refresh = vi.hoisted(() => vi.fn());
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 
-const { CoverageSection } = await import("./coverage-section");
+const { CoverageSection, RoleGroupHeader } = await import("./coverage-section");
 import type { RoleCard } from "../../lib/recs/score";
 import type { RoleName } from "../../lib/recs/score";
 import { explainedCopy } from "../../lib/copy/commander-explained";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { avail } from "./availability-fixture";
+import type { ProfileRoleTargets } from "../../lib/profile/types";
+import { ROLE_TARGETS } from "../../lib/recs/roles";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -44,11 +46,15 @@ const BASE_ROLE_COUNTS: Record<RoleName, number> = {
   ramp: 0, draw: 0, removal: 0, wipes: 0,
 };
 
+/** The fallback, which is what every case written before 5.4b was measured against. */
+const FLAT_TARGETS: ProfileRoleTargets = { of: "flat", targets: { ...ROLE_TARGETS } };
+
 function renderSection(
   overrides: {
     width?: "desktop" | "phone";
     roleCards?: Record<RoleName, RoleCard[]>;
     roleCounts?: Record<RoleName, number>;
+    roleTargets?: ProfileRoleTargets;
     synergyState?: "ok" | "absent" | "degraded";
     markerElsewhere?: boolean;
     avail?: "all" | "free";
@@ -60,6 +66,7 @@ function renderSection(
     width = "desktop",
     roleCards = EMPTY_ROLE_CARDS,
     roleCounts = BASE_ROLE_COUNTS,
+    roleTargets = FLAT_TARGETS,
     synergyState = "ok",
     // Defaults to what the ROLE panels alone would say, which is what this
     // condition used to read — so every case written before the key went
@@ -77,6 +84,7 @@ function renderSection(
         slug="commander-slug"
         roleCards={roleCards}
         roleCounts={roleCounts}
+        roleTargets={roleTargets}
         synergyState={synergyState}
         avail={avail}
         retryCoverageFigures={retryCoverageFigures}
@@ -222,6 +230,7 @@ describe("absent vs degraded note rendering", () => {
           slug="commander-slug"
           roleCards={EMPTY_ROLE_CARDS}
           roleCounts={BASE_ROLE_COUNTS}
+          roleTargets={FLAT_TARGETS}
           synergyState="degraded"
           avail="all"
           retryCoverageFigures={vi.fn<() => Promise<Record<RoleName, RoleCard[]> | null>>().mockResolvedValue(null)}
@@ -241,6 +250,7 @@ describe("absent vs degraded note rendering", () => {
           slug="commander-slug"
           roleCards={EMPTY_ROLE_CARDS}
           roleCounts={BASE_ROLE_COUNTS}
+          roleTargets={FLAT_TARGETS}
           synergyState="absent"
           avail="all"
           retryCoverageFigures={vi.fn<() => Promise<Record<RoleName, RoleCard[]> | null>>().mockResolvedValue(null)}
@@ -802,5 +812,59 @@ describe("the retry carries the page's mode", () => {
       screen.getByRole("button", { name: recommendationsCopy.coverage.degradedRetryAria }),
     );
     await waitFor(() => expect(retry).toHaveBeenCalledWith("commander-slug", "all"));
+  });
+});
+
+// ── The group head's target (How it works §5.4b) ────────────────────────────────
+//
+// The head grades what the reader owns against the targets the commander's fit score used:
+// its own measured figures where they exist, the per-role baseline where they do not.
+describe("the group head's target", () => {
+  const head = (count: number, targets: ProfileRoleTargets, layout: "desktop" | "phone" = "desktop") =>
+    render(<RoleGroupHeader layout={layout} role="wipes" count={count} targets={targets} listId="t" />);
+  const measured = (wipes: number): ProfileRoleTargets => ({
+    of: "commander",
+    targets: { ramp: 10, draw: 10, removal: 8, wipes },
+  });
+
+  it("names the commander's own figure, rounded the way the fit score rounds it", () => {
+    head(1, measured(2.6));
+    expect(screen.getByText("2 short of the 3 its decks run")).toBeInTheDocument();
+  });
+
+  it("is at and past the measured figure the way it was at and past the baseline", () => {
+    const { unmount } = head(3, measured(3));
+    expect(screen.getByText("At the 3 its decks run")).toBeInTheDocument();
+    unmount();
+    head(5, measured(3));
+    expect(screen.getByText("Well past the 3 its decks run")).toBeInTheDocument();
+  });
+
+  // THE CASE d9 named. A commander whose decks run none of a role is never short on it,
+  // whatever the reader owns, and never reads as "past 0" either.
+  it("never reads short on a role whose measured target is 0, at either width", () => {
+    for (const layout of ["desktop", "phone"] as const) {
+      for (const count of [0, 2]) {
+        const { container, unmount } = head(count, measured(0.3), layout);
+        expect(container.textContent).not.toMatch(/short/);
+        expect(container.textContent).not.toMatch(/past 0|At the 0/);
+        expect(screen.getByText("Its decks run none")).toBeInTheDocument();
+        unmount();
+      }
+    }
+  });
+
+  it("keeps the baseline's words when no figure was measured", () => {
+    head(1, FLAT_TARGETS);
+    expect(screen.getByText("2 short of baseline")).toBeInTheDocument();
+  });
+
+  it("draws every panel's head from the targets the section is handed", () => {
+    renderSection({ roleCounts: { ramp: 0, draw: 0, removal: 0, wipes: 0 }, roleTargets: measured(0) });
+    expect(screen.queryByText(/short of baseline/)).toBeNull();
+    expect(screen.getByText("Its decks run none")).toBeInTheDocument();
+    // Ramp and draw both run 10; removal runs 8.
+    expect(screen.getAllByText("10 short of the 10 its decks run")).toHaveLength(2);
+    expect(screen.getByText("8 short of the 8 its decks run")).toBeInTheDocument();
   });
 });

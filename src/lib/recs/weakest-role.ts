@@ -1,4 +1,5 @@
 import { ROLE_TARGETS } from "./roles";
+import { wholeTarget } from "./score";
 
 export type NonLandRole = keyof typeof ROLE_TARGETS;
 
@@ -20,13 +21,23 @@ export type WeakestRole = {
  * on ramp, when the wipes shortfall is the one that stops a deck being fielded.
  *
  * Null when every role is at or past its target: there is no gap to name.
+ *
+ * The targets are the commander's own (`CommanderDetailScore.roleTargets`), rounded to whole
+ * cards the way the fit score rounds them (`wholeTarget`), so the role this names is the one
+ * the score docked. A target of 0 is always met: its decks run none of that role, so nobody is
+ * short of it. It is skipped by name rather than left to the division, whose NaN or -Infinity
+ * only happens to lose the comparison below.
  */
-export function weakestRole(counts: Record<NonLandRole, number>): WeakestRole | null {
+export function weakestRole(
+  counts: Record<NonLandRole, number>,
+  targets: Record<NonLandRole, number>,
+): WeakestRole | null {
   let worst: WeakestRole | null = null;
   let worstShortfall = 0;
 
   for (const role of ROLE_ORDER) {
-    const target = ROLE_TARGETS[role];
+    const target = wholeTarget(targets[role]);
+    if (target <= 0) continue;
     const have = counts[role];
     const shortfall = (target - have) / target;
     if (shortfall > worstShortfall) {
