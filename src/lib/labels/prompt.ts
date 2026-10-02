@@ -119,6 +119,16 @@ Omit "rampKind" entirely on any job that is not a role "ramp" job (a null is
 accepted there too).
 A card with no job in the vocabulary gets "jobs": []. No prose, no markdown fence.`;
 
+/**
+ * What the SYSTEM block can cost, in tokens, as a CEILING the build's hard stop is enforced against:
+ * ONE TOKEN PER CHARACTER, a provable upper bound since no tokenizer emits more tokens than the string
+ * has characters. The measured 1,215 billed tokens was for the block BEFORE Task 2 widened it, and a
+ * measurement of an older string is not a bound on this one. It overstates about fourfold, which only
+ * shrinks waves and pauses a run sooner; it can never let one spend past its cap. The vocabulary plan's
+ * Task 6 re-measures the billed count against a snapshot of SYSTEM and replaces this.
+ */
+export const SYSTEM_TOKENS_BOUND = SYSTEM.length;
+
 type CardForPrompt = {
   name: string; mana_cost: string | null; type_line: string;
   oracle_text: string | null; layout?: string;
