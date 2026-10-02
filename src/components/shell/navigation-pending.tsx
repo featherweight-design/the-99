@@ -80,8 +80,13 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
   const report = useCallback<Reporter>(
     (id, href, isPending) => {
       const to = targetOf(href, pathname);
-      if (isPending && to !== pathname) pending.current.set(id, to);
-      else pending.current.delete(id);
+      if (isPending && to !== pathname) {
+        pending.current.set(id, to);
+        // Published at once, not in the decision effect a render later: a page's mirror in the
+        // same passive flush as this report would otherwise still see no navigation pending.
+        // Clearing waits for that effect, so a press moving between links never reads as idle.
+        setNavigationPending(true);
+      } else pending.current.delete(id);
       setReports((n) => n + 1);
     },
     [pathname],

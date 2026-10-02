@@ -2483,7 +2483,8 @@ after a push to `/decks`, and in 3 of 4 cases the reader never left (1f's startu
   insertion effect, before the provider's layout effect, and every mirror runs in a passive
   effect after both, so a page's own first write sees its own path.
 - **No write while a navigation is pending**, as the shell's `NavigationPendingProvider` reports
-  it. The last write asked for is held and made when the navigation ends without leaving the path
+  it: `true` the moment a link reports a pending destination, so a mirror in the same passive
+  flush as the press already sees it, and cleared only by the provider's decision effect. The last write asked for is held and made when the navigation ends without leaving the path
   it was asked on; one that leaves has made it moot.
 
   The pending signal covers navigations that REPORT: every `<Link>`, and code pushes made through

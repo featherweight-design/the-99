@@ -194,6 +194,47 @@ describe("the URL mirrors stand down while a navigation is pending", () => {
   });
 });
 
+// A page's mirror whose passive effect runs in the SAME commit as a press: rendered after the links,
+// so its effect follows the reporters' in that flush and precedes the provider's own.
+function MirrorInCommit({ write }: { write: string | null }) {
+  useEffect(() => {
+    if (write) mirrorUrl(write);
+  }, [write]);
+  return null;
+}
+
+describe("the pending flag reaches a mirror in the same commit as the press", () => {
+  it("holds a mirror write fired by a sibling effect as the link reports", () => {
+    state.path = "/collection";
+    act(() => rerender(<App links={LINKS} />));
+    window.history.replaceState(null, "", "/collection");
+    const replace = vi.spyOn(window.history, "replaceState");
+    const Both = ({ write }: { write: string | null }) => (
+      <NavigationPendingProvider>
+        <ShellMain className="">
+          {LINKS.map((href) => (
+            <Link key={href} href={href}>
+              <Reporter href={href} />
+            </Link>
+          ))}
+          <MirrorInCommit write={write} />
+        </ShellMain>
+      </NavigationPendingProvider>
+    );
+    try {
+      act(() => rerender(<Both write={null} />));
+      state.pending.set("/commanders", true);
+      act(() => rerender(<Both write="/collection?sort=set" />));
+      expect(replace).not.toHaveBeenCalled();
+      state.pending.set("/commanders", false);
+      act(() => rerender(<Both write="/collection?sort=set" />));
+      expect(replace).toHaveBeenCalledWith(null, "", "/collection?sort=set");
+    } finally {
+      replace.mockRestore();
+    }
+  });
+});
+
 describe("a code-started push", () => {
   // What a slow navigation looks like to React: the push's update suspends, so the transition it
   // runs in stays pending until the new page arrives, which here it never does.
