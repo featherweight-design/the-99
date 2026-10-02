@@ -560,12 +560,15 @@ export async function buildCommanderIndex(
     // The role figures just moved (to null), so the scores a load persisted against the
     // previous ones since the first clear go too. Both role refusals throw into this catch, so
     // this is the one place that covers them and every other failure after the writes. Its own
-    // try, so a failed role clear cannot skip it.
-    try {
-      await clearScores();
-      console.error("commander-index: cleared persisted commander scores after the failed run");
-    } catch (clearErr) {
-      console.error("commander-index: the post-failure score clear ALSO failed", clearErr);
+    // try, so a failed role clear cannot skip it. Only when the run wrote rows: one that moved
+    // nothing has no roles to clear and no reason to cost every reader a cold recompute.
+    if (writtenCommanders.length > 0 || writtenPairs.length > 0) {
+      try {
+        await clearScores();
+        console.error("commander-index: cleared persisted commander scores after the failed run");
+      } catch (clearErr) {
+        console.error("commander-index: the post-failure score clear ALSO failed", clearErr);
+      }
     }
     throw err;
   }

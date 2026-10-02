@@ -483,7 +483,9 @@ describe("the score clear runs before the pair pass", () => {
         delayMs: 0,
       }),
     ).rejects.toThrow("pair query failed");
-    expect(cleared).toBe(1);
+    // Once before the pair pass, and once more on the error path, because the failed run
+    // cleared the roles of the commander it had written.
+    expect(cleared).toBe(2);
   });
 
   // The counterpart, unchanged: a run that moved nothing must not throw away every reader's
