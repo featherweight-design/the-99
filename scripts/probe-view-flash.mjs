@@ -1,6 +1,6 @@
 // Proves desktop /collection draws its real view from the server: no rows painted before the grid.
 //
-//   PROBE_BASE=http://localhost:<port> [RUNS=3] [CASES=bare,stored,hinted] pnpm probe:view-flash
+//   PROBE_BASE=http://localhost:<port> [RUNS=3] [CASES=bare,stored,hinted,art] pnpm probe:view-flash
 //
 // The server could not know a reader's width or their stored view, so it drew rows and the
 // grid replaced them at hydration: 1.9s of rows on main, 3.0s with the first-window payload, on
@@ -17,6 +17,10 @@
 //   bare    no cookies: the first visit, drawn as the CSS split.
 //   stored  collection_view=grid: a reader who chose the grid.
 //   hinted  collection_wide=1: a reader the width cookie says is on desktop.
+//   art     no cookies, at 390 and 1300: the dual render's grid art. At 390 the hidden grid half
+//           requests none of its art before hydration (its first-screen tiles are lazy, and a hidden
+//           lazy image is never fetched); at 1300 the grid's on-screen tiles ARE requested, so the
+//           phone's saving did not cost desktop its first art.
 //
 // The two selectors are the views' root classes (rows-view.tsx, grid-view.tsx). If either root
 // changes, change them here, or every case reads "never" and passes about nothing: a case where
@@ -94,7 +98,7 @@ async function run() {
     stored: [{ name: "collection_view", value: "grid" }],
     hinted: [{ name: "collection_wide", value: "1" }],
   };
-  const wanted = (process.env.CASES ?? "bare,stored,hinted").split(",").map((c) => c.trim());
+  const wanted = (process.env.CASES ?? "bare,stored,hinted").split(",").map((c) => c.trim()).filter((c) => c !== "art");
   for (const name of wanted) {
     if (!CASES[name]) throw new Error(`unknown case ${name}; known: ${Object.keys(CASES).join(", ")}`);
   }
@@ -148,6 +152,93 @@ async function run() {
     hydrations.sort((a, b) => a - b);
     if (hydrations.length) console.log(`   ${name}: median hydration ${Math.round(hydrations[Math.floor(hydrations.length / 2)])}ms`);
   }
+  // ── The first visit's grid art, both sides ─────────────────────────────────────────
+  //
+  // With no cookies the server draws both views, and the grid half's first-screen tiles are eager:
+  // their src is in the server HTML. A browser fetches a non-lazy <img> even under display:none, so
+  // on a phone the hidden grid would download that art for nothing; the dual render marks those
+  // tiles lazy, which a hidden subtree never fetches. Two sides, because either alone passes a
+  // wrong build: at 390 no grid tile's art may be requested before hydration, and at 1300 the
+  // grid's on-screen tiles must be, or the fix cost desktop its first art.
+  //
+  // Read from Resource Timing, whose startTime shares the clock of the hydration stamp, against
+  // the grid tiles' OWN src attributes, so a row thumbnail or the commander art never counts.
+  if (!process.env.CASES || process.env.CASES.split(",").includes("art")) {
+    for (const { width, height, side } of [
+      { width: 390, height: 844, side: "phone" },
+      { width: 1300, height: 900, side: "desktop" },
+    ]) {
+      const ctx = await browser.newContext({ storageState: state, viewport: { width, height } });
+      await ctx.clearCookies({ name: "collection_view" });
+      await ctx.clearCookies({ name: "collection_wide" });
+      const page = await ctx.newPage();
+      // The tiles are read the FIRST frame the grid exists, before hydration: on a phone,
+      // hydration collapses the dual render to rows and the grid half leaves the document, so a
+      // read taken afterwards finds no tiles and measures nothing.
+      await page.addInitScript(() => {
+        const t = (window.__flash = { hydrated: null, tiles: null });
+        const tick = () => {
+          const main = document.querySelector("main");
+          if (main && t.tiles === null) {
+            const grid = main.querySelector('div[class*="grid-cols-2"][class*="minmax(178px"]');
+            const imgs = grid ? [...grid.querySelectorAll("img[src]")] : [];
+            if (imgs.length) {
+              t.tiles = imgs.map((img) => {
+                const r = img.getBoundingClientRect();
+                return { src: img.src, onScreen: r.height > 0 && r.top < window.innerHeight };
+              });
+            }
+          }
+          if (main && t.hydrated === null && Object.keys(main).some((k) => k.startsWith("__reactFiber$"))) {
+            t.hydrated = performance.now();
+          }
+          if (t.hydrated === null) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      });
+      await throttle(page);
+      await page.goto(`${BASE}/collection`, { waitUntil: "domcontentloaded", timeout: 120000 });
+      await page.waitForFunction(() => window.__flash?.hydrated !== null, null, { timeout: 120000 });
+      // Give a request issued at parse time its chance to show up in the timeline.
+      await page.waitForTimeout(1000);
+      const art = await page.evaluate(() => {
+        const hydrated = window.__flash.hydrated;
+        const before = new Set(
+          performance.getEntriesByType("resource")
+            .filter((e) => e.startTime < hydrated && /scryfall\.io/.test(e.name))
+            .map((e) => e.name),
+        );
+        const tiles = window.__flash.tiles ?? [];
+        const onScreen = tiles.filter((tile) => tile.onScreen);
+        return {
+          tiles: tiles.length,
+          requested: tiles.filter((tile) => before.has(tile.src)).length,
+          onScreen: onScreen.length,
+          onScreenRequested: onScreen.filter((tile) => before.has(tile.src)).length,
+        };
+      });
+      if (side === "phone") {
+        report(
+          "390, no cookies: the grid half is in the document with eager art",
+          art.tiles > 0,
+          `${art.tiles} grid tiles carry a src; none means this check lost its subject`,
+        );
+        report(
+          "390, no cookies: none of the hidden grid's art is requested before hydration",
+          art.requested === 0,
+          `${art.requested} of ${art.tiles} grid tiles requested`,
+        );
+      } else {
+        report(
+          "1300, no cookies: the grid's on-screen tiles are requested before hydration",
+          art.onScreen > 0 && art.onScreenRequested === art.onScreen,
+          `${art.onScreenRequested} of ${art.onScreen} on-screen tiles requested`,
+        );
+      }
+      await ctx.close();
+    }
+  }
+
   await browser.close();
   console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
   process.exitCode = failures === 0 ? 0 : 1;
