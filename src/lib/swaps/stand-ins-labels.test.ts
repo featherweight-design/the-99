@@ -92,6 +92,21 @@ describe("stand-ins read labels only where both cards carry one (Q1)", () => {
     expect(all(read).map((s) => [s.shared, s.sharedThemes])).toEqual([[["draw"], []]]);
   });
 
+  it("keeps the text's roles in the header when the label names none, so unlabelled stand-ins still show", () => {
+    const tokens = job({ space: "theme", kind: "tokens", affects: "self" });
+    const read = rank(MURDER, [PATH], new Map([[MURDER.oracleId, [tokens]]]));
+    expect(read.jobRoles).toEqual(["removal"]);
+    expect(names(read)).toEqual(["Swords to Plowshares"]);
+  });
+
+  it("names a theme-only label's themes rather than reading as no job here", () => {
+    const maker = card("Maker", "Sorcery", "Shuffle your graveyard into your library.", 2);
+    const tokens = job({ space: "theme", kind: "tokens", affects: "self" });
+    const read = rank(maker, [], new Map([[maker.oracleId, [tokens]]]));
+    expect(read.job.kind).toBe("spell");
+    expect(read.jobRoles).toEqual(["tokens"]);
+  });
+
   it("modal alternatives count once in the sort", () => {
     const charm = card("Charm", "Instant", "Choose one —\n• Destroy target creature.\n• Draw a card.", 2);
     const both = card("Both", "Instant", "Destroy target creature. Draw a card.", 2);

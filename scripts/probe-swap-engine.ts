@@ -289,6 +289,8 @@ async function main() {
     [gainer.card.oracleId, [rampJob("tapsForMana"), tokens]],
   ]);
   const ids = [...seeds.keys()];
+  // Debris from a run whose restore failed: a real label never carries this model.
+  await fixture.execute(sql`delete from card_labels where model = ${LABEL_MODEL}`);
   labelCleanup = { ids, captured: [] };
   labelCleanup.captured = await rows(sql`select * from card_labels where oracle_id = any(${sql.param(ids)}::uuid[])`);
   const inputs = await rows<{ oracle_id: string; name: string; mana_cost: string | null; type_line: string; oracle_text: string | null; layout: string }>(sql`
@@ -340,13 +342,18 @@ try {
   }
   const labels = labelCleanup as { ids: string[]; captured: Record<string, unknown>[] } | null;
   if (labels) {
-    await fixture.execute(sql`delete from card_labels where oracle_id = any(${sql.param(labels.ids)}::uuid[])`);
-    for (const r of labels.captured) {
-      await fixture.execute(sql`
-        insert into card_labels (oracle_id, labels, model, prompt_version, input_hash, labelled_at)
-        values (${r.oracle_id as string}::uuid, ${JSON.stringify(r.labels)}::jsonb, ${r.model as string},
-          ${r.prompt_version as string}, ${r.input_hash as string}, ${r.labelled_at as Date})`);
-    }
+    // ONE transaction: a restore that fails rolls the delete back with it, so the shared catalog is left
+    // holding the seeds rather than missing real rows. The seeds carry LABEL_MODEL, which the next run
+    // sweeps before it captures anything, so they are never mistaken for rows to put back.
+    await fixture.transaction(async (tx) => {
+      await tx.execute(sql`delete from card_labels where oracle_id = any(${sql.param(labels.ids)}::uuid[])`);
+      for (const r of labels.captured) {
+        await tx.execute(sql`
+          insert into card_labels (oracle_id, labels, model, prompt_version, input_hash, labelled_at)
+          values (${r.oracle_id as string}::uuid, ${JSON.stringify(r.labels)}::jsonb, ${r.model as string},
+            ${r.prompt_version as string}, ${r.input_hash as string}, ${r.labelled_at as Date})`);
+      }
+    });
   }
   await fixture.execute(sql`delete from decks where user_id = ${USER}`);
   await fixture.execute(sql`delete from collection_items where user_id = ${USER}`);

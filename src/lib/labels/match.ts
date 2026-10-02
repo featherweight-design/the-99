@@ -4,7 +4,7 @@
  * fresh label (Q1); every other pair is compared by text, exactly as before.
  */
 import type { DeckLens } from "../swaps/honest";
-import type { Job, Method } from "./types";
+import { ROLES, type Job, type Method } from "./types";
 
 /** A job's identity for sharing: ramp by its kind (E1), every other job by its name. */
 export function keyOf(job: Job): string | null {
@@ -114,7 +114,8 @@ export function matchLabels(
     for (const o of origJobs) {
       for (const c of cand.get(key) ?? []) {
         if (!passes(o, c)) continue;
-        const methodLost = o.method !== null && PERMANENT_ANSWERS.includes(o.method) && c.method !== null && c.method !== o.method;
+        // A candidate with no method keeps no permanent answer either: null is a loss, never a match.
+        const methodLost = o.method !== null && PERMANENT_ANSWERS.includes(o.method) && c.method !== o.method;
         const cost = Number(o.trigger !== c.trigger || o.recurrence !== c.recurrence) + Number(methodLost);
         if (!best || cost < best.cost) best = { o, c, cost };
       }
@@ -122,7 +123,7 @@ export function matchLabels(
     if (!best) { missing.push(refOf(key)); continue; }
     shared.push(refOf(key));
     advisory += best.cost;
-    if (best.o.method !== null && PERMANENT_ANSWERS.includes(best.o.method) && best.c.method !== null && best.c.method !== best.o.method
+    if (best.o.method !== null && PERMANENT_ANSWERS.includes(best.o.method) && best.c.method !== best.o.method
       && !lostMethods.includes(best.o.method)) lostMethods.push(best.o.method);
     if (best.c.modal) modal += 1; else plain += 1;
   }
@@ -140,15 +141,18 @@ export function labelledKeys(jobs: readonly Job[], deck: DeckLens | null, isCrea
  * slice): one per key, a ramp job by its kind. A superset of what matches, deliberately: the deck's
  * relevance and the gates are `matchLabels`'s, on the rows the pool returns.
  */
-export function labelPatterns(jobs: readonly Job[]): string[] {
-  const out = new Set<string>();
-  for (const j of jobs) {
-    const k = keyOf(j);
-    if (k === null || k === "land") continue;
-    out.add(JSON.stringify([j.space === "role" && j.kind === "ramp" ? { space: "role", kind: "ramp", rampKind: k } : { space: j.space, kind: k }]));
-  }
-  return [...out];
+export function labelPatterns(jobs: readonly Job[], deck: DeckLens | null, isCreatureType: (w: string) => boolean): string[] {
+  // From the SAME set `matchLabels` compares: only jobs relevant to this deck, Treasure named once. A key
+  // matching would discard has no business spending the slice's rows.
+  return [...jobsByKey(jobs, deck, isCreatureType).keys()].map((id) => {
+    const { space, key } = refOf(id);
+    const ramp = space === "role" && !ROLE_KINDS.has(key);
+    return JSON.stringify([ramp ? { space: "role", kind: "ramp", rampKind: key } : { space, kind: key }]);
+  });
 }
+
+/** The role kinds by name; a role key that is not one of them is a ramp kind. */
+const ROLE_KINDS: ReadonlySet<string> = new Set(ROLES);
 
 /** Whether a labelled card has any job a stand-in could keep for this deck (for an original whose text names none). */
 export function hasLabelledJob(jobs: readonly Job[], deck: DeckLens | null, isCreatureType: (w: string) => boolean): boolean {

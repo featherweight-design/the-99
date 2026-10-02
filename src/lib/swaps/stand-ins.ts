@@ -336,10 +336,16 @@ export function rankStandIns(
   const originalThemes = originalJobs.themes;
   const originalRoles = originalJobs.roles;
   const originalPrice = stocked(original.oracleId, priced);
-  // A labelled original's header names what its label says it does here (roles, ramp by its kind).
-  const jobRoles = originalLabels && job.kind === "spell"
-    ? labelledKeys(originalLabels, deck, isCreatureType).filter((k) => k.space === "role").map((k) => k.key) as SwapRole[]
-    : originalRoles;
+  // A labelled original's header names what its text AND its label say it does here, roles first (ramp by
+  // its kind). Both, because an unlabelled pair is still compared by text (Q1), so the text's roles are
+  // still jobs the sheet is offering stand-ins for. A label whose every job is a theme names its themes,
+  // since an empty list is the sheet's "no job here".
+  const labelledRefs = originalLabels && job.kind === "spell" ? labelledKeys(originalLabels, deck, isCreatureType) : [];
+  const labelledRoles = labelledRefs.filter((k) => k.space === "role").map((k) => k.key as SwapRole);
+  const unionRoles = [...new Set([...originalRoles, ...labelledRoles])];
+  const jobRoles = unionRoles.length > 0 || labelledRefs.length === 0
+    ? unionRoles
+    : [...new Set(labelledRefs.map((k) => k.key))] as SwapRole[];
   const read: StandInGroups = { job, originalCents: originalPrice?.cents ?? null, groups: [], jobRoles };
   if (job.kind === "none") return read;
 

@@ -101,6 +101,13 @@ describe("matchLabels: the gates drop, the advice ranks", () => {
     expect(m([removal({ method: "bounce" })], [removal({ method: "shrink" })]).lostMethods).toEqual([]);
   });
 
+  it("a candidate removal with no method keeps no permanent answer: it ranks lower and names the loss", () => {
+    const r = m([removal({ method: "exile" })], [removal({ method: null })]);
+    expect(r.shared).toEqual(["removal"]);
+    expect(r.lostMethods).toEqual(["exile"]);
+    expect(r.advisory).toBe(1);
+  });
+
   it("prefers the candidate's job that keeps the method, when it has two", () => {
     const r = m([removal({ method: "exile" })], [removal({ method: "bounce" }), removal({ method: "exile" })]);
     expect(r.lostMethods).toEqual([]);
@@ -139,9 +146,18 @@ describe("matchLabels: the gates drop, the advice ranks", () => {
 describe("the pool's patterns and the deck's types", () => {
   it("one containment pattern per key, a ramp job by its kind", () => {
     const rock = job({ space: "role", kind: "ramp", rampKind: "tapsForMana", affects: "self" });
-    expect(labelPatterns([rock, removal(), removal({ method: "exile" }), job({ space: "role", kind: "land" })])).toEqual([
+    expect(labelPatterns([rock, removal(), removal({ method: "exile" }), job({ space: "role", kind: "land" })], lens(), isType)).toEqual([
       JSON.stringify([{ space: "role", kind: "ramp", rampKind: "tapsForMana" }]),
       JSON.stringify([{ space: "role", kind: "removal" }]),
+    ]);
+  });
+
+  it("asks only for what matching compares: no job this deck does not play, Treasure named once", () => {
+    const goblinPump = job({ space: "theme", kind: "pump", affects: "self", restrictedTo: "Goblin" });
+    const treasureRamp = job({ space: "role", kind: "ramp", rampKind: "makesTreasure", affects: "self" });
+    const treasureTheme = job({ space: "theme", kind: "treasure", affects: "self" });
+    expect(labelPatterns([goblinPump, treasureRamp, treasureTheme], lens(), isType)).toEqual([
+      JSON.stringify([{ space: "role", kind: "ramp", rampKind: "makesTreasure" }]),
     ]);
   });
 

@@ -175,12 +175,26 @@ export async function loadStandIns(deckId: string, userId: string, cutOracleId: 
   const originalLabels: readonly LabelJob[] | undefined = labelsOn && !isLandFace(original.typeLine)
     ? (await readLabels([cutOracleId])).get(cutOracleId)
     : undefined;
-  const patterns = originalLabels ? labelPatterns(originalLabels) : [];
   const job = jobOf(original);
+  // Only a spell is matched on themes, so only a spell needs the type lists. A labelled original reads them
+  // BEFORE the pool: its label slice is chosen from the jobs that count for this deck, as matching reads.
+  const typeLists = () => Promise.all([loadCreatureTypes(), loadNoncreatureSubtypes()]);
+  const early = originalLabels && job.kind !== "land" && job.kind !== "fetch" ? await typeLists() : null;
+  const others = [...draftRows.rows, ...cmdrRows.rows].filter((r) => r.oracle_id !== cutOracleId);
+  const lens = (creatureTypes: Set<string>, noncreatureSubtypes: Set<string>) => ({
+    keyType: keyCreatureType(draftRows.rows.map((r) => ({ typeLine: r.type_line, quantity: Number(r.quantity) })), cmdrRows.rows.map((r) => r.type_line)),
+    isSubtype: (w: string) => noncreatureSubtypes.has(w),
+    // The card being replaced is leaving, so what it holds does not count (d9).
+    held: heldSubtypes(others.map((r) => ({ typeLine: r.type_line, oracleText: r.oracle_text }))),
+    heldTypes: heldCardTypes(others.map((r) => r.type_line)),
+  });
+  const patterns = originalLabels && early
+    ? labelPatterns(originalLabels, lens(early[0], early[1]), (w) => early[0].has(w))
+    : [];
   // A labelled spell whose text names no job still gets a spell pool, from its label slice alone;
   // whether its label does a job for this deck is `rankStandIns`'s call.
   const spell = job.kind === "spell" || (job.kind === "none" && patterns.length > 0);
-  const [candidates, creatureTypes, noncreatureSubtypes] = await Promise.all([
+  const [candidates, [creatureTypes, noncreatureSubtypes]] = await Promise.all([
     !spell && job.kind === "none" ? [] : db.execute<Row>(
       spell
         ? spellPool({
@@ -189,9 +203,7 @@ export async function loadStandIns(deckId: string, userId: string, cutOracleId: 
         })
         : landPool({ deck, userId, identity, draft, cut: cutOracleId }),
     ).then((r) => r.rows),
-    // Only a spell is matched on themes, so only a spell needs the tribal theme's type list.
-    spell ? loadCreatureTypes() : new Set<string>(),
-    spell ? loadNoncreatureSubtypes() : new Set<string>(),
+    early ?? (spell ? typeLists() : [new Set<string>(), new Set<string>()] as const),
   ]);
 
   const ownedIds = candidates.filter((r) => (r.owned ?? 0) > 0).map((r) => r.oracle_id);
@@ -218,14 +230,8 @@ export async function loadStandIns(deckId: string, userId: string, cutOracleId: 
   });
 
   return {
-    ...rankStandIns(original, pool, priced, (w) => creatureTypes.has(w), full ? null : STAND_IN_GROUP_CAP, {
-      keyType: keyCreatureType(draftRows.rows.map((r) => ({ typeLine: r.type_line, quantity: Number(r.quantity) })), cmdrRows.rows.map((r) => r.type_line)),
-      isSubtype: (w) => noncreatureSubtypes.has(w),
-      // The card being replaced is leaving, so what it holds does not count (d9).
-      held: heldSubtypes([...draftRows.rows, ...cmdrRows.rows].filter((r) => r.oracle_id !== cutOracleId)
-        .map((r) => ({ typeLine: r.type_line, oracleText: r.oracle_text }))),
-      heldTypes: heldCardTypes([...draftRows.rows, ...cmdrRows.rows].filter((r) => r.oracle_id !== cutOracleId).map((r) => r.type_line)),
-    }, labels),
+    ...rankStandIns(original, pool, priced, (w) => creatureTypes.has(w), full ? null : STAND_IN_GROUP_CAP,
+      lens(creatureTypes, noncreatureSubtypes), labels),
     original,
     commanders,
     newestAsOf: priced.newestAsOf,
