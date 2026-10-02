@@ -25,6 +25,7 @@ import { unstable_cache } from "next/cache";
 
 import { db } from "../../db";
 import { generationKey } from "./catalog-generation";
+import { recordSoftFailure } from "./soft-failure";
 
 /** Used when the stamp cannot be read, and when no index run has ever completed. */
 const UNSTAMPED = "0";
@@ -118,6 +119,10 @@ export async function readIndexGeneration(
     // one state.
     return parts.every((p) => p === UNSTAMPED) ? UNSTAMPED : parts.join(".");
   } catch {
+    // RECORDED, because this module sits on Home's cached path since the score guard reads
+    // it (`recs/store.ts`): a page built over an unreadable token must not be stored as if
+    // the read had succeeded (`check:list-cache`).
+    recordSoftFailure();
     return UNSTAMPED;
   }
 }
@@ -129,6 +134,7 @@ export async function indexGeneration(): Promise<string> {
     cached ??= unstable_cache(readIndexGeneration, ["index-generation"], { revalidate: 60 });
     return await cached();
   } catch {
+    recordSoftFailure();
     return UNSTAMPED;
   }
 }

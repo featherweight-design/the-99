@@ -180,6 +180,7 @@ describe("indexGeneration", () => {
     rows.value = [{
       support: "1758326400000", pair: "1758326400000", identity: "1758326400000",
       staples: "777", staplesWeight: "51234", supportRoles: "3279", pairRoles: "12",
+      supportRoleSum: "72140.512", pairRoleSum: "261.4",
     }];
     cache.throws = true;
     expect(await indexGeneration()).toBe("0");
