@@ -244,6 +244,7 @@ export function SheetChip({
   dimmed = true,
   unavailableAria,
   glyph,
+  fill = false,
   onClick,
 }: {
   label: string;
@@ -257,6 +258,13 @@ export function SheetChip({
   /** Why this value is out, in its dimension's own words. */
   unavailableAria?: string;
   glyph?: React.ReactNode;
+  /**
+   * Fill its grid cell: label at the left, count at the right edge (H8). A chip sized to
+   * its own content is as wide as its COUNT, so a filter that took counts from four digits
+   * to one reflowed the whole group, and the sheet shrank under the reader's thumb. A host
+   * that lays chips in a fixed grid passes this so every chip is its cell's width.
+   */
+  fill?: boolean;
   onClick: () => void;
 }) {
   const out = Boolean(disabled) && !on;
@@ -282,6 +290,7 @@ export function SheetChip({
       }}
       className={[
         CHIP,
+        fill ? "w-full min-w-0 justify-between" : "",
         out ? "cursor-default" : "",
         out && dimmed ? "opacity-[0.42]" : "",
         on
