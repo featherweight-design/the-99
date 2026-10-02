@@ -11,21 +11,25 @@ From Hugh's walk on 2026-10-02 (intake items H11 and H18):
    take too much height before the first card shows.
 2. **The controls are gone once you scroll.** Search, filters and sort sit at the top of the page
    and scroll away with it. To change a filter halfway down a 3,000-card collection, you scroll
-   back to the top. Sets does not have this problem: its phone head is sticky and collapses to a
-   shorter form past a scroll threshold (`use-head-collapse.ts`, R3 finding 6).
-3. **Two cards across is too few.** The phone grid is an explicit 2-up (`grid-view.tsx`, from the
-   card-captions readiness, erratum 5). Hugh wants three across, as ManaBox draws it: a collection
+   back to the top. Sets answers this differently: its open head scrolls away, and past a scroll
+   threshold a shorter form of it pins to the top (`use-head-collapse.ts`, R3 finding 6;
+   `set-grid-view.tsx` is `sticky` only while collapsed). The open head is deliberately not
+   pinned: pinned, it covered 288px of an 844px phone (#623).
+3. **Two cards across is too few.** The phone grid is an explicit 2-up (`grid-view.tsx`), a layout
+   that predates card captions; erratum 5 of that readiness set only the desktop's tile floor. Hugh wants three across, as ManaBox draws it: a collection
    is browsed by art, and half as many cards again per row is the point.
 4. **Proxies feels detached from Collection.** It is reached from a link in the collection's filter
-   bar (`filter-bar.tsx`), and once you are there nothing ties it back. It has no way back to
+   bar (`filter-bar.tsx`), or from the empty-collection state (`collection/page.tsx`, which draws
+   its own entry because the filter bar is not mounted there), and once you are there nothing ties it back. It has no way back to
    Collection (H19, a bug fixed separately), and it does not read as part of the same place.
 
 ## The ask
 
-- **A compact sticky head for `/collection` on the phone**, always present: search plus the filter
-  and sort entry points, in less height than today. Use Sets' sticky head as the reference for
-  behavior, not necessarily for layout. Say whether it collapses on scroll as Sets does, or is
-  simply compact from the start.
+- **A compact sticky head for `/collection` on the phone**, always reachable: search plus the
+  filter and sort entry points, in less height than today. Sets' collapsing head is one answer to
+  the same problem (the controls stay in reach once you scroll) without pinning a tall head. Say
+  whether Collection collapses the same way, or is compact enough to pin from the start, and
+  give its pinned height against the 844px phone.
 - **A 3-column phone grid.** At 390px the track is 362px, so a tile is about 115px wide with two 8px
   gaps, against 175px today (two tiles and a 12px gap). Say what a tile still carries at that width: the caption (name,
   count, marks), the ownership dot, the art crop or the whole card. The desktop track (a 178px tile
@@ -44,9 +48,12 @@ From Hugh's walk on 2026-10-02 (intake items H11 and H18):
    Changer, tutor, and the rest) still fit. The marker key above the grid must still read at 3-up,
    and H7 (the key's padding and equal-width columns) is open on it now.
 4. **The collection–Sets–Proxies relationship.** Sets already sits under `/collection/sets`, so a
-   shared shape for all three is on the table if it is better than placing Proxies alone.
-5. **Rows view.** The phone also offers a rows view (`rows-view.tsx`). Say whether the sticky head
-   is the same in both views. It should be.
+   shared shape for all three is on the table if it is better than placing Proxies alone. Whatever
+   moves Proxies must still give the empty-collection reader a way in.
+5. **Rows view.** Rows is the phone's DEFAULT (`browser.tsx`: with no URL view and nothing stored,
+   a phone gets rows and a desktop gets the grid), so a phone reader who never touched the toggle
+   sees rows, and the 3-up grid reaches only readers who switched. Say whether the 3-up changes
+   that default. The sticky head must be the same in both views.
 
 Out of scope: the copy, the filter sheet's contents (H8, the Type chips collapsing at a zero count,
 is a bug fixed separately), the card details sheet, and the replace flow.
