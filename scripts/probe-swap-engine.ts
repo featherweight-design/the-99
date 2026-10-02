@@ -87,6 +87,11 @@ let pairCleanup: { a: string; b: string; card: string } | null = null;
 let labelCleanup: string[] | null = null;
 const LABEL_MODEL = "probe-swap-engine";
 
+// Every section but 10's switch-on read runs with the label switch OFF, whatever the caller's `.env` says:
+// those sections prove the text path, and a caller with the switch on would run them through labels.
+const callerLabels = process.env.STAND_IN_LABELS_ENABLED;
+delete process.env.STAND_IN_LABELS_ENABLED;
+
 async function main() {
   // A Naya commander, found by query rather than named, so the fixture follows the catalog.
   const [commander] = await rows<{ oracle_id: string; name: string }>(sql`
@@ -339,6 +344,8 @@ try {
   failures += 1;
   console.log(`FAIL  the run threw — ${(e as Error).message}`);
 } finally {
+  if (callerLabels === undefined) delete process.env.STAND_IN_LABELS_ENABLED;
+  else process.env.STAND_IN_LABELS_ENABLED = callerLabels;
   // Assigned inside `main`, which flow analysis cannot see from here.
   const pair = pairCleanup as { a: string; b: string } | null;
   if (pair) {
