@@ -109,10 +109,15 @@ let cleaned = false;
 async function cleanupFixtures() {
   if (cleaned) return;
   cleaned = true;
+  // A cleanup failure left only logged (never counted into `failures`) let a run print "All
+  // checks passed." and exit 0 while a fixture deck, a collection row or the combo's
+  // deck_cards row stayed behind on the walked user's real data (Copilot round 2, medium).
+  // Each failed step is now a counted failure, so a clean exit code is a guarantee.
   for (const id of fixtureDeckIds) {
     try {
       await pool.query(`delete from decks where id = $1`, [id]);
     } catch (err) {
+      failures += 1;
       console.error(`\n  COULD NOT DELETE fixture deck ${id} — remove by hand:`, err.message ?? err);
     }
   }
@@ -120,6 +125,7 @@ async function cleanupFixtures() {
     try {
       await pool.query(`delete from collection_items where user_id = $1 and oracle_id = $2`, [userId, oracleId]);
     } catch (err) {
+      failures += 1;
       console.error(`\n  COULD NOT DELETE fixture collection row ${oracleId} — remove by hand:`, err.message ?? err);
     }
   }
@@ -127,6 +133,7 @@ async function cleanupFixtures() {
     try {
       await pool.query(`delete from deck_cards where deck_id = $1 and oracle_id = $2`, [fixtureDeckCard.deckId, fixtureDeckCard.oracleId]);
     } catch (err) {
+      failures += 1;
       console.error(`\n  COULD NOT DELETE the combo fixture's deck_cards row — remove by hand:`, fixtureDeckCard, err.message ?? err);
     }
     fixtureDeckCard = null;
@@ -239,6 +246,9 @@ async function buildComboFixture(userId, deckId, commanderOracleId, existingOrac
   const deckIdentity = new Set(cmd[0]?.color_identity ?? []);
   const present = new Set(existingOracleIds);
 
+  // ORDERED, not left to the planner: an unordered `limit` can hand back a different 600
+  // variants after a plan or catalog change, making the fixture intermittently unable to
+  // find a candidate it found yesterday (Copilot round 2, medium — previously missed).
   const { rows: variants } = await pool.query(
     `select v.variant_id, array_agg(vc.oracle_id order by vc.oracle_id) as pieces
        from spellbook_variants v
@@ -246,6 +256,7 @@ async function buildComboFixture(userId, deckId, commanderOracleId, existingOrac
       where v.card_count = 2
       group by v.variant_id
       having count(*) = 2
+      order by v.variant_id
       limit 600`,
   );
   let attempts = 0;
@@ -310,10 +321,16 @@ async function buildComboFixture(userId, deckId, commanderOracleId, existingOrac
         };
       }
       // Not on the real list — undo this attempt's writes before trying the next candidate.
-      // The delete runs before clearing the tracking handle, so a throw mid-delete still
-      // leaves `fixtureDeckCard` pointing at the row for the run's own `finally` to catch.
-      await pool.query(`delete from deck_cards where deck_id = $1 and oracle_id = $2`, [deckId, held.oracle_id]);
-      if (weInsertedIt) fixtureDeckCard = null;
+      // ONLY when WE inserted the row: `on conflict do nothing` meant it could already have
+      // existed (another writer added it between the snapshot and this attempt), and an
+      // unconditional delete here would remove real user data this probe never wrote
+      // (Copilot round 2, high). The delete runs before clearing the tracking handle, so a
+      // throw mid-delete still leaves `fixtureDeckCard` pointing at the row for the run's
+      // own `finally` to catch.
+      if (weInsertedIt) {
+        await pool.query(`delete from deck_cards where deck_id = $1 and oracle_id = $2`, [deckId, held.oracle_id]);
+        fixtureDeckCard = null;
+      }
       if (fixtureCollectionRows.length && fixtureCollectionRows[fixtureCollectionRows.length - 1].oracleId === suggested.oracle_id) {
         const row = fixtureCollectionRows.pop();
         await pool.query(`delete from collection_items where user_id = $1 and oracle_id = $2`, [row.userId, row.oracleId]);
@@ -404,9 +421,16 @@ async function readTiles(page) {
       );
       const metaLine = caption?.firstElementChild?.firstElementChild ?? null;
       const dot = metaLine?.querySelector('span[class*="rounded-full"]') ?? null;
+      // Excludes any child that CONTAINS a fact mark or the combo glyph, not only a child
+      // that directly IS one: on a fine pointer, `FactTooltip` wraps each mark in its own
+      // `<span>`, which is itself neither an svg nor the dot — the old `!el.matches(...)`
+      // check let that wrapper through as the "slot", excluding marked free tiles from
+      // fixture selection and reading the wrapper's position as the chip's (Copilot
+      // round 2, medium — previously missed).
       const chip = metaLine
         ? [...metaLine.children].find(
-            (el) => el !== dot && !el.matches('svg, [data-testid="combo-glyph"]'),
+            (el) => el !== dot && !el.matches('svg, [data-testid="combo-glyph"]')
+              && !el.querySelector('svg[data-testid^="card-fact-"], svg[data-testid="combo-glyph"]'),
           ) ?? null
         : null;
       const marks = metaLine ? [...metaLine.querySelectorAll('svg[data-testid^="card-fact-"]')] : [];
@@ -526,16 +550,24 @@ async function run() {
       // Excludes the combo's own suggested card, so it is never accidentally picked as a
       // hard/over claim target too.
       const freeTiles = (await readTiles(p)).filter((t) => !t.chipRect && t.oracleId !== combo?.suggestedOracleId);
-      const owned = [];
+      // A singleton that ALSO carries a fact mark is preferred for the hard claim, so that
+      // fixture's own tile is the one proving "dot, then slot, then marks" together — the
+      // property is otherwise only reachable by chance, since whether any card in this
+      // run's 99-card pool happens to carry both a mark and a claim is order-sensitive
+      // (`ownedColorLegalPool` has no ORDER BY).
+      const marked = [];
+      const plain = [];
       for (const t of freeTiles) {
         if (!t.oracleId) continue;
         const { rows } = await pool.query(
           `select sum(quantity)::int as qty from collection_items where user_id = $1 and oracle_id = $2`,
           [early.userId, t.oracleId],
         );
-        if (rows[0]?.qty === 1) owned.push(t.oracleId);
-        if (owned.length >= 2) break;
+        if (rows[0]?.qty !== 1) continue;
+        (t.marksRects.length > 0 ? marked : plain).push(t.oracleId);
+        if (marked.length + plain.length >= 40) break;
       }
+      const owned = [...marked, ...plain].slice(0, 2);
       await c.close();
       return {
         href: early.href, userId: early.userId, deckId: early.deckId,
