@@ -462,7 +462,12 @@ function SetsFigure({ width }: { width: AboutWidth }) {
 
       {/* The filter row, and the line under it that says what the denominator
           counts. Both are drawn, because key line 3 is about exactly that
-          disagreement: 162 of 208 and 321 cells are both true. */}
+          disagreement: 162 of 208 and 321 cells are both true.
+
+          Missing and Owned (H12), mutually exclusive, plus Sort (H16), are
+          key line 4 — added as an ORDINARY EDIT to this entry rather than a
+          new one, this being the last Sets round (d9, 2026-10-03). No
+          ABOUT_VERSION bump: Hugh's precedent on the collection surfaces. */}
       <div className="mb-[9px] flex flex-wrap items-center gap-[8px]">
         <span className="flex h-[28px] min-w-[140px] flex-1 items-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)] px-[10px] text-[11px] text-[color:var(--fg-locked)]">
           {setFilterCopy.search.placeholder}
@@ -476,6 +481,13 @@ function SetsFigure({ width }: { width: AboutWidth }) {
         </span>
         <span className="flex h-[26px] items-center rounded-[7px] border border-solid border-[color:var(--border-strong)] px-[10px] text-[11px] text-[color:var(--fg-muted)]">
           {setFilterCopy.ownership.missing.label}
+        </span>
+        <span className="flex h-[26px] items-center rounded-[7px] border border-solid border-[color:var(--border-strong)] px-[10px] text-[11px] text-[color:var(--fg-muted)]">
+          {setFilterCopy.ownership.owned.label}
+        </span>
+        <span className="flex h-[26px] items-center gap-[6px] rounded-[7px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] px-[9px] text-[11px] text-[color:var(--fg-muted)]">
+          {setFilterCopy.sort.panel.triggerOne(setFilterCopy.sort.options.price)}
+          <KeyNumeral n={4} />
         </span>
       </div>
       <div className="mb-[10px] font-mono text-[10px] text-[color:var(--fg-faint)]">
