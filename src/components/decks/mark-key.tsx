@@ -35,8 +35,16 @@ export type MarkKeyEntry = { id: string; sample: ReactNode; word: string };
 export function MarkKey({
   marks,
   regionAria = proxyCopy.key.regionAria,
+  phoneColumns,
 }: {
   marks: MarkKeyEntry[];
+  /**
+   * Equal-width columns below `md` instead of the wrapping line (H7, Hugh's walk
+   * 2026-10-02). Wrapped, the collection's key broke wherever its words happened to
+   * end, so its entries sat at a different place on every line. Opt-in, so every
+   * other key is unchanged; from `md` it wraps as before.
+   */
+  phoneColumns?: 2 | 3;
   /**
    * The group's own label, taken as data for the same reason the marks are: the
    * card view mounts a second instance over cards rather than rows, and its
@@ -51,7 +59,14 @@ export function MarkKey({
       aria-label={regionAria}
       // Wraps rather than scrolls: it grows by one pair per mark, and a
       // horizontally scrolling legend on a phone is a control nobody presses.
-      className="flex flex-wrap items-center gap-x-[12px] gap-y-[6px] font-mono text-[10px] md:text-[10.5px]"
+      className={[
+        phoneColumns === 3
+          ? "grid grid-cols-3 md:flex md:flex-wrap"
+          : phoneColumns === 2
+            ? "grid grid-cols-2 md:flex md:flex-wrap"
+            : "flex flex-wrap",
+        "items-center gap-x-[12px] gap-y-[6px] font-mono text-[10px] md:text-[10.5px]",
+      ].join(" ")}
       style={{ color: "var(--fg-faint)" }}
     >
       {marks.map((mark) => (

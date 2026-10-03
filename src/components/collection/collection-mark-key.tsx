@@ -56,8 +56,10 @@ export function CollectionMarkKey({ className }: { className?: string }) {
   // ~178px columns at 1300px, stretched to the tile row's height with its entries wrapped
   // three deep. The row view is a flex column and needs nothing.
   return (
-    <div className={className}>
-      <MarkKey marks={ENTRIES} regionAria={cardMarkCopy.keyRegionAria} />
+    // Room above and below on the phone (H7): it sat tight against the head and the
+    // first row, and read as part of either rather than as the key to both.
+    <div className={["py-[10px] md:py-0", className].filter(Boolean).join(" ")}>
+      <MarkKey marks={ENTRIES} regionAria={cardMarkCopy.keyRegionAria} phoneColumns={2} />
     </div>
   );
 }

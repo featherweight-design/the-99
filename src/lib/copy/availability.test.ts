@@ -192,4 +192,15 @@ describe("the short marker's count", () => {
     expect(availabilityCopy.marker.overAriaCountOnly(1)).toContain("1 too few");
     expect(availabilityCopy.marker.overAria(1, 1)).toContain("1 too few");
   });
+
+  // H21: the summary states the facts and stops. Pinned as LITERALS, because the builder
+  // tests build their expectations from these same functions and would follow a restored tail.
+  it("ends the deck summary on the facts, with no reassurance (H21)", () => {
+    expect(availabilityCopy.deckSummary.body("Arcane Signet", 2, 1)).toBe(
+      "Arcane Signet is on 2 committed decks and you own one.",
+    );
+    expect(availabilityCopy.deckSummary.bodyMany(3)).toBe(
+      "3 of these are on more committed decks than you have copies.",
+    );
+  });
 });

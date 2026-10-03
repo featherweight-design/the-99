@@ -48,4 +48,14 @@ describe("the mark key", () => {
     render(<MarkKey marks={[proxy]} />);
     expect(screen.getByRole("group", { name: proxyCopy.key.regionAria })).toBeTruthy();
   });
+
+  it("sets its entries in equal columns on the phone only when asked (H7)", () => {
+    const { rerender } = render(<MarkKey marks={[proxy, buy]} phoneColumns={2} />);
+    const group = screen.getByRole("group", { name: proxyCopy.key.regionAria });
+    expect(group.className).toMatch(/(^|\s)grid grid-cols-2/);
+    expect(group.className).toMatch(/md:flex md:flex-wrap/);
+    rerender(<MarkKey marks={[proxy, buy]} />);
+    // Every other key keeps the wrapping line.
+    expect(screen.getByRole("group", { name: proxyCopy.key.regionAria }).className).not.toMatch(/grid/);
+  });
 });

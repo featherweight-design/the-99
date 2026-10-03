@@ -198,14 +198,16 @@ export const availabilityCopy = {
 
   // ── Surface 4 · decklist over-committed summary ───────────────────────
   // Renders ONLY when count > 0. Not an error: no dismiss, no retry, no icon.
-  // Straight-with-a-shrug, per the voice split — this is a real-world problem
-  // but not a data-loss or safety one.
+  // Straight, and the fact alone: it used to close on a shrug ("Nothing’s broken
+  // here…"), which H21 cut, because the facts stand on their own.
   deckSummary: {
     heading: spokenForTwice,
+    // The reassurance tail is gone (H21, Hugh's walk 2026-10-02): the facts stand on their
+    // own, and refresh.ts's voice rule already forbids explaining that a state is fine.
     body: (cardName: string, deckCount: number, ownedQty: number) =>
-      `${cardName} is on ${deckCount === 1 ? "1 committed deck" : `${deckCount} committed decks`} and you own ${ownedQty === 1 ? "one" : ownedQty}. Nothing’s broken here. It’s a shopping decision.`,
+      `${cardName} is on ${deckCount === 1 ? "1 committed deck" : `${deckCount} committed decks`} and you own ${ownedQty === 1 ? "one" : ownedQty}.`,
     bodyMany: (n: number) =>
-      `${n} of these are on more committed decks than you have copies. Nothing’s broken here. It’s a shopping decision.`,
+      `${n} of these are on more committed decks than you have copies.`,
     ariaLabel: (n: number) =>
       n === 1
         ? "1 card in this deck is over-committed"
@@ -368,8 +370,6 @@ export const availabilityCopy = {
       draftCount === 1
         ? "Nothing to sort out yet. The deck that wants it is still a draft. Whichever you sleeve first gets it."
         : "Nothing to sort out yet. The decks that want it are still drafts. Whichever you sleeve first gets it.",
-    detailOverNote:
-      "More committed decks want it than you own. Nothing’s broken. It’s a shopping decision.",
     // Why the shortfall above is smaller than the rows suggest. `short N` counts
     // committed decks only, deliberately — nothing is sleeved in a brew, so no copy
     // has gone anywhere — and a reader looking at five lists wanting one card has

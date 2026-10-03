@@ -113,6 +113,21 @@ describe("CollectionFilterSheet", () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it("lays the type chips in a fixed two-column grid, each filling its cell (H8)", () => {
+    // Content-sized chips are as wide as their counts, so zeroing counts reflowed the group
+    // and the sheet shrank. A fixed grid keeps the rows whatever the counts say.
+    render(sheet());
+    const instant = screen.getByRole("switch", { name: /Instant/ });
+    const grid = instant.parentElement!;
+    expect(grid.hasAttribute("data-type-grid")).toBe(true);
+    expect(grid.className).toMatch(/\bgrid\b/);
+    // Two columns from 360px; one below, where two stop fitting (320 is supported).
+    expect(grid.className).toMatch(/(^|\s)grid-cols-1(\s|$)/);
+    expect(grid.className).toMatch(/min-\[360px\]:grid-cols-2/);
+    expect(instant.className).toMatch(/w-full/);
+    expect(instant.className).toMatch(/justify-between/);
+  });
+
   it("keeps a lit value live even at zero, so it can be turned off", () => {
     const onChange = vi.fn();
     render(sheet({ filters: { ...FILTERS, types: ["Land"] }, onChange }));
