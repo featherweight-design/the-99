@@ -121,14 +121,17 @@ export function SetGridView(props: SetGridViewProps) {
     if (local !== null) setLocal(null);
   }
   const [sheetOpen, setSheetOpen] = useState(false);
-  // Sort moves rows without moving the completion count, so the result region's own text
-  // never changes when the reader picks a new order — nothing announces it (round 5
-  // finding). `seq` forces a repeat of the same sentence to be spoken again on a second
-  // press of the same order; cleared on a timeout so the region falls back to the
-  // completion line it otherwise shows, the same handover `ResultLine` makes for a custom
-  // message. One region throughout — this joins the existing `role="status"` rather than
-  // adding a second live region.
-  const [sortAnnounce, setSortAnnounce] = useState<{ text: string; seq: number } | null>(null);
+  // Sort moves rows without moving the completion count, so the visible result region's
+  // own text never changes when the reader picks a new order — nothing announced it
+  // (round 5 finding). d9's ruling (round 6): no timer on a live region and no swap of
+  // the visible result line, which stays exactly as it is — `ResultLine`'s own shape,
+  // a SEPARATE `sr-only` region holding only the latest message, written on each press
+  // and never cleared. `seq` is what `ResultLine` keys its span on, so a repeated
+  // sentence — the same order pressed twice — is a new node and genuinely re-announced.
+  const [sortAnnounce, setSortAnnounce] = useState<{ text: string; seq: number }>({
+    text: "",
+    seq: 0,
+  });
   const sortAnnounceSeq = useRef(0);
   // The sheet is phone-only, and `md:hidden` alone hid it while useDialogA11y stayed
   // mounted: crossing the breakpoint with it open left the desktop page scroll-locked and
@@ -1312,13 +1315,11 @@ export function SetGridView(props: SetGridViewProps) {
                     + `${setFilterCopy.sort.direction[next.sort][next.dir]}.`,
                   seq: sortAnnounceSeq.current,
                 });
-                window.setTimeout(() => setSortAnnounce(null), 1500);
               }}
               onClear={() => {}}
               onAnnounce={(text) => {
                 sortAnnounceSeq.current += 1;
                 setSortAnnounce({ text, seq: sortAnnounceSeq.current });
-                window.setTimeout(() => setSortAnnounce(null), 1500);
               }}
             />
           </div>
@@ -1529,6 +1530,7 @@ export function SetGridView(props: SetGridViewProps) {
           data-set-result
         >
         {sections.indexed ? (
+        <>
         <p
           role="status"
           aria-live="polite"
@@ -1539,12 +1541,7 @@ export function SetGridView(props: SetGridViewProps) {
           className="font-mono text-[11px] leading-[16px]"
           style={{ color: "var(--fg-muted)" }}
         >
-          {sortAnnounce ? (
-            // Keyed on `seq` so a second press of the same order is a NEW node and the
-            // region is genuinely re-announced, the same rule `ResultLine` states for a
-            // repeated sentence.
-            <span key={sortAnnounce.seq}>{sortAnnounce.text}</span>
-          ) : effective.own === "missing"
+          {effective.own === "missing"
             ? setPageCopy.result.missingOnly(shown.length)
             : effective.own === "owned"
               ? setPageCopy.result.ownedOnly(shown.length)
@@ -1607,6 +1604,26 @@ export function SetGridView(props: SetGridViewProps) {
           ) : null}
           </span>
         </p>
+        {/* A SEPARATE region from the one above (d9's ruling, round 6), never joined
+            to it: that one announces completion and must keep doing so while `shy`
+            hides it visually, which is a different lifecycle than a sort press. This
+            one is ALWAYS `sr-only`, never cleared on a timer — `ResultLine`'s own
+            shape, a visible line untouched and a dedicated live span beside it — and
+            `seq` is what the key is for, so a repeated sentence (the same order
+            pressed twice) is a new node and genuinely re-announced rather than
+            silently reusing one whose content did not change. Gated behind the same
+            "unindexed set has no status region at all" condition as the line above,
+            since there is nothing to sort on a set with no checklist either. */}
+        <span
+          key={sortAnnounce.seq}
+          className="sr-only"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {sortAnnounce.text}
+        </span>
+        </>
         ) : null}
         </div>
       </div>
