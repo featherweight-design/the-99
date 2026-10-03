@@ -796,6 +796,14 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 .anim-overlay-in { animation: overlay-in 150ms ease-out both; }
 .anim-overlay-out { animation: overlay-out 120ms ease-out both; }
 
+/* The pointer rail's name tag (desktop nav labels H2): opacity in over 100ms, no exit fade, no
+   movement. Under reduced motion it appears with no fade (audit E10). */
+@keyframes rail-tag-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.anim-rail-tag { animation: rail-tag-in 100ms ease-out both; }
+
 @media (prefers-reduced-motion: reduce) {
   .anim-bob,
   .anim-dots,
@@ -813,6 +821,8 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   /* The fan holds still in its fanned pose, the inline transform each card carries. */
   .anim-fan-shuffle,
   .anim-overview-in,
+  /* The rail's name tag appears at full opacity. */
+  .anim-rail-tag,
   .anim-sheet-up {
     animation: none;
     /* Nothing moves, so drop the compositing hint rather than holding a layer

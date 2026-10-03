@@ -1358,14 +1358,21 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   Makes no writes; point it at `local-dev`.
 
 - `pnpm probe:nav-labels` walks the desktop rail by input (desktop nav labels handoff): 1300x900
-  with a pointer, where it is today's 62px rail with no visible label; 768x1024 and 852x393 under
+  with a pointer, where it is today's 62px rail with no visible label and no native `title`, and
+  the name tag (R2, T2) is walked with a real mouse: nothing at 200ms, open by 500ms, 28px at
+  12.5px / 500, 8px off the rail, centred on its slot and painted over the page; it follows to the
+  next slot at once, holds while the pointer rests on it, closes once the pointer leaves, waits the
+  full delay again after the grace, and closes on Escape, a press and blur, while keyboard focus
+  opens it at once. With the gap set to 0 and the close timer removed, three of those fail. The
+  timers themselves are pinned with fake timers in `rail-tag.test.tsx`; 768x1024 and 852x393 under
   `(hover: none)`, where it is 88px and every slot is the tab bar's 72 x 52 slot with its label at
   9px on a 12px line (72 x 44 on the short screen, V1); and 390x844, where the tab bar must carry
   none of the rail's touch classes. Every rule is a media query and jsdom applies none, so the unit
   tests read classes and this reads geometry. `(hover: none)` comes from a `hasTouch` context: CDP's
   `Emulation.setEmulatedMedia` does NOT emulate `hover` (its first version read false under it and
   measured the pointer rail as touch), and `isMobile` turns 768 into a 980px layout viewport. Each
-  touch context first asserts the query MATCHES, so that failure cannot recur silently.
+  touch context first asserts the query MATCHES, so that failure cannot recur silently, and 768
+  asserts no name tag is mounted under it.
   On the short screen it reads the account control whole in the viewport and outside the nav (the
   nav is the one scroll region), and the first slot's focus ring 4px clear of the region's edges
   (audit V-E2). First run needs an account with no cards, which neither fixture account is:
