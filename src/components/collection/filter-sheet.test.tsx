@@ -78,8 +78,10 @@ describe("CollectionFilterSheet", () => {
   });
 
   it("renders nothing when closed, rather than a hidden duplicate of the row", () => {
-    const { container } = render(sheet({ open: false }));
-    expect(container.innerHTML).toBe("");
+    // Asked of the whole document: the sheet portals, so the render container is empty either way.
+    render(sheet({ open: false }));
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(screen.queryByText("Color identity")).toBeNull();
   });
 
   it("is a modal dialog carrying every dimension the wide row draws", () => {
