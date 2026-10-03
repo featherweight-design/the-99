@@ -24,7 +24,7 @@ const get = (qs: string) => GET(new NextRequest(`http://localhost/api/collection
 beforeEach(() => {
   stub.userId = "user_1";
   stub.load.mockReset();
-  stub.load.mockResolvedValue([card(A), card(B)]);
+  stub.load.mockResolvedValue({ cards: [card(A), card(B)], version: "v1" });
 });
 
 describe("GET /api/collection-fields", () => {
@@ -36,6 +36,19 @@ describe("GET /api/collection-fields", () => {
     expect(Object.keys(fields)).toEqual([A, B]);
     expect(fields[A]).toEqual({ imageUri: `https://cards.example/${A}.jpg`, comboPartner: { name: "Other" } });
     expect(stub.load).toHaveBeenCalledWith("user_1");
+  });
+
+  // The page named the version of the list it served. A batch the route would answer from a list
+  // rebuilt since is refused as stale, never merged: a printing picked elsewhere keeps the id and
+  // moves the art, which a merge would put under the old caption.
+  it("refuses a batch naming another version of the list as stale, and answers its own", async () => {
+    const stale = await (await get(`ids=${A}&v=v0`)).json();
+    expect(stale).toEqual({ fields: {}, stale: true });
+    const current = await (await get(`ids=${A}&v=v1`)).json();
+    expect(Object.keys(current.fields)).toEqual([A]);
+    expect(current.stale).toBeUndefined();
+    // A caller that names no version is answered as before.
+    expect(Object.keys((await (await get(`ids=${A}`)).json()).fields)).toEqual([A]);
   });
 
   it("answers nothing for an id the reader's list does not hold", async () => {

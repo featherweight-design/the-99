@@ -222,6 +222,7 @@ export function availabilityChangeAnnouncement(
 export function CollectionBrowser({
   cards: rows,
   served: servedProp,
+  version,
   ownedSets,
   availabilityOk,
   hasCollection,
@@ -238,6 +239,12 @@ export function CollectionBrowser({
    * against. `cards` itself when omitted, which is the same list while nothing is picked.
    */
   served?: CollectionRow[];
+  /**
+   * The version of the cached list the page served (`loadCollectionList`). Every fields batch
+   * names it, and one the route has to answer from a rebuilt entry is refused as stale rather
+   * than merged. Omitted in tests and older callers: no batch is ever refused for it.
+   */
+  version?: string;
   /** `sets` catalog rows for the sets this user owns — names + release dates. */
   ownedSets: OwnedSetMeta[];
   /**
@@ -496,7 +503,7 @@ export function CollectionBrowser({
   const wanted = useMemo(() => (sorted as CollectionRow[]).slice(0, shown), [sorted, shown]);
   const router = useRouter();
   const refreshStale = useCallback(() => router.refresh(), [router]);
-  const { resolve } = useCollectionFields(served, wanted, refreshStale);
+  const { resolve } = useCollectionFields(served, wanted, refreshStale, version);
   const resolvedWanted = wanted.map(resolve);
   const complete = resolvedWanted.every((r) => r !== null);
   // The last rows drawn WHOLE, kept as drawn.

@@ -33,9 +33,11 @@ import { HydratedImg } from "../ui/hydrated-art";
  * the 62px rail and 34px of padding a side, so it holds 6 columns at 1300px, 7 at 1536 and 9 at
  * 1920, and a first screen is about 18 tiles at 1300x900 and 27 at 1920x1080; on a phone it is
  * two columns, about 4 tiles. Every eager tile is art downloading beside the page's scripts,
- * so the count is a trade between first art and time to interactive, set by measurement.
+ * so the count is a trade between first art and time to interactive. Measured on the slow profile
+ * (list payload plan, PR 4): 4 eager tiles hydrate as fast as bare `/collection` at 1300 and 390
+ * and paint first art 10.5s and 4.3s sooner than none; 12 cost ~4.7s of hydration at 1300.
  */
-export const GRID_EAGER_TILES = 12;
+export const GRID_EAGER_TILES = 4;
 
 export function GridView({
   cards,

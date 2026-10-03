@@ -11,7 +11,7 @@ const fieldsFor = (slug: string): DrawFields => ({
 
 /** A fetch the test answers by hand, so what is in flight at any moment is observable. */
 function manualFetch() {
-  const calls: { url: string; signal: AbortSignal; answer: () => void; fail: () => void; omit: (gone: string) => void }[] = [];
+  const calls: { url: string; signal: AbortSignal; answer: () => void; fail: () => void; stale: () => void; omit: (gone: string) => void }[] = [];
   const fn = vi.fn((url: string, init: RequestInit) =>
     new Promise<Response>((resolve, reject) => {
       const signal = init.signal as AbortSignal;
@@ -22,6 +22,7 @@ function manualFetch() {
         signal,
         answer: () => resolve(new Response(JSON.stringify({ fields: Object.fromEntries(slugs.map((s) => [s, fieldsFor(s)])) }))),
         fail: () => resolve(new Response("", { status: 500 })),
+        stale: () => resolve(new Response(JSON.stringify({ fields: {}, stale: true }))),
         omit: (gone: string) =>
           resolve(new Response(JSON.stringify({
             fields: Object.fromEntries(slugs.filter((s) => s !== gone).map((s) => [s, fieldsFor(s)])),
@@ -226,6 +227,37 @@ describe("useDrawFields", () => {
     expect(new URL(net.calls[1].url, "http://x").searchParams.get("s")!.split(",")[0]).toBe("c0");
     await act(async () => net.calls[1].answer());
     await waitFor(() => expect(result.current.resolve(all[0])?.prose).toBe("c0"));
+  });
+
+  // A batch the reader waits on fails, and the reader leaves before its retry fires: `leave`
+  // cancels the retry, so a failure kept across a back/forward return would hold the window busy
+  // with nothing left to clear it.
+  it("asks again for a failed window when the page comes back from the back/forward cache", async () => {
+    renderHook(() => useDrawFields("fit", all, [all[0]]));
+    await waitFor(() => expect(net.calls).toHaveLength(1));
+    await act(async () => net.calls[0].fail());
+    act(() => { window.dispatchEvent(new Event("pagehide")); });
+    const shown = new Event("pageshow") as Event & { persisted: boolean };
+    Object.defineProperty(shown, "persisted", { value: true });
+    act(() => { window.dispatchEvent(shown); });
+    await waitFor(() => expect(net.calls).toHaveLength(2));
+    expect(new URL(net.calls[1].url, "http://x").searchParams.get("s")!.split(",")[0]).toBe("c0");
+  });
+
+  // A route that names its list's version answers `stale` from a list rebuilt since the page was
+  // served: those fields belong to other rows, so nothing is merged and the page is read again.
+  // It is read at once even from a BACKGROUND batch, where no row the reader waits on went
+  // missing, which is what a left-out row alone would wait for.
+  it("merges nothing from a stale answer and reads the page again, once", async () => {
+    const onStale = vi.fn();
+    const drawn = all.slice(0, 2).map((r) => ({ ...r, ...fieldsFor(r.slug) })) as DiscoveryRow[];
+    const { result } = renderHook(() => useDrawFields("fit", all, drawn, onStale));
+    await waitFor(() => expect(net.calls).toHaveLength(1));
+    await act(async () => net.calls[0].stale());
+    await waitFor(() => expect(onStale).toHaveBeenCalledTimes(1));
+    expect(result.current.resolve(all[5])).toBeNull();
+    await new Promise((r) => setTimeout(r, 300));
+    expect(onStale).toHaveBeenCalledTimes(1);
   });
 
   it("asks for nothing when every row arrived drawn", async () => {

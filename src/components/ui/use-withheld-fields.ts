@@ -131,7 +131,18 @@ function createFieldsLoop<Row extends object, Fields extends object>(onLanded: (
       for (const s of batch) asked.add(s);
       fetch(source.url(batch), { signal: ac.signal, credentials: "same-origin" })
         .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`fields ${r.status}`))))
-        .then((body: { fields: Record<string, Fields> }) => {
+        .then((body: { fields: Record<string, Fields>; stale?: boolean }) => {
+          // The route answered from a list rebuilt since the page was served (a source that names
+          // its version): its fields belong to another version of these rows, so nothing is
+          // merged and the page is read again, once.
+          if (body.stale) {
+            const list = forList(all);
+            if (!list.refreshed) {
+              list.refreshed = true;
+              onStale();
+            }
+            return;
+          }
           for (const [key, f] of Object.entries(body.fields)) store.set(key, f);
           // The route leaves out a key its reader's list no longer holds; `pump` refreshes the
           // page the moment one of them is wanted, now or later.
@@ -197,9 +208,13 @@ function createFieldsLoop<Row extends object, Fields extends object>(onLanded: (
       unschedule();
       pump();
     },
-    /** Mounted (again, under React's development double mount). */
+    /** Mounted (again, under React's development double mount), or restored from the back/forward
+        cache. Starts clean: `leave` cancelled any retry that was pending, so a failure kept from
+        before would hold the reader's window busy with nothing left to clear it. */
     start() {
       left = false;
+      retries = 0;
+      failedAt = null;
       pump();
     },
     leave() {

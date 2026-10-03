@@ -10,6 +10,16 @@
 import { cacheForUser } from "../cache/user-lists";
 import { loadBrowseCards } from "./browse";
 
+/**
+ * The list, and the VERSION of it this cache entry holds: stamped when the entry is built, so the
+ * page and every fields batch read from one entry carry the same one, and a batch read from an
+ * entry rebuilt since (an invalidation in between) carries another. Missing ids cannot show that,
+ * because a rebuilt list holds the same cards with different fields: a printing picked on another
+ * device keeps the oracle id and moves the art, which a merge would put under the old caption.
+ */
 export function loadCollectionList(userId: string) {
-  return cacheForUser(userId, ["browse-5"], () => loadBrowseCards(userId));
+  return cacheForUser(userId, ["browse-5"], async () => ({
+    cards: await loadBrowseCards(userId),
+    version: Date.now().toString(36),
+  }));
 }

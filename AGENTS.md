@@ -1693,8 +1693,9 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   **Its grid's art waits for the page**, except the first screen's: once the server draws the grid
   (`?view=grid`, or a desktop default), a lazy img still starts on the HTML parse, and on the slow
   profile ~2.4MB of art landed before hydration and held the page at ~20s against ~6s. The tile
-  draws `HydratedImg` with the first `GRID_EAGER_TILES` (12) eager; the server cannot know the
-  width, so that is a fixed count rather than columns times rows.
+  draws `HydratedImg` with the first `GRID_EAGER_TILES` (4) eager; the server cannot know the
+  width, so that is a fixed count rather than columns times rows. 4 is measured: it hydrates as
+  fast as the bare page at both widths, where 12 cost ~4.7s at 1300.
 
 - `pnpm probe:collection-window` proves that at 1300x900 and 390x844 with the fields route HELD:
   six URLs, each with its own view, sort, direction, search and availability, arrive drawn (200
@@ -2396,7 +2397,7 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   tiles' `normal` images at once. It became a native `loading="lazy"` img, which still starts on
   the HTML parse, and once the server drew the grid (`?view=grid`) ~2.4MB of art landed before
   hydration on the slow profile and held the page at ~20s. Since the list payload plan's PR 4 the
-  /collection tile draws `HydratedImg` (`ui/hydrated-art`): the first `GRID_EAGER_TILES` (12)
+  /collection tile draws `HydratedImg` (`ui/hydrated-art`): the first `GRID_EAGER_TILES` (4)
   ask for their art in the server HTML and the rest wait until they come within 600px of the
   viewport, which they can only learn after hydration. The deck page's tiles are still native
   lazy imgs. The probe counts the Scryfall requests the page made, never an attribute, and holds
