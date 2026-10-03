@@ -3,11 +3,11 @@
 // IDENTICAL for Haiku and Sonnet, deliberately: the comparison is between models,
 // so any prompt difference would confound it.
 //
-// A `cache_control` breakpoint on the instruction block, SENT since re-sample 3 (d9, 2026-10-02), so the
-// batch's real cache hit rate is MEASURED rather than assumed: the collector reports read and write tokens
-// per request and pooled. It is transport, not prompt: the model sees the same text, so neither the label
-// hash nor LABEL_PROMPT_VERSION moves. Every cap still books the worst case, every request a cache WRITE
-// at the write rate. What was measured before, when the block was a third of its size:
+// NO `cache_control`, MEASURED twice. Re-sample 3 sent a breakpoint on the 4,115-token block to measure the
+// batch's real hit rate: 11 of 140 requests read and 129 wrote, a pooled token hit rate of 7.9% (45,573
+// read against 534,447 written), so at 1.25x to write the block cost ~16% MORE than uncached, about $2.6
+// more over a full run. Dropped (d9, 2026-10-03). The caps still book the write rate whenever
+// SENDS_CACHE_BREAKPOINT is turned back on. What was measured before, when the block was a third of its size:
 //
 // Caching lost money for both models, for two different reasons:
 //
@@ -81,7 +81,8 @@ ROLES (space "role"): ${ROLES.join(", ")}
                  nonland permanent that adds mana is ramp. Affects self.
   tutor        — searches your library for a card that is NOT a land. A search
                  for a land is ramp (fetchesLand), never tutor.
-  counterspell — counters a spell or ability. Its affects is opponents. NOT
+  counterspell — counters a spell or ability. Its affects is opponents, unless
+                 it counters EVERY player's spells alike, which is each. NOT
                  counterspell: changing a spell's target, making spells
                  uncounterable, or a tax only on spells that target this
                  card ("counter it unless that player pays").
@@ -93,15 +94,19 @@ THEMES (space "theme"): ${THEMES.join(", ")}
                   turn. NOT pump: a keyword grant (double strike, first strike),
                   a +1/+1 counter (that is counters), a penalty (-X/-X, -X/-0,
                   +X/-X), a land or noncreature becoming a creature, and a
-                  creature growing only itself from a count. -X/-X on an
-                  opponent's creature is removal, method shrink.
+                  creature growing only itself from a count. ANY minus in the
+                  change makes it a penalty, never pump: +2/-1 from an
+                  Equipment, or a minus on a creature returned from a
+                  graveyard, is not pump. -X/-X on an opponent's creature is removal,
+                  method shrink.
   haste         — gives haste.
   evasion       — flying, trample, menace, or can't be blocked. A creature's
                   OWN flying, trample or menace is an evasion job on itself:
                   restrictedTo "creature", affects self.
-  etbDraw       — draws a card when a creature enters, its OWN entry included.
-                  Label it IN ADDITION to role draw. Drawing when a creature
-                  spell is CAST is not etbDraw.
+  etbDraw       — draws a card when a creature enters, its OWN entry included:
+                  a creature that draws a card when it enters is etbDraw AND
+                  role draw. Drawing when a creature spell is CAST, or when a
+                  creature attacks or deals combat damage, is not etbDraw.
   draw          — cares about drawing: any reward triggered by you drawing
                   ("whenever you draw", "your second card each turn"), whatever
                   the reward is. It is role draw only if cards also go to hand.
@@ -111,7 +116,9 @@ THEMES (space "theme"): ${THEMES.join(", ")}
   protection    — hexproof, shroud, indestructible, ward, protection from,
                   regenerate, phasing out, and totem or umbra armor; and
                   giving YOU hexproof or shroud.
-  recursion     — returns a card from a graveyard.
+  recursion     — returns a card from a graveyard: to hand, to the battlefield,
+                  or onto the TOP of your library (to "top"), a land that does
+                  it included.
   blink         — exiles a permanent and returns it.
   finisher      — ends the game: a large attack, an extra combat, an extra turn,
                   or a win-the-game clause.
@@ -130,9 +137,10 @@ THEMES (space "theme"): ${THEMES.join(", ")}
                   OWN death is not deathTrigger: label the job it does, with
                   trigger "dies".
   lifegain      — gains you life.
-  drain         — damage or life loss aimed ONLY at opponents. A burn spell that
-                  can hit any target is not drain, and neither is life loss
-                  for EVERY player, you included.
+  drain         — damage or life loss aimed ONLY at opponents. Damage to "any
+                  target" is NEVER drain, whatever deals it, though it can hit
+                  a player. Life loss for EVERY player, you included, is not
+                  drain either.
   spellslinger  — rewards casting instants and sorceries, or noncreature
                   spells. "Whenever you cast a spell" alone is not spellslinger.
   landfall      — does something when a land enters under your control. Label
@@ -216,7 +224,9 @@ EVERY JOB CARRIES:
                            on your own creatures, cards you draw, your library.
                opponents = an opponent's. EVERY removal job is opponents, even
                            where the rules would let you target your own
-                           permanent: "destroy target creature" is opponents.
+                           permanent: "destroy target creature" is opponents,
+                           unless it removes from EVERY player alike ("each
+                           player sacrifices a creature"), which is each.
                each      = every player, you included: "destroy all
                            creatures", "each player draws a card".
                null      = ONLY when the job points at no player at all,
@@ -225,7 +235,11 @@ EVERY JOB CARRIES:
                it does the same for EVERY player, which is each. A symmetric
                effect is each even where it mostly helps you: preventing ALL
                combat damage, a tax on every player's spells, every player
-               gaining control of something.
+               gaining control of something, a buff to every creature of a
+               type, ANYONE's ("every Bird gets +1/+1"; "Birds you
+               control" is self), and the deathTrigger job itself when ANY
+               creature dying triggers it, not only yours. The job that
+               trigger does keeps its own answer: a drain stays opponents.
                  self      = clones (the copy is yours), pump, protection,
                              recursion (even from any graveyard), a land.
                  each      = fog, which prevents combat damage to everyone.
@@ -322,7 +336,7 @@ export const renderCard = (c: CardForPrompt) =>
   `${c.name}\n${c.mana_cost || "(no cost)"} | ${c.type_line}\n${castFaceText(c.oracle_text ?? null, c.layout ?? "normal") ?? "(no text)"}`;
 
 /**
- * Whether a request asks for prompt caching. TRUE since re-sample 3, for the reason at the top of this file.
+ * Whether a request asks for prompt caching. FALSE, for the measurements at the top of this file.
  *
  * Exported so the spend estimate reads it from the module that DECIDES it, rather than
  * inferring caching from a model's capability. `PRICING[m].caches` says the model could
@@ -331,7 +345,7 @@ export const renderCard = (c: CardForPrompt) =>
  * figure computed from something nothing holds is exactly the class of bug this run has
  * been finding all day.
  */
-export const SENDS_CACHE_BREAKPOINT = true;
+export const SENDS_CACHE_BREAKPOINT = false;
 
 /** The user turn exactly as sent, so the estimate can measure the real thing. */
 export const renderBody = (cards: CardForPrompt[]) =>
@@ -434,6 +448,9 @@ export const buildRequest = (customId: string, model: string, cards: CardForProm
  * version still moves with every SYSTEM edit (pinned in `prompt.test.ts`): it is the human-readable
  * reason a run was owed, and what the label copy reads to tell a prompt change from a catalog one.
  */
+// "7": re-sample 3's fixes (2026-10-03), the last tuning round: symmetric each (lords, any creature dying,
+// a counter on every player's spells), any minus is never pump, etbDraw is entry only, recursion includes the
+// top of the library, any-target damage is never drain.
 // "6": re-sample 2's fixes (2026-10-02): a creature's own evasion, cycling is not draw, an untap you can spend
 // at once is burstMana and one in the end step is not ramp, not counterspell or drain by name, no repeated job.
 // "5": the re-sample's prompt fixes (2026-10-02): triggers defined, deathTrigger and tribal labelled beside
@@ -445,7 +462,7 @@ export const buildRequest = (customId: string, model: string, cards: CardForProm
 // with no bump would be misreported as the latter, so `prompt.test.ts` pins SYSTEM's hash to this version.
 // "2": every job now carries `affects`, `to` and `method` (the vocabulary plan's Task 2), so a row
 // labelled under "1" has none of them and must read stale rather than current.
-export const LABEL_PROMPT_VERSION = "6";
+export const LABEL_PROMPT_VERSION = "7";
 
 /**
  * Whether a stored label still describes its card, mirroring `proseInputHash`.
