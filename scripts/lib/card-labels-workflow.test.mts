@@ -146,7 +146,7 @@ describe("the card-labels spend bounds", () => {
 
   it("refuses an empty bound BEFORE the step can spend", () => {
     // `boundedNumber` returns its FALLBACK for an empty variable, and the fallbacks are the
-    // backfill's 55 and 50 rather than this job's 9 and 5 — so an unwired expression does not
+    // backfill's 65 and 65 rather than this job's 9 and 5 — so an unwired expression does not
     // fail, it quietly buys the wrong ceilings.
     const run = runBlockOf(LABEL_STEP);
     const cap = run.indexOf("${LABEL_CAP_USD:?");

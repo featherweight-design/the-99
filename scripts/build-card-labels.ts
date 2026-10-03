@@ -29,15 +29,16 @@ import { parseScope } from "../src/lib/labels/scope";
 import { runLabelBuild } from "./lib/card-labels-build";
 
 /**
- * The cap, and the pause. Hugh's ruling: hard stop $55, and PAUSE AND REPORT if the
- * projection passes $50 rather than spending up to the stop silently.
+ * The cap, and the pause. Hugh's ruling: a hard stop, and PAUSE AND REPORT if the projection
+ * passes the report line rather than spending up to the stop silently. Both $65 since he approved
+ * the full backfill at ~$61.1 (2026-10-03; they were $55 and $50, which would pause that run).
  *
  * Both are bounded ABOVE as well as below: a fat-fingered `LABEL_CAP_USD=5500` is a plausible
  * typo and would authorise a hundred times the approved spend. The cap binds a BUDGET FAMILY
  * (`budgetFamily`): every backfill dispatch shares one, and the weekly cron another.
  */
-const CAP_USD = boundedNumber("LABEL_CAP_USD", process.env.LABEL_CAP_USD, 55, 0, 100);
-const REPORT_AT_USD = boundedNumber("LABEL_REPORT_AT_USD", process.env.LABEL_REPORT_AT_USD, 50, 0, 100);
+const CAP_USD = boundedNumber("LABEL_CAP_USD", process.env.LABEL_CAP_USD, 65, 0, 100);
+const REPORT_AT_USD = boundedNumber("LABEL_REPORT_AT_USD", process.env.LABEL_REPORT_AT_USD, 65, 0, 100);
 
 /** 95% of the cards a batch asked about, per the plan. Below it the batch is held, unpublished. */
 const FLOOR = boundedNumber("LABEL_FLOOR", process.env.LABEL_FLOOR, 0.95, 0, 1);

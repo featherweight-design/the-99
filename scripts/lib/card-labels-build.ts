@@ -91,7 +91,7 @@ export const RATES = ratesFor(MODEL_KEY);
 /**
  * The input figures the WORST CASE is booked on, and both are CEILINGS rather than averages.
  *
- * This matters more than it looks: `waveSize` and `withinCap` bound Hugh's $55 hard stop on
+ * This matters more than it looks: `waveSize` and `withinCap` bound Hugh's hard stop on
  * these numbers, so a figure that is merely typical makes the bound merely typical too.
  *
  * `SYSTEM_TOKENS` is `SYSTEM_TOKENS_BOUND`, one token per character of the block as it is NOW. It was
@@ -869,7 +869,7 @@ async function build(opts: BuildOptions): Promise<number> {
     + `${rateSource} measured rate; worst case if every `
     + `request returns its full ceiling $${worst.toFixed(2)}`);
 
-  // TWO BOUNDS, and they are different questions (d9's ruling on Hugh's $55):
+  // TWO BOUNDS, and they are different questions (d9's ruling on Hugh's backfill stop):
   //
   //   the CAP   each wave's worst case must fit `cap − spent so far`, which is what makes actual
   //             spend unable to pass the cap even if every remaining request maxes out.

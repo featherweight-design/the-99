@@ -293,7 +293,7 @@ jobs:
           #   75   more work: a wave went out, or batches are still processing — call again
           #    *   stop and look: refused, paused, or nothing labelable
           # REFUSE AN EMPTY BOUND rather than inheriting a default. `boundedNumber` returns its
-          # FALLBACK for an absent or empty variable, and those fallbacks are 55 and 50 — the
+          # FALLBACK for an absent or empty variable, and those fallbacks are 65 and 65 — the
           # backfill's ceilings, not this job's 9 and 5. (Not the widest it would allow, which is
           # 100; the point is that they are the wrong figures for a cron, not extreme ones.) So if
           # the bounds step is ever reordered after this one, renamed or dropped, these expressions

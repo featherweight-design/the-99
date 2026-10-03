@@ -363,12 +363,24 @@ export function spellPool(a: PoolArgs & {
  * labels trial's card set (vocabulary plan, Task 6b), so the trial labels exactly what its
  * comparisons can read.
  *
- * It is the pool `loadStandIns` reads, built by the same `spellPool`, for every mana value a spell
- * in the deck has, with the role-word filter dropped. That filter is the point: it runs before
- * `jobOf` or `sameJob` see a card, so a pool chosen by it leaves out exactly the text-mismatched
- * cards labels could newly admit, which are the cards the trial exists to judge. The deck's own
- * cards and its commanders are added, since a cut card is one side of every comparison. A land cut
- * is compared by text only (no label is read for one), so the land pool is not part of it.
+ * It is built by the same `spellPool` `loadStandIns` reads, for every mana value a spell in the
+ * deck has, as a union of two kinds of slice:
+ *
+ *   - ROLE-FREE: the cheapest unlisted spells with the role-word filter dropped. That filter runs
+ *     before `jobOf` or `sameJob` see a card, so a pool chosen by it leaves out exactly the
+ *     text-mismatched cards labels could newly admit, which are the cards the trial exists to judge.
+ *   - ONE PER ROLE: each single role's own role-filtered slice, which is what the text path's sheet
+ *     can show. The role-free slice alone is not enough: at a wide mana value the cheapest spells
+ *     tie at the floor price and break by name, so a removal card inside the 600 cheapest removal
+ *     cards can sit outside the 600 cheapest spells. A cut's slice filters on the UNION of its roles,
+ *     and a card in the cheapest 600 of a union is in the cheapest 600 of each of its roles alone
+ *     (fewer cards match one role), so the single-role slices cover every cut's.
+ *
+ * The commander's list, the player's own copies and the universal staples come with every slice.
+ * The deck's own cards and its commanders are added, since a cut card is one side of every
+ * comparison. A land cut is compared by text only (no label is read for one), so the land pool is
+ * not part of it. Nor is the label slice: it reads `card_labels`, so before a trial it is empty,
+ * and after one it holds only cards this set already gave a label.
  *
  * Null when the deck does not exist.
  */
@@ -393,10 +405,11 @@ export async function labelTrialPool(deckId: string): Promise<string[] | null> {
   const deckIds = draftRows.rows.map((r) => r.oracle_id);
   const draft = sql.param([...new Set([...deckIds, ...commanderIds])]);
   const mvs = [...new Set(draftRows.rows.filter((r) => r.spell).map((r) => Number(r.cmc)))];
-  const pools = await Promise.all(mvs.map((mv) => db.execute<{ oracle_id: string }>(spellPool({
-    deck, userId: deck.user_id, identity, draft, mv, roles: "any", labels: [],
+  const roleSets: (SpellRole[] | "any")[] = ["any", ...(Object.keys(ROLE_WORDS) as SpellRole[]).map((r) => [r])];
+  const pools = await Promise.all(mvs.flatMap((mv) => roleSets.map((roles) => db.execute<{ oracle_id: string }>(spellPool({
+    deck, userId: deck.user_id, identity, draft, mv, roles, labels: [],
     // The cut is excluded from its own pool; every deck card is added below, so any of them serves.
     cut: deck.commander, staples: sql.param([...staples]),
-  })).then((r) => r.rows.map((x) => x.oracle_id))));
+  })).then((r) => r.rows.map((x) => x.oracle_id)))));
   return [...new Set([...pools.flat(), ...deckIds, ...commanderIds])].sort();
 }
