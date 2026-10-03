@@ -8,7 +8,7 @@ import type { DeckView } from "./group-toggle";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { DecklistRow } from "./decklist-row";
 
-/** Module-scoped: a fresh `Set` every render would remount every row below it. */
+/** Module-scoped so an unspecified `spentOracleIds` doesn't allocate a fresh `Set` every render. */
 const EMPTY_SPENT_IDS: ReadonlySet<string> = new Set();
 
 interface DecklistGroupProps {

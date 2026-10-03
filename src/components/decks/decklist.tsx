@@ -275,8 +275,8 @@ export function buildMarkKeyEntries({
 /** Module-scoped, so the default does not hand a fresh map to the provider on
  *  every render and remount the rows under it. */
 const EMPTY_PENDING_CHANGES: ReadonlyMap<string, PendingChangeMove> = new Map();
-/** Module-scoped for the same reason: a fresh `[]` every render would remount
- *  every row below it the moment nothing was spent. */
+/** Module-scoped for the same reason: avoids allocating a fresh `[]` on every
+ *  render when nothing was spent. */
 const EMPTY_SPENT_SLOTS: DeckDetailCard[] = [];
 
 export function Decklist({
