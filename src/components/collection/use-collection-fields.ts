@@ -16,6 +16,18 @@ const SOURCE: FieldsSource<CollectionRow> = {
   isDrawn: isCollectionDrawn,
   maxBatch: MAX_COLLECTION_FIELDS_BATCH,
   url: (ids) => `/api/collection-fields?ids=${ids.map(encodeURIComponent).join(",")}`,
+  // A batch whose caption differs from the row's: the printing was picked again since the page was
+  // read, on another device, so the row's printed name and set code, which search and the sorts
+  // read, are out of date, and the page is read once more. A row holding its own art holds the
+  // caption of a pick made here, which the batch read off the same printing.
+  disagrees: (row, fields) => {
+    const art = (fields as CollectionDrawFields).art;
+    return (
+      art !== undefined &&
+      !Object.hasOwn(row, "imageUri") &&
+      (art.printedName !== row.printedName || art.primarySetCode !== row.primarySetCode)
+    );
+  },
 };
 
 /**

@@ -45,6 +45,35 @@ describe("useCollectionFields", () => {
     expect(drawn).not.toHaveProperty("art");
   });
 
+  // The page's own copy of the caption is what search, the filters and the name and set sorts
+  // read. A batch showing it moved since means that copy is out of date: the page is read again,
+  // once, so a search for the new name finds the card.
+  it("reads the page again, once, when a withheld card's caption moved since it was read", async () => {
+    const onStale = vi.fn();
+    const list = rows();
+    const { result } = renderHook(() => useCollectionFields(list, list, onStale));
+    await waitFor(() => expect(answer).not.toBeNull());
+    await act(async () => answer!());
+    await waitFor(() => expect(result.current.resolve(list[1])).not.toBeNull());
+    await waitFor(() => expect(onStale).toHaveBeenCalledTimes(1));
+  });
+
+  it("does not read the page again when the batch's caption matches the page's", async () => {
+    const onStale = vi.fn();
+    const list = rows();
+    moved[1] = card(1);
+    try {
+      const { result } = renderHook(() => useCollectionFields(list, list, onStale));
+      await waitFor(() => expect(answer).not.toBeNull());
+      await act(async () => answer!());
+      await waitFor(() => expect(result.current.resolve(list[1])).not.toBeNull());
+      await new Promise((r) => setTimeout(r, 100));
+      expect(onStale).not.toHaveBeenCalled();
+    } finally {
+      moved[1] = card(1, { imageUri: "https://cards.example/sld.jpg", printedName: "Renamed", primarySetCode: "SLD" });
+    }
+  });
+
   // A pick made here lays all three over the row. A batch that lands after it, read from the list
   // the pick moved, neither replaces the pick's caption nor sends the page for a fresh read.
   it("keeps a pick made before the batch lands, and refreshes nothing", async () => {

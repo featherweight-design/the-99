@@ -41,6 +41,13 @@ export type FieldsSource<Row> = {
   url: (keys: string[]) => string;
   /** The most keys one request may carry. */
   maxBatch: number;
+  /**
+   * Whether fields that landed describe a different version of this row than the page holds, so
+   * the page's own copy of it (what search, filters and sorts read) is out of date and has to be
+   * read again. Asked of the rows the reader WANTS, as drawn, so a change the reader made here
+   * and already holds is not one.
+   */
+  disagrees?: (row: Row, fields: object) => boolean;
 };
 
 type LoopInput<Row> = { source: FieldsSource<Row> | null; all: Row[]; wanted: Row[]; wantedKey: string };
@@ -98,7 +105,14 @@ function createFieldsLoop<Row extends object, Fields extends object>(onLanded: (
     const { store, asked } = list;
     // A row the reader wants that the route left out, whenever it left it out: this payload's
     // list is stale (a write elsewhere, a catalog refresh), so the page is read again, once.
-    if (!list.refreshed && wanted.some((r) => !isDrawn(r) && list.gone.has(keyOf(r)))) {
+    const stale = (r: Row) => {
+      if (isDrawn(r)) return false;
+      const key = keyOf(r);
+      if (list.gone.has(key)) return true;
+      const f = list.store.get(key);
+      return f !== undefined && source.disagrees?.(r, f) === true;
+    };
+    if (!list.refreshed && wanted.some(stale)) {
       list.refreshed = true;
       onStale();
       return;
