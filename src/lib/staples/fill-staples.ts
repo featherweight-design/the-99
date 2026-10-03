@@ -23,6 +23,7 @@ import { db } from "../../db";
 import { cards } from "../../db/schema";
 import { withinColorIdentity } from "../cards/identity-where";
 import { STAPLE_PROJECTION } from "../decks/suggestions-read";
+import type { FillCandidate } from "../decks/fill";
 import { identityCondition, countCondition } from "./condition";
 import { universalStaples } from "./universal";
 
@@ -101,7 +102,14 @@ export async function loadFillStaples(
  * buy it, outside `pool: "sleeveable"`). Commander-legal and inside the deck's identity, the same
  * two tests the unowned top-cards read applies.
  */
-export async function loadStapleCards(oracleIds: readonly string[], identity: readonly string[]) {
+/** What the catalog read returns for one staple. */
+export type StapleCard = Pick<
+  FillCandidate, "oracleId" | "name" | "typeLine" | "oracleText" | "keywords" | "manaCost" | "layout"
+>;
+
+export async function loadStapleCards(
+  oracleIds: readonly string[], identity: readonly string[],
+): Promise<StapleCard[]> {
   if (oracleIds.length === 0) return [];
   return db
     .select(STAPLE_PROJECTION)
@@ -111,4 +119,48 @@ export async function loadStapleCards(oracleIds: readonly string[], identity: re
       eq(cards.commanderLegal, true),
       withinColorIdentity([...identity]),
     ));
+}
+
+/**
+ * The staples one fill offers, as candidates, under every bound the fill's own pool is under (H25
+ * §4.2): never a card the deck holds or the caller places (`excludeOracleIds`), never a commander,
+ * and inside the allow-list when there is one. An owned staple is the scoped pool's own candidate,
+ * so it carries the collection's facts; an unowned one is read from the catalog, and only when the
+ * fill may buy (`sleeveableOnly` false). Offer order is `loadFillStaples`'s.
+ *
+ * The reads are injected so the rules here are unit tested without a database.
+ */
+export async function gatherFillStaples(
+  args: {
+    identity: readonly string[];
+    scoped: readonly FillCandidate[];
+    excludeOracleIds: ReadonlySet<string>;
+    commanderIds: ReadonlySet<string>;
+    onlyOracleIds?: ReadonlySet<string>;
+    sleeveableOnly: boolean;
+    inclusionOf: (name: string) => number | null;
+  },
+  reads: {
+    staples: (identity: readonly string[]) => Promise<string[]>;
+    cards: (ids: readonly string[], identity: readonly string[]) => Promise<StapleCard[]>;
+  } = { staples: loadFillStaples, cards: loadStapleCards },
+): Promise<FillCandidate[]> {
+  const { identity, scoped, excludeOracleIds, commanderIds, onlyOracleIds, sleeveableOnly } = args;
+  const ids = (await reads.staples(identity)).filter((id) =>
+    !excludeOracleIds.has(id) && !commanderIds.has(id) && (!onlyOracleIds || onlyOracleIds.has(id)));
+  const inScope = new Map(scoped.map((c) => [c.oracleId, c]));
+  const missing = ids.filter((id) => !inScope.has(id));
+  const fromCatalog = new Map(
+    (sleeveableOnly || missing.length === 0 ? [] : await reads.cards(missing, identity))
+      .map((c): [string, FillCandidate] => [c.oracleId, {
+        oracleId: c.oracleId, name: c.name, typeLine: c.typeLine,
+        oracleText: c.oracleText, keywords: c.keywords, manaCost: c.manaCost,
+        layout: c.layout, owned: false, ownedQuantity: 0,
+        inclusionPct: args.inclusionOf(c.name),
+      }]),
+  );
+  return ids.flatMap((id) => {
+    const c = inScope.get(id) ?? fromCatalog.get(id);
+    return c ? [c] : [];
+  });
 }

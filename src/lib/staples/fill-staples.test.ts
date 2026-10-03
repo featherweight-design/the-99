@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { chooseFillStaples, fillStapleCondition, type StapleRow } from "./fill-staples";
+import { chooseFillStaples, fillStapleCondition, gatherFillStaples, type StapleRow } from "./fill-staples";
 
 /** 16 conditions, as the table was measured: universal needs 12. */
 const CONDITIONS = ["W", "U", "B", "R", "G", "UW", "BW", "RW", "GW", "BU", "RU", "GU", "BR", "BG", "GR", "count:3"];
@@ -50,5 +50,45 @@ describe("chooseFillStaples", () => {
   });
   it("gives a four-color deck universal staples only", () => {
     expect(chooseFillStaples(table, ["W", "U", "B", "R"])).toEqual(["sol-ring", "signet"]);
+  });
+});
+
+describe("gatherFillStaples", () => {
+  const owned = (id: string) => ({
+    oracleId: id, name: id, typeLine: "Artifact", oracleText: null, keywords: [], manaCost: null,
+    layout: "normal", owned: true, ownedQuantity: 1, inclusionPct: 60,
+  });
+  const card = (id: string) => ({
+    oracleId: id, name: id, typeLine: "Instant", oracleText: null, keywords: [], manaCost: null,
+    layout: "normal",
+  });
+  const base = {
+    identity: ["W"], scoped: [owned("sol")], excludeOracleIds: new Set<string>(),
+    commanderIds: new Set<string>(), sleeveableOnly: false, inclusionOf: () => 42,
+  };
+  const reads = (ids: string[]) => ({
+    staples: async () => ids,
+    cards: async (want: readonly string[]) => want.map(card),
+  });
+
+  it("takes an owned staple from the pool and an unowned one from the catalog, in offer order", async () => {
+    const got = await gatherFillStaples(base, reads(["swords", "sol"]));
+    expect(got.map((c) => [c.oracleId, c.owned, c.inclusionPct])).toEqual([
+      ["swords", false, 42], ["sol", true, 60],
+    ]);
+  });
+
+  it("reads nothing from the catalog for a sleeveable fill", async () => {
+    const got = await gatherFillStaples({ ...base, sleeveableOnly: true }, reads(["swords", "sol"]));
+    expect(got.map((c) => c.oracleId)).toEqual(["sol"]);
+  });
+
+  it("drops what the deck holds, a commander, and anything outside the allow-list", async () => {
+    const r = reads(["sol", "swords", "path", "cmd"]);
+    expect((await gatherFillStaples({
+      ...base, excludeOracleIds: new Set(["swords"]), commanderIds: new Set(["cmd"]),
+    }, r)).map((c) => c.oracleId)).toEqual(["sol", "path"]);
+    expect((await gatherFillStaples({ ...base, onlyOracleIds: new Set(["path"]) }, r))
+      .map((c) => c.oracleId)).toEqual(["path"]);
   });
 });

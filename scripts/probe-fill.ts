@@ -7,7 +7,8 @@
 // more turn on a skeleton assembled from five database reads down a four-rung chain. A fixture
 // that stated those facts would be asserting the answer it was built to check.
 //
-// Eight sections, each naming the mutation it exists to catch in its own block.
+// Fourteen sections, each naming the mutation it exists to catch in its own block. Sections 9 to
+// 14 are the staples step and the inclusion band (H25), read from the real `format_staples`.
 //
 // Section 8 is the basics split, against the real catalog. It reproduces HD - Thorin: a `{R,W}`
 // deck whose top-off produced 18 Plains, 6 Wastes and NO Mountains. Wastes reaches every pool
@@ -33,7 +34,13 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import ws from "ws";
 
-import { planFill, type FillCandidate, type FillPlan, type FillRow } from "../src/lib/decks/fill";
+import { isResidual, planFill, type FillCandidate, type FillPlan, type FillRow } from "../src/lib/decks/fill";
+import {
+  chooseFillStaples, FILL_STAPLE_INCLUSION_BAR, gatherFillStaples, loadFillStaples, type StapleRow,
+} from "../src/lib/staples/fill-staples";
+import { universalStaples } from "../src/lib/staples/universal";
+import { budgetGate } from "../src/lib/intake/fill-gate";
+import { loadPrices } from "../src/lib/discovery/price";
 import type { ProfileSkeleton } from "../src/lib/profile/types";
 import { landTarget } from "../src/lib/decks/deck-size";
 import { loadSkeletonForCommanders } from "../src/lib/profile/load";
@@ -71,6 +78,10 @@ let commanderRestore: {
 } | null = null;
 
 let failures = 0;
+/** The fixture commander's identity, which the staples sections read beside the skeleton. */
+let cmdIdentity: string[] = [];
+/** The Game Changer staple row section 12 raises past the bar, restored in the `finally`. */
+let stapleRestore: { oracleId: string; condition: string; avgInclusion: number } | null = null;
 /** Counts its OWN failures — a probe whose exit code disagrees with its output is worse than
  *  no probe. The count lives here rather than at each call site for the reason
  *  `probe-commander-availability` records: a check that forgets it prints FAIL and then
@@ -91,7 +102,7 @@ type CardRow = {
   keywords: string[] | null; mana_cost: string | null; layout: string;
 };
 
-const candidate = (r: CardRow, owned = true, qty = 1, inclusionPct = 50): FillCandidate => ({
+const candidate = (r: CardRow, owned = true, qty = 1, inclusionPct: number | null = 50): FillCandidate => ({
   oracleId: r.oracle_id, name: r.name, typeLine: r.type_line,
   oracleText: r.oracle_text, keywords: r.keywords ?? [], manaCost: r.mana_cost,
   layout: r.layout, owned, ownedQuantity: owned ? qty : 0, inclusionPct,
@@ -167,6 +178,7 @@ async function main() {
     return;
   }
   console.log(`fixture commander: ${cmd.name} (${cmd.color_identity.join("") || "C"})`);
+  cmdIdentity = cmd.color_identity;
 
   // THE SENTINEL. A LAND COUNT THAT IS NOT 37, deliberately: the whole of check 1 is that the
   // measured figure replaced the asserted constant, and a sentinel of 37 would pass on a build
@@ -490,6 +502,232 @@ async function main() {
     // the measured figure and the flat default would be a different number on any indexed database.
     check("8d · the base is filled to the land target", landTotal, measuredLand - borosModalDrops);
   }
+
+  await stapleSections(skeleton, basePool, pool400);
+}
+
+/** The catalog rows for these names, one per name, or the names it could not find. */
+async function cardsNamed(names: string[]): Promise<{ found: Map<string, CardRow>; missing: string[] }> {
+  const got = await rows<CardRow>(sql`
+    select distinct on (name) oracle_id, name, type_line, oracle_text, keywords, mana_cost, layout
+    from cards where name = any(${sql.param(names)}::text[]) order by name, oracle_id`);
+  const found = new Map(got.map((r) => [r.name, r]));
+  return { found, missing: names.filter((n) => !found.has(n)) };
+}
+
+const stapleRowsOf = (plan: FillPlan) => plan.rows.filter((r) => r.source === "staple");
+
+/**
+ * SECTIONS 9-14: the staples step and the inclusion band (H25, plan
+ * `2026-10-02-fill-includes-staples.md` §6). The staples are read from the REAL `format_staples`
+ * through the same `loadFillStaples` `buildFillPlan` calls, so the universal set, the condition
+ * chain and the Game Changer exclusion are checked against what the table holds rather than
+ * against a list this script wrote. The fixture collection OWNS every staple it offers, the state
+ * of Hugh's staging account (17 Sol Rings, 15 Arcane Signets).
+ */
+async function stapleSections(skeleton: ProfileSkeleton, basePool: FillCandidate[], pool400: CardRow[]) {
+  const reader = fixture as unknown as Parameters<typeof loadFillStaples>[1];
+  const allRows = await rows<StapleRow>(sql`
+    select fs.oracle_id as "oracleId", fs.condition, fs.avg_inclusion as "avgInclusion",
+           c.game_changer as "gameChanger"
+    from format_staples fs join cards c on c.oracle_id = fs.oracle_id`);
+  if (allRows.length === 0) {
+    fail("9-14 · the fixture", "format_staples is empty — run db:build:staples");
+    return;
+  }
+  const universal = universalStaples(allRows);
+  /** Inside the identity, as the pool (`ownedColorLegalPool`) and the catalog read
+   *  (`loadStapleCards`) both are: `count:3` pools every three-color identity, so its rows include
+   *  cards a given three-color deck cannot play, and production never sees them. */
+  const catalogOf = async (ids: string[], identity: string[]) => new Map((await rows<CardRow>(sql`
+    select oracle_id, name, type_line, oracle_text, keywords, mana_cost, layout
+    from cards where oracle_id = any(${sql.param(ids)}::uuid[])
+      and color_identity <@ ${sql.param(identity)}::text[]`)).map((r) => [r.oracle_id, r]));
+  /** The staples as `buildFillPlan` would hand them over for a collection owning all of them. */
+  const ownedStaples = async (identity: string[]) => {
+    const ids = await loadFillStaples(identity, reader);
+    const cards = await catalogOf(ids, identity);
+    return ids.flatMap((id) => cards.has(id) ? [candidate(cards.get(id)!, true, 1, 60)] : []);
+  };
+  const lands = basePool.filter((c) => /basic land/i.test(c.typeLine));
+
+  // ---- 9 · inclusion bounds the tie-break -----------------------------------------------
+  console.log("\n9 · inclusion bounds the tie-break");
+  // Found THROUGH the classifier. One owned single-role ramp card at a high sentinel inclusion
+  // and three owned ramp-and-draw cards with no figure: before the band, every one of the three
+  // closed two floors and took the slot (Omnath, Locus of Creation's measured role rows).
+  const rampish = await rows<CardRow>(sql`
+    select oracle_id, name, type_line, oracle_text, keywords, mana_cost, layout
+    from cards where commander_legal and oracle_text ilike '%add {%'
+      and type_line not ilike '%land%' order by oracle_id limit 800`);
+  const single = rampish.find((r) => { const x = rolesOf(r); return x.length === 1 && x[0] === "ramp"; });
+  const duals = rampish.filter((r) => { const x = rolesOf(r); return x.includes("ramp") && x.includes("draw"); }).slice(0, 3);
+  if (!single || duals.length < 3) {
+    fail("9 · the fixture", "the catalog has no single-role ramp card and three ramp-and-draw cards");
+  } else {
+    const narrow = {
+      ...skeleton,
+      roleTargets: { of: skeleton.roleTargets.of, targets: { ramp: 1, draw: 1, removal: 0, wipes: 0 } },
+    } as ProfileSkeleton;
+    const plan = planFill([candidate(single, true, 1, 80), ...duals.map((d) => candidate(d, true, 1, null))], {
+      hasPartner: false, skeleton: narrow,
+    });
+    console.log(`  single ${single.name} · duals ${duals.map((d) => d.name).join(", ")}`);
+    check("9 · the figured single-role card keeps the ramp slot",
+      plan.rows.find((r) => r.role === "ramp")?.oracleId, single.oracle_id);
+  }
+
+  // ---- 10 · universal staples land --------------------------------------------------------
+  console.log("\n10 · universal staples land");
+  const { found: named, missing } = await cardsNamed([
+    "Sol Ring", "Arcane Signet", "Swords to Plowshares", "Swiftfoot Boots",
+  ]);
+  if (missing.length > 0) fail("10 · the fixture", `not in the catalog: ${missing.join(", ")}`);
+  const sol = named.get("Sol Ring");
+  const signet = named.get("Arcane Signet");
+  for (const [label, row] of [["Sol Ring", sol], ["Arcane Signet", signet]] as const) {
+    truthy(`10 · ${label} is a universal staple in this table`, !!row && universal.has(row.oracle_id));
+  }
+  const monoStaples = await ownedStaples(cmdIdentity);
+  const mono = planFill([...basePool], { hasPartner: false, skeleton, staples: monoStaples });
+  const seeded = new Set(stapleRowsOf(mono).map((r) => r.oracleId));
+  console.log(`  ${seeded.size} staples seeded for a ${cmdIdentity.join("")} deck`);
+  for (const [label, row] of [["Sol Ring", sol], ["Arcane Signet", signet]] as const) {
+    truthy(`10 · ${label} arrives as a staple`, !!row && seeded.has(row.oracle_id));
+  }
+
+  // ---- 11 · the identity condition --------------------------------------------------------
+  console.log("\n11 · the identity condition");
+  const swords = named.get("Swords to Plowshares");
+  const white = await loadFillStaples(["W"], reader);
+  truthy("11a · a white deck is offered Swords to Plowshares", !!swords && white.includes(swords.oracle_id));
+  // The THREE-COLOR deck has no exact bucket and is served by `count:3`. Found by query: a
+  // count:3 row at the bar that is not universal and not a Game Changer.
+  // Its identity is DERIVED from the row: `count:3` pools every three-color identity, so a row
+  // there may be a card one three-color deck cannot play (on local-dev the only nonland row at the
+  // bar that is not universal is Swords to Plowshares). The deck is that card's colors, widened to
+  // three in WUBRG order.
+  const count3Rows = allRows.filter((r) => r.condition === "count:3"
+    && r.avgInclusion >= FILL_STAPLE_INCLUSION_BAR && !universal.has(r.oracleId) && !r.gameChanger);
+  const count3Cards = await rows<CardRow & { color_identity: string[] }>(sql`
+    select oracle_id, name, type_line, oracle_text, keywords, mana_cost, layout, color_identity
+    from cards where oracle_id = any(${sql.param(count3Rows.map((r) => r.oracleId))}::uuid[])
+      and type_line not ilike '%land%' and cardinality(color_identity) <= 3
+    order by oracle_id`);
+  const count3 = count3Cards[0];
+  const three = count3
+    ? [...new Set([...count3.color_identity, ..."WUBRG"])].slice(0, 3)
+    : [];
+  if (!count3) {
+    fail("11b · the fixture", "count:3 holds no non-universal nonland row at the bar");
+  } else {
+    const threeStaples = await ownedStaples(three);
+    const threePlan = planFill([...basePool], { hasPartner: false, skeleton, staples: threeStaples });
+    console.log(`  ${three.join("")} deck · count:3 row ${count3.name}`);
+    truthy("11b · a three-color deck seeds a count:3 row as a staple",
+      stapleRowsOf(threePlan).some((r) => r.oracleId === count3.oracle_id));
+  }
+  const four = await loadFillStaples(["W", "U", "B", "R"], reader);
+  const universalOffer = [...universal].filter((id) => !allRows.find((r) => r.oracleId === id)?.gameChanger);
+  check("11c · a four-color deck is offered the universal staples only",
+    [...four].sort(), universalOffer.sort());
+  truthy("11d · and so a four-color deck is not offered Swords to Plowshares",
+    !!swords && !four.includes(swords.oracle_id));
+
+  // ---- 12 · the gate --------------------------------------------------------------------
+  console.log("\n12 · the gate");
+  // THE GAME CHANGER EXCLUSION needs a SENTINEL: no Game Changer reaches the bar in any
+  // condition today (the highest, Jeska's Will in R, reads 30.4 on local-dev), so without one the
+  // exclusion is asserted by nobody. The highest Game Changer row in an exact condition is raised
+  // past the bar, captured before the write and restored in the `finally`.
+  const [gc] = allRows
+    .filter((r) => r.gameChanger && !r.condition.startsWith("count:"))
+    .sort((a, b) => b.avgInclusion - a.avgInclusion || a.oracleId.localeCompare(b.oracleId));
+  if (!gc) {
+    fail("12a · the fixture", "format_staples holds no Game Changer row in an exact condition");
+  } else {
+    stapleRestore = { oracleId: gc.oracleId, condition: gc.condition, avgInclusion: gc.avgInclusion };
+    await fixture.execute(sql`
+      update format_staples set avg_inclusion = ${FILL_STAPLE_INCLUSION_BAR + 10}
+       where oracle_id = ${gc.oracleId}::uuid and condition = ${gc.condition}`);
+    const identity = gc.condition === "C" ? [] : [...gc.condition];
+    const raised = allRows.map((r) => r.oracleId === gc.oracleId && r.condition === gc.condition
+      ? { ...r, avgInclusion: FILL_STAPLE_INCLUSION_BAR + 10 } : r);
+    truthy("12a · the sentinel would be offered without the exclusion",
+      chooseFillStaples(raised.map((r) => ({ ...r, gameChanger: false })), identity).includes(gc.oracleId));
+    const offered = await ownedStaples(identity);
+    const gcPlan = planFill([...basePool], { hasPartner: false, skeleton, staples: offered });
+    console.log(`  sentinel: a Game Changer raised to ${FILL_STAPLE_INCLUSION_BAR + 10} in ${gc.condition}`);
+    truthy("12b · an owned Game Changer staple is not offered", !offered.some((c) => c.oracleId === gc.oracleId));
+    truthy("12c · nor seeded, with no bracket answer",
+      !stapleRowsOf(gcPlan).some((r) => r.oracleId === gc.oracleId));
+  }
+  // THE BUDGET: a staple priced above what is left is refused, through the real gate and real
+  // prices, while a cheaper one still lands. The budget is set just under the dearer staple's own
+  // price rather than at a fixed $20: no staple this identity is offered costs that much today,
+  // and a fixed figure would measure nothing.
+  const priced = await loadPrices(monoStaples.map((c) => c.oracleId));
+  const priceOf = (id: string) => priced.get(id)?.liveCents ?? null;
+  const byPrice = monoStaples.filter((c) => priceOf(c.oracleId) !== null)
+    .sort((a, b) => priceOf(b.oracleId)! - priceOf(a.oracleId)!);
+  const dear = byPrice[0];
+  const cheap = byPrice.at(-1);
+  if (!dear || !cheap || priceOf(dear.oracleId)! <= priceOf(cheap.oracleId)!) {
+    fail("12d · the fixture", "fewer than two staples with different prices");
+  } else {
+    const unowned = monoStaples.map((c) => ({ ...c, owned: false, ownedQuantity: 0 }));
+    const budget = planFill([...lands], {
+      hasPartner: false, skeleton, staples: [dear, cheap].map((c) => unowned.find((u) => u.oracleId === c.oracleId)!),
+      gate: budgetGate({ remainingCents: priceOf(dear.oracleId)! - 1, buys: (c) => !c.owned, priceOf }),
+    });
+    console.log(`  dear ${dear.name} $${(priceOf(dear.oracleId)! / 100).toFixed(2)} · cheap ${cheap.name}`);
+    truthy("12d · a budget under a staple's price refuses it", !budget.rows.some((r) => r.oracleId === dear.oracleId));
+    truthy("12e · and still seeds a cheaper one", stapleRowsOf(budget).some((r) => r.oracleId === cheap.oracleId));
+  }
+
+  // ---- 13 · lands -----------------------------------------------------------------------
+  console.log("\n13 · land staples go to the land sweep");
+  const landStaple = monoStaples.find((c) => /\bland\b/i.test(c.typeLine) && !/basic/i.test(c.typeLine));
+  if (!landStaple) {
+    fail("13 · the fixture", "no land among this identity's staples");
+  } else {
+    // AT THE BACK of the pool's own order, so only the staple preference can bring it forward.
+    const nonbasics = pool400.filter((r) => /\bland\b/i.test(r.type_line) && !/basic/i.test(r.type_line))
+      .slice(0, 20).map((r) => candidate(r, true, 1, 99));
+    const pool = [...basePool, ...nonbasics, { ...landStaple, inclusionPct: 1 }];
+    const withStaple = planFill(pool, { hasPartner: false, skeleton, staples: [landStaple] });
+    const without = planFill(pool, { hasPartner: false, skeleton });
+    const landRows = withStaple.rows.filter((r) => r.oracleId === landStaple.oracleId);
+    console.log(`  ${landStaple.name}`);
+    check("13a · the land staple arrives once, as a land, through the sweep",
+      landRows, [{ oracleId: landStaple.oracleId, quantity: 1, role: "land" }]);
+    const landCount = (p: FillPlan) => p.rows.filter((r) => r.role === "land").reduce((n, r) => n + r.quantity, 0);
+    check("13b · and the land count is unchanged", landCount(withStaple), landCount(without));
+    truthy("13c · ahead of the nonbasics the pool preferred",
+      withStaple.rows.filter((r) => r.role === "land")[0]?.oracleId === landStaple.oracleId);
+  }
+
+  // ---- 14 · the caller's bounds ------------------------------------------------------------
+  console.log("\n14 · the caller's bounds");
+  const one = planFill([...basePool], { hasPartner: false, skeleton, slots: 1, staples: monoStaples });
+  check("14a · a one-slot fill places one card", one.filled, 1);
+  if (sol) {
+    const gathered = await gatherFillStaples({
+      identity: cmdIdentity, scoped: basePool, excludeOracleIds: new Set(), commanderIds: new Set(),
+      onlyOracleIds: new Set(monoStaples.map((c) => c.oracleId).filter((id) => id !== sol.oracle_id)),
+      sleeveableOnly: false, inclusionOf: () => null,
+    }, { staples: (id) => loadFillStaples(id, reader), cards: async () => [] });
+    truthy("14b · an allow-list without Sol Ring keeps it out", !gathered.some((c) => c.oracleId === sol.oracle_id));
+  }
+  const boots = named.get("Swiftfoot Boots");
+  if (boots) {
+    const roleless = planFill([...basePool], {
+      hasPartner: false, skeleton, slots: 1, pool: "sleeveable", staples: [candidate(boots, true, 1, 60)],
+    });
+    const row = roleless.rows[0];
+    truthy("14c · a one-slot fill's roleless staple is a tick, not residual",
+      !!row && row.oracleId === boots.oracle_id && !isResidual(row));
+  }
 }
 
 main()
@@ -513,6 +751,12 @@ main()
                  avg_ramp = ${b.avg_ramp ?? null}, avg_draw = ${b.avg_draw ?? null},
                  avg_removal = ${b.avg_removal ?? null}, avg_wipes = ${b.avg_wipes ?? null}
            where commander_oracle_id = ${commanderRestore.oracleId}::uuid`);
+      }],
+      ["the staple sentinel", async () => {
+        if (!stapleRestore) return;
+        await fixture.execute(sql`
+          update format_staples set avg_inclusion = ${stapleRestore.avgInclusion}
+           where oracle_id = ${stapleRestore.oracleId}::uuid and condition = ${stapleRestore.condition}`);
       }],
       ["the fixture decks", async () => {
         await fixture.execute(sql`delete from deck_cards where deck_id in (

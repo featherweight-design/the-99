@@ -53,7 +53,7 @@ import {
   capToBody, dedupeSelectionFromPool, isResidual, planFill,
   type FillCandidate, type FillPlan, type FillRow, type FillShortfall, type HeldCard, type PlanFillArgs,
 } from "../../lib/decks/fill";
-import { loadFillStaples, loadStapleCards } from "../../lib/staples/fill-staples";
+import { gatherFillStaples } from "../../lib/staples/fill-staples";
 import { loadFillGate, type DeckAnswers } from "../../lib/intake/fill-facts";
 import { answerColumnsFor, validateCreateAnswers, type AnswerColumns, type CreateAnswers } from "../../lib/intake/answers";
 import { sanitizeSelection } from "../../lib/decks/selection-param";
@@ -299,7 +299,7 @@ export async function buildFillPlan(
       inclusionPct: inclusionOf(c.name),
     })),
   ];
-  // AFTER the pool and the staples, so it can only ever narrow. Applied before the gate, because
+  // AFTER the pool and the top cards, so it can only ever narrow. Applied before the gate, because
   // a gate built over cards this fill may not pick would answer about candidates that cannot be
   // chosen — and `loadFillGate` reads claims per candidate, which is work per card besides.
   const scoped = onlyOracleIds
@@ -309,34 +309,18 @@ export async function buildFillPlan(
   // `ownedColorLegalPool` filters the pool by — so the split cannot want a colour the pool
   // would never have offered.
   const identity = [...new Set(commanders.flatMap((c) => c.colorIdentity))];
-  // THE DECK'S STAPLES (H25): `format_staples`, universal first, then the identity condition's.
-  // Under every bound the pool is under: not a card the deck holds or the caller places
-  // (`excludeOracleIds`), not a commander, and inside the allow-list when there is one. An owned
-  // staple is the pool's own candidate; an unowned one is read from the catalog, and only when the
-  // fill may buy. In the GATE'S candidates as well, because `loadFillGate` reads prices, claims and
-  // Game Changer facts only for the ids it is given, and a staple it was not told about would read
-  // as unpriced and refused under any budget.
+  // THE DECK'S STAPLES (H25): `format_staples`, universal first, then the identity condition's,
+  // under every bound the pool is under (`gatherFillStaples`). In the GATE'S candidates as well,
+  // because `loadFillGate` reads prices, claims and Game Changer facts only for the ids it is
+  // given, and a staple it was not told about would read as unpriced and refused under any budget.
   //
   // Degraded rather than fatal, like the skeleton and the ranking: a fill that cannot read the
   // staples is the fill this app shipped before H25.
-  const commanderIds = new Set(commanders.map((c) => c.oracleId));
   let staples: FillCandidate[] = [];
   try {
-    const stapleIds = (await loadFillStaples(identity)).filter((id) =>
-      !excludeOracleIds.has(id) && !commanderIds.has(id) && (!onlyOracleIds || onlyOracleIds.has(id)));
-    const inScope = new Map(scoped.map((c) => [c.oracleId, c]));
-    const missing = stapleIds.filter((id) => !inScope.has(id));
-    const fromCatalog = new Map(
-      (sleeveableOnly ? [] : await loadStapleCards(missing, identity)).map((c) => [c.oracleId, {
-        oracleId: c.oracleId, name: c.name, typeLine: c.typeLine,
-        oracleText: c.oracleText, keywords: c.keywords, manaCost: c.manaCost,
-        layout: c.layout, owned: false, ownedQuantity: 0,
-        inclusionPct: inclusionOf(c.name),
-      } satisfies FillCandidate]),
-    );
-    staples = stapleIds.flatMap((id) => {
-      const c = inScope.get(id) ?? fromCatalog.get(id);
-      return c ? [c] : [];
+    staples = await gatherFillStaples({
+      identity, scoped, excludeOracleIds, onlyOracleIds, sleeveableOnly, inclusionOf,
+      commanderIds: new Set(commanders.map((c) => c.oracleId)),
     });
   } catch (err) {
     console.warn("buildFillPlan: no staples — the fill runs without its staples step", err);
