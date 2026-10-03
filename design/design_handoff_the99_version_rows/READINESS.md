@@ -31,6 +31,8 @@
 
 ## Engineering audit (2026-10-03, against origin/main 2cddcdb77)
 
+**Supersedes the "Buy tag on short In rows" row above.** The tag is `density="full"` from `lg` (not `md`) and `"collapsed"` below it, and collapsed draws the live figure (`$2.40`), with a bare `$` only when there is no live price (findings 1 and 2).
+
 **Verdict: 🟢 GREEN.** Buildable as drawn. Every named component and token exists, the payload is plumbing other loaders already do, and every state is reachable. Nothing below needs a Design round.
 
 Verified: `OwnershipDot` (`src/components/ui/ownership-dot.tsx:25-50`), `BuyTag` `variant="row"` with `density` and `newestAsOf` (`buy-tag.tsx:141-192`), `CardDetailTrigger` siblings paging any list (`card-detail-provider.tsx:932`, In-then-Out as `review-changes.tsx:644` does), the Versions tab inside the deck page's `CardDetailProvider` (`builder-shell.tsx:1615`), `HoverPreviewProvider` / `usePreviewRow` (`hover-preview.tsx:166`, `:353`, none on the Versions tab today), the decision-7 comment (`version-diff.tsx:3-9`) and `diffNote` (`:440`). `useRowOpen` and `ROW_PLATE_HOVER` exist but are module-private (`update-diff-row.tsx:287`, `:105`). Every `var(--x)` exists in `globals.css`.

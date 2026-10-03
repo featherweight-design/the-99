@@ -39,33 +39,37 @@
 
 **Files:**
 - Modify: `src/lib/decks/versions.ts` (`loadVersionDiff` at :505, `VersionDiffCard` at ~:482)
-- Modify: `src/app/decks/actions.ts` (`getVersionDiff` at :1927)
+- Modify: `src/app/decks/actions.ts` (`getVersionDiff` at :1927, its `loadVersionDiff` call at :1950)
+- Modify: `src/app/decks/actions.test.ts` (the `loadVersionDiff` mock at :452 and the assertions near :1863-1886 gain `userId`)
 - Modify: `src/components/decks/version-history.tsx` (payload type only)
-- Test: `src/lib/decks/versions.test.ts` (create if absent; mock the readers as `price-query.test.ts` does)
+- Create: `src/lib/decks/version-rows.ts` and `src/lib/decks/version-rows.test.ts`
 
 **Interfaces:**
-- Produces: `loadVersionDiff(deckId, versionId, userId)`.
-  - It returns the existing payload with `newestAsOf: Date | null`.
+- Produces: `loadVersionDiff(versionId, previousVersionId, userId)`, the current signature with `userId` appended, so the predecessor contract is unchanged.
+  - It returns the existing payload plus `newestAsOf: Date | null`.
   - Each `VersionDiffCard` gains:
     - `ownedNow: number`
     - `imageUri: string | null`
     - `printedName: string | null`
     - `price: PriceFact | null`
+- Produces: `assembleVersionRows(cards, owned: Map<string, number>, prices, printings)`, a pure function in `version-rows.ts`.
+  - The loader makes the three reads and hands their results to it, so its rules are unit tested without a database. The repo has no db-mocking precedent for a loader.
+  - The reads themselves are proved by `probe:versions` (Task 4), the `probe:draft` pattern.
 
-- [ ] Write failing tests:
+- [ ] Write failing tests for `assembleVersionRows`:
   - an unowned card reads `ownedNow 0` with its price;
   - a card owned in two printings sums both;
-  - a basic reads `ownedNow >= to` and `price null`, and `loadPrices` is never asked for it;
+  - a basic reads `ownedNow >= to` and `price null`, and the price map is never consulted for it;
   - an owned Secret Lair printing supplies `imageUri` and `printedName`;
-  - `newestAsOf` is passed through from `loadPrices`.
-- [ ] Run `pnpm vitest run src/lib/decks/versions.test.ts`. Expect FAIL.
+  - `newestAsOf` is passed through.
+- [ ] Run `pnpm vitest run src/lib/decks/version-rows.test.ts`. Expect FAIL.
 - [ ] Implement:
   - **`ownedNow`:** `sum(collection_items.quantity)` grouped by oracle id, `inArray` over the diff's oracle ids, for `userId`.
-  - **Basics:** override with `isBasicLand` (`grouping.ts:147`).
+  - **Basics:** override with `isBasicLand` (`grouping.ts:147`), and leave basics out of the price read.
   - **Price:** `loadPrices(nonBasicOracleIds)` (`price-query.ts:67`).
   - **Art:** `resolveOwnedPrintings` (`owned-printings.ts:31`) for `imageUri` and `printedName`, falling back to `cards.image_uri`.
-  - **Loader signature:** `userId` is a required parameter, and `getVersionDiff` passes the signed-in reader's id.
-- [ ] Run the tests. Expect PASS. Mutation-check: drop the basics override, and the basics case fails.
+  - **Call site:** `getVersionDiff` passes the signed-in reader's id, and the `actions.test.ts` mock and assertions are updated to match.
+- [ ] Run `pnpm vitest run src/lib/decks/version-rows.test.ts src/app/decks/actions.test.ts`. Expect PASS. Mutation-check: drop the basics override, and the basics case fails.
 - [ ] Rewrite the `VersionDiffCard` doc comment so it no longer restates decision 7.
 
 ### Task 2: Export the row-open hook
@@ -84,7 +88,7 @@
 - Modify: `src/lib/copy/deck-versioning.ts`, `src/lib/copy/deck-versioning.test.ts`
 - Test: `src/components/decks/version-diff.test.tsx`
 - Modify: `docs/superpowers/design-tables/deck-versioning-surface-4-5.md` (`diffNote` at :57, :623)
-- Modify: `design/design_handoff_the99_version_rows/STATES-version-rows.md` (audit finding 1: the collapsed tag draws the figure)
+- Modify: `design/design_handoff_the99_version_rows/README.md` call 2, `STATES-version-rows.md` rows 8–11 and the canvas callouts at `dc.html:94` and `:369`. Each becomes `lg` rather than `md`, with the collapsed tag drawing the live figure and a bare `$` only when there is no live price (audit findings 1 and 2), so every handoff source agrees with what ships.
 
 - [ ] Write failing component tests, each named for its STATES row:
   - an In row with owned 0 and a price draws a dashed dot and `buy · $2.40`;
@@ -105,7 +109,7 @@
 - [ ] Run `pnpm vitest run src/components/decks/version-diff.test.tsx src/lib/copy/deck-versioning.test.ts`. Expect PASS. Mutation-check:
   - drop the `ownedNow < to` gate, and the owned-row test fails;
   - reverse the sibling order, and the Next test fails.
-- [ ] Sweep `diffNote` from the design table and correct STATES rows 8–11.
+- [ ] Sweep `diffNote` from the design table, and make the handoff corrections listed above. Grep the handoff folder for `md+` and for `density="collapsed"`, and read every hit against the two findings.
 
 ### Task 4: Probes and acceptance
 
