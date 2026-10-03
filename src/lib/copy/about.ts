@@ -435,7 +435,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // it into five lines.
     width: 'plate',
     caption:
-      'Pick a commander and we build the 99 from what you own first. Where your collection runs short, we add the cards that commander’s decks play most. Any slots still open are yours: the last-slots list ranks candidates for them, ticks the ones you can sleeve, and adds nothing until you say so. Anything auto-added can be cleared in one action if you would rather start from your own picks.',
+      'Pick a commander and we build the 99 from what you own first, starting with the staples nearly every deck in its colors runs. Where your collection runs short, we add the cards that commander’s decks play most. Any slots still open are yours: the last-slots list ranks candidates for them, ticks the ones you can sleeve, and adds nothing until you say so. Anything auto-added can be cleared in one action if you would rather start from your own picks.',
     keys: [],
     since: 1,
   },
