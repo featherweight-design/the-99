@@ -2083,9 +2083,15 @@ export function CardModal({
                 // printing, and they sit at the end where the ellipsis never eats them
                 // first.
                 // `relative` puts it over the wash, an absolute sibling that would otherwise
-                // paint on top of an in-flow line.
-                className="relative font-mono text-[11px] mt-[14px] m-0 max-w-[calc(100%-32px)] overflow-hidden text-ellipsis whitespace-nowrap"
-                style={{ color: "var(--fg-muted)" }}
+                // paint on top of an in-flow line. ON THE PLATE, as the art-wash ratification
+                // defines it (the phone's price stack above): over the wash a bare 11px line
+                // has nothing to be legible against, and a light art read it at about 1.5:1.
+                className="relative font-mono text-[11px] mt-[14px] m-0 max-w-[calc(100%-32px)] overflow-hidden text-ellipsis whitespace-nowrap rounded-[7px] px-[8px] py-[3px]"
+                style={{
+                  color: "var(--fg-muted)",
+                  background: "var(--bg)",
+                  border: "1px solid var(--border-strong)",
+                }}
               >
                 {zoomCaption}
               </p>
