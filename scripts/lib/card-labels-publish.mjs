@@ -77,7 +77,8 @@ function bindRunStamp(n) {
   try { owner = JSON.parse(readFileSync(stamp, "utf8")).runId; } catch { owner = undefined; }
   if (typeof owner !== "string" || !owner) {
     throw new Error(`${stamp} exists but names no run. Refusing to publish: an unreadable stamp cannot say whose ` +
-      "evidence this number holds. Inspect it, and restore it from git if a publish was interrupted.");
+      "evidence this number holds. If git holds the stamp, restore it; if git has never held it (the first " +
+      "publish of this number was interrupted between creating it and writing it), delete it and publish again.");
   }
   if (owner !== runId) {
     throw new Error(`resample-${n} already holds ${owner}'s evidence, and out/ is ${runId}. Refusing to publish: ` +
