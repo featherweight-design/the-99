@@ -1033,8 +1033,8 @@ export function DecksView({
                 // trigger itself; this catches the case where there is none.
                 requestAnimationFrame(() => {
                   // Unless the panel that asked for this folder is taking focus
-                  // itself — it survives on All decks, and its ⋯ or its Move row
-                  // is a better answer than the shelf control. Both rescues test
+                  // itself — it survives on All decks, and its ⋯ is a better
+                  // answer than the shelf control. Both rescues test
                   // for the body, so without this the winner would be whichever
                   // frame callback was queued first.
                   if (panelTakesFocus.current) {

@@ -224,7 +224,8 @@ interface DeckCardProps {
   onCreateFolder: () => void;
   onMove: (to: { id: string | null; name: string | null }) => void;
   keepsFocus: boolean;
-  /** The outcome of a create started from this card's move mode, once it lands. */
+  /** Bumped when a create started from this card's move mode is dismissed, which closes the
+   *  panel. It carries no outcome: the move is optimistic, and its answer arrives later. */
   closeAfterCreate: { seq: number } | null;
 }
 
