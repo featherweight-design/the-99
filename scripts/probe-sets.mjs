@@ -654,10 +654,14 @@ async function run() {
     // Read off a STRUCTURE the page maintains, not off copy: the first attempt grepped for
     // sentences this page has never rendered, so it always answered false and the check it
     // guards would have failed on the fixture it exists to allow. At 100% the page removes
-    // the missing-only control, because the base run has nothing left to hide — the absence
-    // of that control IS completeness, and it is the same fact `effective` is derived from.
+    // the Missing option, because the base run has nothing left to hide — the absence of
+    // that option IS completeness, and it is the same fact `effective` is derived from.
+    // Read off the desktop rack's ownership group (H12), whose toggles are named by their
+    // visible labels; the retired toggle's `Showing …` name no longer exists, and matching
+    // it would call every set complete.
     const setIsComplete = await page.evaluate(
-      () => document.querySelectorAll('button[aria-label^="Showing "]').length === 0,
+      () => ![...document.querySelectorAll("[data-set-own] button")]
+        .some((b) => (b.textContent ?? "").trim() === "Missing only"),
     );
     if (rest === null) {
       failures += !report("the chip row is on the page", false, "no [data-set-chips]");
@@ -1735,9 +1739,10 @@ async function run() {
           fieldWidth: Math.round((slot ?? field).getBoundingClientRect().width),
           inputWidth: Math.round(field.getBoundingClientRect().width),
           fontSize: parseFloat(getComputedStyle(field).fontSize),
-          // The field's OWN box, not the row's. The row measures 44 because
-          // `MissingOnlyToggle` is 44; that says nothing about whether this control is a
-          // 44px target, and for eighteen rounds it was 38.
+          // The field's OWN box, not the row's. The row once measured 44 because the
+          // Missing toggle beside it was 44; that said nothing about whether this control
+          // was a 44px target, and for eighteen rounds it was 38. Since H13 that slot holds
+          // the compact Sort trigger, which is 44 for its own reasons.
           // `SearchField` renders container > (glyph, input, trailing), so the parent IS
           // the padded box. Guarded: if that ever stops being true the parent becomes the
           // row or the slot and the number would silently be someone else's.
@@ -1762,6 +1767,10 @@ async function run() {
     };
     // Both widths, and at 390 with a filter on as well: the `Filters` badge takes width from
     // the only child that may shrink, which is exactly when a floor earns its keep.
+    //
+    // The 390 row's arithmetic has NOT been re-derived since H13/H16 swapped `Missing` (76px)
+    // for the compact Sort trigger, whose width was never measured. The no-wrap and 132px
+    // floor checks below are what will say whether it fits; no figure is asserted here.
     for (const [width, floor, query] of [[1280, 132, ""], [390, 132, ""], [390, 132, "?c=W&r=rare"]]) {
       const row = await rowAt(width, query);
       if (row === null) {
@@ -1824,10 +1833,10 @@ async function run() {
       return {
         filtersTrigger: byName(/^Filters$/).length,
         barePips: pips.length,
-        // The Filters trigger counts too: on a complete set the missing-only button is
-        // intentionally absent, and `Math.min(99, ...[])` then returned the sentinel and
-        // passed the 44px check having measured nothing at all.
-        targets: [...byName(/Showing (only|every)/), ...byName(/^Filters/)]
+        // H13 moved ownership into the sheet and H16 put the compact Sort trigger in its
+        // slot, so the row's controls are `Filters` and `Sort`. Both are counted: one alone
+        // could go missing and `Math.min` would pass on the other.
+        targets: [...byName(/^Sort cards/), ...byName(/^Filters/)]
           .map((b) => Math.round(b.getBoundingClientRect().height)),
       };
     });

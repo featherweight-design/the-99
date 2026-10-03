@@ -475,7 +475,7 @@ function SetsFigure({ width }: { width: AboutWidth }) {
           <span aria-hidden className="text-[color:var(--fg-faint)]">▾</span>
         </span>
         <span className="flex h-[26px] items-center rounded-[7px] border border-solid border-[color:var(--border-strong)] px-[10px] text-[11px] text-[color:var(--fg-muted)]">
-          {setFilterCopy.missingOnly.label}
+          {setFilterCopy.ownership.missing.label}
         </span>
       </div>
       <div className="mb-[10px] font-mono text-[10px] text-[color:var(--fg-faint)]">

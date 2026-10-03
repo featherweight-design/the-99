@@ -26,6 +26,19 @@ export type CostToComplete = {
 };
 
 /**
+ * One cell's costable figure, or null when it has none: the price of a `priced` row, the foil
+ * price of a `foilOnly` one, and nothing for `soldOut` or `absent`. The figure the total below
+ * sums, named so the set page's price ORDER (H16) reads the same number rather than a second
+ * opinion about which rows count.
+ */
+export function livePriceCents(
+  price: PriceFact | null | undefined,
+  newestAsOf: Date | null,
+): number | null {
+  return price ? priceOf(price, priceState(price, newestAsOf)) : null;
+}
+
+/**
  * A cell whose price is `soldOut` contributes nothing. Its row is a last known price for
  * something nobody is currently selling, and quoting it would put a number in a total the
  * reader cannot actually spend. A `foilOnly` cell does contribute, at its foil price —
@@ -46,7 +59,7 @@ export function costToComplete(
 
   for (const cell of missing) {
     const state = priceState(cell.price, newestAsOf);
-    const value = cell.price ? priceOf(cell.price, state) : null;
+    const value = livePriceCents(cell.price, newestAsOf);
     if (value !== null) {
       totalCents += value;
       pricedCount += 1;

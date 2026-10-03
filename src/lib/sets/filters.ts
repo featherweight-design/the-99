@@ -1,14 +1,40 @@
-// The set grid's filters and their URL parameters. Pure, so the filtering a reader sees and
-// the count the buy button quotes are the same computation in the same place.
+// The set grid's filters, its order, and their URL parameters. Pure, so the filtering a
+// reader sees and the count the buy button quotes are the same computation in the same place.
 
 import type { Cell } from "./completion";
 import { filterByColors, type JoinMode } from "../commanders/filter";
+import type { SortDirection } from "../collection/browse";
 
 export const WUBRG = ["W", "U", "B", "R", "G"] as const;
 // The four the rack offers, and no more. `special` was in this list while no control
 // could select it and no copy named it, so a URL could carry a filter state no reader
 // could reach or clear.
 export const RARITIES = ["common", "uncommon", "rare", "mythic"] as const;
+
+/**
+ * Which cells ownership keeps. ONE field with three values rather than two booleans, because
+ * the two filters are mutually exclusive (H12): `missing` and `owned` together match nothing,
+ * and two booleans would make that empty state representable — in a URL, in a test, in a
+ * chip line drawing two chips that cancel each other out.
+ */
+export type Ownership = "all" | "missing" | "owned";
+
+/**
+ * The set page's two orders (H16). `number` is collector order, the page's order before
+ * there was a choice; `price` is the per-cell figure the cost strip sums.
+ */
+export type SetSort = "number" | "price";
+export const SET_SORTS = ["number", "price"] as const satisfies readonly SetSort[];
+
+/**
+ * The direction each order opens in, `DEFAULT_SORT_DIRECTION`'s rule for `/collection`:
+ * collector number reads forwards, and "sort by price" means dearest first to everyone —
+ * the reader reaching for it is asking what the expensive cards are.
+ */
+export const DEFAULT_SET_SORT_DIRECTION: Record<SetSort, SortDirection> = {
+  number: "asc",
+  price: "desc",
+};
 
 export type SetGridFilters = {
   colors: string[];
@@ -20,13 +46,21 @@ export type SetGridFilters = {
   match: JoinMode;
   /** Multi-select since H13, as `/collection`'s Type is: `r=rare,mythic` is rare OR mythic. */
   rarities: string[];
-  missingOnly: boolean;
+  own: Ownership;
   /** The name search. A filter by any reading a player would give it, so it lives here. */
   query: string;
+  /**
+   * The order rides in the same state because it rides in the same URL, but it is NOT a
+   * filter: it narrows nothing, no chip names it, no badge counts it, and `Clear all
+   * filters` leaves it alone — the chassis's own exclusion, for the chassis's reason.
+   */
+  sort: SetSort;
+  dir: SortDirection;
 };
 
 export const EMPTY_FILTERS: SetGridFilters = {
-  colors: [], match: "contains", rarities: [], missingOnly: false, query: "",
+  colors: [], match: "contains", rarities: [], own: "all", query: "",
+  sort: "number", dir: DEFAULT_SET_SORT_DIRECTION.number,
 };
 
 /**
@@ -85,7 +119,8 @@ export function isQueryActive(query: string): boolean {
  */
 export function applyFilters(cells: Cell[], f: SetGridFilters): Cell[] {
   return filterByColors(cells, f.colors, f.match).filter((c) => {
-    if (f.missingOnly && c.owned) return false;
+    if (f.own === "missing" && c.owned) return false;
+    if (f.own === "owned" && !c.owned) return false;
     if (!matchesQuery(c.name, f.query)) return false;
     if (f.rarities.length > 0) {
       const r = (c.rarity ?? "").toLowerCase();
@@ -108,14 +143,10 @@ export function serialiseFilters(f: SetGridFilters): URLSearchParams {
   // control greys its selector) that still decides which pips are offered, so the page never
   // holds it: the last pip off returns to Any, and a URL naming it alone is read as Any.
   if (f.match === "exactly" && colors.length > 0) params.set("m", "exact");
-  // `own=missing`, never `m=1` again. `m` was missing-only until H10 needed it for the
-  // colour modifier, and one key cannot hold both `1` and `exact` at once — so a reader who
-  // wanted the missing white-blue cards EXACTLY could not have been written down. `m=1` is
-  // still READ as missing below, so an old link keeps working, and never written, so it
-  // retires as links are rewritten. `own` rather than a second boolean key, because the
-  // ownership control grows an Owned option next and that is one dimension with three
-  // values, not two flags.
-  if (f.missingOnly) params.set("own", "missing");
+  // `own`, never `m` again. `m=1` was missing-only until H10 needed `m` for the colour
+  // modifier; it is still READ as missing below, so an old link keeps working, and never
+  // written, so it retires as links are rewritten.
+  if (f.own !== "all") params.set("own", f.own);
   // `q`, matching the index's own field. R2's decision 15 read literally bans a shared key
   // name with /collection, but the shipped surface already shares `c` for colour and no bug
   // came of it. The rule it was written about is that no VALUE carries and no one name means
@@ -123,6 +154,11 @@ export function serialiseFilters(f: SetGridFilters): URLSearchParams {
   // carries nothing across.
   const query = f.query.trim();
   if (isQueryActive(query)) params.set("q", query);
+  // `sort` and `dir`, `/collection`'s names for the same two things, and each written only
+  // where it differs from its default — the default order is collector number, and a
+  // direction is an absence while it is the one its order opens in.
+  if (f.sort !== "number") params.set("sort", f.sort);
+  if (f.dir !== DEFAULT_SET_SORT_DIRECTION[f.sort]) params.set("dir", f.dir);
   return params;
 }
 
@@ -136,6 +172,10 @@ export function parseFilters(params: URLSearchParams): SetGridFilters {
   const colors = list("c").map((v) => v.toUpperCase());
   const rarities = list("r").map((v) => v.toLowerCase());
   const lit = WUBRG.filter((c) => colors.includes(c));
+  const own = params.get("own");
+  const sortRaw = params.get("sort");
+  const sort: SetSort = SET_SORTS.find((s) => s === sortRaw) ?? "number";
+  const dirRaw = params.get("dir");
   return {
     colors: lit,
     // Exactly only beside a recognized colour: `?m=exact`, or `?m=exact&c=Z`, is Any.
@@ -143,9 +183,9 @@ export function parseFilters(params: URLSearchParams): SetGridFilters {
     // Multi-select since H13, so the whole list is kept, in canonical order. A single value
     // — every link written while the control was single-select — is a list of one.
     rarities: RARITIES.filter((r) => rarities.includes(r)),
-    // `own=missing` first; the LEGACY `m=1` is missing-only from before `m` meant the
-    // colour modifier. The two cannot collide: `m` is `1` or `exact`, never both.
-    missingOnly: params.get("own") === "missing" || params.get("m") === "1",
+    // `own` first; the LEGACY `m=1` is missing-only from before `m` meant the colour
+    // modifier. The two cannot collide: `m` is `1` or `exact`, never both.
+    own: own === "missing" || own === "owned" ? own : params.get("m") === "1" ? "missing" : "all",
     // Canonicalised on the way in, because `serialiseFilters` omits an inactive one on the
     // way out: untrimmed, `?q=%20` would sit in the field looking empty and in a shared URL
     // looking like a filter, until some other control happened to rewrite the string.
@@ -155,5 +195,50 @@ export function parseFilters(params: URLSearchParams): SetGridFilters {
     // folds to nothing, so the grid was unfiltered while the field's × and the sheet's
     // Clear were both inert: a query in the URL with no visible way to clear it.
     query: isQueryActive(raw) ? raw.trim() : "",
+    sort,
+    dir: dirRaw === "asc" || dirRaw === "desc" ? dirRaw : DEFAULT_SET_SORT_DIRECTION[sort],
   };
+}
+
+/**
+ * Picking an order, `/collection`'s rule (`nextSortState`): a different order switches to it
+ * in its own opening direction, and picking the order already chosen reverses it. That is
+ * the only direction control, as it is on every other sorted surface here.
+ */
+export function nextSetSort(
+  current: { sort: SetSort; dir: SortDirection },
+  picked: SetSort,
+): { sort: SetSort; dir: SortDirection } {
+  if (picked !== current.sort) return { sort: picked, dir: DEFAULT_SET_SORT_DIRECTION[picked] };
+  return { sort: picked, dir: current.dir === "asc" ? "desc" : "asc" };
+}
+
+/**
+ * One section in the chosen order. `cells` arrives in collector order (`sectionsOf` builds
+ * it so), which is why `number` needs no comparator of its own.
+ *
+ * `price` reads `centsOf`, the cost strip's own per-cell figure, and a cell with NO figure —
+ * never stocked, sold out, or owned with no row in the price read — goes LAST in both
+ * directions. Reversing a list that put them first would bury the priced cards the reader
+ * sorted to see under a run of cells with nothing to compare. Ties, and the unpriced run
+ * itself, keep collector order: `Array.prototype.sort` is stable, and the comparator never
+ * reverses an equal pair.
+ */
+export function sortCells(
+  cells: Cell[],
+  sort: SetSort,
+  dir: SortDirection,
+  centsOf: (cell: Cell) => number | null,
+): Cell[] {
+  if (sort === "number") return dir === "asc" ? cells : [...cells].reverse();
+  const sign = dir === "asc" ? 1 : -1;
+  const figure = new Map(cells.map((c) => [c, centsOf(c)] as const));
+  return [...cells].sort((a, b) => {
+    const pa = figure.get(a) ?? null;
+    const pb = figure.get(b) ?? null;
+    if (pa === null && pb === null) return 0;
+    if (pa === null) return 1;
+    if (pb === null) return -1;
+    return sign * (pa - pb);
+  });
 }
