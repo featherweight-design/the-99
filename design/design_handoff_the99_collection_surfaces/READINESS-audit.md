@@ -378,7 +378,7 @@ This follows #1163, d8's view and colour PRs, and #1167, in that order. All of t
 
 **Context.** Collection surfaces R1 is audited
 (`design/design_handoff_the99_collection_surfaces/READINESS-audit.md` on branch
-`design/collection-surfaces` (PR #PRNUM)). The 3-up grid and the sheet portal are buildable as
+`design/collection-surfaces` (PR #1169)). The 3-up grid and the sheet portal are buildable as
 drawn. Two layout states are not drawn, one for the tabs and one for the head. Everything else in
 R1 stands.
 
