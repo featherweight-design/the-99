@@ -639,4 +639,50 @@ export const COVERAGE_FIELDS: GoldRow[] = [
     jobs: [j("role", "wipes", { rt: "creature", af: "each", meth: "shrink", rec: "oneShot" })],
     why: "All creatures get -4/-4: the -X/-X wipe, shrink, each, against Pyroclasm's damage wipe.",
   },
+  // ---- re-sample 3's read of 20 random cards, pinned both ways (d9, 2026-10-03) --------------------
+  {
+    name: "Eladamri, Lord of Leaves", klass: "tribal",
+    jobs: [
+      j("theme", "evasion", { rt: "Elf", af: "self" }),
+      j("theme", "protection", { rt: "Elf", af: "self" }),
+      j("theme", "tribal", { rt: "Elf", af: "self" }),
+    ],
+    why: "Other Elves have forestwalk (evasion) and shroud (protection). Both abilities earn tribal Elf, written ONCE: re-sample 2 wrote it twice.",
+  },
+  {
+    name: "Exploration Broodship", klass: "toNull",
+    jobs: [
+      j("role", "ramp", { rk: "extraLandDrop", af: "self" }),
+      j("theme", "evasion", { rt: "creature", af: "self" }),
+      j("theme", "recursion", { rt: "permanent", af: "self", dest: null }),
+    ],
+    why: "At 3+ an extra land each turn; at 8+ its own flying. It CASTS a permanent spell from your graveyard once a turn, so recursion with `to` null: a card cast moves to no zone. Re-sample 2 wrote `to` battlefield.",
+  },
+  {
+    name: "Benalish Sleeper", klass: "affectsEach",
+    jobs: [j("role", "removal", { rt: "creature", af: "each", meth: "sacrifice", tr: "etb", rec: "oneShot" })],
+    why: "Kicked, EACH player sacrifices a creature: removal by sacrifice, affects each, being symmetric. Re-sample 3 called it stax; an edict is removal.",
+  },
+  {
+    name: "Legolas Greenleaf", klass: "etbDrawNeg",
+    jobs: [
+      j("theme", "evasion", { rt: "creature", af: "self" }),
+      j("theme", "counters", { rt: "creature", af: "self", tr: "etb" }),
+      j("role", "draw", { af: "self", tr: "combatDamage" }),
+    ],
+    why: "A HARD NEGATIVE for etbDraw: it draws on COMBAT DAMAGE, which is role draw, not etbDraw. It can't be blocked by small creatures (evasion), and a counter lands when another legend enters (counters, etb). Reach is no job.",
+  },
+  {
+    name: "Bazaar of Wonders", klass: "affectsEach",
+    jobs: [
+      j("theme", "graveyardHate", { af: "each", tr: "etb", rec: "oneShot" }),
+      j("role", "counterspell", { af: "each", tr: "cast" }),
+    ],
+    why: "Exiles ALL graveyards on entry, and counters ANY player's spell that shares a name with a card in a graveyard or a nontoken permanent: both symmetric, so affects each. Re-sample 3 read the counter as opponents.",
+  },
+  {
+    name: "Light of Sanction", klass: "protectionNeg",
+    jobs: [],
+    why: "A HARD NEGATIVE for protection: it prevents damage YOUR sources would deal to your creatures. Damage prevention is not in the protection list (hexproof, indestructible, ward, protection from, regenerate, phasing, armor), and it is no fog. Re-sample 2 called it protection; re-sample 3 left it empty, which is right.",
+  },
 ];
