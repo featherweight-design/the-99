@@ -85,16 +85,24 @@ pr-review skill). Given the fourteen-mount-point blast radius, this splits into 
 - Escape ladder: full → teaser → close.
 - Teaser price plate relocation (`$1.55 from $0.26`, beside the availability line).
 - New copy: `cardSheetCopy.expand` / `cardSheetCopy.grabberAria`.
-- **Flag for engineering, not design**: `card-carousel · copy strings.ts` documents
-  `grabberAria` as "aria-label on the grabber, as a button toggling between the two states," but
-  neither phone specimen draws the grabber pill (`PhoneHero.dc.html:33`, the 36×4px bar) as an
-  interactive element — no `role`, no `aria-label`, no pointer affordance in the markup. The
-  specimen's actual labeled toggle is the "All details" row at the foot of the teaser
-  (`PhoneHero.dc.html:65`), which carries its own visible text as its accessible name and needs
-  no `grabberAria` string at all. Resolve before implementing: does the grip pill *also* act as a
-  tap-to-toggle (in which case it needs `grabberAria` as its label), or is `grabberAria` dead copy
-  that should be dropped from the copy file? A one-line question to Design/Hugh, not a design
-  round.
+- **Resolved (engineering call, the-99-3e, 2026-10-03)**: the grip gets a real control. Neither
+  phone specimen draws the grabber pill (`PhoneHero.dc.html:33`, the 36×4px bar) with a `role` or
+  `aria-label` today — the specimen's *drawn* toggle is the "All details" row at the teaser's
+  foot — but the copy file already carries `grabberAria`, and a grip that visibly drags between
+  two states is exactly the kind of control that wants a tap fallback for a reader who cannot
+  drag. Give the grip pill `role="button"` and `aria-label={cardSheetCopy.grabberAria}`, wired to
+  the same teaser↔full toggle the "All details" row calls; both controls end up doing the same
+  thing, which is fine — a drag-only affordance having no tap equivalent is the gap, not the
+  duplication.
+- **Resolved (engineering call, the-99-3e, 2026-10-03)**: `var(--avail)` in `PhoneHero.dc.html:60,72`
+  does not exist in `globals.css` (confirmed only `--avail-soft` / `--avail-hard` /
+  `--avail-hard-fg` do) and resolves to nothing silently. `cur.avail` draws the same figure the
+  deck page's buy-tag label already draws beside an ownership count — `AvailabilityGlyph`
+  (`src/components/ui/availability-marker.tsx:196-209`) colors that figure `--avail-soft` when
+  the card is freely available and `--avail-hard-fg` when it is hard-claimed/to-buy (the same
+  split `fits-picker.tsx:115` uses for its own "to buy" figure). Wire `--avail` to that same
+  state-conditioned pair rather than a single static var — the carousel's card is drawing the
+  SAME marker every other availability label on the app draws, not a new one.
 - Est. size: one new sheet component + the phone block of `card-modal.tsx` removed/replaced +
   gesture hook. Likely 6-10 files; watch the line count on the gesture math (lock/ratio/commit) —
   split the gesture hook into its own file if the sheet component alone would clear ~500 lines.
@@ -194,8 +202,9 @@ to whichever width actually exercises the state (phone drag rubber-band is phone
 
 ## What this plan does not decide
 
-- The `grabberAria` ambiguity above (PR 3) needs a one-line answer before that PR's gesture code
-  is written, not a design round.
+- The `grabberAria` control and the `--avail` token (both PR 3) are resolved above as engineering
+  calls — neither needed a Design round-trip.
+- The `siblings` plumbing (PR 1) is scoped above; no further resolution needed.
 - The About entry's exact wording and whether this feature's `ABOUT_VERSION` bump rides alone or
   batches with other in-flight rounds is Hugh's call per call #10 and the About-batching rule in
-  AGENTS.md — not decided here.
+  AGENTS.md — not decided here. Flagged in the morning report alongside this plan.
