@@ -9,6 +9,8 @@ import { recordSoftFailure } from "../cache/soft-failure";
 
 /** One printing as the player owns it — the art and the name that belong together. */
 export type OwnedPrinting = {
+  /** Copies owned across EVERY printing of the card, not this one's. */
+  quantity: number;
   printedName: string | null;
   imageUri: string | null;
   artCropUri: string | null;
@@ -46,6 +48,7 @@ export async function resolveOwnedPrintings(
     const p = resolvedPrinting(c);
     if (p) {
       resolved.set(c.oracleId, {
+        quantity: c.quantity,
         printedName: c.printedName,
         imageUri: p.imageUri,
         // `?? null` rather than left optional: `BrowsePrinting.artCropUri` is optional so

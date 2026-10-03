@@ -19,6 +19,11 @@ import { clearDormantLocks, pruneOrphanLocks, reviveDormantLocks } from "./locks
 import { pruneOrphanAssignments } from "./prune-assignments";
 import { clearPullReleases } from "./pull-release";
 import { commanderMoved } from "../commander-change/pending";
+import { resolveOwnedPrintings } from "../collection/owned-printings";
+import { loadPrices } from "./price-query";
+import {
+  assembleVersionRows, pricedIds, type VersionDiffBase, type VersionDiffCard,
+} from "./version-rows";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -479,22 +484,22 @@ export async function listVersions(deckId: string, userId: string): Promise<Vers
   }).reverse();
 }
 
-/** A card named on one side of a version's diff. No ownership, no price and no
- *  availability: this is what the deck WAS, and an offer against a list from
- *  three months ago is an offer about a deck that no longer exists. */
-export type VersionDiffCard = {
-  oracleId: string;
-  name: string;
-  typeLine: string;
-  manaCost: string | null;
-  /** The copy counts either side of the change, for a quantity move's
-   *  `{name} {from} → {to}`. A card that arrived or left reads 0 on one side. */
-  from: number;
-  to: number;
+export type { VersionDiffCard } from "./version-rows";
+
+/** One version's diff, with the date of the newest price the rows were judged against. */
+export type VersionDiffPayload = {
+  in: VersionDiffCard[];
+  out: VersionDiffCard[];
+  /** `max(printing_prices.as_of)`: what `BuyTag` compares a card's own `asOf` to. */
+  newestAsOf: Date | null;
 };
 
 /**
- * What one version changed against the version before it.
+ * What one version changed against the version before it, with TODAY's figures on each
+ * row: what the reader owns now and what a copy costs now (H31, Hugh 2026-10-03). The
+ * cards are the version's; the ownership and the price are today's, and the tab's
+ * `todayNote` says so. Pull offers stay off these rows: a pull is an offer about the deck
+ * as it is now, and this list is the deck as it was.
  *
  * `previousVersionId` is null for a v1, which returns two empty lists rather
  * than diffing against nothing — the caller draws the initial arm instead.
@@ -505,8 +510,9 @@ export type VersionDiffCard = {
 export async function loadVersionDiff(
   versionId: string,
   previousVersionId: string | null,
-): Promise<{ in: VersionDiffCard[]; out: VersionDiffCard[] }> {
-  if (previousVersionId === null) return { in: [], out: [] };
+  userId: string,
+): Promise<VersionDiffPayload> {
+  if (previousVersionId === null) return { in: [], out: [], newestAsOf: null };
 
   const rows = await db.select({
     versionId: deckVersionCards.versionId,
@@ -515,6 +521,7 @@ export async function loadVersionDiff(
     name: cards.name,
     typeLine: cards.typeLine,
     manaCost: cards.manaCost,
+    imageUri: cards.imageUri,
   }).from(deckVersionCards)
     .innerJoin(cards, eq(cards.oracleId, deckVersionCards.oracleId))
     .where(inArray(deckVersionCards.versionId, [versionId, previousVersionId]));
@@ -524,7 +531,7 @@ export async function loadVersionDiff(
     rows.filter((r) => r.versionId === versionId),
     rows.filter((r) => r.versionId === previousVersionId),
   );
-  const card = (change: { oracleId: string; from: number; to: number }): VersionDiffCard | null => {
+  const card = (change: { oracleId: string; from: number; to: number }): VersionDiffBase | null => {
     const described = describe.get(change.oracleId);
     // A card the catalog no longer describes. Dropping it is the only honest
     // rendering — a row with no name and no type is not a row.
@@ -534,13 +541,24 @@ export async function loadVersionDiff(
       name: described.name,
       typeLine: described.typeLine,
       manaCost: described.manaCost,
+      imageUri: described.imageUri,
       from: change.from,
       to: change.to,
     };
   };
+  const ins = adds.map(card).filter((c): c is VersionDiffBase => c !== null);
+  const outs = removes.map(card).filter((c): c is VersionDiffBase => c !== null);
+  const all = [...ins, ...outs];
+  // Both reads are scoped to the diff's own cards: a version moves a handful, and
+  // neither the collection nor the price table is read whole for them.
+  const [owned, priced] = await Promise.all([
+    resolveOwnedPrintings(userId, all.map((c) => c.oracleId)),
+    loadPrices(pricedIds(all)),
+  ]);
   return {
-    in: adds.map(card).filter((c): c is VersionDiffCard => c !== null),
-    out: removes.map(card).filter((c): c is VersionDiffCard => c !== null),
+    in: assembleVersionRows(ins, owned, priced),
+    out: assembleVersionRows(outs, owned, priced),
+    newestAsOf: priced.newestAsOf,
   };
 }
 

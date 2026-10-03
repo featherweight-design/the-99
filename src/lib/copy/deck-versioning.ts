@@ -458,7 +458,15 @@ export const deckVersioningCopy = {
 
     diffIn: (n: number) => `In · ${n}`,
     diffOut: (n: number) => `Out · ${n}`,
-    diffNote: "this is what the deck was, not what it needs",
+    // H31: the rows draw today's ownership and price, so the line above them says the figures
+    // are today's. Drawn only when the In column has rows.
+    todayNote: (version: number) => `ownership and prices are today’s, not v${version}’s`,
+    // After the name on a partly owned In row, counted against the version's own count.
+    partialOwned: (owned: number, asked: number) => `own ${owned} of ${asked}`,
+    // That row's accessible description, in place of the decklist's `Owned` / `Not owned`.
+    partialA11y: (owned: number, asked: number) => `You own ${owned} of the ${asked} this version runs`,
+    owned: "Owned",
+    notOwned: "Not owned",
     // A version with a predecessor and no card movement: the note, the commander
     // or the basics moved instead. Without this the panel opens on nothing at all,
     // which reads as a failed read rather than as an answer. No count in it — a

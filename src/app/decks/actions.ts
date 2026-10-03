@@ -24,7 +24,7 @@ import { loadAvailability } from "../../lib/decks/availability-query";
 import { hardDecks, pullSources } from "../../lib/decks/availability";
 import {
   type CommitSnapshot, commitVersion, loadVersionDiff, newestVersion, restoreDraftFromVersion, versionCards,
-  versionLiveAt, type VersionDiffCard,
+  versionLiveAt, type VersionDiffPayload,
 } from "../../lib/decks/versions";
 import {
   bucketAdds, draftDiff, type BucketedAdd, type DraftChange,
@@ -1927,7 +1927,7 @@ export async function discardDeckDraft(
 export async function getVersionDiff(
   deckId: string,
   versionId: string,
-): Promise<{ in: VersionDiffCard[]; out: VersionDiffCard[] } | null> {
+): Promise<VersionDiffPayload | null> {
   const userId = await requireUserId();
   if (!isUuid(deckId) || !isUuid(versionId)) return null;
   await requireDeck(deckId, userId);
@@ -1947,7 +1947,7 @@ export async function getVersionDiff(
     .orderBy(desc(deckVersions.number))
     .limit(1);
   // A v1 has none, and `loadVersionDiff` answers that with two empty lists.
-  return loadVersionDiff(versionId, previous?.id ?? null);
+  return loadVersionDiff(versionId, previous?.id ?? null, userId);
 }
 
 /**

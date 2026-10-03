@@ -54,8 +54,9 @@ below; collected here so a verify agent reads them before the canvas values:
   own point ("so there is no diff to show").
 - **`history.initialBrowse`** is **retired**. Its only target was the deck page, which the rail
   now draws on.
-- **`history.diffNote`** now reads `this is what the deck was, not what it needs`. Its opening
-  clause enumerated three things the panel visibly does not draw.
+- **`history.diffNote`** is **retired** (H31, 2026-10-03). It read `this is what the deck was, not
+  what it needs`; the rows now draw today's ownership and price, and `history.todayNote` says so
+  instead. See `design/design_handoff_the99_version_rows/`.
 - **`review.outNote`** drops its second sentence, which explained a per-row toggle that does not
   exist. That sentence was also long enough to crush the `GOING OUT · n` heading beside it into
   three stacked lines, so the heading now carries `flex-none`.
@@ -620,26 +621,11 @@ reads as a canvas state label rather than product chrome (Discrepancy 40).
 | padding | — | `4px 9px 0` |
 | copy key | — | **none** — canvas shorthand for "the frame is not tall enough", not a product string (Discrepancy 53) |
 
-### Diff note (`history.diffNote`)
+### Diff note (`history.diffNote`), retired
 
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| rendered | **— (not drawn on phone)** (Discrepancy 41) | drawn |
-| font-family | — | `var(--font-mono)` |
-| font-size | — | `10px` |
-| color | — | `#6A6152` (`--fg-locked`) |
-| margin-top | — | `14px` |
-| text drawn | — | `this is what the deck was, not what it needs` — **amended 2026-09-13** (Hugh's copy ruling); the canvas and §Copy per state both open with an enumeration of absences (`no ownership dot, no prices, no pull offers` / `no availability`), which labelled what the panel visibly does not draw. Discrepancy 54 is moot with it. |
-
----
-
-## Component: v1 opened (no predecessor)
-
-State 39 / READINESS 8: **no columns at all**, never `+99`. The shipped provenance shape
-carrying `Initial` and one sentence. (The canvas also drew a route into the list; retired
-2026-09-13, see below.) Preceded on the canvas by the same
-mono caption treatment as the v2 panel, reading `v1 opened — there is no predecessor`
-(Discrepancy 40).
+**Retired 2026-10-03 (H31).** Replaced by `history.todayNote(version)`, drawn above the columns at
+both widths, mono 10.5px `--fg-faint`, only when the In column has rows. The version card rows
+handoff (`design/design_handoff_the99_version_rows/`) is its spec.
 
 ### Panel container
 

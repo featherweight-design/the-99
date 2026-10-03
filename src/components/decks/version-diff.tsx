@@ -2,16 +2,21 @@
 
 // §Surfaces 4 — what one version changed, opened under its row in the rail.
 //
-// This is what the deck WAS, which is why it carries no ownership dot, no price,
-// no buy tag and no pull offer: an offer against a list from three months ago is
-// an offer about a deck that no longer exists. The rows are therefore NOT
-// `update-diff-row`'s — that row's whole job is the availability rollup and the
-// buy tag, and every one of those affordances is forbidden here.
+// The cards are what the deck WAS; the figures on them are TODAY's (H31, Hugh 2026-10-03,
+// half reversing deck versioning's decision 7). An In row carries an ownership dot and, when
+// the reader owns fewer than the version runs, `own N of M` and a buy tag at today's price;
+// `todayNote` above the columns says the figures are today's. An Out row carries neither.
+// Pull offers stay out: a pull is an offer about the deck as it is now, and this list is the
+// deck as it was. No availability marker and no `committed` dot either, because both describe
+// a deck's claim and a version claims nothing.
+//
+// Every row opens the card modal, paging In then Out in display order, and on a pointer
+// rests into the hover preview.
 //
 // The two lists are fetched when the row opens rather than with the rail: a
 // ten-version deck would otherwise pay ten diffs to draw ten closed rows.
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { getVersionDiff } from "../../app/decks/actions";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
@@ -20,15 +25,26 @@ import { cardTypeGroup, groupByCardType } from "../../lib/decks/grouping";
 import { formatDeckDate } from "../../lib/decks/format";
 // Type only: `versions.ts` reaches `src/db`, which throws at module init in a
 // browser. See `src/lib/client-bundle-safety.test.ts`.
-import type { VersionDiffCard, VersionSummary } from "../../lib/decks/versions";
+import type { VersionDiffCard, VersionDiffPayload, VersionSummary } from "../../lib/decks/versions";
+import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { CostTrack } from "../ui/cost-pips";
+import { OwnershipDot } from "../ui/ownership-dot";
+import { useMinWidth } from "../ui/use-min-width";
+import { BuyTag } from "./buy-tag";
 import { DecklistGroupHeader } from "./decklist-group-header";
+import { HoverPreviewProvider, usePreviewRow } from "./hover-preview";
 import { VersionOverviewLink } from "./synopsis-version";
+import { ROW_PLATE_HOVER, useRowOpen } from "./update-diff-row";
 
 const copy = deckVersioningCopy.history;
 
-/** The two lists one version's row opens. */
-export type VersionDiffPayload = { in: VersionDiffCard[]; out: VersionDiffCard[] };
+export type { VersionDiffPayload };
+
+/** The order the modal pages: In then Out, each in display order (type group, then the
+ *  grouping's own order), so Next walks the rows exactly as they are drawn. */
+function displayOrder(cards: VersionDiffCard[]): string[] {
+  return groupByCardType(grouped(cards)).flatMap(([, g]) => g.map((c) => c.oracleId));
+}
 
 /** A card on one side of the diff, grouped by type the way every other card list
  *  in this app is grouped. `cardTypeGroup` rather than a field on the payload:
@@ -45,20 +61,73 @@ function grouped(cards: VersionDiffCard[]): GroupedCard[] {
  * same fact, so the two surfaces cannot describe a recount differently. Which
  * moves count as one is `printsPair`, shared with the review page and the
  * pending banner for the same reason.
+ *
+ * An In row draws today's ownership: the dot, and when the reader owns fewer copies than
+ * the version runs, `own N of M` (partly owned only) and a buy tag. The tag is `full` from
+ * 1024px and `collapsed` below it: at 820 a partly owned row's fixed parts leave the name
+ * about 40px with the full tag (H31 readiness, finding 2).
  */
-function DiffCardRow({ card }: { card: VersionDiffCard }) {
+function DiffCardRow({
+  card,
+  side,
+  siblings,
+  newestAsOf,
+  wide,
+}: {
+  card: VersionDiffCard;
+  side: "in" | "out";
+  siblings: string[];
+  newestAsOf: Date | null;
+  wide: boolean;
+}) {
   const moved = printsPair(card);
+  const label = card.printedName ?? card.name;
   const name = moved
-    ? deckImportCopy.update.diff.recountedItem(card.name, String(card.from), String(card.to))
-    : card.name;
+    ? deckImportCopy.update.diff.recountedItem(label, String(card.from), String(card.to))
+    : label;
+  const rowOpen = useRowOpen(card, siblings, true);
+  const previewHandlers = usePreviewRow(card.imageUri);
+  const describedId = useId();
+  const incoming = side === "in";
+  const short = incoming && card.ownedNow < card.to;
+  const partial = short && card.ownedNow > 0;
+  const description = !incoming
+    ? null
+    : partial
+      ? copy.partialA11y(card.ownedNow, card.to)
+      : card.ownedNow > 0 ? copy.owned : copy.notOwned;
   return (
     <div
+      {...rowOpen}
+      {...previewHandlers}
       data-version-diff-row
-      className="flex items-center gap-[9px] min-h-[44px] md:min-h-[38px] px-[8px] md:px-[9px] rounded-[7px] bg-[color:var(--surface)] border border-solid border-[color:var(--border)]"
+      className={`flex items-center gap-[9px] min-h-[44px] md:min-h-[38px] px-[8px] md:px-[9px] rounded-[7px] bg-[color:var(--surface)] border border-solid border-[color:var(--border)] ${ROW_PLATE_HOVER}`}
     >
-      <span className="flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[12.5px] md:text-[13px] text-[color:var(--fg)]">
+      {incoming && <OwnershipDot owned={card.ownedNow > 0} size={7} />}
+      {description !== null && <span id={describedId} className="sr-only">{description}</span>}
+      <CardDetailTrigger
+        oracleId={card.oracleId}
+        name={label}
+        title={name}
+        siblings={siblings}
+        describedBy={description !== null ? describedId : undefined}
+        className="flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-left text-[12.5px] md:text-[13px] text-[color:var(--fg)]"
+      >
         {name}
-      </span>
+      </CardDetailTrigger>
+      {partial && (
+        <span aria-hidden className="flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+          {copy.partialOwned(card.ownedNow, card.to)}
+        </span>
+      )}
+      {short && (
+        <BuyTag
+          variant="row"
+          price={card.price}
+          newestAsOf={newestAsOf}
+          density={wide ? "full" : "collapsed"}
+        />
+      )}
       <CostTrack cost={card.manaCost} />
     </div>
   );
@@ -76,6 +145,10 @@ function Column({
   heading,
   headingTone,
   cards,
+  side,
+  siblings,
+  newestAsOf,
+  wide,
   hiddenOnPhone,
   headingOnPhone,
 }: {
@@ -84,6 +157,10 @@ function Column({
    *  the header carries that the rows below it do not. */
   headingTone: string;
   cards: VersionDiffCard[];
+  side: "in" | "out";
+  siblings: string[];
+  newestAsOf: Date | null;
+  wide: boolean;
   hiddenOnPhone: boolean;
   /** The phone normally reads the direction off the pressed segment, so the
    *  header is desktop-only. A version that only added or only cut has no pair to
@@ -106,7 +183,14 @@ function Column({
           <DecklistGroupHeader label={group} count={groupCards.length} />
           <div className="flex flex-col gap-[4px]">
             {groupCards.map((card) => (
-              <DiffCardRow key={card.oracleId} card={card} />
+              <DiffCardRow
+                key={card.oracleId}
+                card={card}
+                side={side}
+                siblings={siblings}
+                newestAsOf={newestAsOf}
+                wide={wide}
+              />
             ))}
           </div>
         </div>
@@ -207,7 +291,7 @@ export function VersionDiff({
   // failed read as that answer claims something about the version the app does not
   // know.
   const [diff, setDiff] = useState<VersionDiffPayload | "unavailable" | null>(
-    initial ? { in: [], out: [] } : cache.get(version.id) ?? null,
+    initial ? { in: [], out: [], newestAsOf: null } : cache.get(version.id) ?? null,
   );
   // Phone only, and it decides which column is on screen rather than which one is
   // drawn twice.
@@ -243,6 +327,8 @@ export function VersionDiff({
   // The pair names a direction, so it is drawn only when there are two
   // directions to choose between. One column keeps its own heading instead.
   const segmented = inCount > 0 && outCount > 0;
+  const wide = useMinWidth("(min-width: 1024px)");
+  const siblings = payload === null ? [] : [...displayOrder(payload.in), ...displayOrder(payload.out)];
 
   // Drawn only on an actual change, and only when both sides resolved to a name.
   // Each side is the whole helm rather than the primary alone: a version piloted
@@ -409,12 +495,26 @@ export function VersionDiff({
               ))}
             </div>
           )}
+          {inCount > 0 && (
+            // Above the columns at both widths. On the phone it describes the In list, so it
+            // goes while the Out segment is pressed.
+            <p
+              className={`${segmented && shown === "out" ? "hidden md:block" : "block"} m-0 mb-[12px] font-mono text-[10.5px] text-[color:var(--fg-faint)]`}
+            >
+              {copy.todayNote(version.number)}
+            </p>
+          )}
+          <HoverPreviewProvider>
           <div className="flex flex-col md:flex-row md:items-start gap-[22px]">
             {inCount > 0 && (
               <Column
                 heading={copy.diffIn(inCount)}
                 headingTone="var(--success)"
                 cards={diff.in}
+                side="in"
+                siblings={siblings}
+                newestAsOf={diff.newestAsOf}
+                wide={wide}
                 hiddenOnPhone={segmented && shown !== "in"}
                 headingOnPhone={!segmented}
               />
@@ -424,21 +524,21 @@ export function VersionDiff({
                 heading={copy.diffOut(outCount)}
                 headingTone="var(--warning)"
                 cards={diff.out}
+                side="out"
+                siblings={siblings}
+                newestAsOf={diff.newestAsOf}
+                wide={wide}
                 hiddenOnPhone={segmented && shown !== "out"}
                 headingOnPhone={!segmented}
               />
             )}
           </div>
-          {inCount === 0 && outCount === 0 ? (
-            // Both widths, unlike `diffNote` below it: this is the panel's whole
-            // content, not a caveat about a list, and a phone that drew nothing
-            // would read as a read that failed.
+          </HoverPreviewProvider>
+          {inCount === 0 && outCount === 0 && (
+            // Both widths: this is the panel's whole content, and a phone that drew
+            // nothing would read as a read that failed.
             <p className="m-0 font-mono text-[11px] text-[color:var(--fg-faint)]">
               {copy.noChange}
-            </p>
-          ) : (
-            <p className="hidden md:block m-0 mt-[14px] font-mono text-[10px] text-[color:var(--fg-locked)]">
-              {copy.diffNote}
             </p>
           )}
         </>
