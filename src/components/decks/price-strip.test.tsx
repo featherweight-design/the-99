@@ -89,6 +89,13 @@ describe("PriceStrip responsive arrangement", () => {
     expect(plate.className).not.toMatch(/row-reverse|md:justify-between|md:items-baseline/);
     // DOM order is figure then provenance, which is the reading order at every width now.
     expect(plate.firstElementChild).toHaveTextContent("$12.40");
+
+    // The link row's own 44px target holds at both widths too — restoring its old
+    // `md:block md:min-h-0` would collapse it to the inline link's own box at desktop
+    // and pass every assertion above, since those only inspect the outer container.
+    const linkRow = screen.getByRole("link").parentElement!;
+    expect(linkRow).toHaveClass("flex", "items-center", "min-h-[44px]");
+    expect(linkRow.className).not.toMatch(/md:block|md:min-h-0/);
   });
 });
 
