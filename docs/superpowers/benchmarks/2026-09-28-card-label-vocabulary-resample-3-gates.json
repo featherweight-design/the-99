@@ -1,0 +1,151 @@
+{
+ "model": "sonnet",
+ "cards": 1679,
+ "flags": {
+  "tutor": {
+   "both": 67,
+   "flagOnly": [
+    "Chord of Calling",
+    "Green Sun's Zenith"
+   ],
+   "labelOnly": [
+    "Eye of Yawgmoth",
+    "Demonic Consultation",
+    "Tamiyo, Collector of Tales",
+    "Songbirds' Blessing",
+    "Legion Angel",
+    "Buried Alive",
+    "Cazur, Ruthless Stalker",
+    "Visage of Bolas",
+    "Selective Adaptation"
+   ]
+  },
+  "massLandDenial~stax": {
+   "both": 6,
+   "flagOnly": [
+    "Fall of the Thran",
+    "Omen of Fire",
+    "Storm Cauldron",
+    "Liliana of the Veil",
+    "Chaos Moon"
+   ],
+   "labelOnly": [
+    "Ghostly Prison",
+    "Mesmerizing Dose",
+    "Tariff",
+    "Thalia, Guardian of Thraben",
+    "Thalia and The Gitrog Monster",
+    "Ranger-Captain of Eos",
+    "Uphill Battle",
+    "Ashiok, Dream Render",
+    "Thorn of Amethyst",
+    "Pollen Lullaby",
+    "Glowrider",
+    "Feroz's Ban",
+    "Mana Vapors",
+    "Lorthos, the Tidemaker",
+    "Eidolon of Rhetoric",
+    "Silence",
+    "Myrel, Shield of Argive",
+    "Seasoned Cryomancer",
+    "Hum of the Radix",
+    "Mindlock Orb",
+    "Sen Triplets",
+    "Council of the Absolute",
+    "Disruptor Flute",
+    "Yuriko, Blade of the Mighty",
+    "City in a Bottle",
+    "Vorinclex, Voice of Hunger",
+    "Hurloon Shaman",
+    "Earth-Cult Elemental",
+    "Merciless Executioner",
+    "Benalish Sleeper",
+    "Kefka, Court Mage // Kefka, Ruler of Ruin",
+    "Arachne, Psionic Weaver",
+    "Dehydration",
+    "Calamity's Wake",
+    "Tangle",
+    "Weakstone's Subjugation",
+    "Elite Spellbinder",
+    "Void Winnower",
+    "Meekstone",
+    "Phyrexian Censor",
+    "Single Combat",
+    "Oppressive Rays",
+    "Marisi, Breaker of the Coil",
+    "Metal Fatigue",
+    "Yasharn, Implacable Earth",
+    "Godsend",
+    "Sphere of Resistance",
+    "Rule of Law",
+    "Aven Mindcensor",
+    "Drannith Magistrate",
+    "Grand Abolisher",
+    "Descent into Madness",
+    "Hinata, Dawn-Crowned",
+    "An-Zerrin Ruins",
+    "Tax Collector",
+    "Esior, Wardwing Familiar",
+    "Avatar's Wrath",
+    "Teferi, Time Raveler"
+   ]
+  },
+  "extraTurn~finisher": {
+   "both": 2,
+   "flagOnly": [],
+   "labelOnly": [
+    "Frodo, Sauron's Bane",
+    "Tezzeret the Seeker",
+    "Sarkhan Unbroken",
+    "Great Train Heist",
+    "Helix Pinnacle",
+    "Triumph of the Hordes",
+    "Tibalt, the Fiend-Blooded",
+    "Craterhoof Behemoth",
+    "Overrun",
+    "Aggravated Assault",
+    "Relentless Assault",
+    "Thassa's Oracle",
+    "Approach of the Second Sun",
+    "Insurrection",
+    "Call the Spirit Dragons"
+   ]
+  }
+ },
+ "removalLeaks": {
+  "counterspell": [
+   "Drown in the Loch",
+   "Obscura Charm",
+   "Fangkeeper's Familiar",
+   "Theorix Charm",
+   "Ouphe Vandals",
+   "Steel Sabotage",
+   "Bant Charm"
+  ],
+  "discard": [
+   "Compelling Deterrence",
+   "Cruel Ultimatum",
+   "Rush of Dread",
+   "Liliana's Triumph",
+   "Capital Punishment",
+   "Isildur's Fateful Strike",
+   "Nicol Bolas, Planeswalker",
+   "Liliana of the Veil",
+   "The Kami War // O-Kagachi Made Manifest",
+   "Archon of Cruelty"
+  ],
+  "tapper": []
+ },
+ "tutorsInDraw": [
+  "Cool but Rude",
+  "Sarkhan Unbroken"
+ ],
+ "emptyRate": {
+  "random": 500,
+  "returned": 500,
+  "empty": 46,
+  "rate": 0.092,
+  "baseline": 0.12236286919831224,
+  "deltaPoints": -3
+ }
+}
