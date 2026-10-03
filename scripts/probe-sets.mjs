@@ -1855,9 +1855,11 @@ async function run() {
     );
     failures += !report(
       "the phone's visible filter controls clear the 44px target",
-      phoneControls.targets.length > 0 && Math.min(...phoneControls.targets) >= 44,
-      phoneControls.targets.length === 0
-        ? "no phone filter control found to measure — the check would have passed empty"
+      // Both named by the comment above, so both are required: `> 0` let the Sort
+      // trigger disappear entirely and still pass on Filters alone.
+      phoneControls.targets.length === 2 && Math.min(...phoneControls.targets) >= 44,
+      phoneControls.targets.length !== 2
+        ? `${phoneControls.targets.length} of 2 expected phone filter controls found to measure`
         : `${phoneControls.targets.length} measured, smallest ${Math.min(...phoneControls.targets)}px`,
     );
 
