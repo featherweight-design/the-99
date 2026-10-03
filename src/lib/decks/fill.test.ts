@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { capToBody, dedupeSelectionFromPool, planFill, type FillCandidate, type FillPlan } from "./fill";
+import {
+  capToBody, dedupeSelectionFromPool, FILL_STAPLE_CAP, isResidual, planFill,
+  type FillCandidate, type FillPlan,
+} from "./fill";
 import type { CompositionTargets, ProfileSkeleton } from "../profile/types";
 
 /** The asserted baseline, which is what every case below the new block was written against. */
@@ -1104,5 +1107,135 @@ describe("capToBody", () => {
 
   it("leaves a body that fits untouched", () => {
     expect(capToBody([{ quantity: 98 }], 99)).toEqual([{ quantity: 98 }]);
+  });
+});
+
+describe("the inclusion band (H25)", () => {
+  // Omnath, Locus of Creation, measured: every ramp slot went to a ramp-and-draw card EDHREC had
+  // no figure for, over a Sol Ring at 64.7%, because closing two floors outranked inclusion.
+  const solRing = c({ oracleId: "sol", name: "sol", inclusionPct: 65 });
+  const dual = (id: string, pct: number | null) => c({
+    oracleId: id, name: id, typeLine: "Creature — Elf", inclusionPct: pct,
+    oracleText: "{T}: Add {G}. When this enters, draw a card.",
+  });
+  const skeleton = skeletonWith({ ramp: 1, draw: 1, removal: 0, wipes: 0, land: 35 });
+
+  it("keeps a figured single-role card's slot from a dual-role card with no figure", () => {
+    const plan = planFill([solRing, dual("d1", null), dual("d2", null)], { hasPartner: false, skeleton });
+    expect(plan.rows.find((r) => r.role === "ramp")?.oracleId).toBe("sol");
+  });
+
+  it("keeps it from a dual-role card more than the band below", () => {
+    const plan = planFill([solRing, dual("d1", 54)], { hasPartner: false, skeleton });
+    expect(plan.rows.find((r) => r.role === "ramp")?.oracleId).toBe("sol");
+  });
+
+  it("still lets a dual-role card within the band take the slot", () => {
+    const plan = planFill([solRing, dual("d1", 56)], { hasPartner: false, skeleton });
+    expect(plan.rows.find((r) => r.role === "ramp")?.oracleId).toBe("d1");
+  });
+});
+
+describe("the staples step (H25)", () => {
+  const sol = c({ oracleId: "sol", name: "sol", inclusionPct: 65 });
+  const boots = c({
+    oracleId: "boots", name: "boots", inclusionPct: 40, typeLine: "Artifact — Equipment",
+    oracleText: "Equipped creature has hexproof and haste. Equip {1}",
+  });
+  const swords = c({
+    oracleId: "swords", name: "swords", inclusionPct: 60, typeLine: "Instant",
+    oracleText: "Exile target creature. Its controller gains life equal to its power.",
+  });
+  const tower = c({
+    oracleId: "tower", name: "tower", typeLine: "Land", inclusionPct: 70,
+    oracleText: "{T}: Add one mana of any color in your commander's color identity.",
+  });
+  const lands = Array.from({ length: 40 }, (_, i) => basic(`b${i}`, 4));
+
+  it("seeds each staple first, marked as a staple, crediting every role it fills", () => {
+    const plan = planFill([...poolOf(200), ...lands], { ...FLAT, staples: [sol, boots, swords] });
+    expect(plan.rows.slice(0, 3)).toEqual([
+      { oracleId: "sol", quantity: 1, role: "ramp", source: "staple" },
+      { oracleId: "boots", quantity: 1, role: "other", source: "staple" },
+      { oracleId: "swords", quantity: 1, role: "removal", source: "staple" },
+    ]);
+  });
+
+  it("credits a dual-role staple to both floors in its one slot", () => {
+    // §2.5a for the staples step: crediting only the first role would spend a SECOND card on the
+    // floor this staple already closes.
+    const dual = c({ oracleId: "dual", name: "dual", typeLine: "Instant", inclusionPct: 50,
+      oracleText: "Destroy target creature. Draw a card." });
+    const plan = planFill([...poolOf(200), ...lands], {
+      hasPartner: false,
+      skeleton: skeletonWith({ ramp: 0, draw: 1, removal: 1, wipes: 0, land: 35 }),
+      staples: [dual],
+    });
+    const roleRows = plan.rows.filter((r) => r.role !== "land" && r.role !== "other");
+    expect(roleRows).toEqual([{ oracleId: "dual", quantity: 1, role: "draw", source: "staple" }]);
+  });
+
+    it("places a staple once even when it is also a candidate", () => {
+    const plan = planFill([sol, ...poolOf(200), ...lands], { ...FLAT, staples: [sol] });
+    expect(plan.rows.filter((r) => r.oracleId === "sol")).toHaveLength(1);
+  });
+
+  it("caps the nonland staples at FILL_STAPLE_CAP", () => {
+    const many = Array.from({ length: 15 }, (_, i) => c({ oracleId: `s${i}`, name: `s${i}` }));
+    const plan = planFill([...poolOf(200), ...lands], { ...FLAT, staples: many });
+    expect(plan.rows.filter((r) => r.source === "staple")).toHaveLength(FILL_STAPLE_CAP);
+  });
+
+  it("skips a staple the gate refuses, and tells the gate each one it places", () => {
+    const told: string[] = [];
+    const plan = planFill([...poolOf(200), ...lands], {
+      ...FLAT, staples: [sol, swords],
+      gate: { admits: (x) => x.oracleId !== "swords", place: (x) => { told.push(x.oracleId); } },
+    });
+    expect(plan.rows.some((r) => r.oracleId === "swords")).toBe(false);
+    expect(told[0]).toBe("sol");
+  });
+
+  it("offers only owned staples to a sleeveable fill, and counts a bought one", () => {
+    const unownedSol = { ...sol, owned: false, ownedQuantity: 0 };
+    const sleeveable = planFill([...poolOf(200), ...lands], { ...FLAT, pool: "sleeveable", staples: [unownedSol] });
+    expect(sleeveable.rows.some((r) => r.oracleId === "sol")).toBe(false);
+    const all = planFill([...poolOf(200), ...lands], { ...FLAT, staples: [unownedSol] });
+    expect(all.rows[0]).toMatchObject({ oracleId: "sol", source: "staple" });
+    expect(all.bought).toBe(1);
+  });
+
+  it("leaves a land staple to the land sweep, which takes it first", () => {
+    const otherLand = c({ oracleId: "aaa-land", name: "aaa-land", typeLine: "Land", inclusionPct: 99,
+      oracleText: "{T}: Add {C}." });
+    const plan = planFill([...poolOf(200), otherLand, tower, ...lands], {
+      ...FLAT, staples: [tower],
+    });
+    const towerRows = plan.rows.filter((r) => r.oracleId === "tower");
+    expect(towerRows).toEqual([{ oracleId: "tower", quantity: 1, role: "land" }]);
+    const landIds = plan.rows.filter((r) => r.role === "land").map((r) => r.oracleId);
+    expect(landIds[0]).toBe("tower");
+  });
+
+  it("still prefers a land staple offered after the cap is reached", () => {
+    const many = Array.from({ length: 12 }, (_, i) => c({ oracleId: `s${i}`, name: `s${i}` }));
+    const otherLand = c({ oracleId: "aaa-land", name: "aaa-land", typeLine: "Land", inclusionPct: 99,
+      oracleText: "{T}: Add {C}." });
+    const plan = planFill([...poolOf(200), otherLand, tower, ...lands], {
+      ...FLAT, staples: [...many, tower],
+    });
+    expect(plan.rows.filter((r) => r.role === "land")[0]?.oracleId).toBe("tower");
+  });
+
+    it("honors the slot limit", () => {
+    const plan = planFill([...poolOf(200), ...lands], { ...FLAT, slots: 1, staples: [sol, swords] });
+    expect(plan.rows).toEqual([{ oracleId: "sol", quantity: 1, role: "ramp", source: "staple" }]);
+  });
+
+  it("files a roleless staple apart from the residual", () => {
+    const plan = planFill([...poolOf(200), ...lands], { ...FLAT, staples: [boots] });
+    const row = plan.rows.find((r) => r.oracleId === "boots")!;
+    expect(isResidual(row)).toBe(false);
+    expect(plan.rows.filter(isResidual).length).toBeGreaterThan(0);
   });
 });

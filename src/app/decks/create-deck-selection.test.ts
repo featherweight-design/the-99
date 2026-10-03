@@ -32,7 +32,7 @@ const stub = vi.hoisted(() => {
     cards: [] as Record<string, unknown>[],
     /** The collection rows behind `ownedColorLegalPool`. */
     collectionItems: [] as Record<string, unknown>[],
-    /** What `unownedStaples`' catalog query returns — the cards EDHREC named
+    /** What `unownedTopCards`' catalog query returns — the cards EDHREC named
         that the player does not own. Kept apart from `cards` because that query
         matches on lowercased name, not on oracle id. */
     stapleCards: [] as Record<string, unknown>[],
@@ -49,7 +49,7 @@ const stub = vi.hoisted(() => {
         const builder = {
           where: async (condition?: unknown) => {
             if (tableName !== "cards") return state.collectionItems;
-            // `unownedStaples` is the only cards read that projects `manaValue`.
+            // `unownedTopCards` is the only cards read that projects `manaValue`.
             if (keys.includes("manaValue")) return state.stapleCards;
             const ids = paramValues(condition);
             // Postgres casts the bound parameter to uuid and errors on anything
@@ -113,7 +113,12 @@ const stub = vi.hoisted(() => {
   const tx = {
     insert: (table: unknown) => makeInsertBuilder(table),
     execute: async () => {},
-    select: () => ({ from: () => ({ where: async () => [] }) }),
+    // `recordFillPass` reads the deck's highest ordinal per kind; a new deck has none.
+    select: () => ({ from: () => ({ where: async () => [{ highest: null }] }) }),
+    // The brief written after a fill placed something. Without it the create throws there and
+    // falls back to an empty deck AFTER `deck_cards` was inserted, so the fill passes are never
+    // recorded and a test about how rows are filed reads nothing.
+    update: () => ({ set: () => ({ where: async () => {} }) }),
   };
 
   const db = {
@@ -139,12 +144,15 @@ vi.mock("next/navigation", () => ({
     throw err;
   },
 }));
+// The staples read is its own module; none by default, and a test that needs one sets it.
+vi.mock("../../lib/staples/fill-staples", () => ({ gatherFillStaples: vi.fn(async () => []) }));
 vi.mock("../../lib/edhrec/client", () => ({
   getEdhrecData: async () => stub.state.edhrec,
 }));
 
 import { createDeck } from "./actions";
 import { loadCatalogBasics } from "../../lib/decks/catalog-basics";
+import { gatherFillStaples } from "../../lib/staples/fill-staples";
 
 const CMDR = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const VALID = "11111111-1111-4111-8111-111111111111";
@@ -241,7 +249,7 @@ describe("createDeck with a selection", () => {
 
   it("keeps the fill from spending an unowned staple the selection placed", async () => {
     // The critical case: a selected card the player does not own is in
-    // `unownedStaples`, not in the owned pool. Filtering only the pool would
+    // `unownedTopCards`, not in the owned pool. Filtering only the pool would
     // let this one land twice.
     stub.state.cards.push(commanderRow(), cardRow(VALID));
     stub.state.stapleCards.push(cardRow(VALID, { manaValue: 2 }));
@@ -406,7 +414,32 @@ describe("createDeck with a selection", () => {
     expect(ids).toContain(CAT_PLAINS);
   });
 
-  it("never plans a second row for a basic the selection already placed", async () => {
+  it("places the staples buildFillPlan gathers, filed with the foundation", async () => {
+    // THE WIRING (H25), which no test on `planFill` reaches: `buildFillPlan` gathers the deck's
+    // staples and hands them to `planFill`, and create files a staple with the seed even when it
+    // has no role, never as an undoable suggestion. Boots is roleless, so `role` alone would file
+    // it with the residual.
+    const BOOTS = "5000b007-0000-4000-8000-000000000041";
+    vi.mocked(gatherFillStaples).mockResolvedValueOnce([{
+      oracleId: BOOTS, name: "Swiftfoot Boots", typeLine: "Artifact — Equipment",
+      oracleText: "Equipped creature has hexproof and haste. Equip {1}", keywords: [],
+      manaCost: "{2}", layout: "normal", owned: false, ownedQuantity: 0, inclusionPct: 40,
+    }]);
+    stub.state.cards.push(commanderRow());
+    stub.state.collectionItems.push(...Array.from({ length: 40 }, (_, i) =>
+      cardRow(`7${i.toString().padStart(7, "0")}-1111-4111-8111-111111111111`)));
+
+    await runCreate("My deck");
+
+    expect([...(vi.mocked(gatherFillStaples).mock.calls[0]?.[0].identity ?? [])].sort()).toEqual(["B", "G", "W"]);
+    expect(insertedIds()).toContain(BOOTS);
+    const passCards = stub.state.insertCalls.filter((c) => c.table === "fill_pass_cards")
+      .map((c) => (c.values as Array<{ oracleId: string }>).map((v) => v.oracleId));
+    expect(passCards[0]).toContain(BOOTS);
+    expect(passCards[1] ?? []).not.toContain(BOOTS);
+  });
+
+    it("never plans a second row for a basic the selection already placed", async () => {
     // `deck_cards` is keyed on the card and the insert does nothing on conflict, so a planned
     // Plains stack beside a selected Plains is dropped whole and the deck lands dozens short. The
     // catalog's basics come under the same exclusion as the pool.

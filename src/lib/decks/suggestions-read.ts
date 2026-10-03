@@ -89,12 +89,12 @@ type UnownedStapleCard = {
   imageUri: string | null; manaCost: string | null; manaValue: number; layout: string;
 };
 
-/** Unowned EDHREC staples, ordered by EDHREC rank, that fit the deck's colour
+/** Unowned EDHREC top cards for this commander, ordered by EDHREC rank, that fit the deck's colour
     identity. Takes every commander for the same reason `ownedColorLegalPool`
     does: a pair's legal identity is the union of both, and a staple legal under
     that union must not be dropped because the primary alone cannot cast it.
     Returns the full ranked list; callers bound it. */
-export async function unownedStaples(
+export async function unownedTopCards(
   commanders: Pick<PoolCard, "oracleId" | "colorIdentity">[],
   topCards: string[],
   ownedIds: Set<string>,
@@ -258,10 +258,10 @@ export async function loadDeckSuggestions(deckId: string, userId: string): Promi
   // Unowned EDHREC staples: one shelf's worth.
   let unownedSuggestions: DeckSuggestion[] = [];
   if (topCards && topCards.length > 0) {
-    // unownedStaples returns the full ranked list; this loader trims it to the
+    // unownedTopCards returns the full ranked list; this loader trims it to the
     // Top picks shelf, which draws SHELF_CAP like every other shelf (#391).
     const excludeIds = new Set([...commanders.map((c) => c.oracleId), ...inDeck]);
-    const eligible = await unownedStaples(commanders, topCards, ownedByOracleId, excludeIds);
+    const eligible = await unownedTopCards(commanders, topCards, ownedByOracleId, excludeIds);
 
     unownedSuggestions = unownedAppend(eligible).map((c) =>
       buildSuggestionPayload(

@@ -2354,6 +2354,24 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   `layout` dropped where the land-capable count reads it. Point it at `local-dev` or a scratch
   Neon branch, **never production**.
 
+  **Sections 9 to 14 are the staples step and the inclusion band** (H25, Hugh's rulings of
+  2026-10-03). The fill seeds the deck's `format_staples` staples before its role pass: universal
+  first, then the identity condition's rows at `avg_inclusion` 50 or more, at most 10 nonland, never a
+  Game Changer, and only universal ones for a colorless, four- or five-color deck. A land staple
+  goes to the land sweep, which takes it first. The tie-break may no longer hand a slot to a card
+  more than 10 inclusion points below the one under the cursor, or with no figure at all: that is
+  what built every ramp slot for Omnath, Locus of Creation out of zero-inclusion dual-role cards. The
+  staples are read from the real table through `loadFillStaples`. Two states no database here
+  carries are BUILT: no Game Changer reaches the bar today (the highest reads 30.4), so section 12
+  raises one past it as a sentinel and restores it in the `finally`; and no offered staple costs
+  $20, so the budget is set just under the dearer staple's own price. The three-color identity is
+  derived from the `count:3` row it checks, since that bucket pools every three-color identity.
+  Nine more mutations fail it: the band removed, the step removed, the condition ignored, the
+  `count:3` fallback dropped, staples placed past the gate, the Game Changer exclusion removed, land
+  staples placed by the step, the slot limit ignored, and the allow-list ignored. The last one
+  passed until section 14 put Sol Ring IN the scoped pool: left out, it dropped for want of a
+  candidate whether or not the list was read.
+
 - `pnpm measure:load` times the pages and the card-details press in a real browser at 1300x900
   and 390x844. It is the before/after tool every performance PR puts in its body (the performance
   lane, from `plans/2026-09-27-performance-research.md`). Per route (Home, `/decks`, a deck,

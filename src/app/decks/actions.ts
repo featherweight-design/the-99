@@ -32,7 +32,7 @@ import {
 import { loadDraftState } from "../../lib/decks/draft-state";
 import { deckSurfaces } from "../../lib/decks/revalidate";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
-import { ownedColorLegalPool, unownedStaples } from "../../lib/decks/suggestions-read";
+import { ownedColorLegalPool, unownedTopCards } from "../../lib/decks/suggestions-read";
 import { requireDeck } from "../../lib/decks/read";
 import { isBasicLand } from "../../lib/decks/grouping";
 import { validateDeckName } from "../../lib/decks/deck-name";
@@ -50,9 +50,10 @@ import { listLastSlotsCandidates } from "../../lib/decks/last-slots";
 import { readDeckSynergy } from "../../lib/decks/deck-synergy";
 import { loadSkeletonForCommanders } from "../../lib/profile/load";
 import {
-  capToBody, dedupeSelectionFromPool, planFill,
-  type FillCandidate, type FillPlan, type FillShortfall, type HeldCard, type PlanFillArgs,
+  capToBody, dedupeSelectionFromPool, isResidual, planFill,
+  type FillCandidate, type FillPlan, type FillRow, type FillShortfall, type HeldCard, type PlanFillArgs,
 } from "../../lib/decks/fill";
+import { gatherFillStaples } from "../../lib/staples/fill-staples";
 import { loadFillGate, type DeckAnswers } from "../../lib/intake/fill-facts";
 import { answerColumnsFor, validateCreateAnswers, type AnswerColumns, type CreateAnswers } from "../../lib/intake/answers";
 import { sanitizeSelection } from "../../lib/decks/selection-param";
@@ -83,14 +84,15 @@ export type TopOffResult =
  *  share a log line. Never escapes `buildFillPlan`. */
 class SkipRead extends Error {}
 
-/** Gathers the pool (quantities included) and the unowned EDHREC staples, then
+/** Gathers the pool (quantities included), the unowned EDHREC top cards and the deck's
+    `format_staples` staples (H25), then
     plans the fill. The EDHREC call is not the failure to guard: `getEdhrecData`
     degrades an unreachable upstream to `{ data: null }` and the fill goes ahead
     on the collection alone. The database reads are what can throw, so callers
     still guard this. */
 export async function buildFillPlan(
   userId: string,
-  // Every commander, primary first: the pool and the staples are both drawn
+  // Every commander, primary first: the pool and the top cards are both drawn
   // against the union identity, and a pair's body is 98 rather than 99. Passing
   // the list rather than a `hasPartner` flag is what keeps those three answers
   // from drifting apart. EDHREC is still asked about the primary — it indexes
@@ -169,10 +171,10 @@ export async function buildFillPlan(
   };
 
   // Built from the deduped pool, so a selected card the player owns is absent
-  // from it and `unownedStaples` may well offer that card back as a staple. The
+  // from it and `unownedTopCards` may well offer that card back as a top card. The
   // separate dedupe below is what settles it — for that card and for a selected
   // card the player does not own, which only ever reaches the plan through the
-  // staples list. Filtering the pool alone would let either be placed twice.
+  // top-cards list. Filtering the pool alone would let either be placed twice.
   // THE SAME SKELETON THE DECK WILL BE MEASURED AGAINST. Built from the profile loader's own
   // reads rather than a second chain written for the fill: a deck filled to one set of targets
   // and then graded against another would disagree with itself from the moment it was created.
@@ -204,16 +206,16 @@ export async function buildFillPlan(
   // NEITHER OF THE NEXT TWO READS CAN CHANGE A SLEEVEABLE ANSWER, so neither is made.
   //
   // `synergyRank` orders the RESIDUAL, and the one caller asking for a sleeveable pool drops
-  // every residual row before answering. `staples` are unowned by definition, and
+  // every residual row before answering. `unownedTop` is unowned by definition, and
   // `pool: "sleeveable"` filters them straight back out.
   //
-  // Skipping them is not only the two queries. `unownedStaples` is awaited without a guard of
-  // its own — deliberately, because a create that cannot see the staples has lost something
-  // real — so on that path a staples outage turned a perfectly good owned-pool fill into the
+  // Skipping them is not only the two queries. `unownedTopCards` is awaited without a guard of
+  // its own — deliberately, because a create that cannot see the top cards has lost something
+  // real — so on that path a top-cards outage turned a perfectly good owned-pool fill into the
   // generic refusal, over work whose result was going to be discarded.
   //
   // NOT ASSERTED, and for the same reason the slot clamp is not: the OUTPUT is identical
-  // either way, because the staples this skips were being filtered out by `pool: "sleeveable"`
+  // either way, because the top cards this skips were being filtered out by `pool: "sleeveable"`
   // and the ranking ordered rows the caller drops. What changes is the work done and the
   // failures that can reach the player. `getEdhrecData` above is deliberately NOT skipped —
   // its `inclusionByName` orders the owned pool, so that read earns its place on this path.
@@ -270,9 +272,9 @@ export async function buildFillPlan(
   }
 
   const ownedIds = new Set(pool.map((c) => c.oracleId));
-  const staples = dedupeSelectionFromPool(
+  const unownedTop = dedupeSelectionFromPool(
     data?.topCards && !sleeveableOnly
-      ? await unownedStaples(
+      ? await unownedTopCards(
           commanders,
           data.topCards,
           ownedIds,
@@ -290,29 +292,46 @@ export async function buildFillPlan(
       layout: c.layout, owned: true, ownedQuantity: c.ownedQuantity,
       inclusionPct: inclusionOf(c.name),
     })),
-    ...staples.map((c) => ({
+    ...unownedTop.map((c) => ({
       oracleId: c.oracleId, name: c.name, typeLine: c.typeLine,
       oracleText: c.oracleText, keywords: c.keywords, manaCost: c.manaCost,
       layout: c.layout, owned: false, ownedQuantity: 0,
       inclusionPct: inclusionOf(c.name),
     })),
   ];
-  // AFTER the pool and the staples, so it can only ever narrow. Applied before the gate, because
+  // AFTER the pool and the top cards, so it can only ever narrow. Applied before the gate, because
   // a gate built over cards this fill may not pick would answer about candidates that cannot be
   // chosen — and `loadFillGate` reads claims per candidate, which is work per card besides.
   const scoped = onlyOracleIds
     ? candidates.filter((c) => onlyOracleIds.has(c.oracleId))
     : candidates;
-  const gate = answers
-    ? await loadFillGate({
-      userId, commanderIds: commanders.map((c) => c.oracleId), answers, candidates: scoped,
-      placedIds: [...excludeOracleIds], excludeDeckId: fillOptions.excludeDeckId,
-    })
-    : undefined;
   // The identity the basics split needs. The union of both commanders, which is the same rule
   // `ownedColorLegalPool` filters the pool by — so the split cannot want a colour the pool
   // would never have offered.
   const identity = [...new Set(commanders.flatMap((c) => c.colorIdentity))];
+  // THE DECK'S STAPLES (H25): `format_staples`, universal first, then the identity condition's,
+  // under every bound the pool is under (`gatherFillStaples`). In the GATE'S candidates as well,
+  // because `loadFillGate` reads prices, claims and Game Changer facts only for the ids it is
+  // given, and a staple it was not told about would read as unpriced and refused under any budget.
+  //
+  // Degraded rather than fatal, like the skeleton and the ranking: a fill that cannot read the
+  // staples is the fill this app shipped before H25.
+  let staples: FillCandidate[] = [];
+  try {
+    staples = await gatherFillStaples({
+      identity, scoped, excludeOracleIds, onlyOracleIds, sleeveableOnly, inclusionOf,
+      commanderIds: new Set(commanders.map((c) => c.oracleId)),
+    });
+  } catch (err) {
+    console.warn("buildFillPlan: no staples — the fill runs without its staples step", err);
+  }
+  const gate = answers
+    ? await loadFillGate({
+      userId, commanderIds: commanders.map((c) => c.oracleId), answers,
+      candidates: [...scoped, ...staples.filter((c) => !scoped.includes(c))],
+      placedIds: [...excludeOracleIds], excludeDeckId: fillOptions.excludeDeckId,
+    })
+    : undefined;
   // CENSUS ONLY. The commanders are deliberately absent from `held` — role floors come from
   // support lists that never contain them — but a `{2}{R}{W}` commander is the most reliable
   // colour signal the deck has, and leaving it out of the pip census scored HD - Thorin at zero
@@ -331,6 +350,7 @@ export async function buildFillPlan(
     ?? (placedBeside > 0 ? Math.max(0, deckBodySize(hasPartner) - placedBeside) : undefined);
   return planFill(scoped, {
     hasPartner, skeleton, synergyRank, ...fillOptions, held, slots, gate, identity, commanderCosts,
+    staples,
     // Every identity colour gets a basic even with no collection row behind it (`planFill`'s
     // `basics`). Loaded here, beside the pool, so no other pass sees them.
     //
@@ -551,12 +571,12 @@ export async function createDeck(
         //   seed          the role floors and the mana base — the foundation
         //   top_off #1    the synergy residual — the suggestions
         //
-        // `FillRow.role === "other"` marks the residual, so the split needs no new
+        // `isResidual` (a role of `other` that is not a staple) marks the residual, so the split needs no new
         // persistence: the pass ledger already carries it. `Undo these 31` then means
         // "clear the suggestions, keep the foundation", through `provenance-line.tsx` and
         // `topOffCopy.ledger.undo(n)` exactly as they stand.
         const residualIds = new Set(
-          plan.rows.filter((r) => r.role === "other").map((r) => r.oracleId),
+          plan.rows.filter(isResidual).map((r) => r.oracleId),
         );
         const foundation = capped.filter((r) => !residualIds.has(r.oracleId));
         const residual = capped.filter((r) => residualIds.has(r.oracleId));
@@ -865,7 +885,7 @@ export async function fillDeck(deckId: string): Promise<void> {
       //
       // openSlots is the whole body because this path refuses a deck that already holds cards.
       const retryResidualIds = new Set(
-        plan.rows.filter((r) => r.role === "other").map((r) => r.oracleId),
+        plan.rows.filter(isResidual).map((r) => r.oracleId),
       );
       // The build-around card is foundation, as the create files a selection: the player asked
       // for it, so it is never among the suggestions a top-off undo clears.
@@ -2393,9 +2413,11 @@ async function planFromPool(
 
 /** One tick is one card, so a stacked row cannot be expressed. See the note in
  *  `chooseBulkFill` — this is that rule, shared by both callers. */
-function sleeveableIds(plan: { rows: readonly { oracleId: string; quantity: number; role: string }[] }) {
+function sleeveableIds(plan: { rows: readonly FillRow[] }) {
+  // A staple is kept whatever its role (H25): a roleless one (Swiftfoot Boots) is filed `other`
+  // and is not the residual this drops.
   return plan.rows
-    .filter((r) => r.role !== "other" && r.quantity === 1)
+    .filter((r) => !isResidual(r) && r.quantity === 1)
     .map((r) => r.oracleId);
 }
 

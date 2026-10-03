@@ -51,7 +51,18 @@ export type FillCandidate = {
   inclusionPct: number | null;
 };
 
-export type FillRow = { oracleId: string; quantity: number; role: FillRole };
+/**
+ * One placed card. `role` is the floor it was filed under; `source: "staple"` marks a card the
+ * staples step seeded (H25), whatever its role. A staple with no role (Swiftfoot Boots) is filed
+ * `other` and is NOT residual: `isResidual` is the one test for that, so a bulk tick or a create's
+ * foundation never mistakes a staple for an undoable suggestion.
+ */
+export type FillRow = { oracleId: string; quantity: number; role: FillRole; source?: "staple" };
+
+/** Whether a row is the synergy residual: the suggestions a create files as undoable. */
+export function isResidual(row: Pick<FillRow, "role" | "source">): boolean {
+  return row.role === "other" && row.source !== "staple";
+}
 
 /**
  * What the fill could not reach. A ROLE floor or a TYPE target, because the two are different
@@ -144,7 +155,44 @@ export type PlanFillArgs = {
    * Absent, every card is admitted, and every caller before Help me choose is unchanged.
    */
   gate?: FillGate;
+  /**
+   * THE DECK'S STAPLES, in the order to offer them (`loadFillStaples`: universal first, then the
+   * identity condition's). Placed BEFORE the role pass, so each one credits every role it fills
+   * (§2.5a) and no floor it closes is spent on something else first.
+   *
+   * Every rule a placed card obeys applies here too: the slot limit, `pool: "sleeveable"` (owned
+   * only), and the gate. At most `FILL_STAPLE_CAP` nonland staples are placed. A LAND staple is not
+   * placed by this step at all: it is preferred by the nonbasic land sweep, which owns the land
+   * ceiling and the nonbasic cap, and like every land there it must be owned. (An owned staple is
+   * the pool's own candidate in `buildFillPlan`, so in practice it is in the pool as well.)
+   *
+   * A staple may or may not also be a candidate; it is placed once either way. The caller has
+   * already removed what the deck holds or may not pick (`excludeOracleIds`, `onlyOracleIds`).
+   */
+  staples?: readonly FillCandidate[];
 };
+
+/** The most nonland staples one fill seeds (Hugh, 2026-10-03), so a two-color condition's ~59
+ *  rows cannot turn a fill into a staples deck. */
+export const FILL_STAPLE_CAP = 10;
+
+/**
+ * How far below the card under the cursor the tie-break may reach, in inclusion points (H25).
+ *
+ * The tie-break prefers a card closing more open floors, and with nothing to bound it that
+ * preference built decks of zero-inclusion dual-role cards: every ramp slot for Omnath, Locus of
+ * Creation went to a ramp-and-draw card EDHREC had no figure for, over a Sol Ring at 64.7%. Inside
+ * the band the gain and the type gap still decide; outside it the cursor card keeps its slot, and a
+ * card with no figure never takes the slot of one with a figure.
+ */
+export const TIE_BREAK_INCLUSION_BAND = 10;
+
+/** Whether the tie-break may hand `cursor`'s slot to `other` on inclusion grounds. */
+function withinInclusionBand(other: FillCandidate, cursor: FillCandidate): boolean {
+  if (cursor.inclusionPct == null) return true;
+  if (other.inclusionPct == null) return false;
+  return other.inclusionPct >= cursor.inclusionPct - TIE_BREAK_INCLUSION_BAND;
+}
 
 export type FillGate = {
   admits(candidate: FillCandidate): boolean;
@@ -384,7 +432,7 @@ export function capToBody<T extends { quantity: number }>(rows: readonly T[], bo
 export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillPlan {
   const {
     hasPartner, skeleton, synergyRank, slots, pool = "all", held, gate, identity, commanderCosts,
-    basics,
+    basics, staples,
   } = args;
   const admits = (c: FillCandidate) => gate?.admits(c) ?? true;
   const { floors, measured } = roleFloors(skeleton);
@@ -400,6 +448,11 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   const byOracleId = new Map<string, FillCandidate>();
   for (const candidate of ordered) {
     if (!byOracleId.has(candidate.oracleId)) byOracleId.set(candidate.oracleId, candidate);
+  }
+  // A staple the pool does not carry (an unowned catalog row) still needs its cost read for the
+  // pip census and its modal back read for the land drops, both of which go through this map.
+  for (const staple of staples ?? []) {
+    if (!byOracleId.has(staple.oracleId)) byOracleId.set(staple.oracleId, staple);
   }
   const spent = new Set<string>();
   /** CARDS, not rows — a stacked basic is nine cards in one row, and a limit counted in rows
@@ -430,6 +483,31 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   }));
   const typeTargets = skeleton?.composition?.targets ?? null;
   let scanned = TIE_BREAK_WINDOW;
+
+  // THE STAPLES STEP (H25), before any floor is weighed. Placed exactly as the role pass places a
+  // card: spent, told to the gate, credited to every role it fills, its type tallied. Its row is
+  // filed under its first role, or `other`, and carries `source: "staple"` either way.
+  const stapleLandIds = new Set<string>();
+  let staplesPlaced = 0;
+  for (const staple of staples ?? []) {
+    if (spent.has(staple.oracleId)) continue;
+    if (pool === "sleeveable" && !staple.owned) continue;
+    const roles = rolesOfCandidate(staple);
+    // A land is recorded whatever the cap and the slot count: it is only a preference for the
+    // land sweep, so a long condition list reaching the cap must not lose its lands.
+    if (roles.includes("land")) { stapleLandIds.add(staple.oracleId); continue; }
+    if (staplesPlaced >= FILL_STAPLE_CAP || filledSoFar() >= limit) continue;
+    if (!admits(staple)) continue;
+    spent.add(staple.oracleId);
+    gate?.place(staple);
+    for (const r of NON_LAND_ROLES) if (roles.includes(r)) counts[r]++;
+    placed.push({ typeLine: staple.typeLine, quantity: 1 });
+    rows.push({
+      oracleId: staple.oracleId, quantity: 1,
+      role: NON_LAND_ROLES.find((r) => roles.includes(r)) ?? "other", source: "staple",
+    });
+    staplesPlaced += 1;
+  }
 
   // AN INDEX, NOT A `for…of`, and the difference is a whole role going unfilled. The tie-break
   // can spend a DIFFERENT card than the one under the cursor, and a `for…of` then advances past
@@ -493,6 +571,10 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
         // player already has — a type gap is a reason to prefer one card to another, never a
         // reason to spend money. The owned card would have been left unused.
         if (other.owned !== candidate.owned) continue;
+        // AND WITHIN THE INCLUSION BAND, for the same reason one tier further down: closing a
+        // second floor is a reason to prefer one well-played card to another, never a reason to
+        // take a card nobody plays over one most decks do.
+        if (!withinInclusionBand(other, candidate)) continue;
         const gain = closes(other) - closes(chosen);
         if (gain < 0) { if (--scanned <= 0) break; continue; }
         if (gain > 0) { chosen = other; if (--scanned <= 0) break; continue; }
@@ -546,9 +628,11 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   // Drawn from the deduplicated index rather than from `ordered`, because
   // three sweeps read this list and a duplicated oracle id would otherwise be
   // taken once per sweep and double-counted in the per-colour capacity.
+  // A LAND STAPLE FIRST (H25), then the pool's own order. Stable, so everything else keeps the
+  // preference order it had.
   const lands = [...byOracleId.values()].filter(
     (c) => c.owned && !spent.has(c.oracleId) && rolesOfCandidate(c).includes("land"),
-  );
+  ).sort((a, b) => Number(stapleLandIds.has(b.oracleId)) - Number(stapleLandIds.has(a.oracleId)));
   /** Every basic the basics step may take: the pool's own, then each catalog basic the pool does
    *  not already hold (`basics`). Only the basics step and the reserve read this. */
   const basicSource = [
@@ -834,7 +918,9 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   }).length;
 
   const haveTypes = tallyTypes(placed);
-  const boughtIds = new Set(candidates.filter((c) => !c.owned).map((c) => c.oracleId));
+  const boughtIds = new Set(
+    [...candidates, ...(staples ?? [])].filter((c) => !c.owned).map((c) => c.oracleId),
+  );
   return {
     rows,
     filled: rows.reduce((n, r) => n + r.quantity, 0),
