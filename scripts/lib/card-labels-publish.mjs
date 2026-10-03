@@ -9,7 +9,7 @@
 // Publishing is OPT-IN (`--publish`), because a run against a scratch database or a
 // half-collected batch must not silently overwrite the evidence a merged report
 // rests on.
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname } from "node:path";
 
 import { MODELS } from "./card-labels-pricing.mjs";
@@ -23,37 +23,20 @@ export const PUBLISHED = {
 };
 
 /**
- * The vocabulary plan's re-samples (Task 5), each published beside the plan it measures under its own NUMBER,
- * so a later re-sample never overwrites an earlier one's evidence and neither touches the first sample's.
- * Sonnet alone, so their own model set. Chosen with `LABEL_PUBLISH=resample-<n>`. The per-card labels and
- * the sample's set membership are committed too: the first sample's stayed in an uncommitted `out/`, and the
- * empty-answer question could not be asked of them afterwards.
- *
- * @param {string} n The number as written, never converted, so two different numbers never share a path.
+ * The vocabulary plan's re-sample (Task 5), published beside the plan it measures and never over the first
+ * sample's evidence. Sonnet alone, so its own model set. Chosen with `LABEL_PUBLISH=resample`. The per-card
+ * labels and the sample's set membership are committed too: the first sample's stayed in an uncommitted
+ * `out/`, and the empty-answer question could not be asked of them afterwards.
  */
-export function resamplePublished(n) {
-  const at = `docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-${n}`;
-  return {
-    "out/score.json": `${at}-score.json`,
-    "out/cost.json": `${at}-cost.json`,
-    "out/gates.json": `${at}-gates.json`,
-    "out/sample.json": `${at}-sample.json`,
-    "out/labels-sonnet.json": `${at}-labels-sonnet.json`,
-  };
-}
-
-/**
- * Which run a numbered re-sample belongs to: written beside its artifacts on the first publish, and the one
- * check that keeps a reused number from replacing that run's evidence, or from leaving one number holding
- * artifacts from two runs (cost, score and gates are published by separate commands). A re-publish of the
- * SAME run, after a re-score, goes through.
- *
- * @param {string} n
- */
-export const resampleRunStamp = (n) => `docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-${n}-run.json`;
+const RESAMPLE = "docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample";
+export const RESAMPLE_PUBLISHED = {
+  "out/score.json": `${RESAMPLE}-score.json`,
+  "out/cost.json": `${RESAMPLE}-cost.json`,
+  "out/gates.json": `${RESAMPLE}-gates.json`,
+  "out/sample.json": `${RESAMPLE}-sample.json`,
+  "out/labels-sonnet.json": `${RESAMPLE}-labels-sonnet.json`,
+};
 const RESAMPLE_MODELS = ["sonnet"];
-/** The re-sample number `LABEL_PUBLISH` names, as written, or null when it names no re-sample. */
-const resampleNumber = () => /^resample-([1-9][0-9]*)$/.exec(process.env.LABEL_PUBLISH ?? "")?.[1] ?? null;
 
 /**
  * Why the labels on disk cannot be published as the submitted run's, or null when they can. The labels file
@@ -78,15 +61,14 @@ export function labelsRunMismatch(models) {
 /** The models the committed set this run publishes to describes: the scorer's publish gate requires exactly these. */
 export const publishModels = () => target().models;
 /** True when this run publishes the re-sample, whose labels must carry the submitted run's stamp. */
-export const publishingResample = () => resampleNumber() !== null;
+export const publishingResample = () => (process.env.LABEL_PUBLISH ?? "first") === "resample";
 
 /** Which committed set this run publishes to, and the models that set describes. */
 function target() {
   const name = process.env.LABEL_PUBLISH ?? "first";
   if (name === "first") return { paths: PUBLISHED, models: Object.keys(MODELS) };
-  const n = resampleNumber();
-  if (n !== null) return { paths: resamplePublished(n), models: RESAMPLE_MODELS };
-  throw new Error(`LABEL_PUBLISH must be "first" or "resample-<n>", got ${JSON.stringify(name)}`);
+  if (name === "resample") return { paths: RESAMPLE_PUBLISHED, models: RESAMPLE_MODELS };
+  throw new Error(`LABEL_PUBLISH must be "first" or "resample", got ${JSON.stringify(name)}`);
 }
 
 /**
@@ -142,24 +124,7 @@ export function publishArtifacts(sources, publish) {
     }
     return [src, dest];
   });
-  const n = resampleNumber();
-  if (n !== null) {
-    const read = (path) => { try { return JSON.parse(readFileSync(path, "utf8")).runId; } catch { return undefined; } };
-    const runId = read("out/batches.json");
-    if (!runId) throw new Error("out/batches.json names no run, so this re-sample's number cannot be bound to one");
-    const owner = read(resampleRunStamp(n));
-    if (owner !== undefined && owner !== runId) {
-      throw new Error(`resample-${n} already holds ${owner}'s evidence, and out/ is ${runId}. Refusing to publish: ` +
-        "a reused number would replace that run's files or mix two runs under one number. Use the next number.");
-    }
-    plan.push([null, resampleRunStamp(n)]);
-  }
   for (const [src, dest] of plan) {
-    if (src === null) {
-      mkdirSync(dirname(dest), { recursive: true });
-      writeFileSync(dest, JSON.stringify({ runId: JSON.parse(readFileSync("out/batches.json", "utf8")).runId }) + "\n");
-      continue;
-    }
     mkdirSync(dirname(dest), { recursive: true });
     copyFileSync(src, dest);
     console.log(`published ${src} -> ${dest}`);

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { chdir, cwd } from "node:process";
 
@@ -60,47 +60,23 @@ describe("publishing refuses an artifact that is not the default run", () => {
     expect(() => publishArtifacts(["out/agreement.json"], true)).not.toThrow();
   });
 
-  describe("a re-sample (LABEL_PUBLISH=resample-<n>)", () => {
-    beforeEach(() => {
-      process.env.LABEL_PUBLISH = "resample-2";
-      writeFileSync("out/batches.json", JSON.stringify({ runId: "run-A" }));
-    });
+  describe("the re-sample (LABEL_PUBLISH=resample)", () => {
+    beforeEach(() => { process.env.LABEL_PUBLISH = "resample"; });
     afterEach(() => { delete process.env.LABEL_PUBLISH; });
 
     it("publishes Sonnet alone to its own dated paths, never over the first sample", () => {
       write({ sonnet: {} });
       writeFileSync("out/labels-sonnet.json", JSON.stringify({ "Sol Ring": [] }));
       publishArtifacts(["out/cost.json", "out/labels-sonnet.json"], true);
-      expect(existsSync("docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-2-cost.json")).toBe(true);
-      expect(existsSync("docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-1-cost.json")).toBe(false);
+      expect(existsSync("docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-cost.json")).toBe(true);
       expect(existsSync("docs/superpowers/benchmarks/2026-09-25-card-labels-cost.json")).toBe(false);
-    });
-
-    it("binds a number to its run: the same run re-publishes, a different run refuses and copies nothing", () => {
-      write({ sonnet: {} });
-      publishArtifacts(["out/cost.json"], true);
-      const stamp = "docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-2-run.json";
-      expect(JSON.parse(readFileSync(stamp, "utf8"))).toEqual({ runId: "run-A" });
-      expect(() => publishArtifacts(["out/cost.json"], true)).not.toThrow();
-      writeFileSync("out/batches.json", JSON.stringify({ runId: "run-B" }));
-      writeFileSync("out/labels-sonnet.json", JSON.stringify({ "Sol Ring": [] }));
-      expect(() => publishArtifacts(["out/labels-sonnet.json"], true)).toThrow(/already holds run-A/);
-      expect(existsSync("docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-2-labels-sonnet.json")).toBe(false);
-    });
-
-    it("keeps two numbers past the float range apart", () => {
-      write({ sonnet: {} });
-      process.env.LABEL_PUBLISH = "resample-9007199254740993";
-      publishArtifacts(["out/cost.json"], true);
-      expect(existsSync("docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-9007199254740993-cost.json")).toBe(true);
-      expect(existsSync("docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-9007199254740992-cost.json")).toBe(false);
     });
 
     it("copies nothing when any one source would refuse", () => {
       writeFileSync("out/gates.json", "{}");
       writeFileSync("out/labels-haiku.json", "{}");
       expect(() => publishArtifacts(["out/gates.json", "out/labels-haiku.json"], true)).toThrow(/no committed path/);
-      expect(existsSync("docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-2-gates.json")).toBe(false);
+      expect(existsSync("docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-gates.json")).toBe(false);
     });
 
     it("refuses the default two-model run, which is not what the re-sample ran", () => {
@@ -112,12 +88,9 @@ describe("publishing refuses an artifact that is not the default run", () => {
   it("refuses an artifact the first sample never published, and an unknown target", () => {
     writeFileSync("out/gates.json", "{}");
     expect(() => publishArtifacts(["out/gates.json"], true)).toThrow(/no committed path is declared/);
-    try {
-      for (const bad of ["second", "resample", "resample-0", "resample-x"]) {
-        process.env.LABEL_PUBLISH = bad;
-        expect(() => publishArtifacts(["out/gates.json"], true)).toThrow(/must be "first" or "resample-<n>"/);
-      }
-    } finally { delete process.env.LABEL_PUBLISH; }
+    process.env.LABEL_PUBLISH = "second";
+    try { expect(() => publishArtifacts(["out/gates.json"], true)).toThrow(/must be "first" or "resample"/); }
+    finally { delete process.env.LABEL_PUBLISH; }
   });
 
   it("binds labels to the submitted run by the collector's stamp", () => {
