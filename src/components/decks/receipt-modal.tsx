@@ -9,7 +9,7 @@ import { cssUrl } from "../../lib/collection/browse";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import type { CardRef } from "../../lib/profile/types";
-import { CardDetailTrigger, useCardDetail, type SheetFooter } from "../cards/card-detail-provider";
+import { CardDetailTrigger, useCardDetail, type SheetFooter, type Sibling } from "../cards/card-detail-provider";
 import { CostPips } from "../ui/cost-pips";
 import { FindingMark } from "./finding-mark";
 
@@ -57,7 +57,10 @@ export function ReceiptModal({
   onClose: () => void;
 }) {
   const label = copy.findings.labels[finding.id];
-  const siblings = finding.cards.map((c) => c.oracleId);
+  const siblings = finding.cards.map((c) => {
+    const drawn = art.get(c.oracleId);
+    return { oracleId: c.oracleId, name: drawn?.name ?? c.name, imageUri: drawn?.imageUri ?? null };
+  });
   return (
     <ModalChrome
       mark={<FindingMark id={finding.id} />}
@@ -265,7 +268,7 @@ export function ReceiptTile({
 }: {
   card: CardRef;
   art: FindingArt;
-  siblings: string[];
+  siblings: readonly Sibling[];
   /** A fixed plate width, for the combo body. The grid sizes its own. */
   width?: number;
 }) {
@@ -303,8 +306,8 @@ export function ReceiptTile({
  * must already be true. Every word in the body but the labels is Spellbook's.
  */
 function ComboBody({ combo, art }: { combo: ComboModal; art: FindingArt }) {
-  const siblings = combo.cards.map((c) => c.oracleId);
   const names = combo.cards.map((c) => art.get(c.oracleId)?.name ?? c.name);
+  const siblings = combo.cards.map((c) => ({ oracleId: c.oracleId, name: art.get(c.oracleId)?.name ?? c.name, imageUri: art.get(c.oracleId)?.imageUri ?? null }));
   return (
     <section className="border-b border-[color:var(--border)] last:border-b-0" data-testid="receipt-combo">
       <div className="flex flex-col md:flex-row gap-[14px] md:gap-[16px] px-[16px] py-[14px] md:px-[18px] md:py-[16px]">

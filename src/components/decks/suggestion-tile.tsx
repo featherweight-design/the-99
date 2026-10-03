@@ -27,7 +27,7 @@ import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import type { ProvenanceForm } from "../../lib/decks/price";
 import type { Bracket } from "../../lib/bracket/types";
 import type { NoteCounts } from "../../lib/bracket/card-note";
-import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { CardDetailTrigger, type Sibling } from "../cards/card-detail-provider";
 import { comboClauseSpoken } from "../cards/combo-clause";
 import { MutationError } from "./mutation-error";
 import { useAddOptimisticCard } from "./optimistic-deck";
@@ -147,8 +147,8 @@ interface SuggestionTileProps {
    * commander, which is not a `deck_cards` row. See ConsiderPanel.
    */
   selfClaimed: boolean;
-  /** The shelf's ordered ids, so the modal's Prev/Next pages this role group. */
-  siblings: string[];
+  /** The shelf, so the modal's Prev/Next pages this role group. */
+  siblings: readonly Sibling[];
   commanderShortName: string;
   /** Only true when rendered on the synergy shelf — renders the absent-figure
       label instead of staying silent, so players know a null is no data, not

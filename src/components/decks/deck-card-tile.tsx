@@ -37,7 +37,7 @@ import { FactTooltip } from "../cards/fact-tooltip";
 import { CostPips } from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { BuyTag } from "./buy-tag";
-import { CardDetailTrigger, cardDetailCopy } from "../cards/card-detail-provider";
+import { CardDetailTrigger, cardDetailCopy, type Sibling } from "../cards/card-detail-provider";
 import { TwoFacedMark } from "../cards/two-faced-mark";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { MutationError } from "./mutation-error";
@@ -70,7 +70,7 @@ export function DeckCardTile({
   deckId: string;
   card: DeckDetailCard;
   /** The decklist in display order, so the modal's Prev/Next page through it. */
-  siblings?: string[];
+  siblings?: readonly Sibling[];
   /** See DecklistRow — the decklist owns this, not the tile. */
   spent?: boolean;
 }) {

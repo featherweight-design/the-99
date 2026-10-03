@@ -8,7 +8,7 @@ import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { cssUrl } from "../../lib/collection/browse";
 import type { CardRef } from "../../lib/profile/types";
 import { ComboGlyph } from "../cards/combo-glyph";
-import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { CardDetailTrigger, type Sibling } from "../cards/card-detail-provider";
 import { ModalChrome, type FindingArt } from "./receipt-modal";
 
 const copy = deckAnalysisCopy;
@@ -49,7 +49,7 @@ export function LeanLine({
     oneHalf: copy.lean.oneHalfParts,
     neither: copy.lean.drawOnlyParts,
   }[reading](nameOf(a), nameOf(b));
-  const siblings = receipt.combo.cards.map((c) => c.oracleId);
+  const siblings = receipt.combo.cards.map((c) => ({ oracleId: c.oracleId, name: nameOf(c), imageUri: art.get(c.oracleId)?.imageUri ?? null }));
 
   return (
     <div
@@ -174,9 +174,16 @@ function ReasoningModal({
     reading === "oneHalf" ? copy.reasoning.qualifierOneHalf(bracket)
     : reading === "neither" ? copy.reasoning.qualifierDrawOnly(bracket)
     : copy.reasoning.qualifierReachable(bracket);
-  const siblings = [
-    ...new Set(receipt.pieces.flatMap((p) => [p.piece.oracleId, ...p.tutors.map((t) => t.oracleId)])),
-  ];
+  const siblingCards = new Map<string, CardRef>();
+  for (const p of receipt.pieces) {
+    siblingCards.set(p.piece.oracleId, p.piece);
+    for (const t of p.tutors) siblingCards.set(t.oracleId, t);
+  }
+  const siblings = [...siblingCards.values()].map((c) => ({
+    oracleId: c.oracleId,
+    name: art.get(c.oracleId)?.name ?? c.name,
+    imageUri: art.get(c.oracleId)?.imageUri ?? null,
+  }));
 
   return (
     <ModalChrome

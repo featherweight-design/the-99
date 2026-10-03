@@ -423,7 +423,12 @@ describe("SetGridView — the cell is the target", () => {
     view([p("1"), p("2")], []);
     fireEvent.click(screen.getAllByRole("button", { name: /not in your collection/ })[0]);
     expect(openCard).toHaveBeenCalledWith(
-      "o-1", ["o-1", "o-2"], { setCode: "DSK", collectorNumber: "1", imageUri: null, backImageUri: null, scryfallId: "s-1" },
+      "o-1",
+      [
+        { oracleId: "o-1", name: "Card 1", imageUri: undefined, colorIdentity: ["W"] },
+        { oracleId: "o-2", name: "Card 2", imageUri: undefined, colorIdentity: ["W"] },
+      ],
+      { setCode: "DSK", collectorNumber: "1", imageUri: null, backImageUri: null, scryfallId: "s-1" },
     );
   });
 
@@ -433,7 +438,12 @@ describe("SetGridView — the cell is the target", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /not in your collection/ })[0]);
     // #2 is owned and hidden by missing-only, so it is not a sibling to page to.
     expect(openCard).toHaveBeenCalledWith(
-      "o-1", ["o-1", "o-3"], { setCode: "DSK", collectorNumber: "1", imageUri: null, backImageUri: null, scryfallId: "s-1" },
+      "o-1",
+      [
+        { oracleId: "o-1", name: "Card 1", imageUri: undefined, colorIdentity: ["W"] },
+        { oracleId: "o-3", name: "Card 3", imageUri: undefined, colorIdentity: ["W"] },
+      ],
+      { setCode: "DSK", collectorNumber: "1", imageUri: null, backImageUri: null, scryfallId: "s-1" },
     );
   });
 });
@@ -601,7 +611,10 @@ describe("SetGridView — the open modal follows the grid", () => {
     openOracleId = "o-1";
     search = "m=1";
     view([p("1"), p("2")], []);
-    expect(setSiblings).toHaveBeenCalledWith(["o-1", "o-2"]);
+    expect(setSiblings).toHaveBeenCalledWith([
+      { oracleId: "o-1", name: "Card 1", imageUri: undefined, colorIdentity: ["W"] },
+      { oracleId: "o-2", name: "Card 2", imageUri: undefined, colorIdentity: ["W"] },
+    ]);
   });
 
   it("closes a card the grid no longer draws rather than stranding it", () => {
@@ -686,7 +699,7 @@ describe("SetGridView — a cell opens its own printing", () => {
     fireEvent.click(screen.getByRole("button", { name: /not in your collection/ }));
     expect(openCard).toHaveBeenCalledWith(
       "o-239",
-      ["o-239"],
+      [{ oracleId: "o-239", name: "Card 239", imageUri: undefined, colorIdentity: ["W"] }],
       { setCode: "DSK", collectorNumber: "239", imageUri: null, backImageUri: null, scryfallId: "s-239" },
     );
   });
@@ -724,7 +737,7 @@ describe("SetGridView — the cell forwards its full-size art", () => {
     fireEvent.click(screen.getByRole("button", { name: /not in your collection/ }));
     expect(openCard).toHaveBeenCalledWith(
       "o-1",
-      ["o-1"],
+      [{ oracleId: "o-1", name: "Card 1", imageUri: "https://cards.scryfall.io/normal/dsk-1.jpg", colorIdentity: ["W"] }],
       {
         setCode: "DSK",
         collectorNumber: "1",

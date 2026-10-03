@@ -9,6 +9,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   DEFAULT_SORT_DIRECTION,
   filterCards,
+  printedNameOf,
   sortCards,
   type BrowseListCard,
   type BrowseFilters,
@@ -540,8 +541,13 @@ export function CollectionBrowser({
   const windowed = complete ? (resolvedWanted as BrowseListCard[]) : held.rows;
 
   // The ordered ids Prev/Next pages through — the sorted list, not the window,
-  // so paging runs past the 200 cards currently rendered.
-  const siblings = useMemo(() => sorted.map((c) => c.oracleId), [sorted]);
+  // so paging runs past the 200 cards currently rendered. Carries each card's own
+  // art and identity (H23 carousel PR 1b).
+  const siblings = useMemo(
+    () => sorted.map((c) => ({ oracleId: c.oracleId, name: printedNameOf(c), imageUri: c.imageUri, colorIdentity: c.colorIdentity })),
+    [sorted],
+  );
+  const siblingIds = useMemo(() => sorted.map((c) => c.oracleId), [sorted]);
 
   const onOpen = useCallback(
     (id: string) => openDetail(id, siblings),
@@ -557,8 +563,8 @@ export function CollectionBrowser({
     if (deepLinked.current) return;
     deepLinked.current = true;
     const id = search.get("card");
-    if (id && siblings.includes(id)) openDetail(id, siblings);
-  }, [search, siblings, openDetail]);
+    if (id && siblingIds.includes(id)) openDetail(id, siblings);
+  }, [search, siblingIds, siblings, openDetail]);
 
   // Push state → URL via history, not the router. `/collection` ships the whole
   // list in one payload and its page reads no searchParams, so every filter and
@@ -566,7 +572,7 @@ export function CollectionBrowser({
   // `router.replace` would fetch an RSC payload identical to the one on screen.
   // Serialize the card param only when the open card is still in the current
   // result set; avoids a stale ?card= after a filter drops it.
-  const openInList = openOracleId !== null && siblings.includes(openOracleId);
+  const openInList = openOracleId !== null && siblingIds.includes(openOracleId);
 
   // This list is a live filter of a larger one, so the order the modal pages
   // through has to move with it: re-file it on every change, and close the modal
@@ -584,7 +590,7 @@ export function CollectionBrowser({
   //
   // Compared by CONTENT, not by array: an art pick patches the list and hands back a
   // new array with the same ids, and that is not the list moving.
-  const listKey = siblings.join(",");
+  const listKey = siblingIds.join(",");
   const lastListKey = useRef(listKey);
   useEffect(() => {
     const listMoved = lastListKey.current !== listKey;

@@ -199,7 +199,8 @@ function RolePanelDesktop({
   listId: string;
 }): JSX.Element {
   const cap = COVERAGE_CAP.desktop;
-  const siblings = cards.map((c) => c.oracleId);
+  const siblingIds = cards.map((c) => c.oracleId);
+  const siblings = cards.map((c) => ({ oracleId: c.oracleId, name: c.name }));
   // The open list is a 320px scroll box, and closing it writes nothing to
   // `scrollTop` — so a role scrolled to its foot and closed reopened at its foot,
   // measured at offset 1752 either side of a close.
@@ -218,7 +219,7 @@ function RolePanelDesktop({
   // ids compare by value: same cards in the same order, same string, no reset. It
   // subsumes the sort key, which reaches this only through the order it puts the
   // ids in.
-  const listRef = useDiscardedScroll<HTMLUListElement>([expanded, siblings.join()]);
+  const listRef = useDiscardedScroll<HTMLUListElement>([expanded, siblingIds.join()]);
   const visible = expanded ? cards.slice(0, COVERAGE_EXPANDED_CAP) : cards.slice(0, cap);
   const hiddenCount = cards.length - cap; // > 0 means disclosure needed
   const beyondExpanded = cards.length > COVERAGE_EXPANDED_CAP
@@ -311,7 +312,8 @@ function RolePanelPhone({
   listId: string;
 }): JSX.Element {
   const cap = COVERAGE_CAP.phone;
-  const siblings = cards.map((c) => c.oracleId);
+  const siblingIds = cards.map((c) => c.oracleId);
+  const siblings = cards.map((c) => ({ oracleId: c.oracleId, name: c.name }));
   // The open list is a 320px scroll box, and closing it writes nothing to
   // `scrollTop` — so a role scrolled to its foot and closed reopened at its foot,
   // measured at offset 1752 either side of a close.
@@ -330,7 +332,7 @@ function RolePanelPhone({
   // ids compare by value: same cards in the same order, same string, no reset. It
   // subsumes the sort key, which reaches this only through the order it puts the
   // ids in.
-  const listRef = useDiscardedScroll<HTMLUListElement>([expanded, siblings.join()]);
+  const listRef = useDiscardedScroll<HTMLUListElement>([expanded, siblingIds.join()]);
   const visible = expanded ? cards.slice(0, COVERAGE_EXPANDED_CAP) : cards.slice(0, cap);
   const hiddenCount = cards.length - cap;
   const beyondExpanded = cards.length > COVERAGE_EXPANDED_CAP
