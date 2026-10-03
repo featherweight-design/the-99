@@ -164,6 +164,13 @@ describe("CollectionBrowser — what the server draws", () => {
     expect(out).toMatch(/<img[^>]*loading="lazy"/);
   });
 
+  // The toggle must not claim a view the split is not actually showing: on a phone this HTML's
+  // rows half is what renders, and a toggle marking grid pressed would say otherwise.
+  it("presses neither toggle segment when there is no hint", () => {
+    const out = html({ stored: null, wide: null });
+    expect(out).not.toMatch(/aria-pressed="true"/);
+  });
+
   it("draws ONE view once the client can answer the width", () => {
     // jsdom answers the width query (narrow), so a client render picks rows: the split is a
     // server-render state only, never the page a reader is left on.

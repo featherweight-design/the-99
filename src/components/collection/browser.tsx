@@ -307,12 +307,11 @@ export function CollectionBrowser({
     serverValue: viewHint.stored,
   });
   // Null only on a first visit's server render and hydration pass: no `?view=`, nothing stored
-  // and no width hint. Both views are drawn then, and the render after hydration picks one.
+  // and no width hint. Both views are drawn then, CSS splits them, and the render after
+  // hydration picks one — the toggle below shows neither segment pressed until it does, rather
+  // than claiming a view the split is not actually showing.
   const resolvedView: ViewMode | null =
     view ?? storedView ?? (isDesktop === null ? null : isDesktop ? "grid" : "rows");
-  // The toggle needs one value even while the views are split by CSS. Grid, the desktop default:
-  // it cannot be pressed before hydration, and hydration settles it within one render.
-  const effectiveView: ViewMode = resolvedView ?? "grid";
   const chooseAndKeepView = useCallback(
     (next: ViewMode) => {
       setView(next);
@@ -632,7 +631,7 @@ export function CollectionBrowser({
         }
         filters={filters}
         sort={sort}
-        view={effectiveView}
+        view={resolvedView}
         setOptions={setOptions}
         hasCollection={hasCollection}
         typeOptions={typeOptions}
