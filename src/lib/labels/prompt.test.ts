@@ -25,11 +25,12 @@ describe("the request asks for no prompt caching", () => {
   // "b-0", where `acceptsTemperature` and `needsThinkingDisabled` both take their default
   // branch. It asserted caching on a model that does not exist.
   for (const model of ["claude-sonnet-4-5", "claude-haiku-4-5-20251001", "claude-sonnet-5"]) {
-    it(`sends no cache_control on the system block for ${model}`, () => {
+    it(`sends one cache_control breakpoint, on the system block, for ${model}`, () => {
       const req = buildRequest("b-0", model, [card]);
       expect(req.params.model).toBe(model);
       expect(req.params.system).toHaveLength(1);
-      expect(req.params.system[0]).not.toHaveProperty("cache_control");
+      expect(req.params.system[0]).toMatchObject({ text: SYSTEM, cache_control: { type: "ephemeral" } });
+      expect(typeof req.params.messages[0].content).toBe("string");
     });
   }
 
@@ -49,7 +50,7 @@ describe("the request asks for no prompt caching", () => {
   // The estimator multiplies by this rather than by a model's capability, so it has to
   // agree with what the request actually sends. Two places, one fact.
   it("advertises that through SENDS_CACHE_BREAKPOINT", () => {
-    expect(SENDS_CACHE_BREAKPOINT).toBe(false);
+    expect(SENDS_CACHE_BREAKPOINT).toBe(true);
     const req = buildRequest("b-0", "claude-sonnet-4-5", [card]);
     const sends = req.params.system.some((b) => "cache_control" in b);
     expect(sends).toBe(SENDS_CACHE_BREAKPOINT);
@@ -123,17 +124,17 @@ describe("labelInputHash", () => {
     expect(labelInputHash(a, "m")).not.toBe(labelInputHash(b, "m"));
   });
 
-  // Version "5" is the re-sample's prompt fixes. Recomputing the payload with the constant
-  // itself cannot see a revert, so the literal is pinned and a row hashed under "4" with this SYSTEM is shown
+  // Version "6" is re-sample 2's prompt fixes. Recomputing the payload with the constant
+  // itself cannot see a revert, so the literal is pinned and a row hashed under "5" with this SYSTEM is shown
   // not to match.
-  it("is version 5, so a row hashed under version 4 reads stale", () => {
-    expect(LABEL_PROMPT_VERSION).toBe("5");
-    const underV4 = createHash("sha256")
+  it("is version 6, so a row hashed under version 5 reads stale", () => {
+    expect(LABEL_PROMPT_VERSION).toBe("6");
+    const underV5 = createHash("sha256")
       .update(JSON.stringify([
-        card.oracleId, renderCard(card), "4", "m", createHash("sha256").update(SYSTEM).digest("hex"),
+        card.oracleId, renderCard(card), "5", "m", createHash("sha256").update(SYSTEM).digest("hex"),
       ]))
       .digest("hex");
-    expect(labelInputHash(card, "m")).not.toBe(underV4);
+    expect(labelInputHash(card, "m")).not.toBe(underV5);
   });
 
   // A SYSTEM edit must move the version with it. `copy-card-labels.ts` tells a prompt change from a
@@ -141,7 +142,7 @@ describe("labelInputHash", () => {
   // install nothing and report every label as a catalog difference. When this fails: bump
   // LABEL_PROMPT_VERSION, then re-pin both literals here together.
   it("pins SYSTEM to the version it was written under", () => {
-    const pinned = { version: "5", system: "6f11d89c47743eb1d08e35e06b68516a9ddfc8d0e2bcc12ee93ad2460b250d9b" };
+    const pinned = { version: "6", system: "90fb5b7447ea67c91913635524c6ce23f4483d3c0fb463563df81bb26c270019" };
     expect({ version: LABEL_PROMPT_VERSION, system: createHash("sha256").update(SYSTEM).digest("hex") })
       .toEqual(pinned);
   });

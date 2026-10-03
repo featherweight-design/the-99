@@ -3,9 +3,13 @@
 // IDENTICAL for Haiku and Sonnet, deliberately: the comparison is between models,
 // so any prompt difference would confound it.
 //
-// NO `cache_control`, and that is a MEASUREMENT rather than an omission (Task 3).
+// A `cache_control` breakpoint on the instruction block, SENT since re-sample 3 (d9, 2026-10-02), so the
+// batch's real cache hit rate is MEASURED rather than assumed: the collector reports read and write tokens
+// per request and pooled. It is transport, not prompt: the model sees the same text, so neither the label
+// hash nor LABEL_PROMPT_VERSION moves. Every cap still books the worst case, every request a cache WRITE
+// at the write rate. What was measured before, when the block was a third of its size:
 //
-// Caching here loses money for both models, for two different reasons:
+// Caching lost money for both models, for two different reasons:
 //
 //   Haiku    the breakpoint is INERT. The block is ~1,285 tokens by this repo's
 //            estimate and 1,215 as BILLED (two different quantities, so both are
@@ -56,11 +60,17 @@ ROLES (space "role"): ${ROLES.join(", ")}
   ramp         — accelerates mana. NEVER label a land with ramp; a land's role
                  is "land", even a land that sacrifices itself to search for
                  another. A ritual (one-time mana from a spell) is ramp,
-                 rampKind burstMana. Tokens that make mana are ramp. NOT ramp:
-                 mana that lasts only until end of combat, untapping your
-                 lands, and playing lands from the top of your library.
+                 rampKind burstMana. Tokens that make mana are ramp. An untap
+                 of your lands you can spend AT ONCE, on your own turn (a
+                 creature that untaps up to five lands when it enters), is
+                 ramp burstMana with that trigger. NOT ramp: mana that lasts
+                 only until end of combat, an untap in the end step or on an
+                 opponent's turn (it pays for nothing you cast this turn),
+                 and playing lands from the top of your library.
   draw         — puts cards into your hand from your library. Becoming the
-                 monarch is repeatable draw. A tutor is NOT draw.
+                 monarch is repeatable draw. A tutor is NOT draw. Cycling is
+                 NOT draw: the card replaces itself, so it gains no cards;
+                 label nothing for cycling.
   removal      — takes an opponent's permanent away from them: destroys,
                  exiles, bounces or shrinks it, or gains control of it.
                  A counterspell, a tapper and hand attack are NOT removal.
@@ -71,7 +81,10 @@ ROLES (space "role"): ${ROLES.join(", ")}
                  nonland permanent that adds mana is ramp. Affects self.
   tutor        — searches your library for a card that is NOT a land. A search
                  for a land is ramp (fetchesLand), never tutor.
-  counterspell — counters a spell or ability. Its affects is opponents.
+  counterspell — counters a spell or ability. Its affects is opponents. NOT
+                 counterspell: changing a spell's target, making spells
+                 uncounterable, or a tax only on spells that target this
+                 card ("counter it unless that player pays").
 
 THEMES (space "theme"): ${THEMES.join(", ")}
   counters      — +1/+1 counters ONLY. A lore counter, a charge counter, a -1/-1
@@ -83,7 +96,9 @@ THEMES (space "theme"): ${THEMES.join(", ")}
                   creature growing only itself from a count. -X/-X on an
                   opponent's creature is removal, method shrink.
   haste         — gives haste.
-  evasion       — flying, trample, menace, or can't be blocked.
+  evasion       — flying, trample, menace, or can't be blocked. A creature's
+                  OWN flying, trample or menace is an evasion job on itself:
+                  restrictedTo "creature", affects self.
   etbDraw       — draws a card when a creature enters, its OWN entry included.
                   Label it IN ADDITION to role draw. Drawing when a creature
                   spell is CAST is not etbDraw.
@@ -116,7 +131,8 @@ THEMES (space "theme"): ${THEMES.join(", ")}
                   trigger "dies".
   lifegain      — gains you life.
   drain         — damage or life loss aimed ONLY at opponents. A burn spell that
-                  can hit any target is not drain.
+                  can hit any target is not drain, and neither is life loss
+                  for EVERY player, you included.
   spellslinger  — rewards casting instants and sorceries, or noncreature
                   spells. "Whenever you cast a spell" alone is not spellslinger.
   landfall      — does something when a land enters under your control. Label
@@ -147,7 +163,9 @@ THEMES (space "theme"): ${THEMES.join(", ")}
 Use ONLY these names. Do not invent a job. If a card does something with no job
 in this list, say nothing about it. Scry and surveil are NOT jobs. Each separate
 ability is its own job, even when two abilities do the same kind; merge only the
-clauses of ONE ability.
+clauses of ONE ability. Never write the same job twice: when two abilities
+earn one job with the same limits (two clauses that each give tribal Elf),
+write it once.
 
 EVERY JOB CARRIES:
   space        "role" or "theme"
@@ -166,9 +184,11 @@ EVERY JOB CARRIES:
                  burstMana    — one-time mana from a source the cost consumes
                                 (sacrifice this creature/token/land for mana, a
                                 Spawn, Scion or Gold token), or a ritual spell.
-                                A trigger that creates a Spawn or Scion is
-                                burstMana with that trigger; a trigger that
-                                adds mana directly is not
+                                A trigger that creates a Spawn or Scion, or
+                                untaps your lands for mana you spend at once
+                                (on entry, on your turn), is burstMana with
+                                that trigger; a trigger that adds mana
+                                directly is not
                  costReduction— makes OTHER spells you cast cost less. A card
                                 that reduces only ITS OWN cost (affinity,
                                 improvise, convoke) is not ramp; casting a
@@ -219,7 +239,8 @@ EVERY JOB CARRIES:
   to           ONLY on a tutor or recursion job, where the card goes: one of
                ${DESTINATIONS.join(", ")}. Returning a creature to the
                battlefield is battlefield; to your hand is hand. A card CAST
-               from a graveyard moves to no zone: null. Otherwise null.
+               from a graveyard moves to no zone: null, even when the card
+               cast is a permanent that then enters. Otherwise null.
   method       ONLY on a removal or wipes job, how it removes: one of
                ${METHODS.join(", ")} ("shrink" = -X/-X or damage). Returning a
                permanent to its owner's HAND is bounce; making a player
@@ -301,7 +322,7 @@ export const renderCard = (c: CardForPrompt) =>
   `${c.name}\n${c.mana_cost || "(no cost)"} | ${c.type_line}\n${castFaceText(c.oracle_text ?? null, c.layout ?? "normal") ?? "(no text)"}`;
 
 /**
- * Whether a request asks for prompt caching. FALSE, for the reason at the top of this file.
+ * Whether a request asks for prompt caching. TRUE since re-sample 3, for the reason at the top of this file.
  *
  * Exported so the spend estimate reads it from the module that DECIDES it, rather than
  * inferring caching from a model's capability. `PRICING[m].caches` says the model could
@@ -310,7 +331,7 @@ export const renderCard = (c: CardForPrompt) =>
  * figure computed from something nothing holds is exactly the class of bug this run has
  * been finding all day.
  */
-export const SENDS_CACHE_BREAKPOINT = false;
+export const SENDS_CACHE_BREAKPOINT = true;
 
 /** The user turn exactly as sent, so the estimate can measure the real thing. */
 export const renderBody = (cards: CardForPrompt[]) =>
@@ -318,8 +339,8 @@ export const renderBody = (cards: CardForPrompt[]) =>
 
 /**
  * One batch request. The instruction block is the system turn and the per-batch card
- * list is the user turn — no cache breakpoint on either, for the reason at the top of
- * this file.
+ * list is the user turn. The breakpoint, when sent, is on the system turn alone: the card list
+ * differs in every request, so there is nothing after it to reuse.
  */
 /**
  * The output ceiling for one batch. EXPORTED because the spend estimate has to bind
@@ -389,7 +410,10 @@ export const buildRequest = (customId: string, model: string, cards: CardForProm
     // temperature, which is a real caveat rather than a formality.
     ...(acceptsTemperature(model) ? { temperature: 0 } : {}),
     ...(needsThinkingDisabled(model) ? { thinking: { type: "disabled" as const } } : {}),
-    system: [{ type: "text" as const, text: SYSTEM }],
+    system: [{
+      type: "text" as const, text: SYSTEM,
+      ...(SENDS_CACHE_BREAKPOINT ? { cache_control: { type: "ephemeral" as const } } : {}),
+    }],
     messages: [{ role: "user" as const, content: renderBody(cards) }],
   },
 });
@@ -410,6 +434,8 @@ export const buildRequest = (customId: string, model: string, cards: CardForProm
  * version still moves with every SYSTEM edit (pinned in `prompt.test.ts`): it is the human-readable
  * reason a run was owed, and what the label copy reads to tell a prompt change from a catalog one.
  */
+// "6": re-sample 2's fixes (2026-10-02): a creature's own evasion, cycling is not draw, an untap you can spend
+// at once is burstMana and one in the end step is not ramp, not counterspell or drain by name, no repeated job.
 // "5": the re-sample's prompt fixes (2026-10-02): triggers defined, deathTrigger and tribal labelled beside
 // the job they come with, symmetric effects are each.
 // "4": deathTrigger is another creature dying; a card's own death is the job's `dies` trigger (Task 4 review).
@@ -419,7 +445,7 @@ export const buildRequest = (customId: string, model: string, cards: CardForProm
 // with no bump would be misreported as the latter, so `prompt.test.ts` pins SYSTEM's hash to this version.
 // "2": every job now carries `affects`, `to` and `method` (the vocabulary plan's Task 2), so a row
 // labelled under "1" has none of them and must read stale rather than current.
-export const LABEL_PROMPT_VERSION = "5";
+export const LABEL_PROMPT_VERSION = "6";
 
 /**
  * Whether a stored label still describes its card, mirroring `proseInputHash`.

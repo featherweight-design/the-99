@@ -30,14 +30,14 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "../src/db";
 import { cardLabelBatches, cardLabels, cardLabelsStaging } from "../src/db/schema";
-import { faceResolver } from "../src/lib/labels/parse";
+import { faceResolver, withoutRepeats } from "../src/lib/labels/parse";
 import {
   boundedNumber, CARDS_PER_REQUEST, meetsFloor, pauseRemediation, planChunks, waveSize,
   withinCap, worstCaseUsd,
   type Chunk,
 } from "../src/lib/labels/plan";
 import {
-  buildRequest, labelInputHash, LABEL_PROMPT_VERSION, MAX_TOKENS_PER_BATCH, renderBody, SYSTEM_TOKENS_BOUND,
+  buildRequest, labelInputHash, LABEL_PROMPT_VERSION, MAX_TOKENS_PER_BATCH, renderBody, SENDS_CACHE_BREAKPOINT, SYSTEM_TOKENS_BOUND,
 } from "../src/lib/labels/prompt";
 // `CardRow` comes from the same module as the read that returns it — two structurally identical
 // row types drift, and the day one gains a field the other lacks the shared helper silently stops
@@ -92,7 +92,13 @@ if (MODEL_KEY === undefined) {
     + `the $${CAP_USD} cap meaningless.`,
   );
 }
-const RATES = { in: PRICING[MODEL_KEY].in, out: PRICING[MODEL_KEY].out };
+// The instruction block is booked at the cache WRITE rate whenever a breakpoint is sent, because no
+// request is guaranteed a warm cache (`SENDS_CACHE_BREAKPOINT`). Whatever `caches` recorded for an older,
+// shorter block: a bound must not rest on a measurement of a different prompt.
+const RATES = {
+  in: PRICING[MODEL_KEY].in, out: PRICING[MODEL_KEY].out,
+  ...(SENDS_CACHE_BREAKPOINT ? { system: PRICING[MODEL_KEY].cacheWrite } : {}),
+};
 
 /**
  * The sample's measured cost per card, used ONLY to project before this run has measured
@@ -232,7 +238,7 @@ async function collectBatch(
           if (bad.length) rejected.push(`${name}: ${bad.join(", ")}`);
           return bad.length === 0;
         }) as Job[];
-        here.byName.set(name, [...(here.byName.get(name) ?? []), ...kept]);
+        here.byName.set(name, withoutRepeats([...(here.byName.get(name) ?? []), ...kept]));
       }
     }
   } catch (err) {

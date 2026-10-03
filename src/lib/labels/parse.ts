@@ -18,6 +18,30 @@
  */
 
 /**
+ * A card's jobs with exact repeats dropped. Two abilities can earn one job with the same limits (two
+ * clauses each giving tribal Elf), and two faces of one card are merged into one list; either way the
+ * second copy says nothing the first did not, and a scorer would count it as a false positive. Jobs that
+ * differ in ANY field are kept, so two abilities of one kind stay two jobs.
+ */
+export function withoutRepeats<T>(jobs: readonly T[]): T[] {
+  const seen = new Set<string>();
+  // A field written null and one left out say the same thing (`validateJob` accepts both for an optional
+  // field such as `rampKind`), so neither enters the key; every other difference does.
+  const sorted = (v: unknown): unknown =>
+    v && typeof v === "object" && !Array.isArray(v)
+      ? Object.fromEntries(Object.keys(v).sort()
+        .filter((k) => (v as Record<string, unknown>)[k] != null)
+        .map((k) => [k, sorted((v as Record<string, unknown>)[k])]))
+      : v;
+  return jobs.filter((j) => {
+    const key = JSON.stringify(sorted(j));
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/**
  * Resolves returned names to the catalog names a batch asked for.
  *
  * Returns `null` for a name the batch does not cover, which the caller records as

@@ -90,6 +90,11 @@ describe("worstCaseUsd", () => {
     expect(usd).toBeCloseTo((10 * 4000 * 7.5) / 1e6, 10);
   });
 
+  it("books the instruction block at the write rate when caching makes it one", () => {
+    const usd = worstCaseUsd(2, 1000, 0, 0, { ...rates, system: 1.875 });
+    expect(usd).toBeCloseTo((2 * 1000 * 1.875) / 1e6, 10);
+  });
+
   it("scales with the cards in a request", () => {
     expect(worstCaseUsd(1, 0, 10, 0, rates))
       .toBeCloseTo((CARDS_PER_REQUEST * 10 * 1.5) / 1e6, 10);
