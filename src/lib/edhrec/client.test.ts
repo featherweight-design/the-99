@@ -120,6 +120,38 @@ describe("the index retires a cached page it has replaced", () => {
     expect(result.data).not.toBeNull();
   });
 
+  // A 4xx with no body: the page probe (a HEAD) answers its own status.
+  const answerStatus = (status: number, htmlStatus = 200) => {
+    const fn = vi.fn((_url: string, init?: RequestInit) => {
+      const s = init?.method === "HEAD" ? htmlStatus : status;
+      return Promise.resolve({ status: s, ok: s >= 200 && s < 300 });
+    });
+    vi.stubGlobal("fetch", fn);
+    return fn;
+  };
+  const retired = () => row(ago(3 * day), ago(1 * day));
+  const expired = () => row(ago(31 * day), ago(40 * day));
+  const id = "00000000-0000-0000-0000-000000000001";
+
+  it("answers absent for a retired page EDHREC confirms is gone, rather than the older snapshot", async () => {
+    answerStatus(404);
+    expect((await resolveEdhrecData(id, "Atraxa, Praetors' Voice", retired())).data).toBeNull();
+    answerStatus(403, 404);
+    expect((await resolveEdhrecData(id, "Atraxa, Praetors' Voice", retired())).data).toBeNull();
+  });
+
+  it("keeps a retired page through a throttle, which confirms nothing", async () => {
+    answerStatus(429);
+    expect((await resolveEdhrecData(id, "Atraxa, Praetors' Voice", retired())).data).not.toBeNull();
+    answerStatus(403, 200);
+    expect((await resolveEdhrecData(id, "Atraxa, Praetors' Voice", retired())).data).not.toBeNull();
+  });
+
+  it("leaves a page that is only past its TTL as it was: a 404 still serves it", async () => {
+    answerStatus(404);
+    expect((await resolveEdhrecData(id, "Atraxa, Praetors' Voice", expired())).data).not.toBeNull();
+  });
+
   it("still serves a retired page when EDHREC cannot be reached, rather than nothing", async () => {
     const fetch = answer(false);
     const result = await resolveEdhrecData("00000000-0000-0000-0000-000000000001", "Atraxa, Praetors' Voice", row(ago(3 * day), ago(1 * day)));

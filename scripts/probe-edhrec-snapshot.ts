@@ -15,6 +15,7 @@
 //   c  a commander the index holds no row for keeps the TTL rule, both ways
 //   d  a retired page is still served when EDHREC cannot be reached
 //   e  a copy landing: the index stamp moves past a page that was current, and the page retires
+//   f  a retired page EDHREC confirms is gone answers absent, not the older snapshot; a throttle keeps it
 //
 // It WRITES `edhrec_cache` rows and `commander_support.computed_at` on two real commanders, and one
 // cache row for a card the index does not hold. All are captured first and put back in a `finally`.
@@ -34,13 +35,21 @@ const check = (label: string, ok: boolean, detail = "") => {
   console.log(`${ok ? "ok  " : "FAIL"}  ${label}${detail ? ` — ${detail}` : ""}`);
 };
 
+/** A cleanup step that failed left the branch changed, which is never a passing run. */
+const cleanupFailed = (what: string, err: unknown) => {
+  failures += 1;
+  console.error(`FAIL  cleanup: ${what}:`, err);
+};
+
 const PAGE = { container: { json_dict: { cardlists: [] } } };
 let calls = 0;
 let reachable = true;
+/** Set to a 4xx to have EDHREC answer it, for the JSON page and the HTML page alike. */
+let status = 200;
 globalThis.fetch = (async () => {
   calls += 1;
   if (!reachable) throw new Error("unreachable");
-  return { status: 200, ok: true, json: async () => PAGE } as unknown as Response;
+  return { status, ok: status >= 200 && status < 300, json: async () => PAGE } as unknown as Response;
 }) as typeof fetch;
 
 const HOUR = 60 * 60 * 1000;
@@ -143,17 +152,29 @@ async function main() {
     await setIndex(A.id, ago(1 * HOUR)); // what db:copy:index writes: the build's own, later stamp
     const e = await liveRead(A.id, A.name);
     check("after it, the next read retires the page and refetches", e.fetches === 1, `${e.fetches} fetches`);
+
+    // ---- f · a retired page EDHREC confirms is gone ------------------------------------------
+    await setIndex(B.id, ago(1 * DAY));
+    await setPage(B.id, ago(3 * DAY));
+    status = 404;
+    const f1 = await liveRead(B.id, B.name);
+    status = 429;
+    const f2 = await liveRead(B.id, B.name);
+    status = 200;
+    check("a retired page EDHREC confirms is gone answers absent, not the older snapshot",
+      f1.result.data === null && f1.result.unreachable === false);
+    check("and a throttle, which confirms nothing, still serves it", f2.result.data !== null);
   } finally {
     // Every step on its own, so one failing cannot strand the rest. The stamps go back as the
     // exact text they were read as, never through a `Date`, which would shift them by the zone.
     for (const r of pair) {
       await db.execute(sql`update edhrec_cache set payload = ${JSON.stringify(r.payload)}::jsonb, fetched_at = ${String(r.fetched_at)}::timestamp
-        where commander_oracle_id = ${r.id}`).catch((err) => console.error(`restore cache ${r.id}:`, err));
+        where commander_oracle_id = ${r.id}`).catch((err) => cleanupFailed(`restore cache ${r.id}`, err));
       await db.execute(sql`update commander_support set computed_at = ${String(r.computed_at)}::timestamp where commander_oracle_id = ${r.id}`)
-        .catch((err) => console.error(`restore index ${r.id}:`, err));
+        .catch((err) => cleanupFailed(`restore index ${r.id}`, err));
     }
     await db.execute(sql`delete from edhrec_cache where commander_oracle_id = ${C.id}`)
-      .catch((err) => console.error(`remove ${C.id}:`, err));
+      .catch((err) => cleanupFailed(`remove ${C.id}`, err));
   }
 }
 

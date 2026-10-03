@@ -107,7 +107,12 @@ export async function resolveEdhrecData(
     // do not flip degraded. Prefer stale cache when available so a transient
     // 4xx on a previously-cached commander doesn't drop otherwise-good data.
     if (res.status >= 400 && res.status < 500) {
-      if (cached) return { data: parseEdhrecPayload(cached.payload), unreachable: false };
+      // Except a RETIRED row EDHREC confirms has no page: the index has since read the commander
+      // anew, and serving the older page would put the two snapshots side by side again (§5.2).
+      // A throttle or an ambiguous 403 confirms nothing, so it keeps the stale page as before.
+      if (cached && !(cacheRowRetired(cached) && (await pageConfirmedMissing(res.status, commanderName)))) {
+        return { data: parseEdhrecPayload(cached.payload), unreachable: false };
+      }
       return { data: null, unreachable: false };
     }
     if (!res.ok) throw new Error(`edhrec ${res.status}`);
@@ -127,6 +132,17 @@ export async function resolveEdhrecData(
     if (cached) return { data: parseEdhrecPayload(cached.payload), unreachable: false };
     return { data: null, unreachable: true };
   }
+}
+
+/**
+ * Whether a 4xx says the commander has no EDHREC page at all, rather than that EDHREC is
+ * throttling: a 404 does, a 403 only when the HTML page is missing too (#712), anything else not.
+ * The index's own fetch draws the same line, so the two halves agree on what "absent" means.
+ */
+async function pageConfirmedMissing(status: number, commanderName: string): Promise<boolean> {
+  if (status === 404) return true;
+  if (status === 403) return edhrecPageMissing(commanderSlug(commanderName));
+  return false;
 }
 
 export async function getEdhrecData(

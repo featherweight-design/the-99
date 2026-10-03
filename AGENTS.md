@@ -2226,10 +2226,12 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   It calls the real `readEdhrecCache` and `resolveEdhrecData` with `fetch` stubbed (a counter that
   serves a fixture page, or fails), over two real indexed commanders and one card the index does
   not hold: a current page served from the cache, a retired one refetched and stored past the
-  stamp, the TTL alone for an unindexed commander, a retired page served when EDHREC is down, and a
-  copy landing (the stamp moved past a current page). Four mutations fail it: the cutoff dropped,
+  stamp, the TTL alone for an unindexed commander, a retired page served when EDHREC is down, a
+  copy landing (the stamp moved past a current page), and a retired page EDHREC confirms is gone,
+  which answers absent rather than the older snapshot while a throttle still serves it. A cleanup
+  step that fails counts as a failure, so a run that left the branch changed never passes. Five mutations fail it: the cutoff dropped,
   an unindexed commander treated as indexed just now, a retired row treated as gone, and the stamp read off the wrong
-  table. It writes those rows' timestamps and puts back the exact text it read, in a `finally`;
+  table, and the confirmed-missing branch removed. It writes those rows' timestamps and puts back the exact text it read, in a `finally`;
   through a `Date` they would come back shifted by this machine's zone, because both columns are
   `timestamp` without one and Drizzle stores UTC. **Scratch branches only**: the database must
   report `PROBE_SNAPSHOT_BRANCH`, and staging, production and local-dev are refused by id.
