@@ -305,6 +305,8 @@ describe("the card-labels spend bounds", () => {
     // enough margin. And never at :00, where every scheduled job on the platform lands at once.
     expect(Number(hour)).toBeGreaterThanOrEqual(18);
     expect(Number(minute)).not.toBe(0);
+    // And the exact cadence Hugh ruled, so a different day or time is a deliberate edit here too.
+    expect(cron).toBe("17 21 * * 2");
   });
 
   it("agrees with the script about the highest report line a dispatch may ask for", () => {
