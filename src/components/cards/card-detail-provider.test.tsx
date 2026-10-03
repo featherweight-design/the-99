@@ -1541,6 +1541,45 @@ describe("CardDetailProvider pages the desktop carousel (H23 PR 2)", () => {
     await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Card B"));
   });
 
+  // Pre-open review (H23 PR 2): a page's `load` and a second, unrelated `load` landing on the
+  // very card the page was headed to used to leave the first call's paging intent standing,
+  // since only the paging handlers ever touched `enterFrom`/`enterTargetId`. A combo-partner
+  // click reaching the same card mid-page is the real-world shape; a second, plain
+  // `CardDetailTrigger` stands in for it here, since both reach `load` with no `page` argument.
+  it("a non-paging read that lands on the card a page was headed to is never announced as one", async () => {
+    stubMinWidth(true);
+    let resolvePaged!: (c: BrowseCard) => void;
+    let resolvePlain!: (c: BrowseCard) => void;
+    let calls = 0;
+    const fetchCard = vi.fn((id: string) => {
+      if (id !== "o-b") return Promise.resolve(byId[id] ?? null);
+      calls += 1;
+      return new Promise<BrowseCard>((r) => { if (calls === 1) resolvePaged = r; else resolvePlain = r; });
+    });
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <CardDetailTrigger oracleId="o-a" name="Card A" siblings={siblings}>open</CardDetailTrigger>
+        <CardDetailTrigger oracleId="o-b" name="Card B">open plain</CardDetailTrigger>
+      </CardDetailProvider>,
+    );
+    await act(async () => { fireEvent.click(screen.getByText("open")); });
+    await screen.findByRole("dialog");
+    // Pages toward B; its read is left pending.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: cardCarouselCopy.nextAria }));
+    });
+    // An unrelated, non-paging read for the SAME card starts and wins the race.
+    await act(async () => {
+      fireEvent.click(screen.getByText("open plain"));
+      resolvePlain(B);
+    });
+    await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Card B"));
+    expect(allLive()).not.toContain(" of ");
+    // The superseded paging read finally resolves too; it must not resurrect the announcement.
+    await act(async () => { resolvePaged(B); });
+    expect(allLive()).not.toContain(" of ");
+  });
+
   // The exclusion zones themselves (printing search, printing radiogroup, zoom region) are
   // proved against a real overflowing printing list in card-modal.test.tsx, which can build
   // that fixture directly; this provider-level suite only proves arrow keys page at all.

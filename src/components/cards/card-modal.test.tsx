@@ -1375,4 +1375,27 @@ describe("CardModal carousel arrow keys stop at interactive zones (H23 PR 2)", (
     expect(onNext).toHaveBeenCalledTimes(1);
     expect(onPrev).toHaveBeenCalledTimes(1);
   });
+
+  // The zoom layer (pre-open review, H23 PR 2): opened via the art, it has no input or
+  // radiogroup of its own, so the one real focusable descendant it can carry is the
+  // two-faced turn control. A card with a back — `layout: "transform"` plus its own
+  // `backImageUri` — is what gets one.
+  it("does not page on an arrow key focused inside the zoom layer", () => {
+    const onPrev = vi.fn();
+    const onNext = vi.fn();
+    const twoFaced = { ...card, layout: "transform", backImageUri: "https://cards.scryfall.io/normal/back.jpg" };
+    render(
+      <CardModal card={twoFaced} position={2} total={3} onClose={() => {}} onPrev={onPrev} onNext={onNext} />,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: /^Look at /i })[0]);
+    // Scoped to the zoom layer: a non-zoomed two-faced card draws its OWN flip control too,
+    // and an unscoped query can match that one instead, which is outside `#card-zoom` and
+    // would pass this test on a build that never excluded the zoom at all.
+    const zoom = screen.getByTestId("card-zoom");
+    within(zoom).getAllByRole("button", { name: /^Turn over to/ })[0].focus();
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowRight" });
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowLeft" });
+    expect(onNext).not.toHaveBeenCalled();
+    expect(onPrev).not.toHaveBeenCalled();
+  });
 });

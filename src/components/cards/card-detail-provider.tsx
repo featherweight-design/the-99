@@ -481,10 +481,16 @@ export function CardDetailProvider({
   // handoff README decisions 2/7/8). Null on a fresh open, which is also how `initialFocusRef`
   // tells a page from an open: the carousel never announces or slides on the first card.
   const [enterFrom, setEnterFrom] = useState<"prev" | "next" | "prevPeek" | "nextPeek" | null>(null);
-  // The oracle id a page was asked for, set in the same tick as `enterFrom`. `load` resolves
-  // asynchronously, so the render that first carries the new `enterFrom` usually still shows
-  // the OLD card — without this check the arrival effect below fires on that stale render and
-  // announces the card being left, then never fires again once the real arrival lands.
+  // The oracle id the IN-FLIGHT paging read is for, set and cleared by `load` itself (its
+  // `page` argument) rather than by the handler that calls it. Two reasons it lives there and
+  // not beside `setEnterFrom` in the handler: `load` resolves asynchronously, so the render
+  // that first carries a fresh `enterFrom` usually still shows the OLD card — without a target
+  // to compare against, the arrival effect below would fire on that stale render and announce
+  // the card being left. And a second, unrelated read landing on the very id a page was headed
+  // to (a combo partner adjacent in the decklist, say) must not inherit that page's intent:
+  // since every `load` call declares its own `page` (or none), the LATEST call standing is
+  // always the one this value reflects, never a stale one left behind by an earlier call that
+  // lost the race.
   const enterTargetId = useRef<string | null>(null);
   // The carousel's own live-region text — distinct from the loading/unavailable region above,
   // which is the modal's. Cleared back to "" is unnecessary: an unchanged value is silent to a
@@ -600,8 +606,20 @@ export function CardDetailProvider({
       // the combo block and never draws the Shopping door, while paging keeps it. Applied when the
       // card ARRIVES, so a read that fails leaves the card on screen, door and all, as it was.
       arrival?: { door: boolean },
+      // Which carousel control asked for this read (H23 PR 2), or undefined for every other way a
+      // card is reached — a combo partner, a re-open, a plain open. Set HERE, inside the one place
+      // every read funnels through, rather than by the caller setting `enterFrom` and then calling
+      // `load` as two separate steps: a caller that does both can be outraced by a SECOND, unrelated
+      // read landing on the very id the first one was paging to (a combo partner adjacent in the
+      // decklist, say) — that second read's arrival would otherwise still carry the first read's
+      // stale paging intent, since nothing had cleared it. Every call to `load` now declares its own
+      // intent (or declares none), so the latest call standing is always the one the arrival effect
+      // believes.
+      page?: "prev" | "next" | "prevPeek" | "nextPeek",
     ) => {
       const request = ++latest.current;
+      enterTargetId.current = page ? oracleId : null;
+      setEnterFrom(page ?? null);
       // EVERY read decides the pending printing, including the reads that have none: paging,
       // a re-read and an owed re-read all pass nothing, which clears whatever an earlier
       // open left behind. That is what binds the value to a read rather than to an oracle
@@ -1053,18 +1071,18 @@ export function CardDetailProvider({
           // Shopping door: the partner was reached from the combo block, not a Shopping row.
           onSelectCard={(id) => void load(id, undefined, undefined, { door: false })}
           onPrev={paging && index > 0
-            ? () => { enterTargetId.current = siblingIds[index - 1]; setEnterFrom("prev"); void load(siblingIds[index - 1]); }
+            ? () => { void load(siblingIds[index - 1], undefined, undefined, undefined, "prev"); }
             : null}
           onNext={
             paging && index < siblings.length - 1
-              ? () => { enterTargetId.current = siblingIds[index + 1]; setEnterFrom("next"); void load(siblingIds[index + 1]); }
+              ? () => { void load(siblingIds[index + 1], undefined, undefined, undefined, "next"); }
               : null
           }
           onPrevPeek={paging && index > 0
-            ? () => { enterTargetId.current = siblingIds[index - 1]; setEnterFrom("prevPeek"); void load(siblingIds[index - 1]); }
+            ? () => { void load(siblingIds[index - 1], undefined, undefined, undefined, "prevPeek"); }
             : null}
           onNextPeek={paging && index < siblings.length - 1
-            ? () => { enterTargetId.current = siblingIds[index + 1]; setEnterFrom("nextPeek"); void load(siblingIds[index + 1]); }
+            ? () => { void load(siblingIds[index + 1], undefined, undefined, undefined, "nextPeek"); }
             : null}
           onAtStart={paging ? announceAtStart : undefined}
           onAtEnd={paging ? announceAtEnd : undefined}
@@ -1114,18 +1132,18 @@ export function CardDetailProvider({
           // Shopping door: the partner was reached from the combo block, not a Shopping row.
           onSelectCard={(id) => void load(id, undefined, undefined, { door: false })}
           onPrev={paging && index > 0
-            ? () => { enterTargetId.current = siblingIds[index - 1]; setEnterFrom("prev"); void load(siblingIds[index - 1]); }
+            ? () => { void load(siblingIds[index - 1], undefined, undefined, undefined, "prev"); }
             : null}
           onNext={
             paging && index < siblings.length - 1
-              ? () => { enterTargetId.current = siblingIds[index + 1]; setEnterFrom("next"); void load(siblingIds[index + 1]); }
+              ? () => { void load(siblingIds[index + 1], undefined, undefined, undefined, "next"); }
               : null
           }
           onPrevPeek={paging && index > 0
-            ? () => { enterTargetId.current = siblingIds[index - 1]; setEnterFrom("prevPeek"); void load(siblingIds[index - 1]); }
+            ? () => { void load(siblingIds[index - 1], undefined, undefined, undefined, "prevPeek"); }
             : null}
           onNextPeek={paging && index < siblings.length - 1
-            ? () => { enterTargetId.current = siblingIds[index + 1]; setEnterFrom("nextPeek"); void load(siblingIds[index + 1]); }
+            ? () => { void load(siblingIds[index + 1], undefined, undefined, undefined, "nextPeek"); }
             : null}
           onAtStart={paging ? announceAtStart : undefined}
           onAtEnd={paging ? announceAtEnd : undefined}
