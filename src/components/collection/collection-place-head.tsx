@@ -22,17 +22,24 @@
 // each page instead (the previous shape) could not do that, because three separate pages
 // share no common ancestor below the group's own layout to persist a component in.
 //
+// `stats`/`lastUpdated` are SEED props, from the layout's own first mount — because the
+// layout does not re-run on a sibling navigation, this re-reads both itself on every tab
+// switch and on window focus, so a collection change made in another tab or on another
+// device does not leave this header's counts (or Sets/Replace's visibility) stuck.
+//
 // `current` is read from the URL rather than passed in, which is what lets the layout mount
 // this once with no idea which of its three children is active.
 
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { GhostButton } from "../ui/button";
 import { PendingReporter } from "../shell/pending-reporter";
 import { formatLastUpdated } from "../../lib/collection/browse";
 import { collectionTabsCopy } from "../../lib/copy/collection";
+import { refreshCollectionHeader } from "../../app/collection/actions";
 
 export type CollectionPlace = "cards" | "sets" | "proxies";
 
@@ -89,14 +96,39 @@ export function placeFromPathname(pathname: string): CollectionPlace | null {
 }
 
 export function CollectionPlaceHead({
-  stats,
-  lastUpdated,
+  stats: initialStats,
+  lastUpdated: initialLastUpdated,
 }: {
   stats: { totalCards: number; uniqueCards: number };
   lastUpdated: Date | null;
 }) {
   const pathname = usePathname();
   const current = placeFromPathname(pathname);
+
+  // The layout that mounts this once fetches its two props on first mount only; a Next
+  // layout does not re-run on a sibling navigation. So the figures are re-read here on every
+  // tab switch and on window focus (the same cross-tab trigger `DeltaStrip` polls on), and
+  // only the latest of possibly several in-flight reads may apply — a focus firing while a
+  // tab switch is still loading must not let the switch's answer land after and overwrite it.
+  const [live, setLive] = useState({ stats: initialStats, lastUpdated: initialLastUpdated });
+  const latest = useRef(0);
+  useEffect(() => {
+    const ticket = ++latest.current;
+    void refreshCollectionHeader().then((next) => {
+      if (ticket === latest.current) setLive(next);
+    });
+  }, [pathname]);
+  useEffect(() => {
+    const onFocus = () => {
+      const ticket = ++latest.current;
+      void refreshCollectionHeader().then((next) => {
+        if (ticket === latest.current) setLive(next);
+      });
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, []);
+  const { stats, lastUpdated } = live;
   const hasCollection = stats.totalCards > 0;
   // The group's layout mounts this only on the three routes `placeFromPathname` answers for
   // (see the file header) — a null here would mean this component were reached from

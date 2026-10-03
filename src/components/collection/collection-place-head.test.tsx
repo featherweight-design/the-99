@@ -1,10 +1,24 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { CollectionPlaceHead, placeFromPathname, type CollectionPlace } from "./collection-place-head";
 import { collectionTabsCopy } from "../../lib/copy/collection";
 
 let pathname = "/collection";
 vi.mock("next/navigation", () => ({ usePathname: () => pathname }));
+
+const refreshCollectionHeader = vi.fn();
+vi.mock("../../app/collection/actions", () => ({
+  refreshCollectionHeader: (...args: unknown[]) => refreshCollectionHeader(...args),
+}));
+
+beforeEach(() => {
+  // Pending forever by default, so every existing test's synchronous assertions read the
+  // seed props untouched; a test exercising the refresh resolves it explicitly.
+  refreshCollectionHeader.mockReset().mockReturnValue(new Promise(() => {}));
+});
+afterEach(() => {
+  pathname = "/collection";
+});
 
 const OWNED = { totalCards: 4492, uniqueCards: 2926 };
 const EMPTY = { totalCards: 0, uniqueCards: 0 };
@@ -115,6 +129,51 @@ describe("the title block", () => {
     unmount();
     head("cards", EMPTY);
     expect(screen.queryAllByRole("link", { name: /Replace/ })).toEqual([]);
+  });
+});
+
+// The layout that mounts this once fetches its two props on its own first mount only, and
+// does not re-run on a sibling navigation — so a collection change made in another tab or on
+// another device would otherwise leave the header's counts, and Sets/Replace's visibility,
+// stuck at whatever they were on arrival (round 2, #1222).
+describe("refreshing the two figures", () => {
+  it("re-reads them on mount, replacing the seed props", async () => {
+    refreshCollectionHeader.mockResolvedValue({ stats: EMPTY, lastUpdated: null });
+    head("cards", OWNED);
+    await waitFor(() => expect(tabNames()).toEqual([collectionTabsCopy.cards, collectionTabsCopy.proxies]));
+  });
+
+  it("re-reads again when the reader switches tabs within the mounted strip", async () => {
+    refreshCollectionHeader.mockResolvedValue({ stats: OWNED, lastUpdated: null });
+    const { rerender } = head("cards", OWNED);
+    await waitFor(() => expect(refreshCollectionHeader).toHaveBeenCalledTimes(1));
+    pathname = "/collection/sets";
+    rerender(<CollectionPlaceHead stats={OWNED} lastUpdated={null} />);
+    await waitFor(() => expect(refreshCollectionHeader).toHaveBeenCalledTimes(2));
+  });
+
+  it("re-reads on window focus, the same cross-tab trigger DeltaStrip polls on", async () => {
+    refreshCollectionHeader.mockResolvedValue({ stats: OWNED, lastUpdated: null });
+    head("cards", OWNED);
+    await waitFor(() => expect(refreshCollectionHeader).toHaveBeenCalledTimes(1));
+    fireEvent(window, new Event("focus"));
+    await waitFor(() => expect(refreshCollectionHeader).toHaveBeenCalledTimes(2));
+  });
+
+  it("applies only the latest of two in-flight reads", async () => {
+    let resolveFirst: (v: { stats: typeof OWNED; lastUpdated: null }) => void = () => {};
+    refreshCollectionHeader
+      .mockImplementationOnce(() => new Promise((r) => { resolveFirst = r; }))
+      .mockResolvedValueOnce({ stats: EMPTY, lastUpdated: null });
+    const { rerender } = head("cards", OWNED);
+    pathname = "/collection/sets";
+    rerender(<CollectionPlaceHead stats={OWNED} lastUpdated={null} />);
+    await waitFor(() => expect(refreshCollectionHeader).toHaveBeenCalledTimes(2));
+    // The stale first read resolves last; it must not overwrite the second's answer. Read the
+    // stats line rather than tabNames: Sets stays visible on its own route even when empty
+    // (E10), so it cannot tell the two states apart here.
+    resolveFirst({ stats: OWNED, lastUpdated: null });
+    await waitFor(() => expect(screen.getByText("0 cards · 0 unique")).toBeTruthy());
   });
 });
 

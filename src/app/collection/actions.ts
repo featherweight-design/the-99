@@ -6,6 +6,7 @@ import { after } from "next/server";
 import { db } from "../../db";
 import { cardArtPreferences, collectionItems, csvUploads } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
+import { getCollectionLastUpdated, getCollectionStats } from "../../lib/home/summary";
 import { revalidateUserLists } from "../../lib/cache/user-lists";
 import { parseCollectionCsv, type CollectionRow, type ParseError } from "../../lib/manabox/parse";
 import { parsePasteList } from "../../lib/manabox/paste";
@@ -325,6 +326,27 @@ function invalidateArtCaches(userId: string): void {
   revalidatePath("/commanders");
   revalidatePath("/commanders/[slug]", "page");
   revalidatePath("/decks/new");
+}
+
+/**
+ * Re-reads the place head's two figures. The `(list)/layout.tsx` that mounts the head once
+ * across all three tabs fetches them on its own first mount only — a Next layout does not
+ * re-run on a sibling navigation — so without this a collection change made in another tab
+ * or on another device while the group stays mounted would leave the header's counts, and
+ * Sets/Replace's visibility, stuck at whatever they were on arrival. The head calls this on
+ * every tab switch and on window focus, the same cross-tab trigger `DeltaStrip` already
+ * polls on for exactly this class of staleness.
+ */
+export async function refreshCollectionHeader(): Promise<{
+  stats: { totalCards: number; uniqueCards: number };
+  lastUpdated: Date | null;
+}> {
+  const userId = await requireUserId();
+  const [stats, lastUpdated] = await Promise.all([
+    getCollectionStats(userId),
+    getCollectionLastUpdated(userId),
+  ]);
+  return { stats, lastUpdated };
 }
 
 /** Forget the pick, returning the card to the resolver's choice. */
