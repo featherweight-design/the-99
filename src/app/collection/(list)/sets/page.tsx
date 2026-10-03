@@ -29,10 +29,10 @@ export default async function SetsPage() {
     // A SECTION, not a `main`: the shell already renders one around every route, and a
     // nested main landmark is invalid (E20). The group's place head (`(list)/layout.tsx`)
     // sits above the padded column, so its strip lands where /collection's does (E19); the
-    // column is anchored left from `md` so "Your sets" starts under the Sets tab rather than
-    // 135px to its right.
+    // column centers under it at its existing max width (Hugh's ruling, #1222 follow-up —
+    // reverses R2's left anchor, which started "Your sets" under the Sets tab).
     <section className="flex flex-col">
-      <div className="mx-auto md:mx-0 w-full max-w-[900px] px-[16px] py-[20px] md:px-[34px] md:py-[28px]">
+      <div className="mx-auto w-full max-w-[900px] px-[16px] py-[20px] md:px-[34px] md:py-[28px]">
         <h1 className="font-display text-[24px] md:text-[28px]" style={{ color: "var(--fg)" }}>
           {setsIndexCopy.title}
         </h1>

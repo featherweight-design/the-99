@@ -765,14 +765,20 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `/collection/proxies` at 1300, 768, 390 and 360. The head is ONE component mounted on three
   pages, so the property worth proving is that pressing one of its own tabs never moves it: the
   strip's top and its first tab's TEXT edge (read through a Range, since the link carries 10px of
-  padding) must be equal on all three routes at every width, at y 109 and x 34 at 1300. From `md`
-  each route's one drawn h1 starts on that edge, which is what anchoring Sets and Proxies left
-  (`md:mx-0`) buys; on the phone the strip is first in `<main>`, carries Replace, and
-  `/collection`'s h1 is not drawn. It also reads `aria-current` and the strip's border-box height
-  (40, 48). Two mutations fail it: the Proxies column centred again (h1 at 203 against 34) and
-  the Sets place head pushed down 28px (strip top 137 against 109, at 1300 and 768). Its first run
-  failed on its own arithmetic, expecting the 1px rule outside the 40: the canvas is border-box.
-  Makes no writes; point it at `local-dev`.
+  padding) must be equal on all three routes at every width, at y 109 and x 34 at 1300; on the
+  phone the strip is first in `<main>`, carries Replace, and `/collection`'s h1 is not drawn. It
+  also reads `aria-current` and the strip's border-box height (40, 48).
+
+  **Sets and Proxies center their content column under the head instead of anchoring it left**
+  (Hugh's ruling, #1222 follow-up — reverses R2's left anchor, which started each route's h1 under
+  its own tab). At 1300 and 768 the probe asserts each column's own midpoint (its h1's parent
+  element, not the h1 itself, whose text only fills part of the column) sits on `<main>`'s
+  midpoint. A mutation that re-anchors either route left fails this, even though every
+  strip/tab-position check above it stays green — those compare the three routes to each other,
+  not the content to `<main>`, so all three could drift together and still pass.
+
+  Its first run failed on its own arithmetic, expecting the 1px rule outside the 40: the canvas
+  is border-box. Makes no writes; point it at `local-dev`.
 
 - `pnpm probe:nav-labels` walks the desktop rail by input (desktop nav labels handoff): 1300x900
   with a pointer, where it is today's 62px rail with no visible label and no native `title`, and

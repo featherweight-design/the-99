@@ -3,10 +3,15 @@
 //
 // What only a layout engine answers: the strip lands at the same top and the same first-tab
 // edge on /collection, /collection/sets and /collection/proxies, at every width, so pressing
-// one of its own tabs never moves it; from `md` the section h1 starts on that edge; on the
-// phone the strip comes first with Replace at its end and /collection's h1 is not drawn.
-// Every one of those is markup-identical on a broken build, which is why jsdom cannot see
-// them. Makes no writes. Point it at `local-dev`.
+// one of its own tabs never moves it; on the phone the strip comes first with Replace at its
+// end and /collection's h1 is not drawn. Every one of those is markup-identical on a broken
+// build, which is why jsdom cannot see them. Makes no writes. Point it at `local-dev`.
+//
+// Dropped (Hugh's ruling, #1222 follow-up): the desktop check that Sets/Proxies' h1 starts
+// on the first tab's edge. Their content column now centers under the place head instead of
+// anchoring left to it, so nothing pins the h1 to that edge any more — replaced below by a
+// check that the content column's own midpoint sits on <main>'s midpoint, which a revert of
+// either `mx-auto` edit would fail.
 
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
@@ -63,9 +68,9 @@ const ROUTES = [
 
 /**
  * The strip's box, its first tab's TEXT edge (a Range, not the link: the link carries 10px
- * of padding, and the design's x=34 is where the word starts), the current tab, the drawn
- * h1 and the title's text edge. Read through `PAGE`, never the document: the shell draws its
- * own navs around <main>.
+ * of padding), the current tab, and whether a drawn h1 exists (the phone's own "no h1 on
+ * Cards" check). Read through `PAGE`, never the document: the shell draws its own navs
+ * around <main>.
  */
 const MEASURE = (scope) => {
   const main = document.querySelector(scope);
@@ -93,6 +98,9 @@ const MEASURE = (scope) => {
   });
   const replace = [...nav.querySelectorAll('a[href="/collection/replace"]')]
     .find((a) => a.getBoundingClientRect().width > 0);
+  // The h1's own PARENT, not the h1: the h1's text only fills part of the column, so its own
+  // box midpoint would not reflect whether the column it sits in is centered under <main>.
+  const contentCol = visibleH1?.parentElement?.getBoundingClientRect() ?? null;
   return {
     top: navBox.top - mainBox.top + window.scrollY,
     height: navBox.height,
@@ -100,6 +108,8 @@ const MEASURE = (scope) => {
     current: links.filter((a) => a.getAttribute("aria-current") === "page").map((a) => a.getAttribute("data-testid")),
     names: links.map((a) => a.textContent),
     h1: visibleH1 ? { text: visibleH1.textContent, left: textLeft(visibleH1) - mainBox.left } : null,
+    contentMid: contentCol ? contentCol.left + contentCol.width / 2 - mainBox.left : null,
+    mainMid: mainBox.width / 2,
     replaceInStrip: Boolean(replace),
   };
 };
@@ -140,21 +150,23 @@ async function run() {
           near(m.height, desktop ? 40 : 48),
           `${m.height}px against ${desktop ? 40 : 48}`,
         );
-        if (desktop) {
-          // Each route keeps exactly one h1, its own name, and it starts on the first tab's
-          // left edge: the title, the strip and the section share x = 34 (R2 §Q1).
-          fail(
-            `${width}px · ${route.path} · h1 on the first tab's edge`,
-            m.h1 !== null && near(m.h1.left, m.tabLeft),
-            m.h1 === null ? "no drawn h1" : `h1 "${m.h1.text}" at ${m.h1.left}, tab text at ${m.tabLeft}`,
-          );
-        } else {
+        if (!desktop) {
           // The phone draws the strip first, with Replace at its end, and no title block.
           fail(`${width}px · ${route.path} · strip first`, near(m.top, 0), `strip top ${m.top}px into <main>`);
           fail(`${width}px · ${route.path} · Replace in the strip`, m.replaceInStrip, String(m.replaceInStrip));
           if (route.tab === "cards") {
             fail(`${width}px · /collection · no drawn h1`, m.h1 === null, m.h1 === null ? "sr-only" : `drew "${m.h1.text}"`);
           }
+        }
+        // Sets and Proxies center their content column under the place head (Hugh's ruling,
+        // #1222 follow-up); a revert of either route's `mx-auto` edit would put the column's
+        // midpoint off <main>'s midpoint, which the strip-position checks above cannot see.
+        if (desktop && route.tab !== "cards") {
+          fail(
+            `${width}px · ${route.path} · content column centered under <main>`,
+            near(m.contentMid, m.mainMid),
+            `column midpoint ${m.contentMid}px against main midpoint ${m.mainMid}px`,
+          );
         }
       }
 
