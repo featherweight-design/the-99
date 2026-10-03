@@ -346,6 +346,17 @@ async function run() {
       { stale: afterRace.at === pressed.at, seq: afterRace.seq === 1 },
       { stale: false, seq: false });
 
+    // AND THE LOSING REBUILD ANSWERS WITH THE PRESS (review round 5). A quiet rebuild raced the
+    // same way returns what the store holds, never the computation its guard threw away: the date
+    // it hands back is the stored one, not one minted after the press.
+    await fixture.execute(sql`update deck_profiles set profile_version = ${PROFILE_VERSION - 1},
+      computed_at = now() - interval '3 days', seen_seq = 1, dirty = false where deck_id = ${deck.id}::uuid`);
+    const answered = await readStoredReading(deck.id, USER, pressFirst);
+    const storedAt = (await marksOf()).at;
+    check("a rebuild that lost to a press answers with the stored reading",
+      answered ? Math.abs(new Date(answered.analyzedAt).getTime() - new Date(`${storedAt}Z`).getTime()) < 5 : "none",
+      true);
+
     // THE LEGACY FORM of the same case: a row written before 0054 stores `profileFingerprint`, so a
     // raw comparison with the commit's list misreads it as another list (review round 1).
     await fixture.execute(sql`update deck_profiles set profile_version = 0, version_id = null,

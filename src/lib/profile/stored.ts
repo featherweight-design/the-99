@@ -368,6 +368,9 @@ export async function computeAndStoreProfile(
   const pinLater = Boolean(versionId && (pinTo || holding));
   let pinned: string | null = pinLater ? null : versionId ?? null;
   let stored = false;
+  // A rebuild whose guarded upsert matched nothing: a press wrote the current version while it
+  // computed. Set only when the write RAN, never for a head that moved or a write that threw.
+  let superseded = false;
   try {
     // STORED ONLY IF IT STILL DESCRIBES THE DECK. Two presses from two tabs can finish out of
     // order, and an older result landing last would replace the newer one. One head read in the
@@ -428,6 +431,8 @@ export async function computeAndStoreProfile(
       if (written) {
         analyzedAt = written.computedAt;
         stored = true;
+      } else if (kept) {
+        superseded = true;
       }
     }, { isolationLevel: "repeatable read" });
     if (stored && pinLater && (await clearDirty(deckId, list, editedAt, versionId, stillNewest))) {
@@ -435,6 +440,12 @@ export async function computeAndStoreProfile(
     }
   } catch (error) {
     console.warn("deck profile not stored; the next tab open will offer the press again", error);
+  }
+  // THE PRESS WON (review round 5): answer with the reading the store holds, never the computation
+  // the guard just discarded. The row is at the current version now, so this read cannot rebuild.
+  if (superseded) {
+    const current = await readStoredReading(deckId, userId, deps);
+    return current ? { kind: "ok", reading: current } : null;
   }
   return {
     kind: "ok",
