@@ -1,10 +1,12 @@
 # Readiness audit: desktop nav labels (H3)
 
-**Verdict: 🟠 Orange, on one question.** R2 is buildable everywhere it is drawn. One state it
-creates is not drawn: the 88px touch rail on a touch screen that is wide enough for the rail but
-short, which includes most phones held in landscape. The touch rail's column no longer fits there, and
-what gives is a layout call. Everything else below is engineering's to settle, and the decisions
-are written out so the build does not wait on them.
+**Verdict: 🟡 Yellow, build-ready (re-audit of V1, 2026-10-02).** Design's V1 answers B1 in
+full; see "Re-audit (V1)" below. The engineering decisions it adds (V-E1 to V-E4) sit beside the
+ratified E1 to E12, and none needs Design.
+
+The first pass was 🟠 Orange on one question: the 88px touch rail on a touch screen that is wide
+enough for the rail but short, which includes most phones held in landscape. That record is kept
+below as written.
 
 This audit was run against `origin/main` at `812be6006` (#1158). It reads the handoff as R2, the
 README's "R2 (current)" section and the canvas's H2, T2, F3, F4 and E2. Where R1's sections
@@ -17,6 +19,65 @@ disagree with R2, R2 governs (finding E3).
 2. **About entry: none.** The change is cosmetic, like card captions: no new entry and no
    `ABOUT_VERSION` bump. The About item below is resolved.
 3. **The engineering-resolvable list (E1 to E12) is ratified as proposed.**
+
+## Re-audit (V1)
+
+Design's drop of 2026-10-02 18:55 changed two files: the README gained "V1: short touch screens
+(audit B1)" and the canvas gained section V1. Nothing else in the folder moved. Only V1 is
+re-audited here.
+
+**Does V1 answer B1?** Yes, on every point the prompt asked.
+
+| B1 asked for | V1's answer |
+|---|---|
+| A height threshold | `@media (hover: none) and (max-height: 459.98px)`, one threshold for both states, set to the larger need (455 first run, 401 unlocked). |
+| What the rail becomes | Labels and the 88px width stay; slots 72 × 52 → 72 × 44, icon–label gap 3 → 2; rail padding 14 → 10; gap under the mark 20 → 16. Its reason for keeping labels ("touch has no hover to ask with") is the brief's own finding. |
+| First run | Same rule: the well keeps 80px, four 44px slots, padding 4 / 3 / 5, foot margin 3 → 0 and gap 5 → 4. |
+| The account control reachable | Below the threshold, everything between the mark and the account control is one `overflow-y: auto` region (`flex: 1`, `min-height: 0`, 8px bottom padding); the mark and the account control are `flex: none` outside it. |
+| 852 × 393 drawn | Canvas V1: unlocked, first run, and R2 without the rule (account control at 403–433, below the fold). |
+
+**Arithmetic, recomputed against the code.**
+- Unlocked: 5 × 44 + 4 × 4 = 236; 10 + 39 + 16 + 236 + 8 + 30 + 10 = 349. Holds. The mark is the
+  39px `rail-62` lockup (`marks.tsx:83-94`) and the account trigger is 30px
+  (`account-menu.tsx:455`).
+- Slot: 19 + 2 + 12 = 33 in 44 leaves 5.5 either side. Holds for a 12px label line.
+- Well: 1 + 4 + (4 × 44 + 3 × 4 = 188) + 4 (gap to the foot) + 28 + 5 + 1 = 231. The structure
+  matches `RailLock` (`nav.tsx:225`: `gap-1` between the four slots and the foot). The 28px foot is
+  14 (padlock, `padlock.tsx` rail size 12 × 14) + 4 + **10** for the LOCKED line.
+- 852 − 88 = 764 for `main`. Holds.
+- The full-rail needs, 393 and 447 + 8, are this audit's own B1 figures. Holds.
+
+**New findings. None blocking.**
+
+- **V-E1. Two label lines are drawn tighter than the code sets them (ENG).** Neither the tab
+  label (`text-[9px]`, `nav.tsx:560`) nor the well's LOCKED (`text-[8.5px]`, `nav.tsx:305`)
+  sets a line height, so both inherit preflight's 1.5: 13.5px and 12.75px, not V1's 12 and 10.
+  Computed, not measured: the 44px slot's air goes from 5.5 to 4.75, and the first-run column
+  from 392 to about 395. That is still under 460, and the backstop covers any excess. Decision:
+  the rail's label takes `leading-[12px]` and the short rule's LOCKED takes `leading-[10px]`, so
+  the build matches the drawn figures. The tab bar keeps its own line.
+- **V-E2. The scroll region must not clip the focus ring (ENG).** `overflow-y: auto` also clips
+  horizontally, and the global ring is 2px at 2px offset (`globals.css:572-575`). Sideways, the 72px
+  slot has 7.5px in the 87px column, which holds. At the top, a slot flush with the region's edge
+  loses 4px of ring. Decision: move 4px of the 16px gap under the mark into the region's top
+  padding (12 + 4), which keeps the drawn geometry.
+- **V-E3. A lock note over a scrolled nav (ENG).** The note is `fixed` and placed once by
+  `railPlace` (`nav.tsx:189-193`). `useLockNotes` re-places it only on window resize
+  (`nav.tsx:149`, `:152`), so a scroll inside the new region would leave it pointing at where the slot
+  was. The region only scrolls below 392px, but it can. Decision: the region's scroll re-places an
+  open note, the way resize does. V1's "no code change" for the note holds everywhere else.
+- **V-E4. `h-screen` on a phone (ENG, not verified on a device).** The rail is `h-screen`
+  (`nav.tsx:470`), which is `100vh`. On iOS Safari that is the large viewport, so the foot can sit
+  under the browser's own toolbar even when V1 fits. Decision: the touch rail uses `h-dvh`, so
+  "the account control is never below the fold" is true of the visible viewport. The media query's
+  height is the threshold V1 states and is unchanged.
+
+**Against what is ratified.** V1 changes nothing on the pointer rail, so E1, E2 and E7 to E11
+are unaffected. E3 (aria-label kept, the span `aria-hidden`) and E5 (the touch classes on
+`NavRail` only) carry over to the 44px slots. E4 (`pipBottom` as a class): at bottom 1 in a 44px
+slot, the pip's top sits about 6.7px up, near the label's line box. None of the five words has a
+descender, so the pip clears the ink. No change. E6's two thresholds are width queries and are
+untouched. No new copy, and no About entry (ruling 2).
 
 ## Does it answer the brief
 
@@ -97,7 +158,7 @@ screen.
   its 262px to the deck grid" (`deck-filters.test.tsx:6-8`, `decks-view.test.tsx:206-209`). The
   check is moot.
 
-## Blocking (needs Design)
+## Blocking (needs Design): answered by V1, see "Re-audit (V1)"
 
 **B1. The touch rail on a short touch screen.** `md` is the default 768px and the rail is
 `h-screen sticky` with no overflow handling (`nav.tsx:470`). Most current phones held in landscape are
@@ -204,7 +265,7 @@ Untouched. The rail is `hidden md:flex` (`nav.tsx:470`) and the tab bar `md:hidd
 (`nav.tsx:576`). `--rail-w` is new and does not touch `--tabbar-h`. E5 is the one place the build
 could reach the tab bar by accident.
 
-## Prompt for Design
+## Prompt for Design (sent; answered by V1)
 
 **Context.** R2 of the desktop nav labels is audited and buildable everywhere it is drawn
 (`design/design_handoff_the99_desktop_nav_labels/READINESS-audit.md`). One state is not drawn.

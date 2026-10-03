@@ -46,6 +46,85 @@
     </div>
   </div>
 
+  <section id="V1" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;max-width:1180px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 8px;">V1</span>
+      <span style="font-size:15px;font-weight:600;">Touch rail on a short screen · 852 × 393 · audit B1</span>
+      <span style="font-size:13px;color:var(--fg-muted);max-width:980px;text-wrap:pretty;">Below 460px tall, the touch rail keeps its labels and its 88px width, and its slots tighten from 52 to 44px. The nav between the mark and the account control can also scroll, so the account control stays pinned to the foot at any height. First run follows the same rule; its well tightens by the same 8px per slot. Labels never drop: touch has no hover to ask with, so the 62px rail would bring the finding back.</span>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;">
+      <sc-for list="{{ shortFrames }}" as="f" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">{{ f.name }}</span>
+          <div data-screen-label="{{ f.screen }}" style="position:relative;width:852px;height:393px;outline:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);display:flex;flex:none;">
+            <aside style="width:88px;flex:none;height:100%;background:var(--surface-rail);border-right:1px solid var(--border);padding:10px 0;display:flex;flex-direction:column;align-items:center;box-sizing:border-box;">
+              <div style="margin-bottom:16px;display:flex;flex:none;">{{ markRail }}</div>
+              <div style="flex:1;min-height:0;width:100%;overflow-y:auto;display:flex;flex-direction:column;align-items:center;gap:4px;padding-bottom:8px;box-sizing:border-box;">
+                <sc-for list="{{ f.live }}" as="n">
+                  <span style="flex:none;width:72px;height:44px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:{{ n.bg }};color:{{ n.ink }};">{{ n.icon }}<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:12px;letter-spacing:0.06em;">{{ n.label }}</span></span>
+                </sc-for>
+                <sc-if value="{{ f.locked }}" hint-placeholder-val="{{ false }}">
+                  <div style="flex:none;width:80px;display:flex;flex-direction:column;align-items:center;gap:4px;border:1px solid var(--border);border-radius:14px;background:var(--surface-sunken);padding:4px 3px 5px;box-sizing:border-box;">
+                    <sc-for list="{{ lockItems }}" as="l">
+                      <span style="width:72px;height:44px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--fg-locked);">{{ l.icon }}<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:12px;letter-spacing:0.06em;">{{ l.label }}</span></span>
+                    </sc-for>
+                    <div style="margin-top:0;display:flex;flex-direction:column;align-items:center;gap:4px;">{{ padlock }}<span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;line-height:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">Locked</span></div>
+                  </div>
+                </sc-if>
+              </div>
+              <span style="flex:none;width:30px;height:30px;border-radius:50%;background:var(--surface);border:1px solid var(--border-strong);box-sizing:border-box;"></span>
+            </aside>
+            <div style="flex:1;min-width:0;padding:22px 26px 0;display:flex;flex-direction:column;gap:14px;overflow:hidden;">
+              <sc-if value="{{ f.locked }}" hint-placeholder-val="{{ false }}">
+                <h1 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:27px;line-height:1;color:var(--fg);">Welcome to The 99</h1>
+                <p style="margin:0;font-size:12.5px;color:var(--fg-muted);display:flex;gap:8px;align-items:center;">{{ padlock }}Collection, Commanders, Discover and Decks open once your cards are in.</p>
+              </sc-if>
+              <sc-if value="{{ f.unlocked }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;align-items:flex-end;gap:12px;">
+                  <div style="flex:1;min-width:0;"><p style="margin:0 0 7px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);">4,335 cards · read 2 days ago</p><h1 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:28px;line-height:1;">Welcome back</h1></div>
+                  <span style="display:flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;background:var(--fg);color:var(--bg);font-size:12.5px;font-weight:600;white-space:nowrap;">New deck</span>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;">
+                  <div style="height:288px;border-radius:14px;overflow:hidden;border:1px solid var(--border);"><img src="./art/hero-sokka.png" alt="" style="width:100%;height:100%;object-fit:cover;object-position:center top;display:block;"></div>
+                  <div style="height:288px;border-radius:14px;overflow:hidden;border:1px solid var(--border);"><img src="./art/hero-master.png" alt="" style="width:100%;height:100%;object-fit:cover;object-position:center top;display:block;"></div>
+                </div>
+              </sc-if>
+            </div>
+            <span style="position:absolute;top:8px;right:10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--bg);background:var(--accent);border-radius:4px;padding:2px 7px;">{{ f.tally }}</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Without the rule · first run, R2 as drawn · 852 × 393</span>
+      <div data-screen-label="V1 · 852×393 failure" style="position:relative;width:852px;height:393px;outline:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);display:flex;flex:none;">
+        <aside style="width:88px;flex:none;height:447px;background:var(--surface-rail);border-right:1px solid var(--border);padding:14px 0;display:flex;flex-direction:column;align-items:center;box-sizing:border-box;">
+          <div style="margin-bottom:20px;display:flex;">{{ markRail }}</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <span style="width:72px;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:var(--elevated);color:var(--fg);">{{ icons.home }}<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:12px;letter-spacing:0.06em;">Home</span></span>
+            <div style="width:80px;display:flex;flex-direction:column;align-items:center;gap:4px;border:1px solid var(--border);border-radius:14px;background:var(--surface-sunken);padding:4px 3px 9px;">
+              <sc-for list="{{ lockItems }}" as="l">
+                <span style="width:72px;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--fg-locked);">{{ l.icon }}<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:12px;letter-spacing:0.06em;">{{ l.label }}</span></span>
+              </sc-for>
+              <div style="margin-top:3px;display:flex;flex-direction:column;align-items:center;gap:5px;">{{ padlock }}<span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">Locked</span></div>
+            </div>
+          </div>
+          <span style="margin-top:auto;width:30px;height:30px;border-radius:50%;background:var(--surface);border:1px solid var(--border-strong);box-sizing:border-box;flex:none;"></span>
+        </aside>
+        <div style="flex:1;min-width:0;padding:22px 26px 0;">
+          <h1 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:27px;line-height:1;color:var(--fg);">Welcome to The 99</h1>
+        </div>
+        <span style="position:absolute;left:0;right:0;bottom:0;border-bottom:2px dashed var(--danger);"></span>
+        <span style="position:absolute;top:8px;right:10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg);background:var(--danger);border-radius:4px;padding:2px 7px;">column 447 · account control at 403–433, below the fold</span>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:1744px;">
+      <sc-for list="{{ shortSpecs }}" as="s" hint-placeholder-count="6">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);">{{ s.k }}</span><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">{{ s.v }}</span></div>
+      </sc-for>
+    </div>
+  </section>
+
   <section id="H2" style="display:flex;flex-direction:column;gap:18px;">
     <div style="display:flex;align-items:baseline;gap:12px;max-width:1180px;">
       <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 8px;">H2</span>
@@ -518,7 +597,20 @@ class Component extends DCLogic {
       { k: "Page column arithmetic", v: "Commanders, decks and the deck page subtract the rail by hand. Point them at --rail-w. Re-check any md layout with a fixed side column (W1)." },
       { k: "Tests", v: "Rail slot tests that query by aria-label still pass, because the visible text is the name. Add one assertion that no rail <a> carries a title attribute." },
     ];
-    return { theme, icons, pip, padlock, markRail, hoverStates, labelSpecs, timing2, eng2, items, itemsA, itemsB, lockItems, lockVariants, lockFrames, rules, specs, lockSpecs, widths, access, eng };
+    const liveAll = items.map((i) => ({ ...i, bg: i.k === "home" ? "var(--elevated)" : "transparent", ink: i.k === "home" ? "var(--fg)" : "var(--fg-faint)" }));
+    const shortFrames = [
+      { name: "Unlocked · short touch rail", screen: "V1 · 852×393 unlocked", live: liveAll, locked: false, unlocked: true, tally: "column 341 + 8 · fits from 349px tall" },
+      { name: "First run · same rule", screen: "V1 · 852×393 first run", live: liveAll.slice(0, 1), locked: true, unlocked: false, tally: "column 384 + 8 · fits from 392px tall" },
+    ];
+    const shortSpecs = [
+      { k: "threshold · < 460px tall", v: "@media (hover: none) and (max-height: 459.98px). The full touch rail needs 393 unlocked and 447 in first run, plus the 8px minimum above the account control: 401 and 455. One threshold, set to the larger, keeps the two from changing form at different heights." },
+      { k: "slot · 72 × 44", v: "52 → 44, radius 12. Icon 19, gap 3 → 2, label 9px / 12px line, the same five words. 5.5px above and below. 44 is the touch floor, so it doesn’t tighten further. Gap between slots stays 4. States, fills and the focus ring are unchanged." },
+      { k: "rail · 88, padding 10", v: "Width unchanged. Top and bottom padding 14 → 10, and 20 → 16 under the mark. Unlocked column: 10 + 39 + 16 + 236 + 8 + 30 + 10 = 349." },
+      { k: "first run · same rule", v: "The well follows the slot: 80px wide, padding 4 / 3 / 5, four 44px slots. The padlock and LOCKED foot keep both elements, with margin 3 → 0 and gap 5 → 4. Well = 1 + 4 + 188 + 4 + 28 (foot) + 5 + 1 = 231. Home 44 + 4 + well 231 = 279 of nav. Column 10 + 39 + 16 + 279 + 8 + 30 + 10 = 392." },
+      { k: "backstop · nav scrolls", v: "Under the threshold, everything between the mark and the account control is one overflow-y: auto region (flex: 1, min-height: 0, 8px bottom padding). The mark and the account control are flex: none outside it. That region only scrolls below 349 unlocked or 392 in first run. The account control is never below the fold." },
+      { k: "what doesn’t change", v: "No new copy. The 88px width and --rail-w hold, so main is 764 at 852 wide. The lock note is placed by railPlace against the measured slot, so it follows the 44px slots without a code change. The pointer rail and the phone tab bar are untouched." },
+    ];
+    return { theme, icons, pip, padlock, markRail, shortFrames, shortSpecs, hoverStates, labelSpecs, timing2, eng2, items, itemsA, itemsB, lockItems, lockVariants, lockFrames, rules, specs, lockSpecs, widths, access, eng };
   }
 }
 </script>

@@ -7,6 +7,13 @@
 - `--rail-w` is 62px, or 88px under `(hover: none)`. Pointer content widths are unchanged; touch loses 26px.
 - Canvas: H2 (label spec), T2 (timing), F3 (1300) and F4 (768) each show pointer beside touch, and E2 is the code delta. R1's sections now describe the touch rail.
 
+## V1: short touch screens (audit B1)
+- **Threshold:** `@media (hover: none) and (max-height: 459.98px)`. The full touch rail needs 401 unlocked and 455 in first run (393 and 447 plus an 8px minimum above the account control).
+- **Below it:** the labels stay and so does the 88px width. Slots go from 72 × 52 to 72 × 44 (icon–label gap 2). Rail padding drops from 14 to 10, and the gap under the mark from 20 to 16.
+- **First run follows the same rule.** The well keeps its 80px width with four 44px slots, padding 4 / 3 / 5, and a tighter foot (margin 0, gap 4). The well is 231 including its 1px borders, and the column is 392 tall, against 349 unlocked.
+- **Backstop:** the nav between the mark and the account control is one `overflow-y: auto` region, and the mark and the account control sit outside it. The account control is always reachable. The nav only scrolls below 349 or 392.
+- Canvas V1 shows 852 × 393 unlocked and in first run, and R2 without the rule (the account control falling below the fold).
+
 ## R1 (kept as the touch rail)
 
 Canvas: `The 99 - Desktop Nav Labels.dc.html`. D1 compares the three shapes (1c chosen), S1 shows every slot in every state it already has, plus the locked well (2×), F1 is 1300 and F2 is 768 (each beside today), W1 is the content-column arithmetic, L1 is the first-run note in place, K1 covers keyboard, touch and AT, and E1 lists the code changes.
