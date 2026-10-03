@@ -458,6 +458,20 @@ describe("The lock, phone tab bar", () => {
     }
   });
 
+  it("cancels a waiting note on a second tap while the About sheet is up", () => {
+    act(() => setAboutSheetUp(true));
+    try {
+      render(<TabBar locked />);
+      const decks = slot("Decks");
+      fireEvent.click(decks);
+      fireEvent.click(decks);
+      act(() => setAboutSheetUp(false));
+      expect(isOpen(decks)).toBe(false);
+    } finally {
+      act(() => setAboutSheetUp(false));
+    }
+  });
+
   it("opens on a tap only, and a second tap closes it", () => {
     render(<TabBar locked />);
     const decks = slot("Decks");

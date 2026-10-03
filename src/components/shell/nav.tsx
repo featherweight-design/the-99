@@ -339,7 +339,11 @@ function TabLockSlots({ pathname, liveHome }: { pathname: string; liveHome: Reac
     <div className="flex w-full items-center">
       {liveHome}
       {LOCKABLE.map(({ href, label }) => {
-        const isOpen = open?.href === href && !sheetUp;
+        // Open in STATE (`waiting`) and drawn (`isOpen`) differ only while the About sheet
+        // is up. The toggle reads the state, so a second tap cancels a waiting note rather
+        // than asking for it again.
+        const waiting = open?.href === href;
+        const isOpen = waiting && !sheetUp;
         const noteId = `${baseId}-note-${label}`;
         const sentenceId = `${noteId}-sentence`;
         return (
@@ -353,7 +357,7 @@ function TabLockSlots({ pathname, liveHome }: { pathname: string; liveHome: Reac
               aria-controls={noteId}
               aria-describedby={sentenceId}
               aria-current={isActive(pathname, href) ? "page" : undefined}
-              onClick={() => (isOpen ? close(href, false) : show(href))}
+              onClick={() => (waiting ? close(href, false) : show(href))}
               // Tapped: an inset outline, never a fill (4a.7).
               className={`flex h-[52px] flex-1 flex-col items-center justify-center gap-[5px] rounded-[12px] bg-transparent text-[color:var(--fg-locked)] ${
                 isOpen ? "shadow-[inset_0_0_0_1px_var(--border-strong)]" : ""
