@@ -15,7 +15,8 @@ name: Card labels
 on:
   schedule:
     # WEEKLY, Tuesdays at 21:17 UTC (Hugh, 2026-10-03). It labels what the input hash says has
-    # moved, which is a new set and nothing else, and sets release weekly at most. Tuesday is the
+    # moved. That is normally a new set, and sets release weekly at most; a catalog correction to
+    # a card's text, or a prompt or model change, moves the hash too and waits for the same run. Tuesday is the
     # day after Monday's combo build, and 21:17 is twelve hours after that day's `Catalog refresh`
     # (09:00, daily), because a card the catalog has not ingested cannot be labelled. The margin is
     # wide because GitHub starts a cron hours late when it is busy (17:27Z for 09:00 on
