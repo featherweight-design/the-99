@@ -506,6 +506,31 @@ describe("useBackDismiss", () => {
     expect(window.history.length).toBeGreaterThanOrEqual(start);
   });
 
+  // Hugh, Firefox, phone width, 2026-10-03: a filter edit made while the sheet was
+  // open re-homes the page (decision 6), and the self-pop this hook issues to clean
+  // up its history entry then runs the browser's own scroll restoration against an
+  // offset that no longer describes the shorter list — landing mid-list instead of
+  // where the edit left the reader. A capture-phase listener here stands in for
+  // that restoration, moving `scrollY` partway through the same popstate the
+  // self-pop's `back()` produces; this hook's own handler, in the bubble phase,
+  // has to win the argument and leave the reader where they were at `unmount`.
+  it("pins the pre-close scroll offset back after its self-pop", async () => {
+    window.scrollY = 900;
+    const { hook } = open();
+    const disturb = () => {
+      window.scrollY = 300;
+    };
+    window.addEventListener("popstate", disturb, { capture: true });
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation((_x, y) => {
+      window.scrollY = y as number;
+    });
+    hook.unmount();
+    await settle();
+    window.removeEventListener("popstate", disturb, { capture: true });
+    expect(window.scrollY).toBe(900);
+    scrollTo.mockRestore();
+  });
+
   it("closes only the top dialog on each Back", async () => {
     const under = open();
     const over = open();

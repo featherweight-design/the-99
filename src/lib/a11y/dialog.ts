@@ -190,6 +190,25 @@ let selfPops = 0;
  */
 let selfPopsUntil = 0;
 let pendingRestore: string | null = null;
+/**
+ * The scroll offset to pin back after a dialog's own self-pop, captured the moment
+ * before that `back()` is issued.
+ *
+ * A self-pop is a real history traversal — it exists only so the hardware/gesture
+ * Back closes a dialog instead of leaving the route — and a real traversal runs the
+ * browser's own scroll restoration, which recalls whatever `scrollY` was at the time
+ * THIS entry's `pushState` ran. That is correct when nothing under the dialog
+ * changed. It is wrong the moment it did: `/collection`'s filter sheet lets a filter
+ * edit re-home the page while it's open (decision 6, `filter-bar.tsx`), and the
+ * entry's remembered offset is now a pixel count into a list that no longer has
+ * that many rows — so the self-pop's restoration lands the reader somewhere in the
+ * MIDDLE of the new, shorter list instead of leaving them where the edit put them
+ * (Hugh, Firefox, phone width, 2026-10-03). Pinning the pre-`back()` offset back
+ * afterward undoes exactly that: when nothing changed it is a same-value no-op, and
+ * when the page moved under the open dialog it holds the dialog's own landing spot
+ * rather than the browser's stale one.
+ */
+let pendingScrollY: number | null = null;
 let hrefBeforeTraverse: string | null = null;
 let traversingBack = true;
 let listening = false;
@@ -211,6 +230,28 @@ function restoreHref(href: string | null) {
   if (href && href !== window.location.href) window.history.replaceState(null, "", href);
 }
 
+/**
+ * Put back a scroll offset over 30 frames — the same count `filter-bar.tsx` uses
+ * for its own rest-offset case, and for the same reason: a single `scrollTo`
+ * loses a race against the browser's own post-traversal restoration in Firefox,
+ * which does not reliably land within the same task as `popstate`, and 30 frames
+ * (~500ms) is what that sibling case measured as the margin that wins it. No
+ * cancel-on-input here, unlike `filter-bar.tsx`'s loop: that one is fighting a
+ * reader who may already be scrolling, where this one runs once, programmatically,
+ * right after a dialog closes and before any new input of the reader's own.
+ */
+function pinScrollY(y: number | null) {
+  if (y == null) return;
+  const offset = y;
+  let frames = 0;
+  function reassert() {
+    if (window.scrollY !== offset) window.scrollTo(0, offset);
+    frames += 1;
+    if (frames < 30) requestAnimationFrame(reassert);
+  }
+  reassert();
+}
+
 /** Stand the dialog on a fresh entry at the current URL. */
 function arm(entry: BackEntry) {
   window.history.pushState(null, "");
@@ -229,6 +270,8 @@ function onPopState() {
     selfPops -= 1;
     restoreHref(pendingRestore);
     pendingRestore = null;
+    pinScrollY(pendingScrollY);
+    pendingScrollY = null;
     return;
   }
   // Only with no dialog up: an open dialog's own entry is what this pop belongs to,
@@ -355,6 +398,7 @@ export function useBackDismiss(open: boolean, onClose: () => void, canClose: () 
           return;
         }
         pendingRestore = window.location.href;
+        pendingScrollY = window.scrollY;
         selfPops += 1;
         selfPopsUntil = Date.now() + 1_000;
         window.history.back();
