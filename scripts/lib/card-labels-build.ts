@@ -661,8 +661,14 @@ export async function readFamilySpend(runId: string): Promise<FamilySpend> {
     // Narrowed in SQL to the rows that can count at all; the family itself is a pure rule, so it
     // is applied in `familySpend` where it is tested rather than restated as a LIKE here.
     .where(eq(cardLabelBatches.promptVersion, LABEL_PROMPT_VERSION));
+  // Narrowed to THIS family before any model is priced: a row only another family holds cannot
+  // move this cap, so an unpriced model there must not refuse this run.
+  const family = budgetFamily(runId);
   const byModel = new Map<string, typeof rows>();
-  for (const r of rows) byModel.set(r.model, [...(byModel.get(r.model) ?? []), r]);
+  for (const r of rows) {
+    if (budgetFamily(r.runId) !== family) continue;
+    byModel.set(r.model, [...(byModel.get(r.model) ?? []), r]);
+  }
   const own = familySpend(byModel.get(MODEL) ?? [], runId, LABEL_PROMPT_VERSION, RATES, expiredReserveFor(RATES));
   let { expiredChunks, reserveUsd, totalUsd } = own;
   for (const [model, those] of byModel) {
