@@ -40,18 +40,26 @@ card's place.**
   pressing one puts back that card only. They are independent rather than a last-in-first-out
   stack: a reader who removed three cards and wants the second one back presses that row. No
   "undo all" is proposed.
-- **No row shifts, by the same rule as today.** The decklist lists every spent card among the
-  visible cards, so each receipt sorts into its card's place. Undoing one turns its receipt back
-  into the live row, in the same place. Nothing else on the list moves.
+- **No row shifts, by the same rule as today, with one exception to change.** The decklist lists
+  every spent card among the visible cards, so each receipt sorts into its card's place, and
+  undoing one turns it back into the live row in the same place. **Except under Shopping's price
+  order:** there the spent card is ranked "as drawn", with no price, so last (`rankAsDrawn`,
+  `decklist.tsx:643-649`, pinned by `decklist.test.tsx`), and removing an expensive card moves
+  every row below it. H29's "no row shifts" asks the opposite, so the plan ranks a receipt at its
+  card's own price in that order. That reverses a shipped rule, and is §8 question 4.
 - **Refusals per card.** `undoFailure` and the `removal` generation become per-receipt: a map keyed
   on the oracle id, each with the generation of its own removal. Today a refusal is dropped when ANY
   newer removal has bumped the one counter (`reportUndoFailure`, `builder-shell.tsx:914-918`); with
   several receipts that would let removing card B silence card A's refusal. The new rule: a refusal
   is dropped only when THAT card has been removed again since its undo was pressed (its own
   generation moved), or its receipt is gone.
-- **A refused removal drops only its own receipt.** `reportRemoveFailure`
+- **A refused removal drops only its own receipt, and keeps its own message.** `reportRemoveFailure`
   (`builder-shell.tsx:919-924`) clears the whole slot today and receives only the card's name. It
-  takes the oracle id instead and drops that card's receipt alone; the other receipts stand.
+  takes the oracle id instead and drops that card's receipt alone; the other receipts stand. The
+  message lives in one `removeFailure` string, cleared by ANY server card update
+  (`builder-shell.tsx:893-895`), so with several removals in flight card B landing would erase
+  card A's refusal. It becomes per card, keyed on the oracle id, and cleared only when that card's
+  own state moves.
 - **Settling per card.** Today's `slotLanded` check (the card seen gone, then seen back) runs per
   receipt, so one undo landing does not take the others away.
 - **Stacks unchanged.** Removing one copy of a stack still leaves the stack and its count, with no
@@ -114,12 +122,14 @@ capability. Hugh decides, including whether the caption should say several can s
 **Unit.** `builder-shell` / `decklist-row` tests: two removals leave two receipts; undoing the
 first keeps the second; a refusal on one does not mark the other; a refusal for card A survives a
 removal of card B, and is dropped when card A itself is removed again; a refused removal drops its
-own receipt and leaves the others; a discard clears every receipt; removing one copy of a stack leaves no receipt; unmounting the shell clears all.
+own receipt and leaves the others; card B's removal landing keeps card A's refusal message; a
+discard clears every receipt; removing one copy of a stack leaves no receipt; unmounting the shell clears all.
 
 **Browser, at 390x844 and 1300x900, list and card view.** A probe removes three cards from one
 group, reads each receipt's top edge against the row it replaced (no row shifts: every other row's
 top unchanged), undoes the middle one and reads the other two still standing, then navigates away
-and back and reads no receipts. Mutations that must fail it: the slot reverted to a single value
+and back and reads no receipts. It repeats the removal under Shopping sorted by price, removing the
+most expensive card, and reads every other row's top unchanged. Mutations that must fail it: the slot reverted to a single value
 (the first receipt vanishes), settling keyed globally (one undo clears all), and the receipts
 appended at the end of the group instead of sorted into place (rows shift).
 
@@ -134,3 +144,5 @@ clear, the tests and the probe. Under ~500 lines.
 1. Independent receipts (press any one), or strictly last-in-first-out? Proposed: independent.
 2. A cap on how many receipts stand at once? Proposed: none.
 3. The About caption: unchanged, or a line saying several can stand at once.
+4. Under Shopping's price order, a receipt keeps its card's price place (proposed, so nothing
+   shifts), reversing the shipped "ranked as drawn, last" rule?
