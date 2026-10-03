@@ -449,7 +449,7 @@ vi.mock("../../lib/decks/versions", () => ({
   versionCards: vi.fn(),
   commitVersion: vi.fn(),
   restoreDraftFromVersion: vi.fn(),
-  loadVersionDiff: vi.fn(async () => ({ in: [], out: [] })),
+  loadVersionDiff: vi.fn(async () => ({ in: [], out: [], newestAsOf: null })),
 }));
 vi.mock("../../lib/decks/availability-query", () => ({
   loadAvailability: vi.fn(async () => new Map()),
@@ -1860,7 +1860,7 @@ describe("setCardLocked", () => {
 describe("getVersionDiff", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(loadVersionDiff).mockResolvedValue({ in: [], out: [] });
+    vi.mocked(loadVersionDiff).mockResolvedValue({ in: [], out: [], newestAsOf: null });
     stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
   });
 
@@ -1900,7 +1900,7 @@ describe("getVersionDiff", () => {
     );
     await getVersionDiff(DECK_ID, VERSION_ID);
     expect(loadVersionDiff).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, V2]);
+    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, V2, USER_ID]);
   });
 
   // A v1 has nothing before it, and the diff loader is told so explicitly rather
@@ -1908,7 +1908,7 @@ describe("getVersionDiff", () => {
   it("names no predecessor for the first version", async () => {
     stub.state.deckVersions.push({ id: VERSION_ID, number: 1, deckId: DECK_ID });
     await getVersionDiff(DECK_ID, VERSION_ID);
-    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, null]);
+    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, null, USER_ID]);
   });
 });
 

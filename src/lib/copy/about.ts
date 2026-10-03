@@ -628,7 +628,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: "opens a deck’s Versions tab",
     width: 'plate',
     caption:
-      'A deck has a committed list and the changes you are making to it. Every add and cut waits there until you commit, and committing cuts a version you can read back. On a committed deck, cards you add count against your collection for this deck straight away, and no other deck feels them until you commit.',
+      'A deck has a committed list and the changes you are making to it. Every add and cut waits there until you commit, and committing cuts a version you can read back. On a committed deck, cards you add count against your collection for this deck straight away, and no other deck feels them until you commit. An opened version marks which of its new cards you own today, and prices the ones you would buy.',
     keys: [
       'each version carries its date, its card count and its average mana value, and on a wide screen how many games it held; each game in the log names its version, so you can tell whether a change helped.',
       'a version keeps the note you wrote when you committed it, or says it has none.',

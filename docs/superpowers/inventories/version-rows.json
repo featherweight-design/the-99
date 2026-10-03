@@ -1,0 +1,151 @@
+{
+  "feature": "Version card rows (H31): today's ownership and price on a version's In rows",
+  "note": "VERSION_ROWS_DECK is a deck of the audit account with two versions whose newest adds an unowned priced card, a partly owned card (to above owned) and a basic step. On local-dev it was built as a clone of a two-version deck and deleted after the run. 820 is measured because a partly owned row's fixed parts leave the name least room there (readiness finding 2).",
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "820",
+      "width": 820,
+      "height": 900
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
+  ],
+  "rows": [
+    {
+      "id": "version-rows",
+      "label": "/decks/[id] Versions: the newest version opened, In rows with dots, own N of M and the buy tag, and the today line above the columns",
+      "view": "src/components/decks/version-diff.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${VERSION_ROWS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Versions",
+          "settle": 800
+        },
+        {
+          "click": "button[aria-expanded='false']",
+          "settle": 800
+        },
+        {
+          "wait": "[data-version-diff-row]",
+          "settle": 600
+        },
+        {
+          "scrollTo": "[data-version-diff-row]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "version-rows-partial",
+      "label": "/decks/[id] Versions: the partly owned In row (own 1 of 4, a pair in the name, and a tag), the row with the least room for its name",
+      "view": "src/components/decks/version-diff.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${VERSION_ROWS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Versions",
+          "settle": 800
+        },
+        {
+          "click": "button[aria-expanded='false']",
+          "settle": 800
+        },
+        {
+          "wait": "[data-version-diff-row]:has([title^='Sun-Blessed Peak'])",
+          "settle": 600
+        },
+        {
+          "scrollTo": "[data-version-diff-row]:has([title^='Sun-Blessed Peak'])",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "version-rows-out",
+      "label": "/decks/[id] Versions on the phone: the Out segment pressed, no dots, no tags, no today line",
+      "view": "src/components/decks/version-diff.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/${VERSION_ROWS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Versions",
+          "settle": 800
+        },
+        {
+          "click": "button[aria-expanded='false']",
+          "settle": 800
+        },
+        {
+          "wait": "[data-version-diff-row]",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "^Out \u00b7 ",
+          "settle": 600
+        },
+        {
+          "scrollTo": "[data-version-diff-row]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "version-rows-modal",
+      "label": "/decks/[id] Versions: a row pressed opens the card modal, paging In then Out",
+      "view": "src/components/decks/version-diff.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${VERSION_ROWS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Versions",
+          "settle": 800
+        },
+        {
+          "click": "button[aria-expanded='false']",
+          "settle": 800
+        },
+        {
+          "wait": "[data-version-diff-row]",
+          "settle": 600
+        },
+        {
+          "click": "[data-version-diff-row]",
+          "settle": 600
+        },
+        {
+          "wait": "[role=dialog]",
+          "settle": 1200
+        }
+      ]
+    }
+  ]
+}

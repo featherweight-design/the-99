@@ -27,13 +27,13 @@ should be rewritten to match.
 | # | Open item | Called |
 |---|---|---|
 | 1 | Which figures | **Ownership dot (two states) and buy tag.** No `AvailabilityMarker` and no `committed` dot. Both describe a deck's claim, and a version claims nothing. |
-| 2 | Price | **Today's price.** At md+, `BuyTag variant="row" density="full"` (`buy · $2.40`). Below md, `density="collapsed"` (`$`). The tag prices the copy you would buy today, not the version's decision, and the today line says so. |
+| 2 | Price | **Today's price.** From lg (1024px), `BuyTag variant="row" density="full"` (`buy · $2.40`). Below lg, `density="collapsed"`, which draws the live figure (`$2.40`) and a bare `$` only with no live price. (Corrected in the build: readiness findings 1 and 2.) The tag prices the copy you would buy today, not the version's decision, and the today line says so. |
 | 3 | Partly owned | **Compared against the version's count (`to`).** The dot is filled, then mono 10.5px `--fg-faint` `own 1 of 4` after the name, then the tag. This is `shortfall = to − ownedNow`, the review row's rule, with the figure shown. |
 | 4 | Out rows | **No dot, no tag, no spacer.** Name, cost track, modal and preview. |
 | 5 | Which versions | **Every version, with one row anatomy.** |
 | 6 | Diff note | **`todayNote(n)`** replaces it, above the columns at both widths: mono 10.5px `--fg-faint`, drawn only when In has rows. On the phone it sits under the segmented pair. |
 | 7 | Modal Prev/Next | **Across both columns, In then Out**, in display order (type group, then name). This is the review row's rule. The phone passes both lists, including the column that is not pressed. |
-| 8 | Phone at 390 | **44px, one line**, as today. Dot 7, name, `own N of M` when partial, `$`, then the 72px track. The name keeps about 150px. There is no meta line and no preview on touch. |
+| 8 | Phone at 390 | **44px, one line**, as today. Dot 7, name, `own N of M` when partial, the collapsed tag (`$2.40`), then the 72px track. The name keeps about 125px. There is no meta line and no preview on touch. |
 | 9 | About entry | **No edit needed** (Hugh's call). `versions` says committing "cuts a version you can read back", and that is still true. An optional bullet is in the copy file. |
 
 ## Row spec (In)

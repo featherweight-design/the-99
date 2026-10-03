@@ -102,7 +102,7 @@ const ROW_BOX_IN_IMPORT = "min-h-[44px] px-[12px]";
 // of a list where a row's tint already means something.
 const ROW_PLATE =
   "group bg-[color:var(--surface)] [--row-bg:var(--surface)] [border:1px_solid_var(--border)]";
-const ROW_PLATE_HOVER =
+export const ROW_PLATE_HOVER =
   "md:cursor-pointer md:hover:bg-[color:var(--elevated-hover)] md:hover:[--row-bg:var(--elevated-hover)]";
 const ROW_PLATE_KEPT =
   "group bg-[color:var(--elevated-hover)] [--row-bg:var(--elevated-hover)] " +
@@ -284,8 +284,8 @@ function AvailabilitySlot({
  * trigger would otherwise open the card a second time over its own fetch, and the
  * pull button would open it while writing.
  */
-function useRowOpen(
-  card: DiffRowCard,
+export function useRowOpen(
+  card: Pick<DiffRowCard, "oracleId">,
   siblings: readonly Sibling[] | undefined,
   review: boolean,
 ): React.HTMLAttributes<HTMLElement> {
