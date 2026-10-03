@@ -48,7 +48,8 @@ import {
 import type { CardRow } from "../../src/lib/labels/publish";
 import { publishWave, readCardsByName, stampWave } from "../../src/lib/labels/publish";
 import { validateJob } from "../../src/lib/labels/schema";
-import { type LabelScope, scopeCondition } from "../../src/lib/labels/scope";
+import { type LabelScope, scopeCondition, scopeDeck } from "../../src/lib/labels/scope";
+import { labelTrialPool } from "../../src/lib/swaps/gather";
 import type { Job } from "../../src/lib/labels/types";
 import { ALL_MODELS, PRICING } from "./card-labels-pricing.mjs";
 
@@ -197,11 +198,15 @@ const refuse = (why: string): never => { throw new Refusal(why); };
  * chunk reproduces its own content-addressed key.
  */
 async function cardsNeedingLabels(scope: LabelScope, only: readonly string[] | undefined): Promise<CardRow[]> {
+  const deckId = scopeDeck(scope);
+  const trial = deckId === null ? null : await labelTrialPool(deckId);
+  if (deckId !== null && trial === null) throw new Error(`LABEL_SCOPE names deck ${deckId}, which does not exist`);
+  if (trial !== null) console.log(`  deck ${deckId}: ${trial.length} card(s) in its trial pool`);
   const rows = await db.execute<CardRow>(sql`
     select c.oracle_id as "oracleId", c.name, c.mana_cost, c.type_line, c.oracle_text, c.layout
       from cards c
      where c.commander_legal = true
-       ${scopeCondition(scope)}
+       ${trial === null ? scopeCondition(scope) : sql`and c.oracle_id = any(${sql.param(trial)}::uuid[])`}
        ${only === undefined ? sql`` : sql`and c.oracle_id = any(${sql.param([...only])}::uuid[])`}
      order by c.oracle_id
   `);
