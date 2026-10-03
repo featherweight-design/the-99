@@ -188,10 +188,20 @@ export const AVAILABILITY_CHIP_GLYPH_OVER_PX = 21;
  * The key's three commitment samples draw smaller than the chip's `big` scale (Hugh,
  * 2026-10-03): the `big` diamond's ~11.3px CSS side read larger than the key's other 16x16
  * marks, most of whose own box is empty around a thin stroke, where a filled/outlined diamond
- * reads dense. 8px is the side Hugh named directly, and the box/inset/over-width below are the
- * SAME √2 derivation the `big` scale uses, run at that side — so the key's samples still
- * reserve exactly their own painted footprint (`AvailabilityGlyphBox`'s invariant), just at a
- * smaller scale. The tile/chip markers are untouched: neither scale here is their 6px one.
+ * reads dense. 8px is the side Hugh named directly.
+ *
+ * `KEY_DIAMOND_BOX_PX` and `KEY_DIAMOND_INSET_PX` are the SAME √2 derivation the `big` scale
+ * uses (box = side × √2, inset centres the unrotated CSS box inside it), run at this side
+ * instead — so the single-diamond samples still reserve exactly their own painted footprint
+ * (`AvailabilityGlyphBox`'s invariant).
+ *
+ * `KEY_DIAMOND_OVER_PX` is NOT that derivation: `AVAILABILITY_CHIP_GLYPH_OVER_PX` (21) is
+ * itself a handoff figure, not derived from `BIG_DIAMOND_SIDE_PX` by any formula (see that
+ * constant's own comment) — there is no second handoff figure for an 8px over-glyph to read
+ * off. This scales 21 by the same side ratio (8 / 11.3137) instead, which keeps the two-diamond
+ * overlap's proportions consistent with the big scale rather than inventing an unrelated width.
+ *
+ * The tile/chip markers are untouched: neither scale here is their 6px one.
  */
 export const KEY_DIAMOND_SIDE_PX = 8;
 export const KEY_DIAMOND_BOX_PX = KEY_DIAMOND_SIDE_PX * Math.SQRT2;
@@ -434,7 +444,8 @@ export function AvailabilityMarker({
    * keeps `AVAILABILITY_CHIP_GLYPH_PX` (16/21px), for the caption row's shared height. An
    * earlier build drew the diamond itself at that bounding-box size, about twice the size of
    * the desktop chip's diamond beside its word. `AvailabilityGlyphBox`, the key's own
-   * samples, still draws `big` — unaffected, since a key entry has no caption row to share.
+   * samples, still draws at its own scale (`"key"`, since 2026-10-03) — unaffected, since a
+   * key entry has no caption row to share.
    */
   glyphOnly?: boolean;
 } & MarkerOpts) {
@@ -504,11 +515,12 @@ export function AvailabilityMarker({
       <AvailabilityGlyph
         state={state}
         seam={chip ? (plate ? CHIP_SCRIM : CAPTION_SCRIM) : seam}
-        // Never `big` here (Hugh, 2026-10-03): the phone's glyph-only chip drew its diamond at
+        // No `size` here (Hugh, 2026-10-03): the phone's glyph-only chip drew its diamond at
         // the bounding box's own 16px rather than the row/chip's 6px, about twice the size of
         // the desktop chip's diamond beside its word. The outer box (below) keeps its 16/21px
         // width for the caption row's shared height; only the diamond inside it shrinks to
-        // match. `AvailabilityGlyphBox`, the key's own samples, still passes `big` — unaffected.
+        // match. `AvailabilityGlyphBox`, the key's own samples, still passes a `size` —
+        // unaffected.
       />
       {/*
         The prefix never truncates; the deck name is the flexible half. This is
