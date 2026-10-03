@@ -120,12 +120,6 @@ export function FilterBar({
    * result line is outside it. */
   shown: number;
   total: number;
-  /**
-   * UNUSED since the place strip replaced the rack's `By set` and `Proxies` links (collection
-   * surfaces Call 4). Removed in a follow-up once the collection flash fix, which also edits
-   * `browser.tsx`, has landed.
-   */
-  hasCollection: boolean;
   /** Chips the chassis draws, already shaped by `collectionChips`. */
   chips: FilterChip[];
   onClearAll: () => void;

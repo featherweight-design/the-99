@@ -38,7 +38,7 @@ const card = (over: Partial<BrowseListCard> = {}): BrowseListCard =>
 function view(cards: BrowseListCard[]) {
   return (
     <CardDetailProvider fetchCard={async () => null}>
-      <CollectionBrowser cards={cards} ownedSets={[]} availabilityOk hasCollection />
+      <CollectionBrowser cards={cards} ownedSets={[]} availabilityOk />
     </CardDetailProvider>
   );
 }
