@@ -766,7 +766,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // screen’s `Put back` (deck-versioning.ts:249) is a second door and is
     // named in the caption rather than drawn. R3 drew one wearing the other.
     caption:
-      "Take a card out of your deck and the row turns into an undo, naming it. The review screen offers the same thing on a cut of a single copy, reading Put back. A whole stack that came out is put back on the deck itself. Putting a card back also puts back what it cost: the deck’s count, its shopping total and any claim it had on your collection all return together, so undo never leaves the figures half-changed. Pulling a copy out of another deck is not this, and discarding a draft is not either.",
+      "Take a card out of your deck and the row turns into an undo, naming it. Take out several and each keeps its own row — undoing one never disturbs another, and there's no limit on how many stand at once. The review screen offers the same thing on a cut of a single copy, reading Put back. A whole stack that came out is put back on the deck itself. Putting a card back also puts back what it cost: the deck’s count, its shopping total and any claim it had on your collection all return together, so undo never leaves the figures half-changed. Pulling a copy out of another deck is not this, and discarding a draft is not either.",
     keys: [],
     since: 1,
   },
