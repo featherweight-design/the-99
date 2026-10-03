@@ -1732,6 +1732,13 @@ async function run() {
           wrapped: rowHeight > tallest + 2,
           rowHeight: Math.round(rowHeight),
           tallest: Math.round(tallest),
+          // Round 5 finding: `wrapped` alone missed a row whose content runs PAST its
+          // right edge without wrapping — `flex-nowrap` and every child `shrink-0` is
+          // exactly what makes that silent. `scrollWidth` over `clientWidth` is the one
+          // fact that catches it; a full "Field · direction" Sort label overflowed the
+          // 390px row by 48-72px with every other check here passing.
+          rowScrollWidth: Math.round(row.scrollWidth),
+          rowClientWidth: Math.round(row.clientWidth),
           fieldWidth: Math.round((slot ?? field).getBoundingClientRect().width),
           inputWidth: Math.round(field.getBoundingClientRect().width),
           fontSize: parseFloat(getComputedStyle(field).fontSize),
@@ -1777,6 +1784,11 @@ async function run() {
         `the control row does not wrap at ${width}${query}`,
         !row.wrapped,
         `row ${row.rowHeight}px against a tallest child of ${row.tallest}px`,
+      );
+      failures += !report(
+        `the control row does not run past its own right edge at ${width}${query}`,
+        row.rowScrollWidth <= row.rowClientWidth,
+        `scrollWidth ${row.rowScrollWidth}px against clientWidth ${row.rowClientWidth}px`,
       );
       failures += !report(
         `the field's slot clears its ${floor}px minimum at ${width}${query}`,

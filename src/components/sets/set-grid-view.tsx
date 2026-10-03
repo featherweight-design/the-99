@@ -121,6 +121,15 @@ export function SetGridView(props: SetGridViewProps) {
     if (local !== null) setLocal(null);
   }
   const [sheetOpen, setSheetOpen] = useState(false);
+  // Sort moves rows without moving the completion count, so the result region's own text
+  // never changes when the reader picks a new order — nothing announces it (round 5
+  // finding). `seq` forces a repeat of the same sentence to be spoken again on a second
+  // press of the same order; cleared on a timeout so the region falls back to the
+  // completion line it otherwise shows, the same handover `ResultLine` makes for a custom
+  // message. One region throughout — this joins the existing `role="status"` rather than
+  // adding a second live region.
+  const [sortAnnounce, setSortAnnounce] = useState<{ text: string; seq: number } | null>(null);
+  const sortAnnounceSeq = useRef(0);
   // The sheet is phone-only, and `md:hidden` alone hid it while useDialogA11y stayed
   // mounted: crossing the breakpoint with it open left the desktop page scroll-locked and
   // trapped focus in a dialog nobody could see. Unmounted rather than hidden.
@@ -1257,10 +1266,10 @@ export function SetGridView(props: SetGridViewProps) {
               panel holds its own `open`, and a sheet opened on a phone would otherwise still
               be open as a popover after a resize.
 
-              On the phone it takes `Missing`'s old slot on row 1. The trigger shows the
-              chosen order and direction (`collectionFilterCopy.sort.triggerOne`), up to
-              170px, and the row is built to 358px. The order is also in its accessible
-              name and in the panel's chosen row. */}
+              On the phone it takes `Missing`'s old slot on row 1 and shows the field alone
+              ("Number", "Price"), the full "Field · direction" label having overflowed the
+              358px row by 48-72px (round 5 finding, measured). Direction stays in the
+              accessible name and in the panel's chosen row. */}
           {/* Open head only, as the ownership toggles above are (d9, 2026-10-03): the order
               stays applied while collapsed. */}
           <div
@@ -1272,7 +1281,16 @@ export function SetGridView(props: SetGridViewProps) {
               key={`sort-${isDesktop ? "wide" : "compact"}`}
               desktopRowMinPx={44}
               compact={!isDesktop}
-              copy={setFilterCopy.sort.panel}
+              // Round 5 finding: the full "Field · direction" label overflowed the 390px
+              // row by 48-72px (measured), with nothing left to shrink. Neither /collection
+              // nor /decks faces this — their compact Sort sits in the filter sheet, not
+              // inline on a tight row — so there is no shared abbreviated form to reuse.
+              // The compact trigger shows the field alone; `oneName` (the accessible name,
+              // composed by `FilterPanel` itself from the option's label and hint, never
+              // from `triggerOne`'s return) still carries the direction.
+              copy={isDesktop
+                ? setFilterCopy.sort.panel
+                : { ...setFilterCopy.sort.panel, triggerOne: (name: string) => name.split(" · ")[0] }}
               options={sortOptions}
               selected={[filters.sort]}
               selectionMode="single"
@@ -1286,8 +1304,22 @@ export function SetGridView(props: SetGridViewProps) {
               onToggle={(code) => {
                 const next = nextSetSort({ sort: filters.sort, dir: filters.dir }, code as SetSort);
                 setFilters({ ...filters, sort: next.sort, dir: next.dir });
+                // Authored, not lowercased — the labels carry "Number" and "Price", and the
+                // directions their own words — the same rule `/collection`'s onToggle states.
+                sortAnnounceSeq.current += 1;
+                setSortAnnounce({
+                  text: `Sorted by ${setFilterCopy.sort.options[next.sort]}, `
+                    + `${setFilterCopy.sort.direction[next.sort][next.dir]}.`,
+                  seq: sortAnnounceSeq.current,
+                });
+                window.setTimeout(() => setSortAnnounce(null), 1500);
               }}
               onClear={() => {}}
+              onAnnounce={(text) => {
+                sortAnnounceSeq.current += 1;
+                setSortAnnounce({ text, seq: sortAnnounceSeq.current });
+                window.setTimeout(() => setSortAnnounce(null), 1500);
+              }}
             />
           </div>
         </div>
@@ -1507,7 +1539,12 @@ export function SetGridView(props: SetGridViewProps) {
           className="font-mono text-[11px] leading-[16px]"
           style={{ color: "var(--fg-muted)" }}
         >
-          {effective.own === "missing"
+          {sortAnnounce ? (
+            // Keyed on `seq` so a second press of the same order is a NEW node and the
+            // region is genuinely re-announced, the same rule `ResultLine` states for a
+            // repeated sentence.
+            <span key={sortAnnounce.seq}>{sortAnnounce.text}</span>
+          ) : effective.own === "missing"
             ? setPageCopy.result.missingOnly(shown.length)
             : effective.own === "owned"
               ? setPageCopy.result.ownedOnly(shown.length)
