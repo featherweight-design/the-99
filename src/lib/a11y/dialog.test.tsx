@@ -514,20 +514,51 @@ describe("useBackDismiss", () => {
   // that restoration, moving `scrollY` partway through the same popstate the
   // self-pop's `back()` produces; this hook's own handler, in the bubble phase,
   // has to win the argument and leave the reader where they were at `unmount`.
-  it("pins the pre-close scroll offset back after its self-pop", async () => {
+  // Found by Copilot's round-1 review: landing the simulated restoration DURING
+  // `popstate`'s own dispatch only exercises the loop's first, synchronous call —
+  // the production bug is Firefox's restoration landing LATER, outside that task,
+  // which is exactly why the fix reasserts over 30 frames rather than once. The
+  // disturbance here lands ten frames in, well after the self-pop's `popstate`
+  // has already come and gone, so only a reassertion that keeps running past
+  // frame one can pass this.
+  it("pins the pre-close scroll offset back after its self-pop, even against a delayed disturbance", async () => {
     window.scrollY = 900;
     const { hook } = open();
-    const disturb = () => {
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation((_x, y) => {
+      window.scrollY = y as number;
+    });
+    let frame = 0;
+    function disturbLater() {
+      frame += 1;
+      if (frame < 10) {
+        requestAnimationFrame(disturbLater);
+        return;
+      }
       window.scrollY = 300;
-    };
-    window.addEventListener("popstate", disturb, { capture: true });
+    }
+    requestAnimationFrame(disturbLater);
+    hook.unmount();
+    await new Promise((r) => setTimeout(r, 700));
+    expect(window.scrollY).toBe(900);
+    scrollTo.mockRestore();
+  });
+
+  // Found alongside the above: closing a dialog does not stop the reader from
+  // scrolling in the following half-second, so the reassert loop has to let a
+  // real wheel/touch/key win rather than fight it for the rest of its 30 frames —
+  // the same rule, and the same reason, `filter-bar.tsx`'s own loop cancels.
+  it("lets a real scroll cancel the reassert loop rather than fight it", async () => {
+    window.scrollY = 900;
+    const { hook } = open();
     const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation((_x, y) => {
       window.scrollY = y as number;
     });
     hook.unmount();
-    await settle();
-    window.removeEventListener("popstate", disturb, { capture: true });
-    expect(window.scrollY).toBe(900);
+    await new Promise((r) => setTimeout(r, 50));
+    window.dispatchEvent(new WheelEvent("wheel", { deltaY: 10 }));
+    window.scrollY = 300;
+    await new Promise((r) => setTimeout(r, 700));
+    expect(window.scrollY).toBe(300);
     scrollTo.mockRestore();
   });
 

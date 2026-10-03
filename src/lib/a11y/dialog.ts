@@ -231,25 +231,37 @@ function restoreHref(href: string | null) {
 }
 
 /**
- * Put back a scroll offset over 30 frames — the same count `filter-bar.tsx` uses
- * for its own rest-offset case, and for the same reason: a single `scrollTo`
- * loses a race against the browser's own post-traversal restoration in Firefox,
- * which does not reliably land within the same task as `popstate`, and 30 frames
- * (~500ms) is what that sibling case measured as the margin that wins it. No
- * cancel-on-input here, unlike `filter-bar.tsx`'s loop: that one is fighting a
- * reader who may already be scrolling, where this one runs once, programmatically,
- * right after a dialog closes and before any new input of the reader's own.
+ * Put back a scroll offset over up to 30 frames — the same count, and the same
+ * cancel-on-input rule, as `filter-bar.tsx`'s own rest-offset reassert: a single
+ * `scrollTo` loses a race against the browser's own post-traversal restoration in
+ * Firefox, which does not reliably land within the same task as `popstate`, and
+ * 30 frames (~500ms) is what that sibling case measured as the margin that wins
+ * it. Found by Copilot's round-1 review: the dialog closing does not stop the
+ * reader from scrolling in the following half-second, so a loop with no
+ * cancel-on-input fights a real wheel/touch/key the same way it fights the
+ * browser's own restoration — the exact feel `filter-bar.tsx`'s own comment
+ * calls out and the reason that loop cancels too.
  */
 function pinScrollY(y: number | null) {
   if (y == null) return;
   const offset = y;
   let frames = 0;
+  let rafId = requestAnimationFrame(reassert);
+  const stop = () => {
+    cancelAnimationFrame(rafId);
+    window.removeEventListener("wheel", stop);
+    window.removeEventListener("touchstart", stop);
+    window.removeEventListener("keydown", stop);
+  };
+  window.addEventListener("wheel", stop, { passive: true });
+  window.addEventListener("touchstart", stop, { passive: true });
+  window.addEventListener("keydown", stop);
   function reassert() {
     if (window.scrollY !== offset) window.scrollTo(0, offset);
     frames += 1;
-    if (frames < 30) requestAnimationFrame(reassert);
+    if (frames < 30) rafId = requestAnimationFrame(reassert);
+    else stop();
   }
-  reassert();
 }
 
 /** Stand the dialog on a fresh entry at the current URL. */
