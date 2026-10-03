@@ -235,17 +235,28 @@ export function FilterBar({
     // A single later scroll — observed consistently, on a sort change, shortly after a plain
     // `scrollTo` here succeeds — pulls the page back to its pre-reset position. Its source
     // wasn't pinned down (not scroll anchoring: disabling it changes nothing), so rather than
-    // chase it, this reasserts the offset for half a second, which reliably wins the race
-    // whatever still causes it. Cancelled on cleanup — a route change or another edit mid-loop
-    // must not keep forcing some other page, or a newer loop, back to this offset.
+    // chase it, this reasserts the offset for up to half a second, which reliably wins the
+    // race whatever still causes it. Any real scroll input during that window — wheel, touch,
+    // a key — cancels the loop at once rather than fighting the reader for the rest of it;
+    // without that, a filter edit followed by an immediate scroll felt locked for ~500ms.
     let frames = 0;
     let rafId = requestAnimationFrame(reassert);
+    const stop = () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("wheel", stop);
+      window.removeEventListener("touchstart", stop);
+      window.removeEventListener("keydown", stop);
+    };
+    window.addEventListener("wheel", stop, { passive: true });
+    window.addEventListener("touchstart", stop, { passive: true });
+    window.addEventListener("keydown", stop);
     function reassert() {
       if (window.scrollY !== offset) window.scrollTo(0, offset);
       frames++;
       if (frames < 30) rafId = requestAnimationFrame(reassert);
+      else stop();
     }
-    return () => cancelAnimationFrame(rafId);
+    return stop;
     // `filters` and `sort`/`sortDirection` already change identity on every
     // edit, including a keystroke in search — nothing else needs to key this.
   }, [filters, sort, sortDirection, wide]);
