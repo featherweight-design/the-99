@@ -85,8 +85,9 @@ describe("freshLabels — a land search is never a tutor", () => {
   });
 });
 
-// 2026-10-03: 3,237 staging rows were `[]` because every job failed `validateJob`, and the collector
-// stored the card anyway. Read as labelled, Lightning Bolt matched nothing and got no stand-ins.
+// 2026-10-03: 3,237 staging rows are `[]`, mostly the model answering no job (Lightning Bolt, wrongly)
+// and some with every job failed by `validateJob`. Read as labelled, they matched nothing and got no
+// stand-ins.
 describe("freshLabels — an empty row", () => {
   it("is unlabelled, so the text path reads the card (Lightning Bolt)", () => {
     const bolt = row({ labels: [] });

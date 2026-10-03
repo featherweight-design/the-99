@@ -30,12 +30,13 @@ type Row = {
  *   row's own model (`labelInputHash`), so the label describes text the card no longer has, or a
  *   prompt (its version or its SYSTEM instruction) the row predates;
  * - any of its jobs fails `validateJob`, so a malformed row is never half-read;
- * - it holds NO job: a stored `[]` is UNLABELLED, never "a fresh label with no jobs". The collector
- *   drops every job that fails `validateJob` and still stores the card, so `[]` cannot tell "nothing
- *   in the vocabulary" from "every job was malformed", and 3,237 staging rows (Lightning Bolt,
- *   Rampant Growth, Sakura-Tribe Elder) were the second kind (2026-10-03). Read as labelled, `[]`
- *   matches nothing and refuses every pair; absent, the text path reads the card, exactly as with
- *   the switch off.
+ * - it holds NO job: a stored `[]` is UNLABELLED, never "a fresh label with no jobs". Measured on
+ *   staging's 3,237 `[]` rows (2026-10-03): 96% are the model answering no job, some rightly (a
+ *   vanilla body) and some not (Lightning Bolt, a plain removal spell), and 4% had every job fail
+ *   `validateJob` (Rampant Growth, Sakura-Tribe Elder: a `to` on a ramp job), which the collector
+ *   stores as `[]` too. Read as labelled, `[]` matches nothing and refuses every pair, so those
+ *   cards got no stand-ins; absent, the text path reads the card, exactly as with the switch off,
+ *   and a body with no job reads as none there too.
  *
  * A `tutor` job on a card whose every library search finds only lands is dropped from an
  * otherwise fresh row (`searchesOnlyLands`): that card is ramp, and the prompt says so. A row the
