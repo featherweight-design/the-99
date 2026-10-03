@@ -25,9 +25,13 @@
  */
 export function withoutRepeats<T>(jobs: readonly T[]): T[] {
   const seen = new Set<string>();
+  // A field written null and one left out say the same thing (`validateJob` accepts both for an optional
+  // field such as `rampKind`), so neither enters the key; every other difference does.
   const sorted = (v: unknown): unknown =>
     v && typeof v === "object" && !Array.isArray(v)
-      ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, sorted((v as Record<string, unknown>)[k])]))
+      ? Object.fromEntries(Object.keys(v).sort()
+        .filter((k) => (v as Record<string, unknown>)[k] != null)
+        .map((k) => [k, sorted((v as Record<string, unknown>)[k])]))
       : v;
   return jobs.filter((j) => {
     const key = JSON.stringify(sorted(j));

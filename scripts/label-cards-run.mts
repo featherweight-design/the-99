@@ -159,7 +159,9 @@ for (const m of Object.keys(chosen) as (keyof typeof MODELS)[]) {
     ? { i: estBody, cw: estIn - estBody, cr: estCacheRead, o: estOut }
     : { i: estIn + estCacheRead, o: estOut };
   const c = costOf(m, usage);
-  const w = costOf(m, caching ? { i: estBody, cw: sysTokens * batches.length, o: estOutWorst } : { ...usage, o: estOutWorst });
+  // The worst case books every block as a write whenever a breakpoint is SENT, whatever `caches` says:
+  // that flag was measured on a shorter block, and a bound must not rest on a different prompt.
+  const w = costOf(m, SENDS_CACHE_BREAKPOINT ? { i: estBody, cw: sysTokens * batches.length, o: estOutWorst } : { ...usage, o: estOutWorst });
   estTotal += c;
   worstTotal += w;
   const how = caching
@@ -228,7 +230,7 @@ mkdirSync("out", { recursive: true });
 // haiku's `create` and sonnet's has spent Haiku's money and recorded nothing, so
 // the next invocation reads $0 and authorises the whole run again.
 const perModelWorst = Object.fromEntries((Object.keys(chosen) as (keyof typeof MODELS)[]).map((m) => [m,
-  costOf(m, SENDS_CACHE_BREAKPOINT && PRICING[m].caches
+  costOf(m, SENDS_CACHE_BREAKPOINT
     ? { i: estBody, cw: sysTokens * batches.length, o: estOutWorst }
     : { i: estIn + estCacheRead, o: estOutWorst })]));
 

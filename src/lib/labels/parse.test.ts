@@ -56,4 +56,11 @@ describe("withoutRepeats", () => {
     const other = { ...tribal, trigger: "etb" };
     expect(withoutRepeats([tribal, again, other])).toEqual([tribal, other]);
   });
+
+  it("reads an omitted field and a null one as the same job, keeping the first as written", () => {
+    const omitted = { space: "theme", kind: "tribal", restrictedTo: "Elf" };
+    const nulled = { ...omitted, rampKind: null };
+    expect(withoutRepeats([omitted, nulled])).toEqual([omitted]);
+    expect(withoutRepeats([omitted, { ...omitted, restrictedTo: "Goblin" }])).toHaveLength(2);
+  });
 });

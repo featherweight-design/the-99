@@ -92,11 +92,12 @@ if (MODEL_KEY === undefined) {
     + `the $${CAP_USD} cap meaningless.`,
   );
 }
-// The instruction block is booked at the cache WRITE rate when a breakpoint is sent, because no
-// request is guaranteed a warm cache (`SENDS_CACHE_BREAKPOINT`).
+// The instruction block is booked at the cache WRITE rate whenever a breakpoint is sent, because no
+// request is guaranteed a warm cache (`SENDS_CACHE_BREAKPOINT`). Whatever `caches` recorded for an older,
+// shorter block: a bound must not rest on a measurement of a different prompt.
 const RATES = {
   in: PRICING[MODEL_KEY].in, out: PRICING[MODEL_KEY].out,
-  ...(SENDS_CACHE_BREAKPOINT && PRICING[MODEL_KEY].caches ? { system: PRICING[MODEL_KEY].cacheWrite } : {}),
+  ...(SENDS_CACHE_BREAKPOINT ? { system: PRICING[MODEL_KEY].cacheWrite } : {}),
 };
 
 /**
