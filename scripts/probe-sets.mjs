@@ -597,6 +597,11 @@ async function run() {
     // 900px too: this page switches form at `md` (768) while the chassis frame switches at
     // 1000, so the band between them shows the wide inline controls. Whether that wraps is
     // the only question that matters, and it is measurable.
+    //
+    // NOT RE-MEASURED since H10 put the `Any` / `Exactly` modifier inside the colour box and
+    // H13 made the rarity trigger count (`Rarity 0` rather than `Rarity · all`). The row is
+    // wider by the modifier and narrower by the trigger, and no figure for either was taken
+    // when this changed: the next run of this check is the first measurement of it.
     const narrowDesktop = await (async () => {
       await page.setViewportSize({ width: 900, height: 900 });
       await page.goto(`${BASE}/collection/sets/${code}?c=W&r=rare`, { waitUntil: "networkidle" });
@@ -640,10 +645,12 @@ async function run() {
     const rest = await rackAt("");
     const one = await rackAt("?c=W");
     // Three ACTIVE dimensions, which a complete set cannot have: at 100% the page drops
-    // missing-only from what it applies, and its control with it, so `m=1` draws no chip
+    // missing-only from what it applies, and its control with it, so `own=missing` draws no chip
     // there by design. Asserting three against the first set in the index would report a
     // failure for correct behaviour on a fixture that happens to be finished.
-    const three = await rackAt("?c=W&r=rare&m=1");
+    // `own=missing`, the key the page writes since H10 took `m` for the colour modifier;
+    // a legacy `m=1` still parses, but a probe asks for what the page itself would write.
+    const three = await rackAt("?c=W&r=rare&own=missing");
     // Read off a STRUCTURE the page maintains, not off copy: the first attempt grepped for
     // sentences this page has never rendered, so it always answered false and the check it
     // guards would have failed on the fixture it exists to allow. At 100% the page removes
@@ -680,8 +687,8 @@ async function run() {
     // desktop-only check above never saw it.
     await page.setViewportSize({ width: 390, height: 844 });
     const phoneRest = await rackAt("");
-    const phoneMissing2 = await rackAt("?m=1");
-    const phoneThree = await rackAt("?c=W&r=rare&m=1");
+    const phoneMissing2 = await rackAt("?own=missing");
+    const phoneThree = await rackAt("?c=W&r=rare&own=missing");
     if (phoneRest === null) {
       // Not a skip. The desktop path treats a missing rack as a failure and this silently
       // returned a green run without measuring the phone invariant at all — the seventh
@@ -692,7 +699,7 @@ async function run() {
         "no [data-set-chips] at 390px, so the phone fixed-height invariant went unmeasured",
       );
     } else {
-      // `?m=1` on a COMPLETE set renders identically to rest — the page drops missing-only
+      // `?own=missing` on a COMPLETE set renders identically to rest — the page drops missing-only
       // from what it applies — so on such a fixture this cannot see the wrapping
       // missing-only line it is named for. SKIPPED rather than passed: a check that cannot
       // fail on the fixture it ran against has measured nothing, and reporting it green
@@ -704,7 +711,7 @@ async function run() {
         failures += !report(
           "an incomplete set was available to test the phone missing-only wrap",
           false,
-          "every set in this collection is complete — `?m=1` is never applied, so the "
+          "every set in this collection is complete — `?own=missing` is never applied, so the "
             + "wrapping result line cannot be measured. Probe a collection with one.",
         );
       } else {

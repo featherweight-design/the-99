@@ -30,12 +30,20 @@ export function ColourControl({
   onColorsChange,
   onMatchChange,
   wide,
+  unavailable,
 }: {
   colors: string[];
   match: JoinMode;
   onColorsChange: (c: string[]) => void;
   onMatchChange: (m: JoinMode) => void;
   wide: boolean;
+  /**
+   * Hues with nothing behind them under the caller's other filters, passed straight to the
+   * pips' own contract. Optional because the commander lanes pass none; the set page (H10)
+   * mounts this control and already greyed its dead hues before it did, so mounting it must
+   * not take that away.
+   */
+  unavailable?: readonly string[];
 }) {
   // With nothing lit there is nothing to be exact about: the modifier is inert,
   // but present and remembered.
@@ -109,6 +117,7 @@ export function ColourControl({
         form={wide ? "wide" : "sheet"}
         legend={filterCopy.colour.legend}
         value={colors}
+        unavailable={unavailable}
         onToggle={(code) => toggle(code.toLowerCase() as Hue)}
       />
 

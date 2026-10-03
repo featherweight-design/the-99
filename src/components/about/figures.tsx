@@ -477,7 +477,7 @@ function SetsFigure({ width }: { width: AboutWidth }) {
           ))}
         </span>
         <span className="flex h-[26px] items-center gap-[6px] rounded-[7px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] px-[9px] text-[11px] text-[color:var(--fg-muted)]">
-          {setFilterCopy.rarity.all}
+          {setFilterCopy.rarityPanel.triggerCount(0)}
           <span aria-hidden className="text-[color:var(--fg-faint)]">▾</span>
         </span>
         <span className="flex h-[26px] items-center rounded-[7px] border border-solid border-[color:var(--border-strong)] px-[10px] text-[11px] text-[color:var(--fg-muted)]">
