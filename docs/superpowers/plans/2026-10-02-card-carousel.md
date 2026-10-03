@@ -65,8 +65,11 @@ pr-review skill). Given the fourteen-mount-point blast radius, this splits into 
   `probe:card-prefetch`; this is a new *caller* of it, not new fetch logic.
 - Move the two shipped inline aria-labels (`Previous card` / `Next card`) to the copy keys in
   `card-carousel · copy strings.ts`.
-- Est. size: ~14-16 files (provider, the openers above, copy), under the 20-file ceiling; the
-  opener edits are each a few lines.
+- **Split in two (2026-10-03),** because the seven openers the pre-open pass added take one PR to
+  about 20 files: **PR 1a** is the provider seam, the `Sibling` type, the neighbor prefetch, the
+  copy keys and the `probe:card-prefetch` extension (about 6 files); **PR 1b** is the openers
+  passing their art and identity (about 13 files, a few lines each). 1b branches from `main` after
+  1a merges. Nothing draws a neighbor until PR 2, so neither half changes what a reader sees.
 - **The neighbor prefetch changes what `probe:card-prefetch` counts**: an opened card now reads
   its neighbors, so that probe's "reads a card ONCE" and "passing over reads nothing" checks must
   tell a neighbor read (after arrival) from an intent read (before a press). Extend it in this PR.
@@ -139,8 +142,8 @@ pr-review skill). Given the fourteen-mount-point blast radius, this splits into 
   describes a carousel that has not shipped.
 - Est. size: small — stacked-sheet wiring plus copy, well under the ceiling.
 
-No PR in this plan stacks on another's unmerged branch; each is independently mergeable once PR 1
-lands (2-4 depend on 1's sibling-art shape but not on each other's code).
+No PR in this plan stacks on another's unmerged branch. The order is 1a, 1b, 2, 3, 4; 2-4 depend on
+1a's sibling shape and on 1b's art, but not on each other's code.
 
 ## Route × viewport inventory
 
