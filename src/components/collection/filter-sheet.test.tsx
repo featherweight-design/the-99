@@ -121,7 +121,9 @@ describe("CollectionFilterSheet", () => {
     const grid = instant.parentElement!;
     expect(grid.hasAttribute("data-type-grid")).toBe(true);
     expect(grid.className).toMatch(/\bgrid\b/);
-    expect(grid.className).toMatch(/grid-cols-2/);
+    // Two columns from 360px; one below, where two stop fitting (320 is supported).
+    expect(grid.className).toMatch(/(^|\s)grid-cols-1(\s|$)/);
+    expect(grid.className).toMatch(/min-\[360px\]:grid-cols-2/);
     expect(instant.className).toMatch(/w-full/);
     expect(instant.className).toMatch(/justify-between/);
   });

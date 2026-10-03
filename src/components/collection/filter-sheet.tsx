@@ -221,8 +221,11 @@ function SheetBody({
           {/* A FIXED two-column grid (H8, d9's ruling 2026-10-02): wrapped, each chip was
               as wide as its count, so a filter that zeroed counts took the group from three
               rows to two and the sheet shrank. Seven types are always four rows here.
-              Interim-consistent: Design's Collection round may redraw this sheet. */}
-          <div data-type-grid className="grid grid-cols-2 gap-[8px]">
+              Interim-consistent: Design's Collection round may redraw this sheet.
+              ONE column below 360px: measured, two columns stop fitting Enchantment beside a
+              five-digit count under ~346px, and 320 is the narrowest phone this app supports.
+              A single column is still a fixed grid, so the rows still never reflow. */}
+          <div data-type-grid className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-[8px]">
             {typeOptions.map((option) => (
               <SheetChip
                 fill
