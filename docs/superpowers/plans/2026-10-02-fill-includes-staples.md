@@ -157,6 +157,13 @@ every role they satisfy (§2.5a), exactly as `held` cards do:
 Every fill caller inherits it: create, fill and Help me choose in full, and the top-off bulk
 controls within their slot count and their allow-list (§4.2 items 6 and 7).
 
+**A staple's row says it is a staple.** `FillRow.role` is what consumers read today, and a staple
+with no role (Swiftfoot Boots) would be filed `other`: `sleeveableIds` (`actions.ts:2396-2399`)
+drops `other` rows, so in a one-slot bulk fill it would spend the slot and return no tick, and
+create files `other` rows as undoable residual suggestions. So `FillRow` gains `source: "staple"`
+beside its classified role, `sleeveableIds` keeps a staple row whatever its role, and create files
+staple rows with the foundation rather than the residual.
+
 ## 5 · Is it a Design question?
 
 **No.** It changes which cards the fill picks and nothing on screen: no new control, state or
@@ -181,28 +188,33 @@ holds.
   sentinel inclusion and three owned dual-role ramp cards with none: the high one is placed.
 - **9 · Universal staples land.** An owned Sol Ring and Arcane Signet in a fixture collection are
   placed in a from-scratch fill for a mono-color commander.
-- **10 · The identity condition.** A W commander gets Swords to Plowshares; a four-color one gets
-  universal only.
+- **10 · The identity condition.** A W commander's staples step seeds Swords to Plowshares; a
+  three-color commander with no exact bucket is served by `count:3`, and a qualifying non-universal
+  card from that bucket arrives as a `source: "staple"` row (seeded, not picked later by the role
+  pass); a four-color commander's staples step seeds universal staples only.
 - **11 · The gate.** A bracket 2 answer refuses a Game Changer staple; a $20 budget refuses a
   staple above it.
 - **12 · Lands.** Command Tower arrives through the land sweep, once, and the land count is
   unchanged.
 - **13 · The caller's bounds.** A `slots: 1` fill places one card, and a fill with an allow-list
-  that omits Sol Ring does not place it.
+  that omits Sol Ring does not place it. A one-slot bulk fill whose staple is roleless (Swiftfoot
+  Boots) returns it as a tick.
 
 **Mutations, each must fail the probe:** the band removed (8), the staples step removed (9), the
-condition ignored so only universal staples seed (10), staples placed outside `admits` (11), land
+condition ignored so only universal staples seed (10), the `count:3` fallback dropped (10), staples placed outside `admits` (11), land
 staples placed by the staples step (12), the slot count or the allow-list ignored (13).
 
 **The measurement, rerun:** the scratch-branch run in §1 on the same four commanders, before and
 after, with each deck's role rows and the staples placed. Sol Ring and Arcane Signet must land on
-all four. Swords to Plowshares must land on Thorin (R W, owned) and, under recommendation 3's
-default, not on Omnath, Locus of Creation (four colors, universal staples only).
+all four. The assertion is on what the STAPLES STEP seeds (rows with `source: "staple"`), not on
+the finished deck: Swords to Plowshares must be seeded for Thorin (R W, owned) and, under §8
+question 3's proposal, not seeded for Omnath, Locus of Creation (four colors, universal staples
+only). The role pass may still pick Swords for Omnath as an ordinary removal card, which is right.
 
 ## 7 · PR boundaries
 
 One PR: `fill.ts` (band and staples step), `actions.ts`, the `staples` reader, the rename,
-`fill.test.ts`, and `probe-fill.ts`. Under ~600 lines.
+`sleeveableIds` and create's row filing (the `source` field), `fill.test.ts`, and `probe-fill.ts`. Under ~600 lines.
 
 ## 8 · For Hugh
 
