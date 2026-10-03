@@ -26,7 +26,8 @@
 //       NAME changes, while its batch is pending is not published under the new inputs' hash and
 //       does not count against the batch's floor; it is asked again.
 //   (h) EVERY MODEL COUNTS AGAINST THE FAMILY, each at its own rates, and a model with no
-//       canonical rate refuses rather than counting as free.
+//       canonical rate refuses rather than counting as free. Another model's OPEN work refuses a
+//       run outright, since its cost is not known until it lands.
 //
 // NO API CALL IS MADE AND NOTHING IS SPENT: the build's client is a parameter, and this passes a
 // fake that answers from the ledger's own `asked` lists. It runs the REAL `runLabelBuild`, with a
@@ -368,6 +369,14 @@ async function main(): Promise<void> {
   const expected = PRICING.haiku.in + PRICING.haiku.out;
   report("another model's collected batch adds its own priced cost", near((await spentInUnits(RUN.h)) - before, expected),
     `+$${((await spentInUnits(RUN.h)) - before).toFixed(4)}, expected $${expected.toFixed(4)}`);
+  const createsBeforeH = creates;
+  await db.insert(cardLabelBatches).values({
+    intentKey: `${RUN.h}:haiku-open`, runId: RUN.h, model: haiku, customId: `probe-haiku-open-${randomUUID()}`,
+    asked: ["probe haiku open card"], batchId: "msgbatch_probe_haiku_open", status: "submitted", promptVersion: LABEL_PROMPT_VERSION,
+  });
+  report("another model's open work in the family refuses the run", (await run(RUN.h, 10 * r, extra)) === EXIT_STOP
+    && creates === createsBeforeH);
+  await db.delete(cardLabelBatches).where(eq(cardLabelBatches.intentKey, `${RUN.h}:haiku-open`));
   await db.insert(cardLabelBatches).values({
     intentKey: `${RUN.h}:unknown`, runId: RUN.h, model: "probe-unknown-model", customId: `probe-unknown-${randomUUID()}`,
     asked: ["probe unknown card"], batchId: "msgbatch_probe_unknown", status: "collected", promptVersion: LABEL_PROMPT_VERSION,

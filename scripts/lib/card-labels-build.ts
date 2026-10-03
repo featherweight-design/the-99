@@ -34,7 +34,7 @@ import { db } from "../../src/db";
 import { cardLabelBatches, cardLabels, cardLabelsStaging } from "../../src/db/schema";
 import { faceResolver, withoutRepeats } from "../../src/lib/labels/parse";
 import {
-  CARDS_PER_REQUEST, MEASURED_PER_CARD, familySpend, meetsFloor, pauseRemediation, planChunks, waveSize,
+  CARDS_PER_REQUEST, MEASURED_PER_CARD, budgetFamily, familySpend, meetsFloor, pauseRemediation, planChunks, waveSize,
   projectedTotalUsd, withinCap, worstCaseUsd,
   type Chunk, type FamilySpend,
 } from "../../src/lib/labels/plan";
@@ -592,7 +592,7 @@ async function reconcile(opts: BuildOptions): Promise<{
  * provider, rather than as absent and re-submits. Writing the rows after the call is the
  * shape that pays twice.
  */
-async function submit(opts: BuildOptions, chunks: Chunk[], hashByName: ReadonlyMap<string, string>): Promise<void> {
+async function submit(opts: BuildOptions, chunks: Chunk[], rowsByName: ReadonlyMap<string, CardRow>): Promise<void> {
   // THE INSERT IS THE CLAIM, and only what this process actually inserted is submitted.
   //
   // Two invocations sharing a `LABEL_RUN_ID` could otherwise both find the intents already present
@@ -602,7 +602,12 @@ async function submit(opts: BuildOptions, chunks: Chunk[], hashByName: ReadonlyM
   const claimed = await db.insert(cardLabelBatches).values(chunks.map((c) => ({
     intentKey: c.intentKey, runId: opts.runId, model: MODEL, customId: c.customId, asked: c.names,
     promptVersion: LABEL_PROMPT_VERSION,
-    askedHashes: Object.fromEntries(c.names.map((n) => [n, hashByName.get(n) ?? ""])),
+    // From the SAME rows the request is built from, below: a hash read separately could describe
+    // text a catalog refresh replaced in between, and the collect would discard a good answer.
+    askedHashes: Object.fromEntries(c.names.flatMap((n) => {
+      const row = rowsByName.get(n);
+      return row === undefined ? [] : [[n, labelInputHash(row, MODEL)]];
+    })),
   }))).onConflictDoNothing().returning({ intentKey: cardLabelBatches.intentKey });
 
   const mine = new Set(claimed.map((r) => r.intentKey));
@@ -614,12 +619,9 @@ async function submit(opts: BuildOptions, chunks: Chunk[], hashByName: ReadonlyM
       + `billable. Wait for the other process, or start a new run.`);
   }
 
-  // THE SHARED HELPER: this read took run 36361018105 down with Postgres 42809, four lines above
-  // `batches.create`, while a probe went green on its own copy of it.
-  const rows = await readCardsByName(db, chunks.flatMap((c) => c.names));
-  const byName = new Map(rows.map((c) => [c.name, c]));
+  // Built from the rows the plan read, the same ones the intent's hashes came from.
   const requests = chunks.map((c) => buildRequest(
-    c.customId, MODEL, c.names.map((n) => byName.get(n)).filter((c2): c2 is CardRow => c2 !== undefined),
+    c.customId, MODEL, c.names.map((n) => rowsByName.get(n)).filter((c2): c2 is CardRow => c2 !== undefined),
   ));
 
   const batch = await opts.client.create({ requests });
@@ -697,6 +699,23 @@ async function build(opts: BuildOptions): Promise<number> {
   const { waiting, abandoned, held } = opts.dryRun
     ? { waiting: 0, abandoned: [] as string[], held: [] as string[] }
     : await reconcile(opts);
+  // ONE MODEL AT A TIME PER FAMILY. An open intent of another model is spend this run cannot see:
+  // it is billed when it lands, `familySpend` counts it only once it is measured, and reconcile
+  // only collects this model's. Planning beside it would let one family commit two caps. A model
+  // switch is not supported mid-flight; it waits until the other model's open work has landed.
+  if (!opts.dryRun) {
+    const otherModel = (await db.select({ runId: cardLabelBatches.runId, model: cardLabelBatches.model })
+      .from(cardLabelBatches).where(and(
+        inArray(cardLabelBatches.status, OPEN_STATUSES),
+        eq(cardLabelBatches.promptVersion, LABEL_PROMPT_VERSION),
+        sql`${cardLabelBatches.model} <> ${MODEL}`,
+      ))).filter((r) => budgetFamily(r.runId) === budgetFamily(runId));
+    if (otherModel.length > 0) {
+      return refuse(`${otherModel.length} open intent(s) in this budget family were asked of `
+        + `${[...new Set(otherModel.map((r) => r.model))].join(", ")}, not ${MODEL}. Their cost is not `
+        + `known yet. Finish them under that LABEL_MODEL first.`);
+    }
+  }
   if (abandoned.length > 0) {
     console.error(`\n${abandoned.length} intent(s) ABANDONED — submitted, id lost, and no longer`);
     console.error(`listed by the provider. Their cards are NOT re-submitted automatically:`);
@@ -862,7 +881,7 @@ async function build(opts: BuildOptions): Promise<number> {
     return EXIT_DONE;
   }
 
-  await submit(opts, wave, new Map(cards.map((c) => [c.name, labelInputHash(c, MODEL)])));
+  await submit(opts, wave, new Map(cards.map((c) => [c.name, c])));
   console.log(`\nSubmitted wave of ${wave.length}. Batches are asynchronous: re-run with `
     + `LABEL_RUN_ID=${runId} to collect it and submit the next wave.`);
   return EXIT_MORE_WORK;
