@@ -88,6 +88,18 @@ describe("publishing refuses an artifact that is not the default run", () => {
       expect(existsSync("docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-2-labels-sonnet.json")).toBe(false);
     });
 
+    it("fails closed on a stamp that names no run, and stamps before copying anything", () => {
+      write({ sonnet: {} });
+      const stamp = "docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-2-run.json";
+      mkdirSync("docs/superpowers/benchmarks", { recursive: true });
+      writeFileSync(stamp, "{\"runI");
+      expect(() => publishArtifacts(["out/cost.json"], true)).toThrow(/names no run/);
+      expect(existsSync("docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-2-cost.json")).toBe(false);
+      rmSync(stamp);
+      writeFileSync(stamp, JSON.stringify({}));
+      expect(() => publishArtifacts(["out/cost.json"], true)).toThrow(/names no run/);
+    });
+
     it("keeps two numbers past the float range apart", () => {
       write({ sonnet: {} });
       process.env.LABEL_PUBLISH = "resample-9007199254740993";

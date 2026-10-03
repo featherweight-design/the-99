@@ -51,6 +51,39 @@ export function resamplePublished(n) {
  * @param {string} n
  */
 export const resampleRunStamp = (n) => `docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-${n}-run.json`;
+
+/**
+ * Binds re-sample `n` to the run `out/batches.json` names, BEFORE any artifact is copied, and FAILS CLOSED.
+ * The stamp is created exclusively (`wx`), so of two publishers only one claims a number; a stamp that
+ * exists is parsed strictly, and one that is unreadable, truncated or names no run refuses rather than
+ * reading as absent. A crash after the stamp leaves the number bound to its run, so a retry of the SAME
+ * run goes through and a different run still refuses.
+ *
+ * @param {string} n
+ */
+function bindRunStamp(n) {
+  let runId;
+  try { runId = JSON.parse(readFileSync("out/batches.json", "utf8")).runId; } catch { runId = undefined; }
+  if (typeof runId !== "string" || !runId) throw new Error("out/batches.json names no run, so this re-sample's number cannot be bound to one");
+  const stamp = resampleRunStamp(n);
+  mkdirSync(dirname(stamp), { recursive: true });
+  try {
+    writeFileSync(stamp, JSON.stringify({ runId }) + "\n", { flag: "wx" });
+    return;
+  } catch (e) {
+    if (e?.code !== "EEXIST") throw e;
+  }
+  let owner;
+  try { owner = JSON.parse(readFileSync(stamp, "utf8")).runId; } catch { owner = undefined; }
+  if (typeof owner !== "string" || !owner) {
+    throw new Error(`${stamp} exists but names no run. Refusing to publish: an unreadable stamp cannot say whose ` +
+      "evidence this number holds. Inspect it, and restore it from git if a publish was interrupted.");
+  }
+  if (owner !== runId) {
+    throw new Error(`resample-${n} already holds ${owner}'s evidence, and out/ is ${runId}. Refusing to publish: ` +
+      "a reused number would replace that run's files or mix two runs under one number. Use the next number.");
+  }
+}
 const RESAMPLE_MODELS = ["sonnet"];
 /** The re-sample number `LABEL_PUBLISH` names, as written, or null when it names no re-sample. */
 const resampleNumber = () => /^resample-([1-9][0-9]*)$/.exec(process.env.LABEL_PUBLISH ?? "")?.[1] ?? null;
@@ -143,23 +176,8 @@ export function publishArtifacts(sources, publish) {
     return [src, dest];
   });
   const n = resampleNumber();
-  if (n !== null) {
-    const read = (path) => { try { return JSON.parse(readFileSync(path, "utf8")).runId; } catch { return undefined; } };
-    const runId = read("out/batches.json");
-    if (!runId) throw new Error("out/batches.json names no run, so this re-sample's number cannot be bound to one");
-    const owner = read(resampleRunStamp(n));
-    if (owner !== undefined && owner !== runId) {
-      throw new Error(`resample-${n} already holds ${owner}'s evidence, and out/ is ${runId}. Refusing to publish: ` +
-        "a reused number would replace that run's files or mix two runs under one number. Use the next number.");
-    }
-    plan.push([null, resampleRunStamp(n)]);
-  }
+  if (n !== null) bindRunStamp(n);
   for (const [src, dest] of plan) {
-    if (src === null) {
-      mkdirSync(dirname(dest), { recursive: true });
-      writeFileSync(dest, JSON.stringify({ runId: JSON.parse(readFileSync("out/batches.json", "utf8")).runId }) + "\n");
-      continue;
-    }
     mkdirSync(dirname(dest), { recursive: true });
     copyFileSync(src, dest);
     console.log(`published ${src} -> ${dest}`);
