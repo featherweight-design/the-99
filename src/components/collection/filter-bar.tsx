@@ -5,7 +5,7 @@
 // on mobile only (desktop keeps the inline pip row), and Sort single-select.
 // Visual chrome matches the §Filter Button spec (radius 999px mobile / 8px desktop).
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { type BrowseFilters, type SortDirection, type SortKey } from "../../lib/collection/browse";
 import {
   buildSortOptions,
@@ -150,6 +150,25 @@ export function FilterBar({
   // than its own 768px check — the two forms below are exactly the wide and
   // compact branches, so there is no longer a third breakpoint to reconcile.
   const wide = useMinWidth(`(min-width: ${CHASSIS_WIDE_MIN_PX}px)`);
+  // `useMinWidth`'s server snapshot is always false (its own doc), so branching the WHOLE
+  // return on `wide` alone made every cold load — wide screens included — paint the compact
+  // head first and swap to the wide chassis at hydration: a real layout shift, not the CSS
+  // flash `useMinWidth` accepts elsewhere. Until mounted, both forms render, split by a pure
+  // `min-[1000px]:` CSS class rather than this JS value, so the first paint is already
+  // correct at any width with no JS involved; once mounted (one render after hydration, by
+  // which point `wide` itself has settled) only the one `wide` now names is rendered, so no
+  // two FilterPanel/live-region instances stay mounted together past that first paint.
+  //
+  // `useSyncExternalStore`, not `useState` + `useEffect`: nothing external ever changes this
+  // once the client has rendered once, so there is no real subscription, but setting it from
+  // inside an effect is exactly the cascading-render pattern `react-hooks/set-state-in-effect`
+  // rejects — the same reason `useLocalFlag` and `useStoredView` use this hook rather than
+  // that pair for their own hydration-safe booleans.
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const [sheetOpen, setSheetOpen] = useState(false);
 
   // Crossing to wide unmounts the sheet, so leaving `open` true would reopen it
@@ -282,8 +301,7 @@ export function FilterBar({
     };
   }, [wide]);
 
-  if (wide) {
-    return (
+  const wideForm = (
       // §Filter Bar Container: sticky top:0 desktop, bg --bg, padding 18px 34px 14px desktop,
       // border-bottom 1px --border, z-index 2. Untouched by the collection surfaces brief
       // (decision 10): this branch is exactly what shipped before the pinned head.
@@ -418,8 +436,7 @@ export function FilterBar({
           }
         />
       </div>
-    );
-  }
+  );
 
   // Below 1000px: collection's own pinned head (collection surfaces, R1 + addendum R2), not
   // the shared chassis. Two heights, both fixed and neither animated (STATES H1/H2):
@@ -434,7 +451,7 @@ export function FilterBar({
   // — measured, the same way `CHASSIS_WIDE_MIN_PX` corrected the chassis breakpoint.
   // Chips leave the head entirely (decision 2 for this route, call 2): a 38px shelf sits
   // below it, in the ordinary scroll, only while a filter is on.
-  return (
+  const compactForm = (
     <>
       {/* Static, never sticky: `headRef`'s own `offsetTop` tracks `scrollY` once the head is
           actually stuck, measured via a probe diagnostic — a non-sticky sibling's `offsetTop` is
@@ -544,10 +561,20 @@ export function FilterBar({
       </div>
 
       {/* The shelf (call 2): only while a filter is on, below the head, in
-          the ordinary scroll — never inside the sticky box (STATES H1, H3). */}
+          the ordinary scroll — never inside the sticky box (STATES H1, H3).
+          Rendered at 44px — the chip ✕ and Clear-all's own 44px touch overlays,
+          not the shelf's 38px look — with the whole -6px correction on the
+          BOTTOM margin alone, pulling its CONTRIBUTION to the surrounding
+          layout back to 38px. A top margin here would pull the box's own top
+          edge UP into the sticky head's own area (`z-[2]`, pointer events),
+          stealing taps meant for the shelf; nothing below contends for that
+          space the same way. `overflow-x: auto` forces `overflow-y` to `auto`
+          too (CSS Overflow §3) once it is anything but `visible`, so a 38px
+          box here would have clipped both overlays to 38px of their 44 — the
+          same trick `card-tile-caption.tsx` uses for its own margin. */}
       {chips.length > 0 && (
         <div
-          className="flex h-[38px] items-center gap-[6px] overflow-x-auto whitespace-nowrap px-[16px]"
+          className="-mb-[6px] flex h-[44px] items-center gap-[6px] overflow-x-auto whitespace-nowrap px-[16px]"
           data-collection-chip-shelf
         >
           {chips.map((chip) => (
@@ -585,6 +612,18 @@ export function FilterBar({
       />
     </>
   );
+
+  // Past the first client render, `wide` has already settled (its own hook corrects it
+  // before this component's mount effect fires), so this is the one subtree that mounts —
+  // no two FilterPanel/live-region instances, no duplicate ids. Until then the exact same
+  // markup renders both ways, picked by the media query below rather than by `wide`.
+  if (mounted) return wide ? wideForm : compactForm;
+  return (
+    <>
+      <div className="hidden min-[1000px]:block">{wideForm}</div>
+      <div className="min-[1000px]:hidden">{compactForm}</div>
+    </>
+  );
 }
 
 /**
@@ -615,7 +654,7 @@ function FiltersTrigger({
       className={[
         // Drawn at 36px (decision 7), with a 44px hit target kept by the
         // same `after:` overlay the chip ✕ and chassis Clear-all use —
-        // drawing it at the shared 44px would make the pinned head 110px.
+        // drawing it at the shared 44px would make the pinned head 116px.
         "relative inline-flex h-[36px] shrink-0 cursor-pointer items-center gap-[7px] whitespace-nowrap",
         "rounded-full border border-solid px-[13px] font-sans text-[12.5px] font-medium",
         "after:absolute after:left-1/2 after:top-1/2 after:h-[44px] after:min-w-[44px] after:w-full",

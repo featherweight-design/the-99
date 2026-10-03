@@ -139,7 +139,21 @@ async function run() {
         fail(`${width}px · shelf drawn with a filter on`, false, "no shelf after toggling a Type chip");
       } else {
         const shelfBox = await shelf.boundingBox();
-        fail(`${width}px · shelf height`, shelfBox && near(shelfBox.height, 38, 2), `${shelfBox?.height}px`);
+        // The box itself is 44px — the chip ✕ and Clear-all's own touch overlays need the
+        // room, since the scroller would otherwise clip them to 38 (CSS Overflow §3: a
+        // non-`visible` `overflow-x` forces `overflow-y` to `auto` too). -3px top/bottom
+        // margins pull its CONTRIBUTION to the layout back to 38, read separately below.
+        fail(`${width}px · shelf box height`, shelfBox && near(shelfBox.height, 44, 2), `${shelfBox?.height}px`);
+        const margins = await shelf.evaluate((el) => {
+          const cs = getComputedStyle(el);
+          return { top: parseFloat(cs.marginTop), bottom: parseFloat(cs.marginBottom) };
+        });
+        const netHeight = (shelfBox?.height ?? 0) + margins.top + margins.bottom;
+        fail(
+          `${width}px · shelf's layout contribution stays 38px`,
+          near(netHeight, 38, 2),
+          `box ${shelfBox?.height}px, margins ${margins.top}/${margins.bottom}, net ${netHeight}px`,
+        );
         const insideHead = await shelf.evaluate((el, headEl) => headEl.contains(el), await head.elementHandle());
         fail(`${width}px · shelf outside the sticky head`, !insideHead, String(insideHead));
         // `scrollHeight` over `clientHeight` is polluted here: the chip ✕ and Clear-all's
@@ -154,9 +168,26 @@ async function run() {
         fail(`${width}px · shelf never wraps`, !wrapped, `tops: ${JSON.stringify(tops)}`);
       }
 
-      // Clean the filter back off for the remaining checks.
+      // Clean the filter back off, and PROVE the touch target while doing it: a point near
+      // the shelf's own top edge — inside the 44px overlay, outside where the old 38px-tall
+      // scroller clipped it — must still land on Clear all.
       const clearAll = onPageRole(page, "button", /Clear all filters/);
-      if (await clearAll.count()) await clearAll.click();
+      if (await clearAll.count()) {
+        const clearBox = await clearAll.boundingBox();
+        const shelfBoxAgain = await onPage(page, "[data-collection-chip-shelf]").first().boundingBox();
+        if (clearBox && shelfBoxAgain) {
+          await page.mouse.click(clearBox.x + clearBox.width / 2, shelfBoxAgain.y + 2);
+          await page.waitForTimeout(300);
+          const shelfGone = (await onPage(page, "[data-collection-chip-shelf]").count()) === 0;
+          fail(
+            `${width}px · Clear all's touch target reaches the shelf's top edge`,
+            shelfGone,
+            shelfGone ? "cleared" : "shelf still present",
+          );
+        } else {
+          await clearAll.click();
+        }
+      }
       await page.waitForTimeout(300);
 
       // H5 — search focus hides the well without losing it, and a typed query draws the ✕.
@@ -282,6 +313,18 @@ async function run() {
       );
       await context.close();
     }
+
+    // `useMinWidth`'s server snapshot is always false, so branching the whole return on it
+    // alone would paint the COMPACT head first on every cold load, wide screens included, and
+    // only swap to the wide chassis once hydration resolves — a real layout shift. Fixed by
+    // rendering both forms from the first frame, split by pure CSS, until mounted (one tick
+    // after hydration), same as `collection-head.tsx`'s own comment. NOT independently probed
+    // here: an rAF-polling check against this LOCAL, unthrottled connection passed identically
+    // with the mutation that reintroduces the single JS-gated branch restored — hydration
+    // settles before the check's own first tick either way, the same reason `probe:view-flash`
+    // only sees its flash under the Slow 4G + 4x CPU profile. Proving this one needs that same
+    // CDP throttling, which this probe does not carry; the fix's correctness rests on the CSS
+    // split alone (verified by reading the markup, not a browser run).
 
     // E6 — a cookieless first visit's view well follows the CSS `md:` split rather than
     // showing neither segment lit over a view the page is visibly drawing. Read the FIRST
