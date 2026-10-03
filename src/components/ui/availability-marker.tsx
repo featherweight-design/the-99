@@ -148,21 +148,43 @@ function label(
 const DIAMOND = "block w-[6px] h-[6px] rotate-45";
 
 /**
+ * The 3-up collection tile's glyph-only chip (collection surfaces, Call 3):
+ * the same diamond ladder at the size `CardFactMark` draws its glyphs, rather
+ * than the 6px size this file's row and captioned chips use alongside a word.
+ * The inline `width`/`height` below override the Tailwind-class size, since an
+ * arbitrary-value class built from an interpolated number is invisible to
+ * Tailwind's static scan and would compile to nothing.
+ */
+export const AVAILABILITY_CHIP_GLYPH_PX = 16;
+/**
+ * The over glyph's own width at that size: the two diamonds keep their 5px
+ * offset (`OverGlyph`'s own figure, unscaled) against a 16px diamond, which
+ * is exactly 21 — the handoff's second figure, not a derived one.
+ */
+export const AVAILABILITY_CHIP_GLYPH_OVER_PX = AVAILABILITY_CHIP_GLYPH_PX + 5;
+
+/**
  * The over-committed glyph is two diamonds overlapping by 1px, with the front
  * one carrying a left border in **the colour of whatever sits behind the
  * marker** — that border is the seam, and it only reads as a seam while it
  * matches the background. Six different backgrounds host this marker, so the
  * colour is a prop rather than a constant (design table line 124).
  */
-function OverGlyph({ seam }: { seam: string }) {
+function OverGlyph({ seam, big }: { seam: string; big?: boolean }) {
+  const side = big ? AVAILABILITY_CHIP_GLYPH_PX : 6;
   return (
-    <span aria-hidden="true" className="relative block flex-none w-[11px] h-[6px]">
+    <span
+      aria-hidden="true"
+      className="relative block flex-none"
+      style={big ? { width: AVAILABILITY_CHIP_GLYPH_OVER_PX, height: side } : { width: 11, height: 6 }}
+    >
       <span
         className={twMerge(DIAMOND, "absolute left-0 top-0 bg-[color:var(--danger)]")}
+        style={big ? { width: side, height: side } : undefined}
       />
       <span
         className={twMerge(DIAMOND, "absolute left-[5px] top-0 bg-[color:var(--danger)]")}
-        style={{ borderLeft: `1px solid ${seam}` }}
+        style={{ borderLeft: `1px solid ${seam}`, ...(big ? { width: side, height: side } : {}) }}
       />
     </span>
   );
@@ -182,11 +204,14 @@ function OverGlyph({ seam }: { seam: string }) {
 export function AvailabilityGlyph({
   state,
   seam,
+  big,
 }: {
   state: Exclude<AvailabilityState, "free">;
   seam: string;
+  /** `AVAILABILITY_CHIP_GLYPH_PX` instead of the row/chip's 6px. See `OverGlyph`. */
+  big?: boolean;
 }) {
-  if (state === "over") return <OverGlyph seam={seam} />;
+  if (state === "over") return <OverGlyph seam={seam} big={big} />;
   return (
     <span
       aria-hidden="true"
@@ -197,6 +222,7 @@ export function AvailabilityGlyph({
           ? "bg-transparent [border:1.5px_solid_var(--avail-soft)]"
           : "bg-[color:var(--avail-hard)]",
       )}
+      style={big ? { width: AVAILABILITY_CHIP_GLYPH_PX, height: AVAILABILITY_CHIP_GLYPH_PX } : undefined}
     />
   );
 }
@@ -255,6 +281,7 @@ export function AvailabilityMarker({
   spoken = false,
   linkDeck = false,
   className,
+  glyphOnly = false,
   ...opts
 }: {
   availability: AvailabilitySummary;
@@ -303,6 +330,13 @@ export function AvailabilityMarker({
    */
   linkDeck?: boolean;
   className?: string;
+  /**
+   * Chip density, `plate={false}` only: the word is dropped and the glyph grows to
+   * `AVAILABILITY_CHIP_GLYPH_PX` (collection surfaces, Call 3 — the 3-up tile has no room for
+   * "1 in a draft"). `spoken`'s sr-only sentence still renders, so the word survives for
+   * assistive tech; it is the key, not this component, that prints it for sighted readers.
+   */
+  glyphOnly?: boolean;
 } & MarkerOpts) {
   // Dev only: production strips it, so a late regression degrades to the
   // duplicated announcement rather than a blank screen for the player.
@@ -328,7 +362,9 @@ export function AvailabilityMarker({
   // Built from the same effective opts as the label, so the sentence never
   // names a deck the drawn form withheld — a nameless chip stays count-only in
   // both halves (Addendum 2 §3).
-  const prose = spoken ? markerAria(availability, effective) : null;
+  // `glyphOnly` always speaks, whether or not the caller also passed `spoken`: with no visible
+  // word left to aria-hide, a glyph-only chip given neither prop would announce nothing at all.
+  const prose = spoken || glyphOnly ? markerAria(availability, effective) : null;
 
   return (
     <span
@@ -338,13 +374,17 @@ export function AvailabilityMarker({
           ? // Top-left: top-right is the shipped accent quantity badge on both
             // tile surfaces (A2RM:51–60).
             `absolute left-[6px] top-[6px] gap-[4px] rounded-[4px] border px-[5px] py-[2px] ${CHIP_SKIN[state]}`
-          : chip
-            ? // In the caption, on a plate of its own: the shared box, in this
-              // state's ink.
-              CARD_TILE_SLOT_BOX
-            : // Row density sets no font size and no family — it rides the
-              // shipped meta line and must not change its height (row 3.1).
-              "gap-[6px]",
+          : chip && glyphOnly
+            ? // The glyph alone, in the same outlined box, padded to its own size
+              // instead of the text box's font-sized gutter.
+              "justify-center rounded-[4px] p-[2px]"
+            : chip
+              ? // In the caption, on a plate of its own: the shared box, in this
+                // state's ink.
+                CARD_TILE_SLOT_BOX
+              : // Row density sets no font size and no family — it rides the
+                // shipped meta line and must not change its height (row 3.1).
+                "gap-[6px]",
         className,
       )}
       style={chip && !plate ? slotOutline(CHIP_EDGE[state]) : undefined}
@@ -352,6 +392,7 @@ export function AvailabilityMarker({
       <AvailabilityGlyph
         state={state}
         seam={chip ? (plate ? CHIP_SCRIM : CAPTION_SCRIM) : seam}
+        big={glyphOnly}
       />
       {/*
         The prefix never truncates; the deck name is the flexible half. This is
@@ -377,19 +418,21 @@ export function AvailabilityMarker({
         that was standing in for it — so `none free — in ` and `Atraxa` render as
         `none free — inAtraxa`. jsdom cannot see this; only the browser can.
       */}
-      <span
-        aria-hidden={spoken || undefined}
-        className={twMerge(
-          "flex-none whitespace-pre",
-          colour,
-          // The caption box already sets the family, the size and the weight
-          // for every occupant, so the label only adds the tracking there.
-          chip && (plate ? "font-mono text-[8.5px] font-semibold tracking-[0.02em]" : "tracking-[0.02em]"),
-        )}
-      >
-        {text.prefix}
-      </span>
-      {text.deck &&
+      {!glyphOnly && (
+        <span
+          aria-hidden={spoken || undefined}
+          className={twMerge(
+            "flex-none whitespace-pre",
+            colour,
+            // The caption box already sets the family, the size and the weight
+            // for every occupant, so the label only adds the tracking there.
+            chip && (plate ? "font-mono text-[8.5px] font-semibold tracking-[0.02em]" : "tracking-[0.02em]"),
+          )}
+        >
+          {text.prefix}
+        </span>
+      )}
+      {!glyphOnly && text.deck &&
         // -ml cancels the container's gap between the two halves of what is one
         // sentence: the gap separates the glyph from the text, not `none free — in`
         // from `Atraxa`.

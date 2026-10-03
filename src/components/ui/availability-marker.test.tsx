@@ -502,3 +502,40 @@ describe("markerAria", () => {
     expect(c.overAria(5, 2)).toContain("you own 5 too few");
   });
 });
+
+// Collection surfaces, Call 3: the 3-up tile's chip drops its word. The glyph grows, the word
+// moves to the key, and the full sentence must still be announced for assistive tech.
+describe("AvailabilityMarker glyphOnly", () => {
+  it("draws no visible word at all, in any state", () => {
+    for (const av of [a(2, 0, 1), a(1, 1, 0, ["Atraxa"]), a(1, 2, 0, ["Atraxa", "Kykar"])]) {
+      const { container, unmount } = render(
+        <AvailabilityMarker availability={av} density="chip" plate={false} glyphOnly />,
+      );
+      // No visible text node at all — only the sr-only sentence and the glyph's own markup.
+      // Leaf spans only, since an ancestor's `textContent` includes its sr-only child's text.
+      const leaves = [...container.querySelectorAll("span")].filter((el) => el.children.length === 0);
+      const visible = leaves.filter((el) => !el.className.includes("sr-only") && el.textContent?.trim());
+      expect(visible).toHaveLength(0);
+      unmount();
+    }
+  });
+
+  it("still announces the full sentence, even without `spoken`", () => {
+    render(
+      <AvailabilityMarker
+        availability={a(1, 1, 0, ["Atraxa"])}
+        density="chip"
+        plate={false}
+        glyphOnly
+      />,
+    );
+    expect(screen.getByText(availabilityCopy.marker.hardAriaCountOnly)).toHaveClass("sr-only");
+  });
+
+  it("renders nothing at all in the free state, glyphOnly or not", () => {
+    const { container } = render(
+      <AvailabilityMarker availability={a(4, 0, 0)} density="chip" plate={false} glyphOnly />,
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+});

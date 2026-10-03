@@ -76,9 +76,12 @@ describe("GridView availability chip", () => {
     expect(screen.queryByText(/free|in a draft|in a brew|short/)).toBeNull();
   });
 
-  it("carries a count-only chip on a committed tile", () => {
+  // Collection surfaces, Call 3: the chip's word is dropped on the 3-up tile. The glyph
+  // alone is visible; the full sentence survives only for assistive tech, via `sr-only`.
+  it("carries a glyph-only chip on a committed tile, with no visible word", () => {
     renderTiles({ ...card, availability: avail(1, 1, 0, ["Atraxa"]) });
-    expect(screen.getByText("none free")).toBeInTheDocument();
+    expect(screen.queryByText("none free")).toBeNull();
+    expect(screen.getByText("no free copies")).toHaveClass("sr-only");
     expect(screen.queryByText(/Atraxa/)).toBeNull();
   });
 
@@ -122,6 +125,31 @@ describe("GridView printed name", () => {
   it("announces an ordinary card by exactly the name on its caption", () => {
     renderTiles({ ...card, name: "Sol Ring", printedName: null });
     expect(screen.getByRole("button", { name: /Sol Ring/ })).toBeInTheDocument();
+  });
+});
+
+// Collection surfaces, Call 3: past three glyphs (facts plus the combo lemniscate), the meta
+// line draws the first two and then `+N` rather than a fourth.
+describe("GridView mark overflow", () => {
+  const comboPartner = { oracleId: "o2", name: "Thrasios, Triton Hero" };
+
+  it("draws every mark up to the budget of three, with no +N", () => {
+    renderTiles({
+      ...card,
+      facts: ["gameChanger", "massLandDenial"],
+      comboPartner,
+    });
+    expect(screen.queryByText(/^\+\d/)).toBeNull();
+  });
+
+  it("collapses a fourth mark to +N, keeping the first two", () => {
+    renderTiles({
+      ...card,
+      facts: ["gameChanger", "massLandDenial", "extraTurns"],
+      comboPartner,
+    });
+    // 3 facts + 1 combo = 4 marks: the first two facts draw, the rest collapse to +2.
+    expect(screen.getByText("+2")).toBeInTheDocument();
   });
 });
 

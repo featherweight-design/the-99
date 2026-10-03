@@ -20,8 +20,10 @@
 
 import { CARD_FACTS, cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
+import { availabilityCopy } from "../../lib/copy/availability";
 import { CardFactMark } from "../cards/card-fact-mark";
 import { ComboGlyph } from "../cards/combo-glyph";
+import { AvailabilityGlyph } from "../ui/availability-marker";
 import { MarkKey } from "../decks/mark-key";
 
 const ENTRIES = [
@@ -47,6 +49,27 @@ const ENTRIES = [
     // 9.5-10.5px mono, where 16 is taller than the text it introduces.
     sample: <ComboGlyph />,
     word: comboAwarenessCopy.keyWord,
+  },
+  // THE THREE AVAILABILITY STATES (collection surfaces, Call 3): the chip on the 3-up tile
+  // dropped its word — "1 in a draft" is 81px of a 101px caption — and moved it here instead,
+  // using the Availability filter's own labels rather than new words for the same three states.
+  // `AvailabilityGlyph` directly, `big`, rather than `AvailabilityMarker`: the marker always
+  // speaks a REAL card's counts and claimants, and a key entry decodes the glyph alone, with no
+  // card behind it to count.
+  {
+    id: "avail-soft",
+    sample: <AvailabilityGlyph state="soft" seam="var(--bg)" big />,
+    word: availabilityCopy.collection.filterSoft,
+  },
+  {
+    id: "avail-hard",
+    sample: <AvailabilityGlyph state="hard" seam="var(--bg)" big />,
+    word: availabilityCopy.collection.filterHard,
+  },
+  {
+    id: "avail-over",
+    sample: <AvailabilityGlyph state="over" seam="var(--bg)" big />,
+    word: availabilityCopy.collection.filterOver,
   },
 ];
 
