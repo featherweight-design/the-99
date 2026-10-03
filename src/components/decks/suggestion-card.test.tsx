@@ -64,7 +64,9 @@ describe("SuggestionCard", () => {
 
   it("draws the full reason at both widths (H35-E)", () => {
     draw(item);
-    expect(screen.getByText(item.rationale)).toBeInTheDocument();
+    const full = screen.getByText(item.rationale).className;
+    expect(full).not.toMatch(/\bhidden\b/);
+    expect(full).not.toMatch(/\bmd:hidden\b/);
     expect(screen.queryByText(item.rationaleShort)).not.toBeInTheDocument();
   });
 
