@@ -32,7 +32,7 @@ const stub = vi.hoisted(() => {
     cards: [] as Record<string, unknown>[],
     /** The collection rows behind `ownedColorLegalPool`. */
     collectionItems: [] as Record<string, unknown>[],
-    /** What `unownedStaples`' catalog query returns — the cards EDHREC named
+    /** What `unownedTopCards`' catalog query returns — the cards EDHREC named
         that the player does not own. Kept apart from `cards` because that query
         matches on lowercased name, not on oracle id. */
     stapleCards: [] as Record<string, unknown>[],
@@ -49,7 +49,7 @@ const stub = vi.hoisted(() => {
         const builder = {
           where: async (condition?: unknown) => {
             if (tableName !== "cards") return state.collectionItems;
-            // `unownedStaples` is the only cards read that projects `manaValue`.
+            // `unownedTopCards` is the only cards read that projects `manaValue`.
             if (keys.includes("manaValue")) return state.stapleCards;
             const ids = paramValues(condition);
             // Postgres casts the bound parameter to uuid and errors on anything
@@ -241,7 +241,7 @@ describe("createDeck with a selection", () => {
 
   it("keeps the fill from spending an unowned staple the selection placed", async () => {
     // The critical case: a selected card the player does not own is in
-    // `unownedStaples`, not in the owned pool. Filtering only the pool would
+    // `unownedTopCards`, not in the owned pool. Filtering only the pool would
     // let this one land twice.
     stub.state.cards.push(commanderRow(), cardRow(VALID));
     stub.state.stapleCards.push(cardRow(VALID, { manaValue: 2 }));
