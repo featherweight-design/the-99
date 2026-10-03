@@ -57,8 +57,8 @@ Two button skins recur, both from the sheet's `renderVals()` (:223-228):
 | Resting | key | `sheet.take` | same | Sheet :110 |
 | Resting | aria-label key | `sheet.takeAria(add, cut)` | same | copy |
 | Resting | skin | Apply skin (desktop) | Apply skin (phone, `72 × 44`) | Sheet :223-225 |
-| Pressed / taking | `PendingLabel` (the in-control crown) over `sheet.take`, `aria-busy` | same | same | resting width held; `sheet.taking` retired 2026-10-03 |
-| Pressed / taking | visual | **not drawn.** The canvas has no taking frame; only the key exists | same | — |
+| Pressed / taking | render | `PendingLabel` (the in-control crown) over `sheet.take`, `aria-busy`; the label keeps its box, so the resting width holds | same | Hugh, 2026-10-03 |
+| Pressed / taking | key | none: `sheet.taking` (`Taking…`) retired 2026-10-03, because it grew the button into the price beside it; the name stays `sheet.takeAria` | same | Hugh, 2026-10-03 |
 | Taken (the pressed row) | render | the row's grid is replaced by the taken row (§2.1); no Take | same | Sheet :87-91, :139 |
 | Taken (every other row) | render | `canTake: false`: Take is **removed**, not disabled; the cell stays empty; the row keeps its slot and order | same | Sheet :172; README "The other rows drop Take but keep their slots"; Swap Tools :233 |
 | Disabled | visual | **not drawn.** The design removes Take rather than disabling it; no disabled skin exists in the package | same | — |
