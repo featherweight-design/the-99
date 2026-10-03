@@ -80,6 +80,9 @@ export type SetGridViewProps = {
   artGeneration: number;
 };
 
+/** The collapsed head's hide for Any / Exactly below 1000px, unless it holds keyboard focus. */
+export const NARROW_HIDE = "max-[999px]:[&_[data-set-shy-hides-narrow]:not(:has(:focus-visible))]:hidden";
+
 export function SetGridView(props: SetGridViewProps) {
   const {
     code, name, iconSvgUri, releasedAt, cells, prices, newestAsOf, baseSetSize, staleAsOf,
@@ -1115,8 +1118,11 @@ export function SetGridView(props: SetGridViewProps) {
             data-set-colour
             // Collapsed below 1000px, the Any / Exactly segments and their hairline go: the
             // row has no room for them beside the set name (d9, 2026-10-03). Still applied,
-            // and the open head draws them.
-            className={`hidden shrink-0 md:flex${shy ? " max-[999px]:[&_[data-set-shy-hides-narrow]]:hidden" : ""}`}
+            // and the open head draws them. NEVER while they hold keyboard focus: a head that
+            // collapsed wide and was then narrowed (a resize, a zoom) would otherwise hide the
+            // radio under the reader's keyboard. In CSS so it holds through every path to the
+            // band, which the scroll-time focus guard alone does not see.
+            className={`hidden shrink-0 md:flex${shy ? ` ${NARROW_HIDE}` : ""}`}
           >
             <ColourControl
               wide

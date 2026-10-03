@@ -1,7 +1,7 @@
 import { cloneElement, useLayoutEffect } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, act, within } from "@testing-library/react";
-import { SetGridView } from "./set-grid-view";
+import { NARROW_HIDE, SetGridView } from "./set-grid-view";
 import { placeCells, type SetPrinting } from "../../lib/sets/completion";
 import { setPageCopy } from "../../lib/copy/set-collections";
 
@@ -2110,7 +2110,7 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     search = "c=W&m=exact";
     const { container } = view([p("1", { colorIdentity: ["W"] }), p("2", { colorIdentity: ["W", "U"] })], []);
     const box = () => container.querySelector("[data-set-colour]") as HTMLElement;
-    const HIDE = "max-[999px]:[&_[data-set-shy-hides-narrow]]:hidden";
+    const HIDE = NARROW_HIDE;
     expect(container.querySelector('[data-set-colour] [role="radiogroup"]')!
       .hasAttribute("data-set-shy-hides-narrow")).toBe(true);
     const exactly = () => container.querySelector('[data-set-colour] [role="radio"][aria-label="Exactly these"]') as HTMLElement;
@@ -2127,6 +2127,14 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     expect(isShy(container)).toBe(false);
     expect(box().className).not.toContain(HIDE);
     expect(exactly().getAttribute("aria-checked")).toBe("true");
+  });
+
+  // Round 5: a head that collapsed WIDE and is then narrowed (resize, zoom) never runs the
+  // scroll guard, so the hide itself must spare a focused radio. jsdom resolves no CSS, so
+  // this pins the selector and probe-sets reads the painted result in a browser.
+  it("never hides Any / Exactly while it holds keyboard focus", () => {
+    expect(NARROW_HIDE).toContain(":not(:has(:focus-visible))");
+    expect(NARROW_HIDE).toMatch(/^max-\[999px\]:/);
   });
 
   // Round 4: below 1000px the collapse hides Any / Exactly, so keyboard focus on it must

@@ -1346,6 +1346,35 @@ async function run() {
           hidden && kept,
           `hidden=${hidden}, url m=${new URL(page.url()).searchParams.get("m")}`,
         );
+
+        // Round 5: collapsed WIDE with keyboard focus on the radio, then narrowed to this
+        // width. No scroll runs the focus guard, so only the hide's own `:focus-visible`
+        // exception keeps the focused radio on screen.
+        await page.setViewportSize({ width: 1200, height: 900 });
+        await scrollTo(0);
+        await page.waitForTimeout(200);
+        await scrollTo(900);
+        await page.waitForTimeout(300);
+        // A key press first, so the browser treats the scripted focus as keyboard focus.
+        await page.keyboard.press("Shift");
+        await exactly.focus();
+        await page.setViewportSize({ width, height: 900 });
+        await page.waitForTimeout(300);
+        const focusedShown = await exactly.isVisible();
+        const stillFocused = await exactly.evaluate((el) => el === document.activeElement && el.matches(":focus-visible"));
+        failures += !report(
+          `narrowed to ${width} with keyboard focus on Exactly, the radio stays on screen`,
+          focusedShown && stillFocused,
+          `visible=${focusedShown}, focus-visible=${stillFocused}`,
+        );
+        await exactly.evaluate((el) => el.blur());
+        await page.waitForTimeout(200);
+        failures += !report(
+          `once focus leaves at ${width}, the collapsed head hides it again`,
+          !(await exactly.isVisible()),
+          `visible=${await exactly.isVisible()}`,
+        );
+        await page.setViewportSize({ width, height: 900 });
       }
       await page.goto(`${BASE}/collection/sets/${code}`, { waitUntil: "networkidle" });
       await waitForCells(page);
