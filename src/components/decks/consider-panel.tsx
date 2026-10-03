@@ -29,7 +29,7 @@ import { useFoldedShelves } from "./use-folded-shelves";
 export { SHELF_CAP } from "../../lib/decks/shelf-cap";
 
 // The shelf heading's meta text, which the unowned shelf prints in two colours.
-const META = "font-mono text-[10px] md:text-[11px]";
+const META = "font-mono text-[10.5px] md:text-[11px]";
 
 type ShelfRole = MixRole | "other";
 const SHELF_ROLES: ShelfRole[] = ["ramp", "draw", "removal", "wipes", "land", "other"];
@@ -222,6 +222,25 @@ function ShelfSection({
   onToggleFold: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  // Folding CLEARS the expansion (handoff s4) — adjusted DURING RENDER, the
+  // pattern React's own docs give for "reset state when a prop changes",
+  // rather than a `useEffect` whose synchronous `setState` this codebase's
+  // lint rule rejects as a cascading-render risk. `prevFolded` is the only
+  // state this needs: when it disagrees with the live `folded` prop, this is
+  // the first render to see that transition, so clearing `expanded` now lands
+  // in the SAME commit rather than one render late.
+  //
+  // On EVERY transition into folded, not only one this tab's own click
+  // initiated — `useFoldedShelves` also subscribes to another tab's write
+  // (`subscribeToKey`'s `storage` listener), so a shelf expanded here and
+  // folded from a second tab must still reopen capped, not resuming an
+  // expansion that external write knows nothing about (Copilot round 1,
+  // medium).
+  const [prevFolded, setPrevFolded] = useState(folded);
+  if (folded !== prevFolded) {
+    setPrevFolded(folded);
+    if (folded && expanded) setExpanded(false);
+  }
   const headingId = `shelf-${shelf.key}`;
   const bodyId = `${headingId}-body`;
   // The SECTION's accessible name stays the bare label (`aria-labelledby`
@@ -287,12 +306,7 @@ function ShelfSection({
             // `unresolved-row.tsx`, `combo-partners-detail.tsx` and `issue-inspector.tsx`
             // already apply to their own disclosures (pre-open review).
             aria-controls={folded ? undefined : bodyId}
-            onClick={() => {
-              // Folding CLEARS the expansion (handoff s4): reopening a shelf
-              // never resumes a "Show all" a reader had left open.
-              if (!folded) setExpanded(false);
-              onToggleFold();
-            }}
+            onClick={onToggleFold}
             className="flex flex-wrap items-baseline gap-x-[8px] md:gap-x-[10px] gap-y-[2px] min-h-[52px] md:min-h-[44px] p-0 border-none bg-transparent cursor-pointer text-left"
           >
             <span

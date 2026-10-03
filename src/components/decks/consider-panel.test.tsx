@@ -5,7 +5,7 @@
 // truth was that we had no figure, and a role printed on every row that the
 // heading above already said.
 import { useState } from "react";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { shelfFoldKey } from "../../lib/decks/shelf-fold";
 import type { SortKey } from "./consider-toolbar";
@@ -251,6 +251,31 @@ describe("ConsiderPanel — shelf fold (STATES-consider-tiles.md s1–s5)", () =
     fireEvent.click(foldButton); // fold
     fireEvent.click(foldButton); // unfold
 
+    expect(screen.getAllByRole("listitem")).toHaveLength(SHELF_CAP);
+    expect(screen.getByRole("button", { name: /show all/i })).toBeInTheDocument();
+  });
+
+  // The fold can arrive from ANY writer to the shared storage key, not only this
+  // tab's own click — `useFoldedShelves` subscribes to `storage` the same way a
+  // second browser tab's write would reach it. The expansion still has to clear
+  // (Copilot round 1, medium): a shelf expanded here and folded by another tab
+  // must reopen capped, not resuming an expansion that write knows nothing about.
+  it("clears the expansion on an externally-written fold, not only a local click", async () => {
+    const { writeRaw } = await import("../ui/local-store");
+    const many = Array.from({ length: SHELF_CAP + 2 }, (_, i) => suggestion({ name: `Ramp Card ${i}` }));
+    mount({ suggestions: many });
+
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(`show all ${SHELF_CAP + 2} ramp`, "i") }));
+    expect(screen.getAllByRole("listitem")).toHaveLength(SHELF_CAP + 2);
+
+    // Simulates a second tab folding this shelf: a write to the same key, through
+    // the same store, with no click on this tab's own button.
+    await act(() => {
+      writeRaw(shelfFoldKey("deck-1"), JSON.stringify(["ramp"]));
+    });
+    expect(screen.queryAllByRole("listitem")).toHaveLength(0);
+
+    fireEvent.click(disclosureFor("Ramp")); // this tab reopens it
     expect(screen.getAllByRole("listitem")).toHaveLength(SHELF_CAP);
     expect(screen.getByRole("button", { name: /show all/i })).toBeInTheDocument();
   });
