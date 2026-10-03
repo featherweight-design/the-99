@@ -176,7 +176,6 @@ export const swapToolsCopy = {
       basicOnly: "finds only a basic",
     },
     take: "Take",
-    taking: "Taking…",
     takeAria: (add: string, cut: string) => `Take ${add} in place of ${cut}`,
     taken: "taken",
     takenNote: (cut: string) =>

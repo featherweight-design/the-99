@@ -331,6 +331,22 @@ describe("StandInsSheet", () => {
       expect(screen.getByTestId("receipts")).toHaveTextContent("Anguished Unmaking>Chaos Warp:false");
     });
 
+    // Hugh, 2026-10-03: `Taking…` grew the button into the price beside it. The in-control loader sits
+    // over the label instead, which keeps its box, and the accessible name stays the button's own.
+    it("draws the loader over Take while its swap runs, with aria-busy and its name unchanged", async () => {
+      loadStandInsAction.mockReset().mockResolvedValue(READ);
+      let land: (v: unknown) => void = () => {};
+      takeStandInAction.mockReset().mockReturnValue(new Promise((r) => { land = r; }));
+      await open();
+      await act(async () => takeButton("Chaos Warp").click());
+      const busy = takeButton("Chaos Warp");
+      expect(busy).toHaveAttribute("aria-busy", "true");
+      expect(busy.querySelector("[data-pending-mark]")).not.toBeNull();
+      expect(busy).not.toHaveTextContent("Taking");
+      expect(takeButton("Swords to Plowshares")).not.toHaveAttribute("aria-busy");
+      await act(async () => land({ ok: true, swapId: "s1", addWasFree: false, cutLeft: 0 }));
+    });
+
     it("names the cause of a refusal only when the swap body reported it (F11)", async () => {
       loadStandInsAction.mockReset().mockResolvedValue(READ);
       takeStandInAction.mockResolvedValueOnce({ ok: false, reason: "cutGone" }).mockResolvedValueOnce({ ok: false, reason: "addHeld" });
