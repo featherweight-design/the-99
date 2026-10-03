@@ -141,7 +141,7 @@ describe("VersionDiff", () => {
     const row = rowOf("Bumi");
     expect(row.querySelector('span[class*="dashed"]')).not.toBeNull();
     expect(row.textContent).toContain("$2.40");
-    expect(row.textContent).not.toContain("own ");
+    expect(row.textContent).not.toContain(copy.partialOwned(0, 1));
   });
 
   it("draws own N of M and a tag on a partly owned In card (Persistent Petitioners)", async () => {
@@ -170,7 +170,10 @@ describe("VersionDiff", () => {
     const row = rowOf("Basalt Monolith");
     expect(row.querySelector('span[class*="var(--success)"]')).not.toBeNull();
     expect(row.textContent).toContain("$1.20");
-    expect(row.textContent).not.toContain("own ");
+    expect(row.textContent).not.toContain(copy.partialOwned(0, 1));
+    // Never "Owned" over a buy tag: the deck holds none of it.
+    expect(screen.getByText(copy.partialA11y(0, 1))).toBeInTheDocument();
+    expect(screen.queryByText(copy.owned)).toBeNull();
   });
 
   it("draws a filled dot and no tag on a card owned in full, a basic included", async () => {

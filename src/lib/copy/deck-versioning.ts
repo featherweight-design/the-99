@@ -461,10 +461,11 @@ export const deckVersioningCopy = {
     // H31: the rows draw today's ownership and price, so the line above them says the figures
     // are today's. Drawn only when the In column has rows.
     todayNote: (version: number) => `ownership and prices are today’s, not v${version}’s`,
-    // After the name on a partly owned In row, counted against the version's own count.
-    partialOwned: (owned: number, asked: number) => `own ${owned} of ${asked}`,
-    // That row's accessible description, in place of the decklist's `Owned` / `Not owned`.
-    partialA11y: (owned: number, asked: number) => `You own ${owned} of the ${asked} this version runs`,
+    // After the name on an In row the deck holds some, not all, of: the copies this deck can
+    // call on under Shopping's claim model (a copy a senior deck holds is not this deck's).
+    partialOwned: (held: number, asked: number) => `has ${held} of ${asked}`,
+    // Every tagged row's accessible description, in place of the decklist's `Owned` / `Not owned`.
+    partialA11y: (held: number, asked: number) => `This deck has ${held} of the ${asked} this version runs`,
     owned: "Owned",
     notOwned: "Not owned",
     // A version with a predecessor and no card movement: the note, the commander

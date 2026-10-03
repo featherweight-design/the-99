@@ -25,11 +25,10 @@ export type VersionDiffCard = Omit<VersionDiffBase, "imageUri"> & {
   /** Copies the reader owns TODAY across every printing. A basic reads `to`: basics are
    *  never bought, and every surface treats them as owned. */
   ownedNow: number;
-  /** Copies this deck has to BUY, as Shopping bills them: `loadDeckBuyRows`' deficit for this
-   *  deck, from the claim model (seniority, committed decks' claims, proxies). Not `to − ownedNow`:
-   *  a copy the reader owns can be held by a senior deck, and then this deck still buys it
-   *  (Basalt Monolith in HD Tune, staging, 2026-10-03). 0 for a card the deck's current list does
-   *  not run, which Shopping does not bill either, and always 0 for a basic. */
+  /** Copies this version's count would have to BUY today, under Shopping's claim model
+   *  (seniority, committed decks' claims, proxies): `to` less the copies this deck can call on.
+   *  Not `to − ownedNow`: a copy the reader owns can be held by a senior deck, and then this deck
+   *  still buys it (Basalt Monolith in HD Tune, staging, 2026-10-03). Always 0 for a basic. */
   buy: number;
   /** The owned printing's art where the reader holds one, the catalog's otherwise. */
   imageUri: string | null;
@@ -39,11 +38,34 @@ export type VersionDiffCard = Omit<VersionDiffBase, "imageUri"> & {
   price: PriceFact | null;
 };
 
+/**
+ * What the claim model says this deck can call on today, per card. Shopping's own figures:
+ *
+ * - `draft` and `deficit`: a card the deck's current list runs. `loadDeckBuyRows` bills the
+ *   deficit against the DRAFT's count, so the copies the deck holds are `draft − deficit`; a
+ *   version's own count may differ from the draft's, which is why the deficit is never
+ *   subtracted from `to` directly.
+ * - `free`: a card the current list no longer runs, off-decklist `loadAvailability`: owned less
+ *   what committed decks hold.
+ */
+export type DeckClaims = {
+  draft: Map<string, number>;
+  deficit: Map<string, number>;
+  free: Map<string, number>;
+};
+
+/** The copies this deck can call on for a card, under Shopping's claim model. */
+export function heldForDeck(oracleId: string, claims: DeckClaims): number {
+  const draft = claims.draft.get(oracleId);
+  if (draft !== undefined) return Math.max(0, draft - (claims.deficit.get(oracleId) ?? 0));
+  return Math.max(0, claims.free.get(oracleId) ?? 0);
+}
+
 export function assembleVersionRows(
   rows: VersionDiffBase[],
   owned: Map<string, OwnedPrinting>,
   { prices }: Pick<PriceRead, "prices">,
-  buy: Map<string, number>,
+  claims: DeckClaims,
 ): VersionDiffCard[] {
   return rows.map((row) => {
     const copy = owned.get(row.oracleId);
@@ -51,7 +73,7 @@ export function assembleVersionRows(
     return {
       ...row,
       ownedNow: basic ? Math.max(row.to, copy?.quantity ?? 0) : copy?.quantity ?? 0,
-      buy: basic ? 0 : buy.get(row.oracleId) ?? 0,
+      buy: basic ? 0 : Math.max(0, row.to - heldForDeck(row.oracleId, claims)),
       imageUri: copy?.imageUri ?? row.imageUri,
       printedName: copy?.printedName ?? null,
       price: basic ? null : prices.get(row.oracleId) ?? null,

@@ -21,9 +21,10 @@ import { clearPullReleases } from "./pull-release";
 import { commanderMoved } from "../commander-change/pending";
 import { readOwnedPrintings } from "../collection/owned-printings";
 import { loadPrices } from "./price-query";
-import { loadDeckBuyRows } from "./availability-query";
+import { loadAvailability, loadDeckBuyRows } from "./availability-query";
+import type { Availability } from "./availability";
 import {
-  assembleVersionRows, pricedIds, type VersionDiffBase, type VersionDiffCard,
+  assembleVersionRows, pricedIds, type DeckClaims, type VersionDiffBase, type VersionDiffCard,
 } from "./version-rows";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -555,7 +556,12 @@ export async function loadVersionDiff(
   const all = [...ins, ...outs];
   // Both reads are scoped to the diff's own cards: a version moves a handful, and
   // neither the collection nor the price table is read whole for them.
-  const [owned, priced, buyRows] = await Promise.all([
+  const ids = [...new Set(all.map((c) => c.oracleId))];
+  const draftRows = ids.length === 0 ? [] : await db.select({ oracleId: deckCards.oracleId, quantity: deckCards.quantity })
+    .from(deckCards).where(and(eq(deckCards.deckId, deckId), inArray(deckCards.oracleId, ids)));
+  const draft = new Map(draftRows.map((r) => [r.oracleId, r.quantity]));
+  const offDraft = ids.filter((id) => !draft.has(id));
+  const [owned, priced, buyRows, availability] = await Promise.all([
     // The throwing read, not `resolveOwnedPrintings`: a failed read there answers "owns
     // nothing", which these rows would draw as a "not owned" dot and a buy tag on cards the
     // reader holds. A failure here reaches `getVersionDiff`'s caller as an unavailable diff.
@@ -564,11 +570,18 @@ export async function loadVersionDiff(
     // Shopping's own bill for this deck, so a row's tag is Shopping's answer rather than a second
     // reading of ownership. User-wide claims inside, narrowed to this deck's rows.
     loadDeckBuyRows(userId, [deckId]),
+    // A card the deck no longer runs has no Shopping row; the off-decklist read says what the
+    // reader holds that no committed deck does.
+    offDraft.length > 0 ? loadAvailability(userId, { oracleIds: offDraft }) : new Map<string, Availability>(),
   ]);
-  const buy = new Map(buyRows.map((r) => [r.oracleId, r.quantity]));
+  const claims: DeckClaims = {
+    draft,
+    deficit: new Map(buyRows.map((r) => [r.oracleId, r.quantity])),
+    free: new Map([...availability].map(([id, a]) => [id, a.free])),
+  };
   return {
-    in: assembleVersionRows(ins, owned, priced, buy),
-    out: assembleVersionRows(outs, owned, priced, buy),
+    in: assembleVersionRows(ins, owned, priced, claims),
+    out: assembleVersionRows(outs, owned, priced, claims),
     newestAsOf: priced.newestAsOf,
   };
 }

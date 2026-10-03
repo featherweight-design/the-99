@@ -28,7 +28,7 @@ should be rewritten to match.
 |---|---|---|
 | 1 | Which figures | **Ownership dot (two states) and buy tag.** No `AvailabilityMarker` and no `committed` dot. Both describe a deck's claim, and a version claims nothing. |
 | 2 | Price | **Today's price.** From lg (1024px), `BuyTag variant="row" density="full"` (`buy · $2.40`). Below lg, `density="collapsed"`, which draws the live figure (`$2.40`) and a bare `$` only with no live price. (Corrected in the build: readiness findings 1 and 2.) The tag prices the copy you would buy today, not the version's decision, and the today line says so. |
-| 3 | Partly owned | **Compared against the version's count (`to`).** The dot is filled, then mono 10.5px `--fg-faint` `own 1 of 4` after the name, then the tag. This is `shortfall = to − ownedNow`, the review row's rule, with the figure shown. |
+| 3 | Partly owned | **Compared against the version's count (`to`).** The dot is filled, then mono 10.5px `--fg-faint` `has 1 of 4` after the name, then the tag. **Corrected 2026-10-03:** the shortfall is Shopping's claim model (`to` less the copies this deck can call on), not `to − ownedNow`; see STATES. |
 | 4 | Out rows | **No dot, no tag, no spacer.** Name, cost track, modal and preview. |
 | 5 | Which versions | **Every version, with one row anatomy.** |
 | 6 | Diff note | **`todayNote(n)`** replaces it, above the columns at both widths: mono 10.5px `--fg-faint`, drawn only when In has rows. On the phone it sits under the segmented pair. |
