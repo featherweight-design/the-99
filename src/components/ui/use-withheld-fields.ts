@@ -103,16 +103,26 @@ function createFieldsLoop<Row extends object, Fields extends object>(onLanded: (
     const { keyOf, isDrawn } = source;
     const list = forList(all);
     const { store, asked } = list;
-    // A row the reader wants that the route left out, whenever it left it out: this payload's
-    // list is stale (a write elsewhere, a catalog refresh), so the page is read again, once.
-    const stale = (r: Row) => {
-      if (isDrawn(r)) return false;
-      const key = keyOf(r);
-      if (list.gone.has(key)) return true;
-      const f = list.store.get(key);
-      return f !== undefined && source.disagrees?.(r, f) === true;
+    // A row the reader WANTS that the route left out, whenever it left it out: this payload's
+    // list is stale (a write elsewhere, a catalog refresh), so the page is read again, once. Not
+    // widened to `all` — a row nobody is waiting on going missing from a batch is not yet a
+    // reason to refresh, and the reader may never ask for it.
+    const gone = (r: Row) => !isDrawn(r) && list.gone.has(keyOf(r));
+    // A batch's caption disagreeing with the page's own copy, checked against the full, locally
+    // patched list, not just `wanted`: a card a search or a filter leaves out of `wanted` is
+    // still a row the page holds, and a renamed printing landing for it is exactly the case that
+    // should make the page stale (its new name is what a reader would search for). `wanted` is
+    // where a local pick's overlay lives — `all` never carries one — so a row `wanted` also
+    // holds is read from there, to keep the pick's own exemption; a row outside `wanted` has no
+    // pick to exempt and reads from `all` as is.
+    const patched = new Map(wanted.map((r) => [keyOf(r), r] as const));
+    const disagreesNow = (r: Row) => {
+      const eff = patched.get(keyOf(r)) ?? r;
+      if (isDrawn(eff)) return false;
+      const f = list.store.get(keyOf(eff));
+      return f !== undefined && source.disagrees?.(eff, f) === true;
     };
-    if (!list.refreshed && wanted.some(stale)) {
+    if (!list.refreshed && (wanted.some(gone) || all.some(disagreesNow))) {
       list.refreshed = true;
       onStale();
       return;
@@ -272,9 +282,10 @@ export function useWithheldFields<Row extends object, Item>(
 
   useEffect(() => {
     loop.update({ source, all, wanted, wantedKey });
-    // `wanted` is a fresh array on most renders; its keys are what move the loop.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loop, source, all, wantedKey]);
+    // `wanted` is memoized by both callers and changes reference only when its rows do — a
+    // local pick can replace a row without moving its keys or order, and without `wanted` here
+    // the loop would keep holding the pre-pick row across that pick.
+  }, [loop, source, all, wanted, wantedKey]);
 
   // Leaving: abort the batch in flight and start no other.
   useEffect(() => {

@@ -74,6 +74,19 @@ describe("useCollectionFields", () => {
     }
   });
 
+  // A renamed card a search or a filter leaves out of `wanted` is still a row the page holds.
+  // The route still fetches it (the batch fills spare slots from `all`), and its moved caption
+  // must still mark the page stale even though no visible row asked for it.
+  it("reads the page again when a withheld card excluded from `wanted` moved since it was read", async () => {
+    const onStale = vi.fn();
+    const list = rows();
+    const { result } = renderHook(() => useCollectionFields(list, [list[0]], onStale));
+    await waitFor(() => expect(answer).not.toBeNull());
+    await act(async () => answer!());
+    await waitFor(() => expect(result.current.resolve(list[0])).not.toBeNull());
+    await waitFor(() => expect(onStale).toHaveBeenCalledTimes(1));
+  });
+
   // A pick made here lays all three over the row. A batch that lands after it, read from the list
   // the pick moved, neither replaces the pick's caption nor sends the page for a fresh read.
   it("keeps a pick made before the batch lands, and refreshes nothing", async () => {
@@ -90,6 +103,29 @@ describe("useCollectionFields", () => {
     expect(drawn.imageUri).toBe("https://cards.example/mine.jpg");
     expect(drawn.printedName).toBeNull();
     expect(drawn.primarySetCode).toBe("M10");
+    expect(onStale).not.toHaveBeenCalled();
+  });
+
+  // A pick applied through a RERENDER, not at mount: it replaces a `wanted` row without moving
+  // its id or its position, so the keys `wantedKey` is built from do not move either. Without
+  // `wanted` itself in the effect's deps, the loop would keep holding the pre-pick row and read
+  // the landing batch's caption against it instead, missing the pick's own exemption.
+  it("applies a pick made through a rerender while the batch is pending", async () => {
+    const onStale = vi.fn();
+    const list = rows();
+    const { result, rerender } = renderHook(
+      ({ wanted }) => useCollectionFields(list, wanted, onStale),
+      { initialProps: { wanted: list } },
+    );
+    await waitFor(() => expect(answer).not.toBeNull());
+    const picked = list.map((r, i) =>
+      i === 1 ? { ...r, imageUri: "https://cards.example/mine.jpg", printedName: null, primarySetCode: "M10" } : r,
+    );
+    rerender({ wanted: picked });
+    await act(async () => answer!());
+    await waitFor(() => expect(result.current.resolve(picked[1])).not.toBeNull());
+    const drawn = result.current.resolve(picked[1])!;
+    expect(drawn.imageUri).toBe("https://cards.example/mine.jpg");
     expect(onStale).not.toHaveBeenCalled();
   });
 });
