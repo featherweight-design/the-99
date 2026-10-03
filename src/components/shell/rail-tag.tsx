@@ -117,20 +117,31 @@ export function useRailTag(pathname: string): {
     const onKeyDown = (e: KeyboardEvent) => {
       const current = openRef.current;
       if (e.key !== "Escape" || e.defaultPrevented || !current) return;
+      // E9: focus on a live rail slot, or nowhere. Not the account control or a locked slot or its
+      // note, which sit in the rail too and own their own Escape.
       const active = document.activeElement;
       const nowhere = !active || active === document.body;
-      if (!nowhere && !active.closest("aside")) return;
+      if (!nowhere && !active.closest("[data-rail-nav] a[href]")) return;
       dismissed.current = current.href;
       close();
     };
     const onMoved = () => {
       if (openRef.current) close();
     };
+    // A locked slot opens its note on the pointer's arrival or on focus, so the tag goes in the same
+    // event rather than after its 100ms leave delay: the two never share the rail's edge (E2).
+    const onLocked = (e: Event) => {
+      if (openRef.current && (e.target as Element | null)?.closest?.("[data-locked-slot]")) close();
+    };
     document.addEventListener("pointerdown", onPointerDown, true);
     document.addEventListener("keydown", onKeyDown);
     document.addEventListener("scroll", onMoved, true);
     window.addEventListener("resize", onMoved);
+    document.addEventListener("pointerover", onLocked, true);
+    document.addEventListener("focusin", onLocked, true);
     return () => {
+      document.removeEventListener("pointerover", onLocked, true);
+      document.removeEventListener("focusin", onLocked, true);
       document.removeEventListener("pointerdown", onPointerDown, true);
       document.removeEventListener("keydown", onKeyDown);
       document.removeEventListener("scroll", onMoved, true);

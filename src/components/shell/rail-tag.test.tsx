@@ -201,6 +201,32 @@ describe("the pointer rail's name tag", () => {
     expect(tag()).not.toBeNull();
   });
 
+  it("leaves an Escape pressed on another rail control to that control (audit E9)", () => {
+    primaryInput(true);
+    render(<NavRail locked={false} theme="amonkhet" />);
+    enter(slot("Home"));
+    wait(OPEN_DELAY_MS);
+    const account = document.querySelector<HTMLElement>("aside button")!;
+    expect(account.closest("[data-rail-nav]")).toBeNull();
+    act(() => account.focus());
+    fireEvent.keyDown(account, { key: "Escape" });
+    expect(tag()).toHaveTextContent("Home");
+  });
+
+  it("goes the moment a locked slot opens its note, not 100ms later (audit E2)", () => {
+    primaryInput(true);
+    render(<NavRail locked theme="amonkhet" />);
+    enter(slot("Home"));
+    wait(OPEN_DELAY_MS);
+    expect(tag()).toHaveTextContent("Home");
+    const locked = screen.getByRole("button", { name: /^Collection/ });
+    leave(slot("Home"));
+    fireEvent.pointerOver(locked, { pointerType: "mouse" });
+    enter(locked);
+    expect(document.querySelector('[data-lock-note="open"]')).not.toBeNull();
+    expect(tag()).toBeNull();
+  });
+
   it("closes on scroll", () => {
     primaryInput(true);
     render(<NavRail locked={false} theme="amonkhet" />);
