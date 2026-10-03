@@ -7,6 +7,7 @@ import { DeckCardTile } from "./deck-card-tile";
 import type { DeckView } from "./group-toggle";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { DecklistRow } from "./decklist-row";
+import type { Sibling } from "../cards/card-detail-provider";
 
 /** Module-scoped so an unspecified `spentOracleIds` doesn't allocate a fresh `Set` every render. */
 const EMPTY_SPENT_IDS: ReadonlySet<string> = new Set();
@@ -24,7 +25,7 @@ interface DecklistGroupProps {
   /** The cards in this group whose slots are spent (#185; H29 lets several stand at once). */
   spentOracleIds?: ReadonlySet<string>;
   /** The whole decklist in display order, for the detail modal's Prev/Next. */
-  siblings?: string[];
+  siblings?: readonly Sibling[];
   /** Optional note shown right-aligned on desktop (e.g. "37 recommended"). */
   note?: string;
   /** Passed straight to the header — the draft note is brass, others quiet. */

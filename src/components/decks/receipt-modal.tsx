@@ -9,7 +9,7 @@ import { cssUrl } from "../../lib/collection/browse";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import type { CardRef } from "../../lib/profile/types";
-import { CardDetailTrigger, useCardDetail, type SheetFooter } from "../cards/card-detail-provider";
+import { CardDetailTrigger, useCardDetail, type SheetFooter, type Sibling } from "../cards/card-detail-provider";
 import { CostPips } from "../ui/cost-pips";
 import { FindingMark } from "./finding-mark";
 
@@ -57,7 +57,7 @@ export function ReceiptModal({
   onClose: () => void;
 }) {
   const label = copy.findings.labels[finding.id];
-  const siblings = finding.cards.map((c) => c.oracleId);
+  const siblings = finding.cards.map((c) => ({ oracleId: c.oracleId, name: c.name, imageUri: art.get(c.oracleId)?.imageUri ?? null }));
   return (
     <ModalChrome
       mark={<FindingMark id={finding.id} />}
@@ -265,7 +265,7 @@ export function ReceiptTile({
 }: {
   card: CardRef;
   art: FindingArt;
-  siblings: string[];
+  siblings: readonly Sibling[];
   /** A fixed plate width, for the combo body. The grid sizes its own. */
   width?: number;
 }) {

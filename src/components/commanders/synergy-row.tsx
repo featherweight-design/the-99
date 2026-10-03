@@ -12,7 +12,7 @@ import { FACET_TYPE_LABEL } from "../../lib/cards/facet";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
 import type { PriceFact } from "../../lib/decks/price";
 import { synergyCopy, synergySignedDisplay } from "../../lib/copy/synergy-discovery";
-import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { CardDetailTrigger, type Sibling } from "../cards/card-detail-provider";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { AvailabilityMarker, markerAria } from "../ui/availability-marker";
 import { availabilityState, drawsMarker } from "../../lib/decks/availability";
@@ -105,7 +105,7 @@ export function SynergyRow({
   card: SynergyCard;
   selected: boolean;
   onToggle: () => void;
-  siblings: string[];
+  siblings: readonly Sibling[];
   width: "desktop" | "phone";
   facet: CardFacet | "all";
   /**

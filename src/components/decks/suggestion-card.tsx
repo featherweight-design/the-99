@@ -220,7 +220,14 @@ function useOpen(item: TuningItem, side: "cut" | "add") {
   const id = side === "cut" ? item.cutOracleId : item.addOracleId;
   const preview = usePreviewRow(side === "cut" ? item.cutImageUri : item.addImageUri);
   const intent = useCardIntent(id);
-  return { onClick: () => open(id, [item.cutOracleId, item.addOracleId]), ...preview, ...intent };
+  return {
+    onClick: () => open(id, [
+      { oracleId: item.cutOracleId, name: item.cutName, imageUri: item.cutImageUri },
+      { oracleId: item.addOracleId, name: item.addName, imageUri: item.addImageUri },
+    ]),
+    ...preview,
+    ...intent,
+  };
 }
 
 function Name({ item, side }: { item: TuningItem; side: "cut" | "add" }) {

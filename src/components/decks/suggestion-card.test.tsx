@@ -73,9 +73,13 @@ describe("SuggestionCard", () => {
   it("opens either card with the pair as the list the modal pages through", async () => {
     draw(item);
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: copy.open("Divination") })); });
-    expect(open).toHaveBeenLastCalledWith("cut", ["cut", "add"]);
+    const pair = [
+      { oracleId: "cut", name: "Divination", imageUri: null },
+      { oracleId: "add", name: "Rhystic Study", imageUri: null },
+    ];
+    expect(open).toHaveBeenLastCalledWith("cut", pair);
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: copy.open("Rhystic Study") })); });
-    expect(open).toHaveBeenLastCalledWith("add", ["cut", "add"]);
+    expect(open).toHaveBeenLastCalledWith("add", pair);
   });
 
   it("draws the buy tag for an add the player does not own", () => {

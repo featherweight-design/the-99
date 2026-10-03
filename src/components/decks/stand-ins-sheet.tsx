@@ -26,7 +26,7 @@ import { COMMA_CLASS, COMPARE_CLASS, GROUP_GAP_CLASS, ITEM_CLASS, TAG_CLASS, TYP
 import { STAND_IN_GROUP_SHOWN } from "../../lib/swaps/stand-ins";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { SheetGroupHeading, SheetGroupToggle } from "../ui/sheet-group";
-import { CardDetailTrigger, useCardDetail, type SheetFooter } from "../cards/card-detail-provider";
+import { CardDetailTrigger, useCardDetail, type SheetFooter, type Sibling } from "../cards/card-detail-provider";
 import { Crown } from "../ui/crown";
 import { HoverPreviewProvider, usePreviewRow } from "./hover-preview";
 import { BuyTag } from "./buy-tag";
@@ -140,7 +140,7 @@ export type RowTake = {
 };
 
 // Exported with StandInGroup (E3). A pure export: the sheet draws both unchanged.
-export function StandInRow({ row, newestAsOf, take, siblings }: { row: SheetRow; newestAsOf: Date | null; take: RowTake; siblings: string[] }) {
+export function StandInRow({ row, newestAsOf, take, siblings }: { row: SheetRow; newestAsOf: Date | null; take: RowTake; siblings: readonly Sibling[] }) {
   const preview = usePreviewRow(row.imageUri);
   return (
     <li className="border-b border-[color:var(--border)]">
@@ -502,7 +502,7 @@ export function StandInsSheet({
   const keep = taken?.addId ?? null;
   const rows = model?.groups.flatMap((g) => g.rows) ?? [];
   const shownBy = new Map(model?.groups.map((g) => [g.heading, shownRows(g, expanded.has(g.heading), keep)]) ?? []);
-  const siblings = [...shownBy.values()].flat().map((r) => r.oracleId);
+  const siblings = [...shownBy.values()].flat().map((r) => ({ oracleId: r.oracleId, name: r.name, imageUri: r.imageUri }));
   const listAsOf = load.state === "ready" ? load.read.newestAsOf : null;
 
   // A stand-in's card, stacked over the sheet, takes it from where the reader is (§7.3). Nothing for

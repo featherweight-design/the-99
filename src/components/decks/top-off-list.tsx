@@ -56,7 +56,7 @@ import {
 } from "../../lib/decks/price";
 import { availabilityState } from "../../lib/decks/availability";
 import { typeWord } from "../../lib/cards/facet";
-import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { CardDetailTrigger, type Sibling } from "../cards/card-detail-provider";
 import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips } from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { AvailabilityMarker } from "../ui/availability-marker";
@@ -380,7 +380,7 @@ export function TopOffList({
    *  illegal rows are in it on purpose: both are still on screen wearing their
    *  own way back, and a traversal that skipped them would step over rows the
    *  reader can see. */
-  const siblingIds = pool.map((c) => c.oracleId);
+  const siblingIds = pool.map((c) => ({ oracleId: c.oracleId, name: c.name, imageUri: c.imageUri }));
   const offered = new Set(candidates.map((c) => c.oracleId));
 
   // A candidate the deck gained while the list was open. Frozen rows keep their
@@ -1295,8 +1295,8 @@ function CandidateRow({
       a button inside it would put "read this card" and "tick this card" on the
       same press. */
   isDesktop: boolean;
-  /** The pool's ids, so the modal pages through the list the reader is in. */
-  siblings: string[];
+  /** The pool, so the modal pages through the list the reader is in. */
+  siblings: readonly Sibling[];
   onToggle: () => void;
   onDecline: () => void;
 }) {

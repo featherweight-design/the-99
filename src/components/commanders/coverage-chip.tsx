@@ -17,7 +17,7 @@
 //   Phone disclosure:   full-width 44px dashed row · mono 12px --accent (Show all N)
 
 import type { RoleCard } from "../../lib/recs/score";
-import { CardDetailTrigger, cardDetailCopy } from "../cards/card-detail-provider";
+import { CardDetailTrigger, cardDetailCopy, type Sibling } from "../cards/card-detail-provider";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { AvailabilityMarker, markerAria } from "../ui/availability-marker";
@@ -134,7 +134,7 @@ export function CoverageChip({
   showFigures,
 }: {
   card: RoleCard;
-  siblings: string[];
+  siblings: readonly Sibling[];
   showFigures: boolean;
 }): JSX.Element {
   // null is "no figure" — distinct from 0, which is a real EDHREC figure.
@@ -220,7 +220,7 @@ export function CoverageRow({
   showFigures,
 }: {
   card: RoleCard;
-  siblings: string[];
+  siblings: readonly Sibling[];
   showFigures: boolean;
 }): JSX.Element {
   const hasFigure = showFigures && Number.isFinite(card.inclusionPct);

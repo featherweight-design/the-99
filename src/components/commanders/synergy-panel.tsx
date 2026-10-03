@@ -124,9 +124,10 @@ export function SynergyPanel({
   // pill's label and not the prose noun: "All, 258 cards".
   const scrollLabel = isAllFacet ? synergyCopy.facet.all : facetLabel;
 
-  // Sibling oracle ids for the card-detail trigger (the full list, so tapping
-  // opens a list-traversal modal that covers the whole set).
-  const siblings = cards.map((c) => c.oracleId);
+  // Siblings for the card-detail trigger (the full list, so tapping opens a
+  // list-traversal modal that covers the whole set), carrying each card's own
+  // art (H23 carousel PR 1b).
+  const siblings = cards.map((c) => ({ oracleId: c.oracleId, name: c.name, imageUri: c.imageUri }));
 
   return (
     <div>

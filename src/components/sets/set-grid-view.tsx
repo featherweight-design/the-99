@@ -21,7 +21,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useIsDesktop } from "../ui/use-is-desktop";
-import { useCardDetail } from "../cards/card-detail-provider";
+import { useCardDetail, type Sibling } from "../cards/card-detail-provider";
 import { useSearchParams } from "next/navigation";
 import { ColourControl } from "../commanders/rack/colour-control";
 import { FilterPanel } from "../ui/filter-panel";
@@ -358,10 +358,19 @@ export function SetGridView(props: SetGridViewProps) {
   const shown = [...shownBase, ...shownExtras];
   // Prev/Next pages through what is on screen, in the order it is on screen. Deduped:
   // the modal pages by ORACLE id and a set can draw two cells for one oracle (EOE's Plains
-  // at #262 and #268), which would otherwise repeat a card on the way through.
+  // at #262 and #268), which would otherwise repeat a card on the way through. Carries each
+  // cell's own printing art and identity (H23 carousel PR 1b), so a neighbor resolves from
+  // this set's own query rather than the oracle-level fallback.
   // Not memoised: `shown` is rebuilt each render, so a memo keyed on it can never hold,
   // and the compiler rejects the dead memoisation rather than keeping it.
-  const siblingIds = [...new Set(shown.map((c) => c.oracleId))];
+  const seenSiblingIds = new Set<string>();
+  const siblingCells = shown.filter((c) => {
+    if (seenSiblingIds.has(c.oracleId)) return false;
+    seenSiblingIds.add(c.oracleId);
+    return true;
+  });
+  const siblingIds = siblingCells.map((c) => ({ oracleId: c.oracleId, name: c.name, imageUri: c.imageUri, colorIdentity: c.colorIdentity }));
+  const bareSiblingIds = siblingCells.map((c) => c.oracleId);
 
   // The provider keeps whatever sibling list it was handed at open, so a filter change or
   // a Back while the modal is up would leave Prev/Next paging through cells the grid no
@@ -377,8 +386,8 @@ export function SetGridView(props: SetGridViewProps) {
     if (openOracleId === null) setModalGeneration((g) => String(Number(g) + 1));
   }
 
-  const openInGrid = openOracleId !== null && siblingIds.includes(openOracleId);
-  const siblingKey = siblingIds.join(",");
+  const openInGrid = openOracleId !== null && bareSiblingIds.includes(openOracleId);
+  const siblingKey = bareSiblingIds.join(",");
   // Closes only when the GRID moves and the open card is not in it, as `/collection` does
   // (collection/browser.tsx). A card opened from inside another surface is off the grid by
   // nature: a partner named in Find a deck's reason line, stacked over the picker. Closing on
@@ -1810,12 +1819,12 @@ function Section({
   cells: Cell[];
   priceFor: Map<string, PriceFact>;
   newest: Date | null;
-  siblings: string[];
+  siblings: readonly Sibling[];
   /** Uppercase, because BrowsePrinting.setCode is and the match is exact (browse.ts:398). */
   setCode: string;
   onOpenCard: (
     oracleId: string,
-    siblings?: string[],
+    siblings?: readonly Sibling[],
     atPrinting?: {
       setCode: string; collectorNumber: string;
       imageUri?: string | null; backImageUri?: string | null; scryfallId?: string;

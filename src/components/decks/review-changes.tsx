@@ -25,7 +25,7 @@ import {
 // a browser. See `src/lib/client-bundle-safety.test.ts`.
 import type { DraftRow, DraftRows, ShapeCard } from "../../lib/decks/draft-state";
 import { groupByCardType } from "../../lib/decks/grouping";
-import { CardDetailProvider } from "../cards/card-detail-provider";
+import { CardDetailProvider, type Sibling } from "../cards/card-detail-provider";
 import { PrimaryButton } from "../ui/button";
 import { CommanderSection, ZoneHint } from "./change-commander-review";
 import { commanderZoneHint } from "./change-commander-banner";
@@ -154,9 +154,9 @@ type TypeGroup = readonly [string, DraftRow[]];
  * modal's Prev/Next walks the list the eye does, and the payload's own order is
  * not that list once the rows are grouped by type.
  */
-function orderedIds(rows: DraftRow[]): string[] {
+function orderedIds(rows: DraftRow[]): Sibling[] {
   return (groupByCardType(rows) as TypeGroup[])
-    .flatMap(([, groupRows]) => groupRows.map((r) => r.oracleId));
+    .flatMap(([, groupRows]) => groupRows.map((r) => ({ oracleId: r.oracleId, name: r.name, imageUri: r.imageUri })));
 }
 
 /**
@@ -196,7 +196,7 @@ export function Column({
   headingTone: string;
   note: string;
   rows: DraftRow[];
-  siblings: string[];
+  siblings: readonly Sibling[];
   /** Prefix for the per-row `sr-only` ids. Owned by the parent so both columns
    *  draw from one `useId` rather than two. */
   descriptionId: string;

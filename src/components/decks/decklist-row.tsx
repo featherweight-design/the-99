@@ -26,7 +26,7 @@ import { isBasicLand } from "../../lib/decks/grouping";
 import { isSpokenFor } from "../../lib/decks/shopping";
 import { AutoTag } from "./auto-tag";
 import { BuyTag } from "./buy-tag";
-import { CardDetailTrigger, useCardDetail, useCardIntent } from "../cards/card-detail-provider";
+import { CardDetailTrigger, useCardDetail, useCardIntent, type Sibling } from "../cards/card-detail-provider";
 import { CardFactMark } from "../cards/card-fact-mark";
 import { FactTooltip } from "../cards/fact-tooltip";
 import { TwoFacedMark } from "../cards/two-faced-mark";
@@ -78,7 +78,7 @@ interface DecklistRowProps {
   deckId: string;
   card: DeckDetailCard;
   /** The decklist in display order, so the modal's Prev/Next page through it. */
-  siblings?: string[];
+  siblings?: readonly Sibling[];
   /**
    * The decklist says this card's slot is spent, so the row draws its undo
    * receipt instead. Decklist state rather than row state: the row unmounts

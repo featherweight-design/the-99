@@ -28,7 +28,7 @@ import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { Availability } from "../../lib/decks/availability";
 import type { PriceFact } from "../../lib/decks/price";
-import { CardDetailTrigger, useCardDetail, useCardIntent } from "../cards/card-detail-provider";
+import { CardDetailTrigger, useCardDetail, useCardIntent, type Sibling } from "../cards/card-detail-provider";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips, CostTrack } from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
@@ -286,7 +286,7 @@ function AvailabilitySlot({
  */
 function useRowOpen(
   card: DiffRowCard,
-  siblings: string[] | undefined,
+  siblings: readonly Sibling[] | undefined,
   review: boolean,
 ): React.HTMLAttributes<HTMLElement> {
   const { open } = useCardDetail();
@@ -354,7 +354,7 @@ function DiffRowName({
   oracleId: string;
   name: string;
   tone: string;
-  siblings?: string[];
+  siblings?: readonly Sibling[];
   describedBy?: string;
   recount?: DiffRowRecount;
 }) {
@@ -404,7 +404,7 @@ function DiffRowName({
  *  the trigger. The review page carries the availability word there so the buy
  *  tag's colour is not the only statement of it. */
 type DiffRowNameExtras = {
-  siblings?: string[];
+  siblings?: readonly Sibling[];
   describedBy?: string;
 };
 

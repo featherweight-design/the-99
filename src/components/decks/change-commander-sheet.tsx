@@ -13,7 +13,7 @@ import { SwapGlyph } from "./change-commander-glyph";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { CostPips } from "../ui/cost-pips";
 import { GhostButton, PrimaryButton } from "../ui/button";
-import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { CardDetailTrigger, type Sibling } from "../cards/card-detail-provider";
 import { cssUrl } from "../../lib/collection/browse";
 import { guildLabel } from "../../lib/copy/color-labels";
 import { changeCommanderCopy as copy } from "../../lib/copy/change-commander";
@@ -211,7 +211,7 @@ function List({ data, pair, onChoose }: { data: ChangeCandidates; pair: boolean;
   const yours = firstScreen(data.yours, allYours);
   const toBuy = firstScreen(data.toBuy, allBuy);
   // The card modal's Prev/Next walks every candidate, folded or not, as the swap sheet's does.
-  const siblings = [...data.yours, ...data.toBuy].flatMap((c) => c.halves.map((h) => h.oracleId));
+  const siblings = [...data.yours, ...data.toBuy].flatMap((c) => c.halves.map((h) => ({ oracleId: h.oracleId, name: h.name, imageUri: h.imageUri })));
   const current = {
     cmc: data.current.reduce((n, c) => n + c.cmc, 0),
     name: joinShort(data.current.map((c) => c.name)),
@@ -371,7 +371,7 @@ export function CandidateRow({
   pair: boolean;
   current: { cmc: number; name: string };
   newestAsOf: Date | null;
-  siblings: string[];
+  siblings: readonly Sibling[];
   open: boolean;
   onToggle: () => void;
   onChoose: () => void;

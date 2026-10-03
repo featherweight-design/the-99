@@ -26,8 +26,15 @@ vi.mock("../../lib/swaps/actions", () => ({ loadStandInsAction, takeStandInActio
 // The trigger reports the list its stacked card would page, so the sheet's Prev/Next set is readable here.
 vi.mock("../cards/card-detail-provider", async (actual) => ({
   ...(await actual<typeof import("../cards/card-detail-provider")>()),
-  CardDetailTrigger: ({ siblings, children }: { siblings?: string[]; children: React.ReactNode }) => (
-    <button type="button" data-siblings={siblings?.join(",")}>{children}</button>
+  CardDetailTrigger: (
+    { siblings, children }: { siblings?: readonly (string | { oracleId: string })[]; children: React.ReactNode },
+  ) => (
+    <button
+      type="button"
+      data-siblings={siblings?.map((s) => (typeof s === "string" ? s : s.oracleId)).join(",")}
+    >
+      {children}
+    </button>
   ),
 }));
 
