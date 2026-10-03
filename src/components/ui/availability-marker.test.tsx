@@ -1,6 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { AvailabilityMarker, markerAria } from "./availability-marker";
+import {
+  AVAILABILITY_CHIP_GLYPH_OVER_PX,
+  AVAILABILITY_CHIP_GLYPH_PX,
+  AvailabilityMarker,
+  markerAria,
+} from "./availability-marker";
 import { availabilityCopy } from "../../lib/copy/availability";
 
 // Off-decklist vantage — no excludeDeckId — so `free` really is `owned − hard`
@@ -500,5 +505,124 @@ describe("markerAria", () => {
     expect(c.hardAria("Atraxa").startsWith(c.hardAriaCountOnly)).toBe(true);
     expect(c.overAriaCountOnly(5)).toContain("you own 5 too few");
     expect(c.overAria(5, 2)).toContain("you own 5 too few");
+  });
+});
+
+// Collection surfaces, Call 3: the 3-up tile's chip drops its word. The glyph grows, the word
+// moves to the key, and the full sentence must still be announced for assistive tech.
+describe("AvailabilityMarker glyphOnly", () => {
+  it("draws no visible word at all, in any state", () => {
+    for (const av of [a(2, 0, 1), a(1, 1, 0, ["Atraxa"]), a(1, 2, 0, ["Atraxa", "Kykar"])]) {
+      const { container, unmount } = render(
+        <AvailabilityMarker availability={av} density="chip" plate={false} glyphOnly />,
+      );
+      // No visible text node at all — only the sr-only sentence and the glyph's own markup.
+      // Leaf spans only, since an ancestor's `textContent` includes its sr-only child's text.
+      const leaves = [...container.querySelectorAll("span")].filter((el) => el.children.length === 0);
+      const visible = leaves.filter((el) => !el.className.includes("sr-only") && el.textContent?.trim());
+      expect(visible).toHaveLength(0);
+      unmount();
+    }
+  });
+
+  it("still announces the full sentence, even without `spoken`", () => {
+    render(
+      <AvailabilityMarker
+        availability={a(1, 1, 0, ["Atraxa"])}
+        density="chip"
+        plate={false}
+        glyphOnly
+      />,
+    );
+    expect(screen.getByText(availabilityCopy.marker.hardAriaCountOnly)).toHaveClass("sr-only");
+  });
+
+  it("renders nothing at all in the free state, glyphOnly or not", () => {
+    const { container } = render(
+      <AvailabilityMarker availability={a(4, 0, 0)} density="chip" plate={false} glyphOnly />,
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  // The caption's meta line is a FIXED 17/18px height (`CardTileCaption`'s `META_LINE`), with
+  // every other occupant a flat, unrotated 16x16 glyph. A 45°-rotated diamond whose CSS side is
+  // the full 16px bounds to ~22.6px and overflows that line — so the diamond's side has to be
+  // smaller, and `AVAILABILITY_CHIP_GLYPH_PX` names the BOUNDING box the rotation produces, not
+  // the diamond's own side.
+  it("keeps every state's rendered box at or under the 16px bounding size the caption's meta line has room for", () => {
+    for (const [owned, hard, soft] of [
+      [1, 1, 0], // hard
+      [2, 0, 1], // soft
+    ] as const) {
+      const { container, unmount } = render(
+        <AvailabilityMarker availability={a(owned, hard, soft)} density="chip" plate={false} glyphOnly />,
+      );
+      const diamond = container.querySelector("[aria-hidden] span, [aria-hidden]")!;
+      const w = parseFloat((diamond as HTMLElement).style.width);
+      const h = parseFloat((diamond as HTMLElement).style.height);
+      // A 45°-rotated square's bounding box is its side times √2 — this is the figure that
+      // must not exceed AVAILABILITY_CHIP_GLYPH_PX, not the raw `w`/`h` the element carries.
+      expect(w * Math.SQRT2).toBeLessThanOrEqual(AVAILABILITY_CHIP_GLYPH_PX + 0.01);
+      expect(h * Math.SQRT2).toBeLessThanOrEqual(AVAILABILITY_CHIP_GLYPH_PX + 0.01);
+      unmount();
+    }
+  });
+
+  it("keeps the over glyph's own box at the handoff's 21x16, not a scaled-up overflow", () => {
+    const { container } = render(
+      <AvailabilityMarker availability={a(1, 2, 0)} density="chip" plate={false} glyphOnly />,
+    );
+    const box = container.querySelector('[aria-hidden="true"]') as HTMLElement;
+    expect(box.style.width).toBe("21px");
+    expect(box.style.height).toBe("16px");
+  });
+
+  // Found by Copilot's round-1 review: a wrapper that auto-sizes to the diamond's unrotated
+  // CSS box draws its outline through the glyph rather than around it, because rotation grows
+  // the glyph's PAINT past that box. The outlined root must carry its own explicit, non-shrinking
+  // size — the box the caption's row actually reserves — independent of the glyph inside it.
+  it("gives the outlined root an explicit, non-shrinking box matching the glyph's bounding size", () => {
+    const soft = render(
+      <AvailabilityMarker availability={a(2, 0, 1)} density="chip" plate={false} glyphOnly />,
+    );
+    const softRoot = soft.container.firstElementChild as HTMLElement;
+    expect(softRoot.style.width).toBe(`${AVAILABILITY_CHIP_GLYPH_PX}px`);
+    expect(softRoot.style.height).toBe(`${AVAILABILITY_CHIP_GLYPH_PX}px`);
+    expect(softRoot.className).toContain("flex-none");
+    soft.unmount();
+
+    const over = render(
+      <AvailabilityMarker availability={a(1, 2, 0)} density="chip" plate={false} glyphOnly />,
+    );
+    const overRoot = over.container.firstElementChild as HTMLElement;
+    expect(overRoot.style.width).toBe(`${AVAILABILITY_CHIP_GLYPH_OVER_PX}px`);
+    expect(overRoot.style.height).toBe(`${AVAILABILITY_CHIP_GLYPH_PX}px`);
+  });
+
+  // Found by Copilot's round-1 and round-2 reviews: positioning the big diamonds by their
+  // unrotated CSS `left` (the small glyph's own convention) ignores that rotation moves a box's
+  // visual edge OUTWARD of its CSS edge by `inset` — a round-1 fix subtracted the inset where it
+  // needed to add it, which this test's own first version also got backwards (asserting the
+  // exact wrong-direction value and passing on the overflow it existed to catch). The PAINTED
+  // edge is `css − inset`, never `css + inset`, and the target paint size is the ROTATED
+  // diamond (`AVAILABILITY_CHIP_GLYPH_PX`), never the CSS side.
+  it("insets both big diamonds by the rotation growth, so the painted union stays within 21px", () => {
+    const { container } = render(
+      <AvailabilityMarker availability={a(1, 2, 0)} density="chip" plate={false} glyphOnly />,
+    );
+    const [first, second] = container.querySelectorAll('[class*="rotate-45"]');
+    const side = parseFloat((first as HTMLElement).style.width);
+    const inset = (AVAILABILITY_CHIP_GLYPH_PX - side) / 2;
+    const firstLeft = parseFloat((first as HTMLElement).style.left);
+    const secondLeft = parseFloat((second as HTMLElement).style.left);
+    // The first diamond's PAINTED left edge (css left minus inset) sits at the wrapper's own 0.
+    expect(firstLeft - inset).toBeCloseTo(0, 1);
+    // The second's painted right edge (css left minus inset, plus its ROTATED width — never the
+    // CSS side, which would make this the same expression `leftSecond` was solved from) sits at
+    // the wrapper's own width.
+    expect(secondLeft - inset + AVAILABILITY_CHIP_GLYPH_PX).toBeCloseTo(
+      AVAILABILITY_CHIP_GLYPH_OVER_PX,
+      1,
+    );
   });
 });

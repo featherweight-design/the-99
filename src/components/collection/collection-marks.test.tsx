@@ -76,9 +76,14 @@ describe("the card mark on /collection", () => {
     // the entry before they find a card.
     for (const View of [RowsView, GridView]) {
       const { unmount } = render(<View cards={[card()]} {...props} />);
-      const key = screen.getByRole("group", { name: cardMarkCopy.keyRegionAria });
-      for (const fact of ["gameChanger", "massLandDenial", "extraTurns"] as const) {
-        expect(key.textContent).toContain(cardMarkCopy[fact]);
+      // GridView mounts TWO key instances since this round (one per breakpoint, collection
+      // surfaces Call 3) — both carry the same facts and combo entries regardless of the
+      // availability entries that distinguish them, so every one found must gloss all three.
+      const keys = screen.getAllByRole("group", { name: cardMarkCopy.keyRegionAria });
+      for (const key of keys) {
+        for (const fact of ["gameChanger", "massLandDenial", "extraTurns"] as const) {
+          expect(key.textContent).toContain(cardMarkCopy[fact]);
+        }
       }
       unmount();
     }

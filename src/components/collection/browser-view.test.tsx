@@ -183,7 +183,7 @@ describe("CollectionBrowser — what the server draws", () => {
     window.history.replaceState(null, "", "/collection");
     localStorage.clear();
   });
-  const GRID = /grid-cols-2[^"]*minmax\(178px/;
+  const GRID = /grid-cols-3[^"]*minmax\(178px/;
   const ROWS = /gap-\[6px\][^"]*flex-col|flex-col[^"]*gap-\[6px\]/;
   const art = card({ imageUri: "https://cards.scryfall.io/normal/front/a.jpg" });
   const html = (viewHint?: ViewHint) =>

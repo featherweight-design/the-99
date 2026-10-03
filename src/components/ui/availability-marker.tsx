@@ -148,21 +148,72 @@ function label(
 const DIAMOND = "block w-[6px] h-[6px] rotate-45";
 
 /**
+ * The 3-up collection tile's glyph-only chip (collection surfaces, Call 3): the glyph's own
+ * BOUNDING box, 16px — the figure the handoff states and the size `CardFactMark`'s 16x16
+ * glyphs draw at, rather than the 6px diamond this file's row and captioned chips use
+ * alongside a word.
+ *
+ * The box is the ROTATED diamond's bounding size, not the diamond's own CSS side: a 45°
+ * rotation grows a square's bounding box by `√2`, so a diamond with a 16px side bounds to
+ * ~22.6px — taller than the caption's fixed-height meta line (`CardTileCaption`'s
+ * `META_LINE`, 17/18px) and taller than every other occupant of that line, which are flat
+ * 16x16 glyphs with no rotation to grow past their own box. The diamond's CSS side is
+ * therefore `AVAILABILITY_CHIP_GLYPH_PX / √2`, so ITS bounding box — what the caption's row
+ * actually has to hold — is 16.
+ */
+export const AVAILABILITY_CHIP_GLYPH_PX = 16;
+const BIG_DIAMOND_SIDE_PX = AVAILABILITY_CHIP_GLYPH_PX / Math.SQRT2;
+/**
+ * Rotating a square about its own centre grows its PAINTED footprint past its CSS box by
+ * `(rotated − css) / 2` on every side — the gap `left-0`/`top-0` positioning (the small,
+ * unrotated glyph's own convention) ignores. Each big diamond's CSS box is inset by this
+ * amount so its rotated paint, not its box, lands flush with the wrapper's edges.
+ */
+const BIG_DIAMOND_INSET_PX = (AVAILABILITY_CHIP_GLYPH_PX - BIG_DIAMOND_SIDE_PX) / 2;
+/**
+ * The over glyph's own box width at that size: the handoff's second figure, not derived from
+ * the 5px offset the row/chip's 6px diamonds use — at this size that ratio would print a wider
+ * box than stated. The second diamond's position is solved FROM this figure instead, by its
+ * PAINTED right edge rather than its CSS left.
+ */
+export const AVAILABILITY_CHIP_GLYPH_OVER_PX = 21;
+
+/**
  * The over-committed glyph is two diamonds overlapping by 1px, with the front
  * one carrying a left border in **the colour of whatever sits behind the
  * marker** — that border is the seam, and it only reads as a seam while it
  * matches the background. Six different backgrounds host this marker, so the
  * colour is a prop rather than a constant (design table line 124).
  */
-function OverGlyph({ seam }: { seam: string }) {
+function OverGlyph({ seam, big }: { seam: string; big?: boolean }) {
+  const side = big ? BIG_DIAMOND_SIDE_PX : 6;
+  const width = big ? AVAILABILITY_CHIP_GLYPH_OVER_PX : 11;
+  const height = big ? AVAILABILITY_CHIP_GLYPH_PX : 6;
+  // Positioned by PAINTED edge, not CSS left. Rotation about centre moves a box's visual edge
+  // OUTWARD of its CSS edge by `inset`, so a CSS box sits `inset` INSIDE the paint it targets:
+  // `css = paint + inset`. The paint target itself is sized by the ROTATED diamond
+  // (`AVAILABILITY_CHIP_GLYPH_PX`, 16), never the CSS side (`side`, ~11.3) — the first
+  // diamond's paint starts flush with the wrapper's left (paint-left 0), the second's paint
+  // ends flush with the wrapper's right (paint-left `width − AVAILABILITY_CHIP_GLYPH_PX`).
+  const leftFirst = big ? BIG_DIAMOND_INSET_PX : 0;
+  const leftSecond = big
+    ? width - AVAILABILITY_CHIP_GLYPH_PX + BIG_DIAMOND_INSET_PX
+    : 5;
+  const top = big ? BIG_DIAMOND_INSET_PX : 0;
   return (
-    <span aria-hidden="true" className="relative block flex-none w-[11px] h-[6px]">
+    <span aria-hidden="true" className="relative block flex-none" style={{ width, height }}>
       <span
-        className={twMerge(DIAMOND, "absolute left-0 top-0 bg-[color:var(--danger)]")}
+        className={twMerge(DIAMOND, "absolute bg-[color:var(--danger)]")}
+        style={{ left: leftFirst, top, ...(big ? { width: side, height: side } : {}) }}
       />
       <span
-        className={twMerge(DIAMOND, "absolute left-[5px] top-0 bg-[color:var(--danger)]")}
-        style={{ borderLeft: `1px solid ${seam}` }}
+        className={twMerge(DIAMOND, "absolute bg-[color:var(--danger)]")}
+        style={{
+          borderLeft: `1px solid ${seam}`,
+          left: leftSecond,
+          top,
+          ...(big ? { width: side, height: side } : {}),
+        }}
       />
     </span>
   );
@@ -182,11 +233,14 @@ function OverGlyph({ seam }: { seam: string }) {
 export function AvailabilityGlyph({
   state,
   seam,
+  big,
 }: {
   state: Exclude<AvailabilityState, "free">;
   seam: string;
+  /** `AVAILABILITY_CHIP_GLYPH_PX`'s bounding box instead of the row/chip's 6px. See `OverGlyph`. */
+  big?: boolean;
 }) {
-  if (state === "over") return <OverGlyph seam={seam} />;
+  if (state === "over") return <OverGlyph seam={seam} big={big} />;
   return (
     <span
       aria-hidden="true"
@@ -197,7 +251,39 @@ export function AvailabilityGlyph({
           ? "bg-transparent [border:1.5px_solid_var(--avail-soft)]"
           : "bg-[color:var(--avail-hard)]",
       )}
+      style={big ? { width: BIG_DIAMOND_SIDE_PX, height: BIG_DIAMOND_SIDE_PX } : undefined}
     />
+  );
+}
+
+/**
+ * `AvailabilityGlyph` at `big`, in an explicit, non-shrinking layout box the size of its
+ * BOUNDING paint — 16x16, or 21x16 for `over`. A CSS `transform` never affects layout, so the
+ * bare glyph (its unrotated CSS side, ~11.3px) reserves less flex space than it paints; a
+ * neighbour sized against the glyph's own true visual footprint (a key's word, this marker's
+ * outlined root) then sits too close, or an outline runs through the glyph instead of around
+ * it. Centering a smaller CSS box inside this one still centers the rotated visual correctly,
+ * since rotation is about the box's own centre.
+ *
+ * `CollectionMarkKey`'s three availability samples use this rather than the bare glyph for
+ * exactly that reason: `MarkKey`'s shared `gap-[5px]` assumes every sample already reserves
+ * its own full paint.
+ */
+export function AvailabilityGlyphBox({
+  state,
+  seam,
+}: {
+  state: Exclude<AvailabilityState, "free">;
+  seam: string;
+}) {
+  const width = state === "over" ? AVAILABILITY_CHIP_GLYPH_OVER_PX : AVAILABILITY_CHIP_GLYPH_PX;
+  return (
+    <span
+      className="inline-flex flex-none items-center justify-center"
+      style={{ width, height: AVAILABILITY_CHIP_GLYPH_PX }}
+    >
+      <AvailabilityGlyph state={state} seam={seam} big />
+    </span>
   );
 }
 
@@ -255,6 +341,7 @@ export function AvailabilityMarker({
   spoken = false,
   linkDeck = false,
   className,
+  glyphOnly = false,
   ...opts
 }: {
   availability: AvailabilitySummary;
@@ -303,6 +390,13 @@ export function AvailabilityMarker({
    */
   linkDeck?: boolean;
   className?: string;
+  /**
+   * Chip density, `plate={false}` only: the word is dropped and the glyph grows to
+   * `AVAILABILITY_CHIP_GLYPH_PX` (collection surfaces, Call 3 — the 3-up tile has no room for
+   * "1 in a draft"). `spoken`'s sr-only sentence still renders, so the word survives for
+   * assistive tech; it is the key, not this component, that prints it for sighted readers.
+   */
+  glyphOnly?: boolean;
 } & MarkerOpts) {
   // Dev only: production strips it, so a late regression degrades to the
   // duplicated announcement rather than a blank screen for the player.
@@ -328,7 +422,9 @@ export function AvailabilityMarker({
   // Built from the same effective opts as the label, so the sentence never
   // names a deck the drawn form withheld — a nameless chip stays count-only in
   // both halves (Addendum 2 §3).
-  const prose = spoken ? markerAria(availability, effective) : null;
+  // `glyphOnly` always speaks, whether or not the caller also passed `spoken`: with no visible
+  // word left to aria-hide, a glyph-only chip given neither prop would announce nothing at all.
+  const prose = spoken || glyphOnly ? markerAria(availability, effective) : null;
 
   return (
     <span
@@ -338,20 +434,37 @@ export function AvailabilityMarker({
           ? // Top-left: top-right is the shipped accent quantity badge on both
             // tile surfaces (A2RM:51–60).
             `absolute left-[6px] top-[6px] gap-[4px] rounded-[4px] border px-[5px] py-[2px] ${CHIP_SKIN[state]}`
-          : chip
-            ? // In the caption, on a plate of its own: the shared box, in this
-              // state's ink.
-              CARD_TILE_SLOT_BOX
-            : // Row density sets no font size and no family — it rides the
-              // shipped meta line and must not change its height (row 3.1).
-              "gap-[6px]",
+          : chip && glyphOnly
+            ? // The glyph alone, in the same outlined box: an EXPLICIT, non-shrinking box
+              // rather than one that auto-sizes to the glyph's unrotated CSS box — the glyph
+              // paints past that box (rotation grows its visual footprint), so a shrink-to-fit
+              // root draws the outline through the glyph instead of around it.
+              "flex-none justify-center rounded-[4px]"
+            : chip
+              ? // In the caption, on a plate of its own: the shared box, in this
+                // state's ink.
+                CARD_TILE_SLOT_BOX
+              : // Row density sets no font size and no family — it rides the
+                // shipped meta line and must not change its height (row 3.1).
+                "gap-[6px]",
         className,
       )}
-      style={chip && !plate ? slotOutline(CHIP_EDGE[state]) : undefined}
+      style={
+        chip && glyphOnly
+          ? {
+              ...slotOutline(CHIP_EDGE[state]),
+              width: state === "over" ? AVAILABILITY_CHIP_GLYPH_OVER_PX : AVAILABILITY_CHIP_GLYPH_PX,
+              height: AVAILABILITY_CHIP_GLYPH_PX,
+            }
+          : chip && !plate
+            ? slotOutline(CHIP_EDGE[state])
+            : undefined
+      }
     >
       <AvailabilityGlyph
         state={state}
         seam={chip ? (plate ? CHIP_SCRIM : CAPTION_SCRIM) : seam}
+        big={glyphOnly}
       />
       {/*
         The prefix never truncates; the deck name is the flexible half. This is
@@ -377,19 +490,21 @@ export function AvailabilityMarker({
         that was standing in for it — so `none free — in ` and `Atraxa` render as
         `none free — inAtraxa`. jsdom cannot see this; only the browser can.
       */}
-      <span
-        aria-hidden={spoken || undefined}
-        className={twMerge(
-          "flex-none whitespace-pre",
-          colour,
-          // The caption box already sets the family, the size and the weight
-          // for every occupant, so the label only adds the tracking there.
-          chip && (plate ? "font-mono text-[8.5px] font-semibold tracking-[0.02em]" : "tracking-[0.02em]"),
-        )}
-      >
-        {text.prefix}
-      </span>
-      {text.deck &&
+      {!glyphOnly && (
+        <span
+          aria-hidden={spoken || undefined}
+          className={twMerge(
+            "flex-none whitespace-pre",
+            colour,
+            // The caption box already sets the family, the size and the weight
+            // for every occupant, so the label only adds the tracking there.
+            chip && (plate ? "font-mono text-[8.5px] font-semibold tracking-[0.02em]" : "tracking-[0.02em]"),
+          )}
+        >
+          {text.prefix}
+        </span>
+      )}
+      {!glyphOnly && text.deck &&
         // -ml cancels the container's gap between the two halves of what is one
         // sentence: the gap separates the glyph from the text, not `none free — in`
         // from `Atraxa`.

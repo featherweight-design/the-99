@@ -119,6 +119,7 @@ export function CardTileCaption({
   nameTrail,
   nameSub,
   trailing,
+  compact = false,
 }: {
   /**
    * The meta line's left group. Its contents are the CALLER's, and the two callers differ:
@@ -156,6 +157,12 @@ export function CardTileCaption({
   nameSub?: ReactNode;
   /** The full-height right column. The deck tile's `✕`. */
   trailing?: ReactNode;
+  /**
+   * Phone-only side padding at 7px instead of 9 (collection surfaces, Call 3). The 3-up grid's
+   * 115.3/105.3px tile has no room for the wider gutter; `md:` is untouched, since the shrink is
+   * a phone-width concession and the desktop tile floor (178px) never needs it.
+   */
+  compact?: boolean;
 }) {
   return (
     /* The draft's accent edge is NOT here. It was, and it ran only the
@@ -164,8 +171,10 @@ export function CardTileCaption({
        row. `/collection` has no draft at all, so nothing here needs the prop. */
     <div className={`flex items-stretch ${nameSub ? CARD_TILE_CAPTION_SUB_H : CARD_TILE_CAPTION_H}`}>
       <div
-        className={`flex-auto min-w-0 flex flex-col justify-center gap-[3px] py-[8px] md:py-[6px] pl-[9px] md:pl-[10px] ${
-          trailing ? "pr-[3px]" : "pr-[9px] md:pr-[10px]"
+        className={`flex-auto min-w-0 flex flex-col justify-center gap-[3px] py-[8px] md:py-[6px] ${
+          compact ? "pl-[7px]" : "pl-[9px]"
+        } md:pl-[10px] ${
+          trailing ? "pr-[3px]" : compact ? "pr-[7px] md:pr-[10px]" : "pr-[9px] md:pr-[10px]"
         }`}
       >
         {/* The meta line sits ABOVE the name: the marks qualify the picture, so
