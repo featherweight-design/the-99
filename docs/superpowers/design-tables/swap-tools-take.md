@@ -57,7 +57,7 @@ Two button skins recur, both from the sheet's `renderVals()` (:223-228):
 | Resting | key | `sheet.take` | same | Sheet :110 |
 | Resting | aria-label key | `sheet.takeAria(add, cut)` | same | copy |
 | Resting | skin | Apply skin (desktop) | Apply skin (phone, `72 × 44`) | Sheet :223-225 |
-| Pressed / taking | key | `sheet.taking` | same | copy only |
+| Pressed / taking | `PendingLabel` (the in-control crown) over `sheet.take`, `aria-busy` | same | same | resting width held; `sheet.taking` retired 2026-10-03 |
 | Pressed / taking | visual | **not drawn.** The canvas has no taking frame; only the key exists | same | — |
 | Taken (the pressed row) | render | the row's grid is replaced by the taken row (§2.1); no Take | same | Sheet :87-91, :139 |
 | Taken (every other row) | render | `canTake: false`: Take is **removed**, not disabled; the cell stays empty; the row keeps its slot and order | same | Sheet :172; README "The other rows drop Take but keep their slots"; Swap Tools :233 |
@@ -418,7 +418,7 @@ records the canvas's own footer box, which this build does not draw. The phone c
 | State | Triggering condition | Component rendered | Key props |
 |---|---|---|---|
 | Take resting | a live stand-in row, nothing taken | Take in the row's third cell (desktop) / spanning cell (phone) | `add`, `cut` for `takeAria` |
-| Taking | Take pressed, swap in flight | Take reading `sheet.taking` (visual undrawn) | row id |
+| Taking | Take pressed, swap in flight | Take draws `PendingLabel` over its label, `aria-busy` (Hugh, 2026-10-03) | row id |
 | Taken, in the sheet | the swap landed | taken row (✓, `taken`, cut → add, Undo swap) in the pressed row's slot; `takenNote(cut)` under the head; lead removed; other rows with no Take | `cut`, `add`, `canTake: false` on the rest |
 | Refused | the swap body returned no swap | refused panel under the pressed row; Take live everywhere | `deck`, `cut`, `add`, the refusal reason (F11) |
 | Take errored | the swap threw | `MutationError` under the row (F11) | error |

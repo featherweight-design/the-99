@@ -28,6 +28,7 @@ import { AvailabilityMarker } from "../ui/availability-marker";
 import { SheetGroupHeading, SheetGroupToggle } from "../ui/sheet-group";
 import { CardDetailTrigger, useCardDetail, type SheetFooter, type Sibling } from "../cards/card-detail-provider";
 import { Crown } from "../ui/crown";
+import { PendingLabel } from "../ui/pending-mark";
 import { HoverPreviewProvider, usePreviewRow } from "./hover-preview";
 import { BuyTag } from "./buy-tag";
 import { MutationError } from "./mutation-error";
@@ -210,10 +211,14 @@ export function StandInRow({ row, newestAsOf, take, siblings }: { row: SheetRow;
               type="button"
               onClick={take.onTake}
               disabled={take.busy}
+              aria-busy={take.taking || undefined}
               aria-label={copy.takeAria(row.name, take.cut)}
               className={APPLY}
             >
-              {take.taking ? copy.taking : copy.take}
+              {/* The app's in-control loader over the label, not a longer word: `Taking…` grew the
+                  button into the price beside it (Hugh, 2026-10-03). The label keeps its box, so the
+                  button is as wide busy as resting, and the accessible name is the aria-label's. */}
+              <PendingLabel pending={take.taking}>{copy.take}</PendingLabel>
             </button>
           ) : null}
         </div>
