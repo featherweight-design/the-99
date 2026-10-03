@@ -493,9 +493,18 @@ export function CardDetailProvider({
   // lost the race.
   const enterTargetId = useRef<string | null>(null);
   // The carousel's own live-region text — distinct from the loading/unavailable region above,
-  // which is the modal's. Cleared back to "" is unnecessary: an unchanged value is silent to a
-  // screen reader by itself, so the next genuinely new announcement is what moves it.
+  // which is the modal's.
   const [pagingAnnouncement, setPagingAnnouncement] = useState("");
+  // An aria-live region only announces a CHANGE of text, so going straight to an identical
+  // string is silent (pre-open review, round 1): pressing the same arrow at an end twice,
+  // or paging A→B, closing, reopening A and paging to B again. Cleared first, on its own
+  // frame, so a repeat is a real change twice over rather than a no-op. Deliberately not a
+  // deps-based `useCallback`: every caller passes a literal built fresh each time, so there
+  // is nothing to memoize against.
+  const announce = (text: string) => {
+    setPagingAnnouncement("");
+    requestAnimationFrame(() => setPagingAnnouncement(text));
+  };
   // Joined and re-split rather than held as an array, so the callback's dependency is a
   // STRING and cannot churn on identity alone. The deck page happens to memoise its list
   // today, so this buys nothing from that caller — it is a guard on every future one, and
@@ -979,7 +988,7 @@ export function CardDetailProvider({
     // The render carrying a fresh `enterFrom` usually still shows the card being left, since
     // `load` has not resolved yet — wait for the one that actually shows the target.
     if (card.oracleId !== enterTargetId.current) return;
-    setPagingAnnouncement(cardCarouselCopy.arrived(card.name, index + 1, siblings.length));
+    announce(cardCarouselCopy.arrived(card.name, index + 1, siblings.length));
     // Cleared once read: a `CardModal` instance is keyed on oracle id and captures `enterFrom`
     // at its own mount for focus and motion, so clearing the provider's copy here cannot take
     // that back from an instance that already has it.
@@ -988,8 +997,8 @@ export function CardDetailProvider({
     // transition, not on every reorder.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [card, enterFrom]);
-  const announceAtStart = useCallback(() => setPagingAnnouncement(cardCarouselCopy.firstCard), []);
-  const announceAtEnd = useCallback(() => setPagingAnnouncement(cardCarouselCopy.lastCard), []);
+  const announceAtStart = useCallback(() => announce(cardCarouselCopy.firstCard), []);
+  const announceAtEnd = useCallback(() => announce(cardCarouselCopy.lastCard), []);
 
   return (
     <CardDetailContext.Provider value={value}>

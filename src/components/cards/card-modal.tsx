@@ -434,6 +434,14 @@ const DOOR_HEIGHT = 8 + 6 + 16 + 8 + 21;
  * Art first, then identity, then a bare plate (handoff "Notes for engineering" §2): a sibling
  * carrying only an id draws no text at all, since there is none to draw.
  */
+// The dialog's own fixed desktop geometry (`md:w-[820px]`) and the 24px gap decision 2 draws
+// between it and a plate — the same two constants the 1252px threshold comment derives from.
+// Kept here, beside the one place that reads them, rather than exported: nothing else needs
+// them, and the threshold's own comment is free to keep stating the arithmetic in prose.
+const DIALOG_HALF_WIDTH = 410;
+const PLATE_GAP = 24;
+const PLATE_WIDTH = 168;
+
 const NeighborPlate = React.forwardRef<
   HTMLButtonElement,
   { sibling: SiblingCard; direction: "previous" | "next"; onPress: () => void }
@@ -443,18 +451,26 @@ const NeighborPlate = React.forwardRef<
     : sibling.colorIdentity
     ? { background: identityGradient([...sibling.colorIdentity]) }
     : { background: "var(--elevated)" };
+  // Anchored from the BACKDROP's own center rather than carried as a flex sibling of the
+  // centered dialog (pre-open review, round 1): a flex sibling present on only one side
+  // shifts the dialog itself by its width-plus-gap, which moved the dialog and its footer
+  // controls under the reader on every page to a list's first or last card.
+  const left = direction === "previous"
+    ? `calc(50% - ${DIALOG_HALF_WIDTH + PLATE_GAP + PLATE_WIDTH}px)`
+    : `calc(50% + ${DIALOG_HALF_WIDTH + PLATE_GAP}px)`;
   return (
     <button
       ref={ref}
       type="button"
       onClick={(e) => { e.stopPropagation(); onPress(); }}
       aria-label={cardCarouselCopy.neighborAria(direction, sibling.name)}
-      className="flex-none flex flex-col items-center gap-[6px] cursor-pointer bg-transparent border-0 p-0"
+      className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center gap-[6px] cursor-pointer bg-transparent border-0 p-0"
+      style={{ left }}
     >
       <span
         aria-hidden="true"
         className="block rounded-[10px]"
-        style={{ width: 168, height: 235, ...art, boxShadow: "0 12px 30px rgba(0,0,0,0.4)" }}
+        style={{ width: PLATE_WIDTH, height: 235, ...art, boxShadow: "0 12px 30px rgba(0,0,0,0.4)" }}
       />
       {sibling.name ? (
         <span className="font-mono text-[12.5px] truncate max-w-[168px]" style={{ color: "var(--fg-muted)" }}>
@@ -634,6 +650,10 @@ export function CardModal({
   }) | null;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  // The fixed backdrop — the one ancestor the dialog and the desktop neighbor plates share.
+  // The arrow-key listener below attaches here rather than to `dialogRef`, since a peek press
+  // can move focus onto a plate, which sits outside the dialog.
+  const backdropRef = useRef<HTMLDivElement>(null);
   // Two card modals are up at once while a card is stacked over a sheet over a card, so the
   // covered one takes its own title id: shared, the top dialog would be named by the held card's
   // heading. The top card keeps the canonical id every other reader of the modal looks for.
@@ -1188,9 +1208,15 @@ export function CardModal({
   // Arrow-key paging (handoff decision 4): anywhere in the dialog except the printing search
   // input, the printing radiogroup, and the zoom — "a look, not a browser", decision 1. A list
   // of one or two behaves exactly as the buttons do: the missing side is simply absent.
+  //
+  // ATTACHED TO THE BACKDROP, not the dialog (pre-open review, round 1). A peek press moves
+  // focus to the pressed plate via `initialFocusRef` on the REMOUNTED instance, and a neighbor
+  // plate is a sibling of `dialogRef`'s element, outside it — a listener on the dialog alone
+  // never sees a key pressed while focus sits on a plate, which stalled paging dead after the
+  // first peek. The backdrop is the one ancestor both the dialog and the plates share.
   useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog || total <= 1) return;
+    const backdrop = backdropRef.current;
+    if (!backdrop || total <= 1) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
       const active = document.activeElement;
@@ -1207,8 +1233,8 @@ export function CardModal({
         if (onNext) onNext(); else onAtEnd?.();
       }
     };
-    dialog.addEventListener("keydown", handler);
-    return () => dialog.removeEventListener("keydown", handler);
+    backdrop.addEventListener("keydown", handler);
+    return () => backdrop.removeEventListener("keydown", handler);
   }, [total, onPrev, onNext, onAtStart, onAtEnd]);
 
   // A back face to turn to, or none (#363). The image is the second condition and
@@ -1553,8 +1579,9 @@ export function CardModal({
     // Fixed backdrop wrapper — §Backdrop at 0.72, mixed against the canvas so the
     // dim tracks the theme; blurred collection behind is decorative and out-of-scope
     <div
+      ref={backdropRef}
       className={
-        "fixed inset-0 flex items-center justify-center gap-[24px]"
+        "fixed inset-0 flex items-center justify-center"
         + (covered ? " z-[49]" : " z-50")
         + (stacked || phoneTop ? " max-md:items-end" : "")
       }
@@ -1570,7 +1597,15 @@ export function CardModal({
       }}
       data-stacked={stacked || undefined}
     >
-      {wideEnoughForNeighbors && prevSibling ? (
+      {/* Positioned OFF the centering flex row, not beside it (pre-open review, round 1): a
+          plate sized as a flex sibling shifts the centered dialog by its own width-plus-gap
+          whenever only one side has a neighbor (a list's first or last card), moving the
+          dialog and footer controls under the reader mid-page. Anchored instead from the
+          backdrop's own center, by the same 820px dialog half-width and 24px gap the 1252px
+          threshold is built from — so the dialog never moves, with a neighbor on one side,
+          both, or neither. Hidden while the zoom is open (decision 1: "a look, not a
+          browser" — a visible, clickable plate behind the zoom could still page past it). */}
+      {wideEnoughForNeighbors && prevSibling && !zoomed ? (
         <NeighborPlate ref={prevPeekRef} sibling={prevSibling} direction="previous" onPress={() => onPrevPeek?.()} />
       ) : null}
       <div
@@ -2256,7 +2291,7 @@ export function CardModal({
           </div>
         )}
       </div>
-      {wideEnoughForNeighbors && nextSibling ? (
+      {wideEnoughForNeighbors && nextSibling && !zoomed ? (
         <NeighborPlate ref={nextPeekRef} sibling={nextSibling} direction="next" onPress={() => onNextPeek?.()} />
       ) : null}
     </div>

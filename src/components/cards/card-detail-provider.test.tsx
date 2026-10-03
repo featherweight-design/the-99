@@ -1517,6 +1517,65 @@ describe("CardDetailProvider pages the desktop carousel (H23 PR 2)", () => {
     await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Card C"));
   });
 
+  // Pre-open review, round 1: the plates used to be flex siblings of the centered dialog,
+  // so a plate present on only one side (every list end) shifted the dialog by its own
+  // width-plus-gap. Positioned absolutely from the backdrop's center now, independent of
+  // how many plates are drawn.
+  it("positions each neighbor plate from the backdrop's center, not as a flex sibling", async () => {
+    stubMinWidth(true);
+    mount("o-b");
+    await press();
+    await screen.findByRole("dialog");
+    const prevPlate = screen.getByRole("button", { name: "Previous card: Card A" });
+    const nextPlate = screen.getByRole("button", { name: "Next card: Card C" });
+    expect(prevPlate.className).toContain("absolute");
+    expect(nextPlate.className).toContain("absolute");
+    expect(prevPlate.style.left).toContain("calc(50% -");
+    expect(nextPlate.style.left).toContain("calc(50% +");
+  });
+
+  // Pre-open review, round 1: at >=1252px a plate sat beside the zoom layer rather than
+  // under it, so it stayed visible and clickable while the zoom was open — pressing one
+  // paged the carousel and unmounted the zoom mid-look, contrary to decision 1 ("a look,
+  // not a browser").
+  it("hides both neighbor plates while the zoom is open", async () => {
+    stubMinWidth(true);
+    mount("o-b");
+    await press();
+    const dialog = await screen.findByRole("dialog");
+    expect(screen.getByRole("button", { name: "Next card: Card C" })).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(within(dialog).getAllByRole("button", { name: /^Look at /i })[0]);
+    });
+    // Named with the neighbor's own title — only a plate ever carries that form, so this
+    // cannot collide with the footer's bare "Previous card"/"Next card" buttons, which stay
+    // mounted (inert behind the zoom) regardless.
+    expect(screen.queryByRole("button", { name: "Previous card: Card A" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Next card: Card C" })).not.toBeInTheDocument();
+  });
+
+  // Pre-open review, round 1: the arrow-key listener lived on the dialog element alone, so
+  // once a peek press moved focus onto the (pressed) plate — a sibling of the dialog, not a
+  // descendant — a further arrow key never reached it and paging stalled.
+  it("keeps paging on arrow keys after focus has moved to a neighbor plate", async () => {
+    stubMinWidth(true);
+    mount("o-a");
+    await press();
+    await screen.findByRole("dialog");
+    const nextPlate = screen.getByRole("button", { name: "Next card: Card B" });
+    await act(async () => { fireEvent.click(nextPlate); });
+    await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Card B"));
+    // The remounted instance restores focus to its own peek plate (H23 PR 2), which jsdom's
+    // zero-rect layout can't exercise through the real focus-restoration path here — moved
+    // by hand instead, to put document.activeElement on an element OUTSIDE the dialog, the
+    // exact condition the old dialog-only listener went deaf under.
+    const arrivedPlate = screen.getByRole("button", { name: "Next card: Card C" });
+    arrivedPlate.focus();
+    expect(arrivedPlate).toHaveFocus();
+    fireEvent.keyDown(arrivedPlate, { key: "ArrowRight" });
+    await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Card C"));
+  });
+
   it("announces the arrival on a page, and nothing new on the first open", async () => {
     stubMinWidth(true);
     mount("o-b");
@@ -1539,6 +1598,25 @@ describe("CardDetailProvider pages the desktop carousel (H23 PR 2)", () => {
     await waitFor(() => expect(allLive()).toContain(cardCarouselCopy.firstCard));
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowRight" });
     await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Card B"));
+  });
+
+  // Pre-open review, round 1: an aria-live region only announces a CHANGE of text, so going
+  // straight from one announcement to an identical one — the same end pressed twice, or
+  // paging A→B, closing, reopening A and paging to B again — was silent the second time.
+  it("re-announces an identical message, by clearing it first", async () => {
+    stubMinWidth(true);
+    mount("o-a");
+    await press();
+    await screen.findByRole("dialog");
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowLeft" });
+    await waitFor(() => expect(allLive()).toContain(cardCarouselCopy.firstCard));
+    // A second press at the same end repeats the identical message. The clear happens
+    // synchronously, before the real text is set on the next frame — a plain repeat of the
+    // same `setState` call would skip the render entirely, since React bails out on an
+    // unchanged primitive value.
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowLeft" });
+    expect(allLive()).not.toContain(cardCarouselCopy.firstCard);
+    await waitFor(() => expect(allLive()).toContain(cardCarouselCopy.firstCard));
   });
 
   // Pre-open review (H23 PR 2): a page's `load` and a second, unrelated `load` landing on the
