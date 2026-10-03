@@ -1,6 +1,7 @@
 import { axisCopy } from "../copy/game-log";
 import type { GameAxisKey } from "../decks/game-axes";
 import { deckTuningCopy } from "../copy/deck-tuning";
+import { playerText, PLAYER_TEXT_SYSTEM_RULE } from "../model/player-text";
 import type { EvidencePack } from "./evidence";
 import { MAX_SUGGESTIONS } from "./limits";
 import { noteDate } from "./note-date";
@@ -73,6 +74,7 @@ const LOCKED_RULE = lockedCardsCopy.tuning.promptRule;
 
 const SYSTEM = [
   "You suggest changes to a Magic: The Gathering Commander deck, for the player who built it.",
+  PLAYER_TEXT_SYSTEM_RULE,
   `Propose at most ${MAX_SUGGESTIONS} swaps. Each swap cuts exactly one card from the deck and adds exactly one card. Fewer is better than padding: one swap you can back beats three you cannot, and an empty list is an acceptable answer.`,
   "Ground every swap in the evidence you are given: the player's games and notes, the decklist and its targets, and what the player says the deck is for. Cite what you used.",
   "Cite with one of five kinds: games, note, decklist, intent, mix. One figure per citation. A figure with no name, or one the evidence does not give, is discarded.",
@@ -106,9 +108,7 @@ function renderPack(pack: EvidencePack): string {
 
   lines.push("", pack.intent === null
     ? "What the deck is for: no stated intent."
-    // Unwrapped, like a note: the intent may itself hold a quotation mark, and a delimiter that
-    // can collide with the text lets the player's words close it and continue as instructions.
-    : `What the deck is for, in the player's words, verbatim after the colon: ${oneLine(pack.intent)}`);
+    : playerText("What the deck is for, in the player's own words", pack.intent, deckTuningCopy.intent.maxLength));
 
   lines.push("", "Games:");
   const { summary, games } = pack.play;
@@ -123,12 +123,13 @@ function renderPack(pack: EvidencePack): string {
     }
     const noted = games.filter((g) => g.note !== null);
     if (noted.length > 0) {
-      // NOT wrapped in quotation marks here: a note may itself contain one, and a delimiter that
-      // can collide with the text breaks the verbatim boundary. Each note is the whole rest of its
-      // line; the model is told to quote it in double quotes, with its date.
-      lines.push("Notes, one per line after the date and colon, verbatim. Quote a note in double quotation marks, byte for byte, with its date as written here:");
+      // Each note is its own delimited block, so one note's text cannot run into another's or
+      // into what follows it. Quote a note in double quotes in the rationale, per the system rule.
+      lines.push("Notes:");
       const year = pack.year;
-      for (const g of noted) lines.push(`- ${noteDate(g.playedAt, year)}: ${oneLine(g.note!)}`);
+      for (const g of noted) {
+        lines.push(playerText(`Note from ${noteDate(g.playedAt, year)}`, g.note!, deckTuningCopy.note.maxLength));
+      }
     }
   }
 

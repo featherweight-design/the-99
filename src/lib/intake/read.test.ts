@@ -81,10 +81,17 @@ describe("the reply's shape", () => {
 });
 
 describe("buildReadPrompt", () => {
-  it("lists the vocabulary and puts the player's words last, on one line", () => {
+  it("lists the vocabulary and puts the player's words last, as a delimited block", () => {
     const { system, user } = buildReadPrompt("big dumb lizards\nand lots of lands", ["Dinosaurs", "Landfall"]);
     expect(system).toMatch(/Never suggest a commander/);
+    expect(system).toContain("<<<PLAYER_TEXT>>>");
     expect(user).toContain("Dinosaurs | Landfall");
-    expect(user.split("\n").at(-1)).toBe("The player's words, verbatim after the colon: big dumb lizards and lots of lands");
+    const lines = user.split("\n");
+    expect(lines.slice(-4)).toEqual([
+      "The player's words:",
+      "<<<PLAYER_TEXT>>>",
+      "big dumb lizards and lots of lands",
+      "<<<END_PLAYER_TEXT>>>",
+    ]);
   });
 });

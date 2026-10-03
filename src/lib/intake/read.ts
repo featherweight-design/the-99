@@ -1,7 +1,9 @@
 import { z } from "zod";
 
+import { playerText, PLAYER_TEXT_SYSTEM_RULE } from "../model/player-text";
 import { oneLine } from "../tuning/prompt";
 import { MAX_BUDGET_DOLLARS } from "./answers";
+import { READ_WORDS_MAX_CHARS } from "./limits";
 import { phraseKey, type Chip, type PhraseIndex } from "./match";
 
 /**
@@ -40,6 +42,7 @@ export type ReadResponse = z.infer<typeof readResponseSchema>;
 
 const SYSTEM = [
   "You read what a Magic: The Gathering Commander player wrote about the deck they want, and map it onto a fixed vocabulary so the app can search for commanders.",
+  PLAYER_TEXT_SYSTEM_RULE,
   "Never suggest a commander, and never add anything the player did not write or clearly describe. You are reading their words, not recommending.",
   "themes: labels copied exactly from the theme list you are given, for every theme the words describe, including ones described without the label's own word (\"big dumb lizards\" is Dinosaurs). At most six.",
   "cards: the exact printed names of cards the player names or unmistakably describes. At most three. A card you are not sure of does not go here.",
@@ -52,12 +55,12 @@ const SYSTEM = [
 export function buildReadPrompt(words: string, themeLabels: readonly string[]): { system: string; user: string } {
   return {
     system: SYSTEM,
-    // The player's words last and unwrapped, as one line, so no delimiter can be closed by them.
+    // The player's words last, as their own delimited block.
     user: [
       "Theme list (copy labels exactly):",
       themeLabels.join(" | "),
       "",
-      `The player's words, verbatim after the colon: ${oneLine(words)}`,
+      playerText("The player's words", words, READ_WORDS_MAX_CHARS),
     ].join("\n"),
   };
 }
