@@ -181,6 +181,33 @@ describe("useDialogA11y scroll lock", () => {
     expect(event.defaultPrevented).toBe(true);
   });
 
+  // Found by Copilot's round-3 review: a trackpad pinch synthesises a `wheel` with
+  // `ctrlKey` set, and a touch pinch carries two or more touch points — neither is a
+  // scroll, and blocking either made zoom unreachable over any non-scrolling part of an
+  // open dialog, card art included.
+  it("lets a Ctrl+wheel (trackpad pinch-zoom) through even with no scrollable ancestor", () => {
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    appended.push(el);
+    renderDialog({ lockScroll: true });
+
+    const event = new WheelEvent("wheel", { deltaY: 100, ctrlKey: true, cancelable: true, bubbles: true });
+    el.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  it("lets a multi-touch touchmove (pinch-zoom) through even with no scrollable ancestor", () => {
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    appended.push(el);
+    renderDialog({ lockScroll: true });
+
+    const event = new Event("touchmove", { cancelable: true, bubbles: true });
+    Object.defineProperty(event, "touches", { value: [{}, {}] });
+    el.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+  });
+
   it("stops blocking once the lock releases", () => {
     const el = document.createElement("div");
     document.body.appendChild(el);

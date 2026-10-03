@@ -53,7 +53,20 @@ function hasScrollableAncestor(target: EventTarget | null): boolean {
   return false;
 }
 
+/**
+ * A pinch-to-zoom gesture, not a scroll — never block it. Trackpad pinch arrives as a
+ * `wheel` with `ctrlKey` set (the browser's own synthesis, unrelated to the Control key
+ * itself), and a touch pinch carries more than one active touch point. Blocking either
+ * made zoom unreachable over any non-scrolling part of an open dialog, card art included.
+ */
+function isZoomGesture(e: Event): boolean {
+  if (e instanceof WheelEvent) return e.ctrlKey;
+  if ("touches" in e) return (e as TouchEvent).touches.length > 1;
+  return false;
+}
+
 function blockUnlessScrollable(e: Event) {
+  if (isZoomGesture(e)) return;
   if (!hasScrollableAncestor(e.target)) e.preventDefault();
 }
 
