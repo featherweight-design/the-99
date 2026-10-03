@@ -37,6 +37,60 @@ describe("freshLabels", () => {
   });
 });
 
+// Two of the Gishath trial's land searches the model labelled `tutor` (2026-10-03), with their
+// real oracle text and the jobs it wrote, and one search that reaches past lands.
+const TUTOR = (restrictedTo: string): Job => ({
+  space: "role", kind: "tutor", restrictedTo, affects: "self", to: "hand", method: null,
+  trigger: "none", recurrence: "oneShot", threshold: null, modal: false,
+});
+const WIPE: Job = { ...JOB, kind: "wipes", affects: "opponents", modal: true, restrictedTo: "creature" };
+const labelled = (card: Partial<typeof CARD>, labels: Job[]) => {
+  const c = { ...CARD, ...card };
+  return { ...c, labels, model: "m", input_hash: hash(c) };
+};
+
+describe("freshLabels — a land search is never a tutor", () => {
+  it("leaves Land Tax out once its only job, the tutor, is dropped, so the text path reads it as ramp", () => {
+    const r = labelled({
+      oracle_id: "00000000-0000-4000-8000-00000000000a", name: "Land Tax", mana_cost: "{W}", type_line: "Enchantment",
+      oracle_text: "At the beginning of your upkeep, if an opponent controls more lands than you, you may search your library for up to three basic land cards, reveal them, put them into your hand, then shuffle.",
+    }, [TUTOR("land")]);
+    expect(freshLabels([r]).has(r.oracle_id)).toBe(false);
+  });
+
+  it("drops the tutor job on Nylea's Intervention and keeps its wipe", () => {
+    const r = labelled({
+      oracle_id: "00000000-0000-4000-8000-00000000000b", name: "Nylea's Intervention", mana_cost: "{X}{G}{G}", type_line: "Sorcery",
+      oracle_text: "Choose one —\n• Search your library for up to X land cards, reveal them, put them into your hand, then shuffle.\n• Nylea's Intervention deals twice X damage to each creature with flying.",
+    }, [{ ...TUTOR("land"), modal: true }, WIPE]);
+    expect(freshLabels([r]).get(r.oracle_id)).toEqual([WIPE]);
+  });
+
+  it("keeps the tutor job when any search can find more than a land (Traverse the Ulvenwald)", () => {
+    const job = TUTOR("creature or land");
+    const r = labelled({
+      oracle_id: "00000000-0000-4000-8000-00000000000c", name: "Traverse the Ulvenwald", mana_cost: "{G}", type_line: "Sorcery",
+      oracle_text: "Search your library for a basic land card, reveal it, put it into your hand, then shuffle.\nDelirium — If there are four or more card types among cards in your graveyard, instead search your library for a creature or land card, reveal it, put it into your hand, then shuffle.",
+    }, [job]);
+    expect(freshLabels([r]).get(r.oracle_id)).toEqual([job]);
+  });
+
+  it("keeps a tutor job on a card that searches nothing (a top-of-library dig)", () => {
+    const job = TUTOR("creature");
+    const r = labelled({
+      oracle_id: "00000000-0000-4000-8000-00000000000d", name: "Commune with Nature", mana_cost: "{G}", type_line: "Sorcery",
+      oracle_text: "Look at the top five cards of your library. You may reveal a creature card from among them and put it into your hand. Put the rest on the bottom of your library in any order.",
+    }, [job]);
+    expect(freshLabels([r]).get(r.oracle_id)).toEqual([job]);
+  });
+});
+
+describe("freshLabels — a row the model left empty", () => {
+  it("still reads as labelled with no job", () => {
+    expect(freshLabels([row({ labels: [] })]).get(CARD.oracle_id)).toEqual([]);
+  });
+});
+
 describe("standInLabelsEnabled", () => {
   it("is on for the exact string 'true' alone", () => {
     expect(standInLabelsEnabled({ STAND_IN_LABELS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).toBe(true);
