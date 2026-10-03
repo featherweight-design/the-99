@@ -161,10 +161,11 @@ const DIAMOND = "block w-[6px] h-[6px] rotate-45";
  * therefore `AVAILABILITY_CHIP_GLYPH_PX / √2`, so ITS bounding box — what the caption's row
  * actually has to hold — is 16.
  *
- * This constant still sizes that OUTER box on every glyph-only chip, and the key's own
- * `AvailabilityGlyphBox` samples, which draw `big`, still paint their diamond at it. The
- * glyph-only chip's own diamond does not (Hugh, 2026-10-03) — see `AvailabilityGlyph`'s
- * `big` comment below.
+ * This constant still sizes that OUTER box on every glyph-only chip. The key's own
+ * `AvailabilityGlyphBox` samples draw at the smaller `"key"` scale instead (Hugh, 2026-10-03
+ * follow-up) — see the `KEY_DIAMOND_*` constants and `AvailabilityGlyph`'s `size` comment
+ * below. The glyph-only chip's own diamond draws at neither scale — see `AvailabilityGlyph`'s
+ * `size` comment below.
  */
 export const AVAILABILITY_CHIP_GLYPH_PX = 16;
 const BIG_DIAMOND_SIDE_PX = AVAILABILITY_CHIP_GLYPH_PX / Math.SQRT2;
@@ -184,32 +185,58 @@ const BIG_DIAMOND_INSET_PX = (AVAILABILITY_CHIP_GLYPH_PX - BIG_DIAMOND_SIDE_PX) 
 export const AVAILABILITY_CHIP_GLYPH_OVER_PX = 21;
 
 /**
+ * The key's three commitment samples draw smaller than the chip's `big` scale (Hugh,
+ * 2026-10-03): the `big` diamond's ~11.3px CSS side read larger than the key's other 16x16
+ * marks, most of whose own box is empty around a thin stroke, where a filled/outlined diamond
+ * reads dense. 8px is the side Hugh named directly, and the box/inset/over-width below are the
+ * SAME √2 derivation the `big` scale uses, run at that side — so the key's samples still
+ * reserve exactly their own painted footprint (`AvailabilityGlyphBox`'s invariant), just at a
+ * smaller scale. The tile/chip markers are untouched: neither scale here is their 6px one.
+ */
+export const KEY_DIAMOND_SIDE_PX = 8;
+export const KEY_DIAMOND_BOX_PX = KEY_DIAMOND_SIDE_PX * Math.SQRT2;
+const KEY_DIAMOND_INSET_PX = (KEY_DIAMOND_BOX_PX - KEY_DIAMOND_SIDE_PX) / 2;
+export const KEY_DIAMOND_OVER_PX = AVAILABILITY_CHIP_GLYPH_OVER_PX * (KEY_DIAMOND_SIDE_PX / BIG_DIAMOND_SIDE_PX);
+
+type DiamondScale = { side: number; box: number; over: number; inset: number };
+const BIG_SCALE: DiamondScale = {
+  side: BIG_DIAMOND_SIDE_PX,
+  box: AVAILABILITY_CHIP_GLYPH_PX,
+  over: AVAILABILITY_CHIP_GLYPH_OVER_PX,
+  inset: BIG_DIAMOND_INSET_PX,
+};
+const KEY_SCALE: DiamondScale = {
+  side: KEY_DIAMOND_SIDE_PX,
+  box: KEY_DIAMOND_BOX_PX,
+  over: KEY_DIAMOND_OVER_PX,
+  inset: KEY_DIAMOND_INSET_PX,
+};
+
+/**
  * The over-committed glyph is two diamonds overlapping by 1px, with the front
  * one carrying a left border in **the colour of whatever sits behind the
  * marker** — that border is the seam, and it only reads as a seam while it
  * matches the background. Six different backgrounds host this marker, so the
  * colour is a prop rather than a constant (design table line 124).
  */
-function OverGlyph({ seam, big }: { seam: string; big?: boolean }) {
-  const side = big ? BIG_DIAMOND_SIDE_PX : 6;
-  const width = big ? AVAILABILITY_CHIP_GLYPH_OVER_PX : 11;
-  const height = big ? AVAILABILITY_CHIP_GLYPH_PX : 6;
+function OverGlyph({ seam, scale }: { seam: string; scale?: DiamondScale }) {
+  const side = scale ? scale.side : 6;
+  const width = scale ? scale.over : 11;
+  const height = scale ? scale.box : 6;
   // Positioned by PAINTED edge, not CSS left. Rotation about centre moves a box's visual edge
   // OUTWARD of its CSS edge by `inset`, so a CSS box sits `inset` INSIDE the paint it targets:
-  // `css = paint + inset`. The paint target itself is sized by the ROTATED diamond
-  // (`AVAILABILITY_CHIP_GLYPH_PX`, 16), never the CSS side (`side`, ~11.3) — the first
-  // diamond's paint starts flush with the wrapper's left (paint-left 0), the second's paint
-  // ends flush with the wrapper's right (paint-left `width − AVAILABILITY_CHIP_GLYPH_PX`).
-  const leftFirst = big ? BIG_DIAMOND_INSET_PX : 0;
-  const leftSecond = big
-    ? width - AVAILABILITY_CHIP_GLYPH_PX + BIG_DIAMOND_INSET_PX
-    : 5;
-  const top = big ? BIG_DIAMOND_INSET_PX : 0;
+  // `css = paint + inset`. The paint target itself is sized by the ROTATED diamond (`scale.box`),
+  // never the CSS side (`side`) — the first diamond's paint starts flush with the wrapper's
+  // left (paint-left 0), the second's paint ends flush with the wrapper's right (paint-left
+  // `width − scale.box`).
+  const leftFirst = scale ? scale.inset : 0;
+  const leftSecond = scale ? width - scale.box + scale.inset : 5;
+  const top = scale ? scale.inset : 0;
   return (
     <span aria-hidden="true" className="relative block flex-none" style={{ width, height }}>
       <span
         className={twMerge(DIAMOND, "absolute bg-[color:var(--danger)]")}
-        style={{ left: leftFirst, top, ...(big ? { width: side, height: side } : {}) }}
+        style={{ left: leftFirst, top, ...(scale ? { width: side, height: side } : {}) }}
       />
       <span
         className={twMerge(DIAMOND, "absolute bg-[color:var(--danger)]")}
@@ -217,7 +244,7 @@ function OverGlyph({ seam, big }: { seam: string; big?: boolean }) {
           borderLeft: `1px solid ${seam}`,
           left: leftSecond,
           top,
-          ...(big ? { width: side, height: side } : {}),
+          ...(scale ? { width: side, height: side } : {}),
         }}
       />
     </span>
@@ -238,14 +265,16 @@ function OverGlyph({ seam, big }: { seam: string; big?: boolean }) {
 export function AvailabilityGlyph({
   state,
   seam,
-  big,
+  size,
 }: {
   state: Exclude<AvailabilityState, "free">;
   seam: string;
-  /** `AVAILABILITY_CHIP_GLYPH_PX`'s bounding box instead of the row/chip's 6px. See `OverGlyph`. */
-  big?: boolean;
+  /** `"big"` is `AVAILABILITY_CHIP_GLYPH_PX`'s bounding box; `"key"` is the key's smaller one.
+   *  Unset is the row/chip's plain 6px diamond. See `OverGlyph`. */
+  size?: "big" | "key";
 }) {
-  if (state === "over") return <OverGlyph seam={seam} big={big} />;
+  const scale = size === "key" ? KEY_SCALE : size === "big" ? BIG_SCALE : undefined;
+  if (state === "over") return <OverGlyph seam={seam} scale={scale} />;
   return (
     <span
       aria-hidden="true"
@@ -256,38 +285,38 @@ export function AvailabilityGlyph({
           ? "bg-transparent [border:1.5px_solid_var(--avail-soft)]"
           : "bg-[color:var(--avail-hard)]",
       )}
-      style={big ? { width: BIG_DIAMOND_SIDE_PX, height: BIG_DIAMOND_SIDE_PX } : undefined}
+      style={scale ? { width: scale.side, height: scale.side } : undefined}
     />
   );
 }
 
 /**
- * `AvailabilityGlyph` at `big`, in an explicit, non-shrinking layout box the size of its
- * BOUNDING paint — 16x16, or 21x16 for `over`. A CSS `transform` never affects layout, so the
- * bare glyph (its unrotated CSS side, ~11.3px) reserves less flex space than it paints; a
- * neighbour sized against the glyph's own true visual footprint (a key's word, this marker's
- * outlined root) then sits too close, or an outline runs through the glyph instead of around
- * it. Centering a smaller CSS box inside this one still centers the rotated visual correctly,
- * since rotation is about the box's own centre.
+ * `AvailabilityGlyph` at `"big"` or `"key"`, in an explicit, non-shrinking layout box the size
+ * of its own BOUNDING paint. A CSS `transform` never affects layout, so the bare glyph (its
+ * unrotated CSS side) reserves less flex space than it paints; a neighbour sized against the
+ * glyph's own true visual footprint (a key's word, this marker's outlined root) then sits too
+ * close, or an outline runs through the glyph instead of around it. Centering a smaller CSS box
+ * inside this one still centers the rotated visual correctly, since rotation is about the box's
+ * own centre.
  *
- * `CollectionMarkKey`'s three availability samples use this rather than the bare glyph for
- * exactly that reason: `MarkKey`'s shared `gap-[5px]` assumes every sample already reserves
- * its own full paint.
+ * `CollectionMarkKey`'s three availability samples use this, at `size="key"`, rather than the
+ * bare glyph for exactly that reason: `MarkKey`'s shared `gap-[5px]` assumes every sample
+ * already reserves its own full paint.
  */
 export function AvailabilityGlyphBox({
   state,
   seam,
+  size = "big",
 }: {
   state: Exclude<AvailabilityState, "free">;
   seam: string;
+  size?: "big" | "key";
 }) {
-  const width = state === "over" ? AVAILABILITY_CHIP_GLYPH_OVER_PX : AVAILABILITY_CHIP_GLYPH_PX;
+  const scale = size === "key" ? KEY_SCALE : BIG_SCALE;
+  const width = state === "over" ? scale.over : scale.box;
   return (
-    <span
-      className="inline-flex flex-none items-center justify-center"
-      style={{ width, height: AVAILABILITY_CHIP_GLYPH_PX }}
-    >
-      <AvailabilityGlyph state={state} seam={seam} big />
+    <span className="inline-flex flex-none items-center justify-center" style={{ width, height: scale.box }}>
+      <AvailabilityGlyph state={state} seam={seam} size={size} />
     </span>
   );
 }

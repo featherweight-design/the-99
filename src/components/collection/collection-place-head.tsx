@@ -112,6 +112,30 @@ export function CollectionPlaceHead({
   const pathname = usePathname();
   const current = placeFromPathname(pathname);
 
+  // Optimistic tab highlight (#1222 follow-up, Hugh's ruling): a press moves the underline
+  // and `aria-current` to the pressed tab at once, not once its content has loaded. Set by
+  // `onNavigate` — fired only for a real client-side navigation, never a modifier-key click
+  // that opens a new tab and leaves this page alone — and cleared whenever the pathname next
+  // commits, whatever it commits to. That one rule covers every reconciliation case: a normal
+  // commit to the pressed tab, a second tab pressed before the first lands (its own onNavigate
+  // simply overwrites this before either commits), and a Back that lands on a sibling tab.
+  // Abandoning the navigation without any further pathname change (an offline press) is the one
+  // case this cannot see — the same blind spot the loading screen and every Link in the app
+  // already has, with no existing mechanism that covers it either.
+  const [pendingPlace, setPendingPlace] = useState<CollectionPlace | null>(null);
+  // Adjusted DURING RENDER (react.dev's own pattern for resetting state when a prop
+  // changes), not in an effect: an effect keyed on `pathname` alone would also have to read
+  // `pendingPlace` to guard its call (`react-hooks/set-state-in-effect` refuses an
+  // unconditional one), and adding `pendingPlace` to that effect's own deps would re-run it
+  // the instant a press sets it — clearing the highlight one render after creating it. This
+  // compares against the pathname LAST SEEN here, decoupled from pendingPlace's own
+  // transitions, and fires only on an actual commit either way.
+  const [committedFor, setCommittedFor] = useState(pathname);
+  if (pathname !== committedFor) {
+    setCommittedFor(pathname);
+    if (pendingPlace !== null) setPendingPlace(null);
+  }
+
   // The layout that mounts this once fetches its two props on first mount only; a Next
   // layout does not re-run on a sibling navigation. So the figures are re-read here on every
   // tab switch and on window focus (the same cross-tab trigger `DeltaStrip` polls on), and
@@ -160,6 +184,7 @@ export function CollectionPlaceHead({
   if (current === null) {
     throw new Error(`CollectionPlaceHead rendered on an unrecognised path: ${pathname}`);
   }
+  const effective = pendingPlace ?? current;
   const titleClass =
     "font-display font-bold m-0 md:text-[30px] md:leading-[45px]";
   return (
@@ -203,13 +228,14 @@ export function CollectionPlaceHead({
         className="flex h-[48px] items-stretch gap-[2px] pl-[8px] pr-[4px] border-b border-[color:var(--border)] md:mt-[14px] md:h-[40px] md:gap-[4px] md:px-[24px]"
       >
         {visibleTabs(current, hasCollection).map((tab) => {
-          const on = tab.place === current;
+          const on = tab.place === effective;
           return (
             <Link
               key={tab.place}
               href={tab.href}
               aria-current={on ? "page" : undefined}
               data-testid={`collection-tab-${tab.place}`}
+              onNavigate={() => setPendingPlace(tab.place)}
               className={[
                 "flex items-center px-[11px] md:px-[10px] text-[14px]",
                 "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--accent)]",
