@@ -257,11 +257,14 @@ export function BuyTag({
         <>
           {/* A LIVE price draws its figure here — the collapsed slot's whole point is to fit
               in the tile's caption line, and a bare `$` beside a real price is visually
-              identical to a sold-out or unpriced card (c5 against c6). Only the no-live-price
-              branch keeps the glyph, which stands for the word rather than saying it, so it is
-              drawn and never spoken. */}
-          {cents !== null ? (
-            <span aria-hidden="true">{formatCents(cents)}</span>
+              identical to a sold-out or unpriced card (c5 against c6). `spokenFigure`, not a
+              raw `formatCents(cents)`: a foil-only or etched-only fact's bare amount implies a
+              normal-printing price, which `price.ts` guards against by folding the qualifier
+              into the figure (Copilot round 4, medium). Only the no-live-price branch keeps the
+              glyph, which stands for the word rather than saying it, so it is drawn and never
+              spoken. */}
+          {spokenFigure !== null ? (
+            <span aria-hidden="true">{spokenFigure}</span>
           ) : (
             <span aria-hidden="true">$</span>
           )}

@@ -261,6 +261,15 @@ describe("BuyTag collapsed density", () => {
     expect(screen.getByText(addPanelCopy.unowned.tag)).toBeInTheDocument();
   });
 
+  it("keeps the foil qualifier on a collapsed foil-only figure", () => {
+    render(<BuyTag variant="row" price={FOIL_ONLY} newestAsOf={NEWEST} density="collapsed" />);
+    // The bare amount alone implies a normal-printing price, which this fact never has
+    // (Copilot round 4, medium) — `price.ts` folds the qualifier into the figure for exactly
+    // that reason.
+    expect(screen.queryByText("$")).toBeNull();
+    expect(screen.getAllByText(`$9.40 ${priceCopy.tag.foil}`).length).toBeGreaterThan(0);
+  });
+
   it("still speaks the word when there is no price to speak", () => {
     render(<BuyTag variant="row" density="collapsed" />);
     expect(screen.getByText("$")).toBeInTheDocument();

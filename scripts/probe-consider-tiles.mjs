@@ -106,7 +106,13 @@ function report(label, ok, detail) {
 
 /** Every fixture deck this run creates, so a signal or an early throw can still clean up. */
 const fixtureDeckIds = new Set();
-/** Collection rows this run inserted because nothing owned the card before — `{userId, oracleId}`. */
+/**
+ * Collection rows this run inserted because nothing owned the card before —
+ * `{userId, oracleId, setCode, collectorNumber, finish}`. The full printing key, not just
+ * `oracleId`: `collection_items` is keyed per printing, and a delete scoped to `oracle_id`
+ * alone would remove every printing of that card the user owns, including one a real upload
+ * added to the collection while this long-running probe was active (Copilot round 4, high).
+ */
 const fixtureCollectionRows = [];
 /** A single `deck_cards` row this run added to the WALKED deck, for the combo fixture. */
 let fixtureDeckCard = null;
@@ -127,9 +133,13 @@ async function cleanupFixtures() {
       console.error(`\n  COULD NOT DELETE fixture deck ${id} — remove by hand:`, err.message ?? err);
     }
   }
-  for (const { userId, oracleId } of fixtureCollectionRows) {
+  for (const { userId, oracleId, setCode, collectorNumber, finish } of fixtureCollectionRows) {
     try {
-      await pool.query(`delete from collection_items where user_id = $1 and oracle_id = $2`, [userId, oracleId]);
+      await pool.query(
+        `delete from collection_items
+           where user_id = $1 and oracle_id = $2 and set_code = $3 and collector_number = $4 and finish = $5`,
+        [userId, oracleId, setCode, collectorNumber, finish],
+      );
     } catch (err) {
       failures += 1;
       console.error(`\n  COULD NOT DELETE fixture collection row ${oracleId} — remove by hand:`, err.message ?? err);
@@ -228,7 +238,9 @@ async function ensureOwned(userId, oracleId) {
        values ($1, $2, 1, $3, $4, 'nonfoil')`,
     [userId, oracleId, set_code, collector_number],
   );
-  fixtureCollectionRows.push({ userId, oracleId });
+  fixtureCollectionRows.push({
+    userId, oracleId, setCode: set_code, collectorNumber: collector_number, finish: "nonfoil",
+  });
 }
 
 /**
@@ -342,7 +354,11 @@ async function buildComboFixture(userId, deckId, commanderOracleId, existingOrac
         // transient failure here must leave the handle in place for the run's own `finally`
         // to retry, rather than losing it the instant this attempt decided to roll back.
         const row = fixtureCollectionRows[fixtureCollectionRows.length - 1];
-        await pool.query(`delete from collection_items where user_id = $1 and oracle_id = $2`, [row.userId, row.oracleId]);
+        await pool.query(
+          `delete from collection_items
+             where user_id = $1 and oracle_id = $2 and set_code = $3 and collector_number = $4 and finish = $5`,
+          [row.userId, row.oracleId, row.setCode, row.collectorNumber, row.finish],
+        );
         fixtureCollectionRows.pop();
       }
     }
