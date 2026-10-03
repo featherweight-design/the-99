@@ -14,19 +14,29 @@ name: Card labels
 # rather than correctness, which is why it reads as one beside its siblings.
 on:
   schedule:
-    # DAILY at 14:00 UTC. The CRON's run id is keyed to the ISO WEEK; a dispatch may name its own — and the daily cadence is what makes
-    # a timeout recoverable rather than abandoned.
+    # WEEKLY, Tuesdays at 21:17 UTC (Hugh, 2026-10-03). It labels what the input hash says has
+    # moved, which is a new set and nothing else, and sets release weekly at most. Tuesday is the
+    # day after Monday's combo build, and 21:17 is twelve hours after that day's `Catalog refresh`
+    # (09:00, daily), because a card the catalog has not ingested cannot be labelled. The margin is
+    # wide because GitHub starts a cron hours late when it is busy (17:27Z for 09:00 on
+    # 2026-09-28). A set ingested after this run waits for next Tuesday's: that is the cost of
+    # weekly, and the price of the weekly cap binding one run. Its own cron rather than a `workflow_run` chain on the catalog refresh: a weekly
+    # job chained on a daily one would need a day-of-week gate to do what this line already says.
     #
-    # A run finds work on a day the catalog took new cards: it is after `Catalog refresh` (09:00,
-    # daily), because a card the catalog has not ingested cannot be labelled. Any other day is a
-    # no-op costing one query, because the hash skip finds nothing to do.
+    # It used to run DAILY, so a run that timed out mid-batch would be resumed the next day under
+    # the same ISO-week id. Most of that reason is gone: resume is keyed on an intent's CONTENT, so
+    # any run id collects a batch another run paid for, and next week's run collects every batch
+    # this week's left open, at no second charge. One run per ISO week means the weekly cap and
+    # pause ($9, $5) bound each run.
     #
-    # The reason it is not weekly: batches can take up to the provider's 24-hour ceiling, and a job
-    # that times out mid-run leaves intents recorded under that week's id. Weekly, the next
-    # invocation would be seven days later under a NEW id — so the old batch's results would never
-    # be collected and its cards would be submitted again, paid for twice. Daily, tomorrow's run
-    # computes the same ISO-week id, finds those intents and collects them.
-    - cron: '0 14 * * *'
+    # THE ONE CASE WEEKLY DOES NOT RESUME ON ITS OWN: a crash between a batch's `create` and the
+    # write that records its id leaves an intent with no batch id, and only its OWN run id may
+    # resolve that (`reconcile`, scripts/lib/card-labels-build.ts). The cron never runs that id
+    # again, so its cards stay unplanned and later weekly runs stop red, naming it. Recover by
+    # DISPATCHING with every box blank in the same ISO week, which computes the same id. A
+    # dispatch cannot name a past week's id (the run_id rule below), so after the week ends it
+    # needs a code change. The window is the seconds around one API call.
+    - cron: '17 21 * * 2'
   workflow_dispatch:
     inputs:
       cap:
@@ -68,8 +78,9 @@ jobs:
     # window has to cover the provider's turnaround. Measured on the sample: a 43-request batch
     # ended within minutes, but the API's stated ceiling is 24 hours and a set week is ~75
     # requests. Three hours is generous for the real case and still bounded; a run that times out
-    # leaves its intents recorded, and the next invocation with the same run id resumes rather
-    # than re-submitting.
+    # leaves its intents recorded, and nothing is re-submitted: the next scheduled run (a new
+    # week's id) collects any batch that has an id, and a dispatch in the same ISO week resumes
+    # the rest.
     timeout-minutes: 180
     environment: catalog-staging
     steps:
@@ -287,8 +298,9 @@ jobs:
           # `alreadySpent` and the publish are all scoped to `LABEL_RUN_ID`. With a fresh timestamp
           # per run and no re-invocation, a scheduled run submitted a wave, exited, and its results
           # were never collected: the same cards were PAID FOR AGAIN every week while nothing was
-          # ever published. The CRON's id is the ISO week, so today's scheduled run resumes this week's;
-          # a dispatch that named `run_id` resumes THAT id instead, and the timeout message says so.
+          # ever published. The CRON's id is the ISO week and it runs once a week, so a blank
+          # dispatch in the same week resumes it; a dispatch that named `run_id` resumes THAT id
+          # instead, and the timeout message says so.
           #
           # And the branching is on the CODE, not on the output. Reading stdout produced three
           # findings in three rounds — `published` also matched "nothing published" on the waiting
@@ -359,7 +371,10 @@ jobs:
               echo "budget; leaving scope blank means every card, which would turn a deck trial into"
               echo "the full backfill under the trial's run id."
             elif [ "$CRON_ENABLED" = "true" ]; then
-              echo "The schedule is ON and this run uses the weekly id, so tomorrow's run resumes it."
+              # Next week's run has a NEW id, so it collects this run's open batches (resume is by
+              # content) but does not take over this id's own plan. Sooner is a blank dispatch now.
+              echo "The schedule is ON, so next week's run collects these batches at no second charge."
+              echo "To finish sooner, dispatch again in the same ISO week with run_id left blank."
             else
               echo "THE SCHEDULE IS OFF — CARD_LABELS_ENABLED is not 'true', so nothing will resume"
               echo "this on its own. Dispatch again in the same ISO week to continue."
