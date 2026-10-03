@@ -32,7 +32,8 @@ type Row = {
  * - any of its jobs fails `validateJob`, so a malformed row is never half-read.
  *
  * A `tutor` job on a card whose every library search finds only lands is dropped from an
- * otherwise fresh row (`searchesOnlyLands`): that card is ramp, and the prompt says so.
+ * otherwise fresh row (`searchesOnlyLands`): that card is ramp, and the prompt says so. A row the
+ * drop leaves with no job is absent, like a stale one, so the text path reads the card as ramp.
  *
  * Absent means the text path compares that card's pairs (the run plan's Task 5, Q1).
  */
@@ -57,8 +58,11 @@ export function freshLabels(rows: readonly Row[]): Map<string, Job[]> {
     if (!Array.isArray(r.labels) || !r.labels.every(isJob)) continue;
     // A land search the model called a tutor (Hugh, 2026-10-03): the job is dropped here, free,
     // rather than paid for again under a new prompt. Land-only by the 2026-09-22 ruling.
-    const landSearch = searchesOnlyLands(r.oracle_text);
-    out.set(r.oracle_id, landSearch ? r.labels.filter((j) => j.kind !== "tutor") : r.labels);
+    // A row left with no job by that drop is left OUT, so the text path compares the card and
+    // reads it as the ramp it is; an empty row would match nothing and refuse every pair.
+    const jobs = searchesOnlyLands(r.oracle_text) ? r.labels.filter((j) => j.kind !== "tutor") : r.labels;
+    if (jobs.length === 0 && r.labels.length > 0) continue;
+    out.set(r.oracle_id, jobs);
   }
   return out;
 }

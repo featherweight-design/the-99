@@ -50,12 +50,12 @@ const labelled = (card: Partial<typeof CARD>, labels: Job[]) => {
 };
 
 describe("freshLabels — a land search is never a tutor", () => {
-  it("drops the tutor job on Land Tax, whose only search finds basic lands", () => {
+  it("leaves Land Tax out once its only job, the tutor, is dropped, so the text path reads it as ramp", () => {
     const r = labelled({
       oracle_id: "00000000-0000-4000-8000-00000000000a", name: "Land Tax", mana_cost: "{W}", type_line: "Enchantment",
       oracle_text: "At the beginning of your upkeep, if an opponent controls more lands than you, you may search your library for up to three basic land cards, reveal them, put them into your hand, then shuffle.",
     }, [TUTOR("land")]);
-    expect(freshLabels([r]).get(r.oracle_id)).toEqual([]);
+    expect(freshLabels([r]).has(r.oracle_id)).toBe(false);
   });
 
   it("drops the tutor job on Nylea's Intervention and keeps its wipe", () => {
@@ -82,6 +82,12 @@ describe("freshLabels — a land search is never a tutor", () => {
       oracle_text: "Look at the top five cards of your library. You may reveal a creature card from among them and put it into your hand. Put the rest on the bottom of your library in any order.",
     }, [job]);
     expect(freshLabels([r]).get(r.oracle_id)).toEqual([job]);
+  });
+});
+
+describe("freshLabels — a row the model left empty", () => {
+  it("still reads as labelled with no job", () => {
+    expect(freshLabels([row({ labels: [] })]).get(CARD.oracle_id)).toEqual([]);
   });
 });
 
