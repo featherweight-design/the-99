@@ -1234,7 +1234,15 @@ export function SetGridView(props: SetGridViewProps) {
               strand across a resize, so nothing to gain from a remount and a hydration jump to
               lose on desktop. Hidden, it is out of the accessibility tree, and the phone's
               copy is the sheet's chip group. */}
-          <div data-set-own className="hidden shrink-0 md:flex">
+          {/* In the OPEN head only, at every width (d9, 2026-10-03): the collapsed row has no
+              room for it beside the set name. Still applied, kept in the URL, and lit again
+              on expand. A shy-hides member on desktop, so keyboard focus on it holds the head
+              open; on the phone the whole row already is one. */}
+          <div
+            data-set-own
+            data-set-shy-hides={isDesktop ? "" : undefined}
+            className={`hidden shrink-0 ${shyDesktop ? "" : "md:flex"}`}
+          >
             <OwnershipToggles
               options={ownOptions}
               own={filters.own}
@@ -1251,7 +1259,13 @@ export function SetGridView(props: SetGridViewProps) {
               On the phone it takes `Missing`'s old slot on row 1 and draws `Sort` alone: the
               chosen order's name is up to 170px on the compact trigger and the row is built
               to 358px. The order is in its accessible name and in the panel's chosen row. */}
-          <div data-set-sort className="shrink-0">
+          {/* Open head only, as the ownership toggles above are (d9, 2026-10-03): the order
+              stays applied while collapsed. */}
+          <div
+            data-set-sort
+            data-set-shy-hides={isDesktop ? "" : undefined}
+            className={`shrink-0${shyDesktop ? " hidden" : ""}`}
+          >
             <FilterPanel
               key={`sort-${isDesktop ? "wide" : "compact"}`}
               desktopRowMinPx={44}

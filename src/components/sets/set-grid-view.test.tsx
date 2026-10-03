@@ -2222,6 +2222,32 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
 
   // d9's ruling on H10: the collapsed head below 1000px hides Any / Exactly so the set name
   // keeps its room. Hiding is display only, and this pins that it never changes state.
+  // d9, 2026-10-03: ownership and Sort live in the OPEN head only. Collapsing hides them
+  // and changes nothing they apply.
+  it("keeps ownership and the order applied while the collapsed head hides them", () => {
+    stubDesktop(true);
+    search = "own=owned&sort=price";
+    window.history.pushState(null, "", "/collection/sets/dsk?own=owned&sort=price");
+    const { container } = view([p("1"), p("2")], []);
+    const own = () => container.querySelector("[data-set-own]") as HTMLElement;
+    const sort = () => container.querySelector("[data-set-sort]") as HTMLElement;
+    expect(own().className).toContain("md:flex");
+    expect(sort().className).not.toMatch(/\bhidden\b/);
+    scrollTo(200);
+    expect(isShy(container)).toBe(true);
+    expect(own().className).not.toContain("md:flex");
+    expect(sort().className).toMatch(/\bhidden\b/);
+    for (const [, , url] of replaceState.mock.calls) {
+      expect(String(url)).toContain("own=owned");
+      expect(String(url)).toContain("sort=price");
+    }
+    scrollTo(0);
+    expect(isShy(container)).toBe(false);
+    expect(own().className).toContain("md:flex");
+    expect(screen.getByRole("button", { name: "Owned only" })).toHaveAttribute("aria-pressed", "true");
+    expect(within(sort()).getByRole("button").getAttribute("aria-label") ?? "").toMatch(/price/i);
+  });
+
   it("hides Any / Exactly in the collapsed head without un-applying Exactly", () => {
     stubDesktop(true);
     search = "c=W&m=exact";
