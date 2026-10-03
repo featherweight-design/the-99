@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { playerText, PLAYER_TEXT_SYSTEM_RULE } from "../model/player-text";
+import { playerText, playerTextBody, PLAYER_TEXT_SYSTEM_RULE } from "../model/player-text";
 import { oneLine } from "../tuning/prompt";
 import { MAX_BUDGET_DOLLARS } from "./answers";
 import { READ_WORDS_MAX_CHARS } from "./limits";
@@ -133,9 +133,12 @@ export function validateRead(args: {
     notUsed,
     // Only phrases the player wrote, since the prompt asks for them verbatim and nothing the model
     // adds may be shown as the player's own words; and never one the vocabulary maps, which is a
-    // chip rather than something not understood.
+    // chip rather than something not understood. Checked against `playerTextBody(words)`, the
+    // exact form the model was shown — not `words` itself — since a tag-lookalike run inside the
+    // player's own words is shown to the model with its brackets stripped, and a faithful copy of
+    // that stripped form would otherwise fail `wrote()` against the unstripped original.
     notUnderstood: [...new Set(reply.notUnderstood.map((p) => oneLine(p).trim()).filter((p) =>
-      p.length > 0 && wrote(words, p) && !index.targets.has(phraseKey(p))))],
+      p.length > 0 && wrote(playerTextBody(words), p) && !index.targets.has(phraseKey(p))))],
     useful: chips.length > 0,
   };
 }

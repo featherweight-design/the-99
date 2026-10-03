@@ -58,8 +58,22 @@ const SEP = "[\\s_-]*";
 const TAG_LOOKALIKE = new RegExp(`${BRACKETS}(/?)${SEP}(end${SEP})?player${SEP}text${SEP}${BRACKETS}`, "gi");
 
 function escapeTags(text: string): string {
+  // The replacement carries NO bracket character of any kind — square brackets would satisfy
+  // this same classifier, which defeats the point (a review caught exactly that: the first
+  // version replaced one tag-shaped string with another one).
   return text.replace(TAG_LOOKALIKE, (_match, slash: string, endPart: string | undefined) =>
-    slash || endPart ? "[END_PLAYER_TEXT]" : "[PLAYER_TEXT]");
+    slash || endPart ? "END_PLAYER_TEXT" : "PLAYER_TEXT");
+}
+
+/**
+ * Code points, the way every cap in scope today counts (`deckTuningCopy.countCharacters`,
+ * Postgres's own `char_length`) — `.length` counts UTF-16 code units and would refuse a note of
+ * 71 emoji as 142 characters when the column, and every caller's own cap check, accepts it at 71.
+ * Duplicated as a one-liner rather than imported, for the same reason `collapseLines` is: this
+ * module stays beneath every feature that calls it.
+ */
+function countCharacters(text: string): number {
+  return [...text].length;
 }
 
 /**
@@ -68,8 +82,9 @@ function escapeTags(text: string): string {
  * player's words is a worse answer than refusing a call whose caller forgot to enforce its cap.
  */
 export function playerText(label: string, text: string, maxChars: number): string {
-  if (text.length > maxChars) {
-    throw new Error(`playerText: "${label}" is ${text.length} characters, over its ${maxChars}-character cap`);
+  const n = countCharacters(text);
+  if (n > maxChars) {
+    throw new Error(`playerText: "${label}" is ${n} characters, over its ${maxChars}-character cap`);
   }
   return [`${label}:`, PLAYER_TEXT_OPEN, playerTextBody(text), PLAYER_TEXT_CLOSE].join("\n");
 }
