@@ -713,11 +713,19 @@ async function stapleSections(skeleton: ProfileSkeleton, basePool: FillCandidate
   check("14a · a one-slot fill places one card", one.filled, 1);
   if (sol) {
     const gathered = await gatherFillStaples({
-      identity: cmdIdentity, scoped: basePool, excludeOracleIds: new Set(), commanderIds: new Set(),
+      // Sol Ring IN SCOPE, owned, so only the allow-list can keep it out: left out of the pool, it
+      // drops for want of a candidate and the check passes over a build that ignores the list.
+      identity: cmdIdentity, scoped: [...basePool, candidate(sol, true, 1, 60)],
+      excludeOracleIds: new Set(), commanderIds: new Set(),
       onlyOracleIds: new Set(monoStaples.map((c) => c.oracleId).filter((id) => id !== sol.oracle_id)),
       sleeveableOnly: false, inclusionOf: () => null,
     }, { staples: (id) => loadFillStaples(id, reader), cards: async () => [] });
     truthy("14b · an allow-list without Sol Ring keeps it out", !gathered.some((c) => c.oracleId === sol.oracle_id));
+    const unbounded = await gatherFillStaples({
+      identity: cmdIdentity, scoped: [...basePool, candidate(sol, true, 1, 60)],
+      excludeOracleIds: new Set(), commanderIds: new Set(), sleeveableOnly: false, inclusionOf: () => null,
+    }, { staples: (id) => loadFillStaples(id, reader), cards: async () => [] });
+    truthy("14b · while without one it is offered", unbounded.some((c) => c.oracleId === sol.oracle_id));
   }
   const boots = named.get("Swiftfoot Boots");
   if (boots) {
