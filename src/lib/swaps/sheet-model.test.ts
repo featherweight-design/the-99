@@ -262,6 +262,11 @@ describe("the stand-ins sheet's model", () => {
   it("says why there are no stand-ins for a card with no role, spell or land", () => {
     expect(sheetModel(read({ job: { kind: "none" }, original: card("Smothering Tithe", "Enchantment") })).sentence)
       .toBe(copy.noRole("Smothering Tithe"));
+    // Pinned literally: the comparison above would pass a reverted wording. True on the text path
+    // and, with the stand-ins' labels on, for a labelled card whose jobs this deck cannot use.
+    expect(copy.noRole("Smothering Tithe")).toBe(
+      "Smothering Tithe does no job we can name in this deck, so there are no stand-ins for it. We won’t guess at one.",
+    );
     const land = sheetModel(read({ job: { kind: "none" }, original: card("Strip Mine", "Land") }));
     expect(land.sentence).toBe(copy.noRoleLand("Strip Mine"));
     // The front face decides: a spell whose back face is a land is a spell.
