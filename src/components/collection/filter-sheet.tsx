@@ -153,6 +153,9 @@ function SheetBody({
   return (
     <Sheet
       open={open}
+      // Out of the head (collection surfaces E1), with the Sort sheet: the head is about to
+      // pin, and a sheet fixed inside a sticky head sits under the phone tab bar.
+      portal
       onDismiss={onDismiss}
       ariaLabel={copy.title}
       panelRef={dialog}

@@ -26,7 +26,9 @@
 // remount the search input and it would lose focus on the first keystroke.
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useBackDismiss, useScrollLock } from "../../lib/a11y/dialog";
+import { useSheetHost } from "./sheet-host";
 import { rankSetOptions } from "../../lib/collection/set-filter";
 import type { FilterPanelCopy } from "../../lib/copy/collection";
 import { PrimaryButton } from "./button";
@@ -108,6 +110,7 @@ export function FilterPanel({
   selectionOrnament = true,
   showCounts = true,
   onAnnounce,
+  portalSheet = false,
   note,
   desktopTriggerHeightPx,
 }: {
@@ -198,6 +201,12 @@ export function FilterPanel({
   disabledAriaLabel?: string;
   /** Writes to the filter bar's single live region. */
   onAnnounce?: (message: string) => void;
+  /**
+   * Portal the phone sheet out of the head this trigger sits in (collection surfaces E1).
+   * Opt-in: from a STICKY head the sheet is fixed inside the head's stacking context and the
+   * tab bar paints over it. The desktop popover is anchored to its trigger and never moves.
+   */
+  portalSheet?: boolean;
 }) {
   const ownBreakpoint = useIsDesktop();
   const isDesktop = compact === undefined ? ownBreakpoint : !compact;
@@ -210,6 +219,11 @@ export function FilterPanel({
   // so the surfaces outside the chassis are unaffected.
   const bp = (wide: string, narrow: string) => (isDesktop ? wide : narrow);
   const [open, setOpen] = useState(false);
+  const sheetHost = useSheetHost(portalSheet && open && !isDesktop);
+  // The host exists on the client from the first render; it is null only on the server,
+  // which never opens a sheet.
+  const maybePortal = (node: ReactNode) =>
+    !portalSheet ? node : sheetHost ? createPortal(node, sheetHost) : null;
   const [query, setQuery] = useState("");
   const [activeCode, setActiveCode] = useState<string | null>(null);
   // Selection as it stood when the panel opened. Grouping is computed once, on
@@ -1029,7 +1043,7 @@ export function FilterPanel({
             {renderBody()}
           </div>
         ) : (
-          <>
+          maybePortal(<>
             {/* Scrim — the same one the shipped card modal uses. Tap dismisses. */}
             <div
               role="presentation"
@@ -1087,7 +1101,7 @@ export function FilterPanel({
               </div>
               {renderBody()}
             </div>
-          </>
+          </>)
         ))}
     </div>
   );

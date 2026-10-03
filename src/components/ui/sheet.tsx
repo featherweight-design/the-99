@@ -40,6 +40,8 @@
 // wholesale. A shell that imposed one would break at least one of them, so it
 // takes the `panelRef` and `onKeyDown` a caller has already decided on.
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { createPortal } from "react-dom";
+import { useSheetHost } from "./sheet-host";
 
 /** Travel past which the handle drag dismisses rather than snapping back. */
 const DRAG_DISMISS_PX = 80;
@@ -88,6 +90,12 @@ export type SheetProps = {
   handleBarClassName?: string;
   /** Wraps scrim and panel — for a caller that gates the sheet on a breakpoint. */
   frameClassName?: string;
+  /**
+   * Portal the sheet out of wherever it was opened from (collection surfaces E1). Opt-in: a
+   * sheet opened from a STICKY head is fixed inside that head's stacking context, and the tab
+   * bar paints over it. See `sheet-host.ts`.
+   */
+  portal?: boolean;
   /**
    * Rendered as a SIBLING of the panel, inside the frame. For a second
    * `aria-modal` surface stacked over this one: nested inside an `inert` panel
@@ -148,10 +156,13 @@ export function Sheet({
   handleClassName = HANDLE,
   handleBarClassName = HANDLE_BAR,
   frameClassName,
+  portal = false,
   beside,
   headerDrag = false,
   height,
 }: SheetProps) {
+  // Called on every render, open or not: a hook cannot sit behind the `open` early return.
+  const host = useSheetHost(portal && open);
   // Live offset under a handle drag, in px. 0 when not dragging.
   const [dragY, setDragY] = useState(0);
   // Whether this sheet has been TOUCHED since it opened — not whether a drag is
@@ -321,7 +332,11 @@ export function Sheet({
     </>
   );
 
-  return frameClassName ? <div className={frameClassName}>{body}</div> : body;
+  const node = frameClassName ? <div className={frameClassName}>{body}</div> : body;
+  if (!portal) return node;
+  // The host exists on the client from the first render; it is null only on the server,
+  // which never opens a sheet.
+  return host ? createPortal(node, host) : null;
 }
 
 export { DRAG_DISMISS_PX };

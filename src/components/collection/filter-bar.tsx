@@ -248,6 +248,9 @@ export function FilterBar({
           // trigger click. The deck sheet and the rack's popovers carry the
           // same fix.
           key={`sort-${wide ? "wide" : "compact"}`}
+          // Out of the head (collection surfaces E1): the head is about to pin, and a sheet
+          // fixed inside a sticky head sits under the phone tab bar.
+          portalSheet
           desktopRowMinPx={44}
           compact={!wide}
           copy={collectionFilterCopy.sort}
