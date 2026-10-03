@@ -658,7 +658,7 @@ export function BuilderShell({
     // The commanders count too (H28): `loadDeckBuyRows` bills an unowned or spoken-for commander,
     // and the Shopping list draws it, so this pill counts it as the list's own pill does.
     unfundedCount: cardCopies([
-      ...commanderShoppingRows(deck.commander, deck.partner),
+      ...commanderShoppingRows(deck.commander, deck.partner, deck.cards),
       ...deck.cards.filter(isShoppingCard),
     ]),
     bodySize,
@@ -1837,7 +1837,7 @@ export function BuilderShell({
               // never saw.
               // The commanders first, as the list draws them (H28).
               shoppingCards={[
-                ...commanderShoppingRows(deck.commander, deck.partner),
+                ...commanderShoppingRows(deck.commander, deck.partner, cards),
                 ...cards.filter(isShoppingCard),
               ].map((c) => ({
                   name: c.name,

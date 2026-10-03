@@ -368,8 +368,8 @@ export function Decklist({
   // The commanders the Shopping list bills (H28), through the list's own predicate. Every Shopping
   // figure below counts them; only the Shopping branch draws them, in a group of their own.
   const commanderShopping = useMemo(
-    () => (commander ? commanderShoppingRows(commander, partner) : []),
-    [commander, partner],
+    () => (commander ? commanderShoppingRows(commander, partner, cards) : []),
+    [commander, partner, cards],
   );
 
   const markKey = useMemo(

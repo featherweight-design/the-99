@@ -844,16 +844,30 @@ async function commanderBuySection() {
   const partner = legends[1].oracle_id;
   const owes = async (deckId: string, oracleId: string) =>
     (await loadDeckBuyRows(USER_K, [deckId])).find((r) => r.oracleId === oracleId)?.quantity ?? 0;
-  const deck = async (name: string, partnerId: string | null = null) => {
+  // A body card the collection never holds, so the deck is not empty (Hugh, 2026-10-02: a deck
+  // with no body bills nothing, its commander included).
+  const { rows: [filler] } = await fixture.execute<{ oracle_id: string }>(sql`
+    select oracle_id from cards
+    where type_line !~ '\\mBasic\\M' and type_line !~ 'Legendary'
+    order by oracle_id limit 1
+  `);
+  const deck = async (name: string, partnerId: string | null = null, body = true) => {
     const { rows: [d] } = await fixture.execute<{ id: string }>(sql`
       insert into decks (user_id, name, commander_oracle_id, partner_oracle_id)
       values (${USER_K}, ${name}, ${cmd}, ${partnerId}) returning id
     `);
+    if (body) {
+      await fixture.execute(sql`
+        insert into deck_cards (deck_id, oracle_id, quantity) values (${d.id}, ${filler.oracle_id}, 1)
+      `);
+    }
     return d.id;
   };
   try {
+    const empty = await deck("Commander buy empty", null, false);
+    check("a deck with no body bills no commander", await owes(empty, cmd), 0);
     const brew = await deck("Commander buy brew");
-    check("an unowned commander is a buy row", await owes(brew, cmd), 1);
+    check("one body card bills the unowned commander", await owes(brew, cmd), 1);
 
     await fixture.execute(sql`
       insert into collection_items (user_id, oracle_id, quantity, set_code)

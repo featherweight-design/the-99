@@ -18,6 +18,9 @@ function card(over: Partial<DeckDetailCard>): DeckDetailCard {
 const spokenFor = { owned: 1, hard: 2, soft: 0, free: -1, claims: [] };
 const yours = { owned: 1, hard: 0, soft: 0, free: 1, claims: [] };
 
+/** One body row: what a deck needs before its commander is billed. */
+const BODY = [{}];
+
 describe("isShoppingCard", () => {
   it("takes a card you do not own", () => {
     expect(isShoppingCard(card({ owned: false }))).toBe(true);
@@ -118,21 +121,21 @@ describe("commanderShoppingRows", () => {
   }
 
   it("bills an unowned commander, as a commander row of one copy", () => {
-    const rows = commanderShoppingRows(commander({ owned: false }), null);
+    const rows = commanderShoppingRows(commander({ owned: false }), null, BODY);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ oracleId: "cmd", quantity: 1, owned: false, commander: true });
   });
 
   it("bills nothing for an owned commander with a copy to spare", () => {
-    expect(commanderShoppingRows(commander({ owned: true, availability: yours }), null)).toEqual([]);
+    expect(commanderShoppingRows(commander({ owned: true, availability: yours }), null, BODY)).toEqual([]);
   });
 
   it("bills nothing for a proxied commander the player does not own", () => {
-    expect(commanderShoppingRows(commander({ owned: false, proxied: true }), null)).toEqual([]);
+    expect(commanderShoppingRows(commander({ owned: false, proxied: true }), null, BODY)).toEqual([]);
   });
 
   it("bills an owned commander whose copies are spoken for elsewhere, as spoken for", () => {
-    const rows = commanderShoppingRows(commander({ owned: true, availability: spokenFor }), null);
+    const rows = commanderShoppingRows(commander({ owned: true, availability: spokenFor }), null, BODY);
     expect(rows).toHaveLength(1);
     expect(isSpokenFor(rows[0])).toBe(true);
   });
@@ -140,24 +143,32 @@ describe("commanderShoppingRows", () => {
   // Absent means owned: a fixture with no collection behind it must bill nothing, which is
   // what every surface assumed before the deck page carried the flag.
   it("reads an absent ownership flag as owned", () => {
-    expect(commanderShoppingRows(commander({}), null)).toEqual([]);
+    expect(commanderShoppingRows(commander({}), null, BODY)).toEqual([]);
   });
 
   it("bills both of a pair in the pair's order, each on its own answer", () => {
     const rows = commanderShoppingRows(
       commander({ oracleId: "a", owned: false }),
       commander({ oracleId: "b", owned: false }),
+      BODY,
     );
     expect(rows.map((r) => r.oracleId)).toEqual(["a", "b"]);
     expect(
-      commanderShoppingRows(commander({ oracleId: "a", owned: true, availability: yours }), commander({ oracleId: "b", owned: false }))
+      commanderShoppingRows(commander({ oracleId: "a", owned: true, availability: yours }), commander({ oracleId: "b", owned: false }), BODY)
         .map((r) => r.oracleId),
     ).toEqual(["b"]);
   });
 
+  // Hugh, 2026-10-02: a deck with every card removed bills nothing, its commander included; one
+  // body card is enough to bill it again.
+  it("bills no commander for a deck with no body, and bills it again at one card", () => {
+    expect(commanderShoppingRows(commander({ owned: false }), null, [])).toEqual([]);
+    expect(commanderShoppingRows(commander({ owned: false }), null, BODY)).toHaveLength(1);
+  });
+
   it("carries the price, so the strip totals the commander", () => {
     const price = { cents: 1234, foilCents: null, etchedCents: null, asOf: new Date("2026-10-01T00:00:00Z") };
-    const [row] = commanderShoppingRows(commander({ owned: false, price }), null);
+    const [row] = commanderShoppingRows(commander({ owned: false, price }), null, BODY);
     expect(row.price).toBe(price);
   });
 });

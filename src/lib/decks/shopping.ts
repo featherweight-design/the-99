@@ -88,10 +88,15 @@ export function commanderAsRow(c: DeckCommander): DeckDetailCard {
  * The commanders the Shopping list bills, commander first: each one through `isShoppingCard`, the
  * same predicate every list row passes, so an unowned commander is a row, a proxied or freely owned
  * one is not, and an owned one sleeved elsewhere is spoken for.
+ *
+ * NONE FOR A DECK WITH NO BODY (Hugh, 2026-10-02), `loadDeckBuyRows`' rule: a deck with every card
+ * removed bills nothing until it holds a card again. `body` is the deck's list rows.
  */
 export function commanderShoppingRows(
   commander: DeckCommander,
   partner: DeckCommander | null,
+  body: readonly unknown[],
 ): DeckDetailCard[] {
+  if (body.length === 0) return [];
   return [commander, ...(partner ? [partner] : [])].map(commanderAsRow).filter(isShoppingCard);
 }
