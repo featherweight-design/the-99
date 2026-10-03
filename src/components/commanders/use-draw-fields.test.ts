@@ -256,8 +256,35 @@ describe("useDrawFields", () => {
     await act(async () => net.calls[0].stale());
     await waitFor(() => expect(onStale).toHaveBeenCalledTimes(1));
     expect(result.current.resolve(all[5])).toBeNull();
+    // And asks for nothing more of the list it has sent away: the rest of its rows belong to a
+    // payload the page is replacing.
     await new Promise((r) => setTimeout(r, 300));
     expect(onStale).toHaveBeenCalledTimes(1);
+    expect(net.calls).toHaveLength(1);
+  });
+
+  // A window that spent its retries, then a refresh that hands over a new payload with the same
+  // window: the new payload's rows are asked for, or the list stays busy with nothing to clear it.
+  it("asks afresh for a new payload's rows after the old one's window failed for good", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const { rerender } = renderHook(
+        ({ list, wanted }: { list: DiscoveryRow[]; wanted: DiscoveryRow[] }) => useDrawFields("fit", list, wanted),
+        { initialProps: { list: all, wanted: [all[0]] } },
+      );
+      for (let i = 0; i < 4; i++) {
+        await waitFor(() => expect(net.calls).toHaveLength(i + 1));
+        await act(async () => net.calls[i].fail());
+        await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
+      }
+      expect(net.calls).toHaveLength(4);
+      const fresh = all.map((r) => ({ ...r }));
+      rerender({ list: fresh, wanted: [fresh[0]] });
+      await waitFor(() => expect(net.calls).toHaveLength(5));
+      expect(new URL(net.calls[4].url, "http://x").searchParams.get("s")!.split(",")[0]).toBe("c0");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("asks for nothing when every row arrived drawn", async () => {

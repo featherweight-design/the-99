@@ -103,6 +103,10 @@ function createFieldsLoop<Row extends object, Fields extends object>(onLanded: (
       onStale();
       return;
     }
+    // A list already sent for a fresh read asks for nothing more: what it would fetch belongs to a
+    // payload the page is replacing, and every batch would hold the one in-flight slot. The new
+    // payload is a new list and starts fetching on its own.
+    if (list.refreshed) return;
     if (controller || cancelScheduled) return;
     const needs = (row: Row) => !isDrawn(row) && !store.has(keyOf(row)) && !asked.has(keyOf(row));
     const waiting = wanted.filter(needs).map(keyOf);
@@ -199,7 +203,9 @@ function createFieldsLoop<Row extends object, Fields extends object>(onLanded: (
     /** A change of window, list or order: a background batch still waiting for its idle moment
         gives way, so the rows the reader now wants go first. */
     update(next: LoopInput<Row>) {
-      if (next.wantedKey !== input.wantedKey) {
+      // A failure belongs to the payload and window it was asked for. A refresh that hands over a
+      // new payload with the same window must ask afresh, or the window stays busy for good.
+      if (next.wantedKey !== input.wantedKey || next.all !== input.all || next.source !== input.source) {
         retries = 0;
         failedAt = null;
         unretry();
