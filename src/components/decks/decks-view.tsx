@@ -1037,8 +1037,14 @@ export function DecksView({
                   // answer than the shelf control. Both rescues test
                   // for the body, so without this the winner would be whichever
                   // frame callback was queued first.
+                  // A frame later the claim is checked rather than trusted: the
+                  // card can be gone by then (a concurrent delete the create's
+                  // payload revealed), and focus is rescued all the same.
                   if (panelTakesFocus.current) {
                     panelTakesFocus.current = false;
+                    requestAnimationFrame(() => {
+                      if (document.activeElement === document.body) focusShelfControl();
+                    });
                     return;
                   }
                   if (document.activeElement === document.body) focusShelfControl();

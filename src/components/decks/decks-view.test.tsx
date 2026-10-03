@@ -708,6 +708,31 @@ describe("DecksView", () => {
     expect(segment("Unfiled", 1)).not.toBeNull();
   });
 
+  it("rescues focus when the card that asked for the folder is gone by the time it closes", async () => {
+    // On All decks the asking card normally takes focus back. A concurrent delete the create's
+    // payload reveals takes the card away instead, and focus must not be left on the body.
+    const answer = deferred<boolean>();
+    actionStub.move.mockReturnValueOnce(answer.promise);
+    const decks = shelvedDecks();
+    const { rerender } = renderWide(view(decks, twoFolders));
+    const card = screen.getByText("Unfiled one").closest("li")!;
+    fireEvent.click(within(card).getByRole("button", { name: /^Actions for/ }));
+    fireEvent.click(within(card).getByRole("button", { name: /^Move / }));
+    const rows = screen.getAllByRole("button", { name: /New folder/ });
+    fireEvent.click(rows[rows.length - 1]);
+    fireEvent.change(screen.getByLabelText("Folder name"), { target: { value: "Draft pile" } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Create" }));
+    });
+    rerender(view(decks.filter((d) => d.name !== "Unfiled one"), twoFolders));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        document.querySelector("[data-shelf-line] button[aria-current='true']"),
+      ),
+    );
+    await act(async () => answer.resolve(false));
+  });
+
   it("says the move failed when it threw", async () => {
     // A throw is not a refusal: the reader can act on it. The folder was made
     // either way, so both halves are said.
