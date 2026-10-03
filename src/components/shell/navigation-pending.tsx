@@ -189,24 +189,29 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
   // into the page it covers and press a link there. The rail and tab bar stay live either way,
   // as a press there moves the run to its own target.
   const busy = shown !== null && !leaving;
-  // Captured at the moment busy turns true rather than re-read off `overlayBox.current` when it
-  // turns false: a confined run's content scope could in principle unregister mid-run (its
-  // owner left the tree before the run ended), which would move `overlayBox.current` out from
-  // under this effect and miss the very element that needs its `inert` lifted.
+  // The element busy/inert currently lands on, kept so a RETARGET — a run still escalated when
+  // its box moves from a registered scope to `mainRef` or back, which happens when the pressed
+  // link moves from inside a scope to outside it (or the reverse) before the run ends — clears
+  // the PREVIOUS element rather than abandoning it mid-busy. Without this the old element kept
+  // `aria-busy`/`inert` forever once `overlayBox` changed out from under it: the effect only
+  // ever cleared whatever it currently pointed to, never what it had just stopped pointing to.
   const busyElRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
-    if (busy) {
-      busyElRef.current = (overlayBox ?? mainRef).current;
+    const prev = busyElRef.current;
+    // Written to the plain ref immediately, and every mutation below reads it back from
+    // there rather than from `overlayBox`/`mainRef` directly: those are hook-tracked values,
+    // and `react-hooks/immutability` (rightly) refuses a direct property write on anything
+    // read straight off one, even though what is actually being mutated is the DOM element a
+    // ref merely points to.
+    busyElRef.current = busy ? (overlayBox ?? mainRef).current : null;
+    const next = busyElRef.current;
+    if (prev && prev !== next) {
+      prev.removeAttribute("aria-busy");
+      prev.inert = false;
     }
-    const el = busyElRef.current;
-    if (!el) return;
-    if (busy) {
-      el.setAttribute("aria-busy", "true");
-      el.inert = true;
-    } else {
-      el.removeAttribute("aria-busy");
-      el.inert = false;
-      busyElRef.current = null;
+    if (next) {
+      next.setAttribute("aria-busy", "true");
+      next.inert = true;
     }
   }, [busy, overlayBox]);
 

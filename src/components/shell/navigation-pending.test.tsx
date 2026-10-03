@@ -232,6 +232,25 @@ describe("a registered content scope", () => {
     expect(scope().hasAttribute("aria-busy")).toBe(false);
   });
 
+  it("clears the scope's busy/inert when an already-escalated run retargets outside it", () => {
+    // The rail and tab bar stay live while a confined run is up, so a press there can move the
+    // same run's target from inside the scope to outside it before the run ends.
+    cleanup();
+    state.path = "/collection";
+    state.pending.clear();
+    const { rerender: local } = render(<ScopedApp links={["/collection/sets", "/discover"]} />);
+    state.pending.set("/collection/sets", true);
+    act(() => local(<ScopedApp links={["/collection/sets", "/discover"]} />));
+    act(() => vi.advanceTimersByTime(OVERLAY_AFTER_MS));
+    expect(scope().getAttribute("aria-busy")).toBe("true");
+    expect(main().hasAttribute("aria-busy")).toBe(false);
+    state.pending.set("/discover", true);
+    act(() => local(<ScopedApp links={["/collection/sets", "/discover"]} />));
+    expect(scope().hasAttribute("aria-busy")).toBe(false);
+    expect(scope().inert).toBe(false);
+    expect(main().getAttribute("aria-busy")).toBe("true");
+  });
+
   it("stops marking the scope once a confined run commits", () => {
     cleanup();
     state.path = "/collection";
