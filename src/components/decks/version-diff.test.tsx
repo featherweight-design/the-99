@@ -151,7 +151,8 @@ describe("VersionDiff", () => {
     });
     mount();
     await screen.findByText(/Persistent Petitioners/);
-    const row = rowOf("Persistent Petitioners");
+    // The trigger is named by the whole drawn name, so a quantity move is spoken too.
+    const row = rowOf("Persistent Petitioners 0 → 4");
     expect(row.textContent).toContain(copy.partialOwned(1, 4));
     expect(row.textContent).toContain("$0.35");
     expect(screen.getByText(copy.partialA11y(1, 4))).toBeInTheDocument();
@@ -168,7 +169,7 @@ describe("VersionDiff", () => {
     });
     mount();
     await screen.findByText("Aang");
-    for (const name of ["Aang", "Plains"]) {
+    for (const name of ["Aang", "Plains 6 → 7"]) {
       const row = rowOf(name);
       expect(row.querySelector('span[class*="var(--success)"]')).not.toBeNull();
       expect(row.textContent).not.toMatch(/buy|\$/);

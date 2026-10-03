@@ -110,7 +110,9 @@ function DiffCardRow({
       {description !== null && <span id={describedId} className="sr-only">{description}</span>}
       <CardDetailTrigger
         oracleId={card.oracleId}
-        name={label}
+        // The whole drawn name, pair included: the trigger's accessible name replaces its
+        // text, so a `label` alone would hide a quantity move from a screen reader.
+        name={name}
         title={name}
         siblings={siblings}
         describedBy={description !== null ? describedId : undefined}

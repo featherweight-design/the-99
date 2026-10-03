@@ -627,6 +627,16 @@ reads as a canvas state label rather than product chrome (Discrepancy 40).
 both widths, mono 10.5px `--fg-faint`, only when the In column has rows. The version card rows
 handoff (`design/design_handoff_the99_version_rows/`) is its spec.
 
+---
+
+## Component: v1 opened (no predecessor)
+
+State 39 / READINESS 8: **no columns at all**, never `+99`. The shipped provenance shape
+carrying `Initial` and one sentence. (The canvas also drew a route into the list; retired
+2026-09-13, see below.) Preceded on the canvas by the same
+mono caption treatment as the v2 panel, reading `v1 opened — there is no predecessor`
+(Discrepancy 40).
+
 ### Panel container
 
 | Property | Mobile | Desktop |
