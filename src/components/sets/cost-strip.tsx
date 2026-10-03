@@ -224,7 +224,9 @@ export function CostStrip({
           // Pinned where the collapsed row's ▾ was (H15): it used to wrap to a full-width
           // row at the strip's foot, so the control that opened the strip moved the moment
           // it was pressed. The block above reserves its 44px.
-          className="absolute right-0 top-0 flex h-[44px] w-[44px] items-center justify-center
+          // The glyph sits at the ▾'s own x, not centred in the 44px target: the ▾ ends at the
+          // collapsed row's 12px padding, so the ▴ ends there too.
+          className="absolute right-0 top-0 flex h-[44px] w-[44px] items-center justify-end pr-[12px]
                      font-mono text-[14px] leading-none text-[color:var(--fg-muted)] md:hidden"
         >
           <span aria-hidden="true">▴</span>

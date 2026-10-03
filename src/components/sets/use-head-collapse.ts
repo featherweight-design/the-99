@@ -15,11 +15,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
-/**
- * Honoured for the height change, as every other motion in this app is. A reader who has
- * asked for no motion gets the two heights and the step between them, with nothing drawn in
- * between.
- */
+/** Whether focus arrived by keyboard (`:focus-visible`), which is the only focus that holds the head open (H17). */
 function keyboardFocused(el: Element | null): boolean {
   if (el === null) return false;
   try {
@@ -30,6 +26,11 @@ function keyboardFocused(el: Element | null): boolean {
   }
 }
 
+/**
+ * Honoured for the height change, as every other motion in this app is. A reader who has
+ * asked for no motion gets the two heights and the step between them, with nothing drawn in
+ * between.
+ */
 function prefersReducedMotion(): boolean {
   return typeof window !== "undefined"
     && typeof window.matchMedia === "function"
@@ -475,7 +476,8 @@ export function useHeadCollapse({
 
 
   /**
-   * The step between the two heights, animated — and owned by the engine rather than by this
+   * The RESTORE, animated (the collapse snaps since H14: by the time it fires the open head
+   * has scrolled away, so animating it pinned a full-height head over the grid) — and owned by the engine rather than by this
    * file.
    *
    * This was a CSS transition driven by hand: a `transitionend` listener, a safety timer for
