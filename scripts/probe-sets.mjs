@@ -656,12 +656,12 @@ async function run() {
     // guards would have failed on the fixture it exists to allow. At 100% the page removes
     // the Missing option, because the base run has nothing left to hide — the absence of
     // that option IS completeness, and it is the same fact `effective` is derived from.
-    // Read off the desktop rack's ownership group (H12), whose toggles are named by their
-    // visible labels; the retired toggle's `Showing …` name no longer exists, and matching
-    // it would call every set complete.
+    // Read off the ownership group's STRUCTURE, never its copy: a complete set drops the
+    // Missing option entirely (`ownOptions` in set-grid-view.tsx), so the group renders one
+    // button, Owned only; an incomplete set renders two. Matching a label would call every
+    // set complete the moment that label changed, and silently pass the check it guards.
     const setIsComplete = await page.evaluate(
-      () => ![...document.querySelectorAll("[data-set-own] button")]
-        .some((b) => (b.textContent ?? "").trim() === "Missing only"),
+      () => document.querySelectorAll("[data-set-own] button").length === 1,
     );
     if (rest === null) {
       failures += !report("the chip row is on the page", false, "no [data-set-chips]");

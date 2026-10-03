@@ -1257,9 +1257,10 @@ export function SetGridView(props: SetGridViewProps) {
               panel holds its own `open`, and a sheet opened on a phone would otherwise still
               be open as a popover after a resize.
 
-              On the phone it takes `Missing`'s old slot on row 1 and draws `Sort` alone: the
-              chosen order's name is up to 170px on the compact trigger and the row is built
-              to 358px. The order is in its accessible name and in the panel's chosen row. */}
+              On the phone it takes `Missing`'s old slot on row 1. The trigger shows the
+              chosen order and direction (`collectionFilterCopy.sort.triggerOne`), up to
+              170px, and the row is built to 358px. The order is also in its accessible
+              name and in the panel's chosen row. */}
           {/* Open head only, as the ownership toggles above are (d9, 2026-10-03): the order
               stays applied while collapsed. */}
           <div
