@@ -83,9 +83,12 @@ export function useRailTag(pathname: string): {
 
   const show = useCallback(
     (slot: HTMLElement, href: string, label: string) => {
-      if (document.querySelector('[data-lock-note="open"]')) return;
+      // This rail's own note only: the tab bar stays mounted below md, and a note left open there
+      // is hidden at this width and overlaps nothing.
+      const aside = slot.closest("aside");
+      if (aside?.querySelector('[data-lock-note="open"]')) return;
       const r = slot.getBoundingClientRect();
-      const rail = slot.closest("aside")?.getBoundingClientRect();
+      const rail = aside?.getBoundingClientRect();
       const x = (rail?.right ?? r.right) + TAG_GAP_PX;
       apply({ href, label, x, y: r.top + r.height / 2, at: pathname });
     },
@@ -125,9 +128,8 @@ export function useRailTag(pathname: string): {
       dismissed.current = current.href;
       close();
     };
-    const onMoved = () => {
-      if (openRef.current) close();
-    };
+    // Closes an open tag and cancels one waiting to open: the slot it would have measured has moved.
+    const onMoved = () => close();
     // A locked slot opens its note on the pointer's arrival or on focus, so the tag goes in the same
     // event rather than after its 100ms leave delay: the two never share the rail's edge (E2).
     const onLocked = (e: Event) => {

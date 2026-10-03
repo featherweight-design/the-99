@@ -227,13 +227,40 @@ describe("the pointer rail's name tag", () => {
     expect(tag()).toBeNull();
   });
 
-  it("closes on scroll", () => {
+  it("closes on scroll, and a scroll or resize cancels a tag waiting to open", () => {
     primaryInput(true);
     render(<NavRail locked={false} theme="amonkhet" />);
     enter(slot("Home"));
     wait(OPEN_DELAY_MS);
     act(() => { document.dispatchEvent(new Event("scroll")); });
     expect(tag()).toBeNull();
+
+    leave(slot("Home"));
+    wait(CLOSE_DELAY_MS + FOLLOW_GRACE_MS + 10);
+    enter(slot("Decks"));
+    wait(OPEN_DELAY_MS / 2);
+    act(() => { document.dispatchEvent(new Event("scroll")); });
+    wait(OPEN_DELAY_MS);
+    expect(tag()).toBeNull();
+
+    leave(slot("Decks"));
+    wait(CLOSE_DELAY_MS + FOLLOW_GRACE_MS + 10);
+    enter(slot("Decks"));
+    wait(OPEN_DELAY_MS / 2);
+    act(() => { window.dispatchEvent(new Event("resize")); });
+    wait(OPEN_DELAY_MS);
+    expect(tag()).toBeNull();
+  });
+
+  it("is not held off by a lock note outside the rail", () => {
+    primaryInput(true);
+    render(<NavRail locked={false} theme="amonkhet" />);
+    const stray = document.createElement("div");
+    stray.setAttribute("data-lock-note", "open");
+    document.body.append(stray);
+    enter(slot("Home"));
+    wait(OPEN_DELAY_MS);
+    expect(tag()).toHaveTextContent("Home");
   });
 
   it("never opens while a lock note is open, and a locked slot raises none (audit E2)", () => {
