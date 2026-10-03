@@ -2109,22 +2109,58 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     stubDesktop(true);
     search = "c=W&m=exact";
     const { container } = view([p("1", { colorIdentity: ["W"] }), p("2", { colorIdentity: ["W", "U"] })], []);
-    const group = () => container.querySelector('[data-set-colour] [role="radiogroup"]') as HTMLElement;
+    const box = () => container.querySelector("[data-set-colour]") as HTMLElement;
+    const HIDE = "max-[999px]:[&_[data-set-shy-hides-narrow]]:hidden";
+    expect(container.querySelector('[data-set-colour] [role="radiogroup"]')!
+      .hasAttribute("data-set-shy-hides-narrow")).toBe(true);
     const exactly = () => container.querySelector('[data-set-colour] [role="radio"][aria-label="Exactly these"]') as HTMLElement;
     const names = () => screen.getAllByRole("button", { name: /in your collection/ })
       .map((b) => (b.getAttribute("aria-label") ?? "").split(",")[0]);
-    expect(group().className).not.toMatch(/max-\[999px\]:hidden/);
+    expect(box().className).not.toContain(HIDE);
     scrollTo(200);
     expect(isShy(container)).toBe(true);
-    expect(group().className).toMatch(/max-\[999px\]:hidden/);
+    expect(box().className).toContain(HIDE);
     expect(exactly().getAttribute("aria-checked")).toBe("true");
     expect(names()).toEqual(["Card 1"]);
     for (const [, , url] of replaceState.mock.calls) expect(String(url)).toContain("m=exact");
     scrollTo(0);
     expect(isShy(container)).toBe(false);
-    expect(group().className).not.toMatch(/max-\[999px\]:hidden/);
+    expect(box().className).not.toContain(HIDE);
     expect(exactly().getAttribute("aria-checked")).toBe("true");
   });
+
+  // Round 4: below 1000px the collapse hides Any / Exactly, so keyboard focus on it must
+  // hold the head open, as it does for every other member the collapse hides; above 1000
+  // nothing is hidden and focus there holds nothing.
+  for (const [width, holds] of [[900, true], [1200, false]] as const) {
+    it(`${holds ? "holds" : "does not hold"} the head open for focus on Any / Exactly at ${width}px`, () => {
+      stubDesktop(true);
+      Object.defineProperty(window, "innerWidth", { value: width, configurable: true });
+      search = "c=W";
+      const { container } = view([p("1", { colorIdentity: ["W"] })], []);
+      const radio = container.querySelector('[data-set-colour] [role="radio"][aria-checked="true"]') as HTMLElement;
+      // KEYBOARD focus, answered as a browser does after a Tab (the H17 rule's own stub).
+      const matches = Element.prototype.matches;
+      const spy = vi.spyOn(Element.prototype, "matches").mockImplementation(function (
+        this: Element,
+        selector: string,
+      ) {
+        return selector === ":focus-visible" ? this === document.activeElement : matches.call(this, selector);
+      });
+      try {
+        radio.focus();
+        scrollTo(2000);
+        expect(isShy(container)).toBe(!holds);
+        if (holds) {
+          radio.blur();
+          scrollTo(2001);
+          expect(isShy(container)).toBe(true);
+        }
+      } finally {
+        spy.mockRestore();
+      }
+    });
+  }
 
   it("stays open until 120px of scroll", () => {
     stubDesktop(false);

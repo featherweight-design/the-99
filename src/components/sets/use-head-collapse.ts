@@ -399,9 +399,15 @@ export function useHeadCollapse({
     // never pinned, until the reader happened to focus something else. A pointer press
     // leaves no keyboard to take away, and `:focus-visible` is the browser's own answer to
     // which kind of focus this is.
+    //
+    // `data-set-shy-hides-narrow` marks a member the collapse hides only below 1000px (the
+    // colour box's Any / Exactly), so it holds the head only in that band.
+    const hidden = window.innerWidth < 1000
+      ? "[data-set-shy-hides], [data-set-shy-hides-narrow]"
+      : "[data-set-shy-hides]";
     const holdsFocus = head !== null
       && keyboardFocused(document.activeElement)
-      && [...head.querySelectorAll("[data-set-shy-hides]")]
+      && [...head.querySelectorAll(hidden)]
         .some((member) => member.contains(document.activeElement));
     // Read as a function of the CURRENT state, which is what makes this hysteresis rather
     // than two thresholds: collapsed stays collapsed until the reserve would show, open

@@ -73,11 +73,11 @@ describe("ColourControl", () => {
     const { container, rerender } = render(
       <ColourControl wide colors={["w"]} match="contains" onColorsChange={() => {}} onMatchChange={() => {}} />,
     );
-    const group = () => container.querySelector('[role="radiogroup"]') as HTMLElement;
-    expect(container.innerHTML).not.toContain("max-[999px]:hidden");
+    expect(container.innerHTML).not.toContain("data-set-shy-hides-narrow");
     rerender(
-      <ColourControl wide colors={["w"]} match="contains" onColorsChange={() => {}} onMatchChange={() => {}} hideMatchBelowWide />,
+      <ColourControl wide colors={["w"]} match="contains" onColorsChange={() => {}} onMatchChange={() => {}} shyHidesMatch />,
     );
-    expect(group().className).toContain("max-[999px]:hidden");
+    expect(container.querySelectorAll("[data-set-shy-hides-narrow]")).toHaveLength(2);
+    expect(container.querySelector('[role="radiogroup"]')!.hasAttribute("data-set-shy-hides-narrow")).toBe(true);
   });
 });

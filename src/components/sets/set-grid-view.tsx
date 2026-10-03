@@ -1111,7 +1111,13 @@ export function SetGridView(props: SetGridViewProps) {
               `display:none` takes the hidden copy out of the accessibility tree, and the
               sheet's copy is mounted only while the sheet is open on a phone. `shrink-0` is
               the search field's doing: it is the one child of this row that may compress. */}
-          <div data-set-colour className="hidden shrink-0 md:flex">
+          <div
+            data-set-colour
+            // Collapsed below 1000px, the Any / Exactly segments and their hairline go: the
+            // row has no room for them beside the set name (d9, 2026-10-03). Still applied,
+            // and the open head draws them.
+            className={`hidden shrink-0 md:flex${shy ? " max-[999px]:[&_[data-set-shy-hides-narrow]]:hidden" : ""}`}
+          >
             <ColourControl
               wide
               // LOWERCASE in and out, the rack's own case: the control rebuilds the selection
@@ -1121,7 +1127,7 @@ export function SetGridView(props: SetGridViewProps) {
               colors={filters.colors.map((c) => c.toLowerCase())}
               match={filters.match}
               unavailable={unavailableColours}
-              hideMatchBelowWide={shy}
+              shyHidesMatch
               onColorsChange={setColours}
               onMatchChange={(m) => setFilters({ ...filters, match: m })}
             />
