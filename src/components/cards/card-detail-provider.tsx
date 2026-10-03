@@ -31,6 +31,7 @@ import { getCardDetail } from "../../app/card-detail-action";
 import { fetchCardDetail } from "../../lib/cards/fetch-card-detail";
 import { FitsPicker } from "./fits-picker";
 import { CardModal } from "./card-modal";
+import { cardCarouselCopy } from "../../lib/copy/card-carousel";
 
 export const cardDetailCopy = {
   triggerAria: (name: string) => `View details for ${name}`,
@@ -475,6 +476,20 @@ export function CardDetailProvider({
   // when the correction brings back a new object; a failed or missing correction leaves `card`
   // exactly as `show(hit)` set it, so nothing else would re-run the effect at all.
   const [settleTick, setSettleTick] = useState(0);
+  // Which control paged the carousel, captured once per arrival so a remounted CardModal (it
+  // is keyed on oracle id) restores focus and plays its slide-in from the right side (H23 PR 2,
+  // handoff README decisions 2/7/8). Null on a fresh open, which is also how `initialFocusRef`
+  // tells a page from an open: the carousel never announces or slides on the first card.
+  const [enterFrom, setEnterFrom] = useState<"prev" | "next" | "prevPeek" | "nextPeek" | null>(null);
+  // The oracle id a page was asked for, set in the same tick as `enterFrom`. `load` resolves
+  // asynchronously, so the render that first carries the new `enterFrom` usually still shows
+  // the OLD card — without this check the arrival effect below fires on that stale render and
+  // announces the card being left, then never fires again once the real arrival lands.
+  const enterTargetId = useRef<string | null>(null);
+  // The carousel's own live-region text — distinct from the loading/unavailable region above,
+  // which is the modal's. Cleared back to "" is unnecessary: an unchanged value is silent to a
+  // screen reader by itself, so the next genuinely new announcement is what moves it.
+  const [pagingAnnouncement, setPagingAnnouncement] = useState("");
   // Joined and re-split rather than held as an array, so the callback's dependency is a
   // STRING and cannot churn on identity alone. The deck page happens to memoise its list
   // today, so this buys nothing from that caller — it is a guard on every future one, and
@@ -932,6 +947,31 @@ export function CardDetailProvider({
   const paging = index >= 0 && siblings.length > 1;
   const heldIndex = held ? held.siblings.findIndex((s) => s.oracleId === held.card.oracleId) : -1;
   const liveDoor = Boolean(card && door && doorRender && doorRender(card.oracleId, "art") !== null);
+  // The desktop neighbor plates (handoff decision 2): the card either side of the one on
+  // screen, or null at a list's end — same bound as `nextId`/`prevId` above, which read the
+  // same positions to prefetch them.
+  const prevSibling = paging && index > 0 ? siblings[index - 1] : null;
+  const nextSibling = paging && index < siblings.length - 1 ? siblings[index + 1] : null;
+  // Announced once the paged card has actually arrived, never on the first open (decision 8:
+  // "First open announces nothing new"). `enterFrom` is null on a fresh open and on any card
+  // change that is not a page (the combo block's partner swap, for one), so this effect is
+  // silent there by construction.
+  useEffect(() => {
+    if (!card || enterFrom === null) return;
+    // The render carrying a fresh `enterFrom` usually still shows the card being left, since
+    // `load` has not resolved yet — wait for the one that actually shows the target.
+    if (card.oracleId !== enterTargetId.current) return;
+    setPagingAnnouncement(cardCarouselCopy.arrived(card.name, index + 1, siblings.length));
+    // Cleared once read: a `CardModal` instance is keyed on oracle id and captures `enterFrom`
+    // at its own mount for focus and motion, so clearing the provider's copy here cannot take
+    // that back from an instance that already has it.
+    setEnterFrom(null);
+    // `index`/`siblings.length` are read, not watched: this fires once per `enterFrom`
+    // transition, not on every reorder.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [card, enterFrom]);
+  const announceAtStart = useCallback(() => setPagingAnnouncement(cardCarouselCopy.firstCard), []);
+  const announceAtEnd = useCallback(() => setPagingAnnouncement(cardCarouselCopy.lastCard), []);
 
   return (
     <CardDetailContext.Provider value={value}>
@@ -940,6 +980,10 @@ export function CardDetailProvider({
       <div aria-live="polite" className="sr-only">
         {pendingOracleId ? cardDetailCopy.loading : failed ? cardDetailCopy.unavailable : ""}
       </div>
+      {/* The carousel's own region (handoff decision 8), separate from the one above: the
+          modal is keyed per card and remounts empty on every page, so the thing that
+          survives a page — the provider — is what owns an announcement that must. */}
+      <div aria-live="polite" className="sr-only">{pagingAnnouncement}</div>
       {held ? (
         <CardModal
           // The same slot and key the card was open in, so lifting it under the sheet keeps it
@@ -1009,13 +1053,24 @@ export function CardDetailProvider({
           // Shopping door: the partner was reached from the combo block, not a Shopping row.
           onSelectCard={(id) => void load(id, undefined, undefined, { door: false })}
           onPrev={paging && index > 0
-            ? () => void load(siblingIds[index - 1])
+            ? () => { enterTargetId.current = siblingIds[index - 1]; setEnterFrom("prev"); void load(siblingIds[index - 1]); }
             : null}
           onNext={
             paging && index < siblings.length - 1
-              ? () => void load(siblingIds[index + 1])
+              ? () => { enterTargetId.current = siblingIds[index + 1]; setEnterFrom("next"); void load(siblingIds[index + 1]); }
               : null
           }
+          onPrevPeek={paging && index > 0
+            ? () => { enterTargetId.current = siblingIds[index - 1]; setEnterFrom("prevPeek"); void load(siblingIds[index - 1]); }
+            : null}
+          onNextPeek={paging && index < siblings.length - 1
+            ? () => { enterTargetId.current = siblingIds[index + 1]; setEnterFrom("nextPeek"); void load(siblingIds[index + 1]); }
+            : null}
+          onAtStart={paging ? announceAtStart : undefined}
+          onAtEnd={paging ? announceAtEnd : undefined}
+          prevSibling={prevSibling}
+          nextSibling={nextSibling}
+          enterFrom={enterFrom}
         />
       ) : null}
       {/* Before the third layer in the document, so a card opened from the picker paints over it:
@@ -1059,13 +1114,24 @@ export function CardDetailProvider({
           // Shopping door: the partner was reached from the combo block, not a Shopping row.
           onSelectCard={(id) => void load(id, undefined, undefined, { door: false })}
           onPrev={paging && index > 0
-            ? () => void load(siblingIds[index - 1])
+            ? () => { enterTargetId.current = siblingIds[index - 1]; setEnterFrom("prev"); void load(siblingIds[index - 1]); }
             : null}
           onNext={
             paging && index < siblings.length - 1
-              ? () => void load(siblingIds[index + 1])
+              ? () => { enterTargetId.current = siblingIds[index + 1]; setEnterFrom("next"); void load(siblingIds[index + 1]); }
               : null
           }
+          onPrevPeek={paging && index > 0
+            ? () => { enterTargetId.current = siblingIds[index - 1]; setEnterFrom("prevPeek"); void load(siblingIds[index - 1]); }
+            : null}
+          onNextPeek={paging && index < siblings.length - 1
+            ? () => { enterTargetId.current = siblingIds[index + 1]; setEnterFrom("nextPeek"); void load(siblingIds[index + 1]); }
+            : null}
+          onAtStart={paging ? announceAtStart : undefined}
+          onAtEnd={paging ? announceAtEnd : undefined}
+          prevSibling={prevSibling}
+          nextSibling={nextSibling}
+          enterFrom={enterFrom}
         />
       ) : null}
     </CardDetailContext.Provider>

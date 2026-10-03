@@ -1,7 +1,8 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { printingPickerCopy } from "../../lib/copy/collection";
+import { cardCarouselCopy } from "../../lib/copy/card-carousel";
 
 vi.mock("../../app/collection/actions", () => ({
   setCardArtPreference: vi.fn(async () => true),
@@ -205,25 +206,26 @@ describe("CardDetailProvider", () => {
     await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
     await screen.findByRole("dialog");
 
-    expect(screen.getByRole("button", { name: "Previous card" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Previous card" })).toHaveAttribute("aria-disabled", "true");
     await click(screen.getByRole("button", { name: "Next card" }));
 
     await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Sol Ring"));
-    expect(screen.getByRole("button", { name: "Next card" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Previous card" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Next card" })).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByRole("button", { name: "Previous card" })).toHaveAttribute("aria-disabled", "false");
   });
 
   // The commander and a suggestion belong to no list; forcing paging there would page
-  // through a list of one.
-  it("disables paging when opened without siblings", async () => {
+  // through a list of one — decision 6 drops the whole counter and both controls rather
+  // than disabling them, so the link beside it stands alone.
+  it("draws no carousel at all for a card with no siblings", async () => {
     const fetchCard = vi.fn().mockResolvedValue(SIGNET);
     renderTriggers(fetchCard);
     await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
     await screen.findByRole("dialog");
 
-    expect(screen.getByRole("button", { name: "Previous card" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Next card" })).toBeDisabled();
-    expect(screen.getByText("1 of 1")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Previous card" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Next card" })).not.toBeInTheDocument();
+    expect(screen.queryByText("1 of 1")).not.toBeInTheDocument();
   });
 
   // A surface whose list is a live filter re-files it as that filter moves, and the
@@ -240,7 +242,8 @@ describe("CardDetailProvider", () => {
     );
     await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
     await screen.findByRole("dialog");
-    expect(screen.getByRole("button", { name: "Next card" })).toBeDisabled();
+    // A list of one at open: decision 6 draws no carousel, so there is no button yet.
+    expect(screen.queryByRole("button", { name: "Next card" })).not.toBeInTheDocument();
 
     await click(screen.getByRole("button", { name: "refile" }));
     await click(screen.getByRole("button", { name: "Next card" }));
@@ -1429,4 +1432,116 @@ describe("CardDetailProvider reads the neighbors ahead (carousel, H23)", () => {
     expect(await screen.findByText("2 of 3")).toBeTruthy();
     await waitFor(() => expect(prefetchCard.mock.calls.map((c) => c[0])).toEqual(["o-c", "o-a"]));
   });
+});
+
+describe("CardDetailProvider pages the desktop carousel (H23 PR 2)", () => {
+  afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+  function stubMinWidth(matches: boolean) {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches,
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+      onchange: null,
+      dispatchEvent: () => false,
+    }));
+  }
+  const allLive = () =>
+    [...document.querySelectorAll('[aria-live="polite"]')].map((el) => el.textContent).join("|");
+  const A = card("o-a", "Card A");
+  const B = card("o-b", "Card B");
+  const C = card("o-c", "Card C");
+  const byId: Record<string, BrowseCard> = { "o-a": A, "o-b": B, "o-c": C };
+  const siblings = [
+    { oracleId: "o-a", name: "Card A", imageUri: "https://img/a.jpg" },
+    { oracleId: "o-b", name: "Card B" },
+    { oracleId: "o-c", name: "Card C", colorIdentity: ["U"] },
+  ];
+  const mount = (oracleId: string) =>
+    render(
+      <CardDetailProvider fetchCard={async (id) => byId[id] ?? null}>
+        <CardDetailTrigger oracleId={oracleId} name={byId[oracleId].name} siblings={siblings}>open</CardDetailTrigger>
+      </CardDetailProvider>,
+    );
+  const press = () => act(async () => { fireEvent.click(screen.getByText("open")); });
+
+  it("draws both neighbor plates at the wide threshold, with art and with a gradient", async () => {
+    stubMinWidth(true);
+    mount("o-b");
+    await press();
+    await screen.findByRole("dialog");
+    const prevPlate = screen.getByRole("button", { name: "Previous card: Card A" });
+    const nextPlate = screen.getByRole("button", { name: "Next card: Card C" });
+    expect(within(prevPlate).getByText("Card A")).toBeInTheDocument();
+    expect(within(nextPlate).getByText("Card C")).toBeInTheDocument();
+  });
+
+  it("draws a bare plate with no text for a sibling carrying only an id", async () => {
+    stubMinWidth(true);
+    render(
+      <CardDetailProvider fetchCard={async (id) => byId[id] ?? null}>
+        <CardDetailTrigger oracleId="o-b" name="Card B" siblings={["o-a", "o-b"]}>open</CardDetailTrigger>
+      </CardDetailProvider>,
+    );
+    await press();
+    const dialog = await screen.findByRole("dialog");
+    // The footer's own Prev button shares this exact bare label when a sibling carries no
+    // name, so the plate is the match OUTSIDE the dialog rather than inside it.
+    const prevPlate = screen.getAllByRole("button", { name: cardCarouselCopy.prevAria })
+      .find((el) => !dialog.contains(el));
+    expect(prevPlate).toBeTruthy();
+    expect(within(prevPlate as HTMLElement).queryByText(/./)).not.toBeInTheDocument();
+  });
+
+  it("draws no plates under the width threshold", async () => {
+    stubMinWidth(false);
+    mount("o-b");
+    await press();
+    await screen.findByRole("dialog");
+    // Named with the neighbor's own title, which only a plate ever carries — the footer's
+    // Prev/Next stay in bare form no matter the width, so this name is unambiguous.
+    expect(screen.queryByRole("button", { name: "Previous card: Card A" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Next card: Card C" })).not.toBeInTheDocument();
+  });
+
+  it("pages when a neighbor plate is pressed", async () => {
+    stubMinWidth(true);
+    mount("o-b");
+    await press();
+    await screen.findByRole("dialog");
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Next card: Card C" }));
+    });
+    await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Card C"));
+  });
+
+  it("announces the arrival on a page, and nothing new on the first open", async () => {
+    stubMinWidth(true);
+    mount("o-b");
+    await press();
+    await screen.findByRole("dialog");
+    expect(allLive()).not.toContain(" of ");
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: cardCarouselCopy.nextAria }));
+    });
+    await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Card C"));
+    await waitFor(() => expect(allLive()).toContain(cardCarouselCopy.arrived("Card C", 3, 3)));
+  });
+
+  it("pages with the arrow keys, and announces an end rather than paging past it", async () => {
+    stubMinWidth(true);
+    mount("o-a");
+    await press();
+    await screen.findByRole("dialog");
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowLeft" });
+    await waitFor(() => expect(allLive()).toContain(cardCarouselCopy.firstCard));
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowRight" });
+    await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Card B"));
+  });
+
+  // The exclusion zones themselves (printing search, printing radiogroup, zoom region) are
+  // proved against a real overflowing printing list in card-modal.test.tsx, which can build
+  // that fixture directly; this provider-level suite only proves arrow keys page at all.
 });

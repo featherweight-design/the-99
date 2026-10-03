@@ -1306,3 +1306,73 @@ describe("CardModal header — the cost may take its own line", () => {
     expect(nameBlock?.className).not.toContain("basis-");
   });
 });
+
+describe("CardModal carousel arrow keys stop at interactive zones (H23 PR 2)", () => {
+  const catalogPrinting = (setCode: string, collectorNumber: string) => ({
+    setCode,
+    setName: setCode,
+    collectorNumber,
+    releasedAt: "2024-01-12",
+    quantity: 1,
+    finishes: { nonfoil: 1 },
+    imageUri: "https://cards.scryfall.io/normal/tithe.jpg",
+    flavorName: null,
+  });
+
+  // OVERFLOW_THRESHOLD (printing-region.tsx) is 12; one more than that is what makes the
+  // real search input render, rather than stubbing around the gate.
+  const overflowing = {
+    ...card,
+    quantity: 13,
+    printings: Array.from({ length: 13 }, (_, i) => catalogPrinting("RVR", String(i + 1))),
+  };
+
+  it("does not page on an arrow key typed into the printing search field", async () => {
+    const onPrev = vi.fn();
+    const onNext = vi.fn();
+    render(
+      <CardModal card={overflowing} position={2} total={3} onClose={() => {}} onPrev={onPrev} onNext={onNext} />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("button", {
+        name: /13 printings owned/,
+      })[0]);
+    });
+    const search = screen.getAllByPlaceholderText(printingPickerCopy.printing.searchPlaceholder)[0];
+    search.focus();
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowRight" });
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowLeft" });
+    expect(onPrev).not.toHaveBeenCalled();
+    expect(onNext).not.toHaveBeenCalled();
+  });
+
+  it("does not page on an arrow key focused inside the printing radiogroup", async () => {
+    const onPrev = vi.fn();
+    const onNext = vi.fn();
+    render(
+      <CardModal card={overflowing} position={2} total={3} onClose={() => {}} onPrev={onPrev} onNext={onNext} />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("button", {
+        name: /13 printings owned/,
+      })[0]);
+    });
+    screen.getAllByRole("radio", { name: /RVR/ })[0].focus();
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowRight" });
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowLeft" });
+    expect(onPrev).not.toHaveBeenCalled();
+    expect(onNext).not.toHaveBeenCalled();
+  });
+
+  it("pages normally on an arrow key outside any interactive zone", () => {
+    const onPrev = vi.fn();
+    const onNext = vi.fn();
+    render(
+      <CardModal card={card} position={2} total={3} onClose={() => {}} onPrev={onPrev} onNext={onNext} />,
+    );
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowRight" });
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowLeft" });
+    expect(onNext).toHaveBeenCalledTimes(1);
+    expect(onPrev).toHaveBeenCalledTimes(1);
+  });
+});

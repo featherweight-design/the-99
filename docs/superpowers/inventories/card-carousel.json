@@ -1,0 +1,62 @@
+{
+  "feature": "Card details carousel (H23)",
+  "clearAbout": true,
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "narrow", "width": 1100, "height": 900 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    {
+      "id": "deck-row-open",
+      "label": "/decks/[id] — decklist row opens the modal, mid-list",
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "a[href^=\"/decks/\"]",
+          "settle": 3000
+        },
+        {
+          "click": "a[href^=\"/decks/\"]",
+          "wait": "main, [role=main], h1",
+          "settle": 7000
+        },
+        {
+          "clickRole": "button",
+          "name": "^View details for ",
+          "wait": "[role=dialog]",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "deck-row-next",
+      "label": "/decks/[id] — Next pages to the following card",
+      "widths": ["narrow", "desktop"],
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "a[href^=\"/decks/\"]",
+          "settle": 3000
+        },
+        {
+          "click": "a[href^=\"/decks/\"]",
+          "wait": "main, [role=main], h1",
+          "settle": 7000
+        },
+        {
+          "clickRole": "button",
+          "name": "^View details for ",
+          "wait": "[role=dialog]",
+          "settle": 3000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Next card",
+          "settle": 1500
+        }
+      ]
+    }
+  ],
+  "note": "The desktop neighbor plates (handoff decision 2) only draw at 1252px and up. `deck-row-next` runs at both `narrow` (1100) and `desktop` (1300) so the sheet shows the paged state with the plates correctly ABSENT below the threshold and present above it, footer paging working at both. Both rows open the account's first listed deck rather than naming one, since any deck with more than one card shows the carousel."
+}

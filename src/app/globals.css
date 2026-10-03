@@ -816,6 +816,21 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 }
 .anim-rail-tag { animation: rail-tag-in 100ms ease-out both; }
 
+/* The card carousel's desktop art, entering from the side it paged from (H23 PR 2, handoff
+   decision 7): 24px, 200ms. `CardModal` remounts per card, so a `transition` has no prior frame
+   to interpolate from; an `animation` needs none, since a keyframe states its own start. Under
+   reduced motion the art simply appears, same as every other entrance here (ruling below). */
+@keyframes carousel-art-enter-prev {
+  from { opacity: 0; transform: translateX(-24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes carousel-art-enter-next {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.anim-carousel-prev { animation: carousel-art-enter-prev 200ms ease-out both; }
+.anim-carousel-next { animation: carousel-art-enter-next 200ms ease-out both; }
+
 @media (prefers-reduced-motion: reduce) {
   .anim-bob,
   .anim-dots,
@@ -835,6 +850,9 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   .anim-overview-in,
   /* The rail's name tag appears at full opacity. */
   .anim-rail-tag,
+  /* The carousel's art appears at its final position, no slide. */
+  .anim-carousel-prev,
+  .anim-carousel-next,
   .anim-sheet-up {
     animation: none;
     /* Nothing moves, so drop the compositing hint rather than holding a layer
