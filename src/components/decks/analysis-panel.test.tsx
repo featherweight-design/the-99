@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AnalysisPanel } from "./analysis-panel";
 import { synopsisCopy } from "../../lib/copy/synopsis";
-import { deckProfile } from "./__fixtures__/deck-profile";
+import { COMMANDER, deckProfile, profileCard } from "./__fixtures__/deck-profile";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import type { ProfileState } from "./use-deck-profile";
@@ -16,7 +16,7 @@ const copy = deckAnalysisCopy.panel;
 const MIX = "the mix strip";
 const AT = new Date().toISOString();
 const onRequest = vi.fn();
-type Extra = Partial<Pick<React.ComponentProps<typeof AnalysisPanel>, "pressNote" | "hold" | "overviewReady" | "overview">>;
+type Extra = Partial<Pick<React.ComponentProps<typeof AnalysisPanel>, "pressNote" | "hold" | "overviewReady" | "overview" | "declaration">>;
 const panel = (state: ProfileState, extra: Extra = {}) => (
   <CardDetailProvider fetchCard={async () => null}>
     <AnalysisPanel state={state} onRequest={onRequest} {...extra}>
@@ -98,6 +98,21 @@ describe("AnalysisPanel", () => {
     const rung = screen.getAllByTestId("climb-rung")[0];
     expect(box.compareDocumentPosition(rung) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByTestId("verdict-analyzed").textContent).toBe(copy.analyzed(copy.justNow));
+  });
+
+  // H34, AT THE MOUNT SITE: the panel hands the climb the deck's answer, so an answered `[4,5]`
+  // stops asking. The climb's own test proves the rung; this one fails when the prop is dropped.
+  it("hands the climb the declaration, so an answered range stops asking", () => {
+    const profile = deckProfile({
+      cards: [COMMANDER, ...["a", "b", "c", "d"].map((id) => profileCard(id, `GC ${id}`))],
+      gameChangerIds: new Set(["a", "b", "c", "d"]),
+    });
+    draw({ kind: "ready", ...reading(), profile }, {
+      declaration: { declared: 5, version: null, previous: null, onDeclare: vi.fn(), refused: false },
+    });
+    const above = screen.getAllByTestId("climb-rung").find((r) => r.dataset.role === "above")!;
+    expect(within(above).queryByText(deckAnalysisCopy.climb.roleDeclare)).toBeNull();
+    expect(within(above).getByText(deckAnalysisCopy.climb.roleAbove)).toBeTruthy();
   });
 
   // The flag off and a deck that cannot be read draw no reading at all.

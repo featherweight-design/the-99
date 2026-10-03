@@ -1832,8 +1832,9 @@ export async function commitDeckVersion(
   });
   if (!result.ok) return result;
   // RULING 2: the commit pins the deck's analysis to the version it just wrote. Off the commit's
-  // path, in `after()`, because an analysis can cost 2.2s and the reader is waiting on the commit
-  // alone. `pinAnalysisToVersion` writes nothing when an edit has moved the deck off this list
+  // path, in `after()`, because the one pin that analyzes (a reading of this list under an older
+  // `PROFILE_VERSION`) can cost 2.2s and the reader is waiting on the commit alone. It never
+  // analyzes another list (H32). `pinAnalysisToVersion` writes nothing when an edit has moved the deck off this list
   // since, and nothing for a version that is not a whole deck (ruling 1). The synopsis is COPIED
   // beside it, never written: a commit writes no prose (ruling 7), and the version keeps the draft's
   // synopsis only when it was written for exactly this list from a draft that is not stale (brief

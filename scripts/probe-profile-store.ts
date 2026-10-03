@@ -287,6 +287,133 @@ async function run() {
     { computes, v: (await storedRow(deck.id))?.profile_version }, { computes: 6, v: PROFILE_VERSION - 1 });
   await computeAndStoreProfile(deck.id, USER, deps);
 
+  // 10c2 · A COMMIT OF A CHANGED LIST PINS NOTHING AND COMPUTES NOTHING (H32, Hugh's walk). The
+  // stored reading describes an older list (an edit since the last press), and the commit's pin
+  // must leave it stale and unpinned, so the banner offers the press, rather than quietly
+  // re-analyzing the new list and reading fresh.
+  {
+    await fixture.execute(sql`update deck_profiles set fingerprint = 'an-older-list', dirty = true, version_id = null
+      where deck_id = ${deck.id}::uuid`);
+    const { version: changed } = await commitVersion(deck.id, null);
+    const before = computes;
+    await pinAnalysisToVersion(deck.id, USER, { versionId: changed.id, list: listFingerprint(head) }, deps);
+    const after = await readStoredReading(deck.id, USER, deps);
+    check("a commit of a changed list computes nothing and pins nothing",
+      { computed: computes - before, pin: (await storedRow(deck.id))?.version_id ?? null },
+      { computed: 0, pin: null });
+    check("and the reading stays stale, so the banner offers the press", after?.fresh, false);
+    // Put the reading back as a press would, for the steps after this one.
+    await computeAndStoreProfile(deck.id, USER, deps);
+  }
+
+  // 10c3 · A DEPLOY BETWEEN THE PRESS AND THE COMMIT. The reading is of this list under an older
+  // PROFILE_VERSION: a version bump is not an edit, so the commit's pin rebuilds it and pins it,
+  // where a reading of ANOTHER list (10c2) is left alone.
+  {
+    // A REBUILD STILL, so the analysis date and the notice mark are the press's, never the deploy's
+    // (review round 2): both are set to values no write would produce, and must survive the pin.
+    await fixture.execute(sql`update deck_profiles set profile_version = ${PROFILE_VERSION - 1}, version_id = null,
+      computed_at = now() - interval '3 days', seen_seq = 1 where deck_id = ${deck.id}::uuid`);
+    const marksOf = async () => (await rows<{ at: string; seq: number }>(sql`
+      select computed_at::text as at, seen_seq::int as seq from deck_profiles where deck_id = ${deck.id}::uuid`))[0];
+    const marksBefore = await marksOf();
+    const { version: bumped } = await commitVersion(deck.id, null);
+    const before = computes;
+    await pinAnalysisToVersion(deck.id, USER, { versionId: bumped.id, list: listFingerprint(head) }, deps);
+    const row = await storedRow(deck.id);
+    check("a commit over this list's older-version reading rebuilds it and pins it",
+      { computed: computes - before, v: row?.profile_version, pin: row?.version_id },
+      { computed: 1, v: PROFILE_VERSION, pin: bumped.id });
+    check("and keeps the analysis date and the notice mark it replaced", await marksOf(), marksBefore);
+
+    // A PRESS LANDING WHILE THAT REBUILD COMPUTES (review round 4): the press writes the current
+    // version, and the rebuild finishing after it must not put the old marks and date back.
+    await fixture.execute(sql`update deck_profiles set profile_version = ${PROFILE_VERSION - 1}, version_id = null,
+      computed_at = now() - interval '3 days', seen_seq = 1 where deck_id = ${deck.id}::uuid`);
+    const { version: racedCommit } = await commitVersion(deck.id, null);
+    const pressFirst: StoredProfileDeps = {
+      generation: deps.generation,
+      compute: async (id, user) => {
+        const built = await loadDeckProfile(id, user);
+        await computeAndStoreProfile(deck.id, USER, deps);
+        return built;
+      },
+    };
+    const pressed = await marksOf();
+    await pinAnalysisToVersion(deck.id, USER, { versionId: racedCommit.id, list: listFingerprint(head) }, pressFirst);
+    const afterRace = await marksOf();
+    check("a press landing mid-rebuild keeps its own date and mark",
+      { stale: afterRace.at === pressed.at, seq: afterRace.seq === 1 },
+      { stale: false, seq: false });
+
+    // AND THE LOSING REBUILD ANSWERS WITH THE PRESS (review round 5). A quiet rebuild raced the
+    // same way returns what the store holds, never the computation its guard threw away: the date
+    // it hands back is the stored one, not one minted after the press.
+    await fixture.execute(sql`update deck_profiles set profile_version = ${PROFILE_VERSION - 1},
+      computed_at = now() - interval '3 days', seen_seq = 1, dirty = false where deck_id = ${deck.id}::uuid`);
+    const answered = await readStoredReading(deck.id, USER, pressFirst);
+    const storedAt = (await marksOf()).at;
+    check("a rebuild that lost to a press answers with the stored reading",
+      answered ? Math.abs(new Date(answered.analyzedAt).getTime() - new Date(`${storedAt}Z`).getTime()) < 5 : "none",
+      true);
+
+    // AN EDIT AWAY AND BACK WHILE A REBUILD COMPUTES (review round 7): the list matches again, so
+    // only `dirty` records it, and the rebuild must not clear it.
+    await fixture.execute(sql`update deck_profiles set profile_version = ${PROFILE_VERSION - 1}, dirty = false
+      where deck_id = ${deck.id}::uuid`);
+    const editFirst: StoredProfileDeps = {
+      generation: deps.generation,
+      compute: async (id, user) => {
+        const built = await loadDeckProfile(id, user);
+        await db.transaction((tx) => touchDeck(tx, deck.id));
+        return built;
+      },
+    };
+    const answeredStale = await readStoredReading(deck.id, USER, editFirst);
+    check("an edit landing mid-rebuild leaves the reading dirty", (await storedRow(deck.id))?.dirty, true);
+    check("and the rebuild's own answer says stale, as the row does", answeredStale?.fresh, false);
+
+    // A REBUILD THAT ARRIVES TO A CURRENT ROW (round 11): a press wrote this version after the
+    // reader's read, so the rebuild changes nothing, its stale pin included.
+    await computeAndStoreProfile(deck.id, USER, deps);
+    const pinBefore = (await storedRow(deck.id))?.version_id ?? null;
+    const beforeLate = computes;
+    await computeAndStoreProfile(deck.id, USER, deps, {
+      rebuildOf: { list: listFingerprint(head), versionId: version.id, versionNumber: 1,
+        marks: { seenSeq: 0, rulesVersion: 1, analyzedOracleIds: [] } },
+    });
+    check("a rebuild arriving to a current row changes nothing",
+      { computed: computes - beforeLate, pin: (await storedRow(deck.id))?.version_id ?? null },
+      { computed: 0, pin: pinBefore });
+    await computeAndStoreProfile(deck.id, USER, deps);
+
+    // A ROW A NEWER DEPLOYMENT WROTE (review round 8, REBUILD RULES 1): older code neither reads,
+    // rebuilds nor pins it, so a rolling deploy never downgrades it.
+    await fixture.execute(sql`update deck_profiles set profile_version = ${PROFILE_VERSION + 1}, version_id = null
+      where deck_id = ${deck.id}::uuid`);
+    const beforeNewer = computes;
+    const newerRead = await readStoredReading(deck.id, USER, deps);
+    const { version: newerCommit } = await commitVersion(deck.id, null);
+    await pinAnalysisToVersion(deck.id, USER, { versionId: newerCommit.id, list: listFingerprint(head) }, deps);
+    const newerRow = await storedRow(deck.id);
+    check("a newer deployment's row is not read, rebuilt or pinned by older code",
+      { read: newerRead, computed: computes - beforeNewer, v: newerRow?.profile_version, pin: newerRow?.version_id },
+      { read: null, computed: 0, v: PROFILE_VERSION + 1, pin: null });
+    await computeAndStoreProfile(deck.id, USER, deps);
+
+    // THE LEGACY FORM of the same case: a row written before 0054 stores `profileFingerprint`, so a
+    // raw comparison with the commit's list misreads it as another list (review round 1).
+    await fixture.execute(sql`update deck_profiles set profile_version = 0, version_id = null,
+      fingerprint = ${profileFingerprint(legacyHeadOf())} where deck_id = ${deck.id}::uuid`);
+    const { version: legacyCommit } = await commitVersion(deck.id, null);
+    const beforeLegacy = computes;
+    await pinAnalysisToVersion(deck.id, USER, { versionId: legacyCommit.id, list: listFingerprint(head) }, deps);
+    const legacyRow = await storedRow(deck.id);
+    check("and so does a commit over a legacy reading of this list",
+      { computed: computes - beforeLegacy, v: legacyRow?.profile_version, pin: legacyRow?.version_id },
+      { computed: 1, v: PROFILE_VERSION, pin: legacyCommit.id });
+  }
+
   // 10d · ONLY THE NEWEST VERSION IS PINNED: an older commit's `after()` pin landing last is refused.
   const { version: v2 } = await commitVersion(deck.id, null);
   await pinAnalysisToVersion(deck.id, USER, { versionId: v2.id, list: listFingerprint(head) }, deps);
