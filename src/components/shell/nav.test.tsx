@@ -61,15 +61,20 @@ describe("NavRail", () => {
     expect(tabs.className).toContain("z-40");
   });
 
-  it("is icon-only, so every item carries its label as an accessible name and a tooltip", () => {
+  it("is icon-only beside a pointer, so every item carries its label as an accessible name and a tooltip", () => {
     render(<NavRail locked={false} theme="amonkhet" />);
     const nav = screen.getByRole("navigation", { name: "Primary" });
     for (const label of LABELS) {
       const item = within(nav).getByRole("link", { name: label });
       expect(item).toHaveAttribute("title", label);
-      // Icon-only: the label must NOT also sit in the row as visible text, or
-      // the 62px rail overflows.
-      expect(item).not.toHaveTextContent(label);
+      // The label's only text is the touch rail's span, which is hidden unless
+      // `(hover: none)` (jsdom applies no media query, so this reads the class)
+      // and aria-hidden, so the name is heard once (audit E3).
+      const span = item.querySelector("[data-rail-label]");
+      expect(span).toHaveTextContent(label);
+      expect(span).toHaveAttribute("aria-hidden", "true");
+      expect(span?.className).toMatch(/(^| )hidden( |$)/);
+      expect(span?.className).toContain("touch:block");
     }
   });
 
@@ -103,8 +108,87 @@ describe("NavRail", () => {
   });
 });
 
+// Desktop nav labels (R2 for the input split, R1 as the touch rail, V1 for short touch screens).
+// jsdom applies no media queries, so these read the classes (audit E12); probe:nav-labels walks
+// the rail with `(hover: none)` emulated.
+describe("NavRail on a touch screen", () => {
+  const railSlots = (container: HTMLElement) =>
+    [...container.querySelectorAll<HTMLElement>("aside a, aside [data-locked-slot]")];
+
+  it("takes its width from --rail-w and its height from the visible viewport", () => {
+    const { container } = render(<NavRail locked={false} theme="amonkhet" />);
+    const rail = container.querySelector("aside")!;
+    expect(rail.className).toContain("w-[var(--rail-w)]");
+    expect(rail.className).not.toContain("w-[62px]");
+    expect(rail.className).toContain("touch:h-dvh");
+    expect(rail.className).toContain("touch-short:py-[10px]");
+  });
+
+  it("draws every live and locked slot as the tab bar's 72 × 52 slot, and 72 × 44 when short", () => {
+    for (const locked of [false, true]) {
+      const { container, unmount } = render(<NavRail locked={locked} theme="amonkhet" />);
+      const slots = railSlots(container);
+      expect(slots).toHaveLength(5);
+      for (const slot of slots) {
+        for (const cls of ["touch:w-[72px]", "touch:h-[52px]", "touch:flex-col", "touch:rounded-[12px]", "touch-short:h-[44px]", "shrink-0"]) {
+          expect(slot.className).toContain(cls);
+        }
+        expect(slot.querySelector("[data-rail-label]")?.className).toContain("leading-[12px]");
+      }
+      unmount();
+    }
+  });
+
+  it("makes the nav the one scroll region, with the mark and the account control outside it", () => {
+    const { container } = render(<NavRail locked={false} theme="amonkhet" />);
+    const nav = container.querySelector("[data-rail-nav]")!;
+    for (const cls of ["touch:overflow-y-auto", "touch:flex-1", "touch:min-h-0", "touch:pt-[4px]", "touch:pb-[8px]"]) {
+      expect(nav.className).toContain(cls);
+    }
+    // V1 tightens the gap between icon and label when short, never the gap between slots, which
+    // stays 4px in the nav and in the well (5 × 44 + 4 × 4 = 236; the well's 188 and its 4 to the foot).
+    expect(nav.className).not.toMatch(/touch-short:gap-/);
+    // A classic scrollbar would take ~15px of the column and clip the slot's ring at both sides.
+    expect(nav.className).toContain("touch:[scrollbar-width:none]");
+    expect(nav.className).toContain("touch:[&::-webkit-scrollbar]:hidden");
+    expect(nav.contains(screen.getByRole("img", { name: /the 99/i }))).toBe(false);
+  });
+
+  it("widens the first-run well to 80px and tightens it when short", () => {
+    const { container } = render(<NavRail locked theme="amonkhet" />);
+    const well = container.querySelector("[data-lock-well]")!;
+    for (const cls of ["touch:w-[80px]", "touch:rounded-[14px]", "touch:px-[3px]", "touch-short:pb-[5px]"]) {
+      expect(well.className).toContain(cls);
+    }
+    expect(well.className).not.toMatch(/touch-short:gap-/);
+  });
+
+  it("re-places an open lock note when the nav scrolls under it (audit V-E3)", () => {
+    render(<NavRail locked theme="amonkhet" />);
+    const slot = screen.getByRole("button", { name: /^Collection/ });
+    let top = 100;
+    slot.getBoundingClientRect = () => ({ top, height: 52, right: 80, left: 8, bottom: top + 52, width: 72, x: 8, y: top, toJSON: () => ({}) });
+    fireEvent.pointerEnter(slot);
+    const note = document.querySelector<HTMLElement>('[data-lock-note="open"]')!;
+    const before = note.style.top;
+    top = 40;
+    act(() => {
+      document.querySelector("[data-rail-nav]")!.dispatchEvent(new Event("scroll"));
+    });
+    expect(document.querySelector<HTMLElement>('[data-lock-note="open"]')!.style.top).not.toBe(before);
+  });
+});
+
 describe("TabBar", () => {
-  it("keeps its visible labels — the phone bar has room and the rail does not", () => {
+  // The rail's touch classes live on the rail alone: every phone is `(hover: none)` too, and the
+  // tab bar shares NavSlot (audit E5). Its slots and pip are what they were.
+  it("carries none of the touch rail's classes", () => {
+    pathname = "/decks";
+    const { container } = render(<TabBar locked={false} />);
+    expect(container.innerHTML).not.toMatch(/touch(-short)?:/);
+  });
+
+  it("keeps its visible labels, the way the touch rail draws them", () => {
     render(<TabBar locked={false} />);
     const nav = screen.getByRole("navigation", { name: "Primary" });
     for (const label of LABELS) {

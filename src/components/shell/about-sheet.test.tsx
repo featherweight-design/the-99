@@ -105,6 +105,15 @@ describe("AboutSheet", () => {
     expect(screen.getByTestId("up").textContent).toBe("false");
   });
 
+  // Beside the rail from md, 20px off its edge. The rail is 62px beside a pointer and 88px on touch
+  // (desktop nav labels), so a literal 82 would sit under the touch rail.
+  it("sits 20px off the rail's own width, never a literal", () => {
+    render(<AboutSheet state={{ kind: "behind", entries: entries(1) }} />);
+    const box = screen.getByRole("region").className;
+    expect(box).toContain("md:left-[calc(var(--rail-w)+20px)]");
+    expect(box).not.toContain("md:left-[82px]");
+  });
+
   it("Escape inside closes it (N7)", () => {
     render(<AboutSheet state={{ kind: "behind", entries: entries(1) }} />);
     fireEvent.keyDown(screen.getByRole("button", { name: "Later" }), { key: "Escape" });

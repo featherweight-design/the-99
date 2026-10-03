@@ -152,12 +152,16 @@ function useLockNotes(place: (slot: HTMLElement) => { x: number; y: number }) {
       close(href, true);
     };
     const onResize = () => show(href);
+    // The touch rail's nav scrolls on a short screen, and the note is `fixed`, so a scroll there
+    // re-places it the way a resize does (audit V-E3). Scroll does not bubble: listen in capture.
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("scroll", onResize, true);
     window.addEventListener("resize", onResize);
     return () => {
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("scroll", onResize, true);
       window.removeEventListener("resize", onResize);
     };
   }, [open, inLock, close, show]);
@@ -227,7 +231,7 @@ function RailLock({ pathname }: { pathname: string }) {
   return (
     <div
       data-lock-well
-      className="flex w-[48px] flex-col items-center gap-1 rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-sunken)] pt-[4px] pb-[9px]"
+      className="flex w-[48px] shrink-0 flex-col items-center gap-1 rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-sunken)] pt-[4px] pb-[9px] touch:w-[80px] touch:rounded-[14px] touch:px-[3px] touch-short:pb-[5px]"
     >
       {LOCKABLE.map(({ href, label }) => {
         const isOpen = open?.href === href;
@@ -250,9 +254,10 @@ function RailLock({ pathname }: { pathname: string }) {
               onFocus={() => show(href)}
               onClick={() => show(href)}
               onBlur={onBlur(href)}
-              className="flex h-[38px] w-[38px] items-center justify-center rounded-[10px] bg-transparent text-[color:var(--fg-locked)] focus-visible:shadow-[0_0_0_2px_var(--accent)] focus-visible:outline-none"
+              className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] bg-transparent text-[color:var(--fg-locked)] focus-visible:shadow-[0_0_0_2px_var(--accent)] focus-visible:outline-none ${RAIL_TOUCH_SLOT}`}
             >
               <NavIcon href={href} />
+              <RailLabel label={label} />
             </button>
             <div
               id={noteId}
@@ -305,9 +310,13 @@ function RailLock({ pathname }: { pathname: string }) {
       })}
       {/* The well's foot: decorative, since every slot above names itself
           locked. */}
-      <div aria-hidden="true" className="mt-[3px] flex flex-col items-center gap-[5px]">
+      <div
+        aria-hidden="true"
+        className="mt-[3px] flex flex-col items-center gap-[5px] touch-short:mt-0 touch-short:gap-[4px]"
+      >
         <Padlock stroke="var(--fg-locked)" />
-        <span className="font-mono text-[8.5px] tracking-[0.1em] text-[color:var(--fg-locked)] uppercase">
+        {/* The short rule sets LOCKED's line to the 10px V1 draws (audit V-E1). */}
+        <span className="font-mono text-[8.5px] tracking-[0.1em] text-[color:var(--fg-locked)] uppercase touch-short:leading-[10px]">
           {lockCopy.railLabel}
         </span>
       </div>
@@ -438,21 +447,44 @@ function TabBracket() {
 // §Rail container / §Rail Wordmark area / §Rail Nav section / §Rail Account trigger
 // ---------------------------------------------------------------------------
 
+// The touch rail's slot (desktop nav labels handoff, R1 as the touch rail): the tab bar's slot as it
+// is, the 19px icon over a 9px mono label, 72 × 52 at radius 12, and 72 × 44 with a 2px gap on a
+// short screen (V1). On the rail only, never in NavSlot's base, because every phone is
+// `(hover: none)` too and the tab bar shares NavSlot (audit E5).
+const RAIL_TOUCH_SLOT =
+  "touch:h-[52px] touch:w-[72px] touch:flex-col touch:gap-[3px] touch:rounded-[12px] touch-short:h-[44px] touch-short:gap-[2px]";
+
+// The touch rail's visible label. `aria-hidden`: the slot is already named by its `aria-label`,
+// and the two strings are identical, so the name is heard once (audit E3). Its line is set to the
+// 12px the handoff draws rather than preflight's 1.5 (V-E1). Takes the slot's colour.
+function RailLabel({ label }: { label: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      data-rail-label
+      className="hidden font-mono text-[9px] leading-[12px] tracking-[0.06em] touch:block"
+    >
+      {label}
+    </span>
+  );
+}
+
 // A live nav slot. Locked slots are not links: they are buttons that open their
 // note (RailLock, TabLockSlots above).
 type NavSlotProps = {
   href: NavHref;
   active: boolean;
-  // Where the pending pip sits: 2px up in the 38px rail slot, 1px in the 52px tab slot.
-  pipBottom: 1 | 2;
-  // The rail passes its label because it shows none; the tab bar leaves the
-  // name to its visible label.
+  // Where the pending pip sits: the rail's slot or the tab bar's (PendingPip).
+  pip: "rail" | "tab";
+  // The rail passes its label as the slot's name: beside a pointer it draws none,
+  // and on touch its drawn label is aria-hidden, so the name is heard once. The
+  // tab bar leaves the name to its visible label.
   name: string | undefined;
   className: string;
   children: React.ReactNode;
 };
 
-function NavSlot({ href, name, active, pipBottom, className, children }: NavSlotProps) {
+function NavSlot({ href, name, active, pip, className, children }: NavSlotProps) {
   return (
     <Link
       href={href}
@@ -462,7 +494,7 @@ function NavSlot({ href, name, active, pipBottom, className, children }: NavSlot
       className={`relative ${className}`}
     >
       {children}
-      <PendingPip href={href} bottom={pipBottom} />
+      <PendingPip href={href} placement={pip} />
     </Link>
   );
 }
@@ -479,7 +511,10 @@ export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey })
       // Below the tab bar, the menu backdrop and the modals, which all sit at
       // 40 or above. The lock's note is fixed inside it, so it inherits the
       // same rank over page content.
-      className="hidden md:flex md:flex-col items-center w-[62px] shrink-0 h-screen sticky top-0 z-30 py-[14px]"
+      // Touch (`hover: none`): the 88px labelled rail, `h-dvh` so the account
+      // control is measured against the visible viewport (audit V-E4), and the
+      // short rule's 10px padding (V1).
+      className="hidden md:flex md:flex-col items-center w-[var(--rail-w)] shrink-0 h-screen touch:h-dvh sticky top-0 z-30 py-[14px] touch-short:py-[10px]"
       style={{
         background: "var(--surface-rail)",
         borderRight: "1px solid var(--border)",
@@ -493,12 +528,33 @@ export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey })
           middle diamond with the other two and the numerals taken away, which
           is both not the mark and the same shape Discover's nav glyph is built
           from. This is the only place the desktop app says its own name. */}
-      <Crowned99 variant="rail-62" className="mb-5" />
+      {/* On touch, 4px of the gap under the mark moves into the nav's own top
+          padding, so a focus ring on the first slot is not cut by the nav's
+          scroll box (audit V-E2): 16 + 4 = 20, and 12 + 4 = 16 when short. */}
+      <Crowned99
+        variant="rail-62"
+        className="mb-5 shrink-0 touch:mb-[16px] touch-short:mb-[12px]"
+      />
 
       {/* ------------------------------------------------------------------ */}
       {/* Nav section — icon-only, 38px squares, 4px apart                    */}
       {/* ------------------------------------------------------------------ */}
-      <nav className="flex flex-col items-center gap-1" aria-label="Primary">
+      {/* On touch the nav is the rail's one scroll region, between the mark and
+          the account control, so the account control is always reachable on a
+          short screen (V1's backstop). It only scrolls below 349px of column
+          (392 in first run). Every child is `shrink-0`, or a column too short for
+          it would squeeze the slots before it scrolled. The 4px on top keeps the
+          first slot's focus ring clear of the box's clip (V-E2); the 8px below is
+          V1's minimum above the account control. The slots stay 4px apart when
+          short: V1 tightens only the gap between icon and label. The scrollbar
+          is hidden, as the deck page's tab strip hides its own: a classic one
+          takes ~15px of the 87px column and would clip the 72px slot's ring at
+          both sides. The region still scrolls by touch and by wheel. */}
+      <nav
+        data-rail-nav
+        className="flex flex-col items-center gap-1 touch:min-h-0 touch:w-full touch:flex-1 touch:overflow-y-auto touch:pt-[4px] touch:pb-[8px] touch:[scrollbar-width:none] touch:[&::-webkit-scrollbar]:hidden"
+        aria-label="Primary"
+      >
         {ITEMS.filter((i) => !locked || !i.lockable).map(({ href, label }) => {
           const active = isActive(pathname, href);
           return (
@@ -507,16 +563,17 @@ export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey })
               name={label}
               href={href}
               active={active}
-              pipBottom={2}
+              pip="rail"
               // No `transition-colors`: the pending fill below must clear the frame the new page
               // lands, not fade out over it (audit correction 4).
-              className={`flex h-[38px] w-[38px] items-center justify-center rounded-[10px] ${
+              className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] ${RAIL_TOUCH_SLOT} ${
                 active
                   ? "bg-elevated text-[color:var(--fg)]"
                   : "bg-transparent text-[color:var(--fg-faint)] hover:bg-elevated-hover has-[[data-pending]]:bg-elevated-hover has-[[data-pending]]:text-[color:var(--fg)]"
               }`}
             >
               <NavIcon href={href} />
+              <RailLabel label={label} />
             </NavSlot>
           );
         })}
@@ -529,7 +586,7 @@ export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey })
       {/* ------------------------------------------------------------------ */}
       {/* Account trigger — §Rail: 30px circle, pinned to the bottom.         */}
       {/* ------------------------------------------------------------------ */}
-      <div className="mt-auto">
+      <div className="mt-auto shrink-0">
         <AccountMenu panel="popover" theme={theme} />
       </div>
     </aside>
@@ -555,7 +612,7 @@ export function TabBar({ locked }: { locked: boolean }) {
         // The active fill is a surface, not a coloured label: locked ruling
         // 13 reserves colour for status. One `color` on the slot serves both
         // the icon (currentColor) and the label.
-        pipBottom={1}
+        pip="tab"
         className={`flex h-[52px] flex-1 flex-col items-center justify-center gap-[3px] rounded-[12px] ${
           active
             ? "bg-[color:var(--surface-inset)] text-[color:var(--fg)]"

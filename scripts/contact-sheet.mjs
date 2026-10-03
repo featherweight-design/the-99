@@ -250,6 +250,9 @@ try {
     const context = await browser.newContext({
       viewport: { width: size.width, height: size.height },
       deviceScaleFactor: 1,
+      // A width may name an input: `"touch": true` makes Chromium report `(hover: none)`, where the
+      // desktop rail draws its labelled touch form (desktop nav labels), at a desktop viewport.
+      hasTouch: size.touch === true,
     });
     const page = await context.newPage();
     await signIn(page);

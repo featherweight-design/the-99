@@ -1343,6 +1343,26 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   desktop default is the grid, which draws no pips, and a run that took the default would
   sweep nothing clean at the width the defect was reported on. Point it at `local-dev`.
 
+- `pnpm probe:nav-labels` walks the desktop rail by input (desktop nav labels handoff): 1300x900
+  with a pointer, where it is today's 62px rail with no visible label; 768x1024 and 852x393 under
+  `(hover: none)`, where it is 88px and every slot is the tab bar's 72 x 52 slot with its label at
+  9px on a 12px line (72 x 44 on the short screen, V1); and 390x844, where the tab bar must carry
+  none of the rail's touch classes. Every rule is a media query and jsdom applies none, so the unit
+  tests read classes and this reads geometry. `(hover: none)` comes from a `hasTouch` context: CDP's
+  `Emulation.setEmulatedMedia` does NOT emulate `hover` (its first version read false under it and
+  measured the pointer rail as touch), and `isMobile` turns 768 into a 980px layout viewport. Each
+  touch context first asserts the query MATCHES, so that failure cannot recur silently.
+  On the short screen it reads the account control whole in the viewport and outside the nav (the
+  nav is the one scroll region), and the first slot's focus ring 4px clear of the region's edges
+  (audit V-E2). First run needs an account with no cards, which neither fixture account is:
+  `PROBE_LOCKED_EMAIL` names a `+clerk_test` one, and adds the 80px well and an open lock note
+  following the nav as it scrolls (V-E3); unset, that row FAILS as not measured rather than passing.
+  `PROBE_TOUCH=1 pnpm probe:home` is the other half (audit E6): the 88px rail takes 26px from
+  `main`, so Home's 1180 split is re-measured under `(hover: none)` by its existing stamp-clip
+  check, at 1190 as well. A width in a contact-sheet inventory takes `"touch": true` for the
+  same emulation (`docs/superpowers/inventories/desktop-nav-labels.json`). Makes no writes beyond
+  signing in; point it at `local-dev`.
+
 - `pnpm probe:catalog-stamp` proves the WRITE half of the catalog generation against a real
   Postgres: two stamps leave one row and move the value, the key the reader derives changes
   with it, and the check constraint refuses any id but the canonical one. `cacheForUser`'s

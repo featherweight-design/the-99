@@ -100,6 +100,7 @@
     "probe:games-empty": "node scripts/probe-games-empty.mjs",
     "probe:games-log": "node scripts/probe-games-log.mjs",
     "probe:home": "node scripts/probe-refresh-home.mjs",
+    "probe:nav-labels": "node scripts/probe-nav-labels.mjs",
     "probe:colour-box": "node scripts/probe-chassis-colour.mjs",
     "probe:scroll-lock": "node scripts/probe-scroll-lock.mjs",
     "probe:pip-gap": "node scripts/probe-pip-gap.mjs",
