@@ -354,7 +354,16 @@ async function main(): Promise<void> {
   report("the second request asks those two alone, the renamed one by its new name",
     gIntents.length === 2 && second !== undefined && second.asked.includes(target.name) && second.asked.includes(newName),
     gIntents.map((i) => i.asked.join("|").slice(0, 80)).join(" ; "));
-  report("G3 collects it and finishes", (await run(RUN.g, 10 * r, moving)) === EXIT_DONE);
+  // And again before that second batch lands, so EVERY card it asked has moved: nothing is left to
+  // judge, and the batch must complete rather than be held on 0 of 0 for ever.
+  await db.execute(sql`update cards set oracle_text = coalesce(oracle_text, '') || ' (probe: errata 2)' where oracle_id = ${target.oracleId}`);
+  await db.execute(sql`update cards set name = ${`${newName} 2`} where oracle_id = ${renamed.oracleId}`);
+  report("G3 completes a batch whose every card moved, and re-asks both", (await run(RUN.g, 10 * r, moving)) === EXIT_MORE_WORK);
+  const g3 = await intentsOf(RUN.g);
+  report("the all-moved batch is collected, not held", second !== undefined
+    && g3.find((i) => i.intentKey === second.intentKey)?.status === "collected" && g3.length === 3,
+    g3.map((i) => `${i.asked.length}:${i.status}`).join(", "));
+  report("G4 collects them and finishes", (await run(RUN.g, 10 * r, moving)) === EXIT_DONE);
   report("all twelve are now labelled", (await db.select().from(cardLabels)
     .where(inArray(cardLabels.oracleId, moving.map((c) => c.oracleId)))).length === 12);
 

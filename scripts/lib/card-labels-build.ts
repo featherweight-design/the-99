@@ -399,7 +399,11 @@ async function collectBatch(opts: BuildOptions, batchId: string, intents: Intent
     // THIS BATCH's floor: of the cards its intents asked about, how many came back usable.
     const asked = mine.reduce((n, i) => n + i.asked.length, 0) - moved;
     const staged = [...stagedByRun.values()].reduce((n, s) => n + s.size, 0);
-    const floor = meetsFloor(staged, asked, opts.floor);
+    // EVERY card moved: nothing is left to judge, and nothing here is short. The batch is complete,
+    // publishing nothing, and its cards go to the next plan. `meetsFloor` refuses 0 of 0 on purpose
+    // (an empty RUN is not a success), so without this the batch would be held, and its cards
+    // blocked from planning, for ever.
+    const floor = asked === 0 && moved > 0 ? { ok: true as const, share: 1 } : meetsFloor(staged, asked, opts.floor);
     if (!floor.ok) {
       // HELD: staged, measured, unpublished, and still open — so it blocks its own cards from
       // being planned again, and the next invocation re-reads it under whatever floor it is
