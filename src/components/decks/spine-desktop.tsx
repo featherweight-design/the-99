@@ -26,6 +26,7 @@ import { SpineBracketChip } from "./bracket-chip";
 import { HeaderNoticeTag, type HeaderNotice } from "./notice-tag";
 import type { TileBracket } from "../../lib/decks/read";
 import { useDeckHeaderEdit } from "./use-deck-header-edit";
+import { useMinWidth } from "../ui/use-min-width";
 import { ProxyTag } from "./proxy-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { shortName } from "../../lib/cards/short-name";
@@ -149,6 +150,11 @@ export function SpineDesktop({
   // also contain that unrelated control.
   const fieldsWrapperRef = useRef<HTMLDivElement>(null);
   const actionsWrapperRef = useRef<HTMLDivElement>(null);
+  // This header renders from 768px, which includes landscape iPhones and iPads — devices iOS
+  // Safari still zooms the viewport on focusing a sub-16px input. `pointer: fine` is false on
+  // every touchscreen regardless of viewport width, so the description field keeps 13.5px only
+  // on a mouse/trackpad desktop and falls back to 16px anywhere that protection is needed.
+  const pointerFine = useMinWidth("(pointer: fine)");
 
   // §F, as three booleans rather than a state string: they are not exclusive in
   // the source (a save-disabled field can also be showing a previous error) and
@@ -163,12 +169,9 @@ export function SpineDesktop({
       ? "1px solid var(--danger)"
       : "1px solid var(--accent)";
 
-  const hint = failed ? rename.error : saving ? renameCopy.saving : renameCopy.hint;
-  const hintInk = failed
-    ? "var(--danger)"
-    : inert
-      ? "var(--fg-disabled)"
-      : "var(--fg-faint)";
+  // STATES §2, state 3: "No hint line" — the keyboard hint shown by the retired single-field
+  // editor is gone. State 4 keeps the refusal message, same as the mobile editor's.
+  const hint = failed ? rename.error : null;
 
   return (
     <header
@@ -231,8 +234,11 @@ export function SpineDesktop({
       </div>
       {/* §G — with no crop there is no printing to open, so the pill is absent (the door then
           draws its ⇄ half alone, or nothing with the switch off). It is absolutely
-          positioned, so its absence shifts nothing. */}
-      <ChangeCommanderDoor oracleId={commander.oracleId} width="desktop" hasCrop={Boolean(commander.artCropUri)} />
+          positioned, so its absence shifts nothing. Hidden while editing (STATES §2, state 3:
+          "the corner buttons hide"). */}
+      {!renaming && (
+        <ChangeCommanderDoor oracleId={commander.oracleId} width="desktop" hasCrop={Boolean(commander.artCropUri)} />
+      )}
 
       <div
         // The inset switches on the same breakpoint the portrait does: 592 clears
@@ -320,7 +326,7 @@ export function SpineDesktop({
                     border: "1px dashed var(--border-strong)",
                     borderRadius: 8,
                     padding: "6px 10px",
-                    fontSize: 13.5,
+                    fontSize: pointerFine ? 13.5 : 16,
                     lineHeight: 1.45,
                     color: "var(--fg)",
                   }}
@@ -622,8 +628,7 @@ export function SpineDesktop({
             it giving anything. */}
         <div className={renaming ? "flex-none" : "min-w-0 shrink-[4] grow-0 basis-auto"}>
           {renaming ? (
-            // §B14 — the actions are replaced, not joined. The hint row is
-            // present in every state, which is what holds the column's height.
+            // §B14 — the actions are replaced, not joined.
             <div
               ref={actionsWrapperRef}
               className="flex flex-col items-end"
@@ -673,18 +678,15 @@ export function SpineDesktop({
                   {renameCopy.cancel}
                 </button>
               </div>
-              <p
-                data-testid="spine-rename-hint"
-                className="font-mono"
-                style={{
-                  fontSize: 10,
-                  letterSpacing: "0.08em",
-                  minHeight: 16,
-                  color: hintInk,
-                }}
-              >
-                {hint}
-              </p>
+              {hint ? (
+                <p
+                  data-testid="spine-rename-hint"
+                  className="font-mono"
+                  style={{ fontSize: 10, letterSpacing: "0.08em", color: "var(--danger)" }}
+                >
+                  {hint}
+                </p>
+              ) : null}
             </div>
           ) : (
             // `flex-wrap justify-end`: with the first-commit offer present this

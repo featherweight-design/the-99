@@ -9,6 +9,11 @@ describe("DeckDescriptionField (STATES-deck-description.md §1)", () => {
     expect(screen.getByText("0 / 240")).toBeInTheDocument();
   });
 
+  it("reserves the counter's full width so the help text does not reflow as it grows a digit", () => {
+    render(<DeckDescriptionField value="" onChange={() => {}} onBlur={() => {}} saving={false} refused={null} />);
+    expect(screen.getByText("0 / 240")).toHaveStyle({ width: "9ch" });
+  });
+
   it("counts what is typed and calls onChange", () => {
     const onChange = vi.fn();
     render(<DeckDescriptionField value="" onChange={onChange} onBlur={() => {}} saving={false} refused={null} />);

@@ -267,7 +267,10 @@ export function SpineMobile({
         />
         {/* §G — with no crop there is no printing to open; the door then draws its ⇄ half
             alone, or nothing with the switch off. */}
-        <ChangeCommanderDoor oracleId={commander.oracleId} width="mobile" hasCrop={Boolean(commander.artCropUri)} />
+        {/* Hidden while editing (STATES §2, state 3: "the corner buttons hide"). */}
+        {!renaming && (
+          <ChangeCommanderDoor oracleId={commander.oracleId} width="mobile" hasCrop={Boolean(commander.artCropUri)} />
+        )}
 
         <div
           // The block the ramp is keyed to, hooked so a probe measures it rather
@@ -592,44 +595,48 @@ export function SpineMobile({
         )}
       </div>
 
-      <div
-        className="flex flex-wrap justify-center"
-        style={{ padding: "4px 16px 14px", gap: 8 }}
-      >
-        {built > 0 && (
-          <GhostButton
-            href={`/decks/${deck.id}/import`}
-            className="flex min-h-[44px] items-center px-[9px] py-[6px] font-mono text-[11px]"
-          >
-            {deckImportCopy.update.entryLabel}
-          </GhostButton>
-        )}
-        {built > 0 && (
-          <button
-            type="button"
-            onClick={onExport}
-            className="flex min-h-[44px] items-center gap-[5px] rounded-[7px] border border-[color:var(--border-strong)] bg-transparent px-[9px] py-[6px] font-mono text-[11px] text-[color:var(--accent)]"
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="var(--fg-faint)"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
+      {/* STATES §2, state 3: Save/Cancel replace Update and Export while editing, at both
+          widths — so this whole row hides rather than sitting under the open editor. */}
+      {!renaming && (
+        <div
+          className="flex flex-wrap justify-center"
+          style={{ padding: "4px 16px 14px", gap: 8 }}
+        >
+          {built > 0 && (
+            <GhostButton
+              href={`/decks/${deck.id}/import`}
+              className="flex min-h-[44px] items-center px-[9px] py-[6px] font-mono text-[11px]"
             >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            {deckHeaderCopy.export}
-          </button>
-        )}
-        {offerFirstCommit && <FirstCommitOffer deckId={deck.id} />}
-      </div>
+              {deckImportCopy.update.entryLabel}
+            </GhostButton>
+          )}
+          {built > 0 && (
+            <button
+              type="button"
+              onClick={onExport}
+              className="flex min-h-[44px] items-center gap-[5px] rounded-[7px] border border-[color:var(--border-strong)] bg-transparent px-[9px] py-[6px] font-mono text-[11px] text-[color:var(--accent)]"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--fg-faint)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              {deckHeaderCopy.export}
+            </button>
+          )}
+          {offerFirstCommit && <FirstCommitOffer deckId={deck.id} />}
+        </div>
+      )}
     </header>
   );
 }

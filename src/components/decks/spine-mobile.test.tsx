@@ -2,7 +2,8 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { SpineMobile } from "./spine-mobile";
-import { overCopy, renameCopy } from "../../lib/copy/decks-builder";
+import { deckHeaderCopy, overCopy, renameCopy } from "../../lib/copy/decks-builder";
+import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { pairDeck, props } from "./spine-fixtures";
 
@@ -85,6 +86,21 @@ describe("SpineMobile", () => {
     expect((trigger.firstElementChild as HTMLElement).style.borderBottom).toBe(
       "1px solid var(--border-strong)",
     );
+  });
+
+  // STATES §2, state 3: Save/Cancel replace Update and Export at both widths, and the
+  // corner buttons hide.
+  it("hides Update, Export and the change-commander door while editing", () => {
+    renderSpine(<SpineMobile {...props} />);
+    expect(screen.getByRole("link", { name: deckImportCopy.update.entryLabel })).toBeTruthy();
+    expect(screen.getByRole("button", { name: deckHeaderCopy.export })).toBeTruthy();
+    // With no `ChangeCommanderDoor` provider mounted (as here), the door falls back to today's
+    // plain card-details trigger — the same control the feature replaces.
+    expect(screen.getByRole("button", { name: "View card details" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    expect(screen.queryByRole("link", { name: deckImportCopy.update.entryLabel })).toBeNull();
+    expect(screen.queryByRole("button", { name: deckHeaderCopy.export })).toBeNull();
+    expect(screen.queryByRole("button", { name: "View card details" })).toBeNull();
   });
 
   it("moves the meta row below the divider while editing", () => {

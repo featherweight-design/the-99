@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { PgDialect } from "drizzle-orm/pg-core";
+import type { SQL } from "drizzle-orm";
 
 // The actions are public endpoints: what the tests pin is what they do with a wire value that
 // is not what the TypeScript type claims.
@@ -8,7 +10,10 @@ const calls = vi.hoisted(() => ({ inputs: 0, started: 0, applied: 0, saved: 0, s
   // `saveDeckHeader`'s one query shape: `db.update(decks).set(values).where(cond).returning(shape)`.
   // `headerUpdateRows` is the row count the "owned deck" where-clause would have matched —
   // set to `[]` to simulate a deck that is not this user's (or does not exist).
-  headerUpdates: [] as { set: unknown }[], headerUpdateRows: [{ id: "deck_1" }] as { id: string }[] }));
+  headerUpdates: [] as { set: unknown }[], headerUpdateRows: [{ id: "deck_1" }] as { id: string }[],
+  // The WHERE condition passed to `saveDeckHeader`'s update, one per call — rendered to SQL
+  // in the test itself, the same way `combo-map-action.test.ts` proves its own scoping.
+  headerWhere: [] as unknown[] }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 // `updateTag` too: `saveDeckHeader`'s name path reaches `revalidateClaims` → `revalidateUserLists`.
@@ -17,12 +22,15 @@ vi.mock("../../db", () => ({
   db: {
     update: () => ({
       set: (values: unknown) => ({
-        where: () => ({
-          returning: async () => {
-            calls.headerUpdates.push({ set: values });
-            return calls.headerUpdateRows;
-          },
-        }),
+        where: (cond: unknown) => {
+          calls.headerWhere.push(cond);
+          return {
+            returning: async () => {
+              calls.headerUpdates.push({ set: values });
+              return calls.headerUpdateRows;
+            },
+          };
+        },
       }),
     }),
   },
@@ -230,6 +238,13 @@ describe("saveDeckHeader (H35, the pencil's one atomic write)", () => {
     expect(result.ok).toBe(true);
     expect(calls.headerUpdates).toHaveLength(1);
     expect(calls.headerUpdates[0].set).toMatchObject({ name: "New Name", intent: "New desc", intentSeeded: false });
+    // The WHERE must carry BOTH predicates — a deck a reader does not own must never match.
+    // Rendered to real SQL rather than inspected as a tree, so dropping either `eq()` call
+    // fails this assertion rather than passing against a mock that ignores its argument.
+    const where = new PgDialect().sqlToQuery(calls.headerWhere[0] as SQL);
+    expect(where.sql).toContain('"decks"."id"');
+    expect(where.sql).toContain('"decks"."user_id"');
+    expect(where.params).toEqual([DECK, "user_1"]);
   });
 
   it("sends only the field it was given — the other is left exactly as the row holds it", async () => {

@@ -75,8 +75,10 @@ export function DeckDescriptionField({
       <p className="m-0 flex items-baseline justify-between gap-[10px] text-[12px] leading-[1.5]" style={{ color: "var(--fg-faint)" }}>
         <span>{copy.help}</span>
         <span
-          className="flex-none font-mono"
-          style={{ color: over ? "var(--danger)" : warn ? "var(--warning)" : "var(--fg-faint)" }}
+          // Fixed to 9 monospace characters — "240 / 240", the widest this counter ever draws
+          // — so the help text's wrapping does not shift as the count grows a digit while typing.
+          className="flex-none text-right font-mono"
+          style={{ width: "9ch", color: over ? "var(--danger)" : warn ? "var(--warning)" : "var(--fg-faint)" }}
         >
           {copy.counter(n, copy.maxLength)}
         </span>

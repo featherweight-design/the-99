@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { SpineDesktop } from "./spine-desktop";
 import { overCopy, renameCopy } from "../../lib/copy/decks-builder";
@@ -8,6 +8,19 @@ import { deck, pairDeck, props } from "./spine-fixtures";
 
 const saveDeckHeader = vi.hoisted(() => vi.fn(async () => ({ ok: true as const })));
 vi.mock("../../app/decks/tuning-actions", () => ({ saveDeckHeader }));
+
+/** jsdom has no matchMedia; vitest.setup.ts stubs a `matches: false` default for every query. */
+function pointer(fine: boolean) {
+  vi.stubGlobal("matchMedia", (q: string) => ({
+    matches: q.includes("pointer: fine") ? fine : false,
+    media: q, onchange: null, addListener: vi.fn(), removeListener: vi.fn(),
+    addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
+  }));
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 // The band's `Card details` pill reads the card-detail context, so the header
 // can only be rendered inside it.
@@ -144,11 +157,14 @@ describe("SpineDesktop", () => {
     expect(lead?.style.color).toBe("");
   });
 
-  it("swaps the actions slot for the rename hint while editing", () => {
+  // STATES §2, state 3: Save/Cancel replace Update and Export, with no hint line.
+  it("swaps the actions slot for Save/Cancel while editing, with no idle hint", () => {
     renderSpine(<SpineDesktop {...props} />);
     fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
     expect(screen.getByLabelText("Deck name")).toBeTruthy();
-    expect(screen.getByText("↵ save · esc cancel")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Save/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeTruthy();
+    expect(screen.queryByTestId("spine-rename-hint")).toBeNull();
     expect(screen.queryByRole("button", { name: "Export" })).toBeNull();
   });
 
@@ -179,8 +195,22 @@ describe("SpineDesktop", () => {
     expect(screen.getByRole("button", { name: /Save/ }).getAttribute("aria-disabled")).toBe("true");
     expect([field.style.width, field.style.height]).toEqual(box);
 
-    // and the hint row is present in every state, so no row is ever added
-    expect(screen.getByTestId("spine-rename-hint")).toBeTruthy();
+    // STATES §2, state 3: "No hint line" — the old keyboard hint is gone.
+    expect(screen.queryByTestId("spine-rename-hint")).toBeNull();
+  });
+
+  it("shows the refusal message, but no idle hint, once a save fails", async () => {
+    saveDeckHeader.mockResolvedValueOnce({ ok: false, message: "That did not save." } as never);
+    renderSpine(<SpineDesktop {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    const name = screen.getByLabelText("Deck name") as HTMLInputElement;
+    fireEvent.change(name, { target: { value: "Changed Name" } });
+    fireEvent.click(screen.getByRole("button", { name: /Save/ }));
+    await screen.findByTestId("spine-rename-hint");
+    expect(screen.getByTestId("spine-rename-hint")).toHaveTextContent("That did not save.");
+    // This file has no `beforeEach` mock reset (a later test asserts `not.toHaveBeenCalled()`
+    // on the strength of being the first caller) — clear so this test's call doesn't leak.
+    saveDeckHeader.mockClear();
   });
 
   // Pre-open review round 3: the editor already shows the description as its own field, so the
@@ -190,6 +220,16 @@ describe("SpineDesktop", () => {
     expect(container.querySelector("[data-deck-intent]")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
     expect(container.querySelector("[data-deck-intent]")).toBeNull();
+  });
+
+  // STATES §2, state 3: "the corner buttons hide" while editing. With no `ChangeCommanderDoor`
+  // provider mounted (as in every test here), the door falls back to today's plain card-details
+  // trigger — the same control the feature replaces, found by its shared aria-label.
+  it("hides the change-commander door while editing", () => {
+    renderSpine(<SpineDesktop {...props} />);
+    expect(screen.getByRole("button", { name: "View card details" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    expect(screen.queryByRole("button", { name: "View card details" })).toBeNull();
   });
 
   // Pre-open review: Save/Cancel sit in a separate column from the fields, so the pair's blur
@@ -220,6 +260,25 @@ describe("SpineDesktop", () => {
     const partnerTrigger = screen.getByRole("button", { name: new RegExp(pairDeck.partner!.name) });
     fireEvent.blur(description, { relatedTarget: partnerTrigger });
     await vi.waitFor(() => expect(saveDeckHeader).toHaveBeenCalledWith(pairDeck.id, { name: "Changed Name" }));
+  });
+
+  // This header renders from 768px, which includes touch devices (landscape iPhone, iPad).
+  // `pointer: fine` is false on every touchscreen regardless of viewport, so the description
+  // field must keep iOS Safari's sub-16px zoom protection there rather than trusting width alone.
+  it("keeps the description field at 16px off a fine pointer, even at the desktop breakpoint", () => {
+    pointer(false);
+    renderSpine(<SpineDesktop {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    const description = screen.getByLabelText(deckDescriptionCopy.description.fieldAria);
+    expect(description).toHaveStyle({ fontSize: "16px" });
+  });
+
+  it("uses the smaller 13.5px size on a fine pointer", () => {
+    pointer(true);
+    renderSpine(<SpineDesktop {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    const description = screen.getByLabelText(deckDescriptionCopy.description.fieldAria);
+    expect(description).toHaveStyle({ fontSize: "13.5px" });
   });
 
   // R6 ruling 4. The header is reachable from list contexts, so the label has
