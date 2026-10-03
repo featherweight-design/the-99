@@ -17,17 +17,21 @@ import type { z } from "zod";
  *    unreachable upstream (429, 5xx, 529, a dropped connection) or a reply that fails the
  *    caller's schema. A timeout is never retried, and a caller's `retryFloorMs` refuses a retry
  *    that would start with too little of the deadline left to finish.
- *  - IT NEVER THROWS for an upstream, configuration or unexpected fault. A bad key, a retired model id or a
- *    malformed request comes back as `upstream_busy` with a server-side log line naming it, so
- *    the caller always reaches a terminal outcome (and refunds the allowance unit) rather than
- *    leaving a run pending for the reaper.
+ *  - IT NEVER THROWS for an upstream, configuration or unexpected fault, so the caller always
+ *    reaches a terminal outcome (and refunds the allowance unit) rather than leaving a run
+ *    pending for the reaper. Two classes keep the faults apart, because they call for opposite
+ *    responses: `upstream_busy` is an upstream that was overloaded or unreachable (429, 5xx,
+ *    529, a dropped connection), which a later attempt may well get past; `upstream_rejected`
+ *    is a request the upstream REFUSED (a bad or missing key, a retired model id, a malformed
+ *    request: 401, 403 and every other non-429 4xx), which no retry fixes. Both carry the HTTP
+ *    `status` when there was one, so a stored failure can name what happened without a log.
  *
  * The reply is constrained server-side to the caller's zod schema (`output_config.format`),
  * which guarantees its SHAPE. It guarantees nothing about its truth: grounding, in-deck cards
  * and verbatim quotes are the caller's validation rules, and still run.
  */
 
-export type ModelErrorClass = "upstream_busy" | "timeout" | "malformed";
+export type ModelErrorClass = "upstream_busy" | "upstream_rejected" | "timeout" | "malformed";
 
 /**
  * What the call was billed for, ACCUMULATED across both attempts: a malformed first reply still
@@ -43,8 +47,9 @@ export type ModelUsage = {
 
 export type ModelOutcome<T> =
   | { ok: true; value: T; usage: ModelUsage }
-  /** `usage` is present whenever any attempt got a response back, and absent when none did. */
-  | { ok: false; errorClass: ModelErrorClass; usage?: ModelUsage };
+  /** `usage` is present whenever any attempt got a response back, and absent when none did.
+   *  `status` is the HTTP status of the LAST attempt's error, when that error carried one. */
+  | { ok: false; errorClass: ModelErrorClass; usage?: ModelUsage; status?: number };
 
 export type ModelRequest<T> = {
   /** The caller's. This module names none. */
@@ -81,8 +86,8 @@ export type ModelDeps = {
 
 type Attempt<T> =
   | { kind: "ok"; value: T; usage: ModelUsage }
-  | { kind: "retryable"; errorClass: "upstream_busy" | "malformed"; usage?: ModelUsage }
-  | { kind: "final"; errorClass: ModelErrorClass; usage?: ModelUsage };
+  | { kind: "retryable"; errorClass: "upstream_busy" | "malformed"; usage?: ModelUsage; status?: number }
+  | { kind: "final"; errorClass: ModelErrorClass; usage?: ModelUsage; status?: number };
 
 type ApiUsage = {
   input_tokens: number;
@@ -111,9 +116,15 @@ function addUsage(a: ModelUsage | undefined, b: ModelUsage | undefined): ModelUs
   };
 }
 
-/** A failure outcome, carrying the usage only when some attempt got a response. */
-function failed<T>(errorClass: ModelErrorClass, usage: ModelUsage | undefined): ModelOutcome<T> {
-  return usage ? { ok: false, errorClass, usage } : { ok: false, errorClass };
+/** A failure outcome, carrying the usage only when some attempt got a response, and the status
+ *  only when the failing attempt's error had one. */
+function failed<T>(errorClass: ModelErrorClass, usage: ModelUsage | undefined, status?: number): ModelOutcome<T> {
+  return {
+    ok: false,
+    errorClass,
+    ...(usage ? { usage } : {}),
+    ...(status !== undefined ? { status } : {}),
+  };
 }
 
 export async function callModel<T>(req: ModelRequest<T>, deps: ModelDeps = {}): Promise<ModelOutcome<T>> {
@@ -121,27 +132,30 @@ export async function callModel<T>(req: ModelRequest<T>, deps: ModelDeps = {}): 
   const log = deps.log ?? ((line: string) => console.error(line));
 
   const messages = deps.messages ?? realMessages(log);
-  if (!messages) return { ok: false, errorClass: "upstream_busy" };
+  // No key is a configuration fault: nothing was sent, and nothing a retry does will change it.
+  if (!messages) return { ok: false, errorClass: "upstream_rejected" };
 
   const deadline = now() + req.deadlineMs;
   let last: ModelErrorClass = "upstream_busy";
+  let lastStatus: number | undefined;
   let usage: ModelUsage | undefined;
 
   for (let attempt = 0; attempt < 2; attempt++) {
     const remaining = deadline - now();
-    if (remaining <= 0) return failed(attempt === 0 ? "timeout" : last, usage);
+    if (remaining <= 0) return attempt === 0 ? failed("timeout", usage) : failed(last, usage, lastStatus);
     if (attempt > 0 && req.retryFloorMs !== undefined && remaining < req.retryFloorMs) {
       log(`[model] retry skipped: ${Math.round(remaining / 1000)}s left, ${Math.round(req.retryFloorMs / 1000)}s needed`);
-      return failed(last, usage);
+      return failed(last, usage, lastStatus);
     }
 
     const result = await tryOnce(messages, req, remaining, log);
     usage = addUsage(usage, result.usage);
     if (result.kind === "ok") return { ok: true, value: result.value, usage: usage ?? result.usage };
-    if (result.kind === "final") return failed(result.errorClass, usage);
+    if (result.kind === "final") return failed(result.errorClass, usage, result.status);
     last = result.errorClass;
+    lastStatus = result.status;
   }
-  return failed(last, usage);
+  return failed(last, usage, lastStatus);
 }
 
 function realMessages(log: (line: string) => void): Messages | null {
@@ -212,17 +226,23 @@ function classify<T>(err: unknown, aborted: boolean, log: (line: string) => void
   }
   if (err instanceof Anthropic.AuthenticationError || err instanceof Anthropic.PermissionDeniedError) {
     log(`[model] configuration: ${err.status} ${err.message}`);
-    return { kind: "final", errorClass: "upstream_busy" };
+    return { kind: "final", errorClass: "upstream_rejected", status: err.status };
   }
   if (err instanceof Anthropic.RateLimitError || err instanceof Anthropic.InternalServerError || err instanceof Anthropic.APIConnectionError) {
     // Logged on every attempt, not only the last: a run that fails twice leaves two lines, and
     // a run that recovers on its retry still shows the upstream was struggling.
     log(`[model] upstream: ${err.status ?? "connection"} ${err.message}`);
-    return { kind: "retryable", errorClass: "upstream_busy" };
+    return { kind: "retryable", errorClass: "upstream_busy", ...(err.status !== undefined ? { status: err.status } : {}) };
+  }
+  if (err instanceof Anthropic.APIError && err.status !== undefined) {
+    // 400, 404, 409, 413 and any other 4xx the SDK names or not: a request the upstream refused,
+    // which a second attempt cannot fix. (Every 5xx is an InternalServerError, taken above.)
+    log(`[model] request: ${err.status} ${err.message}`);
+    return { kind: "final", errorClass: "upstream_rejected", status: err.status };
   }
   if (err instanceof Anthropic.APIError) {
-    // 400, 404, 409, 413 and anything else unnamed: a request a second attempt cannot fix.
-    log(`[model] request: ${err.status ?? "?"} ${err.message}`);
+    // An API error with no status names no request fault, so it is not called a rejection.
+    log(`[model] request: ? ${err.message}`);
     return { kind: "final", errorClass: "upstream_busy" };
   }
   if (err instanceof Anthropic.AnthropicError) {
@@ -230,9 +250,11 @@ function classify<T>(err: unknown, aborted: boolean, log: (line: string) => void
     log(`[model] malformed: ${err.message}`);
     return { kind: "retryable", errorClass: "malformed" };
   }
-  // Anything else — a transport fault outside the SDK's classes, a bug in schema conversion.
+  // Anything else: a transport fault outside the SDK's classes, a bug in schema conversion.
   // Still a terminal outcome rather than a throw, so the caller writes its failure and refunds
-  // the unit; the log line is what says it was none of the expected kinds.
+  // the unit; the log line is what says it was none of the expected kinds. Kept `upstream_busy`
+  // rather than `upstream_rejected`, deliberately: nothing says the upstream refused the request,
+  // and a rejection tells the player not to try again, which would be a claim this cannot make.
   log(`[model] unexpected: ${err instanceof Error ? `${err.name} ${err.message}` : String(err)}`);
   return { kind: "final", errorClass: "upstream_busy" };
 }

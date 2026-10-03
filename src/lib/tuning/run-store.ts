@@ -29,7 +29,7 @@ import type { ValidatedSuggestion } from "./validate";
 
 /** The six values `deck_suggestion_runs_error_class_check` allows. `locked_only` (Locked, F10): a run
  *  whose every suggestion cut a locked card. Refunded like every failure. */
-export type ErrorClass = ModelErrorClass | "ungrounded" | "interrupted" | "locked_only";
+export type ErrorClass = Exclude<ModelErrorClass, "upstream_rejected"> | "ungrounded" | "interrupted" | "locked_only";
 
 class RunSupersededError extends Error {}
 /** Thrown inside `startRun`'s transaction to abandon it, reserving nothing. */

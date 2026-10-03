@@ -132,6 +132,28 @@ describe("SynopsisOverview", () => {
     expect(onWrite).toHaveBeenCalledOnce();
   });
 
+  // H33: a write the upstream REFUSED (a bad key, a retired model id) fails the same way on every
+  // press, so it says so without "just now" and offers nothing to press.
+  it("says a rejected write failed, and offers no Try again", () => {
+    draw(synopsisState({ synopsis: null, lastFailed: true, lastRejected: true, wouldSpend: true }));
+    expect(screen.getByRole("alert").textContent).toBe(copy.rejected);
+    expect(screen.queryByText(copy.failed)).toBeNull();
+    expect(screen.queryByRole("button", { name: copy.tryAgain })).toBeNull();
+  });
+
+  it("draws a rejection over a held overview with no Try again, and the held text still labelled", () => {
+    draw(synopsisState({ stale: true, lastFailed: true, lastRejected: true, wouldSpend: true }), { pressed: true });
+    expect(screen.getByRole("alert").textContent).toBe(copy.rejected);
+    expect(screen.queryByRole("button", { name: copy.tryAgain })).toBeNull();
+    expect(screen.getByTestId("overview-held-caption").textContent).toBe(copy.olderThanList);
+  });
+
+  it("still offers Try again for a busy failure", () => {
+    draw(synopsisState({ synopsis: null, lastFailed: true, lastRejected: false, wouldSpend: true }));
+    expect(screen.getByRole("alert").textContent).toBe(copy.failed);
+    expect(screen.getByRole("button", { name: copy.tryAgain })).toBeTruthy();
+  });
+
   // Credits audit, finding 4: the note says what the PRESS does. A write the server would answer
   // from what it already holds spends nothing, so no credit is named beside it.
   it("names no credit beside a write that would spend none", () => {

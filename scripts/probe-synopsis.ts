@@ -303,6 +303,20 @@ async function run() {
   check("…refunds", (await ledger()).find((r) => r.status === "refunded")?.n, 1);
   check("…keeps the old synopsis on screen, stale", [!!afterBusy.synopsis, afterBusy.stale], [true, true]);
   check("…and reports the failure for Try again", afterBusy.lastFailed, true);
+  check("…and not as a rejection", afterBusy.lastRejected, false);
+
+  // 7b · A REJECTED request (H33: a bad key, a retired model id) is its own outcome, stored with
+  // the status the call failed with, and read as a failure with no Try again. The model is
+  // injected, as in every case here, so the run does not depend on SYNOPSIS_STUB (whose `rejected`
+  // mode serves a dev server); the CHECK admitting the class is what only a database can prove.
+  const rejectingModel: GenerateDeps = { ...deps, model: async () => ({ ok: false, errorClass: "upstream_rejected", status: 404 }) };
+  const rejected = await writeSynopsisFor(deck.id, USER, rejectingModel);
+  check("a rejected request ends upstream_rejected", rejected.kind === "written" && rejected.outcome, "upstream_rejected");
+  const [rejectedRow] = await rows<{ outcome: string; error_status: number | null }>(sql`
+    select outcome, error_status from deck_synopses where deck_id = ${deck.id}::uuid order by created_at desc limit 1`);
+  check("…stored with its status", rejectedRow, { outcome: "upstream_rejected", error_status: 404 });
+  const afterRejected = await state();
+  check("…and read as a failure, a rejection", [afterRejected.lastFailed, afterRejected.lastRejected], [true, true]);
 
   // 8 · ONE RUN IN FLIGHT: a double press makes one run and one charge, never two.
   delayMs = 1500;

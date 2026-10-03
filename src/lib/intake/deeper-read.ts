@@ -106,8 +106,10 @@ export async function runDeeperRead(
   const outcome = await deps.model(buildReadPrompt(input.words, labels), input.words, index);
   const billed = outcome.usage ? { model: deps.modelName, usage: outcome.usage } : undefined;
   if (!outcome.ok) {
-    const settled = await settleRead({ ...started, userId }, { kind: "failed", errorClass: outcome.errorClass }, billed);
-    return settled ? { kind: "failed", errorClass: outcome.errorClass } : { kind: "stopped" };
+    // A rejection is stored as busy here: the distinction is kept for the overview only, for now.
+    const errorClass = outcome.errorClass === "upstream_rejected" ? "upstream_busy" : outcome.errorClass;
+    const settled = await settleRead({ ...started, userId }, { kind: "failed", errorClass }, billed);
+    return settled ? { kind: "failed", errorClass } : { kind: "stopped" };
   }
   const result = validateRead({ reply: outcome.value, words: input.words, index, controls: input.controls });
   const settled = await settleRead({ ...started, userId }, { kind: "read", result }, billed);

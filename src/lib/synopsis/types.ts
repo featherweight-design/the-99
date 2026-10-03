@@ -111,5 +111,7 @@ export type SynopsisOutcome =
   | "refused"
   | "malformed"
   | "upstream_busy"
+  /** The upstream refused the request (a bad key, a retired model id): a retry cannot fix it. */
+  | "upstream_rejected"
   | "timeout"
   | "interrupted";

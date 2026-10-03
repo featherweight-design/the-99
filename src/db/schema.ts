@@ -1994,12 +1994,18 @@ export const deckSynopses = pgTable("deck_synopses", {
    * written before the log existed, which the log's first entry therefore dates correctly.
    */
   seenSeq: bigint("seen_seq", { mode: "number" }).notNull().default(0),
+  /**
+   * The HTTP status the model call's last attempt failed with, when it failed with one: what tells
+   * an overloaded upstream (429, 5xx) from a request it refused (401, 404) on the row itself,
+   * without a log. Null for every other outcome and for a failure that carried no status.
+   */
+  errorStatus: integer("error_status"),
 }, (t) => [
   check("deck_synopses_status_check", sql`${t.status} in ('pending', 'done')`),
   check(
     "deck_synopses_outcome_check",
     sql`(${t.status} = 'pending') = (${t.outcome} is null)
-        and (${t.outcome} is null or ${t.outcome} in ('survived', 'refused', 'malformed', 'upstream_busy', 'timeout', 'interrupted'))`,
+        and (${t.outcome} is null or ${t.outcome} in ('survived', 'refused', 'malformed', 'upstream_busy', 'upstream_rejected', 'timeout', 'interrupted'))`,
   ),
   // One run in flight per deck: the loser of a double press gets a unique violation, not a
   // second run and a second charge. Same partial form as deck_suggestion_runs.

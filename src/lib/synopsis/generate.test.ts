@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../../db", () => ({ db: {} }));
 
 import type { SynopsisFacts } from "./facts";
-import { chargeFor, mergeRetry, outcomeOf, refusedSections, shown, sumUsage } from "./generate";
+import { chargeFor, failedRunSet, mergeRetry, outcomeOf, refusedSections, shown, sumUsage } from "./generate";
 import { isRepair } from "./prompt";
 import { stubDelayMs, stubMode, stubReply, synopsisLive } from "./stub";
 import type { CheckedSynopsis, SectionVerdict } from "./types";
@@ -49,6 +49,23 @@ describe("the run's outcome and charge", () => {
     expect(sumUsage(a, undefined)).toBe(a);
     expect(sumUsage(undefined, a)).toBe(a);
     expect(sumUsage(undefined, undefined)).toBeUndefined();
+  });
+});
+
+describe("a failed call's settle (H33)", () => {
+  it("stores a rejection as its own class, with the status the call failed with, refunded", () => {
+    expect(failedRunSet({ ok: false, errorClass: "upstream_rejected", status: 404 }, undefined)).toEqual({
+      outcome: "upstream_rejected", content: null, usage: null, charge: "refunded", billed: undefined, errorStatus: 404,
+    });
+  });
+
+  it("keeps a busy upstream busy, with its status", () => {
+    expect(failedRunSet({ ok: false, errorClass: "upstream_busy", status: 529 }, undefined))
+      .toMatchObject({ outcome: "upstream_busy", errorStatus: 529, charge: "refunded" });
+  });
+
+  it("stores no status for a failure that had none", () => {
+    expect(failedRunSet({ ok: false, errorClass: "timeout" }, undefined).errorStatus).toBeUndefined();
   });
 });
 
@@ -105,6 +122,9 @@ describe("the stub", () => {
     expect(run("partial")).toEqual(["refused", "ok", "ok", "ok"]);
     expect(run("refused")).toEqual(["refused", "refused", "refused", "refused"]);
     expect(run("busy")).toBe("upstream_busy");
+    expect(run("rejected")).toBe("upstream_rejected");
+    expect(stubReply(facts, "rejected")).toMatchObject({ ok: false, status: 404 });
+    expect(stubMode({ SYNOPSIS_STUB: "rejected" })).toBe("rejected");
     expect(run("timeout")).toBe("timeout");
     expect(run("malformed")).toBe("malformed");
   });

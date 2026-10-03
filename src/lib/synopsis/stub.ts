@@ -19,11 +19,13 @@ import type { SynopsisResponse } from "./response-schema";
 
 export const STUB_MODEL = "stub";
 
-export type StubMode = "survived" | "partial" | "refused" | "malformed" | "busy" | "timeout" | "repairs" | "unrepaired";
+export type StubMode =
+  | "survived" | "partial" | "refused" | "malformed" | "busy" | "rejected" | "timeout" | "repairs" | "unrepaired";
 
 export function stubMode(env: Record<string, string | undefined> = process.env): StubMode {
   const mode = env.SYNOPSIS_STUB;
-  return mode === "partial" || mode === "refused" || mode === "malformed" || mode === "busy" || mode === "timeout"
+  return mode === "partial" || mode === "refused" || mode === "malformed" || mode === "busy" || mode === "rejected"
+    || mode === "timeout"
     || mode === "repairs" || mode === "unrepaired"
     ? mode
     : "survived";
@@ -57,7 +59,9 @@ export function stubReply(facts: SynopsisFacts, mode: StubMode, repair = false):
   if (mode === "repairs") return stubReply(facts, repair ? "survived" : "partial");
   if (mode === "unrepaired") return stubReply(facts, "partial");
   if (mode === "malformed") return { ok: false, errorClass: "malformed" };
-  if (mode === "busy") return { ok: false, errorClass: "upstream_busy" };
+  if (mode === "busy") return { ok: false, errorClass: "upstream_busy", status: 529 };
+  // A request the upstream refused (H33): a retired model id reads as a 404.
+  if (mode === "rejected") return { ok: false, errorClass: "upstream_rejected", status: 404 };
   if (mode === "timeout") return { ok: false, errorClass: "timeout" };
 
   const commander = facts.commanders[0] ?? facts.cards[0].name;

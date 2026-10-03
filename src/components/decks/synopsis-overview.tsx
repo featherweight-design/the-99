@@ -137,6 +137,7 @@ export function SynopsisOverview({
 
   const failedRow = (
     <FailedRow
+      rejected={state.lastRejected}
       note={pressed ? null : canWrite ? note : null}
       disabled={!canWrite || spent}
       busy={busy}
@@ -280,12 +281,15 @@ export function SynopsisOverview({
 /**
  * 1d, the write failed (addendum_overview_loading): the shipped failure line, heard at once, and
  * Try again. No tag and no `--danger`: `not written` is a refusal's, and this is an outage.
+ *
+ * A REJECTED write (the upstream refused the request: a bad key, a retired model id) draws its own
+ * line and no Try again, because a second press would be refused exactly as the first was.
  */
-function FailedRow({ note, disabled, busy, onPress }: { note: string | null; disabled: boolean; busy: boolean; onPress: () => void }) {
+function FailedRow({ rejected, note, disabled, busy, onPress }: { rejected: boolean; note: string | null; disabled: boolean; busy: boolean; onPress: () => void }) {
   return (
     <div className="flex flex-col gap-[7px] md:gap-[8px]">
-      <p role="alert" className="m-0 text-[13px] leading-[1.6] text-[var(--fg-muted)] [text-wrap:pretty] md:text-[13.5px]">{synopsisCopy.failed}</p>
-      <Press label={synopsisCopy.tryAgain} note={note} disabled={disabled} busy={busy} onPress={onPress} />
+      <p role="alert" className="m-0 text-[13px] leading-[1.6] text-[var(--fg-muted)] [text-wrap:pretty] md:text-[13.5px]">{rejected ? synopsisCopy.rejected : synopsisCopy.failed}</p>
+      {rejected ? null : <Press label={synopsisCopy.tryAgain} note={note} disabled={disabled} busy={busy} onPress={onPress} />}
     </div>
   );
 }
