@@ -337,7 +337,7 @@ export function DecklistRow({
     // Outside `run`: the slot and its announcement are ordinary state, which
     // React holds for the length of an async transition. Inside, they would
     // land only once the server answered — after the window they exist for.
-    markSlotSpent(card);
+    const generation = markSlotSpent(card);
     // Dispatched into the deck-wide list as well as this row's own state, or
     // the row vanishes while the header, the tab counts, the role strip and the
     // group heading all keep claiming it for the length of the round-trip.
@@ -349,7 +349,7 @@ export function DecklistRow({
           // Only when this was the last copy, because only then has the
           // prediction unmounted the row and left `run`'s message with nothing
           // to draw on. A decremented stack still has its own line to say it.
-          if (shellReportsFailure) reportRemoveFailure(displayName);
+          if (shellReportsFailure) reportRemoveFailure(card.oracleId, displayName, generation);
           throw cause;
         }
       },
@@ -363,7 +363,11 @@ export function DecklistRow({
   // outlives what it describes — that state never returns to false, so once a
   // card had been removed and put back, React reusing the row under the same
   // key would draw the receipt over a card that is in the deck.
-  if (spent) return <UndoRow deckId={deckId} card={card} />;
+  // `rowShell` carries the same meta-line height this row would have drawn
+  // live (H29: a receipt that is always 44px shrinks the slot of any card
+  // that would have shown a meta line, and several stacked compound the
+  // drift) — the one thing a bare `<UndoRow>` cannot know on its own.
+  if (spent) return <UndoRow deckId={deckId} card={card} rowShell={rowShell} />;
 
   /**
    * The whole row opens the card, not only its name — which is how `/collection`'s rows have
@@ -806,13 +810,31 @@ export function DecklistRow({
  * and this row unmounts under it. A refusal is held by the shell and read back
  * here when the reverted prediction draws the receipt again; see
  * `useSpentSlotUndo`.
+ *
+ * `rowShell` is the caller's own, already-computed shell for the card this
+ * receipt replaces (H29) — a receipt that is always the plain 44px shell
+ * shrinks the slot of any removed card that would have drawn a meta line,
+ * and several stacked receipts compound that into a visible drift.
  */
-function UndoRow({ deckId, card }: { deckId: string; card: DeckDetailCard }) {
+function UndoRow({
+  deckId,
+  card,
+  rowShell,
+}: {
+  deckId: string;
+  card: DeckDetailCard;
+  rowShell: string;
+}) {
   const { isPending, error, undo: handleUndo } = useSpentSlotUndo(deckId, card);
 
   return (
     <div>
-      <div className={`${ROW_SHELL} bg-surface-sunken border border-dashed border-border-strong`}>
+      <div
+        // Same marker a live row carries, for the same reason: a probe can
+        // address a receipt without matching a composed class list (H29).
+        data-decklist-row
+        className={`${rowShell} bg-surface-sunken border border-dashed border-border-strong`}
+      >
         {/* No dot on a spent slot — the spacer keeps the name aligned with the
             live rows above and below it. */}
         <span className="flex-none w-[7px] h-[7px] md:w-[8px] md:h-[8px]" aria-hidden />

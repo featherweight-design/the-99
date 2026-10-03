@@ -8,6 +8,9 @@ import type { DeckView } from "./group-toggle";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { DecklistRow } from "./decklist-row";
 
+/** Module-scoped so an unspecified `spentOracleIds` doesn't allocate a fresh `Set` every render. */
+const EMPTY_SPENT_IDS: ReadonlySet<string> = new Set();
+
 interface DecklistGroupProps {
   deckId: string;
   label: string;
@@ -18,8 +21,8 @@ interface DecklistGroupProps {
    * way of reading the list rather than a second list.
    */
   view?: DeckView;
-  /** The card in this group whose slot is spent, if any (#185). */
-  spentOracleId?: string;
+  /** The cards in this group whose slots are spent (#185; H29 lets several stand at once). */
+  spentOracleIds?: ReadonlySet<string>;
   /** The whole decklist in display order, for the detail modal's Prev/Next. */
   siblings?: string[];
   /** Optional note shown right-aligned on desktop (e.g. "37 recommended"). */
@@ -46,7 +49,7 @@ export function DecklistGroup({
   label,
   cards,
   view = "list",
-  spentOracleId,
+  spentOracleIds = EMPTY_SPENT_IDS,
   siblings,
   note,
   noteColor,
@@ -54,16 +57,16 @@ export function DecklistGroup({
 }: DecklistGroupProps) {
   // The count does not wait for the undo: a spent slot is a receipt, not a
   // pending state, and a group that held its figure would be lying about its
-  // own size.
+  // own size. Every standing receipt in this group is excluded, not just one.
   const count = cards.reduce(
-    (sum, c) => sum + (c.oracleId === spentOracleId ? 0 : c.quantity),
+    (sum, c) => sum + (spentOracleIds.has(c.oracleId) ? 0 : c.quantity),
     0,
   );
   // Auto tally: how many cards in this group still carry the auto flag. Spent
-  // cards are excluded for the same reason as the count — the slot is already
-  // gone from the player's perspective.
+  // cards are excluded for the same reason as the count — each spent slot is
+  // already gone from the player's perspective.
   const autoCount = cards.reduce(
-    (sum, c) => sum + (c.oracleId !== spentOracleId && c.auto ? c.quantity : 0),
+    (sum, c) => sum + (!spentOracleIds.has(c.oracleId) && c.auto ? c.quantity : 0),
     0,
   );
 
@@ -99,7 +102,7 @@ export function DecklistGroup({
               key={card.oracleId}
               deckId={deckId}
               card={card}
-              spent={card.oracleId === spentOracleId}
+              spent={spentOracleIds.has(card.oracleId)}
               siblings={siblings}
             />
           ))}
@@ -117,7 +120,7 @@ export function DecklistGroup({
               key={card.oracleId}
               deckId={deckId}
               card={card}
-              spent={card.oracleId === spentOracleId}
+              spent={spentOracleIds.has(card.oracleId)}
               siblings={siblings}
               newestAsOf={newestAsOf}
             />

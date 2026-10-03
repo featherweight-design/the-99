@@ -117,8 +117,13 @@ type DecklistProps = {
       rather than derived, so this list cannot disagree with the target strip
       above it about how big the deck is. */
   bodySize: number;
-  /** The card whose slot is spent, drawn in place as an undo row (#185). */
-  spentSlot?: DeckDetailCard | null;
+  /**
+   * The cards whose slots are spent, each drawn in place as its own undo row
+   * (#185; H29 lets several stand at once, one receipt per removal). A list
+   * rather than a single card: every removal in a visit leaves its own
+   * receipt, undone independently and in any order.
+   */
+  spentSlots?: DeckDetailCard[];
   /**
    * Whether this deck was ever filled by the auto-fill. Gates the Shopping
    * "Nothing to buy" compliment: a deck that was never filled and simply owns
@@ -270,6 +275,9 @@ export function buildMarkKeyEntries({
 /** Module-scoped, so the default does not hand a fresh map to the provider on
  *  every render and remount the rows under it. */
 const EMPTY_PENDING_CHANGES: ReadonlyMap<string, PendingChangeMove> = new Map();
+/** Module-scoped for the same reason: avoids allocating a fresh `[]` on every
+ *  render when nothing was spent. */
+const EMPTY_SPENT_SLOTS: DeckDetailCard[] = [];
 
 export function Decklist({
   deckId,
@@ -281,7 +289,7 @@ export function Decklist({
   deckOracleIds,
   built,
   bodySize,
-  spentSlot = null,
+  spentSlots = EMPTY_SPENT_SLOTS,
   filled = false,
   filter,
   grouping,
@@ -519,34 +527,33 @@ export function Decklist({
   // something they cannot go and buy.
   const visibleUnresolved = filter === "shopping" ? [] : unresolvedRows;
 
-  // The spent card is out of the deck's counts already, so it is grouped
-  // alongside the live ones only to be marked — which is what puts the undo row
+  // Each spent card is out of the deck's counts already, so it is grouped
+  // alongside the live ones only to be marked — which is what puts its undo row
   // where the card's own row was rather than at the end of the list. Any other
-  // path that puts the card back — quick-add, a suggestion tile — returns it to
-  // `cards` optimistically, and the slot steps aside for the live row.
+  // path that puts a card back — quick-add, a suggestion tile — returns it to
+  // `cards` optimistically, and that one slot steps aside for the live row; the
+  // other receipts standing are untouched.
   //
   // Under Shopping the test is the filter's own predicate rather than
-  // `!spentSlot.owned`: a spoken-for card is owned, so the old test would
-  // unmount its row with no undo receipt — the one case #185 exists to prevent.
-  const spentCard =
-    spentSlot &&
-    !cards.some((c) => c.oracleId === spentSlot.oracleId) &&
-    (filter === "all" || isShoppingCard(spentSlot))
-      ? spentSlot
-      : null;
-  const listedCards = spentCard ? [...visibleCards, spentCard] : visibleCards;
+  // `!card.owned`: a spoken-for card is owned, so the old test would unmount
+  // its row with no undo receipt — the one case #185 exists to prevent.
+  const spentCards = spentSlots.filter(
+    (slot) =>
+      !cards.some((c) => c.oracleId === slot.oracleId) &&
+      (filter === "all" || isShoppingCard(slot)),
+  );
+  const spentOracleIds = new Set(spentCards.map((c) => c.oracleId));
+  const isSpentCard = (c: DeckDetailCard) => spentOracleIds.has(c.oracleId);
+  const listedCards = spentCards.length > 0 ? [...visibleCards, ...spentCards] : visibleCards;
 
   // A spent slot draws the undo receipt and returns before the brass rule
   // (`decklist-row.tsx:282`), so a pending change on that card is a mark the
   // reader cannot see. Every figure that counts marks reads these two rather
   // than `pendingChanges` directly — the caption, the group note and Shopping's
   // own caption all answer "how many marked rows are on this screen".
-  const isMarked = (c: DeckDetailCard) =>
-    pendingChanges.has(c.oracleId) && c.oracleId !== spentCard?.oracleId;
-  const markedPendingCount =
-    spentCard && pendingChanges.has(spentCard.oracleId)
-      ? pendingChanges.size - 1
-      : pendingChanges.size;
+  const isMarked = (c: DeckDetailCard) => pendingChanges.has(c.oracleId) && !isSpentCard(c);
+  const spentMarkedCount = spentCards.filter((c) => pendingChanges.has(c.oracleId)).length;
+  const markedPendingCount = pendingChanges.size - spentMarkedCount;
 
   // Group the visible cards
   const groups =
@@ -558,7 +565,7 @@ export function Decklist({
   // group boundaries rather than restarting inside each one.
   const orderedIds = groups
     .flatMap(([, groupCards]) => groupCards.map((c) => c.oracleId))
-    .filter((id) => id !== spentCard?.oracleId);
+    .filter((id) => !spentOracleIds.has(id));
 
   // Shopping view: role-grouped with gap clauses, intro, and footer.
   if (filter === "shopping") {
@@ -580,7 +587,7 @@ export function Decklist({
     // lets a removed row keep its place in its own group — where the undo receipt
     // has to appear — without the group promising a card that is no longer in the
     // deck. `notSpent` is the one place the difference is spelled.
-    const notSpent = (c: DeckDetailCard) => c.oracleId !== spentCard?.oracleId;
+    const notSpent = (c: DeckDetailCard) => !isSpentCard(c);
     const spokenForCards = listedCards.filter(isSpokenFor);
     const missingCards = listedCards.filter((c) => !c.owned);
 
@@ -640,13 +647,14 @@ export function Decklist({
     const missingN = cardCopies(missingCards.filter(notSpent))
       + cardCopies(commanderShopping) - commanderSpokenForN;
 
-    // The spent slot draws an UNDO RECEIPT rather than a row — `DecklistRow`
-    // returns `UndoRow` before it reaches the buy tag — so it shows no figure at
-    // all while still carrying the card's price. Ranked on that price it would
-    // sit among the priced rows with nothing on it, which is the reading the
-    // rule below exists to prevent. It is ranked as drawn: no figure, so last.
-    const rankAsDrawn = (c: DeckDetailCard) =>
-      c.oracleId === spentCard?.oracleId ? { ...c, price: null } : c;
+    // A spent slot draws an UNDO RECEIPT rather than a row — `DecklistRow`
+    // returns `UndoRow` before it reaches the buy tag — but H29's "no row
+    // shifts" asks for its receipt to sit where the card's own row sat, which
+    // under price order means ranked at the card's OWN price. This reverses
+    // the earlier rule (ranked as drawn, with no figure, so last): that rule
+    // moved every row below a removed dear card the moment it was cut, which
+    // is exactly the shift H29 exists to stop. So the comparator sees each
+    // card's real price, spent or not, and `rankAsDrawn` is gone.
 
     // The sections this list draws, in the order it draws them — and the one
     // place the grouping toggle reaches Shopping. `By role` is the list the
@@ -701,8 +709,7 @@ export function Decklist({
     // computed already and reads the same rows in any order.
     ].map((section) => ({
       ...section,
-      cards: section.cards.slice().sort((a, b) =>
-        compareCards(rankAsDrawn(a), rankAsDrawn(b))),
+      cards: section.cards.slice().sort(compareCards),
     }));
 
     // The open slots the player kept for themselves (not filled by auto).
@@ -734,12 +741,13 @@ export function Decklist({
     // a deck the fill actually ran on. A deck the player built by hand that
     // happens to own everything it lists must not be congratulated on a fill
     // that never ran.
-    // `!spentCard` for the same reason `builder-shell.tsx` guards its own empty
-    // state on it: swapping the list for an empty state would take the undo row
-    // with it, and the player has nowhere else to undo from. A swap's open sheet and its receipts
-    // hold the empty state off for the same reason: a take can empty the list, and Undo swap lives
-    // in the receipt.
-    if (n === 0 && !spentCard && !swapTools?.standIns && !swapTools?.receipts.length) {
+    // `spentCards.length === 0` for the same reason `builder-shell.tsx` guards
+    // its own empty state on it: swapping the list for an empty state would
+    // take every standing undo row with it, and the player has nowhere else to
+    // undo from. A swap's open sheet and its receipts hold the empty state off
+    // for the same reason: a take can empty the list, and Undo swap lives in
+    // the receipt.
+    if (n === 0 && spentCards.length === 0 && !swapTools?.standIns && !swapTools?.receipts.length) {
       return (
         <div className="flex flex-col">
           <GroupToggle
@@ -823,7 +831,7 @@ export function Decklist({
     ].map(([key, label]) => ({ key, label, cards: [] as DeckDetailCard[], gapClause: undefined }));
     const shoppingOrderedIds = shoppingSections
       .flatMap((section) => section.cards.map((c) => c.oracleId))
-      .filter((id) => id !== spentCard?.oracleId);
+      .filter((id) => !spentOracleIds.has(id));
 
     return (
       <div className="flex flex-col">
@@ -919,7 +927,7 @@ export function Decklist({
                       deckId={deckId}
                       card={card}
                       siblings={shoppingOrderedIds}
-                      spent={card.oracleId === spentCard?.oracleId}
+                      spent={isSpentCard(card)}
                       shoppingFigure={figureFor(card.oracleId)}
                       inShopping
                       newestAsOf={newestAsOf}
@@ -1052,7 +1060,7 @@ export function Decklist({
               label={label}
               cards={groupCards}
               view={view}
-              spentOracleId={spentCard?.oracleId}
+              spentOracleIds={spentOracleIds}
               siblings={orderedIds}
               newestAsOf={newestAsOf}
               note={

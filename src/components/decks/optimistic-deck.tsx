@@ -32,28 +32,37 @@ type RemoveOptimisticCard = (card: DeckDetailCard) => void;
  * `markSpent` is ordinary state, which React would hold for the length of that
  * async transition, so the row calls it straight from the click instead.
  */
-type MarkSlotSpent = (card: DeckDetailCard) => void;
+/** Returns the generation stamped on this removal, for a caller that needs to
+ *  pass it back on a later failure — see `ReportRemoveFailure`. */
+type MarkSlotSpent = (card: DeckDetailCard) => number;
 /** Undo's announcement, made from the click rather than inside the transition. */
 type AnnounceUndo = (card: DeckDetailCard) => void;
 
 /**
- * The spent slot's Undo, which is optimistic (Hugh, 2026-09-28). The re-add puts the card straight
- * back in the list, which is the decklist's cue to stop drawing the slot, so the receipt unmounts
- * before the server answers. A refusal therefore needs an owner that outlives it, exactly as a
- * failed removal does: the shell holds it, keyed on the card, and the receipt the reverted
- * prediction draws again reads it back.
+ * Every spent slot's Undo, which is optimistic (Hugh, 2026-09-28). The re-add puts the card
+ * straight back in the list, which is the decklist's cue to stop drawing that one slot, so the
+ * receipt unmounts before the server answers. A refusal therefore needs an owner that outlives
+ * it, exactly as a failed removal does: the shell holds it, keyed on the card's oracle id, and
+ * the receipt the reverted prediction draws again reads it back.
+ *
+ * H29: several receipts stand at once, independent of one another, so both maps below are keyed
+ * per card rather than holding one global value — removing card B must not touch card A's own
+ * refusal or generation.
  *
  * `restore` is the bare re-add, not the shell's `add`: that one also announces an add, and it would
  * land when the transition settles, over the undo's own announcement.
  */
 type UndoSpentSlot = {
   restore: AddOptimisticCard;
-  /** `removal` is the generation the undo was pressed under: a report from an undo that a newer
-   *  removal has since overtaken is dropped, or it would land on that removal's receipt. */
+  /** `removal` is the generation the undo was pressed under, for THIS card: a report from an
+   *  undo that a newer removal of the same card has since overtaken is dropped, or it would
+   *  land on that removal's receipt. */
   reportFailure: (oracleId: string, message: string, removal: number) => void;
-  failure: { oracleId: string; message: string } | null;
-  /** Bumped by every removal that leaves a receipt. */
-  removal: number;
+  /** Keyed on oracle id. A card with no entry has no standing refusal. */
+  failure: Record<string, string>;
+  /** Keyed on oracle id: each card's own generation, bumped by every removal of that card that
+   *  leaves a receipt. */
+  removal: Record<string, number>;
 };
 
 /**
@@ -90,9 +99,15 @@ type DeckEdit =
  * A failed removal has nowhere to draw itself: the prediction has already taken
  * the row out of the deck-wide list, so the row is unmounted by the time its own
  * `useDeckMutation` has a message, and it remounts clean when the transition
- * reverts. The reason has to be handed to something that outlives the row.
+ * reverts. The reason has to be handed to something that outlives the row — keyed
+ * on the oracle id (H29), so a refusal for one card never touches another's.
+ *
+ * `from` is the generation `markSpent` stamped at the moment of THIS removal
+ * attempt, same rule as the shell's `reportUndoFailure`: a card removed again
+ * before this one's rejection arrives has moved past this generation, and the
+ * stale failure must not erase the newer attempt's receipt.
  */
-type ReportRemoveFailure = (cardName: string) => void;
+type ReportRemoveFailure = (oracleId: string, cardName: string, from: number) => void;
 
 /** Putting a card to an unresolved line: the line goes, the card joins the 99. */
 type ResolveOptimisticRow = (rowId: string, card: DeckDetailCard) => void;
@@ -220,7 +235,7 @@ export function useRemoveOptimisticCard(): RemoveOptimisticCard {
 }
 
 export function useMarkSlotSpent(): MarkSlotSpent {
-  return useContext(DeckEditContext)?.markSpent ?? noop;
+  return useContext(DeckEditContext)?.markSpent ?? (() => 0);
 }
 
 export function useAnnounceUndo(): AnnounceUndo {

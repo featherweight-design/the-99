@@ -466,7 +466,7 @@ describe("SweepReceipt", () => {
 });
 
 // ── Integration: sweep + undo lifecycle ───────────────────────────────────────
-// Exercised through BuilderShell because swept state lives there beside spentSlot.
+// Exercised through BuilderShell because swept state lives there beside spentSlots.
 
 const { BuilderShell } = await import("./builder-shell");
 import type { DeckDetail } from "../../lib/decks/read";

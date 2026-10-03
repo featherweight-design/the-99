@@ -166,13 +166,13 @@ export function DeckCardTile({
   const cost = hasFrontFaceCost(card.manaCost) ? card.manaCost : null;
 
   function handleRemove() {
-    markSlotSpent(card);
+    const generation = markSlotSpent(card);
     run(
       async () => {
         try {
           await removeCardFromDeck(deckId, card.oracleId);
         } catch (cause) {
-          if (shellReportsFailure) reportRemoveFailure(card.name);
+          if (shellReportsFailure) reportRemoveFailure(card.oracleId, card.name, generation);
           throw cause;
         }
       },

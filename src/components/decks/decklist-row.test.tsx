@@ -6,6 +6,8 @@ import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import type { DeckDetail } from "../../lib/decks/read";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
+import type { DraftState } from "../../lib/decks/draft-shape";
+import { COMMITTED } from "./__fixtures__/draft-state";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
 import { spokenManaCost } from "../../lib/copy/card-surfaces";
 import { deckImportCopy } from "../../lib/copy/deck-import";
@@ -23,10 +25,11 @@ import { OVER_LIMIT_RING } from "./buy-tag";
  *  literal drifts from the type the moment a field is added, which is how 120 of these broke. */
 const TEST_MIX = recommendedMix(null, false);
 
-const { addCardToDeck, removeCardFromDeck, keepAutoCard } = vi.hoisted(() => ({
+const { addCardToDeck, removeCardFromDeck, keepAutoCard, discardDeckDraft } = vi.hoisted(() => ({
   addCardToDeck: vi.fn(),
   removeCardFromDeck: vi.fn(),
   keepAutoCard: vi.fn(),
+  discardDeckDraft: vi.fn(),
 }));
 vi.mock("../../app/decks/actions", () => ({
   createDeck: vi.fn(),
@@ -34,6 +37,7 @@ vi.mock("../../app/decks/actions", () => ({
   addCardToDeck,
   removeCardFromDeck,
   keepAutoCard,
+  discardDeckDraft,
   deleteDeck: vi.fn(),
   renameDeck: vi.fn(),
 }));
@@ -88,6 +92,7 @@ beforeEach(() => {
   removeCardFromDeck.mockReset();
   addCardToDeck.mockReset();
   keepAutoCard.mockReset();
+  discardDeckDraft.mockReset();
   localStorage.clear();
 });
 
@@ -377,7 +382,7 @@ function makeDeck(cards: DeckDetailCard[] = [solRing, arcaneSignet]): DeckDetail
   } as DeckDetail;
 }
 
-function shell(cards?: DeckDetailCard[]) {
+function shell(cards?: DeckDetailCard[], draft?: DraftState | null, versionCards?: number) {
   return (
     <BuilderShell mix={TEST_MIX}
       deck={makeDeck(cards)}
@@ -386,12 +391,14 @@ function shell(cards?: DeckDetailCard[]) {
       firstRun={false}
       commanderIdentity={["B", "R", "G"]}
       arrivedFromImport={false}
+      draft={draft ?? null}
+      versionCards={versionCards}
      newestAsOf={null}/>
   );
 }
 
-function renderBuilder() {
-  const view = render(shell());
+function renderBuilder(draft?: DraftState | null, versionCards?: number) {
+  const view = render(shell(undefined, draft, versionCards));
   return {
     ...view,
     /**
@@ -400,9 +407,9 @@ function renderBuilder() {
      * ever see a mutation mid-flight — and the states this file is about are
      * the ones on the far side of that.
      */
-    revalidate: (cards: DeckDetailCard[]) =>
+    revalidate: (cards: DeckDetailCard[], nextDraft?: DraftState | null) =>
       act(async () => {
-        view.rerender(shell(cards));
+        view.rerender(shell(cards, nextDraft ?? draft, versionCards));
       }),
   };
 }
@@ -474,7 +481,9 @@ describe("undo row lifetime (#185)", () => {
     expect(screen.getByText(addPanelCopy.undo.removed("Sol Ring"))).toBeInTheDocument();
   });
 
-  it("settles the first undo row when a second card is removed", async () => {
+  // H29: several receipts stand at once, independent of one another, rather
+  // than the next removal settling the last one.
+  it("leaves both receipts standing when a second card is removed", async () => {
     removeCardFromDeck.mockReturnValue(deferred<void>().promise);
 
     renderBuilder();
@@ -482,12 +491,38 @@ describe("undo row lifetime (#185)", () => {
     await removeFromBuilder("Arcane Signet");
 
     expect(screen.getByText(addPanelCopy.undo.removed("Arcane Signet"))).toBeInTheDocument();
+    expect(screen.getByText(addPanelCopy.undo.removed("Sol Ring"))).toBeInTheDocument();
+  });
+
+  // Undoing one receipt is independent of the other — H29 ruling 1, any order.
+  it("undoing the first keeps the second standing", async () => {
+    removeCardFromDeck.mockResolvedValue(undefined);
+    addCardToDeck.mockResolvedValue({ ok: true } as DeckMutationResult);
+
+    const { revalidate } = renderBuilder();
+    await removeFromBuilder("Sol Ring");
+    await revalidate([arcaneSignet]);
+    await removeFromBuilder("Arcane Signet");
+    await revalidate([]);
+
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }),
+      );
+    });
+    // The undo's own payload: Sol Ring is back. Without this the settled
+    // transition would discard the optimistic add and show the receipt again.
+    await revalidate([solRing]);
+
+    // Sol Ring's receipt has landed back as a live row, and Arcane Signet's
+    // receipt is untouched by it.
     expect(screen.queryByText(addPanelCopy.undo.removed("Sol Ring"))).not.toBeInTheDocument();
+    expect(screen.getByText(addPanelCopy.undo.removed("Arcane Signet"))).toBeInTheDocument();
   });
 
   // Emptying the deck would otherwise swap the whole decklist for the empty
-  // state, taking the undo row with it — the one removal hardest to recover from.
-  it("keeps the undo row when the last card leaves the deck", async () => {
+  // state, taking every undo row with it — the removal hardest to recover from.
+  it("keeps every undo row when the last cards leave the deck", async () => {
     removeCardFromDeck.mockReturnValue(deferred<void>().promise);
 
     renderBuilder();
@@ -495,7 +530,147 @@ describe("undo row lifetime (#185)", () => {
     await removeFromBuilder("Arcane Signet");
 
     expect(screen.getByText(addPanelCopy.undo.removed("Arcane Signet"))).toBeInTheDocument();
+    expect(screen.getByText(addPanelCopy.undo.removed("Sol Ring"))).toBeInTheDocument();
     expect(screen.queryByText(/king with no army/i)).not.toBeInTheDocument();
+  });
+
+  // A refusal on one card's receipt must not spill onto another's — neither
+  // the error message nor the withdrawn Undo control.
+  it("keeps a refusal on one receipt from marking the other", async () => {
+    removeCardFromDeck.mockResolvedValue(undefined);
+    const reason = "That card is locked in another deck.";
+    addCardToDeck.mockResolvedValue({ ok: false, message: reason });
+
+    const { revalidate } = renderBuilder();
+    await removeFromBuilder("Sol Ring");
+    await revalidate([arcaneSignet]);
+    await removeFromBuilder("Arcane Signet");
+    await revalidate([]);
+
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }),
+      );
+    });
+
+    // Sol Ring's receipt carries the refusal and has lost its Undo control.
+    expect(screen.getByRole("alert")).toHaveTextContent(reason);
+    expect(
+      screen.queryByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }),
+    ).not.toBeInTheDocument();
+    // Arcane Signet's receipt is untouched: no error, Undo still offered.
+    expect(screen.getByText(addPanelCopy.undo.removed("Arcane Signet"))).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Arcane Signet") }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+  });
+
+  // A refusal for card A must survive an unrelated card B being removed and
+  // that removal landing — the two counters that drop a stale refusal are per
+  // card, so B's own generation moving must never answer for A's.
+  it("keeps card A's refusal standing through card B's removal and landing", async () => {
+    removeCardFromDeck.mockResolvedValue(undefined);
+    const reason = "That card is locked in another deck.";
+    addCardToDeck.mockResolvedValue({ ok: false, message: reason });
+
+    const { revalidate } = renderBuilder();
+    await removeFromBuilder("Sol Ring");
+    await revalidate([arcaneSignet]);
+
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }),
+      );
+    });
+    expect(screen.getByRole("alert")).toHaveTextContent(reason);
+
+    // Card B removed, and its removal lands (a fresh server list arrives).
+    await removeFromBuilder("Arcane Signet");
+    await revalidate([]);
+
+    // Card A's refusal is exactly as it was.
+    expect(screen.getByRole("alert")).toHaveTextContent(reason);
+    expect(screen.getByText(addPanelCopy.undo.removed("Sol Ring"))).toBeInTheDocument();
+    expect(screen.getByText(addPanelCopy.undo.removed("Arcane Signet"))).toBeInTheDocument();
+  });
+
+  // A refused removal drops only its own receipt; the others stand exactly as
+  // they were, and the message is cleared only by a fresh removal of the same
+  // card — never by another card's successful write.
+  it("drops only its own receipt on a refused removal, and leaves others' messages alone", async () => {
+    removeCardFromDeck.mockRejectedValueOnce(new Error("boom"));
+    removeCardFromDeck.mockResolvedValue(undefined);
+
+    const { revalidate } = renderBuilder();
+    await removeFromBuilder("Sol Ring");
+
+    // The optimistic removal reverted: Sol Ring's row is back, with the
+    // banner naming it, and no receipt was left behind for it.
+    expect(
+      screen.getByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(addPanelCopy.undo.removed("Sol Ring"))).not.toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(DECK_REMOVE_FALLBACK_MESSAGE);
+
+    // A different card removed successfully leaves its own clean receipt and
+    // does not touch Sol Ring's standing refusal banner. Revalidated to its own
+    // landing: Sol Ring's removal was refused, so it stands; Arcane Signet's
+    // succeeded, so it is gone.
+    await removeFromBuilder("Arcane Signet");
+    await revalidate([solRing]);
+
+    expect(screen.getByText(addPanelCopy.undo.removed("Arcane Signet"))).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(DECK_REMOVE_FALLBACK_MESSAGE);
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+  });
+
+  // Leaving the builder route clears every standing receipt (the same rule
+  // that governs a discard, below) — nothing a fresh mount should inherit.
+  it("clears every receipt when the builder route unmounts", async () => {
+    removeCardFromDeck.mockReturnValue(deferred<void>().promise);
+
+    const view = render(shell());
+    await removeFromBuilder("Sol Ring");
+    expect(screen.getByText(addPanelCopy.undo.removed("Sol Ring"))).toBeInTheDocument();
+
+    view.unmount();
+    render(shell());
+
+    expect(screen.queryByText(addPanelCopy.undo.removed("Sol Ring"))).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") }),
+    ).toBeInTheDocument();
+  });
+
+  // A discard throws the whole draft away, so every receipt describing a
+  // removal from it must go too — the same rule as unmounting, without the
+  // unmount (§3 of the plan: a discard refreshes the banner in place).
+  it("clears every receipt when the draft is discarded", async () => {
+    removeCardFromDeck.mockReturnValue(deferred<void>().promise);
+    discardDeckDraft.mockResolvedValue({ ok: true });
+
+    const draftWithChanges: DraftState = {
+      ...COMMITTED,
+      removes: [{ oracleId: "placeholder", from: 1, to: 0 }],
+    };
+    const { revalidate } = renderBuilder(draftWithChanges, 99);
+    await removeFromBuilder("Sol Ring");
+    expect(screen.getByText(addPanelCopy.undo.removed("Sol Ring"))).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: deckVersioningCopy.pending.discardCta }));
+    });
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: deckVersioningCopy.discard.confirm(1) }),
+      );
+    });
+    // The revalidation a successful discard brings: the draft has no more
+    // changes, and the server's cards are back to the version's.
+    await revalidate([arcaneSignet], COMMITTED);
+
+    expect(screen.queryByText(addPanelCopy.undo.removed("Sol Ring"))).not.toBeInTheDocument();
   });
 
   // Gate 5's repeat pass. The bug class it exists for is a receipt keyed to
