@@ -1,8 +1,8 @@
 // Labels every Commander-legal card's jobs and their LIMITS, once, with a model.
 //
 // The one-time backfill is ~32,000 cards; afterwards the weekly refresh labels only what the
-// input hash says has moved, which is a new set and nothing else. Hugh approved this run at
-// about $41 on Sonnet 4.5 with a HARD STOP at $55.
+// input hash says has moved, which is a new set and nothing else. Hugh approved it on Sonnet 4.5
+// at about $61.1 (the v7 prompt's measured rate), with a HARD STOP raised to $65 (2026-10-03).
 //
 // Three properties carry the money, and each one exists because something already went wrong:
 //
