@@ -57,20 +57,32 @@ let scrollYBeforeLock = 0;
  * still have to hold the page — an `aria-modal` sheet over a page that scrolls
  * behind it reads as broken — so the lock is the part they share.
  *
- * `overflow: hidden` ALONE does not hold the page on iOS Safari: that engine
- * keeps honouring touch-driven rubber-band scroll on the body regardless, so a
- * sheet opened partway down the page reads as the page snapping to the top
- * while the sheet is up, and snapping again on close — reported on `/collection`,
- * and reachable on `/commanders` and `/discover` too, since all three route
- * through this one lock. The fix pins the body at its current scroll offset
- * instead of trusting overflow to hold it: `position: fixed` with `top` set to
- * the negative of the saved `scrollY`, which keeps the page visually still
- * because that offset is now the ONLY thing positioning its content, with
- * `width: 100%` alongside it since a fixed body loses the width it had from
- * flowing edge to edge and would otherwise narrow to its content. The restore
- * reverses all four properties and then `scrollTo`s back explicitly, rather
- * than counting on the browser to remember a position that `position: fixed`
- * already walked away from.
+ * `overflow: hidden` ALONE does not hold the page. Reported on `/collection`
+ * (Hugh, desktop Firefox, a narrow window): scroll down, open a filter sheet,
+ * and the page behind snaps to a different position while the sheet is up —
+ * confirmed with Playwright-firefox at 390 and 700px, real clicks, no sheet
+ * reachable without scrolling first: `overflow: hidden` on `body` does NOT
+ * stop a wheel/trackpad gesture over the sheet's own scrim from scrolling the
+ * page behind it (Firefox chains the wheel event past a fixed, non-scrollable
+ * overlay to the page's real scroll; `document.body.style.overflow` reads
+ * `hidden` throughout and makes no difference). The reader never sees the
+ * scroll happen — the sheet covers it — only that the page is somewhere else
+ * once it closes. The SAME failure, by a different mechanism, is iOS Safari's
+ * long-documented refusal to honour `overflow: hidden` for touch-driven
+ * rubber-band scroll. Reachable through any dialog on `/commanders` and
+ * `/discover` too, since all three route through this one lock.
+ *
+ * The fix pins the body at its current scroll offset instead of trusting
+ * overflow to hold it: `position: fixed` with `top` set to the negative of
+ * the saved `scrollY`, which keeps the page visually still because that
+ * offset is now the ONLY thing positioning its content, with `width: 100%`
+ * alongside it since a fixed body loses the width it had from flowing edge to
+ * edge and would otherwise narrow to its content. A fixed, out-of-flow body
+ * gives a wheel event nothing to scroll — confirmed in Firefox: the same
+ * gesture over the scrim moves nothing while locked — and gives iOS Safari's
+ * touch scroll nothing either. The restore reverses all four properties and
+ * then `scrollTo`s back explicitly, rather than counting on the browser to
+ * remember a position that `position: fixed` already walked away from.
  */
 export function useScrollLock(locked: boolean) {
   useEffect(() => {
@@ -94,7 +106,11 @@ export function useScrollLock(locked: boolean) {
         document.body.style.position = positionBeforeLock;
         document.body.style.top = topBeforeLock;
         document.body.style.width = widthBeforeLock;
-        window.scrollTo(0, scrollYBeforeLock);
+        // "instant", not the browser default: a page with `scroll-behavior: smooth` set
+        // anywhere (globally, or on an ancestor this restore happens to inherit from) would
+        // otherwise animate the jump back into place, which is itself a visible snap of
+        // exactly the kind this fix exists to remove.
+        window.scrollTo({ top: scrollYBeforeLock, left: 0, behavior: "instant" });
       }
     };
   }, [locked]);

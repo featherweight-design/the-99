@@ -13,6 +13,7 @@ afterEach(() => {
   document.body.style.top = "";
   document.body.style.width = "";
   window.scrollY = 0;
+  vi.restoreAllMocks();
   while (appended.length) appended.pop()?.remove();
 });
 
@@ -160,7 +161,7 @@ describe("useDialogA11y scroll lock", () => {
     expect(document.body.style.position).toBe("relative");
     expect(document.body.style.top).toBe("3px");
     expect(document.body.style.width).toBe("90%");
-    expect(scrollTo).toHaveBeenCalledWith(0, 712);
+    expect(scrollTo).toHaveBeenCalledWith({ top: 712, left: 0, behavior: "instant" });
   });
 
   // Counted exactly as `overflow` is: the offset is captured once, by the first
@@ -178,7 +179,31 @@ describe("useDialogA11y scroll lock", () => {
     expect(document.body.style.position).toBe("fixed"); // still held by the second
 
     second.unmount();
-    expect(scrollTo).toHaveBeenLastCalledWith(0, 900);
+    expect(scrollTo).toHaveBeenLastCalledWith({ top: 900, left: 0, behavior: "instant" });
+  });
+
+  // The realistic nested case, the-99-36's concern #3: a card modal opened FROM an open
+  // sheet closes first — a reader can dismiss the modal without touching the sheet
+  // behind it — and must restore nothing, since the sheet is still holding the page.
+  // The sheet closing LAST then restores once, to the offset it captured when it opened,
+  // never to wherever the window happened to sit when the modal (opened after it) let go.
+  it("restores once, to the outer dialog's own offset, when the inner one closes first", () => {
+    window.scrollY = 1500;
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+    const sheet = renderDialog({ lockScroll: true }); // opens first
+    expect(document.body.style.top).toBe("-1500px");
+
+    const modal = renderDialog({ lockScroll: true }); // opens from inside the sheet
+    window.scrollY = 0; // nothing the reader did — just not a signal to restore to
+
+    modal.unmount(); // the modal closes; the sheet is still up
+    expect(scrollTo).not.toHaveBeenCalled();
+    expect(document.body.style.position).toBe("fixed");
+    expect(document.body.style.top).toBe("-1500px");
+
+    sheet.unmount(); // the sheet closes last
+    expect(scrollTo).toHaveBeenCalledTimes(1);
+    expect(scrollTo).toHaveBeenCalledWith({ top: 1500, left: 0, behavior: "instant" });
   });
 });
 
