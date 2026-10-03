@@ -218,22 +218,25 @@ jobs:
           #
           # Measured over recent sets on the real catalog: a single set brings 65-616
           # Commander-legal cards (median 193), and a release WEEK can bring several — 2026-06-26
-          # brought 897 across two, which is 75 requests and a worst case of $5.85. $9 covers that
-          # with room and still refuses anything resembling a backfill, which would be $208.
+          # brought 897 across two, which is 75 requests and a worst case of $6.07. $9 covers that
+          # and still refuses anything resembling a backfill, which would be $217.
           #
-          # WHAT THIS ACTUALLY DOES, measured rather than asserted — an earlier version of this
-          # comment claimed 1,200 cards would "refuse and report", and that is false:
+          # WHAT THIS ACTUALLY DOES, computed from the build's own `REQUEST_WORST_USD` ($0.0809 a
+          # request at the 5,000-token ceiling) and `MEASURED_PER_CARD` ($0.001902), against the
+          # weekly $9 cap and $5 pause — an earlier version of this comment claimed 1,200 cards
+          # would "refuse and report", and that is false:
           #
-          #    897 cards  ( 75 req)  worst $5.85   submits in full   projection $1.16
-          #  1,200 cards  (100 req)  worst $7.80   submits in full   projection $1.55
-          #  1,368 cards  (114 req)  worst $8.89   submits in full   projection $1.77
-          #  2,000 cards  (167 req)  worst $13.02  wave TRUNCATES to 115 requests
-          #  3,900 cards  (325 req)  worst $25.34  PAUSES on the projection
+          #    897 cards  ( 75 req)  worst $6.07   submits in full   projection $1.71
+          #  1,200 cards  (100 req)  worst $8.09   submits in full   projection $2.28
+          #  1,332 cards  (111 req)  worst $8.98   submits in full   projection $2.53
+          #  2,000 cards  (167 req)  worst $13.52  wave TRUNCATES to 111 requests
+          #  2,700 cards  (225 req)  worst $18.21  PAUSES on the projection ($5.14)
           #
-          # So the cap truncates above ~1,368 cards and the projection is what refuses, at
-          # ~3,900. That is the right shape for a weekly job: a heavy release week goes through,
+          # So the cap truncates above ~1,332 cards and the projection is what refuses, from
+          # ~2,630. That is the right shape for a weekly job: a heavy release week goes through,
           # a backfill-sized surprise stops and reports. It is NOT a hard refusal at 1,200, and
-          # saying so would have left somebody trusting a bound that does not exist.
+          # saying so would have left somebody trusting a bound that does not exist. A truncated
+          # wave is not lost: it published what it collected, and the next run asks for the rest.
           # THE LITERALS MOVED to the `Resolve the spend bounds` step above, which validates a
           # dispatch's overrides and echoes what it settled on. They are read from that step's
           # OUTPUTS rather than from `$GITHUB_ENV`, because a step-level `env:` block WINS over

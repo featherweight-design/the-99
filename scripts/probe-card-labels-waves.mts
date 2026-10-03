@@ -19,6 +19,9 @@
 //   (e) A TERMINAL FAILURE IS RETRIED ONCE AND COUNTED ONCE. An expired batch reserves its worst
 //       case; the retry takes attempt 2, errors outright (unbilled), and attempt 3 succeeds. The
 //       family's spend is checked to equal each of those exactly once.
+//   (f) AN OLDER PROMPT'S ANSWER IS NEVER PUBLISHED AS CURRENT. A run's own open intent asked under
+//       an older prompt is left uncollected and its cards are asked again; a row an older build
+//       staged under the same run id is overwritten by the new answer, not published in its place.
 //
 // NO API CALL IS MADE AND NOTHING IS SPENT: the build's client is a parameter, and this passes a
 // fake that answers from the ledger's own `asked` lists. It runs the REAL `runLabelBuild`, with a
@@ -51,6 +54,7 @@ const {
 } = await import("./lib/card-labels-build");
 type BatchClient = import("./lib/card-labels-build").BatchClient;
 const { validateJob } = await import("../src/lib/labels/schema");
+const { LABEL_PROMPT_VERSION } = await import("../src/lib/labels/prompt");
 
 let failures = 0;
 const report = (what: string, ok: boolean, detail = "") => {
@@ -71,7 +75,7 @@ const PER_REQUEST_USD = (OUT_TOKENS * RATES.out) / 1e6;
 
 const RUN = {
   a: "backfill-2099-01-01", b: "backfill-2099-01-02", c: "backfill-2099-01-03", d: "backfill-2099-01-04",
-  legacy: "backfill-2099-12-31",
+  e: "backfill-2099-01-05", legacy: "backfill-2099-12-31",
 };
 const probeRuns = Object.values(RUN);
 
@@ -129,10 +133,12 @@ const fake = {
 // ---- helpers ------------------------------------------------------------------------------------
 
 let scope: { oracleId: string; name: string }[] = [];
+/** Twelve more unlabelled cards, outside `scope`, for (f). */
+let extra: { oracleId: string; name: string }[] = [];
 
-const run = (runId: string, capUsd: number) => runLabelBuild({
+const run = (runId: string, capUsd: number, cards = scope) => runLabelBuild({
   client: fake, runId, capUsd, reportAtUsd: 100, floor: 0.95, dispatchCeilingUsd: 50, dryRun: false, scope: "all",
-  onlyOracleIds: scope.map((c) => c.oracleId),
+  onlyOracleIds: cards.map((c) => c.oracleId),
   hooks: {
     beforeCommit: (batchId) => {
       if (batchId === crashBatch) { crashBatch = null; throw new Error("probe: crash inside the collect transaction"); }
@@ -150,8 +156,8 @@ async function cleanup(): Promise<void> {
   const steps: [string, () => Promise<unknown>][] = [
     ["ledger", () => db.delete(cardLabelBatches).where(inArray(cardLabelBatches.runId, probeRuns))],
     ["staging", () => db.delete(cardLabelsStaging).where(inArray(cardLabelsStaging.runId, probeRuns))],
-    ["labels", () => scope.length === 0 ? Promise.resolve()
-      : db.delete(cardLabels).where(inArray(cardLabels.oracleId, scope.map((c) => c.oracleId)))],
+    ["labels", () => scope.length + extra.length === 0 ? Promise.resolve()
+      : db.delete(cardLabels).where(inArray(cardLabels.oracleId, [...scope, ...extra].map((c) => c.oracleId)))],
   ];
   for (const [what, step] of steps) {
     try { await step(); } catch (err) { failures++; console.error(`FAIL cleanup: ${what}`, err); }
@@ -179,9 +185,10 @@ async function main(): Promise<void> {
      where c.commander_legal = true
        and not exists (select 1 from card_labels l where l.oracle_id = c.oracle_id)
        and (select count(*) from cards c2 where c2.name = c.name) = 1
-     order by c.oracle_id limit 72`);
-  scope = picked.rows;
-  if (scope.length < 72) throw new Error(`need 72 unlabelled cards, found ${scope.length}`);
+     order by c.oracle_id limit 84`);
+  if (picked.rows.length < 84) throw new Error(`need 84 unlabelled cards, found ${picked.rows.length}`);
+  scope = picked.rows.slice(0, 72);
+  extra = picked.rows.slice(72);
   const chunkNames = (i: number) => scope.slice(i * 12, (i + 1) * 12).map((c) => c.name);
   console.log(`one request's worst case r = $${r.toFixed(4)}; each fake request reports $${PER_REQUEST_USD.toFixed(4)}`);
 
@@ -276,6 +283,35 @@ async function main(): Promise<void> {
   const wrong = scope.filter((c) => (times.get(c.name) ?? 0) !== (retried.has(c.name) ? 3 : 1));
   report("each card was asked once, and the failed chunk's three times (expired, errored, ok)", wrong.length === 0,
     wrong.slice(0, 3).map((c) => `${c.name} ×${times.get(c.name) ?? 0}`).join(", "));
+
+  console.log("\n(f) an older prompt's answer is never published as current");
+  const oldBatch = `msgbatch_probe_oldprompt_${randomUUID().replace(/-/g, "")}`;
+  const oldCustom = `probe-oldprompt-${randomUUID()}`;
+  // Answerable: the fake would hand back a full reply if anything asked it to.
+  sent.set(oldBatch, { customIds: [oldCustom], outcome: "ok" });
+  await db.insert(cardLabelBatches).values({
+    intentKey: `${RUN.e}:old-prompt`, runId: RUN.e, model: MODEL, customId: oldCustom,
+    asked: extra.map((c) => c.name), batchId: oldBatch, status: "submitted", promptVersion: "0",
+  });
+  // What the run-at-a-time build left in staging: an answer under an older prompt, never published.
+  await db.insert(cardLabelsStaging).values({
+    runId: RUN.e, oracleId: extra[0].oracleId, labels: [], model: MODEL, promptVersion: "0", inputHash: "probe-stale",
+  });
+  const createsBeforeE = creates;
+  report("E1 asks the cards again rather than waiting on the old prompt's intent",
+    (await run(RUN.e, 10 * r, extra)) === EXIT_MORE_WORK && creates === createsBeforeE + 1,
+    `${creates - createsBeforeE} create(s)`);
+  report("E2 collects the new batch and finishes", (await run(RUN.e, 10 * r, extra)) === EXIT_DONE);
+  const old = (await intentsOf(RUN.e)).find((i) => i.customId === oldCustom);
+  report("the old prompt's intent was never collected", old?.status === "submitted", String(old?.status));
+  const published = await db.select().from(cardLabels).where(inArray(cardLabels.oracleId, extra.map((c) => c.oracleId)));
+  report("all twelve are published under the current prompt",
+    published.length === 12 && published.every((l) => l.promptVersion === LABEL_PROMPT_VERSION),
+    `${published.length} published, versions ${[...new Set(published.map((l) => l.promptVersion))].join(",")}`);
+  const first = published.find((l) => l.oracleId === extra[0].oracleId);
+  report("the card an older build staged carries the new answer, not the stale one",
+    first !== undefined && first.inputHash !== "probe-stale" && first.labels.length > 0,
+    `hash ${first?.inputHash.slice(0, 12)}, ${first?.labels.length} job(s)`);
 }
 
 try {

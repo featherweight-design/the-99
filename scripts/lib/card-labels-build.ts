@@ -46,7 +46,7 @@ import {
 // row types drift, and the day one gains a field the other lacks the shared helper silently stops
 // satisfying this script.
 import type { CardRow } from "../../src/lib/labels/publish";
-import { publishRun, publishWave, readCardsByName, stampWave } from "../../src/lib/labels/publish";
+import { publishWave, readCardsByName, stampWave } from "../../src/lib/labels/publish";
 import { validateJob } from "../../src/lib/labels/schema";
 import { type LabelScope, scopeCondition } from "../../src/lib/labels/scope";
 import type { Job } from "../../src/lib/labels/types";
@@ -342,8 +342,18 @@ async function collectBatch(opts: BuildOptions, batchId: string, intents: Intent
         }));
       if (rows.length > 0) {
         // Idempotent: a batch held below the floor is re-collected on every invocation until it
-        // is accepted, and its rows are the same rows each time.
-        await tx.insert(cardLabelsStaging).values(rows).onConflictDoNothing();
+        // is accepted, and its rows are the same rows each time. An UPDATE rather than a skip,
+        // because a row already staged under this run id may be an older build's answer to an
+        // older prompt (staging holds `backfill-2026-09-28`'s prompt-1 rows): skipping it would
+        // let `publishWave` publish that stale answer as this batch's.
+        await tx.insert(cardLabelsStaging).values(rows).onConflictDoUpdate({
+          target: [cardLabelsStaging.runId, cardLabelsStaging.oracleId],
+          set: {
+            labels: sql`excluded.labels`, model: sql`excluded.model`,
+            promptVersion: sql`excluded.prompt_version`, inputHash: sql`excluded.input_hash`,
+            labelledAt: sql`excluded.labelled_at`,
+          },
+        });
         const set = stagedByRun.get(intent.runId) ?? new Set<string>();
         for (const r of rows) set.add(r.oracleId);
         stagedByRun.set(intent.runId, set);
@@ -411,14 +421,13 @@ async function reconcile(opts: BuildOptions): Promise<{
 }> {
   const open = await db.select().from(cardLabelBatches).where(and(
     inArray(cardLabelBatches.status, OPEN_STATUSES),
-    or(
-      eq(cardLabelBatches.runId, opts.runId),
-      and(
-        isNotNull(cardLabelBatches.batchId),
-        eq(cardLabelBatches.model, MODEL),
-        eq(cardLabelBatches.promptVersion, LABEL_PROMPT_VERSION),
-      ),
-    ),
+    // This run's OWN intents are held to the same model and prompt as another run's. Its answers
+    // are staged with the current prompt version and `labelInputHash(c, MODEL)`, so an intent
+    // asked under an older prompt or model, collected after a bump, would publish an old answer
+    // stamped as current.
+    eq(cardLabelBatches.model, MODEL),
+    eq(cardLabelBatches.promptVersion, LABEL_PROMPT_VERSION),
+    or(eq(cardLabelBatches.runId, opts.runId), isNotNull(cardLabelBatches.batchId)),
   ));
   if (open.length === 0) return { waiting: 0, abandoned: [], held: [], published: 0 };
 
@@ -672,15 +681,17 @@ async function build(opts: BuildOptions): Promise<number> {
     if (ambiguous.length > 10) console.warn(`  ...and ${ambiguous.length - 10} more`);
   }
 
-  // **NOTHING IS ASKED TWICE WHILE IT MAY STILL BE ANSWERED.** A card inside an open intent — of
-  // this run, or of any run asking under this model and prompt — is already paid for or about to
-  // be; planning it again is the double charge. After reconcile, what is left open here is another
-  // run's ambiguous intent, which only that run can resolve.
+  // **NOTHING IS ASKED TWICE WHILE IT MAY STILL BE ANSWERED.** A card inside an open intent asked
+  // under this model and prompt, by any run, is already paid for or about to be; planning it again
+  // is the double charge. An intent asked under an older prompt does not block: its answer can
+  // never be published (reconcile leaves it alone), so the card has to be asked again. After
+  // reconcile, what is left open here is another run's ambiguous intent, which only that run can
+  // resolve.
   const openRows = await db.select({ runId: cardLabelBatches.runId, asked: cardLabelBatches.asked })
     .from(cardLabelBatches).where(and(
       inArray(cardLabelBatches.status, OPEN_STATUSES),
       eq(cardLabelBatches.model, MODEL),
-      or(eq(cardLabelBatches.promptVersion, LABEL_PROMPT_VERSION), eq(cardLabelBatches.runId, runId)),
+      eq(cardLabelBatches.promptVersion, LABEL_PROMPT_VERSION),
     ));
   const inFlight = new Set(openRows.flatMap((r) => r.asked));
   const cards = stale.filter((c) => !inFlight.has(c.name));
@@ -695,31 +706,11 @@ async function build(opts: BuildOptions): Promise<number> {
     .where(and(eq(cardLabelBatches.runId, runId), eq(cardLabelBatches.model, MODEL)));
   const chunks = planChunks(runId, MODEL, cards.map((c) => c.name), prior.map((p) => p.asked));
 
-  // NOTHING LEFT TO SUBMIT. Each collected batch has already published itself, so the one thing
-  // left to publish here is staging this run accumulated under the old run-at-a-time rule — an
-  // invocation of an older build that collected and then stopped. That drains exactly as it used
-  // to: judged against the floor over what this run's collected intents asked, then published in
-  // one transaction.
+  // NOTHING LEFT TO SUBMIT. Each collected batch published itself in its own transaction, so
+  // there is no run-wide publish left to make. The old run-at-a-time build's drain is gone with
+  // it: the only staging it ever left is `backfill-2026-09-28`'s, answered under prompt 1, and
+  // publishing that over current labels is the one thing a drain here could do.
   if (chunks.length === 0) {
-    const [{ n: staged }] = await db.select({ n: sql<number>`count(*)::int` })
-      .from(cardLabelsStaging).where(eq(cardLabelsStaging.runId, runId));
-    if (staged > 0) {
-      const [{ n: asked }] = await db.select({
-        n: sql<number>`coalesce(sum(jsonb_array_length(${cardLabelBatches.asked})), 0)::int`,
-      }).from(cardLabelBatches)
-        .where(and(eq(cardLabelBatches.runId, runId), eq(cardLabelBatches.status, "collected")));
-      const floor = meetsFloor(staged, asked, opts.floor);
-      console.log(`\n${staged} staged card(s) left from ${runId}, of ${asked} asked `
-        + `(${(100 * floor.share).toFixed(1)}%), floor ${(100 * opts.floor).toFixed(0)}%`);
-      if (!floor.ok) {
-        return refuse(`${floor.why}. Staging for ${runId} is kept — inspect it, or re-run with a `
-          + `stated LABEL_FLOOR once you know why the shortfall is acceptable.`);
-      }
-      if (opts.dryRun) { console.log("dry run — not publishing"); return EXIT_DONE; }
-      const published = await publishRun(db, runId);
-      console.log(`published ${published} leftover label(s) in one transaction`);
-      return EXIT_DONE;
-    }
     // FOUR different states reach here and they are not interchangeable. Collapsing them printed
     // "every card's label matches its inputs" when stale cards existed and were simply
     // unlabelable — so the weekly workflow matched it as success for ever.
