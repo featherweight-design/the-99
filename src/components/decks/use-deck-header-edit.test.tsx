@@ -29,6 +29,31 @@ describe("useDeckHeaderEdit (H35, STATES-deck-description.md §2)", () => {
     expect(onDone).toHaveBeenCalledOnce();
   });
 
+  // Round 5: `onDone` closes the editor on success, so the only thing that lets a screen-reader
+  // user hear it happened is state that OUTLIVES that unmount — a caller renders this outside
+  // the editor's own conditional.
+  it("announces a successful description save", async () => {
+    const { result } = renderHook(() => useDeckHeaderEdit("d1", "Old Name", "Old desc", () => {}));
+    act(() => { result.current.setDescription("New desc"); });
+    await act(async () => {
+      result.current.commit();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(result.current.announced).toBe("Saved the description.");
+  });
+
+  it("announces nothing for a name-only save — the tagline did not change", async () => {
+    const { result } = renderHook(() => useDeckHeaderEdit("d1", "Old Name", "Old desc", () => {}));
+    act(() => { result.current.setName("New Name"); });
+    await act(async () => {
+      result.current.commit();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(result.current.announced).toBe("");
+  });
+
   // Pre-open review round 2: a name-only save must not resend the untouched description, or a
   // concurrent save of that field elsewhere could be overwritten with this commit's stale copy.
   it("sends only the field that changed, on a name-only edit", async () => {

@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { SpineDesktop } from "./spine-desktop";
 import { overCopy, renameCopy } from "../../lib/copy/decks-builder";
@@ -17,6 +17,12 @@ function pointer(fine: boolean) {
     addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
   }));
 }
+
+beforeEach(() => {
+  // Each test's expectations about `saveDeckHeader` should stand on their own regardless of
+  // what ran before it — not rely on being, incidentally, the first test in the file to call it.
+  saveDeckHeader.mockClear();
+});
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -207,10 +213,24 @@ describe("SpineDesktop", () => {
     fireEvent.change(name, { target: { value: "Changed Name" } });
     fireEvent.click(screen.getByRole("button", { name: /Save/ }));
     await screen.findByTestId("spine-rename-hint");
-    expect(screen.getByTestId("spine-rename-hint")).toHaveTextContent("That did not save.");
-    // This file has no `beforeEach` mock reset (a later test asserts `not.toHaveBeenCalled()`
-    // on the strength of being the first caller) — clear so this test's call doesn't leak.
-    saveDeckHeader.mockClear();
+    const hintEl = screen.getByTestId("spine-rename-hint");
+    expect(hintEl).toHaveTextContent("That did not save.");
+    // Round 5: "expose failures as alerts in both widths, as the retired editor did".
+    expect(hintEl).toHaveAttribute("role", "alert");
+  });
+
+  // Round 5: `onDone` closes the editor on success, so the announcement has to come from a
+  // region that outlives the editor's unmount to ever be heard.
+  it("announces a successful description save through a status region that outlives the editor", async () => {
+    renderSpine(<SpineDesktop {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    const description = screen.getByLabelText(deckDescriptionCopy.description.fieldAria);
+    fireEvent.change(description, { target: { value: "New description" } });
+    fireEvent.click(screen.getByRole("button", { name: /Save/ }));
+    await vi.waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Saved the description."));
+    // Still present — and still readable — once the editor itself has closed.
+    expect(screen.queryByLabelText("Deck name")).toBeNull();
+    expect(screen.getByRole("status")).toHaveTextContent("Saved the description.");
   });
 
   // Pre-open review round 3: the editor already shows the description as its own field, so the

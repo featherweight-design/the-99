@@ -98,7 +98,12 @@ export function AnalysisEmpty({
     setDescriptionAnnounced("");
     const run = (async (): Promise<DeckMutationResult> => {
       try {
-        const result = await onSaveDescription(trimmed);
+        // Deferred through a microtask, so a callback that THROWS SYNCHRONOUSLY (rather than
+        // returning a rejected promise) still suspends this async function at `await` instead
+        // of running the whole try/catch/finally to completion before `pendingSave.current = run`
+        // below ever executes — which would have the `finally` clear the ref back to null and
+        // this line immediately re-set it to an already-settled promise, stuck until unmount.
+        const result = await Promise.resolve().then(() => onSaveDescription(trimmed));
         if (result.ok) setDescriptionAnnounced(deckDescriptionCopy.announce.descriptionSaved);
         else setDescriptionRefused(result.message);
         return result;

@@ -14,6 +14,17 @@ describe("DeckDescriptionField (STATES-deck-description.md §1)", () => {
     expect(screen.getByText("0 / 240")).toHaveStyle({ width: "9ch" });
   });
 
+  // Round 5: an `aria-label` here used to override the visible `<label htmlFor>` with
+  // different words ("Deck description" vs. "Describe your deck"), so a voice-control user
+  // reading the label on screen could not target the field by it.
+  it("takes its accessible name from the visible label, not a hidden override", () => {
+    render(<DeckDescriptionField value="" onChange={() => {}} onBlur={() => {}} saving={false} refused={null} />);
+    // `getByLabelText` alone does not catch this: it matches ANY association strategy
+    // (an aria-label included), so the real test is the ARIA accessible-name computation,
+    // which prefers aria-label over an associated <label> when both are present.
+    expect(screen.getByRole("textbox")).toHaveAccessibleName("Describe your deck");
+  });
+
   it("counts what is typed and calls onChange", () => {
     const onChange = vi.fn();
     render(<DeckDescriptionField value="" onChange={onChange} onBlur={() => {}} saving={false} refused={null} />);

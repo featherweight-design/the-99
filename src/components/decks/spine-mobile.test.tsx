@@ -1,11 +1,18 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { SpineMobile } from "./spine-mobile";
 import { deckHeaderCopy, overCopy, renameCopy } from "../../lib/copy/decks-builder";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { pairDeck, props } from "./spine-fixtures";
+
+const saveDeckHeader = vi.hoisted(() => vi.fn(async () => ({ ok: true as const })));
+vi.mock("../../app/decks/tuning-actions", () => ({ saveDeckHeader }));
+
+beforeEach(() => {
+  saveDeckHeader.mockClear();
+});
 
 function renderSpine(ui: React.ReactElement) {
   return render(
@@ -121,6 +128,30 @@ describe("SpineMobile", () => {
     for (const name of [/Save/, "Cancel"]) {
       expect(fireEvent.mouseDown(screen.getByRole("button", { name }))).toBe(false);
     }
+  });
+
+  // Round 5: `onDone` closes the editor on success, so the announcement has to come from a
+  // region that outlives the editor's unmount to ever be heard.
+  it("announces a successful description save through a status region that outlives the editor", async () => {
+    renderSpine(<SpineMobile {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    const description = screen.getByLabelText(deckDescriptionCopy.description.fieldAria);
+    fireEvent.change(description, { target: { value: "New description" } });
+    fireEvent.click(screen.getByRole("button", { name: /Save/ }));
+    await vi.waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Saved the description."));
+    expect(screen.queryByLabelText("Deck name")).toBeNull();
+    expect(screen.getByRole("status")).toHaveTextContent("Saved the description.");
+  });
+
+  it("shows a save refusal as an alert", async () => {
+    saveDeckHeader.mockResolvedValueOnce({ ok: false, message: "That did not save." } as never);
+    renderSpine(<SpineMobile {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    const name = screen.getByLabelText("Deck name") as HTMLInputElement;
+    fireEvent.change(name, { target: { value: "Changed Name" } });
+    fireEvent.click(screen.getByRole("button", { name: /Save/ }));
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("That did not save.");
   });
 
   // R6 ruling 4. The header is reachable from list contexts, so the label has

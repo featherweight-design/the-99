@@ -58,7 +58,8 @@ export function DeckDescriptionField({
         rows={2}
         readOnly={saving}
         placeholder={copy.placeholder}
-        aria-label={copy.fieldAria}
+        // No `aria-label`: the visible `<label htmlFor>` above already names this field, and an
+        // aria-label would override it with different words a voice-control user can't see.
         // 16px below `md`: iOS Safari zooms the viewport on focusing any input under 16px, and
         // this field is shared at both widths (pre-open review) — `md:text-[13.5px]` is the
         // desktop size the retired single-field editor used.

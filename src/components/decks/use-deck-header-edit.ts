@@ -40,6 +40,10 @@ export function useDeckHeaderEdit(
   const [name, setName] = useState(currentName);
   const [description, setDescription] = useState(currentDescription ?? "");
   const [error, setError] = useState<string | null>(null);
+  // Round 5: the retired single-field editor announced a successful save; this one closed
+  // silently. A status region OUTSIDE the editor (rendered regardless of `renaming`) is what
+  // lets the announcement survive `onDone()` unmounting the fields that triggered it.
+  const [announced, setAnnounced] = useState("");
   const [isPending, startTransition] = useTransition();
 
   // A field follows the page's new value while it is UNEDITED, independently of the other
@@ -70,6 +74,7 @@ export function useDeckHeaderEdit(
     setName(currentName);
     setDescription(currentDescription ?? "");
     setError(null);
+    setAnnounced("");
     onDone();
   }, [currentDescription, currentName, onDone]);
 
@@ -88,12 +93,14 @@ export function useDeckHeaderEdit(
       return;
     }
     setError(null);
+    setAnnounced("");
     // Captured NOW, at the moment the commit began — not re-read inside the transition, where a
     // concurrent save of the field this commit left untouched could otherwise be clobbered by
     // this closure's older value of it.
     const fields: { name?: string; description?: string } = {};
     if (nameChanged) fields.name = trimmedName;
     if (descriptionChanged) fields.description = description.trim();
+    const savedDescription = descriptionChanged;
     startTransition(async () => {
       try {
         const result = await saveDeckHeader(deckId, fields);
@@ -101,6 +108,9 @@ export function useDeckHeaderEdit(
           setError(result.message);
           return;
         }
+        // Including clearing it to empty — still a save, and the tagline row disappearing is
+        // exactly the change a sighted reader sees happen.
+        if (savedDescription) setAnnounced(deckDescriptionCopy.announce.descriptionSaved);
         onDone();
       } catch {
         setError(renameCopy.errorFailed);
@@ -164,6 +174,7 @@ export function useDeckHeaderEdit(
     description,
     setDescription,
     error,
+    announced,
     isPending,
     canSave,
     commit,

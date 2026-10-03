@@ -334,7 +334,7 @@ export function SpineMobile({
                 }}
               />
               {rename.error ? (
-                <p className="font-mono" style={{ fontSize: 11, color: "var(--danger)" }}>
+                <p role="alert" className="font-mono" style={{ fontSize: 11, color: "var(--danger)" }}>
                   {rename.error}
                 </p>
               ) : null}
@@ -637,6 +637,9 @@ export function SpineMobile({
           {offerFirstCommit && <FirstCommitOffer deckId={deck.id} />}
         </div>
       )}
+      {/* Mounted regardless of `renaming` — a successful save closes the editor via `onDone`,
+          and the announcement has to outlive that unmount to be heard (round 5). */}
+      <span role="status" className="sr-only">{rename.announced}</span>
     </header>
   );
 }

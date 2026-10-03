@@ -681,6 +681,7 @@ export function SpineDesktop({
               {hint ? (
                 <p
                   data-testid="spine-rename-hint"
+                  role="alert"
                   className="font-mono"
                   style={{ fontSize: 10, letterSpacing: "0.08em", color: "var(--danger)" }}
                 >
@@ -728,6 +729,9 @@ export function SpineDesktop({
           )}
         </div>
       </div>
+      {/* Mounted regardless of `renaming` — a successful save closes the editor via `onDone`,
+          and the announcement has to outlive that unmount to be heard (round 5). */}
+      <span role="status" className="sr-only">{rename.announced}</span>
     </header>
   );
 }
