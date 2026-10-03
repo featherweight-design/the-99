@@ -21,6 +21,7 @@ import { clearPullReleases } from "./pull-release";
 import { commanderMoved } from "../commander-change/pending";
 import { readOwnedPrintings } from "../collection/owned-printings";
 import { loadPrices } from "./price-query";
+import { loadDeckBuyRows } from "./availability-query";
 import {
   assembleVersionRows, pricedIds, type VersionDiffBase, type VersionDiffCard,
 } from "./version-rows";
@@ -511,6 +512,7 @@ export async function loadVersionDiff(
   versionId: string,
   previousVersionId: string | null,
   userId: string,
+  deckId: string,
 ): Promise<VersionDiffPayload> {
   if (previousVersionId === null) return { in: [], out: [], newestAsOf: null };
 
@@ -553,16 +555,20 @@ export async function loadVersionDiff(
   const all = [...ins, ...outs];
   // Both reads are scoped to the diff's own cards: a version moves a handful, and
   // neither the collection nor the price table is read whole for them.
-  const [owned, priced] = await Promise.all([
+  const [owned, priced, buyRows] = await Promise.all([
     // The throwing read, not `resolveOwnedPrintings`: a failed read there answers "owns
     // nothing", which these rows would draw as a "not owned" dot and a buy tag on cards the
     // reader holds. A failure here reaches `getVersionDiff`'s caller as an unavailable diff.
     readOwnedPrintings(userId, all.map((c) => c.oracleId)),
     loadPrices(pricedIds(all)),
+    // Shopping's own bill for this deck, so a row's tag is Shopping's answer rather than a second
+    // reading of ownership. User-wide claims inside, narrowed to this deck's rows.
+    loadDeckBuyRows(userId, [deckId]),
   ]);
+  const buy = new Map(buyRows.map((r) => [r.oracleId, r.quantity]));
   return {
-    in: assembleVersionRows(ins, owned, priced),
-    out: assembleVersionRows(outs, owned, priced),
+    in: assembleVersionRows(ins, owned, priced, buy),
+    out: assembleVersionRows(outs, owned, priced, buy),
     newestAsOf: priced.newestAsOf,
   };
 }

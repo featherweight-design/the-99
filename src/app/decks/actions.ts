@@ -1947,7 +1947,7 @@ export async function getVersionDiff(
     .orderBy(desc(deckVersions.number))
     .limit(1);
   // A v1 has none, and `loadVersionDiff` answers that with two empty lists.
-  return loadVersionDiff(versionId, previous?.id ?? null, userId);
+  return loadVersionDiff(versionId, previous?.id ?? null, userId, deckId);
 }
 
 /**

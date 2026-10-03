@@ -49,6 +49,7 @@ function card(over: Partial<VersionDiffCard> = {}): VersionDiffCard {
     from: 0,
     to: 1,
     ownedNow: 1,
+    buy: 0,
     imageUri: null,
     printedName: null,
     price: null,
@@ -132,7 +133,7 @@ describe("VersionDiff", () => {
   it("draws a dashed dot and a priced tag on an In card the reader does not own (Bumi)", async () => {
     getVersionDiff.mockResolvedValueOnce({
       newestAsOf: asOf,
-      in: [card({ name: "Bumi", ownedNow: 0, price: priced(240) })],
+      in: [card({ name: "Bumi", ownedNow: 0, buy: 1, price: priced(240) })],
       out: [],
     });
     mount();
@@ -146,7 +147,7 @@ describe("VersionDiff", () => {
   it("draws own N of M and a tag on a partly owned In card (Persistent Petitioners)", async () => {
     getVersionDiff.mockResolvedValueOnce({
       newestAsOf: asOf,
-      in: [card({ name: "Persistent Petitioners", from: 0, to: 4, ownedNow: 1, price: priced(35) })],
+      in: [card({ name: "Persistent Petitioners", from: 0, to: 4, ownedNow: 1, buy: 3, price: priced(35) })],
       out: [],
     });
     mount();
@@ -156,6 +157,20 @@ describe("VersionDiff", () => {
     expect(row.textContent).toContain(copy.partialOwned(1, 4));
     expect(row.textContent).toContain("$0.35");
     expect(screen.getByText(copy.partialA11y(1, 4))).toBeInTheDocument();
+  });
+
+  it("tags an owned card a senior deck holds, as Shopping does (Basalt Monolith)", async () => {
+    getVersionDiff.mockResolvedValueOnce({
+      newestAsOf: asOf,
+      in: [card({ name: "Basalt Monolith", ownedNow: 1, buy: 1, price: priced(120) })],
+      out: [],
+    });
+    mount();
+    await screen.findByText("Basalt Monolith");
+    const row = rowOf("Basalt Monolith");
+    expect(row.querySelector('span[class*="var(--success)"]')).not.toBeNull();
+    expect(row.textContent).toContain("$1.20");
+    expect(row.textContent).not.toContain("own ");
   });
 
   it("draws a filled dot and no tag on a card owned in full, a basic included", async () => {
@@ -180,7 +195,7 @@ describe("VersionDiff", () => {
     getVersionDiff.mockResolvedValueOnce({
       newestAsOf: asOf,
       in: [],
-      out: [card({ name: "Mind Stone", from: 1, to: 0, ownedNow: 0, price: priced(100) })],
+      out: [card({ name: "Mind Stone", from: 1, to: 0, ownedNow: 0, buy: 1, price: priced(100) })],
     });
     mount();
     await screen.findByText("Mind Stone");

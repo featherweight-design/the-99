@@ -25,6 +25,12 @@ export type VersionDiffCard = Omit<VersionDiffBase, "imageUri"> & {
   /** Copies the reader owns TODAY across every printing. A basic reads `to`: basics are
    *  never bought, and every surface treats them as owned. */
   ownedNow: number;
+  /** Copies this deck has to BUY, as Shopping bills them: `loadDeckBuyRows`' deficit for this
+   *  deck, from the claim model (seniority, committed decks' claims, proxies). Not `to − ownedNow`:
+   *  a copy the reader owns can be held by a senior deck, and then this deck still buys it
+   *  (Basalt Monolith in HD Tune, staging, 2026-10-03). 0 for a card the deck's current list does
+   *  not run, which Shopping does not bill either, and always 0 for a basic. */
+  buy: number;
   /** The owned printing's art where the reader holds one, the catalog's otherwise. */
   imageUri: string | null;
   /** The owned printing's own name (a Secret Lair's flavor name), or null. */
@@ -37,6 +43,7 @@ export function assembleVersionRows(
   rows: VersionDiffBase[],
   owned: Map<string, OwnedPrinting>,
   { prices }: Pick<PriceRead, "prices">,
+  buy: Map<string, number>,
 ): VersionDiffCard[] {
   return rows.map((row) => {
     const copy = owned.get(row.oracleId);
@@ -44,6 +51,7 @@ export function assembleVersionRows(
     return {
       ...row,
       ownedNow: basic ? Math.max(row.to, copy?.quantity ?? 0) : copy?.quantity ?? 0,
+      buy: basic ? 0 : buy.get(row.oracleId) ?? 0,
       imageUri: copy?.imageUri ?? row.imageUri,
       printedName: copy?.printedName ?? null,
       price: basic ? null : prices.get(row.oracleId) ?? null,

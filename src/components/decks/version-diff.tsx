@@ -92,12 +92,15 @@ function DiffCardRow({
   const previewHandlers = usePreviewRow(card.imageUri);
   const describedId = useId();
   const incoming = side === "in";
-  const short = incoming && card.ownedNow < card.to;
-  const partial = short && card.ownedNow > 0;
+  // Shopping's answer, not ownership's: a copy the reader owns that a senior deck holds is
+  // still a buy here, as it is on Shopping.
+  const short = incoming && card.buy > 0;
+  const covered = card.to - card.buy;
+  const partial = short && covered > 0;
   const description = !incoming
     ? null
     : partial
-      ? copy.partialA11y(card.ownedNow, card.to)
+      ? copy.partialA11y(covered, card.to)
       : card.ownedNow > 0 ? copy.owned : copy.notOwned;
   return (
     <div
@@ -122,7 +125,7 @@ function DiffCardRow({
       </CardDetailTrigger>
       {partial && (
         <span aria-hidden className="flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-          {copy.partialOwned(card.ownedNow, card.to)}
+          {copy.partialOwned(covered, card.to)}
         </span>
       )}
       {short && (

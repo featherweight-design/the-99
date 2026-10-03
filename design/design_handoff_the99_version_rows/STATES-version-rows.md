@@ -19,6 +19,6 @@
 | Only cuts | — | — | — | No `todayNote` |
 | v1 / `noChange` / `diffUnavailable` | — | — | — | 1d 1f: unchanged, no figures |
 
-`own N of M` uses all printings the reader owns: `sum(collection_items.quantity)` across printings. It is not the decklist's `short N`, which is claim-relative.
+**Corrected 2026-10-03 (Hugh's staging walk):** whether an In row buys, and how many, is Shopping's answer for this deck (`loadDeckBuyRows`, the claim model), not raw ownership. An owned copy a senior deck holds is still a buy, as Basalt Monolith was in HD Tune - Counter Intelligence. `own N of M` is `M − buy`: the copies this deck has. The dot still reads ownership.
 
 **Corrected in the build (readiness findings 1 and 2):** the tag is `full` from `lg` (1024px), not `md`, because at 820 a partly owned row left the name about 40px. Below `lg` the collapsed tag draws the live figure (`$2.40`), as `BuyTag` always does; a bare `$` only when there is no live price (no price, or sold out).

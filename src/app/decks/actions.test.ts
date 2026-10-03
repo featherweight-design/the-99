@@ -1900,7 +1900,7 @@ describe("getVersionDiff", () => {
     );
     await getVersionDiff(DECK_ID, VERSION_ID);
     expect(loadVersionDiff).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, V2, USER_ID]);
+    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, V2, USER_ID, DECK_ID]);
   });
 
   // A v1 has nothing before it, and the diff loader is told so explicitly rather
@@ -1908,7 +1908,7 @@ describe("getVersionDiff", () => {
   it("names no predecessor for the first version", async () => {
     stub.state.deckVersions.push({ id: VERSION_ID, number: 1, deckId: DECK_ID });
     await getVersionDiff(DECK_ID, VERSION_ID);
-    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, null, USER_ID]);
+    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, null, USER_ID, DECK_ID]);
   });
 });
 

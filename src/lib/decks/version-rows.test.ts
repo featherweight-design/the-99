@@ -30,8 +30,26 @@ const owns = (quantity: number, over: Partial<OwnedPrinting> = {}): OwnedPrintin
 });
 
 describe("assembleVersionRows", () => {
+  // The bill is Shopping's, from the claim model: a copy the reader owns that a senior deck
+  // holds is still a buy (Basalt Monolith in HD Tune - Counter Intelligence, staging).
+  it("carries Shopping's buy for a card owned but held by a senior deck (Basalt Monolith)", () => {
+    const [r] = assembleVersionRows(
+      [row({ name: "Basalt Monolith" })],
+      new Map([["o-1", owns(1)]]),
+      { prices: new Map([["o-1", fact(120)]]) },
+      new Map([["o-1", 1]]),
+    );
+    expect(r.ownedNow).toBe(1);
+    expect(r.buy).toBe(1);
+  });
+
+  it("buys nothing for a card Shopping does not bill, owned or not", () => {
+    const [r] = assembleVersionRows([row({})], new Map(), { prices: new Map() }, new Map());
+    expect(r.buy).toBe(0);
+  });
+
   it("reads an unowned card as 0 owned, with today's price and the catalog art", () => {
-    const [r] = assembleVersionRows([row({})], new Map(), { prices: new Map([["o-1", fact(240)]]) });
+    const [r] = assembleVersionRows([row({})], new Map(), { prices: new Map([["o-1", fact(240)]]) }, new Map([["o-1", 1]]));
     expect(r).toMatchObject({ ownedNow: 0, price: fact(240), imageUri: "https://img/oracle.jpg", printedName: null });
   });
 
@@ -40,8 +58,10 @@ describe("assembleVersionRows", () => {
       [row({ name: "Persistent Petitioners", to: 4 })],
       new Map([["o-1", owns(1)]]),
       { prices: new Map([["o-1", fact(35)]]) },
+      new Map([["o-1", 3]]),
     );
     expect(r.ownedNow).toBe(1);
+    expect(r.buy).toBe(3);
     expect(r.price).toEqual(fact(35));
   });
 
@@ -51,7 +71,9 @@ describe("assembleVersionRows", () => {
       [plains],
       new Map([["o-plains", owns(3)]]),
       { prices: new Map([["o-plains", fact(5)]]) },
+      new Map([["o-plains", 2]]),
     );
+    expect(r.buy).toBe(0);
     expect(r.ownedNow).toBe(7);
     expect(r.price).toBeNull();
     expect(pricedIds([plains, row({})])).toEqual(["o-1"]);
@@ -62,6 +84,7 @@ describe("assembleVersionRows", () => {
       [row({})],
       new Map([["o-1", owns(1, { printedName: "Earthbender King", imageUri: "https://img/sld.jpg" })]]),
       { prices: new Map() },
+      new Map(),
     );
     expect(r).toMatchObject({ imageUri: "https://img/sld.jpg", printedName: "Earthbender King", price: null });
   });
