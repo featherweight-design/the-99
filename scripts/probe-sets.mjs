@@ -682,6 +682,26 @@ async function run() {
       );
     }
 
+    // The FULLEST chip line the page can draw, at every desktop width the line has to hold
+    // without wrapping: two colours (one chip), the Exactly modifier, all four rarities and
+    // missing-only, seven chips on an incomplete set. The line scrolls and never wraps, so the
+    // rack's three rows must read the same with seven chips as with none, at 768 (this page's
+    // md), 820, 900 (between md and the chassis's 1000) and 1280. Three chips never overflowed
+    // the strip, so the earlier checks could not see a wrap or a scrollbar adding height.
+    const SEVEN = "?c=W,U&m=exact&r=common,uncommon,rare,mythic&own=missing";
+    for (const width of [768, 820, 900, 1280]) {
+      await page.setViewportSize({ width, height: 900 });
+      const none = await rackAt("");
+      const full = await rackAt(SEVEN);
+      const want = setIsComplete ? 6 : 7;
+      failures += !report(
+        `${width}: the fullest filter state draws ${want} chips`,
+        full !== null && full.chips === want,
+        full === null ? "no rack" : `${full.chips} chip removals`,
+      );
+      failures += !rackHeightsAgree(`${width}: the rack's rows hold with ${want} chips`, [none, full]);
+    }
+
     // The head's height at PHONE too, which is where it was actually moving: the
     // missing-only result line wraps in 358px, so toggling that filter grew row 3 and the
     // desktop-only check above never saw it.
@@ -1400,6 +1420,11 @@ async function run() {
           sameParent: prefix.parentElement === field.parentElement,
           nameWidth: Math.round(name.getBoundingClientRect().width),
           fieldWidth: Math.round(f.width),
+          // What the row's width went to, so a failing reading names the member that took it.
+          members: [...prefix.parentElement.children]
+            .filter((c) => c.getClientRects().length > 0)
+            .map((c) => `${(c.getAttribute("aria-label") ?? c.textContent ?? "").trim().slice(0, 14)}:${Math.round(c.getBoundingClientRect().width)}`)
+            .join(" "),
         };
       });
       failures += !report(
@@ -1418,7 +1443,7 @@ async function run() {
       failures += !report(
         `the set name survives the shrink at ${width}`,
         row !== null && row.nameWidth >= 40 && row.fieldWidth >= 132,
-        row === null ? "no prefix" : `name ${row.nameWidth}px, field ${row.fieldWidth}px`,
+        row === null ? "no prefix" : `name ${row.nameWidth}px, field ${row.fieldWidth}px; row ${row.members}`,
       );
 
       // §29: two controls with one accessible name is the defect a redrawn bar would
