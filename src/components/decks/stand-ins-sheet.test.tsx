@@ -23,15 +23,20 @@ const { loadStandInsAction, takeStandInAction, undoSwapAction } = vi.hoisted(() 
 }));
 vi.mock("../../lib/swaps/actions", () => ({ loadStandInsAction, takeStandInAction, undoSwapAction }));
 
-// The trigger reports the list its stacked card would page, so the sheet's Prev/Next set is readable here.
+// The trigger reports the list its stacked card would page, so the sheet's Prev/Next set is
+// readable here. Kept as full objects (JSON), not just oracle ids: the sibling list carries
+// each row's name and art (H23 carousel PR 1b), and a mock that reduced it to ids would still
+// pass if the sheet reverted to bare ids and dropped that plumbing entirely.
 vi.mock("../cards/card-detail-provider", async (actual) => ({
   ...(await actual<typeof import("../cards/card-detail-provider")>()),
   CardDetailTrigger: (
-    { siblings, children }: { siblings?: readonly (string | { oracleId: string })[]; children: React.ReactNode },
+    { siblings, children }: { siblings?: readonly (string | { oracleId: string; name?: string; imageUri?: string | null })[]; children: React.ReactNode },
   ) => (
     <button
       type="button"
-      data-siblings={siblings?.map((s) => (typeof s === "string" ? s : s.oracleId)).join(",")}
+      data-siblings={JSON.stringify(
+        siblings?.map((s) => (typeof s === "string" ? { oracleId: s } : s)) ?? [],
+      )}
     >
       {children}
     </button>
@@ -149,10 +154,22 @@ describe("StandInsSheet", () => {
     loadStandInsAction.mockResolvedValue({ ...READ, groups: [{ same: true, type: "instant", rows: seven, total: 7 }] });
     await open();
     const sheet = screen.getByTestId("stand-ins-sheet");
-    const paged = () => within(sheet).getByText("Removal 1").closest("button")!.getAttribute("data-siblings")!.split(",");
+    const pagedSiblings = () =>
+      JSON.parse(within(sheet).getByText("Removal 1").closest("button")!.getAttribute("data-siblings")!) as
+        { oracleId: string; name?: string; imageUri?: string | null }[];
+    const paged = () => pagedSiblings().map((s) => s.oracleId);
     expect(paged()).toEqual(seven.slice(0, 5).map((r) => r.card.oracleId));
+    // Carries each row's own name and art (H23 carousel PR 1b), not just its id — a mutation
+    // that reduced the sibling list back to bare ids would still pass the id-only assertions
+    // above.
+    expect(pagedSiblings()).toEqual(
+      seven.slice(0, 5).map((r) => ({ oracleId: r.card.oracleId, name: r.card.name, imageUri: r.card.imageUri })),
+    );
     fireEvent.click(within(sheet).getByRole("button", { name: swapToolsCopy.sheet.showAll(7, "instants") }));
     expect(paged()).toEqual(seven.map((r) => r.card.oracleId));
+    expect(pagedSiblings()).toEqual(
+      seven.map((r) => ({ oracleId: r.card.oracleId, name: r.card.name, imageUri: r.card.imageUri })),
+    );
   });
 
   // Close-out ruling 1: the first read is capped for payload size, so `Show all` counts the group's true
@@ -406,7 +423,7 @@ describe("StandInGroup and StandInRow, mounted alone", () => {
     const group = sheetModel(READ).groups[0];
     const inSheet = screen.getByRole("region", { name: group.heading }).outerHTML;
     document.body.innerHTML = "";
-    const siblings = group.rows.map((r) => r.oracleId);
+    const siblings = group.rows.map((r) => ({ oracleId: r.oracleId, name: r.name, imageUri: r.imageUri }));
     const take = { onTake: () => {}, taking: false, busy: false, refused: null, error: null, cut: "Anguished Unmaking" };
     const alone = render(
       <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
