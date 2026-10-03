@@ -80,8 +80,15 @@ to two **sets** - `producibleColors` (colors any land in the deck can make) and 
 is no existing figure for "how many red pips does this deck ask for" or "how many sources make
 red."
 
-Land-side supply is straightforward: the same `isLandFace` + `colorIdentity` read already used by
-`colours()` gives a per-color count of mana-producing lands with no new reads.
+Land-side supply has an existing read to start from, but it is a HEURISTIC, not a fact, and Stats
+is required to present facts: the same `isLandFace` + `colorIdentity` read `colours()` uses counts
+a land as a source of every colour in its `colorIdentity`, and `colorIdentity` is not a
+mana-production field - it also picks up a colour from a non-mana activated ability (a land that
+taps only for colourless but has a white ability text), so this count can report a source for a
+colour the land cannot actually make. Fetch and filter lands need an explicit counting policy for
+the same reason. A fact-grade source count needs either a mana-ability parse or stored
+produced-mana data, neither of which exists today; `colorIdentity` is a starting point for the
+derivation, not a per-color count ready to draw as a fact.
 
 Non-land mana sources (rocks, dorks) are not modeled anywhere. `classifyRoles()`
 (`src/lib/recs/roles.ts:28-45`) flags a card `ramp` via text patterns (`{T}: add`, `search your
@@ -94,7 +101,8 @@ straightforward slice; full non-land color attribution is a new, moderate-comple
 ### (c) Money and ownership - **cost-to-buy exists (aggregate); deck value and a per-card list need new derivations**
 
 `loadDeckStats` already carries `cost: DeckShopping | null` per deck
-(`stats-query.ts:40-45, 140-146`), sourced from `loadShoppingRollup()`
+(the field at `stats-query.ts:36-47`, populated per deck at line 179), sourced from
+`loadShoppingRollup()`
 (`src/lib/decks/shopping-rollup.ts:70`), which is itself built on `loadDeckBuyRows`
 (`src/lib/decks/availability-query.ts`) - the same claim-model reader `probe:claims` proves. This
 gives copies-to-buy, total cents, and priced-copies (how many of those copies have a price at
@@ -162,18 +170,20 @@ Verified populated on staging: `card_labels` carries 32,099 rows, one per distin
 `readLabels()` call over that deck's oracle ids, tallying `Job.kind` the same way `colourSpread`
 tallies colors.
 
-### (f) Win record and trend - **record exists; trend needs a new derivation**
+### (f) Win record and trend - **both exist; no new query needed for a single deck**
 
 `playRecord()` and `recordFromCounts()` (`src/lib/decks/stats.ts:30-67`) already compute
 wins/losses/draws/played, and `loadDeckStats` (`stats-query.ts:76-193`) already reads
 `deck_games` grouped by result (`stats-query.ts:118-126`) to feed it - this is live on the deck
-page and Home today.
+page and Home today. That grouped form is the right one for Home's roll-up over every deck at
+once, but it is not the only existing reader.
 
-A **trend** (most of Hugh's "and trend from logged games") does not exist as a figure - the
-grouped read discards `playedAt`. `deck_games.playedAt` (`schema.ts`, the column beside
-`versionId`) is already stored, so a trend (recent N games' record against lifetime, or a
-win-rate-over-time series) is a new query ordering by `playedAt` rather than grouping it away,
-and a new pure function alongside `recordFromCounts`. No new column, no new table.
+A **trend** (most of Hugh's "and trend from logged games") does not need a new query: a single
+deck's `listDeckGames()` (`src/lib/decks/games.ts:70-126`) already returns every game's `result`
+and `playedAt`, ordered newest-first (`orderBy(desc(deckGames.playedAt), desc(deckGames.createdAt))`)
+- the ordered-by-time read the grouped roll-up discards. Stats can compute a trend (recent N
+games' record against lifetime, or a win-rate-over-time series) as a new pure function reading
+that existing list, with no new database read.
 
 ### (g) Results by version - **column exists; needs a new grouped query**
 
@@ -184,8 +194,13 @@ value." Today's `loadDeckStats` groups games by `result` alone, not by `(version
 this is a new `group by` on an existing column, not a new field.
 
 Verified on staging: `deck_games` carries 6 rows total, 5 with a `version_id` set and 1 null,
-confirming both the populated case and the pre-versioning null case actually occur and need a
-visible "before versioning" bucket rather than being silently dropped or miscounted as version 1.
+confirming the populated case and a null case both actually occur. A null needs a visible bucket
+rather than being silently dropped or miscounted as version 1 - but the bucket cannot be
+labelled "before versioning": `versionId` is `on delete set null`, and `DeckGame`'s own type
+comment (`src/lib/decks/games.ts:13-18`) already documents that a version deleted out from under
+a game leaves exactly the same null. The COUNT alone cannot tell the pre-versioning case from the
+deleted-version case, so the bucket needs a neutral label (unrecorded, or unattributed) rather
+than one that states a cause the data does not establish.
 `deck_versions` carries 26 rows across the account's decks. This is a thin dataset to design
 against for layout density; Design should not assume every deck has many versions or many games.
 
@@ -193,9 +208,12 @@ against for layout density; Design should not assume every deck has many version
 
 - 390 and 1300 frames for every state Stats can be in: populated with games logged, populated
   with no games logged (the empty state for (f) and (g), facts for (a)-(e) still drawn), a brand
-  new deck with a tiny decklist (thin-data case), and a deck with no commander-index figures at
-  all (every rung of the (d) chain absent, i.e. a colorless or very fresh commander) so the
-  degraded case is drawn rather than assumed.
+  new deck with a tiny decklist (thin-data case), and the (d) chain's actual fallback - NOT
+  "every rung absent", which `pickRoleTargets()` never returns (it always resolves to pair,
+  commander, identity, or the flat `ROLE_TARGETS` baseline, in that order), but a deck that falls
+  all the way to that flat baseline (a colourless or very fresh commander with no pair, commander,
+  or identity match) - so the real degraded state is drawn rather than one the implementation
+  cannot produce.
 - The placement decision itself, with its rationale: a sixth tab, a fold into an existing tab, or
   a compact band, and why, against the tab-crowding concern in ruling 6.
 - A states table (`STATES-*.md`), matching the format of recent handoffs
@@ -221,6 +239,8 @@ US English. No em dashes. Every new string in this round's deliverable is a PLAC
 
 - `src/lib/decks/stats.ts`, `src/lib/decks/stats-query.ts`: curve, color spread, play record, the
   shopping aggregate - the existing half of round 1's data.
+- `src/lib/decks/games.ts`: `listDeckGames()`, the single-deck ordered-by-`playedAt` read the
+  trend (f) builds on, and `DeckGame`'s own documentation of what a null `versionId` can mean.
 - `src/lib/profile/build.ts`: `manaNeeds`, `colours`, the composition/role basis chain
   (`CompositionCandidates`, `pickRoleTargets`, `skeleton`) - the (d) comparison and the pip
   parsing (b) builds on.
