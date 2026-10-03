@@ -295,7 +295,7 @@ describe("AccountMenu items", () => {
     push.mockClear();
     const providerPush = vi.fn();
     render(
-      <Report.Provider value={{ report: () => {}, pathname: "/", push: providerPush }}>
+      <Report.Provider value={{ report: () => {}, pathname: "/", push: providerPush, registerContentScope: () => {} }}>
         <AccountMenu panel="popover" theme="amonkhet" />
       </Report.Provider>,
     );

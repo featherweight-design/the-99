@@ -10,29 +10,32 @@ export const OVERLAY_OUT_MS = 120;
 
 /**
  * The escalation screen (escalation addendum): the target route's `LoadingScreen`, laid over the
- * visible part of the shell's `<main>` once a navigation has been pending for 400ms.
+ * visible part of a box once a navigation has been pending for 400ms — normally the shell's own
+ * `<main>`, or a narrower registered content scope when the run never leaves one (collection tabs
+ * overlay fix, #1222 follow-up), so a shared head above that scope stays visible and interactive.
  *
- * A sibling of `<main>`, never inside it, because `LoadingScreen` is a `role="status"` live region
- * and `<main>` is marked busy while it shows (audit correction 2). Fixed-position over main's box:
- * right of the rail, below the phone header (clamped to 0 once the header scrolls away), and clear
- * of the tab bar and an open About sheet. It blocks pointer events from its first frame, so a press
- * under it goes nowhere; leaving, it lets them through at once and fades out over the new page.
+ * A sibling of whichever element it covers, never inside it, because `LoadingScreen` is a
+ * `role="status"` live region and that element is marked busy while it shows (audit correction 2).
+ * Fixed-position over the box: right of the rail, below the phone header (clamped to 0 once the
+ * header scrolls away), and clear of the tab bar and an open About sheet. It blocks pointer events
+ * from its first frame, so a press under it goes nowhere; leaving, it lets them through at once and
+ * fades out over the new page.
  */
 export function PendingOverlay({
   screen,
   leaving,
-  main,
+  box: boxRef,
   onLeft,
 }: {
   screen: LoadingKey;
   leaving: boolean;
-  main: RefObject<HTMLElement | null>;
+  box: RefObject<HTMLElement | null>;
   onLeft: () => void;
 }) {
   const [box, setBox] = useState<{ left: number; top: number } | null>(null);
 
   useLayoutEffect(() => {
-    const el = main.current;
+    const el = boxRef.current;
     if (!el) return;
     const place = () => {
       const r = el.getBoundingClientRect();
@@ -45,7 +48,7 @@ export function PendingOverlay({
       window.removeEventListener("scroll", place);
       window.removeEventListener("resize", place);
     };
-  }, [main]);
+  }, [boxRef]);
 
   // Unmount once the 120ms fade has run. A timer rather than `animationend`, which never fires
   // where animations do not run and would leave the screen up over the new page.

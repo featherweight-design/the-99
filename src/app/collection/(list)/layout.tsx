@@ -18,6 +18,7 @@ import { requireUserId } from "../../../lib/auth";
 import { getCollectionLastUpdated, getCollectionStats } from "../../../lib/home/summary";
 import { formatLastUpdated } from "../../../lib/collection/browse";
 import { CollectionPlaceHead } from "../../../components/collection/collection-place-head";
+import { CollectionContentScope } from "../../../components/collection/collection-content-scope";
 
 export default async function CollectionListLayout({
   children,
@@ -36,7 +37,7 @@ export default async function CollectionListLayout({
   return (
     <>
       <CollectionPlaceHead stats={stats} lastUpdatedLabel={lastUpdatedLabel} />
-      {children}
+      <CollectionContentScope>{children}</CollectionContentScope>
     </>
   );
 }

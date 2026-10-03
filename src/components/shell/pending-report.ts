@@ -1,9 +1,21 @@
 "use client";
 
 import { useLinkStatus } from "next/link";
-import { createContext, useContext, useEffect, useId } from "react";
+import { createContext, useContext, useEffect, useId, useLayoutEffect, useRef, type RefObject } from "react";
 
 import { pathOf } from "../../lib/shell/pending-routes";
+
+/**
+ * A boundary a route tree can register so a navigation that stays inside it confines its
+ * pending state to this element instead of covering the whole shell `<main>` (collection
+ * tabs overlay fix, #1222 follow-up). `contains` is asked about BOTH the page the press
+ * leaves and the page it targets — a navigation that starts or ends outside the boundary is
+ * an arrival from elsewhere, which keeps the full-`<main>` screen.
+ */
+export type PendingScope = {
+  ref: RefObject<HTMLElement | null>;
+  contains: (pathname: string) => boolean;
+};
 
 /**
  * The reporting half of navigation pending, kept apart from the provider so a mark
@@ -15,15 +27,42 @@ export type Reporter = (id: string, href: string, pending: boolean) => void;
 /**
  * What the provider hands its marks: where to report, and the page the press is leaving. `push`
  * runs a code-started navigation from the provider itself (`usePendingPush`), which outlives any
- * component that starts one.
+ * component that starts one. `registerContentScope` is how a route tree installs or removes a
+ * `PendingScope`.
  */
-export type PendingContext = { report: Reporter; pathname: string; push?: (href: string) => void };
+export type PendingContext = {
+  report: Reporter;
+  pathname: string;
+  push?: (href: string) => void;
+  registerContentScope: (scope: PendingScope | null) => void;
+};
 
 export const Report = createContext<PendingContext | null>(null);
 
 /** Resolve a link's href against the page it is pressed on: a bare query or hash is this page. */
 export function targetOf(href: string, pathname: string): string {
   return href.startsWith("?") || href.startsWith("#") ? pathname : pathOf(href);
+}
+
+/**
+ * Registers an element as the boundary a same-scope navigation confines its pending state to,
+ * for as long as the calling component stays mounted. The provider calls `contains` at the
+ * moment of each navigation decision rather than reading a cached verdict, so a caller is free
+ * to pass a pure function of the pathname — the one case this exists for today — without it
+ * ever going stale.
+ */
+export function usePendingContentScope(contains: (pathname: string) => boolean): RefObject<HTMLElement | null> {
+  const ref = useRef<HTMLElement | null>(null);
+  const ctx = useContext(Report);
+  // A layout effect, so the boundary is in place before the first navigation decision a child
+  // press could trigger in the same commit. Registers once per mount: `contains` is meant to be
+  // a stable function of the pathname alone, not a closure over this component's own state.
+  useLayoutEffect(() => {
+    ctx?.registerContentScope({ ref, contains });
+    return () => ctx?.registerContentScope(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ctx]);
+  return ref;
 }
 
 /**

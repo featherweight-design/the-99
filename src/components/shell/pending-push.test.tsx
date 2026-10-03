@@ -23,7 +23,7 @@ describe("usePendingPush", () => {
     routerPush.mockClear();
     const providerPush = vi.fn();
     render(
-      <Report.Provider value={{ report: () => {}, pathname: "/", push: providerPush }}>
+      <Report.Provider value={{ report: () => {}, pathname: "/", push: providerPush, registerContentScope: () => {} }}>
         <Starter />
       </Report.Provider>,
     );
