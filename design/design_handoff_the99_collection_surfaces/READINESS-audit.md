@@ -7,8 +7,28 @@ layout state that is not drawn, and each needs a Design answer before it is buil
 - **B1.** The tab strip on `/collection/sets` and `/collection/proxies` at desktop width.
 - **B2.** Row 2 of the phone head, and the 600–999 one-row head, when the sort label is long.
 
-Two Product questions are open for Hugh (P1, P2). The other gaps Design raised are resolved below
-from the code.
+Hugh ruled on both Product questions and on the About entry, and ratified the sixteen engineering
+calls as proposed (see Rulings). The other gaps Design raised are resolved below from the code.
+
+## Rulings (Hugh, 2026-10-02)
+
+- **P1: the phone default stays rows.** Readers who never touched the toggle keep rows; the 3-up
+  grid is what a reader gets on choosing Grid. No change to `browser.tsx`'s default.
+- **P2: the empty filter-chip row is hidden on `/collection`.** The chips sit in a 38px shelf below
+  the pinned head only while a filter is on. This route-scoped departure from the chassis rule
+  (decision 2: the chip row is always present, with `No filters on` and an inert `Clear all`) is
+  accepted for `/collection` alone. Every other route keeps the shared rule. It is built as an
+  option the shared frame owns, not as a `/collection` copy of the frame.
+- **About: no new entry and no version bump.** The existing collection entry gets an ordinary edit
+  for the removed `By set` pill (E16).
+- **E1 to E16 are ratified as proposed.**
+
+**Does P2 change B2's arithmetic? No.** Row 2 (`Filters`, the hairline, `Sort`, the count) lives in
+the pinned head whether or not the shelf exists, and the shelf is a separate 38px row below it in
+the scroll. With a filter on, row 2 carries the `Filters` badge (93px rather than 68px) under either
+ruling. So row 2 still needs about 403px against 358 at 390, and about 350 against 328 at 360, with
+the longest sort and a filter on. What P2 does settle is the first tile at rest: about 324px, and
+about 362px once the shelf appears.
 
 This audit was run against `origin/main` at `018f7cb59` (#1159). It also read the in-flight work on
 `/collection`:
@@ -172,7 +192,11 @@ the same mobile header.
 - What gives in row 2 at 390 and 360 when the sort label is long and a filter is on.
 - Where the one-row form starts once it is drawn with the shipped `Sort: {order}` trigger.
 
-## Product questions for Hugh
+## Product questions (decided, Hugh 2026-10-02)
+
+Both are ruled above: P1 keeps rows, and P2 hides the empty chip row on `/collection`. The
+questions are kept as they were put.
+
 
 **P1. Should the phone open on art?** The phone defaults to rows for anyone who has never touched
 the toggle. Rows show the whole card name and its cost; the new 3-up grid shows about 7 to 8 cards
@@ -203,8 +227,8 @@ frame, and leave the other routes as they are until one of them pins a compact h
 
 ## Design's gap report, resolved
 
-1. **The phone default:** P1.
-2. **Decision 2:** P2.
+1. **The phone default:** P1, ruled: rows stay the default.
+2. **Decision 2:** P2, ruled: the shelf shows only while a filter is on, on `/collection` alone.
 3. **The Cards tab is a bare `/collection`.** Resolved by ruling 15: no filter state crosses a route
    boundary, and Browser Back restores the URL's filters. Nothing is remembered per session.
 4. **Measured against derived figures:** see the arithmetic. The derived first tile is about 324,
@@ -217,7 +241,7 @@ frame, and leave the other routes as they are until one of them pins a compact h
    as `sr-only`. The README and the gap report disagree about Replace; see E12.
 7. **The tab labels are new copy:** see Copy.
 
-## Engineering-resolvable
+## Engineering-resolvable (ratified as proposed, Hugh 2026-10-02)
 
 - **E1. Portal both sheets, not one.** The compact Sort trigger is a `FilterPanel`, and its sheet
   is also an inline `fixed z-50` (`filter-panel.tsx:1037, 1047`) mounted inside the head. Pinned, it
@@ -344,7 +368,7 @@ These go to /copy-review, never to Design.
 My read is that none is owed. The brief calls this a rework of existing surfaces. Nothing here lets
 a reader do something they could not do before, and Proxies was already reachable. That makes it
 cosmetic under the rule, and the existing collection entry takes an ordinary edit (E16), with no
-version bump. This is Hugh's call.
+version bump. Hugh ruled it so on 2026-10-02: no new entry and no bump.
 
 ## How the build splits
 
@@ -366,7 +390,7 @@ This follows #1163, d8's view and colour PRs, and #1167, in that order. All of t
    - the phone h1 as `sr-only`, and Replace in the strip;
    - E10 to E12, and E16's About edit.
 4. **The pinned head.** Blocked on B2, and lands after d8. It covers:
-   - the sticky compact head and the chassis option (P2);
+   - the sticky compact head and the frame-owned chip-row option (P2, ruled);
    - row 2 with the count (E13);
    - `:has(input:focus)` (E2), 16px type (E3) and the clear ✕ (E4);
    - the scroll reset (E8), `scroll-padding` (E9) and the lit segment (E6);
@@ -379,8 +403,8 @@ This follows #1163, d8's view and colour PRs, and #1167, in that order. All of t
 **Context.** Collection surfaces R1 is audited
 (`design/design_handoff_the99_collection_surfaces/READINESS-audit.md` on branch
 `design/collection-surfaces` (PR #1169)). The 3-up grid and the sheet portal are buildable as
-drawn. Two layout states are not drawn, one for the tabs and one for the head. Everything else in
-R1 stands.
+drawn. Hugh decided: the phone default stays rows, and `/collection` alone hides the empty chip
+row (chips sit in the 38px shelf only while a filter is on). Two layout states are not drawn.
 
 **What to change.**
 
@@ -388,13 +412,13 @@ R1 stands.
   desktop, `/collection` (`src/app/collection/page.tsx`) is full width with a title block of about
   90px above the strip. Sets (`src/app/collection/sets/page.tsx`) and Proxies
   (`src/components/decks/proxy-list-view.tsx`) are centred 900px columns whose h1 is the section
-  name. Mounted as described, the strip jumps across and down whenever a reader presses one of its
-  own tabs.
+  name. As described, the strip jumps across and down whenever a reader presses one of its tabs.
 - **Row 2 at a long sort.** §2 budgets row 2 with `Sort: Name · A–Z`. The trigger reads
   `Sort: {order}` (`src/lib/collection/sort-options.ts`), and `Sort: Color · Colorless first` is
-  about 210px. With a filter on, row 2 then needs about 403px against 358 at 390, and about 350
-  against 328 at 360. The 768 frame in §5 draws a bare `Sort ▾`. With the shipped trigger, the
-  one-row form leaves search about 129px at 600 and about 63px at 600 with the longest sort.
+  about 210px. With a filter on, row 2 needs about 403px against 358 at 390, and about 350 against
+  328 at 360. Hiding the empty chip row does not change this. The 768 frame in §5 draws a bare
+  `Sort ▾`; with the shipped trigger, the one-row form leaves search about 129px at 600, or about
+  63px with the longest sort.
 
 **Constraints.** The strip stays place navigation of plain links. The head stays fixed-height CSS,
 with no measurement, and row 2 never wraps. Marks and type sizes are unchanged. No new copy.
@@ -414,5 +438,5 @@ with no measurement, and row 2 never wraps. Marks and type sizes are unchanged. 
 - Row 2 at 390 and 360 with the longest sort and a filter on.
 - The 768 frame redrawn with the shipped trigger, and the one-row breakpoint stated.
 
-**Out of scope.** The 3-up tile, the key, the shelf and the scroll reset. The engineering decisions
-in the audit. Hugh's two open questions (the rows default, and the chip row's rule).
+**Out of scope.** The 3-up tile, the key, the shelf, the scroll reset, the audit's engineering
+decisions, and both decided rulings.
