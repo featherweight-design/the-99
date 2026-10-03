@@ -89,7 +89,7 @@ const READ_HEADER = `() => {
     (e) => visible(e) && /card details/i.test(e.getAttribute('aria-label') || ''),
   );
   const pencil = [...header.querySelectorAll('button')].find(
-    (e) => visible(e) && /^Rename deck/.test(e.getAttribute('aria-label') || ''),
+    (e) => visible(e) && /^Edit name and description of/.test(e.getAttribute('aria-label') || ''),
   );
   // R6 ruling 1 needs the plate's own colour and the page ground to compare it
   // to. The --bg token is resolved through a throwaway element rather than read off the
@@ -154,7 +154,7 @@ const READ_HEADER = `() => {
     // last line.
     pencilOnLastLine: (() => {
       const title = h1 ? h1.querySelector('[data-deck-title]') : null;
-      const pencil = [...header.querySelectorAll('[aria-label^="Rename deck: "]')].find(visible);
+      const pencil = [...header.querySelectorAll('[aria-label^="Edit name and description of "]')].find(visible);
       const block = header.querySelector('[data-wash-label]');
       if (!title || !pencil || !block) return null;
       const range = document.createRange();
@@ -324,8 +324,8 @@ try {
 
       // R6 ruling 4 — the header is reachable from list contexts, so the label
       // has to name the deck it is about to rename.
-      if (h.renameLabel !== `Rename deck: ${h.title}`) {
-        fail(`rename trigger labelled "${h.renameLabel}", not "Rename deck: ${h.title}"`);
+      if (h.renameLabel !== `Edit name and description of ${h.title}`) {
+        fail(`rename trigger labelled "${h.renameLabel}", not "Edit name and description of ${h.title}"`);
       }
       if (!h.title) fail(`no title in the header`);
       // The phone trigger is always visible because there is no hover, so it
@@ -440,7 +440,7 @@ try {
     // pattern also says the prefix is the intent, rather than leaning on
     // Playwright's substring matching to make a whole-name query work.
     const pencil = page
-      .getByRole("button", { name: /^Rename deck: / })
+      .getByRole("button", { name: /^Edit name and description of / })
       .locator("visible=true");
 
     // The pencil is a button inside a 14px holder beside the heading, with its
@@ -453,7 +453,7 @@ try {
     // band's own art layer, a header that grew — would have passed.
     const reach = await page.evaluate(
       `(() => {
-        const el = [...document.querySelectorAll('[aria-label^="Rename deck: "]')]
+        const el = [...document.querySelectorAll('[aria-label^="Edit name and description of "]')]
           .find((b) => b.getClientRects().length);
         if (!el) return null;
         const r = el.getBoundingClientRect();
