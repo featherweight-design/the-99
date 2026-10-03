@@ -101,6 +101,26 @@ describe("the proxy list", () => {
     expect(screen.getByText(proxyCopy.empty.noDecksAction)).toBeTruthy();
   });
 
+  it("links back to the collection from its breadcrumb (H19)", () => {
+    render(<ProxyListView newestAsOf={NEWEST} rows={[row()]} hasDecks hasCollection />);
+    const back = screen.getByRole("link", { name: proxyCopy.page.breadcrumb });
+    expect(back.getAttribute("href")).toBe("/collection");
+  });
+
+  it("stretches the card's button over the whole row, under the deck links (H20)", () => {
+    // jsdom lays nothing out, so this pins the structure the press depends on: the
+    // row is the positioned ancestor the stretch fills, and each deck link sits on
+    // a layer above it so a press on a deck name still reaches the deck.
+    render(<ProxyListView newestAsOf={NEWEST} rows={[row()]} hasDecks hasCollection />);
+    const trigger = screen.getByRole("button", { name: proxyCopy.row.cardAria("The Ozolith") });
+    expect(trigger.className).toMatch(/after:absolute/);
+    expect(trigger.className).toMatch(/after:inset-0/);
+    expect(trigger.closest("li")!.className).toMatch(/\brelative\b/);
+    const deck = screen.getByRole("link", { name: proxyCopy.row.deckAria("HD Gods") });
+    expect(deck.className).toMatch(/\brelative\b/);
+    expect(deck.className).toMatch(/z-\[1\]/);
+  });
+
   it("offers no way to unmark from here", () => {
     // Read-only by ruling: a row belongs to several decks and the control is per
     // deck, so unmarking happens where the decision was made.
