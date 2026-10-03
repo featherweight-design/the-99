@@ -1049,9 +1049,10 @@ export function SetGridView(props: SetGridViewProps) {
           ) : null}
           {/* The field leads the row and is the ONLY child that shrinks — `min-w-0` on it
               and `shrink-0` on everything else is what keeps the row from wrapping. At
-              390px the arithmetic is tight and deliberate: `Filters` with a badge is 93, the
-              compact `Sort` trigger took the slot `Missing` (76) left when H13 moved ownership
-              into the sheet, and two gaps are 16, so the field keeps its 132 minimum.
+              390px the row is tight: `Filters` carries a badge, and the compact `Sort`
+              trigger took the slot `Missing` left when H13 moved ownership into the sheet.
+              That trigger's own width was never re-derived against the 132px floor —
+              probe-sets measures the field's resolved width rather than asserting a sum.
 
               Never in the sheet. A second field behind `Filters` is two controls with one
               accessible name — the defect this page's one-mount controls exist to avoid —
@@ -1270,9 +1271,7 @@ export function SetGridView(props: SetGridViewProps) {
               key={`sort-${isDesktop ? "wide" : "compact"}`}
               desktopRowMinPx={44}
               compact={!isDesktop}
-              copy={isDesktop
-                ? setFilterCopy.sort.panel
-                : { ...setFilterCopy.sort.panel, triggerOne: undefined }}
+              copy={setFilterCopy.sort.panel}
               options={sortOptions}
               selected={[filters.sort]}
               selectionMode="single"
