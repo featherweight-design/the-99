@@ -2,13 +2,13 @@
 
 "Today" means the reader's collection and the newest price at the moment the version opens.
 
-| Row | Dot | Beside the name | Tag, md+ / phone | Frame |
+| Row | Dot | Beside the name | Tag, lg+ / below lg | Frame |
 |---|---|---|---|---|
 | In · owned ≥ `to` | filled `--success` | — | — | 1b 1e (Aang, Earthshape) |
-| In · owned 0, priced | dashed `--fg-locked` | — | `buy · $2.40` / `$` | 1b 1e (Bumi) |
+| In · owned 0, priced | dashed `--fg-locked` | — | `buy · $2.40` / `$2.40` | 1b 1e (Bumi) |
 | In · owned 0, no price | dashed | — | `buy` / `$` (BuyTag `absent`) | — |
 | In · owned 0, sold out | dashed | — | `buy · sold out` / `$` | — |
-| In · 0 < owned < `to` | filled | `own 1 of 4` | `buy · $0.35` / `$` | 1b 1e (Persistent Petitioners) |
+| In · 0 < owned < `to` | filled | `own 1 of 4` | `buy · $0.35` / `$0.35` | 1b 1e (Persistent Petitioners) |
 | In · quantity move, owned ≥ `to` | filled | pair in the name (`Plains 6 → 7`) | — | 1b 1e |
 | In · quantity move, owned < `to` | filled | pair + `own 2 of 4` | tag | — |
 | In · basic land | filled (always) | — | never | 1b 1e |
@@ -19,4 +19,6 @@
 | Only cuts | — | — | — | No `todayNote` |
 | v1 / `noChange` / `diffUnavailable` | — | — | — | 1d 1f: unchanged, no figures |
 
-`own N of M` uses all printings the reader owns. It is the same count the decklist's short figure reads.
+`own N of M` uses all printings the reader owns: `sum(collection_items.quantity)` across printings. It is not the decklist's `short N`, which is claim-relative.
+
+**Corrected in the build (readiness findings 1 and 2):** the tag is `full` from `lg` (1024px), not `md`, because at 820 a partly owned row left the name about 40px. Below `lg` the collapsed tag draws the live figure (`$2.40`), as `BuyTag` always does; a bare `$` only when there is no live price (no price, or sold out).
