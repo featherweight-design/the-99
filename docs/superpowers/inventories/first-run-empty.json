@@ -18,7 +18,7 @@
     {
       "id": "collection-locked",
       "label": "/collection \u2014 locked chrome on its own route",
-      "view": "src/app/collection/page.tsx",
+      "view": "src/app/collection/(list)/page.tsx",
       "steps": [
         {
           "goto": "/collection",

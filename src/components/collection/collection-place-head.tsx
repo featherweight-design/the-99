@@ -1,7 +1,7 @@
 // The head every route of the collection place starts with: /collection's title block, then
 // the strip of place tabs (collection surfaces, Call 4; R2 §Q1).
 //
-// ONE BLOCK, MOUNTED THREE TIMES, so the strip cannot move when a reader presses one of its
+// ONE BLOCK, MOUNTED ONCE, so the strip cannot move when a reader presses one of its
 // own tabs. Every height in it comes from content, never from a measurement: 28px of top
 // padding, a 45px title line, 4 + 18 for the stats line and a 14px gap put the strip's top
 // at 109 on all three routes from `md`. That is why an empty collection keeps its stats line
