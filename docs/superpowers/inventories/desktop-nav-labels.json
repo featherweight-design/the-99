@@ -1,0 +1,17 @@
+{
+  "feature": "Desktop nav labels — the rail by input",
+  "note": "PR 1 (the touch rail). Widths: 1300 with a pointer (the rail as today, 62px), 768 and 852x393 under (hover: none) (the 88px labelled rail, and its short form), and 390 (the phone tab bar, untouched). First run needs an account with no cards, which no fixture account is: walk it with probe:nav-labels and PROBE_LOCKED_EMAIL.",
+  "clearAbout": true,
+  "widths": [
+    { "label": "pointer-1300", "width": 1300, "height": 900 },
+    { "label": "touch-768", "width": 768, "height": 1024, "touch": true },
+    { "label": "touch-852x393", "width": 852, "height": 393, "touch": true },
+    { "label": "phone-390", "width": 390, "height": 844 }
+  ],
+  "rows": [
+    { "id": "home", "label": "/ — Home", "view": "src/components/shell/nav.tsx", "steps": [{ "goto": "/", "settle": 2500 }] },
+    { "id": "decks", "label": "/decks", "view": "src/components/shell/nav.tsx", "steps": [{ "goto": "/decks", "settle": 2500 }] },
+    { "id": "collection", "label": "/collection", "view": "src/components/shell/nav.tsx", "steps": [{ "goto": "/collection", "settle": 3000 }] },
+    { "id": "commanders", "label": "/commanders", "view": "src/components/shell/nav.tsx", "steps": [{ "goto": "/commanders", "settle": 3000 }] }
+  ]
+}

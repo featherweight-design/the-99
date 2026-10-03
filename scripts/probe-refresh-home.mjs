@@ -43,6 +43,7 @@
 //      2.5px apart in every pair), and the bar's `flex-1` removed (0px bars).
 //
 // Run: `node scripts/probe-refresh-home.mjs`, against local dev.
+// `PROBE_TOUCH=1` runs every width as a touch screen (the 88px desktop rail) and adds 1190.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
@@ -194,11 +195,18 @@ async function main() {
     // narrowest phone it measures (F3).
     { label: "pair-1300", width: 1300, height: 900 },
     { label: "pair-1180", width: 1180, height: 900 },
+    // The rail's touch width moves the pair's need from ~1168 to ~1194 of viewport (audit E6), so a
+    // touch walk reads the band just above the threshold as well.
+    ...(process.env.PROBE_TOUCH === "1" ? [{ label: "pair-1190", width: 1190, height: 900 }] : []),
     { label: "phone-360", width: 360, height: 780, isMobile: true, hasTouch: true },
   ]) {
     const context = await browser.newContext({
       viewport: { width: vp.width, height: vp.height },
-      hasTouch: vp.hasTouch ?? false,
+      // PROBE_TOUCH=1 walks every width as a touch screen, where the desktop rail is 88px and
+      // `main` 26px narrower (desktop nav labels audit E6): the 1180 split's stamp check is the
+      // measurement that says whether the threshold still holds there. `hasTouch` is what makes
+      // Chromium report `(hover: none)`; CDP's media emulation does not cover `hover`.
+      hasTouch: vp.hasTouch ?? process.env.PROBE_TOUCH === "1",
       isMobile: vp.isMobile ?? false,
     });
     const page = await context.newPage();
