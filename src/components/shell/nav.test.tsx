@@ -142,9 +142,12 @@ describe("NavRail on a touch screen", () => {
   it("makes the nav the one scroll region, with the mark and the account control outside it", () => {
     const { container } = render(<NavRail locked={false} theme="amonkhet" />);
     const nav = container.querySelector("[data-rail-nav]")!;
-    for (const cls of ["touch:overflow-y-auto", "touch:flex-1", "touch:min-h-0", "touch:py-[4px]"]) {
+    for (const cls of ["touch:overflow-y-auto", "touch:flex-1", "touch:min-h-0", "touch:pt-[4px]", "touch:pb-[8px]"]) {
       expect(nav.className).toContain(cls);
     }
+    // V1 tightens the gap between icon and label when short, never the gap between slots, which
+    // stays 4px in the nav and in the well (5 × 44 + 4 × 4 = 236; the well's 188 and its 4 to the foot).
+    expect(nav.className).not.toMatch(/touch-short:gap-/);
     expect(nav.contains(screen.getByRole("img", { name: /the 99/i }))).toBe(false);
   });
 
@@ -154,6 +157,7 @@ describe("NavRail on a touch screen", () => {
     for (const cls of ["touch:w-[80px]", "touch:rounded-[14px]", "touch:px-[3px]", "touch-short:pb-[5px]"]) {
       expect(well.className).toContain(cls);
     }
+    expect(well.className).not.toMatch(/touch-short:gap-/);
   });
 
   it("re-places an open lock note when the nav scrolls under it (audit V-E3)", () => {

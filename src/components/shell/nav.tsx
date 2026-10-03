@@ -231,7 +231,7 @@ function RailLock({ pathname }: { pathname: string }) {
   return (
     <div
       data-lock-well
-      className="flex w-[48px] shrink-0 flex-col items-center gap-1 rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-sunken)] pt-[4px] pb-[9px] touch:w-[80px] touch:rounded-[14px] touch:px-[3px] touch-short:gap-[2px] touch-short:pb-[5px]"
+      className="flex w-[48px] shrink-0 flex-col items-center gap-1 rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-sunken)] pt-[4px] pb-[9px] touch:w-[80px] touch:rounded-[14px] touch:px-[3px] touch-short:pb-[5px]"
     >
       {LOCKABLE.map(({ href, label }) => {
         const isOpen = open?.href === href;
@@ -542,12 +542,13 @@ export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey })
           the account control, so the account control is always reachable on a
           short screen (V1's backstop). It only scrolls below 349px of column
           (392 in first run). Every child is `shrink-0`, or a column too short for
-          it would squeeze the slots before it scrolled. The 4px top and bottom
-          keep the focus ring of the first and last slot clear of the box's
-          clip (V-E2). */}
+          it would squeeze the slots before it scrolled. The 4px on top keeps the
+          first slot's focus ring clear of the box's clip (V-E2); the 8px below is
+          V1's minimum above the account control. The slots stay 4px apart when
+          short: V1 tightens only the gap between icon and label. */}
       <nav
         data-rail-nav
-        className="flex flex-col items-center gap-1 touch:min-h-0 touch:w-full touch:flex-1 touch:overflow-y-auto touch:py-[4px] touch-short:gap-[2px]"
+        className="flex flex-col items-center gap-1 touch:min-h-0 touch:w-full touch:flex-1 touch:overflow-y-auto touch:pt-[4px] touch:pb-[8px]"
         aria-label="Primary"
       >
         {ITEMS.filter((i) => !locked || !i.lockable).map(({ href, label }) => {
