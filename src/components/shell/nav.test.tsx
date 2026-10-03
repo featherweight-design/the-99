@@ -61,12 +61,14 @@ describe("NavRail", () => {
     expect(tabs.className).toContain("z-40");
   });
 
-  it("is icon-only beside a pointer, so every item carries its label as an accessible name and a tooltip", () => {
+  it("is icon-only beside a pointer, so every item carries its label as an accessible name and no native tooltip", () => {
     render(<NavRail locked={false} theme="amonkhet" />);
     const nav = screen.getByRole("navigation", { name: "Primary" });
     for (const label of LABELS) {
       const item = within(nav).getByRole("link", { name: label });
-      expect(item).toHaveAttribute("title", label);
+      // The name tag draws the name beside a pointer (rail-tag.test.tsx); a native `title`
+      // would draw a second, browser tooltip over it (audit E3).
+      expect(item).not.toHaveAttribute("title");
       // The label's only text is the touch rail's span, which is hidden unless
       // `(hover: none)` (jsdom applies no media query, so this reads the class)
       // and aria-hidden, so the name is heard once (audit E3).

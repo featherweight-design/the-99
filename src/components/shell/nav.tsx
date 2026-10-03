@@ -7,6 +7,7 @@ import { AccountMenu } from "./account-menu";
 import { NavIcon, type NavHref } from "./nav-icons";
 import { Padlock } from "./padlock";
 import { PendingPip } from "./pending-pip";
+import { useRailTag } from "./rail-tag";
 import { useAboutSheetUp } from "./about-sheet-presence";
 import { usePendingPush } from "./pending-push";
 import { Crowned99 } from "../marks";
@@ -481,15 +482,19 @@ type NavSlotProps = {
   // tab bar leaves the name to its visible label.
   name: string | undefined;
   className: string;
+  // The pointer rail's name tag listens on its slots (useRailTag). The tab bar passes none.
+  handlers?: ReturnType<ReturnType<typeof useRailTag>["bind"]>;
   children: React.ReactNode;
 };
 
-function NavSlot({ href, name, active, pip, className, children }: NavSlotProps) {
+// No `title`: the pointer rail draws its own tag (desktop nav labels R2, audit E3), and a native
+// tooltip would show beside it.
+function NavSlot({ href, name, active, pip, className, handlers, children }: NavSlotProps) {
   return (
     <Link
       href={href}
-      title={name}
       aria-label={name}
+      {...handlers}
       aria-current={active ? "page" : undefined}
       className={`relative ${className}`}
     >
@@ -501,6 +506,9 @@ function NavSlot({ href, name, active, pip, className, children }: NavSlotProps)
 
 export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey }) {
   const pathname = usePathname();
+  // Live slots only: a locked slot's note already names it, and two popovers from one slot is
+  // the collision the handoff's D1 warned of. Home, live in first run, gets the tag.
+  const { bind, tag } = useRailTag(pathname);
 
   return (
     <aside
@@ -564,6 +572,7 @@ export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey })
               href={href}
               active={active}
               pip="rail"
+              handlers={bind(href, label)}
               // No `transition-colors`: the pending fill below must clear the frame the new page
               // lands, not fade out over it (audit correction 4).
               className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] ${RAIL_TOUCH_SLOT} ${
@@ -589,6 +598,7 @@ export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey })
       <div className="mt-auto shrink-0">
         <AccountMenu panel="popover" theme={theme} />
       </div>
+      {tag}
     </aside>
   );
 }

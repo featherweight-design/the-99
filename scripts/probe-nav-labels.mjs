@@ -3,7 +3,13 @@
 // query and jsdom applies none.
 //
 // Four contexts:
-//   pointer-1300  1300x900, no emulation. The rail is today's: 62px, 38px slots, no visible label.
+//   pointer-1300  1300x900, no emulation. The rail is today's: 62px, 38px slots, no visible label,
+//                 no native tooltip. Then the name tag walked with a real mouse (R2, T2): none at
+//                 200ms, open by 500ms, 28px tall at 12.5px / 500, 8px off the rail and centred on
+//                 the slot, painted over the page; it follows to the next slot at once, holds while
+//                 the pointer rests on it, closes once the pointer leaves, waits the full delay again
+//                 after the grace, closes on Escape and on a press, and opens at once on keyboard
+//                 focus. The touch contexts assert no tag is mounted at all.
 //   touch-768     768x1024 under `(hover: none)`. 88px, 72 x 52 slots, each label drawn at 9px on a
 //                 12px line (audit V-E1), `main` 26px narrower, the account control in view.
 //   touch-852     852x393 under `(hover: none)`, a phone held sideways. The short rule: 72 x 44
@@ -155,6 +161,130 @@ function checkSlots(tag, r, { width, height, labelled }) {
   }
 }
 
+const TAG = "aside [data-rail-tag]";
+const slotIn = (page, name) => page.locator(`aside a[aria-label="${name}"]`);
+
+async function centre(locator) {
+  const b = await locator.boundingBox();
+  return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+}
+
+const tagText = (page) => page.evaluate((sel) => document.querySelector(sel)?.textContent ?? null, TAG);
+
+// Polls for up to `ms` and answers the first frame the tag reads `name`, or null.
+async function tagWithin(page, name, ms) {
+  const t0 = Date.now();
+  while (Date.now() - t0 <= ms) {
+    if ((await tagText(page)) === name) return Date.now() - t0;
+    await page.waitForTimeout(10);
+  }
+  return null;
+}
+
+// The name tag beside a pointer (R2, T2). Timings are read off a real clock, so each check leaves
+// room either side of the delay it measures rather than asserting the delay to the millisecond.
+async function walkTag(page) {
+  const tag = "pointer-1300 tag";
+  const home = slotIn(page, "Home");
+  const decks = slotIn(page, "Decks");
+  const commanders = slotIn(page, "Commanders");
+  const titles = await page.evaluate(() => [...document.querySelectorAll("aside a[aria-label]")].filter((a) => a.hasAttribute("title")).length);
+  check(`${tag}: no slot carries a native title`, titles === 0, `${titles} with title`);
+
+  await page.mouse.move(700, 450);
+  const c = await centre(commanders);
+  await page.mouse.move(c.x, c.y);
+  await page.waitForTimeout(200);
+  check(`${tag}: nothing at 200ms`, (await tagText(page)) === null, `read ${await tagText(page)}`);
+  const opened = await tagWithin(page, "Commanders", 600);
+  check(`${tag}: opens by 500ms`, opened !== null && opened <= 300, opened === null ? "never opened" : `${200 + opened}ms`);
+
+  const geo = await page.evaluate((sel) => {
+    const el = document.querySelector(sel);
+    if (!el) return null;
+    const t = el.getBoundingClientRect();
+    const rail = el.closest("aside").getBoundingClientRect();
+    const slot = document.querySelector('aside a[aria-label="Commanders"]').getBoundingClientRect();
+    const cs = getComputedStyle(el);
+    const top = document.elementFromPoint(t.left + t.width / 2, t.top + t.height / 2);
+    return {
+      gap: t.left - rail.right,
+      dy: t.top + t.height / 2 - (slot.top + slot.height / 2),
+      height: t.height,
+      size: cs.fontSize,
+      weight: cs.fontWeight,
+      family: cs.fontFamily,
+      hidden: el.getAttribute("aria-hidden"),
+      onTop: top === el || el.contains(top),
+    };
+  }, TAG);
+  check(`${tag}: 8px off the rail`, geo && near(geo.gap, 8), `gap ${geo?.gap}px`);
+  check(`${tag}: centred on its slot`, geo && Math.abs(geo.dy) <= 0.6, `off by ${geo?.dy}px`);
+  check(`${tag}: 28px tall`, geo && near(geo.height, 28), `${geo?.height}px`);
+  check(`${tag}: 12.5px / 500`, geo && geo.size === "12.5px" && geo.weight === "500", `${geo?.size} / ${geo?.weight}`);
+  check(`${tag}: set in the sans, not the rail's mono`, geo && /plex.?sans/i.test(geo.family) && !/mono/i.test(geo.family.split(",")[0]), `${geo?.family}`);
+  check(`${tag}: aria-hidden`, geo?.hidden === "true", `aria-hidden ${geo?.hidden}`);
+  check(`${tag}: painted over the page`, geo?.onTop === true, geo?.onTop ? "on top" : "covered");
+
+  // Straight to the next slot: no second delay.
+  const d = await centre(decks);
+  await page.mouse.move(d.x, d.y, { steps: 4 });
+  const followed = await tagWithin(page, "Decks", 150);
+  check(`${tag}: follows to the next slot at once`, followed !== null, followed === null ? `read ${await tagText(page)}` : `${followed}ms`);
+
+  // Across the 8px gap onto the tag itself, and resting there.
+  const t = await page.locator(TAG).boundingBox();
+  await page.mouse.move(t.x + t.width / 2, t.y + t.height / 2, { steps: 6 });
+  await page.waitForTimeout(400);
+  check(`${tag}: holds while the pointer rests on it`, (await tagText(page)) === "Decks", `read ${await tagText(page)}`);
+
+  // Away: closes after its short delay.
+  await page.mouse.move(700, 450, { steps: 4 });
+  await page.waitForTimeout(250);
+  check(`${tag}: closes once the pointer leaves`, (await tagText(page)) === null, `read ${await tagText(page)}`);
+
+  // Back after the grace: the full delay again.
+  await page.waitForTimeout(500);
+  await page.mouse.move(c.x, c.y);
+  await page.waitForTimeout(150);
+  check(`${tag}: after the grace it waits again`, (await tagText(page)) === null, `read ${await tagText(page)} at 150ms`);
+  const reopened = await tagWithin(page, "Commanders", 600);
+  check(`${tag}: and then opens`, reopened !== null, reopened === null ? "never opened" : `${150 + reopened}ms`);
+
+  // Escape closes it and it stays closed while the pointer stays on that slot.
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(600);
+  check(`${tag}: Escape closes it and it stays closed`, (await tagText(page)) === null, `read ${await tagText(page)}`);
+
+  // A press anywhere closes it. Pressed on the page beside the rail, so nothing navigates.
+  const h = await centre(home);
+  await page.mouse.move(h.x, h.y, { steps: 3 });
+  await tagWithin(page, "Home", 600);
+  await page.evaluate(() => document.querySelector("main")?.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerType: "mouse" })));
+  await page.waitForTimeout(50);
+  check(`${tag}: a press closes it`, (await tagText(page)) === null, `read ${await tagText(page)}`);
+
+  // Keyboard focus opens it at once. A key first, so the focus that follows is `:focus-visible`.
+  await page.mouse.move(700, 450);
+  await page.waitForTimeout(800);
+  await page.keyboard.press("Shift");
+  await commanders.focus();
+  const focused = await tagWithin(page, "Commanders", 100);
+  check(`${tag}: keyboard focus opens it at once`, focused !== null, focused === null ? `read ${await tagText(page)}` : `${focused}ms`);
+  await page.evaluate(() => document.activeElement?.blur());
+  await page.waitForTimeout(50);
+  check(`${tag}: blur closes it`, (await tagText(page)) === null, `read ${await tagText(page)}`);
+}
+
+// A touch screen draws every name in the rail, so the tag is not mounted there at all.
+async function noTag(page, tag) {
+  const c = await centre(slotIn(page, "Commanders"));
+  await page.mouse.move(c.x, c.y);
+  await page.waitForTimeout(700);
+  const n = await page.locator("[data-rail-tag]").count();
+  check(`${tag}: no name tag is mounted`, n === 0, `${n} drawn`);
+}
+
 async function run() {
   await clerkSetup();
   const browser = await chromium.launch();
@@ -169,6 +299,7 @@ async function run() {
       check("pointer-1300: the rail is 62px", r.drawn && near(r.railWidth, 62), `${r.railWidth}px, --rail-w ${r.railVar}`);
       if (r.drawn) checkSlots("pointer-1300", r, { width: 38, height: 38, labelled: false });
       check("pointer-1300: the nav does not scroll", r.navOverflow === "visible", `overflow-y ${r.navOverflow}`);
+      if (r.drawn) await walkTag(page);
       await context.close();
     }
 
@@ -188,6 +319,7 @@ async function run() {
           r.account && r.account.bottom <= r.viewport.height && r.account.top >= 0,
           `account ${r.account?.top}–${r.account?.bottom} in ${r.viewport.height}`,
         );
+        await noTag(page, "touch-768");
       }
       await context.close();
     }

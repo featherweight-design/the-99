@@ -172,6 +172,12 @@ async function run(page, steps) {
     if (step.wait !== undefined) {
       await onPage(page, step.wait).first().waitFor({ state: "visible", timeout: 15_000 });
     }
+    // The desktop rail's name tag is drawn under a resting pointer, and the rail is shell rather
+    // than page, so it is the one step reached outside `onPage`: named by the slot's own
+    // `aria-label` inside the rail, never by a free selector, so it cannot wander into the page.
+    if (step.hoverRail !== undefined) {
+      await page.locator(`aside a[aria-label="${step.hoverRail}"]`).first().hover({ timeout: 15_000 });
+    }
     if (step.settle !== undefined) await page.waitForTimeout(step.settle);
     // A surface that only exists part-way down the page — the set head's collapsed bar, the
     // foot of a long column — is reached by scrolling to it, which is a step like any other
