@@ -30,10 +30,10 @@ clamped to 1 to 5. **The player's answer plays no part in this.**
 
 Each rung is drawn by `Rung` in `src/components/decks/bracket-climb.tsx`:
 
-- **yours** (`:168-170`, `:178`, `:217-223`): a 12% ink tint over `--surface` with an ink
+- **yours** (`:164`, `:168-170`, `:178`, `:218-223`): a 12% ink tint over `--surface` with an ink
   border, and the full mark at 26px (36px from `md`). Its label is `where your cards are`, or
   `your cards` on a phone.
-- **below** (`:164`, `:211`): a sunken fill with the upgrade-path label and the drop sentence.
+- **below** (`:163`, `:216-217`, `:280`): a sunken fill with the upgrade-path label and the drop sentence.
 - **above** (`:165`, `:227`, `:289`): a hairline border and the mark at 75%
   (`NEIGHBOUR_OPACITY`, `:40`). It is labeled `already allowed` and carries the sentence
   *Nothing rules it out. It permits more than this deck uses.*
@@ -98,7 +98,7 @@ end up with two treatments.
    "you said"; `src/lib/copy/declaration.ts:13`), and the same rule holds here. Any new string
    goes through copy review in the build lane, not back to Design.
 5. **Both widths.** On the phone, a rung's label is one line with the role at its far end
-   (`bracket-climb.tsx:198-203`). Desktop has a 186px first column. A longer role label has to
+   (`bracket-climb.tsx:196-202`). Desktop has a 186px first column. A longer role label has to
    fit at 390px.
 
 **Not open:** the verdict head (settled by the declaration round), how the ask is made, drift,
