@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* The desktop rail depends on the input (desktop nav labels handoff, R2): a touch
+   screen gets the 88px labelled rail, and a short touch screen (a phone held
+   sideways, V1) the compact one. Named once so the rail's classes read as rules
+   rather than as media queries. */
+@custom-variant touch (@media (hover: none));
+@custom-variant touch-short (@media (hover: none) and (max-height: 459.98px));
+
 /* ------------------------------------------------------------------
  * Brand tokens — the 37-key contract enforced by src/lib/theme/contract.test.ts.
  * Semantic names first; raw hexes live only here.
@@ -493,6 +500,14 @@ body { font-family: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif; }
    Deliberately not a theme token: the theme contract is a colour contract, and
    `parseThemeBlocks` reads only `:root` and `[data-theme]` blocks. */
 html { --tabbar-h: 74px; }
+
+/* The desktop rail's width (desktop nav labels handoff, R2): 62px beside a
+   pointer, and 88px under `(hover: none)`, where every slot carries its label
+   (72px slot + 2 × 7.5 + the 1px hairline). `main` is a flex sibling and measures
+   itself, so only what is placed against the rail by hand reads this.
+   Geometry, not theme, for the same reason as `--tabbar-h`. */
+html { --rail-w: 62px; }
+@media (hover: none) { html { --rail-w: 88px; } }
 
 /* The lift every dialog in the app sits on — the card modal, the export dialog,
    the collection's confirm and issue dialogs, and Clerk's own popover, which is

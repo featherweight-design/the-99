@@ -110,8 +110,9 @@ export function AboutSheet({ state }: { state: SheetState }) {
         "px-[18px] pt-[16px] pb-[14px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] " +
         // Phone (§N5): full width, above the tab bar.
         "inset-x-[12px] bottom-[calc(var(--tabbar-h)+10px)] " +
-        // From the shell's md, beside the 62px rail (§N4, audit E8).
-        "md:right-auto md:left-[82px] md:bottom-[20px] md:w-[340px]"
+        // From the shell's md, 20px beside the rail (§N4, audit E8). The rail is 62px beside a
+        // pointer and 88px on touch (desktop nav labels), so the offset reads its width.
+        "md:right-auto md:left-[calc(var(--rail-w)+20px)] md:bottom-[20px] md:w-[340px]"
       }
     >
       <span className="sr-only" aria-live="polite">
