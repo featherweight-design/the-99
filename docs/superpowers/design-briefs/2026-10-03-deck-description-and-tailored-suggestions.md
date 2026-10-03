@@ -60,10 +60,12 @@ Hugh ruled seven points the same day (quoted in full under "The rulings," below)
    whole module) finds no reference to intent anywhere — the overview does not read it today.
    **Ruling text says it should inform both**, which is new wiring, not a rename.
 6. **Suggested changes takes no request text, no price cap of its own, no set filter, and no
-   "Only from my collection" today.** Its only inputs are the stored deck list, the stored games,
-   what the reader owns, and the commander's recommended mix; the only per-deck memory is the
-   intent line itself. (`TuningPanel`, `src/components/decks/tuning-panel.tsx`; the state machine
-   is `src/lib/tuning/state.ts` and `src/lib/tuning/prompt.ts`.) The prior art is Help me choose,
+   "Only from my collection" today.** Its inputs are the stored deck list, the stored games, what
+   the reader owns, the commander's recommended mix, the stored overview, the deck's key cards and
+   universal staples, and any locked cards (`buildEvidencePack`, called from
+   `src/app/decks/tuning-actions.ts:129-138`); the only per-deck memory is the intent line itself.
+   (`TuningPanel`, `src/components/decks/tuning-panel.tsx`; the state machine is
+   `src/lib/tuning/state.ts` and `src/lib/tuning/prompt.ts`.) The prior art is Help me choose,
    not Shopping: Help me choose already asks for a budget, sets (Printed in) and "Only cards I
    own" (`src/lib/copy/help-me-choose.ts`). Decks already store some of those answers per deck —
    `decks.answer_budget_cents` and `decks.answer_owned_only` (`src/db/schema.ts`, the block
@@ -104,10 +106,12 @@ Hugh ruled seven points the same day (quoted in full under "The rulings," below)
   field's size, position relative to Analyze and the credit note, and its state at both the idle
   and loading phases (does the field remain editable while an Analyze press is in flight? Ruling 1
   doesn't say).
-- **Where it's edited after the first save.** "Via the deck-name pencil" (ruling 1) — the
-  existing rename control that already sits on the deck name. Draw what that control looks like
-  once it edits two fields (name and description) rather than one, and the inline editing surface
-  for both.
+- **Where it's edited once saved.** "Via the deck-name pencil" (ruling 1) — the existing rename
+  control that already sits on the deck name. The field is optional, so a player can press Analyze
+  with no description ever typed; the boundary is keyed to a description having been SAVED, not to
+  the first Analyze press, or a deck analyzed with no description would have nowhere for the
+  original empty-state ask to go. Draw what that control looks like once it edits two fields (name
+  and description) rather than one, and the inline editing surface for both.
 - **Label and placeholder.** Hugh's own wording is "Describe your deck in 1-2 sentences" — decide
   whether that is the field's label, its placeholder, or both, and whether "What is this deck
   for?" survives anywhere.
