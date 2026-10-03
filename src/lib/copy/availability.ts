@@ -198,8 +198,8 @@ export const availabilityCopy = {
 
   // ── Surface 4 · decklist over-committed summary ───────────────────────
   // Renders ONLY when count > 0. Not an error: no dismiss, no retry, no icon.
-  // Straight-with-a-shrug, per the voice split — this is a real-world problem
-  // but not a data-loss or safety one.
+  // Straight, and the fact alone: it used to close on a shrug ("Nothing’s broken
+  // here…"), which H21 cut, because the facts stand on their own.
   deckSummary: {
     heading: spokenForTwice,
     // The reassurance tail is gone (H21, Hugh's walk 2026-10-02): the facts stand on their
