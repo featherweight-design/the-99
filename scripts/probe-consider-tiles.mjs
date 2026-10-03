@@ -116,7 +116,6 @@ const fixtureDeckIds = new Set();
 const fixtureCollectionRows = [];
 /** A single `deck_cards` row this run added to the WALKED deck, for the combo fixture. */
 let fixtureDeckCard = null;
-let cleaned = false;
 
 /**
  * A dedicated connection holding the walked user's collection lock for this run's whole
@@ -150,9 +149,21 @@ async function unlockCollection() {
   }
 }
 
-async function cleanupFixtures() {
-  if (cleaned) return;
-  cleaned = true;
+/**
+ * Memoized to a single IN-FLIGHT PROMISE, not a boolean. A boolean set before the first
+ * `await` lets a second, concurrent call (SIGINT firing while the main `finally` is already
+ * running cleanup, for instance) see "already cleaned" and return immediately — so the
+ * caller that raced in can close the pool, or exit, while the real cleanup is still deleting
+ * rows underneath it (Copilot round 6, medium "previously missed"). Every caller now awaits
+ * the SAME promise, so a second call waits for the first to finish rather than skipping past it.
+ */
+let cleanupPromise = null;
+function cleanupFixtures() {
+  if (!cleanupPromise) cleanupPromise = runCleanup();
+  return cleanupPromise;
+}
+
+async function runCleanup() {
   // A cleanup failure left only logged (never counted into `failures`) let a run print "All
   // checks passed." and exit 0 while a fixture deck, a collection row or the combo's
   // deck_cards row stayed behind on the walked user's real data (Copilot round 2, medium).
@@ -573,11 +584,18 @@ async function run() {
       const href = process.env.PROBE_DECK ? `/decks/${process.env.PROBE_DECK}` : await findDeck(p);
       if (!href) throw new Error("No deck with open slots on this account — pass PROBE_DECK.");
       const deckId = href.split("/decks/")[1];
+      // SCOPED to the signed-in user — this fixture goes on to WRITE a `deck_cards` row to
+      // this deck (`buildComboFixture`), and `PROBE_DECK` is an env var a caller can mistype
+      // or copy from another run. An unscoped lookup would mutate a deck belonging to another
+      // account (Copilot round 6, high).
       const { rows: deckRows } = await pool.query(
         `select commander_oracle_id, (select array_agg(oracle_id) from deck_cards where deck_id = $1) as cards
-           from decks where id = $1`,
-        [deckId],
+           from decks where id = $1 and user_id = $2`,
+        [deckId, userId],
       );
+      if (deckRows.length === 0) {
+        throw new Error(`Deck ${deckId} does not belong to the signed-in account — refusing to touch it.`);
+      }
       await c.close();
       return {
         href, userId, deckId,
