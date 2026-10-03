@@ -94,12 +94,14 @@ export function CommitmentsCard({
           color="var(--fg)"
         />
 
-        {/* The collection's availability view, filtered to the two states these
-            rows count — cards a committed deck has sleeved, and cards more than
-            one has claimed. `/collection` with no filter would be the whole
-            collection, which is not what "review" means here. */}
+        {/* The collection's availability view, filtered to OVER-COMMITTED alone
+            (H2, Hugh 2026-10-02): the cards more committed decks want than you own,
+            which are the ones to review. It used to add `in use` too, and on a real
+            collection that buried 43 over-committed cards under 1,015 that are
+            merely sleeved, which needs no review. `/collection` with no filter
+            would be the whole collection, which is not what "review" means here. */}
         <GhostButton
-          href="/collection?avail=inuse,over"
+          href="/collection?avail=over"
           // 44 on a phone, 32 above it. The card was desktop-only when this was
           // written, so it kept the desktop form at every width; it is the last
           // block on the phone now and its control is a tap target.

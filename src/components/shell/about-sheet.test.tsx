@@ -21,6 +21,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 import { AboutSheet, sheetTitles } from "./about-sheet";
+import { useAboutSheetUp } from "./about-sheet-presence";
 
 const entries = (n: number) =>
   Array.from({ length: n }, (_, i) => ({ id: `e${i}`, title: `Entry ${i}` }));
@@ -84,6 +85,24 @@ describe("AboutSheet", () => {
     fireEvent.click(screen.getByRole("button", { name: "Later" }));
     expect(screen.queryByRole("region")).toBeNull();
     expect(push).not.toHaveBeenCalled();
+  });
+
+  // H1: the tab bar's lock note waits on these two facts, so they are pinned on the REAL
+  // sheet. The tab bar's own test drives the store directly and would pass without either.
+  it("reports itself up while drawn and down once Later closes it, and marks its box (H1)", () => {
+    function Probe() {
+      return <span data-testid="up">{String(useAboutSheetUp())}</span>;
+    }
+    render(
+      <>
+        <AboutSheet state={{ kind: "behind", entries: entries(1) }} />
+        <Probe />
+      </>,
+    );
+    expect(screen.getByTestId("up").textContent).toBe("true");
+    expect(screen.getByRole("region").hasAttribute("data-about-sheet")).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Later" }));
+    expect(screen.getByTestId("up").textContent).toBe("false");
   });
 
   it("Escape inside closes it (N7)", () => {

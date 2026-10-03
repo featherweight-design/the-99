@@ -142,4 +142,16 @@ describe("HeroCommander", () => {
     expect(cta.className).toContain("w-full");
     expect(cta.className).not.toContain("sm:flex-none");
   });
+
+  it("opens the commander's page from its art, without a second named link (H4)", () => {
+    const { container } = render(<HeroCommander item={item()} inUse={0} />);
+    const band = container.querySelector(".hero-band")!;
+    const art = band.querySelector('[data-testid="hero-art-link"]')!;
+    expect(art.getAttribute("href")).toBe("/commanders/atraxa-praetors-voice");
+    expect(art.getAttribute("aria-hidden")).toBe("true");
+    expect(art.getAttribute("tabindex")).toBe("-1");
+    // Covers the whole band, which is the positioned box it fills.
+    expect(art.className).toMatch(/absolute inset-0/);
+    expect(band.className).toMatch(/\brelative\b/);
+  });
 });

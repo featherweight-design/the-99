@@ -64,4 +64,17 @@ describe("CommitmentsCard", () => {
     );
     expect(screen.getByRole("link", { name: "Review commitments" })).toBeInTheDocument();
   });
+
+  it("reviews the over-committed cards alone, not the merely sleeved ones (H2)", () => {
+    render(
+      <CommitmentsCard
+        commitments={{ inUse: 1015, overCommitted: 43 }}
+        shopping={shopping(18, 9480)}
+        totalCards={1284}
+      />,
+    );
+    expect(screen.getByRole("link", { name: "Review commitments" }).getAttribute("href")).toBe(
+      "/collection?avail=over",
+    );
+  });
 });
