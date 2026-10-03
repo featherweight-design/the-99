@@ -546,10 +546,13 @@ export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey })
           it would squeeze the slots before it scrolled. The 4px on top keeps the
           first slot's focus ring clear of the box's clip (V-E2); the 8px below is
           V1's minimum above the account control. The slots stay 4px apart when
-          short: V1 tightens only the gap between icon and label. */}
+          short: V1 tightens only the gap between icon and label. The scrollbar
+          is hidden, as the deck page's tab strip hides its own: a classic one
+          takes ~15px of the 87px column and would clip the 72px slot's ring at
+          both sides. The region still scrolls by touch and by wheel. */}
       <nav
         data-rail-nav
-        className="flex flex-col items-center gap-1 touch:min-h-0 touch:w-full touch:flex-1 touch:overflow-y-auto touch:pt-[4px] touch:pb-[8px]"
+        className="flex flex-col items-center gap-1 touch:min-h-0 touch:w-full touch:flex-1 touch:overflow-y-auto touch:pt-[4px] touch:pb-[8px] touch:[scrollbar-width:none] touch:[&::-webkit-scrollbar]:hidden"
         aria-label="Primary"
       >
         {ITEMS.filter((i) => !locked || !i.lockable).map(({ href, label }) => {

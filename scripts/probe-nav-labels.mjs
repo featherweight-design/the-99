@@ -112,6 +112,7 @@ const READ_RAIL = () => {
     railVar: getComputedStyle(document.documentElement).getPropertyValue("--rail-w").trim(),
     nav: box(nav),
     navOverflow: nav ? getComputedStyle(nav).overflowY : null,
+    navScrollbar: nav ? getComputedStyle(nav).scrollbarWidth : null,
     navScrollable: nav ? nav.scrollHeight > nav.clientHeight + 1 : false,
     slots,
     account: box(account),
@@ -203,6 +204,10 @@ async function run() {
       check(`${tag}: the rail is 88px`, near(r.railWidth, 88), `${r.railWidth}px`);
       checkSlots(tag, r, { width: 72, height: 44, labelled: true });
       check(`${tag}: the nav is the scroll region`, r.navOverflow === "auto", `overflow-y ${r.navOverflow}`);
+      // Hidden, or a classic scrollbar takes ~15px of the 87px column and clips the ring at both
+      // sides once the region overflows (round 1 of #1181). Read resolved: a class that did not
+      // compile reads `auto` here.
+      check(`${tag}: the scroll region draws no scrollbar`, r.navScrollbar === "none", `scrollbar-width ${r.navScrollbar}`);
       check(
         `${tag}: the account control is whole in the viewport, outside the nav`,
         r.account && r.account.bottom <= r.viewport.height && r.account.top >= r.nav.bottom - 0.5,

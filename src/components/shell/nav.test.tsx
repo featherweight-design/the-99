@@ -148,6 +148,9 @@ describe("NavRail on a touch screen", () => {
     // V1 tightens the gap between icon and label when short, never the gap between slots, which
     // stays 4px in the nav and in the well (5 × 44 + 4 × 4 = 236; the well's 188 and its 4 to the foot).
     expect(nav.className).not.toMatch(/touch-short:gap-/);
+    // A classic scrollbar would take ~15px of the column and clip the slot's ring at both sides.
+    expect(nav.className).toContain("touch:[scrollbar-width:none]");
+    expect(nav.className).toContain("touch:[&::-webkit-scrollbar]:hidden");
     expect(nav.contains(screen.getByRole("img", { name: /the 99/i }))).toBe(false);
   });
 

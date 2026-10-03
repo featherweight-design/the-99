@@ -6,7 +6,7 @@
     { "label": "pointer-1300", "width": 1300, "height": 900 },
     { "label": "touch-768", "width": 768, "height": 1024, "touch": true },
     { "label": "touch-852x393", "width": 852, "height": 393, "touch": true },
-    { "label": "phone-390", "width": 390, "height": 844 }
+    { "label": "phone-390", "width": 390, "height": 844, "touch": true }
   ],
   "rows": [
     { "id": "home", "label": "/ — Home", "view": "src/components/shell/nav.tsx", "steps": [{ "goto": "/", "settle": 2500 }] },
