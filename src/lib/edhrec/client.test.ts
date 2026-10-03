@@ -5,6 +5,7 @@ const stub = vi.hoisted(() => ({ db: {} as Record<string, unknown> }));
 vi.mock("../../db", () => ({ db: stub.db }));
 
 import { cacheRowRetired, fetchEdhrecUncached, resolveEdhrecData, type EdhrecCacheRow } from "./client";
+import { parseEdhrecPayload } from "./parse";
 
 function mockFetch(status: number, htmlStatus = 200): ReturnType<typeof vi.fn> {
   // The JSON API is asked first; a 403 then asks the HTML page, which is the only
@@ -118,6 +119,15 @@ describe("the index retires a cached page it has replaced", () => {
     const result = await resolveEdhrecData("00000000-0000-0000-0000-000000000001", "Atraxa, Praetors' Voice", row(ago(1 * day), ago(3 * day)));
     expect(fetch).not.toHaveBeenCalled();
     expect(result.data).not.toBeNull();
+  });
+
+  it("answers with the page EDHREC just sent even when storing it fails, never the retired one", async () => {
+    const fresh = { container: { json_dict: { cardlists: [{ tag: "newcards", cardviews: [{ name: "Fresh Card", inclusion: 9, potential_decks: 10 }] }] } } };
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ status: 200, ok: true, json: () => Promise.resolve(fresh) })));
+    stub.db.insert = () => { throw new Error("write failed"); };
+    const result = await resolveEdhrecData("00000000-0000-0000-0000-000000000001", "Atraxa, Praetors' Voice", row(ago(3 * day), ago(1 * day)));
+    expect(result.data).toEqual(parseEdhrecPayload(fresh));
+    expect(result.data).not.toEqual(parseEdhrecPayload(row(ago(3 * day), null).payload));
   });
 
   // A 4xx with no body: the page probe (a HEAD) answers its own status.

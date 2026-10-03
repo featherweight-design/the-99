@@ -118,12 +118,20 @@ export async function resolveEdhrecData(
     if (!res.ok) throw new Error(`edhrec ${res.status}`);
     const payload = await res.json();
     const now = new Date();
-    await db.insert(edhrecCache)
-      .values({ commanderOracleId, payload, fetchedAt: now })
-      .onConflictDoUpdate({
-        target: edhrecCache.commanderOracleId,
-        set: { payload, fetchedAt: now },
-      });
+    // The write is its own try: a page EDHREC has just answered is the current snapshot whether
+    // or not storing it succeeds, and falling through to the catch below would serve the cached
+    // row instead, which may be the very page the index retired (§5.2). An unstored page costs
+    // one more fetch on the next read, and nothing else.
+    try {
+      await db.insert(edhrecCache)
+        .values({ commanderOracleId, payload, fetchedAt: now })
+        .onConflictDoUpdate({
+          target: edhrecCache.commanderOracleId,
+          set: { payload, fetchedAt: now },
+        });
+    } catch {
+      // not a fallback: the fresh page is still what this read answers with.
+    }
     return { data: parseEdhrecPayload(payload), unreachable: false };
   } catch {
     // not a fallback: an unreachable EDHREC is reported as degraded, which no page stores.
