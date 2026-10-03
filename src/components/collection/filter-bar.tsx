@@ -503,6 +503,10 @@ export function FilterBar({
               announceId={announceId}
               revision={revision}
               warn={warnResult}
+              // The filter sheet carries its own `role="status"` for the same count
+              // (filter-sheet.tsx) — the same handover `silentResult` gives the shared
+              // chassis elsewhere (rack, decks), so the two never announce it twice.
+              silent={sheetOpen}
             />
           </div>
         </div>

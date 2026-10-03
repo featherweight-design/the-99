@@ -39,9 +39,10 @@ describe("ResultLine", () => {
   });
 
   it("announces the suffix-split line whole, exactly as an un-split one", () => {
-    const { container } = render(<ResultLine line="41 decks" hiddenSuffix=" decks" />);
-    act(() => vi.advanceTimersByTime(1000));
-    expect(container.querySelector("[role='status']")?.textContent).toBe("");
+    const { rerender, container } = render(<ResultLine line="41 decks" hiddenSuffix=" decks" />);
+    rerender(<ResultLine line="12 of 41 decks" hiddenSuffix=" decks" />);
+    act(() => vi.advanceTimersByTime(300));
+    expect(container.querySelector("[role='status']")?.textContent).toBe("12 of 41 decks");
   });
 
   it("ignores a suffix the line does not end with", () => {
