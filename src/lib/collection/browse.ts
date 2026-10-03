@@ -2,6 +2,7 @@ import { cache } from "react";
 import { and, eq, inArray, sql } from "drizzle-orm";
 // Type-only, so the set-filter → browse dependency stays one-way at runtime.
 import type { OwnedSetMeta } from "./set-filter";
+import { matchesColors, type JoinMode } from "../commanders/filter";
 import { availabilityState, type Availability, type AvailabilityState, type AvailabilitySummary } from "../decks/availability";
 import { faceNames, isTwoFaced } from "../cards/faces";
 
@@ -308,6 +309,13 @@ export function toListCards(cards: BrowseCard[]): BrowseListCard[] {
 export type BrowseFilters = {
   search: string;
   colors: string[];       // subset of ["W","U","B","R","G"]
+  /**
+   * How `colors` is matched (H10): `contains` (the default) keeps a card whose identity holds
+   * every selected colour, `exactly` one whose identity is the selection and nothing else. The
+   * lanes' rule, read through `matchesColors`. Absent reads as `contains`, which is every caller
+   * that predates the mode, including the counts that clear the colour selection anyway.
+   */
+  match?: JoinMode;
   /**
    * Multi-select (#100): a card matches when ANY selected type is a substring of
    * its typeLine. ORs internally, ANDs with every other filter — the same shape
@@ -863,10 +871,7 @@ export function filterCards(list: BrowseListCard[], f: BrowseFilters): BrowseLis
     // by its real name will type. Neither name is the truer one, so the filter takes
     // either.
     if (search && !matchesName(c, search)) return false;
-    if (f.colors.length > 0) {
-      const id = new Set(c.colorIdentity);
-      for (const col of f.colors) if (!id.has(col)) return false;
-    }
+    if (!matchesColors(c.colorIdentity, f.colors, f.match ?? "contains")) return false;
     if (types.length > 0) {
       const line = c.typeLine.toLowerCase();
       if (!types.some((t) => line.includes(t))) return false;

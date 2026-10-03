@@ -35,6 +35,32 @@ describe("collectionChips", () => {
     expect(chip.dots).toHaveLength(2);
   });
 
+  // H10: the colour chip's own reset, and the modifier's chip beside it.
+  it("removing the colour chip resets the match to contains, as the rack's rule says", () => {
+    const chip = collectionChips({ ...EMPTY, colors: ["R"], match: "exactly" }, options)[0];
+    expect(chip.key).toBe("colors");
+    expect(chip.next).toEqual({ ...EMPTY, colors: [], match: "contains" });
+  });
+
+  it("draws an m chip only while there are pips for it to modify", () => {
+    const withMatch = collectionChips({ ...EMPTY, colors: ["R"], match: "exactly" }, options);
+    expect(withMatch.map((c) => c.key)).toContain("m");
+    expect(withMatch.find((c) => c.key === "m")?.label).toBe("Exactly");
+
+    // Exactly with nothing lit is the inert state (the control greys it rather than
+    // removing it), and the chip row names only what is actually filtering.
+    expect(collectionChips({ ...EMPTY, match: "exactly" }, options).map((c) => c.key))
+      .not.toContain("m");
+    expect(collectionChips({ ...EMPTY, colors: ["R"] }, options).map((c) => c.key))
+      .not.toContain("m");
+  });
+
+  it("removing the m chip returns to Any and keeps the pips", () => {
+    const chip = collectionChips({ ...EMPTY, colors: ["R"], match: "exactly" }, options)
+      .find((c) => c.key === "m")!;
+    expect(chip.next).toEqual({ ...EMPTY, colors: ["R"], match: "contains" });
+  });
+
   it("names every collapsed value, not just colours", () => {
     // Types, sets and availability all collapse to a count too, and the row
     // this replaces named each one.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { filterByColors } from "./filter";
+import { filterByColors, matchesColors } from "./filter";
 import type { RankedCommander } from "../recs/recommend";
 
 // Minimal stub: only fields needed for filter testing.
@@ -123,5 +123,23 @@ describe("filterByColors", () => {
     const twoBlue = [atraxa, nekusar, stub("Vela", ["U", "B", "R"])];
     const result = filterByColors(twoBlue, ["U", "B", "R"], "exactly");
     expect(result.map((r) => r.name)).toEqual(["Nekusar", "Vela"]);
+  });
+});
+
+// The one rule both the lanes and /collection read (H10).
+describe("matchesColors", () => {
+  it("contains: every selected colour is in the identity", () => {
+    expect(matchesColors(["R", "U"], ["R"], "contains")).toBe(true);
+    expect(matchesColors(["R"], ["R", "U"], "contains")).toBe(false);
+  });
+  it("exactly: the identity is the selection and nothing besides", () => {
+    expect(matchesColors(["R"], ["R"], "exactly")).toBe(true);
+    expect(matchesColors(["R", "U"], ["R"], "exactly")).toBe(false);
+    expect(matchesColors(["U", "R"], ["R", "U"], "exactly")).toBe(true);
+  });
+  it("matches everything with nothing selected, under both modes", () => {
+    expect(matchesColors(["R"], [], "exactly")).toBe(true);
+    expect(matchesColors([], [], "exactly")).toBe(true);
+    expect(matchesColors(["G"], [], "contains")).toBe(true);
   });
 });

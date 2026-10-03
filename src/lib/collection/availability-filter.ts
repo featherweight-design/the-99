@@ -72,6 +72,7 @@ export function buildAvailabilityOptions(
   const surviving = filterCards(cards, {
     search: "",
     colors: filters.colors,
+    match: filters.match,
     types: filters.types,
     setCodes: filters.setCodes,
   });

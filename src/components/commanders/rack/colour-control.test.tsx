@@ -80,4 +80,22 @@ describe("ColourControl", () => {
     expect(container.querySelectorAll("[data-set-shy-hides-narrow]")).toHaveLength(2);
     expect(container.querySelector('[role="radiogroup"]')!.hasAttribute("data-set-shy-hides-narrow")).toBe(true);
   });
+
+  // H10, round 3: /collection's filter sheet already draws "Color identity" as the Group's own
+  // heading around this control, so the control's matching compact caption would repeat it.
+  it("drops its own colour caption when a caller already draws one, keeping the match legend", () => {
+    render(
+      <ColourControl colors={["w"]} match="contains" onColorsChange={noop} onMatchChange={noop}
+        wide={false} hideColourCaption />,
+    );
+    expect(screen.queryByText("Color identity")).toBeNull();
+    expect(screen.getByText("Color match")).toBeInTheDocument();
+  });
+
+  it("draws its own colour caption by default in the compact form", () => {
+    render(
+      <ColourControl colors={["w"]} match="contains" onColorsChange={noop} onMatchChange={noop} wide={false} />,
+    );
+    expect(screen.getByText("Color identity")).toBeInTheDocument();
+  });
 });

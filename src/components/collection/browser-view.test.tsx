@@ -112,6 +112,66 @@ describe("CollectionBrowser — which view it opens as", () => {
     fireEvent.click(grid());
     expect(window.location.search).toContain("view=grid");
   });
+  // H10: the colour match rides in the URL as the lanes' and Sets' `m=exact`, and any rewrite of
+  // the URL (here, the view toggle's) keeps it. `contains`, the default, is never written.
+  it("keeps m=exact through a rewrite of the URL, and writes nothing for contains", () => {
+    window.history.replaceState(null, "", "/collection?c=R&m=exact");
+    const { unmount } = render(view());
+    fireEvent.click(grid());
+    expect(window.location.search).toContain("m=exact");
+    unmount();
+    cleanup();
+    window.history.replaceState(null, "", "/collection?c=R");
+    render(view());
+    fireEvent.click(grid());
+    expect(window.location.search).not.toContain("m=");
+  });
+
+  it("drops m=exact from a URL with no colour it knows, rather than carrying it", () => {
+    for (const qs of ["m=exact", "m=exact&c=Z"]) {
+      window.history.replaceState(null, "", `/collection?${qs}`);
+      const { unmount } = render(view());
+      fireEvent.click(grid());
+      expect(window.location.search).not.toContain("m=");
+      unmount();
+      cleanup();
+    }
+  });
+
+  // H10: the colour control itself, not just the URL round-trip above. jsdom's `matchMedia`
+  // reports the compact form, where the pips and the match control live in the sheet behind
+  // "Filter cards" (the real phone path, not a test artifact — see browser-clear.test.tsx).
+  const openFilters = () => fireEvent.click(screen.getByRole("button", { name: /Filter cards/i }));
+  const anyRadio = () => screen.getByRole("radio", { name: "Any of these" });
+  const exactlyRadio = () => screen.getByRole("radio", { name: "Exactly these" });
+  const redPip = () => screen.getByRole("switch", { name: "Red" });
+
+  it("?m=exact with no colour opens on Any", () => {
+    window.history.replaceState(null, "", "/collection?m=exact");
+    render(view());
+    openFilters();
+    expect(anyRadio()).toHaveAttribute("aria-checked", "true");
+    expect(exactlyRadio()).toHaveAttribute("aria-checked", "false");
+  });
+
+  it("pressing Exactly, with a colour lit, writes m=exact", () => {
+    window.history.replaceState(null, "", "/collection?c=R");
+    render(view());
+    openFilters();
+    fireEvent.click(exactlyRadio());
+    expect(window.location.search).toContain("m=exact");
+    expect(exactlyRadio()).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("turning off the last lit pip while Exactly is active returns the mode to Any", () => {
+    window.history.replaceState(null, "", "/collection?c=R&m=exact");
+    render(view());
+    openFilters();
+    expect(exactlyRadio()).toHaveAttribute("aria-checked", "true");
+    fireEvent.click(redPip());
+    expect(window.location.search).not.toContain("m=");
+    expect(anyRadio()).toHaveAttribute("aria-checked", "true");
+  });
 });
 
 // THE SERVER RENDER (the rows-then-grid flash, `probe:view-flash`). The server could not see a

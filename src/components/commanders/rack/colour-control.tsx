@@ -32,6 +32,7 @@ export function ColourControl({
   wide,
   unavailable,
   shyHidesMatch = false,
+  hideColourCaption = false,
 }: {
   colors: string[];
   match: JoinMode;
@@ -53,6 +54,13 @@ export function ColourControl({
    * applied. Every other caller leaves it off and renders exactly as before.
    */
   shyHidesMatch?: boolean;
+  /**
+   * The compact form's own "Color identity" caption, suppressed for a caller that already
+   * draws that heading around the control — the filter sheet's `Group`, whose `h3` reads the
+   * same string. Every other caller mounts this control with no heading of its own, so this
+   * stays off by default.
+   */
+  hideColourCaption?: boolean;
 }) {
   const narrowMark = shyHidesMatch ? { "data-set-shy-hides-narrow": "" } : {};
   // With nothing lit there is nothing to be exact about: the modifier is inert,
@@ -110,7 +118,7 @@ export function ColourControl({
         wide && live ? "border-[color:var(--accent)]" : "border-[color:var(--border)]",
       ].join(" ")}
     >
-      {!wide && <Caption>{filterCopy.colour.legend}</Caption>}
+      {!wide && !hideColourCaption && <Caption>{filterCopy.colour.legend}</Caption>}
 
       {/* The app's ONE colour control. This drew its own swatches until the
           filter chassis landed: a token square dimmed to .34 unlit on the rack

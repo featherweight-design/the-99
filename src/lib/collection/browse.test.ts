@@ -838,6 +838,16 @@ describe("filterCards", () => {
     // R alone matches both R and R/U cards
     expect(filterCards(list, { search: "", colors: ["R"], types: [], setCodes: [] }).map((c) => c.oracleId).sort()).toEqual(["b", "d"]);
   });
+  // H10: the lanes' Exactly, through the same rule (`matchesColors`).
+  it("Exactly keeps a card whose identity IS the selection, and nothing wider", () => {
+    expect(filterCards(list, { search: "", colors: ["R"], match: "exactly", types: [], setCodes: [] }).map((c) => c.oracleId)).toEqual(["b"]);
+    expect(filterCards(list, { search: "", colors: ["R", "U"], match: "exactly", types: [], setCodes: [] }).map((c) => c.oracleId)).toEqual(["d"]);
+    // Nothing lit is no filter under either mode, never "colorless only".
+    expect(filterCards(list, { search: "", colors: [], match: "exactly", types: [], setCodes: [] })).toHaveLength(4);
+  });
+  it("an absent match reads as contains, as every caller before the mode did", () => {
+    expect(filterCards(list, { search: "", colors: ["R"], match: "contains", types: [], setCodes: [] }).map((c) => c.oracleId).sort()).toEqual(["b", "d"]);
+  });
   it("type filter is case-insensitive substring on typeLine", () => {
     expect(filterCards(list, { search: "", colors: [], types: ["instant"], setCodes: [] }).map((c) => c.oracleId).sort()).toEqual(["b", "c"]);
   });

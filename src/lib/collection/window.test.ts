@@ -26,6 +26,20 @@ describe("parseBrowseParams", () => {
     expect(p.direction).toBe("asc");
   });
 
+  // H10: the colour match, the lanes' and Sets' `m=exact`. Parsed here, by the function the page
+  // cuts its first window with, so the rows drawn first honour it too.
+  it("reads m=exact as an exact colour match, and anything else as contains", () => {
+    expect(params("c=R&m=exact").filters.match).toBe("exactly");
+    for (const qs of ["c=R", "c=R&m=Exact", "c=R&m=1", "c=R&m="]) {
+      expect(params(qs).filters.match).toBe("contains");
+    }
+  });
+
+  // Sets' rule (#1172): with no colour this page recognises there is nothing to be exact about.
+  it.each(["m=exact", "m=exact&c=Z"])("reads %s, with no colour it knows, as contains", (qs) => {
+    expect(params(qs).filters.match).toBe("contains");
+  });
+
   it("falls back to the default for an unknown sort, and ignores availability it cannot read", () => {
     const p = params("sort=nonsense&avail=free", false);
     expect(p.sort).toBe("name");
