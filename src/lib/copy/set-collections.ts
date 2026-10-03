@@ -7,15 +7,15 @@
 //   - nothing here names an internal noun (no "base_set_size", no "booster")
 
 // Hoisted so the chip labels can reach it from inside the same object literal. A chip is a
-// control and takes Title Case; the trigger's value form is lowercase because the caption
-// under it reads `042 · uncommon` in the same register.
+// control and takes Title Case, and so do the panel's rows since H13: the trigger counts
+// rather than naming a value, so the lowercase value form it once needed has no reader.
 import { chassisCopy } from "./filter-chassis";
+import { filterCopy } from "./lanes";
 
 const setFilterCopyRarityOptions = {
   common: "Common", uncommon: "Uncommon", rare: "Rare", mythic: "Mythic",
 } as const;
 
-/** Hoisted for the same reason: the panel's trigger reads these, it does not restate them. */
 /** Hoisted so the chip label reads the control's own words rather than a second copy. */
 const setFilterCopyMissingOnly = {
   label: "Missing only",
@@ -27,8 +27,6 @@ const setFilterCopyMissingOnly = {
 
 const setFilterCopyRarity = {
   label: "Rarity",
-  all: "Rarity · all",
-  value: (r: "common" | "uncommon" | "rare" | "mythic") => `Rarity · ${r}`,
   options: setFilterCopyRarityOptions,
 } as const;
 
@@ -49,7 +47,6 @@ export const setFilterCopy = {
     ariaLabel: (set: string) => `Search cards in ${set}`,
     clear: "Clear the search",
   },
-  colourLabel: "Color",
   missingOnly: setFilterCopyMissingOnly,
   sheetPrimary: (n: number) => (n === 1 ? "Show 1 card" : `Show ${n} cards`),
   // DIMENSIONS only — never missing-only, which sits on the row beside the badge where the
@@ -69,6 +66,8 @@ export const setFilterCopy = {
     colour: chassisCopy.colour.collapsed,
     rarity: (r: "common" | "uncommon" | "rare" | "mythic") =>
       setFilterCopyRarityOptions[r],
+    // The commander rack's modifier chip, read from where that control's words live.
+    match: filterCopy.match.exactlyShort,
     missingOnly: setFilterCopyMissingOnly.label,
   },
   // `Clear all filters` and `No filters on` are the chassis's, reused rather than restated:
@@ -91,22 +90,13 @@ export const setFilterCopy = {
 
   // The rarity panel. `FilterPanel` mounted, never forked (§28's named dependency).
   rarityPanel: {
-    // Rest and active labels are `rarity.all` / `rarity.value`, which already shipped in
-    // this file unused — evidence the trigger was always the intent and the four letter
-    // buttons were the shortcut.
-    // ONE source. These were spelled out here while the comment above claimed they were
-    // reused, which is how a later copy edit makes the trigger disagree with the chips
-    // beside it.
-    triggerLabel: setFilterCopyRarity.all,
-    // The option labels arrive lowercase already — see the mount — so this does not case
-    // them itself. Lowercasing here alone left the accessible name in Title Case.
-    triggerOne: (name: string) =>
-      setFilterCopyRarity.value(name as "common" | "uncommon" | "rare" | "mythic"),
-    // Carries `all`, and in the same shape the selected state uses — `FilterPanel` builds
-    // that one as `Filter by rarity, uncommon, collapsed`. The button reads `Rarity · all`
-    // at rest, and a name omitting `all` left a voice-control user unable to address the
-    // value they can see (WCAG 2.5.3), while the selected state already carried its own.
-    triggerAriaCollapsed: "Filter by rarity, all, collapsed",
+    triggerLabel: setFilterCopyRarity.label,
+    // Counts, as `/collection`'s Type does (H13: rarity matches that control fully). Multi-
+    // select retired the `Rarity · all` / `Rarity · uncommon` pair: past one value a name
+    // has nowhere to go, and a counting trigger holds one width from nothing to four. The
+    // names live in the chip row. Queued for /copy-review.
+    triggerCount: (n: number) => (n <= 1 ? `Rarity ${n}` : `Rarities ${n}`),
+    triggerAriaCollapsed: "Filter by rarity, collapsed",
     triggerAriaWithSelection: (n: number) => `Filter by rarity, ${n} selected, collapsed`,
     panelAriaLabel: "Filter by rarity",
     sheetTitle: "Rarity",

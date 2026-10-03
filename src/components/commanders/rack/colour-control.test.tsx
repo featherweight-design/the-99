@@ -68,4 +68,16 @@ describe("ColourControl", () => {
     );
     expect(screen.getAllByRole("radiogroup", { name: "Color match" })).toHaveLength(1);
   });
+
+  it("leaves the modifier visible at every width unless a caller opts in", () => {
+    const { container, rerender } = render(
+      <ColourControl wide colors={["w"]} match="contains" onColorsChange={() => {}} onMatchChange={() => {}} />,
+    );
+    expect(container.innerHTML).not.toContain("data-set-shy-hides-narrow");
+    rerender(
+      <ColourControl wide colors={["w"]} match="contains" onColorsChange={() => {}} onMatchChange={() => {}} shyHidesMatch />,
+    );
+    expect(container.querySelectorAll("[data-set-shy-hides-narrow]")).toHaveLength(2);
+    expect(container.querySelector('[role="radiogroup"]')!.hasAttribute("data-set-shy-hides-narrow")).toBe(true);
+  });
 });

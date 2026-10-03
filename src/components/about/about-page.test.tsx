@@ -1047,14 +1047,20 @@ describe("what each chapter 01 figure actually draws", () => {
     // module, which is exactly what made the difference invisible.
     //
     // Asserted on the emitted URL, not on the element count: five boxes are
-    // present either way.
-    const pips = [...el.querySelectorAll("span")].filter((n) =>
+    // present either way. Buttons since H10: the figure mounts the live row's
+    // `ColourControl`, whose pips are the chassis's switches.
+    const pips = [...el.querySelectorAll("span, button")].filter((n) =>
       (n.getAttribute("style") ?? "").includes("/mana/"),
     );
     expect(pips).toHaveLength(PIP_ORDER.length);
     for (const pip of pips) {
       expect(pip.getAttribute("style")).not.toContain("undefined");
     }
+
+    // And the modifier beside them, as the live row draws it (H10). The figure drew
+    // bare pips while the row carried `Any` / `Exactly`, a picture of a row that no
+    // longer existed.
+    expect(el.querySelector('[role="radiogroup"][aria-label="Color match"]')).not.toBeNull();
 
     // Six cells as drawn, and only a missing one shows a price. This is an
     // INVARIANCE over the route's rule rather than a guard on this figure:

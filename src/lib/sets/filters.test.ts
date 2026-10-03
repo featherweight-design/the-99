@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { applyFilters, EMPTY_FILTERS, isQueryActive, parseFilters, serialiseFilters, type SetGridFilters } from "./filters";
+import {
+  applyFilters, EMPTY_FILTERS, isQueryActive, parseFilters, serialiseFilters,
+  type SetGridFilters,
+} from "./filters";
 import type { Cell } from "./completion";
 
 const cell = (over: Partial<Cell>): Cell => ({
@@ -11,7 +14,8 @@ const cell = (over: Partial<Cell>): Cell => ({
 describe("applyFilters", () => {
   it("keeps only missing cells under missing-only", () => {
     const cells = [cell({ owned: true }), cell({ collectorNumber: "2" })];
-    expect(applyFilters(cells, { ...EMPTY_FILTERS, missingOnly: true })).toHaveLength(1);
+    const kept = applyFilters(cells, { ...EMPTY_FILTERS, missingOnly: true });
+    expect(kept.map((c) => c.collectorNumber)).toEqual(["2"]);
   });
 
   it("matches a colour when the identity contains it", () => {
@@ -19,9 +23,43 @@ describe("applyFilters", () => {
     expect(applyFilters(cells, { ...EMPTY_FILTERS, colors: ["R"] })).toHaveLength(1);
   });
 
-  it("treats multiple colours as any, never as exactly", () => {
-    const cells = [cell({ colorIdentity: ["W"] }), cell({ colorIdentity: ["U"] })];
-    expect(applyFilters(cells, { ...EMPTY_FILTERS, colors: ["W", "U"] })).toHaveLength(2);
+  // H10: the commander rack's meanings. `Any` (contains) is ALL the lit colours, which is
+  // the reverse of the any-of rule this page used to apply.
+  it("treats multiple colours under Any as all of them", () => {
+    const cells = [
+      cell({ collectorNumber: "1", colorIdentity: ["W"] }),
+      cell({ collectorNumber: "2", colorIdentity: ["U"] }),
+      cell({ collectorNumber: "3", colorIdentity: ["W", "U"] }),
+      cell({ collectorNumber: "4", colorIdentity: ["W", "U", "B"] }),
+    ];
+    const kept = applyFilters(cells, { ...EMPTY_FILTERS, colors: ["W", "U"], match: "contains" });
+    expect(kept.map((c) => c.collectorNumber)).toEqual(["3", "4"]);
+  });
+
+  it("keeps only the identity that is the selection under Exactly", () => {
+    const cells = [
+      cell({ collectorNumber: "1", colorIdentity: ["W"] }),
+      cell({ collectorNumber: "3", colorIdentity: ["W", "U"] }),
+      cell({ collectorNumber: "4", colorIdentity: ["W", "U", "B"] }),
+    ];
+    const kept = applyFilters(cells, { ...EMPTY_FILTERS, colors: ["W", "U"], match: "exactly" });
+    expect(kept.map((c) => c.collectorNumber)).toEqual(["3"]);
+  });
+
+  it("leaves an empty colour selection alone under either mode", () => {
+    const cells = [cell({ colorIdentity: [] }), cell({ collectorNumber: "2", colorIdentity: ["G"] })];
+    expect(applyFilters(cells, { ...EMPTY_FILTERS, match: "exactly" })).toHaveLength(2);
+  });
+
+  // H13: multi-select is a union within the dimension.
+  it("keeps a cell matching ANY selected rarity", () => {
+    const cells = [
+      cell({ collectorNumber: "1", rarity: "rare" }),
+      cell({ collectorNumber: "2", rarity: "mythic" }),
+      cell({ collectorNumber: "3", rarity: "common" }),
+    ];
+    const kept = applyFilters(cells, { ...EMPTY_FILTERS, rarities: ["rare", "mythic"] });
+    expect(kept.map((c) => c.collectorNumber)).toEqual(["1", "2"]);
   });
 
   it("keeps a colourless card out of every colour filter", () => {
@@ -65,12 +103,18 @@ describe("filter URL round trip", () => {
     expect(serialiseFilters({ ...EMPTY_FILTERS, colors: ["R", "W"] }).get("c")).toBe("W,R");
   });
 
-  it("writes missing-only as m=1", () => {
-    expect(serialiseFilters({ ...EMPTY_FILTERS, missingOnly: true }).get("m")).toBe("1");
+  // H10 took `m` for the colour modifier, and one key cannot carry `1` and `exact` at once.
+  it("writes missing-only as own=missing, never m=1", () => {
+    const missing = serialiseFilters({ ...EMPTY_FILTERS, missingOnly: true });
+    expect(missing.get("own")).toBe("missing");
+    expect(missing.has("m")).toBe(false);
   });
 
   it("round trips", () => {
-    const f = { colors: ["U"], rarities: ["rare"], missingOnly: true, query: "plains" };
+    const f: SetGridFilters = {
+      colors: ["W", "U"], match: "exactly", rarities: ["rare", "mythic"], missingOnly: true,
+      query: "plains",
+    };
     expect(parseFilters(serialiseFilters(f))).toEqual(f);
   });
 
@@ -78,24 +122,54 @@ describe("filter URL round trip", () => {
     expect(parseFilters(new URLSearchParams("c=Z&r=legendary"))).toEqual(EMPTY_FILTERS);
   });
 
-  it("reads m as off unless it is exactly 1", () => {
+  // `m` was missing-only before H10 took it for the colour modifier. A link written then
+  // still opens on the missing cards.
+  it("reads the legacy m=1 as missing-only", () => {
+    expect(parseFilters(new URLSearchParams("m=1")).missingOnly).toBe(true);
+    expect(parseFilters(new URLSearchParams("m=1")).match).toBe("contains");
+  });
+
+  it("reads own=missing as missing-only", () => {
+    expect(parseFilters(new URLSearchParams("own=missing")).missingOnly).toBe(true);
+  });
+
+  it("reads missing-only as off for anything it does not recognise", () => {
     expect(parseFilters(new URLSearchParams("m=true")).missingOnly).toBe(false);
-  });
-});
-
-describe("hand-edited URLs", () => {
-  it("parses a rarity whatever case it was typed in", () => {
-    expect(parseFilters(new URLSearchParams("r=Mythic")).rarities).toEqual(["mythic"]);
+    expect(parseFilters(new URLSearchParams("own=both")).missingOnly).toBe(false);
   });
 
-  it("parses a colour whatever case it was typed in", () => {
-    expect(parseFilters(new URLSearchParams("c=u,g")).colors).toEqual(["U", "G"]);
+  // H10: the commander lanes' key and value.
+  it("writes Exactly as m=exact and reads it back", () => {
+    const params = serialiseFilters({ ...EMPTY_FILTERS, colors: ["W"], match: "exactly" });
+    expect(params.get("m")).toBe("exact");
+    expect(parseFilters(params).match).toBe("exactly");
   });
 
-  it("cannot represent a rarity the rack does not offer", () => {
-    // `special` was parseable while no control could select it and no copy named it, so a
-    // URL could carry a filter state no reader could reach or clear.
-    expect(parseFilters(new URLSearchParams("r=special")).rarities).toEqual([]);
+  it("reads Exactly as Any when no recognized colour is lit, and never writes it alone", () => {
+    expect(parseFilters(new URLSearchParams("m=exact")).match).toBe("contains");
+    expect(parseFilters(new URLSearchParams("m=exact&c=Z")).match).toBe("contains");
+    expect(serialiseFilters({ ...EMPTY_FILTERS, match: "exactly" }).has("m")).toBe(false);
+  });
+
+  it("writes Any as an absence", () => {
+    expect(serialiseFilters({ ...EMPTY_FILTERS, colors: ["W"] }).has("m")).toBe(false);
+    expect(parseFilters(new URLSearchParams("c=W")).match).toBe("contains");
+  });
+
+  // H13: a list now, in canonical order.
+  it("writes several rarities as one comma list in canonical order", () => {
+    expect(serialiseFilters({ ...EMPTY_FILTERS, rarities: ["mythic", "rare"] }).get("r"))
+      .toBe("rare,mythic");
+  });
+
+  it("reads a rarity list whole rather than its first value", () => {
+    expect(parseFilters(new URLSearchParams("r=mythic,common")).rarities)
+      .toEqual(["common", "mythic"]);
+  });
+
+  // Every link written while the control was single-select carries one value.
+  it("still reads a single legacy rarity as a list of one", () => {
+    expect(parseFilters(new URLSearchParams("r=rare")).rarities).toEqual(["rare"]);
   });
 });
 

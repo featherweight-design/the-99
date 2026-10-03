@@ -1,7 +1,8 @@
-// The set grid's three filters and their URL parameters. Pure, so the filtering a reader
-// sees and the count the buy button quotes are the same computation in the same place.
+// The set grid's filters and their URL parameters. Pure, so the filtering a reader sees and
+// the count the buy button quotes are the same computation in the same place.
 
 import type { Cell } from "./completion";
+import { filterByColors, type JoinMode } from "../commanders/filter";
 
 export const WUBRG = ["W", "U", "B", "R", "G"] as const;
 // The four the rack offers, and no more. `special` was in this list while no control
@@ -11,6 +12,13 @@ export const RARITIES = ["common", "uncommon", "rare", "mythic"] as const;
 
 export type SetGridFilters = {
   colors: string[];
+  /**
+   * How the colours match, the commander rack's modifier and its meanings (H10). `contains`
+   * keeps a card whose identity holds EVERY lit colour; `exactly` keeps one whose identity
+   * is the selection and nothing besides.
+   */
+  match: JoinMode;
+  /** Multi-select since H13, as `/collection`'s Type is: `r=rare,mythic` is rare OR mythic. */
   rarities: string[];
   missingOnly: boolean;
   /** The name search. A filter by any reading a player would give it, so it lives here. */
@@ -18,7 +26,7 @@ export type SetGridFilters = {
 };
 
 export const EMPTY_FILTERS: SetGridFilters = {
-  colors: [], rarities: [], missingOnly: false, query: "",
+  colors: [], match: "contains", rarities: [], missingOnly: false, query: "",
 };
 
 /**
@@ -66,17 +74,19 @@ export function isQueryActive(query: string): boolean {
 }
 
 /**
- * Colours are always "any", and there is deliberately no join-mode modifier on this page.
- * A card has one colour identity in a set list, so *exactly* has nothing to modify —
- * passing a disabled modifier through would be a control that can never do anything.
+ * Colours match through the commander rack's own rule, `filterByColors`, called rather than
+ * restated (H10, ruled 2026-10-02). This used to say the page deliberately had no join-mode
+ * modifier and matched ANY lit colour — `c=W,U` kept every white card and every blue one —
+ * which made this the one colour control in the app where lighting a second pip WIDENED the
+ * grid. `contains` is now the default, as it is on `/commanders`: a card is kept when its
+ * identity holds every lit colour, so `c=W,U` is the Azorius cards and a mono-white card is
+ * not one. `exactly` keeps the identity that IS the selection. Both modes leave an empty
+ * selection alone, and `filterByColors` never re-sorts, so collector order survives it.
  */
 export function applyFilters(cells: Cell[], f: SetGridFilters): Cell[] {
-  return cells.filter((c) => {
+  return filterByColors(cells, f.colors, f.match).filter((c) => {
     if (f.missingOnly && c.owned) return false;
     if (!matchesQuery(c.name, f.query)) return false;
-    if (f.colors.length > 0 && !f.colors.some((col) => c.colorIdentity.includes(col))) {
-      return false;
-    }
     if (f.rarities.length > 0) {
       const r = (c.rarity ?? "").toLowerCase();
       if (!f.rarities.includes(r)) return false;
@@ -92,7 +102,20 @@ export function serialiseFilters(f: SetGridFilters): URLSearchParams {
   if (colors.length > 0) params.set("c", colors.join(","));
   const rarities = RARITIES.filter((r) => f.rarities.includes(r));
   if (rarities.length > 0) params.set("r", rarities.join(","));
-  if (f.missingOnly) params.set("m", "1");
+  // `m=exact`, the commander lanes' key and value, written on the same condition
+  // `serializeLaneParams` writes it, so one colour modifier is spelled one way across the app.
+  // Only beside a lit pip. Exactly with nothing lit is a mode the reader cannot see (the
+  // control greys its selector) that still decides which pips are offered, so the page never
+  // holds it: the last pip off returns to Any, and a URL naming it alone is read as Any.
+  if (f.match === "exactly" && colors.length > 0) params.set("m", "exact");
+  // `own=missing`, never `m=1` again. `m` was missing-only until H10 needed it for the
+  // colour modifier, and one key cannot hold both `1` and `exact` at once — so a reader who
+  // wanted the missing white-blue cards EXACTLY could not have been written down. `m=1` is
+  // still READ as missing below, so an old link keeps working, and never written, so it
+  // retires as links are rewritten. `own` rather than a second boolean key, because the
+  // ownership control grows an Owned option next and that is one dimension with three
+  // values, not two flags.
+  if (f.missingOnly) params.set("own", "missing");
   // `q`, matching the index's own field. R2's decision 15 read literally bans a shared key
   // name with /collection, but the shipped surface already shares `c` for colour and no bug
   // came of it. The rule it was written about is that no VALUE carries and no one name means
@@ -112,12 +135,17 @@ export function parseFilters(params: URLSearchParams): SetGridFilters {
   const list = (key: string) => (params.get(key) ?? "").split(",").filter(Boolean);
   const colors = list("c").map((v) => v.toUpperCase());
   const rarities = list("r").map((v) => v.toLowerCase());
+  const lit = WUBRG.filter((c) => colors.includes(c));
   return {
-    colors: WUBRG.filter((c) => colors.includes(c)),
-    // Single-select, so `?r=common,mythic` canonicalises to the first recognised one
-    // rather than producing a state the control can neither show nor serialise back.
-    rarities: RARITIES.filter((r) => rarities.includes(r)).slice(0, 1),
-    missingOnly: params.get("m") === "1",
+    colors: lit,
+    // Exactly only beside a recognized colour: `?m=exact`, or `?m=exact&c=Z`, is Any.
+    match: params.get("m") === "exact" && lit.length > 0 ? "exactly" : "contains",
+    // Multi-select since H13, so the whole list is kept, in canonical order. A single value
+    // — every link written while the control was single-select — is a list of one.
+    rarities: RARITIES.filter((r) => rarities.includes(r)),
+    // `own=missing` first; the LEGACY `m=1` is missing-only from before `m` meant the
+    // colour modifier. The two cannot collide: `m` is `1` or `exact`, never both.
+    missingOnly: params.get("own") === "missing" || params.get("m") === "1",
     // Canonicalised on the way in, because `serialiseFilters` omits an inactive one on the
     // way out: untrimmed, `?q=%20` would sit in the field looking empty and in a shared URL
     // looking like a filter, until some other control happened to rewrite the string.

@@ -30,13 +30,31 @@ export function ColourControl({
   onColorsChange,
   onMatchChange,
   wide,
+  unavailable,
+  shyHidesMatch = false,
 }: {
   colors: string[];
   match: JoinMode;
   onColorsChange: (c: string[]) => void;
   onMatchChange: (m: JoinMode) => void;
   wide: boolean;
+  /**
+   * Hues with nothing behind them under the caller's other filters, passed straight to the
+   * pips' own contract. Optional because the commander lanes pass none; the set page (H10)
+   * mounts this control and already greyed its dead hues before it did, so mounting it must
+   * not take that away.
+   */
+  unavailable?: readonly string[];
+  /**
+   * Opt-in, for the set page: marks the hairline and the Any / Exactly segments with
+   * `data-set-shy-hides-narrow`, so the page's COLLAPSED head can hide them below 1000px
+   * (the set name keeps its room; H10, d9's ruling) and its focus guard can hold the head
+   * open while one of them has keyboard focus. Hiding is display only: the mode stays
+   * applied. Every other caller leaves it off and renders exactly as before.
+   */
+  shyHidesMatch?: boolean;
 }) {
+  const narrowMark = shyHidesMatch ? { "data-set-shy-hides-narrow": "" } : {};
   // With nothing lit there is nothing to be exact about: the modifier is inert,
   // but present and remembered.
   const live = colors.length > 0;
@@ -109,6 +127,7 @@ export function ColourControl({
         form={wide ? "wide" : "sheet"}
         legend={filterCopy.colour.legend}
         value={colors}
+        unavailable={unavailable}
         onToggle={(code) => toggle(code.toLowerCase() as Hue)}
       />
 
@@ -116,6 +135,7 @@ export function ColourControl({
         <span
           aria-hidden
           className="block h-[20px] w-px shrink-0 bg-[color:var(--border)]"
+          {...narrowMark}
         />
       )}
       {!wide && <Caption>{filterCopy.match.legend}</Caption>}
@@ -133,6 +153,7 @@ export function ColourControl({
         // `Exactly` against 10px to the left of the first pip — the box read as
         // lopsided at every width. Reported 2026-09-13.
         className={wide ? "flex items-center gap-[2px]" : "flex gap-[8px]"}
+        {...narrowMark}
       >
         {segments.map((s, i) => {
           const selected = s.mode === match;

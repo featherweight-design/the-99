@@ -601,7 +601,8 @@ describe("FilterPanel", () => {
   it("labels the trigger with the set name at one selection and a count past that", () => {
     setViewport(true);
     const { rerender } = renderPanel({ selected: ["BLB"] });
-    expect(screen.getByRole("button", { name: "Filter by set, Bloomburrow, collapsed" })).toBeTruthy();
+    // The name STARTS with what the trigger shows (WCAG 2.5.3), then says what it filters.
+    expect(screen.getByRole("button", { name: "Set 1, Filter by set, Bloomburrow, collapsed" })).toBeTruthy();
     rerender(
       <FilterPanel
         copy={collectionFilterCopy.set}
@@ -612,9 +613,8 @@ describe("FilterPanel", () => {
         onClear={() => {}}
       />,
     );
-    const trigger = screen.getByRole("button", {
-      name: collectionFilterCopy.set.triggerAriaWithSelection(2),
-    });
+    const trigger = screen.getByRole("button", { name: "Sets 2, Filter by set, collapsed" });
+    expect(trigger.textContent).toContain("Sets 2");
     // Past one selection the names live in the chip row, not the label.
     expect(trigger.textContent).not.toContain("Bloomburrow");
     expect(trigger.textContent).toContain("2");

@@ -99,19 +99,13 @@ describe("setFilterCopy", () => {
     expect(setFilterCopy.countBadgeAria(3)).toBe("3 filters on");
   });
 
-  // The four letter buttons retired with addendum R2 §28: the trigger's two labels shipped
-  // in this file unused from the first round, which is evidence the trigger was the intent
-  // and the letters were the shortcut. The chip group in the phone sheet takes Title Case,
-  // because a chip is a control; the trigger's value form is lowercase, because the caption
-  // under it reads `042 · uncommon` in the same register.
-  it("labels the rarity trigger at rest and at a value", () => {
-    expect(setFilterCopy.rarity.all).toBe("Rarity · all");
-    expect(setFilterCopy.rarity.value("uncommon")).toBe("Rarity · uncommon");
-    expect(setFilterCopy.rarityPanel.triggerLabel).toBe(setFilterCopy.rarity.all);
-    // The mount passes lowercase option labels, because `FilterPanel` composes the
-    // trigger's accessible name from them and Title Case there breaks label-in-name.
-    expect(setFilterCopy.rarityPanel.triggerOne("uncommon"))
-      .toBe(setFilterCopy.rarity.value("uncommon"));
+  // H13: rarity is multi-select and its trigger COUNTS, as `/collection`'s Type does, so the
+  // `Rarity · all` / `Rarity · uncommon` pair retired with the single-select control.
+  it("counts on the rarity trigger, as Type does", () => {
+    expect(setFilterCopy.rarityPanel.triggerLabel).toBe(setFilterCopy.rarity.label);
+    expect(setFilterCopy.rarityPanel.triggerCount(0)).toBe("Rarity 0");
+    expect(setFilterCopy.rarityPanel.triggerCount(1)).toBe("Rarity 1");
+    expect(setFilterCopy.rarityPanel.triggerCount(2)).toBe("Rarities 2");
   });
 
   it("names every rarity it offers as a chip", () => {

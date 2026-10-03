@@ -597,6 +597,11 @@ async function run() {
     // 900px too: this page switches form at `md` (768) while the chassis frame switches at
     // 1000, so the band between them shows the wide inline controls. Whether that wraps is
     // the only question that matters, and it is measurable.
+    //
+    // NOT RE-MEASURED since H10 put the `Any` / `Exactly` modifier inside the colour box and
+    // H13 made the rarity trigger count (`Rarity 0` rather than `Rarity · all`). The row is
+    // wider by the modifier and narrower by the trigger, and no figure for either was taken
+    // when this changed: the next run of this check is the first measurement of it.
     const narrowDesktop = await (async () => {
       await page.setViewportSize({ width: 900, height: 900 });
       await page.goto(`${BASE}/collection/sets/${code}?c=W&r=rare`, { waitUntil: "networkidle" });
@@ -640,10 +645,12 @@ async function run() {
     const rest = await rackAt("");
     const one = await rackAt("?c=W");
     // Three ACTIVE dimensions, which a complete set cannot have: at 100% the page drops
-    // missing-only from what it applies, and its control with it, so `m=1` draws no chip
+    // missing-only from what it applies, and its control with it, so `own=missing` draws no chip
     // there by design. Asserting three against the first set in the index would report a
     // failure for correct behaviour on a fixture that happens to be finished.
-    const three = await rackAt("?c=W&r=rare&m=1");
+    // `own=missing`, the key the page writes since H10 took `m` for the colour modifier;
+    // a legacy `m=1` still parses, but a probe asks for what the page itself would write.
+    const three = await rackAt("?c=W&r=rare&own=missing");
     // Read off a STRUCTURE the page maintains, not off copy: the first attempt grepped for
     // sentences this page has never rendered, so it always answered false and the check it
     // guards would have failed on the fixture it exists to allow. At 100% the page removes
@@ -675,13 +682,33 @@ async function run() {
       );
     }
 
+    // The FULLEST chip line the page can draw, at every desktop width the line has to hold
+    // without wrapping: two colours (one chip), the Exactly modifier, all four rarities and
+    // missing-only, seven chips on an incomplete set. The line scrolls and never wraps, so the
+    // rack's three rows must read the same with seven chips as with none, at 768 (this page's
+    // md), 820, 900 (between md and the chassis's 1000) and 1280. Three chips never overflowed
+    // the strip, so the earlier checks could not see a wrap or a scrollbar adding height.
+    const SEVEN = "?c=W,U&m=exact&r=common,uncommon,rare,mythic&own=missing";
+    for (const width of [768, 820, 900, 1280]) {
+      await page.setViewportSize({ width, height: 900 });
+      const none = await rackAt("");
+      const full = await rackAt(SEVEN);
+      const want = setIsComplete ? 6 : 7;
+      failures += !report(
+        `${width}: the fullest filter state draws ${want} chips`,
+        full !== null && full.chips === want,
+        full === null ? "no rack" : `${full.chips} chip removals`,
+      );
+      failures += !rackHeightsAgree(`${width}: the rack's rows hold with ${want} chips`, [none, full]);
+    }
+
     // The head's height at PHONE too, which is where it was actually moving: the
     // missing-only result line wraps in 358px, so toggling that filter grew row 3 and the
     // desktop-only check above never saw it.
     await page.setViewportSize({ width: 390, height: 844 });
     const phoneRest = await rackAt("");
-    const phoneMissing2 = await rackAt("?m=1");
-    const phoneThree = await rackAt("?c=W&r=rare&m=1");
+    const phoneMissing2 = await rackAt("?own=missing");
+    const phoneThree = await rackAt("?c=W&r=rare&own=missing");
     if (phoneRest === null) {
       // Not a skip. The desktop path treats a missing rack as a failure and this silently
       // returned a green run without measuring the phone invariant at all — the seventh
@@ -692,7 +719,7 @@ async function run() {
         "no [data-set-chips] at 390px, so the phone fixed-height invariant went unmeasured",
       );
     } else {
-      // `?m=1` on a COMPLETE set renders identically to rest — the page drops missing-only
+      // `?own=missing` on a COMPLETE set renders identically to rest — the page drops missing-only
       // from what it applies — so on such a fixture this cannot see the wrapping
       // missing-only line it is named for. SKIPPED rather than passed: a check that cannot
       // fail on the fixture it ran against has measured nothing, and reporting it green
@@ -704,7 +731,7 @@ async function run() {
         failures += !report(
           "an incomplete set was available to test the phone missing-only wrap",
           false,
-          "every set in this collection is complete — `?m=1` is never applied, so the "
+          "every set in this collection is complete — `?own=missing` is never applied, so the "
             + "wrapping result line cannot be measured. Probe a collection with one.",
         );
       } else {
@@ -1283,8 +1310,72 @@ async function run() {
     // is inline (`useIsDesktop` is `min-width: 768px`), and the prefix is a member the
     // handoff's row arithmetic never carried — so it is the width where an added item
     // either fits or wraps the row the whole ruling depends on.
-    for (const width of [1440, 1180, 768]) {
+    // The collapsed set name's floor is 40px, so the name can never disappear. ONE named
+    // exception, ruled 2026-10-03: from 768 to 773px the row has no room left once the
+    // colour box drops Any / Exactly (H10). Measured, the 638px row there is the field at its
+    // 132 floor, the colour box 156, the rarity trigger 103, the missing toggle 88, four 8px
+    // gaps, and a 127px prefix whose h1 reads 34px. Hiding a second control to buy 6px in a
+    // 6px band of viewports was judged worse than the dip. So 768-773 holds a 30px floor (the
+    // name is shortened, never gone), and 774 is walked to pin where the band ends.
+    const nameFloor = (w) => (w >= 768 && w <= 773 ? 30 : 40);
+    for (const width of [1440, 1180, 774, 768]) {
       await page.setViewportSize({ width, height: 900 });
+      // Below 1000 the COLLAPSED head hides Any / Exactly so the name keeps its room (d9's
+      // ruling on H10). The other half of that ruling is read here: the OPEN head still draws
+      // the control and a press on it still applies, so the mode is never out of reach.
+      if (width < 1000) {
+        await page.goto(`${BASE}/collection/sets/${code}?c=W`, { waitUntil: "networkidle" });
+        await page.waitForSelector("[data-set-colour]", { timeout: 20_000 });
+        const exactly = onPage(page, '[data-set-colour] [role="radio"][aria-label="Exactly these"]');
+        const shown = await exactly.isVisible();
+        if (shown) await exactly.click();
+        await page.waitForTimeout(300);
+        const applied = new URL(page.url()).searchParams.get("m") === "exact"
+          && (await exactly.getAttribute("aria-checked")) === "true";
+        failures += !report(
+          `the open head draws Any / Exactly and a press applies it at ${width}`,
+          shown && applied,
+          `visible=${shown}, url m=${new URL(page.url()).searchParams.get("m")}`,
+        );
+        await scrollTo(900);
+        await page.waitForTimeout(300);
+        const hidden = !(await exactly.isVisible());
+        const kept = new URL(page.url()).searchParams.get("m") === "exact";
+        failures += !report(
+          `the collapsed head hides it at ${width} and Exactly stays applied`,
+          hidden && kept,
+          `hidden=${hidden}, url m=${new URL(page.url()).searchParams.get("m")}`,
+        );
+
+        // Round 5: collapsed WIDE with keyboard focus on the radio, then narrowed to this
+        // width. No scroll runs the focus guard, so only the hide's own `:focus-visible`
+        // exception keeps the focused radio on screen.
+        await page.setViewportSize({ width: 1200, height: 900 });
+        await scrollTo(0);
+        await page.waitForTimeout(200);
+        await scrollTo(900);
+        await page.waitForTimeout(300);
+        // A key press first, so the browser treats the scripted focus as keyboard focus.
+        await page.keyboard.press("Shift");
+        await exactly.focus();
+        await page.setViewportSize({ width, height: 900 });
+        await page.waitForTimeout(300);
+        const focusedShown = await exactly.isVisible();
+        const stillFocused = await exactly.evaluate((el) => el === document.activeElement && el.matches(":focus-visible"));
+        failures += !report(
+          `narrowed to ${width} with keyboard focus on Exactly, the radio stays on screen`,
+          focusedShown && stillFocused,
+          `visible=${focusedShown}, focus-visible=${stillFocused}`,
+        );
+        await exactly.evaluate((el) => el.blur());
+        await page.waitForTimeout(200);
+        failures += !report(
+          `once focus leaves at ${width}, the collapsed head hides it again`,
+          !(await exactly.isVisible()),
+          `visible=${await exactly.isVisible()}`,
+        );
+        await page.setViewportSize({ width, height: 900 });
+      }
       await page.goto(`${BASE}/collection/sets/${code}`, { waitUntil: "networkidle" });
       await waitForCells(page);
       await scrollTo(0);
@@ -1393,6 +1484,14 @@ async function run() {
           sameParent: prefix.parentElement === field.parentElement,
           nameWidth: Math.round(name.getBoundingClientRect().width),
           fieldWidth: Math.round(f.width),
+          // What the row's width went to, so a failing reading names the member that took it.
+          members: [...prefix.parentElement.children]
+            .filter((c) => c.getClientRects().length > 0)
+            .map((c) => `${(c.getAttribute("aria-label") ?? c.textContent ?? "").trim().slice(0, 14)}:${Math.round(c.getBoundingClientRect().width)}`)
+            .join(" ")
+            + ` | row ${Math.round(prefix.parentElement.getBoundingClientRect().width)}`
+            + ` scroll ${prefix.parentElement.scrollWidth}`
+            + ` prefix[${[...prefix.children].map((c) => `${c.tagName}:${Math.round(c.getBoundingClientRect().width)}`).join(",")}]`,
         };
       });
       failures += !report(
@@ -1410,8 +1509,8 @@ async function run() {
       // right members is exactly what it would still be.
       failures += !report(
         `the set name survives the shrink at ${width}`,
-        row !== null && row.nameWidth >= 40 && row.fieldWidth >= 132,
-        row === null ? "no prefix" : `name ${row.nameWidth}px, field ${row.fieldWidth}px`,
+        row !== null && row.nameWidth >= nameFloor(width) && row.fieldWidth >= 132,
+        row === null ? "no prefix" : `name ${row.nameWidth}px, field ${row.fieldWidth}px; row ${row.members}`,
       );
 
       // §29: two controls with one accessible name is the defect a redrawn bar would
