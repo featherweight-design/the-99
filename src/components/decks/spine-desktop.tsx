@@ -143,6 +143,12 @@ export function SpineDesktop({
   const overInk = `var(${STATUS_TOKEN[status]})`;
   const rename = useDeckHeaderEdit(deck.id, deck.name, deck.intent ?? null, () => setRenaming(false));
   const descriptionFieldRef = useRef<HTMLTextAreaElement>(null);
+  // The editor's two halves sit in separate flex columns of the header row, with the partner's
+  // card-details trigger between them in DOM order — so blur has to be checked against BOTH
+  // halves explicitly (pre-open review round 2), not against one shared ancestor that would
+  // also contain that unrelated control.
+  const fieldsWrapperRef = useRef<HTMLDivElement>(null);
+  const actionsWrapperRef = useRef<HTMLDivElement>(null);
 
   // §F, as three booleans rather than a state string: they are not exclusive in
   // the source (a save-disabled field can also be showing a previous error) and
@@ -248,11 +254,6 @@ export function SpineDesktop({
         // classes above — the inset would silently stay at 24px and the title
         // would print over the portrait.
         style={{ paddingRight: 24, paddingBottom: 18, gap: 18 }}
-        // THE PAIR'S BLUR LIVES HERE, not on the fields' own wrapper: Save and Cancel sit in a
-        // separate sibling column (`renaming`'s action column below), and `onPairBlur` has to
-        // enclose them too, or tabbing from the description field to Cancel fires blur outside
-        // the wrapper and commits the edit before Cancel is ever pressed (pre-open review).
-        onBlur={renaming ? rename.onPairBlur : undefined}
       >
         {/* `basis-[280px]`, not a bare `flex-1`: with a zero basis this column
             takes only what the action column leaves, and that column sizes to
@@ -269,7 +270,12 @@ export function SpineDesktop({
               // Both fields, one width (STATES-deck-description.md §2, state 3): 560 or the
               // cover's own width, whichever this column has. One commit for the pair — blur on
               // the wrapper, never on either field alone.
-              <div className="flex w-full max-w-[560px] flex-col gap-[6px]" style={{ margin: "-2px 0 -2px -11px" }}>
+              <div
+                ref={fieldsWrapperRef}
+                className="flex w-full max-w-[560px] flex-col gap-[6px]"
+                style={{ margin: "-2px 0 -2px -11px" }}
+                onBlur={(e) => rename.onPairBlur(e, actionsWrapperRef.current)}
+              >
                 <input
                   autoFocus
                   value={rename.name}
@@ -614,7 +620,12 @@ export function SpineDesktop({
           {renaming ? (
             // §B14 — the actions are replaced, not joined. The hint row is
             // present in every state, which is what holds the column's height.
-            <div className="flex flex-col items-end" style={{ gap: 7 }}>
+            <div
+              ref={actionsWrapperRef}
+              className="flex flex-col items-end"
+              style={{ gap: 7 }}
+              onBlur={(e) => rename.onPairBlur(e, fieldsWrapperRef.current)}
+            >
               <div className="flex items-center" style={{ gap: 9 }}>
                 <button
                   type="button"

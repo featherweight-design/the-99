@@ -6,9 +6,8 @@ import { overCopy, renameCopy } from "../../lib/copy/decks-builder";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { deck, pairDeck, props } from "./spine-fixtures";
 
-const renameDeck = vi.hoisted(() => vi.fn(async () => {}));
-vi.mock("../../app/decks/actions", () => ({ renameDeck }));
-vi.mock("../../app/decks/tuning-actions", () => ({ saveDeckDescription: vi.fn(async () => ({ ok: true })) }));
+const saveDeckHeader = vi.hoisted(() => vi.fn(async () => ({ ok: true as const })));
+vi.mock("../../app/decks/tuning-actions", () => ({ saveDeckHeader }));
 
 // The band's `Card details` pill reads the card-detail context, so the header
 // can only be rendered inside it.
@@ -196,7 +195,22 @@ describe("SpineDesktop", () => {
     const cancelButton = screen.getByRole("button", { name: "Cancel" });
     fireEvent.blur(description, { relatedTarget: cancelButton });
     fireEvent.click(cancelButton);
-    expect(renameDeck).not.toHaveBeenCalled();
+    expect(saveDeckHeader).not.toHaveBeenCalled();
+  });
+
+  // Pre-open review round 2: the editor's two halves sit in separate flex columns with the
+  // partner's card-details trigger between them — focus moving there is genuinely OUTSIDE the
+  // pair (unlike Cancel, above) and must still commit, not be silently swallowed by too wide a
+  // boundary.
+  it("commits when focus moves from the description field to the partner's card trigger", async () => {
+    renderSpine(<SpineDesktop {...props} deck={pairDeck} />);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(pairDeck.name) }));
+    const name = screen.getByLabelText("Deck name") as HTMLInputElement;
+    fireEvent.change(name, { target: { value: "Changed Name" } });
+    const description = screen.getByLabelText(deckDescriptionCopy.description.fieldAria);
+    const partnerTrigger = screen.getByRole("button", { name: new RegExp(pairDeck.partner!.name) });
+    fireEvent.blur(description, { relatedTarget: partnerTrigger });
+    await vi.waitFor(() => expect(saveDeckHeader).toHaveBeenCalledWith(pairDeck.id, { name: "Changed Name" }));
   });
 
   // R6 ruling 4. The header is reachable from list contexts, so the label has

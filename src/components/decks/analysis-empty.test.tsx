@@ -46,8 +46,11 @@ describe("AnalysisEmpty's description field (H35, STATES §1)", () => {
     expect(onRequest).not.toHaveBeenCalled();
     order.push("save-called");
     resolveSave({ ok: true });
-    await Promise.resolve();
-    await Promise.resolve();
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
     expect(onSaveDescription).toHaveBeenCalledWith("Grind it out.");
     expect(onRequest).toHaveBeenCalledOnce();
     expect(order).toEqual(["save-called", "request"]);
@@ -91,5 +94,39 @@ describe("AnalysisEmpty's description field (H35, STATES §1)", () => {
     fireEvent.change(screen.getByLabelText("Deck description"), { target: { value: "Still typing…" } });
     rerender(<AnalysisEmpty phase="idle" onRequest={() => {}} description="Saved from the header." />);
     expect(screen.getByLabelText("Deck description")).toHaveValue("Still typing…");
+  });
+
+  // Pre-open review round 2: a successful save on blur announces itself through a status region.
+  it("announces a successful save", async () => {
+    const onSaveDescription = vi.fn(async () => ({ ok: true as const }));
+    render(<AnalysisEmpty phase="idle" onRequest={() => {}} description={null} onSaveDescription={onSaveDescription} />);
+    fireEvent.change(screen.getByLabelText("Deck description"), { target: { value: "Grind it out." } });
+    await act(async () => {
+      fireEvent.blur(screen.getByLabelText("Deck description"));
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(screen.getByRole("status")).toHaveTextContent("Saved the description.");
+  });
+
+  // Pre-open review round 2: blur starts a save, then an Analyze click a moment later must join
+  // that SAME save rather than firing a second one that could race it.
+  it("joins a save already started by blur rather than starting a second one", async () => {
+    let calls = 0;
+    const onSaveDescription = vi.fn(async () => {
+      calls += 1;
+      await Promise.resolve();
+      return { ok: true as const };
+    });
+    const onRequest = vi.fn();
+    render(<AnalysisEmpty phase="idle" onRequest={onRequest} description={null} onSaveDescription={onSaveDescription} />);
+    const field = screen.getByLabelText("Deck description");
+    fireEvent.change(field, { target: { value: "Grind it out." } });
+    fireEvent.blur(field);
+    fireEvent.click(screen.getByRole("button", { name: "Analyze" }));
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
+    expect(calls).toBe(1);
+    expect(onRequest).toHaveBeenCalledOnce();
   });
 });

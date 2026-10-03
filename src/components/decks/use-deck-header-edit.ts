@@ -1,8 +1,7 @@
 "use client";
 
 import { useCallback, useState, useTransition } from "react";
-import { renameDeck } from "../../app/decks/actions";
-import { saveDeckDescription } from "../../app/decks/tuning-actions";
+import { saveDeckHeader } from "../../app/decks/tuning-actions";
 import { renameCopy } from "../../lib/copy/decks-builder";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { countCharacters } from "../../lib/copy/deck-tuning";
@@ -17,10 +16,20 @@ const descriptionCopy = deckDescriptionCopy.description;
  * this one is free to carry a second field without adding a branch to a hook three call sites
  * already share.
  *
+ * ONE ATOMIC WRITE (pre-open review round 2): both fields go to `saveDeckHeader` in a single
+ * update, so a description refusal can never leave a renamed deck with no way for Cancel to
+ * undo it — there is nothing partial to undo. Only the fields that actually changed when THIS
+ * commit began are sent; a field untouched here is never overwritten with a stale closure
+ * value if something else (the empty-state door) saved it first.
+ *
  * ONE commit for both fields: Enter in the name field moves to the description field; Enter in
- * the description field saves both; Escape cancels both. Blur commits only when focus leaves the
- * PAIR — call `onBlur` from a wrapper around both fields and their buttons, checking
- * `e.currentTarget.contains(e.relatedTarget)`, never from either field alone.
+ * the description field saves both; Escape cancels both — neither fires while an IME composition
+ * is in progress, so composing Japanese/Chinese/Korean text can use Enter to confirm a character
+ * without saving an unfinished line. Blur commits only when focus leaves the PAIR — call
+ * `onBlur` from a wrapper around both fields and their buttons, checking
+ * `e.currentTarget.contains(e.relatedTarget)`, never from either field alone, and never from a
+ * wrapper wider than the editor's own controls (a header row also holding unrelated focusable
+ * controls, such as a partner's card-details trigger, must not count as "inside the pair").
  */
 export function useDeckHeaderEdit(
   deckId: string,
@@ -34,10 +43,10 @@ export function useDeckHeaderEdit(
   const [isPending, startTransition] = useTransition();
 
   // A field follows the page's new value while it is UNEDITED, independently of the other
-  // field (pre-open review): both widths mount this hook, so saving at one and resizing opens
-  // the other with the field's old value, and a description saved through the empty-state
-  // field left the pencil's own draft stale until the next remount. Adjusted during render,
-  // never in an effect, so the stale value never paints.
+  // field: both widths mount this hook, so saving at one and resizing opens the other with the
+  // field's old value, and a description saved through the empty-state field left the pencil's
+  // own draft stale until the next remount. Adjusted during render, never in an effect, so the
+  // stale value never paints.
   const [seenName, setSeenName] = useState(currentName);
   if (seenName !== currentName) {
     const unedited = name.trim() === seenName.trim();
@@ -52,7 +61,9 @@ export function useDeckHeaderEdit(
   }
 
   const trimmedName = name.trim();
-  const changed = trimmedName !== currentName.trim() || description.trim() !== (currentDescription ?? "").trim();
+  const nameChanged = trimmedName !== currentName.trim();
+  const descriptionChanged = description.trim() !== (currentDescription ?? "").trim();
+  const changed = nameChanged || descriptionChanged;
   const canSave = !isPending && trimmedName.length > 0 && changed;
 
   const cancel = useCallback(() => {
@@ -77,16 +88,15 @@ export function useDeckHeaderEdit(
       return;
     }
     setError(null);
+    // Captured NOW, at the moment the commit began — not re-read inside the transition, where a
+    // concurrent save of the field this commit left untouched could otherwise be clobbered by
+    // this closure's older value of it.
+    const fields: { name?: string; description?: string } = {};
+    if (nameChanged) fields.name = trimmedName;
+    if (descriptionChanged) fields.description = description.trim();
     startTransition(async () => {
       try {
-        // Two writes, one commit from the reader's point of view: the name through its own
-        // action, the description through its own, both awaited before the editor closes. A
-        // name that saved and a description that refused still reports the refusal, which is
-        // the shipped `MutationError` contract every save on this page already follows.
-        await renameDeck(deckId, trimmedName);
-        const form = new FormData();
-        form.set("intent", description.trim());
-        const result = await saveDeckDescription(deckId, form);
+        const result = await saveDeckHeader(deckId, fields);
         if (!result.ok) {
           setError(result.message);
           return;
@@ -96,10 +106,11 @@ export function useDeckHeaderEdit(
         setError(renameCopy.errorFailed);
       }
     });
-  }, [canSave, deckId, description, onDone, trimmedName]);
+  }, [canSave, deckId, description, descriptionChanged, nameChanged, onDone, trimmedName]);
 
   const onNameKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>, descriptionField: HTMLTextAreaElement | HTMLInputElement | null) => {
+      if (e.nativeEvent.isComposing) return;
       if (e.key === "Enter") {
         e.preventDefault();
         descriptionField?.focus();
@@ -113,6 +124,7 @@ export function useDeckHeaderEdit(
 
   const onDescriptionKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.nativeEvent.isComposing) return;
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         commit();
@@ -124,11 +136,19 @@ export function useDeckHeaderEdit(
     [cancel, commit],
   );
 
-  // Blur commits only when focus leaves the PAIR — a wrapper's own onBlur, never either field's.
+  /**
+   * Blur commits only when focus leaves the PAIR. `extraBoundary` is for a caller whose editor
+   * is NOT one contiguous DOM subtree — the fields and the Save/Cancel pair can sit in separate
+   * flex columns of a wider row that also holds unrelated focusable controls (a partner's
+   * card-details trigger, say), so `e.currentTarget.contains()` alone cannot be trusted to mean
+   * "still inside the editor". Pass every OTHER node that belongs to this same editor; focus
+   * landing in any of them, or in `e.currentTarget`, counts as staying inside the pair.
+   */
   const onPairBlur = useCallback(
-    (e: React.FocusEvent<HTMLElement>) => {
+    (e: React.FocusEvent<HTMLElement>, ...extraBoundary: readonly (Element | null)[]) => {
       if (isPending || error) return;
-      if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+      const related = e.relatedTarget as Node | null;
+      if (e.currentTarget.contains(related) || extraBoundary.some((node) => node?.contains(related))) return;
       if (!changed || trimmedName.length === 0) {
         cancel();
         return;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 
 import type { Bracket } from "../../lib/bracket/types";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
@@ -72,6 +72,7 @@ export function AnalysisEmpty({
   const [draft, setDraft] = useState(description ?? "");
   const [savingDescription, setSavingDescription] = useState(false);
   const [descriptionRefused, setDescriptionRefused] = useState<string | null>(null);
+  const [descriptionAnnounced, setDescriptionAnnounced] = useState("");
   // A new description from the page (another tab's edit, a revalidate) replaces the held draft,
   // adjusted during render rather than in an effect — but only while the draft still matches
   // what was last seen: a reader mid-edit here must not have their unsaved text overwritten by
@@ -82,23 +83,36 @@ export function AnalysisEmpty({
     setSeenDescription(description ?? null);
     if (unedited) setDraft(description ?? "");
   }
+  // Blur fires a save, then a press on Analyze a moment later can fire a SECOND one before the
+  // first settles (pre-open review round 2) — both write and both revalidate, and the one that
+  // resolves last decides what the field ends up reading. Sharing the in-flight promise means a
+  // second call while one is pending joins the first rather than racing it.
+  const pendingSave = useRef<Promise<DeckMutationResult> | null>(null);
   async function saveDescription(): Promise<DeckMutationResult> {
+    if (pendingSave.current) return pendingSave.current;
     if (!onSaveDescription) return { ok: true };
     const trimmed = draft.trim();
     if (trimmed === (description ?? "").trim()) return { ok: true };
     setSavingDescription(true);
     setDescriptionRefused(null);
-    try {
-      const result = await onSaveDescription(trimmed);
-      if (!result.ok) setDescriptionRefused(result.message);
-      return result;
-    } catch {
-      const result: DeckMutationResult = { ok: false, message: deckDescriptionCopy.description.refused };
-      setDescriptionRefused(result.message);
-      return result;
-    } finally {
-      setSavingDescription(false);
-    }
+    setDescriptionAnnounced("");
+    const run = (async (): Promise<DeckMutationResult> => {
+      try {
+        const result = await onSaveDescription(trimmed);
+        if (result.ok) setDescriptionAnnounced(deckDescriptionCopy.announce.descriptionSaved);
+        else setDescriptionRefused(result.message);
+        return result;
+      } catch {
+        const result: DeckMutationResult = { ok: false, message: deckDescriptionCopy.description.refused };
+        setDescriptionRefused(result.message);
+        return result;
+      } finally {
+        setSavingDescription(false);
+        pendingSave.current = null;
+      }
+    })();
+    pendingSave.current = run;
+    return run;
   }
   const shownNote = blocked === null ? note : null;
   const text = phase === "loading"
@@ -155,6 +169,7 @@ export function AnalysisEmpty({
                 saving={savingDescription}
                 refused={descriptionRefused}
               />
+              <span role="status" className="sr-only">{descriptionAnnounced}</span>
             </div>
           ) : null}
           <div className={`mt-[20px] flex w-full flex-col items-center gap-[6px] md:mt-[22px] md:w-auto md:flex-row md:flex-wrap md:gap-x-[20px] ${shownNote ? "md:gap-y-[12px]" : "md:gap-y-[20px]"}`}>
