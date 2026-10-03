@@ -1232,9 +1232,13 @@ export function CardModal({
     : null;
 
   const faceImage = showingBack ? backImage : resolved?.imageUri;
-  const artStyle: React.CSSProperties = faceImage
-    ? { backgroundImage: cssUrl(faceImage), backgroundSize: "cover", backgroundPosition: "center" }
+  const artStyleOf = (image: string | null | undefined): React.CSSProperties => image
+    ? { backgroundImage: cssUrl(image), backgroundSize: "cover", backgroundPosition: "center" }
     : { background: identityGradient(card.colorIdentity) };
+  const artStyle = artStyleOf(faceImage);
+  // THE ZOOM'S WASH follows the face the zoom shows, which can differ from the art behind it: the
+  // zoom opens on the front and turns on its own (table row 4.10).
+  const zoomWashStyle = artStyleOf(zoomFlipped ? backImage : resolved?.imageUri);
 
   // The figure belongs to the printing on screen, so it is resolved from the same
   // object the art and the `Set` caption read — a pick moves four things together
@@ -1965,18 +1969,34 @@ export function CardModal({
             // receives nothing. A click on the hairline therefore hits the dialog and
             // does nothing at all — which is the right failure for a 1px target that
             // was never a dismissal path, and better than pretending otherwise.
-            className="absolute inset-0 z-20 flex flex-col items-center justify-center anim-zoom-in"
+            // THE ZOOM MATCHES THE VIEW BEHIND IT, AT EACH WIDTH (H22, Hugh's walk). Below
+            // `md` that view is the phone's art header, so the zoom takes its ground and its
+            // wash (below), opaque, and nothing of the page shows through. From `md` the
+            // dialog draws no wash, so the zoom keeps the handoff's 94% scrim and its
+            // backdrop blur (README:256). The blur needs no prefix: the utility emits the
+            // WebKit declaration beside the standard one.
+            className="absolute inset-0 z-20 flex flex-col items-center justify-center overflow-hidden anim-zoom-in bg-[color:var(--surface-sunken)] md:bg-[color-mix(in_srgb,var(--bg)_94%,transparent)] md:backdrop-blur-[10px]"
             onClick={closeZoom}
             style={{
               // Shallow enough to be a turn rather than a lens (table row 4.2).
               perspective: "1400px",
-              background: "color-mix(in srgb, var(--bg) 94%, transparent)",
-              backdropFilter: "blur(10px)",
-              // WebKit honours only the prefixed declaration, and without the blur the
-              // scrim alone is not enough separation from the art behind it.
-              WebkitBackdropFilter: "blur(10px)",
             }}
           >
+            {/* THE WASH, the phone header's own treatment (`mobile-art-wash`): the zoomed
+                face's art, blurred, dimmed and scaled past its own edges so the blur has
+                no transparent rim. The layer clips the overscale. Phone only, as that
+                header is. */}
+            <div
+              aria-hidden
+              data-testid="card-zoom-wash"
+              className="pointer-events-none absolute inset-0 md:hidden"
+              style={{
+                ...zoomWashStyle,
+                filter: "blur(22px)",
+                transform: "scale(1.2)",
+                opacity: 0.45,
+              }}
+            />
             {/* The whole card, at the largest 63/88 the rect allows — 372x520 desktop,
                 318x444 phone. Clicking it closes too: three doors, one stage. */}
             <div className="relative flex flex-col items-center" data-testid="card-zoom-stage">
@@ -2065,7 +2085,12 @@ export function CardModal({
                 // gets — the set code and number are the half that identifies the
                 // printing, and they sit at the end where the ellipsis never eats them
                 // first.
-                className="font-mono text-[11px] mt-[14px] m-0 max-w-[calc(100%-32px)] overflow-hidden text-ellipsis whitespace-nowrap"
+                // `relative` puts it over the wash, an absolute sibling that would otherwise
+                // paint on top of an in-flow line. ON THE PLATE below `md`, where the wash
+                // is, as the art-wash ratification defines it (the phone's price stack above):
+                // over the wash a bare 11px line has nothing to be legible against, and a light
+                // art read it at about 1.5:1. From `md` the scrim is its ground, as before.
+                className="relative font-mono text-[11px] mt-[14px] m-0 max-w-[calc(100%-32px)] overflow-hidden text-ellipsis whitespace-nowrap rounded-[7px] px-[8px] py-[3px] bg-[color:var(--bg)] border border-[color:var(--border-strong)] md:rounded-none md:p-0 md:bg-transparent md:border-0"
                 style={{ color: "var(--fg-muted)" }}
               >
                 {zoomCaption}

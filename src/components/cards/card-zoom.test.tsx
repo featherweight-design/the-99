@@ -67,6 +67,30 @@ describe("the zoom", () => {
     expect(layer).toHaveTextContent("Ravnica Remastered · RVR 12");
   });
 
+  // H22: the zoom matches the view behind it at each width. On the phone that is the art
+  // header's opaque ground and blurred wash of the zoomed face; from `md` the dialog draws no
+  // wash, so the zoom keeps the scrim and its blur.
+  it("washes the phone zoom in the zoomed face's art, and keeps the desktop scrim", () => {
+    mount();
+    openZoom();
+    const layer = screen.getByTestId("card-zoom");
+    expect(layer.className).toContain("bg-[color:var(--surface-sunken)]");
+    expect(layer.className).toContain("md:bg-[color-mix(in_srgb,var(--bg)_94%,transparent)]");
+    expect(layer.className).toContain("md:backdrop-blur-[10px]");
+    const wash = within(layer).getByTestId("card-zoom-wash");
+    expect(wash.className).toContain("md:hidden");
+    expect(wash.getAttribute("style")).toContain("front.jpg");
+    expect(wash.style.filter).toBe("blur(22px)");
+    expect(wash.style.transform).toBe("scale(1.2)");
+    expect(wash.style.opacity).toBe("0.45");
+    // The caption's plate on the phone, where the wash is; reset from `md`, where the scrim is.
+    const caption = within(layer).getByText(/Ravnica Remastered/);
+    for (const cls of ["bg-[color:var(--bg)]", "border-[color:var(--border-strong)]", "rounded-[7px]",
+      "md:bg-transparent", "md:border-0", "md:p-0"]) {
+      expect(caption.className).toContain(cls);
+    }
+  });
+
   it("is a region inside the dialog, not a second dialog", () => {
     // A second `role="dialog"` would mean a second focus trap, a second thing for
     // Escape to mean, and a backdrop whose click-to-close no longer reaches.
@@ -276,6 +300,13 @@ describe("the turn inside the zoom", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /Look at/ })[0]);
     return screen.getByTestId("card-zoom");
   };
+
+  it("washes the zoom in the face it turned to", () => {
+    const layer = openTwoFaced();
+    expect(within(layer).getByTestId("card-zoom-wash").getAttribute("style")).toContain("front.jpg");
+    fireEvent.click(within(layer).getByRole("button", { name: /Turn over to/ }));
+    expect(within(layer).getByTestId("card-zoom-wash").getAttribute("style")).toContain("back.jpg");
+  });
 
   it("draws both faces, each hiding its own back", () => {
     // A turning card shows both at once. A single box whose background swapped
