@@ -203,6 +203,13 @@ jobs:
             echo "::error::scope must be all, in-use or deck:<uuid>, got '$scope'"
             exit 1
           fi
+          # A DECK TRIAL NEEDS ITS OWN BACKFILL ID. Under the weekly id, a timed-out trial would be
+          # resumed by the next scheduled run, which passes no scope and so labels every card, on
+          # the weekly budget, under the trial's intents.
+          if [[ "$scope" == deck:* && "$run_id" != backfill-* ]]; then
+            echo "::error::a deck scope needs a backfill-YYYY-MM-DD run_id, got '$run_id'"
+            exit 1
+          fi
 
           echo "cap=$cap"     >> "$GITHUB_OUTPUT"
           echo "pause=$pause" >> "$GITHUB_OUTPUT"

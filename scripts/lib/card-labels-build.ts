@@ -205,8 +205,9 @@ async function cardsNeedingLabels(scope: LabelScope, only: readonly string[] | u
   const rows = await db.execute<CardRow>(sql`
     select c.oracle_id as "oracleId", c.name, c.mana_cost, c.type_line, c.oracle_text, c.layout
       from cards c
-     where c.commander_legal = true
-       ${trial === null ? scopeCondition(scope) : sql`and c.oracle_id = any(${sql.param(trial)}::uuid[])`}
+     -- A trial's ids are EXPLICIT: every pool slice already requires legality, and a deck spell
+     -- banned since it was added is still an original its stand-ins sheet compares against.
+     where ${trial === null ? sql`c.commander_legal = true ${scopeCondition(scope)}` : sql`c.oracle_id = any(${sql.param(trial)}::uuid[])`}
        ${only === undefined ? sql`` : sql`and c.oracle_id = any(${sql.param([...only])}::uuid[])`}
      order by c.oracle_id
   `);

@@ -113,6 +113,20 @@ describe("the card-labels spend bounds", () => {
 
   // A resumed trial must name its scope again: a blank one is every card, which would turn a deck
   // trial into the full backfill under the trial's own run id.
+  it("refuses a deck scope under the weekly id, so the cron can never resume a trial as every card", () => {
+    const r = resolve("8", "7", "", "deck:904fdc61-e190-4ba5-8e34-2b18fa0584f2");
+    expect(r.code).toBe(1);
+    expect(r.errors.some((e) => e.includes("needs a backfill"))).toBe(true);
+    expect(r.scope).toBeUndefined();
+  });
+
+  // The bounds step is only half: a missing env line makes the build default to every card.
+  it("hands the resolved scope to the step that spends", () => {
+    const step = workflow.slice(workflow.indexOf(LABEL_STEP),
+      workflow.indexOf("\n      - ", workflow.indexOf(LABEL_STEP) + LABEL_STEP.length));
+    expect(step).toContain("LABEL_SCOPE: ${{ steps.bounds.outputs.scope }}");
+  });
+
   it("tells a timed-out backfill to dispatch again with BOTH its run id and its scope", () => {
     expect(runBlockOf(LABEL_STEP)).toContain("enter run_id=$LABEL_RUN_ID and scope=$LABEL_SCOPE");
   });
