@@ -55,7 +55,10 @@ A version is history, but the reader's collection is now. So every figure Hugh a
 
 - **Owned:** does the reader own a copy now (`collection_items`).
 - **To buy:** owns none now, priced at today's price (`printing_prices`, the same newest-price read
-  every buy tag uses).
+  every buy tag uses). Or owns fewer than the version asks: a `0 → 4` add of a card a deck may hold
+  several of still needs three when one is owned. The review row handles this through `shortfall`
+  (`update-diff-row.tsx:247`). Whether a version row compares against the version's count or only
+  the change is Design's to choose (open question 2 covers the price).
 - **Claimed:** whether today's copies are free or held by other decks (`loadAvailability`). Whether
   this round shows that, or only owned and to buy, is open below.
 
