@@ -130,8 +130,8 @@ export async function resolveEdhrecData(
           set: { payload, fetchedAt: now },
         });
     } catch (err) {
-      // Logged, as the pair cache's upsert is: the fresh page is still what this read answers
-      // with, but a write that keeps failing leaves the row retired and refetches on every read.
+      // not a fallback: the fresh page is still what this read answers with. Logged, as the pair
+      // cache's upsert is, because a write that keeps failing refetches on every read.
       console.error("edhrec cache upsert failed", err);
     }
     return { data: parseEdhrecPayload(payload), unreachable: false };
