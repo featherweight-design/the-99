@@ -165,6 +165,13 @@ export const folderCopy = {
      * they can: the move did not happen and trying again is the answer.
      */
     failed: 'That did not save. Try again.',
+    /**
+     * A move the server REFUSED, said after the deck has already taken its new
+     * shelf on the press (H24): the deck goes back, and a screen reader that
+     * heard "Filed under X" has to hear that it did not happen. A refusal means
+     * the deck or the folder is gone, so there is nothing to try again.
+     */
+    refused: 'That did not save. The deck or the folder is gone.',
   },
 
   // ── Empty states — S2 and S3 only ─────────────────────────────────────

@@ -8,8 +8,6 @@ const { deleteDeck, renameDeck } = vi.hoisted(() => ({
 }));
 vi.mock("../../app/decks/actions", () => ({ deleteDeck, renameDeck }));
 
-vi.mock("../../app/decks/folder-actions", () => ({ moveDeckAction: async () => true }));
-
 const { DeckCardOverflow } = await import("./deck-card-overflow");
 
 // Named per deck: "Deck options" said the same thing for every tile on the
@@ -19,10 +17,12 @@ const trigger = (deckName = "Atraxa") =>
   screen.getByRole("button", { name: `Actions for ${deckName}` });
 
 describe("DeckCardOverflow", () => {
-  it("closes the whole menu after a move, rather than returning to it", async () => {
+  it("closes the whole menu on the press, and hands the move to the view", () => {
     // Hugh's call, 2026-09-13 (errata E21): the act is finished, so the panel
     // that performed it goes. Design had it return to the menu with the Move
-    // row as the receipt.
+    // row as the receipt. And it goes ON THE PRESS (H24): the view moves the
+    // deck optimistically, so there is no round trip to wait for here.
+    const onMove = vi.fn();
     render(
       <DeckCardOverflow
         deckId="d1"
@@ -32,15 +32,16 @@ describe("DeckCardOverflow", () => {
         folderId={null}
         folderName={null}
         onCreateFolder={() => {}}
-        say={() => {}}
-        onMoved={() => {}}
+        onMove={onMove}
         keepsFocus closeAfterCreate={null}
       />,
     );
     fireEvent.click(trigger());
     fireEvent.click(screen.getByRole("button", { name: /^Move / }));
     fireEvent.click(screen.getByRole("button", { name: "Cube night" }));
-    await waitFor(() => expect(screen.queryByRole("button", { name: /^Move / })).toBeNull());
+    // Synchronously: nothing here is awaited.
+    expect(onMove).toHaveBeenCalledWith({ id: "f1", name: "Cube night" });
+    expect(screen.queryByRole("button", { name: /^Move / })).toBeNull();
     expect(screen.queryByRole("button", { name: "Rename" })).toBeNull();
   });
 
@@ -54,8 +55,7 @@ describe("DeckCardOverflow", () => {
         folderId="f1"
         folderName="Cube night"
         onCreateFolder={() => {}}
-        say={() => {}}
-        onMoved={() => {}} keepsFocus closeAfterCreate={null}
+        onMove={() => {}} keepsFocus closeAfterCreate={null}
       />,
     );
     fireEvent.click(trigger());
@@ -73,8 +73,7 @@ describe("DeckCardOverflow", () => {
         folderId={null}
         folderName={null}
         onCreateFolder={() => {}}
-        say={() => {}}
-        onMoved={() => {}} keepsFocus closeAfterCreate={null}
+        onMove={() => {}} keepsFocus closeAfterCreate={null}
       />,
     );
     fireEvent.click(trigger());
@@ -86,12 +85,12 @@ describe("DeckCardOverflow", () => {
   // value names a pattern this panel does not implement either. Its rename mode
   // is a form, not a list of actions, so no value is honest here.
   it("claims no popup pattern it does not implement", () => {
-    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} folders={[]} folderId={null} folderName={null} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} />);
+    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} folders={[]} folderId={null} folderName={null} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} />);
     expect(trigger()).not.toHaveAttribute("aria-haspopup");
   });
 
   it("points aria-controls at the panel only while it is open", () => {
-    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} folders={[]} folderId={null} folderName={null} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} />);
+    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} folders={[]} folderId={null} folderName={null} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} />);
     expect(trigger()).toHaveAttribute("aria-expanded", "false");
     expect(trigger()).not.toHaveAttribute("aria-controls");
 
@@ -106,8 +105,8 @@ describe("DeckCardOverflow", () => {
   it("gives each instance its own panel id", () => {
     render(
       <>
-        <DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} folders={[]} folderId={null} folderName={null} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} />
-        <DeckCardOverflow deckId="d2" deckName="Krenko" built={99} folders={[]} folderId={null} folderName={null} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} />
+        <DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} folders={[]} folderId={null} folderName={null} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} />
+        <DeckCardOverflow deckId="d2" deckName="Krenko" built={99} folders={[]} folderId={null} folderName={null} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} />
       </>,
     );
     fireEvent.click(trigger("Atraxa"));
@@ -126,7 +125,7 @@ describe("DeckCardOverflow — THE PLATE on phone", () => {
   // the crop beneath it. That scrim is gone from this tile, so the glyph would be
   // `var(--fg)` on an unmodified crop.
   it("draws the 26px plate inside the 44px target, at both widths", () => {
-    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} folders={[]} folderId={null} folderName={null} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} />);
+    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} folders={[]} folderId={null} folderName={null} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} />);
     const button = screen.getByRole("button");
     // Target unchanged: 44 on a phone, 26 from `sm:` up, where the plate fills it.
     expect(button.className).toContain("h-[44px]");
@@ -175,8 +174,7 @@ describe("DeckCardOverflow — the delete confirm", () => {
         folderId={null}
         folderName={null}
         onCreateFolder={() => {}}
-        say={() => {}}
-        onMoved={() => {}}
+        onMove={() => {}}
         keepsFocus
         closeAfterCreate={null}
       />,

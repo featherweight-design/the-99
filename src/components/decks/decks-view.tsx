@@ -9,7 +9,15 @@
 // list a reader flips between" asks for on a re-parameterised list.
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useOptimistic,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { colorNames } from "../../lib/copy/color-labels";
 import { refreshCopy } from "../../lib/copy/refresh";
 import {
@@ -161,7 +169,7 @@ function chipLabels(filters: DeckFilters): { key: string; label: string; without
 }
 
 export function DecksView({
-  decks,
+  decks: serverDecks,
   folders: serverFolders,
   shopping,
   buildable,
@@ -299,8 +307,16 @@ export function DecksView({
   const [createFiled, setCreateFiled] = useState<{
     deckId: string;
     seq: number;
-    filed: boolean;
   } | null>(null);
+  /**
+   * The deck a create just filed, held until the dialog is dismissed. The panel
+   * is told in the SAME commit that unmounts the dialog, because the dialog's
+   * trap returns focus into that panel as it goes: told any earlier, the panel
+   * could close first and take the restored focus with it to the body. The move
+   * no longer holds the create open for a round trip, so nothing else orders
+   * the two.
+   */
+  const filedOnDismiss = useRef<string | null>(null);
 
   const [creating, setCreating] = useState(false);
   /**
@@ -365,6 +381,78 @@ export function DecksView({
   const say = useCallback(
     (text: string) => setShelfSaid((prev) => ({ text, n: prev.n + 1 })),
     [],
+  );
+
+  /**
+   * THE MOVE IS OPTIMISTIC (Hugh's walk, H24): the deck takes its new shelf on
+   * the press, and the grid, the shelf counts and both denominators move with
+   * it, because every one of them is derived from this list rather than from
+   * the server's. Waiting on the action left the deck on its old shelf for a
+   * round trip after the menu had closed.
+   *
+   * The override is dispatched inside the move's transition, which for a
+   * revalidating server action ends when the new payload lands. On success the
+   * payload agrees and nothing repaints; on a refusal React drops the override
+   * and the deck goes back to the shelf the server names, with no explicit
+   * revert. The pattern `optimistic-deck.tsx` uses for the decklist.
+   */
+  const [decks, fileOptimistic] = useOptimistic(
+    serverDecks,
+    (current: DeckListItem[], move: { deckId: string; id: string | null; name: string | null }) =>
+      current.map((deck) =>
+        deck.id === move.deckId ? { ...deck, folderId: move.id, folderName: move.name } : deck,
+      ),
+  );
+  const [, startMove] = useTransition();
+  /**
+   * Every door that moves a deck calls this one function, so the prediction,
+   * the announcement and the outcomes live in one place.
+   *
+   * THE ANNOUNCEMENT IS MADE ON THE PRESS, outside the transition: a state
+   * update inside an async transition is held until it settles, which would put
+   * the receipt a round trip behind the deck it describes.
+   */
+  const moveDeck = useCallback(
+    (
+      deckId: string,
+      to: { id: string | null; name: string | null },
+      failed: string = folderCopy.move.failed,
+    ) => {
+      say(to.name ? folderCopy.move.announceFiled(to.name) : folderCopy.move.announceUnfiled);
+      startMove(async () => {
+        fileOptimistic({ deckId, ...to });
+        // THREW AND REFUSED ARE DIFFERENT ANSWERS. `false` is a conflict the
+        // reader cannot act on (the deck or the folder is gone), the action
+        // revalidated for exactly that reason, and the prediction dropping is
+        // the whole response. A rejection is a failure they can act on, and
+        // silence there would leave them believing the move landed.
+        const answer = await moveDeckAction(deckId, to.id).catch(() => "threw" as const);
+        if (answer === "threw") {
+          say(failed);
+          // THE ONE PATH THAT STILL REFRESHES. Every other outcome reaches the
+          // client through the action's own `revalidatePath`; a rejected action
+          // may have committed on the server with its response lost, and no
+          // payload is coming for that one.
+          router.refresh();
+          return;
+        }
+        // A refusal can mean the deck itself is gone (M6), which takes its card
+        // with it on any shelf, so focus goes to the one control that survives.
+        // The deck has already been announced on its new shelf, so the revert
+        // is announced too: a screen reader would otherwise keep a success the
+        // screen took back. On the next task, OUTSIDE the action: a state update
+        // made inside it is entangled with the transition, which then holds the
+        // reverted shelf and the rescued focus with it.
+        // Focus is RESCUED, not taken: the panel closed on the press, so the reader may be
+        // anywhere by now. Only when the refusal took their element away (the deck itself is
+        // gone, and focus fell to the body) does the shelf control take it.
+        if (!answer) {
+          if (document.activeElement === document.body) focusShelfControl();
+          setTimeout(() => say(folderCopy.move.refused), 0);
+        }
+      });
+    },
+    [fileOptimistic, focusShelfControl, router, say],
   );
   /**
    * A one-shot: the result line stays quiet through the frame in which the
@@ -438,10 +526,6 @@ export function DecksView({
     () => filterDecks(narrowed, state.filters, now),
     [narrowed, state.filters, now],
   );
-  // One map, feeding both the shelf line's segments and the result line's
-  // denominator, so the two figures cannot drift apart. See `shelfCounts`.
-  const counts = useMemo(() => shelfCounts(decks, serverFolders), [decks, serverFolders]);
-
   const active = activeFilterCount(state.filters);
   const zero = decks.length === 0;
   const chips = chipLabels(state.filters);
@@ -468,6 +552,12 @@ export function DecksView({
         : serverFolders,
     [serverFolders, justMade],
   );
+  // One map, feeding both the shelf line's segments and the result line's
+  // denominator, so the two figures cannot drift apart. See `shelfCounts`.
+  // Over the OPTIMISTIC list and the merged folders, so a deck filed into a
+  // folder made a moment ago counts on that folder's segment before the
+  // server's payload names either of them.
+  const counts = useMemo(() => shelfCounts(decks, folders), [decks, folders]);
 
   // THE SELECTED SHELF CAN STOP EXISTING UNDER THE READER. A folder action
   // revalidates `/decks`, and the App Router can hand this client component new
@@ -927,6 +1017,10 @@ export function DecksView({
               onDismiss={() => {
                 setCreating(false);
                 setCreatingFor(null);
+                const filed = filedOnDismiss.current;
+                filedOnDismiss.current = null;
+                if (filed)
+                  setCreateFiled((prev) => ({ deckId: filed, seq: (prev?.seq ?? 0) + 1 }));
                 // The control that opened this is gone when it was the sheet's
                 // row, so the hook has nothing to return focus to. The trigger
                 // that opens the sheet is the nearest equivalent, and it is the
@@ -942,12 +1036,18 @@ export function DecksView({
                 // trigger itself; this catches the case where there is none.
                 requestAnimationFrame(() => {
                   // Unless the panel that asked for this folder is taking focus
-                  // itself — it survives on All decks, and its ⋯ or its Move row
-                  // is a better answer than the shelf control. Both rescues test
+                  // itself — it survives on All decks, and its ⋯ is a better
+                  // answer than the shelf control. Both rescues test
                   // for the body, so without this the winner would be whichever
                   // frame callback was queued first.
+                  // A frame later the claim is checked rather than trusted: the
+                  // card can be gone by then (a concurrent delete the create's
+                  // payload revealed), and focus is rescued all the same.
                   if (panelTakesFocus.current) {
                     panelTakesFocus.current = false;
+                    requestAnimationFrame(() => {
+                      if (document.activeElement === document.body) focusShelfControl();
+                    });
                     return;
                   }
                   if (document.activeElement === document.body) focusShelfControl();
@@ -969,61 +1069,37 @@ export function DecksView({
                   against: serverFolders,
                 });
                 // Made from the act: the deck whose panel asked for this folder
-                // is filed into it. THE MOVE'S OWN ANSWER IS READ — the folder
-                // is persisted either way, but the deck is only on it if the
-                // move said so, and saying otherwise is a claim about someone
-                // else's shelf.
-                // THREE OUTCOMES, not two. `false` is a conflict the reader
-                // cannot act on — the deck or the folder is gone — and a throw is
-                // a failure they can, which is why `MoveMode` says so and this
-                // path has to as well rather than folding both into "not filed".
-                const answer = creatingFor
-                  ? await moveDeckAction(creatingFor, result.folder.id).catch(
-                      () => "threw" as const,
-                    )
-                  : null;
-                const filed = answer === true;
-                // Same exception the destination list makes: a rejected action
-                // may have committed with its response lost, and nothing else is
-                // coming to update the grid.
-                if (answer === "threw") router.refresh();
+                // is filed into it, through the same optimistic move as every
+                // other door, so it takes the new shelf as the dialog closes
+                // rather than a second round trip later. A refusal drops the
+                // prediction exactly as it does there; a throw says both halves,
+                // because the folder was made and the reader can act on the
+                // second.
+                if (creatingFor)
+                  moveDeck(
+                    creatingFor,
+                    { id: result.folder.id, name: result.folder.name },
+                    `${folderCopy.create.created(result.folder.name)} ${folderCopy.move.failed}`,
+                  );
+                else say(folderCopy.create.created(result.folder.name));
                 // THE READER DOES NOT MOVE. STATES CR4 selected the new shelf,
                 // landing them on S2; Hugh overruled that on 2026-09-13 (errata
                 // E20) — the shelf is empty, so there is nothing to go and look
                 // at, and being moved somewhere blank to confirm a thing was
                 // made is a worse answer than saying it was made. The new
                 // segment appearing in the line is the visible half; the
-                // sentence below is the spoken one.
+                // sentence is the spoken one.
                 // The panel that asked for this folder closes, exactly as a move
                 // from the destination list closes it (errata E21). This path
                 // never reaches that handler — the move happens here — so the
-                // card is told directly.
-                // The panel is told what happened, not just that it is over. It
-                // closes on a move that landed (errata E21) and returns to its
-                // MENU on one that did not (M6) — the state it would be in had
-                // the destination list performed the move itself.
-                // Only where a panel will still be there to take it. A `false`
-                // move is allowed to mean the deck itself is gone, and then the
-                // card unmounts with nothing to focus — which is exactly when
-                // the dialog's own rescue is the answer.
-                if (creatingFor)
-                  panelTakesFocus.current = state.shelf === ALL_DECKS && answer !== false;
-                if (creatingFor)
-                  setCreateFiled((prev) => ({
-                    deckId: creatingFor,
-                    seq: (prev?.seq ?? 0) + 1,
-                    filed,
-                  }));
-                say(
-                  filed
-                    ? folderCopy.move.announceFiled(result.folder.name)
-                    : answer === "threw"
-                      ? // The folder was made and the deck was not filed. Both
-                        // halves are said, because the reader can act on the
-                        // second and the first is not in doubt.
-                        `${folderCopy.create.created(result.folder.name)} ${folderCopy.move.failed}`
-                      : folderCopy.create.created(result.folder.name),
-                );
+                // card is told directly, as the dialog goes (`filedOnDismiss`).
+                // Only where the card survives the move: on a named shelf it
+                // leaves the grid with the prediction, and the dialog's own
+                // rescue puts focus on the shelf control.
+                if (creatingFor) {
+                  panelTakesFocus.current = state.shelf === ALL_DECKS;
+                  filedOnDismiss.current = creatingFor;
+                }
                 return null;
               }}
             />
@@ -1095,27 +1171,19 @@ export function DecksView({
                       setCreatingFor(deck.id);
                       setCreating(true);
                     }}
-                    say={say}
+                    onMove={(to) => {
+                      moveDeck(deck.id, to);
+                      // On a named shelf the move takes this card off the grid
+                      // in the same commit, so focus goes to the shelf control
+                      // now rather than being dropped on the body.
+                      if (state.shelf !== ALL_DECKS) focusShelfControl();
+                    }}
                     keepsFocus={state.shelf === ALL_DECKS}
                     closeAfterCreate={
                       createFiled?.deckId === deck.id
-                        ? { seq: createFiled.seq, filed: createFiled.filed }
+                        ? { seq: createFiled.seq }
                         : null
                     }
-                    onMoved={({ refused, threw }) => {
-                      // THE ONE PATH THAT STILL REFRESHES. Every other outcome
-                      // reaches the client through the action's own
-                      // `revalidatePath`, which is why the blanket
-                      // `router.refresh()` went; a rejected action may have
-                      // committed on the server with its response lost, and no
-                      // payload is coming for that one.
-                      if (threw) router.refresh();
-                      // Focus goes to the shelf whenever this card may not
-                      // survive: on a named shelf a successful move takes it off
-                      // the grid, and a REFUSAL can mean the deck itself is gone
-                      // (M6) — which removes the card on All decks too.
-                      if (refused || state.shelf !== ALL_DECKS) focusShelfControl();
-                    }}
                   />
                 </li>
               ))}
