@@ -15,7 +15,7 @@ vi.mock("../decks/availability-query", () => ({ loadAvailability }));
 const readEdhrecCache = vi.hoisted(() => vi.fn(async () => new Map()));
 vi.mock("../edhrec/client", () => ({ readEdhrecCache }));
 // Ruling D: the score's synergy comes from the stored index, so the loader is
-// mocked alongside the live cache. ARMABLE rather than always empty — every
+// mocked, and it is the only EDHREC-derived read the free ranking makes. ARMABLE rather than always empty — every
 // case here used to take an empty map, which meant nothing verified that
 // `rankFree` passes the support list through at all: dropping the lookup would
 // have made every free Fit unmeasured with the whole suite still green.

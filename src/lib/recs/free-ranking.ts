@@ -4,10 +4,10 @@
 // This score is NOT persisted. `commander_scores` is keyed on collection
 // generation, and availability changes on every deck mutation, so storing it
 // there would need a whole second invalidation axis for a score most players
-// never ask for. It is computed on demand, only for `?avail=free`, out of
-// whatever the EDHREC cache already holds. `scoreCommander` is a pure function
-// of its pool, so the second score is the same function over a smaller array:
-// zero extra network calls.
+// never ask for. It is computed on demand, only for `?avail=free`, from the
+// stored index and the role targets, and never from EDHREC or its cache.
+// `scoreCommander` is a pure function of its pool, so the second score is the
+// same function over a smaller array: zero network calls.
 
 import { cache } from "react";
 import { loadSupportLists } from "../edhrec/support-read";
@@ -134,12 +134,11 @@ function carryCanonicalArt(
  * Ranks the candidate set against the free pool, narrowed to the commanders the
  * player could actually build from today.
  *
- * Reads the EDHREC cache but never the network. The cache is usually warm, since
- * the canonical ranking filled it — but not guaranteed to be: `getRankedList`
- * can serve persisted scores without touching EDHREC at all, and those rows
- * expire on their own schedule. A miss is therefore an ordinary outcome, and it
- * scores with a null fitSynergy rather than triggering a second fanout. Never
- * add a fetch here to close that gap: this path exists to be free.
+ * Reads neither EDHREC nor its cache. The score's synergy comes from the stored
+ * index, and the one figure the live page would add, each role card's
+ * inclusion, feeds only `roleCards`, which `toListItem` drops before this
+ * returns. Never add a cache read or a fetch here: this path exists to be free,
+ * and the first one read every buildable commander's whole page for nothing.
  *
  * `ok: false` means no trustworthy second ranking could be produced — either the
  * availability read failed, or canonical named a commander the collection no
