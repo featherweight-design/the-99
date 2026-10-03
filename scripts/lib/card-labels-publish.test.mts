@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { chdir, cwd } from "node:process";
 
@@ -61,7 +61,10 @@ describe("publishing refuses an artifact that is not the default run", () => {
   });
 
   describe("a re-sample (LABEL_PUBLISH=resample-<n>)", () => {
-    beforeEach(() => { process.env.LABEL_PUBLISH = "resample-2"; });
+    beforeEach(() => {
+      process.env.LABEL_PUBLISH = "resample-2";
+      writeFileSync("out/batches.json", JSON.stringify({ runId: "run-A" }));
+    });
     afterEach(() => { delete process.env.LABEL_PUBLISH; });
 
     it("publishes Sonnet alone to its own dated paths, never over the first sample", () => {
@@ -71,6 +74,18 @@ describe("publishing refuses an artifact that is not the default run", () => {
       expect(existsSync("docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-2-cost.json")).toBe(true);
       expect(existsSync("docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-1-cost.json")).toBe(false);
       expect(existsSync("docs/superpowers/benchmarks/2026-09-25-card-labels-cost.json")).toBe(false);
+    });
+
+    it("binds a number to its run: the same run re-publishes, a different run refuses and copies nothing", () => {
+      write({ sonnet: {} });
+      publishArtifacts(["out/cost.json"], true);
+      const stamp = "docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-2-run.json";
+      expect(JSON.parse(readFileSync(stamp, "utf8"))).toEqual({ runId: "run-A" });
+      expect(() => publishArtifacts(["out/cost.json"], true)).not.toThrow();
+      writeFileSync("out/batches.json", JSON.stringify({ runId: "run-B" }));
+      writeFileSync("out/labels-sonnet.json", JSON.stringify({ "Sol Ring": [] }));
+      expect(() => publishArtifacts(["out/labels-sonnet.json"], true)).toThrow(/already holds run-A/);
+      expect(existsSync("docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-2-labels-sonnet.json")).toBe(false);
     });
 
     it("keeps two numbers past the float range apart", () => {
