@@ -264,6 +264,13 @@ export async function computeAndStoreProfile(
   if (pinTo && pinTo.list !== list) return null;
   // And the same for a rebuild: an edit landing after the read that decided on it is not analyzed.
   if (rebuildOf && rebuildOf.list !== list) return null;
+  // A REBUILD THAT ARRIVES TO A CURRENT ROW IS ALREADY SUPERSEDED (REBUILD RULES 3, round 11): a
+  // press wrote this version between the reader's read and this snapshot. Taking the same-answer
+  // shortcut below would hand `clearDirty` the rebuild's old pin over the press's own.
+  if (rebuildOf && row && row.profileVersion >= PROFILE_VERSION) {
+    const current = await readStoredReading(deckId, userId, deps);
+    return current ? { kind: "ok", reading: current } : null;
+  }
   // ONLY THE NEWEST VERSION IS PINNED. Two commits' `after()` pins can run out of order, and the
   // older one landing last would name the wrong version. Checked here and again in the write.
   if (pinTo && (await newestVersion(deckId))?.id !== pinTo.versionId) return null;

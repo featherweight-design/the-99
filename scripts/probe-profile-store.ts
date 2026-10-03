@@ -372,6 +372,19 @@ async function run() {
     const answeredStale = await readStoredReading(deck.id, USER, editFirst);
     check("an edit landing mid-rebuild leaves the reading dirty", (await storedRow(deck.id))?.dirty, true);
     check("and the rebuild's own answer says stale, as the row does", answeredStale?.fresh, false);
+
+    // A REBUILD THAT ARRIVES TO A CURRENT ROW (round 11): a press wrote this version after the
+    // reader's read, so the rebuild changes nothing, its stale pin included.
+    await computeAndStoreProfile(deck.id, USER, deps);
+    const pinBefore = (await storedRow(deck.id))?.version_id ?? null;
+    const beforeLate = computes;
+    await computeAndStoreProfile(deck.id, USER, deps, {
+      rebuildOf: { list: listFingerprint(head), versionId: version.id, versionNumber: 1,
+        marks: { seenSeq: 0, rulesVersion: 1, analyzedOracleIds: [] } },
+    });
+    check("a rebuild arriving to a current row changes nothing",
+      { computed: computes - beforeLate, pin: (await storedRow(deck.id))?.version_id ?? null },
+      { computed: 0, pin: pinBefore });
     await computeAndStoreProfile(deck.id, USER, deps);
 
     // A ROW A NEWER DEPLOYMENT WROTE (review round 8, REBUILD RULES 1): older code neither reads,
