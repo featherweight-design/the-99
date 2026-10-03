@@ -122,6 +122,9 @@ describe("the stub", () => {
     expect(run("partial")).toEqual(["refused", "ok", "ok", "ok"]);
     expect(run("refused")).toEqual(["refused", "refused", "refused", "refused"]);
     expect(run("busy")).toBe("upstream_busy");
+    expect(run("rejected")).toBe("upstream_rejected");
+    expect(stubReply(facts, "rejected")).toMatchObject({ ok: false, status: 404 });
+    expect(stubMode({ SYNOPSIS_STUB: "rejected" })).toBe("rejected");
     expect(run("timeout")).toBe("timeout");
     expect(run("malformed")).toBe("malformed");
   });

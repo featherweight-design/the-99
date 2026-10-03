@@ -323,6 +323,8 @@ describe("callModel classifies each fault", () => {
     { name: "500, a server error", err: () => new Anthropic.InternalServerError(500, undefined, "oops", h()), errorClass: "upstream_busy", status: 500, retried: true },
     { name: "529, overloaded", err: () => new Anthropic.InternalServerError(529, undefined, "overloaded", h()), errorClass: "upstream_busy", status: 529, retried: true },
     { name: "a dropped connection", err: () => new Anthropic.APIConnectionError({ message: "socket hang up" }), errorClass: "upstream_busy", retried: true },
+    // An API error with no status names no request fault, so it is not called a rejection.
+    { name: "an API error with no status", err: () => new Anthropic.APIError(undefined, undefined, "no status", undefined), errorClass: "upstream_busy", retried: false },
     { name: "an error of no known kind", err: () => new TypeError("odd"), errorClass: "upstream_busy", retried: false },
   ];
 
