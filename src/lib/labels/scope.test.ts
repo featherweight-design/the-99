@@ -26,7 +26,8 @@ describe("scopeCondition", () => {
     const q = render("in-use");
     for (const part of [
       "csc.oracle_id from commander_support_cards", "csc.commander_oracle_id from commander_support_cards",
-      "cps.oracle_id from commander_pair_support_cards", "cps.partner_oracle_id from commander_pair_support_cards",
+      "cps.oracle_id from commander_pair_support_cards", "cps.commander_oracle_id from commander_pair_support_cards",
+      "cps.partner_oracle_id from commander_pair_support_cards",
       "dc.oracle_id from deck_cards", "d.commander_oracle_id from decks", "d.partner_oracle_id from decks",
       "ci.oracle_id from collection_items",
     ]) expect(q).toContain(part);
