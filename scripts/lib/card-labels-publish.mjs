@@ -9,7 +9,7 @@
 // Publishing is OPT-IN (`--publish`), because a run against a scratch database or a
 // half-collected batch must not silently overwrite the evidence a merged report
 // rests on.
-import { copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
 import { MODELS } from "./card-labels-pricing.mjs";
@@ -41,6 +41,16 @@ export function resamplePublished(n) {
     "out/labels-sonnet.json": `${at}-labels-sonnet.json`,
   };
 }
+
+/**
+ * Which run a numbered re-sample belongs to: written beside its artifacts on the first publish, and the one
+ * check that keeps a reused number from replacing that run's evidence, or from leaving one number holding
+ * artifacts from two runs (cost, score and gates are published by separate commands). A re-publish of the
+ * SAME run, after a re-score, goes through.
+ *
+ * @param {string} n
+ */
+export const resampleRunStamp = (n) => `docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-${n}-run.json`;
 const RESAMPLE_MODELS = ["sonnet"];
 /** The re-sample number `LABEL_PUBLISH` names, as written, or null when it names no re-sample. */
 const resampleNumber = () => /^resample-([1-9][0-9]*)$/.exec(process.env.LABEL_PUBLISH ?? "")?.[1] ?? null;
@@ -132,7 +142,24 @@ export function publishArtifacts(sources, publish) {
     }
     return [src, dest];
   });
+  const n = resampleNumber();
+  if (n !== null) {
+    const read = (path) => { try { return JSON.parse(readFileSync(path, "utf8")).runId; } catch { return undefined; } };
+    const runId = read("out/batches.json");
+    if (!runId) throw new Error("out/batches.json names no run, so this re-sample's number cannot be bound to one");
+    const owner = read(resampleRunStamp(n));
+    if (owner !== undefined && owner !== runId) {
+      throw new Error(`resample-${n} already holds ${owner}'s evidence, and out/ is ${runId}. Refusing to publish: ` +
+        "a reused number would replace that run's files or mix two runs under one number. Use the next number.");
+    }
+    plan.push([null, resampleRunStamp(n)]);
+  }
   for (const [src, dest] of plan) {
+    if (src === null) {
+      mkdirSync(dirname(dest), { recursive: true });
+      writeFileSync(dest, JSON.stringify({ runId: JSON.parse(readFileSync("out/batches.json", "utf8")).runId }) + "\n");
+      continue;
+    }
     mkdirSync(dirname(dest), { recursive: true });
     copyFileSync(src, dest);
     console.log(`published ${src} -> ${dest}`);
