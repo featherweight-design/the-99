@@ -1161,7 +1161,21 @@ describe("the staples step (H25)", () => {
     ]);
   });
 
-  it("places a staple once even when it is also a candidate", () => {
+  it("credits a dual-role staple to both floors in its one slot", () => {
+    // §2.5a for the staples step: crediting only the first role would spend a SECOND card on the
+    // floor this staple already closes.
+    const dual = c({ oracleId: "dual", name: "dual", typeLine: "Instant", inclusionPct: 50,
+      oracleText: "Destroy target creature. Draw a card." });
+    const plan = planFill([...poolOf(200), ...lands], {
+      hasPartner: false,
+      skeleton: skeletonWith({ ramp: 0, draw: 1, removal: 1, wipes: 0, land: 35 }),
+      staples: [dual],
+    });
+    const roleRows = plan.rows.filter((r) => r.role !== "land" && r.role !== "other");
+    expect(roleRows).toEqual([{ oracleId: "dual", quantity: 1, role: "draw", source: "staple" }]);
+  });
+
+    it("places a staple once even when it is also a candidate", () => {
     const plan = planFill([sol, ...poolOf(200), ...lands], { ...FLAT, staples: [sol] });
     expect(plan.rows.filter((r) => r.oracleId === "sol")).toHaveLength(1);
   });
