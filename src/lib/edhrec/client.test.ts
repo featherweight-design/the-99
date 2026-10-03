@@ -101,6 +101,7 @@ describe("the index retires a cached page it has replaced", () => {
   });
 
   it("keeps a page the index holds no row for: the TTL alone governs it", () => {
+    // A missing index row means "nothing to disagree with", never "indexed just now".
     expect(cacheRowRetired(row(ago(3 * day), null))).toBe(false);
   });
 
@@ -120,8 +121,10 @@ describe("the index retires a cached page it has replaced", () => {
   });
 
   it("still serves a retired page when EDHREC cannot be reached, rather than nothing", async () => {
-    answer(false);
+    const fetch = answer(false);
     const result = await resolveEdhrecData("00000000-0000-0000-0000-000000000001", "Atraxa, Praetors' Voice", row(ago(3 * day), ago(1 * day)));
+    // EDHREC was asked, so this answer is the fallback's, not an in-TTL serve of the cache.
+    expect(fetch).toHaveBeenCalledTimes(1);
     expect(result).toEqual({ data: expect.anything(), unreachable: false });
     expect(result.data).not.toBeNull();
   });

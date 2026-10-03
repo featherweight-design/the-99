@@ -2228,7 +2228,7 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   not hold: a current page served from the cache, a retired one refetched and stored past the
   stamp, the TTL alone for an unindexed commander, a retired page served when EDHREC is down, and a
   copy landing (the stamp moved past a current page). Four mutations fail it: the cutoff dropped,
-  the unindexed guard dropped, a retired row treated as gone, and the stamp read off the wrong
+  an unindexed commander treated as indexed just now, a retired row treated as gone, and the stamp read off the wrong
   table. It writes those rows' timestamps and puts back the exact text it read, in a `finally`;
   through a `Date` they would come back shifted by this machine's zone, because both columns are
   `timestamp` without one and Drizzle stores UTC. **Scratch branches only**: the database must
