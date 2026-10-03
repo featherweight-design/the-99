@@ -490,11 +490,13 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   const stapleLandIds = new Set<string>();
   let staplesPlaced = 0;
   for (const staple of staples ?? []) {
-    if (staplesPlaced >= FILL_STAPLE_CAP || filledSoFar() >= limit) break;
     if (spent.has(staple.oracleId)) continue;
     if (pool === "sleeveable" && !staple.owned) continue;
     const roles = rolesOfCandidate(staple);
+    // A land is recorded whatever the cap and the slot count: it is only a preference for the
+    // land sweep, so a long condition list reaching the cap must not lose its lands.
     if (roles.includes("land")) { stapleLandIds.add(staple.oracleId); continue; }
+    if (staplesPlaced >= FILL_STAPLE_CAP || filledSoFar() >= limit) continue;
     if (!admits(staple)) continue;
     spent.add(staple.oracleId);
     gate?.place(staple);

@@ -1203,7 +1203,17 @@ describe("the staples step (H25)", () => {
     expect(landIds[0]).toBe("tower");
   });
 
-  it("honors the slot limit", () => {
+  it("still prefers a land staple offered after the cap is reached", () => {
+    const many = Array.from({ length: 12 }, (_, i) => c({ oracleId: `s${i}`, name: `s${i}` }));
+    const otherLand = c({ oracleId: "aaa-land", name: "aaa-land", typeLine: "Land", inclusionPct: 99,
+      oracleText: "{T}: Add {C}." });
+    const plan = planFill([...poolOf(200), otherLand, tower, ...lands], {
+      ...FLAT, staples: [...many, tower],
+    });
+    expect(plan.rows.filter((r) => r.role === "land")[0]?.oracleId).toBe("tower");
+  });
+
+    it("honors the slot limit", () => {
     const plan = planFill([...poolOf(200), ...lands], { ...FLAT, slots: 1, staples: [sol, swords] });
     expect(plan.rows).toEqual([{ oracleId: "sol", quantity: 1, role: "ramp", source: "staple" }]);
   });
