@@ -294,6 +294,10 @@ describe("the card-labels spend bounds", () => {
     const [minute, hour, dom, month, dow] = cron!.split(" ");
     expect([dom, month]).toEqual(["*", "*"]);
     expect(dow).toMatch(/^[0-6]$/);
+    // ONE minute of one hour: `*` in either field is NaN to the checks below and would pass them
+    // while firing up to 60 times that day, under the same week's id.
+    expect(minute).toMatch(/^[0-9]{1,2}$/);
+    expect(hour).toMatch(/^[0-9]{1,2}$/);
     // Well after `Catalog refresh` (09:00 UTC), or the new set is not in the catalog yet. GitHub
     // has started that cron 8.5 hours late (17:27Z on 2026-09-28), so "after 09:00" is not
     // enough margin. And never at :00, where every scheduled job on the platform lands at once.
