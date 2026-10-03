@@ -9,6 +9,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   DEFAULT_SORT_DIRECTION,
   filterCards,
+  printedNameOf,
   sortCards,
   type BrowseListCard,
   type BrowseFilters,
@@ -543,7 +544,7 @@ export function CollectionBrowser({
   // so paging runs past the 200 cards currently rendered. Carries each card's own
   // art and identity (H23 carousel PR 1b).
   const siblings = useMemo(
-    () => sorted.map((c) => ({ oracleId: c.oracleId, name: c.name, imageUri: c.imageUri, colorIdentity: c.colorIdentity })),
+    () => sorted.map((c) => ({ oracleId: c.oracleId, name: printedNameOf(c), imageUri: c.imageUri, colorIdentity: c.colorIdentity })),
     [sorted],
   );
   const siblingIds = useMemo(() => sorted.map((c) => c.oracleId), [sorted]);

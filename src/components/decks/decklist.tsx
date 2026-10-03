@@ -13,6 +13,7 @@ import { isOverLimit } from "../../lib/swaps/limit";
 import type { RecommendedMix } from "../../lib/decks/mix";
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
 import { cardCopies, groupByCardType, groupByRole } from "../../lib/decks/grouping";
+import { printedNameOf } from "../../lib/collection/browse";
 import { computeRoleCounts } from "../../lib/decks/mix";
 import { commanderShoppingRows, isShoppingCard, isSpokenFor } from "../../lib/decks/shopping";
 import type { DeckCommander } from "../../lib/decks/read";
@@ -567,7 +568,7 @@ export function Decklist({
   const orderedIds = groups
     .flatMap(([, groupCards]) => groupCards)
     .filter((c) => !spentOracleIds.has(c.oracleId))
-    .map((c) => ({ oracleId: c.oracleId, name: c.name, imageUri: c.imageUri }));
+    .map((c) => ({ oracleId: c.oracleId, name: printedNameOf(c), imageUri: c.imageUri }));
 
   // Shopping view: role-grouped with gap clauses, intro, and footer.
   if (filter === "shopping") {
@@ -834,7 +835,7 @@ export function Decklist({
     const shoppingOrderedIds = shoppingSections
       .flatMap((section) => section.cards)
       .filter((c) => !spentOracleIds.has(c.oracleId))
-      .map((c) => ({ oracleId: c.oracleId, name: c.name, imageUri: c.imageUri }));
+      .map((c) => ({ oracleId: c.oracleId, name: printedNameOf(c), imageUri: c.imageUri }));
 
     return (
       <div className="flex flex-col">

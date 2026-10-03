@@ -483,7 +483,7 @@ function Plate({
             key={c.oracleId}
             oracleId={c.oracleId}
             name={c.name}
-            siblings={cards.map((x) => x.oracleId)}
+            siblings={cards.map((x) => ({ oracleId: x.oracleId, name: x.name, imageUri: x.imageUri }))}
             className={"flex flex-col items-center gap-[6px] " + (one ? "w-[104px] md:w-[120px]" : "w-[68px] md:w-[84px]")}
           >
             <span
