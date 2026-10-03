@@ -934,9 +934,15 @@ export function FilterPanel({
       : selected.length === 1
         ? `, ${oneName}`
         : `, ${selected.length} selected`;
+  // A counting trigger SHOWS `Rarity 1` rather than the label, so its name has to start with
+  // that text (WCAG 2.5.3: a reader who says what they see must reach the control). The count
+  // is already in it, so past one value the name says nothing more about the selection.
+  const visibleCount = copy.triggerCount?.(selected.length);
   const triggerAria =
     disabled && disabledAriaLabel
       ? disabledAriaLabel
+      : visibleCount
+        ? `${visibleCount}, ${copy.panelAriaLabel}${selected.length === 1 ? `, ${oneName}` : ""}, ${open ? "expanded" : "collapsed"}`
       : open
         ? `${copy.panelAriaLabel}${triggerAriaDetail}, expanded`
         : selected.length === 0

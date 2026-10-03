@@ -568,6 +568,15 @@ export function SetGridView(props: SetGridViewProps) {
   // `contains` lighting a second pip narrows the grid to cards holding both, so "does any
   // card carry U?" said yes about a press that would empty the page; what the pip has to
   // answer is "would lighting me leave anything?".
+  // Turning the last pip off returns the mode to Any, as removing the colour chip does. Left on
+  // Exactly with nothing lit, the mode is invisible (the control greys its selector with no
+  // pips) yet still decides which pips are offered: in a set of multicolor cells only, every
+  // single pip would then read unavailable, with no way to reset the mode.
+  const setColours = (c: string[]) => {
+    const colors = c.map((v) => v.toUpperCase());
+    setFilters({ ...filters, colors, match: colors.length > 0 ? filters.match : "contains" });
+  };
+
   const unavailableColours = WUBRG.filter((c) => {
     if (effective.colors.includes(c)) return false;
     return !applyFilters(
@@ -1112,8 +1121,7 @@ export function SetGridView(props: SetGridViewProps) {
               colors={filters.colors.map((c) => c.toLowerCase())}
               match={filters.match}
               unavailable={unavailableColours}
-              onColorsChange={(c) =>
-                setFilters({ ...filters, colors: c.map((v) => v.toUpperCase()) })}
+              onColorsChange={setColours}
               onMatchChange={(m) => setFilters({ ...filters, match: m })}
             />
           </div>
@@ -1204,8 +1212,12 @@ export function SetGridView(props: SetGridViewProps) {
               44px there would grow the head by a line, which is the motion this row exists
               to prevent. `overflow-y-hidden` stops the pseudo targets that hang past that
               height from making the strip scroll vertically; a pointer needs the chip, not
-              a 44px margin around it. Never `flex-wrap`, at any width. */}
+              a 44px margin around it. Never `flex-wrap`, at any width. Its scrollbar is hidden,
+              as `builder-tabs.tsx` hides its own: a classic (non-overlay) scrollbar takes
+              its thickness out of the strip's height and would grow the head the moment
+              the chips overflowed. */}
           <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-[6px] overflow-x-auto
+                          [scrollbar-width:none] [&::-webkit-scrollbar]:hidden
                           h-[44px] md:h-auto md:overflow-y-hidden">
           {chips.length === 0 ? (
             <span
@@ -1262,8 +1274,7 @@ export function SetGridView(props: SetGridViewProps) {
                 colors={filters.colors.map((c) => c.toLowerCase())}
                 match={filters.match}
                 unavailable={unavailableColours}
-                onColorsChange={(c) =>
-                  setFilters({ ...filters, colors: c.map((v) => v.toUpperCase()) })}
+                onColorsChange={setColours}
                 onMatchChange={(m) => setFilters({ ...filters, match: m })}
               />
             </div>

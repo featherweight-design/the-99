@@ -1640,6 +1640,19 @@ describe("SetGridView — colour match", () => {
     expect(cellNames()).toEqual(["Card 1"]);
   });
 
+  it("returns to Any when the last pip goes off, so no pip is left unreachable", () => {
+    stubDesktop(true);
+    search = "c=W&m=exact";
+    // Multicolor cells only: under a stale Exactly with nothing lit, every single pip would
+    // match nothing and read unavailable.
+    view([p("1", { colorIdentity: ["W", "U"] }), p("2", { colorIdentity: ["B", "R"] })], []);
+    fireEvent.click(screen.getAllByRole("switch", { name: "White" })[0]);
+    expect(replaceState).toHaveBeenLastCalledWith(null, "", "/collection/sets/dsk");
+    const blue = screen.getAllByRole("switch", { name: "Blue" })[0];
+    expect(blue.getAttribute("aria-disabled")).not.toBe("true");
+    expect(blue).not.toBeDisabled();
+  });
+
   it("carries the modifier into the phone sheet", () => {
     stubDesktop(false);
     search = "c=W";
