@@ -61,7 +61,7 @@ import { useCollectionFields } from "./use-collection-fields";
  * carried through untouched, so the browse state is written by clearing exactly
  * these and rewriting them rather than by rebuilding the whole query string.
  */
-const OWNED_PARAMS = ["q", "c", "t", "s", "avail", "sort", "dir", "view", "card"] as const;
+const OWNED_PARAMS = ["q", "c", "m", "t", "s", "avail", "sort", "dir", "view", "card"] as const;
 
 function serializeParams(
   filters: BrowseFilters,
@@ -75,6 +75,10 @@ function serializeParams(
   for (const key of OWNED_PARAMS) p.delete(key);
   if (filters.search.trim()) p.set("q", filters.search.trim());
   if (filters.colors.length > 0) p.set("c", filters.colors.join(""));
+  // The default is an absence, as on the lanes and Sets: only `exactly` is written, and only
+  // beside a lit colour, Sets' rule (#1172). The parse reads `m=exact` alone as contains, so a
+  // URL carrying it with no colour would say one thing and draw another.
+  if (filters.match === "exactly" && filters.colors.length > 0) p.set("m", "exact");
   // Comma-joined; a single bare type still parses, so pre-#100 links survive.
   if (filters.types.length > 0) p.set("t", serializeTypes(filters.types));
   // Comma-joined; a single bare code still parses, so pre-#86 links survive.
@@ -423,7 +427,12 @@ export function CollectionBrowser({
   // Any filter/sort change resets the window — folded into the update
   // callbacks (not an effect) to avoid a cascading render.
   const updateFilters = useCallback(
-    (f: BrowseFilters, intent?: FilterChangeIntent) => {
+    (next: BrowseFilters, intent?: FilterChangeIntent) => {
+      // Turning the last pip off returns the mode to Any, as Sets does (#1172) and as removing
+      // the colour chip does: `Exactly` with nothing lit filters nothing, the control greys it,
+      // and the URL does not write it, so state that kept it would disagree with both.
+      const f: BrowseFilters =
+        next.colors.length === 0 && next.match === "exactly" ? { ...next, match: "contains" } : next;
       // The panels' add/remove/clear announcements are composed here rather than
       // in the panel: only this component knows how many cards survive the new
       // filter set, and the string quotes that figure. At most one of the two

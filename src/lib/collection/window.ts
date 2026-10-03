@@ -14,6 +14,7 @@ import {
 } from "./browse";
 import { SORT_KEYS, parseSortDirection } from "./sort-options";
 import { parseColors } from "../color-param";
+import { parseJoin } from "../discovery/params";
 import { parseTypesParam } from "./type-filter";
 import { parseSetCodesParam } from "./set-filter";
 import { initialAvailability } from "./availability-filter";
@@ -32,10 +33,16 @@ export type BrowseParams = { filters: BrowseFilters; sort: SortKey; direction: S
 export function parseBrowseParams(get: (key: string) => string | null, availabilityOk: boolean): BrowseParams {
   const raw = get("sort");
   const sort: SortKey = raw !== null && (SORT_KEYS as readonly string[]).includes(raw) ? (raw as SortKey) : "name";
+  const colors = parseColors(get("c"));
   return {
     filters: {
       search: get("q") ?? "",
-      colors: parseColors(get("c")),
+      colors,
+      // H10: the lanes' and Sets' key and value. `contains` is the default, and an absent,
+      // misspelled or hand-edited `m` reads as it. So does `m=exact` with no colour this page
+      // recognises, Sets' rule (#1172): there is nothing to be exact about, and a link that
+      // opened on Exactly with no pip lit would hold a mode the control shows as inert.
+      match: colors.length > 0 ? parseJoin(get("m")) : "contains",
       types: parseTypesParam(get("t")),
       setCodes: parseSetCodesParam(get("s")),
       availability: initialAvailability(availabilityOk, get("avail")),

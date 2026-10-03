@@ -28,10 +28,17 @@ export function filterByColors<T extends { colorIdentity: string[] }>(
   mode: JoinMode = "contains",
 ): T[] {
   if (selected.length === 0) return results;
-  return results.filter((r) =>
-    mode === "exactly"
-      ? r.colorIdentity.length === selected.length &&
-        selected.every((c) => r.colorIdentity.includes(c))
-      : selected.every((c) => r.colorIdentity.includes(c)),
-  );
+  return results.filter((r) => matchesColors(r.colorIdentity, selected, mode));
+}
+
+/**
+ * The rule itself, for one identity: the lanes filter a list through `filterByColors`, and
+ * `/collection` tests a card inside a predicate that also checks every other filter, so both
+ * read this rather than each keeping a copy. An empty selection matches everything, under
+ * both modes, for the reason `filterByColors` gives.
+ */
+export function matchesColors(identity: readonly string[], selected: readonly string[], mode: JoinMode): boolean {
+  if (selected.length === 0) return true;
+  if (mode === "exactly" && identity.length !== selected.length) return false;
+  return selected.every((c) => identity.includes(c));
 }

@@ -12,6 +12,7 @@
 
 import type { AvailabilityState } from "../decks/availability";
 import { collectionChassisCopy } from "../copy/collection";
+import { filterCopy } from "../copy/lanes";
 import { COLOR_NAMES } from "./color-filter";
 import type { BrowseFilters } from "./browse";
 import { WUBRG_COLOR } from "./browse";
@@ -87,7 +88,18 @@ export function collectionChips(
       // or type renders as itself and a spoken copy would say it twice.
       spoken: filters.colors.map((c) => colourName(c)).join(", "),
       dots: filters.colors.map((c) => WUBRG_COLOR[c.toUpperCase()]),
-      next: { ...filters, colors: [] },
+      // Dropping the pips drops the modifier with them, the rack's rule (`chip-line.tsx`).
+      next: { ...filters, colors: [], match: "contains" },
+    });
+  }
+
+  // The modifier's own chip, the rack's and Sets' rule (H10): only while there are pips for it
+  // to modify, and removing it returns to Any and keeps the pips.
+  if (filters.colors.length > 0 && filters.match === "exactly") {
+    chips.push({
+      key: "m",
+      label: filterCopy.match.exactlyShort,
+      next: { ...filters, match: "contains" },
     });
   }
 

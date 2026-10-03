@@ -30,7 +30,7 @@ import type { ColorOption } from "../../lib/collection/color-filter";
 import type { SetOption } from "../../lib/collection/set-filter";
 import type { TypeOption } from "../../lib/collection/type-filter";
 import { AvailabilityGlyph } from "../ui/availability-marker";
-import { ColourPips } from "../ui/colour-pips";
+import { ColourControl } from "../commanders/rack/colour-control";
 import { SetListSheet, SheetChip, type SetListSheetCopy } from "../ui/set-list-sheet";
 import type { FilterChangeIntent } from "./filter-bar";
 
@@ -212,10 +212,14 @@ function SheetBody({
         {/* Colour leads (decision 22), and it is the same control the wide form
             draws rather than a phone-shaped copy of it. */}
         <Group heading={copy.colourHeading}>
-          <ColourPips
-            form="sheet"
-            value={filters.colors}
-            onToggle={(code) => onChange({ ...filters, colors: toggle(filters.colors, code) })}
+          {/* The commander rack's control in its sheet form (H10): the pips, then `Any` /
+              `Exactly` at a 44px target. Lowercase in, uppercase back, as the bar does. */}
+          <ColourControl
+            wide={false}
+            colors={filters.colors.map((c) => c.toLowerCase())}
+            match={filters.match ?? "contains"}
+            onColorsChange={(c) => onChange({ ...filters, colors: c.map((v) => v.toUpperCase()) })}
+            onMatchChange={(m) => onChange({ ...filters, match: m })}
             unavailable={colorOptions.filter((o) => o.disabled).map((o) => o.code)}
           />
         </Group>

@@ -22,7 +22,7 @@ import type { AvailabilityState } from "../../lib/decks/availability";
 import { collectionChassisCopy, collectionFilterCopy } from "../../lib/copy/collection";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { AvailabilityGlyph } from "../ui/availability-marker";
-import { ColourPips } from "../ui/colour-pips";
+import { ColourControl } from "../commanders/rack/colour-control";
 import { CollectionFilterSheet } from "./filter-sheet";
 import type { ColorOption } from "../../lib/collection/color-filter";
 import { CHASSIS_WIDE_MIN_PX, FilterChassis, type FilterChip } from "../ui/filter-chassis";
@@ -201,13 +201,10 @@ export function FilterBar({
     (filters.setCodes.length > 0 ? 1 : 0) +
     ((filters.availability ?? []).length > 0 ? 1 : 0);
 
-  function toggleColor(c: string) {
-    const has = filters.colors.includes(c);
-    onFiltersChange({
-      ...filters,
-      colors: has ? filters.colors.filter((x) => x !== c) : [...filters.colors, c],
-    });
-  }
+  // LOWERCASE in and out, the rack's own case: the control rebuilds the selection by testing its
+  // lowercase hues against what it was handed. This page keeps colours uppercase everywhere else
+  // (the URL, `colorIdentity`), hence the lift on the way back.
+  const setColours = (c: string[]) => onFiltersChange({ ...filters, colors: c.map((v) => v.toUpperCase()) });
 
   return (
     // §Filter Bar Container: sticky top:0 desktop, bg --bg, padding 18px 34px 14px desktop, border-bottom 1px --border, z-index 2
@@ -328,10 +325,13 @@ export function FilterBar({
             one filter. The `COLOR` caption went with the row that carried it
             (decision 17): it existed to explain five abstract squares, and the
             symbols explain themselves. */}
-        <ColourPips
-          form={wide ? "wide" : "sheet"}
-          value={filters.colors}
-          onToggle={(code) => toggleColor(code)}
+        {/* The commander rack's control (H10): the pips, then `Any` / `Exactly`. */}
+        <ColourControl
+          wide={wide}
+          colors={filters.colors.map((c) => c.toLowerCase())}
+          match={filters.match ?? "contains"}
+          onColorsChange={setColours}
+          onMatchChange={(m) => onFiltersChange({ ...filters, match: m })}
           // `color-filter.ts` builds these with `disabled: count === 0`. The
           // retired mobile Color panel passed them through and the pips must
           // too, or a hue no surviving card carries is selectable and empties
