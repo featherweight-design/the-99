@@ -48,8 +48,9 @@ export type VersionDiffCard = Omit<VersionDiffBase, "imageUri"> & {
  *   uncapped supply. The larger of the two: the deficit carries the proxy rule (a proxied slot is
  *   never billed) and the surplus the copies beyond the ask. A version's own count may differ
  *   from the draft's, which is why neither figure is subtracted from `to` directly.
- * - `free`: a card the current list no longer runs, off-decklist `loadAvailability`: owned less
- *   what committed decks hold.
+ * - `free`: a card the current list no longer runs, `loadAvailability`'s `free` from this deck's
+ *   vantage with an ask of 0: owned less what senior decks hold, so a copy this deck's own
+ *   committed version still sleeves counts as this deck's.
  */
 export type DeckClaims = {
   draft: Map<string, number>;
