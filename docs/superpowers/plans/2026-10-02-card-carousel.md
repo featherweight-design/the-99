@@ -39,14 +39,18 @@ that don't fall back to `identityGradient` or the `--elevated` plate per the han
 (`decks/suggestion-tile.tsx`), the Card view (`decks/deck-card-tile.tsx`), the top-off list
 (`decks/top-off-list.tsx`), the update diff (`decks/update-diff-row.tsx`), the stand-ins sheet
 (`decks/stand-ins-sheet.tsx`), and the commander page's synergy and coverage lists
-(`commanders/synergy-row.tsx`, `commanders/coverage-chip.tsx`). Each passes its list's own art and
+(`commanders/synergy-row.tsx`, `commanders/coverage-chip.tsx`), and, found by review round 1, the
+suggestion's cut/add pair (`decks/suggestion-card.tsx`), the findings receipt and the lean's lists
+backed by a `FindingArt` map (`decks/receipt-modal.tsx`, `decks/lean-line.tsx`), and Change
+commander's candidates (`decks/change-commander-sheet.tsx`). Each passes its list's own art and
 identity. Every other opener passes bare ids, which stay valid.
 
 ## PR boundaries
 
 Repo rule: split anything over ~20 files or ~800 runtime lines; no stacked PRs (AGENTS.md /
-pr-review skill). Given the fourteen-mount-point blast radius, this splits into four PRs by
-**kind**, not by surface — each is independently shippable and independently reviewable:
+pr-review skill). Given the app-wide blast radius, this is FIVE PRs across four stages (PR 1 is
+split into 1a and 1b, below), cut by **kind**, not by surface — each is independently shippable
+and independently reviewable:
 
 ### PR 1 — Provider seam + sibling art plumbing (no visible behavior change)
 - Add the wrapper component above `CardModal` inside `card-detail-provider.tsx` that will own the
@@ -62,13 +66,16 @@ pr-review skill). Given the fourteen-mount-point blast radius, this splits into 
   `identityGradient`/`--elevated` per note 2. Do not force-fetch art for those.
 - Prefetch the two neighbors' detail on arrival (README note 2, "Today nothing reads ahead") —
   reuse the existing `prefetchCard`/`useCardIntent` machinery already proven by
-  `probe:card-prefetch`; this is a new *caller* of it, not new fetch logic.
+  `probe:card-prefetch`; this is a new *caller* of it, not new fetch logic. **Sequenced**, because
+  the provider keeps one speculative read at a time (`prefetching`) and a second call while one runs
+  returns without reading: `prefetch` returns its read, and the next neighbor is read when that one
+  settles, then the previous. Both ids are covered by a unit test and by the probe.
 - Move the two shipped inline aria-labels (`Previous card` / `Next card`) to the copy keys in
   `card-carousel · copy strings.ts`.
 - **Split in two (2026-10-03),** because the seven openers the pre-open pass added take one PR to
   about 20 files: **PR 1a** is the provider seam, the `Sibling` type, the neighbor prefetch, the
   copy keys and the `probe:card-prefetch` extension (about 6 files); **PR 1b** is the openers
-  passing their art and identity (about 13 files, a few lines each). 1b branches from `main` after
+  passing their art and identity (about 17 files, a few lines each, still under the ceiling). 1b branches from `main` after
   1a merges. Nothing draws a neighbor until PR 2, so neither half changes what a reader sees.
 - **The neighbor prefetch changes what `probe:card-prefetch` counts**: an opened card now reads
   its neighbors, so that probe's "reads a card ONCE" and "passing over reads nothing" checks must
@@ -106,7 +113,8 @@ pr-review skill). Given the fourteen-mount-point blast radius, this splits into 
   `aria-label` today — the specimen's *drawn* toggle is the "All details" row at the teaser's
   foot — but the copy file already carries `grabberAria`, and a grip that visibly drags between
   two states is exactly the kind of control that wants a tap fallback for a reader who cannot
-  drag. Give the grip pill `role="button"` and `aria-label={cardSheetCopy.grabberAria}`, wired to
+  drag. Make the grip a NATIVE `<button>` (focusable, and Enter and Space work, which a `role` alone
+  does not give) with `aria-label={cardSheetCopy.grabberAria}`, wired to
   the same teaser↔full toggle the "All details" row calls; both controls end up doing the same
   thing, which is fine — a drag-only affordance having no tap equivalent is the gap, not the
   duplication.
@@ -172,7 +180,7 @@ Proposed inventory file: `docs/superpowers/inventories/card-carousel.json`.
 | phone-full-picker | any opener, phone width | swipe up to full, open printing picker | m2: counter only, peeks withheld, picker lives in the full sheet |
 | phone-zoom | any opener, phone width | tap the centre card in the teaser, then in full | the phone zoom is RETIRED (PR 3): nothing in the teaser, back to the teaser from full, no `Tap to zoom` hint |
 | desktop-zoom | any opener, ≥ 1252px | open zoom, press ← / → | arrow keys do nothing inside the zoom (decision 2 stands) |
-| reduced-motion | any opener | `prefers-reduced-motion: reduce`, page once | swap, no glide/snap; drag still tracks finger (not photographable — note in the row) |
+| reduced-motion | any opener | `prefers-reduced-motion: reduce`, page once | photographed for the record only; the contact sheet cannot emulate the media query, so the SWAP is proved by the two carousel probes under `page.emulateMedia({ reducedMotion: "reduce" })` at both widths |
 | about-card-detail | `about/ch01-figures.tsx` | load `/about` | the existing specimen still opens correctly with the new modal shape |
 
 The inventory declares a top-level `widths` array (the contact sheet defaults to 390 and 1300
