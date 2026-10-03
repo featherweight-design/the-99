@@ -163,12 +163,13 @@ describe("SetGridView — 0% and 100%", () => {
     expect(screen.getByText("all 2 of the base run")).toBeInTheDocument();
   });
 
-  it("removes Missing-only at 100 percent rather than greying it", () => {
+  it("removes Missing at 100 percent rather than greying it, and keeps Owned", () => {
     // The grey-in-place rule protects a control's STATE; here the population is empty
-    // and stays empty until the reader sells a card, so there is no state to lose.
+    // and stays empty until the reader sells a card, so there is no state to lose. Owned
+    // still means something in the extras, so it stays (H12).
     view([p("1")], ["1"]);
-    expect(screen.queryByRole("button", { name: /Showing only cards/ })).toBeNull();
-    expect(screen.queryByRole("button", { name: /Showing every card/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Missing only" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Owned only" })).toBeInTheDocument();
   });
 
   it("promotes the extras count into the head at 100 percent", () => {
@@ -222,25 +223,51 @@ describe("SetGridView — price staleness", () => {
 describe("SetGridView — filters", () => {
   it("writes missing-only to the URL without navigating", () => {
     // Every cell is already loaded, so a toggle is a presentation change over data in
-    // hand: routing is the request being avoided. `own=missing`, never `m=1`: H10 took
-    // `m` for the colour modifier.
+    // hand: routing is the request being avoided. `own`, never `m=1` (H10 took `m`).
     view([p("1"), p("2")], ["1"]);
-    fireEvent.click(screen.getByRole("button", { name: /Showing every card/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Missing only" }));
     expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk?own=missing");
   });
 
   it("serialises a cleared filter as an absence rather than an empty parameter", () => {
-    // The legacy `m=1` reads as missing-only, and leaves the URL with it.
+    // The legacy `m=1` reads as missing, and leaves the URL with it.
     search = "m=1";
     view([p("1"), p("2")], ["1"]);
-    fireEvent.click(screen.getByRole("button", { name: /Showing only cards/ }));
+    const missing = screen.getByRole("button", { name: "Missing only" });
+    expect(missing).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(missing);
     expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
   });
 
-  it("reads own=missing as missing-only", () => {
+  // H12: the mirror filter.
+  it("writes owned-only as own=owned", () => {
+    view([p("1"), p("2")], ["1"]);
+    fireEvent.click(screen.getByRole("button", { name: "Owned only" }));
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk?own=owned");
+  });
+
+  it("makes Missing and Owned mutually exclusive", () => {
     search = "own=missing";
     view([p("1"), p("2")], ["1"]);
-    expect(screen.getByRole("button", { name: /Showing only cards/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Owned only" }));
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk?own=owned");
+    expect(screen.getByRole("button", { name: "Owned only" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Missing only" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("hides missing cells under owned-only and says what it shows", () => {
+    search = "own=owned";
+    view([p("1"), p("2"), p("3")], ["1"]);
+    expect(screen.queryAllByRole("button", { name: /not in your collection/ })).toHaveLength(0);
+    expect(screen.getAllByRole("button", { name: /Card 1/ }).length).toBeGreaterThan(0);
+    expect(screen.getByText(/^1 yours · numbers skip/)).toBeInTheDocument();
+  });
+
+  it("chips owned-only and removes it from the chip's ×", () => {
+    search = "own=owned";
+    view([p("1"), p("2")], ["1"]);
+    fireEvent.click(screen.getByRole("button", { name: "Remove filter: Owned only" }));
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
   });
 
   it("hides owned cells under missing-only and says the numbers skip", () => {
@@ -412,11 +439,27 @@ describe("SetGridView — the cell is the target", () => {
 });
 
 describe("SetGridView — phone and desktop are one document", () => {
-  it("renders exactly one Missing-only control, not one per breakpoint", () => {
+  it("renders exactly one of each ownership toggle outside the sheet", () => {
     // Two buttons with one accessible name read as correct at either width alone and
     // wrong in the document that contains both.
     view([p("1"), p("2")], ["1"]);
-    expect(screen.getAllByRole("button", { name: /Showing every card/ })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "Missing only" })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "Owned only" })).toHaveLength(1);
+  });
+
+  // H13: on the phone ownership lives in the drawer, as chips with counts.
+  it("puts ownership in the phone sheet as chips with counts", () => {
+    stubDesktop(false);
+    view([p("1"), p("2"), p("3")], ["1"]);
+    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    // Scoped to the sheet: jsdom applies no CSS, so the desktop rack's group of the same
+    // name is in the document too.
+    const group = screen.getByRole("dialog").querySelector('[aria-label="Ownership"]') as HTMLElement;
+    const missing = [...group.querySelectorAll<HTMLElement>('[role="switch"]')]
+      .find((b) => /Missing/.test(b.textContent ?? "")) as HTMLElement;
+    expect(missing.textContent).toContain("2");
+    fireEvent.click(missing);
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk?own=missing");
   });
 
   it("puts the filters behind a sheet on the phone, with a count badge", () => {
@@ -425,13 +468,12 @@ describe("SetGridView — phone and desktop are one document", () => {
     expect(screen.getByRole("button", { name: /2 filters on/ })).toBeInTheDocument();
   });
 
-  // Addendum R2 §28: the badge counts DIMENSIONS only. Missing-only is a control on the
-  // row beside the badge, so counting it states the same fact twice in one glance — and it
-  // put a `1` on `Filters` with nothing behind `Filters`.
-  it("leaves missing-only out of the badge, which sits beside it", () => {
+  // H13 moved ownership behind `Filters`, so the badge counts it: left out, a live filter
+  // would be in neither the row nor the badge.
+  it("counts ownership in the badge now that it lives in the sheet", () => {
     search = "m=1";
     view([p("1"), p("2")], ["1"]);
-    expect(screen.queryByRole("button", { name: /filter(s)? on/ })).toBeNull();
+    expect(screen.getByRole("button", { name: /1 filter on/ })).toBeInTheDocument();
   });
 
   it("keeps the cost strip when the filters match nothing", () => {
@@ -751,12 +793,11 @@ describe("SetGridView — the rack, chassis-conformant", () => {
     expect(chipLabels()).toEqual(["White", "Rare", "Missing only"]);
   });
 
-  // H10 and H13: the modifier's own chip after the pips, and one chip per rarity — with
-  // missing-only beside an Exactly, which one `m` key could not have carried.
-  it("chips Exactly, each rarity and missing-only in dimension order", () => {
-    search = "own=missing&r=mythic,rare&m=exact&c=W";
-    view([p("1", { rarity: "rare" }), p("2", { rarity: "mythic" })], []);
-    expect(chipLabels()).toEqual(["White", "Exactly", "Rare", "Mythic", "Missing only"]);
+  // H10 and H13: the modifier's own chip after the pips, and one chip per rarity.
+  it("chips Exactly, each rarity and Owned in dimension order", () => {
+    search = "own=owned&r=mythic,rare&m=exact&c=W";
+    view([p("1", { rarity: "rare" }), p("2", { rarity: "mythic" })], ["1", "2"]);
+    expect(chipLabels()).toEqual(["White", "Exactly", "Rare", "Mythic", "Owned only"]);
   });
 
   it("removes one rarity from its own chip and keeps the other", () => {
@@ -945,10 +986,10 @@ describe("SetGridView — the badge counts dimensions", () => {
     expect(screen.getByRole("button", { name: /2 filters on/ })).toBeInTheDocument();
   });
 
-  it("counts two rarities as one dimension", () => {
-    search = "r=rare,common";
-    view([p("1", { rarity: "rare" }), p("2")], []);
-    expect(screen.getByRole("button", { name: /1 filter on/ })).toBeInTheDocument();
+  it("counts two rarities as one dimension, and ownership as one more", () => {
+    search = "r=rare,common&own=owned";
+    view([p("1", { rarity: "rare" }), p("2")], ["1"]);
+    expect(screen.getByRole("button", { name: /2 filters on/ })).toBeInTheDocument();
   });
 
 });
@@ -1695,6 +1736,82 @@ describe("SetGridView — colour match", () => {
   });
 });
 
+// H16: the order. Collector number by default; price from the cost strip's own figure,
+// dearest first, unpriced last whichever way it runs.
+describe("SetGridView — sort by price", () => {
+  const NEWEST = "2026-09-28 09:00:00";
+  const priced = () => render(
+    <SetGridView
+      code="dsk"
+      name="Duskmourn"
+      iconSvgUri={null}
+      releasedAt="2026-09-01"
+      ownedFingerprint=""
+      artGeneration={0}
+      cells={placeCells([p("1"), p("2"), p("3"), p("4"), p("5")], [])}
+      prices={[
+        { scryfallId: "s-1", cents: 100, foilCents: null, etchedCents: null, asOf: NEWEST },
+        // s-2 has no row at all.
+        { scryfallId: "s-3", cents: 900, foilCents: null, etchedCents: null, asOf: NEWEST },
+        // Sold out: a last known price nobody is selling against, so no figure.
+        { scryfallId: "s-4", cents: 5000, foilCents: null, etchedCents: null,
+          asOf: "2026-01-01 09:00:00" },
+        { scryfallId: "s-5", cents: 500, foilCents: null, etchedCents: null, asOf: NEWEST },
+      ]}
+      newestAsOf={NEWEST}
+      baseSetSize={5}
+      staleAsOf={null}
+    />,
+  );
+  const cellNames = () => screen.getAllByRole("button", { name: /in your collection/ })
+    .map((b) => (b.getAttribute("aria-label") ?? "").split(",")[0]);
+
+  it("opens in collector order", () => {
+    window.history.pushState(null, "", "/collection/sets/dsk");
+    priced();
+    expect(cellNames()).toEqual(["Card 1", "Card 2", "Card 3", "Card 4", "Card 5"]);
+  });
+
+  it("sorts dearest first by default, unpriced last", () => {
+    search = "sort=price";
+    window.history.pushState(null, "", "/collection/sets/dsk?sort=price");
+    priced();
+    expect(cellNames()).toEqual(["Card 3", "Card 5", "Card 1", "Card 2", "Card 4"]);
+  });
+
+  it("sorts cheapest first ascending, unpriced STILL last", () => {
+    search = "sort=price&dir=asc";
+    window.history.pushState(null, "", "/collection/sets/dsk?sort=price&dir=asc");
+    priced();
+    expect(cellNames()).toEqual(["Card 1", "Card 5", "Card 3", "Card 2", "Card 4"]);
+  });
+
+  it("picks price from the sort control, then reverses it on a second pick", () => {
+    stubDesktop(true);
+    window.history.pushState(null, "", "/collection/sets/dsk");
+    priced();
+    fireEvent.click(screen.getByRole("button", { name: /^Sort cards/ }));
+    fireEvent.click(screen.getByRole("option", { name: /^Price/ }));
+    expect(replaceState).toHaveBeenLastCalledWith(null, "", "/collection/sets/dsk?sort=price");
+    expect(cellNames()[0]).toBe("Card 3");
+    fireEvent.click(screen.getByRole("button", { name: /^Sort cards/ }));
+    fireEvent.click(screen.getByRole("option", { name: /^Price/ }));
+    expect(replaceState).toHaveBeenLastCalledWith(
+      null, "", "/collection/sets/dsk?sort=price&dir=asc",
+    );
+    expect(cellNames()).toEqual(["Card 1", "Card 5", "Card 3", "Card 2", "Card 4"]);
+  });
+
+  // Sort narrows nothing, so Clear all leaves it, as the chassis's does.
+  it("survives Clear all filters", () => {
+    search = "sort=price&c=W";
+    window.history.pushState(null, "", "/collection/sets/dsk?sort=price&c=W");
+    priced();
+    fireEvent.click(screen.getByRole("button", { name: /^Clear all filters/ }));
+    expect(replaceState).toHaveBeenLastCalledWith(null, "", "/collection/sets/dsk?sort=price");
+  });
+});
+
 // The badge counts dimensions; the result LINE describes the page, and a query narrows the
 // page. Reading one off the other made a query-only search state the whole set's figures
 // over a grid showing a handful.
@@ -2105,6 +2222,32 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
 
   // d9's ruling on H10: the collapsed head below 1000px hides Any / Exactly so the set name
   // keeps its room. Hiding is display only, and this pins that it never changes state.
+  // d9, 2026-10-03: ownership and Sort live in the OPEN head only. Collapsing hides them
+  // and changes nothing they apply.
+  it("keeps ownership and the order applied while the collapsed head hides them", () => {
+    stubDesktop(true);
+    search = "own=owned&sort=price";
+    window.history.pushState(null, "", "/collection/sets/dsk?own=owned&sort=price");
+    const { container } = view([p("1"), p("2")], []);
+    const own = () => container.querySelector("[data-set-own]") as HTMLElement;
+    const sort = () => container.querySelector("[data-set-sort]") as HTMLElement;
+    expect(own().className).toContain("md:flex");
+    expect(sort().className).not.toMatch(/\bhidden\b/);
+    scrollTo(200);
+    expect(isShy(container)).toBe(true);
+    expect(own().className).not.toContain("md:flex");
+    expect(sort().className).toMatch(/\bhidden\b/);
+    for (const [, , url] of replaceState.mock.calls) {
+      expect(String(url)).toContain("own=owned");
+      expect(String(url)).toContain("sort=price");
+    }
+    scrollTo(0);
+    expect(isShy(container)).toBe(false);
+    expect(own().className).toContain("md:flex");
+    expect(screen.getByRole("button", { name: "Owned only" })).toHaveAttribute("aria-pressed", "true");
+    expect(within(sort()).getByRole("button").getAttribute("aria-label") ?? "").toMatch(/price/i);
+  });
+
   it("hides Any / Exactly in the collapsed head without un-applying Exactly", () => {
     stubDesktop(true);
     search = "c=W&m=exact";
@@ -2470,10 +2613,9 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
       .toHaveLength(1);
   });
 
-  // The open row draws the Missing toggle beside the badge, so counting it there says one
-  // thing twice. The collapsed bar hides it and the sheet does not carry it, so there the
-  // same exclusion hides a live filter completely.
-  it("counts missing-only on the collapsed badge, unlike the open row", () => {
+  // H13 moved ownership into the sheet, so both badges count it: the open row no longer
+  // draws it beside the badge, and the two counts are one figure.
+  it("counts ownership on the collapsed badge and the open row alike", () => {
     stubDesktop(false);
     search = "m=1";
     const { container } = view([p("1"), p("2")], ["1"]);
@@ -2481,8 +2623,7 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     const bar = container.querySelector("[data-set-head-bar]") as HTMLElement;
     expect(bar.querySelector("[aria-label*='filter']")?.textContent).toBe("1");
     scrollTo(0);
-    // And the open row still does not count it.
-    expect(screen.getByRole("button", { name: /^Filters/ }).textContent).not.toMatch(/1/);
+    expect(screen.getByRole("button", { name: /^Filters/ }).textContent).toMatch(/1/);
   });
 
   // What the collapsed bar keeps: where you are, how far along, and the two ways to change

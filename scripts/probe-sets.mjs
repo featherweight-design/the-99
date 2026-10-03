@@ -654,10 +654,14 @@ async function run() {
     // Read off a STRUCTURE the page maintains, not off copy: the first attempt grepped for
     // sentences this page has never rendered, so it always answered false and the check it
     // guards would have failed on the fixture it exists to allow. At 100% the page removes
-    // the missing-only control, because the base run has nothing left to hide — the absence
-    // of that control IS completeness, and it is the same fact `effective` is derived from.
+    // the Missing option, because the base run has nothing left to hide — the absence of
+    // that option IS completeness, and it is the same fact `effective` is derived from.
+    // Read off the ownership group's STRUCTURE, never its copy: a complete set drops the
+    // Missing option entirely (`ownOptions` in set-grid-view.tsx), so the group renders one
+    // button, Owned only; an incomplete set renders two. Matching a label would call every
+    // set complete the moment that label changed, and silently pass the check it guards.
     const setIsComplete = await page.evaluate(
-      () => document.querySelectorAll('button[aria-label^="Showing "]').length === 0,
+      () => document.querySelectorAll("[data-set-own] button").length === 1,
     );
     if (rest === null) {
       failures += !report("the chip row is on the page", false, "no [data-set-chips]");
@@ -1310,14 +1314,10 @@ async function run() {
     // is inline (`useIsDesktop` is `min-width: 768px`), and the prefix is a member the
     // handoff's row arithmetic never carried — so it is the width where an added item
     // either fits or wraps the row the whole ruling depends on.
-    // The collapsed set name's floor is 40px, so the name can never disappear. ONE named
-    // exception, ruled 2026-10-03: from 768 to 773px the row has no room left once the
-    // colour box drops Any / Exactly (H10). Measured, the 638px row there is the field at its
-    // 132 floor, the colour box 156, the rarity trigger 103, the missing toggle 88, four 8px
-    // gaps, and a 127px prefix whose h1 reads 34px. Hiding a second control to buy 6px in a
-    // 6px band of viewports was judged worse than the dip. So 768-773 holds a 30px floor (the
-    // name is shortened, never gone), and 774 is walked to pin where the band ends.
-    const nameFloor = (w) => (w >= 768 && w <= 773 ? 30 : 40);
+    // The collapsed set name's floor is 40px at every width, so the name can never
+    // disappear. From #1172 to Sets PR 2, 768-773 carried a 30px exception (the name read
+    // 34px there); with ownership and Sort moved to the open head only, 768 reads 130px and
+    // the exception is retired. 774 stays in the walk, where that band used to end.
     for (const width of [1440, 1180, 774, 768]) {
       await page.setViewportSize({ width, height: 900 });
       // Below 1000 the COLLAPSED head hides Any / Exactly so the name keeps its room (d9's
@@ -1509,7 +1509,7 @@ async function run() {
       // right members is exactly what it would still be.
       failures += !report(
         `the set name survives the shrink at ${width}`,
-        row !== null && row.nameWidth >= nameFloor(width) && row.fieldWidth >= 132,
+        row !== null && row.nameWidth >= 40 && row.fieldWidth >= 132,
         row === null ? "no prefix" : `name ${row.nameWidth}px, field ${row.fieldWidth}px; row ${row.members}`,
       );
 
@@ -1732,12 +1732,20 @@ async function run() {
           wrapped: rowHeight > tallest + 2,
           rowHeight: Math.round(rowHeight),
           tallest: Math.round(tallest),
+          // Round 5 finding: `wrapped` alone missed a row whose content runs PAST its
+          // right edge without wrapping — `flex-nowrap` and every child `shrink-0` is
+          // exactly what makes that silent. `scrollWidth` over `clientWidth` is the one
+          // fact that catches it; a full "Field · direction" Sort label overflowed the
+          // 390px row by 48-72px with every other check here passing.
+          rowScrollWidth: Math.round(row.scrollWidth),
+          rowClientWidth: Math.round(row.clientWidth),
           fieldWidth: Math.round((slot ?? field).getBoundingClientRect().width),
           inputWidth: Math.round(field.getBoundingClientRect().width),
           fontSize: parseFloat(getComputedStyle(field).fontSize),
-          // The field's OWN box, not the row's. The row measures 44 because
-          // `MissingOnlyToggle` is 44; that says nothing about whether this control is a
-          // 44px target, and for eighteen rounds it was 38.
+          // The field's OWN box, not the row's. The row once measured 44 because the
+          // Missing toggle beside it was 44; that said nothing about whether this control
+          // was a 44px target, and for eighteen rounds it was 38. Since H13 that slot holds
+          // the compact Sort trigger, which is 44 for its own reasons.
           // `SearchField` renders container > (glyph, input, trailing), so the parent IS
           // the padded box. Guarded: if that ever stops being true the parent becomes the
           // row or the slot and the number would silently be someone else's.
@@ -1762,6 +1770,10 @@ async function run() {
     };
     // Both widths, and at 390 with a filter on as well: the `Filters` badge takes width from
     // the only child that may shrink, which is exactly when a floor earns its keep.
+    //
+    // The 390 row's arithmetic has NOT been re-derived since H13/H16 swapped `Missing` (76px)
+    // for the compact Sort trigger, whose width was never measured. The no-wrap and 132px
+    // floor checks below are what will say whether it fits; no figure is asserted here.
     for (const [width, floor, query] of [[1280, 132, ""], [390, 132, ""], [390, 132, "?c=W&r=rare"]]) {
       const row = await rowAt(width, query);
       if (row === null) {
@@ -1772,6 +1784,11 @@ async function run() {
         `the control row does not wrap at ${width}${query}`,
         !row.wrapped,
         `row ${row.rowHeight}px against a tallest child of ${row.tallest}px`,
+      );
+      failures += !report(
+        `the control row does not run past its own right edge at ${width}${query}`,
+        row.rowScrollWidth <= row.rowClientWidth,
+        `scrollWidth ${row.rowScrollWidth}px against clientWidth ${row.rowClientWidth}px`,
       );
       failures += !report(
         `the field's slot clears its ${floor}px minimum at ${width}${query}`,
@@ -1824,10 +1841,10 @@ async function run() {
       return {
         filtersTrigger: byName(/^Filters$/).length,
         barePips: pips.length,
-        // The Filters trigger counts too: on a complete set the missing-only button is
-        // intentionally absent, and `Math.min(99, ...[])` then returned the sentinel and
-        // passed the 44px check having measured nothing at all.
-        targets: [...byName(/Showing (only|every)/), ...byName(/^Filters/)]
+        // H13 moved ownership into the sheet and H16 put the compact Sort trigger in its
+        // slot, so the row's controls are `Filters` and `Sort`. Both are counted: one alone
+        // could go missing and `Math.min` would pass on the other.
+        targets: [...byName(/^Sort cards/), ...byName(/^Filters/)]
           .map((b) => Math.round(b.getBoundingClientRect().height)),
       };
     });
@@ -1838,9 +1855,11 @@ async function run() {
     );
     failures += !report(
       "the phone's visible filter controls clear the 44px target",
-      phoneControls.targets.length > 0 && Math.min(...phoneControls.targets) >= 44,
-      phoneControls.targets.length === 0
-        ? "no phone filter control found to measure — the check would have passed empty"
+      // Both named by the comment above, so both are required: `> 0` let the Sort
+      // trigger disappear entirely and still pass on Filters alone.
+      phoneControls.targets.length === 2 && Math.min(...phoneControls.targets) >= 44,
+      phoneControls.targets.length !== 2
+        ? `${phoneControls.targets.length} of 2 expected phone filter controls found to measure`
         : `${phoneControls.targets.length} measured, smallest ${Math.min(...phoneControls.targets)}px`,
     );
 

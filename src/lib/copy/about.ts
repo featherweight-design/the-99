@@ -230,6 +230,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'missing — dashed edge, dimmed art, and a price an owned cell never carries. Absent, not disabled: it still opens.',
       'the cost covers the cards ManaPool actually stocks. One that has never been stocked is counted and left out rather than priced at zero.',
       'Base run is the set; extras are counted apart and sit below, which is why the completion figure and the number of cells on screen do not match.',
+      'Missing and Owned are the same toggle in reverse, mutually exclusive. Sort orders by collector number or price, dearest first by default, unpriced cells last either way.',
     ],
     since: 1,
   },

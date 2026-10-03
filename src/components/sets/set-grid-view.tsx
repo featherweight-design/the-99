@@ -5,7 +5,7 @@
 // The population here is INVERTED from /collection's: that page lists what you own, this
 // one exists to show what you do not. Nothing crosses the boundary in either direction —
 // /collection's search, type and availability filters are not applied here, and colour,
-// rarity and missing-only are not applied back. Different populations, different params.
+// rarity and ownership are not applied back. Different populations, different params.
 //
 // One density and no toggle, set by ONE declaration on the grid and by nothing on the cell:
 // `repeat(auto-fill, minmax(146px, 1fr))` (addendum R2 §27). It measures ~150x210 at 1180
@@ -34,11 +34,12 @@ import { EmptyState, EmptyStateBody, EmptyStateTitle } from "../ui/empty-state";
 import { manapoolAddDeckUrl } from "../../lib/manapool/links";
 import { parseAsOf, type PriceFact } from "../../lib/decks/price";
 import {
-  applyFilters, EMPTY_FILTERS, isQueryActive, parseFilters, RARITIES, serialiseFilters,
-  WUBRG, type SetGridFilters,
+  applyFilters, EMPTY_FILTERS, isQueryActive, nextSetSort, parseFilters, RARITIES,
+  serialiseFilters, SET_SORTS, sortCells, WUBRG, type Ownership, type SetGridFilters,
+  type SetSort,
 } from "../../lib/sets/filters";
 import { sectionsOf, type Cell } from "../../lib/sets/completion";
-import { costToComplete } from "../../lib/sets/cost";
+import { costToComplete, livePriceCents } from "../../lib/sets/cost";
 import { setFilterCopy, setPageCopy, setsIndexCopy } from "../../lib/copy/set-collections";
 import type { PrintingPriceRow } from "../../lib/sets/read";
 import { SetCell } from "./set-cell";
@@ -120,6 +121,18 @@ export function SetGridView(props: SetGridViewProps) {
     if (local !== null) setLocal(null);
   }
   const [sheetOpen, setSheetOpen] = useState(false);
+  // Sort moves rows without moving the completion count, so the visible result region's
+  // own text never changes when the reader picks a new order — nothing announced it
+  // (round 5 finding). d9's ruling (round 6): no timer on a live region and no swap of
+  // the visible result line, which stays exactly as it is — `ResultLine`'s own shape,
+  // a SEPARATE `sr-only` region holding only the latest message, written on each press
+  // and never cleared. `seq` is what `ResultLine` keys its span on, so a repeated
+  // sentence — the same order pressed twice — is a new node and genuinely re-announced.
+  const [sortAnnounce, setSortAnnounce] = useState<{ text: string; seq: number }>({
+    text: "",
+    seq: 0,
+  });
+  const sortAnnounceSeq = useRef(0);
   // The sheet is phone-only, and `md:hidden` alone hid it while useDialogA11y stayed
   // mounted: crossing the breakpoint with it open left the desktop page scroll-locked and
   // trapped focus in a dialog nobody could see. Unmounted rather than hidden.
@@ -284,10 +297,10 @@ export function SetGridView(props: SetGridViewProps) {
     // serialises to an absence, so without deleting it first, clearing the search would
     // leave the old one standing in the URL — a Clear that clears nothing.
     const live = new URLSearchParams(window.location.search);
-    // `own` since H10 took `m` for the colour modifier. `m` stays on the list for both of
-    // its meanings: the legacy `m=1` is read as missing and must go when missing-only is
-    // next written, or it would outlive the `own=missing` that replaced it.
-    for (const key of ["c", "r", "m", "own", "q"]) live.delete(key);
+    // `own`, `sort` and `dir` since H12 and H16. `m` stays on the list for both of its
+    // meanings: the legacy `m=1` is read as missing and must go when ownership is next
+    // written, or it would outlive the `own` that replaced it.
+    for (const key of ["c", "r", "m", "own", "q", "sort", "dir"]) live.delete(key);
     for (const [key, value] of serialiseFilters(next)) live.set(key, value);
     const qs = live.toString();
     mirrorUrl(qs ? `/collection/sets/${code}?${qs}` : `/collection/sets/${code}`);
@@ -313,17 +326,35 @@ export function SetGridView(props: SetGridViewProps) {
   const indexedKey = sections.indexed ? "i" : "u";
   const complete = sections.complete;
 
-  // At 100% the Missing-only control is removed, because the base run has nothing left to
-  // hide. The PARAMETER can still be in the URL — a reader completes a set with
-  // `own=missing` (or a legacy `m=1`) set — and it would go on filtering the extras with no
-  // control left to turn it off. So the complete state drops it from the filters it applies
-  // as well as from the rack.
-  const effective = complete ? { ...filters, missingOnly: false } : filters;
+  // At 100% the Missing option is removed, because the base run has nothing left to hide.
+  // The PARAMETER can still be in the URL — a reader completes a set with `own=missing` set —
+  // and it would go on filtering the extras with no control left to turn it off. So the
+  // complete state drops it from the filters it applies as well as from the rack.
+  //
+  // Owned is NOT dropped (H12). On a complete set it keeps every base cell, so it is
+  // harmless there, and it still means something in the extras; its option stays drawn at
+  // 100%, so it never becomes a filter with no control.
+  const effective: SetGridFilters = complete && filters.own === "missing"
+    ? { ...filters, own: "all" }
+    : filters;
 
-  // ONE count function. Everything below reads these two arrays and nothing recomputes
-  // the filter — the result line, the Send label and the cost denominator must agree.
-  const shownBase = applyFilters(sections.base, effective);
-  const shownExtras = applyFilters(sections.extras, effective);
+  // The price ORDER's figure for one cell (H16): the cost strip's own, through the same
+  // `livePriceCents`, so the dearest cell this order names first is the one the strip would
+  // charge most for. Owned cells are read the same way — a price row is per printing, not
+  // per holding — and a cell with no row is unpriced, which `sortCells` puts last.
+  const centsOf = (c: Cell) => livePriceCents(priceFor.get(c.scryfallId), newest);
+
+  // ONE count function. Everything below reads these arrays and nothing recomputes the
+  // filter — the result line, the Send label and the cost denominator must agree.
+  //
+  // Matched in collector order, then ORDERED per section for the grid. The two are kept
+  // apart for the cost strip alone: `Send N` caps at 99 cards and takes them in the order it
+  // is handed, so feeding it the price order would make what the buy button sends depend on
+  // how the grid happens to be sorted.
+  const matchedBase = applyFilters(sections.base, effective);
+  const matchedExtras = applyFilters(sections.extras, effective);
+  const shownBase = sortCells(matchedBase, effective.sort, effective.dir, centsOf);
+  const shownExtras = sortCells(matchedExtras, effective.sort, effective.dir, centsOf);
   const shown = [...shownBase, ...shownExtras];
   // Prev/Next pages through what is on screen, in the order it is on screen. Deduped:
   // the modal pages by ORACLE id and a set can draw two cells for one oracle (EOE's Plains
@@ -368,7 +399,7 @@ export function SetGridView(props: SetGridViewProps) {
   // the BASE RUN, and at 100% the same strip re-scopes to the extras. Costing both at once
   // put extras in a figure and a button that said base run — and would have sent them to
   // ManaPool under that label.
-  const costable = complete ? shownExtras : shownBase;
+  const costable = complete ? matchedExtras : matchedBase;
   const missingShown = costable.filter((c) => !c.owned);
 
   const cost = costToComplete(
@@ -411,39 +442,42 @@ export function SetGridView(props: SetGridViewProps) {
     const next = list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
     return RARITIES.filter((r) => next.includes(r));
   };
-  // What the colour and rarity filters match, missing-only aside: the denominator behind
-  // both the owns-all claim and its correction.
-  const matchedIgnoringMissing = applyFilters(
-    [...sections.base, ...sections.extras],
-    { ...effective, missingOnly: false },
-  ).length;
+  // Ownership is a tri-state (H12): pressing the lit option returns to every cell, and
+  // pressing the other one REPLACES it, because `missing` and `owned` together match nothing.
+  const pickOwn = (current: Ownership, value: Exclude<Ownership, "all">): Ownership =>
+    (current === value ? "all" : value);
 
-  // `effective`, not `filters`: at 100% missing-only is dropped from what is applied, and
-  // counting the raw value showed "1 filter on" with a Clear button for a filter that is
-  // neither applied nor reachable.
-  //
-  // The BADGE counts only what the sheet holds (§28): missing-only sits on the phone row
-  // beside the badge, so counting it is the same fact twice in one glance.
+  // What the colour and rarity filters match, ownership aside: the denominator behind both
+  // the owns-all claim and its correction.
+  const matchedIgnoringOwn = applyFilters(
+    [...sections.base, ...sections.extras],
+    { ...effective, own: "all" },
+  );
+
   // DIMENSIONS, not values. `c=W,U` is one colour filter, and counting its values put a `2`
-  // on `Filters` for a single control — and could exceed the chassis's three-dimension cap
-  // on a page that only has three dimensions to begin with.
-  const filtersOn =
-    (effective.colors.length > 0 ? 1 : 0) + (effective.rarities.length > 0 ? 1 : 0);
-  // The collapsed bar's own count. Missing-only is excluded from `filtersOn` because the
-  // open row draws that toggle beside the badge, and counting it there would state one
-  // fact twice — but the collapsed bar hides the toggle and the sheet does not carry it,
-  // so there the same exclusion hides a live filter completely.
+  // on `Filters` for a single control. Ownership counts since H13 moved it into the sheet:
+  // the phone row no longer draws it beside the badge, so a badge leaving it out would hide a
+  // live filter behind `Filters` completely.
   //
-  // The RAW filter, not `effective`. At 100% `effective` forces missing-only off while
-  // the parameter can still be in the URL — the stale-filter case Clear exists for — and
-  // reading `effective` there left the bar with no badge at all for a parameter that is set.
-  const collapsedFiltersOn = filtersOn + (filters.missingOnly ? 1 : 0);
-  // The sheet's Clear reads the RAW filters, not `effective`. At 100% missing-only is
-  // dropped from what is applied, but the parameter can still be in the URL — a reader
-  // completes a set with it set — and gating Clear on `effective` left that parameter with
-  // no way out of the UI, ready to reactivate the moment the set stopped being complete.
+  // `effective` for colour and rarity, and for ownership too where it is APPLIED — this is
+  // the figure the result line's "narrowing" reads, and at 100% a stale `own=missing` is
+  // neither applied nor reachable.
+  const filtersOn =
+    (effective.colors.length > 0 ? 1 : 0) + (effective.rarities.length > 0 ? 1 : 0)
+    + (effective.own !== "all" ? 1 : 0);
+  // The BADGE's count, on the open row and on the collapsed bar alike. The RAW ownership,
+  // not `effective`: at 100% `effective` forces missing off while `own=missing` (or a legacy
+  // `m=1`) can still be in the URL — the stale-filter case Clear exists for — and reading
+  // `effective` there left the badge with nothing for a parameter that is set.
+  const badgeCount =
+    (effective.colors.length > 0 ? 1 : 0) + (effective.rarities.length > 0 ? 1 : 0)
+    + (filters.own !== "all" ? 1 : 0);
+  // Clear reads the RAW filters, not `effective`. At 100% missing is dropped from what is
+  // applied, but the parameter can still be in the URL — a reader completes a set with it
+  // set — and gating Clear on `effective` left that parameter with no way out of the UI,
+  // ready to reactivate the moment the set stopped being complete.
   const anyFilterOn =
-    filters.colors.length > 0 || filters.rarities.length > 0 || filters.missingOnly
+    filters.colors.length > 0 || filters.rarities.length > 0 || filters.own !== "all"
     || isQueryActive(filters.query);
 
   // What the RESULT LINE reads, which is not what the badge reads. The badge counts the
@@ -506,11 +540,11 @@ export function SetGridView(props: SetGridViewProps) {
       onRemove: () => setFilters({ ...filters, rarities: filters.rarities.filter((v) => v !== r) }),
     });
   }
-  if (effective.missingOnly) {
+  if (effective.own !== "all") {
     chips.push({
-      key: "missing",
-      label: setFilterCopy.chip.missingOnly,
-      onRemove: () => setFilters({ ...filters, missingOnly: false }),
+      key: "own",
+      label: setFilterCopy.chip.own(effective.own),
+      onRemove: () => setFilters({ ...filters, own: "all" }),
     });
   }
   // `EMPTY_FILTERS` clears the query too, so every non-dialog route to it owes the same
@@ -518,20 +552,23 @@ export function SetGridView(props: SetGridViewProps) {
   // state's second button both unmount themselves and drop focus to the body. The phone
   // sheet's Clear passes `false`: focusing a field behind an open dialog is worse than
   // leaving focus in the sheet the reader is still using.
+  //
+  // The ORDER survives: sort narrows nothing, and the chassis excludes it from Clear all
+  // for exactly that reason.
   const clearAll = (refocus = true) => {
     cancelQueryTimer();
     setDraft("");
     setPushedQuery("");
-    setFilters(EMPTY_FILTERS);
+    setFilters({ ...EMPTY_FILTERS, sort: filters.sort, dir: filters.dir });
     if (refocus) searchRef.current?.focus();
   };
   // A filter that is SET but not APPLIED has no chip and no control. That happens exactly
-  // once: missing-only (`own=missing`, or a legacy `m=1`) still in the URL on a set the
-  // reader has completed, where `effective` drops it and its toggle is gone too. Clear stays live for
+  // once: `own=missing` (or a legacy `m=1`) still in the URL on a set the reader has
+  // completed, where `effective` drops it and its option is gone too. Clear stays live for
   // it, because it is the only route left to a parameter that would start filtering again
   // the moment the set stopped being complete — named precisely rather than inferred from an
   // empty chip line, since `?own=missing&c=W` draws a White chip and "no chips" would be false.
-  const staleFilter = complete && filters.missingOnly;
+  const staleFilter = complete && filters.own === "missing";
   // Whether `Clear all filters` has anything to clear. It is ALWAYS drawn since H13 — the
   // chassis's rule, `ml-auto` and inert with `--fg-locked` when off — rather than appearing
   // past one active control; a way out that comes and goes is a control the reader has to
@@ -597,6 +634,25 @@ export function SetGridView(props: SetGridViewProps) {
       disabled: count === 0 && !filters.rarities.includes(r),
     };
   });
+
+  // The ownership options' counts, from the same pool the owns-all claim reads. Missing is
+  // not offered on a complete set (see `effective`), and Owned always is.
+  const ownOptions = ([
+    { own: "missing", count: matchedIgnoringOwn.filter((c) => !c.owned).length },
+    { own: "owned", count: matchedIgnoringOwn.filter((c) => c.owned).length },
+  ] as const)
+    .filter((o) => !(complete && o.own === "missing"))
+    .map((o) => ({ ...o, disabled: o.count === 0 && filters.own !== o.own }));
+
+  // The order control's rows, `buildSortOptions`' shape: only the chosen row carries its
+  // direction, since an unchosen row has none until it is picked.
+  const sortOptions = SET_SORTS.map((key) => ({
+    code: key,
+    label: setFilterCopy.sort.options[key],
+    hint: key === filters.sort ? setFilterCopy.sort.direction[key][filters.dir] : undefined,
+    count: 0,
+    disabled: false,
+  }));
 
 
   // Both widths since addendum 2, and only when there is a measured rest height to reserve.
@@ -716,19 +772,17 @@ export function SetGridView(props: SetGridViewProps) {
               {/* The badge is how the collapsed bar carries the filter state, which is why
                   it may drop the chip line. At zero filters there is no badge and nothing
                   to carry. */}
-              {/* The collapsed count INCLUDES missing-only, where the open row's does not.
-                  The open row shows that toggle beside the badge, so counting it there
-                  states the same fact twice — but the collapsed bar hides the toggle and
-                  the sheet does not carry it, so without this an active missing-only is a
-                  filter the reader can neither see nor find. */}
-              {collapsedFiltersOn > 0 ? (
+              {/* The same count the open row's badge carries, ownership included. The two
+                  differed while missing-only sat on the open row beside the badge; H13 moved
+                  ownership into the sheet, so both badges are the only place it shows. */}
+              {badgeCount > 0 ? (
                 <span
-                  aria-label={setFilterCopy.countBadgeAria(collapsedFiltersOn)}
+                  aria-label={setFilterCopy.countBadgeAria(badgeCount)}
                   className="inline-flex h-[18px] min-w-[18px] items-center justify-center
                              rounded-full bg-[color:var(--accent)] px-[5px] font-mono
                              text-[10px] text-[color:var(--bg)]"
                 >
-                  {collapsedFiltersOn}
+                  {badgeCount}
                 </span>
               ) : null}
             </button>
@@ -1007,12 +1061,14 @@ export function SetGridView(props: SetGridViewProps) {
           ) : null}
           {/* The field leads the row and is the ONLY child that shrinks — `min-w-0` on it
               and `shrink-0` on everything else is what keeps the row from wrapping. At
-              390px the arithmetic is tight and deliberate: `Filters` with a badge is 93,
-              `Missing` is 76, two gaps are 16, so the field gets 173 against a 132 minimum.
+              390px the row is tight: `Filters` carries a badge, and the compact `Sort`
+              trigger took the slot `Missing` left when H13 moved ownership into the sheet.
+              That trigger's own width was never re-derived against the 132px floor —
+              probe-sets measures the field's resolved width rather than asserting a sum.
 
               Never in the sheet. A second field behind `Filters` is two controls with one
-              accessible name — the defect `MissingOnlyToggle` already exists to avoid on
-              this page — and the badge does not count it, because it is visible beside it. */}
+              accessible name — the defect this page's one-mount controls exist to avoid —
+              and the badge does not count it, because it is visible beside it. */}
           {/* `min-w-[132px]`, which is the chassis's floor and not decoration: `min-w-0`
               alone lets this shrink to nothing on a narrower phone or beside a longer
               rarity value, and the 173px-at-390 arithmetic the row is built on assumes a
@@ -1023,8 +1079,8 @@ export function SetGridView(props: SetGridViewProps) {
               ref={searchRef}
               // 9px, not 6: the field's own box is the 24px trailing slot plus its padding
               // and borders, and at 6 that is 38px — under the phone's 44px target. The row
-              // measured 44 only because `MissingOnlyToggle` is 44, which is the toggle's
-              // height and not this control's. Desktop keeps 4.
+              // once measured 44 only because the Missing toggle beside it was 44, which was
+              // that toggle's height and not this control's. Desktop keeps 4.
               containerClassName="px-[10px] py-[9px] md:py-[4px]"
               // 16px on the phone is not a type choice: iOS Safari zooms the page when a
               // text input under 16px takes focus, which would throw away the 390px
@@ -1087,21 +1143,21 @@ export function SetGridView(props: SetGridViewProps) {
                        text-[color:var(--fg-body)]"
           >
             {setFilterCopy.label}
-            {filtersOn > 0 ? (
+            {badgeCount > 0 ? (
               <span
-                aria-label={setFilterCopy.countBadgeAria(filtersOn)}
+                aria-label={setFilterCopy.countBadgeAria(badgeCount)}
                 className="inline-flex h-[18px] min-w-[18px] items-center justify-center
                            rounded-full px-[5px] font-mono text-[10px]
                            bg-[color:var(--accent)] text-[color:var(--bg)]"
               >
-                {filtersOn}
+                {badgeCount}
               </span>
             ) : null}
           </button>
 
-          {/* The colour and rarity controls are desktop-only here; the phone's are in the
-              sheet. Missing-only is mounted ONCE and shown at both widths, which is what
-              keeps one control with one accessible name in the document.
+          {/* The colour, rarity and ownership controls are desktop-only here; the phone's
+              are in the sheet. Each is MOUNTED on the breakpoint rather than CSS-hidden, so
+              one control with one accessible name is ever in the document.
 
               The colour control is the commander rack's, mounted and never forked (H10): the
               chassis's pips with the `Any` / `Exactly` modifier inside the same box behind a
@@ -1145,7 +1201,7 @@ export function SetGridView(props: SetGridViewProps) {
               the single-select mode had to drop. */}
           {/* Mounted at `md`, which is this page's own switch and not the chassis frame's
               1000. The chassis picks 1000 from `/collection`'s EIGHT controls summing to
-              987px; this row has four — colour, rarity, missing-only and the field.
+              987px; this row has five — colour, rarity, ownership, sort and the field.
 
               MOUNTED on the breakpoint, never CSS-hidden. `FilterPanel` holds its own open
               state and picks popover or sheet off the same `useIsDesktop`: hidden with
@@ -1187,7 +1243,86 @@ export function SetGridView(props: SetGridViewProps) {
             </div>
           ) : null}
 
-          {complete ? null : <MissingOnlyToggle filters={filters} onChange={setFilters} />}
+          {/* CSS-gated like the colour control, as `MissingOnlyToggle` was: no open state to
+              strand across a resize, so nothing to gain from a remount and a hydration jump to
+              lose on desktop. Hidden, it is out of the accessibility tree, and the phone's
+              copy is the sheet's chip group. */}
+          {/* In the OPEN head only, at every width (d9, 2026-10-03): the collapsed row has no
+              room for it beside the set name. Still applied, kept in the URL, and lit again
+              on expand. A shy-hides member on desktop, so keyboard focus on it holds the head
+              open; on the phone the whole row already is one. */}
+          <div
+            data-set-own
+            data-set-shy-hides={isDesktop ? "" : undefined}
+            className={`hidden shrink-0 ${shyDesktop ? "" : "md:flex"}`}
+          >
+            <OwnershipToggles
+              options={ownOptions}
+              own={filters.own}
+              onPick={(o) => setFilters({ ...filters, own: pickOwn(filters.own, o) })}
+            />
+          </div>
+
+          {/* The order (H16): `/collection`'s Sort control, the same `FilterPanel` in
+              `single` mode with the same props, where picking the chosen order again reverses
+              it. ONE mount at both widths, keyed on the form for `/collection`'s reason — a
+              panel holds its own `open`, and a sheet opened on a phone would otherwise still
+              be open as a popover after a resize.
+
+              On the phone it takes `Missing`'s old slot on row 1 and shows the field alone
+              ("Number", "Price"), the full "Field · direction" label having overflowed the
+              358px row by 48-72px (round 5 finding, measured). Direction stays in the
+              accessible name and in the panel's chosen row. */}
+          {/* Open head only, as the ownership toggles above are (d9, 2026-10-03): the order
+              stays applied while collapsed. */}
+          <div
+            data-set-sort
+            data-set-shy-hides={isDesktop ? "" : undefined}
+            className={`shrink-0${shyDesktop ? " hidden" : ""}`}
+          >
+            <FilterPanel
+              key={`sort-${isDesktop ? "wide" : "compact"}`}
+              desktopRowMinPx={44}
+              compact={!isDesktop}
+              // Round 5 finding: the full "Field · direction" label overflowed the 390px
+              // row by 48-72px (measured), with nothing left to shrink. Neither /collection
+              // nor /decks faces this — their compact Sort sits in the filter sheet, not
+              // inline on a tight row — so there is no shared abbreviated form to reuse.
+              // The compact trigger shows the field alone; `oneName` (the accessible name,
+              // composed by `FilterPanel` itself from the option's label and hint, never
+              // from `triggerOne`'s return) still carries the direction.
+              copy={isDesktop
+                ? setFilterCopy.sort.panel
+                : { ...setFilterCopy.sort.panel, triggerOne: (name: string) => name.split(" · ")[0] }}
+              options={sortOptions}
+              selected={[filters.sort]}
+              selectionMode="single"
+              // Exactly one order is always chosen, so a lit border would say "on" about a
+              // control that is never off — `/collection`'s Sort passes the same.
+              selectionOrnament={false}
+              showCounts={false}
+              searchable={false}
+              widthPx={260}
+              footerStatus={false}
+              onToggle={(code) => {
+                const next = nextSetSort({ sort: filters.sort, dir: filters.dir }, code as SetSort);
+                setFilters({ ...filters, sort: next.sort, dir: next.dir });
+                // Authored, not lowercased — the labels carry "Number" and "Price", and the
+                // directions their own words — the same rule `/collection`'s onToggle states.
+                sortAnnounceSeq.current += 1;
+                setSortAnnounce({
+                  text: `Sorted by ${setFilterCopy.sort.options[next.sort]}, `
+                    + `${setFilterCopy.sort.direction[next.sort][next.dir]}.`,
+                  seq: sortAnnounceSeq.current,
+                });
+              }}
+              onClear={() => {}}
+              onAnnounce={(text) => {
+                sortAnnounceSeq.current += 1;
+                setSortAnnounce({ text, seq: sortAnnounceSeq.current });
+              }}
+            />
+          </div>
         </div>
 
         {/* Row 2 — the chip line, present at rest rather than conditionally rendered. The
@@ -1320,6 +1455,33 @@ export function SetGridView(props: SetGridViewProps) {
               ))}
             </div>
 
+            {/* Ownership moved here from row 1 (H13): the drawer holds every filter, and the
+                row keeps the field, `Filters` and the order. The same chips as rarity, with
+                the counts the options carry; the two are mutually exclusive, so pressing
+                one clears the other. */}
+            <p className="font-mono text-[10px] mb-[10px]" style={{ color: "var(--fg-faint)" }}>
+              {setFilterCopy.ownership.heading}
+            </p>
+            <div
+              role="group"
+              aria-label={setFilterCopy.ownership.heading}
+              className="mb-[16px] flex flex-wrap gap-[8px]"
+            >
+              {ownOptions.map((o) => (
+                <SheetChip
+                  key={o.own}
+                  label={setFilterCopy.ownership[o.own].short}
+                  count={o.count}
+                  on={filters.own === o.own}
+                  disabled={o.disabled}
+                  unavailableAria={setFilterCopy.ownership.unavailable(
+                    setFilterCopy.ownership[o.own].short,
+                  )}
+                  onClick={() => setFilters({ ...filters, own: pickOwn(filters.own, o.own) })}
+                />
+              ))}
+            </div>
+
             <div className="flex items-center gap-[10px]">
               {/* The same search-aware name the chip line's Clear carries. This one clears
                   the query too, and the field is OUTSIDE the `aria-modal` sheet — so
@@ -1368,6 +1530,7 @@ export function SetGridView(props: SetGridViewProps) {
           data-set-result
         >
         {sections.indexed ? (
+        <>
         <p
           role="status"
           aria-live="polite"
@@ -1378,8 +1541,10 @@ export function SetGridView(props: SetGridViewProps) {
           className="font-mono text-[11px] leading-[16px]"
           style={{ color: "var(--fg-muted)" }}
         >
-          {effective.missingOnly
+          {effective.own === "missing"
             ? setPageCopy.result.missingOnly(shown.length)
+            : effective.own === "owned"
+              ? setPageCopy.result.ownedOnly(shown.length)
             : narrowing
               // The classified population, not every row: an unclassified printing is
               // rendered in neither section, so `cells.length` promised cells the page
@@ -1439,6 +1604,26 @@ export function SetGridView(props: SetGridViewProps) {
           ) : null}
           </span>
         </p>
+        {/* A SEPARATE region from the one above (d9's ruling, round 6), never joined
+            to it: that one announces completion and must keep doing so while `shy`
+            hides it visually, which is a different lifecycle than a sort press. This
+            one is ALWAYS `sr-only`, never cleared on a timer — `ResultLine`'s own
+            shape, a visible line untouched and a dedicated live span beside it — and
+            `seq` is what the key is for, so a repeated sentence (the same order
+            pressed twice) is a new node and genuinely re-announced rather than
+            silently reusing one whose content did not change. Gated behind the same
+            "unindexed set has no status region at all" condition as the line above,
+            since there is nothing to sort on a set with no checklist either. */}
+        <span
+          key={sortAnnounce.seq}
+          className="sr-only"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {sortAnnounce.text}
+        </span>
+        </>
         ) : null}
         </div>
       </div>
@@ -1479,23 +1664,22 @@ export function SetGridView(props: SetGridViewProps) {
           // Good news only when the OTHER filters matched at least one cell. An empty
           // intersection is not "you own all of these"; it is a filter combination with
           // nothing behind it.
-          missingOnly={effective.missingOnly && matchedIgnoringMissing > 0}
+          missingOnly={effective.own === "missing" && matchedIgnoringOwn.length > 0}
           // The cards that match the OTHER filters and are owned — which is what "you hold
           // all of them" means here. Counting the whole base run put a number in the
           // sentence that had nothing to do with what the reader filtered to.
-          ownedCount={applyFilters(
-            [...sections.base, ...sections.extras],
-            { ...effective, missingOnly: false },
-          ).filter((c) => c.owned).length}
+          ownedCount={matchedIgnoringOwn.filter((c) => c.owned).length}
           setName={name}
           query={isQueryActive(effective.query) ? effective.query.trim() : ""}
           // Whether anything BUT the query is narrowing, which decides the second clause of
           // the search branch's body — a sentence claiming other filters are on when they
           // are not is worse than no sentence.
-          otherFiltersOn={filtersOn > 0 || effective.missingOnly}
+          // Owned-only counts here like any other filter: zero under it is not good news, it
+          // is a combination with nothing you own behind it, and falls to the ordinary state.
+          otherFiltersOn={filtersOn > 0}
           // Turns missing-only off and keeps the rest: the promised correction is "show
           // the ones you DO own that match", not "discard what you filtered to".
-          onShowAll={() => setFilters({ ...filters, missingOnly: false })}
+          onShowAll={() => setFilters({ ...filters, own: "all" })}
           onClearSearch={clearQuery}
           onClearAll={() => clearAll()}
         />
@@ -1568,35 +1752,52 @@ function FilterSheet({ onClose, children }: { onClose: () => void; children: Rea
 }
 
 /**
- * ONE control for both widths. The phone row and the desktop rack both need it, and
- * rendering it twice put two buttons with one accessible name in the tree — correct at
- * either width read alone, wrong in the document. The label is what varies.
+ * Ownership on the desktop rack (H12): `Missing only` and `Owned only` as one group of two
+ * toggles, the shape `MissingOnlyToggle` drew for one. Mutually exclusive, so at most one is
+ * pressed, and pressing the lit one returns to every cell. The phone's copy is the sheet's
+ * chip group, and the two are never both in the accessibility tree.
+ *
+ * Named by their visible labels, with `aria-pressed` carrying the state. The retired toggle
+ * announced the PAGE's state as its name ("Showing every card in the set"), which with two
+ * buttons would have been two names nobody can see.
  */
-function MissingOnlyToggle({
-  filters, onChange,
+function OwnershipToggles({
+  options, own, onPick,
 }: {
-  filters: SetGridFilters;
-  onChange: (next: SetGridFilters) => void;
+  options: readonly { own: "missing" | "owned"; count: number; disabled: boolean }[];
+  own: Ownership;
+  onPick: (value: "missing" | "owned") => void;
 }) {
   return (
-    <button
-      type="button"
-      aria-pressed={filters.missingOnly}
-      aria-label={filters.missingOnly
-        ? setFilterCopy.missingOnly.ariaOn
-        : setFilterCopy.missingOnly.ariaOff}
-      onClick={() => onChange({ ...filters, missingOnly: !filters.missingOnly })}
-      className={[
-        "shrink-0 min-h-[44px] md:min-h-[32px] rounded-[6px] px-[12px] md:px-[10px]",
-        "text-[13px] md:text-[12px] border hover:bg-[color:var(--elevated)]",
-        filters.missingOnly
-          ? "text-[color:var(--accent)] border-[color:var(--accent)]"
-          : "text-[color:var(--fg-muted)] border-[color:var(--border)]",
-      ].join(" ")}
-    >
-      <span className="md:hidden">{setFilterCopy.missingOnly.short}</span>
-      <span className="hidden md:inline">{setFilterCopy.missingOnly.label}</span>
-    </button>
+    <div role="group" aria-label={setFilterCopy.ownership.heading} className="flex gap-[6px]">
+      {options.map((o) => {
+        const on = own === o.own;
+        return (
+          <button
+            key={o.own}
+            type="button"
+            aria-pressed={on}
+            // `aria-disabled`, never `disabled`, the rarity panel's rule: a real `disabled`
+            // drops focus the instant the other filters zero this option, and a lit option
+            // is never disabled, or it could not be turned off.
+            aria-disabled={o.disabled || undefined}
+            onClick={() => {
+              if (!o.disabled) onPick(o.own);
+            }}
+            className={[
+              "shrink-0 min-h-[32px] rounded-[6px] px-[10px] text-[12px] border",
+              o.disabled
+                ? "cursor-default opacity-[0.42] text-[color:var(--fg-locked)] border-[color:var(--border)]"
+                : on
+                  ? "text-[color:var(--accent)] border-[color:var(--accent)] hover:bg-[color:var(--elevated)]"
+                  : "text-[color:var(--fg-muted)] border-[color:var(--border)] hover:bg-[color:var(--elevated)]",
+            ].join(" ")}
+          >
+            {setFilterCopy.ownership[o.own].label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

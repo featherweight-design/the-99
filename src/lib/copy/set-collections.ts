@@ -11,18 +11,27 @@
 // rather than naming a value, so the lowercase value form it once needed has no reader.
 import { chassisCopy } from "./filter-chassis";
 import { filterCopy } from "./lanes";
+import { collectionFilterCopy } from "./collection";
 
 const setFilterCopyRarityOptions = {
   common: "Common", uncommon: "Uncommon", rare: "Rare", mythic: "Mythic",
 } as const;
 
-/** Hoisted so the chip label reads the control's own words rather than a second copy. */
-const setFilterCopyMissingOnly = {
-  label: "Missing only",
-  // The phone row has two controls and no room for three words.
-  short: "Missing",
-  ariaOn: "Showing only cards you do not own",
-  ariaOff: "Showing every card in the set",
+/**
+ * Ownership, a tri-state since H12: every cell, the ones you are missing, or the ones you
+ * own. Hoisted so the chip labels read the control's own words rather than a second copy.
+ *
+ * `label` is the desktop toggle and the chip; `short` is the phone sheet's chip, which
+ * carries a count beside it as the rarity chips do. The old `ariaOn` / `ariaOff` pair is
+ * gone: two toggles each announcing the PAGE's state under its own name gave both buttons a
+ * name nobody could see (WCAG 2.5.3), and `aria-pressed` already says which one is on.
+ */
+// `owned`, `heading` and `unavailable` are new, and queued for /copy-review.
+const setFilterCopyOwnership = {
+  heading: "Ownership",
+  missing: { label: "Missing only", short: "Missing" },
+  owned: { label: "Owned only", short: "Owned" },
+  unavailable: (name: string) => `${name}, no cells match your other filters`,
 } as const;
 
 const setFilterCopyRarity = {
@@ -47,11 +56,24 @@ export const setFilterCopy = {
     ariaLabel: (set: string) => `Search cards in ${set}`,
     clear: "Clear the search",
   },
-  missingOnly: setFilterCopyMissingOnly,
+  ownership: setFilterCopyOwnership,
+  // Sort (H16). The PANEL's strings are `/collection`'s, taken whole rather than restated: it
+  // is the same control in the same mode, sorting the same noun, and a second copy of
+  // `Sort cards` is a second thing to keep in step. Only the two orders are this page's.
+  // Option and direction labels queued for /copy-review.
+  sort: {
+    panel: collectionFilterCopy.sort,
+    options: { number: "Number", price: "Price" },
+    // Each order's own pair, the `DIRECTION_LABELS` rule: "ascending" says nothing about a
+    // price, and "A–Z" nothing about a collector number.
+    direction: {
+      number: { asc: "First to last", desc: "Last to first" },
+      price: { asc: "Lowest first", desc: "Highest first" },
+    },
+  },
   sheetPrimary: (n: number) => (n === 1 ? "Show 1 card" : `Show ${n} cards`),
-  // DIMENSIONS only — never missing-only, which sits on the row beside the badge where the
-  // reader can already see it. A badge counting a control visible next to it is the same
-  // fact twice, and it made `Filters 1` appear with nothing behind `Filters`.
+  // DIMENSIONS, and ownership is one of them since H13 moved it into the sheet: the phone
+  // row no longer draws it beside the badge, so the badge is the only place it shows.
   countBadgeAria: (n: number) => (n === 1 ? "1 filter on" : `${n} filters on`),
 
   // The chip line (addendum R2 §28). Dimension order, never click order.
@@ -68,7 +90,7 @@ export const setFilterCopy = {
       setFilterCopyRarityOptions[r],
     // The commander rack's modifier chip, read from where that control's words live.
     match: filterCopy.match.exactlyShort,
-    missingOnly: setFilterCopyMissingOnly.label,
+    own: (own: "missing" | "owned") => setFilterCopyOwnership[own].label,
   },
   // `Clear all filters` and `No filters on` are the chassis's, reused rather than restated:
   // the addendum's own note says to take them from the chassis once it lands, and it has.
@@ -360,6 +382,9 @@ export const setPageCopy = {
     restShort: (cells: number) => `${cells} ${cells === 1 ? "cell" : "cells"}`,
     missingOnly: (n: number) =>
       `${n} missing · numbers skip, because the cards you own are hidden`,
+    // The owned-only mirror of the line above (H12). Queued for /copy-review.
+    ownedOnly: (n: number) =>
+      `${n} yours · numbers skip, because the cards you are missing are hidden`,
     filtered: (shown: number, total: number) =>
       `${shown} of ${total} ${total === 1 ? "cell" : "cells"}`,
   },

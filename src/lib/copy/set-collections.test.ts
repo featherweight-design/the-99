@@ -108,6 +108,16 @@ describe("setFilterCopy", () => {
     expect(setFilterCopy.rarityPanel.triggerCount(2)).toBe("Rarities 2");
   });
 
+  // H12: the chip reads the control's own words, for both options.
+  it("names each ownership option on its chip with the control's label", () => {
+    expect(setFilterCopy.chip.own("missing")).toBe(setFilterCopy.ownership.missing.label);
+    expect(setFilterCopy.chip.own("owned")).toBe(setFilterCopy.ownership.owned.label);
+  });
+
+  it("states an owned-only result as the owned count", () => {
+    expect(setPageCopy.result.ownedOnly(1)).toMatch(/^1 yours ·/);
+  });
+
   it("names every rarity it offers as a chip", () => {
     for (const key of Object.keys(setFilterCopy.rarity.options) as
       ("common" | "uncommon" | "rare" | "mythic")[]) {
