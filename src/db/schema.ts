@@ -2125,6 +2125,16 @@ export const cardLabelBatches = pgTable("card_label_batches", {
    */
   promptVersion: text("prompt_version"),
   /**
+   * Each asked card's `labelInputHash` AT REQUEST TIME, by name, written with the intent.
+   *
+   * A batch can stay pending across a daily catalog refresh, so a card's text may move between
+   * the request and its collection. The collect stages a card only while its current hash still
+   * equals this one; a card that moved is left for the next plan, because its answer describes
+   * text the catalog no longer holds. Null on every row written before it, which the collect
+   * reads as "no record" and stages as it always did.
+   */
+  askedHashes: jsonb("asked_hashes").$type<Record<string, string>>(),
+  /**
    * MEASURED token usage, written when the batch collects. Null until then.
    *
    * These exist so the wave sizing can read what a run has ACTUALLY spent rather than what

@@ -22,6 +22,10 @@
 //   (f) AN OLDER PROMPT'S ANSWER IS NEVER PUBLISHED AS CURRENT. A run's own open intent asked under
 //       an older prompt is left uncollected and its cards are asked again; a row an older build
 //       staged under the same run id is overwritten by the new answer, not published in its place.
+//   (g) AN ANSWER DESCRIBES THE TEXT IT WAS ASKED ABOUT. A card whose oracle text moves while its
+//       batch is pending is not published under the new text's hash; it is asked again.
+//   (h) EVERY MODEL COUNTS AGAINST THE FAMILY, each at its own rates, and a model with no
+//       canonical rate refuses rather than counting as free.
 //
 // NO API CALL IS MADE AND NOTHING IS SPENT: the build's client is a parameter, and this passes a
 // fake that answers from the ledger's own `asked` lists. It runs the REAL `runLabelBuild`, with a
@@ -55,6 +59,7 @@ const {
 type BatchClient = import("./lib/card-labels-build").BatchClient;
 const { validateJob } = await import("../src/lib/labels/schema");
 const { LABEL_PROMPT_VERSION } = await import("../src/lib/labels/prompt");
+const { ALL_MODELS, PRICING } = await import("./lib/card-labels-pricing.mjs");
 
 let failures = 0;
 const report = (what: string, ok: boolean, detail = "") => {
@@ -75,7 +80,7 @@ const PER_REQUEST_USD = (OUT_TOKENS * RATES.out) / 1e6;
 
 const RUN = {
   a: "backfill-2099-01-01", b: "backfill-2099-01-02", c: "backfill-2099-01-03", d: "backfill-2099-01-04",
-  e: "backfill-2099-01-05", legacy: "backfill-2099-12-31",
+  e: "backfill-2099-01-05", g: "backfill-2099-01-06", h: "backfill-2099-01-07", legacy: "backfill-2099-12-31",
 };
 const probeRuns = Object.values(RUN);
 
@@ -135,6 +140,10 @@ const fake = {
 let scope: { oracleId: string; name: string }[] = [];
 /** Twelve more unlabelled cards, outside `scope`, for (f). */
 let extra: { oracleId: string; name: string }[] = [];
+/** Twelve more again, for (g). */
+let moving: { oracleId: string; name: string }[] = [];
+/** The oracle text (g) changes, put back in the `finally`. */
+let movedText: { oracleId: string; text: string | null } | null = null;
 
 const run = (runId: string, capUsd: number, cards = scope) => runLabelBuild({
   client: fake, runId, capUsd, reportAtUsd: 100, floor: 0.95, dispatchCeilingUsd: 50, dryRun: false, scope: "all",
@@ -154,10 +163,12 @@ const spentInUnits = async (runId: string) => (await readFamilySpend(runId)).tot
 async function cleanup(): Promise<void> {
   // Each step on its own, so one failing cannot skip the rest — and a failed step is a failure.
   const steps: [string, () => Promise<unknown>][] = [
+    ["card text", () => movedText === null ? Promise.resolve()
+      : db.execute(sql`update cards set oracle_text = ${movedText.text} where oracle_id = ${movedText.oracleId}`)],
     ["ledger", () => db.delete(cardLabelBatches).where(inArray(cardLabelBatches.runId, probeRuns))],
     ["staging", () => db.delete(cardLabelsStaging).where(inArray(cardLabelsStaging.runId, probeRuns))],
-    ["labels", () => scope.length + extra.length === 0 ? Promise.resolve()
-      : db.delete(cardLabels).where(inArray(cardLabels.oracleId, [...scope, ...extra].map((c) => c.oracleId)))],
+    ["labels", () => scope.length + extra.length + moving.length === 0 ? Promise.resolve()
+      : db.delete(cardLabels).where(inArray(cardLabels.oracleId, [...scope, ...extra, ...moving].map((c) => c.oracleId)))],
   ];
   for (const [what, step] of steps) {
     try { await step(); } catch (err) { failures++; console.error(`FAIL cleanup: ${what}`, err); }
@@ -185,10 +196,11 @@ async function main(): Promise<void> {
      where c.commander_legal = true
        and not exists (select 1 from card_labels l where l.oracle_id = c.oracle_id)
        and (select count(*) from cards c2 where c2.name = c.name) = 1
-     order by c.oracle_id limit 84`);
-  if (picked.rows.length < 84) throw new Error(`need 84 unlabelled cards, found ${picked.rows.length}`);
+     order by c.oracle_id limit 96`);
+  if (picked.rows.length < 96) throw new Error(`need 96 unlabelled cards, found ${picked.rows.length}`);
   scope = picked.rows.slice(0, 72);
-  extra = picked.rows.slice(72);
+  extra = picked.rows.slice(72, 84);
+  moving = picked.rows.slice(84);
   const chunkNames = (i: number) => scope.slice(i * 12, (i + 1) * 12).map((c) => c.name);
   console.log(`one request's worst case r = $${r.toFixed(4)}; each fake request reports $${PER_REQUEST_USD.toFixed(4)}`);
 
@@ -312,6 +324,45 @@ async function main(): Promise<void> {
   report("the card an older build staged carries the new answer, not the stale one",
     first !== undefined && first.inputHash !== "probe-stale" && first.labels.length > 0,
     `hash ${first?.inputHash.slice(0, 12)}, ${first?.labels.length} job(s)`);
+
+  console.log("\n(g) a card whose text moves while its batch is pending is asked again");
+  report("G1 submits the twelve", (await run(RUN.g, 10 * r, moving)) === EXIT_MORE_WORK);
+  const target = moving[0];
+  const [{ text }] = (await db.execute<{ text: string | null }>(
+    sql`select oracle_text as text from cards where oracle_id = ${target.oracleId}`)).rows;
+  movedText = { oracleId: target.oracleId, text };
+  await db.execute(sql`update cards set oracle_text = coalesce(oracle_text, '') || ' (probe: errata)' where oracle_id = ${target.oracleId}`);
+  report("G2 collects and re-asks the moved card", (await run(RUN.g, 10 * r, moving)) === EXIT_MORE_WORK);
+  const afterG2 = await db.select().from(cardLabels).where(inArray(cardLabels.oracleId, moving.map((c) => c.oracleId)));
+  report("the eleven unmoved cards are published and the moved one is not",
+    afterG2.length === 11 && !afterG2.some((l) => l.oracleId === target.oracleId), `${afterG2.length} published`);
+  const gIntents = await intentsOf(RUN.g);
+  report("the second request asks the moved card alone",
+    gIntents.length === 2 && gIntents.some((i) => i.asked.length === 1 && i.asked[0] === target.name),
+    gIntents.map((i) => i.asked.length).join(", "));
+  report("G3 collects it and finishes", (await run(RUN.g, 10 * r, moving)) === EXIT_DONE);
+  report("all twelve are now labelled", (await db.select().from(cardLabels)
+    .where(inArray(cardLabels.oracleId, moving.map((c) => c.oracleId)))).length === 12);
+
+  console.log("\n(h) every model counts against the family, each at its own rates");
+  const before = await spentInUnits(RUN.h);
+  const haiku = ALL_MODELS.haiku;
+  await db.insert(cardLabelBatches).values({
+    intentKey: `${RUN.h}:haiku`, runId: RUN.h, model: haiku, customId: `probe-haiku-${randomUUID()}`,
+    asked: ["probe haiku card"], batchId: "msgbatch_probe_haiku", status: "collected", promptVersion: LABEL_PROMPT_VERSION,
+    inTokens: 1_000_000, outTokens: 1_000_000,
+  });
+  const expected = PRICING.haiku.in + PRICING.haiku.out;
+  report("another model's collected batch adds its own priced cost", near((await spentInUnits(RUN.h)) - before, expected),
+    `+$${((await spentInUnits(RUN.h)) - before).toFixed(4)}, expected $${expected.toFixed(4)}`);
+  await db.insert(cardLabelBatches).values({
+    intentKey: `${RUN.h}:unknown`, runId: RUN.h, model: "probe-unknown-model", customId: `probe-unknown-${randomUUID()}`,
+    asked: ["probe unknown card"], batchId: "msgbatch_probe_unknown", status: "collected", promptVersion: LABEL_PROMPT_VERSION,
+    inTokens: 1, outTokens: 1,
+  });
+  let refused = false;
+  try { await spentInUnits(RUN.h); } catch (err) { refused = (err as Error).message.includes("no canonical"); }
+  report("a model with no canonical rate refuses", refused);
 }
 
 try {

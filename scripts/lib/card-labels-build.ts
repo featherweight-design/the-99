@@ -80,10 +80,11 @@ if (MODEL_KEY === undefined) {
 // The instruction block is booked at the cache WRITE rate whenever a breakpoint is sent, because no
 // request is guaranteed a warm cache (`SENDS_CACHE_BREAKPOINT`). Whatever `caches` recorded for an older,
 // shorter block: a bound must not rest on a measurement of a different prompt.
-export const RATES = {
-  in: PRICING[MODEL_KEY].in, out: PRICING[MODEL_KEY].out,
-  ...(SENDS_CACHE_BREAKPOINT ? { system: PRICING[MODEL_KEY].cacheWrite } : {}),
-};
+const ratesFor = (key: keyof typeof PRICING) => ({
+  in: PRICING[key].in, out: PRICING[key].out,
+  ...(SENDS_CACHE_BREAKPOINT ? { system: PRICING[key].cacheWrite } : {}),
+});
+export const RATES = ratesFor(MODEL_KEY);
 
 
 /**
@@ -118,9 +119,10 @@ const BODY_OVERHEAD_TOKENS = renderBody(
 ).length; // characters, for the reason above
 
 /** One request's worst case: what a wave is sized by, and what an expired batch is reserved at. */
-export const REQUEST_WORST_USD = worstCaseUsd(
-  1, SYSTEM_TOKENS, PER_CARD_TOKENS, MAX_TOKENS_PER_BATCH, RATES, BODY_OVERHEAD_TOKENS,
+const requestWorstFor = (rates: typeof RATES) => worstCaseUsd(
+  1, SYSTEM_TOKENS, PER_CARD_TOKENS, MAX_TOKENS_PER_BATCH, rates, BODY_OVERHEAD_TOKENS,
 );
+export const REQUEST_WORST_USD = requestWorstFor(RATES);
 
 /**
  * EXIT CODES, because a caller must not have to read prose to know what happened.
@@ -329,12 +331,21 @@ async function collectBatch(opts: BuildOptions, batchId: string, intents: Intent
 
     /** Oracle ids staged by this batch, per run: a staged row keeps the run id that ASKED for it. */
     const stagedByRun = new Map<string, Set<string>>();
+    /** Cards whose text moved between the request and now: not judged, not staged, planned again. */
+    let moved = 0;
     for (const intent of mine) {
       const here = got.get(intent.customId);
-      const rows = [...(here?.byName.keys() ?? [])]
+      const sentHash = intent.askedHashes;
+      const current = [...(here?.byName.keys() ?? [])]
         .map((n) => byName.get(n))
-        .filter((c): c is CardRow => c !== undefined)
-        .map((c) => ({
+        .filter((c): c is CardRow => c !== undefined);
+      // AN ANSWER DESCRIBES THE TEXT IT WAS ASKED ABOUT. Stamping it with today's hash would mark
+      // an answer to yesterday's oracle text as current for ever. A legacy intent (no record)
+      // stages as it always did.
+      const unmoved = sentHash === null ? current
+        : current.filter((c) => sentHash[c.name] === labelInputHash(c, MODEL));
+      moved += current.length - unmoved.length;
+      const rows = unmoved.map((c) => ({
           // The INTENT's run, not this process's: a batch collected by a later run id is still
           // that earlier run's work, and its staging rows say so.
           runId: intent.runId, oracleId: c.oracleId, labels: here?.byName.get(c.name) ?? [],
@@ -370,7 +381,7 @@ async function collectBatch(opts: BuildOptions, batchId: string, intents: Intent
     }
 
     // THIS BATCH's floor: of the cards its intents asked about, how many came back usable.
-    const asked = mine.reduce((n, i) => n + i.asked.length, 0);
+    const asked = mine.reduce((n, i) => n + i.asked.length, 0) - moved;
     const staged = [...stagedByRun.values()].reduce((n, s) => n + s.size, 0);
     const floor = meetsFloor(staged, asked, opts.floor);
     if (!floor.ok) {
@@ -388,6 +399,7 @@ async function collectBatch(opts: BuildOptions, batchId: string, intents: Intent
     await tx.update(cardLabelBatches).set({ status: "collected", collectedAt: new Date() })
       .where(inArray(cardLabelBatches.intentKey, mine.map((i) => i.intentKey)));
     if (rejected.length > 0) console.warn(`  ${batchId}: dropped ${rejected.length} item(s)`);
+    if (moved > 0) console.warn(`  ${batchId}: ${moved} card(s) changed since they were asked; left for the next plan`);
     await opts.hooks?.beforeCommit?.(batchId);
     return { kind: "published", published } as const;
   });
@@ -564,7 +576,7 @@ async function reconcile(opts: BuildOptions): Promise<{
  * provider, rather than as absent and re-submits. Writing the rows after the call is the
  * shape that pays twice.
  */
-async function submit(opts: BuildOptions, chunks: Chunk[]): Promise<void> {
+async function submit(opts: BuildOptions, chunks: Chunk[], hashByName: ReadonlyMap<string, string>): Promise<void> {
   // THE INSERT IS THE CLAIM, and only what this process actually inserted is submitted.
   //
   // Two invocations sharing a `LABEL_RUN_ID` could otherwise both find the intents already present
@@ -574,6 +586,7 @@ async function submit(opts: BuildOptions, chunks: Chunk[]): Promise<void> {
   const claimed = await db.insert(cardLabelBatches).values(chunks.map((c) => ({
     intentKey: c.intentKey, runId: opts.runId, model: MODEL, customId: c.customId, asked: c.names,
     promptVersion: LABEL_PROMPT_VERSION,
+    askedHashes: Object.fromEntries(c.names.map((n) => [n, hashByName.get(n) ?? ""])),
   }))).onConflictDoNothing().returning({ intentKey: cardLabelBatches.intentKey });
 
   const mine = new Set(claimed.map((r) => r.intentKey));
@@ -601,9 +614,19 @@ async function submit(opts: BuildOptions, chunks: Chunk[]): Promise<void> {
   console.log(`submitted ${requests.length} request(s) as ${batch.id}`);
 }
 
-/** What a budget family has already spent, read from the ledger and summed by `familySpend`. */
+/**
+ * What a budget family has already spent, read from the ledger and summed by `familySpend`.
+ *
+ * EVERY MODEL counts against the family, each row priced at its own model's rates: the family is
+ * the run id and the prompt version, so a `LABEL_MODEL` change must not make the spend before it
+ * vanish and hand the same backfill a second cap. A ledger model with no canonical rate refuses,
+ * as `LABEL_MODEL` does, rather than counting as free. The MEASURED rate (`measuredUsd` over
+ * `measuredCards`) stays this model's alone, because it is what the projection prices the
+ * remaining cards at, and those are asked of this model.
+ */
 export async function readFamilySpend(runId: string): Promise<FamilySpend> {
   const rows = await db.select({
+    model: cardLabelBatches.model,
     runId: cardLabelBatches.runId,
     status: cardLabelBatches.status,
     promptVersion: cardLabelBatches.promptVersion,
@@ -615,8 +638,25 @@ export async function readFamilySpend(runId: string): Promise<FamilySpend> {
   }).from(cardLabelBatches)
     // Narrowed in SQL to the rows that can count at all; the family itself is a pure rule, so it
     // is applied in `familySpend` where it is tested rather than restated as a LIKE here.
-    .where(and(eq(cardLabelBatches.model, MODEL), eq(cardLabelBatches.promptVersion, LABEL_PROMPT_VERSION)));
-  return familySpend(rows, runId, LABEL_PROMPT_VERSION, RATES, REQUEST_WORST_USD);
+    .where(eq(cardLabelBatches.promptVersion, LABEL_PROMPT_VERSION));
+  const byModel = new Map<string, typeof rows>();
+  for (const r of rows) byModel.set(r.model, [...(byModel.get(r.model) ?? []), r]);
+  const own = familySpend(byModel.get(MODEL) ?? [], runId, LABEL_PROMPT_VERSION, RATES, REQUEST_WORST_USD);
+  let { expiredChunks, reserveUsd, totalUsd } = own;
+  for (const [model, those] of byModel) {
+    if (model === MODEL) continue;
+    const key = (Object.entries(ALL_MODELS) as [keyof typeof PRICING, string][]).find(([, id]) => id === model)?.[0];
+    if (key === undefined) {
+      throw new Error(`the ledger holds ${those.length} row(s) for model "${model}", which has no canonical `
+        + `rate. Refusing: spend that cannot be priced cannot be held to the cap.`);
+    }
+    const rates = ratesFor(key);
+    const other = familySpend(those, runId, LABEL_PROMPT_VERSION, rates, requestWorstFor(rates));
+    expiredChunks += other.expiredChunks;
+    reserveUsd += other.reserveUsd;
+    totalUsd += other.totalUsd;
+  }
+  return { ...own, expiredChunks, reserveUsd, totalUsd };
 }
 
 /** Runs one invocation of the build and returns its exit code. */
@@ -806,7 +846,7 @@ async function build(opts: BuildOptions): Promise<number> {
     return EXIT_DONE;
   }
 
-  await submit(opts, wave);
+  await submit(opts, wave, new Map(cards.map((c) => [c.name, labelInputHash(c, MODEL)])));
   console.log(`\nSubmitted wave of ${wave.length}. Batches are asynchronous: re-run with `
     + `LABEL_RUN_ID=${runId} to collect it and submit the next wave.`);
   return EXIT_MORE_WORK;

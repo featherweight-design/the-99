@@ -1,5 +1,5 @@
 {
-  "id": "f62e5add-0b19-4cac-8955-5871a10cdbca",
+  "id": "7f1029a2-b045-40d2-9db4-1c8a83e716f9",
   "prevId": "94b06ca7-a998-456b-a482-989b29448777",
   "version": "7",
   "dialect": "postgresql",
@@ -315,6 +315,12 @@
         "prompt_version": {
           "name": "prompt_version",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "asked_hashes": {
+          "name": "asked_hashes",
+          "type": "jsonb",
           "primaryKey": false,
           "notNull": false
         },

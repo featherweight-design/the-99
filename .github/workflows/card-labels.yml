@@ -57,6 +57,9 @@ jobs:
       # submitting a batch and recording its intent is the one window that costs money twice.
       group: card-labels
       cancel-in-progress: false
+    outputs:
+      # Set once the build has STARTED, whatever it then exits with. Read by `copy`, below.
+      ran: ${{ steps.build.outputs.ran }}
     # Batches are asynchronous and this job POLLS until they are collected and published, so the
     # window has to cover the provider's turnaround. Measured on the sample: a 43-request batch
     # ended within minutes, but the API's stated ceiling is 24 hours and a set week is ~75
@@ -204,6 +207,7 @@ jobs:
           fi
 
       - name: Label new and changed cards
+        id: build
         # `shell: bash` expands to `bash -eo pipefail`. WITHOUT IT the script's exit code is
         # swallowed by `tee`, and the job reports green over a refused run — which would make the
         # spend cap and the publish floor, the two guards this job has, invisible in the only
@@ -286,6 +290,8 @@ jobs:
           # here would put a named backfill's cards under a different run id and pay for them twice.
           : "${RESOLVED_RUN_ID:?empty — the bounds step did not run or did not publish run_id}"
           export LABEL_RUN_ID="$RESOLVED_RUN_ID"
+          # From here on the build may publish, so the copy job carries whatever it published.
+          echo "ran=true" >> "$GITHUB_OUTPUT"
           echo "### Card labels — \`catalog-staging\` — run \`$LABEL_RUN_ID\`" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           for attempt in $(seq 1 40); do
@@ -339,7 +345,14 @@ jobs:
   # hash production's own card text produces.
   copy:
     needs: label
-    if: needs.label.result == 'success'
+    # WHENEVER THE BUILD RAN, not only when it succeeded. Each batch publishes in its own
+    # transaction behind its own floor, so a run stopped at its cap, paused on its projection or
+    # killed by an unexpected error has still published labels that passed — and a backfill
+    # family that spends its cap stops every later run too, so a success-only copy would never
+    # carry those labels to production. The label job stays red for every non-zero exit, so a
+    # failure still blocks and still reads as one; this job only moves what already passed,
+    # and installs a label only when production's own hash matches it.
+    if: ${{ !cancelled() && needs.label.outputs.ran == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: catalog-production
