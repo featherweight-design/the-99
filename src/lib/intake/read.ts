@@ -1,7 +1,9 @@
 import { z } from "zod";
 
+import { playerText, playerTextBody, PLAYER_TEXT_SYSTEM_RULE } from "../model/player-text";
 import { oneLine } from "../tuning/prompt";
 import { MAX_BUDGET_DOLLARS } from "./answers";
+import { READ_WORDS_MAX_CHARS } from "./limits";
 import { phraseKey, type Chip, type PhraseIndex } from "./match";
 
 /**
@@ -25,6 +27,16 @@ import { phraseKey, type Chip, type PhraseIndex } from "./match";
  * the run store settles on that, BEFORE it settles the unit.
  */
 
+/**
+ * Folded into `wordsHash` (`run-store.ts`), never stored as its own column: a settled read is
+ * looked up by that hash alone, so a prompt change has to move the hash or an ask made before
+ * the change keeps answering from its old, unprotected-prompt result forever. Tuning's
+ * `PROMPT_VERSION` is the precedent; this is its intake-read counterpart.
+ * 1 (2026-10-03): the player's words are wrapped in `playerText`'s delimited data block, with
+ * the system rule naming the tags, so they can no longer read as an instruction.
+ */
+export const INTAKE_PROMPT_VERSION = 1;
+
 export const READ_MAX_THEMES = 6;
 export const READ_MAX_CARDS = 3;
 
@@ -40,6 +52,7 @@ export type ReadResponse = z.infer<typeof readResponseSchema>;
 
 const SYSTEM = [
   "You read what a Magic: The Gathering Commander player wrote about the deck they want, and map it onto a fixed vocabulary so the app can search for commanders.",
+  PLAYER_TEXT_SYSTEM_RULE,
   "Never suggest a commander, and never add anything the player did not write or clearly describe. You are reading their words, not recommending.",
   "themes: labels copied exactly from the theme list you are given, for every theme the words describe, including ones described without the label's own word (\"big dumb lizards\" is Dinosaurs). At most six.",
   "cards: the exact printed names of cards the player names or unmistakably describes. At most three. A card you are not sure of does not go here.",
@@ -52,12 +65,12 @@ const SYSTEM = [
 export function buildReadPrompt(words: string, themeLabels: readonly string[]): { system: string; user: string } {
   return {
     system: SYSTEM,
-    // The player's words last and unwrapped, as one line, so no delimiter can be closed by them.
+    // The player's words last, as their own delimited block.
     user: [
       "Theme list (copy labels exactly):",
       themeLabels.join(" | "),
       "",
-      `The player's words, verbatim after the colon: ${oneLine(words)}`,
+      playerText("The player's words", words, READ_WORDS_MAX_CHARS),
     ].join("\n"),
   };
 }
@@ -130,9 +143,12 @@ export function validateRead(args: {
     notUsed,
     // Only phrases the player wrote, since the prompt asks for them verbatim and nothing the model
     // adds may be shown as the player's own words; and never one the vocabulary maps, which is a
-    // chip rather than something not understood.
+    // chip rather than something not understood. Checked against `playerTextBody(words)`, the
+    // exact form the model was shown — not `words` itself — since a tag-lookalike run inside the
+    // player's own words is shown to the model with its brackets stripped, and a faithful copy of
+    // that stripped form would otherwise fail `wrote()` against the unstripped original.
     notUnderstood: [...new Set(reply.notUnderstood.map((p) => oneLine(p).trim()).filter((p) =>
-      p.length > 0 && wrote(words, p) && !index.targets.has(phraseKey(p))))],
+      p.length > 0 && wrote(playerTextBody(words), p) && !index.targets.has(phraseKey(p))))],
     useful: chips.length > 0,
   };
 }

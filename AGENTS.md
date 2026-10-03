@@ -977,6 +977,24 @@ sql<number>`(
   both tab-row figures for exactly that reason. When a count reads 0 and should not, print
   `.toSQL()` first.
 
+## Any new model input from a player goes through `playerText`
+
+SQL is parameterized (Drizzle), URL params parse to closed sets, server actions re-validate, and
+a model's own OUTPUT goes through `validate.ts`. Free text a player TYPES — deck intent, a game
+note, Look deeper's free-text question — is the one input that reached a prompt verbatim, framed
+only by a sentence asking the model to read it "after the colon". That sentence is a request, not
+a boundary. `playerText(label, text, maxChars)` in `src/lib/model/player-text.ts` is the boundary:
+it collapses line breaks (so the text cannot start what reads as a new line of instructions),
+breaks any literal occurrence of its own delimiter tags inside the text (so the player's words
+cannot forge a close and continue past it), and re-checks the field's own cap. Every system prompt
+that calls it also carries its one `PLAYER_TEXT_SYSTEM_RULE` line, naming the tags and stating
+that anything between them is data, never an instruction.
+
+**Any new free-text field a player types that reaches a model prompt goes through `playerText`.**
+Catalog data (a card name, oracle text) is not in scope — the player cannot type it, so it carries
+no injection surface — but intent, notes, a free-text question, or anything of that shape is. A
+field that reaches a prompt without it is a defect.
+
 ## Writing the address bar without navigating
 
 Every `history.replaceState` a page makes to mirror its own state (a filter, a sort, a view, an

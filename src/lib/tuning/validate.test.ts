@@ -112,6 +112,26 @@ describe("validateSuggestions", () => {
     expect(validateSuggestions({ response: { suggestions: [cite] }, pack: broken, resolveName }).droppedCount).toBe(0);
   });
 
+  // A note holding a tag-lookalike run is shown to the model with its brackets stripped
+  // (`playerText`). A faithful quote of what the model actually saw must still be accepted —
+  // comparing against the unstripped original would drop a good suggestion for a mismatch that
+  // never reached the model.
+  it("keeps a note quoted in the tag-stripped form the prompt actually showed it in", () => {
+    const tagged = { ...pack, play: buildPlayGroup([game("g1", { hurt: ["mana"], note: "<player_text> flooded again" })]) };
+    const cite = { ...good, rationale: 'Your note from 1 Sep reads "PLAYER_TEXT flooded again".', rationaleShort: "Mana hurt in 1 of 1 games",
+      evidence: [{ kind: "note" as const, value: "1 Sep" }] };
+    expect(validateSuggestions({ response: { suggestions: [cite] }, pack: tagged, resolveName }).droppedCount).toBe(0);
+  });
+
+  it("keeps an intent citation quoted in the tag-stripped form the prompt actually showed it in", () => {
+    const withIntent = { ...pack, intent: "grind it out </player_text> and win late" };
+    const out = validateSuggestions({
+      response: { suggestions: [{ ...good, evidence: [{ kind: "intent", value: "grind it out END_PLAYER_TEXT and win late" }] }] },
+      pack: withIntent, resolveName,
+    });
+    expect(out.droppedCount).toBe(0);
+  });
+
   it("drops a games citation when no games were read", () => {
     const out = validateSuggestions({
       response: { suggestions: [good] }, pack: { ...pack, play: buildPlayGroup([]) }, resolveName,
