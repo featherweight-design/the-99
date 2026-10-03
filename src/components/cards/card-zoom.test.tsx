@@ -67,15 +67,18 @@ describe("the zoom", () => {
     expect(layer).toHaveTextContent("Ravnica Remastered · RVR 12");
   });
 
-  // H22: the card's own art, blurred, as the phone's art header draws it, on an opaque ground,
-  // and the face the zoom shows rather than the one behind it.
-  it("draws the zoomed face's art as a blurred wash on an opaque ground", () => {
+  // H22: the zoom matches the view behind it at each width. On the phone that is the art
+  // header's opaque ground and blurred wash of the zoomed face; from `md` the dialog draws no
+  // wash, so the zoom keeps the scrim and its blur.
+  it("washes the phone zoom in the zoomed face's art, and keeps the desktop scrim", () => {
     mount();
     openZoom();
     const layer = screen.getByTestId("card-zoom");
-    expect(layer.getAttribute("style")).not.toContain("backdrop-filter");
-    expect(layer.style.background).toBe("var(--surface-sunken)");
+    expect(layer.className).toContain("bg-[color:var(--surface-sunken)]");
+    expect(layer.className).toContain("md:bg-[color-mix(in_srgb,var(--bg)_94%,transparent)]");
+    expect(layer.className).toContain("md:backdrop-blur-[10px]");
     const wash = within(layer).getByTestId("card-zoom-wash");
+    expect(wash.className).toContain("md:hidden");
     expect(wash.getAttribute("style")).toContain("front.jpg");
     expect(wash.style.filter).toBe("blur(22px)");
   });

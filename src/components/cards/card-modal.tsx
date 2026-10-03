@@ -1967,26 +1967,27 @@ export function CardModal({
             // receives nothing. A click on the hairline therefore hits the dialog and
             // does nothing at all — which is the right failure for a 1px target that
             // was never a dismissal path, and better than pretending otherwise.
-            className="absolute inset-0 z-20 flex flex-col items-center justify-center overflow-hidden anim-zoom-in"
+            // THE ZOOM MATCHES THE VIEW BEHIND IT, AT EACH WIDTH (H22, Hugh's walk). Below
+            // `md` that view is the phone's art header, so the zoom takes its ground and its
+            // wash (below), opaque, and nothing of the page shows through. From `md` the
+            // dialog draws no wash, so the zoom keeps the handoff's 94% scrim and its
+            // backdrop blur (README:256). The blur needs no prefix: the utility emits the
+            // WebKit declaration beside the standard one.
+            className="absolute inset-0 z-20 flex flex-col items-center justify-center overflow-hidden anim-zoom-in bg-[color:var(--surface-sunken)] md:bg-[color-mix(in_srgb,var(--bg)_94%,transparent)] md:backdrop-blur-[10px]"
             onClick={closeZoom}
             style={{
               // Shallow enough to be a turn rather than a lens (table row 4.2).
               perspective: "1400px",
-              // OPAQUE, under the wash below. The handoff drew a 94% scrim blurring whatever
-              // the dialog held (README:256); Hugh's walk (H22) asked for the card's own
-              // blurred art instead, as the phone's art header draws it. The ground is that
-              // header's, so the wash reads the same on both and nothing of the page behind
-              // shows through.
-              background: "var(--surface-sunken)",
             }}
           >
             {/* THE WASH, the phone header's own treatment (`mobile-art-wash`): the zoomed
                 face's art, blurred, dimmed and scaled past its own edges so the blur has
-                no transparent rim. The layer clips the overscale. */}
+                no transparent rim. The layer clips the overscale. Phone only, as that
+                header is. */}
             <div
               aria-hidden
               data-testid="card-zoom-wash"
-              className="pointer-events-none absolute inset-0"
+              className="pointer-events-none absolute inset-0 md:hidden"
               style={{
                 ...zoomWashStyle,
                 filter: "blur(22px)",
@@ -2083,15 +2084,12 @@ export function CardModal({
                 // printing, and they sit at the end where the ellipsis never eats them
                 // first.
                 // `relative` puts it over the wash, an absolute sibling that would otherwise
-                // paint on top of an in-flow line. ON THE PLATE, as the art-wash ratification
-                // defines it (the phone's price stack above): over the wash a bare 11px line
-                // has nothing to be legible against, and a light art read it at about 1.5:1.
-                className="relative font-mono text-[11px] mt-[14px] m-0 max-w-[calc(100%-32px)] overflow-hidden text-ellipsis whitespace-nowrap rounded-[7px] px-[8px] py-[3px]"
-                style={{
-                  color: "var(--fg-muted)",
-                  background: "var(--bg)",
-                  border: "1px solid var(--border-strong)",
-                }}
+                // paint on top of an in-flow line. ON THE PLATE below `md`, where the wash
+                // is, as the art-wash ratification defines it (the phone's price stack above):
+                // over the wash a bare 11px line has nothing to be legible against, and a light
+                // art read it at about 1.5:1. From `md` the scrim is its ground, as before.
+                className="relative font-mono text-[11px] mt-[14px] m-0 max-w-[calc(100%-32px)] overflow-hidden text-ellipsis whitespace-nowrap rounded-[7px] px-[8px] py-[3px] bg-[color:var(--bg)] border border-[color:var(--border-strong)] md:rounded-none md:p-0 md:bg-transparent md:border-0"
+                style={{ color: "var(--fg-muted)" }}
               >
                 {zoomCaption}
               </p>
