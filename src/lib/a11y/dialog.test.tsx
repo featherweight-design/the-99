@@ -562,6 +562,25 @@ describe("useBackDismiss", () => {
     scrollTo.mockRestore();
   });
 
+  // Found by Copilot's round-2 review: a link click commits a new route without
+  // firing any of the three cancel events above, so an uncancelled loop would
+  // keep stamping the OLD route's offset onto the page the click just navigated
+  // to for the rest of its ~500ms.
+  it("stops reasserting once the URL changes under it", async () => {
+    window.scrollY = 900;
+    const { hook } = open();
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation((_x, y) => {
+      window.scrollY = y as number;
+    });
+    hook.unmount();
+    await new Promise((r) => setTimeout(r, 50));
+    window.history.pushState(null, "", "/decks");
+    window.scrollY = 50;
+    await new Promise((r) => setTimeout(r, 700));
+    expect(window.scrollY).toBe(50);
+    scrollTo.mockRestore();
+  });
+
   it("closes only the top dialog on each Back", async () => {
     const under = open();
     const over = open();

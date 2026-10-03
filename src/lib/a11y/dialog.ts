@@ -245,6 +245,13 @@ function restoreHref(href: string | null) {
 function pinScrollY(y: number | null) {
   if (y == null) return;
   const offset = y;
+  // A link click during the reassert window fires none of the three events below
+  // — found by Copilot's round-2 review — so the loop would otherwise keep
+  // applying the OLD route's offset onto the route the click just committed.
+  // Checked every frame rather than via its own listener: `popstate` already
+  // fires for a history navigation, and a push/replace triggers no event this
+  // module could listen for at all.
+  const startHref = window.location.href;
   let frames = 0;
   let rafId = requestAnimationFrame(reassert);
   const stop = () => {
@@ -257,6 +264,10 @@ function pinScrollY(y: number | null) {
   window.addEventListener("touchstart", stop, { passive: true });
   window.addEventListener("keydown", stop);
   function reassert() {
+    if (window.location.href !== startHref) {
+      stop();
+      return;
+    }
     if (window.scrollY !== offset) window.scrollTo(0, offset);
     frames += 1;
     if (frames < 30) rafId = requestAnimationFrame(reassert);
