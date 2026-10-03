@@ -1,6 +1,6 @@
 import { cloneElement, useLayoutEffect } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { render, screen, fireEvent, act, within } from "@testing-library/react";
 import { SetGridView } from "./set-grid-view";
 import { placeCells, type SetPrinting } from "../../lib/sets/completion";
 import { setPageCopy } from "../../lib/copy/set-collections";
@@ -1639,6 +1639,23 @@ describe("SetGridView — colour match", () => {
     expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk?c=W&m=exact");
     expect(cellNames()).toEqual(["Card 1"]);
   });
+
+  for (const desktop of [true, false]) {
+    for (const url of ["m=exact", "m=exact&c=Z"]) {
+      it(`opens ?${url} on Any, every pip offered (${desktop ? "rack" : "sheet"})`, () => {
+        stubDesktop(desktop);
+        search = url;
+        view([p("1", { colorIdentity: ["W", "U"] }), p("2", { colorIdentity: ["B", "R"] })], []);
+        if (!desktop) fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+        const scope = desktop ? document.body : screen.getByRole("dialog");
+        for (const name of ["White", "Blue", "Black", "Red"]) {
+          const pip = within(scope).getAllByRole("switch", { name })[0];
+          expect(pip.getAttribute("aria-disabled")).not.toBe("true");
+          expect(pip).not.toBeDisabled();
+        }
+      });
+    }
+  }
 
   it("returns to Any when the last pip goes off, so no pip is left unreachable", () => {
     stubDesktop(true);

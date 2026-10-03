@@ -145,6 +145,12 @@ describe("filter URL round trip", () => {
     expect(parseFilters(params).match).toBe("exactly");
   });
 
+  it("reads Exactly as Any when no recognized colour is lit, and never writes it alone", () => {
+    expect(parseFilters(new URLSearchParams("m=exact")).match).toBe("contains");
+    expect(parseFilters(new URLSearchParams("m=exact&c=Z")).match).toBe("contains");
+    expect(serialiseFilters({ ...EMPTY_FILTERS, match: "exactly" }).has("m")).toBe(false);
+  });
+
   it("writes Any as an absence", () => {
     expect(serialiseFilters({ ...EMPTY_FILTERS, colors: ["W"] }).has("m")).toBe(false);
     expect(parseFilters(new URLSearchParams("c=W")).match).toBe("contains");

@@ -104,9 +104,10 @@ export function serialiseFilters(f: SetGridFilters): URLSearchParams {
   if (rarities.length > 0) params.set("r", rarities.join(","));
   // `m=exact`, the commander lanes' key and value, written on the same condition
   // `serializeLaneParams` writes it, so one colour modifier is spelled one way across the app.
-  // With no pip lit it filters nothing (`filterByColors` leaves an empty selection alone) and
-  // is kept anyway: the control greys it in place and remembers it, as the rack's does.
-  if (f.match === "exactly") params.set("m", "exact");
+  // Only beside a lit pip. Exactly with nothing lit is a mode the reader cannot see (the
+  // control greys its selector) that still decides which pips are offered, so the page never
+  // holds it: the last pip off returns to Any, and a URL naming it alone is read as Any.
+  if (f.match === "exactly" && colors.length > 0) params.set("m", "exact");
   // `own=missing`, never `m=1` again. `m` was missing-only until H10 needed it for the
   // colour modifier, and one key cannot hold both `1` and `exact` at once — so a reader who
   // wanted the missing white-blue cards EXACTLY could not have been written down. `m=1` is
@@ -134,9 +135,11 @@ export function parseFilters(params: URLSearchParams): SetGridFilters {
   const list = (key: string) => (params.get(key) ?? "").split(",").filter(Boolean);
   const colors = list("c").map((v) => v.toUpperCase());
   const rarities = list("r").map((v) => v.toLowerCase());
+  const lit = WUBRG.filter((c) => colors.includes(c));
   return {
-    colors: WUBRG.filter((c) => colors.includes(c)),
-    match: params.get("m") === "exact" ? "exactly" : "contains",
+    colors: lit,
+    // Exactly only beside a recognized colour: `?m=exact`, or `?m=exact&c=Z`, is Any.
+    match: params.get("m") === "exact" && lit.length > 0 ? "exactly" : "contains",
     // Multi-select since H13, so the whole list is kept, in canonical order. A single value
     // — every link written while the control was single-select — is a list of one.
     rarities: RARITIES.filter((r) => rarities.includes(r)),
