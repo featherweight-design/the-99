@@ -6,6 +6,10 @@ import { overCopy, renameCopy } from "../../lib/copy/decks-builder";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { deck, pairDeck, props } from "./spine-fixtures";
 
+const renameDeck = vi.hoisted(() => vi.fn(async () => {}));
+vi.mock("../../app/decks/actions", () => ({ renameDeck }));
+vi.mock("../../app/decks/tuning-actions", () => ({ saveDeckDescription: vi.fn(async () => ({ ok: true })) }));
+
 // The band's `Card details` pill reads the card-detail context, so the header
 // can only be rendered inside it.
 function renderSpine(ui: React.ReactElement) {
@@ -178,6 +182,21 @@ describe("SpineDesktop", () => {
 
     // and the hint row is present in every state, so no row is ever added
     expect(screen.getByTestId("spine-rename-hint")).toBeTruthy();
+  });
+
+  // Pre-open review: Save/Cancel sit in a separate column from the fields, so the pair's blur
+  // has to be caught above both columns or focus moving from the description field to Cancel
+  // reads as "left the pair" and commits before Cancel is ever pressed.
+  it("does not commit when focus moves from the description field to Cancel", () => {
+    renderSpine(<SpineDesktop {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    const name = screen.getByLabelText("Deck name") as HTMLInputElement;
+    fireEvent.change(name, { target: { value: "Changed Name" } });
+    const description = screen.getByLabelText(deckDescriptionCopy.description.fieldAria);
+    const cancelButton = screen.getByRole("button", { name: "Cancel" });
+    fireEvent.blur(description, { relatedTarget: cancelButton });
+    fireEvent.click(cancelButton);
+    expect(renameDeck).not.toHaveBeenCalled();
   });
 
   // R6 ruling 4. The header is reachable from list contexts, so the label has

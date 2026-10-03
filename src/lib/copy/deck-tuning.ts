@@ -232,7 +232,6 @@ export const deckTuningCopy = {
     undone: (cut: string) => `Put back. ${cut} is in the deck again.`,
     rejected: "Rejected.",
     restored: "Shown again.",
-    intentSaved: "Saved what this deck is for.",
   },
 
   // ── The shared model allowance, spent: the refusal a press gets ────────

@@ -248,6 +248,11 @@ export function SpineDesktop({
         // classes above — the inset would silently stay at 24px and the title
         // would print over the portrait.
         style={{ paddingRight: 24, paddingBottom: 18, gap: 18 }}
+        // THE PAIR'S BLUR LIVES HERE, not on the fields' own wrapper: Save and Cancel sit in a
+        // separate sibling column (`renaming`'s action column below), and `onPairBlur` has to
+        // enclose them too, or tabbing from the description field to Cancel fires blur outside
+        // the wrapper and commits the edit before Cancel is ever pressed (pre-open review).
+        onBlur={renaming ? rename.onPairBlur : undefined}
       >
         {/* `basis-[280px]`, not a bare `flex-1`: with a zero basis this column
             takes only what the action column leaves, and that column sizes to
@@ -264,7 +269,7 @@ export function SpineDesktop({
               // Both fields, one width (STATES-deck-description.md §2, state 3): 560 or the
               // cover's own width, whichever this column has. One commit for the pair — blur on
               // the wrapper, never on either field alone.
-              <div className="flex w-full max-w-[560px] flex-col gap-[6px]" style={{ margin: "-2px 0 -2px -11px" }} onBlur={rename.onPairBlur}>
+              <div className="flex w-full max-w-[560px] flex-col gap-[6px]" style={{ margin: "-2px 0 -2px -11px" }}>
                 <input
                   autoFocus
                   value={rename.name}
