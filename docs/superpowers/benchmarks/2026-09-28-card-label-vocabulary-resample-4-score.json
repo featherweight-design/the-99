@@ -1,0 +1,1542 @@
+{
+ "scoredAt": "2026-10-03T02:40:02.367Z",
+ "goldCards": 538,
+ "models": {
+  "sonnet": {
+   "bars": [
+    {
+     "key": "role:ramp",
+     "bar": 0.8,
+     "precision": 0.974,
+     "recall": 0.86,
+     "cases": 86,
+     "pass": true
+    },
+    {
+     "key": "role:draw",
+     "bar": 0.8,
+     "precision": 0.986,
+     "recall": 1,
+     "cases": 72,
+     "pass": true
+    },
+    {
+     "key": "role:removal",
+     "bar": 0.8,
+     "precision": 0.971,
+     "recall": 0.85,
+     "cases": 80,
+     "pass": true
+    },
+    {
+     "key": "role:wipes",
+     "bar": 0.8,
+     "precision": 0.947,
+     "recall": 0.947,
+     "cases": 19,
+     "pass": true
+    },
+    {
+     "key": "role:land",
+     "bar": 0.8,
+     "precision": 0.889,
+     "recall": 1,
+     "cases": 16,
+     "pass": true
+    },
+    {
+     "key": "role:tutor",
+     "bar": 0.9,
+     "precision": 1,
+     "recall": 0.946,
+     "cases": 37,
+     "pass": true
+    },
+    {
+     "key": "role:counterspell",
+     "bar": 0.8,
+     "precision": 0.923,
+     "recall": 1,
+     "cases": 12,
+     "pass": true
+    },
+    {
+     "key": "theme:counters",
+     "bar": 0.8,
+     "precision": 0.902,
+     "recall": 0.949,
+     "cases": 39,
+     "pass": true
+    },
+    {
+     "key": "theme:pump",
+     "bar": 0.8,
+     "precision": 0.889,
+     "recall": 0.97,
+     "cases": 33,
+     "pass": true
+    },
+    {
+     "key": "theme:haste",
+     "bar": 0.8,
+     "precision": 0.909,
+     "recall": 0.952,
+     "cases": 21,
+     "pass": true
+    },
+    {
+     "key": "theme:evasion",
+     "bar": 0.8,
+     "precision": 0.921,
+     "recall": 0.967,
+     "cases": 60,
+     "pass": true
+    },
+    {
+     "key": "theme:etbDraw",
+     "bar": 0.8,
+     "precision": 0.889,
+     "recall": 0.889,
+     "cases": 9,
+     "pass": true
+    },
+    {
+     "key": "theme:draw",
+     "bar": 0.8,
+     "precision": 0.75,
+     "recall": 1,
+     "cases": 3,
+     "pass": false
+    },
+    {
+     "key": "theme:tokens",
+     "bar": 0.8,
+     "precision": 0.885,
+     "recall": 1,
+     "cases": 23,
+     "pass": true
+    },
+    {
+     "key": "theme:treasure",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 0.875,
+     "cases": 8,
+     "pass": true
+    },
+    {
+     "key": "theme:protection",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 0.971,
+     "cases": 34,
+     "pass": true
+    },
+    {
+     "key": "theme:recursion",
+     "bar": 0.8,
+     "precision": 0.967,
+     "recall": 0.935,
+     "cases": 31,
+     "pass": true
+    },
+    {
+     "key": "theme:blink",
+     "bar": 0.8,
+     "precision": 0.9,
+     "recall": 1,
+     "cases": 9,
+     "pass": true
+    },
+    {
+     "key": "theme:finisher",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 0.9,
+     "cases": 10,
+     "pass": true
+    },
+    {
+     "key": "theme:castFree",
+     "bar": 0.8,
+     "precision": 0.583,
+     "recall": 0.875,
+     "cases": 8,
+     "pass": false
+    },
+    {
+     "key": "theme:mill",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 1,
+     "cases": 14,
+     "pass": true
+    },
+    {
+     "key": "theme:sacOutlet",
+     "bar": 0.8,
+     "precision": 0.8,
+     "recall": 0.889,
+     "cases": 9,
+     "pass": true
+    },
+    {
+     "key": "theme:deathTrigger",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 0.929,
+     "cases": 14,
+     "pass": true
+    },
+    {
+     "key": "theme:lifegain",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 1,
+     "cases": 26,
+     "pass": true
+    },
+    {
+     "key": "theme:drain",
+     "bar": 0.8,
+     "precision": 0.72,
+     "recall": 1,
+     "cases": 18,
+     "pass": false
+    },
+    {
+     "key": "theme:spellslinger",
+     "bar": 0.8,
+     "precision": 0.5,
+     "recall": 0.8,
+     "cases": 5,
+     "pass": false
+    },
+    {
+     "key": "theme:landfall",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 1,
+     "cases": 6,
+     "pass": true
+    },
+    {
+     "key": "theme:tribal",
+     "bar": 0.8,
+     "precision": 0.787,
+     "recall": 1,
+     "cases": 37,
+     "pass": false
+    },
+    {
+     "key": "theme:graveyardHate",
+     "bar": 0.8,
+     "precision": 0.955,
+     "recall": 1,
+     "cases": 21,
+     "pass": true
+    },
+    {
+     "key": "theme:discard",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 0.852,
+     "cases": 27,
+     "pass": true
+    },
+    {
+     "key": "theme:stax",
+     "bar": 0.8,
+     "precision": 0.929,
+     "recall": 1,
+     "cases": 13,
+     "pass": true
+    },
+    {
+     "key": "theme:clones",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 1,
+     "cases": 13,
+     "pass": true
+    },
+    {
+     "key": "theme:theft",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 0.769,
+     "cases": 13,
+     "pass": false
+    },
+    {
+     "key": "theme:poison",
+     "bar": 0.8,
+     "precision": 0.769,
+     "recall": 1,
+     "cases": 10,
+     "pass": false
+    },
+    {
+     "key": "theme:goad",
+     "bar": 0.8,
+     "precision": 0.889,
+     "recall": 1,
+     "cases": 8,
+     "pass": true
+    },
+    {
+     "key": "theme:doublers",
+     "bar": 0.8,
+     "precision": 0.8,
+     "recall": 1,
+     "cases": 8,
+     "pass": true
+    },
+    {
+     "key": "theme:fog",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 1,
+     "cases": 10,
+     "pass": true
+    },
+    {
+     "key": "affects=self",
+     "bar": 0.9,
+     "precision": 0.975,
+     "recall": 0.986,
+     "cases": 564,
+     "pass": true
+    },
+    {
+     "key": "affects=opponents",
+     "bar": 0.9,
+     "precision": 0.936,
+     "recall": 0.97,
+     "cases": 166,
+     "pass": true
+    },
+    {
+     "key": "affects=each",
+     "bar": 0.9,
+     "precision": 0.971,
+     "recall": 0.829,
+     "cases": 82,
+     "pass": false
+    },
+    {
+     "key": "to=hand",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 1,
+     "cases": 24,
+     "pass": true
+    },
+    {
+     "key": "to=battlefield",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 1,
+     "cases": 19,
+     "pass": true
+    },
+    {
+     "key": "to=top",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 1,
+     "cases": 19,
+     "pass": true
+    },
+    {
+     "key": "to=none",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 1,
+     "cases": 2,
+     "pass": true
+    },
+    {
+     "key": "method=destroy",
+     "bar": 0.8,
+     "precision": 0.957,
+     "recall": 1,
+     "cases": 22,
+     "pass": true
+    },
+    {
+     "key": "method=exile",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 1,
+     "cases": 13,
+     "pass": true
+    },
+    {
+     "key": "method=bounce",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 1,
+     "cases": 12,
+     "pass": true
+    },
+    {
+     "key": "method=shrink",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 0.941,
+     "cases": 17,
+     "pass": true
+    },
+    {
+     "key": "method=sacrifice",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 1,
+     "cases": 12,
+     "pass": true
+    },
+    {
+     "key": "method=bottom",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 1,
+     "cases": 8,
+     "pass": true
+    },
+    {
+     "key": "method=none",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 1,
+     "cases": 2,
+     "pass": true
+    },
+    {
+     "key": "rampKind=tapsForMana",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 0.867,
+     "cases": 15,
+     "pass": true
+    },
+    {
+     "key": "rampKind=fetchesLand",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 1,
+     "cases": 4,
+     "pass": true
+    },
+    {
+     "key": "rampKind=makesTreasure",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 1,
+     "cases": 7,
+     "pass": true
+    },
+    {
+     "key": "rampKind=burstMana",
+     "bar": 0.8,
+     "precision": 0.778,
+     "recall": 1,
+     "cases": 14,
+     "pass": false
+    },
+    {
+     "key": "rampKind=costReduction",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 1,
+     "cases": 14,
+     "pass": true
+    },
+    {
+     "key": "rampKind=extraLandDrop",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 1,
+     "cases": 9,
+     "pass": true
+    },
+    {
+     "key": "rampKind=multiplies",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 0.818,
+     "cases": 11,
+     "pass": true
+    },
+    {
+     "key": "restrictedTo=restricted",
+     "bar": 0.8,
+     "precision": 0.848,
+     "recall": 0.909,
+     "cases": 405,
+     "pass": true
+    },
+    {
+     "key": "restrictedTo=none",
+     "bar": 0.8,
+     "precision": 0.924,
+     "recall": 0.838,
+     "cases": 407,
+     "pass": true
+    },
+    {
+     "key": "trigger=none",
+     "bar": 0.8,
+     "precision": 0.965,
+     "recall": 0.956,
+     "cases": 428,
+     "pass": true
+    },
+    {
+     "key": "trigger=etb",
+     "bar": 0.8,
+     "precision": 0.958,
+     "recall": 0.926,
+     "cases": 122,
+     "pass": true
+    },
+    {
+     "key": "trigger=combatDamage",
+     "bar": 0.8,
+     "precision": 0.882,
+     "recall": 1,
+     "cases": 15,
+     "pass": true
+    },
+    {
+     "key": "trigger=attacks",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 0.944,
+     "cases": 18,
+     "pass": true
+    },
+    {
+     "key": "trigger=cast",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 1,
+     "cases": 24,
+     "pass": true
+    },
+    {
+     "key": "trigger=dies",
+     "bar": 0.8,
+     "precision": 0.974,
+     "recall": 0.927,
+     "cases": 41,
+     "pass": true
+    },
+    {
+     "key": "trigger=activated",
+     "bar": 0.8,
+     "precision": 0.977,
+     "recall": 0.925,
+     "cases": 93,
+     "pass": true
+    },
+    {
+     "key": "trigger=upkeep",
+     "bar": 0.8,
+     "precision": 0.75,
+     "recall": 0.857,
+     "cases": 7,
+     "pass": false
+    },
+    {
+     "key": "trigger=landfall",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 1,
+     "cases": 16,
+     "pass": true
+    },
+    {
+     "key": "trigger=other",
+     "bar": 0.8,
+     "precision": 0.754,
+     "recall": 0.958,
+     "cases": 48,
+     "pass": false
+    },
+    {
+     "key": "recurrence=oneShot",
+     "bar": 0.8,
+     "precision": 0.972,
+     "recall": 0.945,
+     "cases": 364,
+     "pass": true
+    },
+    {
+     "key": "recurrence=repeatable",
+     "bar": 0.8,
+     "precision": 0.956,
+     "recall": 0.978,
+     "cases": 448,
+     "pass": true
+    },
+    {
+     "key": "modal=true",
+     "bar": 0.8,
+     "precision": 0.878,
+     "recall": 0.973,
+     "cases": 37,
+     "pass": true
+    },
+    {
+     "key": "modal=false",
+     "bar": 0.8,
+     "precision": 0.999,
+     "recall": 0.994,
+     "cases": 775,
+     "pass": true
+    }
+   ],
+   "stops": [
+    "theme:draw: precision 0.75 recall 1 under 0.8 (3 cases)",
+    "theme:castFree: precision 0.583 recall 0.875 under 0.8 (8 cases)",
+    "theme:drain: precision 0.72 recall 1 under 0.8 (18 cases)",
+    "theme:spellslinger: precision 0.5 recall 0.8 under 0.8 (5 cases)",
+    "theme:tribal: precision 0.787 recall 1 under 0.8 (37 cases)",
+    "theme:theft: precision 1 recall 0.769 under 0.8 (13 cases)",
+    "theme:poison: precision 0.769 recall 1 under 0.8 (10 cases)",
+    "affects=each: precision 0.971 recall 0.829 under 0.9 (82 cases)",
+    "rampKind=burstMana: precision 0.778 recall 1 under 0.8 (14 cases)",
+    "trigger=upkeep: precision 0.75 recall 0.857 under 0.8 (7 cases)",
+    "trigger=other: precision 0.754 recall 0.958 under 0.8 (48 cases)"
+   ],
+   "notReturned": 0,
+   "spuriousRestrictions": 16,
+   "jobs": {
+    "precision": 0.924,
+    "recall": 0.942,
+    "tp": 812,
+    "fp": 67,
+    "fn": 50
+   },
+   "limits": {
+    "rampKind": {
+     "accuracy": 0.946,
+     "informativeAccuracy": 0.946,
+     "right": 70,
+     "wrong": 4,
+     "infRight": 70,
+     "infWrong": 4
+    },
+    "restrictedTo": {
+     "accuracy": 0.873,
+     "informativeAccuracy": 0.909,
+     "right": 709,
+     "wrong": 103,
+     "infRight": 368,
+     "infWrong": 37
+    },
+    "affects": {
+     "accuracy": 0.967,
+     "informativeAccuracy": 0.967,
+     "right": 785,
+     "wrong": 27,
+     "infRight": 785,
+     "infWrong": 27
+    },
+    "to": {
+     "accuracy": 1,
+     "informativeAccuracy": 1,
+     "right": 64,
+     "wrong": 0,
+     "infRight": 62,
+     "infWrong": 0
+    },
+    "method": {
+     "accuracy": 0.988,
+     "informativeAccuracy": 0.988,
+     "right": 85,
+     "wrong": 1,
+     "infRight": 83,
+     "infWrong": 1
+    },
+    "trigger": {
+     "accuracy": 0.948,
+     "informativeAccuracy": 0.94,
+     "right": 770,
+     "wrong": 42,
+     "infRight": 361,
+     "infWrong": 23
+    },
+    "recurrence": {
+     "accuracy": 0.963,
+     "informativeAccuracy": 0.945,
+     "right": 782,
+     "wrong": 30,
+     "infRight": 344,
+     "infWrong": 20
+    },
+    "threshold": {
+     "accuracy": 0.99,
+     "informativeAccuracy": 0.886,
+     "right": 804,
+     "wrong": 8,
+     "infRight": 31,
+     "infWrong": 4
+    },
+    "modal": {
+     "accuracy": 0.993,
+     "informativeAccuracy": 0.973,
+     "right": 806,
+     "wrong": 6,
+     "infRight": 36,
+     "infWrong": 1
+    },
+    "restrictedTo(gating)": {
+     "accuracy": 0.826,
+     "informativeAccuracy": 0.826,
+     "right": 114,
+     "wrong": 24,
+     "infRight": 114,
+     "infWrong": 24
+    },
+    "restrictedTo(tribal)": {
+     "accuracy": 0.96,
+     "informativeAccuracy": 0.96,
+     "right": 72,
+     "wrong": 3,
+     "infRight": 72,
+     "infWrong": 3
+    }
+   },
+   "worstKinds": [
+    {
+     "kind": "role:ramp",
+     "precision": 0.974,
+     "recall": 0.86,
+     "tp": 74,
+     "fp": 2,
+     "fn": 12
+    },
+    {
+     "kind": "role:removal",
+     "precision": 0.971,
+     "recall": 0.85,
+     "tp": 68,
+     "fp": 2,
+     "fn": 12
+    },
+    {
+     "kind": "theme:tribal",
+     "precision": 0.787,
+     "recall": 1,
+     "tp": 37,
+     "fp": 10,
+     "fn": 0
+    },
+    {
+     "kind": "theme:evasion",
+     "precision": 0.921,
+     "recall": 0.967,
+     "tp": 58,
+     "fp": 5,
+     "fn": 2
+    },
+    {
+     "kind": "theme:drain",
+     "precision": 0.72,
+     "recall": 1,
+     "tp": 18,
+     "fp": 7,
+     "fn": 0
+    },
+    {
+     "kind": "theme:counters",
+     "precision": 0.902,
+     "recall": 0.949,
+     "tp": 37,
+     "fp": 4,
+     "fn": 2
+    },
+    {
+     "kind": "theme:castFree",
+     "precision": 0.583,
+     "recall": 0.875,
+     "tp": 7,
+     "fp": 5,
+     "fn": 1
+    },
+    {
+     "kind": "theme:pump",
+     "precision": 0.889,
+     "recall": 0.97,
+     "tp": 32,
+     "fp": 4,
+     "fn": 1
+    }
+   ]
+  },
+  "textRules": {
+   "bars": [
+    {
+     "key": "role:ramp",
+     "bar": 0.8,
+     "precision": 0.979,
+     "recall": 0.547,
+     "cases": 86,
+     "pass": false
+    },
+    {
+     "key": "role:draw",
+     "bar": 0.8,
+     "precision": 0.934,
+     "recall": 0.792,
+     "cases": 72,
+     "pass": false
+    },
+    {
+     "key": "role:removal",
+     "bar": 0.8,
+     "precision": 0.673,
+     "recall": 0.463,
+     "cases": 80,
+     "pass": false
+    },
+    {
+     "key": "role:wipes",
+     "bar": 0.8,
+     "precision": 0.5,
+     "recall": 0.211,
+     "cases": 19,
+     "pass": false
+    },
+    {
+     "key": "role:land",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 1,
+     "cases": 16,
+     "pass": true
+    },
+    {
+     "key": "role:tutor",
+     "bar": 0.9,
+     "precision": null,
+     "recall": 0,
+     "cases": 37,
+     "pass": false
+    },
+    {
+     "key": "role:counterspell",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 12,
+     "pass": false
+    },
+    {
+     "key": "theme:counters",
+     "bar": 0.8,
+     "precision": 0.95,
+     "recall": 0.974,
+     "cases": 39,
+     "pass": true
+    },
+    {
+     "key": "theme:pump",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 0.576,
+     "cases": 33,
+     "pass": false
+    },
+    {
+     "key": "theme:haste",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 0.714,
+     "cases": 21,
+     "pass": false
+    },
+    {
+     "key": "theme:evasion",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 0.233,
+     "cases": 60,
+     "pass": false
+    },
+    {
+     "key": "theme:etbDraw",
+     "bar": 0.8,
+     "precision": 0.5,
+     "recall": 0.222,
+     "cases": 9,
+     "pass": false
+    },
+    {
+     "key": "theme:draw",
+     "bar": 0.8,
+     "precision": 0.015,
+     "recall": 0.333,
+     "cases": 3,
+     "pass": false
+    },
+    {
+     "key": "theme:tokens",
+     "bar": 0.8,
+     "precision": 0.611,
+     "recall": 0.957,
+     "cases": 23,
+     "pass": false
+    },
+    {
+     "key": "theme:treasure",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 1,
+     "cases": 8,
+     "pass": true
+    },
+    {
+     "key": "theme:protection",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 0.676,
+     "cases": 34,
+     "pass": false
+    },
+    {
+     "key": "theme:recursion",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 0.419,
+     "cases": 31,
+     "pass": false
+    },
+    {
+     "key": "theme:blink",
+     "bar": 0.8,
+     "precision": 0.818,
+     "recall": 1,
+     "cases": 9,
+     "pass": true
+    },
+    {
+     "key": "theme:finisher",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 0.3,
+     "cases": 10,
+     "pass": false
+    },
+    {
+     "key": "theme:castFree",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 0.625,
+     "cases": 8,
+     "pass": false
+    },
+    {
+     "key": "theme:mill",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 0.857,
+     "cases": 14,
+     "pass": true
+    },
+    {
+     "key": "theme:sacOutlet",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 1,
+     "cases": 9,
+     "pass": true
+    },
+    {
+     "key": "theme:deathTrigger",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 0.714,
+     "cases": 14,
+     "pass": false
+    },
+    {
+     "key": "theme:lifegain",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 0.731,
+     "cases": 26,
+     "pass": false
+    },
+    {
+     "key": "theme:drain",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 0.444,
+     "cases": 18,
+     "pass": false
+    },
+    {
+     "key": "theme:spellslinger",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 0.6,
+     "cases": 5,
+     "pass": false
+    },
+    {
+     "key": "theme:landfall",
+     "bar": 0.8,
+     "precision": 1,
+     "recall": 1,
+     "cases": 6,
+     "pass": true
+    },
+    {
+     "key": "theme:tribal",
+     "bar": 0.8,
+     "precision": 0.972,
+     "recall": 0.946,
+     "cases": 37,
+     "pass": true
+    },
+    {
+     "key": "theme:graveyardHate",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 21,
+     "pass": false
+    },
+    {
+     "key": "theme:discard",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 27,
+     "pass": false
+    },
+    {
+     "key": "theme:stax",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 13,
+     "pass": false
+    },
+    {
+     "key": "theme:clones",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 13,
+     "pass": false
+    },
+    {
+     "key": "theme:theft",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 13,
+     "pass": false
+    },
+    {
+     "key": "theme:poison",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 10,
+     "pass": false
+    },
+    {
+     "key": "theme:goad",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 8,
+     "pass": false
+    },
+    {
+     "key": "theme:doublers",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 8,
+     "pass": false
+    },
+    {
+     "key": "theme:fog",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 10,
+     "pass": false
+    },
+    {
+     "key": "affects=self",
+     "bar": 0.9,
+     "precision": null,
+     "recall": 0,
+     "cases": 367,
+     "pass": false
+    },
+    {
+     "key": "affects=opponents",
+     "bar": 0.9,
+     "precision": null,
+     "recall": 0,
+     "cases": 51,
+     "pass": false
+    },
+    {
+     "key": "affects=each",
+     "bar": 0.9,
+     "precision": null,
+     "recall": 0,
+     "cases": 17,
+     "pass": false
+    },
+    {
+     "key": "to=hand",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 7,
+     "pass": false
+    },
+    {
+     "key": "to=battlefield",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 6,
+     "pass": false
+    },
+    {
+     "key": "to=top",
+     "bar": 0.8,
+     "precision": null,
+     "recall": null,
+     "cases": 0,
+     "pass": false
+    },
+    {
+     "key": "to=none",
+     "bar": 0.8,
+     "precision": 0,
+     "recall": null,
+     "cases": 0,
+     "pass": false
+    },
+    {
+     "key": "method=destroy",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 18,
+     "pass": false
+    },
+    {
+     "key": "method=exile",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 11,
+     "pass": false
+    },
+    {
+     "key": "method=bounce",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 1,
+     "pass": false
+    },
+    {
+     "key": "method=shrink",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 11,
+     "pass": false
+    },
+    {
+     "key": "method=sacrifice",
+     "bar": 0.8,
+     "precision": null,
+     "recall": null,
+     "cases": 0,
+     "pass": false
+    },
+    {
+     "key": "method=bottom",
+     "bar": 0.8,
+     "precision": null,
+     "recall": null,
+     "cases": 0,
+     "pass": false
+    },
+    {
+     "key": "method=none",
+     "bar": 0.8,
+     "precision": 0,
+     "recall": null,
+     "cases": 0,
+     "pass": false
+    },
+    {
+     "key": "rampKind=tapsForMana",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 17,
+     "pass": false
+    },
+    {
+     "key": "rampKind=fetchesLand",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 8,
+     "pass": false
+    },
+    {
+     "key": "rampKind=makesTreasure",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 4,
+     "pass": false
+    },
+    {
+     "key": "rampKind=burstMana",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 12,
+     "pass": false
+    },
+    {
+     "key": "rampKind=costReduction",
+     "bar": 0.8,
+     "precision": null,
+     "recall": null,
+     "cases": 0,
+     "pass": false
+    },
+    {
+     "key": "rampKind=extraLandDrop",
+     "bar": 0.8,
+     "precision": null,
+     "recall": null,
+     "cases": 0,
+     "pass": false
+    },
+    {
+     "key": "rampKind=multiplies",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 6,
+     "pass": false
+    },
+    {
+     "key": "restrictedTo=restricted",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 202,
+     "pass": false
+    },
+    {
+     "key": "restrictedTo=none",
+     "bar": 0.8,
+     "precision": 0.536,
+     "recall": 1,
+     "cases": 233,
+     "pass": false
+    },
+    {
+     "key": "trigger=none",
+     "bar": 0.8,
+     "precision": 0.432,
+     "recall": 1,
+     "cases": 188,
+     "pass": false
+    },
+    {
+     "key": "trigger=etb",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 66,
+     "pass": false
+    },
+    {
+     "key": "trigger=combatDamage",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 10,
+     "pass": false
+    },
+    {
+     "key": "trigger=attacks",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 13,
+     "pass": false
+    },
+    {
+     "key": "trigger=cast",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 15,
+     "pass": false
+    },
+    {
+     "key": "trigger=dies",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 26,
+     "pass": false
+    },
+    {
+     "key": "trigger=activated",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 65,
+     "pass": false
+    },
+    {
+     "key": "trigger=upkeep",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 3,
+     "pass": false
+    },
+    {
+     "key": "trigger=landfall",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 17,
+     "pass": false
+    },
+    {
+     "key": "trigger=other",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 32,
+     "pass": false
+    },
+    {
+     "key": "recurrence=oneShot",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 182,
+     "pass": false
+    },
+    {
+     "key": "recurrence=repeatable",
+     "bar": 0.8,
+     "precision": 0.582,
+     "recall": 1,
+     "cases": 253,
+     "pass": false
+    },
+    {
+     "key": "modal=true",
+     "bar": 0.8,
+     "precision": null,
+     "recall": 0,
+     "cases": 24,
+     "pass": false
+    },
+    {
+     "key": "modal=false",
+     "bar": 0.8,
+     "precision": 0.945,
+     "recall": 1,
+     "cases": 411,
+     "pass": true
+    }
+   ],
+   "stops": [],
+   "notReturned": 0,
+   "spuriousRestrictions": 0,
+   "jobs": {
+    "precision": 0.795,
+    "recall": 0.505,
+    "tp": 435,
+    "fp": 112,
+    "fn": 427
+   },
+   "limits": {
+    "rampKind": {
+     "accuracy": 0,
+     "informativeAccuracy": 0,
+     "right": 0,
+     "wrong": 47,
+     "infRight": 0,
+     "infWrong": 47
+    },
+    "restrictedTo": {
+     "accuracy": 0.536,
+     "informativeAccuracy": 0,
+     "right": 233,
+     "wrong": 202,
+     "infRight": 0,
+     "infWrong": 202
+    },
+    "affects": {
+     "accuracy": 0,
+     "informativeAccuracy": 0,
+     "right": 0,
+     "wrong": 435,
+     "infRight": 0,
+     "infWrong": 435
+    },
+    "to": {
+     "accuracy": 0,
+     "informativeAccuracy": 0,
+     "right": 0,
+     "wrong": 13,
+     "infRight": 0,
+     "infWrong": 13
+    },
+    "method": {
+     "accuracy": 0,
+     "informativeAccuracy": 0,
+     "right": 0,
+     "wrong": 41,
+     "infRight": 0,
+     "infWrong": 41
+    },
+    "trigger": {
+     "accuracy": 0.432,
+     "informativeAccuracy": 0,
+     "right": 188,
+     "wrong": 247,
+     "infRight": 0,
+     "infWrong": 247
+    },
+    "recurrence": {
+     "accuracy": 0.582,
+     "informativeAccuracy": 0,
+     "right": 253,
+     "wrong": 182,
+     "infRight": 0,
+     "infWrong": 182
+    },
+    "threshold": {
+     "accuracy": 0.966,
+     "informativeAccuracy": 0,
+     "right": 420,
+     "wrong": 15,
+     "infRight": 0,
+     "infWrong": 15
+    },
+    "modal": {
+     "accuracy": 0.945,
+     "informativeAccuracy": 0,
+     "right": 411,
+     "wrong": 24,
+     "infRight": 0,
+     "infWrong": 24
+    },
+    "restrictedTo(gating)": {
+     "accuracy": 0,
+     "informativeAccuracy": 0,
+     "right": 0,
+     "wrong": 84,
+     "infRight": 0,
+     "infWrong": 84
+    },
+    "restrictedTo(tribal)": {
+     "accuracy": 0,
+     "informativeAccuracy": 0,
+     "right": 0,
+     "wrong": 60,
+     "infRight": 0,
+     "infWrong": 60
+    }
+   },
+   "worstKinds": [
+    {
+     "kind": "theme:draw",
+     "precision": 0.015,
+     "recall": 0.333,
+     "tp": 1,
+     "fp": 64,
+     "fn": 2
+    },
+    {
+     "kind": "role:removal",
+     "precision": 0.673,
+     "recall": 0.463,
+     "tp": 37,
+     "fp": 18,
+     "fn": 43
+    },
+    {
+     "kind": "theme:evasion",
+     "precision": 1,
+     "recall": 0.233,
+     "tp": 14,
+     "fp": 0,
+     "fn": 46
+    },
+    {
+     "kind": "role:ramp",
+     "precision": 0.979,
+     "recall": 0.547,
+     "tp": 47,
+     "fp": 1,
+     "fn": 39
+    },
+    {
+     "kind": "role:tutor",
+     "precision": null,
+     "recall": 0,
+     "tp": 0,
+     "fp": 0,
+     "fn": 37
+    },
+    {
+     "kind": "theme:discard",
+     "precision": null,
+     "recall": 0,
+     "tp": 0,
+     "fp": 0,
+     "fn": 27
+    },
+    {
+     "kind": "theme:graveyardHate",
+     "precision": null,
+     "recall": 0,
+     "tp": 0,
+     "fp": 0,
+     "fn": 21
+    },
+    {
+     "kind": "role:draw",
+     "precision": 0.934,
+     "recall": 0.792,
+     "tp": 57,
+     "fp": 4,
+     "fn": 15
+    }
+   ]
+  }
+ }
+}
