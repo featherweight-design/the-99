@@ -203,7 +203,7 @@
     "@clerk/nextjs": "^7.5.20",
     "@neondatabase/serverless": "^1.1.0",
     "drizzle-orm": "^0.45.2",
-    "next": "16.3.4",
+    "next": "16.3.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-window": "^1.8.11",
