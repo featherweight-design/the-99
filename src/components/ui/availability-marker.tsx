@@ -160,6 +160,11 @@ const DIAMOND = "block w-[6px] h-[6px] rotate-45";
  * 16x16 glyphs with no rotation to grow past their own box. The diamond's CSS side is
  * therefore `AVAILABILITY_CHIP_GLYPH_PX / √2`, so ITS bounding box — what the caption's row
  * actually has to hold — is 16.
+ *
+ * This constant still sizes that OUTER box on every glyph-only chip, and the key's own
+ * `AvailabilityGlyphBox` samples, which draw `big`, still paint their diamond at it. The
+ * glyph-only chip's own diamond does not (Hugh, 2026-10-03) — see `AvailabilityGlyph`'s
+ * `big` comment below.
  */
 export const AVAILABILITY_CHIP_GLYPH_PX = 16;
 const BIG_DIAMOND_SIDE_PX = AVAILABILITY_CHIP_GLYPH_PX / Math.SQRT2;
@@ -391,10 +396,16 @@ export function AvailabilityMarker({
   linkDeck?: boolean;
   className?: string;
   /**
-   * Chip density, `plate={false}` only: the word is dropped and the glyph grows to
-   * `AVAILABILITY_CHIP_GLYPH_PX` (collection surfaces, Call 3 — the 3-up tile has no room for
-   * "1 in a draft"). `spoken`'s sr-only sentence still renders, so the word survives for
-   * assistive tech; it is the key, not this component, that prints it for sighted readers.
+   * Chip density, `plate={false}` only: the word is dropped (collection surfaces, Call 3 —
+   * the 3-up tile has no room for "1 in a draft"). `spoken`'s sr-only sentence still renders,
+   * so the word survives for assistive tech; it is the key, not this component, that prints
+   * it for sighted readers.
+   *
+   * The GLYPH stays at its plain row/chip size, 6px (Hugh, 2026-10-03) — only the outer box
+   * keeps `AVAILABILITY_CHIP_GLYPH_PX` (16/21px), for the caption row's shared height. An
+   * earlier build drew the diamond itself at that bounding-box size, about twice the size of
+   * the desktop chip's diamond beside its word. `AvailabilityGlyphBox`, the key's own
+   * samples, still draws `big` — unaffected, since a key entry has no caption row to share.
    */
   glyphOnly?: boolean;
 } & MarkerOpts) {

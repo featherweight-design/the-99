@@ -50,4 +50,15 @@ describe("the collection mark key", () => {
       screen.getByText(availabilityCopy.collection.filterHard).closest('[role="group"]'),
     );
   });
+
+  // Found by Copilot's round-1 review of #1225: nothing here pinned the phone column count,
+  // so reverting `phoneColumns={3}` back to `2` (the value this surface shipped with for one
+  // round) would leave the suite green. 3, matching the phone grid's own 3 columns — 2 left
+  // every entry sitting in the grid's left two-thirds, reading as the whole key shifted left
+  // of the card grid above and below it.
+  it("lays the key out in the phone grid's own 3 columns", () => {
+    render(<CollectionMarkKey />);
+    const group = screen.getByRole("group");
+    expect(group.className).toMatch(/(^|\s)grid grid-cols-3/);
+  });
 });
