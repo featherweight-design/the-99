@@ -118,6 +118,38 @@ const fixtureCollectionRows = [];
 let fixtureDeckCard = null;
 let cleaned = false;
 
+/**
+ * A dedicated connection holding the walked user's collection lock for this run's whole
+ * fixture lifetime — the SAME lock key `replaceCollection` takes
+ * (`src/lib/collection/import.ts:159`, `pg_advisory_xact_lock(hashtextextended(userId, 0))`).
+ * Session- and transaction-level advisory locks on the same key block each other, so a CSV
+ * import started on this account while the probe is running waits for this run to finish
+ * rather than racing it. Without this, the printing-exact cleanup above still has a gap: a
+ * `replaceCollection` that deletes and reinserts the IDENTICAL printing key (same user, oracle,
+ * set, collector number, finish — `collection_items`' whole primary key, with no surrogate id
+ * to tell the two rows apart) would be deleted by this run's cleanup even though it is now a
+ * real holding (Copilot round 5, high).
+ */
+let collectionLockClient = null;
+let collectionLockUserId = null;
+
+async function lockCollectionFor(userId) {
+  collectionLockClient = await pool.connect();
+  await collectionLockClient.query("select pg_advisory_lock(hashtextextended($1, 0))", [userId]);
+  collectionLockUserId = userId;
+}
+
+async function unlockCollection() {
+  if (!collectionLockClient) return;
+  try {
+    await collectionLockClient.query("select pg_advisory_unlock(hashtextextended($1, 0))", [collectionLockUserId]);
+  } finally {
+    collectionLockClient.release();
+    collectionLockClient = null;
+    collectionLockUserId = null;
+  }
+}
+
 async function cleanupFixtures() {
   if (cleaned) return;
   cleaned = true;
@@ -155,6 +187,9 @@ async function cleanupFixtures() {
     fixtureDeckCard = null;
   }
   console.log(`\n  cleaned up ${fixtureDeckIds.size} fixture deck(s), ${fixtureCollectionRows.length} collection row(s) and the combo deck_cards row`);
+  // LAST, after every delete above has run: releasing earlier would reopen the window those
+  // deletes exist to close.
+  await unlockCollection();
 }
 
 /**
@@ -533,6 +568,8 @@ async function run() {
       const c = await browser.newContext({ viewport: WIDTHS[0].viewport });
       const p = await c.newPage();
       const userId = await signIn(p);
+      // Before any fixture write — see `lockCollectionFor`'s header for what this closes.
+      await lockCollectionFor(userId);
       const href = process.env.PROBE_DECK ? `/decks/${process.env.PROBE_DECK}` : await findDeck(p);
       if (!href) throw new Error("No deck with open slots on this account — pass PROBE_DECK.");
       const deckId = href.split("/decks/")[1];

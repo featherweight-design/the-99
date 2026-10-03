@@ -163,11 +163,13 @@ export function BuyTag({
    */
   reserveSlot?: boolean | "lg";
   /**
-   * `collapsed` draws a bare `$` in the same box, ink, radius and position —
-   * the All tab is a list being scanned, not a bill being read. Nothing is
-   * dropped from the reading order: the drawn content becomes the tag's
-   * accessible name unchanged, so the word and the figure are still spoken in
-   * full, formatted by the one Tail that formats them everywhere.
+   * `collapsed` draws a LIVE price's figure (with its foil/etched qualifier, where the fact
+   * carries one) in the same box, ink, radius and position — the All tab is a list being
+   * scanned, not a bill being read, so the word drops but the figure that distinguishes a
+   * card from its neighbours does not. Only a card with no live price (sold out, or no price
+   * at all) draws the bare `$` glyph. Nothing is dropped from the reading order either way:
+   * the drawn content becomes the tag's accessible name unchanged, so the word and the figure
+   * are still spoken in full, formatted by the one Tail that formats them everywhere.
    */
   density?: "full" | "collapsed";
   /**
