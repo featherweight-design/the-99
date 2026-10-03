@@ -22,13 +22,14 @@ import type { Bracket } from "../../lib/bracket/types";
 import type { NoteCounts } from "../../lib/bracket/card-note";
 import { ConsiderToolbar, type SortKey } from "./consider-toolbar";
 import { SHELF_CAP } from "../../lib/decks/shelf-cap";
+import { useFoldedShelves } from "./use-folded-shelves";
 
 // Named once, in its own module, so the cap, the `Show all N` count, the server's
 // unowned append and the tests cannot drift apart (#391).
 export { SHELF_CAP } from "../../lib/decks/shelf-cap";
 
 // The shelf heading's meta text, which the unowned shelf prints in two colours.
-const META = "font-mono text-[10px] md:text-[11px]";
+const META = "font-mono text-[10.5px] md:text-[11px]";
 
 type ShelfRole = MixRole | "other";
 const SHELF_ROLES: ShelfRole[] = ["ramp", "draw", "removal", "wipes", "land", "other"];
@@ -199,7 +200,7 @@ function CardFan() {
 
 function ShelfSection({
   shelf, deckId, declaredBracket, noteCounts, inDeckIds, selfClaimedIds, commanderShortName,
-  first, newestAsOf, provenance,
+  first, newestAsOf, provenance, folded, onToggleFold,
 }: {
   shelf: Shelf;
   deckId: string;
@@ -215,9 +216,39 @@ function ShelfSection({
   first: boolean;
   newestAsOf: Date | null;
   provenance: ProvenanceForm | null;
+  /** Whether this shelf is folded shut — owned by `ConsiderPanel`, since the one
+   *  localStorage key holds every shelf's state for this deck. */
+  folded: boolean;
+  onToggleFold: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  // Folding CLEARS the expansion (handoff s4) — adjusted DURING RENDER, the
+  // pattern React's own docs give for "reset state when a prop changes",
+  // rather than a `useEffect` whose synchronous `setState` this codebase's
+  // lint rule rejects as a cascading-render risk. `prevFolded` is the only
+  // state this needs: when it disagrees with the live `folded` prop, this is
+  // the first render to see that transition, so clearing `expanded` now lands
+  // in the SAME commit rather than one render late.
+  //
+  // On EVERY transition into folded, not only one this tab's own click
+  // initiated — `useFoldedShelves` also subscribes to another tab's write
+  // (`subscribeToKey`'s `storage` listener), so a shelf expanded here and
+  // folded from a second tab must still reopen capped, not resuming an
+  // expansion that external write knows nothing about (Copilot round 1,
+  // medium).
+  const [prevFolded, setPrevFolded] = useState(folded);
+  if (folded !== prevFolded) {
+    setPrevFolded(folded);
+    if (folded && expanded) setExpanded(false);
+  }
   const headingId = `shelf-${shelf.key}`;
+  const bodyId = `${headingId}-body`;
+  // The SECTION's accessible name stays the bare label (`aria-labelledby`
+  // targets this id, not the h3's own) — the disclosure button's name is
+  // richer, carrying the count clause too, but "Ramp, 2 of 5, 3 to
+  // consider" is not a useful region name and every coverage-cell focus
+  // target and test keys off the plain label.
+  const labelId = `${headingId}-label`;
   const isSynergyShelf = shelf.key === "synergy";
   const label = shelf.key === "unowned"
     ? addPanelCopy.shelf.labels.edhrec(commanderShortName)
@@ -233,48 +264,80 @@ function ShelfSection({
     [shelf.suggestions],
   );
 
+  const clause = shelf.key === "unowned" ? (
+    // Two colours, so two spans — but one run, like every other shelf's. As
+    // two separate paragraphs the separator led a block of its own and a
+    // screen reader read "dot, 1 to consider" as its own sentence; inline
+    // it is punctuation between two clauses.
+    <span className={META}>
+      <span style={{ color: "var(--warning)" }}>{addPanelCopy.unowned.shelfCoverage}</span>{" "}
+      <span style={{ color: "var(--fg-muted)" }}>
+        {`· ${addPanelCopy.shelf.count(shelf.suggestions.length)}`}
+      </span>
+    </span>
+  ) : isSynergyShelf ? (
+    <span className={META} style={{ color: "var(--fg-muted)" }}>
+      {synergyCopy.shelf.meta(String(shelf.suggestions.length))}
+    </span>
+  ) : (
+    <span className={META} style={{ color: "var(--fg-muted)" }}>
+      {shelf.coverage
+        ? `${addPanelCopy.shelf.coverage(shelf.coverage.have, shelf.coverage.target)} · ${addPanelCopy.shelf.count(shelf.suggestions.length)}`
+        : `${addPanelCopy.shelf.noTarget} · ${addPanelCopy.shelf.count(shelf.suggestions.length)}`}
+    </span>
+  );
+
   return (
     <section
       data-testid="consider-shelf"
       data-shelf-key={shelf.key}
-      aria-labelledby={headingId}
-      className={`md:mt-0 md:mb-[20px] ${first ? "" : "mt-[16px]"}`}
+      aria-labelledby={labelId}
+      className={`md:mt-0 md:mb-[20px] border-t border-border-strong ${first ? "" : "mt-[16px]"}`}
     >
-      <div className="flex items-baseline gap-[8px] md:gap-[10px] mb-[9px] md:mb-[11px]">
+      <div className="flex items-baseline gap-[8px] md:gap-[10px] mb-[9px] md:mb-[11px] md:min-h-[44px]">
         {/* tabIndex -1: the coverage cell that sends the user here moves focus
             onto this heading, not just the scroll position. Never in the tab
-            order — a programmatic focus target only. */}
-        <h3
-          id={headingId}
-          tabIndex={-1}
-          className="font-mono uppercase text-[10.5px] md:text-[11px] tracking-[0.14em]"
-          style={{ color: "var(--accent)" }}
-        >
-          {label}
-        </h3>
-        {shelf.key === "unowned" ? (
-          // Two colours, so two spans — but one paragraph, like every other
-          // shelf. As two paragraphs the separator led a block of its own and a
-          // screen reader read "dot, 1 to consider" as its own sentence; inside
-          // the line it is punctuation between two clauses.
-          <p className={META}>
-            <span style={{ color: "var(--warning)" }}>{addPanelCopy.unowned.shelfCoverage}</span>{" "}
-            <span style={{ color: "var(--fg-faint)" }}>
-              {`· ${addPanelCopy.shelf.count(shelf.suggestions.length)}`}
+            order — a programmatic focus target only. The disclosure button
+            lives INSIDE it and carries the normal tab stop. */}
+        <h3 id={headingId} tabIndex={-1} className="m-0 flex-1">
+          <button
+            type="button"
+            aria-expanded={!folded}
+            // `undefined` when folded: the `<ul id={bodyId}>` below is UNMOUNTED, not
+            // hidden, so a bare `aria-controls={bodyId}` would name an id no element in
+            // the document carries — the same dangling-reference guard `builder-tabs.tsx`,
+            // `unresolved-row.tsx`, `combo-partners-detail.tsx` and `issue-inspector.tsx`
+            // already apply to their own disclosures (pre-open review).
+            aria-controls={folded ? undefined : bodyId}
+            onClick={onToggleFold}
+            className="flex items-baseline gap-x-[8px] md:gap-x-[10px] min-h-[52px] md:min-h-[44px] p-0 border-none bg-transparent cursor-pointer text-left"
+          >
+            <span
+              aria-hidden
+              className={`inline-block transition-transform duration-150 ${folded ? "" : "rotate-90"}`}
+              style={{ color: "var(--fg-muted)" }}
+            >
+              ▸
             </span>
-          </p>
-        ) : isSynergyShelf ? (
-          <p className={META} style={{ color: "var(--fg-faint)" }}>
-            {synergyCopy.shelf.meta(String(shelf.suggestions.length))}
-          </p>
-        ) : (
-          <p className={META} style={{ color: "var(--fg-faint)" }}>
-            {shelf.coverage
-              ? `${addPanelCopy.shelf.coverage(shelf.coverage.have, shelf.coverage.target)} · ${addPanelCopy.shelf.count(shelf.suggestions.length)}`
-              : `${addPanelCopy.shelf.noTarget} · ${addPanelCopy.shelf.count(shelf.suggestions.length)}`}
-          </p>
-        )}
-        {overflowing && (
+            {/* Label and clause share ONE group, not two flex-wrap siblings of the
+                button: a flex-wrap item that wraps starts at the CONTAINER's edge,
+                under the chevron, not under the preceding sibling — which is not
+                what "the clause wraps under the label" means (Copilot round 2,
+                medium "previously missed"). Column on phone, row from `md`. */}
+            <span className="flex flex-col md:flex-row md:items-baseline gap-x-[10px] gap-y-[2px]">
+              <span
+                id={labelId}
+                data-testid="shelf-label"
+                className="font-sans font-semibold text-[16px] md:text-[17px] leading-[1.2]"
+                style={{ color: "var(--fg)" }}
+              >
+                {label}
+              </span>
+              {clause}
+            </span>
+          </button>
+        </h3>
+        {!folded && overflowing && (
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
@@ -283,7 +346,7 @@ function ShelfSection({
                 ? addPanelCopy.consider.collapse
                 : addPanelCopy.consider.showAllAria(label.toLowerCase(), shelf.suggestions.length)
             }
-            className="ml-auto p-0 font-mono text-[11px] cursor-pointer border-none bg-transparent text-accent hover:text-accent-hover"
+            className="ml-auto p-0 font-mono text-[11.5px] text-fg-body cursor-pointer border-none bg-transparent min-h-[44px] inline-flex items-center"
           >
             {expanded
               ? addPanelCopy.consider.collapse
@@ -291,7 +354,8 @@ function ShelfSection({
           </button>
         )}
       </div>
-      <ul className="grid grid-cols-2 gap-[12px] md:grid-cols-6 md:gap-[14px]">
+      {folded ? null : (
+      <ul id={bodyId} className="grid grid-cols-2 gap-[12px] md:grid-cols-6 md:gap-[14px]">
         {shown.map((s) => (
           <SuggestionTile
             key={s.oracleId}
@@ -309,6 +373,7 @@ function ShelfSection({
           />
         ))}
       </ul>
+      )}
     </section>
   );
 }
@@ -389,6 +454,7 @@ export function ConsiderPanel({
     // reading against the previous commander's figures.
     [suggestions, deckCards, sort, mix],
   );
+  const { isFolded, toggleFold } = useFoldedShelves(deckId);
 
   return (
     <section
@@ -482,7 +548,17 @@ export function ConsiderPanel({
 
           {shelves.map((shelf, i) => (
             <ShelfSection
-              key={shelf.key}
+              // Keyed on deckId too, not just the shelf key: `BuilderShell` is
+              // retained across a deck-to-deck navigation (the same component
+              // instance re-renders with a new `deck` prop rather than
+              // unmounting), so a `ShelfSection` for the same role would
+              // otherwise carry deck A's `expanded` state — a local "Show
+              // all" that is never persisted — straight into deck B's shelf
+              // of the same key (Copilot round 3, medium "previously
+              // missed"). The deckId in the key forces a fresh mount, which
+              // resets every bit of this component's local state at once
+              // rather than tracking one more "did this prop change" case.
+              key={`${deckId}-${shelf.key}`}
               first={i === 0}
               shelf={shelf}
               deckId={deckId}
@@ -493,6 +569,8 @@ export function ConsiderPanel({
               commanderShortName={commanderShortName}
               newestAsOf={newestAsOf}
               provenance={provenance}
+              folded={isFolded(shelf.key)}
+              onToggleFold={() => toggleFold(shelf.key)}
             />
           ))}
         </>
