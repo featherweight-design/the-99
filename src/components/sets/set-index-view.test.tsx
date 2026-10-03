@@ -31,6 +31,20 @@ describe("SetIndexView — S1 first run", () => {
       .toHaveAttribute("href", "/collection/replace");
   });
 
+  // The page above draws "Your sets" as its h1 and the place head draws "Collection" as a
+  // <p>, so every empty state here is one level down (collection surfaces E11).
+  it("draws its empty titles as h2s, never a second h1", async () => {
+    const { unmount } = render(<SetIndexView sets={[]} cardCount={0} onSearch={noSearch} />);
+    expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
+    expect(screen.getByRole("heading", { level: 2, name: "Upload your collection and the sets appear" })).toBeTruthy();
+    unmount();
+    const onSearch = vi.fn().mockResolvedValue([]);
+    render(<SetIndexView sets={[set({})]} cardCount={1} onSearch={onSearch} />);
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "zzzz" } });
+    await waitFor(() => expect(screen.getByText("No collectible set matches zzzz")).toBeInTheDocument());
+    expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
+  });
+
   it("offers the search the empty state promises", () => {
     // The copy says "or search a set to browse it at 0%". It previously said that with no
     // field on the page.
