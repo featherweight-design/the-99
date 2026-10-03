@@ -57,6 +57,22 @@ describe("useDrawFields", () => {
     expect(new URL(net.calls[1].url, "http://x").searchParams.get("s")!.split(",")).toHaveLength(50);
   });
 
+  // The reader can wait on more rows than one batch holds (Show more pressed past the first
+  // window, then a refresh that leaves only that window whole), and the route refuses a batch
+  // over its limit, so the waiting rows are split across batches rather than asked for at once.
+  it("never asks for more than one batch's limit, even for rows the reader is waiting on", async () => {
+    const wanted = all.slice(0, 230);
+    renderHook(() => useDrawFields("fit", all, wanted));
+    await waitFor(() => expect(net.calls).toHaveLength(1));
+    const first = new URL(net.calls[0].url, "http://x").searchParams.get("s")!.split(",");
+    expect(first).toHaveLength(200);
+    expect(first).toEqual(wanted.slice(0, 200).map((r) => r.slug));
+    await act(async () => net.calls[0].answer());
+    await waitFor(() => expect(net.calls).toHaveLength(2));
+    const second = new URL(net.calls[1].url, "http://x").searchParams.get("s")!.split(",");
+    expect(second.slice(0, 30)).toEqual(wanted.slice(200).map((r) => r.slug));
+  });
+
   it("resolves a row once its fields have arrived", async () => {
     const wanted = [all[0]];
     const { result } = renderHook(() => useDrawFields("fit", all, wanted));

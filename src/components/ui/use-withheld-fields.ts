@@ -108,8 +108,11 @@ function createFieldsLoop<Row extends object, Fields extends object>(onLanded: (
     const waiting = wanted.filter(needs).map(keyOf);
     const urgent = waiting.length > 0;
     if (failedAt !== null && (failedAt === wantedKey || !urgent)) return;
-    // The next batch: rows the reader is waiting on, then the rest in the order they are listed.
-    const batch = [...waiting];
+    // The next batch: rows the reader is waiting on, then the rest in the order they are listed,
+    // never past the route's limit. The reader can wait on more than one batch holds (three
+    // presses of Show more, then a refresh that leaves only the first window whole), and a batch
+    // over the limit is refused outright; the rest go in the next batch, since every batch pumps.
+    const batch = waiting.slice(0, source.maxBatch);
     const seen = new Set(batch);
     for (const r of all) {
       if (batch.length >= source.maxBatch) break;

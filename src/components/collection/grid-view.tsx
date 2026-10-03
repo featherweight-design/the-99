@@ -28,9 +28,12 @@ import { GhostButton } from "../ui/button";
 import { HydratedImg } from "../ui/hydrated-art";
 
 /**
- * Tiles whose art the server HTML asks for: about the first screen. The server cannot know the
- * width, so this is a fixed count rather than columns times rows: 12 covers two rows at the
- * widest common desktop (six columns) and six rows on a phone, where the grid has two.
+ * Tiles whose art the server HTML asks for. The server cannot know the width, so this is a fixed
+ * count rather than columns times rows. The track is `minmax(178px, 1fr)` with a 20px gap beside
+ * the 62px rail and 34px of padding a side, so it holds 6 columns at 1300px, 7 at 1536 and 9 at
+ * 1920, and a first screen is about 18 tiles at 1300x900 and 27 at 1920x1080; on a phone it is
+ * two columns, about 4 tiles. Every eager tile is art downloading beside the page's scripts,
+ * so the count is a trade between first art and time to interactive, set by measurement.
  */
 export const GRID_EAGER_TILES = 12;
 

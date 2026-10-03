@@ -83,14 +83,18 @@ describe("/collection's first window", () => {
     expect(before).toBeGreaterThanOrEqual(PAGE_SIZE);
     fireEvent.click(screen.getByRole("button", { name: /Show more/ }));
     await waitFor(() => expect(pending.length).toBeGreaterThan(0), { timeout: 10_000 });
-    // Busy, the rows already drawn still standing, and a second press does nothing.
+    // Busy, with the rows already drawn still standing.
     expect(document.querySelector('[aria-busy="true"]')).not.toBeNull();
     expect(tileNames()).toBe(before);
+    // A second press while busy must be ignored. What proves it is the count once the fields
+    // land: an ignored press draws exactly one more page, and one that went through would have
+    // asked for a second page the answered batch does not cover, leaving the list busy.
     fireEvent.click(screen.getByRole("button", { name: /Show more/ }));
     expect(tileNames()).toBe(before);
     await act(async () => pending[0].answer());
-    await waitFor(() => expect(document.querySelector('[aria-busy="true"]')).toBeNull(), { timeout: 10_000 });
-    expect(tileNames()).toBeGreaterThan(before);
+    // The first window is one page; one more page doubles what is drawn (each tile's name is
+    // in the document twice, so the count is read as a ratio, not as a number of tiles).
+    await waitFor(() => expect(tileNames()).toBe(before * 2), { timeout: 3_000 });
     expect(busyNodes().length).toBe(0);
   });
 });
