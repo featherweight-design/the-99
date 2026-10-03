@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0B0E; }
+  ::selection { background: #5C86C9; color: #14110E; }
+  a { color: #5C86C9; text-decoration: none; }
+  a:hover { color: #6C95D8; }
+  :root {
+    --bg:#121217; --surface:#1E1F26; --surface-raised:#22232B; --surface-rail:#181920;
+    --surface-sunken:#16171D; --surface-inset:#1A1B22; --elevated:#2D2E35; --elevated-hover:#212229;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --accent-strong:#486BA3; --accent-dim:#2C405F;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+    --avail-soft:var(--fg-muted); --avail-hard:var(--accent); --fact:#8FA6BE;
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#0B0B0E;min-height:100vh;">
+
+  <section style="max-width:1320px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#5C86C9;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">collection surfaces &middot; H11 + H18 &middot; 2026-10-02</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 12px;">A 102px head that never leaves, three cards across, and one place called Collection.</h1>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;"><b style="color:#EDE6D8;font-weight:600;">Call 1 &mdash; Collection pins from the start; it does not collapse.</b> The phone head is two fixed rows, <b style="color:#EDE6D8;font-weight:600;">102px against 844 (12.1%)</b>, and it is <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">position: sticky</span> in server markup with no script behind it. Sets collapses because its open head is 288px. This head is short enough to pin as it is, and that also keeps it clear of the in-flight work: no threshold, no spacer, no <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">ResizeObserver</span>, and nothing measured before the cards paint. So &ldquo;collapsed&rdquo; is drawn as <i>scrolled</i>: the tabs and the key scroll away, and the head stays the same height. <a href="#head">&sect;1</a> <a href="#height">&sect;2</a></p>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;"><b style="color:#EDE6D8;font-weight:600;">Call 2 &mdash; the search field gets row 1 to itself, except for the view well.</b> It is 262px wide at 390 and 232px at 360, against 163px at 390 on the shipped page (measured from the screens), with 15px type in a 44px box. Row 2 holds <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Filters</span>, the hairline, the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Sort: Name &middot; A&ndash;Z</span> trigger and the result count. Below 375px the count drops its noun visually and keeps it for screen readers. While the field is focused the view well steps aside through <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">:focus-within</span>, so the field runs the full 358px. Chips leave the pinned head: they sit on a shelf just below it that is present only while a filter is on, and the <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Filters</span> badge carries the state once you scroll.</p>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;"><b style="color:#EDE6D8;font-weight:600;">Call 3 &mdash; the 3-up tile keeps every mark at 16px; the chip loses its word.</b> The tile is 115px wide at 390 and 105px at 360, with the whole card at 63:88 and the same three-line caption. What drops: the availability chip's word (the glyph keeps its outlined box, and the word moves to the key and the spoken name), the caption's side padding (9px to 7px), and the name's length (about 13 characters before truncating, against about 20 today). A fourth glyph becomes <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">+N</span>, counted from the data and never measured. <a href="#tile">&sect;3</a></p>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;"><b style="color:#EDE6D8;font-weight:600;">Call 4 &mdash; Proxies is a tab: <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Cards &middot; Sets &middot; Proxies</span>.</b> The strip is the same on all three routes at both widths, and every tab is a plain link. It replaces the <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">By set</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Proxies</span> pills and both breadcrumbs. The way back is the tab you left by. An empty collection gets <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Cards &middot; Proxies</span>, so the empty state's own Proxies button goes. <a href="#proxies">&sect;4</a></p>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;"><b style="color:#EDE6D8;font-weight:600;">Call 5 &mdash; the phone default stays rows.</b> The 3-up grid is the grid, and the head is the same in both views. Flipping a default under readers who never chose is Product's call, and it is gap 1. <a href="#rows">&sect;6</a></p>
+    <p style="max-width:1080px;font-size:14px;line-height:1.7;color:#8E8269;margin:0;">Read <a href="README.md">README.md</a> for the decisions, <a href="STATES-collection-head.md">STATES-collection-head.md</a> for every state with its Must-nots, and <a href="READINESS.md">READINESS.md</a> for the gap report. Source of truth: <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">docs/superpowers/design-briefs/2026-10-02-collection-surfaces.md</span>, read at <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">main</span>, since the brief branch is merged. Also read at <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">main</span>: <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">collection/{browser,filter-bar,grid-view,collection-mark-key}.tsx</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">ui/{filter-chassis,card-tile-caption,availability-marker}.tsx</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">sets/use-head-collapse.ts</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">decks/{mark-key,proxy-list-view}.tsx</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">app/collection/{page,proxies/page}.tsx</span>.</p>
+  </section>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #6FA368;border-radius:12px;background:#161318;padding:16px 20px;margin-bottom:38px;max-width:1320px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;margin-bottom:10px;">Binding: engineering already in flight on /collection</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px 26px;font-size:13px;color:#A89B84;line-height:1.65;">
+      <div><b style="color:#EDE6D8;font-weight:600;">The first window (2b, PR 4).</b> The head counts and filters over every row, exactly as now: rows still ship whole. A tile can come into view before its drawn fields arrive, so it has a <b style="color:#EDE6D8;font-weight:600;">pending state</b>: a flat <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--surface-sunken</span> plate, deliberately not the identity gradient, which means the card has no art. The caption's fixed 70px means the late marks land without reflow. <a href="#tile">&sect;3</a></div>
+      <div><b style="color:#EDE6D8;font-weight:600;">The server-drawn view (d8).</b> The head is server markup with fixed heights. The 360/600 split is a CSS media query, not a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">useMinWidth</span>, and no JS runs before the cards show. On a cookieless first visit both views are drawn, so the view well's lit segment has to follow the same width rule in CSS until hydration.</div>
+      <div><b style="color:#EDE6D8;font-weight:600;">One new requirement, not optional.</b> Pinning the compact head below 1000px brings back the stacking-context bug that <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">filter-bar.tsx</span> documents: a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">z-[2]</span> sticky box would rank the sheet's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">z-50</span> under the rail and the tab bar. <b style="color:#EDE6D8;font-weight:600;">The sheet must portal out of the sticky box.</b> <a href="#eng">&sect;7</a></div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:64px;">
+
+  <!-- §1 -->
+  <div id="head">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #5C86C9;padding-top:18px;max-width:2200px;">&sect;1 &middot; <span style="color:#5C86C9;">the phone head, at 390 and 360, every state at full 844 height</span></div>
+    <div style="border:1px solid #3A3229;border-left:3px solid #5C86C9;border-radius:12px;background:#161318;padding:16px 20px;margin-bottom:24px;max-width:1280px;font-size:13.5px;color:#A89B84;line-height:1.75;"><b style="color:#EDE6D8;font-weight:600;">Read across, not down.</b> Columns 1 and 2 are the same page at scroll 0 and mid-list. The head is the same <b style="color:#EDE6D8;font-weight:600;">102px</b> in both, which is the whole of call 1: there is no second height to animate to. The accent ruler beside each frame marks the pinned part. The mobile header, Sort trigger, chips, row cards and tab bar follow the shipped screens. The keyboard is a stand-in at its real size, so the count of rows above the fold is honest. A query or filter change made below the head's rest position <b style="color:#EDE6D8;font-weight:600;">returns the list to its first result</b> (column 5): new results under an old scroll offset would drop the reader at an arbitrary card.</div>
+
+    <div style="display:flex;flex-direction:column;gap:40px;">
+      <sc-for list="{{ widths }}" as="w" hint-placeholder-count="2">
+        <div>
+          <div style="font-family:'Cinzel',serif;font-size:22px;font-weight:700;margin:0 0 4px;">{{ w.title }}</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin:0 0 18px;">{{ w.sub }}</div>
+          <div style="display:flex;gap:44px;align-items:flex-start;flex-wrap:nowrap;padding-left:18px;">
+            <sc-for list="{{ w.frames }}" as="f" hint-placeholder-count="5">
+              <div style="display:flex;flex-direction:column;gap:12px;flex:none;">
+                <div style="position:relative;">
+                  <sc-if value="{{ f.ruler }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:absolute;left:-14px;top:{{ f.rulerTop }}px;height:102px;width:4px;border-radius:2px;background:#5C86C9;"></div>
+                  </sc-if>
+                  <div style="width:{{ w.px }}px;height:844px;position:relative;overflow:hidden;border-radius:22px;border:1px solid #3A3229;background:var(--bg);">
+                    <sc-if value="{{ f.showTabs }}" hint-placeholder-val="{{ true }}">
+                      <div style="height:70px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:1px solid var(--border);">
+                        <span style="display:flex;flex-direction:column;gap:3px;"><span style="display:flex;gap:4px;align-items:center;margin-left:30px;"><span style="width:5px;height:5px;transform:rotate(45deg);background:var(--accent);"></span><span style="width:7px;height:7px;transform:rotate(45deg);background:var(--accent);"></span><span style="width:5px;height:5px;transform:rotate(45deg);background:var(--accent);"></span></span><span style="display:flex;align-items:baseline;gap:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.32em;color:var(--accent);">THE</span><span style="font-family:'Cinzel',serif;font-size:26px;font-weight:700;line-height:1;color:var(--fg);">99</span></span></span>
+                        <span style="width:38px;height:38px;border-radius:11px;border:1.5px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--accent);">HH</span>
+                      </div>
+                      <div style="height:48px;display:flex;align-items:stretch;gap:2px;padding:0 4px 0 8px;border-bottom:1px solid var(--border);">
+                        <span style="display:flex;align-items:center;padding:0 11px;font-size:14px;font-weight:600;color:var(--fg);box-shadow:inset 0 -2px 0 var(--accent);">Cards</span>
+                        <span style="display:flex;align-items:center;padding:0 11px;font-size:14px;font-weight:500;color:var(--fg-muted);">Sets</span>
+                        <span style="display:flex;align-items:center;padding:0 11px;font-size:14px;font-weight:500;color:var(--fg-muted);">Proxies</span>
+                        <span style="margin-left:auto;min-height:44px;display:flex;align-items:center;gap:6px;padding:0 10px;font-size:13px;color:var(--accent);"><span style="font-size:15px;">&#8635;</span>Replace</span>
+                      </div>
+                    </sc-if>
+
+                    <div style="background:var(--surface-sunken);border-bottom:1px solid var(--border);padding:8px 16px 7px;display:flex;flex-direction:column;gap:6px;">
+                      <div style="display:flex;gap:8px;align-items:center;height:44px;">
+                        <sc-if value="{{ f.focus }}" hint-placeholder-val="{{ false }}">
+                          <div style="flex:1;min-width:0;height:44px;display:flex;align-items:center;gap:8px;padding:0 6px 0 12px;border:1px solid var(--accent);border-radius:8px;background:var(--surface-sunken);box-shadow:0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent);">
+                            <span style="font-size:15px;color:var(--fg-faint);">&#8981;</span>
+                            <span style="font-size:15px;color:var(--fg);">tutor</span>
+                            <span style="width:1.5px;height:19px;background:var(--accent);margin-left:-6px;"></span>
+                            <span style="margin-left:auto;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--elevated);font-size:13px;color:var(--fg-muted);">&#10005;</span>
+                          </div>
+                        </sc-if>
+                        <sc-if value="{{ f.idle }}" hint-placeholder-val="{{ true }}">
+                          <div style="flex:1;min-width:0;height:44px;display:flex;align-items:center;gap:8px;padding:0 12px;border:1px solid var(--border-strong);border-radius:8px;background:var(--surface-sunken);">
+                            <span style="font-size:15px;color:var(--fg-faint);">&#8981;</span>
+                            <span style="font-size:15px;color:var(--fg-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Search your cards&hellip;</span>
+                          </div>
+                          <div style="flex:none;display:flex;height:44px;border:1px solid var(--border-strong);border-radius:8px;overflow:hidden;">
+                            <span style="width:43px;display:flex;align-items:center;justify-content:center;font-size:15px;background:{{ f.rowsBg }};color:{{ f.rowsFg }};">&#8803;</span>
+                            <span style="width:43px;display:flex;align-items:center;justify-content:center;font-size:14px;border-left:1px solid var(--border-strong);background:{{ f.gridBg }};color:{{ f.gridFg }};">&#9638;</span>
+                          </div>
+                        </sc-if>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:8px;height:36px;">
+                        <span style="height:36px;display:inline-flex;align-items:center;gap:7px;padding:0 13px;border-radius:999px;border:1px solid {{ f.filtersEdge }};background:var(--elevated);flex:none;font-size:12.5px;font-weight:500;color:var(--fg);">Filters<sc-if value="{{ f.badge }}" hint-placeholder-val="{{ false }}"><span style="height:18px;min-width:18px;padding:0 5px;border-radius:999px;background:var(--accent);color:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10px;display:inline-flex;align-items:center;justify-content:center;">{{ f.badge }}</span></sc-if></span>
+                        <span style="width:1px;height:20px;background:var(--border-strong);flex:none;"></span>
+                        <span style="height:36px;display:inline-flex;align-items:center;gap:7px;padding:0 13px;border-radius:999px;border:1px solid var(--elevated);background:var(--elevated);font-size:12.5px;font-weight:500;color:var(--fg);flex:none;white-space:nowrap;">Sort: Name &middot; A&ndash;Z <span style="font-size:9px;color:var(--fg-muted);">&#9660;</span></span>
+                        <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);white-space:nowrap;">{{ f.result }}</span>
+                      </div>
+                    </div>
+
+                    <sc-if value="{{ f.shelfQuery }}" hint-placeholder-val="{{ false }}">
+                      <div style="height:38px;display:flex;align-items:center;gap:6px;padding:0 16px;border-bottom:1px solid var(--border);overflow:hidden;">
+                        <span style="display:inline-flex;align-items:center;gap:8px;flex:none;border:1px solid var(--border-strong);background:var(--bg);border-radius:7px;padding:3px 8px;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:14px;color:var(--fg-body);">&quot;tutor&quot; <span style="color:var(--fg-faint);">&times;</span></span>
+                        <span style="margin-left:auto;flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);text-decoration:underline;">Clear all filters</span>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ f.showShelf }}" hint-placeholder-val="{{ false }}">
+                      <div style="height:38px;display:flex;align-items:center;gap:6px;padding:0 16px;border-bottom:1px solid var(--border);overflow:hidden;">
+                        <span style="display:inline-flex;align-items:center;gap:6px;flex:none;border:1px solid var(--border-strong);background:var(--bg);border-radius:7px;padding:3px 8px;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:14px;color:var(--fg-body);"><span style="display:inline-flex;gap:3px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--u);"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--b);"></span></span>2 colours <span style="color:var(--fg-faint);">&times;</span></span>
+                        <span style="display:inline-flex;align-items:center;gap:6px;flex:none;border:1px solid var(--border-strong);background:var(--bg);border-radius:7px;padding:3px 8px;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:14px;color:var(--fg-body);"><span style="width:6px;height:6px;transform:rotate(45deg);background:var(--avail-hard);"></span>In use <span style="color:var(--fg-faint);">&times;</span></span>
+                        <span style="margin-left:auto;flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);text-decoration:underline;">Clear all filters</span>
+                      </div>
+                    </sc-if>
+
+                    <sc-if value="{{ f.showKey }}" hint-placeholder-val="{{ true }}">
+                      <div style="padding:10px 14px 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 12px;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:14px;color:var(--fg-faint);">
+                        <sc-for list="{{ keyEntries }}" as="e" hint-placeholder-count="8">
+                          <span style="display:flex;align-items:center;gap:5px;min-width:0;white-space:nowrap;">
+                            <span style="width:16px;flex:none;display:inline-flex;align-items:center;justify-content:center;">
+                              <sc-if value="{{ e.gc }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in srgb, var(--fact) 45%, transparent));"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"></path></svg></sc-if><sc-if value="{{ e.mld }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in srgb, var(--fact) 45%, transparent));"><path d="M1.4 13.4 L6.2 5.2 L9.4 10.6 L11.2 7.8 L14.6 13.4 Z" fill="currentColor"></path><path d="M4.4 2.6 L5.6 2.6 M8.0 1.6 L8.0 3.0 M11.0 2.8 L12.2 2.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"></path></svg></sc-if><sc-if value="{{ e.turn }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in srgb, var(--fact) 45%, transparent));"><path d="M10.98 3.74 A 5.2 5.2 0 1 1 6.65 2.98" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path><path d="M9.0 2.4 L7.1 4.6 L6.2 1.3 Z" fill="currentColor"></path></svg></sc-if><sc-if value="{{ e.tutor }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in srgb, var(--fact) 45%, transparent));"><path d="M1.8 12.2 H14.2 V14.4 H1.8 Z" fill="currentColor"></path><path d="M8 1.3 L11.7 5.7 H9.2 V10.3 H6.8 V5.7 H4.3 Z" fill="currentColor"></path></svg></sc-if><sc-if value="{{ e.combo }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in srgb, var(--fact) 45%, transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg></sc-if>
+                              <sc-if value="{{ e.soft }}" hint-placeholder-val="{{ false }}"><span style="width:6px;height:6px;transform:rotate(45deg);border:1.5px solid var(--avail-soft);"></span></sc-if>
+                              <sc-if value="{{ e.hard }}" hint-placeholder-val="{{ false }}"><span style="width:6px;height:6px;transform:rotate(45deg);background:var(--avail-hard);"></span></sc-if>
+                              <sc-if value="{{ e.over }}" hint-placeholder-val="{{ false }}"><span style="position:relative;width:11px;height:6px;"><span style="position:absolute;left:0;top:0;width:6px;height:6px;transform:rotate(45deg);background:var(--danger);"></span><span style="position:absolute;left:5px;top:0;width:6px;height:6px;transform:rotate(45deg);background:var(--danger);border-left:1px solid var(--bg);"></span></span></sc-if>
+                            </span>
+                            <span style="overflow:hidden;text-overflow:ellipsis;">{{ e.word }}</span>
+                          </span>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+
+                    <sc-if value="{{ f.grid }}" hint-placeholder-val="{{ true }}">
+                      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:10px 14px;">
+                        <sc-for list="{{ f.tiles }}" as="t" hint-placeholder-count="9">
+                          <div style="min-width:0;border-radius:9px;overflow:hidden;background:var(--surface);border:1px solid {{ t.edge }};">
+                            <div style="position:relative;aspect-ratio:63/88;background:{{ t.plate }};border-radius:0 0 9px 9px;">
+                              <span style="position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.25);"></span>
+                            </div>
+                            <div style="padding:8px 7px;display:flex;flex-direction:column;gap:3px;">
+                              <div style="height:17px;display:flex;align-items:center;gap:6px;min-width:0;">
+                                <sc-if value="{{ t.aSoft }}" hint-placeholder-val="{{ false }}"><span style="flex:none;width:16px;height:15px;border-radius:4px;outline:1px solid var(--border-dashed);outline-offset:-1px;display:inline-flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;transform:rotate(45deg);border:1.5px solid var(--avail-soft);"></span></span></sc-if>
+                                <sc-if value="{{ t.aHard }}" hint-placeholder-val="{{ false }}"><span style="flex:none;width:16px;height:15px;border-radius:4px;outline:1px solid var(--accent);outline-offset:-1px;display:inline-flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;transform:rotate(45deg);background:var(--avail-hard);"></span></span></sc-if>
+                                <sc-if value="{{ t.aOver }}" hint-placeholder-val="{{ false }}"><span style="flex:none;width:21px;height:15px;border-radius:4px;outline:1px solid var(--danger);outline-offset:-1px;display:inline-flex;align-items:center;justify-content:center;"><span style="position:relative;width:11px;height:6px;"><span style="position:absolute;left:0;top:0;width:6px;height:6px;transform:rotate(45deg);background:var(--danger);"></span><span style="position:absolute;left:5px;top:0;width:6px;height:6px;transform:rotate(45deg);background:var(--danger);border-left:1px solid var(--surface);"></span></span></span></sc-if>
+                                <sc-for list="{{ t.facts }}" as="g" hint-placeholder-count="0"><sc-if value="{{ g.gc }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in srgb, var(--fact) 45%, transparent));"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"></path></svg></sc-if><sc-if value="{{ g.mld }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in srgb, var(--fact) 45%, transparent));"><path d="M1.4 13.4 L6.2 5.2 L9.4 10.6 L11.2 7.8 L14.6 13.4 Z" fill="currentColor"></path><path d="M4.4 2.6 L5.6 2.6 M8.0 1.6 L8.0 3.0 M11.0 2.8 L12.2 2.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"></path></svg></sc-if><sc-if value="{{ g.turn }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in srgb, var(--fact) 45%, transparent));"><path d="M10.98 3.74 A 5.2 5.2 0 1 1 6.65 2.98" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path><path d="M9.0 2.4 L7.1 4.6 L6.2 1.3 Z" fill="currentColor"></path></svg></sc-if><sc-if value="{{ g.tutor }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in srgb, var(--fact) 45%, transparent));"><path d="M1.8 12.2 H14.2 V14.4 H1.8 Z" fill="currentColor"></path><path d="M8 1.3 L11.7 5.7 H9.2 V10.3 H6.8 V5.7 H4.3 Z" fill="currentColor"></path></svg></sc-if></sc-for>
+                                <sc-if value="{{ t.more }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">{{ t.more }}</span></sc-if>
+                                <sc-if value="{{ t.combo }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in srgb, var(--fact) 45%, transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg></sc-if>
+                              </div>
+                              <div style="height:20px;display:flex;align-items:center;gap:5px;min-width:0;line-height:16px;">
+                                <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;color:var(--fg);">{{ t.name }}</span>
+                                <sc-if value="{{ t.count }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ t.count }}</span></sc-if>
+                              </div>
+                              <div style="height:11px;font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:11px;color:var(--fg-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ t.sub }}</div>
+                            </div>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+
+                    <sc-if value="{{ f.rows }}" hint-placeholder-val="{{ false }}">
+                      <div style="padding:10px 12px;display:flex;flex-direction:column;gap:6px;">
+                        <sc-for list="{{ f.tiles }}" as="t" hint-placeholder-count="10">
+                          <div style="display:flex;align-items:center;gap:12px;padding:9px 14px;min-height:52px;border-radius:10px;background:var(--surface);border:1px solid {{ t.rowEdge }};">
+                            <span style="width:22px;flex:none;font-size:13px;color:var(--accent);">{{ t.qty }}</span>
+                            <span style="min-width:0;flex:1;display:flex;flex-direction:column;gap:2px;">
+                              <span style="display:flex;align-items:center;gap:6px;min-width:0;">
+                                <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600;color:var(--fg);">{{ t.name }}</span>
+                                <sc-for list="{{ t.facts }}" as="g" hint-placeholder-count="0"><sc-if value="{{ g.gc }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in srgb, var(--fact) 45%, transparent));"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"></path></svg></sc-if><sc-if value="{{ g.mld }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in srgb, var(--fact) 45%, transparent));"><path d="M1.4 13.4 L6.2 5.2 L9.4 10.6 L11.2 7.8 L14.6 13.4 Z" fill="currentColor"></path><path d="M4.4 2.6 L5.6 2.6 M8.0 1.6 L8.0 3.0 M11.0 2.8 L12.2 2.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"></path></svg></sc-if><sc-if value="{{ g.turn }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in srgb, var(--fact) 45%, transparent));"><path d="M10.98 3.74 A 5.2 5.2 0 1 1 6.65 2.98" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path><path d="M9.0 2.4 L7.1 4.6 L6.2 1.3 Z" fill="currentColor"></path></svg></sc-if><sc-if value="{{ g.tutor }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in srgb, var(--fact) 45%, transparent));"><path d="M1.8 12.2 H14.2 V14.4 H1.8 Z" fill="currentColor"></path><path d="M8 1.3 L11.7 5.7 H9.2 V10.3 H6.8 V5.7 H4.3 Z" fill="currentColor"></path></svg></sc-if></sc-for>
+                                <sc-if value="{{ t.combo }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in srgb, var(--fact) 45%, transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg></sc-if>
+                                <sc-if value="{{ t.aSoft }}" hint-placeholder-val="{{ false }}"><span style="flex:none;display:inline-flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;color:var(--fg-body);white-space:nowrap;"><span style="width:6px;height:6px;transform:rotate(45deg);border:1.5px solid var(--avail-soft);"></span>1 in a draft</span></sc-if>
+                                <sc-if value="{{ t.aHard }}" hint-placeholder-val="{{ false }}"><span style="flex:none;display:inline-flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;color:var(--accent);white-space:nowrap;"><span style="width:6px;height:6px;transform:rotate(45deg);background:var(--avail-hard);"></span>none free</span></sc-if>
+                                <sc-if value="{{ t.aOver }}" hint-placeholder-val="{{ false }}"><span style="flex:none;display:inline-flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;color:var(--danger);white-space:nowrap;"><span style="position:relative;width:11px;height:6px;"><span style="position:absolute;left:0;top:0;width:6px;height:6px;transform:rotate(45deg);background:var(--danger);"></span><span style="position:absolute;left:5px;top:0;width:6px;height:6px;transform:rotate(45deg);background:var(--danger);border-left:1px solid var(--surface);"></span></span>short 1</span></sc-if>
+                              </span>
+                              <span style="font-size:12px;color:var(--fg-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ t.type }}</span>
+                            </span>
+                            <span style="width:10px;height:10px;border-radius:50%;flex:none;background:{{ t.dot }};"></span>
+                            <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ t.set }}</span>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+
+                    <sc-if value="{{ f.focus }}" hint-placeholder-val="{{ false }}">
+                      <div style="position:absolute;left:0;right:0;bottom:0;height:336px;background:repeating-linear-gradient(135deg,#1E1B1F 0 8px,#1A171B 8px 16px);border-top:1px solid #3A3229;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">system keyboard &middot; ~336</div>
+                    </sc-if>
+                    <sc-if value="{{ f.idle }}" hint-placeholder-val="{{ true }}">
+                      <div style="position:absolute;left:0;right:0;bottom:0;height:64px;background:var(--surface-rail);border-top:1px solid var(--border);display:flex;align-items:stretch;padding:4px 8px 10px;">
+                      <span style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);"><span style="width:15px;height:15px;border:1.5px solid var(--fg-faint);border-radius:4px;"></span>Home</span>
+                      <span style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg);background:var(--surface);border-radius:10px;"><span style="width:15px;height:15px;border:1.5px solid var(--fg-muted);border-radius:4px;"></span>Collection</span>
+                      <span style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);"><span style="width:15px;height:15px;border:1.5px solid var(--fg-faint);border-radius:4px;"></span>Commanders</span>
+                      <span style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);"><span style="width:15px;height:15px;border:1.5px solid var(--fg-faint);border-radius:4px;"></span>Discover</span>
+                      <span style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);"><span style="width:15px;height:15px;border:1.5px solid var(--fg-faint);border-radius:4px;"></span>Decks</span>
+                    </div>
+                    </sc-if>
+                  </div>
+                </div>
+                <div style="width:{{ w.px }}px;">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#5C86C9;margin-bottom:5px;">{{ f.label }}</div>
+                  <div style="font-size:12.5px;color:#A89B84;line-height:1.6;">{{ f.note }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- §2 -->
+  <div id="height" style="max-width:1280px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #5C86C9;padding-top:18px;">&sect;2 &middot; <span style="color:#5C86C9;">the heights, derived</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:22px;">
+      <div style="border:1px solid #2A241D;border-radius:12px;background:#16131A;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">The pinned head, phone</div>
+        <sc-for list="{{ headSum }}" as="r" hint-placeholder-count="6">
+          <div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid #2A241D;font-size:13px;color:#C6B79A;"><span>{{ r.k }}</span><span style="font-family:'IBM Plex Mono',monospace;color:#EDE6D8;">{{ r.v }}</span></div>
+        </sc-for>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:10px;">Row 2's controls draw at 36px and keep a <b style="color:#EDE6D8;font-weight:600;">44px target</b>, using the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">after:</span> overlay the chip &times; already uses. The overlay reaches 4px into the 6px gap above and the 7px padding below, so it never overlaps row 1.</div>
+      </div>
+      <div style="border:1px solid #2A241D;border-radius:12px;background:#16131A;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">Against 844, and against today</div>
+        <sc-for list="{{ compare }}" as="r" hint-placeholder-count="6">
+          <div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid #2A241D;font-size:13px;color:#C6B79A;"><span>{{ r.k }}</span><span style="font-family:'IBM Plex Mono',monospace;color:#EDE6D8;white-space:nowrap;">{{ r.v }}</span></div>
+        </sc-for>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:10px;">&ldquo;Today&rdquo; is measured from the shipped 390 screens: mobile header 70, page header 85, chassis 137, key 41. Both figures include the 70px mobile header, which scrolls away and is unchanged.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- §3 -->
+  <div id="tile" style="max-width:1320px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #5C86C9;padding-top:18px;">&sect;3 &middot; <span style="color:#5C86C9;">the 3-up tile: what it carries, and what drops</span></div>
+    <div style="border:1px solid #3A3229;border-left:3px solid #5C86C9;border-radius:12px;background:#161318;padding:16px 20px;margin-bottom:22px;font-size:13.5px;color:#A89B84;line-height:1.75;"><b style="color:#EDE6D8;font-weight:600;">The marks do not shrink.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">grid-view.tsx</span> rules that a fact mark draws at 16px on every surface, because a smaller one would read as a second mark, and that rule holds here. What gives instead is the availability chip's word (&ldquo;1 in a draft&rdquo; is about 81px wide, most of a 101px caption), so the chip becomes its glyph inside the same outlined box. The <b style="color:#EDE6D8;font-weight:600;">word goes two places</b>: the key above the grid gains the three availability entries, using the Availability filter's own labels, and the tile's spoken name already carries the full sentence through <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">spoken</span>. Each tile below is drawn at 1&times; and again at 2&times;.</div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start;margin-bottom:26px;">
+      <sc-for list="{{ anatomy }}" as="a" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#5C86C9;">{{ a.title }}</div>
+          <div style="display:flex;gap:14px;align-items:flex-start;padding:16px;border-radius:12px;background:var(--bg);border:1px solid #2A241D;zoom:2;">
+            <sc-for list="{{ a.tiles }}" as="t" hint-placeholder-count="6">
+              <div style="width:{{ a.px }}px;flex:none;display:flex;flex-direction:column;gap:6px;">
+                <div style="min-width:0;border-radius:9px;overflow:hidden;background:var(--surface);border:1px solid {{ t.edge }};">
+                  <div style="position:relative;aspect-ratio:63/88;background:{{ t.plate }};border-radius:0 0 9px 9px;">
+                    <span style="position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.25);"></span>
+                  </div>
+                  <div style="padding:8px 7px;display:flex;flex-direction:column;gap:3px;">
+                    <div style="height:17px;display:flex;align-items:center;gap:6px;min-width:0;">
+                      <sc-if value="{{ t.aSoft }}" hint-placeholder-val="{{ false }}"><span style="flex:none;width:16px;height:15px;border-radius:4px;outline:1px solid var(--border-dashed);outline-offset:-1px;display:inline-flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;transform:rotate(45deg);border:1.5px solid var(--avail-soft);"></span></span></sc-if>
+                      <sc-if value="{{ t.aHard }}" hint-placeholder-val="{{ false }}"><span style="flex:none;width:16px;height:15px;border-radius:4px;outline:1px solid var(--accent);outline-offset:-1px;display:inline-flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;transform:rotate(45deg);background:var(--avail-hard);"></span></span></sc-if>
+                      <sc-if value="{{ t.aOver }}" hint-placeholder-val="{{ false }}"><span style="flex:none;width:21px;height:15px;border-radius:4px;outline:1px solid var(--danger);outline-offset:-1px;display:inline-flex;align-items:center;justify-content:center;"><span style="position:relative;width:11px;height:6px;"><span style="position:absolute;left:0;top:0;width:6px;height:6px;transform:rotate(45deg);background:var(--danger);"></span><span style="position:absolute;left:5px;top:0;width:6px;height:6px;transform:rotate(45deg);background:var(--danger);border-left:1px solid var(--surface);"></span></span></span></sc-if>
+                      <sc-for list="{{ t.facts }}" as="g" hint-placeholder-count="0"><sc-if value="{{ g.gc }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in srgb, var(--fact) 45%, transparent));"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"></path></svg></sc-if><sc-if value="{{ g.mld }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in srgb, var(--fact) 45%, transparent));"><path d="M1.4 13.4 L6.2 5.2 L9.4 10.6 L11.2 7.8 L14.6 13.4 Z" fill="currentColor"></path><path d="M4.4 2.6 L5.6 2.6 M8.0 1.6 L8.0 3.0 M11.0 2.8 L12.2 2.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"></path></svg></sc-if><sc-if value="{{ g.turn }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in srgb, var(--fact) 45%, transparent));"><path d="M10.98 3.74 A 5.2 5.2 0 1 1 6.65 2.98" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path><path d="M9.0 2.4 L7.1 4.6 L6.2 1.3 Z" fill="currentColor"></path></svg></sc-if><sc-if value="{{ g.tutor }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in srgb, var(--fact) 45%, transparent));"><path d="M1.8 12.2 H14.2 V14.4 H1.8 Z" fill="currentColor"></path><path d="M8 1.3 L11.7 5.7 H9.2 V10.3 H6.8 V5.7 H4.3 Z" fill="currentColor"></path></svg></sc-if></sc-for>
+                      <sc-if value="{{ t.more }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">{{ t.more }}</span></sc-if>
+                      <sc-if value="{{ t.combo }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in srgb, var(--fact) 45%, transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg></sc-if>
+                    </div>
+                    <div style="height:20px;display:flex;align-items:center;gap:5px;min-width:0;line-height:16px;">
+                      <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;color:var(--fg);">{{ t.name }}</span>
+                      <sc-if value="{{ t.count }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ t.count }}</span></sc-if>
+                    </div>
+                    <div style="height:11px;font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:11px;color:var(--fg-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ t.sub }}</div>
+                  </div>
+                </div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:6px;line-height:1.4;color:#A89B84;">{{ t.cap }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:22px;">
+      <div style="border:1px solid #2A241D;border-radius:12px;background:#16131A;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">The meta line's budget</div>
+        <div style="display:grid;grid-template-columns:1.6fr 0.7fr 0.7fr;gap:0;font-size:12.5px;color:#C6B79A;">
+          <span style="padding:6px 0;border-bottom:1px solid #3A3229;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">occupants</span><span style="padding:6px 0;border-bottom:1px solid #3A3229;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">width</span><span style="padding:6px 0;border-bottom:1px solid #3A3229;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">fits</span>
+          <sc-for list="{{ budget }}" as="b" hint-placeholder-count="6">
+            <span style="padding:6px 8px 6px 0;border-bottom:1px solid #2A241D;">{{ b.k }}</span><span style="padding:6px 0;border-bottom:1px solid #2A241D;font-family:'IBM Plex Mono',monospace;color:#EDE6D8;">{{ b.w }}</span><span style="padding:6px 0;border-bottom:1px solid #2A241D;font-family:'IBM Plex Mono',monospace;color:{{ b.c }};">{{ b.f }}</span>
+          </sc-for>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:10px;">Caption content width is 101px at 390 and 91px at 360, from 115.3 / 105.3 less 7 + 7. <b style="color:#EDE6D8;font-weight:600;">The rule is a count:</b> past three glyphs (facts plus combo), draw the first two facts, then <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">+N</span>. Engineering branches on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">facts.length + (comboPartner ? 1 : 0) &gt; 3</span>, on the server, with no measurement. No real card in the catalogue reaches four today.</div>
+      </div>
+      <div style="border:1px solid #2A241D;border-radius:12px;background:#16131A;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">Kept, dropped, shrunk</div>
+        <sc-for list="{{ keepDrop }}" as="r" hint-placeholder-count="8">
+          <div style="display:flex;gap:12px;padding:6px 0;border-bottom:1px solid #2A241D;font-size:12.5px;color:#C6B79A;line-height:1.5;"><span style="width:62px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:{{ r.c }};padding-top:2px;">{{ r.tag }}</span><span>{{ r.v }}</span></div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <!-- §4 -->
+  <div id="proxies" style="max-width:1480px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #5C86C9;padding-top:18px;">&sect;4 &middot; <span style="color:#5C86C9;">where Proxies lives: one tab strip on three routes</span></div>
+    <div style="border:1px solid #3A3229;border-left:3px solid #5C86C9;border-radius:12px;background:#161318;padding:16px 20px;margin-bottom:22px;font-size:13.5px;color:#A89B84;line-height:1.75;max-width:1280px;"><b style="color:#EDE6D8;font-weight:600;">This is not the view-mode segment that set-collections R3 rejected (1c), and the difference is the point.</b> That segment sat in the Rows/Grid well, where the other two options keep the URL path and the filters. A third option there that navigates away is the /commanders defect. This strip sits <i>above</i> the filters, belongs to no filter frame, and changes the URL path on every tap. It is place navigation, and it reads like the app's other route tabs, not like a view toggle. <b style="color:#EDE6D8;font-weight:600;">Ruling 15 holds unchanged</b>: each tab is a bare link with no query and no memory, nothing carries across, and Back is a route change.</div>
+
+    <div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap;margin-bottom:26px;">
+      <sc-for list="{{ placeFrames }}" as="p" hint-placeholder-count="3">
+        <div style="display:flex;flex-direction:column;gap:12px;width:390px;">
+          <div style="width:390px;height:640px;position:relative;overflow:hidden;border-radius:22px;border:1px solid #3A3229;background:var(--bg);">
+            <div style="height:70px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:1px solid var(--border);">
+                        <span style="display:flex;flex-direction:column;gap:3px;"><span style="display:flex;gap:4px;align-items:center;margin-left:30px;"><span style="width:5px;height:5px;transform:rotate(45deg);background:var(--accent);"></span><span style="width:7px;height:7px;transform:rotate(45deg);background:var(--accent);"></span><span style="width:5px;height:5px;transform:rotate(45deg);background:var(--accent);"></span></span><span style="display:flex;align-items:baseline;gap:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.32em;color:var(--accent);">THE</span><span style="font-family:'Cinzel',serif;font-size:26px;font-weight:700;line-height:1;color:var(--fg);">99</span></span></span>
+                        <span style="width:38px;height:38px;border-radius:11px;border:1.5px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--accent);">HH</span>
+                      </div>
+            <div style="height:48px;display:flex;align-items:stretch;gap:2px;padding:0 4px 0 8px;border-bottom:1px solid var(--border);">
+              <sc-for list="{{ p.tabs }}" as="tb" hint-placeholder-count="3">
+                <span style="display:flex;align-items:center;padding:0 11px;font-size:14px;font-weight:{{ tb.weight }};color:{{ tb.color }};box-shadow:{{ tb.shadow }};">{{ tb.label }}</span>
+              </sc-for>
+              <span style="margin-left:auto;min-height:44px;display:flex;align-items:center;gap:6px;padding:0 10px;font-size:13px;color:var(--accent);"><span style="font-size:15px;">&#8635;</span>Replace</span>
+            </div>
+            <sc-if value="{{ p.isProxies }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:18px 16px 0;">
+                <div style="font-family:'Cinzel',serif;font-size:20px;font-weight:700;color:var(--fg);">What you&rsquo;re printing</div>
+                <div style="margin-top:4px;font-size:13px;color:var(--fg-muted);">9 cards across 4 decks</div>
+                <div style="margin-top:14px;border-radius:10px;background:var(--surface-rail);padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">Cost to own them for real <span style="font-size:13px;color:var(--fg);">$214.60</span> &middot; 8 of 9</div>
+                <div style="margin-top:10px;display:flex;flex-direction:column;">
+                  <sc-for list="{{ proxyRows }}" as="r" hint-placeholder-count="5">
+                    <div style="display:flex;align-items:center;gap:12px;padding:11px 12px;min-height:44px;">
+                      <span style="min-width:0;flex:1;display:flex;flex-direction:column;gap:2px;">
+                        <span style="font-size:13px;color:var(--fg);">{{ r.name }}</span>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--fg-faint);">{{ r.set }}</span>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);text-decoration:underline;text-decoration-color:var(--border-strong);">{{ r.deck }}</span>
+                      </span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-body);">{{ r.price }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ p.isSets }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:18px 16px 0;">
+                <div style="font-family:'Cinzel',serif;font-size:20px;font-weight:700;color:var(--fg);">Your sets</div>
+                <div style="margin-top:12px;height:44px;border:1px solid var(--border-strong);border-radius:8px;background:var(--surface-sunken);display:flex;align-items:center;gap:8px;padding:0 12px;font-size:15px;color:var(--fg-faint);">&#8981; <span>Search sets</span></div>
+                <div style="margin-top:14px;height:380px;border:1px dashed var(--border-dashed);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-locked);text-align:center;padding:20px;">set index &middot; shipped, unchanged below the heading</div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ p.isEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:70px 28px 0;text-align:center;display:flex;flex-direction:column;align-items:center;">
+                <div style="width:120px;height:84px;border:1px dashed var(--border-dashed);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">CardFan</div>
+                <div style="margin-top:22px;font-family:'Cinzel',serif;font-size:24px;font-weight:700;color:var(--fg);">Your collection is empty</div>
+                <div style="margin-top:12px;font-size:15px;line-height:1.6;color:var(--fg-body);max-width:320px;">A pile of possibilities waiting for a commander. Upload a CSV and the table fills. Commanders and decks follow.</div>
+                <div style="margin-top:24px;height:44px;display:inline-flex;align-items:center;padding:0 20px;border-radius:8px;background:var(--fg);color:var(--bg);font-size:13px;font-weight:600;">Upload your CSV</div>
+                <div style="margin-top:14px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6533F;text-decoration:line-through;">Proxies (ghost button), withdrawn: the tab is the way in</div>
+              </div>
+            </sc-if>
+            <div style="position:absolute;left:0;right:0;bottom:0;height:64px;background:var(--surface-rail);border-top:1px solid var(--border);display:flex;align-items:stretch;padding:4px 8px 10px;">
+                      <span style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);"><span style="width:15px;height:15px;border:1.5px solid var(--fg-faint);border-radius:4px;"></span>Home</span>
+                      <span style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg);background:var(--surface);border-radius:10px;"><span style="width:15px;height:15px;border:1.5px solid var(--fg-muted);border-radius:4px;"></span>Collection</span>
+                      <span style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);"><span style="width:15px;height:15px;border:1.5px solid var(--fg-faint);border-radius:4px;"></span>Commanders</span>
+                      <span style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);"><span style="width:15px;height:15px;border:1.5px solid var(--fg-faint);border-radius:4px;"></span>Discover</span>
+                      <span style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);"><span style="width:15px;height:15px;border:1.5px solid var(--fg-faint);border-radius:4px;"></span>Decks</span>
+                    </div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#5C86C9;margin-bottom:5px;">{{ p.label }}</div>
+            <div style="font-size:12.5px;color:#A89B84;line-height:1.6;">{{ p.note }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:22px;max-width:1280px;">
+      <div style="border:1px solid #2A241D;border-radius:12px;background:#16131A;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">Getting there and back</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;margin-bottom:12px;">
+          <span style="border:1px solid #5C86C9;border-radius:8px;padding:8px 12px;">/collection</span><span style="color:#8E8269;">&#8646;</span>
+          <span style="border:1px solid #3A3229;border-radius:8px;padding:8px 12px;">/collection/sets</span><span style="color:#8E8269;">&#8646;</span>
+          <span style="border:1px solid #3A3229;border-radius:8px;padding:8px 12px;">/collection/proxies</span>
+        </div>
+        <sc-for list="{{ routes }}" as="r" hint-placeholder-count="5">
+          <div style="padding:6px 0;border-bottom:1px solid #2A241D;font-size:12.5px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">{{ r.k }}</b> {{ r.v }}</div>
+        </sc-for>
+      </div>
+      <div style="border:1px solid #2A241D;border-radius:12px;background:#16131A;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C6533F;margin-bottom:12px;">Considered and rejected</div>
+        <sc-for list="{{ rejected }}" as="r" hint-placeholder-count="4">
+          <div style="padding:6px 0;border-bottom:1px solid #2A241D;font-size:12.5px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">{{ r.k }}</b> {{ r.v }}</div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <!-- §5 -->
+  <div id="desktop" style="max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #5C86C9;padding-top:18px;">&sect;5 &middot; <span style="color:#5C86C9;">desktop, only where it changes: 1300 and the 768 boundary</span></div>
+    <div style="border:1px solid #3A3229;border-left:3px solid #5C86C9;border-radius:12px;background:#161318;padding:16px 20px;margin-bottom:22px;font-size:13.5px;color:#A89B84;line-height:1.75;max-width:1280px;"><b style="color:#EDE6D8;font-weight:600;">At 1000px and up, one thing changes:</b> the tab strip comes in under the title, and the <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">By set</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Proxies</span> pills leave row 3's trailing slot, so only the view well is left there. The wide chassis, its sticky rule and the 178px tile floor are untouched. <b style="color:#EDE6D8;font-weight:600;">From 768 to 999</b> (the compact chassis beside the rail) the head pins as it does on the phone. At 600px and up its two rows fit on one line, so it is <b style="color:#EDE6D8;font-weight:600;">60px</b>. That is a CSS breakpoint, not a measurement.</div>
+
+    <div style="display:flex;flex-direction:column;gap:30px;">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C6533F;margin-bottom:8px;">shipped &middot; 1300 &middot; the two pills in row 3</div>
+        <div style="width:1300px;border:1px solid #3A3229;border-radius:12px;overflow:hidden;background:var(--bg);display:flex;">
+          <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;justify-content:center;padding-top:16px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-locked);">rail</div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;padding:28px 34px 0;">
+              <div><div style="font-family:'Cinzel',serif;font-size:30px;font-weight:700;color:var(--fg);">Collection</div><div style="margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">2,933 cards &middot; 1,804 unique &middot; last updated 2 days ago</div></div>
+              <span style="height:38px;display:inline-flex;align-items:center;gap:6px;padding:0 16px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;color:var(--fg-body);">&#8635; Replace collection</span>
+            </div>
+            <div style="margin-top:18px;background:var(--surface-sunken);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:12px 22px 10px;display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="flex:1;height:46px;border:1px solid var(--border-strong);border-radius:8px;display:flex;align-items:center;gap:10px;padding:0 14px;font-size:14px;color:var(--fg-faint);">&#8981; Search by card name&hellip;</span>
+                <span style="display:flex;gap:6px;"><span style="width:28px;height:28px;border-radius:50%;background:var(--w);"></span><span style="width:28px;height:28px;border-radius:50%;background:var(--u);"></span><span style="width:28px;height:28px;border-radius:50%;background:var(--b);"></span><span style="width:28px;height:28px;border-radius:50%;background:var(--r);"></span><span style="width:28px;height:28px;border-radius:50%;background:var(--g);"></span></span>
+                <span style="height:46px;display:inline-flex;align-items:center;padding:0 14px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;color:var(--fg);">Type &#9662;</span>
+                <span style="height:46px;display:inline-flex;align-items:center;padding:0 14px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;color:var(--fg);">Set &#9662;</span>
+                <span style="height:46px;display:inline-flex;align-items:center;padding:0 14px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;color:var(--fg);">Availability &#9662;</span>
+                <span style="width:1px;height:20px;background:var(--border);"></span>
+                <span style="height:46px;display:inline-flex;align-items:center;padding:0 14px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;color:var(--fg);">Sort &#9662;</span>
+              </div>
+              <div style="display:flex;align-items:center;min-height:22px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">No filters on</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-locked);text-decoration:underline;">Clear all filters</span></div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">result line (shipped string)</span>
+                <span style="margin-left:auto;height:46px;display:inline-flex;align-items:center;gap:6px;padding:0 10px;border:2px solid #C6533F;border-radius:8px;font-size:13px;color:var(--fg-body);"><span style="width:7px;height:7px;transform:rotate(45deg);background:var(--accent);"></span>By set</span>
+                <span style="height:46px;display:inline-flex;align-items:center;gap:6px;padding:0 10px;border:2px solid #C6533F;border-radius:8px;font-size:13px;color:var(--fg-body);"><span style="width:7px;height:7px;transform:rotate(45deg);border:1px solid var(--fg-locked);"></span>Proxies</span>
+                <span style="display:flex;height:46px;border:1px solid var(--border-strong);border-radius:8px;overflow:hidden;"><span style="width:44px;display:flex;align-items:center;justify-content:center;color:var(--fg-faint);">&#8803;</span><span style="width:44px;display:flex;align-items:center;justify-content:center;background:var(--elevated);color:var(--fg);border-left:1px solid var(--border-strong);">&#9638;</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#5C86C9;margin-bottom:8px;">R1 &middot; 1300 &middot; tabs under the title; row 3 keeps only the view well</div>
+        <div style="width:1300px;border:1px solid #3A3229;border-radius:12px;overflow:hidden;background:var(--bg);display:flex;">
+          <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;justify-content:center;padding-top:16px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-locked);">rail</div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;padding:28px 34px 0;">
+              <div><div style="font-family:'Cinzel',serif;font-size:30px;font-weight:700;color:var(--fg);">Collection</div><div style="margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">2,933 cards &middot; 1,804 unique &middot; last updated 2 days ago</div></div>
+              <span style="height:38px;display:inline-flex;align-items:center;gap:6px;padding:0 16px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;color:var(--fg-body);">&#8635; Replace collection</span>
+            </div>
+            <div style="margin-top:14px;height:40px;display:flex;align-items:stretch;gap:4px;padding:0 24px;border-bottom:1px solid var(--border);">
+              <span style="display:flex;align-items:center;padding:0 10px;font-size:14px;font-weight:600;color:var(--fg);box-shadow:inset 0 -2px 0 var(--accent);">Cards</span>
+              <span style="display:flex;align-items:center;padding:0 10px;font-size:14px;font-weight:500;color:var(--fg-muted);">Sets</span>
+              <span style="display:flex;align-items:center;padding:0 10px;font-size:14px;font-weight:500;color:var(--fg-muted);">Proxies</span>
+            </div>
+            <div style="background:var(--surface-sunken);border-bottom:1px solid var(--border);padding:12px 22px 10px;display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="flex:1;height:46px;border:1px solid var(--border-strong);border-radius:8px;display:flex;align-items:center;gap:10px;padding:0 14px;font-size:14px;color:var(--fg-faint);">&#8981; Search by card name&hellip;</span>
+                <span style="display:flex;gap:6px;"><span style="width:28px;height:28px;border-radius:50%;background:var(--w);"></span><span style="width:28px;height:28px;border-radius:50%;background:var(--u);"></span><span style="width:28px;height:28px;border-radius:50%;background:var(--b);"></span><span style="width:28px;height:28px;border-radius:50%;background:var(--r);"></span><span style="width:28px;height:28px;border-radius:50%;background:var(--g);"></span></span>
+                <span style="height:46px;display:inline-flex;align-items:center;padding:0 14px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;color:var(--fg);">Type &#9662;</span>
+                <span style="height:46px;display:inline-flex;align-items:center;padding:0 14px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;color:var(--fg);">Set &#9662;</span>
+                <span style="height:46px;display:inline-flex;align-items:center;padding:0 14px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;color:var(--fg);">Availability &#9662;</span>
+                <span style="width:1px;height:20px;background:var(--border);"></span>
+                <span style="height:46px;display:inline-flex;align-items:center;padding:0 14px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;color:var(--fg);">Sort &#9662;</span>
+              </div>
+              <div style="display:flex;align-items:center;min-height:22px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">No filters on</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-locked);text-decoration:underline;">Clear all filters</span></div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">result line (shipped string)</span>
+                <span style="margin-left:auto;display:flex;height:46px;border:1px solid var(--border-strong);border-radius:8px;overflow:hidden;"><span style="width:44px;display:flex;align-items:center;justify-content:center;color:var(--fg-faint);">&#8803;</span><span style="width:44px;display:flex;align-items:center;justify-content:center;background:var(--elevated);color:var(--fg);border-left:1px solid var(--border-strong);">&#9638;</span></span>
+              </div>
+            </div>
+            <div style="padding:14px 34px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">wide chassis: sticky at &ge;1000 as shipped &middot; tabs and title scroll away &middot; grid: 178px floor, unchanged</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:30px;align-items:flex-start;flex-wrap:wrap;">
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#5C86C9;margin-bottom:8px;">R1 &middot; 768, scrolled &middot; compact head pinned at 60px</div>
+          <div style="width:768px;height:520px;border:1px solid #3A3229;border-radius:12px;overflow:hidden;background:var(--bg);display:flex;">
+            <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;justify-content:center;padding-top:16px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-locked);">rail</div>
+            <div style="flex:1;min-width:0;position:relative;">
+              <div style="background:var(--surface-sunken);border-bottom:1px solid var(--border);padding:8px 16px 7px;display:flex;align-items:center;gap:8px;height:60px;">
+                <span style="flex:1;min-width:0;height:44px;border:1px solid var(--border-strong);border-radius:8px;display:flex;align-items:center;gap:8px;padding:0 12px;font-size:15px;color:var(--fg-faint);">&#8981; Search your cards&hellip;</span>
+                <span style="height:36px;display:inline-flex;align-items:center;gap:7px;padding:0 13px;border-radius:999px;border:1px solid var(--accent);background:var(--elevated);font-size:12.5px;font-weight:500;color:var(--fg);">Filters<span style="height:18px;min-width:18px;padding:0 5px;border-radius:999px;background:var(--accent);color:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10px;display:inline-flex;align-items:center;justify-content:center;">2</span></span>
+                <span style="height:36px;display:inline-flex;align-items:center;gap:6px;padding:0 13px;border-radius:999px;border:1px solid var(--border-strong);background:var(--elevated);font-size:12.5px;font-weight:500;color:var(--fg);">Sort <span style="font-size:9px;color:var(--fg-faint);">&#9662;</span></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);white-space:nowrap;">212 results</span>
+                <span style="display:flex;height:44px;border:1px solid var(--border-strong);border-radius:8px;overflow:hidden;flex:none;"><span style="width:43px;display:flex;align-items:center;justify-content:center;color:var(--fg-faint);">&#8803;</span><span style="width:43px;display:flex;align-items:center;justify-content:center;background:var(--elevated);color:var(--fg);border-left:1px solid var(--border-strong);">&#9638;</span></span>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;padding:20px 34px;">
+                <sc-for list="{{ mdTiles }}" as="t" hint-placeholder-count="3">
+                  <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface);"><div style="aspect-ratio:63/88;background:{{ t.plate }};"></div><div style="height:65px;padding:6px 10px;font-size:13px;font-weight:600;color:var(--fg);">{{ t.name }}</div></div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="max-width:400px;font-size:13px;color:#A89B84;line-height:1.7;padding-top:24px;">
+          <b style="color:#EDE6D8;font-weight:600;">Why 768&ndash;999 pins as well.</b> That band already gets the compact chassis and the sheet, because the wide row does not fit until 987px. It is the same reader problem as the phone with a narrower list, so it gets the same answer. The one-row form at <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">min-[600px]</span> holds search at 301px or more beside every control. The grid is the shipped desktop floor: 3 tiles of about 199px at 768.<br><br><b style="color:#EDE6D8;font-weight:600;">It depends on the portal.</b> The comment in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">filter-bar.tsx</span> says why the sticky rule starts at 1000: a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">z-[2]</span> sticky box made the rail paint over an open sheet. Pinning here is only safe once the sheet renders outside the sticky box. <a href="#eng">&sect;7</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- §6 -->
+  <div id="rows" style="max-width:1280px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #5C86C9;padding-top:18px;">&sect;6 &middot; <span style="color:#5C86C9;">rows, the phone's default, and whether 3-up changes it</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:22px;font-size:13.5px;color:#A89B84;line-height:1.75;">
+      <div><b style="color:#EDE6D8;font-weight:600;">The head is identical in rows</b>, at both widths and in every state; the rows frame is the last column of &sect;1 at 390. What differs is below the head. Rows keep the shipped key without the availability entries, because the row draws the marker <i>with</i> its word, and a key never glosses a mark the reader cannot find. The tile grid passes <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">withAvailability</span> to <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">CollectionMarkKey</span>, and rows do not.</div>
+      <div><b style="color:#EDE6D8;font-weight:600;">Recommendation: the default stays rows for R1.</b> First, readers who never touched the toggle would find their surface changed under them, and the stored choice exists to stop that. Second, rows carry the cost track and the full name, which 3-up truncates at about 13 characters. Third, this lets the grid change ship and be judged on the readers who chose it. If Product wants art-first browsing as the default, it is a one-line change in <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">browser.tsx</span> plus the matching CSS rule for the cookieless first visit. <b style="color:#EDE6D8;font-weight:600;">Gap 1.</b></div>
+    </div>
+  </div>
+
+  <!-- §7 -->
+  <div id="eng" style="max-width:1280px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #5C86C9;padding-top:18px;">&sect;7 &middot; <span style="color:#5C86C9;">contract for engineering</span></div>
+    <div style="border:1px solid #2A241D;border-radius:12px;background:#16131A;padding:6px 18px;">
+      <sc-for list="{{ contract }}" as="r" hint-placeholder-count="10">
+        <div style="display:grid;grid-template-columns:230px 1fr;gap:16px;padding:10px 0;border-bottom:1px solid #2A241D;font-size:13px;line-height:1.6;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EDE6D8;">{{ r.k }}</span>
+          <span style="color:#C6B79A;">{{ r.v }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const ST = (c) => `repeating-linear-gradient(135deg, color-mix(in oklab, var(--${c}) 36%, var(--surface-sunken)) 0 7px, color-mix(in oklab, var(--${c}) 27%, var(--surface-sunken)) 7px 14px)`;
+    const G = { g: { gc: true }, t: { tutor: true }, m: { mld: true }, x: { turn: true } };
+    const card = (name, sub, c, o = {}) => {
+      let facts = o.pending ? [] : (o.f || '').split('').map((k) => G[k]);
+      const combo = !o.pending && !!o.combo;
+      let more = '';
+      let showCombo = combo;
+      if (facts.length + (combo ? 1 : 0) > 3) {
+        more = '+' + (facts.length + (combo ? 1 : 0) - 2);
+        facts = facts.slice(0, 2);
+        showCombo = false;
+      }
+      const dots = { u: 'var(--u)', b: 'var(--b)', w: 'var(--w)', r: 'var(--r)', g: 'var(--g)' };
+      return {
+        name, sub, cap: o.cap || '',
+        qty: '×' + (o.n || 1), set: sub.split(' ')[0], type: o.type || 'Instant', dot: dots[c] || 'transparent',
+        rowEdge: o.a === 'over' ? 'var(--danger)' : 'transparent',
+        plate: o.pending ? 'var(--surface-sunken)' : o.missing ? 'linear-gradient(160deg, color-mix(in oklab, var(--w) 60%, #000), color-mix(in oklab, var(--u) 65%, #000))' : ST(c),
+        count: o.n ? '×' + o.n : '',
+        facts, more, combo: showCombo,
+        aSoft: o.a === 'soft', aHard: o.a === 'hard', aOver: o.a === 'over',
+        edge: o.a === 'over' ? 'var(--danger)' : 'var(--border)',
+      };
+    };
+
+    const rest = [
+      card('Rhystic Study', 'PCY · common', 'u', { f: 'g', a: 'hard', type: 'Enchantment' }),
+      card('Sol Ring', 'C21 · uncommon', 'fg-locked', { f: 'g', n: 3, a: 'over' }),
+      card('Demonic Tutor', 'UMA · rare', 'b', { f: 'gt' }),
+      card('Cyclonic Rift', 'RTR · rare', 'u', { f: 'g', a: 'soft' }),
+      card('Arcane Signet', 'CMR · common', 'fg-locked', { n: 4 }),
+      card('Smothering Tithe', 'RNA · rare', 'w', { f: 'g', a: 'hard' }),
+      card('Dockside Extortionist', 'C19 · rare', 'r', { f: 'g', combo: true }),
+      card("Kodama's Reach", 'CHK · common', 'g', { n: 2 }),
+      card('Swords to Plowshares', 'STA · uncommon', 'w', { n: 2, a: 'soft' }),
+      card("Thassa's Oracle", 'THB · common', 'u', { combo: true, a: 'hard' }),
+      card('Birds of Paradise', 'M12 · rare', 'g', {}),
+      card('Command Tower', 'CMR · common', 'fg-locked', { missing: true, n: 3 }),
+      card('Counterspell', 'MH2 · uncommon', 'u', { n: 3 }),
+      card('Lightning Greaves', 'CMR · uncommon', 'fg-locked', {}),
+      card('Esper Sentinel', 'MH2 · rare', 'w', { f: 'g' }),
+    ];
+    const mid = [
+      card('Mana Crypt', '2XM · mythic', 'fg-locked', { f: 'g', a: 'over' }),
+      card('Mystic Remora', 'ICE · common', 'u', { f: 'g' }),
+      card('Necropotence', 'ICE · rare', 'b', { f: 'g', a: 'hard' }),
+      card("Nature's Lore", 'CMR · common', 'g', { n: 2 }),
+      card('Opposition Agent', 'C20 · rare', 'b', { f: 'gt' }),
+      card('Path to Exile', 'CON · uncommon', 'w', { n: 2, a: 'soft' }),
+      card('Ponder', 'M12 · common', 'u', { n: 3 }),
+      card('Pact of Negation', 'FUT · rare', 'u', { combo: true }),
+      card('Rampant Growth', 'M10 · common', 'g', {}),
+      card('Reanimate', 'TMP · uncommon', 'b', { pending: true, a: 'hard' }),
+      card('Rite of Flame', 'CSP · common', 'r', { pending: true }),
+      card('Sakura-Tribe Elder', 'CHK · common', 'g', { pending: true, n: 2 }),
+      card('Scroll Rack', 'TMP · rare', 'fg-locked', { pending: true }),
+      card('Sensei’s Top', 'CHK · uncommon', 'fg-locked', { pending: true }),
+      card('Sylvan Library', 'EMA · rare', 'g', { pending: true }),
+    ];
+    const filtered = [
+      card('Rhystic Study', 'PCY · common', 'u', { f: 'g', a: 'hard' }),
+      card('Necropotence', 'ICE · rare', 'b', { f: 'g', a: 'hard' }),
+      card("Thassa's Oracle", 'THB · common', 'u', { combo: true, a: 'hard' }),
+      card('Reanimate', 'TMP · uncommon', 'b', { a: 'hard' }),
+      card('Fierce Guardianship', 'C20 · rare', 'u', { f: 'g', a: 'hard' }),
+      card('Vampiric Tutor', 'EMA · mythic', 'b', { f: 'gt', a: 'hard' }),
+      card('Brainstorm', 'STA · rare', 'u', { n: 2, a: 'hard' }),
+      card('Dark Ritual', 'STA · rare', 'b', { a: 'hard' }),
+      card('Force of Will', '2XM · mythic', 'u', { f: 'g', a: 'hard' }),
+      card('Toxic Deluge', 'C13 · rare', 'b', { a: 'hard' }),
+      card('Mystic Remora', 'ICE · common', 'u', { f: 'g', a: 'hard' }),
+      card('Bloodchief’s Thirst', 'ZNR · uncommon', 'b', { n: 2, a: 'hard' }),
+      card('Imperial Seal', 'PTK · rare', 'b', { f: 'gt', a: 'hard' }),
+      card('Counterspell', 'MH2 · uncommon', 'u', { n: 3, a: 'hard' }),
+      card('Snuff Out', 'MMA · rare', 'b', { a: 'hard' }),
+    ];
+    const tutors = [
+      card('Demonic Tutor', 'UMA · rare', 'b', { f: 'gt' }),
+      card('Diabolic Intent', 'PLS · rare', 'b', { f: 't' }),
+      card('Enlightened Tutor', 'MIR · uncommon', 'w', { f: 'gt', a: 'soft' }),
+      card('Gamble', 'USG · rare', 'r', { f: 'gt' }),
+      card('Imperial Seal', 'PTK · rare', 'b', { f: 'gt', a: 'hard' }),
+      card('Mystical Tutor', 'STA · rare', 'u', { f: 'gt' }),
+      card('Personal Tutor', 'M10 · uncommon', 'u', { f: 't' }),
+      card('Vampiric Tutor', 'EMA · mythic', 'b', { f: 'gt', a: 'hard' }),
+      card('Worldly Tutor', 'MIR · uncommon', 'g', { f: 'gt' }),
+    ];
+
+    const base = { ruler: true, focus: false, idle: true, shelfQuery: false, badge: '', filtersEdge: 'var(--border-strong)', grid: true, rows: false,
+      rowsBg: 'transparent', rowsFg: 'var(--fg-faint)', gridBg: 'var(--elevated)', gridFg: 'var(--fg)' };
+    const frames = (w) => {
+      const tabsH = 48 + 70;
+      const res = (n) => (w === 390 ? n + ' results' : n);
+      const list = [
+        { ...base, label: '1 · at rest, scroll 0', note: `Tabs (48) scroll away; the head (102) pins. Mobile header (70, shipped) and tabs (48) scroll away; the head (102) pins. Key: 2 equal columns × 4 rows of 16px samples (H7), 90px. First tile at 320px, against 339 on the shipped page.`,
+          showTabs: true, showShelf: false, showKey: true, result: res('2,926'), tiles: rest, rulerTop: tabsH },
+        { ...base, label: '2 · scrolled (the “collapsed” state)', note: 'Same 102px, pinned at the top. Nothing animated and nothing measured: tabs and key are simply above the viewport. ~7–8 tiles in view against ~3–4 at 2-up today. The bottom row is the first window still drawing (pending plates, captions present).',
+          showTabs: false, showShelf: false, showKey: false, result: res('2,926'), tiles: mid, rulerTop: 0 },
+        { ...base, label: '3 · filters on, at rest', note: 'Badge counts dimensions (2). The chip shelf (38) appears below the pinned head only while a filter is on: one line, scrolling sideways, with Clear all at the trailing edge. It scrolls away with the tabs.',
+          showTabs: true, showShelf: true, showKey: true, badge: '2', filtersEdge: 'var(--accent)', result: res('212'), tiles: filtered, rulerTop: tabsH },
+        { ...base, label: '4 · filters on, scrolled', note: 'The badge and the result count carry the state; the chips are above. The Filters trigger is in reach on every screen of the list, which was finding 2.',
+          showTabs: false, showShelf: false, showKey: false, badge: '2', filtersEdge: 'var(--accent)', result: res('212'), tiles: filtered.slice(3).concat(filtered.slice(0, 3)), rulerTop: 0 },
+        { ...base, label: '5 · search focused, typing', note: `Typed mid-list: the page returns to where the head first pins, so the query chip, the key and result 1 are in view. The chip is the shipped "query" chip. The view well yields to the field (:focus-within): ${w - 32}px wide, accent edge, ✕ to clear. The count updates live in row 2. Tab bar under the keyboard.`,
+          showTabs: false, showShelf: false, shelfQuery: true, showKey: true, focus: true, idle: false, result: res('9'), tiles: tutors, rulerTop: 0 },
+      ];
+      if (w === 390) list.push({ ...base, label: '6 · rows view, at rest', note: 'The same head, row for row. Rows stay the phone default (§6). Rows keep the shipped key without availability entries, because the row prints the word.',
+        showTabs: true, showShelf: false, showKey: true, grid: false, rows: true, rowsBg: 'var(--elevated)', rowsFg: 'var(--fg)', gridBg: 'transparent', gridFg: 'var(--fg-faint)', result: res('2,926'), tiles: rest, rulerTop: tabsH });
+      return list;
+    };
+
+    const keyEntries = [
+      { gc: true, word: 'game changer' },
+      { mld: true, word: 'mass land denial' },
+      { turn: true, word: 'extra turns' },
+      { tutor: true, word: 'tutor' },
+      { combo: true, word: 'Two-card combo' },
+      { soft: true, word: 'Wanted by a draft' },
+      { hard: true, word: 'In use' },
+      { over: true, word: 'Over-committed' },
+    ];
+
+    const anatomyTiles = (px) => [
+      card('Demonic Tutor', 'UMA · rare', 'b', { f: 'gt', cap: 'two facts, no chip' }),
+      card('Imperial Seal', 'PTK · rare', 'b', { f: 'gt', a: 'hard', cap: 'chip glyph + two facts' }),
+      card('Sol Ring', 'C21 · uncommon', 'fg-locked', { f: 'g', n: 3, a: 'over', combo: true, cap: 'over (21px box, danger edge) + fact + combo + ×3' }),
+      card('Synthetic four', 'XXX · mythic', 'r', { f: 'gmx', combo: true, a: 'soft', cap: 'four glyphs → two + “+2” (synthetic)' }),
+      card('Reanimate', 'TMP · uncommon', 'b', { pending: true, a: 'hard', cap: 'pending: first window, drawn fields not yet here' }),
+      card('Command Tower', 'CMR · common', 'fg-locked', { missing: true, n: 3, cap: 'no art exists: identity gradient (shipped)' }),
+    ];
+
+    return {
+      widths: [
+        { px: 390, title: '390 · iPhone 14/15', sub: 'track 362 · tile 115.3 (art 161 + caption 70) · gap 8 · search 262 at rest, 358 focused', frames: frames(390) },
+        { px: 360, title: '360 · the narrow Android floor', sub: 'track 332 · tile 105.3 (art 147 + caption 70) · gap 8 · search 232 at rest, 328 focused', frames: frames(360) },
+      ],
+      keyEntries,
+      headSum: [
+        { k: 'padding-top', v: '8' },
+        { k: 'row 1 · search + view well', v: '44' },
+        { k: 'gap', v: '6' },
+        { k: 'row 2 · Filters · Sort · result (36 drawn, 44 target)', v: '36' },
+        { k: 'padding-bottom', v: '7' },
+        { k: 'border-bottom', v: '1' },
+        { k: 'pinned, phone (<600)', v: '102' },
+        { k: 'pinned, 600–999 (one row)', v: '60' },
+      ],
+      compare: [
+        { k: 'Pinned head / 844', v: '102 · 12.1%' },
+        { k: 'Sets, collapsed bar (shipped)', v: '52 · 6.2%' },
+        { k: 'Sets, open head pinned (#623, rejected)', v: '288 · 34%' },
+        { k: 'First tile at 390, shipped (2-up, measured)', v: '339' },
+        { k: 'First tile at 390, R1 (3-up)', v: '320' },
+        { k: 'Controls in reach after scrolling, today', v: '0' },
+      ],
+      anatomy: [
+        { title: '390 · tile 115px', px: 115, tiles: anatomyTiles(115) },
+        { title: '360 · tile 105px', px: 105, tiles: anatomyTiles(105) },
+      ],
+      budget: [
+        { k: 'chip glyph box (soft/hard)', w: '16', f: '—', c: '#8E8269' },
+        { k: 'chip glyph box (over)', w: '21', f: '—', c: '#8E8269' },
+        { k: 'over + 2 facts + combo', w: '87', f: '390 ✓ 360 ✓', c: '#6FA368' },
+        { k: 'over + 3 facts', w: '87', f: '390 ✓ 360 ✓', c: '#6FA368' },
+        { k: 'over + 3 facts + combo', w: '109', f: '→ +N rule', c: '#DEAA29' },
+        { k: 'shipped chip “1 in a draft” + 1 fact', w: '103', f: '✗ both', c: '#C6533F' },
+      ],
+      keepDrop: [
+        { tag: 'kept', c: '#6FA368', v: 'The four fact marks and the combo glyph, all at the shipped 16px with the --fact glow (CARD_FACT_MARK_PX / COMBO_GLYPH_PX). They must not differ by surface.' },
+        { tag: 'kept', c: '#6FA368', v: 'The whole card at 63:88, the same `normal` file, the 9px shell radius (≥ 3.1% of 115px, so the matte rule holds) and TILE_ART_CLIP.' },
+        { tag: 'kept', c: '#6FA368', v: 'All three caption lines at a fixed 70px: meta, name with ×N, and SET · rarity (Hugh, 2026-09-23).' },
+        { tag: 'kept', c: '#6FA368', v: 'The availability state, as its glyph inside the shipped outlined slot box, with the over tile’s danger border.' },
+        { tag: 'dropped', c: '#C6533F', v: 'The chip’s word (1 in a draft / none free / short N). It is still spoken through the tile’s name, and glossed in the key.' },
+        { tag: 'dropped', c: '#C6533F', v: 'A fourth glyph and beyond, which become +N. Rare to never, and decided by count.' },
+        { tag: 'shrunk', c: '#DEAA29', v: 'Caption side padding, 9px → 7px (pl/pr at 3-up only).' },
+        { tag: 'shrunk', c: '#DEAA29', v: 'The visible name: about 13 characters at 390 and 12 at 360 before the ellipsis. The full name is in the spoken name and the card sheet.' },
+      ],
+      placeFrames: [
+        { label: '/collection/proxies · reached by its tab', note: 'The breadcrumb goes, because the strip says where you are. The page title becomes an h2 under the shared strip. The way back is the Cards tab. The list, cost strip and read-only ruling are untouched. H19 (the missing back link) is fixed by this too, but it ships separately.', isProxies: true,
+          tabs: [{ label: 'Cards', weight: 500, color: 'var(--fg-muted)', shadow: 'none' }, { label: 'Sets', weight: 500, color: 'var(--fg-muted)', shadow: 'none' }, { label: 'Proxies', weight: 600, color: 'var(--fg)', shadow: 'inset 0 -2px 0 var(--accent)' }] },
+        { label: '/collection/sets · the same strip', note: 'The strip replaces "Collection / Sets" and the By set pill. The set index below the heading is unchanged. /collection/sets/[code] keeps its own breadcrumb and collapsing head: a fourth level would stack above a head that already took two rounds to settle.', isSets: true,
+          tabs: [{ label: 'Cards', weight: 500, color: 'var(--fg-muted)', shadow: 'none' }, { label: 'Sets', weight: 600, color: 'var(--fg)', shadow: 'inset 0 -2px 0 var(--accent)' }, { label: 'Proxies', weight: 500, color: 'var(--fg-muted)', shadow: 'none' }] },
+        { label: '/collection, empty · Cards · Proxies', note: 'Sets is absent, not disabled: the By set pill was gated on hasCollection, and this keeps that gate. Proxies stays ungated, as the shipped pill was, for the player whose cards are all printed. The strip is mounted by the page here too, so the early return no longer loses the way in.', isEmpty: true,
+          tabs: [{ label: 'Cards', weight: 600, color: 'var(--fg)', shadow: 'inset 0 -2px 0 var(--accent)' }, { label: 'Proxies', weight: 500, color: 'var(--fg-muted)', shadow: 'none' }] },
+      ],
+      proxyRows: [
+        { name: 'Mana Crypt', set: '2XM · mythic', deck: 'Kinnan, Bonder Prodigy', price: '$164.99' },
+        { name: 'Gaea’s Cradle', set: 'USG · rare', deck: 'Yisan', price: 'no stock' },
+        { name: 'Mox Diamond', set: 'STH · rare', deck: 'Tymna / Kraum', price: '$29.40' },
+        { name: 'Grim Monolith', set: 'ULG · rare', deck: 'Kinnan, Bonder Prodigy', price: '$11.20' },
+        { name: 'Chrome Mox', set: 'MRD · rare', deck: 'Tymna / Kraum', price: '$9.01' },
+      ],
+      routes: [
+        { k: 'Phone:', v: 'the strip is the first row of each route and scrolls away, so it is one scroll-to-top from anywhere. It is place navigation, not a control the list needs, so it does not take pinned height.' },
+        { k: 'Desktop:', v: 'the same strip under the title, with 32px+ targets (40 tall). The two pills leave row 3.' },
+        { k: 'Back:', v: 'the tab you came from. Browser Back restores the URL, filters included, because /collection mirrors its state to the query.' },
+        { k: 'Not carried:', v: 'filters, query, sort and view stay inside each route (ruling 15). The Cards tab is bare /collection. Gap 3 asks whether it should remember the last query.' },
+        { k: 'Mounted by:', v: 'a shared CollectionTabs server component that each of the three pages renders, the empty branch included. Not a layout.tsx, which would also wrap /replace and /sets/[code].' },
+      ],
+      rejected: [
+        { k: 'A third segment in the view well.', v: 'Set-collections 1c and ruling 2 already rejected it. A segment that navigates is the /commanders defect.' },
+        { k: '“Proxied” as a filter on /collection.', v: 'Proxies are cards you do NOT own, so it would put an inverted population inside a filter of owned cards. That is the same state-sharing defect.' },
+        { k: 'Keep the pills and add a back link.', v: 'This fixes H19 and nothing else. Proxies would still be a door in a filter bar, not part of a place.' },
+        { k: 'A layout.tsx shell.', v: 'It would wrap /replace and the set page, and would put the strip on routes whose heads it does not belong in.' },
+      ],
+      mdTiles: [
+        card('Rhystic Study', '', 'u'), card('Sol Ring', '', 'fg-locked'), card('Demonic Tutor', '', 'b'),
+      ],
+      contract: [
+        { k: 'Pinned head', v: 'position: sticky; top: 0 on a server-rendered box of fixed height: 102px below 600, 60px from 600 to 999. No JS, threshold, spacer or observer. Don’t import use-head-collapse.' },
+        { k: 'Sheet portal', v: 'CollectionFilterSheet renders outside the sticky box (a portal to body). Without it, the z-[2] stacking context traps the sheet’s z-50 under the rail (768–999) and the tab bar (phone). This blocks the 768–999 pin.' },
+        { k: 'Chassis, compact', v: 'On /collection the compact form splits: rows 1 + 3 merge into the pinned box, and row 2 (chips) renders below it only while chips.length > 0. Decision 2’s fixed-height row yields here, because the shelf sits in the scroll and a filter change resets the list anyway. Other routes are unchanged (gap 2).' },
+        { k: 'Result count', v: 'Below 375px the noun ("results") is visually hidden by a CSS breakpoint and stays in the accessible name.' },
+        { k: 'Search width', v: 'Row 1: SearchField flex-1 + ViewToggle. ViewToggle is hidden under row 1’s :focus-within (CSS), and the field takes the row.' },
+        { k: 'Scroll on change', v: 'A query, filter or sort change made while scrollY is past the head’s rest offset scrolls to that offset, so results start under the head. Typing at the top does nothing.' },
+        { k: 'Grid track', v: 'grid-cols-3 gap-[8px] below md (was grid-cols-2 gap-[12px]). The md floor of 178px is unchanged. Caption pl/pr 7px at 3-up.' },
+        { k: 'Tile chip', v: 'AvailabilityMarker gains a glyph-only form for the 3-up caption: the same CARD_TILE_SLOT_BOX and slotOutline, with no label span. `spoken` stays on.' },
+        { k: 'Overflow', v: 'facts.length + (comboPartner ? 1 : 0) > 3 → render facts[0..1] plus `+N`. Server-safe, so no measurement.' },
+        { k: 'Pending tile', v: 'Art plate var(--surface-sunken) with the inner edge, no gradient and no shimmer. The caption draws name, ×N, sub and the chip glyph. Facts and combo fill the fixed meta line when they arrive.' },
+        { k: 'Key', v: 'CollectionMarkKey({ withAvailability }) for the grid. MarkKey becomes a grid of repeat(auto-fill, minmax(150px,1fr)) gap 6/12 with padding 10/14 (H7): 2 equal columns × 4 rows at both 390 and 360. Each row is 16px tall, the sample’s height, so the key is 90px. Three columns would need 378px against a 360px track, and "Wanted by a draft" needs about 121px, so a third column is not reachable on the phone.' },
+        { k: 'Tabs', v: 'A CollectionTabs server component with links /collection, /collection/sets and /collection/proxies, and aria-current="page" on the current one. The By set and Proxies pills are removed from filter-bar.tsx, the empty state’s Proxies GhostButton is removed, and the breadcrumbs on sets and proxies are removed.' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
