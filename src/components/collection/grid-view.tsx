@@ -89,11 +89,10 @@ export function GridView({
        would collapse a 178px floor to a single column at this width. */
     <div aria-busy={busy || undefined} className="grid grid-cols-3 md:grid-cols-[repeat(auto-fill,minmax(178px,1fr))] gap-[8px] md:gap-[20px] px-[14px] md:px-[34px] pt-[4px] md:pt-[20px] pb-[14px] md:pb-[34px]">
       {/* The gloss travels WITH the view: a surface drawing a wordless mark carries the
-          thing that decodes it, rather than trusting a caller to mount one above. TWO
-          instances, not one prop on a shared key: the availability entries belong to the
-          below-`md` phone tile alone, whose chip is the one that drops its word (below). */}
-      <CollectionMarkKey className="col-span-full md:hidden" withAvailability />
-      <CollectionMarkKey className="col-span-full hidden md:block" />
+          thing that decodes it, rather than trusting a caller to mount one above. ONE
+          instance (Hugh, 2026-10-03): the desktop key matches the phone's, even though
+          the desktop chip spells the availability state out in words too (below). */}
+      <CollectionMarkKey className="col-span-full" />
       {cards.map((c, i) => {
         const state = c.availability ? availabilityState(c.availability) : "free";
         // Addendum 2 §2, matching the row: over-committed keeps its border tint

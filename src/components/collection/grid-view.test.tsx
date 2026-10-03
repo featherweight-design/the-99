@@ -102,16 +102,13 @@ describe("GridView availability chip", () => {
     expect(screen.getByText("RVR · rare")).toBeInTheDocument();
   });
 
-  // Collection surfaces, Call 3, and the handoff's own ruling: the key's availability
-  // entries belong to the below-`md` PHONE key alone. The two `CollectionMarkKey` mounts
-  // (`md:hidden` and `hidden md:block`) carry the same facts and combo entries either way, so
-  // this reads the one thing that must differ between them.
-  it("gives the phone key the availability entries and withholds them from the desktop key", () => {
+  // Unconditional (Hugh, 2026-10-03): ONE key, carrying the availability entries at every
+  // width, rather than a phone instance that has them and a separate desktop one that does not.
+  it("gives the one key the availability entries, at every width", () => {
     renderTiles({ ...card, availability: avail(1, 1, 0, ["Atraxa"]) });
-    const phoneKey = document.querySelector('.md\\:hidden[role="group"], .md\\:hidden [role="group"]')!;
-    const desktopKey = document.querySelector('.md\\:block[role="group"], .md\\:block [role="group"]')!;
-    expect(phoneKey.textContent).toContain(availabilityCopy.collection.filterSoft);
-    expect(desktopKey.textContent).not.toContain(availabilityCopy.collection.filterSoft);
+    expect(screen.getAllByRole("group")).toHaveLength(1);
+    const key = screen.getByRole("group");
+    expect(key.textContent).toContain(availabilityCopy.collection.filterSoft);
   });
 });
 

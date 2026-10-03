@@ -464,7 +464,11 @@ export function AvailabilityMarker({
       <AvailabilityGlyph
         state={state}
         seam={chip ? (plate ? CHIP_SCRIM : CAPTION_SCRIM) : seam}
-        big={glyphOnly}
+        // Never `big` here (Hugh, 2026-10-03): the phone's glyph-only chip drew its diamond at
+        // the bounding box's own 16px rather than the row/chip's 6px, about twice the size of
+        // the desktop chip's diamond beside its word. The outer box (below) keeps its 16/21px
+        // width for the caption row's shared height; only the diamond inside it shrinks to
+        // match. `AvailabilityGlyphBox`, the key's own samples, still passes `big` — unaffected.
       />
       {/*
         The prefix never truncates; the deck name is the flexible half. This is

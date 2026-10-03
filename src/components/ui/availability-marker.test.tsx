@@ -544,12 +544,12 @@ describe("AvailabilityMarker glyphOnly", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  // The caption's meta line is a FIXED 17/18px height (`CardTileCaption`'s `META_LINE`), with
-  // every other occupant a flat, unrotated 16x16 glyph. A 45°-rotated diamond whose CSS side is
-  // the full 16px bounds to ~22.6px and overflows that line — so the diamond's side has to be
-  // smaller, and `AVAILABILITY_CHIP_GLYPH_PX` names the BOUNDING box the rotation produces, not
-  // the diamond's own side.
-  it("keeps every state's rendered box at or under the 16px bounding size the caption's meta line has room for", () => {
+  // Never `big` (Hugh, 2026-10-03): the phone's glyph-only chip drew its diamond at the
+  // bounding box's own ~11.3px CSS side (16px rotated), about twice the 6px diamond the
+  // desktop chip draws beside its word. The diamond itself is the plain, unrotated 6px
+  // `DIAMOND` size now — only the OUTER box (the next test) keeps its 16/21px width, for the
+  // caption row's shared height.
+  it("draws every state's diamond at the row/chip's plain 6px, not the bounding-box size", () => {
     for (const [owned, hard, soft] of [
       [1, 1, 0], // hard
       [2, 0, 1], // soft
@@ -557,24 +557,28 @@ describe("AvailabilityMarker glyphOnly", () => {
       const { container, unmount } = render(
         <AvailabilityMarker availability={a(owned, hard, soft)} density="chip" plate={false} glyphOnly />,
       );
-      const diamond = container.querySelector("[aria-hidden] span, [aria-hidden]")!;
-      const w = parseFloat((diamond as HTMLElement).style.width);
-      const h = parseFloat((diamond as HTMLElement).style.height);
-      // A 45°-rotated square's bounding box is its side times √2 — this is the figure that
-      // must not exceed AVAILABILITY_CHIP_GLYPH_PX, not the raw `w`/`h` the element carries.
-      expect(w * Math.SQRT2).toBeLessThanOrEqual(AVAILABILITY_CHIP_GLYPH_PX + 0.01);
-      expect(h * Math.SQRT2).toBeLessThanOrEqual(AVAILABILITY_CHIP_GLYPH_PX + 0.01);
+      const diamond = container.querySelector('[class*="rotate-45"]') as HTMLElement;
+      // No inline width/height at all: `big` unset falls through to the class's own `w-[6px]
+      // h-[6px]`, which jsdom does not resolve to a style value, so its ABSENCE is the signal.
+      expect(diamond.style.width).toBe("");
+      expect(diamond.style.height).toBe("");
+      expect(diamond.className).toContain("w-[6px]");
+      expect(diamond.className).toContain("h-[6px]");
       unmount();
     }
   });
 
-  it("keeps the over glyph's own box at the handoff's 21x16, not a scaled-up overflow", () => {
+  it("keeps the chip's own root at the handoff's 21x16, with the over glyph's plain 11x6 inside", () => {
     const { container } = render(
       <AvailabilityMarker availability={a(1, 2, 0)} density="chip" plate={false} glyphOnly />,
     );
-    const box = container.querySelector('[aria-hidden="true"]') as HTMLElement;
-    expect(box.style.width).toBe("21px");
-    expect(box.style.height).toBe("16px");
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.style.width).toBe("21px");
+    expect(root.style.height).toBe("16px");
+    // The over glyph's own `aria-hidden` root, nested inside, is the plain non-big layout: 11x6.
+    const overRoot = root.querySelector('[aria-hidden="true"]') as HTMLElement;
+    expect(overRoot.style.width).toBe("11px");
+    expect(overRoot.style.height).toBe("6px");
   });
 
   // Found by Copilot's round-1 review: a wrapper that auto-sizes to the diamond's unrotated
@@ -599,30 +603,15 @@ describe("AvailabilityMarker glyphOnly", () => {
     expect(overRoot.style.height).toBe(`${AVAILABILITY_CHIP_GLYPH_PX}px`);
   });
 
-  // Found by Copilot's round-1 and round-2 reviews: positioning the big diamonds by their
-  // unrotated CSS `left` (the small glyph's own convention) ignores that rotation moves a box's
-  // visual edge OUTWARD of its CSS edge by `inset` — a round-1 fix subtracted the inset where it
-  // needed to add it, which this test's own first version also got backwards (asserting the
-  // exact wrong-direction value and passing on the overflow it existed to catch). The PAINTED
-  // edge is `css − inset`, never `css + inset`, and the target paint size is the ROTATED
-  // diamond (`AVAILABILITY_CHIP_GLYPH_PX`), never the CSS side.
-  it("insets both big diamonds by the rotation growth, so the painted union stays within 21px", () => {
+  // The glyph-only chip no longer draws `big`, so the over glyph's two diamonds sit at their
+  // plain, non-rotated-growth positions — `left` 0 and 5, the same pair the row and the
+  // captioned desktop chip already use — rather than the inset math the bounding-box size needed.
+  it("positions the over glyph's two plain diamonds at left 0 and 5, unchanged by rotation growth", () => {
     const { container } = render(
       <AvailabilityMarker availability={a(1, 2, 0)} density="chip" plate={false} glyphOnly />,
     );
     const [first, second] = container.querySelectorAll('[class*="rotate-45"]');
-    const side = parseFloat((first as HTMLElement).style.width);
-    const inset = (AVAILABILITY_CHIP_GLYPH_PX - side) / 2;
-    const firstLeft = parseFloat((first as HTMLElement).style.left);
-    const secondLeft = parseFloat((second as HTMLElement).style.left);
-    // The first diamond's PAINTED left edge (css left minus inset) sits at the wrapper's own 0.
-    expect(firstLeft - inset).toBeCloseTo(0, 1);
-    // The second's painted right edge (css left minus inset, plus its ROTATED width — never the
-    // CSS side, which would make this the same expression `leftSecond` was solved from) sits at
-    // the wrapper's own width.
-    expect(secondLeft - inset + AVAILABILITY_CHIP_GLYPH_PX).toBeCloseTo(
-      AVAILABILITY_CHIP_GLYPH_OVER_PX,
-      1,
-    );
+    expect((first as HTMLElement).style.left).toBe("0px");
+    expect((second as HTMLElement).style.left).toBe("5px");
   });
 });
