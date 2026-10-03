@@ -15,6 +15,17 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
+/** Whether focus arrived by keyboard (`:focus-visible`), which is the only focus that holds the head open (H17). */
+function keyboardFocused(el: Element | null): boolean {
+  if (el === null) return false;
+  try {
+    return el.matches(":focus-visible");
+  } catch {
+    // An engine without the selector: keep the old, safer rule and hold on any focus.
+    return true;
+  }
+}
+
 /**
  * Honoured for the height change, as every other motion in this app is. A reader who has
  * asked for no motion gets the two heights and the step between them, with nothing drawn in
@@ -380,7 +391,16 @@ export function useHeadCollapse({
     // Only ever a reason NOT to collapse. A reader who is already looking at the bar and
     // tabs into the row must not have the head open itself underneath them, which is why
     // this gates the open→shy edge alone and never the restore.
+    //
+    // KEYBOARD focus only (H17, Hugh's walk 2026-10-02). The cost strip's toggles take
+    // focus on every press so a keyboard reader lands on the control that replaced the one
+    // they pressed, and a TAP does the same. Held on any focus, a tap on the strip's
+    // disclosure left focus inside a hidden member, so the head never collapsed and so
+    // never pinned, until the reader happened to focus something else. A pointer press
+    // leaves no keyboard to take away, and `:focus-visible` is the browser's own answer to
+    // which kind of focus this is.
     const holdsFocus = head !== null
+      && keyboardFocused(document.activeElement)
       && [...head.querySelectorAll("[data-set-shy-hides]")]
         .some((member) => member.contains(document.activeElement));
     // Read as a function of the CURRENT state, which is what makes this hysteresis rather
@@ -456,7 +476,8 @@ export function useHeadCollapse({
 
 
   /**
-   * The step between the two heights, animated — and owned by the engine rather than by this
+   * The RESTORE, animated (the collapse snaps since H14: by the time it fires the open head
+   * has scrolled away, so animating it pinned a full-height head over the grid) — and owned by the engine rather than by this
    * file.
    *
    * This was a CSS transition driven by hand: a `transitionend` listener, a safety timer for
@@ -514,7 +535,17 @@ export function useHeadCollapse({
     const settling = settlingCrossingRef.current;
     settlingCrossingRef.current = false;
     if (crossedBreakpoint) crossingPendingRef.current = true;
-    if (el === null || spacer === null || !stepping || crossedBreakpoint || settling
+    // The COLLAPSE is never animated, only the restore (H14, Hugh's walk 2026-10-02: "the
+    // collapse jumps to full height first"). The head turns `sticky` in the same commit that
+    // draws the bar, so a step from the open height pinned a full-height head over the top
+    // of the grid and shrank it there: measured at 390x844, `top 0, height 302, sticky` on
+    // the first frame of the collapse, then 81, 79 … 75. And there is nothing to animate on
+    // that edge: the decision waits until the open head has scrolled entirely past
+    // (`collapseAt` is the grid's top), so the reader never saw the open form shrink — only
+    // a form that was off-screen reappearing at full height. The restore keeps its step,
+    // since that head is in the flow and grows into a band the reader is looking at.
+    const collapsing = shy;
+    if (el === null || spacer === null || !stepping || collapsing || crossedBreakpoint || settling
       || prefersReducedMotion() || typeof el.animate !== "function"
       || from === null || to === null || Math.abs(to - from) < 1) {
       // A bar height measured at one width must not decide a threshold at the other. The
@@ -525,6 +556,13 @@ export function useHeadCollapse({
         barHeightRef.current = null;
         barDesktopRef.current = null;
       }
+      // Switched off BEFORE `sizeSpacer`, never after. Its reads force a layout with the bar
+      // already drawn and the reserve not yet grown, and with anchoring live in that layout
+      // Chrome moved the reader by the reserve's height: measured at 390x844, a collapse at
+      // y=416 landed at y=642, the grid 226px up the screen, on every snapped collapse
+      // (reduced motion's included, which took this branch before H14 too). jsdom does no
+      // anchoring, so only a browser can see this one.
+      if (containerRef.current !== null) containerRef.current.style.overflowAnchor = "none";
       sizeSpacer();
       if (containerRef.current !== null) {
         // The anchoring switch still applies: the leap is the height change's doing, not the

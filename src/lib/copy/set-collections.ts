@@ -334,6 +334,10 @@ export const setPageCopy = {
     // The list travels in a URL, so a full set does not fit. The button says what it is
     // actually sending rather than implying it sends everything missing.
     sendCapped: (n: number) => `Send the first ${n} to ManaPool`,
+    // Why only the first N (H15, Hugh's walk 2026-10-02): the cap was stated on the button
+    // and never explained. Drawn under it only when the cap bites. Through /copy-review: the
+    // missing count is already the figure's own line above, so it is not said twice.
+    capNote: (cap: number) => `One send holds up to ${cap} cards. Filter the grid to send the rest.`,
     // No price: the figure above costs every missing card, and this link carries only the
     // first N of them.
     sendCappedAria: (n: number) =>

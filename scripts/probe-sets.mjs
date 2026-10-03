@@ -1139,16 +1139,23 @@ async function run() {
           : `worst ${worstBand.band}px at y=${worstBand.y}, shy=${worstBand.shy}`,
       );
 
-      // The step between the two heights is animated, in both directions. A swap of two
-      // `display` states is instant by construction, which is what read as the head
-      // snapping; the heights below are sampled every frame across the change, so a head
-      // that jumps reports two of them and one that moves reports a run.
+      // The RESTORE is animated and the COLLAPSE snaps (H14). A swap of two `display` states
+      // is instant by construction, which is what read as the head snapping open; the
+      // heights below are sampled every frame across the change, so a head that jumps
+      // reports two of them and one that moves reports a run. The collapse is the other
+      // way round on purpose: the head turns sticky in the commit that draws the bar, so a
+      // step from the open height pinned a full-height head over the grid and shrank it
+      // there — Hugh's "the collapse jumps to full height first", read as 302, 81, 79 … 75
+      // with `top 0` on every frame. It now reports exactly two heights, open then bar.
       const heightsAcross = async (from, to) => {
         await scrollTo(from);
         return page.evaluate((target) => new Promise((resolve) => {
           const head = document.querySelector("[data-set-head]");
           if (head === null) return resolve(null);
-          const seen = [];
+          // The height BEFORE the scroll is recorded first, so the count does not depend on
+          // whether React commits before or after the first frame: a snap is exactly
+          // [open, bar] either way.
+          const seen = [Math.round(head.getBoundingClientRect().height)];
           window.scrollTo(0, target);
           const t0 = performance.now();
           const tick = () => {
@@ -1163,8 +1170,8 @@ async function run() {
       const collapsing = await heightsAcross(0, 900);
       const restoring = await heightsAcross(900, 0);
       failures += !report(
-        "the head animates between its two heights rather than snapping",
-        Array.isArray(collapsing) && collapsing.length >= 4
+        "the head snaps to the bar and animates back open",
+        Array.isArray(collapsing) && collapsing.length === 2
           && Array.isArray(restoring) && restoring.length >= 4,
         collapsing === null || restoring === null
           ? "the head was not on the page — the check measured nothing"
