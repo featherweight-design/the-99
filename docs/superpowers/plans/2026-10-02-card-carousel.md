@@ -12,27 +12,35 @@ id `'card-detail'`, `src/lib/copy/about.ts:248-256`).
 
 ## Why this is bigger than the handoff's own PR count implies
 
-The handoff describes a modal enhancement. The modal is shared by **fourteen mount points**
-across the app (every `CardDetailProvider` usage): `commanders/detail.tsx`,
-`collection/collection-client.tsx`, `intake/hand-off-answers.tsx`, `decks/update-diff.tsx`,
-`decks/review-changes.tsx`, `commanders/full-card-trigger.tsx`, `decks/proxy-list-view.tsx`,
-`collection/browser.tsx`, `decks/change-commander-context.tsx`, `sets/set-grid-client.tsx`,
-`about/ch01-figures.tsx`, `app/decks/new/choose/page.tsx`, `decks/builder-shell.tsx`, plus the
-provider's own render in `card-detail-provider.tsx`. This is not a route-scoped feature — it is a
-change to a provider's public contract, consumed everywhere a card opens.
+The handoff describes a modal enhancement. The modal is shared app-wide: `<CardDetailProvider>`
+is mounted in ten files (`app/decks/new/choose/page.tsx`, `commanders/detail.tsx`,
+`about/ch01-figures.tsx` (twelve sites on its own), `collection/collection-client.tsx`,
+`intake/hand-off-answers.tsx`, `decks/proxy-list-view.tsx`, `decks/review-changes.tsx`,
+`decks/update-diff.tsx`, `sets/set-grid-client.tsx`, `decks/builder-shell.tsx`), 21 sites in all,
+and consumed by many more through `useCardDetail` / `CardDetailTrigger` (`collection/browser.tsx`,
+`commanders/full-card-trigger.tsx`, `decks/change-commander-context.tsx` among them). This is not
+a route-scoped feature — it is a change to a provider's public contract, consumed everywhere a
+card opens.
 
 **The provider's `open()` and `setSiblings()` currently take `siblings: string[]`** (oracle ids
-only — confirmed at `card-detail-provider.tsx:66-76`). Openers that currently hand the provider
-an id list include `collection/browser.tsx`, `sets/set-grid-view.tsx`, and
-`decks/decklist-row.tsx` (`open(card.oracleId, siblings, undefined, { door, art: card.imageUri })`
-— `decklist-row.tsx:396`). None of them pass per-sibling art or color identity today; `opts.art`
+only — the `open` and `setSiblings` members of `CardDetailContextValue`). Openers that currently
+hand the provider an id list include `collection/browser.tsx`, `sets/set-grid-view.tsx`, and the
+decklist, whose list is built in `decks/decklist.tsx` (`orderedIds`, `shoppingOrderedIds`) and
+passed down through `decklist-group.tsx` to `decklist-row.tsx`. None of them pass per-sibling art or color identity today; `opts.art`
 only ever carries the art for the **single card being opened**, not its neighbors. Note 2 in the
 handoff's README ("Openers that already ship images... pass `{oracleId, imageUri,
 colorIdentity}`") is **not yet true of any caller** — READINESS correctly flags this as "Needs
 openers," but the scope is: change `siblings` from `string[]` to a richer shape (or add a
-parallel lookup) and update every one of the three-plus openers that have image/identity data at
-hand (Collection, set grid, decklist), while openers that don't (search results, suggestions)
-fall back to `identityGradient` or the `--elevated` plate per the handoff's note 2.
+parallel lookup) and update every opener that has image/identity data at hand, while openers
+that don't fall back to `identityGradient` or the `--elevated` plate per the handoff's note 2.
+
+**Openers with art at hand** (the pre-open pass found the first list short): the decklist
+(`decks/decklist.tsx`), `collection/browser.tsx`, `sets/set-grid-view.tsx`, the Consider tiles
+(`decks/suggestion-tile.tsx`), the Card view (`decks/deck-card-tile.tsx`), the top-off list
+(`decks/top-off-list.tsx`), the update diff (`decks/update-diff-row.tsx`), the stand-ins sheet
+(`decks/stand-ins-sheet.tsx`), and the commander page's synergy and coverage lists
+(`commanders/synergy-row.tsx`, `commanders/coverage-chip.tsx`). Each passes its list's own art and
+identity. Every other opener passes bare ids, which stay valid.
 
 ## PR boundaries
 
@@ -48,17 +56,20 @@ pr-review skill). Given the fourteen-mount-point blast radius, this splits into 
 - Change `siblings` from `string[]` to a shape carrying `{oracleId, imageUri?, colorIdentity?}`
   per entry (or add a sibling lookup map alongside the id list — pick whichever keeps `open()`'s
   signature smallest; either way `setSiblings` must accept the same shape).
-- Update the three openers that have image/identity at hand: `collection/browser.tsx`,
-  `sets/set-grid-view.tsx`, `decks/decklist-row.tsx`. Every other opener (search results,
-  suggestions, commander detail's own list, `about/ch01-figures.tsx`) passes bare ids and falls
-  back to `identityGradient`/`--elevated` per note 2 — do not force-fetch art for those.
+- Update the openers with art at hand (listed above). The sibling type is `string |
+  {oracleId, name?, imageUri?, colorIdentity?}`, so a bare-id opener (search results,
+  `about/ch01-figures.tsx`, a commander opened alone) needs no change and falls back to
+  `identityGradient`/`--elevated` per note 2. Do not force-fetch art for those.
 - Prefetch the two neighbors' detail on arrival (README note 2, "Today nothing reads ahead") —
   reuse the existing `prefetchCard`/`useCardIntent` machinery already proven by
   `probe:card-prefetch`; this is a new *caller* of it, not new fetch logic.
 - Move the two shipped inline aria-labels (`Previous card` / `Next card`) to the copy keys in
   `card-carousel · copy strings.ts`.
-- Est. size: ~10-12 files (provider, three openers, copy, one new copy import site), well under
-  the 20-file / 800-line ceiling.
+- Est. size: ~14-16 files (provider, the openers above, copy), under the 20-file ceiling; the
+  opener edits are each a few lines.
+- **The neighbor prefetch changes what `probe:card-prefetch` counts**: an opened card now reads
+  its neighbors, so that probe's "reads a card ONCE" and "passing over reads nothing" checks must
+  tell a neighbor read (after arrival) from an intent read (before a press). Extend it in this PR.
 
 ### PR 2 — Desktop: neighbors, arrow keys, ends, one/two (R1 stands)
 - Draw the two scaled-down neighbor cards on the backdrop at ≥ 1252px (168×235 at .55, 24px off
@@ -70,7 +81,9 @@ pr-review skill). Given the fourteen-mount-point blast radius, this splits into 
 - One/two: a list of one drops `1 of 1` and both dead controls; a list of two pages one side.
 - Desktop art-column slide: 24px off its side, 200ms, reduced motion → swap (call #7).
 - Arrival announcement in the provider's live region (`{name}, {n} of {total}`), focus restored
-  to the control that paged (note 3).
+  to the control that paged (note 3). The PROVIDER's region owns it (call 8: the modal remounts per
+  card, so its own region would be empty on arrival). The modal's region keeps its own messages and
+  never says the arrival, so nothing is read twice.
 - Est. size: one file (`card-modal.tsx` footer + art column) plus the provider wrapper's
   announcement/motion logic — comfortably under the size ceiling on its own.
 
@@ -97,21 +110,22 @@ pr-review skill). Given the fourteen-mount-point blast radius, this splits into 
 - **Resolved (engineering call, the-99-3e, 2026-10-03)**: `var(--avail)` in `PhoneHero.dc.html:60,72`
   does not exist in `globals.css` (confirmed only `--avail-soft` / `--avail-hard` /
   `--avail-hard-fg` do) and resolves to nothing silently. `cur.avail` draws the same figure the
-  deck page's buy-tag label already draws beside an ownership count — `AvailabilityGlyph`
-  (`src/components/ui/availability-marker.tsx:196-209`) colors that figure `--avail-soft` when
-  the card is freely available and `--avail-hard-fg` when it is hard-claimed/to-buy (the same
-  split `fits-picker.tsx:115` uses for its own "to buy" figure). Wire `--avail` to that same
-  state-conditioned pair rather than a single static var — the carousel's card is drawing the
-  SAME marker every other availability label on the app draws, not a new one.
+  deck page's availability label already draws beside an ownership count. Its color is the
+  label map in `src/components/ui/availability-marker.tsx` (`LABEL_COLOUR`): `--fg-body` for a
+  soft claim, `--avail-hard-fg` for a hard one, `--avail-over-fg` for over, with the glyph beside
+  it drawing its own `--avail-soft` outline or `--avail-hard` fill. (Corrected by the pre-open
+  pass: an earlier draft named `--avail-soft` as the figure's free color, which no label uses.)
+  Wire `--avail` to that same state-conditioned map, through the marker's own export, so the
+  carousel draws the SAME label every other availability figure on the app draws.
 - Est. size: one new sheet component + the phone block of `card-modal.tsx` removed/replaced +
   gesture hook. Likely 6-10 files; watch the line count on the gesture math (lock/ratio/commit) —
   split the gesture hook into its own file if the sheet component alone would clear ~500 lines.
 
 ### PR 4 — Stacked sheets + ledger follow-ups
-- Stacked carousel (call #9): top layer pages its own list with its own peeks (frame P7 carries
-  over unchanged — it is not one of R2's superseded frames); the held card draws nothing
-  (`onPrev={null}`, already the shape the provider uses for `held` — see
-  `card-detail-provider.tsx:886-895`).
+- Stacked carousel (call #9): top layer pages its own list with its own peeks. Call 9's RULE
+  carries over (README: "the rest carry over unchanged ... stacked"), drawn at R2's geometry: frame
+  P7 lives in the superseded `PhoneSheet.dc.html`, so its layout is not followed, only its rule. The
+  held card draws nothing (`onPrev={null}`, the shape the provider already passes `held`).
 - Reduced-motion swap for both widths (ledger item 7: "a swap," never a slide/glide).
 - Ledger item 1 (peek contrast, measure the desktop neighbor names in `--fg-muted` on all six
   themes), item 3 (1252px threshold re-check if the 820px modal width ever moves), item 4
@@ -135,10 +149,8 @@ Per the contact-sheet convention (`docs/superpowers/inventories/*.json`, shape c
 surface — not necessarily the route's own `page.tsx`, since the modal is mounted by a shared
 component in most of these), and `steps`. Widths: **1300×900** (desktop neighbors, ≥ 1252px),
 **1100×900** (desktop, below the 1252px neighbor threshold — footer-only), and **390×844**
-(phone R2 sheet). A fourth width, **768×1024**, is worth adding once for the "desktop controls,
-no neighbors" state, since 1100 and 768 are both inside the same `768–1251` band per
-`STATES-card-carousel.md` list-shape table and one of the two can be dropped if the contact sheet
-runs long.
+(phone R2 sheet). 768 sits in the same `768–1251` band as 1100 (`STATES-card-carousel.md`),
+so it is not a fourth width: 1100 stands for the band.
 
 Proposed inventory file: `docs/superpowers/inventories/card-carousel.json`.
 
@@ -150,18 +162,19 @@ Proposed inventory file: `docs/superpowers/inventories/card-carousel.json`.
 | decklist-one | `decks/decklist-row.tsx` on a 1-card list (e.g. a brand-new brew) | open the sole card | s1: no counter, no peeks, footer = link only |
 | collection-tile | `collection/browser.tsx` | open a tile from a filtered/searched list | sibling list respects the live filter (provider `setSiblings`) |
 | set-grid-cell | `sets/set-grid-view.tsx` | open a printing cell | neighbor art resolves from the set grid's own data |
-| commander-detail | `commanders/full-card-trigger.tsx` | open a synergy/support card | bare-id opener fallback (`identityGradient`) |
+| commander-detail | `commanders/synergy-row.tsx` / `commanders/coverage-chip.tsx` | open a synergy card | neighbor art from the commander page's own lists |
 | review-diff | `decks/update-diff.tsx` / `decks/review-changes.tsx` | open a card from the what-changed strip | provider mounted on `/decks/[id]/changes` |
 | stacked-fits | `decks/proxy-list-view.tsx` or the Fits picker | open a card from a sheet stacked over another card | held card draws no paging (m6) |
 | builder-shell | `decks/builder-shell.tsx` | open a card from a Shopping row (door) | `phoneTop={52}` sheet-offset case still holds with the new phone sheet |
 | phone-full-picker | any opener, phone width | swipe up to full, open printing picker | m2: counter only, peeks withheld, picker lives in the full sheet |
-| phone-zoom | any opener, phone width | tap the centre card | zoom opens, no `Tap to zoom` hint, no paging inside it |
+| phone-zoom | any opener, phone width | tap the centre card in the teaser, then in full | the phone zoom is RETIRED (PR 3): nothing in the teaser, back to the teaser from full, no `Tap to zoom` hint |
 | desktop-zoom | any opener, ≥ 1252px | open zoom, press ← / → | arrow keys do nothing inside the zoom (decision 2 stands) |
 | reduced-motion | any opener | `prefers-reduced-motion: reduce`, page once | swap, no glide/snap; drag still tracks finger (not photographable — note in the row) |
 | about-card-detail | `about/ch01-figures.tsx` | load `/about` | the existing specimen still opens correctly with the new modal shape |
 
-Rows without an explicit `"widths"` key run at all three (1300, 1100, 390) per the contact-sheet
-convention; `reduced-motion` and the explicit end/one/two rows should carry `"widths"` narrowing
+The inventory declares a top-level `widths` array (the contact sheet defaults to 390 and 1300
+only): `phone` 390×844, `narrow` 1100×900 and `desktop` 1300×900, so rows without their own
+`"widths"` run at all three. Row `widths` take those LABELS, not pixels; `reduced-motion` and the explicit end/one/two rows should carry `"widths"` narrowing
 to whichever width actually exercises the state (phone drag rubber-band is phone-only; desktop
 `aria-disabled` is desktop-only).
 
