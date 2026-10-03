@@ -125,7 +125,11 @@ describe("the index retires a cached page it has replaced", () => {
     const fresh = { container: { json_dict: { cardlists: [{ tag: "newcards", cardviews: [{ name: "Fresh Card", inclusion: 9, potential_decks: 10 }] }] } } };
     vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ status: 200, ok: true, json: () => Promise.resolve(fresh) })));
     stub.db.insert = () => { throw new Error("write failed"); };
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
     const result = await resolveEdhrecData("00000000-0000-0000-0000-000000000001", "Atraxa, Praetors' Voice", row(ago(3 * day), ago(1 * day)));
+    // Said out loud, because a write that keeps failing refetches on every read and is otherwise silent.
+    expect(logged).toHaveBeenCalledWith("edhrec cache upsert failed", expect.any(Error));
+    logged.mockRestore();
     expect(result.data).toEqual(parseEdhrecPayload(fresh));
     expect(result.data).not.toEqual(parseEdhrecPayload(row(ago(3 * day), null).payload));
   });

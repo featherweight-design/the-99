@@ -129,8 +129,10 @@ export async function resolveEdhrecData(
           target: edhrecCache.commanderOracleId,
           set: { payload, fetchedAt: now },
         });
-    } catch {
-      // not a fallback: the fresh page is still what this read answers with.
+    } catch (err) {
+      // Logged, as the pair cache's upsert is: the fresh page is still what this read answers
+      // with, but a write that keeps failing leaves the row retired and refetches on every read.
+      console.error("edhrec cache upsert failed", err);
     }
     return { data: parseEdhrecPayload(payload), unreachable: false };
   } catch {
