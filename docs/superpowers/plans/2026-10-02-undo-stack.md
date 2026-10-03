@@ -1,6 +1,6 @@
 # Undo stacks across removals (H29)
 
-Plan, 2026-10-02. For Hugh's approval: not merged until he rules.
+Plan, 2026-10-02. **Ruled by Hugh, 2026-10-03** — see §8 for the four answers.
 
 Hugh's walk note (intake H29): "Undo stacks across several removals (no row shifts); locked after
 leaving the page or committing."
@@ -113,9 +113,11 @@ and bringing it back is an ordinary add on the next draft. The plan states this 
 same component in several places, with no new state, control or string. Logic plus existing
 affordances.
 
-**About entry.** The `undo-removal` entry says "the row turns into an undo", which stays true.
-Proposed: no new entry, since this changes how long an existing receipt lasts rather than adding a
-capability. Hugh decides, including whether the caption should say several can stand at once.
+**About entry.** Ruled: an ORDINARY EDIT to the existing `undo-removal` / Put back entry — no new
+entry and no `ABOUT_VERSION` bump, since this changes how long an existing receipt lasts rather
+than adding a capability (the entry's "the row turns into an undo" stays true; only a detail about
+several standing at once might change). The wording itself goes through `/copy-review` rather than
+to Hugh directly, per the standing copy-changes rule.
 
 ## 6 · Proof
 
@@ -139,10 +141,12 @@ One PR: `builder-shell.tsx`, `optimistic-deck.tsx` (`UndoSpentSlot` per card), `
 `decklist.tsx` (a list of spent cards), `decklist-group.tsx` (a set of spent ids), the discard's
 clear, the tests and the probe. Under ~500 lines.
 
-## 8 · For Hugh
+## 8 · Hugh's ruling, 2026-10-03
 
-1. Independent receipts (press any one), or strictly last-in-first-out? Proposed: independent.
-2. A cap on how many receipts stand at once? Proposed: none.
-3. The About caption: unchanged, or a line saying several can stand at once.
-4. Under Shopping's price order, a receipt keeps its card's price place (proposed, so nothing
-   shifts), reversing the shipped "ranked as drawn, last" rule?
+1. **Independent.** Any receipt may be undone in any order — not strictly last-in-first-out.
+2. **No cap.** Every receipt stands until undone, settled, or cleared by leaving/discarding/committing.
+3. **About: an ordinary edit, no version bump.** See §5. Wording goes through `/copy-review`.
+4. **Shopping's price order reverses.** A receipt ranks at its card's own price, not last as
+   drawn — `rankAsDrawn` no longer applies to a spent row under that sort. This is a shipped-rule
+   reversal; the build PR says so explicitly in its body, and `decklist.test.ts`'s pin for the old
+   "ranked as drawn, last" behavior on a spent row is replaced rather than left contradicted.
