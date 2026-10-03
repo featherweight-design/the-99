@@ -132,6 +132,10 @@ function createFieldsLoop<Row extends object, Fields extends object>(onLanded: (
       if (left) return;
       const ac = new AbortController();
       controller = ac;
+      // Whether this batch's payload is still the one the reader holds. Every late continuation
+      // checks it: a failure or a stale answer from a payload `update` has replaced belongs to a
+      // list nobody is drawing, and acting on it would undo the reset the new payload got.
+      const current = () => input.all === all && input.source === source;
       for (const s of batch) asked.add(s);
       fetch(source.url(batch), { signal: ac.signal, credentials: "same-origin" })
         .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`fields ${r.status}`))))
@@ -143,7 +147,7 @@ function createFieldsLoop<Row extends object, Fields extends object>(onLanded: (
             const list = forList(all);
             if (!list.refreshed) {
               list.refreshed = true;
-              onStale();
+              if (current()) onStale();
             }
             return;
           }
@@ -160,7 +164,7 @@ function createFieldsLoop<Row extends object, Fields extends object>(onLanded: (
           if (ac.signal.aborted) return;
           // Only while the window the batch was asked for is still the reader's: a failure never
           // marks a window chosen since, and a window left behind starts clean when it returns.
-          if (wantedKey !== input.wantedKey) return;
+          if (!current() || wantedKey !== input.wantedKey) return;
           failedAt = wantedKey;
           if (urgent && retries < RETRY_MS.length) {
             const key = failedAt;
@@ -205,11 +209,15 @@ function createFieldsLoop<Row extends object, Fields extends object>(onLanded: (
     update(next: LoopInput<Row>) {
       // A failure belongs to the payload and window it was asked for. A refresh that hands over a
       // new payload with the same window must ask afresh, or the window stays busy for good.
-      if (next.wantedKey !== input.wantedKey || next.all !== input.all || next.source !== input.source) {
+      const newPayload = next.all !== input.all || next.source !== input.source;
+      if (next.wantedKey !== input.wantedKey || newPayload) {
         retries = 0;
         failedAt = null;
         unretry();
       }
+      // A batch for a payload the reader no longer holds gives up its one in-flight slot, so the
+      // new payload's rows are asked for at once rather than after it.
+      if (newPayload) controller?.abort();
       input = next;
       unschedule();
       pump();

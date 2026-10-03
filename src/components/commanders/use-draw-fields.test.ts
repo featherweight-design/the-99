@@ -287,6 +287,23 @@ describe("useDrawFields", () => {
     }
   });
 
+  // A refresh can hand over a new payload with the same window while a background batch for the
+  // old one is still in flight. That batch gives way: it is aborted, so its failure cannot mark the
+  // new payload's window failed, and the new payload's waiting rows are asked for at once.
+  it("gives up an old payload's batch when a new payload arrives for the same window", async () => {
+    const drawn = all.slice(0, 2).map((r) => ({ ...r, ...fieldsFor(r.slug) })) as DiscoveryRow[];
+    const { rerender } = renderHook(
+      ({ list, wanted }: { list: DiscoveryRow[]; wanted: DiscoveryRow[] }) => useDrawFields("fit", list, wanted),
+      { initialProps: { list: all, wanted: drawn } },
+    );
+    await waitFor(() => expect(net.calls).toHaveLength(1));
+    const fresh = all.map((r) => ({ ...r }));
+    rerender({ list: fresh, wanted: [fresh[0], fresh[1]] });
+    expect(net.calls[0].signal.aborted).toBe(true);
+    await waitFor(() => expect(net.calls).toHaveLength(2));
+    expect(new URL(net.calls[1].url, "http://x").searchParams.get("s")!.split(",").slice(0, 2)).toEqual(["c0", "c1"]);
+  });
+
   it("asks for nothing when every row arrived drawn", async () => {
     const drawn = all.slice(0, 3).map((r) => ({ ...r, ...fieldsFor(r.slug) }));
     renderHook(() => useDrawFields("fit", drawn, drawn));
