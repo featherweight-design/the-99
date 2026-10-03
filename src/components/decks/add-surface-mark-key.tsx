@@ -39,11 +39,8 @@ const ENTRIES = [
   })),
   {
     id: "combo",
-    // AT THE SIZE THE READER SEES — 12px, not the 16 the three above draw at. A key decodes a
-    // glyph, so a sample that is not the glyph on the surface decodes something else, and the
-    // two sizes are both the spec: the facts sit on a NAME line at 16, and the clause leads a
-    // secondary line of 9.5-10.5px mono where 16 is taller than the text it introduces.
-    // `CollectionMarkKey` makes the same pairing for the same reason.
+    // `ComboGlyph` takes no size prop — Hugh's 2026-09-21 ruling, recorded in that
+    // component. Both callers draw the lemniscate at the app's one mark size.
     sample: <ComboGlyph />,
     word: comboAwarenessCopy.keyWord,
   },

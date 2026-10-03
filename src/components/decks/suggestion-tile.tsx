@@ -5,28 +5,30 @@
 // card was suggested for is never printed here — it is the shelf heading above,
 // so a tile in the Ramp shelf does not say "ramp" a second time.
 
-import { hasFrontFaceCost } from "../../lib/cards/faces";
 import type { DeckSuggestion, DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import { addCardToDeck } from "../../app/decks/actions";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { synergyCopy, synergySignedDisplay } from "../../lib/copy/synergy-discovery";
 import { availabilityState, hardDecks } from "../../lib/decks/availability";
-import { CostPips } from "../ui/cost-pips";
 import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { shelfRoleOf } from "../../lib/decks/suggest";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { GhostButton } from "../ui/button";
 import { BuyTag } from "./buy-tag";
 import { CardNote } from "./card-note";
+import { CardTileCaption } from "../ui/card-tile-caption";
+import { OwnershipDot } from "../ui/ownership-dot";
 import { CardFactMark } from "../cards/card-fact-mark";
+import { ComboGlyph } from "../cards/combo-glyph";
 import { FactTooltip } from "../cards/fact-tooltip";
 import { factsFromCandidate } from "../../lib/bracket/facts";
+import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import type { ProvenanceForm } from "../../lib/decks/price";
 import type { Bracket } from "../../lib/bracket/types";
 import type { NoteCounts } from "../../lib/bracket/card-note";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
-import { ComboClause } from "../cards/combo-clause";
+import { comboClauseSpoken } from "../cards/combo-clause";
 import { MutationError } from "./mutation-error";
 import { useAddOptimisticCard } from "./optimistic-deck";
 import { useDeckMutation } from "./use-deck-mutation";
@@ -96,8 +98,12 @@ function Evidence({
   return (
     <div className="flex flex-col gap-[3px]">
       {barRow}
+      {/* States l1-l3, consider-tiles handoff call 4: all three at one ink and one size,
+          `--fg-muted` mono 10px — was `--accent-shadow` (l1) and `--fg-faint` (l2/l3) at
+          9.5px, which measured 1.48-2.13:1 against the tile's ground on every theme
+          (design brief finding 4). `--fg-muted` reads 5.94-6.65:1 at the same size. */}
       {lift != null ? (
-        <p className="font-mono text-[9.5px]" style={{ color: "var(--accent-shadow)" }}>
+        <p className="font-mono text-[10px]" style={{ color: "var(--fg-muted)" }}>
           {/* EDHREC hands synergy back as a fraction; the tile states it in points. */}
           {addPanelCopy.tile.lift(String(Math.round(lift * 100)))}
         </p>
@@ -106,13 +112,13 @@ function Evidence({
         // the design table says the line is always rendered when the figure is
         // present, and neither zero nor a negative is an absence. Signed by the
         // shared formatter so a rounded 0 does not print as "−0 pts".
-        <p className="font-mono text-[9.5px]" style={{ color: "var(--fg-faint)" }}>
+        <p className="font-mono text-[10px]" style={{ color: "var(--fg-muted)" }}>
           {synergySignedDisplay(Math.round(synergyFigure * 100))}
         </p>
       ) : showNoSynergy ? (
         // Only on the synergy shelf: a card with no figure at all is named rather
         // than silent, so the player knows the card simply has no data.
-        <p className="font-mono text-[9.5px]" style={{ color: "var(--fg-faint)" }}>
+        <p className="font-mono text-[10px]" style={{ color: "var(--fg-muted)" }}>
           {synergyCopy.shelf.noSynergy}
         </p>
       ) : null}
@@ -219,6 +225,11 @@ export function SuggestionTile({
     );
   }
 
+  // §C2 amendment, consider-tiles handoff call 3: the lemniscate joins the fact marks on the
+  // meta line, and the combo partner's name moves alone onto the secondary line (`+ {partner}`)
+  // — scoped to this tile; the clause's own placement rule still governs every other host.
+  const completesCombo = Boolean(suggestion.comboPartner) && !applied;
+
   return (
     // The tile keeps its slot once added: pulling it out reflows the grid under
     // the pointer, so the next click lands on a card the user never chose.
@@ -231,186 +242,168 @@ export function SuggestionTile({
       className="group flex flex-col gap-[8px] rounded-[10px] p-[9px] pb-[10px] transition-colors border bg-[color:var(--surface)] border-[color:var(--border)] hover:bg-[color:var(--elevated-hover)] hover:border-[color:var(--border-strong)]"
       style={{ opacity: noArt ? 0.55 : 1 }}
     >
-      {/* One slot, two marks: the dot is aria-hidden decoration, the tag is the
-          only thing that says unowned out loud. An added tile keeps neither
-          rather than claiming two states at once.
-
-          They sit beside the art rather than inside it. `CardDetailTrigger` is a
-          button carrying its own `aria-label`, which replaces everything below
-          it in the accessible name — a tag nested there was silent, leaving the
-          shelf heading as the sole carrier of unownedness. Out here the mark
-          also survives a card with no art, which renders a placeholder instead
-          of the art branch the marks used to live in. */}
-      <div className="relative">
-        {/* pointer-events-none because the chip sits over the detail trigger and
-            is never a tap target itself (design 3.6). Not suppressed on an
-            applied tile: "already sleeved elsewhere" is exactly what a player
-            needs to know about a card they have just added. */}
-        {suggestion.availability && (
-          <AvailabilityMarker bareOne
-            availability={suggestion.availability}
-            density="chip"
-            selfExcluded={selfClaimed}
-            // The tile's own labels belong to the two detail triggers; neither
-            // wraps the chip, so it carries §17's prose itself.
-            spoken
-            className="z-10 pointer-events-none"
+      {/* THE ART, bare — consider-tiles handoff call 1 and `STATES-consider-tiles.md` c10.
+          Nothing overlays it: the dot, the slot and the marks all move into the caption below,
+          and cost pips and the hover hint are deleted outright (design brief finding 1). Only
+          the 1px inset edge survives of the two shadows the art used to carry. */}
+      <CardDetailTrigger
+        oracleId={suggestion.oracleId}
+        name={suggestion.name}
+        siblings={siblings}
+        className="relative block w-full overflow-hidden rounded-[7px] p-0 border-none"
+        style={{
+          aspectRatio: "63 / 88",
+          background: noArt
+            ? "linear-gradient(158deg, var(--border-strong) 0%, var(--surface-raised) 62%, var(--surface-sunken) 100%)"
+            : "var(--surface-sunken)",
+          filter: applied ? "grayscale(.6)" : undefined,
+          opacity: applied ? 0.5 : undefined,
+        }}
+      >
+        {/* AN IMG, LOADED LAZILY, as the Card view's and the /collection grid's (list payload
+            plan): a CSS background is fetched for every tile whether or not it is on screen,
+            so an expanded shelf asked for every candidate's art at once. */}
+        {noArt ? null : (
+          // eslint-disable-next-line @next/next/no-img-element -- Scryfall art is remote; next/image would need a loader per host and would re-encode art the CDN already sizes
+          <img
+            src={suggestion.imageUri!}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className="absolute inset-0 h-full w-full object-cover object-center"
           />
         )}
-        {!applied && (suggestion.owned ? (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.3)]"
+        />
+        {noArt && (
           <span
-            aria-hidden
-            className="absolute z-10 right-[6px] top-[6px] w-[8px] h-[8px] rounded-full pointer-events-none"
-            style={{ background: "var(--success)", boxShadow: "0 0 0 2px color-mix(in oklab, var(--bg) 70%, transparent)" }}
-          />
-        ) : (
-          <BuyTag
-            variant="tile"
-            label={addPanelCopy.unowned.tagAria(suggestion.name)}
-            price={suggestion.price}
-            newestAsOf={newestAsOf}
-            provenance={provenance}
-          />
-        ))}
-        <CardDetailTrigger
-          oracleId={suggestion.oracleId}
-          name={suggestion.name}
-          siblings={siblings}
-          className="relative block w-full overflow-hidden rounded-[7px] p-0 border-none"
-          style={{
-            aspectRatio: "63 / 88",
-            background: noArt
-              ? "linear-gradient(158deg, var(--border-strong) 0%, var(--surface-raised) 62%, var(--surface-sunken) 100%)"
-              : "var(--surface-sunken)",
-            filter: applied ? "grayscale(.6)" : undefined,
-            opacity: applied ? 0.5 : undefined,
-          }}
-        >
-          {/* AN IMG, LOADED LAZILY, as the Card view's and the /collection grid's (list payload
-              plan): a CSS background is fetched for every tile whether or not it is on screen,
-              so an expanded shelf asked for every candidate's art at once. */}
-          {noArt ? null : (
-            // eslint-disable-next-line @next/next/no-img-element -- Scryfall art is remote; next/image would need a loader per host and would re-encode art the CDN already sizes
-            <img
-              src={suggestion.imageUri!}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              className="absolute inset-0 h-full w-full object-cover object-center"
-            />
-          )}
-          {/* The shadows, drawn OVER the art: an inset shadow on the box paints under its img.
-              Classes rather than an inline style so the hover variant can win, since an inline
-              boxShadow outranks group-hover:. */}
-          <span
-            aria-hidden
-            className={`pointer-events-none absolute inset-0 rounded-[inherit] transition-shadow ${
-              applied || noArt
-                ? "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.3)]"
-                : "shadow-[inset_0_-26px_30px_-22px_rgba(0,0,0,0.65),inset_0_0_0_1px_rgba(0,0,0,0.3)] group-hover:shadow-[inset_0_-26px_30px_-22px_rgba(0,0,0,0.5),inset_0_0_0_1px_color-mix(in_oklab,var(--accent)_35%,transparent)]"
-            }`}
-          />
-          {noArt ? (
-            <span
-              className="absolute inset-0 flex items-center justify-center text-center font-mono text-[9px] leading-[1.4]"
-              style={{ color: "var(--fg-locked)" }}
-            >
-              {addPanelCopy.tile.noArt}
-            </span>
-          ) : (
-            <>
-              {!applied && (
-                <span
-                  aria-hidden
-                  className="absolute inset-x-0 bottom-0 hidden pt-[14px] pr-[6px] pb-[5px] text-right font-mono text-[9px] group-hover:block"
-                  style={{
-                    background: "linear-gradient(180deg, transparent, color-mix(in oklab, var(--bg) 85%, transparent))",
-                    color: "var(--accent)",
-                  }}
-                >
-                  {addPanelCopy.tile.detailHint}
-                </span>
-              )}
-              {hasFrontFaceCost(suggestion.manaCost) && (
-                <CostPips
-                  cost={suggestion.manaCost}
-                  className="absolute left-[6px] bottom-[6px] flex gap-[3px]"
+            className="absolute inset-0 flex items-center justify-center text-center font-mono text-[9px] leading-[1.4]"
+            style={{ color: "var(--fg-locked)" }}
+          >
+            {addPanelCopy.tile.noArt}
+          </span>
+        )}
+      </CardDetailTrigger>
+
+      {/* THE CAPTION — `CardTileCaption` as is (handoff call 1). Meta line order per
+          `STATES-consider-tiles.md`: ownership dot, the one slot, the fact marks, the
+          lemniscate (c1-c9). */}
+      <CardTileCaption
+        meta={
+          <>
+            {/* No dot on an applied tile (c9) — the dot is a mark about this player's
+                collection, and the chip beside it already says the card is sleeved. */}
+            {/* `OwnershipDot`'s `label` lands as an `aria-label` on a bare `<span>`, whose
+                default role carries no accessible name — browsers discard it (the same gap
+                `buy-tag.tsx:131-134` documents). Real visually-hidden text, only for the owned
+                case: the unowned caption slot already speaks "not owned" (BuyTag or the
+                availability marker), so a second announcement there would repeat itself. */}
+            {!applied && (
+              <>
+                <OwnershipDot
+                  owned={suggestion.owned}
+                  committed={availState === "hard" || availState === "over"}
+                  className="w-[8px] h-[8px] flex-none"
                 />
-              )}
-            </>
-          )}
-        </CardDetailTrigger>
-      </div>
-
-      <div className="flex flex-col gap-[2px] min-w-0">
-        {/* THE FACT MARKS, on their own line above the name — `STATES-push-line.md` §C2.
-            This is the surface the glyph was designed to lead on: a reader scanning a shelf
-            of six tiles meets the silhouette before any sentence, and the note below then
-            says the count and the rule, which a glyph cannot.
-
-            DRAWN ONLY WHERE THERE ARE MARKS. No tile reserves the line: most candidates carry
-            no fact at all, so a reserved row would be the commonest rendering on the shelf —
-            the same rule the note itself obeys.
-
-            `FactTooltip` wraps each one, as on every other mount. The hover is a SURFACE
-            concern that needs a positioned element and an open delay, which is why it wraps
-            the glyph rather than being a prop on it; a mark drawn bare is the defect reported
-            on /collection on 2026-09-19. */}
-        {marks.length > 0 && (
-          <div className="flex items-center gap-[5px] min-w-0">
+                {suggestion.owned && <span className="sr-only">Owned</span>}
+              </>
+            )}
+            {/* One slot. The chip stays on an applied tile — "already sleeved elsewhere" is
+                exactly what a player needs to know about a card they just added — but no
+                buy tag draws there (c9: "no buy tag"). */}
+            {suggestion.availability ? (
+              <AvailabilityMarker bareOne
+                availability={suggestion.availability}
+                density="chip"
+                plate={false}
+                selfExcluded={selfClaimed}
+                spoken
+              />
+            ) : !suggestion.owned && !applied ? (
+              // States c5/c6: the $ tag stays in the caption slot, figure-only (handoff
+              // call 2) — every owned-cards shelf excludes unowned cards by construction,
+              // so the slot can never draw anything but "not owned" here, which the shelf
+              // heading already says.
+              <BuyTag
+                variant="tile"
+                plate={false}
+                density="collapsed"
+                label={addPanelCopy.unowned.tagAria(suggestion.name)}
+                price={suggestion.price}
+                newestAsOf={newestAsOf}
+                provenance={provenance}
+              />
+            ) : null}
+            {/* THE FACT MARKS, then the lemniscate — `STATES-push-line.md` §C2 as amended by
+                the consider-tiles handoff, call 3. DRAWN ONLY WHERE THERE ARE MARKS: no tile
+                reserves the line, since most candidates carry no fact at all. */}
+            {/* NOT `silent`: these marks sit beside the two `CardDetailTrigger` buttons
+                rather than nested inside either one, so each keeps its own `role="img"`
+                announcement — exactly as the pre-caption mount above the name did. */}
             {marks.map((fact) => (
               <FactTooltip key={fact} fact={fact}>
                 <CardFactMark fact={fact} />
               </FactTooltip>
             ))}
-          </div>
-        )}
-        <CardDetailTrigger
-          oracleId={suggestion.oracleId}
-          name={suggestion.name}
-          siblings={siblings}
-          // Always two lines tall, clamped or not: a shelf is a grid, and a
-          // one-line name beside a wrapped one pushed its type line, bar and
-          // Add button half a line up out of alignment with its row-mates.
-          // 2.5em is the clamp height exactly — two lines at leading 1.25.
-          className="block w-full text-left text-[13px] md:text-[12.5px] font-semibold leading-[1.25] min-h-[2.5em] p-0"
-          style={{
-            color: applied ? "var(--fg-muted)" : "var(--fg)",
-            background: "transparent",
-            border: "none",
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-          }}
-        >
-          {suggestion.name}
-        </CardDetailTrigger>
-        {/* STATE 2 / 3 REPLACE THE TYPE LINE. The tile has one line here and the combo is
-            the fact a reader cannot get from the art, the name or the evidence row below.
+            {completesCombo && (
+              <FactTooltip sentence={comboAwarenessCopy.markerTooltip.completes(suggestion.comboPartner!.name)}>
+                <ComboGlyph />
+              </FactTooltip>
+            )}
+          </>
+        }
+        name={
+          // The second of the tile's three click targets. `CardTileCaption`'s name slot
+          // wraps whatever it is given in a non-interactive `<span>`; nesting a `<button>`
+          // inside it is valid HTML (button is phrasing content), but that span's own
+          // truncation does not reach a block descendant's overflow, so this button carries
+          // its own `truncate` rather than depending on the wrapper's.
+          <CardDetailTrigger
+            oracleId={suggestion.oracleId}
+            name={suggestion.name}
+            siblings={siblings}
+            className="block min-w-0 max-w-full truncate text-left text-[12px] md:text-[13px] font-semibold p-0"
+            style={{
+              color: applied ? "var(--fg-muted)" : "var(--fg)",
+              background: "transparent",
+              border: "none",
+            }}
+          >
+            {suggestion.name}
+          </CardDetailTrigger>
+        }
+      />
+
+      {/* THE BODY — secondary line, in-use line, evidence row, lift line, note, Add
+          (`STATES-consider-tiles.md`). */}
+      <div className="flex flex-col gap-[2px] min-w-0">
+        {/* THE SECONDARY LINE. States c8/c9: the combo partner's name alone, `+ {partner}`,
+            replaces the type line while the tile completes a combo and is not yet applied;
+            the glyph that used to lead this line now lives in the meta line above (call 3).
 
             ABSENT WHEN THE CARD IS IN THE DECK: `completes` presupposes adding it, and a
-            card that is in already completes nothing by being added again. The tile says
-            `✓ In deck` there and the type line comes back.
+            card that is in already completes nothing by being added again. The tile shows
+            the type line again there (c9).
 
-            GATED ON `applied`, NOT ON `inDeck`. `applied` starts AT `inDeck` and flips the
-            moment Add is pressed, while `inDeck` stays at the last server-rendered value
-            until revalidation — so gating on the prop leaves the tile saying `✓ In deck` and
-            naming a combo partner at the same time for the length of a round trip. Every other
-            atom on this tile is gated the same way.
+            GATED ON `applied`, NOT ON `inDeck`, for the same round-trip reason every other
+            atom here is: see `completesCombo` above.
 
-            READ AS TEXT, not aria-hidden. Unlike the collection row and the Last 31, this
-            tile composes no accessible name of its own — its name is a `CardDetailTrigger`
-            whose label is the card's name, and the type line this replaces was simply read
-            in place as content. Hiding the clause here would delete the sentence rather
-            than relocate it, and there is nowhere to relocate it to. The glyph inside is
-            hidden either way. */}
-        {suggestion.comboPartner && !applied ? (
-          <p className="min-w-0">
-            <ComboClause
-              partnerName={suggestion.comboPartner.name}
-              state="completes"
-            />
+            READ AS TEXT, not aria-hidden: this tile composes no accessible name of its own
+            outside the two `CardDetailTrigger`s, so hiding the clause would delete the
+            sentence rather than relocate it. The `+` is punctuation, not a word, so it is
+            aria-hidden on its own and the sentence is carried by the sr-only clause below it,
+            exactly as the retired `ComboClause` mount here did. */}
+        {completesCombo ? (
+          <p
+            data-testid="consider-combo-line"
+            className="truncate min-w-0 font-mono text-[10px] md:text-[9.5px]"
+            style={{ color: "var(--fg-body)" }}
+          >
+            <span aria-hidden>+ </span>
+            <span aria-hidden>{suggestion.comboPartner!.name}</span>
+            <span className="sr-only">{comboClauseSpoken(suggestion.comboPartner!.name, "completes")}</span>
           </p>
         ) : (
           <p
@@ -420,8 +413,8 @@ export function SuggestionTile({
             {suggestion.typeLine}
           </p>
         )}
-        {/* The chip is count-only (density="chip" forces nameless), so the
-            caption is where the deck gets named. Design 6.3 / 6.4. */}
+        {/* THE IN-USE LINE. The chip above is count-only (density="chip" forces nameless), so
+            this is where the deck gets named (c3/c4, design 6.3/6.4). */}
         {tileCaption && (
           // The caption takes its colour from the state, not from the state it
           // is usually in: the chip is nameless at this density, so this line

@@ -163,11 +163,13 @@ export function BuyTag({
    */
   reserveSlot?: boolean | "lg";
   /**
-   * `collapsed` draws a bare `$` in the same box, ink, radius and position —
-   * the All tab is a list being scanned, not a bill being read. Nothing is
-   * dropped from the reading order: the drawn content becomes the tag's
-   * accessible name unchanged, so the word and the figure are still spoken in
-   * full, formatted by the one Tail that formats them everywhere.
+   * `collapsed` draws a LIVE price's figure (with its foil/etched qualifier, where the fact
+   * carries one) in the same box, ink, radius and position — the All tab is a list being
+   * scanned, not a bill being read, so the word drops but the figure that distinguishes a
+   * card from its neighbours does not. Only a card with no live price (sold out, or no price
+   * at all) draws the bare `$` glyph. Nothing is dropped from the reading order either way:
+   * the drawn content becomes the tag's accessible name unchanged, so the word and the figure
+   * are still spoken in full, formatted by the one Tail that formats them everywhere.
    */
   density?: "full" | "collapsed";
   /**
@@ -255,10 +257,19 @@ export function BuyTag({
     >
       {density === "collapsed" ? (
         <>
-          {/* The glyph is the component's, like the tail's separator — it
-              stands for the word rather than saying it, so it is drawn and
-              never spoken. */}
-          <span aria-hidden="true">$</span>
+          {/* A LIVE price draws its figure here — the collapsed slot's whole point is to fit
+              in the tile's caption line, and a bare `$` beside a real price is visually
+              identical to a sold-out or unpriced card (c5 against c6). `spokenFigure`, not a
+              raw `formatCents(cents)`: a foil-only or etched-only fact's bare amount implies a
+              normal-printing price, which `price.ts` guards against by folding the qualifier
+              into the figure (Copilot round 4, medium). Only the no-live-price branch keeps the
+              glyph, which stands for the word rather than saying it, so it is drawn and never
+              spoken. */}
+          {spokenFigure !== null ? (
+            <span aria-hidden="true">{spokenFigure}</span>
+          ) : (
+            <span aria-hidden="true">$</span>
+          )}
           <span className="sr-only">{content}</span>
         </>
       ) : (

@@ -228,3 +228,43 @@ describe("SuggestionTile availability caption", () => {
     expect(screen.queryByText(/free|in a draft|in a brew|short|in use/)).toBeNull();
   });
 });
+
+describe("SuggestionTile ownership dot accessibility", () => {
+  // `OwnershipDot`'s `label` prop lands as an `aria-label` on a bare `<span>`, whose default
+  // role carries no accessible name — browsers discard it. Real visually-hidden text is what
+  // this tile speaks instead, and only for the owned case: the unowned caption slot already
+  // says "not owned" (BuyTag or the availability marker), so a second announcement would
+  // repeat it (Copilot round 3, medium).
+  it("speaks \"Owned\" for an owned card", () => {
+    mountTile({ owned: true });
+    expect(screen.getByText("Owned")).toHaveClass("sr-only");
+  });
+
+  it("speaks nothing extra for an unowned card — the caption already says so", () => {
+    mountTile({ owned: false });
+    expect(screen.queryByText("Owned")).toBeNull();
+  });
+});
+
+describe("SuggestionTile — fact marks and the lemniscate, document order", () => {
+  // §C2 (push-line, as amended by the consider-tiles handoff): the fact marks draw first,
+  // then the lemniscate, on the same meta line. A combo test with no facts, and a facts test
+  // with no combo, cannot tell "always last" apart from "the only mark on the line" — this
+  // case builds both together and reads DOCUMENT ORDER, not just presence (Copilot round 5,
+  // medium "previously missed": moving the lemniscate block before `marks.map(...)` left
+  // every existing check green).
+  it("draws the lemniscate after the fact marks, never before", () => {
+    mountTile({
+      facts: {
+        card: { oracleId: "o-test", name: "Test Card" },
+        gameChanger: true, massLandDenial: false, extraTurn: false, tutor: false,
+        completesCombos: [],
+      },
+      comboPartner: { oracleId: "o-partner", name: "Partner Card" },
+    });
+    const gameChanger = screen.getByTestId("card-fact-gameChanger");
+    const glyph = screen.getByTestId("combo-glyph");
+    // Node.DOCUMENT_POSITION_FOLLOWING (4): `glyph` comes AFTER `gameChanger` in the tree.
+    expect(gameChanger.compareDocumentPosition(glyph) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});

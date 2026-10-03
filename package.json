@@ -40,6 +40,7 @@
     "probe:printed-in-lanes": "node scripts/probe-printed-in-lanes.mjs",
     "probe:card-art-corners": "node scripts/probe-card-art-corners.mjs",
     "probe:commander-availability": "tsx scripts/probe-commander-availability.mjs",
+    "probe:consider-tiles": "tsx scripts/probe-consider-tiles.mjs",
     "probe:fit-parity": "tsx scripts/probe-fit-parity.mts",
     "probe:declaration": "tsx scripts/probe-declaration.ts",
     "probe:label-build": "tsx scripts/probe-label-build.ts",
