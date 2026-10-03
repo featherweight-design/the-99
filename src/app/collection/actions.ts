@@ -7,6 +7,7 @@ import { db } from "../../db";
 import { cardArtPreferences, collectionItems, csvUploads } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { getCollectionLastUpdated, getCollectionStats } from "../../lib/home/summary";
+import { formatLastUpdated } from "../../lib/collection/browse";
 import { revalidateUserLists } from "../../lib/cache/user-lists";
 import { parseCollectionCsv, type CollectionRow, type ParseError } from "../../lib/manabox/parse";
 import { parsePasteList } from "../../lib/manabox/paste";
@@ -339,14 +340,18 @@ function invalidateArtCaches(userId: string): void {
  */
 export async function refreshCollectionHeader(): Promise<{
   stats: { totalCards: number; uniqueCards: number };
-  lastUpdated: Date | null;
+  lastUpdatedLabel: string | null;
 }> {
   const userId = await requireUserId();
   const [stats, lastUpdated] = await Promise.all([
     getCollectionStats(userId),
     getCollectionLastUpdated(userId),
   ]);
-  return { stats, lastUpdated };
+  // Formatted HERE, on the server, rather than handed to the client as a raw `Date` — the
+  // head that renders this is a Client Component and would otherwise recompute the label
+  // against the browser's own clock and timezone on hydration, which can disagree with the
+  // server's render.
+  return { stats, lastUpdatedLabel: lastUpdated ? formatLastUpdated(lastUpdated) : null };
 }
 
 /** Forget the pick, returning the card to the resolver's choice. */

@@ -29,9 +29,9 @@ const PATH_FOR: Record<CollectionPlace, string> = {
   proxies: "/collection/proxies",
 };
 
-function head(current: CollectionPlace, stats = OWNED, lastUpdated: Date | null = null) {
+function head(current: CollectionPlace, stats = OWNED, lastUpdatedLabel: string | null = null) {
   pathname = PATH_FOR[current];
-  return render(<CollectionPlaceHead stats={stats} lastUpdated={lastUpdated} />);
+  return render(<CollectionPlaceHead stats={stats} lastUpdatedLabel={lastUpdatedLabel} />);
 }
 
 function strip() {
@@ -118,8 +118,8 @@ describe("the title block", () => {
   });
 
   it("says when the collection was last updated, on every route", () => {
-    head("sets", OWNED, new Date());
-    expect(screen.getByText(/4,492 cards · 2,926 unique · last updated/)).toBeTruthy();
+    head("sets", OWNED, "today");
+    expect(screen.getByText("4,492 cards · 2,926 unique · last updated today")).toBeTruthy();
   });
 
   it("offers Replace only when there is a collection to replace", () => {
@@ -137,49 +137,58 @@ describe("the title block", () => {
 // another device would otherwise leave the header's counts, and Sets/Replace's visibility,
 // stuck at whatever they were on arrival (round 2, #1222).
 describe("refreshing the two figures", () => {
-  it("re-reads them on mount, replacing the seed props", async () => {
-    refreshCollectionHeader.mockResolvedValue({ stats: EMPTY, lastUpdated: null });
+  it("does not re-read on mount — the layout's own props are already fresh", async () => {
     head("cards", OWNED);
-    await waitFor(() => expect(tabNames()).toEqual([collectionTabsCopy.cards, collectionTabsCopy.proxies]));
+    // Give any accidental effect a tick to fire before asserting it never did (round 5):
+    // repeating the exact read the layout just made would cost a server-action round trip
+    // and two database reads on every entry into these routes.
+    await waitFor(() => expect(refreshCollectionHeader).not.toHaveBeenCalled());
   });
 
-  it("re-reads again when the reader switches tabs within the mounted strip", async () => {
-    refreshCollectionHeader.mockResolvedValue({ stats: OWNED, lastUpdated: null });
+  it("re-reads when the reader switches tabs within the mounted strip", async () => {
+    refreshCollectionHeader.mockResolvedValue({ stats: EMPTY, lastUpdatedLabel: null });
     const { rerender } = head("cards", OWNED);
-    await waitFor(() => expect(refreshCollectionHeader).toHaveBeenCalledTimes(1));
     pathname = "/collection/sets";
-    rerender(<CollectionPlaceHead stats={OWNED} lastUpdated={null} />);
-    await waitFor(() => expect(refreshCollectionHeader).toHaveBeenCalledTimes(2));
+    rerender(<CollectionPlaceHead stats={OWNED} lastUpdatedLabel={null} />);
+    await waitFor(() => expect(refreshCollectionHeader).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(tabNames()).toEqual([
+      collectionTabsCopy.cards,
+      collectionTabsCopy.sets,
+      collectionTabsCopy.proxies,
+    ]));
   });
 
   it("re-reads on window focus, the same cross-tab trigger DeltaStrip polls on", async () => {
-    refreshCollectionHeader.mockResolvedValue({ stats: OWNED, lastUpdated: null });
+    refreshCollectionHeader.mockResolvedValue({ stats: EMPTY, lastUpdatedLabel: null });
     head("cards", OWNED);
-    await waitFor(() => expect(refreshCollectionHeader).toHaveBeenCalledTimes(1));
     fireEvent(window, new Event("focus"));
-    await waitFor(() => expect(refreshCollectionHeader).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(refreshCollectionHeader).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(tabNames()).toEqual([collectionTabsCopy.cards, collectionTabsCopy.proxies]));
   });
 
   it("leaves the header exactly as it was when a refresh fails", async () => {
     refreshCollectionHeader.mockRejectedValue(new Error("offline"));
     head("cards", OWNED);
+    fireEvent(window, new Event("focus"));
     await waitFor(() => expect(refreshCollectionHeader).toHaveBeenCalledTimes(1));
     expect(screen.getByText("4,492 cards · 2,926 unique")).toBeTruthy();
   });
 
   it("applies only the latest of two in-flight reads", async () => {
-    let resolveFirst: (v: { stats: typeof OWNED; lastUpdated: null }) => void = () => {};
+    let resolveFirst: (v: { stats: typeof OWNED; lastUpdatedLabel: null }) => void = () => {};
     refreshCollectionHeader
       .mockImplementationOnce(() => new Promise((r) => { resolveFirst = r; }))
-      .mockResolvedValueOnce({ stats: EMPTY, lastUpdated: null });
+      .mockResolvedValueOnce({ stats: EMPTY, lastUpdatedLabel: null });
     const { rerender } = head("cards", OWNED);
     pathname = "/collection/sets";
-    rerender(<CollectionPlaceHead stats={OWNED} lastUpdated={null} />);
+    rerender(<CollectionPlaceHead stats={OWNED} lastUpdatedLabel={null} />);
+    fireEvent(window, new Event("focus"));
     await waitFor(() => expect(refreshCollectionHeader).toHaveBeenCalledTimes(2));
-    // The stale first read resolves last; it must not overwrite the second's answer. Read the
-    // stats line rather than tabNames: Sets stays visible on its own route even when empty
-    // (E10), so it cannot tell the two states apart here.
-    resolveFirst({ stats: OWNED, lastUpdated: null });
+    // The stale first read (the tab switch) resolves last; it must not overwrite the
+    // second's (the focus) answer. Read the stats line rather than tabNames: Sets stays
+    // visible on its own route even when empty (E10), so it cannot tell the two states
+    // apart here.
+    resolveFirst({ stats: OWNED, lastUpdatedLabel: null });
     await waitFor(() => expect(screen.getByText("0 cards · 0 unique")).toBeTruthy());
   });
 });
@@ -187,7 +196,7 @@ describe("refreshing the two figures", () => {
 describe("rendered on an unrecognised path", () => {
   it("throws rather than guessing", () => {
     pathname = "/collection/replace";
-    expect(() => render(<CollectionPlaceHead stats={OWNED} lastUpdated={null} />)).toThrow(
+    expect(() => render(<CollectionPlaceHead stats={OWNED} lastUpdatedLabel={null} />)).toThrow(
       /unrecognised path/,
     );
   });

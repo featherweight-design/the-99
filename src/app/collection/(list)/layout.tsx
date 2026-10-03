@@ -16,6 +16,7 @@
 
 import { requireUserId } from "../../../lib/auth";
 import { getCollectionLastUpdated, getCollectionStats } from "../../../lib/home/summary";
+import { formatLastUpdated } from "../../../lib/collection/browse";
 import { CollectionPlaceHead } from "../../../components/collection/collection-place-head";
 
 export default async function CollectionListLayout({
@@ -28,9 +29,13 @@ export default async function CollectionListLayout({
     getCollectionStats(userId),
     getCollectionLastUpdated(userId),
   ]);
+  // Formatted here rather than handed down as a raw `Date`: the head is a Client Component
+  // and would otherwise recompute the label against the browser's clock and timezone on
+  // hydration, which can disagree with what this server render produced.
+  const lastUpdatedLabel = lastUpdated ? formatLastUpdated(lastUpdated) : null;
   return (
     <>
-      <CollectionPlaceHead stats={stats} lastUpdated={lastUpdated} />
+      <CollectionPlaceHead stats={stats} lastUpdatedLabel={lastUpdatedLabel} />
       {children}
     </>
   );
