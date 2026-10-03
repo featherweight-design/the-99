@@ -89,9 +89,9 @@ describe("freshLabels — a land search is never a tutor", () => {
 // and some with every job failed by `validateJob`. Read as labelled, they matched nothing and got no
 // stand-ins.
 describe("freshLabels — an empty row", () => {
-  it("is unlabelled, so the text path reads the card (Lightning Bolt)", () => {
-    const bolt = row({ labels: [] });
-    const m = freshLabels([bolt]);
+  it("is unlabelled, so the text path reads the card", () => {
+    const empty = row({ labels: [] });
+    const m = freshLabels([empty]);
     expect(m.has(CARD.oracle_id)).toBe(false);
     expect(m.size).toBe(0);
   });
