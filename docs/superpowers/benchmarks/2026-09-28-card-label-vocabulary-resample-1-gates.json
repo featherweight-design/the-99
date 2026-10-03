@@ -1,0 +1,150 @@
+{
+ "model": "sonnet",
+ "cards": 1673,
+ "flags": {
+  "tutor": {
+   "both": 66,
+   "flagOnly": [
+    "Myr Incubator",
+    "Chord of Calling",
+    "Green Sun's Zenith"
+   ],
+   "labelOnly": [
+    "Dune Mover",
+    "Demonic Consultation",
+    "Songbirds' Blessing",
+    "Visage of Bolas",
+    "Tamiyo, Collector of Tales",
+    "Selective Adaptation",
+    "Cazur, Ruthless Stalker",
+    "Legion Angel"
+   ]
+  },
+  "massLandDenial~stax": {
+   "both": 5,
+   "flagOnly": [
+    "Fall of the Thran",
+    "Storm Cauldron",
+    "Epicenter",
+    "Thoughts of Ruin",
+    "Liliana of the Veil",
+    "Chaos Moon"
+   ],
+   "labelOnly": [
+    "Tamiyo, Compleated Sage",
+    "Teferi, Time Raveler",
+    "Uphill Battle",
+    "Ivory Giant",
+    "Immolation Shaman",
+    "An-Zerrin Ruins",
+    "Tax Collector",
+    "Avatar's Wrath",
+    "Hum of the Radix",
+    "Mindlock Orb",
+    "Sen Triplets",
+    "Silence",
+    "Vulshok Gauntlets",
+    "Sphere of Resistance",
+    "Rule of Law",
+    "Aven Mindcensor",
+    "Drannith Magistrate",
+    "Grand Abolisher",
+    "Thorn of Amethyst",
+    "Thalia and The Gitrog Monster",
+    "Descent into Madness",
+    "Yasharn, Implacable Earth",
+    "Ghostly Prison",
+    "Thalia, Guardian of Thraben",
+    "Marisi, Breaker of the Coil",
+    "Hinata, Dawn-Crowned",
+    "Weakstone's Subjugation",
+    "Meekstone",
+    "Phyrexian Censor",
+    "Single Combat",
+    "Oppressive Rays",
+    "Glowrider",
+    "Feroz's Ban",
+    "Mana Vapors",
+    "Lorthos, the Tidemaker",
+    "Eidolon of Rhetoric",
+    "Calamity's Wake",
+    "Ashiok, Dream Render",
+    "Vorinclex, Voice of Hunger",
+    "Ranger-Captain of Eos",
+    "Pollen Lullaby",
+    "Mesmerizing Dose",
+    "Arachne, Psionic Weaver",
+    "Grafdigger's Cage",
+    "Dehydration",
+    "Council of the Absolute",
+    "Disruptor Flute",
+    "Yuriko, Blade of the Mighty",
+    "City in a Bottle",
+    "Elite Spellbinder",
+    "Void Winnower",
+    "Metal Fatigue"
+   ]
+  },
+  "extraTurn~finisher": {
+   "both": 2,
+   "flagOnly": [],
+   "labelOnly": [
+    "Call the Spirit Dragons",
+    "Frodo, Sauron's Bane",
+    "Thassa's Oracle",
+    "Approach of the Second Sun",
+    "Great Train Heist",
+    "Insurrection",
+    "Shaman of Forgotten Ways",
+    "Helix Pinnacle",
+    "Triumph of the Hordes",
+    "Platinum Angel",
+    "Craterhoof Behemoth",
+    "Overrun",
+    "Aggravated Assault",
+    "Relentless Assault"
+   ]
+  }
+ },
+ "removalLeaks": {
+  "counterspell": [
+   "Drown in the Loch",
+   "Bant Charm",
+   "Obscura Charm",
+   "Fangkeeper's Familiar",
+   "Steel Sabotage",
+   "Theorix Charm",
+   "Ouphe Vandals",
+   "Frost Titan"
+  ],
+  "discard": [
+   "Liliana's Triumph",
+   "Nicol Bolas, Planeswalker",
+   "Compelling Deterrence",
+   "Rush of Dread",
+   "Liliana of the Veil",
+   "Archon of Cruelty",
+   "Cruel Ultimatum",
+   "Kefka, Court Mage // Kefka, Ruler of Ruin",
+   "Capital Punishment",
+   "The Kami War // O-Kagachi Made Manifest",
+   "Isildur's Fateful Strike"
+  ],
+  "tapper": [
+   "Thunder Lasso",
+   "Frost Titan",
+   "Flash Thompson, Spider-Fan"
+  ]
+ },
+ "tutorsInDraw": [
+  "Sarkhan Unbroken"
+ ],
+ "emptyRate": {
+  "random": 500,
+  "returned": 500,
+  "empty": 45,
+  "rate": 0.09,
+  "baseline": 0.12236286919831224,
+  "deltaPoints": -3.2
+ }
+}

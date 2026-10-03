@@ -60,15 +60,16 @@ describe("publishing refuses an artifact that is not the default run", () => {
     expect(() => publishArtifacts(["out/agreement.json"], true)).not.toThrow();
   });
 
-  describe("the re-sample (LABEL_PUBLISH=resample)", () => {
-    beforeEach(() => { process.env.LABEL_PUBLISH = "resample"; });
+  describe("a re-sample (LABEL_PUBLISH=resample-<n>)", () => {
+    beforeEach(() => { process.env.LABEL_PUBLISH = "resample-2"; });
     afterEach(() => { delete process.env.LABEL_PUBLISH; });
 
     it("publishes Sonnet alone to its own dated paths, never over the first sample", () => {
       write({ sonnet: {} });
       writeFileSync("out/labels-sonnet.json", JSON.stringify({ "Sol Ring": [] }));
       publishArtifacts(["out/cost.json", "out/labels-sonnet.json"], true);
-      expect(existsSync("docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-cost.json")).toBe(true);
+      expect(existsSync("docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-2-cost.json")).toBe(true);
+      expect(existsSync("docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-1-cost.json")).toBe(false);
       expect(existsSync("docs/superpowers/benchmarks/2026-09-25-card-labels-cost.json")).toBe(false);
     });
 
@@ -76,7 +77,7 @@ describe("publishing refuses an artifact that is not the default run", () => {
       writeFileSync("out/gates.json", "{}");
       writeFileSync("out/labels-haiku.json", "{}");
       expect(() => publishArtifacts(["out/gates.json", "out/labels-haiku.json"], true)).toThrow(/no committed path/);
-      expect(existsSync("docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-gates.json")).toBe(false);
+      expect(existsSync("docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-2-gates.json")).toBe(false);
     });
 
     it("refuses the default two-model run, which is not what the re-sample ran", () => {
@@ -88,9 +89,12 @@ describe("publishing refuses an artifact that is not the default run", () => {
   it("refuses an artifact the first sample never published, and an unknown target", () => {
     writeFileSync("out/gates.json", "{}");
     expect(() => publishArtifacts(["out/gates.json"], true)).toThrow(/no committed path is declared/);
-    process.env.LABEL_PUBLISH = "second";
-    try { expect(() => publishArtifacts(["out/gates.json"], true)).toThrow(/must be "first" or "resample"/); }
-    finally { delete process.env.LABEL_PUBLISH; }
+    try {
+      for (const bad of ["second", "resample", "resample-0", "resample-x"]) {
+        process.env.LABEL_PUBLISH = bad;
+        expect(() => publishArtifacts(["out/gates.json"], true)).toThrow(/must be "first" or "resample-<n>"/);
+      }
+    } finally { delete process.env.LABEL_PUBLISH; }
   });
 
   it("binds labels to the submitted run by the collector's stamp", () => {

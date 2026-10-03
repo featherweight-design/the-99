@@ -1,0 +1,29 @@
+{
+ "measuredAt": "2026-10-02T23:40:02.371Z",
+ "perModel": {
+  "sonnet": {
+   "cards": 1675,
+   "notReturned": 12,
+   "rejectedJobs": 31,
+   "tokens": {
+    "in": 652683,
+    "out": 281010,
+    "cacheWrite": 0,
+    "cacheRead": 0
+   },
+   "usd": 3.0866,
+   "usdPerCard": 0.001843
+  }
+ },
+ "totalUsd": 3.0866,
+ "projections": {
+  "sonnet": {
+   "fullRunUsd": 58.66,
+   "perSetUsd": 0.72,
+   "basis": {
+    "commanderLegalCards": 31830,
+    "avgRecentSetCards": 390
+   }
+  }
+ }
+}
