@@ -53,8 +53,9 @@ The verdict head above it names **Core** (bracket 2), in 2's ink, with only that
 Exhibition or Core: the two differ in what you are trying to do*
 (`src/lib/copy/declaration.ts:53-58`, drawn at `verdict-block.tsx:138`).
 
-So the page names 2 as the deck's bracket, and the Climb calls 2 a bracket the deck goes
-beyond. That second claim is false for this deck, because the player has said 2 is what it is.
+So the page names 2 as the deck's bracket, while the Climb says 2 allows more than the deck
+uses, which places the deck below 2. That second claim is false for this deck, because the
+player has said 2 is what it is.
 
 `BracketClimb` already has the answer it would need. It takes `declared`
 (`analysis-panel.tsx:263`) and reduces it to `answered` (`bracket-climb.tsx:66`). Today that
