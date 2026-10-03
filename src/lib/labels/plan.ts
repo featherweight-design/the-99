@@ -240,3 +240,21 @@ export function pauseRemediation(
       + `workflow, not a different input.`;
   return { canResume, neededUsd, text };
 }
+
+/**
+ * The measured cost of labelling one card, used ONLY to project a run before it has measured anything of
+ * its own. It is a MEASUREMENT, so it names the run it came from: a figure with no source goes stale
+ * silently, and the first one did. It projected from the first sample's $0.001291 while v7 measured
+ * $0.001902, so a full run read as $41 against a truth near $61, and the $50 report line would fire late or
+ * not at all. `plan.test.ts` pins it to the newest committed re-sample's `usdPerCard`.
+ */
+export const MEASURED_PER_CARD = {
+  usd: 0.001902,
+  runId: "run-2026-10-03T02-35-34-739Z",
+  measuredOn: "2026-10-03",
+  source: "docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-4-cost.json",
+} as const;
+
+/** What a run is projected to cost in all: what it has measured, plus the cards still to do at a rate. */
+export const projectedTotalUsd = (measuredUsd: number, remainingCards: number, perCardUsd: number): number =>
+  measuredUsd + remainingCards * perCardUsd;
