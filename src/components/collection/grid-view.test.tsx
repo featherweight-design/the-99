@@ -90,8 +90,11 @@ describe("GridView availability chip", () => {
     // Its only text is the sr-only sentence — no visible word of its own.
     expect(phoneChip.textContent).toBe("no free copies");
     expect(phoneChip.querySelector(".sr-only")?.textContent).toBe("no free copies");
-    expect(desktopChip.textContent).toBe("none free");
+    expect(desktopChip.textContent).toBe("none freeno free copies");
     expect(desktopChip.textContent).not.toContain("Atraxa");
+    // Found by Copilot's round-4 review: the desktop chip kept its word but dropped `spoken`,
+    // so its accessible name regressed from the full sentence to the bare visible word.
+    expect(desktopChip.querySelector(".sr-only")?.textContent).toBe("no free copies");
   });
 
   it("leaves the set · rarity caption untouched", () => {

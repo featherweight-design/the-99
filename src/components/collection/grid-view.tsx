@@ -207,6 +207,7 @@ export function GridView({
                       availability={c.availability}
                       density="chip"
                       plate={false}
+                      spoken
                       className="hidden md:inline-flex"
                     />
                   </>
