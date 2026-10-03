@@ -43,6 +43,7 @@ import { availabilityCopy } from "../src/lib/copy/availability";
 import { loadAvailability } from "../src/lib/decks/availability-query";
 import { availabilityState, hardDecks } from "../src/lib/decks/availability";
 import { loadDeckSuggestions } from "../src/lib/decks/suggestions-read";
+import { synergyCopy } from "../src/lib/copy/synergy-discovery";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
   "E2E_AUDIT_USER_EMAIL",
@@ -275,11 +276,19 @@ async function buildComboFixture(userId, deckId, commanderOracleId, existingOrac
     for (const [held, suggested] of [[ca, cb], [cb, ca]]) {
       if (attempts >= COMBO_ATTEMPT_LIMIT) return null;
       attempts += 1;
-      await pool.query(
+      // TRACKED FOR CLEANUP THE MOMENT THE ROW EXISTS, before any further async work
+      // (`ensureOwned`, `loadDeckSuggestions`) can throw — a throw between an untracked
+      // insert and its tracking would leave the row standing with no `finally` record of
+      // it, permanently changing the walked user's real deck (Copilot round 1, high). Only
+      // tracked when THIS statement inserted it: `on conflict do nothing` means a row that
+      // already existed is not ours to delete.
+      const inserted = await pool.query(
         `insert into deck_cards (deck_id, oracle_id, quantity, auto) values ($1, $2, 1, false)
          on conflict (deck_id, oracle_id) do nothing`,
         [deckId, held.oracle_id],
       );
+      const weInsertedIt = inserted.rowCount > 0;
+      if (weInsertedIt) fixtureDeckCard = { deckId, oracleId: held.oracle_id };
       await ensureOwned(userId, suggested.oracle_id);
       // REQUIRES the EDHREC path specifically, not just presence. The EDHREC loop runs
       // first and in EDHREC's own fixed order; a role-filled match depends on
@@ -295,14 +304,16 @@ async function buildComboFixture(userId, deckId, commanderOracleId, existingOrac
         onList = false;
       }
       if (onList) {
-        fixtureDeckCard = { deckId, oracleId: held.oracle_id };
         return {
           heldName: held.name, suggestedOracleId: suggested.oracle_id, suggestedName: suggested.name,
           roles: "edhrec",
         };
       }
       // Not on the real list — undo this attempt's writes before trying the next candidate.
+      // The delete runs before clearing the tracking handle, so a throw mid-delete still
+      // leaves `fixtureDeckCard` pointing at the row for the run's own `finally` to catch.
       await pool.query(`delete from deck_cards where deck_id = $1 and oracle_id = $2`, [deckId, held.oracle_id]);
+      if (weInsertedIt) fixtureDeckCard = null;
       if (fixtureCollectionRows.length && fixtureCollectionRows[fixtureCollectionRows.length - 1].oracleId === suggested.oracle_id) {
         const row = fixtureCollectionRows.pop();
         await pool.query(`delete from collection_items where user_id = $1 and oracle_id = $2`, [row.userId, row.oracleId]);
@@ -385,7 +396,7 @@ async function expandShelves(page) {
  * dot, chip and mark as absent.
  */
 async function readTiles(page) {
-  return page.evaluate(() => {
+  return page.evaluate((noSynergyText) => {
     const out = [];
     for (const tile of document.querySelectorAll('main [data-testid="suggestion-tile"]')) {
       const caption = [...tile.children].find(
@@ -409,8 +420,15 @@ async function readTiles(page) {
       const bodyParas = caption?.nextElementSibling ? [...caption.nextElementSibling.querySelectorAll('p')] : [];
       const secondary = tile.querySelector('[data-testid="consider-combo-line"]') ?? bodyParas[0] ?? null;
       const inUse = bodyParas.find((p) => p !== secondary) ?? null;
+      // The Evidence container holds up to two <p>s: the barRow's reason sentence
+      // (`fillsRole(...)` or the shipped "no EDHREC figure", neither of which is the lift
+      // line) and the true lift/synergy/no-synergy line below it. `/pts|no deck|no EDHREC/`
+      // matched the barRow's "no EDHREC figure" too, and `.find` took whichever came first —
+      // so the l3 check never saw the real "no synergy figure" line, reading it absent
+      // (Copilot round 1, medium). Matched EXACTLY now: ends in "pts" (l1/l2) or equals the
+      // shipped no-synergy string (l3), neither of which the barRow ever prints.
       const lift = [...(caption?.nextElementSibling?.nextElementSibling?.querySelectorAll('p') ?? [])].find(
-        (p) => /pts|no deck|no EDHREC/.test(p.textContent ?? ""),
+        (p) => /pts$/.test(p.textContent ?? "") || p.textContent === noSynergyText,
       );
       out.push({
         oracleId: tile.getAttribute("data-oracle-id"),
@@ -428,7 +446,7 @@ async function readTiles(page) {
       });
     }
     return out;
-  });
+  }, synergyCopy.shelf.noSynergy);
 }
 
 /** Reads `--fg-muted` through a throwaway node, so the check needs no var()-parsing of its own. */
@@ -607,9 +625,9 @@ async function run() {
       }
 
       // 3. the lift line's ink and size (handoff call 4) — l1 (positive), l2 (zero/negative
-      // figure) and l3 (no deck/no EDHREC data) counted SEPARATELY, so a run reaching only
-      // some of the three states says so rather than reporting a pass over a comparison
-      // that had no subject for the others.
+      // figure) and l3 (an EDHREC pick with no synergy figure at all, synergy shelf only)
+      // counted SEPARATELY, so a run reaching only some of the three states says so rather
+      // than reporting a pass over a comparison that had no subject for the others.
       const mutedColour = await fgMutedColour(page);
       const withLift = tiles.filter((t) => t.liftText);
       const positive = withLift.filter((t) => /^\+/.test(t.liftText));
@@ -617,7 +635,7 @@ async function run() {
       const noFigure = withLift.filter((t) => !/^\+/.test(t.liftText) && !/pts$/.test(t.liftText));
       report("l1 (lift above zero) reached", positive.length > 0, `${positive.length} lines`);
       report("l2 (figure at or below zero) reached", nonPositive.length > 0, `${nonPositive.length} lines`);
-      report("l3 (no deck/no EDHREC data) reached", noFigure.length > 0, `${noFigure.length} lines`);
+      report("l3 (no synergy figure at all) reached", noFigure.length > 0, `${noFigure.length} lines`);
       if (withLift.length === 0) {
         report("lift line ink/size", false, "no tile drew a lift figure on this screen — NOT a pass");
       } else {

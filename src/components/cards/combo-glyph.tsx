@@ -43,11 +43,11 @@ const GLOW = "drop-shadow(0 0 3px color-mix(in oklab, var(--fact) 45%, transpare
  */
 export const COMBO_GLYPH_PX = CARD_FACT_MARK_PX;
 
-export function ComboGlyph({ size = COMBO_GLYPH_PX }: { size?: number } = {}) {
+export function ComboGlyph() {
   return (
     <svg
-      width={size}
-      height={size}
+      width={COMBO_GLYPH_PX}
+      height={COMBO_GLYPH_PX}
       viewBox="0 0 16 16"
       // `block` so the glyph does not sit on the text baseline and lift the line box.
       className="block shrink-0"

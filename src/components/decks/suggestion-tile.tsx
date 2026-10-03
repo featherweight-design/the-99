@@ -310,6 +310,7 @@ export function SuggestionTile({
               <AvailabilityMarker bareOne
                 availability={suggestion.availability}
                 density="chip"
+                plate={false}
                 selfExcluded={selfClaimed}
                 spoken
               />

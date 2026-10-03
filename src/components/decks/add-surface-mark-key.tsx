@@ -31,39 +31,25 @@ import { CardFactMark } from "../cards/card-fact-mark";
 import { ComboGlyph } from "../cards/combo-glyph";
 import { MarkKey } from "./mark-key";
 
-function entries(comboGlyphSize?: number) {
-  return [
-    ...CARD_FACTS.map((fact) => ({
-      id: fact,
-      sample: <CardFactMark fact={fact} silent />,
-      word: cardFactName(fact),
-    })),
-    {
-      id: "combo",
-      // AT THE SIZE THE READER SEES. Both callers draw the lemniscate at
-      // `CARD_FACT_MARK_PX` today (the 2026-09-21 one-size ruling superseded the
-      // 12px-on-a-secondary-line pairing this comment used to describe), but the prop
-      // stays: Consider's §C2 amendment moves the glyph onto the fact-marks name line
-      // while top-off's stays on `ComboClause`'s secondary line, and a future split
-      // between those two hosts should not have to touch this module again.
-      sample: <ComboGlyph size={comboGlyphSize} />,
-      word: comboAwarenessCopy.keyWord,
-    },
-  ];
-}
+const ENTRIES = [
+  ...CARD_FACTS.map((fact) => ({
+    id: fact,
+    sample: <CardFactMark fact={fact} silent />,
+    word: cardFactName(fact),
+  })),
+  {
+    id: "combo",
+    // `ComboGlyph` takes no size prop — Hugh's 2026-09-21 ruling, recorded in that
+    // component. Both callers draw the lemniscate at the app's one mark size.
+    sample: <ComboGlyph />,
+    word: comboAwarenessCopy.keyWord,
+  },
+];
 
-export function AddSurfaceMarkKey({
-  className,
-  comboGlyphSize,
-}: {
-  className?: string;
-  /** Consider tiles and top-off both draw the lemniscate at its one shipped size today;
-   *  pass to pin this key's sample to a host whose own lemniscate size moves independently. */
-  comboGlyphSize?: number;
-}) {
+export function AddSurfaceMarkKey({ className }: { className?: string }) {
   return (
     <div className={className}>
-      <MarkKey marks={entries(comboGlyphSize)} regionAria={cardMarkCopy.keyRegionAria} />
+      <MarkKey marks={ENTRIES} regionAria={cardMarkCopy.keyRegionAria} />
     </div>
   );
 }
