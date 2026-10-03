@@ -668,7 +668,9 @@ async function stapleSections(skeleton: ProfileSkeleton, basePool: FillCandidate
   // and a fixed figure would measure nothing.
   const priced = await loadPrices(monoStaples.map((c) => c.oracleId));
   const priceOf = (id: string) => priced.get(id)?.liveCents ?? null;
-  const byPrice = monoStaples.filter((c) => priceOf(c.oracleId) !== null)
+  // NONLAND only: the step never places a land, so a land here would pass 12d with the gate
+  // removed and fail 12e on a correct build.
+  const byPrice = monoStaples.filter((c) => priceOf(c.oracleId) !== null && !/\bland\b/i.test(c.typeLine))
     .sort((a, b) => priceOf(b.oracleId)! - priceOf(a.oracleId)!);
   const dear = byPrice[0];
   const cheap = byPrice.at(-1);

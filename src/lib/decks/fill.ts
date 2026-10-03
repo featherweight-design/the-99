@@ -163,7 +163,8 @@ export type PlanFillArgs = {
    * Every rule a placed card obeys applies here too: the slot limit, `pool: "sleeveable"` (owned
    * only), and the gate. At most `FILL_STAPLE_CAP` nonland staples are placed. A LAND staple is not
    * placed by this step at all: it is preferred by the nonbasic land sweep, which owns the land
-   * ceiling and the nonbasic cap, and like every land there it must be owned and in the pool.
+   * ceiling and the nonbasic cap, and like every land there it must be owned. (An owned staple is
+   * the pool's own candidate in `buildFillPlan`, so in practice it is in the pool as well.)
    *
    * A staple may or may not also be a candidate; it is placed once either way. The caller has
    * already removed what the deck holds or may not pick (`excludeOracleIds`, `onlyOracleIds`).

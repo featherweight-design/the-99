@@ -97,16 +97,16 @@ export async function loadFillStaples(
   return chooseFillStaples(rows as StapleRow[], identity);
 }
 
-/**
- * The catalog rows for staples the pool does not hold, so the fill can offer an unowned one (and
- * buy it, outside `pool: "sleeveable"`). Commander-legal and inside the deck's identity, the same
- * two tests the unowned top-cards read applies.
- */
 /** What the catalog read returns for one staple. */
 export type StapleCard = Pick<
   FillCandidate, "oracleId" | "name" | "typeLine" | "oracleText" | "keywords" | "manaCost" | "layout"
 >;
 
+/**
+ * The catalog rows for staples the pool does not hold, so the fill can offer an unowned one (and
+ * buy it, outside `pool: "sleeveable"`). Commander-legal and inside the deck's identity, the same
+ * two tests the unowned top-cards read applies.
+ */
 export async function loadStapleCards(
   oracleIds: readonly string[], identity: readonly string[],
 ): Promise<StapleCard[]> {
