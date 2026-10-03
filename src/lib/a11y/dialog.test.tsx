@@ -506,6 +506,80 @@ describe("useBackDismiss", () => {
     expect(window.history.length).toBeGreaterThanOrEqual(start);
   });
 
+  // Hugh, Firefox, phone width, 2026-10-03: a filter edit made while the sheet was
+  // open re-homes the page (decision 6), and the self-pop this hook issues to clean
+  // up its history entry then runs the browser's own scroll restoration against an
+  // offset that no longer describes the shorter list — landing mid-list instead of
+  // where the edit left the reader.
+  //
+  // `disturbLater` stands in for that restoration landing OUTSIDE the task the
+  // self-pop's `popstate` runs in — ten `requestAnimationFrame`s after `unmount`,
+  // well after `pinScrollY`'s own first (also RAF-scheduled, never synchronous)
+  // reassertion has already come and gone. Found by Copilot's round-1 review: an
+  // earlier version of this test moved `scrollY` from a capture-phase `popstate`
+  // listener instead, landing the disturbance inside that same task — which only
+  // exercised `pinScrollY`'s first reassertion, so the test still passed with the
+  // 30-frame loop (the actual fix for Firefox's delayed restoration) deleted.
+  it("pins the pre-close scroll offset back after its self-pop, even against a delayed disturbance", async () => {
+    window.scrollY = 900;
+    const { hook } = open();
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation((_x, y) => {
+      window.scrollY = y as number;
+    });
+    let frame = 0;
+    function disturbLater() {
+      frame += 1;
+      if (frame < 10) {
+        requestAnimationFrame(disturbLater);
+        return;
+      }
+      window.scrollY = 300;
+    }
+    requestAnimationFrame(disturbLater);
+    hook.unmount();
+    await new Promise((r) => setTimeout(r, 700));
+    expect(window.scrollY).toBe(900);
+    scrollTo.mockRestore();
+  });
+
+  // Found alongside the above: closing a dialog does not stop the reader from
+  // scrolling in the following half-second, so the reassert loop has to let a
+  // real wheel/touch/key win rather than fight it for the rest of its 30 frames —
+  // the same rule, and the same reason, `filter-bar.tsx`'s own loop cancels.
+  it("lets a real scroll cancel the reassert loop rather than fight it", async () => {
+    window.scrollY = 900;
+    const { hook } = open();
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation((_x, y) => {
+      window.scrollY = y as number;
+    });
+    hook.unmount();
+    await new Promise((r) => setTimeout(r, 50));
+    window.dispatchEvent(new WheelEvent("wheel", { deltaY: 10 }));
+    window.scrollY = 300;
+    await new Promise((r) => setTimeout(r, 700));
+    expect(window.scrollY).toBe(300);
+    scrollTo.mockRestore();
+  });
+
+  // Found by Copilot's round-2 review: a link click commits a new route without
+  // firing any of the three cancel events above, so an uncancelled loop would
+  // keep stamping the OLD route's offset onto the page the click just navigated
+  // to for the rest of its ~500ms.
+  it("stops reasserting once the URL changes under it", async () => {
+    window.scrollY = 900;
+    const { hook } = open();
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation((_x, y) => {
+      window.scrollY = y as number;
+    });
+    hook.unmount();
+    await new Promise((r) => setTimeout(r, 50));
+    window.history.pushState(null, "", "/decks");
+    window.scrollY = 50;
+    await new Promise((r) => setTimeout(r, 700));
+    expect(window.scrollY).toBe(50);
+    scrollTo.mockRestore();
+  });
+
   it("closes only the top dialog on each Back", async () => {
     const under = open();
     const over = open();
