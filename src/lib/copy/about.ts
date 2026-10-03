@@ -435,7 +435,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // it into five lines.
     width: 'plate',
     caption:
-      'Pick a commander and we build the 99 from what you own first, starting with the staples nearly every deck in its colors runs. Where your collection runs short, we add the cards that commander’s decks play most. Any slots still open are yours: the last-slots list ranks candidates for them, ticks the ones you can sleeve, and adds nothing until you say so. Anything auto-added can be cleared in one action if you would rather start from your own picks.',
+      'Pick a commander and we start with the staples most decks in its colors run, then build the rest of the 99 from what you own first. Where your collection runs short, we add the cards that commander’s decks play most. Any slots still open are yours: the last-slots list ranks candidates for them, ticks the ones you can sleeve, and adds nothing until you say so. Anything auto-added can be cleared in one action if you would rather start from your own picks.',
     keys: [],
     since: 1,
   },
@@ -722,7 +722,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'only commanders you own and could legally build are listed. The picker is your collection, not a catalog.',
       'the figure beside each one is how many of your cards are legal in its colors, which is the Pool part of a fit score seen from the other side.',
-      'a name is required and everything else has a default: the deck arrives already filled, from your collection first and then with the cards that commander’s decks play most, and every card of it is yours to change.',
+      'a name is required and everything else has a default: the deck arrives already filled: the staples most decks in its colors run, then your collection, then the cards that commander’s decks play most. Every card of it is yours to change.',
     ],
     since: 7,
   },
