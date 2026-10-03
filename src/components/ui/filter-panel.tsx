@@ -694,7 +694,11 @@ export function FilterPanel({
           aria-activedescendant={
             !searchable && activeCode ? optionDomId(activeCode) : undefined
           }
-          className={`m-0 list-none overflow-y-auto p-0 ${bp("max-h-[384px]", "max-h-[60vh]")}`}
+          // `overscroll-behavior: contain` (Hugh, 2026-10-03): without it, scrolling this
+          // list to either end lets the gesture chain into the page behind the sheet —
+          // the same wheel-chaining useScrollLock's own listener blocks over the scrim,
+          // but reachable here too since this region IS legitimately scrollable.
+          className={`m-0 list-none overflow-y-auto overscroll-contain p-0 ${bp("max-h-[384px]", "max-h-[60vh]")}`}
         >
           {groupList.map((group, gi) => (
             // role=group (not presentation) so the label `<p>` is not a bare

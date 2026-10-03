@@ -9,10 +9,6 @@ const appended: HTMLElement[] = [];
 
 afterEach(() => {
   document.body.style.overflow = "";
-  document.body.style.position = "";
-  document.body.style.top = "";
-  document.body.style.width = "";
-  window.scrollY = 0;
   vi.restoreAllMocks();
   while (appended.length) appended.pop()?.remove();
 });
@@ -135,75 +131,82 @@ describe("useDialogA11y scroll lock", () => {
     expect(document.body.style.overflow).toBe("scroll");
   });
 
-  // `overflow: hidden` alone does not hold the page on iOS Safari (it keeps honouring
-  // touch-driven rubber-band scroll on the body regardless), which read on `/collection`,
-  // `/commanders` and `/discover` as the page snapping to the top while a filter sheet was
-  // up, and snapping again on close. Pinning the body to its own current offset — rather
-  // than trusting overflow to hold it — is what stops that.
-  it("pins the body to the scroll offset it held when the lock engaged", () => {
-    window.scrollY = 1500;
+  // `overflow: hidden` on `body` alone does not hold the page in every engine — Firefox
+  // chains a wheel event past a fixed, non-scrollable sheet overlay to the page's real
+  // scroll regardless (reported on `/collection`, Hugh, desktop Firefox, a narrow window).
+  // Two fixes that looked right were dropped after they broke `position: sticky` in
+  // Firefox instead (see the module doc comment); this is the one that didn't: block the
+  // wheel/touchmove directly, and leave `overflow`/`position` exactly as they already were.
+  function wheelAt(target: EventTarget, deltaY = 100) {
+    const event = new WheelEvent("wheel", { deltaY, cancelable: true, bubbles: true });
+    target.dispatchEvent(event);
+    return event;
+  }
+
+  it("blocks a wheel event whose target has no scrollable ancestor", () => {
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    appended.push(el);
     renderDialog({ lockScroll: true });
-    expect(document.body.style.position).toBe("fixed");
-    expect(document.body.style.top).toBe("-1500px");
-    expect(document.body.style.width).toBe("100%");
+
+    const event = wheelAt(el);
+    expect(event.defaultPrevented).toBe(true);
   });
 
-  it("restores position, top, width and the exact scroll offset on unmount", () => {
-    document.body.style.position = "relative";
-    document.body.style.top = "3px";
-    document.body.style.width = "90%";
-    window.scrollY = 712;
-    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+  it("lets a wheel event through when its target sits inside a genuinely scrollable region", () => {
+    const list = document.createElement("ul");
+    list.style.overflowY = "auto";
+    Object.defineProperty(list, "scrollHeight", { value: 400, configurable: true });
+    Object.defineProperty(list, "clientHeight", { value: 100, configurable: true });
+    const row = document.createElement("li");
+    list.appendChild(row);
+    document.body.appendChild(list);
+    appended.push(list);
+    renderDialog({ lockScroll: true });
+
+    const event = wheelAt(row);
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  // The same rule, for touch — iOS Safari's rubber-band failure of `overflow: hidden`
+  // is the same underlying weakness as Firefox's wheel-chaining, by a different input.
+  it("blocks a touchmove the same way", () => {
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    appended.push(el);
+    renderDialog({ lockScroll: true });
+
+    const event = new Event("touchmove", { cancelable: true, bubbles: true });
+    el.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+  });
+
+  it("stops blocking once the lock releases", () => {
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    appended.push(el);
     const { unmount } = renderDialog({ lockScroll: true });
-    expect(document.body.style.position).toBe("fixed");
-
     unmount();
-    expect(document.body.style.position).toBe("relative");
-    expect(document.body.style.top).toBe("3px");
-    expect(document.body.style.width).toBe("90%");
-    expect(scrollTo).toHaveBeenCalledWith({ top: 712, left: 0, behavior: "instant" });
+
+    const event = wheelAt(el);
+    expect(event.defaultPrevented).toBe(false);
   });
 
-  // Counted exactly as `overflow` is: the offset is captured once, by the first
-  // locker, and restored only once the last one releases — never mid-stack, where
-  // a second dialog's own capture would overwrite the first's with 0.
-  it("captures the offset once, by the first of two dialogs, and restores once, on the last", () => {
-    window.scrollY = 900;
-    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+  // Counted exactly as `overflow` is: the listener goes on when the first dialog opens
+  // and comes off only when the last one closes — never mid-stack, where a second
+  // dialog's own unmount would remove it out from under the first.
+  it("keeps blocking until the last of two dialogs releases it", () => {
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    appended.push(el);
     const first = renderDialog({ lockScroll: true });
-    window.scrollY = 50; // the sheet's own effects may move the window meanwhile
     const second = renderDialog({ lockScroll: true });
-    expect(document.body.style.top).toBe("-900px");
 
     first.unmount();
-    expect(document.body.style.position).toBe("fixed"); // still held by the second
+    expect(wheelAt(el).defaultPrevented).toBe(true); // still held by the second
 
     second.unmount();
-    expect(scrollTo).toHaveBeenLastCalledWith({ top: 900, left: 0, behavior: "instant" });
-  });
-
-  // The realistic nested case, the-99-36's concern #3: a card modal opened FROM an open
-  // sheet closes first — a reader can dismiss the modal without touching the sheet
-  // behind it — and must restore nothing, since the sheet is still holding the page.
-  // The sheet closing LAST then restores once, to the offset it captured when it opened,
-  // never to wherever the window happened to sit when the modal (opened after it) let go.
-  it("restores once, to the outer dialog's own offset, when the inner one closes first", () => {
-    window.scrollY = 1500;
-    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
-    const sheet = renderDialog({ lockScroll: true }); // opens first
-    expect(document.body.style.top).toBe("-1500px");
-
-    const modal = renderDialog({ lockScroll: true }); // opens from inside the sheet
-    window.scrollY = 0; // nothing the reader did — just not a signal to restore to
-
-    modal.unmount(); // the modal closes; the sheet is still up
-    expect(scrollTo).not.toHaveBeenCalled();
-    expect(document.body.style.position).toBe("fixed");
-    expect(document.body.style.top).toBe("-1500px");
-
-    sheet.unmount(); // the sheet closes last
-    expect(scrollTo).toHaveBeenCalledTimes(1);
-    expect(scrollTo).toHaveBeenCalledWith({ top: 1500, left: 0, behavior: "instant" });
+    expect(wheelAt(el).defaultPrevented).toBe(false);
   });
 });
 

@@ -36,10 +36,26 @@ function visibleFocusables(root: HTMLElement): HTMLElement[] {
 // dialog: every hook instance has to see the same count.
 let scrollLocks = 0;
 let overflowBeforeLock = "";
-let positionBeforeLock = "";
-let topBeforeLock = "";
-let widthBeforeLock = "";
-let scrollYBeforeLock = 0;
+
+/**
+ * While locked, true unless the wheel/touchmove's own target sits inside a region that
+ * can genuinely scroll — a sheet's own options list, for one. Walking up rather than
+ * checking the event's own target alone: the target is usually some inner span or row,
+ * not the scrollable element itself.
+ */
+function hasScrollableAncestor(target: EventTarget | null): boolean {
+  let node = target as HTMLElement | null;
+  while (node && node !== document.body) {
+    const canScrollY = /(auto|scroll)/.test(getComputedStyle(node).overflowY) && node.scrollHeight > node.clientHeight;
+    if (canScrollY) return true;
+    node = node.parentElement;
+  }
+  return false;
+}
+
+function blockUnlessScrollable(e: Event) {
+  if (!hasScrollableAncestor(e.target)) e.preventDefault();
+}
 
 /**
  * Hold the page still while a surface is up, and let go when the last one closes.
@@ -57,60 +73,51 @@ let scrollYBeforeLock = 0;
  * still have to hold the page — an `aria-modal` sheet over a page that scrolls
  * behind it reads as broken — so the lock is the part they share.
  *
- * `overflow: hidden` ALONE does not hold the page. Reported on `/collection`
- * (Hugh, desktop Firefox, a narrow window): scroll down, open a filter sheet,
- * and the page behind snaps to a different position while the sheet is up —
- * confirmed with Playwright-firefox at 390 and 700px, real clicks, no sheet
- * reachable without scrolling first: `overflow: hidden` on `body` does NOT
- * stop a wheel/trackpad gesture over the sheet's own scrim from scrolling the
- * page behind it (Firefox chains the wheel event past a fixed, non-scrollable
- * overlay to the page's real scroll; `document.body.style.overflow` reads
- * `hidden` throughout and makes no difference). The reader never sees the
- * scroll happen — the sheet covers it — only that the page is somewhere else
- * once it closes. The SAME failure, by a different mechanism, is iOS Safari's
- * long-documented refusal to honour `overflow: hidden` for touch-driven
- * rubber-band scroll. Reachable through any dialog on `/commanders` and
- * `/discover` too, since all three route through this one lock.
+ * `overflow: hidden` on `body` ALONE does not hold the page in every engine. Reported
+ * on `/collection` (Hugh, desktop Firefox, a narrow window): scroll down, open a filter
+ * sheet, and the page behind ends up somewhere else once the sheet closes. Confirmed
+ * with Playwright-firefox at 390 and 700px, real clicks: a wheel/trackpad gesture over
+ * the sheet's own scrim scrolls the page behind it — Firefox chains the wheel event past
+ * a fixed, non-scrollable overlay to the page's real scroll, and `body`'s `overflow:
+ * hidden` makes no difference, since `html` is the actual scrolling element and this
+ * line never touched it. The reader never sees the scroll happen — the sheet covers it
+ * — only that the page is somewhere else once it closes.
  *
- * The fix pins the body at its current scroll offset instead of trusting
- * overflow to hold it: `position: fixed` with `top` set to the negative of
- * the saved `scrollY`, which keeps the page visually still because that
- * offset is now the ONLY thing positioning its content, with `width: 100%`
- * alongside it since a fixed body loses the width it had from flowing edge to
- * edge and would otherwise narrow to its content. A fixed, out-of-flow body
- * gives a wheel event nothing to scroll — confirmed in Firefox: the same
- * gesture over the scrim moves nothing while locked — and gives iOS Safari's
- * touch scroll nothing either. The restore reverses all four properties and
- * then `scrollTo`s back explicitly, rather than counting on the browser to
- * remember a position that `position: fixed` already walked away from.
+ * TWO THINGS THAT LOOKED LIKE FIXES AND WERE NOT, each confirmed in a real browser
+ * before being dropped: pinning `body` with `position: fixed` (stops the wheel, but
+ * `position: sticky` descendants — the collection pinned head — compute their stuck
+ * offset against the nearest scrolling ancestor, and Firefox recomputes that wrong the
+ * moment an ancestor's scrollability changes, so the head itself jumped off-screen and
+ * back — the exact symptom this fix exists to remove, from the fix); and adding
+ * `overflow: hidden` to `html` alongside `body`, with no position change at all (same
+ * head jump, so it is the ancestor's scrollability changing at all that breaks `sticky`
+ * in Firefox, not `position: fixed` specifically).
+ *
+ * So the ancestor's own `overflow` and `position` are left exactly as this line already
+ * sets them — `hidden`, nothing else — and the wheel/touchmove event is stopped
+ * directly instead: a non-passive listener, while locked, that lets the event through
+ * only when it targets something that can genuinely scroll (a sheet's own list), and
+ * blocks it otherwise. A target with nothing scrollable above it — the scrim, or any
+ * non-scrolling part of the dialog — never reaches the page. This also covers iOS
+ * Safari's touch-driven rubber-band failure of the same `overflow: hidden`, by the
+ * same mechanism: `touchmove` is listened for too.
  */
 export function useScrollLock(locked: boolean) {
   useEffect(() => {
     if (!locked) return;
     if (scrollLocks === 0) {
-      scrollYBeforeLock = window.scrollY;
       overflowBeforeLock = document.body.style.overflow;
-      positionBeforeLock = document.body.style.position;
-      topBeforeLock = document.body.style.top;
-      widthBeforeLock = document.body.style.width;
       document.body.style.overflow = "hidden";
-      document.body.style.position = "fixed";
-      document.body.style.top = `-${scrollYBeforeLock}px`;
-      document.body.style.width = "100%";
+      window.addEventListener("wheel", blockUnlessScrollable, { passive: false });
+      window.addEventListener("touchmove", blockUnlessScrollable, { passive: false });
     }
     scrollLocks += 1;
     return () => {
       scrollLocks -= 1;
       if (scrollLocks === 0) {
         document.body.style.overflow = overflowBeforeLock;
-        document.body.style.position = positionBeforeLock;
-        document.body.style.top = topBeforeLock;
-        document.body.style.width = widthBeforeLock;
-        // "instant", not the browser default: a page with `scroll-behavior: smooth` set
-        // anywhere (globally, or on an ancestor this restore happens to inherit from) would
-        // otherwise animate the jump back into place, which is itself a visible snap of
-        // exactly the kind this fix exists to remove.
-        window.scrollTo({ top: scrollYBeforeLock, left: 0, behavior: "instant" });
+        window.removeEventListener("wheel", blockUnlessScrollable);
+        window.removeEventListener("touchmove", blockUnlessScrollable);
       }
     };
   }, [locked]);
