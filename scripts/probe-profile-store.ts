@@ -306,6 +306,21 @@ async function run() {
     await computeAndStoreProfile(deck.id, USER, deps);
   }
 
+  // 10c3 · A DEPLOY BETWEEN THE PRESS AND THE COMMIT. The reading is of this list under an older
+  // PROFILE_VERSION: a version bump is not an edit, so the commit's pin rebuilds it and pins it,
+  // where a reading of ANOTHER list (10c2) is left alone.
+  {
+    await fixture.execute(sql`update deck_profiles set profile_version = ${PROFILE_VERSION - 1}, version_id = null
+      where deck_id = ${deck.id}::uuid`);
+    const { version: bumped } = await commitVersion(deck.id, null);
+    const before = computes;
+    await pinAnalysisToVersion(deck.id, USER, { versionId: bumped.id, list: listFingerprint(head) }, deps);
+    const row = await storedRow(deck.id);
+    check("a commit over this list's older-version reading rebuilds it and pins it",
+      { computed: computes - before, v: row?.profile_version, pin: row?.version_id },
+      { computed: 1, v: PROFILE_VERSION, pin: bumped.id });
+  }
+
   // 10d · ONLY THE NEWEST VERSION IS PINNED: an older commit's `after()` pin landing last is refused.
   const { version: v2 } = await commitVersion(deck.id, null);
   await pinAnalysisToVersion(deck.id, USER, { versionId: v2.id, list: listFingerprint(head) }, deps);

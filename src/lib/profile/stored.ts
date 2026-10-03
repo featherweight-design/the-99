@@ -221,8 +221,10 @@ export type AnalyzeResult =
  * store otherwise. Null when the deck is not the reader's.
  *
  * `pinTo` is passed by a commit (ruling 2), which pins the reading to the version it just wrote.
- * The pin answers from the store like any other analysis when the list is unchanged, so a commit
- * of a deck analyzed a moment ago costs one UPDATE.
+ * The pin answers from the store when the list is unchanged, so a commit of a deck analyzed a
+ * moment ago costs one UPDATE. It never analyzes a list nobody pressed Analyze on (H32): a reading
+ * of another list is left stale and unpinned, and the only pin that computes is the rebuild of a
+ * reading of this same list under an older `PROFILE_VERSION`.
  *
  * The WRITE is best-effort: a failed write must not take the verdict the reader asked for down
  * with it, so it is caught and the profile returned.
@@ -280,7 +282,11 @@ export async function computeAndStoreProfile(
   // describes another list, the commit leaves it stale and unpinned: computing here would re-analyze
   // the new list behind the player's back and draw it fresh, so the banner offering the press never
   // shows. The next press names this version through `versionHolding`.
-  if (pinTo && !sameAnswer) return null;
+  //
+  // THE LIST, NOT THE VERSION. A reading of this list under an older `PROFILE_VERSION` (a deploy
+  // landing between the press and the commit) falls through and is rebuilt and pinned, because a
+  // version bump is not an edit: the player analyzed this list, and the reading stays theirs.
+  if (pinTo && (!row || row.fingerprint !== list)) return null;
   // Behind the notices switch (Hugh's release ruling): off, a press keeps ruling 5 unamended.
   const dataMoved = Boolean(isPress && sameAnswer && row && noticesEnabled() && (await readingMoved({
     seenSeq: row.seenSeq,
@@ -465,8 +471,10 @@ export async function clearDirty(
 
 /**
  * Pin the reading to the version a commit just wrote (ruling 2), best-effort and off the commit's
- * path: it runs in `after()`, so the commit answers without waiting on a 630ms-to-2.2s analysis.
- * A deck the commit left illegal (a later version may be any size) is not analyzed at all.
+ * path: it runs in `after()`, so the commit answers without waiting on it. It pins a reading of
+ * the committed list only (H32); the one case that analyzes is a reading of that list under an
+ * older `PROFILE_VERSION`, which a 630ms-to-2.2s rebuild replaces. A deck the commit left illegal
+ * (a later version may be any size) is not analyzed at all.
  */
 export async function pinAnalysisToVersion(
   deckId: string,
