@@ -289,6 +289,14 @@ export async function computeAndStoreProfile(
   // `sameList`, not a raw comparison: a row written before migration 0054 stores
   // `profileFingerprint` rather than `listFingerprint`, and is this list all the same.
   if (pinTo && (!row || !sameList(row, head))) return null;
+  // WHAT A REBUILD KEEPS: the marks and the date of the analysis it replaces (readiness F4, brief
+  // §6), so a deploy never reads as a new press or swallows a pending notice. A quiet rebuild hands
+  // them over; a commit's pin over this list's older-version reading takes them off the row, and
+  // differs from the quiet rebuild only in the pin it writes (review round 2).
+  const kept: RebuildMarks | null = rebuildOf?.marks
+    ?? (pinTo && row && row.profileVersion !== PROFILE_VERSION
+      ? { seenSeq: row.seenSeq, rulesVersion: row.rulesVersion, analyzedOracleIds: row.analyzedOracleIds }
+      : null);
   // Behind the notices switch (Hugh's release ruling): off, a press keeps ruling 5 unamended.
   const dataMoved = Boolean(isPress && sameAnswer && row && noticesEnabled() && (await readingMoved({
     seenSeq: row.seenSeq,
@@ -341,7 +349,7 @@ export async function computeAndStoreProfile(
   // THE LOG HEAD TOO, and for the same reason (plan D3): an entry published while this computes
   // is past the mark and still reported. A rebuild keeps the mark it replaced.
   // Unreadable (null): the write takes the head in its own statement, which errs towards quiet.
-  const seenSeq = rebuildOf ? rebuildOf.marks.seenSeq : await readLogHead(db);
+  const seenSeq = kept ? kept.seenSeq : await readLogHead(db);
   const seenSeqValue = seenSeq ?? sql`(${LOG_HEAD_SQL})`;
   // A PRESS NEVER TAKES THE CACHE. It stamps the reading as past every entry and under the current
   // rules, and the cache key carries neither the log head nor the rules version: a press on a list
@@ -377,11 +385,11 @@ export async function computeAndStoreProfile(
       // defaults, which the migration's backfill ran too early to see. A rebuild fills the list
       // from the list it was guarded to (the same list, `rebuildOf.list`) rather than carrying
       // an empty one forward, which would match no card-scoped entry ever again.
-      const marks = rebuildOf
+      const marks = kept
         ? {
-            ...rebuildOf.marks,
-            analyzedOracleIds: rebuildOf.marks.analyzedOracleIds.length > 0
-              ? rebuildOf.marks.analyzedOracleIds
+            ...kept,
+            analyzedOracleIds: kept.analyzedOracleIds.length > 0
+              ? kept.analyzedOracleIds
               : analyzedOracleIds(now),
           }
         : { seenSeq: seenSeqValue, rulesVersion: BRACKET_RULES_VERSION, analyzedOracleIds: analyzedOracleIds(now) };
@@ -408,7 +416,7 @@ export async function computeAndStoreProfile(
             // analyzed` is the player's press and never the deploy's.
             // The row's own column, not a value read back through JS: the column is
             // microsecond-precise and a Date is not, so a carried value would move the date.
-            computedAt: rebuildOf ? sql`${deckProfiles}.computed_at` : sql`now()`,
+            computedAt: kept ? sql`${deckProfiles}.computed_at` : sql`now()`,
           },
         })
         .returning({ computedAt: deckProfiles.computedAt });

@@ -310,8 +310,13 @@ async function run() {
   // PROFILE_VERSION: a version bump is not an edit, so the commit's pin rebuilds it and pins it,
   // where a reading of ANOTHER list (10c2) is left alone.
   {
-    await fixture.execute(sql`update deck_profiles set profile_version = ${PROFILE_VERSION - 1}, version_id = null
-      where deck_id = ${deck.id}::uuid`);
+    // A REBUILD STILL, so the analysis date and the notice mark are the press's, never the deploy's
+    // (review round 2): both are set to values no write would produce, and must survive the pin.
+    await fixture.execute(sql`update deck_profiles set profile_version = ${PROFILE_VERSION - 1}, version_id = null,
+      computed_at = now() - interval '3 days', seen_seq = 1 where deck_id = ${deck.id}::uuid`);
+    const marksOf = async () => (await rows<{ at: string; seq: number }>(sql`
+      select computed_at::text as at, seen_seq::int as seq from deck_profiles where deck_id = ${deck.id}::uuid`))[0];
+    const marksBefore = await marksOf();
     const { version: bumped } = await commitVersion(deck.id, null);
     const before = computes;
     await pinAnalysisToVersion(deck.id, USER, { versionId: bumped.id, list: listFingerprint(head) }, deps);
@@ -319,6 +324,7 @@ async function run() {
     check("a commit over this list's older-version reading rebuilds it and pins it",
       { computed: computes - before, v: row?.profile_version, pin: row?.version_id },
       { computed: 1, v: PROFILE_VERSION, pin: bumped.id });
+    check("and keeps the analysis date and the notice mark it replaced", await marksOf(), marksBefore);
 
     // THE LEGACY FORM of the same case: a row written before 0054 stores `profileFingerprint`, so a
     // raw comparison with the commit's list misreads it as another list (review round 1).
