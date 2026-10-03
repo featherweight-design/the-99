@@ -190,15 +190,15 @@ describe("the rung above", () => {
     expect(within(above).getByText(copy.roleDeclare)).toBeTruthy();
   });
 
-  // H34: once the range is answered the rung has nothing to ask, so it reads as the plain rung
-  // above. A declaration OUTSIDE the range is drift, which leaves the ask standing.
+  // H34, superseded by addendum F: once the range is answered the in-range rungs remap to
+  // `declared`/`permitted` rather than reading as the plain rung above. See "the declared range"
+  // below for the full remap; this just confirms the ask and the dashed border are gone.
   it("stops asking once the range is answered", () => {
     draw("4,5", 5);
-    const above = rungs().find((r) => r.dataset.role === "above")!;
-    expect(within(above).queryByText(copy.declare)).toBeNull();
-    expect(within(above).queryByText(copy.roleDeclare)).toBeNull();
-    expect(within(above).getByText(copy.roleAbove)).toBeTruthy();
-    expect(above.className).not.toContain("border-dashed");
+    const permitted = rungs().find((r) => r.dataset.role === "permitted")!;
+    expect(within(permitted).queryByText(copy.declare)).toBeNull();
+    expect(within(permitted).queryByText(copy.roleDeclare)).toBeNull();
+    expect(permitted.className).not.toContain("border-dashed");
   });
 
   it("keeps asking over a declaration the range does not permit", () => {
@@ -305,6 +305,75 @@ describe("the yours rung's text", () => {
     }
     expect(failures).toEqual([]);
     expect(floor).toBeGreaterThan(7.5);
+  });
+});
+
+// ADDENDUM F, H34: once a range is answered, `climb()` still decides which three rungs draw —
+// only the role of the two rungs INSIDE the range changes. A rung outside it (the 4-5 deck's
+// rung 3) is untouched.
+describe("the declared range", () => {
+  it("1,2 declared 2: the declared rung takes the full treatment, the other reads permitted", () => {
+    draw("1,2", 2);
+    const declared = rungs().find((r) => r.dataset.bracket === "2")!;
+    const permitted = rungs().find((r) => r.dataset.bracket === "1")!;
+    expect(declared.dataset.role).toBe("declared");
+    expect(permitted.dataset.role).toBe("permitted");
+    expect(within(declared).getByText(copy.roleDeclared)).toBeTruthy();
+    expect(within(permitted).getByText(copy.rolePermitted)).toBeTruthy();
+    // No rung on an answered range reads "permits more than this deck uses". A 1/2 deck holds
+    // none of the four rules by definition, so the declared rung's empty body is the existing
+    // empty-cell rule (README note 2), not asserted here.
+    expect(within(permitted).queryByText(copy.aboveAllowed)).toBeNull();
+  });
+
+  it("1,2 declared 1: the mirror of that", () => {
+    draw("1,2", 1);
+    const declared = rungs().find((r) => r.dataset.bracket === "1")!;
+    const permitted = rungs().find((r) => r.dataset.bracket === "2")!;
+    expect(declared.dataset.role).toBe("declared");
+    expect(permitted.dataset.role).toBe("permitted");
+    expect(within(declared).getByText(copy.roleDeclared)).toBeTruthy();
+    expect(within(permitted).getByText(copy.rolePermitted)).toBeTruthy();
+  });
+
+  it("4,5 declared 5: rung 5 is declared with no cap, rung 4 is permitted with no sentence, rung 3 is untouched", () => {
+    draw("4,5", 5);
+    const below = rungs().find((r) => r.dataset.bracket === "3")!;
+    const permitted = rungs().find((r) => r.dataset.bracket === "4")!;
+    const declared = rungs().find((r) => r.dataset.bracket === "5")!;
+    expect(below.dataset.role).toBe("below");
+    expect(permitted.dataset.role).toBe("permitted");
+    expect(declared.dataset.role).toBe("declared");
+    expect(within(declared).getAllByText(copy.noCap).length).toBeGreaterThan(0);
+    // No body at all on the permitted rung: no declare sentence, no allowance figures.
+    expect(within(permitted).queryByText(copy.declare)).toBeNull();
+    expect(within(permitted).queryAllByTestId("climb-figure")).toHaveLength(0);
+    expect(within(permitted).getByText(copy.rolePermitted)).toBeTruthy();
+  });
+
+  it("4,5 declared 4: the mirror of that, rung 5 is no longer already allowed", () => {
+    draw("4,5", 4);
+    const declared = rungs().find((r) => r.dataset.bracket === "4")!;
+    const permitted = rungs().find((r) => r.dataset.bracket === "5")!;
+    expect(declared.dataset.role).toBe("declared");
+    expect(permitted.dataset.role).toBe("permitted");
+    expect(within(permitted).queryByText(copy.aboveAllowed)).toBeNull();
+  });
+
+  // The 40% border is a UI edge, not text — measured rather than asserted to a stated bar, since
+  // READINESS carries no threshold for it (only "check it in build"). Report the worst case.
+  it("measures the permitted border's contrast against --surface, every rank, every theme", () => {
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "..", "app", "globals.css"), "utf8");
+    let floor = Infinity;
+    for (const [, tokens] of parseThemeBlocks(css)) {
+      for (const rank of [1, 2, 3, 4, 5]) {
+        const mixed = mixOklab(tokens.get(`bracket-${rank}`)!, tokens.get("border")!, 0.4);
+        const ratio = contrast(mixed, tokens.get("surface")!);
+        floor = Math.min(floor, ratio);
+      }
+    }
+    // Sanity only: the mix must actually read as distinct from the surface it sits on.
+    expect(floor).toBeGreaterThan(1);
   });
 });
 

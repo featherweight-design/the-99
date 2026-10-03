@@ -250,6 +250,10 @@ export const deckAnalysisCopy = {
     roleAbove: "already allowed",
     /** The 4-5 rung only, where the one ringed `?` left on the climb sits. */
     roleDeclare: "to claim this",
+    /** NEW (addendum F, H34). The declared bracket's rung label, once the range is answered. */
+    roleDeclared: "declared",
+    /** NEW (addendum F, H34). The other bracket in the answered range. The rung has no body. */
+    rolePermitted: "permitted",
 
     /**
      * What would take you down. NAMES THE CARDS at one or two and the count above that, because

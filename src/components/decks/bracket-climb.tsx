@@ -42,6 +42,14 @@ export const NEIGHBOUR_OPACITY = 0.75;
 /** How much of the rank's ink tints the rung a deck sits on. Exported for the same reason. */
 export const YOURS_TINT = 0.12;
 
+/**
+ * `climb`'s three roles, plus the two an answered range remaps an in-range rung to (addendum F,
+ * H34). `declared` takes `yours`'s whole treatment, at whichever bracket the player answered —
+ * not necessarily `permits[0]`. `permitted` is new: no fill, a 40%-ink border, the mark at
+ * {@link NEIGHBOUR_OPACITY}, a label, and no body.
+ */
+type DisplayRole = "below" | "yours" | "above" | "declared" | "permitted";
+
 export function BracketClimb({
   verdict,
   profile,
@@ -62,8 +70,16 @@ export function BracketClimb({
   const rungs = climb(verdict.permits);
   // AN ANSWERED RANGE STOPS ASKING (H34). The declare rung points at the block's chips, and once
   // the player has chosen there is nothing left for it to point at: `[4,5]` declared reads as the
-  // plain rung above. How the climb marks the declared bracket itself is not drawn yet.
+  // plain rung above.
   const answered = declared !== null && declarationAsk(verdict.permits, declared).kind === "answered";
+  // THE DECLARED RANGE REMAPS, NOT `climb()` (addendum F, H34). `climb` still decides which
+  // three rungs; this only relabels the two rungs INSIDE the answered range. A rung whose
+  // bracket the range permits takes `declared` (the answer) or `permitted` (the other bracket
+  // in the range); a rung outside the range — the 4-5 deck's rung 3 — is untouched.
+  const displayRole = (rung: ReturnType<typeof climb>[number]): DisplayRole =>
+    answered && verdict.permits.includes(rung.bracket)
+      ? rung.bracket === declared ? "declared" : "permitted"
+      : rung.role;
   // THE PATH'S SHEET. Local, not persisted; the dialog returns focus to the rung's opener.
   const [open, setOpen] = useState(false);
   // THE REFERENCE SHEET's own, separate from the path's: the two never open together.
@@ -79,7 +95,7 @@ export function BracketClimb({
           <Rung
             key={rung.bracket}
             bracket={rung.bracket}
-            role={rung.role}
+            role={displayRole(rung)}
             verdict={verdict}
             profile={profile}
             answered={answered}
@@ -132,7 +148,7 @@ function Rung({
   path,
 }: {
   bracket: Bracket;
-  role: "below" | "yours" | "above";
+  role: DisplayRole;
   verdict: BracketVerdict;
   profile: DeckProfile;
   /** The range is answered, so the declare rung has nothing left to ask. */
@@ -157,24 +173,29 @@ function Rung({
       data-bracket={bracket}
       className={
         "grid rounded-lg px-[11px] md:grid-cols-[186px_1fr] md:items-center md:gap-[14px] md:px-3 "
-        + (role === "yours"
+        + ((role === "yours" || role === "declared")
           ? "gap-[9px] py-[11px] md:py-[11px] "
           : "gap-[7px] py-[10px] md:py-[10px] ")
         + (role === "below" ? "border border-[color:var(--border)] bg-[color:var(--surface-sunken)] " : "")
-        + (role === "yours" ? "border " : "")
+        + ((role === "yours" || role === "declared") ? "border " : "")
         + (role === "above" && !declares ? "border border-[color:var(--border)] " : "")
+        + (role === "permitted" ? "border " : "")
         + (declares ? "border border-dashed " : "")
       }
       style={
-        role === "yours"
+        (role === "yours" || role === "declared")
           ? { background: `color-mix(in oklab, ${ink} ${YOURS_TINT * 100}%, var(--surface))`, borderColor: ink }
           : declares
             ? { borderColor: `color-mix(in oklab, ${ink} 55%, transparent)` }
-            : undefined
+            // PERMITTED (addendum F, H34): no fill, an edge at 40% of this rank's ink mixed into
+            // `--border` — a border, not text, so the usual text-contrast bar does not apply.
+            : role === "permitted"
+              ? { borderColor: `color-mix(in oklab, ${ink} 40%, var(--border))` }
+              : undefined
       }
     >
       <span className="flex items-center gap-2 md:gap-[9px]">
-        {role === "yours" ? (
+        {role === "yours" || role === "declared" ? (
           <BracketMark bracket={bracket} px={26} mdPx={36} />
         ) : (
           <>
@@ -202,7 +223,7 @@ function Rung({
         <span className="flex flex-1 items-baseline gap-2 md:flex-none md:flex-col md:items-start md:gap-0.5">
           <span
             className={
-              role === "yours"
+              role === "yours" || role === "declared"
                 ? "text-[13px] font-semibold text-[color:var(--fg)] md:text-[13.5px]"
                 : "text-[12.5px] font-semibold text-[color:var(--fg-body)]"
             }
@@ -211,7 +232,7 @@ function Rung({
           </span>
           <span
             className="ml-auto font-mono text-[8.5px] uppercase tracking-[0.1em] md:ml-0 md:text-[9px]"
-            style={{ color: role === "yours" ? "var(--fg)" : "var(--fg-faint)" }}
+            style={{ color: role === "yours" || role === "declared" ? "var(--fg)" : "var(--fg-faint)" }}
           >
             {role === "below" ? (
               upgradePathCopy.rungLabel
@@ -221,6 +242,10 @@ function Rung({
                 <span className="md:hidden">{copy.roleHereShort}</span>
                 <span className="hidden md:inline">{copy.roleHere}</span>
               </>
+            ) : role === "declared" ? (
+              copy.roleDeclared
+            ) : role === "permitted" ? (
+              copy.rolePermitted
             ) : declares ? (
               copy.roleDeclare
             ) : (
@@ -260,12 +285,14 @@ function RungBody({
   profile,
 }: {
   bracket: Bracket;
-  role: "below" | "yours" | "above";
+  role: DisplayRole;
   declares: boolean;
   verdict: BracketVerdict;
   profile: DeckProfile;
 }) {
   const copy = deckAnalysisCopy.climb;
+  // PERMITTED HAS NO BODY (addendum F, H34). The rung is the mark, the name and the label only.
+  if (role === "permitted") return null;
   if (role === "below") {
     // NARROWED, NOT CAST. `climb` puts `yours` at `permits[0]`, which `permitsFor` never returns
     // above 4, so the rung below is 1, 2 or 3 and `upgradePath`'s target type is satisfied. The
