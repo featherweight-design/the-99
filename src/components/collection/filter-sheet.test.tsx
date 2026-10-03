@@ -96,6 +96,9 @@ describe("CollectionFilterSheet", () => {
     expect(within(dialog).getByRole("switch", { name: /White/ })).toBeTruthy();
     expect(within(dialog).getByRole("switch", { name: /Instant/ })).toBeTruthy();
     expect(within(dialog).getByRole("switch", { name: /Free/ })).toBeTruthy();
+    // H10, round 3: the control's own compact caption (not a heading role, so the loop above
+    // cannot see it) must not repeat the Group's "Color identity" h3.
+    expect(within(dialog).getAllByText("Color identity")).toHaveLength(1);
     // Set is the one dimension that is a row rather than chips: a collection
     // reaches into the hundreds, and the list under a field was most of the
     // sheet and resized it on every keystroke.

@@ -221,6 +221,9 @@ function SheetBody({
             onColorsChange={(c) => onChange({ ...filters, colors: c.map((v) => v.toUpperCase()) })}
             onMatchChange={(m) => onChange({ ...filters, match: m })}
             unavailable={colorOptions.filter((o) => o.disabled).map((o) => o.code)}
+            // The Group above already draws "Color identity" as its own h3; the control's
+            // matching built-in caption would repeat it (the round-3 finding).
+            hideColourCaption
           />
         </Group>
 
