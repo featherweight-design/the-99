@@ -306,9 +306,9 @@ async function run() {
   check("…and not as a rejection", afterBusy.lastRejected, false);
 
   // 7b · A REJECTED request (H33: a bad key, a retired model id) is its own outcome, stored with
-  // the status the call failed with, and read as a failure with no Try again. The stub has no
-  // rejected mode, so the injected model answers it; the CHECK admitting the class is what only a
-  // database can prove.
+  // the status the call failed with, and read as a failure with no Try again. The model is
+  // injected, as in every case here, so the run does not depend on SYNOPSIS_STUB (whose `rejected`
+  // mode serves a dev server); the CHECK admitting the class is what only a database can prove.
   const rejectingModel: GenerateDeps = { ...deps, model: async () => ({ ok: false, errorClass: "upstream_rejected", status: 404 }) };
   const rejected = await writeSynopsisFor(deck.id, USER, rejectingModel);
   check("a rejected request ends upstream_rejected", rejected.kind === "written" && rejected.outcome, "upstream_rejected");
