@@ -266,7 +266,7 @@ export function SetIndexView({
           aria-label={setsIndexCopy.search.ariaLabel}
         />
         <EmptyState>
-          <EmptyStateTitle>{setsIndexCopy.noCollectibleSets.heading}</EmptyStateTitle>
+          <EmptyStateTitle level={2}>{setsIndexCopy.noCollectibleSets.heading}</EmptyStateTitle>
           <EmptyStateBody>{setsIndexCopy.noCollectibleSets.body}</EmptyStateBody>
         </EmptyState>
       </div>
@@ -285,7 +285,7 @@ export function SetIndexView({
           aria-label={setsIndexCopy.search.ariaLabel}
         />
         <EmptyState>
-        <EmptyStateTitle>{setsIndexCopy.firstRun.heading}</EmptyStateTitle>
+        <EmptyStateTitle level={2}>{setsIndexCopy.firstRun.heading}</EmptyStateTitle>
         <EmptyStateBody>{setsIndexCopy.firstRun.body}</EmptyStateBody>
         <div className="mt-[18px] flex flex-col items-center gap-[10px]">
           <PrimaryButton href="/collection/replace">
@@ -334,7 +334,7 @@ export function SetIndexView({
         </p>
       ) : searching && shown.length === 0 ? (
         <EmptyState>
-          <EmptyStateTitle>
+          <EmptyStateTitle level={2}>
             {failed
               ? setsIndexCopy.searchFailed.heading
               : setsIndexCopy.noMatch.heading(query.trim())}

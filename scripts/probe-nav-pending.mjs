@@ -227,7 +227,7 @@ async function run(browser, state, width, userId) {
 
   // 5. An inline text link with no mark (PR 2's `PendingReporter`): an About entry's route link
   //    (plain mono text, no chrome) still escalates to its route's screen, and paints no mark of its
-  //    own. /collection's "By set" link is not the subject: it is drawn as a bordered chip.
+  //    own. The collection's place tabs are not the subject: they draw their own current-tab rule.
   {
     const { page, throttle } = await slowPage(context);
     await page.goto(`${BASE}/about`, { waitUntil: "domcontentloaded", timeout: 120_000 });

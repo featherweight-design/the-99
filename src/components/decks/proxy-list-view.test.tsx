@@ -101,10 +101,12 @@ describe("the proxy list", () => {
     expect(screen.getByText(proxyCopy.empty.noDecksAction)).toBeTruthy();
   });
 
-  it("links back to the collection from its breadcrumb (H19)", () => {
+  // The way back (H19) is the place head's Cards tab now, drawn by the page above this
+  // view; a breadcrumb here as well would be a second answer to "where am I".
+  it("draws no breadcrumb of its own, and keeps its h1 (E11)", () => {
     render(<ProxyListView newestAsOf={NEWEST} rows={[row()]} hasDecks hasCollection />);
-    const back = screen.getByRole("link", { name: proxyCopy.page.breadcrumb });
-    expect(back.getAttribute("href")).toBe("/collection");
+    expect(screen.queryByRole("link", { name: /Collection/ })).toBeNull();
+    expect(screen.getByRole("heading", { level: 1, name: proxyCopy.page.title })).toBeTruthy();
   });
 
   it("stretches the card's button over the whole row, under the deck links (H20)", () => {

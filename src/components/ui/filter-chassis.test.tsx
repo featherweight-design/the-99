@@ -187,8 +187,8 @@ describe("FilterChassis", () => {
   });
 
   it("draws resultTrailing at row 3's trailing edge", () => {
-    // `/collection`'s view toggle and `By set` link live here: both change what
-    // surface you are on rather than what is in the list. Without an assertion
+    // `/collection`'s view toggle lives here: it changes how the list is drawn
+    // rather than what is in it. Without an assertion
     // a refactor could drop the slot and every structural test would still pass.
     const { container } = render(
       <FilterChassis

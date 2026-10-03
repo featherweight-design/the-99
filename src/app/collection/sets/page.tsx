@@ -5,12 +5,11 @@
 // That is why it is its own route rather than a view mode, and why none of /collection's
 // filters cross the boundary in either direction.
 
-import Link from "next/link";
-import { PendingReporter } from "../../../components/shell/pending-reporter";
 import { requireUserId } from "../../../lib/auth";
 import { cacheForUser } from "../../../lib/cache/user-lists";
 import { loadOwnedSets } from "../../../lib/sets/read";
-import { getCollectionStats } from "../../../lib/home/summary";
+import { getCollectionLastUpdated, getCollectionStats } from "../../../lib/home/summary";
+import { CollectionPlaceHead } from "../../../components/collection/collection-place-head";
 import { SetIndexView } from "../../../components/sets/set-index-view";
 import { setsIndexCopy } from "../../../lib/copy/set-collections";
 import { searchSetsAction } from "./actions";
@@ -22,28 +21,31 @@ export default async function SetsPage() {
   // this payload (booster, rarity, base_set_size) is written by the weekly refresh, which
   // does not clear that tag — so a set re-indexed between visits shows its previous figure
   // until the hour ceiling. Both inputs move weekly, so the bound sits inside the cadence.
-  const [sets, stats] = await Promise.all([
+  const [sets, stats, lastUpdated] = await Promise.all([
     cacheForUser(userId, ["sets-index"], () => loadOwnedSets(userId)),
     getCollectionStats(userId),
+    // The place head's stats line reads it on all three routes, so the strip below it sits
+    // at the same height everywhere (collection surfaces R2, E18).
+    getCollectionLastUpdated(userId),
   ]);
 
   return (
-    <main className="mx-auto w-full max-w-[900px] px-[16px] py-[20px] md:px-[34px] md:py-[28px]">
-      {/* A way back to the collection, as the proxy list's breadcrumb gives (H19). */}
-      <p className="font-mono text-[11px] mb-[6px]" style={{ color: "var(--fg-faint)" }}>
-        <Link href="/collection">
-          {setsIndexCopy.breadcrumb}
-          <PendingReporter href="/collection" />
-        </Link>
-      </p>
-      <h1 className="font-display text-[24px] md:text-[28px]" style={{ color: "var(--fg)" }}>
-        {setsIndexCopy.title}
-      </h1>
-      <p className="mt-[4px] mb-[18px] text-[13px]" style={{ color: "var(--fg-muted)" }}>
-        {setsIndexCopy.subtitle(sets.length)}
-      </p>
+    // A SECTION, not a `main`: the shell already renders one around every route, and a
+    // nested main landmark is invalid (E20). The place head sits ABOVE the padded column, so
+    // its strip lands where /collection's does (E19); the column is anchored left from `md`
+    // so "Your sets" starts under the Sets tab rather than 135px to its right.
+    <section className="flex flex-col">
+      <CollectionPlaceHead current="sets" stats={stats} lastUpdated={lastUpdated} />
+      <div className="mx-auto md:mx-0 w-full max-w-[900px] px-[16px] py-[20px] md:px-[34px] md:py-[28px]">
+        <h1 className="font-display text-[24px] md:text-[28px]" style={{ color: "var(--fg)" }}>
+          {setsIndexCopy.title}
+        </h1>
+        <p className="mt-[4px] mb-[18px] text-[13px]" style={{ color: "var(--fg-muted)" }}>
+          {setsIndexCopy.subtitle(sets.length)}
+        </p>
 
-      <SetIndexView sets={sets} cardCount={stats.totalCards} onSearch={searchSetsAction} />
-    </main>
+        <SetIndexView sets={sets} cardCount={stats.totalCards} onSearch={searchSetsAction} />
+      </div>
+    </section>
   );
 }

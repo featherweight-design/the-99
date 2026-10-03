@@ -140,8 +140,8 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'Search by name, narrow by color, type, set or availability, and read the result as a grid or as rows. Every narrowing is a chip you can see and remove, and the count above the results says how many cards you are looking at.',
     keys: [
+      'Cards, Sets and Proxies sit in one strip at the top. Sets shows each set in collector order with what you are missing.',
       'a chip per narrowing, each removable on its own, and one link that clears the lot. Nothing filters invisibly.',
-      'By set takes you to your sets, each one in collector order with what you are missing.',
       'grid or rows is a reading choice and it is remembered. The filters are not: they live on the URL, so a link carries them and a fresh visit starts clean.',
     ],
     since: 1,

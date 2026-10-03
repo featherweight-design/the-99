@@ -34,12 +34,8 @@ import { FilterPanel } from "../ui/filter-panel";
 // The hook moved to ui/use-is-desktop.ts when filter-panel.tsx needed it too;
 // it is re-exported here because browser.tsx already imports it from this file.
 import { useIsDesktop } from "../ui/use-is-desktop";
-import Link from "next/link";
 import { ViewToggle, type ViewToggleOption } from "../ui/view-toggle";
-import { setPageCopy } from "../../lib/copy/set-collections";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
-import { proxyCopy } from "../../lib/copy/proxies";
-import { PendingReporter } from "../shell/pending-reporter";
 
 export { useIsDesktop };
 
@@ -91,7 +87,6 @@ export function FilterBar({
   shown,
   total,
   availabilityOk,
-  hasCollection,
   chips,
   onClearAll,
   resultLine,
@@ -124,10 +119,9 @@ export function FilterBar({
   shown: number;
   total: number;
   /**
-   * Whether the reader has a collection at all — NOT whether the current filters left any
-   * sets. `setOptions` is filter-aware, so keying the By set pill on it removed the entry
-   * point whenever a type or colour filter excluded everything, which is an ordinary thing
-   * to do and has nothing to say about whether the sets page is worth visiting.
+   * UNUSED since the place strip replaced the rack's `By set` and `Proxies` links (collection
+   * surfaces Call 4). Removed in a follow-up once the collection flash fix, which also edits
+   * `browser.tsx`, has landed.
    */
   hasCollection: boolean;
   /** Chips the chassis draws, already shaped by `collectionChips`. */
@@ -276,57 +270,6 @@ export function FilterBar({
         />}
         resultTrailing={
           <>
-        {hasCollection ? (
-          <Link
-            href="/collection/sets"
-            aria-label={setPageCopy.entryPoint.aria}
-            // Sized by the chassis's form, not `md:`. The two disagree by 232px,
-            // and at 768-999 this dropped to a 46px fixed height inside the
-            // compact frame while the controls around it kept their 44px
-            // minimum — the same split ViewToggle and the panel triggers had.
-            className={[
-              "inline-flex shrink-0 items-center gap-[6px] rounded-lg px-[10px] text-[13px]",
-              wide ? "min-h-[auto] h-[46px]" : "min-h-[44px]",
-              "border border-[color:var(--accent)] text-[color:var(--fg-body)]",
-              "hover:bg-[color:var(--elevated)]",
-            ].join(" ")}
-          >
-            <span
-              aria-hidden
-              className="inline-block rotate-45 bg-[color:var(--accent)]"
-              style={{ width: 7, height: 7 }}
-            />
-            {setPageCopy.entryPoint.label}
-            <PendingReporter href="/collection/sets" />
-          </Link>
-        ) : null}
-        {/* NOT gated on `hasCollection`, unlike `By set` beside it: a set browser
-            with no collection has nothing to say, while a proxy list is most
-            useful to exactly the player whose cards are all printed. The two sit
-            together and differ on this one condition. */}
-        <Link
-          href="/collection/proxies"
-          aria-label={proxyCopy.entryPoint.aria}
-          className={[
-            "inline-flex shrink-0 items-center gap-[6px] rounded-lg px-[10px] text-[13px]",
-            wide ? "min-h-[auto] h-[46px]" : "min-h-[44px]",
-            // `--border-strong`, not a second accent hairline: two accent edges
-            // inside 180px is two permanent off-default signals, and the second
-            // stops meaning anything. The label keeps `--fg-body`, identical to
-            // its neighbour's — ranking is not disabled-ness.
-            "border border-[color:var(--border-strong)] text-[color:var(--fg-body)]",
-            "hover:bg-[color:var(--elevated)]",
-          ].join(" ")}
-        >
-          {/* OUTLINED, not filled: `printing_picker`'s unset half, which is the
-              same move `By set` uses for its own ranking. */}
-          <span
-            aria-hidden
-            className="inline-block h-[7px] w-[7px] rotate-45 border border-[color:var(--fg-locked)]"
-          />
-          {proxyCopy.entryPoint.label}
-          <PendingReporter href="/collection/proxies" />
-        </Link>
         <ViewToggle
           options={COLLECTION_VIEWS}
           value={view}
@@ -500,21 +443,6 @@ export function FilterBar({
           onAnnounce={onAnnounce}
         />
 
-        {/* By set → the last control before the view well, and never inside it.
-            The leading cluster changes WHAT IS IN THE LIST; the trailing cluster
-            changes WHAT SURFACE YOU ARE ON, and sets is a surface.
-
-            It always goes to the index. Carrying `Set ▾`'s current value into the
-            route — so that filtering to EOE and tapping this lands on the EOE page —
-            is exactly the state-sharing behind the Commanders/Discover confusion,
-            and would make one control go to two places depending on a filter set ten
-            minutes ago. If that shortcut is ever wanted it belongs inside the Set ▾
-            menu as an explicit row that says so.
-
-            `Set ▾` and this are opposites and share nothing: one narrows the cards you
-            OWN to a set, the other leaves for a page of the ones you DO NOT. Three
-            carriers keep them apart — position, shape (a diamond link, with no
-            dropdown affordance) and the words. */}
           </>
         ) : (
           <FiltersTrigger

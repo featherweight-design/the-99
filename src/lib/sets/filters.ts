@@ -119,7 +119,7 @@ export function serialiseFilters(f: SetGridFilters): URLSearchParams {
   // `q`, matching the index's own field. R2's decision 15 read literally bans a shared key
   // name with /collection, but the shipped surface already shares `c` for colour and no bug
   // came of it. The rule it was written about is that no VALUE carries and no one name means
-  // two things: `q` means "what I typed" on all three routes, and the `By set` pill still
+  // two things: `q` means "what I typed" on all three routes, and the place strip's Sets tab
   // carries nothing across.
   const query = f.query.trim();
   if (isQueryActive(query)) params.set("q", query);

@@ -582,7 +582,7 @@ export function CollectionBrowser({
                 anyFilterActive,
               )
             : // The phone keeps the shorter line the chip row drew: row 3 also
-              // carries `By set` and the view toggle at 390px.
+              // carries the view toggle at 390px.
               collectionChassisCopy.resultCompact(sorted.length)
         }
         filters={filters}

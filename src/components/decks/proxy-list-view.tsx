@@ -8,7 +8,6 @@
 
 import { faceCosts } from "../../lib/cards/faces";
 import Link from "next/link";
-import { PendingReporter } from "../shell/pending-reporter";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { CostPips } from "../ui/cost-pips";
@@ -95,15 +94,11 @@ export function ProxyListView({
     // A SECTION, not a `main`: the shell already renders one around every route,
     // and a nested main landmark is invalid — it exposes two ambiguous main
     // regions to a screen reader.
-    <section className="mx-auto w-full max-w-[900px] px-[16px] py-[20px] md:px-[34px] md:py-[28px]">
-      {/* The way back (H19): the breadcrumb is a link to the collection, as a set
-          page's breadcrumb links to the set index. */}
-      <p className="font-mono text-[11px] mb-[6px]" style={{ color: "var(--fg-faint)" }}>
-        <Link href="/collection">
-          {proxyCopy.page.breadcrumb}
-          <PendingReporter href="/collection" />
-        </Link>
-      </p>
+    //
+    // Anchored left from `md`, not centred, so "What you're printing" starts under the
+    // Proxies tab of the place head the page draws above it (collection surfaces R2). The way
+    // back is that strip's Cards tab, which is why the breadcrumb is gone.
+    <section className="mx-auto md:mx-0 w-full max-w-[900px] px-[16px] py-[20px] md:px-[34px] md:py-[28px]">
       <h1 className="font-display text-[24px] md:text-[28px]" style={{ color: "var(--fg)" }}>
         {proxyCopy.page.title}
       </h1>

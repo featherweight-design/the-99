@@ -199,18 +199,8 @@ export const proxyCopy = {
       `${card} is a proxy in this deck, so this add asks nothing of your collection.`,
   },
 
-  // ── The rack entry point ──────────────────────────────────────────────
-  // Shaped like setPageCopy.entryPoint, beside which it renders. Unlike By set it is NOT
-  // gated on hasCollection: a proxy list is most useful to exactly the player whose cards
-  // are all printed. No count on the pill — see README decision 9.
-  entryPoint: {
-    label: "Proxies",
-    aria: "See every card you're proxying",
-  },
-
   // ── /collection/proxies ───────────────────────────────────────────────
   page: {
-    breadcrumb: "Collection / Proxies",
     title: "What you're printing",
     // The second clause is a clarification for a player who HAS a collection, so it drops
     // for one who does not — that reader needs no reassurance about a collection they

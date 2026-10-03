@@ -41,8 +41,8 @@ const count = (n: number) => n.toLocaleString("en-US");
 export const collectionChassisCopy = {
   /**
    * The phone's shorter line. The retired chip row drew this at `md:hidden`,
-   * and it matters more now: row 3 also carries the `By set` link and the view
-   * toggle, so the long sentence and those controls compete for 390px.
+   * and it matters more now: row 3 also carries the view toggle, so the long
+   * sentence and that control compete for 390px.
    */
   resultCompact: (shown: number) => (shown === 1 ? "1 result" : `${count(shown)} results`),
   /**
@@ -569,4 +569,18 @@ export const printingPickerCopy = {
         ? `No sets match ${query}`
         : `${count(n)} ${n === 1 ? "printing" : "printings"} from sets matching ${query}`,
   },
+} as const;
+
+/**
+ * The strip of place tabs on /collection, /collection/sets and /collection/proxies
+ * (collection surfaces, Call 4 and R2 §Q1). Each tab is a plain link to a route, so these
+ * are place names rather than view names: "Cards" is the browse surface the route has
+ * always been, and "Sets" is the index the `By set` pill used to open.
+ */
+export const collectionTabsCopy = {
+  /** The nav landmark's name. */
+  regionAria: "Collection sections",
+  cards: "Cards",
+  sets: "Sets",
+  proxies: "Proxies",
 } as const;
