@@ -1,5 +1,5 @@
 import { buildFillPlan } from "../../app/decks/actions";
-import { costsOf } from "../decks/costs-of";
+import { placedCardsOf } from "../decks/costs-of";
 import { loadAvailability } from "../decks/availability-query";
 import { deckBodySize } from "../decks/deck-size";
 import { capToBody } from "../decks/fill";
@@ -43,10 +43,10 @@ export async function trialFill(
   answers: DeckAnswers,
 ): Promise<TrialFigures> {
   const card = answers.cardOracleId;
-  // The card is placed beside the plan below, so its pips are in the finished deck's census, as
-  // they are in the create this trial predicts.
+  // The card is placed beside the plan below, so the plan counts it, as the create this trial
+  // predicts does.
   const plan = await buildFillPlan(userId, [commander], new Set(card ? [card] : []), {
-    answers, selectedCosts: await costsOf(card ? [card] : []),
+    answers, selected: await placedCardsOf(card ? [card] : []),
   });
   // The plan is sized to the slots the card leaves (`buildFillPlan` plans body - placed), and the
   // cap is kept exactly as `createDeck` and `fillDeck` keep it, as the rule the body obeys.

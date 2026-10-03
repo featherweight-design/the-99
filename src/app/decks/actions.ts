@@ -16,7 +16,7 @@ import {
   deckUnresolvedRows, deckVersions, fillPassCards, fillPasses,
 } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
-import { costsOf } from "../../lib/decks/costs-of";
+import { placedCardsOf } from "../../lib/decks/costs-of";
 import { loadCatalogBasics } from "../../lib/decks/catalog-basics";
 import { isUuid } from "../../lib/uuid";
 import { getEdhrecData } from "../../lib/edhrec/client";
@@ -51,7 +51,7 @@ import { readDeckSynergy } from "../../lib/decks/deck-synergy";
 import { loadSkeletonForCommanders } from "../../lib/profile/load";
 import {
   capToBody, dedupeSelectionFromPool, planFill,
-  type FillCandidate, type FillPlan, type FillShortfall, type PlanFillArgs,
+  type FillCandidate, type FillPlan, type FillShortfall, type HeldCard, type PlanFillArgs,
 } from "../../lib/decks/fill";
 import { loadFillGate, type DeckAnswers } from "../../lib/intake/fill-facts";
 import { answerColumnsFor, validateCreateAnswers, type AnswerColumns, type CreateAnswers } from "../../lib/intake/answers";
@@ -105,7 +105,7 @@ export async function buildFillPlan(
   excludeOracleIds: Set<string> = new Set(),
   /** Passed straight to `planFill`. The bulk control names a slot count and a sleeveable-only
    *  pool; every other caller fills from everything, to the whole body less any cards it places
-   *  beside the plan (`selectedCosts`). */
+   *  beside the plan (`selected`). */
   options: Pick<PlanFillArgs, "slots" | "pool" | "held"> & {
     /** The deck being filled, so its OWN claims are not counted against it when
      *  `pool: "sleeveable"` narrows to cards with a free copy. */
@@ -117,22 +117,22 @@ export async function buildFillPlan(
      *  read throws rather than widening the pool to copies another deck may hold. The create reads
      *  that throw as a failed fill and leaves its retry. Every other sleeveable caller degrades. */
     failClosed?: boolean;
-    /** The costs of cards the CALLER will put in the deck itself, for the pip census only.
+    /** The cards the CALLER will put in the deck itself, beside the plan.
      *
      * `createDeck` inserts its selection beside the plan's rows, and every selected card is in
-     * `excludeOracleIds` — so it is stripped from the candidate pool and appears in neither
-     * `held` nor `rows`. Its pips were therefore missing from the census that weights the basics,
-     * and a selection carrying several pips could produce a split the finished deck contradicts.
-     * The same defect the commanders had, by a different route.
+     * `excludeOracleIds`, so it is stripped from the candidate pool and appears in no row. The
+     * plan has to count it anyway: it is in the finished deck. They reach `planFill` as `held`
+     * cards, so each one is credited to its roles, its type, its land drop and its pips.
      *
-     * CENSUS ONLY, like `commanderCosts`: these cards are already placed, so counting them
-     * toward a role floor would spend a slot on work the caller has done.
+     * They used to arrive as their COSTS alone, for the pip census (H26). A selected land or
+     * land-backed spell was then a land drop the plan could not see, so it built the whole land
+     * count beside it: Thorin's v1 shipped 41 lands against 37, four of them picks.
      *
-     * REQUIRED, like `manaCost` on the commanders: as an optional field `fillDeck`'s retry and
-     * `trialFill` both excluded a build-around card without its cost, so a retried create split
-     * the basics differently from the create. A caller whose excluded cards arrive another way
-     * (`planFromPool`'s held rows ride `held`) passes `[]` and says why. `costsOf` loads them. */
-    selectedCosts: readonly (string | null)[];
+     * REQUIRED: as an optional field `fillDeck`'s retry and `trialFill` both excluded a
+     * build-around card without it, so a retried create split the basics differently from the
+     * create. A caller whose excluded cards arrive another way (`planFromPool`'s held rows ride
+     * `held`) passes `[]` and says why. `placedCardsOf` loads them. */
+    selected: readonly HeldCard[];
     /** THE ONLY CARDS THIS FILL MAY PICK, when the caller has a list on screen.
      *
      * The top-off's plan and the list the player is ticking drew from structurally different
@@ -282,7 +282,7 @@ export async function buildFillPlan(
     excludeOracleIds,
   );
 
-  const { answers, selectedCosts, onlyOracleIds, ...fillOptions } = options;
+  const { answers, selected, onlyOracleIds, ...fillOptions } = options;
   const candidates: FillCandidate[] = [
     ...pool.map((c) => ({
       oracleId: c.oracleId, name: c.name, typeLine: c.typeLine,
@@ -317,20 +317,20 @@ export async function buildFillPlan(
   // support lists that never contain them — but a `{2}{R}{W}` commander is the most reliable
   // colour signal the deck has, and leaving it out of the pip census scored HD - Thorin at zero
   // red and gave a Boros deck one Mountain.
-  const commanderCosts = [
-    ...commanders.map((c) => c.manaCost ?? null),
-    ...selectedCosts,
-  ];
+  const commanderCosts = commanders.map((c) => c.manaCost ?? null);
+  // What the deck will hold besides the plan: the caller's own `held` rows (the top-off's deck)
+  // and the cards it places beside the plan.
+  const held = [...(fillOptions.held ?? []), ...selected];
   // THE SLOTS THAT SURVIVE. A caller that places cards beside the plan (a selection, a
   // build-around card) caps the finished deck with `capToBody`, which cuts the plan's tail — the
   // residual. Planning the whole body anyway put those cut rows in the pip census, and with a
   // large `?select=` their pips outweighed the selection's own. Planning only what will be kept
   // means every row the census counts reaches the deck. A caller naming `slots` decides for itself.
-  const placedBeside = selectedCosts.length;
+  const placedBeside = selected.reduce((n, c) => n + (c.quantity ?? 1), 0);
   const slots = fillOptions.slots
     ?? (placedBeside > 0 ? Math.max(0, deckBodySize(hasPartner) - placedBeside) : undefined);
   return planFill(scoped, {
-    hasPartner, skeleton, synergyRank, ...fillOptions, slots, gate, identity, commanderCosts,
+    hasPartner, skeleton, synergyRank, ...fillOptions, held, slots, gate, identity, commanderCosts,
     // Every identity colour gets a basic even with no collection row behind it (`planFill`'s
     // `basics`). Loaded here, beside the pool, so no other pass sees them.
     //
@@ -441,10 +441,13 @@ export async function createDeck(
             commanderLegal: cards.commanderLegal,
             colorIdentity: cards.colorIdentity,
             typeLine: cards.typeLine,
-            // For the pip census alone. A selected card is inserted into the deck BESIDE the
-            // fill's rows, so its pips are part of the finished deck's mana base — and this read
-            // is the only place its cost is available.
+            // What the plan counts a selected card by (`selected`). A selected card is inserted
+            // into the deck BESIDE the fill's rows, so its roles, its land drop and its pips are
+            // the finished deck's, and this read is the only place they are available.
             manaCost: cards.manaCost,
+            oracleText: cards.oracleText,
+            keywords: cards.keywords,
+            layout: cards.layout,
           })
           .from(cards)
           .where(inArray(cards.oracleId, requested))
@@ -491,14 +494,16 @@ export async function createDeck(
       ],
       selectedSet,
       {
-        // CENSUS ONLY, and passed on every path rather than only the asked one: the selection is
-        // inserted beside the fill's rows below, so its pips belong to the finished deck's mana
-        // base whether or not Help me choose was involved. `selectedSet` rather than `candidates`
-        // — a requested card that failed validation is never placed, so its cost is not the
-        // deck's.
-        selectedCosts: candidates
+        // Passed on every path rather than only the asked one: the selection is inserted beside
+        // the fill's rows below, so it is the finished deck's whether or not Help me choose was
+        // involved. `selectedSet` rather than `candidates`: a requested card that failed
+        // validation is never placed, so it is not the deck's.
+        selected: candidates
           .filter((c) => selectedSet.has(c.oracleId))
-          .map((c) => c.manaCost ?? null),
+          .map((c) => ({
+            typeLine: c.typeLine, oracleText: c.oracleText, keywords: c.keywords,
+            layout: c.layout, manaCost: c.manaCost,
+          })),
         ...(asked === null ? {} : {
           answers: { budgetCents: answerColumns.answerBudgetCents ?? null, bracket: asked.bracket, cardOracleId: card?.oracleId ?? null },
           // Only cards I own (three answers §3): the 99 from what the collection can supply.
@@ -822,9 +827,9 @@ export async function fillDeck(deckId: string): Promise<void> {
     partner ? [commander, partner] : [commander],
     new Set(buildAround ? [buildAround] : []),
     {
-      // The build-around card is placed beside the plan below, so its pips belong to the census
-      // exactly as they did in the create this retries.
-      selectedCosts: await costsOf(buildAround ? [buildAround] : []),
+      // The build-around card is placed beside the plan below, so the plan counts it exactly as
+      // the create this retries did.
+      selected: await placedCardsOf(buildAround ? [buildAround] : []),
       ...(answers === null ? {} : { answers }),
       // The retry fills the way the create was asked to: from the player's own cards.
       ...(deck.answerOwnedOnly ? { pool: "sleeveable" as const, failClosed: true, excludeDeckId: deck.id } : {}),
@@ -2343,9 +2348,9 @@ async function planFromPool(
         // Only the cards the list on screen draws: a planned card with no row there is a tick
         // with nowhere to land. It binds the catalog's basics as well as the candidates.
         onlyOracleIds: allowed,
-        // Nothing is placed beside this plan: the excluded ids are the deck's own rows, and their
-        // pips reach the census through `held`, so listing them here would count them twice.
-        selectedCosts: [],
+        // Nothing is placed beside this plan: the excluded ids are the deck's own rows, and they
+        // reach the plan through `held`, so listing them here would count them twice.
+        selected: [],
         // So this deck's own claims are not counted as competition for itself when the pool
         // is narrowed to cards with a free copy.
         excludeDeckId: deckId,

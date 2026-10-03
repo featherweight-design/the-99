@@ -5,6 +5,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
+import type { DeckCommander } from "../../lib/decks/read";
 import type { SwapReceipt } from "../../lib/swaps/context";
 import { useEffect } from "react";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
@@ -97,6 +98,8 @@ function renderDecklist(
     /** Swap receipts seeded into a `SwapToolsProvider` around the list. */
     receipts?: SwapReceipt[];
     lockMode?: boolean;
+    commander?: DeckCommander;
+    partner?: DeckCommander | null;
   } = {},
 ) {
   const deckEdits = {
@@ -137,7 +140,9 @@ function renderDecklist(
           deckId="deck-1"
           cards={cards}
           unresolvedRows={[]}
-          commanderOracleId="commander-1"
+          commanderOracleId={opts.commander?.oracleId ?? "commander-1"}
+          commander={opts.commander}
+          partner={opts.partner}
           deckOracleIds={cards.map((c) => c.oracleId)}
           built={cards.reduce((s, c) => s + c.quantity, 0)}
           bodySize={99}
@@ -1309,5 +1314,78 @@ describe("LockModeLine", () => {
     cleanup();
     render(<LockModeLine count={1} />);
     expect(screen.getByTestId("lock-mode-line").outerHTML).toBe(inList);
+  });
+});
+
+// H28: a commander is not a `deck_cards` row, so the Shopping list never billed it while the
+// deck tile and the roll-up did. It heads the list now, in a group of its own, through the same
+// predicate as every row, and it is counted wherever the list is.
+describe("an unowned commander heads the Shopping list", () => {
+  const atraxa: DeckCommander = {
+    oracleId: "atraxa",
+    name: "Atraxa, Praetors' Voice",
+    colorIdentity: ["W", "U", "B", "G"],
+    manaCost: "{G}{W}{U}{B}",
+    typeLine: "Legendary Creature — Phyrexian Angel Horror",
+    oracleText: null,
+    imageUri: null,
+    artCropUri: null,
+    owned: false,
+  };
+
+  const triggers = () =>
+    screen.getAllByRole("button", { name: /^View details for / });
+
+  it("lists the commander first, under the Commander heading, with no remove control", () => {
+    renderDecklist([rampOwned, rampUnowned, drawUnowned], { commander: atraxa });
+
+    const heading = screen.getByText(recommendationsCopy.shopping.commanderGroupLabel(1));
+    const first = triggers()[0];
+    expect(first).toHaveAccessibleName(cardDetailCopy.triggerAria(atraxa.name));
+    // Under the heading: the heading precedes the row in document order.
+    expect(heading.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // And above every other section's heading.
+    expect(
+      screen.getByText("Ramp").compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
+
+    expect(
+      screen.queryByRole("button", { name: addPanelCopy.row.removeAria(atraxa.name) }),
+    ).not.toBeInTheDocument();
+    // The list's own rows keep theirs.
+    expect(
+      screen.getByRole("button", { name: addPanelCopy.row.removeAria("Arcane Signet") }),
+    ).toBeInTheDocument();
+  });
+
+  // d9: the pill promises exactly the rows the list shows, commander included.
+  it("counts the commander in the Shopping pill, which equals the rows listed", () => {
+    renderDecklist([rampOwned, rampUnowned, drawUnowned], { commander: atraxa });
+
+    const rows = triggers();
+    expect(rows).toHaveLength(3);
+    expect(screen.getByRole("button", { name: `Shopping ${rows.length}` })).toBeInTheDocument();
+  });
+
+  it("does not list an owned commander with a copy to spare", () => {
+    renderDecklist([rampUnowned], { commander: { ...atraxa, owned: true, availability: null } });
+
+    expect(
+      screen.queryByText(recommendationsCopy.shopping.commanderGroupLabel(1)),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Shopping 1" })).toBeInTheDocument();
+  });
+
+  it("leaves the All view without the commander", () => {
+    renderDecklist([rampOwned, rampUnowned], { commander: atraxa, filter: "all" });
+
+    expect(
+      screen.queryByRole("button", { name: cardDetailCopy.triggerAria(atraxa.name) }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(recommendationsCopy.shopping.commanderGroupLabel(1)),
+    ).not.toBeInTheDocument();
+    // The pill under All still counts what Shopping would show.
+    expect(screen.getByRole("button", { name: "Shopping 2" })).toBeInTheDocument();
   });
 });

@@ -14,7 +14,8 @@ import type { RecommendedMix } from "../../lib/decks/mix";
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
 import { cardCopies, groupByCardType, groupByRole } from "../../lib/decks/grouping";
 import { computeRoleCounts } from "../../lib/decks/mix";
-import { isShoppingCard, isSpokenFor } from "../../lib/decks/shopping";
+import { commanderShoppingRows, isShoppingCard, isSpokenFor } from "../../lib/decks/shopping";
+import type { DeckCommander } from "../../lib/decks/read";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
@@ -101,6 +102,14 @@ type DecklistProps = {
   unresolvedRows: DeckUnresolvedRow[];
   /** Resolving a line to the commander must not also put it in the 99. */
   commanderOracleId: string;
+  /**
+   * The deck's commanders, for the Shopping list alone (H28): an unowned or spoken-for commander
+   * heads that list in a group of its own and counts in every Shopping figure. The All view never
+   * lists them, since neither is a `deck_cards` row. Optional because most tests mount the list
+   * without them, and absent bills no commander, which is the list as it was.
+   */
+  commander?: DeckCommander;
+  partner?: DeckCommander | null;
   /** The committed claim set — see UnresolvedGroup. */
   deckOracleIds: string[];
   built: number;
@@ -195,12 +204,17 @@ export function buildMarkKeyEntries({
   cards,
   filter,
   inCardView,
+  commanderRows = [],
 }: {
   cards: DeckDetailCard[];
   filter: string;
   inCardView: boolean;
+  /** The commanders' Shopping rows (`commanderShoppingRows`), glossed under Shopping alone. */
+  commanderRows?: DeckDetailCard[];
 }): MarkKeyEntry[] {
-    const shown = filter === "shopping" ? cards.filter(isShoppingCard) : cards;
+    const shown = filter === "shopping"
+      ? [...commanderRows, ...cards].filter(isShoppingCard)
+      : cards;
     const entries: MarkKeyEntry[] = [];
     if (shown.some((c) => deckRowTag(c, filter === "shopping" && isSpokenFor(c)) === "buy")) {
       entries.push({
@@ -262,6 +276,8 @@ export function Decklist({
   cards,
   unresolvedRows,
   commanderOracleId,
+  commander,
+  partner = null,
   deckOracleIds,
   built,
   bodySize,
@@ -349,9 +365,16 @@ export function Decklist({
   // that is stored.
   const inCardView = filter === "all" && view === "card";
 
+  // The commanders the Shopping list bills (H28), through the list's own predicate. Every Shopping
+  // figure below counts them; only the Shopping branch draws them, in a group of their own.
+  const commanderShopping = useMemo(
+    () => (commander ? commanderShoppingRows(commander, partner) : []),
+    [commander, partner],
+  );
+
   const markKey = useMemo(
-    () => buildMarkKeyEntries({ cards, filter, inCardView }),
-    [cards, filter, inCardView],
+    () => buildMarkKeyEntries({ cards, filter, inCardView, commanderRows: commanderShopping }),
+    [cards, filter, inCardView, commanderShopping],
   );
 
   // One label, computed beside the entries and passed to every instance: the
@@ -433,8 +456,13 @@ export function Decklist({
     return Number.isFinite(raw) ? raw : null;
   }
 
-  const shoppingCards = cards.filter(isShoppingCard);
-  const visibleCards = filter === "shopping" ? shoppingCards : cards;
+  // The decklist's own Shopping rows, and the whole basket: the commanders first, then those. The
+  // basket is what every Shopping FIGURE reads (the pill, the strip, both Mana Pool hrefs, the
+  // intro and the footer), so the list and its figures bill one set of cards. The list rows alone
+  // are what the type and role groups section, since a commander draws in a group of its own.
+  const listShoppingCards = cards.filter(isShoppingCard);
+  const shoppingCards = [...commanderShopping, ...listShoppingCards];
+  const visibleCards = filter === "shopping" ? listShoppingCards : cards;
 
   // The Shopping pill counts the list it opens, not the deck's unowned total.
   // Those differ by any unowned basic land — the filter drops basics, and a
@@ -467,11 +495,14 @@ export function Decklist({
         />
       ) : null}
       {/* The card modal's door, for a card a Shopping row opened (swap tools PR 4c). */}
-      <StandInDoorRegistration shoppingCards={shoppingCards} newestAsOf={newestAsOf} />
+      {/* The list rows alone: a commander's row opens no door to stand-ins (H28). */}
+      <StandInDoorRegistration shoppingCards={listShoppingCards} newestAsOf={newestAsOf} />
     </>
   ) : null;
+  // The list rows alone, for the reason the count is rows: a commander's row draws no limit mark
+  // (H28), so counting it would name a row the reader cannot find marked.
   const shoppingOverCount = swapTools
-    ? shoppingCards.filter((c) => isOverLimit(c.price, newestAsOf, swapTools.limitCents)).length
+    ? listShoppingCards.filter((c) => isOverLimit(c.price, newestAsOf, swapTools.limitCents)).length
     : 0;
 
   // What the strip's buy link buys — the same rows, in the same order, as the
@@ -600,8 +631,14 @@ export function Decklist({
     const allAuto = autoN === n;
     // Copies, like every other figure on this surface: they all describe one
     // purchase, so they move together.
-    const spokenForN = cardCopies(spokenForCards.filter(notSpent));
-    const missingN = cardCopies(missingCards.filter(notSpent));
+    // The two halves of `n` include the commanders (H28), each on the side its row is on, so the
+    // intro's and footer's split still sums to the pill. The spoken-for GROUP's own clause counts
+    // its own rows, below, and a commander is never in that group.
+    const commanderSpokenForN = cardCopies(commanderShopping.filter(isSpokenFor));
+    const spokenForGroupN = cardCopies(spokenForCards.filter(notSpent));
+    const spokenForN = spokenForGroupN + commanderSpokenForN;
+    const missingN = cardCopies(missingCards.filter(notSpent))
+      + cardCopies(commanderShopping) - commanderSpokenForN;
 
     // The spent slot draws an UNDO RECEIPT rather than a row — `DecklistRow`
     // returns `UndoRow` before it reaches the buy tag — so it shows no figure at
@@ -623,8 +660,18 @@ export function Decklist({
       label: string;
       cards: DeckDetailCard[];
       gapClause?: string;
-    }[] = (
-      grouping === "type"
+    }[] = [
+      // The commanders head the list under either grouping (H28), in a group of their own and
+      // never among the types or roles: neither is a list card, and a role's arithmetic is about
+      // the 99. No clause, for the reason a type section carries none.
+      ...(commanderShopping.length > 0
+        ? [{
+            key: "commander",
+            label: recommendationsCopy.shopping.commanderGroupLabel(commanderShopping.length),
+            cards: commanderShopping,
+          }]
+        : []),
+      ...(grouping === "type"
         ? groupByCardType([...missingCards, ...spokenForCards]).map(([group, groupCards]) => ({
             key: group,
             label: group,
@@ -640,10 +687,10 @@ export function Decklist({
                   key: "spoken-for",
                   label: recommendationsCopy.shopping.spokenForGroupLabel,
                   cards: spokenForCards,
-                  gapClause: recommendationsCopy.shopping.spokenForGroupClause(String(spokenForN)),
+                  gapClause: recommendationsCopy.shopping.spokenForGroupClause(String(spokenForGroupN)),
                 }]
               : []),
-          ]
+          ]),
     // Dearest first, inside whichever grouping is open. A shopping list is read
     // to decide what to buy, and the decision is made on the figures — so the
     // rows carrying them come first, and the ones the feed has nothing for go
@@ -652,7 +699,7 @@ export function Decklist({
     // groups, `Other` and the pinned spoken-for group all order the same way
     // and none of them can be forgotten. Every count, clause and total above is
     // computed already and reads the same rows in any order.
-    ).map((section) => ({
+    ].map((section) => ({
       ...section,
       cards: section.cards.slice().sort((a, b) =>
         compareCards(rankAsDrawn(a), rankAsDrawn(b))),

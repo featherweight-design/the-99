@@ -55,7 +55,7 @@ import {
   type PriceFact,
 } from "../../lib/decks/price";
 import { availabilityState } from "../../lib/decks/availability";
-import { FACET_TYPE_LABEL } from "../../lib/cards/facet";
+import { typeWord } from "../../lib/cards/facet";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips } from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
@@ -72,9 +72,10 @@ const ANNOUNCE_SETTLE_MS = 600;
 /** The type column, desktop only, as one figure the header and the rows share.
  *
  *  90px rather than the synergy panel's 150: that panel prints a real type line
- *  under a single facet, and this list has no facet filter, so every row here is
- *  the panel's own "all" case — the bucket word, of which `Enchantment` is the
- *  longest at about 76px. The name column is `flex-auto` and pays for it. */
+ *  under a single facet, and this list prints one word per row (`typeWord`): the
+ *  panel's bucket word, except that an instant or sorcery is named as one (H27)
+ *  rather than as the merged `Spell`. `Enchantment` is still the longest, at
+ *  about 76px. The name column is `flex-auto` and pays for it. */
 const TYPE_COL = "90px";
 
 export interface TopOffListProps {
@@ -198,7 +199,7 @@ function rowLabel(
   // served by matching them, and the card's type is as true on a phone as on a
   // desktop. It leads, beside the cost, because both are facts about the card
   // rather than about this player's copy of it.
-  const type = FACET_TYPE_LABEL[c.facet];
+  const type = typeWord(c.typeLine);
   const inclusion =
     c.inclusionPct === null
       ? synergyCopy.figure.inclusionNone
@@ -1571,7 +1572,7 @@ function CandidateRow({
             className="md:order-3 flex-none truncate font-mono text-[11px]"
             style={{ width: TYPE_COL, color: "var(--fg-faint)" }}
           >
-            {FACET_TYPE_LABEL[c.facet]}
+            {typeWord(c.typeLine)}
           </span>
         )}
 

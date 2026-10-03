@@ -11,7 +11,7 @@ import { deckBodySize } from "../../lib/decks/deck-size";
 import type { DeckDetail } from "../../lib/decks/read";
 import { countStatus, statusPill } from "../../lib/decks/status";
 import { availabilityState, hardDecks } from "../../lib/decks/availability";
-import { isShoppingCard } from "../../lib/decks/shopping";
+import { commanderShoppingRows, isShoppingCard } from "../../lib/decks/shopping";
 import type { DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import { BuilderSpine } from "./builder-spine";
 import { AnalysisPanel } from "./analysis-panel";
@@ -654,7 +654,13 @@ export function BuilderShell({
     // what gives the deck list its pill. Both halves of the shopping list count
     // — unowned, and owned but held by an older committed deck — so this pill and
     // the Shopping filter's own count can never disagree.
-    unfundedCount: cardCopies(deck.cards.filter(isShoppingCard)),
+    //
+    // The commanders count too (H28): `loadDeckBuyRows` bills an unowned or spoken-for commander,
+    // and the Shopping list draws it, so this pill counts it as the list's own pill does.
+    unfundedCount: cardCopies([
+      ...commanderShoppingRows(deck.commander, deck.partner),
+      ...deck.cards.filter(isShoppingCard),
+    ]),
     bodySize,
   });
 
@@ -1685,6 +1691,8 @@ export function BuilderShell({
                 cards={cards}
                 unresolvedRows={unresolvedRows}
                 commanderOracleId={deck.commander.oracleId}
+                commander={deck.commander}
+                partner={deck.partner}
                 deckOracleIds={deckOracleIds}
                 built={built}
                 bodySize={bodySize}
@@ -1827,9 +1835,11 @@ export function BuilderShell({
               // refuses to show and dropped the spoken-for cards it puts front
               // and centre, so the buy link under it bought a basket the player
               // never saw.
-              shoppingCards={cards
-                .filter(isShoppingCard)
-                .map((c) => ({
+              // The commanders first, as the list draws them (H28).
+              shoppingCards={[
+                ...commanderShoppingRows(deck.commander, deck.partner),
+                ...cards.filter(isShoppingCard),
+              ].map((c) => ({
                   name: c.name,
                   role: c.role,
                   quantity: c.quantity,

@@ -257,7 +257,7 @@ describe("createDeck with a selection", () => {
     // THE WIRING, which no test on `planFill` can reach. A selected card is inserted beside the
     // fill's rows and is in `excludeOracleIds`, so it is stripped from the candidate pool and
     // reaches neither `held` nor `rows` — its pips are in the finished deck and were missing from
-    // the census that weights the mana base. `createDeck` passes them as `selectedCosts`.
+    // the census that weights the mana base. `createDeck` passes them as `selected`.
     //
     // Atraxa is `{G}{W}{B}`: one pip each, so the three basics start level and the selection is
     // the only thing that can separate them.
@@ -290,6 +290,39 @@ describe("createDeck with a selection", () => {
       .filter((r) => r.oracleId === id)
       .reduce((n, r) => n + (r.quantity as number), 0);
     expect(qty(SWAMP)).toBeGreaterThan(qty(PLAINS) + qty(FOREST));
+  });
+
+  it("charges selected lands against the land ceiling (H26)", async () => {
+    // THE WIRING again. A selected land is inserted beside the plan and stripped from its pool, so
+    // a plan that saw only the selection's COSTS built the whole land count beside it: Thorin's v1
+    // shipped 41 lands against 37, four of them picks. Passed as `selected`, each one reaches
+    // `planFill` as a held card, and a held land is a land the ceiling has already spent.
+    //
+    // Measured as every land the create inserts, picks and basics together, against the flat 37
+    // a deck with no measured skeleton builds to. With `selected` reduced to the costs alone, the
+    // basics fill to 37 on their own and the deck reads 41.
+    const LANDS = selectionOf(4);
+    const SWAMP = "5000ba51-0000-4000-8000-000000000011";
+    const PLAINS = "5000ba51-0000-4000-8000-000000000012";
+    const FOREST = "5000ba51-0000-4000-8000-000000000013";
+    const basic = (id: string, name: string) => cardRow(id, {
+      name, typeLine: `Basic Land — ${name}`, manaCost: null, cmc: 0, quantity: 40,
+    });
+    stub.state.cards.push(
+      commanderRow(),
+      ...LANDS.map((id) => cardRow(id, {
+        typeLine: "Land", oracleText: "{T}: Add {C}.", manaCost: null, cmc: 0,
+      })),
+    );
+    stub.state.collectionItems.push(
+      basic(SWAMP, "Swamp"), basic(PLAINS, "Plains"), basic(FOREST, "Forest"),
+    );
+    await runCreate("My deck", LANDS);
+    const lands = insertedRows()
+      .filter((r) => LANDS.includes(r.oracleId as string) || [SWAMP, PLAINS, FOREST].includes(r.oracleId as string))
+      .reduce((n, r) => n + (r.quantity as number), 0);
+    expect(insertedIds()).toEqual(expect.arrayContaining(LANDS));
+    expect(lands).toBe(37);
   });
   it("skips a malformed id rather than failing the whole create", async () => {
     stub.state.cards.push(commanderRow(), cardRow(VALID));

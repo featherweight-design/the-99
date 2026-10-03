@@ -9,8 +9,9 @@
 // player never saw. One predicate is what makes the two doors one promise.
 
 import type { DeckDetailCard } from "./grouping";
-import { isBasicLand } from "./grouping";
+import { cardTypeGroup, isBasicLand } from "./grouping";
 import { availabilityState } from "./availability";
+import type { DeckCommander } from "./read";
 
 /**
  * A card you don't own, or one you own whose copies are already sleeved into
@@ -46,4 +47,51 @@ export function isShoppingCard(c: DeckDetailCard): boolean {
 /** A card on the Shopping list that is there because it is spoken for. */
 export function isSpokenFor(c: DeckDetailCard): boolean {
   return c.owned && isShoppingCard(c);
+}
+
+/**
+ * A commander as a Shopping row: the decklist row's shape, marked `commander`, at one copy.
+ * Neither commander is a `deck_cards` row, so without this the list never billed the one card a
+ * player cannot start without, while `loadDeckBuyRows` (which unions both into `list_claims`)
+ * billed it on the tile and the roll-up (H28).
+ *
+ * `owned` absent reads as owned, which is what every surface assumed before the deck page carried
+ * it: a fixture with no collection behind it bills nothing.
+ */
+export function commanderAsRow(c: DeckCommander): DeckDetailCard {
+  const owned = c.owned ?? true;
+  return {
+    oracleId: c.oracleId,
+    name: c.name,
+    typeLine: c.typeLine,
+    cardTypeGroup: cardTypeGroup(c.typeLine),
+    // No role: a commander is not counted toward a role's baseline on this list.
+    role: "other",
+    cmc: c.cmc ?? 0,
+    owned,
+    proxied: c.proxied,
+    quantity: 1,
+    auto: false,
+    availability: c.availability ?? null,
+    price: c.price ?? null,
+    manaCost: c.manaCost,
+    imageUri: c.imageUri,
+    // The decklist row's rule: an unowned card has no copy in hand to print a name.
+    printedName: owned ? (c.printedName ?? null) : null,
+    printedSetCode: null,
+    printedCollectorNumber: null,
+    commander: true,
+  };
+}
+
+/**
+ * The commanders the Shopping list bills, commander first: each one through `isShoppingCard`, the
+ * same predicate every list row passes, so an unowned commander is a row, a proxied or freely owned
+ * one is not, and an owned one sleeved elsewhere is spoken for.
+ */
+export function commanderShoppingRows(
+  commander: DeckCommander,
+  partner: DeckCommander | null,
+): DeckDetailCard[] {
+  return [commander, ...(partner ? [partner] : [])].map(commanderAsRow).filter(isShoppingCard);
 }

@@ -132,3 +132,16 @@ export function castFaceText(oracleText: string | null, layout: string): string 
   // resolving to an empty first half.
   return halves.length < 2 ? oracleText : halves[0];
 }
+
+/**
+ * The type word a row prints in its own type column (H27, Hugh's walk). The same as the facet's
+ * label, except that an instant or a sorcery names itself: the facet's merged `Spell` is the
+ * synergy panel's bucket for its `All` pill, and a list with no facet strip has no reason to hide
+ * which of the two a card is. The front face only, as `cardFacet` reads it.
+ */
+export function typeWord(typeLine: string): string {
+  const front = typeLine.split(" // ")[0].toLowerCase();
+  const facet = cardFacet(typeLine);
+  if (facet === "spell") return front.includes("instant") ? "Instant" : "Sorcery";
+  return FACET_TYPE_LABEL[facet];
+}
