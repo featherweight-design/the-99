@@ -71,7 +71,7 @@ type CardDetailContextValue = {
    */
   open: (
     oracleId: string,
-    siblings?: string[],
+    siblings?: readonly Sibling[],
     atPrinting?: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null; scryfallId?: string }) | null,
     /**
      * `door`: the card was opened from a Shopping row, so the swap tools' door draws in it (audit F17).
@@ -100,7 +100,7 @@ type CardDetailContextValue = {
    * here when that filter moves; otherwise the modal keeps paging the order that
    * happened to be on screen at the moment it was opened.
    */
-  setSiblings: (list: string[]) => void;
+  setSiblings: (list: readonly Sibling[]) => void;
   /**
    * Drop `oracleId` from the cache, so the next open has nothing to paint before its
    * fetch answers. A surface that writes something the card carries — the art pick is
@@ -118,7 +118,8 @@ type CardDetailContextValue = {
    * `useCardIntent`, never directly. `art` is the opener's art hint, asked for alongside the
    * read exactly as `open` asks for it.
    */
-  prefetch: (oracleId: string, art?: string | null) => void;
+  /** Resolves with the read when one starts, so a caller can chain a second one after it. */
+  prefetch: (oracleId: string, art?: string | null) => Promise<unknown> | undefined;
   /**
    * Declare a sheet that stays open UNDER the card modal, and get back the call that
    * withdraws it.
@@ -145,6 +146,25 @@ type CardDetailContextValue = {
 };
 
 /** The swap tools' door for one card, in the desktop art column or the phone's strip, or null. */
+/**
+ * One card of the list Prev/Next pages through (the carousel, H23). An opener that already holds a
+ * card's art and identity passes them, so the neighbors can be drawn before their details are read;
+ * one that holds only ids passes those, and a neighbor then draws its identity's gradient or a plain
+ * plate (handoff note 2). Bare ids stay valid everywhere a list is accepted.
+ */
+export type SiblingCard = {
+  oracleId: string;
+  name?: string;
+  imageUri?: string | null;
+  colorIdentity?: readonly string[];
+};
+export type Sibling = string | SiblingCard;
+
+/** A list in the one shape the provider holds. */
+export function siblingCards(list: readonly Sibling[]): SiblingCard[] {
+  return list.map((s) => (typeof s === "string" ? { oracleId: s } : s));
+}
+
 export type CardDoor = (oracleId: string, layout: "art" | "strip") => ReactNode;
 
 /**
@@ -259,7 +279,7 @@ export function CardDetailTrigger({
 }: {
   oracleId: string;
   name: string;
-  siblings?: string[];
+  siblings?: readonly Sibling[];
   className?: string;
   style?: React.CSSProperties;
   /** Hover tooltip, where the surface truncates the name it wraps. */
@@ -338,7 +358,7 @@ type OpenAt = {
   printing: PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null };
 } | null;
 /** A card lifted out of the live slot by a sheet opened over it, with what it needs to come back. */
-type Held = { card: BrowseCard; siblings: string[]; openAt: OpenAt; door: boolean };
+type Held = { card: BrowseCard; siblings: SiblingCard[]; openAt: OpenAt; door: boolean };
 
 export function CardDetailProvider({
   children,
@@ -410,7 +430,11 @@ export function CardDetailProvider({
   const fetchCard = fetchCardProp ?? getCardDetail;
   const prefetchCard = prefetchCardProp ?? (fetchCardProp ? null : fetchCardDetail);
   const [card, setCard] = useState<BrowseCard | null>(null);
-  const [siblings, setSiblings] = useState<string[]>([]);
+  // The list Prev/Next pages, in the one shape the provider holds (`siblingCards`). `siblingIds` is
+  // what every paging test reads; the cards beside it carry whatever art an opener passed.
+  const [siblings, setSiblingList] = useState<SiblingCard[]>([]);
+  const siblingIds = useMemo(() => siblings.map((s) => s.oracleId), [siblings]);
+  const setSiblings = useCallback((list: readonly Sibling[]) => setSiblingList(siblingCards(list)), []);
   // Opened from a Shopping row: the swap tools' door draws (audit F17).
   const [door, setDoor] = useState(false);
   const [held, setHeld] = useState<Held | null>(null);
@@ -545,11 +569,11 @@ export function CardDetailProvider({
   // `load` pays the debt above by calling itself, which it cannot do by name without giving
   // up its own memoization — every surface holds `open` through the context, so rebuilding
   // it on each render would re-render all of them.
-  const loadRef = useRef<(oracleId: string, list?: string[]) => Promise<void>>(async () => {});
+  const loadRef = useRef<(oracleId: string, list?: readonly Sibling[]) => Promise<void>>(async () => {});
   const load = useCallback(
     async (
       oracleId: string,
-      list?: string[],
+      list?: readonly Sibling[],
       at?: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null }) | null,
       // Where the card was reached from, when that moves the door: a combo partner is reached from
       // the combo block and never draws the Shopping door, while paging keeps it. Applied when the
@@ -668,14 +692,14 @@ export function CardDetailProvider({
         }
       }
     },
-    [fetchCard, show, comboScope],
+    [fetchCard, show, comboScope, setSiblings],
   );
   useEffect(() => { loadRef.current = load; }, [load]);
 
   const open = useCallback(
     (
       oracleId: string,
-      list?: string[],
+      list?: readonly Sibling[],
       atPrinting?: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null; scryfallId?: string }) | null,
       opts?: { door?: boolean; art?: string | null },
     ) => {
@@ -763,7 +787,7 @@ export function CardDetailProvider({
       openRef.current = back.card.oracleId;
       shownRef.current = back.card.oracleId;
       setCard(back.card);
-      setSiblings(back.siblings);
+      setSiblingList(back.siblings);
       setOpenAt(back.openAt);
       setDoor(back.door);
     };
@@ -804,7 +828,7 @@ export function CardDetailProvider({
     (oracleId: string, art?: string | null) => {
       // Yields to every read already running: a prefetch is a guess, and a second request
       // beside the one the reader is waiting on only slows that one down.
-      if (!prefetchCard || cache.current.has(oracleId) || inFlight.current !== null || prefetching.current) return;
+      if (!prefetchCard || cache.current.has(oracleId) || inFlight.current !== null || prefetching.current) return undefined;
       if (art) preloadCardArt(art);
       const evictedAt = evictions.current.get(oracleId) ?? 0;
       const scope = comboScope;
@@ -834,7 +858,7 @@ export function CardDetailProvider({
         ),
       };
       prefetching.current = entry;
-      void entry.read.finally(() => {
+      return entry.read.finally(() => {
         if (prefetching.current === entry) prefetching.current = null;
       });
     },
@@ -858,12 +882,35 @@ export function CardDetailProvider({
     [open, prefetch, pendingOracleId, card, evict, close, deckId, deckOracleIds, registerSheet, registerDoor],
   );
 
-  const index = card ? siblings.indexOf(card.oracleId) : -1;
+  const index = card ? siblingIds.indexOf(card.oracleId) : -1;
+
+  // READ AHEAD BOTH WAYS once a card has arrived (carousel handoff note 2: "Today nothing reads
+  // ahead"). The next card first, since paging forward is the common press, then the previous one
+  // when that read settles. Through `prefetch` and nothing else, so a press landing mid-read waits
+  // on it for `PREFETCH_WAIT_MS` exactly as an intent prefetch is waited on, and a neighbor already
+  // cached costs nothing. `prefetch` yields to any read in flight, so the card's own re-read of a
+  // cache hit goes first: this effect runs again when that re-read shows the card.
+  // Only the live card's list, never the card held under a sheet, which draws no paging.
+  const nextId = !held && index >= 0 && index < siblingIds.length - 1 ? siblingIds[index + 1] : null;
+  const prevId = !held && index > 0 ? siblingIds[index - 1] : null;
+  useEffect(() => {
+    if (!card || (nextId === null && prevId === null)) return;
+    const shownId = card.oracleId;
+    const first = nextId ?? prevId!;
+    const second = nextId !== null ? prevId : null;
+    const read = prefetch(first);
+    if (second === null) return;
+    // A first neighbor already cached (or a read in flight) started nothing: try the second now.
+    if (!read) { prefetch(second); return; }
+    void read.finally(() => {
+      if (shownRef.current === shownId) prefetch(second);
+    });
+  }, [card, nextId, prevId, prefetch]);
   // See `openAt`: the printing applies to one card, and the card on screen is not always
   // the one that was asked for.
   const openAtPrinting = card && openAt?.oracleId === card.oracleId ? openAt.printing : null;
   const paging = index >= 0 && siblings.length > 1;
-  const heldIndex = held ? held.siblings.indexOf(held.card.oracleId) : -1;
+  const heldIndex = held ? held.siblings.findIndex((s) => s.oracleId === held.card.oracleId) : -1;
   const liveDoor = Boolean(card && door && doorRender && doorRender(card.oracleId, "art") !== null);
 
   return (
@@ -942,11 +989,11 @@ export function CardDetailProvider({
           // Shopping door: the partner was reached from the combo block, not a Shopping row.
           onSelectCard={(id) => void load(id, undefined, undefined, { door: false })}
           onPrev={paging && index > 0
-            ? () => void load(siblings[index - 1])
+            ? () => void load(siblingIds[index - 1])
             : null}
           onNext={
             paging && index < siblings.length - 1
-              ? () => void load(siblings[index + 1])
+              ? () => void load(siblingIds[index + 1])
               : null
           }
         />
@@ -992,11 +1039,11 @@ export function CardDetailProvider({
           // Shopping door: the partner was reached from the combo block, not a Shopping row.
           onSelectCard={(id) => void load(id, undefined, undefined, { door: false })}
           onPrev={paging && index > 0
-            ? () => void load(siblings[index - 1])
+            ? () => void load(siblingIds[index - 1])
             : null}
           onNext={
             paging && index < siblings.length - 1
-              ? () => void load(siblings[index + 1])
+              ? () => void load(siblingIds[index + 1])
               : null
           }
         />

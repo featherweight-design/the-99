@@ -1322,3 +1322,59 @@ describe("CardDetailProvider prefetch on intent", () => {
     expect(prefetchCard).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("CardDetailProvider reads the neighbors ahead (carousel, H23)", () => {
+  afterEach(() => { vi.restoreAllMocks(); });
+  const A = card("o-a", "Card A");
+  const B = card("o-b", "Card B");
+  const C = card("o-c", "Card C");
+  const byId: Record<string, BrowseCard> = { "o-a": A, "o-b": B, "o-c": C };
+  const mount = (
+    oracleId: string,
+    siblings: Parameters<typeof CardDetailTrigger>[0]["siblings"],
+    prefetchCard: (id: string) => Promise<BrowseCard | null>,
+  ) =>
+    render(
+      <CardDetailProvider fetchCard={async (id) => byId[id] ?? null} prefetchCard={prefetchCard}>
+        <CardDetailTrigger oracleId={oracleId} name={byId[oracleId].name} siblings={siblings}>open</CardDetailTrigger>
+      </CardDetailProvider>,
+    );
+  const press = () => act(async () => { fireEvent.click(screen.getByRole("button", { name: /open|Card/ })); });
+
+  it("reads the next card, then the previous one, once a mid-list card arrives", async () => {
+    const prefetchCard = vi.fn(async (id: string) => byId[id] ?? null);
+    mount("o-b", ["o-a", "o-b", "o-c"], prefetchCard);
+    await press();
+    await waitFor(() => expect(prefetchCard.mock.calls.map((c) => c[0])).toEqual(["o-c", "o-a"]));
+  });
+
+  it("reads only the one neighbor a card at an end has", async () => {
+    const prefetchCard = vi.fn(async (id: string) => byId[id] ?? null);
+    mount("o-c", ["o-a", "o-b", "o-c"], prefetchCard);
+    await press();
+    await waitFor(() => expect(prefetchCard).toHaveBeenCalled());
+    await act(() => new Promise((r) => setTimeout(r, 20)));
+    expect(prefetchCard.mock.calls.map((c) => c[0])).toEqual(["o-b"]);
+  });
+
+  it("reads nothing for a card with no list", async () => {
+    const prefetchCard = vi.fn(async (id: string) => byId[id] ?? null);
+    mount("o-b", undefined, prefetchCard);
+    await press();
+    await screen.findByRole("dialog");
+    await act(() => new Promise((r) => setTimeout(r, 20)));
+    expect(prefetchCard).not.toHaveBeenCalled();
+  });
+
+  it("takes a list of cards carrying art as readily as a list of ids", async () => {
+    const prefetchCard = vi.fn(async (id: string) => byId[id] ?? null);
+    mount("o-b", [
+      { oracleId: "o-a", name: "Card A", imageUri: "https://img/a.jpg", colorIdentity: ["W"] },
+      { oracleId: "o-b" },
+      "o-c",
+    ], prefetchCard);
+    await press();
+    expect(await screen.findByText("2 of 3")).toBeTruthy();
+    await waitFor(() => expect(prefetchCard.mock.calls.map((c) => c[0])).toEqual(["o-c", "o-a"]));
+  });
+});
