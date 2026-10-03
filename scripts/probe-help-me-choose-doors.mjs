@@ -169,8 +169,10 @@ async function run() {
       const deckId = new URL(page.url()).pathname.split("/")[2];
       decks.push(deckId);
       const [deck] = await sql`select answer_budget_cents, answer_bracket, intent, intent_seeded from decks where id = ${deckId} and user_id = ${userId}`;
+      // H35 retired the fill's auto-seeded description (round 9): creation now leaves `intent`
+      // null and `intent_seeded` false, same as every other field this probe never asserted.
       report(at("Create writes the answers onto the deck"),
-        deck?.answer_budget_cents === 15000 && deck?.answer_bracket === 2 && deck?.intent_seeded === true && /Dinosaurs/.test(deck?.intent ?? ""),
+        deck?.answer_budget_cents === 15000 && deck?.answer_bracket === 2 && deck?.intent_seeded === false && deck?.intent === null,
         JSON.stringify(deck));
       await context.close();
     }
