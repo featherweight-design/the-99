@@ -2,12 +2,18 @@
  * Which Commander-legal cards a labels build covers (`LABEL_SCOPE`).
  *
  * `all`, the default, is every Commander-legal card, as every build so far has run. `in-use` is the
- * cards something in the app can ask about: a commander's support list (single or partner pair), a
- * commander or partner slot (indexed or in a deck), a deck's cards, or anyone's collection. It is computed
- * fresh on every run, so a card that later enters a collection or a support list becomes eligible on the
- * next run rather than being left out for good.
+ * cards a player's own lists reach: a commander's support list (single or partner pair), a commander or
+ * partner slot (indexed or in a deck), a deck's cards, or anyone's collection. It is computed fresh on
+ * every run, so a card that later enters a collection or a support list becomes eligible on the next run
+ * rather than being left out for good.
  *
- * Measured on staging (2026-10-03): 32,116 cards for `all`, 28,666 for `in-use`.
+ * It is a TRADE, not a free saving. The swaps stand-in pool (`spellPool` in `src/lib/swaps/gather.ts`)
+ * also offers any priced, unlisted Commander-legal card, and almost every card is priced, so an `in-use`
+ * card set leaves those candidates unlabelled. Such a pair is compared by TEXT, since the labels path
+ * needs both cards labelled: it degrades rather than breaks.
+ *
+ * Measured on staging (2026-10-03): 32,116 cards for `all`; 28,666 for `in-use`; 32,108 if priced cards
+ * and format staples were added, which is why they are not.
  */
 import { sql, type SQL } from "drizzle-orm";
 

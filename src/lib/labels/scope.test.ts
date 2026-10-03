@@ -17,8 +17,9 @@ describe("parseScope", () => {
 });
 
 describe("scopeCondition", () => {
-  it("adds nothing for all", () => {
-    expect(render("all")).not.toMatch(/in \(/);
+  it("adds nothing for all: the query is exactly the base query", () => {
+    const base = new PgDialect().sqlToQuery(sql`select c.oracle_id from cards c where c.commander_legal = true `).sql;
+    expect(render("all")).toBe(base);
   });
 
   it("restricts in-use to every place the app can ask about a card", () => {
