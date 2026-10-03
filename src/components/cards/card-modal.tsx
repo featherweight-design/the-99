@@ -1696,7 +1696,9 @@ export function CardModal({
             </button>
           )}
 
-          <div className="flex-1 overflow-auto p-[20px] md:p-[30px_32px]">
+          {/* `overscroll-contain` (Hugh, 2026-10-03): stops a scroll of this body at either
+              end from chaining into the page behind the modal. */}
+          <div className="flex-1 overflow-auto overscroll-contain p-[20px] md:p-[30px_32px]">
             {/* Name + type + mana pips — §Mobile: Name + Type Header.
                 Right padding on desktop clears the absolutely-positioned close
                 button, which otherwise sits on top of the mana pips. */}

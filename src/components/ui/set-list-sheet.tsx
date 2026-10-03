@@ -189,8 +189,9 @@ export function SetListSheet({
         {/* THE ONLY FLEXIBLE ROW. `min-h-0` is load-bearing: a flex child's
             default `min-height:auto` refuses to shrink below its content, so
             without it the list pushes `Done` off the bottom instead of
-            scrolling. */}
-        <div className="flex min-h-0 flex-1 flex-col gap-[6px] overflow-y-auto">
+            scrolling. `overscroll-contain` (Hugh, 2026-10-03) stops a scroll of
+            this list at either end from chaining into the page behind the sheet. */}
+        <div className="flex min-h-0 flex-1 flex-col gap-[6px] overflow-y-auto overscroll-contain">
           {sets.length === 0 ? (
             <p className="m-0 font-sans text-[13px] text-[color:var(--fg-muted)]">
               {/* An empty VOCABULARY is not a failed search, and the panel opens

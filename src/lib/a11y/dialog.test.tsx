@@ -9,6 +9,7 @@ const appended: HTMLElement[] = [];
 
 afterEach(() => {
   document.body.style.overflow = "";
+  vi.restoreAllMocks();
   while (appended.length) appended.pop()?.remove();
 });
 
@@ -128,6 +129,111 @@ describe("useDialogA11y scroll lock", () => {
 
     second.unmount();
     expect(document.body.style.overflow).toBe("scroll");
+  });
+
+  // `overflow: hidden` on `body` alone does not hold the page in every engine — Firefox
+  // chains a wheel event past a fixed, non-scrollable sheet overlay to the page's real
+  // scroll regardless (reported on `/collection`, Hugh, desktop Firefox, a narrow window).
+  // Two fixes that looked right were dropped after they broke `position: sticky` in
+  // Firefox instead (see the module doc comment); this is the one that didn't: block the
+  // wheel/touchmove directly, and leave `overflow`/`position` exactly as they already were.
+  function wheelAt(target: EventTarget, deltaY = 100) {
+    const event = new WheelEvent("wheel", { deltaY, cancelable: true, bubbles: true });
+    target.dispatchEvent(event);
+    return event;
+  }
+
+  it("blocks a wheel event whose target has no scrollable ancestor", () => {
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    appended.push(el);
+    renderDialog({ lockScroll: true });
+
+    const event = wheelAt(el);
+    expect(event.defaultPrevented).toBe(true);
+  });
+
+  it("lets a wheel event through when its target sits inside a genuinely scrollable region", () => {
+    const list = document.createElement("ul");
+    list.style.overflowY = "auto";
+    Object.defineProperty(list, "scrollHeight", { value: 400, configurable: true });
+    Object.defineProperty(list, "clientHeight", { value: 100, configurable: true });
+    const row = document.createElement("li");
+    list.appendChild(row);
+    document.body.appendChild(list);
+    appended.push(list);
+    renderDialog({ lockScroll: true });
+
+    const event = wheelAt(row);
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  // The same rule, for touch — iOS Safari's rubber-band failure of `overflow: hidden`
+  // is the same underlying weakness as Firefox's wheel-chaining, by a different input.
+  it("blocks a touchmove the same way", () => {
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    appended.push(el);
+    renderDialog({ lockScroll: true });
+
+    const event = new Event("touchmove", { cancelable: true, bubbles: true });
+    el.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+  });
+
+  // Found by Copilot's round-3 review: a trackpad pinch synthesises a `wheel` with
+  // `ctrlKey` set, and a touch pinch carries two or more touch points — neither is a
+  // scroll, and blocking either made zoom unreachable over any non-scrolling part of an
+  // open dialog, card art included.
+  it("lets a Ctrl+wheel (trackpad pinch-zoom) through even with no scrollable ancestor", () => {
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    appended.push(el);
+    renderDialog({ lockScroll: true });
+
+    const event = new WheelEvent("wheel", { deltaY: 100, ctrlKey: true, cancelable: true, bubbles: true });
+    el.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  it("lets a multi-touch touchmove (pinch-zoom) through even with no scrollable ancestor", () => {
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    appended.push(el);
+    renderDialog({ lockScroll: true });
+
+    const event = new Event("touchmove", { cancelable: true, bubbles: true });
+    Object.defineProperty(event, "touches", { value: [{}, {}] });
+    el.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  it("stops blocking once the lock releases", () => {
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    appended.push(el);
+    const { unmount } = renderDialog({ lockScroll: true });
+    unmount();
+
+    const event = wheelAt(el);
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  // Counted exactly as `overflow` is: the listener goes on when the first dialog opens
+  // and comes off only when the last one closes — never mid-stack, where a second
+  // dialog's own unmount would remove it out from under the first.
+  it("keeps blocking until the last of two dialogs releases it", () => {
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    appended.push(el);
+    const first = renderDialog({ lockScroll: true });
+    const second = renderDialog({ lockScroll: true });
+
+    first.unmount();
+    expect(wheelAt(el).defaultPrevented).toBe(true); // still held by the second
+
+    second.unmount();
+    expect(wheelAt(el).defaultPrevented).toBe(false);
   });
 });
 

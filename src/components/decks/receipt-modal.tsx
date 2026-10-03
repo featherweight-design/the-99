@@ -242,8 +242,10 @@ export function ModalChrome({
           </button>
         </div>
         {/* Behind a card the body steps down further than the header (0.35 against 0.55): the
-            header is the strip that says where a dismissal lands, and the body is only context. */}
-        <div className="flex-1 min-h-0 overflow-y-auto" style={{ opacity: behind ? 0.35 : undefined }}>
+            header is the strip that says where a dismissal lands, and the body is only context.
+            `overscroll-contain` (Hugh, 2026-10-03) stops a scroll of this body at either end
+            from chaining into the page behind the modal. */}
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain" style={{ opacity: behind ? 0.35 : undefined }}>
           {children}
         </div>
       </div>

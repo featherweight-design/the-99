@@ -325,7 +325,10 @@ export function Sheet({
           header
         )}
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</div>
+        {/* `overscroll-contain` (Hugh, 2026-10-03): without it, scrolling this region to
+            either end lets the gesture chain into the page behind the sheet — the shared
+            body wrapper for every `Sheet` consumer, so one fix here covers them all. */}
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">{children}</div>
         {footer}
       </div>
       {beside}

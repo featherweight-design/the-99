@@ -109,7 +109,9 @@ export function ShelfSheet({
           </button>
         </div>
 
-        <div className="flex min-h-0 flex-auto flex-col overflow-y-auto">
+        {/* `overscroll-contain` (Hugh, 2026-10-03): stops a scroll of this list at either
+            end from chaining into the page behind the sheet. */}
+        <div className="flex min-h-0 flex-auto flex-col overflow-y-auto overscroll-contain">
         {rows.map((row) => {
           const selected = row.shelf === shelf;
           return (

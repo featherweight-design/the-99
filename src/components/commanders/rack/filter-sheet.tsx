@@ -254,8 +254,10 @@ export function FilterSheet({
         </div>
 
         {/* min-h-0 so the section stack scrolls inside the 78vh cap rather than
-            pushing the footer off the bottom of the sheet. */}
-        <div className="flex min-h-0 flex-1 flex-col gap-[22px] overflow-y-auto px-[16px] py-[6px]">
+            pushing the footer off the bottom of the sheet. `overscroll-contain`
+            (Hugh, 2026-10-03) stops a scroll of this list at either end from
+            chaining into the page behind the sheet. */}
+        <div className="flex min-h-0 flex-1 flex-col gap-[22px] overflow-y-auto overscroll-contain px-[16px] py-[6px]">
           {colour}
           {/* Before Build from, whose explainer is a hint line: sheet order rule 4 puts a
               control carrying a hint last, and Printed in's hint lives in its own layer. */}

@@ -38,6 +38,39 @@ let scrollLocks = 0;
 let overflowBeforeLock = "";
 
 /**
+ * While locked, true unless the wheel/touchmove's own target sits inside a region that
+ * can genuinely scroll — a sheet's own options list, for one. Walking up rather than
+ * checking the event's own target alone: the target is usually some inner span or row,
+ * not the scrollable element itself.
+ */
+function hasScrollableAncestor(target: EventTarget | null): boolean {
+  let node = target as HTMLElement | null;
+  while (node && node !== document.body) {
+    const canScrollY = /(auto|scroll)/.test(getComputedStyle(node).overflowY) && node.scrollHeight > node.clientHeight;
+    if (canScrollY) return true;
+    node = node.parentElement;
+  }
+  return false;
+}
+
+/**
+ * A pinch-to-zoom gesture, not a scroll — never block it. Trackpad pinch arrives as a
+ * `wheel` with `ctrlKey` set (the browser's own synthesis, unrelated to the Control key
+ * itself), and a touch pinch carries more than one active touch point. Blocking either
+ * made zoom unreachable over any non-scrolling part of an open dialog, card art included.
+ */
+function isZoomGesture(e: Event): boolean {
+  if (e instanceof WheelEvent) return e.ctrlKey;
+  if ("touches" in e) return (e as TouchEvent).touches.length > 1;
+  return false;
+}
+
+function blockUnlessScrollable(e: Event) {
+  if (isZoomGesture(e)) return;
+  if (!hasScrollableAncestor(e.target)) e.preventDefault();
+}
+
+/**
  * Hold the page still while a surface is up, and let go when the last one closes.
  *
  * Counted rather than saved-and-restored per caller. Two surfaces can be up at
@@ -52,6 +85,35 @@ let overflowBeforeLock = "";
  * a hook that moves focus to the first focusable would break its one rule. They
  * still have to hold the page — an `aria-modal` sheet over a page that scrolls
  * behind it reads as broken — so the lock is the part they share.
+ *
+ * `overflow: hidden` on `body` ALONE does not hold the page in every engine. Reported
+ * on `/collection` (Hugh, desktop Firefox, a narrow window): scroll down, open a filter
+ * sheet, and the page behind ends up somewhere else once the sheet closes. Confirmed
+ * with Playwright-firefox at 390 and 700px, real clicks: a wheel/trackpad gesture over
+ * the sheet's own scrim scrolls the page behind it — Firefox chains the wheel event past
+ * a fixed, non-scrollable overlay to the page's real scroll, and `body`'s `overflow:
+ * hidden` makes no difference, since `html` is the actual scrolling element and this
+ * line never touched it. The reader never sees the scroll happen — the sheet covers it
+ * — only that the page is somewhere else once it closes.
+ *
+ * TWO THINGS THAT LOOKED LIKE FIXES AND WERE NOT, each confirmed in a real browser
+ * before being dropped: pinning `body` with `position: fixed` (stops the wheel, but
+ * `position: sticky` descendants — the collection pinned head — compute their stuck
+ * offset against the nearest scrolling ancestor, and Firefox recomputes that wrong the
+ * moment an ancestor's scrollability changes, so the head itself jumped off-screen and
+ * back — the exact symptom this fix exists to remove, from the fix); and adding
+ * `overflow: hidden` to `html` alongside `body`, with no position change at all (same
+ * head jump, so it is the ancestor's scrollability changing at all that breaks `sticky`
+ * in Firefox, not `position: fixed` specifically).
+ *
+ * So the ancestor's own `overflow` and `position` are left exactly as this line already
+ * sets them — `hidden`, nothing else — and the wheel/touchmove event is stopped
+ * directly instead: a non-passive listener, while locked, that lets the event through
+ * only when it targets something that can genuinely scroll (a sheet's own list), and
+ * blocks it otherwise. A target with nothing scrollable above it — the scrim, or any
+ * non-scrolling part of the dialog — never reaches the page. This also covers iOS
+ * Safari's touch-driven rubber-band failure of the same `overflow: hidden`, by the
+ * same mechanism: `touchmove` is listened for too.
  */
 export function useScrollLock(locked: boolean) {
   useEffect(() => {
@@ -59,12 +121,16 @@ export function useScrollLock(locked: boolean) {
     if (scrollLocks === 0) {
       overflowBeforeLock = document.body.style.overflow;
       document.body.style.overflow = "hidden";
+      window.addEventListener("wheel", blockUnlessScrollable, { passive: false });
+      window.addEventListener("touchmove", blockUnlessScrollable, { passive: false });
     }
     scrollLocks += 1;
     return () => {
       scrollLocks -= 1;
       if (scrollLocks === 0) {
         document.body.style.overflow = overflowBeforeLock;
+        window.removeEventListener("wheel", blockUnlessScrollable);
+        window.removeEventListener("touchmove", blockUnlessScrollable);
       }
     };
   }, [locked]);
