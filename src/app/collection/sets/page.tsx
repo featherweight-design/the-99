@@ -5,6 +5,8 @@
 // That is why it is its own route rather than a view mode, and why none of /collection's
 // filters cross the boundary in either direction.
 
+import Link from "next/link";
+import { PendingReporter } from "../../../components/shell/pending-reporter";
 import { requireUserId } from "../../../lib/auth";
 import { cacheForUser } from "../../../lib/cache/user-lists";
 import { loadOwnedSets } from "../../../lib/sets/read";
@@ -27,8 +29,12 @@ export default async function SetsPage() {
 
   return (
     <main className="mx-auto w-full max-w-[900px] px-[16px] py-[20px] md:px-[34px] md:py-[28px]">
+      {/* A way back to the collection, as the proxy list's breadcrumb gives (H19). */}
       <p className="font-mono text-[11px] mb-[6px]" style={{ color: "var(--fg-faint)" }}>
-        {setsIndexCopy.breadcrumb}
+        <Link href="/collection">
+          {setsIndexCopy.breadcrumb}
+          <PendingReporter href="/collection" />
+        </Link>
       </p>
       <h1 className="font-display text-[24px] md:text-[28px]" style={{ color: "var(--fg)" }}>
         {setsIndexCopy.title}
