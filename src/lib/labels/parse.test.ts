@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { faceResolver } from "./parse";
+import { faceResolver, withoutRepeats } from "./parse";
 
 /**
  * Every case here is a shape the sample actually produced, or a shape that would have
@@ -46,5 +46,14 @@ describe("faceResolver", () => {
     const r = faceResolver(["Fire // Ice", "Fire"]);
     expect(r("Fire")).toBe("Fire");
     expect(r("Ice")).toBe("Fire // Ice");
+  });
+});
+
+describe("withoutRepeats", () => {
+  it("drops an exact repeat, whatever its key order, and keeps jobs that differ in any field", () => {
+    const tribal = { space: "theme", kind: "tribal", restrictedTo: "Elf", affects: "self" };
+    const again = { affects: "self", restrictedTo: "Elf", kind: "tribal", space: "theme" };
+    const other = { ...tribal, trigger: "etb" };
+    expect(withoutRepeats([tribal, again, other])).toEqual([tribal, other]);
   });
 });

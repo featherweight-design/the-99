@@ -273,6 +273,16 @@ export const COVERAGE_ROLES: GoldRow[] = [
     jobs: [j("role", "tutor", { rt: "Equipment", af: "self", dest: "hand", ...once })],
     why: "HARD NEGATIVE for draw: an Equipment tutor to hand. restrictedTo is the printed subtype 'Equipment'.",
   },
+  {
+    name: "Primoc Escapee", klass: "drawNeg",
+    jobs: [j("theme", "evasion", { rt: "creature", af: "self" })],
+    why: "A HARD NEGATIVE for draw (d9, 2026-10-02): cycling replaces the card and gains none, so it is no draw job. Its own flying is evasion.",
+  },
+  {
+    name: "Disciple of Malice", klass: "drawNeg",
+    jobs: [j("theme", "protection", { rt: "creature", af: "self" })],
+    why: "A HARD NEGATIVE for draw (d9, 2026-10-02): cycling is not draw. Its own protection from white is protection on itself.",
+  },
 
   // ---- wipes: positives (affects is `each` on a wipe: every player's creatures, yours included) ---
   {
@@ -443,6 +453,22 @@ export const COVERAGE_ROLES: GoldRow[] = [
   },
 
   // ---- ramp burstMana: positives -------------------------------------------------------
+  {
+    name: "Peregrine Drake", klass: "burstMana",
+    jobs: [
+      j("role", "ramp", { rk: "burstMana", rt: "land", af: "self", tr: "etb", ...once }),
+      j("theme", "evasion", { rt: "creature", af: "self" }),
+    ],
+    why: "Untaps up to five lands when it enters, on your turn, so the mana is spent at once: burstMana with trigger etb (d9, 2026-10-02). Its own flying is evasion on itself.",
+  },
+  {
+    name: "Innocuous Researcher", klass: "burstManaNeg",
+    jobs: [
+      j("role", "draw", { af: "each", tr: "attacks" }),
+      j("role", "draw", { af: "self", tr: "attacks" }),
+    ],
+    why: "A HARD NEGATIVE for ramp (d9, 2026-10-02): it untaps your lands in YOUR END STEP, which pays for nothing you cast that turn, so no ramp job. Attacking makes each player draw (draw, each) and investigates for you (Clues you sacrifice to draw: draw, self).",
+  },
   {
     name: "Dark Ritual", klass: "burstMana",
     jobs: [j("role", "ramp", { rk: "burstMana", af: "self", ...once })],

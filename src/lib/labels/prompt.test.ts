@@ -123,17 +123,17 @@ describe("labelInputHash", () => {
     expect(labelInputHash(a, "m")).not.toBe(labelInputHash(b, "m"));
   });
 
-  // Version "5" is the re-sample's prompt fixes. Recomputing the payload with the constant
-  // itself cannot see a revert, so the literal is pinned and a row hashed under "4" with this SYSTEM is shown
+  // Version "6" is re-sample 2's prompt fixes. Recomputing the payload with the constant
+  // itself cannot see a revert, so the literal is pinned and a row hashed under "5" with this SYSTEM is shown
   // not to match.
-  it("is version 5, so a row hashed under version 4 reads stale", () => {
-    expect(LABEL_PROMPT_VERSION).toBe("5");
-    const underV4 = createHash("sha256")
+  it("is version 6, so a row hashed under version 5 reads stale", () => {
+    expect(LABEL_PROMPT_VERSION).toBe("6");
+    const underV5 = createHash("sha256")
       .update(JSON.stringify([
-        card.oracleId, renderCard(card), "4", "m", createHash("sha256").update(SYSTEM).digest("hex"),
+        card.oracleId, renderCard(card), "5", "m", createHash("sha256").update(SYSTEM).digest("hex"),
       ]))
       .digest("hex");
-    expect(labelInputHash(card, "m")).not.toBe(underV4);
+    expect(labelInputHash(card, "m")).not.toBe(underV5);
   });
 
   // A SYSTEM edit must move the version with it. `copy-card-labels.ts` tells a prompt change from a
@@ -141,7 +141,7 @@ describe("labelInputHash", () => {
   // install nothing and report every label as a catalog difference. When this fails: bump
   // LABEL_PROMPT_VERSION, then re-pin both literals here together.
   it("pins SYSTEM to the version it was written under", () => {
-    const pinned = { version: "5", system: "6f11d89c47743eb1d08e35e06b68516a9ddfc8d0e2bcc12ee93ad2460b250d9b" };
+    const pinned = { version: "6", system: "305b1c93e210ddb3b7dbbaf6030e5b30c99c8b65011337aa3d5787debcb66223" };
     expect({ version: LABEL_PROMPT_VERSION, system: createHash("sha256").update(SYSTEM).digest("hex") })
       .toEqual(pinned);
   });

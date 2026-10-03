@@ -12,7 +12,7 @@ import { costOf, type ModelKey } from "./lib/card-labels-pricing.mjs";
 import { publishArtifacts } from "./lib/card-labels-publish.mjs";
 import { validateJob } from "../src/lib/labels/schema.js";
 import type { Job } from "../src/lib/labels/types.js";
-import { faceResolver } from "../src/lib/labels/parse.js";
+import { faceResolver, withoutRepeats } from "../src/lib/labels/parse.js";
 
 const client = new Anthropic({ baseURL: "https://api.anthropic.com" });
 /**
@@ -138,7 +138,7 @@ for (const [key, id] of Object.entries(submitted)) {
         if (problems.length) malformed.push(`${card.name} [${job?.kind}]: ${problems.join(", ")}`);
         else kept.push(job);
       }
-      labels[card.name] = [...(labels[card.name] ?? []), ...kept];
+      labels[card.name] = withoutRepeats([...(labels[card.name] ?? []), ...kept]);
     }
     // A card asked for and not returned is a MISS, recorded rather than silently absent.
     for (const name of asked) if (!(name in labels)) labels[name] = labels[name] ?? null;

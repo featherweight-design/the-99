@@ -30,7 +30,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "../src/db";
 import { cardLabelBatches, cardLabels, cardLabelsStaging } from "../src/db/schema";
-import { faceResolver } from "../src/lib/labels/parse";
+import { faceResolver, withoutRepeats } from "../src/lib/labels/parse";
 import {
   boundedNumber, CARDS_PER_REQUEST, meetsFloor, pauseRemediation, planChunks, waveSize,
   withinCap, worstCaseUsd,
@@ -232,7 +232,7 @@ async function collectBatch(
           if (bad.length) rejected.push(`${name}: ${bad.join(", ")}`);
           return bad.length === 0;
         }) as Job[];
-        here.byName.set(name, [...(here.byName.get(name) ?? []), ...kept]);
+        here.byName.set(name, withoutRepeats([...(here.byName.get(name) ?? []), ...kept]));
       }
     }
   } catch (err) {
