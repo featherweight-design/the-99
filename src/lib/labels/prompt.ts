@@ -372,10 +372,17 @@ export const renderBody = (cards: CardForPrompt[]) =>
  * has adaptive thinking on by default and spent 2,999 of a 3,000 ceiling on it,
  * returning no labels at all and costing $1.0367 for nothing. So a ceiling under 4,000
  * is safe only with `thinking: {type: "disabled"}`, which `buildRequest` sets.
+ *
+ * **5,000 by default, down from 8,000, because the cap books every request at this ceiling.** The
+ * largest output measured across four re-samples of the current prompt was 3,865 tokens for a
+ * batch of 12, and no request in any of them stopped on `max_tokens`. 8,000 left the worst case
+ * — which is what each wave is sized against — at roughly twice anything observed, so a capped
+ * run reserved budget for output no request has produced and sent smaller waves for it. 5,000
+ * keeps about 30% over the largest measured reply.
  */
 export const MAX_TOKENS_PER_BATCH = (() => {
   const raw = process.env.LABEL_MAX_TOKENS;
-  if (raw === undefined || raw === "") return 8000;
+  if (raw === undefined || raw === "") return 5000;
   const n = Number(raw);
   // NaN is the dangerous case, not the obvious one: it makes `worstTotal` NaN, and
   // `NaN > CAP_USD` is FALSE, so the spend guard waves the run through and the request

@@ -2114,6 +2114,17 @@ export const cardLabelBatches = pgTable("card_label_batches", {
   batchId: text("batch_id"),
   status: text("status").notNull().default("intended"),
   /**
+   * The `LABEL_PROMPT_VERSION` the request was built under, written with the intent.
+   *
+   * Two rules read it. The spend cap sums a whole budget family's batches (`familySpend`), and a
+   * row's cost is only comparable within one prompt version; and a run may collect, and plan
+   * around, another run's open batch only when it was asked under the prompt this run would ask,
+   * or it would stage one prompt's answer under another's hash. Nullable because every row written
+   * before it has no record, and such a row counts for nothing in either rule rather than being
+   * guessed into one.
+   */
+  promptVersion: text("prompt_version"),
+  /**
    * MEASURED token usage, written when the batch collects. Null until then.
    *
    * These exist so the wave sizing can read what a run has ACTUALLY spent rather than what

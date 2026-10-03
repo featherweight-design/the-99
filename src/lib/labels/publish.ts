@@ -12,7 +12,7 @@
  * places that used to hold their own copy of it.
  */
 
-import { eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import type { NeonDatabase } from "drizzle-orm/neon-serverless";
 
 import { cardLabelBatches, cardLabels, cards, cardLabelsStaging } from "../../db/schema";
@@ -80,6 +80,51 @@ export async function publishRun(db: Db, runId: string): Promise<number> {
     await tx.delete(cardLabelsStaging).where(eq(cardLabelsStaging.runId, runId));
     return ids.length;
   });
+}
+
+/** A transaction handed out by `Db.transaction`, which is what a wave publishes inside. */
+export type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
+
+/**
+ * Publishes ONE BATCH's staged labels, inside the caller's transaction, and returns how many rows
+ * moved.
+ *
+ * **Why per batch.** `publishRun` waited for the whole run, so a run that stopped at its cap —
+ * which is the cap working — published nothing, and a new run id re-asked every card the stopped
+ * run had already paid for, because nothing it paid for ever reached `card_labels`. A batch whose
+ * own returned share clears the floor is complete evidence for the cards it asked about, so they
+ * are published the moment it is collected.
+ *
+ * **Inside the caller's transaction, never one of its own.** The collect stages the batch, marks
+ * its intents collected and publishes here as ONE commit. Publishing in a second transaction would
+ * open a window where the intents read `collected` (so nothing re-collects the batch) while the
+ * labels are unpublished, and a crash in that window strands paid work exactly as before.
+ *
+ * Scoped to `oracleIds` within `runId`'s staging, so it can never sweep up another batch's rows
+ * that happen to share the run — a batch held below the floor keeps its staged rows unpublished
+ * while the next batch publishes. The same advisory lock as `publishRun`, so a wave publish and an
+ * end-of-run drain of one run can never interleave their delete and insert.
+ */
+export async function publishWave(tx: Tx, runId: string, oracleIds: readonly string[]): Promise<number> {
+  if (oracleIds.length === 0) return 0;
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`card-labels:${runId}`}))`);
+  const ids = [...oracleIds];
+  const staged = await tx.select({ id: cardLabelsStaging.oracleId }).from(cardLabelsStaging)
+    .where(and(eq(cardLabelsStaging.runId, runId), inArray(cardLabelsStaging.oracleId, ids)));
+  const present = staged.map((r) => r.id);
+  if (present.length === 0) return 0;
+  await tx.delete(cardLabels).where(inArray(cardLabels.oracleId, present));
+  // ONE array parameter with its cast, for the reason `readCardsByName` records: a bare
+  // interpolation renders a row constructor and Postgres refuses it.
+  await tx.execute(sql`
+    insert into ${cardLabels} (oracle_id, labels, model, prompt_version, input_hash, labelled_at)
+    select oracle_id, labels, model, prompt_version, input_hash, labelled_at
+      from ${cardLabelsStaging}
+     where run_id = ${runId} and oracle_id = any(${sql.param(present)}::uuid[])
+  `);
+  await tx.delete(cardLabelsStaging)
+    .where(and(eq(cardLabelsStaging.runId, runId), inArray(cardLabelsStaging.oracleId, present)));
+  return present.length;
 }
 
 /** One catalog row as the label prompt needs it. */

@@ -3,10 +3,11 @@ import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import {
-  boundedNumber, CARDS_PER_REQUEST, MEASURED_PER_CARD, meetsFloor, modelToken, pauseRemediation, planChunks, projectedTotalUsd,
-  runToken, waveSize,
+  boundedNumber, budgetFamily, CARDS_PER_REQUEST, chunkHash, familySpend, MEASURED_PER_CARD, meetsFloor,
+  modelToken, pauseRemediation, planChunks, projectedTotalUsd, runToken, waveSize,
   withinCap,
   worstCaseUsd,
+  type SpendRow,
 } from "./plan";
 
 const names = (n: number) => Array.from({ length: n }, (_, i) => `Card ${i}`);
@@ -64,13 +65,171 @@ describe("planChunks", () => {
       .not.toBe(planChunks("r2", "haiku", names(12))[0].customId);
   });
 
-  // Every id must fit the provider's cap with room to spare, for every model name.
+  // Every id must fit the provider's cap with room to spare, for every model name — including a
+  // retried chunk, whose attempt number makes the id longer.
   it("keeps every custom id short", () => {
     for (const model of ["haiku", "sonnet", "sonnet5"]) {
       for (const c of planChunks("run-2026-09-26T06-54-54-984Z", model, names(5000))) {
         expect(c.customId.length, c.customId).toBeLessThan(32);
       }
+      const retried = planChunks("r", model, names(12), Array.from({ length: 98 }, () => names(12)));
+      expect(retried[0].customId.length, retried[0].customId).toBeLessThan(32);
     }
+  });
+});
+
+describe("planChunks keys a chunk on WHAT it asks, not where it sits", () => {
+  // The defect this replaced: keyed on index, a card entering the stale set between waves moved
+  // every later chunk's contents under an unchanged key, so a resumed run had to refuse.
+  it("gives the same cards the same key wherever they fall in the plan", () => {
+    const all = names(24);
+    const whole = planChunks("r", "haiku", all)[1];
+    const alone = planChunks("r", "haiku", all.slice(12))[0];
+    expect(alone.intentKey).toBe(whole.intentKey);
+    expect(alone.customId).toBe(whole.customId);
+  });
+
+  it("gives different cards a different key", () => {
+    const a = planChunks("r", "haiku", names(12))[0];
+    const b = planChunks("r", "haiku", [...names(11), "Some Other Card"])[0];
+    expect(a.intentKey).not.toBe(b.intentKey);
+    expect(a.customId).not.toBe(b.customId);
+  });
+
+  it("never repeats a key or a request id within one plan", () => {
+    const plan = planChunks("run-2026-09-26T06-54-54-984Z", "sonnet", names(5000));
+    expect(new Set(plan.map((c) => c.intentKey)).size).toBe(plan.length);
+    expect(new Set(plan.map((c) => c.customId)).size).toBe(plan.length);
+  });
+
+  it("is the run, the model, the content hash and the attempt", () => {
+    const c = planChunks("backfill-2026-10-02", "haiku", names(12))[0];
+    expect(c.intentKey).toBe(`backfill-2026-10-02:haiku:${chunkHash(names(12))}:1`);
+  });
+
+  it("hashes the names in order, with a separator a name cannot contain", () => {
+    expect(chunkHash(["ab", "c"])).not.toBe(chunkHash(["a", "bc"]));
+    expect(chunkHash(["a", "b"])).toHaveLength(10);
+  });
+});
+
+describe("a chunk asked again after a terminal failure takes the next attempt", () => {
+  // Content addressing reproduces the key of a chunk whose batch expired or errored, and that key
+  // is already in the ledger. Reused, the insert-as-claim reads it as another process's claim.
+  it("moves to attempt 2 when this run already recorded the same cards", () => {
+    const first = planChunks("r", "haiku", names(12))[0];
+    const again = planChunks("r", "haiku", names(12), [names(12)])[0];
+    expect(again.intentKey).toBe(first.intentKey.replace(/:1$/, ":2"));
+    expect(again.customId).not.toBe(first.customId);
+  });
+
+  it("counts every earlier attempt, so a third try does not collide with the second", () => {
+    const third = planChunks("r", "haiku", names(12), [names(12), names(12)])[0];
+    expect(third.intentKey.endsWith(":3")).toBe(true);
+  });
+
+  it("leaves a chunk nobody asked before at attempt 1", () => {
+    const fresh = planChunks("r", "haiku", names(12), [names(13).slice(1)])[0];
+    expect(fresh.intentKey.endsWith(":1")).toBe(true);
+  });
+});
+
+describe("budgetFamily", () => {
+  // The defect: the cap bounded one run id, so a backfill dispatched again under a new date
+  // started from $0 with a fresh $55.
+  it("puts every dated backfill in one budget", () => {
+    expect(budgetFamily("backfill-2026-09-28")).toBe(budgetFamily("backfill-2026-10-02"));
+  });
+
+  it("gives each ISO-week cron run its own budget, apart from the backfills", () => {
+    expect(budgetFamily("weekly-2026-W40")).not.toBe(budgetFamily("weekly-2026-W41"));
+    expect(budgetFamily("weekly-2026-W40")).toBe("weekly-2026-W40");
+    expect(budgetFamily("weekly-2026-W40")).not.toBe(budgetFamily("backfill-2026-09-28"));
+  });
+
+  it("matches the workflow's exact shapes, so a hand-typed id does not join a budget", () => {
+    expect(budgetFamily("weekly-something")).toBe("weekly-something");
+    expect(budgetFamily("backfill-tomorrow")).toBe("backfill-tomorrow");
+  });
+
+  it("keeps any other id in a budget of its own", () => {
+    expect(budgetFamily("run-2026-09-26T06-54-54-984Z")).toBe("run-2026-09-26T06-54-54-984Z");
+    expect(budgetFamily("run-A")).not.toBe(budgetFamily("run-B"));
+  });
+});
+
+describe("familySpend", () => {
+  const rates = { in: 1, out: 10 };
+  /** 1,000 output tokens at $10 a million: $0.01 a row. */
+  const row = (over: Partial<SpendRow>): SpendRow => ({
+    runId: "backfill-2026-09-28", status: "collected", promptVersion: "7", askedCards: 12,
+    inTokens: 0, outTokens: 1000, cacheWriteTokens: 0, cacheReadTokens: 0, ...over,
+  });
+  const sum = (rows: SpendRow[], runId = "backfill-2026-10-02") => familySpend(rows, runId, "7", rates, 0.5);
+
+  it("sums every run in the family, not the current run id alone", () => {
+    const s = sum([row({}), row({ runId: "backfill-2026-10-01" })]);
+    expect(s.measuredUsd).toBeCloseTo(0.02);
+    expect(s.measuredCards).toBe(24);
+  });
+
+  it("leaves another family's spend out", () => {
+    expect(sum([row({ runId: "weekly-2026-W40" }), row({ runId: "run-x" })]).totalUsd).toBe(0);
+  });
+
+  // A row from before the column has no record of which prompt it priced.
+  it("counts a row with no prompt version for nothing", () => {
+    expect(sum([row({ promptVersion: null, outTokens: 10_000_000 })]).totalUsd).toBe(0);
+    expect(sum([row({ promptVersion: null, status: "expired", outTokens: null })]).totalUsd).toBe(0);
+  });
+
+  it("counts another prompt version's row for nothing", () => {
+    expect(sum([row({ promptVersion: "6" })]).totalUsd).toBe(0);
+  });
+
+  it("reserves an expired batch at the worst case and never reads its tokens", () => {
+    const s = sum([row({ status: "expired", inTokens: null, outTokens: null })]);
+    expect(s.expiredChunks).toBe(1);
+    expect(s.totalUsd).toBe(0.5);
+  });
+
+  // Reachable: a batch held under the floor records its usage, and its results can later expire.
+  // The reserve already covers that batch at its worst case; adding its tokens too counts it twice.
+  it("counts an expired batch that had recorded usage by its reserve alone", () => {
+    const s = sum([row({ status: "expired", outTokens: 1000 })]);
+    expect(s.totalUsd).toBe(0.5);
+    expect(s.measuredCards).toBe(0);
+  });
+
+  // Content addressing re-plans a failed chunk to the same cards. The
+  // failed row and its retry are two rows, and each is counted once — by its own status.
+  it("counts an expired chunk and its retry once each", () => {
+    const s = sum([
+      row({ status: "expired", inTokens: null, outTokens: null }),
+      row({ status: "collected", outTokens: 1000 }),
+    ]);
+    expect(s.reserveUsd).toBe(0.5);
+    expect(s.measuredUsd).toBeCloseTo(0.01);
+    expect(s.totalUsd).toBeCloseTo(0.51);
+  });
+
+  it("counts a batch whose every request errored as free, and its retry once", () => {
+    const s = sum([
+      row({ status: "failed", inTokens: null, outTokens: null, cacheWriteTokens: null, cacheReadTokens: null }),
+      row({ status: "collected" }),
+    ]);
+    expect(s.totalUsd).toBeCloseTo(0.01);
+    expect(s.expiredChunks).toBe(0);
+  });
+
+  // A batch held under the floor stays open, and it was still paid for.
+  it("counts a held batch's measured usage although it is not collected", () => {
+    expect(sum([row({ status: "in_progress" })]).measuredUsd).toBeCloseTo(0.01);
+  });
+
+  it("prices cache writes and reads as the provider bills them", () => {
+    const s = sum([row({ outTokens: 0, inTokens: 1000, cacheWriteTokens: 1000, cacheReadTokens: 1000 })]);
+    expect(s.measuredUsd).toBeCloseTo((1000 + 1250 + 100) / 1e6);
   });
 });
 

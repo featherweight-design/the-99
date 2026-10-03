@@ -138,8 +138,8 @@ const estBody = estIn + estCacheRead - sysTokens * batches.length;
 
 // The WORST CASE the request actually permits, which is what a cap has to bind on.
 // `MAX_TOKENS_PER_BATCH` is IMPORTED from the module that sets it, never copied:
-// 8000 per batch of 12 is 667 tokens a card against the 160 measured, so an estimate
-// built on the average leaves 4x of headroom the cap never sees. A cap that cannot
+// 5000 per batch of 12 is 417 tokens a card against the 160 measured, so an estimate
+// built on the average leaves 2.6x of headroom the cap never sees. A cap that cannot
 // be exceeded by the run it approves is not a cap -- and a cap reading a stale copy
 // of the ceiling is the same failure with an extra step.
 const estOutWorst = batches.length * MAX_TOKENS_PER_BATCH;

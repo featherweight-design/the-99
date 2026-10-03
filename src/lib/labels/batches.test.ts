@@ -119,3 +119,14 @@ describe("staging is scoped by run", () => {
     }
   });
 });
+
+describe("each intent records the prompt it was asked under (migration 0077)", () => {
+  const added = readFileSync("drizzle/0077_card_label_batches_prompt_version.sql", "utf8");
+
+  // NULLABLE, because every row written before the column has no record of its prompt, and the
+  // spend sum counts such a row for nothing rather than guessing which prompt it priced.
+  it("adds a nullable prompt_version and nothing else", () => {
+    expect(cardLabelBatches.promptVersion.notNull).toBe(false);
+    expect(added.trim()).toBe('ALTER TABLE "card_label_batches" ADD COLUMN "prompt_version" text;');
+  });
+});

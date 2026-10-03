@@ -1,0 +1,1 @@
+ALTER TABLE "card_label_batches" ADD COLUMN "prompt_version" text;
