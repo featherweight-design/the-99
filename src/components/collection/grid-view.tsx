@@ -89,8 +89,11 @@ export function GridView({
        would collapse a 178px floor to a single column at this width. */
     <div aria-busy={busy || undefined} className="grid grid-cols-3 md:grid-cols-[repeat(auto-fill,minmax(178px,1fr))] gap-[8px] md:gap-[20px] px-[14px] md:px-[34px] pt-[4px] md:pt-[20px] pb-[14px] md:pb-[34px]">
       {/* The gloss travels WITH the view: a surface drawing a wordless mark carries the
-          thing that decodes it, rather than trusting a caller to mount one above. */}
-      <CollectionMarkKey className="col-span-full" />
+          thing that decodes it, rather than trusting a caller to mount one above. TWO
+          instances, not one prop on a shared key: the availability entries belong to the
+          below-`md` phone tile alone, whose chip is the one that drops its word (below). */}
+      <CollectionMarkKey className="col-span-full md:hidden" withAvailability />
+      <CollectionMarkKey className="col-span-full hidden md:block" />
       {cards.map((c, i) => {
         const state = c.availability ? availabilityState(c.availability) : "free";
         // Addendum 2 §2, matching the row: over-committed keeps its border tint
@@ -184,17 +187,29 @@ export function GridView({
             meta={
               <>
                 {c.availability && (
-                  // The word is dropped (collection surfaces, Call 3): "1 in a draft" is 81px
-                  // of a 101px caption, and the 3-up tile has none to spare. `CollectionMarkKey`
-                  // carries the three states' words instead; `spoken` still announces the full
-                  // sentence for assistive tech via `glyphOnly`'s own rule.
-                  <AvailabilityMarker
-                    availability={c.availability}
-                    density="chip"
-                    plate={false}
-                    glyphOnly
-                    spoken
-                  />
+                  <>
+                    {/* Below `md` ONLY: the word is dropped (collection surfaces, Call 3) —
+                        "1 in a draft" is 81px of a 101px caption, and the 3-up phone tile has
+                        none to spare. `CollectionMarkKey`'s phone instance carries the three
+                        states' words instead; `spoken` still announces the full sentence for
+                        assistive tech via `glyphOnly`'s own rule. */}
+                    <AvailabilityMarker
+                      availability={c.availability}
+                      density="chip"
+                      plate={false}
+                      glyphOnly
+                      spoken
+                      className="md:hidden"
+                    />
+                    {/* From `md`: the desktop tile's 178px-floor track has room for the word,
+                        exactly as it did before this round, so it keeps the captioned chip. */}
+                    <AvailabilityMarker
+                      availability={c.availability}
+                      density="chip"
+                      plate={false}
+                      className="hidden md:inline-flex"
+                    />
+                  </>
                 )}
                 {/* Absent at one copy, matching the deck tile. It used to be
                     unconditional, because on a collection one copy is the common
@@ -231,12 +246,14 @@ export function GridView({
                   ),
                 )}
                 {/* Decided by count on the server, never by measurement (see `MAX_TILE_MARKS`
-                    above): no current card reaches four, so this is untested on a live tile. */}
+                    above): no current card reaches four, so this is untested on a live tile.
+                    `--fg-faint` (STATES-collection-head.md), not `--fact`: the overflow count
+                    is subordinate to the marks it stands in for, not a fourth fact of its own. */}
                 {moreCount > 0 && (
                   <span
                     aria-hidden
                     className="flex-none font-mono text-[9px] md:text-[9.5px] font-semibold"
-                    style={{ color: "var(--fact)" }}
+                    style={{ color: "var(--fg-faint)" }}
                   >
                     +{moreCount}
                   </span>

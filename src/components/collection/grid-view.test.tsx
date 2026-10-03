@@ -7,6 +7,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import type { Availability } from "../../lib/decks/availability";
 import type { BrowseListCard } from "../../lib/collection/browse";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
+import { availabilityCopy } from "../../lib/copy/availability";
 import { GRID_EAGER_TILES, GridView } from "./grid-view";
 
 const card: BrowseListCard = {
@@ -77,18 +78,37 @@ describe("GridView availability chip", () => {
     expect(screen.queryByText(/free|in a draft|in a brew|short/)).toBeNull();
   });
 
-  // Collection surfaces, Call 3: the chip's word is dropped on the 3-up tile. The glyph
-  // alone is visible; the full sentence survives only for assistive tech, via `sr-only`.
-  it("carries a glyph-only chip on a committed tile, with no visible word", () => {
+  // Collection surfaces, Call 3, below `md` only: the phone tile's chip drops its word; the
+  // desktop tile (`hidden md:inline-flex`, from `md`) keeps the exact pre-round chip. Both
+  // mount together — the breakpoint is CSS, which jsdom does not evaluate — so the probe
+  // reads each by its OWN class rather than by a single query across the whole caption.
+  it("carries two chips: glyph-only below md, the worded chip from md, never neither", () => {
     renderTiles({ ...card, availability: avail(1, 1, 0, ["Atraxa"]) });
-    expect(screen.queryByText("none free")).toBeNull();
-    expect(screen.getByText("no free copies")).toHaveClass("sr-only");
-    expect(screen.queryByText(/Atraxa/)).toBeNull();
+    const tile = screen.getByRole("button");
+    const phoneChip = tile.querySelector(".md\\:hidden")!;
+    const desktopChip = tile.querySelector(".md\\:inline-flex")!;
+    // Its only text is the sr-only sentence — no visible word of its own.
+    expect(phoneChip.textContent).toBe("no free copies");
+    expect(phoneChip.querySelector(".sr-only")?.textContent).toBe("no free copies");
+    expect(desktopChip.textContent).toBe("none free");
+    expect(desktopChip.textContent).not.toContain("Atraxa");
   });
 
   it("leaves the set · rarity caption untouched", () => {
     renderTiles({ ...card, availability: avail(1, 1, 0, ["Atraxa"]) });
     expect(screen.getByText("RVR · rare")).toBeInTheDocument();
+  });
+
+  // Collection surfaces, Call 3, and the handoff's own ruling: the key's availability
+  // entries belong to the below-`md` PHONE key alone. The two `CollectionMarkKey` mounts
+  // (`md:hidden` and `hidden md:block`) carry the same facts and combo entries either way, so
+  // this reads the one thing that must differ between them.
+  it("gives the phone key the availability entries and withholds them from the desktop key", () => {
+    renderTiles({ ...card, availability: avail(1, 1, 0, ["Atraxa"]) });
+    const phoneKey = document.querySelector('.md\\:hidden[role="group"], .md\\:hidden [role="group"]')!;
+    const desktopKey = document.querySelector('.md\\:block[role="group"], .md\\:block [role="group"]')!;
+    expect(phoneKey.textContent).toContain(availabilityCopy.collection.filterSoft);
+    expect(desktopKey.textContent).not.toContain(availabilityCopy.collection.filterSoft);
   });
 });
 
@@ -183,7 +203,11 @@ describe("GridView mark overflow", () => {
       comboPartner,
     });
     // 3 facts + 1 combo = 4 marks: the first two facts draw, the rest collapse to +2.
-    expect(screen.getByText("+2")).toBeInTheDocument();
+    const more = screen.getByText("+2");
+    expect(more).toBeInTheDocument();
+    // STATES-collection-head.md: `--fg-faint`, never `--fact` — the count is subordinate to
+    // the marks it stands in for, not a fourth fact in its own right.
+    expect(more.style.color).toBe("var(--fg-faint)");
   });
 });
 

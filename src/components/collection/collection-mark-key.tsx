@@ -26,7 +26,7 @@ import { ComboGlyph } from "../cards/combo-glyph";
 import { AvailabilityGlyph } from "../ui/availability-marker";
 import { MarkKey } from "../decks/mark-key";
 
-const ENTRIES = [
+const FACT_AND_COMBO_ENTRIES = [
   ...CARD_FACTS.map((fact) => ({
     id: fact,
     sample: <CardFactMark fact={fact} silent />,
@@ -50,12 +50,20 @@ const ENTRIES = [
     sample: <ComboGlyph />,
     word: comboAwarenessCopy.keyWord,
   },
-  // THE THREE AVAILABILITY STATES (collection surfaces, Call 3): the chip on the 3-up tile
-  // dropped its word — "1 in a draft" is 81px of a 101px caption — and moved it here instead,
-  // using the Availability filter's own labels rather than new words for the same three states.
-  // `AvailabilityGlyph` directly, `big`, rather than `AvailabilityMarker`: the marker always
-  // speaks a REAL card's counts and claimants, and a key entry decodes the glyph alone, with no
-  // card behind it to count.
+];
+
+// THE THREE AVAILABILITY STATES (collection surfaces, Call 3): the chip on the 3-up PHONE tile
+// dropped its word — "1 in a draft" is 81px of a 101px caption — and moved it here instead,
+// using the Availability filter's own labels rather than new words for the same three states.
+// `AvailabilityGlyph` directly, `big`, rather than `AvailabilityMarker`: the marker always
+// speaks a REAL card's counts and claimants, and a key entry decodes the glyph alone, with no
+// card behind it to count.
+//
+// BELOW `md` ONLY (README.md: "Rows don't get the availability entries, because a row prints
+// the word beside its glyph"). The desktop grid's tile keeps its word too — Call 3 is a
+// below-`md` concession — so this key is a SEPARATE instance (`withAvailability`), never a
+// prop that widens the one every surface shares.
+const AVAILABILITY_ENTRIES = [
   {
     id: "avail-soft",
     sample: <AvailabilityGlyph state="soft" seam="var(--bg)" big />,
@@ -73,16 +81,26 @@ const ENTRIES = [
   },
 ];
 
-export function CollectionMarkKey({ className }: { className?: string }) {
+export function CollectionMarkKey({
+  className,
+  withAvailability = false,
+}: {
+  className?: string;
+  /** The below-`md` phone grid's own instance. See `AVAILABILITY_ENTRIES` above. */
+  withAvailability?: boolean;
+}) {
   // The TILE grid needs `col-span-full` here, exactly as its `Show more` button does: a bare
   // child of that grid takes one CARD CELL — one of two columns at 390px, and one of six
   // ~178px columns at 1300px, stretched to the tile row's height with its entries wrapped
   // three deep. The row view is a flex column and needs nothing.
+  const entries = withAvailability
+    ? [...FACT_AND_COMBO_ENTRIES, ...AVAILABILITY_ENTRIES]
+    : FACT_AND_COMBO_ENTRIES;
   return (
     // Room above and below on the phone (H7): it sat tight against the head and the
     // first row, and read as part of either rather than as the key to both.
     <div className={["py-[10px] md:py-0", className].filter(Boolean).join(" ")}>
-      <MarkKey marks={ENTRIES} regionAria={cardMarkCopy.keyRegionAria} phoneColumns={2} />
+      <MarkKey marks={entries} regionAria={cardMarkCopy.keyRegionAria} phoneColumns={2} />
     </div>
   );
 }
