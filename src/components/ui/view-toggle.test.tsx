@@ -25,6 +25,14 @@ describe("ViewToggle", () => {
     );
   });
 
+  // `null` is the pre-hydration state (no hint, the view split by CSS): neither segment may
+  // claim a view the page is not actually showing.
+  it("presses neither segment when the real view is unresolved", () => {
+    render(<ViewToggle options={OPTIONS} value={null} onChange={() => {}} />);
+    expect(screen.getByRole("button", { name: "A view" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "B view" })).toHaveAttribute("aria-pressed", "false");
+  });
+
   it("reports the segment pressed", () => {
     const picked: string[] = [];
     render(<ViewToggle options={OPTIONS} value="a" onChange={(v) => picked.push(v)} />);

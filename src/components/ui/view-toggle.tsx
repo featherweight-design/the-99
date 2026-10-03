@@ -30,7 +30,9 @@ export function ViewToggle<T extends string>({
   compact,
 }: {
   options: readonly [ViewToggleOption<T>, ViewToggleOption<T>];
-  value: T;
+  /** `null` while the real view is still unresolved (no hint, pre-hydration): neither segment
+      is pressed, rather than one claiming a state the page is not actually showing. */
+  value: T | null;
   onChange: (next: T) => void;
   className?: string;
   /**
@@ -52,7 +54,7 @@ export function ViewToggle<T extends string>({
       }}
     >
       {options.map((option) => {
-        const active = option.value === value;
+        const active = value !== null && option.value === value;
         return (
           <button
             key={option.value}

@@ -102,7 +102,9 @@ export function FilterBar({
   filters: BrowseFilters;
   sort: SortKey;
   sortDirection: SortDirection;
-  view: ViewMode;
+  /** `null` while the real view is still unresolved (no hint, pre-hydration): the toggle shows
+      neither segment pressed, rather than claiming a view the page is not actually showing. */
+  view: ViewMode | null;
   /** Owned sets, newest first, with counts under the other active filters. */
   setOptions: SetOption[];
   /** The whole type vocabulary, in the design's fixed order, with counts. */

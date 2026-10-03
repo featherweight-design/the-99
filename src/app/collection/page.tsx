@@ -5,7 +5,14 @@
 // Empty-collection state remains the shell's design; this surface's own
 // "no results" case is triggered when filters return zero (Task 5).
 
+import { cookies } from "next/headers";
 import { requireUserId } from "../../lib/auth";
+import {
+  COLLECTION_VIEW_COOKIE,
+  COLLECTION_WIDE_COOKIE,
+  parseViewCookie,
+  parseWideCookie,
+} from "../../components/ui/view-cookie";
 import { getCollectionLastUpdated, getCollectionStats } from "../../lib/home/summary";
 import { loadOwnedSetMeta } from "../../lib/collection/browse";
 import { CardFan } from "../../components/marks";
@@ -29,6 +36,13 @@ export default async function CollectionPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const userId = await requireUserId();
+  // The two layout hints a past visit left (`ui/view-cookie`), so the server draws the view the
+  // reader will see. Parsed to a closed set; anything else is no hint.
+  const jar = await cookies();
+  const viewHint = {
+    stored: parseViewCookie(jar.get(COLLECTION_VIEW_COOKIE)?.value),
+    wide: parseWideCookie(jar.get(COLLECTION_WIDE_COOKIE)?.value),
+  };
   const [stats, cards, lastUpdated, ownedSets, availability] = await Promise.all([
     getCollectionStats(userId),
     // The heaviest read on this page by an order of magnitude, which is why it
@@ -121,6 +135,7 @@ export default async function CollectionPage({
         ownedSets={ownedSets}
         availabilityOk={availability !== null}
         hasCollection={stats.totalCards > 0}
+        viewHint={viewHint}
       />
     </section>
   );

@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import type { Availability } from "../../lib/decks/availability";
 import type { BrowseListCard } from "../../lib/collection/browse";
-import { GridView } from "./grid-view";
+import { GRID_EAGER_TILES, GridView } from "./grid-view";
 
 const card: BrowseListCard = {
   oracleId: "o1",
@@ -164,5 +164,33 @@ describe("GridView art in the server HTML", () => {
     expect(asked).toEqual(Array.from({ length: GRID_EAGER_TILES }, (_, i) => i));
     // Every tile still draws its art box, so nothing moves when the art arrives.
     expect(html.match(/<img/g)?.length).toBe(cards.length);
+  });
+});
+
+// /collection's first visit draws both views and lets CSS pick one. The grid copy may be hidden,
+// and a browser fetches a plain <img> under display:none but never a lazy one, so the eager tiles
+// of THAT copy carry `loading="lazy"` and no other copy does. Read against the export, not a
+// literal: the eager count is tuned in a browser slot.
+describe("GridView when it may be hidden", () => {
+  const many = Array.from({ length: GRID_EAGER_TILES + 4 }, (_, i) =>
+    ({ ...card, oracleId: `o${i}`, name: `Card ${i}`, imageUri: `https://cards.scryfall.io/normal/front/${i}.jpg` }),
+  );
+  const loadings = (container: HTMLElement) =>
+    [...container.querySelectorAll("img")].map((img) => img.getAttribute("loading"));
+
+  it("marks exactly the eager tiles lazy", () => {
+    const { container } = render(
+      <GridView cards={many} totalCards={many.length} onShowMore={() => {}} onOpen={() => {}} mayBeHidden />,
+    );
+    const got = loadings(container);
+    expect(got.slice(0, GRID_EAGER_TILES).every((l) => l === "lazy")).toBe(true);
+    expect(got.slice(GRID_EAGER_TILES).every((l) => l === null)).toBe(true);
+  });
+
+  it("leaves every tile as it was without the prop", () => {
+    const { container } = render(
+      <GridView cards={many} totalCards={many.length} onShowMore={() => {}} onOpen={() => {}} />,
+    );
+    expect(loadings(container).every((l) => l === null)).toBe(true);
   });
 });

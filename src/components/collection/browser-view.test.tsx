@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
@@ -7,7 +8,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: () => {} }),
 }));
 
-import { CollectionBrowser } from "./browser";
+import { CollectionBrowser, type ViewHint } from "./browser";
 import { COLLECTION_VIEW_KEY } from "./filter-bar";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import type { BrowseListCard } from "../../lib/collection/browse";
@@ -110,5 +111,71 @@ describe("CollectionBrowser — which view it opens as", () => {
     render(view());
     fireEvent.click(grid());
     expect(window.location.search).toContain("view=grid");
+  });
+});
+
+// THE SERVER RENDER (the rows-then-grid flash, `probe:view-flash`). The server could not see a
+// reader's width or stored view, so it drew rows and hydration swapped in the grid. It now reads
+// two cookie hints; with neither it draws both views and lets CSS pick. Read off the HTML the
+// server sends, by each view's root class, which are the probe's selectors too.
+describe("CollectionBrowser — what the server draws", () => {
+  beforeEach(() => {
+    window.history.replaceState(null, "", "/collection");
+    localStorage.clear();
+  });
+  const GRID = /grid-cols-2[^"]*minmax\(178px/;
+  const ROWS = /gap-\[6px\][^"]*flex-col|flex-col[^"]*gap-\[6px\]/;
+  const art = card({ imageUri: "https://cards.scryfall.io/normal/front/a.jpg" });
+  const html = (viewHint?: ViewHint) =>
+    renderToString(
+      <CardDetailProvider fetchCard={async () => null}>
+        <CollectionBrowser cards={[art]} ownedSets={[]} availabilityOk hasCollection viewHint={viewHint} />
+      </CardDetailProvider>,
+    );
+
+  it("draws the stored choice the cookie carries, and only that view", () => {
+    const out = html({ stored: "grid", wide: false });
+    expect(out).toMatch(GRID);
+    expect(out).not.toMatch(ROWS);
+  });
+
+  it("draws the width hint's default when nothing was chosen", () => {
+    expect(html({ stored: null, wide: true })).toMatch(GRID);
+    const narrow = html({ stored: null, wide: false });
+    expect(narrow).toMatch(ROWS);
+    expect(narrow).not.toMatch(GRID);
+  });
+
+  it("still lets a link's ?view= beat every hint", () => {
+    window.history.replaceState(null, "", "/collection?view=rows");
+    const out = html({ stored: "grid", wide: true });
+    expect(out).toMatch(ROWS);
+    expect(out).not.toMatch(GRID);
+  });
+
+  // The first visit: no hint at all. Both views, split at 768px, and the grid copy's eager art
+  // marked lazy, since that copy is display:none on a phone.
+  it("draws both views split by CSS when there is no hint, the grid's eager art lazy", () => {
+    const out = html({ stored: null, wide: null });
+    expect(out).toMatch(GRID);
+    expect(out).toMatch(ROWS);
+    expect(out).toMatch(/class="hidden md:block"/);
+    expect(out).toMatch(/class="md:hidden"/);
+    expect(out).toMatch(/<img[^>]*loading="lazy"/);
+  });
+
+  // The toggle must not claim a view the split is not actually showing: on a phone this HTML's
+  // rows half is what renders, and a toggle marking grid pressed would say otherwise.
+  it("presses neither toggle segment when there is no hint", () => {
+    const out = html({ stored: null, wide: null });
+    expect(out).not.toMatch(/aria-pressed="true"/);
+  });
+
+  it("draws ONE view once the client can answer the width", () => {
+    // jsdom answers the width query (narrow), so a client render picks rows: the split is a
+    // server-render state only, never the page a reader is left on.
+    const { container } = render(view());
+    expect(container.innerHTML).toMatch(ROWS);
+    expect(container.innerHTML).not.toMatch(GRID);
   });
 });

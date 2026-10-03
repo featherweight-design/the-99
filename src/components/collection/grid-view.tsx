@@ -46,6 +46,7 @@ export function GridView({
   onOpen,
   pendingOracleId = null,
   busy = false,
+  mayBeHidden = false,
 }: {
   cards: BrowseListCard[];
   totalCards: number;
@@ -59,6 +60,12 @@ export function GridView({
   onOpen: (oracleId: string) => void;
   /** The tile whose card is being fetched, which shows the click landed. */
   pendingOracleId?: string | null;
+  /**
+   * This copy may be under `display:none`: `/collection`'s first visit draws both views and lets
+   * CSS pick one. Its eager tiles then also carry `loading="lazy"`, because a browser fetches a
+   * plain <img> even when hidden and never fetches a lazy one that is.
+   */
+  mayBeHidden?: boolean;
 }) {
   return (
     /* §Grid Container. The desktop track is a TILE FLOOR rather than a column
@@ -128,6 +135,7 @@ export function GridView({
             {c.imageUri && (
               <HydratedImg
                 eager={i < GRID_EAGER_TILES}
+                loading={mayBeHidden && i < GRID_EAGER_TILES ? "lazy" : undefined}
                 src={c.imageUri}
                 alt=""
                 decoding="async"

@@ -11,7 +11,8 @@
 // SSR snapshot is false (the narrow branch); hydration corrects it. That way a
 // server render never emits a modal, which is the more expensive thing to undo.
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
+import { writeViewCookie } from "./view-cookie";
 
 export function useMinWidth(query: string): boolean {
   const subscribe = useCallback(
@@ -28,4 +29,43 @@ export function useMinWidth(query: string): boolean {
     () => window.matchMedia(query).matches,
     () => false,
   );
+}
+
+/**
+ * `useMinWidth` for a surface whose SERVER render must already be laid out for the reader's width
+ * (`/collection`'s default view, whose rows-then-grid flash was `useMinWidth`'s `false` server
+ * snapshot). `hint` is what the page read from `cookie` on a past visit: the server render and the
+ * hydration pass return it, and the render after reads the real query. Null when there is no hint,
+ * which is the caller's cue to draw for both widths until it knows.
+ *
+ * Once it knows, it writes the answer to `cookie` when the hint was missing or wrong, so the next
+ * visit's server draws the right layout. Width can change between visits; a stale hint costs one
+ * flip, the same as no hint.
+ */
+export function useMinWidthHinted(query: string, hint: boolean | null, cookie: string): boolean | null {
+  const subscribe = useCallback(
+    (onStoreChange: () => void) => {
+      const mq = window.matchMedia(query);
+      mq.addEventListener("change", onStoreChange);
+      return () => mq.removeEventListener("change", onStoreChange);
+    },
+    [query],
+  );
+  const matches = useSyncExternalStore<boolean | null>(
+    subscribe,
+    () => window.matchMedia(query).matches,
+    () => hint,
+  );
+  // What `cookie` last held, so a resize back to the ORIGINAL hint still corrects a cookie this
+  // effect already moved away from it: comparing against `hint` itself misses that round trip,
+  // since `hint` never changes after the page loaded.
+  const lastWritten = useRef(hint);
+  useEffect(() => {
+    const now = window.matchMedia(query).matches;
+    if (now !== lastWritten.current) {
+      lastWritten.current = now;
+      writeViewCookie(cookie, now ? "1" : "0");
+    }
+  }, [query, cookie, matches]);
+  return matches;
 }
