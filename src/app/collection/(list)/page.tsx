@@ -121,7 +121,7 @@ export default async function CollectionPage({
   }
 
   return (
-    <section className="flex flex-col min-h-[calc(100vh-var(--tabbar-h))] md:min-h-screen">
+    <section className="flex flex-col min-h-[calc(100vh-var(--tabbar-h)-var(--collection-head-h))] md:min-h-[calc(100vh-var(--collection-head-h))]">
       {/* The browse list carries no printings or oracle text — the modal fetches the
           one card it is opening, the same way every deck surface does. */}
       <CollectionClient
