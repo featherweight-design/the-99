@@ -77,6 +77,9 @@ async function run() {
         // and move on rather than re-proving behaviour that predates this PR.
         const wideBox = await onPage(page, '[data-chassis-row="controls"]').first().isVisible().catch(() => false);
         fail(`${width}px · wide chassis present`, wideBox, String(wideBox));
+        // E9 applies below 1000px only (decision 10) — the wide branch clears the padding.
+        const wideScrollPaddingTop = await page.evaluate(() => document.documentElement.style.scrollPaddingTop);
+        fail(`${width}px · scroll-padding-top cleared`, wideScrollPaddingTop === "", `"${wideScrollPaddingTop}"`);
         await context.close();
         continue;
       }
@@ -88,6 +91,15 @@ async function run() {
         `${width}px · head height`,
         headBox && near(headBox.height, oneRow ? 66 : 108, 2),
         `${headBox?.height}px against ${oneRow ? 66 : 108}`,
+      );
+
+      // E9 — a tile reached by keyboard must not land under the pinned head: the root's
+      // `scroll-padding-top` equals the head's own fixed height for this width.
+      const scrollPaddingTop = await page.evaluate(() => document.documentElement.style.scrollPaddingTop);
+      fail(
+        `${width}px · scroll-padding-top matches the head height`,
+        scrollPaddingTop === `${oneRow ? 66 : 108}px`,
+        `${scrollPaddingTop} against ${oneRow ? 66 : 108}px`,
       );
 
       // H2 — scrolled: the head stays pinned at the viewport top with the SAME height.
