@@ -10,7 +10,10 @@ vi.mock("./recommend", async (orig) => ({
   loadCollectionPool,
 }));
 vi.mock("../decks/availability-query", () => ({ loadAvailability }));
-vi.mock("../edhrec/client", () => ({ readEdhrecCache: async () => new Map() }));
+// A spy rather than a stub: the free ranking reads NO live EDHREC page, and a test below asserts
+// it, because canonical's cache read only feeds `roleCards`, which `toListItem` drops.
+const readEdhrecCache = vi.hoisted(() => vi.fn(async () => new Map()));
+vi.mock("../edhrec/client", () => ({ readEdhrecCache }));
 // Ruling D: the score's synergy comes from the stored index, so the loader is
 // mocked alongside the live cache. ARMABLE rather than always empty — every
 // case here used to take an empty map, which meant nothing verified that
@@ -158,6 +161,20 @@ describe("rankFree with preloaded reads", () => {
     expect(out.items[0].imageUri).toBe("owned.jpg");
     expect(out.items[0].artCropUri).toBe("owned-crop.jpg");
     expect(out.items[0].printedName).toBe("Freya, Queen of the Valkyries");
+  });
+
+  // Each buildable commander's cached EDHREC page is ~94KB, and nothing the free ranking returns
+  // carries a figure out of it: `inclusionByName` only feeds `roleCards`, which `toListItem` drops.
+  it("reads no live EDHREC page", async () => {
+    readEdhrecCache.mockClear();
+    const commander = { ...card("a"), typeLine: "Legendary Creature" };
+    const out = await rankFree("user", [item("a")], {
+      collection: [commander, card("b")],
+      availability: new Map([["b", avail(1, 0)]]),
+    });
+
+    expect(out.items.map((i) => i.oracleId)).toEqual(["a"]);
+    expect(readEdhrecCache).not.toHaveBeenCalled();
   });
 
   // The point of the parameter: `/commanders` has already made both reads for
