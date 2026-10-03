@@ -2,7 +2,7 @@
 
 Source of truth: `docs/superpowers/design-briefs/2026-10-02-card-details-carousel.md`, and the
 merged handoff `design/design_handoff_the99_card_carousel/` (README.md, READINESS.md,
-STATES-card-carousel.md, `card-carousel · copy strings.ts`). Status: **LGTM (Hugh, 2026-10-03)**.
+STATES-card-carousel.md, `card-carousel · copy strings.ts`). Status: **plan APPROVED (Hugh, 2026-10-03)**; the About ruling of the same day is in PR 4 below.
 Phone = R2 (`PhoneHero.dc.html`, frames H1–H6). Desktop = R1 (`The 99 - Card Carousel.dc.html`,
 D1–D5). `PhoneSheet.dc.html` (R1 phone, P1–P7) is superseded and kept for the record only.
 
@@ -118,14 +118,11 @@ pr-review skill). Given the fourteen-mount-point blast radius, this splits into 
   (stacked phone sheets at 96/140 running the same sizing formula — not drawn in the handoff,
   needs its own small spec check against the `phoneTop={52}` / `phoneTop={140}` cases already in
   the provider).
-- About entry: fold into the existing `card-detail` entry (`src/lib/copy/about.ts:248-256`) per
-  call #10 — **Hugh's decision, not drawn by Design.** Flagging per AGENTS.md: no new About
-  entry exists for this feature anywhere in the repo (checked
-  `design/design_handoff_the99_about/` for anything carousel-specific — the two "carousel" hits
-  there are an unrelated onboarding-pattern rejection, not this feature). If folded in, this is an
-  ordinary caption edit to that entry plus whatever `ABOUT_VERSION` bump this feature's launch
-  round calls for (per the multi-round-batches-at-the-end rule, if this ships alongside other
-  rounds) or its own bump if it ships alone.
+- About entry (**Hugh, 2026-10-03**): an ORDINARY EDIT to the existing `card-detail` entry
+  (`src/lib/copy/about.ts`) that mentions stepping between cards, with **NO `ABOUT_VERSION` bump**
+  and no new entry. The `about.test.ts` content hash is re-pinned deliberately. The wording goes
+  through `/copy-review`. It rides in this PR, the last of the line, so the caption never
+  describes a carousel that has not shipped.
 - Est. size: small — stacked-sheet wiring plus copy, well under the ceiling.
 
 No PR in this plan stacks on another's unmerged branch; each is independently mergeable once PR 1
@@ -205,6 +202,5 @@ to whichever width actually exercises the state (phone drag rubber-band is phone
 - The `grabberAria` control and the `--avail` token (both PR 3) are resolved above as engineering
   calls — neither needed a Design round-trip.
 - The `siblings` plumbing (PR 1) is scoped above; no further resolution needed.
-- The About entry's exact wording and whether this feature's `ABOUT_VERSION` bump rides alone or
-  batches with other in-flight rounds is Hugh's call per call #10 and the About-batching rule in
-  AGENTS.md — not decided here. Flagged in the morning report alongside this plan.
+- The About entry was ruled by Hugh on 2026-10-03 (PR 4): an ordinary edit to `card-detail`,
+  no version bump. Only its exact wording is left, and that goes through `/copy-review`, not Hugh.
