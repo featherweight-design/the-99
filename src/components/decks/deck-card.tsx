@@ -222,11 +222,10 @@ interface DeckCardProps {
   folders: readonly { id: string; name: string }[];
   /** Passed through to the menu's move mode — see `DeckCardOverflow`. */
   onCreateFolder: () => void;
-  say: (announcement: string) => void;
-  onMoved: (result: { refused: boolean; threw?: boolean }) => void;
+  onMove: (to: { id: string | null; name: string | null }) => void;
   keepsFocus: boolean;
   /** The outcome of a create started from this card's move mode, once it lands. */
-  closeAfterCreate: { seq: number; filed: boolean } | null;
+  closeAfterCreate: { seq: number } | null;
 }
 
 /**
@@ -264,7 +263,7 @@ interface DeckCardProps {
 const YIELD = { faced: "@min-[330px]:@max-[336px]:hidden", marks: "hidden @min-[330px]:@max-[336px]:contents" };
 
 export function DeckCard({
-  deck, shopping, now, folders, onCreateFolder, say, onMoved, keepsFocus, closeAfterCreate,
+  deck, shopping, now, folders, onCreateFolder, onMove, keepsFocus, closeAfterCreate,
 }: DeckCardProps) {
   const detail = detailFor(deck, shopping, now);
   // A pair takes two of the hundred, so its body is 98 and its tile says so.
@@ -422,8 +421,7 @@ export function DeckCard({
           folderId={deck.folderId}
           folderName={deck.folderName}
           onCreateFolder={onCreateFolder}
-          say={say}
-          onMoved={onMoved}
+          onMove={onMove}
           keepsFocus={keepsFocus}
           closeAfterCreate={closeAfterCreate}
         />

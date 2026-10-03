@@ -31,6 +31,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 import { DecksView } from "./decks-view";
+import { folderCopy } from "../../lib/copy/folders";
 import type { DeckListItem } from "../../lib/decks/read";
 import type { DeckFolderWithCount } from "../../lib/decks/folders";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
@@ -71,6 +72,17 @@ const SHOPPING: ShoppingRollup = {
   byDeck: new Map(),
   total: { copies: 0, cents: 0, pricedCopies: 0 },
 };
+
+/** A promise the test settles, so a state can be read while an action is in flight. */
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
 
 function view(decks: DeckListItem[], folders: DeckFolderWithCount[] = []) {
   return (
@@ -332,6 +344,20 @@ describe("DecksView", () => {
     { id: FOLDER_A, name: "Cube night", createdAt: new Date("2026-09-01"), deckCount: 2 },
     { id: FOLDER_B, name: "Commander night", createdAt: new Date("2026-09-02"), deckCount: 1 },
   ];
+  /** A shelf segment by its accessible name, which carries its count. */
+  const segment = (name: string, decks: number) =>
+    document.querySelector(
+      `[data-shelf-line] button[aria-label="${name}, ${decks === 1 ? "1 deck" : `${decks} decks`}"]`,
+    );
+  const said = () =>
+    [...document.querySelectorAll("[aria-live='polite']")].map((r) => r.textContent);
+  /** Moves a deck from its own card's menu. */
+  function moveFromCard(deckName: string, to: string) {
+    const card = screen.getByText(deckName).closest("li")!;
+    fireEvent.click(within(card).getByRole("button", { name: /^Actions for/ }));
+    fireEvent.click(within(card).getByRole("button", { name: /^Move / }));
+    fireEvent.click(within(card).getByRole("button", { name: to }));
+  }
 
   it("narrows the grid to the shelf named on the URL", () => {
     window.history.replaceState(null, "", `/decks?folder=${FOLDER_A}`);
@@ -661,35 +687,28 @@ describe("DecksView", () => {
     await waitFor(() => expect(trigger).toHaveAttribute("aria-expanded", "false"));
   });
 
-  it("leaves the panel open when the move the create asked for is refused", async () => {
-    // M6: a refused move changes nothing, so the panel goes back to its menu
-    // rather than closing. The folder was still made, and the announcement says
-    // that and nothing about a shelf the deck is not on.
-    actionStub.move.mockResolvedValueOnce(false);
-    const { container } = renderWide(view(shelvedDecks(), twoFolders));
-    const trigger = screen.getAllByRole("button", { name: /^Actions for/ })[0];
-    fireEvent.click(trigger);
-    fireEvent.click(screen.getByRole("button", { name: /^Move / }));
+  it("takes the deck back when the move the create asked for is refused", async () => {
+    // M6: a refused move changes nothing. The create files the deck through the
+    // same optimistic move as every other door, so the deck takes the new shelf
+    // on the press and the prediction drops once the refusal lands.
+    const answer = deferred<boolean>();
+    actionStub.move.mockReturnValueOnce(answer.promise);
+    renderWide(view(shelvedDecks(), twoFolders));
+    const card = screen.getByText("Unfiled one").closest("li")!;
+    fireEvent.click(within(card).getByRole("button", { name: /^Actions for/ }));
+    fireEvent.click(within(card).getByRole("button", { name: /^Move / }));
     const rows = screen.getAllByRole("button", { name: /New folder/ });
     fireEvent.click(rows[rows.length - 1]);
     fireEvent.change(screen.getByLabelText("Folder name"), { target: { value: "Draft pile" } });
     fireEvent.click(screen.getByRole("button", { name: "Create" }));
-    await waitFor(() =>
-      expect(
-        [...container.querySelectorAll("[aria-live='polite']")].map((r) => r.textContent),
-      ).toContain("Folder “Draft pile” created."),
-    );
-    expect(trigger).toHaveAttribute("aria-expanded", "true");
-    // And back at its MENU, not left on the destination list behind a dialog
-    // that has been dismissed. The Move row exists only in menu mode.
-    // The menu and its focus both land a frame after the dialog's trap lets go,
-    // so they are waited for rather than read straight away.
-    await waitFor(() =>
-      expect(document.activeElement).toBe(screen.getByRole("button", { name: /^Move / })),
-    );
+    await waitFor(() => expect(segment("Draft pile", 1)).not.toBeNull());
+    expect(segment("Unfiled", 0)).not.toBeNull();
+    await act(async () => answer.resolve(false));
+    await waitFor(() => expect(segment("Draft pile", 0)).not.toBeNull());
+    expect(segment("Unfiled", 1)).not.toBeNull();
   });
 
-  it("says the move failed when it threw, and keeps the panel open", async () => {
+  it("says the move failed when it threw", async () => {
     // A throw is not a refusal: the reader can act on it. The folder was made
     // either way, so both halves are said.
     actionStub.move.mockRejectedValueOnce(new Error("outage"));
@@ -706,7 +725,6 @@ describe("DecksView", () => {
         [...container.querySelectorAll("[aria-live='polite']")].map((r) => r.textContent),
       ).toContain("Folder “Draft pile” created. That did not save. Try again."),
     );
-    expect(trigger).toHaveAttribute("aria-expanded", "true");
     // And the route is refetched, for the same reason the destination list
     // refetches on a throw: the action may have committed with its response
     // lost, and nothing else is coming.
@@ -755,8 +773,8 @@ describe("DecksView", () => {
     expect(routerStub.refresh).not.toHaveBeenCalled();
 
     actionStub.move.mockRejectedValueOnce(new Error("outage"));
-    // The panel is still open on its menu — a refusal returns it there — so the
-    // Move row is the one to click, not the ⋯ again.
+    // The panel closed on the press, so it is opened again.
+    fireEvent.click(screen.getAllByRole("button", { name: /^Actions for/ })[0]);
     fireEvent.click(screen.getByRole("button", { name: /^Move / }));
     fireEvent.click(screen.getByRole("button", { name: "Commander night" }));
     await waitFor(() => expect(routerStub.refresh).toHaveBeenCalledTimes(1));
@@ -797,14 +815,90 @@ describe("DecksView", () => {
         document.querySelector("[data-shelf-line] button[aria-current='true']"),
       ),
     );
-    // And the panel went with it rather than staying open on a card that is
-    // still in the grid because the payload has not landed yet. The TRIGGER
-    // says so: the Move row exists only in the panel's menu mode, so its absence
-    // is also what an open destination list looks like.
-    expect(within(card).getByRole("button", { name: /^Actions for/ })).toHaveAttribute(
-      "aria-expanded",
-      "false",
+    // And the card went with the press rather than staying in the grid until
+    // the payload lands: the move is optimistic (H24).
+    expect(card).not.toBeInTheDocument();
+  });
+
+  // ── The optimistic move (Hugh's walk, H24) ──────────────────────────────
+  //
+  // Every case holds the action open with a deferred promise, so what is read
+  // before it settles is what the reader sees during the round trip.
+
+  it("moves the deck and its counts on the press, before the action answers", async () => {
+    const answer = deferred<boolean>();
+    actionStub.move.mockReturnValueOnce(answer.promise);
+    window.history.replaceState(null, "", "/decks?folder=none");
+    const { rerender } = renderWide(view(shelvedDecks(), twoFolders));
+    expect(segment("Unfiled", 1)).not.toBeNull();
+    moveFromCard("Unfiled one", "Commander night");
+    // Still unanswered, and the deck has already left the Unfiled shelf.
+    expect(actionStub.move).toHaveBeenCalledWith("u1", FOLDER_B);
+    expect(screen.queryByText("Unfiled one")).toBeNull();
+    expect(segment("Unfiled", 0)).not.toBeNull();
+    expect(segment("Commander night", 2)).not.toBeNull();
+    // The payload agreeing, then the answer: nothing moves back.
+    const moved = shelvedDecks().map((d) =>
+      d.id === "u1" ? { ...d, folderId: FOLDER_B, folderName: "Commander night" } : d,
     );
+    rerender(view(moved, twoFolders));
+    await act(async () => answer.resolve(true));
+    expect(segment("Commander night", 2)).not.toBeNull();
+    expect(routerStub.refresh).not.toHaveBeenCalled();
+  });
+
+  // React entangles every async transition in flight, so a promise left
+  // pending would hold every later test's prediction too. Each one is settled.
+  it("names the new shelf on the deck's own Move row before the action answers", async () => {
+    const answer = deferred<boolean>();
+    actionStub.move.mockReturnValueOnce(answer.promise);
+    renderWide(view(shelvedDecks(), twoFolders));
+    moveFromCard("Unfiled one", "Commander night");
+    const card = screen.getByText("Unfiled one").closest("li")!;
+    fireEvent.click(within(card).getByRole("button", { name: /^Actions for/ }));
+    expect(within(card).getByRole("button", { name: /^Move / })).toHaveTextContent(
+      "Move · Commander night",
+    );
+    await act(async () => answer.resolve(true));
+  });
+
+  it("announces the move on the press", async () => {
+    const answer = deferred<boolean>();
+    actionStub.move.mockReturnValueOnce(answer.promise);
+    renderWide(view(shelvedDecks(), twoFolders));
+    moveFromCard("Unfiled one", "Commander night");
+    expect(said()).toContain("Filed under Commander night.");
+    await act(async () => answer.resolve(true));
+  });
+
+  it("puts the deck and the counts back when the action refuses", async () => {
+    const answer = deferred<boolean>();
+    actionStub.move.mockReturnValueOnce(answer.promise);
+    window.history.replaceState(null, "", "/decks?folder=none");
+    renderWide(view(shelvedDecks(), twoFolders));
+    moveFromCard("Unfiled one", "Commander night");
+    expect(screen.queryByText("Unfiled one")).toBeNull();
+    await act(async () => answer.resolve(false));
+    await waitFor(() => expect(screen.getByText("Unfiled one")).toBeInTheDocument());
+    expect(segment("Unfiled", 1)).not.toBeNull();
+    expect(segment("Commander night", 1)).not.toBeNull();
+    // A refusal revalidated on its way back; only a throw refetches.
+    expect(routerStub.refresh).not.toHaveBeenCalled();
+    // The press already said "Filed under", so the revert is said too.
+    expect(said()).toContain(folderCopy.move.refused);
+  });
+
+  it("says a thrown move failed, puts the deck back and refetches", async () => {
+    const answer = deferred<boolean>();
+    actionStub.move.mockReturnValueOnce(answer.promise);
+    renderWide(view(shelvedDecks(), twoFolders));
+    moveFromCard("Unfiled one", "Commander night");
+    expect(segment("Commander night", 2)).not.toBeNull();
+    await act(async () => answer.reject(new Error("outage")));
+    expect(said()).toContain("That did not save. Try again.");
+    await waitFor(() => expect(segment("Commander night", 1)).not.toBeNull());
+    expect(segment("Unfiled", 1)).not.toBeNull();
+    expect(routerStub.refresh).toHaveBeenCalledTimes(1);
   });
 
   it("ignores a hand-edited folder id", () => {

@@ -50,8 +50,7 @@ describe("DeckCard", () => {
       <DeckCard
         folders={[]}
         onCreateFolder={() => {}}
-        say={() => {}}
-        onMoved={() => {}}
+        onMove={() => {}}
         keepsFocus
         closeAfterCreate={null}
         deck={deck({ statusPill: "Complete", toBuyCount: 0, lastPlayedAt: null })}
@@ -76,7 +75,7 @@ describe("DeckCard", () => {
   // collection reader forbids everywhere else.
   it("captions the tile with the name printed on the copy the player owns", () => {
     render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null}
         deck={deck({
           commanderName: "Iroas, God of Victory",
           commanderPrintedName: "Freya, Queen of the Valkyries",
@@ -93,7 +92,7 @@ describe("DeckCard", () => {
   // prevent.
   it("keeps the oracle name when the copy owned prints it", () => {
     render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null}
         deck={deck()} shopping={undefined} now={now} />,
     );
 
@@ -102,7 +101,7 @@ describe("DeckCard", () => {
 
   it("shows the status, the count with its denominator, and the explaining figure", () => {
     render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
     );
     expect(screen.getByText("To buy")).toBeInTheDocument();
     expect(screen.getByText("99 / 99")).toBeInTheDocument();
@@ -115,11 +114,11 @@ describe("DeckCard", () => {
   // card short, and its progress bar would stop just shy of full forever.
   it("measures a pair against 98 and a single commander against 99", () => {
     const pair = deck({ partnerName: "Kratos, Stoic Father", built: 98, statusPill: "Building" });
-    const { rerender } = render(<DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={pair} shopping={undefined} now={now} />);
+    const { rerender } = render(<DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={pair} shopping={undefined} now={now} />);
     expect(screen.getByText("98 / 98")).toBeInTheDocument();
 
     rerender(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck({ built: 98, statusPill: "Building" })} shopping={undefined} now={now} />,
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck({ built: 98, statusPill: "Building" })} shopping={undefined} now={now} />,
     );
     expect(screen.getByText("98 / 99")).toBeInTheDocument();
   });
@@ -128,7 +127,7 @@ describe("DeckCard", () => {
   // two over its body, not one.
   it("counts a pair's overage against 98", () => {
     render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null}
         deck={deck({ partnerName: "Kratos, Stoic Father", built: 100, statusPill: "Over" })}
         shopping={undefined}
         now={now}
@@ -142,7 +141,7 @@ describe("DeckCard", () => {
   // roll-up's cost would be a figure and a price covering different cards.
   it("counts the roll-up's copies, not the deck's, so the count and the cost agree", () => {
     render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null}
         deck={deck({ toBuyCount: 3 })}
         shopping={{ copies: 1, cents: 620, pricedCopies: 1 }}
         now={now}
@@ -152,7 +151,7 @@ describe("DeckCard", () => {
   });
 
   it("prints the copies without a cost when nothing in the deck has a price", () => {
-    render(<DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={{ copies: 3, cents: 0, pricedCopies: 0 }} now={now} />);
+    render(<DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={{ copies: 3, cents: 0, pricedCopies: 0 }} now={now} />);
     expect(screen.getByText("3 to buy")).toBeInTheDocument();
   });
 
@@ -161,12 +160,12 @@ describe("DeckCard", () => {
   // surface sells them. Falling back to `toBuyCount` here would print an
   // "unowned" figure that disagrees with every other surface in the app.
   it("draws no figure for a To buy deck the roll-up has nothing for", () => {
-    render(<DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck({ toBuyCount: 3 })} shopping={undefined} now={now} />);
+    render(<DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck({ toBuyCount: 3 })} shopping={undefined} now={now} />);
     expect(screen.queryByText(/to buy/)).toBeNull();
   });
 
   it("has no call to action — the pill is the message and the tile is the target", () => {
-    render(<DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={undefined} now={now} />);
+    render(<DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={undefined} now={now} />);
     // One link (the whole tile) and one button (the overflow). Nothing else.
     expect(screen.getAllByRole("link")).toHaveLength(1);
     expect(screen.getAllByRole("button")).toHaveLength(1);
@@ -175,7 +174,7 @@ describe("DeckCard", () => {
 
   it("draws commander art on a New tile, because every deck has a commander", () => {
     const { container } = render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null}
         deck={deck({
           statusPill: "New",
           built: 0,
@@ -200,7 +199,7 @@ describe("DeckCard", () => {
   // gives a 102px cell at 640px — beside a 262px filter column — where 248 is a
   // portrait sliver. The handoff's floor is ~330px of column and this is it.
   it("draws the cell band above its column floor and the resume band below", () => {
-    const { container } = render(<DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={undefined} now={now} />);
+    const { container } = render(<DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={undefined} now={now} />);
     const band = container.querySelector<HTMLElement>("[data-deck-art]")!;
     expect(band.className).toContain("h-[168px]");
     expect(band.className).toContain("@min-[330px]:h-[248px]");
@@ -224,7 +223,7 @@ describe("DeckCard", () => {
 
   it("leaves a Draft tile's track empty and its last-played slot unrendered", () => {
     render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null}
         deck={deck({ statusPill: "Draft", built: 0, lastPlayedAt: null, createdAt: now })}
         shopping={undefined}
         now={now}
@@ -242,7 +241,7 @@ describe("DeckCard", () => {
   // answering a question, and if last-played matters it belongs in the overflow
   // menu or on the deck's own page.
   it("draws nothing where never played used to sit", () => {
-    render(<DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck({ lastPlayedAt: null })} shopping={undefined} now={now} />);
+    render(<DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck({ lastPlayedAt: null })} shopping={undefined} now={now} />);
     expect(screen.queryByText("never played")).toBeNull();
   });
 
@@ -257,7 +256,7 @@ describe("DeckCard", () => {
       [{ statusPill: "Building", built: 87 }, "87 / 99"],
     ];
     for (const [over, text] of cases) {
-      const { unmount } = render(<DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck(over)} shopping={undefined} now={now} />);
+      const { unmount } = render(<DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck(over)} shopping={undefined} now={now} />);
       expect(screen.getByText(text)).toBeInTheDocument();
       unmount();
     }
@@ -265,7 +264,7 @@ describe("DeckCard", () => {
 
   it("gives a Complete tile no detail figure at all", () => {
     render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null}
         deck={deck({ statusPill: "Complete", toBuyCount: 0, ownedCount: 99, built: 99 })}
         shopping={undefined}
         now={now}
@@ -279,7 +278,7 @@ describe("DeckCard", () => {
 
   it("fills an empty detail slot with the in-use-elsewhere clause", () => {
     render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null}
         deck={deck({ statusPill: "Building", built: 87, inUseElsewhere: 3 })}
         shopping={undefined}
         now={now}
@@ -294,7 +293,7 @@ describe("DeckCard", () => {
   // bar beside it.
   it("draws no clause on a Complete tile, which has no figure of its own", () => {
     render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null}
         deck={deck({ statusPill: "Complete", toBuyCount: 0, ownedCount: 99, inUseElsewhere: 3 })}
         shopping={undefined}
         now={now}
@@ -305,7 +304,7 @@ describe("DeckCard", () => {
 
   it("never lets the clause displace a status's own figure", () => {
     render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null}
         deck={deck({ statusPill: "Unresolved", unresolvedCount: 2, inUseElsewhere: 3 })}
         shopping={undefined}
         now={now}
@@ -320,7 +319,7 @@ describe("DeckCard", () => {
   // its count rather than being told a date it does not have.
   it("falls back to the count for a Draft older than the day it was created", () => {
     render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null}
         deck={deck({ statusPill: "Draft", built: 0, createdAt: daysBefore(9) })}
         shopping={undefined}
         now={now}
@@ -339,7 +338,7 @@ describe("DeckCard", () => {
   // the block and again from the link.
   it("hides the presentation the link's own name already states", () => {
     const { container } = render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
     );
     const block = container.querySelector("[data-wash-label]")!;
     const footer = container.querySelector(".deck-card-footer")!;
@@ -355,7 +354,7 @@ describe("DeckCard", () => {
 
   it("names the whole tile for a screen reader, in the order the tile reads", () => {
     render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
     );
     expect(
       screen.getByRole("link", {
@@ -370,7 +369,7 @@ describe("DeckCard", () => {
 
     it("draws no mark on any tile", () => {
       const { container } = render(
-        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck({ statusPill: "Draft" })} shopping={undefined} now={now} />,
+        <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck({ statusPill: "Draft" })} shopping={undefined} now={now} />,
       );
       const chip = container.querySelector("[data-deck-chips]") as HTMLElement;
       expect(chip.style.borderLeft).toBe("");
@@ -383,14 +382,14 @@ describe("DeckCard", () => {
     // it is the figure that deck will draw the moment it commits.
     it("keeps a draft's count figure in the detail row", () => {
       render(
-        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck({ statusPill: "Draft", built: 104, unresolvedCount: 0 })} shopping={undefined} now={now} />,
+        <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck({ statusPill: "Draft", built: 104, unresolvedCount: 0 })} shopping={undefined} now={now} />,
       );
       expect(screen.getByText("5 over")).toBeInTheDocument();
     });
 
     it("gives a draft the To buy roll-up figure it would commit into", () => {
       render(
-        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck({ statusPill: "Draft", built: 99, ownedCount: 96 })} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
+        <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck({ statusPill: "Draft", built: 99, ownedCount: 96 })} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
       );
       expect(screen.getByText("3 to buy · $18.40")).toBeInTheDocument();
     });
@@ -407,7 +406,7 @@ describe("DeckCard", () => {
     // mutation it was written for.
     it("does not let a proxied commander cover a missing body card", () => {
       render(
-        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
+        <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null}
           deck={deck({ statusPill: "Draft", built: 99, ownedCount: 98, toBuyCount: 1, proxiedCount: 1 })}
           shopping={undefined} now={now} />,
       );
@@ -421,7 +420,7 @@ describe("DeckCard", () => {
     // draft draws nothing and then flips to `To buy` on its first commit.
     it("gives a draft whose copies are all spoken for its To buy figure", () => {
       render(
-        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
+        <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null}
           deck={deck({ statusPill: "Draft", built: 99, ownedCount: 99, toBuyCount: 0 })}
           shopping={{ copies: 12, cents: 4200, pricedCopies: 12 }} now={now} />,
       );
@@ -432,7 +431,7 @@ describe("DeckCard", () => {
     // rather than the count vanished from all of them.
     it("keeps the in-use-elsewhere clause on a short draft", () => {
       render(
-        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
+        <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null}
           deck={deck({ statusPill: "Draft", built: 47, ownedCount: 47, toBuyCount: 0, inUseElsewhere: 3 })}
           shopping={undefined} now={now} />,
       );
@@ -441,7 +440,7 @@ describe("DeckCard", () => {
 
     it("still prints the change figure for a committed deck whose draft moved", () => {
       render(
-        <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={committed({ pendingChanges: 36 })} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
+        <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={committed({ pendingChanges: 36 })} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
       );
       expect(screen.getByText("36 changes since v2")).toBeInTheDocument();
     });
@@ -452,7 +451,7 @@ describe("DeckCard", () => {
   // than an information one.
   it("names both commanders of a pair", () => {
     render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null}
         deck={deck({
           commanderName: "Ishai, Ojutai Dragonspeaker",
           partnerName: "Bruse Tarl, Boorish Herder",
@@ -482,7 +481,7 @@ describe("DeckCard", () => {
   // regression passed them all.
   it("words a pair's colour as the union of both identities", () => {
     render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null}
         deck={deck({
           commanderName: "Ishai, Ojutai Dragonspeaker",
           commanderColorIdentity: ["W", "U"],
@@ -506,7 +505,7 @@ describe("DeckCard", () => {
   // screen reader and passes a property check on both columns while being wrong.
   it("renders the phone and desktop layouts from one set of nodes", () => {
     const { container } = render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
     );
     expect(screen.getAllByText("3 to buy · $18.40")).toHaveLength(1);
     expect(container.querySelectorAll("[data-deck-art]")).toHaveLength(1);
@@ -516,7 +515,7 @@ describe("DeckCard", () => {
   // and the status chip. Everything else sits below a divider on flat ground.
   it("prints the commander name and its colour under the deck name, in the band", () => {
     render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null}
         deck={deck({ name: "Blink and you'll miss it", commanderName: "Yuriko, the Tiger's Shadow" })}
         shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }}
         now={now}
@@ -534,7 +533,7 @@ describe("DeckCard", () => {
 
   it("separates the band from the data with a divider", () => {
     const { container } = render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
     );
     const footer = container.querySelector(".deck-card-footer") as HTMLElement;
     expect(footer.style.borderTop).toBe("1px solid var(--border)");
@@ -547,7 +546,7 @@ describe("DeckCard — the progress sentence", () => {
   // what leaves the block above carrying identity alone, which is what drops the
   // band's `labelAt` from 78 to 46 and turns 32px of darkness back into art.
   it("moves the status chip off the art and onto the bar's row", () => {
-    const { container } = render(<DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={undefined} now={now} />);
+    const { container } = render(<DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={undefined} now={now} />);
     const band = container.querySelector<HTMLElement>("[data-deck-art]")!;
     expect(band.textContent).not.toContain("To buy");
 
@@ -562,7 +561,7 @@ describe("DeckCard — the progress sentence", () => {
   // redundancy one layer down, and at a 189px column the word is what stays
   // legible — an earlier round had this backwards.
   it("draws no identity pips", () => {
-    const { container } = render(<DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={undefined} now={now} />);
+    const { container } = render(<DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={undefined} now={now} />);
     const footer = container.querySelector<HTMLElement>(".deck-card-footer")!;
     expect(footer.querySelectorAll('[aria-hidden="true"]')).toHaveLength(0);
     expect(footer.className).not.toContain("pips");
@@ -571,7 +570,7 @@ describe("DeckCard — the progress sentence", () => {
 
 describe("DeckCard — the bracket chip", () => {
   const card = (bracket: DeckListItem["bracket"]) =>
-    render(<DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck({ bracket })} shopping={undefined} now={now} />);
+    render(<DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck({ bracket })} shopping={undefined} now={now} />);
 
   // Round 0 §5: "a deck we have not read draws no chip", not a dash.
   it("draws no chip for a deck that has not been read", () => {
@@ -611,7 +610,7 @@ describe("DeckCard — the footer's three rows", () => {
   // when there is nothing to put in it, so every tile on /decks is one height.
   it("draws the detail row on a tile with no figure and no date, empty", () => {
     const { container } = render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null}
         deck={deck({ statusPill: "Building", built: 87, lastPlayedAt: null, inUseElsewhere: 0 })}
         shopping={undefined}
         now={now}
@@ -624,7 +623,7 @@ describe("DeckCard — the footer's three rows", () => {
 
   it("puts a figure in it when there is one", () => {
     const { container } = render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck({ statusPill: "Over", built: 104 })} shopping={undefined} now={now} />,
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck({ statusPill: "Over", built: 104 })} shopping={undefined} now={now} />,
     );
     expect(container.querySelector("[data-deck-detail]")!.textContent).toContain("5 over");
   });
@@ -632,7 +631,7 @@ describe("DeckCard — the footer's three rows", () => {
   // H6: last played at BOTH widths now, so it carries no `sm:` gate.
   it("draws last played at every width", () => {
     render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null}
         deck={deck({ statusPill: "Building", built: 87, lastPlayedAt: daysBefore(2) })} shopping={undefined} now={now} />,
     );
     const played = screen.getByText(formatWhen(daysBefore(2), now));
@@ -643,7 +642,7 @@ describe("DeckCard — the footer's three rows", () => {
   // detail row carries `created today` alone.
   it("draws no last played for a New deck with a logged game", () => {
     const { container } = render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null}
         deck={deck({
           statusPill: "New",
           built: 0,
@@ -662,19 +661,19 @@ describe("the tile's proxy line", () => {
   it("draws it on a Complete deck, in the detail slot", () => {
     // The deck page shows the marks; the grid shows a bare pill. Two `Complete`
     // decks — one cardboard, one half paper — are otherwise identical here.
-    render(<DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} now={now} deck={deck({ statusPill: "Complete", proxiedCount: 7 })} shopping={undefined} />);
+    render(<DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} now={now} deck={deck({ statusPill: "Complete", proxiedCount: 7 })} shopping={undefined} />);
     expect(screen.getByText(proxyCopy.deckCard.line(7))).toBeTruthy();
   });
 
   it("is absent at zero", () => {
-    render(<DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} now={now} deck={deck({ statusPill: "Complete", proxiedCount: 0 })} shopping={undefined} />);
+    render(<DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} now={now} deck={deck({ statusPill: "Complete", proxiedCount: 0 })} shopping={undefined} />);
     expect(screen.queryByText(/proxies/)).toBeNull();
   });
 
   it("yields to the clause that says what is holding the deck up", () => {
     // `3 in use elsewhere` answers a question; a proxy is not holding anything up.
     render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} now={now}
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} now={now}
         deck={deck({ statusPill: "Building", built: 87, inUseElsewhere: 3, proxiedCount: 2 })}
         shopping={undefined}
       />,
@@ -684,7 +683,7 @@ describe("the tile's proxy line", () => {
 
   it("takes the slot on a Building deck with nothing in use elsewhere", () => {
     render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} now={now}
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} now={now}
         deck={deck({ statusPill: "Building", built: 87, inUseElsewhere: 0, proxiedCount: 2 })}
         shopping={undefined}
       />,
@@ -699,7 +698,7 @@ describe("the tile's proxy line yields where the slot is deliberately empty", ()
     // roll-up entry, so `statusDetailFor` returns null on purpose — and printing
     // a proxy count there takes a slot that is meant to stay empty.
     render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} now={now}
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} now={now}
         deck={deck({ statusPill: "To buy", proxiedCount: 3 })}
         shopping={undefined}
       />,
@@ -710,7 +709,7 @@ describe("the tile's proxy line yields where the slot is deliberately empty", ()
 
 describe("DeckCard — the notice mark (tile marker addendum)", () => {
   const card = (over: Partial<DeckListItem>) =>
-    render(<DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck(over)} shopping={undefined} now={now} />);
+    render(<DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck(over)} shopping={undefined} now={now} />);
   const mark = (c: HTMLElement) => c.querySelector<HTMLElement>("[data-notice-mark]");
 
   it("draws no mark for a deck with no notice", () => {

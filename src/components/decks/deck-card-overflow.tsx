@@ -37,29 +37,27 @@ interface DeckCardOverflowProps {
   folderName: string | null;
   /** Opens the route's create dialog — `New folder…` is the move list's last row. */
   onCreateFolder: () => void;
-  /** The route's own live region, which outlives this panel's mode switch. */
-  say: (announcement: string) => void;
   /**
-   * Refreshes the route after a move — the grid and every count are the view's —
-   * and says whether the move was refused, because a refusal can mean the deck
-   * is gone and this card with it.
+   * The view's one optimistic move for this deck. The grid, every count and the
+   * announcement are the view's, so this panel only says where the deck went;
+   * the deck's new shelf comes back down as `folderId` and `folderName` on the
+   * press, and a refusal takes it back the same way.
    */
-  onMoved: (result: { refused: boolean; threw?: boolean }) => void;
+  onMove: (to: { id: string | null; name: string | null }) => void;
   /**
    * Whether this card stays on screen after a move — true on All decks, false on
    * a named shelf, where the deck leaves the grid and the view takes focus.
    */
   keepsFocus: boolean;
   /**
-   * The outcome of a create started from THIS card's move mode, once the route's
-   * dialog has made the folder and tried to file the deck into it. That path
-   * never reaches the handlers below — the move is performed by the dialog, not
-   * by the destination list — so the panel is told directly, and acts exactly as
-   * it would have: closing on a move that landed, returning to its menu on one
-   * that did not. `seq` rather than a boolean alone, so a second create on the
-   * same card is a new instruction. Null for every other card.
+   * A create started from THIS card's move mode, once the route's dialog has
+   * made the folder and filed the deck into it. That path never reaches the
+   * handlers below — the move is performed by the dialog, not by the destination
+   * list — so the panel is told directly, and closes exactly as it would have.
+   * A `seq`, so a second create on the same card is a new instruction. Null for
+   * every other card.
    */
-  closeAfterCreate: { seq: number; filed: boolean } | null;
+  closeAfterCreate: { seq: number } | null;
 }
 
 /**
@@ -76,8 +74,7 @@ export function DeckCardOverflow({
   folderId,
   folderName,
   onCreateFolder,
-  say,
-  onMoved,
+  onMove,
   keepsFocus,
   closeAfterCreate,
 }: DeckCardOverflowProps) {
@@ -131,30 +128,15 @@ export function DeckCardOverflow({
     setMode("delete");
   }
 
-  // Optimistic, because the tile's own menu is the only place the fact is
-  // stated: the server revalidates `/decks` behind this, and re-reading before
-  // painting would leave the row naming the old shelf for a round trip.
-  const [movedTo, setMovedTo] = useState<
-    { id: string | null; name: string | null; from: string | null } | null
-  >(null);
-  // A ref, not state: this is a one-shot instruction to the DOM after a commit,
-  // and holding it in state would mean setting state inside the effect that
-  // consumes it — the cascading render this repo's lint rejects.
-  const wantsMoveRowFocus = useRef(false);
-  const moveRow = useRef<HTMLButtonElement>(null);
-  // The same one-shot instruction for the delete pane's cancel, which unmounts
-  // holding focus. Its own ref rather than a shared flag, because the two modes
-  // return to different rows.
+  // A ref, not state: the delete pane's cancel unmounts holding focus, and this
+  // is a one-shot instruction to the DOM after a commit. Holding it in state
+  // would mean setting state inside the effect that consumes it — the cascading
+  // render this repo's lint rejects.
   const wantsDeleteRowFocus = useRef(false);
   const deleteRow = useRef<HTMLButtonElement>(null);
-  // The optimistic receipt EXPIRES ON THE FIRST CHANGED SERVER PROP, whether it
-  // agrees or not. Clearing only on agreement left it standing forever when the
-  // destination was deleted or the deck moved elsewhere before the refresh
-  // landed: the id never matched, and the menu went on printing a shelf that
-  // was no longer true. `from` is what the server said when the override was
-  // made, so any change to that is the answer arriving.
-  if (movedTo && movedTo.from !== folderId) setMovedTo(null);
-  const shelf = movedTo ?? { id: folderId, name: folderName };
+  // No override of its own: the view's optimistic list hands the new shelf down
+  // on the press, and drops it again on a refusal.
+  const shelf = { id: folderId, name: folderName };
   const shelfLabel = shelf.name ?? folderCopy.shelves.unfiled;
 
   // The seq already acted on. A ref because this is a one-shot instruction
@@ -163,7 +145,7 @@ export function DeckCardOverflow({
   const closedSeq = useRef(closeAfterCreate?.seq ?? null);
   useEffect(() => {
     if (closeAfterCreate === null || closeAfterCreate.seq === closedSeq.current) return;
-    const { seq, filed } = closeAfterCreate;
+    const { seq } = closeAfterCreate;
     // EVERYTHING A FRAME LATER, and for one reason: the dialog that performed
     // this move is unmounting in the same commit, and its focus trap restores
     // focus to the control that opened it — a destination row that has gone with
@@ -176,35 +158,16 @@ export function DeckCardOverflow({
       // callbacks are inline, so it does — would then see its own instruction as
       // already handled and drop it.
       closedSeq.current = seq;
-      if (!filed) {
-        // M6, the answer `onRefused` gives: nothing happened, so the panel
-        // returns to the row naming the shelf this deck is still on, rather than
-        // to a destination list left behind a dismissed dialog. There is no
-        // optimistic override to clear — this path never set one, because the
-        // move was performed by the dialog.
-        // The flag, not a direct focus call: the row does not exist until the
-        // mode change commits, and the effect below is what waits for that.
-        wantsMoveRowFocus.current = true;
-        setMode("menu");
-        return;
-      }
       // Errata E21: the act is finished, so the panel goes. On All decks the ⋯
       // survives and takes focus; on a named shelf the deck has left the shelf
-      // being viewed and this card goes with it, so focus is handed to the view,
-      // which knows to put it on the shelf control.
+      // being viewed with the move, and the view's dialog rescue puts focus on
+      // the shelf control.
       setOpen(false);
       setMode("menu");
       if (keepsFocus) buttonRef.current?.focus();
-      else onMoved({ refused: false });
     });
     return () => cancelAnimationFrame(frame);
-  }, [buttonRef, closeAfterCreate, keepsFocus, onMoved]);
-
-  useEffect(() => {
-    if (mode !== "menu" || !wantsMoveRowFocus.current) return;
-    wantsMoveRowFocus.current = false;
-    moveRow.current?.focus();
-  }, [mode]);
+  }, [buttonRef, closeAfterCreate, keepsFocus]);
 
   useEffect(() => {
     if (mode !== "menu" || !wantsDeleteRowFocus.current) return;
@@ -321,7 +284,6 @@ export function DeckCardOverflow({
                   rendered — it is gated on `built > 0`, so the shipped menu is
                   two rows on a brew (errata E9). */}
               <button
-                ref={moveRow}
                 type="button"
                 onClick={handleMove}
                 aria-label={folderCopy.move.rowAria(deckName, shelfLabel)}
@@ -345,33 +307,18 @@ export function DeckCardOverflow({
             </div>
           ) : mode === "move" ? (
             <MoveMode
-              deckId={deckId}
               deckName={deckName}
               folders={folders}
               currentId={shelf.id}
               onCreate={onCreateFolder}
-              say={say}
-              onRefused={({ threw }) => {
-                // M6: the row reverts to the shelf it named, which means the
-                // menu — not a destination list whose focused button is about
-                // to be refreshed away.
-                setMovedTo(null);
-                // ONLY WHERE THE VIEW IS NOT RESCUING. A `false` is reported as
-                // a refusal below, and the view answers that by focusing the
-                // shelf, because the deck may be gone and this card with it —
-                // two focus calls in one commit, and the later one wins.
-                wantsMoveRowFocus.current = threw;
-                setMode("menu");
-                // A `false` IS the refusal, and the view reads that flag to
-                // decide whether this card may have gone: the deck being absent
-                // is one of the two things it means. A throw is not — nothing
-                // moved — so only the refetch it asks for is reported.
-                onMoved({ refused: !threw, threw });
-              }}
-              onMoved={(next) => {
-                setMovedTo({ ...next, from: folderId });
-                // THE MENU CLOSES. Design made the Move row the receipt and had
-                // the panel return to it; Hugh overruled that on 2026-09-13 —
+              onMove={(next) => {
+                // THE MENU CLOSES, ON THE PRESS. Waiting for the action left
+                // the panel open over a deck that had not moved for a round
+                // trip (Hugh's walk, H24); the view moves it optimistically and
+                // takes it back if the server refuses.
+                //
+                // Design made the Move row the receipt and had the panel return
+                // to it; Hugh overruled that on 2026-09-13 —
                 // the act is finished, so the panel that performed it goes
                 // (errata E21). The receipt is the announcement, plus the tile
                 // leaving the grid on a named shelf.
@@ -381,10 +328,9 @@ export function DeckCardOverflow({
                 // and the view focuses the shelf control instead.
                 if (keepsFocus) handleClose();
                 else setOpen(false);
-                // The list, its counts and both denominators live in the view;
-                // without this a deck moved off the shelf being viewed stays in
-                // the grid and every figure above it is stale.
-                onMoved({ refused: false });
+                // The list, its counts and both denominators live in the view,
+                // and so does the move that changes them.
+                onMove(next);
               }}
             />
           ) : mode === "delete" ? (
