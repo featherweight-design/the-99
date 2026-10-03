@@ -11,7 +11,7 @@ const fieldsFor = (slug: string): DrawFields => ({
 
 /** A fetch the test answers by hand, so what is in flight at any moment is observable. */
 function manualFetch() {
-  const calls: { url: string; signal: AbortSignal; answer: () => void; fail: () => void; stale: () => void; omit: (gone: string) => void }[] = [];
+  const calls: { url: string; signal: AbortSignal; answer: () => void; fail: () => void; omit: (gone: string) => void }[] = [];
   const fn = vi.fn((url: string, init: RequestInit) =>
     new Promise<Response>((resolve, reject) => {
       const signal = init.signal as AbortSignal;
@@ -22,7 +22,6 @@ function manualFetch() {
         signal,
         answer: () => resolve(new Response(JSON.stringify({ fields: Object.fromEntries(slugs.map((s) => [s, fieldsFor(s)])) }))),
         fail: () => resolve(new Response("", { status: 500 })),
-        stale: () => resolve(new Response(JSON.stringify({ fields: {}, stale: true }))),
         omit: (gone: string) =>
           resolve(new Response(JSON.stringify({
             fields: Object.fromEntries(slugs.filter((s) => s !== gone).map((s) => [s, fieldsFor(s)])),
@@ -244,20 +243,18 @@ describe("useDrawFields", () => {
     expect(new URL(net.calls[1].url, "http://x").searchParams.get("s")!.split(",")[0]).toBe("c0");
   });
 
-  // A route that names its list's version answers `stale` from a list rebuilt since the page was
-  // served: those fields belong to other rows, so nothing is merged and the page is read again.
-  // It is read at once even from a BACKGROUND batch, where no row the reader waits on went
-  // missing, which is what a left-out row alone would wait for.
-  it("merges nothing from a stale answer and reads the page again, once", async () => {
+  // A list sent for a fresh read asks for nothing more: what it would fetch belongs to the payload
+  // the page is replacing, and every batch would hold the one in-flight slot.
+  it("asks for nothing more of a list once it has sent the page for a fresh read", async () => {
     const onStale = vi.fn();
-    const drawn = all.slice(0, 2).map((r) => ({ ...r, ...fieldsFor(r.slug) })) as DiscoveryRow[];
-    const { result } = renderHook(() => useDrawFields("fit", all, drawn, onStale));
+    const { rerender } = renderHook(({ wanted }: { wanted: DiscoveryRow[] }) => useDrawFields("fit", all, wanted, onStale), {
+      initialProps: { wanted: [all[0]] },
+    });
     await waitFor(() => expect(net.calls).toHaveLength(1));
-    await act(async () => net.calls[0].stale());
+    await act(async () => net.calls[0].omit("c0"));
     await waitFor(() => expect(onStale).toHaveBeenCalledTimes(1));
-    expect(result.current.resolve(all[5])).toBeNull();
-    // And asks for nothing more of the list it has sent away: the rest of its rows belong to a
-    // payload the page is replacing.
+    // Show more on the list being replaced, before the fresh payload lands.
+    rerender({ wanted: [all[0], all[240]] });
     await new Promise((r) => setTimeout(r, 300));
     expect(onStale).toHaveBeenCalledTimes(1);
     expect(net.calls).toHaveLength(1);

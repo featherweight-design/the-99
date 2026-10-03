@@ -133,24 +133,13 @@ function createFieldsLoop<Row extends object, Fields extends object>(onLanded: (
       const ac = new AbortController();
       controller = ac;
       // Whether this batch's payload is still the one the reader holds. Every late continuation
-      // checks it: a failure or a stale answer from a payload `update` has replaced belongs to a
+      // checks it: a failure from a payload `update` has replaced belongs to a
       // list nobody is drawing, and acting on it would undo the reset the new payload got.
       const current = () => input.all === all && input.source === source;
       for (const s of batch) asked.add(s);
       fetch(source.url(batch), { signal: ac.signal, credentials: "same-origin" })
         .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`fields ${r.status}`))))
-        .then((body: { fields: Record<string, Fields>; stale?: boolean }) => {
-          // The route answered from a list rebuilt since the page was served (a source that names
-          // its version): its fields belong to another version of these rows, so nothing is
-          // merged and the page is read again, once.
-          if (body.stale) {
-            const list = forList(all);
-            if (!list.refreshed) {
-              list.refreshed = true;
-              if (current()) onStale();
-            }
-            return;
-          }
+        .then((body: { fields: Record<string, Fields> }) => {
           for (const [key, f] of Object.entries(body.fields)) store.set(key, f);
           // The route leaves out a key its reader's list no longer holds; `pump` refreshes the
           // page the moment one of them is wanted, now or later.

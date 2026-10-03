@@ -29,7 +29,7 @@ export default async function CollectionPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const userId = await requireUserId();
-  const [stats, { cards, version }, lastUpdated, ownedSets, availability] = await Promise.all([
+  const [stats, cards, lastUpdated, ownedSets, availability] = await Promise.all([
     getCollectionStats(userId),
     // The heaviest read on this page by an order of magnitude, which is why it
     // is the one cached across visits.
@@ -118,7 +118,6 @@ export default async function CollectionPage({
           one card it is opening, the same way every deck surface does. */}
       <CollectionClient
         wire={wire}
-        version={version}
         ownedSets={ownedSets}
         availabilityOk={availability !== null}
         hasCollection={stats.totalCards > 0}

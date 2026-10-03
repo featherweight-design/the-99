@@ -143,6 +143,9 @@ describe("cutCollectionWindow / collectionDrawFieldsFor (list payload plan, PR 4
     const fields = collectionDrawFieldsFor([kept, cut], new Set(["b", "not-here"]));
     expect(Object.keys(fields)).toEqual(["b"]);
     const [, withheld] = decodeCollection(cutCollectionWindow(wire, new Set()));
-    expect({ ...fields.b, ...withheld, withheld: undefined }).toEqual({ ...cut, availability: null, withheld: undefined });
+    const { art, ...draw } = fields.b;
+    expect({ ...draw, ...withheld, withheld: undefined }).toEqual({ ...cut, availability: null, withheld: undefined });
+    // And the caption the art was resolved with, read off the same card.
+    expect(art).toEqual({ printedName: cut.printedName, primarySetCode: cut.primarySetCode });
   });
 });

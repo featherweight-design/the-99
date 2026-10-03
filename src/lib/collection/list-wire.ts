@@ -50,7 +50,16 @@ type WireCard = Omit<BrowseListCard, "availability" | CollectionDrawKey> &
  */
 export const COLLECTION_DRAW_KEYS = ["imageUri", "facts", "comboPartner", "comboOtherPartners"] as const;
 export type CollectionDrawKey = (typeof COLLECTION_DRAW_KEYS)[number];
-export type CollectionDrawFields = Partial<Pick<BrowseListCard, CollectionDrawKey>>;
+/**
+ * What a fields batch answers for a card: its draw fields, and the CAPTION its art was resolved
+ * with. A card's art, printed name and set code come off one printing, and a printing picked on
+ * another device moves all three while the page holds the older two. Sent together, the client
+ * draws the three from one read (see `useCollectionFields`), so no art lands under another
+ * printing's name, and no list-wide version has to stand guard over the batch.
+ */
+export type CollectionDrawFields = Partial<Pick<BrowseListCard, CollectionDrawKey>> & {
+  art?: Pick<BrowseListCard, "printedName" | "primarySetCode">;
+};
 
 /**
  * A card as the client holds it: whole, or WITHHELD, with its draw fields still to come. The mark
@@ -164,6 +173,7 @@ export function collectionDrawFieldsFor(
     for (const key of COLLECTION_DRAW_KEYS) {
       if (Object.hasOwn(card, key)) (fields as Record<string, unknown>)[key] = card[key];
     }
+    fields.art = { printedName: card.printedName, primarySetCode: card.primarySetCode };
     out[card.oracleId] = fields;
   }
   return out;

@@ -23,14 +23,11 @@ import { decodeCollection, type CollectionRow, type CollectionWire } from "../..
 
 export function CollectionClient({
   wire,
-  version,
   ownedSets,
   availabilityOk,
   hasCollection,
 }: {
   wire: CollectionWire;
-  /** The version of the cached list this payload came from (`loadCollectionList`). */
-  version: string;
   ownedSets: OwnedSetMeta[];
   availabilityOk: boolean;
   hasCollection: boolean;
@@ -86,7 +83,6 @@ export function CollectionClient({
       <CollectionBrowser
         cards={patched}
         served={cards}
-        version={version}
         ownedSets={ownedSets}
         availabilityOk={availabilityOk}
         hasCollection={hasCollection}
