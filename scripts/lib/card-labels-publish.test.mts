@@ -73,6 +73,14 @@ describe("publishing refuses an artifact that is not the default run", () => {
       expect(existsSync("docs/superpowers/benchmarks/2026-09-25-card-labels-cost.json")).toBe(false);
     });
 
+    it("keeps two numbers past the float range apart", () => {
+      write({ sonnet: {} });
+      process.env.LABEL_PUBLISH = "resample-9007199254740993";
+      publishArtifacts(["out/cost.json"], true);
+      expect(existsSync("docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-9007199254740993-cost.json")).toBe(true);
+      expect(existsSync("docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-9007199254740992-cost.json")).toBe(false);
+    });
+
     it("copies nothing when any one source would refuse", () => {
       writeFileSync("out/gates.json", "{}");
       writeFileSync("out/labels-haiku.json", "{}");

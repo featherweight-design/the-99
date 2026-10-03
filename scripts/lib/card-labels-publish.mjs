@@ -29,7 +29,7 @@ export const PUBLISHED = {
  * the sample's set membership are committed too: the first sample's stayed in an uncommitted `out/`, and the
  * empty-answer question could not be asked of them afterwards.
  *
- * @param {number} n
+ * @param {string} n The number as written, never converted, so two different numbers never share a path.
  */
 export function resamplePublished(n) {
   const at = `docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-${n}`;
@@ -42,11 +42,8 @@ export function resamplePublished(n) {
   };
 }
 const RESAMPLE_MODELS = ["sonnet"];
-/** The re-sample number `LABEL_PUBLISH` names, or null when it names no re-sample. */
-const resampleNumber = () => {
-  const m = /^resample-([1-9][0-9]*)$/.exec(process.env.LABEL_PUBLISH ?? "");
-  return m ? Number(m[1]) : null;
-};
+/** The re-sample number `LABEL_PUBLISH` names, as written, or null when it names no re-sample. */
+const resampleNumber = () => /^resample-([1-9][0-9]*)$/.exec(process.env.LABEL_PUBLISH ?? "")?.[1] ?? null;
 
 /**
  * Why the labels on disk cannot be published as the submitted run's, or null when they can. The labels file
