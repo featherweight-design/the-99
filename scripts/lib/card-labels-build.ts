@@ -39,7 +39,7 @@ import {
   type Chunk, type FamilySpend,
 } from "../../src/lib/labels/plan";
 import {
-  buildRequest, labelInputHash, LABEL_PROMPT_VERSION, MAX_TOKENS_PER_BATCH, renderBody,
+  buildRequest, labelInputHash, LABEL_PROMPT_VERSION, MAX_TOKENS_CEILING, MAX_TOKENS_PER_BATCH, renderBody,
   SENDS_CACHE_BREAKPOINT, SYSTEM_TOKENS_BOUND,
 } from "../../src/lib/labels/prompt";
 // `CardRow` comes from the same module as the read that returns it — two structurally identical
@@ -118,11 +118,17 @@ const BODY_OVERHEAD_TOKENS = renderBody(
   })),
 ).length; // characters, for the reason above
 
-/** One request's worst case: what a wave is sized by, and what an expired batch is reserved at. */
-const requestWorstFor = (rates: typeof RATES) => worstCaseUsd(
-  1, SYSTEM_TOKENS, PER_CARD_TOKENS, MAX_TOKENS_PER_BATCH, rates, BODY_OVERHEAD_TOKENS,
+const requestWorstFor = (rates: typeof RATES, maxTokens: number) => worstCaseUsd(
+  1, SYSTEM_TOKENS, PER_CARD_TOKENS, maxTokens, rates, BODY_OVERHEAD_TOKENS,
 );
-export const REQUEST_WORST_USD = requestWorstFor(RATES);
+/** One request's worst case at THIS run's ceiling: what a wave is sized by. */
+export const REQUEST_WORST_USD = requestWorstFor(RATES, MAX_TOKENS_PER_BATCH);
+/**
+ * What an EXPIRED request is reserved at: the worst case at `MAX_TOKENS_CEILING`, which no request can
+ * exceed. Not this run's ceiling, because the request that expired was sent by an earlier invocation
+ * that may have run under a different `LABEL_MAX_TOKENS`.
+ */
+const expiredReserveFor = (rates: typeof RATES) => requestWorstFor(rates, MAX_TOKENS_CEILING);
 
 /**
  * EXIT CODES, because a caller must not have to read prose to know what happened.
@@ -311,7 +317,10 @@ async function collectBatch(opts: BuildOptions, batchId: string, intents: Intent
 
   // One catalog read for the whole batch. THE SHARED HELPER: it runs only after a batch has come
   // BACK, so a broken read here fires with the money already spent.
-  const allNames = [...got.values()].flatMap((g) => [...g.byName.keys()]);
+  // The ASKED names as well as the replied ones: a card asked and since renamed, or since changed,
+  // has to be found to be judged moved, whether or not the reply carried it.
+  const allNames = [...new Set([...got.values()].flatMap((g) => [...g.byName.keys()])
+    .concat(intents.flatMap((i) => i.asked)))];
   const byName = new Map((await readCardsByName(db, allNames)).map((c) => [c.name, c]));
 
   return db.transaction(async (tx) => {
@@ -336,16 +345,23 @@ async function collectBatch(opts: BuildOptions, batchId: string, intents: Intent
     for (const intent of mine) {
       const here = got.get(intent.customId);
       const sentHash = intent.askedHashes;
-      const current = [...(here?.byName.keys() ?? [])]
-        .map((n) => byName.get(n))
-        .filter((c): c is CardRow => c !== undefined);
       // AN ANSWER DESCRIBES THE TEXT IT WAS ASKED ABOUT. Stamping it with today's hash would mark
-      // an answer to yesterday's oracle text as current for ever. A legacy intent (no record)
-      // stages as it always did.
-      const unmoved = sentHash === null ? current
-        : current.filter((c) => sentHash[c.name] === labelInputHash(c, MODEL));
-      moved += current.length - unmoved.length;
-      const rows = unmoved.map((c) => ({
+      // an answer to yesterday's oracle text as current for ever. Every ASKED card is judged,
+      // whether or not the reply carried it: one renamed since, which no longer resolves by its
+      // asked name, or one whose inputs moved, is left for the next plan and out of the floor —
+      // otherwise a single rename holds an otherwise good batch below the floor for ever. A card
+      // the model simply omitted is unchanged, and still counts against the floor. A legacy
+      // intent (no record) stages as it always did.
+      const changed = new Set(sentHash === null ? [] : intent.asked.filter((n) => {
+        const c = byName.get(n);
+        return c === undefined || sentHash[n] !== labelInputHash(c, MODEL);
+      }));
+      moved += changed.size;
+      const rows = [...(here?.byName.keys() ?? [])]
+        .filter((n) => !changed.has(n))
+        .map((n) => byName.get(n))
+        .filter((c): c is CardRow => c !== undefined)
+        .map((c) => ({
           // The INTENT's run, not this process's: a batch collected by a later run id is still
           // that earlier run's work, and its staging rows say so.
           runId: intent.runId, oracleId: c.oracleId, labels: here?.byName.get(c.name) ?? [],
@@ -641,7 +657,7 @@ export async function readFamilySpend(runId: string): Promise<FamilySpend> {
     .where(eq(cardLabelBatches.promptVersion, LABEL_PROMPT_VERSION));
   const byModel = new Map<string, typeof rows>();
   for (const r of rows) byModel.set(r.model, [...(byModel.get(r.model) ?? []), r]);
-  const own = familySpend(byModel.get(MODEL) ?? [], runId, LABEL_PROMPT_VERSION, RATES, REQUEST_WORST_USD);
+  const own = familySpend(byModel.get(MODEL) ?? [], runId, LABEL_PROMPT_VERSION, RATES, expiredReserveFor(RATES));
   let { expiredChunks, reserveUsd, totalUsd } = own;
   for (const [model, those] of byModel) {
     if (model === MODEL) continue;
@@ -651,7 +667,7 @@ export async function readFamilySpend(runId: string): Promise<FamilySpend> {
         + `rate. Refusing: spend that cannot be priced cannot be held to the cap.`);
     }
     const rates = ratesFor(key);
-    const other = familySpend(those, runId, LABEL_PROMPT_VERSION, rates, requestWorstFor(rates));
+    const other = familySpend(those, runId, LABEL_PROMPT_VERSION, rates, expiredReserveFor(rates));
     expiredChunks += other.expiredChunks;
     reserveUsd += other.reserveUsd;
     totalUsd += other.totalUsd;

@@ -22,8 +22,9 @@
 //   (f) AN OLDER PROMPT'S ANSWER IS NEVER PUBLISHED AS CURRENT. A run's own open intent asked under
 //       an older prompt is left uncollected and its cards are asked again; a row an older build
 //       staged under the same run id is overwritten by the new answer, not published in its place.
-//   (g) AN ANSWER DESCRIBES THE TEXT IT WAS ASKED ABOUT. A card whose oracle text moves while its
-//       batch is pending is not published under the new text's hash; it is asked again.
+//   (g) AN ANSWER DESCRIBES THE TEXT IT WAS ASKED ABOUT. A card whose oracle text moves, or whose
+//       NAME changes, while its batch is pending is not published under the new inputs' hash and
+//       does not count against the batch's floor; it is asked again.
 //   (h) EVERY MODEL COUNTS AGAINST THE FAMILY, each at its own rates, and a model with no
 //       canonical rate refuses rather than counting as free.
 //
@@ -144,6 +145,8 @@ let extra: { oracleId: string; name: string }[] = [];
 let moving: { oracleId: string; name: string }[] = [];
 /** The oracle text (g) changes, put back in the `finally`. */
 let movedText: { oracleId: string; text: string | null } | null = null;
+/** The name (g) changes, put back in the `finally`. */
+let movedName: { oracleId: string; name: string } | null = null;
 
 const run = (runId: string, capUsd: number, cards = scope) => runLabelBuild({
   client: fake, runId, capUsd, reportAtUsd: 100, floor: 0.95, dispatchCeilingUsd: 50, dryRun: false, scope: "all",
@@ -163,6 +166,8 @@ const spentInUnits = async (runId: string) => (await readFamilySpend(runId)).tot
 async function cleanup(): Promise<void> {
   // Each step on its own, so one failing cannot skip the rest — and a failed step is a failure.
   const steps: [string, () => Promise<unknown>][] = [
+    ["card name", () => movedName === null ? Promise.resolve()
+      : db.execute(sql`update cards set name = ${movedName.name} where oracle_id = ${movedName.oracleId}`)],
     ["card text", () => movedText === null ? Promise.resolve()
       : db.execute(sql`update cards set oracle_text = ${movedText.text} where oracle_id = ${movedText.oracleId}`)],
     ["ledger", () => db.delete(cardLabelBatches).where(inArray(cardLabelBatches.runId, probeRuns))],
@@ -332,14 +337,22 @@ async function main(): Promise<void> {
     sql`select oracle_text as text from cards where oracle_id = ${target.oracleId}`)).rows;
   movedText = { oracleId: target.oracleId, text };
   await db.execute(sql`update cards set oracle_text = coalesce(oracle_text, '') || ' (probe: errata)' where oracle_id = ${target.oracleId}`);
-  report("G2 collects and re-asks the moved card", (await run(RUN.g, 10 * r, moving)) === EXIT_MORE_WORK);
+  // A RENAME as well: the reply answers under the old name, which no longer resolves. Two of twelve
+  // is under the 95% floor, so the floor must judge the ten that still stand, not the twelve asked.
+  const renamed = moving[1];
+  movedName = { oracleId: renamed.oracleId, name: renamed.name };
+  const newName = `${renamed.name} (probe rename)`;
+  await db.execute(sql`update cards set name = ${newName} where oracle_id = ${renamed.oracleId}`);
+  report("G2 collects and re-asks the two that moved", (await run(RUN.g, 10 * r, moving)) === EXIT_MORE_WORK);
   const afterG2 = await db.select().from(cardLabels).where(inArray(cardLabels.oracleId, moving.map((c) => c.oracleId)));
-  report("the eleven unmoved cards are published and the moved one is not",
-    afterG2.length === 11 && !afterG2.some((l) => l.oracleId === target.oracleId), `${afterG2.length} published`);
+  report("the ten unmoved cards are published and the two that moved are not",
+    afterG2.length === 10 && !afterG2.some((l) => l.oracleId === target.oracleId || l.oracleId === renamed.oracleId),
+    `${afterG2.length} published`);
   const gIntents = await intentsOf(RUN.g);
-  report("the second request asks the moved card alone",
-    gIntents.length === 2 && gIntents.some((i) => i.asked.length === 1 && i.asked[0] === target.name),
-    gIntents.map((i) => i.asked.length).join(", "));
+  const second = gIntents.find((i) => i.asked.length === 2);
+  report("the second request asks those two alone, the renamed one by its new name",
+    gIntents.length === 2 && second !== undefined && second.asked.includes(target.name) && second.asked.includes(newName),
+    gIntents.map((i) => i.asked.join("|").slice(0, 80)).join(" ; "));
   report("G3 collects it and finishes", (await run(RUN.g, 10 * r, moving)) === EXIT_DONE);
   report("all twelve are now labelled", (await db.select().from(cardLabels)
     .where(inArray(cardLabels.oracleId, moving.map((c) => c.oracleId)))).length === 12);

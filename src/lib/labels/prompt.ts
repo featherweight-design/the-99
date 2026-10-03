@@ -380,15 +380,25 @@ export const renderBody = (cards: CardForPrompt[]) =>
  * run reserved budget for output no request has produced and sent smaller waves for it. 5,000
  * keeps about 30% over the largest measured reply.
  */
+export const MAX_TOKENS_CEILING = 5000;
+/**
+ * `LABEL_MAX_TOKENS` may only LOWER the ceiling, never raise it above `MAX_TOKENS_CEILING`. That is
+ * what lets the spend cap reserve a batch whose results EXPIRED at the ceiling: the request that
+ * expired may have been sent by an earlier invocation under a different override, and nothing
+ * records what it carried, so the reserve has to be a figure no request can exceed.
+ */
 export const MAX_TOKENS_PER_BATCH = (() => {
   const raw = process.env.LABEL_MAX_TOKENS;
-  if (raw === undefined || raw === "") return 5000;
+  if (raw === undefined || raw === "") return MAX_TOKENS_CEILING;
   const n = Number(raw);
   // NaN is the dangerous case, not the obvious one: it makes `worstTotal` NaN, and
   // `NaN > CAP_USD` is FALSE, so the spend guard waves the run through and the request
   // carries an invalid `max_tokens`. A bad ceiling has to refuse before submission.
   if (!Number.isInteger(n) || n < 1) {
     throw new Error(`LABEL_MAX_TOKENS must be a positive whole number of tokens, got "${raw}"`);
+  }
+  if (n > MAX_TOKENS_CEILING) {
+    throw new Error(`LABEL_MAX_TOKENS may only lower the ceiling: ${n} is above ${MAX_TOKENS_CEILING}`);
   }
   return n;
 })();
