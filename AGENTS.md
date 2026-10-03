@@ -2210,6 +2210,32 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   view, three checks fail at 390 (`194 shown, option said 39`). It writes only the account's About
   row, captured and restored. Point it at `local-dev`, **never production**.
 
+- `pnpm probe:edhrec-snapshot` proves How it works §5.2 against a real Postgres: the live half of
+  the app and the commander index read ONE EDHREC snapshot per commander. The index scores a
+  commander from its own fetch, and the live readers read `edhrec_cache` under a 30-day TTL, so
+  before this one commander could show figures from two snapshots a month apart. A cached page
+  fetched before the index fetched that commander is now RETIRED: `readEdhrecCache` joins
+  `commander_support` in its one SELECT and hands back the index's stamp (`computed_at`) beside
+  each row, and `resolveEdhrecData` refetches a retired page even inside the TTL (`cacheRowRetired`).
+
+  **The marker is per commander and already on both databases.** The index build stamps
+  `computed_at` when it writes a commander, and `db:copy:index` carries the column to production
+  exactly, so production needs no ledger row of its own to know when its index changed. **A retired
+  row is never deleted**: it stays the stale-on-error fallback when EDHREC cannot be reached.
+
+  It calls the real `readEdhrecCache` and `resolveEdhrecData` with `fetch` stubbed (a counter that
+  serves a fixture page, or fails), over two real indexed commanders and one card the index does
+  not hold: a current page served from the cache, a retired one refetched and stored past the
+  stamp, the TTL alone for an unindexed commander, a retired page served when EDHREC is down, a
+  copy landing (the stamp moved past a current page), and a retired page EDHREC confirms is gone,
+  which answers absent rather than the older snapshot while a throttle still serves it. A cleanup
+  step that fails counts as a failure, so a run that left the branch changed never passes. Five mutations fail it: the cutoff dropped,
+  an unindexed commander treated as indexed just now, a retired row treated as gone, and the stamp read off the wrong
+  table, and the confirmed-missing branch removed. It writes those rows' timestamps and puts back the exact text it read, in a `finally`;
+  through a `Date` they would come back shifted by this machine's zone, because both columns are
+  `timestamp` without one and Drizzle stores UTC. **Scratch branches only**: the database must
+  report `PROBE_SNAPSHOT_BRANCH`, and staging, production and local-dev are refused by id.
+
 - `pnpm probe:fill` proves `planFill` against a real Postgres and the real catalog — fourteen
   checks in seven sections, one per rule the fill gained when it stopped building to four
   asserted constants.
