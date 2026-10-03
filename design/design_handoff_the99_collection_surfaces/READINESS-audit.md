@@ -1,6 +1,8 @@
 # Readiness audit: collection surfaces (H11, H18)
 
-**Verdict: 🟠 Orange, on two questions.** The 3-up grid is buildable as drawn once its
+**Superseded by the R2 re-audit below: 🟢 Green.** Design's addendum resolves B1 and B2.
+
+**R1 verdict: 🟠 Orange, on two questions.** The 3-up grid is buildable as drawn once its
 prerequisites land, and so is the sheet portal. The pinned head and the tab strip each have one
 layout state that is not drawn, and each needs a Design answer before it is built:
 
@@ -398,7 +400,79 @@ This follows #1163, d8's view and colour PRs, and #1167, in that order. All of t
 
    If it passes 800 lines with the probe, the 600–999 one-row form splits off.
 
-## Prompt for Design
+## Re-audit (R2)
+
+**Verdict: 🟢 Green.** `ADDENDUM-README.md` and `The 99 - Collection Surfaces Addendum (R2).dc.html`
+resolve B1 and B2. No Design or Product question remains. The build proceeds on the split above,
+with the decisions below added to E1–E16. R2 changes nothing in R1 beyond its three stated
+supersessions; the README's only change is the status line that says so. Read against
+`origin/main` at `018f7cb59`, as before; only what changed was re-audited.
+
+**B1, resolved.** One `CollectionPlaceHead` (the shipped `/collection` title block, then the strip)
+is mounted first on all three routes. The strip's position checks out against the code:
+
+- The top is 28 + 45 + 4 + 18 + 14 = **109**. That is `page.tsx`'s `md:p-[28px_34px_0]`, the 30px
+  title at the inherited 1.5 line height (45), `md:mt-[4px]`, the 12px stats line (18), and the 14px
+  gap. The header row is `items-end` and Replace (about 40px) is shorter than the text column
+  (about 67px), so hiding Replace on an empty collection moves nothing. ✓
+- The left edge is **34**. Sets (`sets/page.tsx:31`) and Proxies (`proxy-list-view.tsx:98`) already
+  pad `md:px-[34px]`; dropping `mx-auto` at `md` puts their content at 34, level with
+  `/collection`'s. ✓
+- The stats line keeps one height in every state. `last updated` is already conditional on
+  `/collection`, and `0 cards · 0 unique` holds the line on an empty collection. ✓
+- Each route keeps exactly one h1, its own name, so E11 holds. On Sets and Proxies, the shared
+  "Collection" is a `<p>`. ✓
+- Against the rulings: P1 and P2 are untouched (desktop only), and the About ruling stands. The
+  stats line on two more routes is not a capability.
+
+**B2, resolved.** Below 480px, row 2 visually hides the `Sort: ` prefix and the count's noun, and
+keeps both in the accessible names. `deckSortCopy.triggerOne` already ships the bare order
+(`deck-sort.ts:166`), so this has precedent. The budget is 93 + 17 + 178 + 8 + 20 = **316**, leaving
+42px at 390 and 12px at 360. ✓ The 768 frame is two rows: search 674 − 88 − 8 = **578**, and row 2
+about 401 of 674. ✓ The one-row head starts at **900**: 8 + 93 + 17 + 210 + 8 + 86 + 8 + 88 = 518, so
+search gets 806 − 518 = **288** beside the 62px rail. ✓ The 262px figure beside an 88px touch rail
+refers to the desktop nav labels handoff, which is not built; it does not gate this one. E9 moves
+with it: `scroll-padding-top` is 102 below 900 and 60 from 900 to 999. Under P2, row 2 is in the
+pinned head with or without the shelf, so the ruling does not change this budget.
+
+**New findings, all engineering-resolvable (ratified E1–E16 stand):**
+
+- **E17. A four-digit count at 360 is about 1px over.** The addendum puts a five-digit count at
+  about 323. In 11px Plex Mono every glyph is 6.6px, so `12,345` is about 40px and the row about
+  336, and a four-digit `1,804` (33px) makes it about 329 against 328. A filter leaving more than
+  999 unique cards is ordinary on a collection of about 2,900. The addendum's own safety net
+  (`min-width: 0` and an ellipsis on the order label) absorbs a few pixels. Decision: build the net
+  as drawn. The head probe asserts row 2's `scrollWidth ≤ clientWidth` at 360 with
+  `?sort=color&dir=desc` and a filter that leaves at least 1,000 results, as well as the addendum's
+  case. If the net cuts more than the last few characters of the order, that comes back as a
+  finding, not a silent ellipsis.
+- **E18. `getCollectionLastUpdated` is not cached.** The addendum calls it "the cached
+  `getCollectionLastUpdated` read". It is a plain one-row query (`summary.ts:25`), unlike
+  `getCollectionStats`, which is wrapped in `cache`. Decision: Sets and Proxies add it to their
+  existing `Promise.all`, as `/collection` does. That is one indexed row per request, and no new
+  cache.
+- **E19. Sets and Proxies render the place head outside their padded column.** Both columns pad
+  their own top (`py-[20px] md:py-[28px]`). The place head must sit above the column, not inside
+  it, for the strip to land at 109. The column keeps its shipped top padding under the strip, so
+  the section h1 sits where it does today relative to its content.
+- **E20. `sets/page.tsx` renders a nested `<main>`.** The shell already renders `<main>`, and
+  `proxy-list-view.tsx`'s comment records why a nested one is invalid. The tabs PR rewrites this
+  page's head anyway, so the element becomes a `<section>`.
+- **E21. The probe from the addendum's gap 2 is adopted.** It checks the strip's
+  `getBoundingClientRect()` `top` and `left`, which must be equal on all three routes at 1300.
+
+**Copy (to /copy-review).** Split `triggerOne` into its prefix and `sortOrderLabel`, so the prefix
+can be hidden visually. This joins E13's noun split. No new strings.
+
+**The addendum's gap 1** ("Collection" as a `<p>` rather than the h1): E11 holds as ratified. Each
+route's h1 is its own name, and nothing here asks to re-rule it.
+
+**Build split, updated.** PR 3 (the tabs) is unblocked and gains `CollectionPlaceHead`, the
+left-anchored columns, E18–E20 and the strip-position probe. PR 4 (the pinned head) is unblocked
+and gains the prefix and noun hides below 480, the 900 breakpoint, E9's new values and E17. The
+order is still #1163, d8's view and colour PRs, and #1167 first.
+
+## Prompt for Design (R1, answered by R2)
 
 **Context.** Collection surfaces R1 is audited
 (`design/design_handoff_the99_collection_surfaces/READINESS-audit.md` on branch

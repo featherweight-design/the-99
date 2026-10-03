@@ -2,7 +2,8 @@
 
 `design/design_handoff_the99_collection_surfaces/` · 2026-10-02 · H11 + H18
 
-**Status: R1, approved (LGTM, 2026-10-03).** Fidelity: **high**. Sizes, heights, mark paths and token
+**Status: R1, approved (LGTM, 2026-10-03).** Amended by **R2** (`ADDENDUM-README.md`), which
+supersedes §4 at desktop, §2's row-2 budget, and §5's 768 frame and 600 breakpoint. Fidelity: **high**. Sizes, heights, mark paths and token
 names are final. Card names and their marks are illustrative.
 
 **About these files.** The `.dc.html` canvas is a design reference built in HTML, not production code.
