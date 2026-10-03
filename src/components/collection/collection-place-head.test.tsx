@@ -1,13 +1,23 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
-import { CollectionPlaceHead, type CollectionPlace } from "./collection-place-head";
+import { CollectionPlaceHead, placeFromPathname, type CollectionPlace } from "./collection-place-head";
 import { collectionTabsCopy } from "../../lib/copy/collection";
+
+let pathname = "/collection";
+vi.mock("next/navigation", () => ({ usePathname: () => pathname }));
 
 const OWNED = { totalCards: 4492, uniqueCards: 2926 };
 const EMPTY = { totalCards: 0, uniqueCards: 0 };
 
+const PATH_FOR: Record<CollectionPlace, string> = {
+  cards: "/collection",
+  sets: "/collection/sets",
+  proxies: "/collection/proxies",
+};
+
 function head(current: CollectionPlace, stats = OWNED, lastUpdated: Date | null = null) {
-  return render(<CollectionPlaceHead current={current} stats={stats} lastUpdated={lastUpdated} />);
+  pathname = PATH_FOR[current];
+  return render(<CollectionPlaceHead stats={stats} lastUpdated={lastUpdated} />);
 }
 
 function strip() {
@@ -20,6 +30,20 @@ function tabNames() {
     .filter((a) => a.getAttribute("href") !== "/collection/replace")
     .map((a) => a.textContent);
 }
+
+describe("placeFromPathname", () => {
+  it("names exactly the three routes the group's layout mounts on", () => {
+    expect(placeFromPathname("/collection")).toBe("cards");
+    expect(placeFromPathname("/collection/sets")).toBe("sets");
+    expect(placeFromPathname("/collection/proxies")).toBe("proxies");
+  });
+
+  it("names nothing past them", () => {
+    expect(placeFromPathname("/collection/sets/4ed")).toBeNull();
+    expect(placeFromPathname("/collection/replace")).toBeNull();
+    expect(placeFromPathname("/collection/replace/summary/u1")).toBeNull();
+  });
+});
 
 describe("the place strip", () => {
   it("is a nav of plain links, one per route, with no query on any of them", () => {
@@ -91,5 +115,14 @@ describe("the title block", () => {
     unmount();
     head("cards", EMPTY);
     expect(screen.queryAllByRole("link", { name: /Replace/ })).toEqual([]);
+  });
+});
+
+describe("rendered on an unrecognised path", () => {
+  it("throws rather than guessing", () => {
+    pathname = "/collection/replace";
+    expect(() => render(<CollectionPlaceHead stats={OWNED} lastUpdated={null} />)).toThrow(
+      /unrecognised path/,
+    );
   });
 });

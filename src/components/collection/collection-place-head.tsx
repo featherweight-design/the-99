@@ -13,9 +13,21 @@
 // Sets and Proxies keep their own section h1 below, so "Collection" is a `<p>` there and
 // each route has exactly one h1 (E11).
 //
-// NOT a `layout.tsx`: that would also wrap /collection/replace and /collection/sets/[code],
-// neither of which takes the strip.
+// MOUNTED FROM A SHARED `layout.tsx` now, at `(list)/layout.tsx` — a route group holding
+// exactly the three routes that take the strip (`(list)/page.tsx`, `(list)/sets/page.tsx`,
+// `(list)/proxies/page.tsx`), with `/collection/replace` and `/collection/sets/[code]` as
+// plain siblings OUTSIDE the group, so neither one takes it. A layout persists across a
+// client-side navigation between its own children — only the page below it swaps — which is
+// what keeps this strip from unmounting and remounting on every tab press; mounting it inside
+// each page instead (the previous shape) could not do that, because three separate pages
+// share no common ancestor below the group's own layout to persist a component in.
+//
+// `current` is read from the URL rather than passed in, which is what lets the layout mount
+// this once with no idea which of its three children is active.
 
+"use client";
+
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { GhostButton } from "../ui/button";
 import { PendingReporter } from "../shell/pending-reporter";
@@ -63,16 +75,36 @@ export function visibleTabs(current: CollectionPlace, hasCollection: boolean) {
   return TABS.filter((tab) => tab.place !== "sets" || hasCollection || current === "sets");
 }
 
+/**
+ * The three routes this head mounts on, and nothing past them: a trailing segment (the set
+ * detail route's `[code]`, or anything under `/replace`) means the reader has left the place
+ * this head describes, and the group's layout does not render on those routes at all — this
+ * is a defensive match, not the one that keeps them out.
+ */
+export function placeFromPathname(pathname: string): CollectionPlace | null {
+  if (pathname === "/collection") return "cards";
+  if (pathname === "/collection/sets") return "sets";
+  if (pathname === "/collection/proxies") return "proxies";
+  return null;
+}
+
 export function CollectionPlaceHead({
-  current,
   stats,
   lastUpdated,
 }: {
-  current: CollectionPlace;
   stats: { totalCards: number; uniqueCards: number };
   lastUpdated: Date | null;
 }) {
+  const pathname = usePathname();
+  const current = placeFromPathname(pathname);
   const hasCollection = stats.totalCards > 0;
+  // The group's layout mounts this only on the three routes `placeFromPathname` answers for
+  // (see the file header) — a null here would mean this component were reached from
+  // somewhere it was never meant to be, which is a build-time wiring question, not a state
+  // this render should paper over with a guess.
+  if (current === null) {
+    throw new Error(`CollectionPlaceHead rendered on an unrecognised path: ${pathname}`);
+  }
   const titleClass =
     "font-display font-bold m-0 md:text-[30px] md:leading-[45px]";
   return (

@@ -6,7 +6,7 @@ const refresh = vi.fn();
 const ownedFingerprintForSet = vi.fn();
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
-vi.mock("../../app/collection/sets/actions", () => ({
+vi.mock("../../app/collection/(list)/sets/actions", () => ({
   ownedFingerprintForSet: (code: string) => ownedFingerprintForSet(code),
 }));
 

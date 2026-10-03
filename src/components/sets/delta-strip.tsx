@@ -17,7 +17,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ownedFingerprintForSet } from "../../app/collection/sets/actions";
+import { ownedFingerprintForSet } from "../../app/collection/(list)/sets/actions";
 import { holdingCountOf } from "../../lib/sets/completion";
 import { setPageCopy } from "../../lib/copy/set-collections";
 

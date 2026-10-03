@@ -10,7 +10,7 @@ import { readFile } from "node:fs/promises";
 // with no entry; the mechanism that fixes that is process, and this file only
 // covers the half a machine can read.
 
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -18,6 +18,32 @@ import { ABOUT_VERSION, aboutCopy, aboutEntries, aboutMenuCopy, aboutSheetCopy }
 import pin from "./about.version.json";
 
 const APP_DIR = join(process.cwd(), "src", "app");
+
+/**
+ * A route segment may be satisfied by a literal directory OR by a route group — `(name)`,
+ * invisible in the URL — holding it, at any depth. `/collection/sets` is `page.tsx`'s own
+ * route since the collection-surfaces route-group restructure (sets-tab persistence fix), via
+ * `collection/(list)/sets/page.tsx` rather than `collection/sets/page.tsx`, and a resolver
+ * that only tries the literal path reports a page that exists as missing.
+ */
+function resolvesToPage(dir: string, segments: string[]): boolean {
+  if (!existsSync(dir)) return false;
+  if (segments.length === 0 && existsSync(join(dir, "page.tsx"))) return true;
+  const head = segments[0];
+  const rest = segments.slice(1);
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const isGroup = entry.name.startsWith("(") && entry.name.endsWith(")");
+    // A route group never consumes a segment, whether one remains or the path has already
+    // ended — `page.tsx` for `/collection` can sit inside `collection/(list)/page.tsx` just
+    // as directly as inside `collection/page.tsx`.
+    if (isGroup && resolvesToPage(join(dir, entry.name), segments)) return true;
+    if (head !== undefined && entry.name === head && resolvesToPage(join(dir, entry.name), rest)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 /** Everything a reader sees, walked rather than listed.
  *
@@ -96,8 +122,10 @@ describe("about content", () => {
       expect(path.includes("["), `${e.id} links the pattern ${path}`).toBe(false);
 
       const segments = path.split("/").filter(Boolean);
-      const file = join(APP_DIR, ...segments, "page.tsx");
-      expect(existsSync(file), `${e.id} links ${path}, which has no page.tsx`).toBe(true);
+      expect(
+        resolvesToPage(APP_DIR, segments),
+        `${e.id} links ${path}, which has no page.tsx`,
+      ).toBe(true);
     }
   });
 

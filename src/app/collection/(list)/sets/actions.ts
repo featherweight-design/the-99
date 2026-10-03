@@ -5,9 +5,9 @@
 // on a query typed after the page rendered, and caching them per reader would file another
 // reader's catalogue under this one's tag.
 
-import { requireUserId } from "../../../lib/auth";
-import { loadOwnershipInSet, searchSets, type SetIndexRow } from "../../../lib/sets/read";
-import { fingerprintOf } from "../../../lib/sets/completion";
+import { requireUserId } from "../../../../lib/auth";
+import { loadOwnershipInSet, searchSets, type SetIndexRow } from "../../../../lib/sets/read";
+import { fingerprintOf } from "../../../../lib/sets/completion";
 
 export async function searchSetsAction(query: string): Promise<SetIndexRow[]> {
   await requireUserId();
