@@ -58,10 +58,10 @@ describe("PriceStrip provenance line", () => {
   });
 });
 
-// The phone stacks the figure over the provenance; desktop puts the provenance
-// first on the line with the figure at its end. One subtree reaches both — a
-// width-branched pair would render each fact twice and still pass a
-// column-by-column review.
+// One column, both widths (Hugh's ruling, #1222 follow-up): the figure tops
+// it, the provenance line and the buy link follow under it. Desktop used to
+// `flex-row-reverse` this into a row with the figure at the far end — a
+// second arrangement that put the total where it was easily missed.
 describe("PriceStrip responsive arrangement", () => {
   it("renders each fact exactly once, reordering rather than duplicating", () => {
     render(
@@ -76,7 +76,7 @@ describe("PriceStrip responsive arrangement", () => {
     expect(screen.getAllByRole("link")).toHaveLength(1);
   });
 
-  it("reverses the row at desktop so the figure ends the line", () => {
+  it("stacks the figure over the provenance and the buy link, with no row reversal at any width", () => {
     const { container } = render(
       <PriceStrip
         summary={{ totalCents: 1240, pricedCopies: 6, totalCopies: 8 }}
@@ -85,9 +85,17 @@ describe("PriceStrip responsive arrangement", () => {
       />,
     );
     const plate = container.firstElementChild!;
-    expect(plate).toHaveClass("flex-col", "md:flex-row-reverse", "md:justify-between");
-    // DOM order is figure then provenance, which is also the reading order.
+    expect(plate).toHaveClass("flex-col");
+    expect(plate.className).not.toMatch(/row-reverse|md:justify-between|md:items-baseline/);
+    // DOM order is figure then provenance, which is the reading order at every width now.
     expect(plate.firstElementChild).toHaveTextContent("$12.40");
+
+    // The link row's own 44px target holds at both widths too — restoring its old
+    // `md:block md:min-h-0` would collapse it to the inline link's own box at desktop
+    // and pass every assertion above, since those only inspect the outer container.
+    const linkRow = screen.getByRole("link").parentElement!;
+    expect(linkRow).toHaveClass("flex", "items-center", "min-h-[44px]");
+    expect(linkRow.className).not.toMatch(/md:block|md:min-h-0/);
   });
 });
 

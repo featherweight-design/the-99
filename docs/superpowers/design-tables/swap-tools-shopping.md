@@ -182,11 +182,11 @@ Not shipped in PR 3. The key glosses the row's ⇄, and the ⇄ lands with the s
 | font-size | 13px | 12.5px |
 | color | `--fg-muted` | `--fg-muted` |
 
-### Context: PriceStrip above (unchanged, for placement only)
+### Context: PriceStrip above (for placement only)
 | Property | Mobile | Desktop |
 |---|---|---|
 | Strip margin-top | 10px | 10px |
-| Strip layout | Column, gap 5 | row-reverse, space-between, gap 14 |
+| Strip layout | Column, gap 5 | Column, gap 5 — unified onto the mobile layout, Hugh's ruling, #1222 follow-up (was row-reverse, space-between, gap 14) |
 | Bar padding (container of pills, strip, limit) | 9px 16px 10px | 14px 26px 10px |
 | Bar border-bottom | 1px solid `--border` | 0 |
 

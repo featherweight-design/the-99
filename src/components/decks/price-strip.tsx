@@ -5,6 +5,11 @@
 // the builder spine — a deck-level header would make the total read as a
 // property of the deck, and would overturn spine line 391's deliberate
 // desktop-only omission sideways.
+//
+// ONE LAYOUT FOR BOTH WIDTHS (Hugh's ruling, #1222 follow-up). Desktop used to
+// `flex-row-reverse` the figure to the far right with the provenance line and
+// the buy link on the left — easily missed, and a second arrangement someone
+// could drift from the phone's. It now reuses the phone's column exactly.
 
 import { priceCopy } from "../../lib/copy/price";
 import { exportLinkOutCopy } from "../../lib/copy/decks-builder";
@@ -51,16 +56,17 @@ export function PriceStrip({
   const buyHref = manapoolAddDeckUrl(shoppingCards);
 
   return (
-    // One DOM order, two arrangements. The phone stacks figure over provenance;
-    // desktop puts the provenance first on the line and the figure at its end,
-    // which `flex-row-reverse` + `justify-between` reach without a second
-    // subtree — two branches would pass a width-by-width review while being
-    // two components that can drift.
+    // ONE LAYOUT, both widths (Hugh's ruling, #1222 follow-up): the figure
+    // tops the column, the provenance line and the buy link follow under it,
+    // left-aligned — the phone's own arrangement, which desktop used to
+    // reverse into a row that put the total at the far top-right and the
+    // provenance/link on the left, easily missed. No `md:` override changes
+    // this order; the only `md:` classes left are comfort padding.
     <div
-      // The phone's bottom padding is zero: the 44px link row below supplies it,
-      // and 10px on top of a 44px target would read as a gap rather than as the
+      // The bottom padding is zero: the 44px link row below supplies it, and
+      // 10px on top of a 44px target would read as a gap rather than as the
       // row's own height.
-      className="mt-[10px] flex flex-col gap-[5px] rounded-[9px] border border-[color:var(--border)] px-[13px] pt-[10px] pb-0 md:flex-row-reverse md:items-baseline md:justify-between md:gap-[14px] md:px-[15px] md:py-[11px]"
+      className="mt-[10px] flex flex-col gap-[5px] rounded-[9px] border border-[color:var(--border)] px-[13px] pt-[10px] pb-0 md:px-[15px]"
       style={{ background: "var(--surface-sunken)" }}
     >
       {/* The clause cannot outlive the figure — it is a fraction OF it — so the
@@ -78,17 +84,10 @@ export function PriceStrip({
           ) : null}
         </p>
       ) : null}
-      {/* The provenance line and the buy link are one flex child, not two. On
-          desktop `flex-row-reverse` reads the strip's children right to left, so
-          a third child would land between the figure and the provenance instead
-          of under it.
-
-          `md:mr-auto` holds this column at the leading edge. With no prices at
-          all the figure line does not render, leaving this the only child — and
-          a lone item under `row-reverse` + `justify-between` sits at main-start,
-          which is the right-hand edge. The auto margin absorbs the free space
-          instead; with two children it is what `justify-between` already does. */}
-      <div className="md:mr-auto">
+      {/* The provenance line and the buy link stay one flex child rather than
+          two siblings of the figure — a third top-level child would be a third
+          row in the column rather than the link sitting under its own line. */}
+      <div>
         {/* --fg-locked in both forms. Old prices are our operational problem, not
             the player's error, and amber would spend the surface's loudest ink
             on something nothing here can act on. */}
@@ -101,7 +100,9 @@ export function PriceStrip({
         </p>
         {/* The 44px is the ROW's height, never the link's box — the link stays
             inline text, so the words get a full-height target vertically while
-            the focus ring still traces them rather than a plate.
+            the focus ring still traces them rather than a plate. Held at both
+            widths now: a pointer loses nothing from the extra height, and it
+            is what keeps the layout one definition rather than two.
 
             The 9px gap holds at both breakpoints. `outline` takes no layout
             space, so the ring at 2px offset overlaps the gap rather than pushing
@@ -115,7 +116,7 @@ export function PriceStrip({
             passing a summary from one list and rows from another would render a
             strip with nothing to buy from. */}
         {buyHref ? (
-          <div className="mt-[9px] flex min-h-[44px] items-center md:block md:min-h-0">
+          <div className="mt-[9px] flex min-h-[44px] items-center">
             <ExternalLink href={buyHref} label={exportLinkOutCopy.shopping} />
           </div>
         ) : null}
