@@ -33,6 +33,30 @@ describe("ViewToggle", () => {
     expect(screen.getByRole("button", { name: "B view" })).toHaveAttribute("aria-pressed", "false");
   });
 
+  // Unresolved is painted, not blank: the app's own dual-render split draws the
+  // first option below `md` and the second from `md` (collection surfaces,
+  // readiness E6), so the well's look follows that split rather than showing
+  // neither segment lit over a view the page is visibly drawing. `aria-pressed`
+  // stays false either way (the test above) — this is paint only.
+  it("paints the first option active below md and the second from md when unresolved", () => {
+    render(<ViewToggle options={OPTIONS} value={null} onChange={() => {}} />);
+    const a = screen.getByRole("button", { name: "A view" });
+    const b = screen.getByRole("button", { name: "B view" });
+    expect(a.className).toContain("bg-[color:var(--elevated)]");
+    expect(a.className).toContain("md:bg-transparent");
+    expect(b.className).toContain("bg-transparent");
+    expect(b.className).toContain("md:bg-[color:var(--elevated)]");
+    // The `md:` step has to reset weight and shadow too, not only colour — both are part of
+    // the active skin, and literal classes (not a runtime-assembled `variant:` prefix, which
+    // Tailwind's static scanner cannot discover) are what let this reset exist at all.
+    expect(a.className).toContain("font-semibold");
+    expect(a.className).toContain("md:font-normal");
+    expect(a.className).toContain("md:[box-shadow:none]");
+    expect(b.className).toContain("font-normal");
+    expect(b.className).toContain("md:font-semibold");
+    expect(b.className).toContain("md:[box-shadow:inset_0_0_0_1px_var(--border-strong)]");
+  });
+
   it("reports the segment pressed", () => {
     const picked: string[] = [];
     render(<ViewToggle options={OPTIONS} value="a" onChange={(v) => picked.push(v)} />);

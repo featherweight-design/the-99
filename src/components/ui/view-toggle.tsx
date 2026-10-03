@@ -53,8 +53,31 @@ export function ViewToggle<T extends string>({
         border: "1px solid var(--border-strong)",
       }}
     >
-      {options.map((option) => {
+      {options.map((option, i) => {
         const active = value !== null && option.value === value;
+        // No real value yet (a first visit's SSR/hydration gap): the app's own
+        // dual-render split draws the first option below `md` and the second
+        // from `md`, so the well's paint follows the same rule rather than
+        // showing neither pressed over a view the page is visibly drawing.
+        // `aria-pressed` stays false either way — this is paint only, and the
+        // real value still resolves to one segment within the same render.
+        const activeClasses =
+          "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)] [box-shadow:inset_0_0_0_1px_var(--border-strong)]";
+        const inactiveClasses = "bg-transparent text-[color:var(--fg-faint)] md:hover:text-[color:var(--fg-body)]";
+        // Tailwind's scanner reads the raw source text for class-like tokens — it cannot see a
+        // `variant:` prefix assembled at runtime (`prefixEach`), so the unresolved paint below is
+        // spelled out literally rather than composed, with every property the `md:` step flips
+        // reset explicitly (weight and box-shadow included, not just colour).
+        const paintClasses =
+          value !== null
+            ? active
+              ? activeClasses
+              : inactiveClasses
+            : i === 0
+              ? "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)] [box-shadow:inset_0_0_0_1px_var(--border-strong)] " +
+                "md:font-normal md:text-[color:var(--fg-faint)] md:bg-transparent md:[box-shadow:none] md:hover:text-[color:var(--fg-body)]"
+              : "font-normal bg-transparent text-[color:var(--fg-faint)] " +
+                "md:font-semibold md:text-[color:var(--fg)] md:bg-[color:var(--elevated)] md:[box-shadow:inset_0_0_0_1px_var(--border-strong)]";
         return (
           <button
             key={option.value}
@@ -73,9 +96,7 @@ export function ViewToggle<T extends string>({
               // Selected is bone on `--elevated` with a ring, never accent: the
               // builder's control bar spends accent on nothing, and the two
               // surfaces draw the same control.
-              active
-                ? "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)] [box-shadow:inset_0_0_0_1px_var(--border-strong)]"
-                : "bg-transparent text-[color:var(--fg-faint)] md:hover:text-[color:var(--fg-body)]",
+              paintClasses,
             ].join(" ")}
           >
             <span aria-hidden="true">{option.glyph}</span>

@@ -184,7 +184,12 @@ describe("CollectionBrowser — what the server draws", () => {
     localStorage.clear();
   });
   const GRID = /grid-cols-3[^"]*minmax\(178px/;
-  const ROWS = /gap-\[6px\][^"]*flex-col|flex-col[^"]*gap-\[6px\]/;
+  // `RowsView`'s own root class, literal and in its own written order
+  // (`rows-view.tsx`) — not the looser either-order form, which also matched
+  // the pinned head's `flex flex-col gap-[6px] min-[900px]:flex-row …` once
+  // the head PR gave it that exact pair for its own, unrelated reason (the
+  // two-row-to-one-row collapse at 900px).
+  const ROWS = /flex flex-col gap-\[6px\] md:gap-\[7px\]/;
   const art = card({ imageUri: "https://cards.scryfall.io/normal/front/a.jpg" });
   const html = (viewHint?: ViewHint) =>
     renderToString(

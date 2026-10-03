@@ -135,6 +135,48 @@ describe("FilterPanel portalSheet (collection surfaces E1)", () => {
   });
 });
 
+// Collection surfaces addendum Q2 and decision 7: the pinned head's row 2 has no room for
+// the trigger's own "Sort: " prefix at 390/360px, and no room for the shared 44px trigger
+// beside the count. Both opt in — every other `FilterPanel` caller is unaffected.
+describe("FilterPanel trigger, below the pinned head's narrowest width", () => {
+  const mount = (over: Partial<React.ComponentProps<typeof FilterPanel>> = {}) =>
+    render(
+      <FilterPanel
+        copy={collectionFilterCopy.sort}
+        options={[{ code: "name-asc", label: "Name · A–Z", count: 0, disabled: false }]}
+        selected={["name-asc"]}
+        selectionMode="single"
+        onToggle={() => {}}
+        onClear={() => {}}
+        compact
+        {...over}
+      />,
+    );
+
+  it("hides the trigger's prefix visually, below 479px, without touching its name", () => {
+    mount();
+    const trigger = screen.getByRole("button", { name: /Sort cards, Name · A–Z, collapsed/ });
+    expect(trigger.textContent).toContain("Sort: Name · A–Z");
+    const hiddenPrefix = within(trigger).getByText(/^Sort:\s*$/);
+    expect(hiddenPrefix).toHaveAttribute("aria-hidden", "true");
+    expect(hiddenPrefix.className).toContain("max-[479px]:hidden");
+  });
+
+  it("draws the trigger at a pinned height, with a 44px hit target kept by an overlay", () => {
+    mount({ compactTriggerHeightPx: 36 });
+    const trigger = screen.getByRole("button", { name: /Sort cards, Name · A–Z, collapsed/ });
+    expect(trigger).toHaveStyle({ height: "36px" });
+    expect(trigger.className).toContain("after:h-[44px]");
+  });
+
+  it("leaves every other compact trigger at its shared 44px when the override is omitted", () => {
+    mount();
+    const trigger = screen.getByRole("button", { name: /Sort cards, Name · A–Z, collapsed/ });
+    expect(trigger.getAttribute("style") ?? "").not.toContain("height");
+    expect(trigger.className).toContain("min-h-[44px]");
+  });
+});
+
 // Two cases retired with the control they covered: the mobile `Color ▾` panel
 // is gone, because `ColourPips` draws one colour control at both widths rather
 // than a desktop pip row and a phone panel with different ARIA roles for the

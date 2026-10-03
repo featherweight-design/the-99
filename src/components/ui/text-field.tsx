@@ -84,6 +84,10 @@ export function SearchField({
   dropStyle(rest);
   return (
     <label
+      // A styling hook only — lets a page target "this field or its own trailing
+      // control" (`:focus-within`) without reaching the input alone, which misses
+      // a trailing button taking focus on the way to a click.
+      data-search-field
       className={twMerge(
         FIELD_CHROME,
         "flex items-center gap-[10px] px-[12px] " +

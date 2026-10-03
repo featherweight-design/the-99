@@ -904,3 +904,17 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
     background: Canvas !important;
   }
 }
+
+/* Collection's pinned head (collection surfaces, readiness E2): the view well
+   hides while the search field is focused, so the field can run full width
+   under a phone keyboard. `:focus-within` on the ROW does this too, but it
+   also fires when the WELL itself takes focus by Tab — which hides the very
+   control that is focused and drops keyboard focus to nowhere. Scoped to the
+   search field's own label instead (`[data-search-field]:focus-within`),
+   which the well sits outside of: that still clears the field's own clear
+   button, not just the bare input — a button-only `:focus` miss is what let
+   pointerdown blur the input, show the well and move the button out from
+   under a pointerup aimed at it. */
+[data-collection-search-row]:has([data-search-field]:focus-within) [data-collection-view-well] {
+  display: none;
+}
