@@ -185,7 +185,7 @@ describe("TabBar", () => {
     expect(container.innerHTML).not.toMatch(/touch(-short)?:/);
   });
 
-  it("keeps its visible labels — the phone bar has room and the rail does not", () => {
+  it("keeps its visible labels, the way the touch rail draws them", () => {
     render(<TabBar locked={false} />);
     const nav = screen.getByRole("navigation", { name: "Primary" });
     for (const label of LABELS) {

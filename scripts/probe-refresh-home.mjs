@@ -195,8 +195,9 @@ async function main() {
     // narrowest phone it measures (F3).
     { label: "pair-1300", width: 1300, height: 900 },
     { label: "pair-1180", width: 1180, height: 900 },
-    // The rail's touch width moves the pair's need from ~1168 to ~1194 of viewport (audit E6), so a
-    // touch walk reads the band just above the threshold as well.
+    // The 88px touch rail takes 26px more from `main`, and the threshold's comment, summed by hand,
+    // puts a pair's need near 1194 there (audit E6). Its figures are estimates, so a touch walk
+    // MEASURES the band above 1180 instead: on 2026-10-03 every stamp fit at 1180 and 1190.
     ...(process.env.PROBE_TOUCH === "1" ? [{ label: "pair-1190", width: 1190, height: 900 }] : []),
     { label: "phone-360", width: 360, height: 780, isMobile: true, hasTouch: true },
   ]) {

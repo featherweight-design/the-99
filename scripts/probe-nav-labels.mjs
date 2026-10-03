@@ -217,16 +217,17 @@ async function run() {
       // V-E2: the first slot's ring (2px at a 2px offset) clears the region's top edge. Read with
       // the region scrolled to its top, which is where the clip would bite.
       await page.evaluate(() => document.querySelector("[data-rail-nav]").scrollTo(0, 0));
-      const first = r.slots[0];
+      const top = await page.evaluate(READ_RAIL);
+      const first = top.slots[0];
       check(
         `${tag}: the first slot's focus ring clears the scroll region's top`,
-        first.box.top - r.nav.top >= 4 - 0.01,
-        `${Math.round((first.box.top - r.nav.top) * 100) / 100}px of the 4px the ring needs`,
+        first.box.top - top.nav.top >= 4 - 0.01,
+        `${Math.round((first.box.top - top.nav.top) * 100) / 100}px of the 4px the ring needs`,
       );
       check(
         `${tag}: the ring clears the region's sides`,
-        first.box.left - r.nav.left >= 4 - 0.01 && r.nav.right - first.box.right >= 4 - 0.01,
-        `${first.box.left - r.nav.left}px / ${r.nav.right - first.box.right}px`,
+        first.box.left - top.nav.left >= 4 - 0.01 && top.nav.right - first.box.right >= 4 - 0.01,
+        `${first.box.left - top.nav.left}px / ${top.nav.right - first.box.right}px`,
       );
 
       if (who.locked) {

@@ -476,8 +476,9 @@ type NavSlotProps = {
   active: boolean;
   // Where the pending pip sits: the rail's slot or the tab bar's (PendingPip).
   pip: "rail" | "tab";
-  // The rail passes its label because it shows none; the tab bar leaves the
-  // name to its visible label.
+  // The rail passes its label as the slot's name: beside a pointer it draws none,
+  // and on touch its drawn label is aria-hidden, so the name is heard once. The
+  // tab bar leaves the name to its visible label.
   name: string | undefined;
   className: string;
   children: React.ReactNode;
