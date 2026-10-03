@@ -72,9 +72,10 @@ const ANNOUNCE_SETTLE_MS = 600;
 /** The type column, desktop only, as one figure the header and the rows share.
  *
  *  90px rather than the synergy panel's 150: that panel prints a real type line
- *  under a single facet, and this list has no facet filter, so every row here is
- *  the panel's own "all" case — the bucket word, of which `Enchantment` is the
- *  longest at about 76px. The name column is `flex-auto` and pays for it. */
+ *  under a single facet, and this list prints one word per row (`typeWord`): the
+ *  panel's bucket word, except that an instant or sorcery is named as one (H27)
+ *  rather than as the merged `Spell`. `Enchantment` is still the longest, at
+ *  about 76px. The name column is `flex-auto` and pays for it. */
 const TYPE_COL = "90px";
 
 export interface TopOffListProps {
