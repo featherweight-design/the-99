@@ -6,7 +6,7 @@
 // carries none.
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { GhostButton } from "@/components/ui/button";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { ChangeCommanderDoor } from "./change-commander-door";
@@ -34,7 +34,9 @@ import { verdictHead } from "../../lib/bracket/verdict-head";
  */
 const F18_FACED = "@max-[344px]:hidden";
 const F18_MARKS = "hidden @max-[344px]:contents";
-import { useDeckRename } from "./use-deck-rename";
+import { useDeckHeaderEdit } from "./use-deck-header-edit";
+import { deckDescriptionCopy } from "../../lib/copy/deck-description";
+import { countCharacters } from "../../lib/copy/deck-tuning";
 import { ProxyTag } from "./proxy-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { shortName } from "../../lib/cards/short-name";
@@ -78,7 +80,8 @@ export function SpineMobile({
   // ink the state adds reads the same token `statusBarStyle` gives the bar
   // rather than a second alarm colour of its own.
   const overInk = `var(${STATUS_TOKEN[status]})`;
-  const rename = useDeckRename(deck.id, deck.name, () => setRenaming(false));
+  const rename = useDeckHeaderEdit(deck.id, deck.name, deck.intent ?? null, () => setRenaming(false));
+  const descriptionFieldRef = useRef<HTMLTextAreaElement>(null);
 
   // §C8/§C10 — one row, drawn in the band at rest and below the divider while
   // editing, where the field needs the band's whole width. Its ink differs with
@@ -285,13 +288,12 @@ export function SpineMobile({
           }}
         >
           {renaming ? (
-            <>
+            <div className="flex w-full flex-col" style={{ gap: 8 }} onBlur={rename.onPairBlur}>
               <input
                 autoFocus
-                value={rename.value}
-                onChange={(e) => rename.setValue(e.target.value)}
-                onKeyDown={rename.onKeyDown}
-                onBlur={rename.onBlur}
+                value={rename.name}
+                onChange={(e) => rename.setName(e.target.value)}
+                onKeyDown={(e) => rename.onNameKeyDown(e, descriptionFieldRef.current)}
                 // readOnly, never disabled: a disabled input blurs, and blur
                 // commits.
                 readOnly={rename.isPending}
@@ -301,6 +303,28 @@ export function SpineMobile({
                   boxSizing: "border-box",
                   padding: "8px 12px",
                   fontSize: 20,
+                  color: "var(--fg)",
+                }}
+              />
+              <textarea
+                ref={descriptionFieldRef}
+                value={rename.description}
+                onChange={(e) => {
+                  if (countCharacters(e.target.value) <= deckDescriptionCopy.description.maxLength) {
+                    rename.setDescription(e.target.value);
+                  }
+                }}
+                onKeyDown={rename.onDescriptionKeyDown}
+                readOnly={rename.isPending}
+                rows={2}
+                placeholder={deckDescriptionCopy.description.placeholderPhone}
+                aria-label={deckDescriptionCopy.description.fieldAria}
+                className="w-full resize-none rounded-[8px] border border-dashed border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] text-left font-sans focus-visible:outline-none"
+                style={{
+                  boxSizing: "border-box",
+                  padding: "8px 12px",
+                  fontSize: 13.5,
+                  lineHeight: 1.45,
                   color: "var(--fg)",
                 }}
               />
@@ -355,7 +379,7 @@ export function SpineMobile({
                   {renameCopy.cancel}
                 </button>
               </div>
-            </>
+            </div>
           ) : (
             <>
               {/* A BLOCK, not a flex row, and that is the whole fix for the
@@ -443,7 +467,7 @@ export function SpineMobile({
                   <button
                     type="button"
                     onClick={() => setRenaming(true)}
-                    aria-label={renameCopy.triggerAria(deck.name)}
+                    aria-label={deckDescriptionCopy.description.pencilAria(deck.name)}
                     className="inline-flex items-center justify-center text-[color:var(--fg-muted)]"
                     style={{
                       // The 44px target is stated rather than inferred from the
@@ -467,13 +491,7 @@ export function SpineMobile({
                 </span>
               </div>
               {/* SECOND in the order (placement addendum r3, E2b), on the art like the name. */}
-              <DeckIntentLine
-                key={deck.id}
-                deckId={deck.id}
-                intent={deck.intent ?? null}
-                seeded={deck.intentSeeded ?? false}
-                width="phone"
-              />
+              <DeckIntentLine intent={deck.intent ?? null} width="phone" />
               {metaRow(true)}
               {chipsRow}
             </>

@@ -700,21 +700,17 @@ describe("createDeck — filled baseline", () => {
     expect(kinds).toEqual(["seed", "top_off"]);
   });
 
-  // Gate 6, "fires once": the fill-failed banner's retry is the one path that
-  // can run a seed fill against a deck that already exists, so it is the one
-  // path that could write a second seed pass.
-  // The brief a fill builds to is the app's own words, so a deck the fill placed cards in is
-  // born SEEDED, in its creating transaction.
-  it("is born with a seeded intent naming the commander when the fill lands rows", async () => {
+  // H35 ruling 3: a fill no longer writes an app-seeded intent, whatever it places. The
+  // player's own description is the one line a reader sees now.
+  it("seeds nothing when the fill lands rows", async () => {
     stub.state.cards.push(commanderCard());
     stub.state.collectionItems.push(...Array.from({ length: 10 }, (_, i) => rampCard(i)));
 
     await runCreate();
 
-    expect(stub.state.updateCalls).toContainEqual({
-      table: "decks",
-      values: { intent: "Built around Atraxa, Praetors' Voice, from the cards you own.", intentSeeded: true },
-    });
+    const seeds = (values: unknown) => (values as { intentSeeded?: boolean }).intentSeeded === true;
+    expect(stub.state.insertCalls.some((c) => c.table === "decks" && seeds(c.values))).toBe(false);
+    expect(stub.state.updateCalls.some((c) => seeds(c.values))).toBe(false);
   });
 
   // A fill that placed nothing built nothing, so there is no brief to disclose — the rule the
@@ -2496,7 +2492,7 @@ describe("createDeck — Help me choose's answers (F1, F2)", () => {
     }
   };
 
-  it("stores the answers on the deck and writes them as the brief, in the insert", async () => {
+  it("stores the answers on the deck, writing no intent any more (H35)", async () => {
     stub.state.cards.push(commanderCard());
     stub.state.collectionItems.push(...Array.from({ length: 10 }, (_, i) => rampCard(i)));
 
@@ -2505,10 +2501,10 @@ describe("createDeck — Help me choose's answers (F1, F2)", () => {
     const insert = stub.state.insertCalls.find((c) => c.table === "decks")!;
     expect(insert.values).toMatchObject({
       answerBracket: 4, answerBudgetCents: null, answerCardOracleId: null,
-      intent: "Built around Atraxa, Praetors' Voice: Superfriends, bracket 4.", intentSeeded: true,
     });
-    // The fill's own brief is not written over the answers.
-    expect(stub.state.updateCalls.some((c) => (c.values as { intent?: string }).intent?.includes("from the cards you own"))).toBe(false);
+    expect((insert.values as { intentSeeded?: boolean }).intentSeeded).toBeUndefined();
+    // Nothing seeds the intent any more, from either door.
+    expect(stub.state.updateCalls.some((c) => (c.values as { intent?: string }).intent !== undefined)).toBe(false);
   });
 
   it("places the build-around card first, whatever order the catalog read returns", async () => {
@@ -2552,7 +2548,7 @@ describe("createDeck — Help me choose's answers (F1, F2)", () => {
     await runAsked(answers);
 
     const inserts = stub.state.insertCalls.filter((c) => c.table === "decks");
-    expect(inserts[inserts.length - 1].values).toMatchObject({ filled: false, answerBracket: 4, intentSeeded: true });
+    expect(inserts[inserts.length - 1].values).toMatchObject({ filled: false, answerBracket: 4 });
   });
 
   it("retries a failed fill to the stored answers: the build-around card first, and the body whole", async () => {

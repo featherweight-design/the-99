@@ -1,133 +1,27 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
-
-import { deckTuningCopy } from "../../lib/copy/deck-tuning";
-import type { DeckMutationResult } from "../../lib/decks/mutation-result";
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
 import { DeckIntentLine } from "./deck-intent-line";
 
-vi.mock("../../app/decks/tuning-actions", () => ({ saveDeckIntent: vi.fn() }));
-
-type Save = (deckId: string, form: FormData) => Promise<DeckMutationResult>;
-const copy = deckTuningCopy.intent;
-
-const draw = (intent: string | null, seeded = false, save = vi.fn<Save>(async () => ({ ok: true }))) => {
-  render(<DeckIntentLine deckId="d1" intent={intent} seeded={seeded} width="desktop" save={save} />);
-  return save;
-};
-
-describe("DeckIntentLine", () => {
-  it("draws no row at all when the deck has no line", () => {
-    const { container } = render(<DeckIntentLine deckId="d1" intent={null} seeded={false} width="desktop" />);
-    // Only the empty live region, which draws nothing.
-    expect(container.querySelector("[data-deck-intent]")).toBeNull();
-    expect(container.textContent).toBe("");
+describe("DeckIntentLine (STATES-deck-description.md §2) — read-only tagline", () => {
+  it("draws the sentence alone, with no row at all when null", () => {
+    const { rerender } = render(<DeckIntentLine intent="Grind out a long game." width="desktop" />);
+    expect(screen.getByText("Grind out a long game.")).toBeTruthy();
+    rerender(<DeckIntentLine intent={null} width="desktop" />);
+    expect(screen.queryByText("Grind out a long game.")).toBeNull();
   });
 
-  // A line with no spaces (a pasted link) has no word break to wrap at; it must still wrap.
-  it("lets an unbroken line wrap anywhere rather than run under the controls", () => {
-    draw("https://example.com/a-very-long-decklist-address-with-no-spaces-in-it-at-all");
-    expect(screen.getByText(/^https:/).className).toContain("[overflow-wrap:anywhere]");
+  it("carries no edit control, disc or chip", () => {
+    render(<DeckIntentLine intent="Win late with fliers." width="desktop" />);
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.queryByText(/from the build/i)).toBeNull();
   });
 
-  it("draws the line whole, with its edit control", () => {
-    draw("grind a four-person table out and win late");
-    expect(screen.getByText("grind a four-person table out and win late")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: copy.editAria })).toBeInTheDocument();
-  });
-
-  it("marks an app-seeded line, and drops the mark for good once saved over", async () => {
-    draw("Built around Gisa.", true);
-    expect(screen.getByLabelText(copy.seededAria)).toBeInTheDocument();
-    expect(screen.getByText(copy.seeded)).toBeInTheDocument();
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.editAria })));
-    fireEvent.change(screen.getByRole("textbox"), { target: { value: "win late" } });
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.save })));
-    expect(screen.getByText("win late")).toBeInTheDocument();
-    expect(screen.queryByText(copy.seeded)).toBeNull();
-  });
-
-  it("keeps the field and its text when a save is refused", async () => {
-    draw("go wide", false, vi.fn<Save>(async () => ({ ok: false, message: copy.refused })));
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.editAria })));
-    fireEvent.change(screen.getByRole("textbox"), { target: { value: "go tall" } });
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.save })));
-    expect(screen.getByRole("textbox")).toHaveValue("go tall");
-    expect(screen.getByRole("alert")).toHaveTextContent(copy.refused);
-  });
-
-  it("says the save failed and frees the field when the action rejects", async () => {
-    draw("go wide", false, vi.fn<Save>(() => Promise.reject(new Error("network"))));
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.editAria })));
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.save })));
-    expect(screen.getByRole("alert")).toHaveTextContent(copy.refused);
-    expect(screen.getByRole("button", { name: copy.save })).not.toBeDisabled();
-  });
-
-  it("drops a refusal when Escape closes the field, so reopening starts clean", async () => {
-    draw("go wide", false, vi.fn<Save>(async () => ({ ok: false, message: "nope" })));
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.editAria })));
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.save })));
-    expect(screen.getByText("nope")).toBeInTheDocument();
-    fireEvent.keyDown(screen.getByRole("textbox"), { key: "Escape" });
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.editAria })));
-    expect(screen.queryByText("nope")).toBeNull();
-  });
-
-  it("cancels the edit without saving, back to the line as it was", async () => {
-    const save = draw("go wide");
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.editAria })));
-    fireEvent.change(screen.getByRole("textbox"), { target: { value: "go tall" } });
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.cancel })));
-    expect(save).not.toHaveBeenCalled();
-    expect(screen.getByText("go wide")).toBeInTheDocument();
-  });
-
-  it("clears the row when the line is saved empty", async () => {
-    const save = draw("go wide");
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.editAria })));
-    fireEvent.change(screen.getByRole("textbox"), { target: { value: "  " } });
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.save })));
-    expect((save.mock.calls[0][1] as FormData).get("intent")).toBe("");
-    expect(screen.queryByText("go wide")).toBeNull();
-    expect(screen.queryByRole("textbox")).toBeNull();
-    // The row is gone, and the save is still announced.
-    expect(screen.getByRole("status")).toHaveTextContent(deckTuningCopy.announce.intentSaved);
-  });
-
-  it("announces a save", async () => {
-    draw("go wide");
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.editAria })));
-    fireEvent.change(screen.getByRole("textbox"), { target: { value: "go tall" } });
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.save })));
-    expect(screen.getByRole("status")).toHaveTextContent(deckTuningCopy.announce.intentSaved);
-  });
-
-  // An open, untouched field takes the other door's save, so Save cannot write the old line back.
-  it("moves an untouched open field to a line saved elsewhere, and leaves typed text alone", async () => {
-    const save = vi.fn<Save>(async () => ({ ok: true }));
-    const { rerender } = render(<DeckIntentLine deckId="d1" intent="go wide" seeded={false} width="desktop" save={save} />);
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.editAria })));
-    rerender(<DeckIntentLine deckId="d1" intent="go tall" seeded={false} width="desktop" save={save} />);
-    expect(screen.getByRole("textbox")).toHaveValue("go tall");
-    fireEvent.change(screen.getByRole("textbox"), { target: { value: "mine" } });
-    rerender(<DeckIntentLine deckId="d1" intent="go long" seeded={false} width="desktop" save={save} />);
-    expect(screen.getByRole("textbox")).toHaveValue("mine");
-    // Typed back to the line the page last sent: still typed in, and still the player's.
-    fireEvent.change(screen.getByRole("textbox"), { target: { value: "go long" } });
-    rerender(<DeckIntentLine deckId="d1" intent="go far" seeded={false} width="desktop" save={save} />);
-    expect(screen.getByRole("textbox")).toHaveValue("go long");
-  });
-
-  // The line's other door (the ask in Suggested changes) saves through the page, which hands the
-  // header a new line. A header that held its first line would stay blank until a reload.
-  it("takes a new line from the page, and drops the seeded mark with it", () => {
-    const { rerender } = render(<DeckIntentLine deckId="d1" intent={null} seeded={false} width="desktop" />);
-    expect(screen.queryByText("go wide")).toBeNull();
-    rerender(<DeckIntentLine deckId="d1" intent="go wide" seeded={false} width="desktop" />);
-    expect(screen.getByText("go wide")).toBeInTheDocument();
-    rerender(<DeckIntentLine deckId="d1" intent="Built around Gisa." seeded width="desktop" />);
-    expect(screen.getByText(copy.seeded)).toBeInTheDocument();
-    rerender(<DeckIntentLine deckId="d1" intent="win late" seeded={false} width="desktop" />);
-    expect(screen.queryByText(copy.seeded)).toBeNull();
+  it("clamps to two lines on a phone and never clamps on desktop", () => {
+    render(<DeckIntentLine intent="A deck about flying creatures and keeping the board clear." width="phone" />);
+    const phoneLine = screen.getByText(/A deck about flying/);
+    expect(phoneLine.className).toContain("line-clamp-2");
+    const { container } = render(<DeckIntentLine intent="A deck about flying creatures and keeping the board clear." width="desktop" />);
+    const desktopLine = container.querySelector("[data-deck-intent]");
+    expect(desktopLine?.className).not.toContain("line-clamp");
   });
 });

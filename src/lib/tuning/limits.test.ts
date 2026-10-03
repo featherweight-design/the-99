@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import { ANSWER_TOKENS_WORST_CASE, MAX_SUGGESTIONS, MODEL_TIMEOUT_MS, THINKING_HEADROOM_TOKENS, TUNING_MAX_TOKENS, TUNING_RETRY_FLOOR_MS, intentTooLong, seededAnswersIntent, seededIntent } from "./limits";
+import { ANSWER_TOKENS_WORST_CASE, MAX_SUGGESTIONS, MODEL_TIMEOUT_MS, THINKING_HEADROOM_TOKENS, TUNING_MAX_TOKENS, TUNING_RETRY_FLOOR_MS, intentTooLong } from "./limits";
 
 // The deck page's maxDuration bounds the run's Server Action, so the model deadline must fit
 // under it with room for the reads and writes around the call. Read from the page's source:
@@ -41,82 +41,16 @@ describe("TUNING_MAX_TOKENS", () => {
 });
 
 describe("intentTooLong", () => {
-  it("accepts an intent at the cap and refuses one over it", () => {
-    expect(intentTooLong("a".repeat(120))).toBe(false);
-    expect(intentTooLong("a".repeat(121))).toBe(true);
+  it("accepts a description at the cap (240, H35) and refuses one over it", () => {
+    expect(intentTooLong("a".repeat(240))).toBe(false);
+    expect(intentTooLong("a".repeat(241))).toBe(true);
     expect(intentTooLong("")).toBe(false);
   });
 
   it("counts code points, as the column does", () => {
-    // 120 emoji are 240 UTF-16 units and 120 code points: the column stores them.
-    expect(intentTooLong("🂡".repeat(120))).toBe(false);
-    expect(intentTooLong("🂡".repeat(121))).toBe(true);
+    // 240 emoji are 480 UTF-16 units and 240 code points: the column stores them.
+    expect(intentTooLong("🂡".repeat(240))).toBe(false);
+    expect(intentTooLong("🂡".repeat(241))).toBe(true);
   });
 });
 
-describe("seededIntent", () => {
-  it("names the commander in the whole sentence when it fits", () => {
-    expect(seededIntent(["Gisa, Glorious Resurrector"])).toBe(
-      "Built around Gisa, Glorious Resurrector, from the cards you own.",
-    );
-  });
-
-  it("names a pair as a pair", () => {
-    expect(seededIntent(["Tymna the Weaver", "Thrasios, Triton Hero"])).toContain(
-      "Tymna the Weaver and Thrasios, Triton Hero",
-    );
-  });
-
-  // The catalog's longest names run past 60 characters, and a pair of them is past the cap.
-  it("never returns more than the cap, counting code points, however long the names", () => {
-    const long = "Asmoranomardicadaistinaculdacar ".repeat(3).trim();
-    for (const names of [[long], [long, long], ["\u{1F600}".repeat(200)]]) {
-      const intent = seededIntent(names);
-      expect(intentTooLong(intent)).toBe(false);
-      expect(intent.startsWith("Built around ")).toBe(true);
-    }
-    expect(seededIntent([long, long]).endsWith("….")).toBe(true);
-  });
-});
-
-describe("seededAnswersIntent (F2)", () => {
-  const none = { themes: [], cardName: null, budgetDollars: null, bracket: null };
-
-  it("writes every answer as the brief", () => {
-    expect(seededAnswersIntent(["Gishath, Sun's Avatar"], { themes: ["Dinosaurs"], cardName: "Doubling Season", budgetDollars: 150, bracket: 3 }))
-      .toBe("Built around Gishath, Sun's Avatar: Dinosaurs, with Doubling Season, under $150, bracket 3.");
-  });
-
-  it("names themes asked as any of with or, and a single one plainly", () => {
-    expect(seededAnswersIntent(["Thorin"], { ...none, themes: ["Orcs", "Elves", "Dwarves", "Wizards"], themeJoin: "any" }))
-      .toBe("Built around Thorin: any of Orcs, Elves, Dwarves or Wizards.");
-    expect(seededAnswersIntent(["Thorin"], { ...none, themes: ["Dwarves"], themeJoin: "any" })).toBe("Built around Thorin: Dwarves.");
-  });
-
-  it("names the sets by code, joined by or", () => {
-    expect(seededAnswersIntent(["Thorin"], { ...none, themes: ["Orcs", "Elves"], themeJoin: "any", sets: ["hob", "hoc"] }))
-      .toBe("Built around Thorin: any of Orcs or Elves, from HOB or HOC.");
-  });
-
-  it("names several themes as a list", () => {
-    expect(seededAnswersIntent(["Gishath, Sun's Avatar"], { ...none, themes: ["Dinosaurs", "Ramp", "Landfall"] }))
-      .toBe("Built around Gishath, Sun's Avatar: Dinosaurs, Ramp and Landfall.");
-  });
-
-  it("falls back to the commander and its themes when the whole sentence is over the cap", () => {
-    const long = "A".repeat(80);
-    const s = seededAnswersIntent(["Gishath, Sun's Avatar"], { themes: ["Dinosaurs"], cardName: long, budgetDollars: 150, bracket: 3 });
-    expect(s).toBe("Built around Gishath, Sun's Avatar: Dinosaurs.");
-  });
-
-  it("falls back to seededIntent when even that is over, and with nothing asked", () => {
-    const names = ["Gishath, Sun's Avatar"];
-    expect(seededAnswersIntent(names, { ...none, themes: ["T".repeat(120)] })).toBe(seededIntent(names));
-    expect(seededAnswersIntent(names, none)).toBe(seededIntent(names));
-  });
-
-  it("never passes the cap, counted in code points", () => {
-    const s = seededAnswersIntent(["Æ".repeat(200)], { themes: ["Ω".repeat(50)], cardName: "x", budgetDollars: 1, bracket: 1 });
-    expect([...s].length).toBeLessThanOrEqual(120);
-  });
-});

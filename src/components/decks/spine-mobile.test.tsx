@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { SpineMobile } from "./spine-mobile";
 import { overCopy, renameCopy } from "../../lib/copy/decks-builder";
+import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { pairDeck, props } from "./spine-fixtures";
 
 function renderSpine(ui: React.ReactElement) {
@@ -90,7 +91,7 @@ describe("SpineMobile", () => {
     const { container } = renderSpine(<SpineMobile {...props} />);
     const band = container.querySelector("[data-testid='spine-band']")!;
     expect(band.textContent).toContain("Atraxa, Praetors’ Voice");
-    fireEvent.click(screen.getByRole("button", { name: renameCopy.triggerAria(props.deck.name) }));
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
     expect(band.textContent).not.toContain("Atraxa, Praetors’ Voice");
     expect(screen.getByText(/Atraxa, Praetors’ Voice/)).toBeTruthy();
   });
@@ -100,7 +101,7 @@ describe("SpineMobile", () => {
   // same rename the tap is about to send.
   it("neither action lets the field's blur fire first", () => {
     renderSpine(<SpineMobile {...props} />);
-    fireEvent.click(screen.getByRole("button", { name: renameCopy.triggerAria(props.deck.name) }));
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
     for (const name of [/Save/, "Cancel"]) {
       expect(fireEvent.mouseDown(screen.getByRole("button", { name }))).toBe(false);
     }
@@ -111,7 +112,7 @@ describe("SpineMobile", () => {
   it("names the deck in the rename trigger's accessible name", () => {
     renderSpine(<SpineMobile {...props} />);
     expect(
-      screen.getByRole("button", { name: `Rename deck: ${props.deck.name}` }),
+      screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }),
     ).toBeTruthy();
   });
 
@@ -168,7 +169,7 @@ describe("SpineMobile", () => {
   // centred.
   it("draws the rename trigger inline, unplated, at a 44px hit area", () => {
     renderSpine(<SpineMobile {...props} />);
-    const trigger = screen.getByRole("button", { name: renameCopy.triggerAria(props.deck.name) });
+    const trigger = screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) });
     expect(trigger.className).not.toContain("border");
     expect(trigger.className).not.toContain("bg-");
     expect(trigger.className).toContain("text-[color:var(--fg-muted)]");
@@ -369,7 +370,7 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
   // The field replaces the title in place, so it takes the title's alignment.
   it("left-aligns the rename field, like the title it replaces", () => {
     renderSpine(<SpineMobile {...props} />);
-    fireEvent.click(screen.getByRole("button", { name: renameCopy.triggerAria(props.deck.name) }));
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
     expect(screen.getByLabelText(renameCopy.fieldAria).className).toContain("text-left");
   });
 
@@ -389,7 +390,7 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
     );
     const heading = container.querySelector<HTMLElement>("h1")!;
     const holder = container
-      .querySelector<HTMLElement>('button[aria-label^="Rename deck"]')!
+      .querySelector<HTMLElement>('button[aria-label^="Edit name"]')!
       .parentElement!;
     // Siblings in one inline flow: the heading is `display: inline` and
     // unclamped, so its text wraps as ordinary content and the glyph after it

@@ -66,7 +66,7 @@ vi.mock("../../lib/tuning/verdicts", () => ({
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { creditsCopy } from "../../lib/copy/credits";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
-import { applySuggestion, readTuningEvidence, runTuning, saveDeckIntent } from "./tuning-actions";
+import { applySuggestion, readTuningEvidence, runTuning, saveDeckDescription } from "./tuning-actions";
 
 const DECK = "11111111-1111-4111-8111-111111111111";
 
@@ -186,12 +186,12 @@ describe("ids off the wire", () => {
   });
 });
 
-describe("saveDeckIntent's field", () => {
+describe("saveDeckDescription's field", () => {
   it("refuses a missing or non-text intent rather than clearing the line", async () => {
     const file = new FormData();
     file.set("intent", new Blob(["x"]), "intent.txt");
     for (const form of [new FormData(), file, null as unknown as FormData]) {
-      expect((await saveDeckIntent(DECK, form)).ok).toBe(false);
+      expect((await saveDeckDescription(DECK, form)).ok).toBe(false);
     }
     expect(calls.saved).toBe(0);
   });
@@ -199,7 +199,7 @@ describe("saveDeckIntent's field", () => {
   it("saves a text intent, empty included, since clearing is a real edit", async () => {
     const form = new FormData();
     form.set("intent", "");
-    expect((await saveDeckIntent(DECK, form)).ok).toBe(true);
+    expect((await saveDeckDescription(DECK, form)).ok).toBe(true);
     expect(calls.saved).toBe(1);
   });
 });

@@ -7,7 +7,7 @@ describe("the lines naming what shares the credits, by Help me choose's switch",
   const next = new Date("2026-09-24T14:20:00");
   it("read exactly as before the deeper looks with the switch off, which is the default", () => {
     expect(creditsCopy.spent(3, null)).toBe("0 of 3 left. Your overview and suggestions share these credits.");
-    expect(creditsCopy.spent(3, next, false)).toBe(`0 of 3 left · next one at ${clockTime(next)}. Your overview and suggestions share these credits.`);
+    expect(creditsCopy.spent(3, next, false)).toBe(`0 of 3 left · reset at ${clockTime(next)}. Your overview and suggestions share these credits.`);
     expect(creditsCopy.pausedReason()).toBe("The app has reached its monthly limit for suggestions and overviews. Nothing you did caused this.");
   });
 
@@ -39,7 +39,7 @@ describe("the spend cap's copy", () => {
   // must be built from the very same line or the two surfaces drift apart.
   it("exports standing, and first and again compose from it", () => {
     const next = new Date("2026-09-24T14:20:00");
-    expect(creditsCopy.standing(4, 5, next)).toBe(`4 of 5 left · next one at ${clockTime(next)}`);
+    expect(creditsCopy.standing(4, 5, next)).toBe(`4 of 5 left · reset at ${clockTime(next)}`);
     expect(creditsCopy.standing(5, 5, null)).toBe("5 of 5 left");
     expect(creditsCopy.first(4, 5, next)).toBe(`Uses a credit. ${creditsCopy.standing(4, 5, next)}.`);
     expect(creditsCopy.again(4, 5, next)).toContain(creditsCopy.standing(4, 5, next));

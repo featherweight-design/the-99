@@ -28,52 +28,9 @@ export function countCharacters(value: string): number {
 }
 
 export const deckTuningCopy = {
-  // ── What this deck is for (Surface 3) ─────────────────────────────────
-  // Transcribed from the handoff's copy strings; the one dash in `ask` and `skip` is set as
-  // a colon here, per the 2026-09-13 em-dash sweep. `maxLength` is read by the intent cap in
-  // `src/lib/tuning/limits.ts`, which counts code points the way the column's check does.
-  intent: {
-    askLabel: "What is this deck for?",
-    ask: (axis: string, count: string) =>
-      `One line, and the suggestions get sharper. Without it we can only read the games: ${count} of them say ${axis} is the problem, and we would guess at whether you want to fix that by drawing more or by winning sooner.`,
-    placeholder: "e.g. grind a four-person table out and win late with Gisa",
-    save: "Save this",
-    // Skippable, and it says so. An intent gate on a feature the player already waited for is
-    // a paywall made of typing.
-    skip: "or skip it: the suggestions still run",
-    edit: "edit",
-    // Eng-written, owed to /copy-review: the in-place edit's way out, undrawn.
-    cancel: "cancel",
-    editAria: "Edit what this deck is for",
-    // App-seeded. The chip is an authorship statement, removed PERMANENTLY on first edit.
-    seeded: "from the build",
-    seededAria: "This came from the brief The 99 built this deck to",
-    maxLength: 120,
-    // PLACEHOLDER, eng-written, owed to /copy-review: the handoff draws the seeded state and not
-    // its sentence. The brief a fill builds to is "around the commander, from what you own", and
-    // that is all it may say: anything more is a guess, and a guess wearing the seeded chip is
-    // the one thing the chip exists to prevent.
-    seededBrief: (commanders: string) => `Built around ${commanders}, from the cards you own.`,
-    seededBriefShort: (commanders: string) => `Built around ${commanders}.`,
-    // Help me choose's answers as the brief (design: *Built around {commander}: {theme}, with
-    // {card}, under {$cap}, bracket {n}.*). Owed to /copy-review with the rest of the line's copy.
-    seededAnswers: (commanders: string, parts: readonly string[]) => `Built around ${commanders}: ${parts.join(", ")}.`,
-    answerThemes: (labels: readonly string[]) =>
-      labels.length < 2 ? labels.join("") : `${labels.slice(0, -1).join(", ")} and ${labels[labels.length - 1]}`,
-    /** Themes asked as any of (Help me choose's three-answers addendum): *any of Orcs, Elves or Wizards*. */
-    answerThemesAny: (labels: readonly string[]) =>
-      `any of ${labels.length < 2 ? labels.join("") : `${labels.slice(0, -1).join(", ")} or ${labels[labels.length - 1]}`}`,
-    /** The sets asked, by code as their chip names them: *from HOB or HOC*. */
-    answerSets: (codes: readonly string[]) => `from ${codes.join(" or ")}`,
-    /** Own-only, as the addendum's seeded line reads it. */
-    answerOwn: "the 99 from cards you own",
-    answerCard: (name: string) => `with ${name}`,
-    answerBudget: (dollars: number) => `under $${dollars}`,
-    answerBracket: (bracket: number) => `bracket ${bracket}`,
-    // PLACEHOLDER refusals, owed to /copy-review. The shipped MutationError draws them.
-    tooLong: "Keep it to one line of 120 characters.",
-    refused: "That did not save. Try again.",
-  },
+  // `intent` (what this deck is for) is RETIRED whole, replaced by `deckDescriptionCopy.description`
+  // (H35, DESCRIPTION-where-it-lives.md): the ask, the seeded chip and its sentences are gone
+  // with the old door. See `deck-description.ts`.
 
   // ── The server's own refusals (PLACEHOLDER, owed to /copy-review) ──────
   // The panel's drawn states replace most of these; they are what a stale tab or a replayed

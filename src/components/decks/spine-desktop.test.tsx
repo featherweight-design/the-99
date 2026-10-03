@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { SpineDesktop } from "./spine-desktop";
 import { overCopy, renameCopy } from "../../lib/copy/decks-builder";
+import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { deck, pairDeck, props } from "./spine-fixtures";
 
 // The band's `Card details` pill reads the card-detail context, so the header
@@ -142,7 +143,7 @@ describe("SpineDesktop", () => {
 
   it("swaps the actions slot for the rename hint while editing", () => {
     renderSpine(<SpineDesktop {...props} />);
-    fireEvent.click(screen.getByRole("button", { name: renameCopy.triggerAria(props.deck.name) }));
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
     expect(screen.getByLabelText("Deck name")).toBeTruthy();
     expect(screen.getByText("↵ save · esc cancel")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Export" })).toBeNull();
@@ -153,27 +154,27 @@ describe("SpineDesktop", () => {
   // send the same rename the click is about to send.
   it("neither action lets the field's blur fire first", () => {
     renderSpine(<SpineDesktop {...props} />);
-    fireEvent.click(screen.getByRole("button", { name: renameCopy.triggerAria(props.deck.name) }));
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
     for (const name of [/Save/, "Cancel"]) {
       const down = fireEvent.mouseDown(screen.getByRole("button", { name }));
       expect(down).toBe(false);
     }
   });
 
-  it("holds the field's box across every editing state", () => {
+  it("holds the field's box across every editing state (H35: both fields, one width)", () => {
     renderSpine(<SpineDesktop {...props} />);
-    fireEvent.click(screen.getByRole("button", { name: renameCopy.triggerAria(props.deck.name) }));
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
     const field = screen.getByLabelText("Deck name") as HTMLInputElement;
-    // 352 is a CEILING now, not a fixed width: below ~1200px of row the title
-    // column's inset is 364px, so a 768px viewport leaves about 318px of column
-    // and a fixed field ran under the action controls beside it.
-    const box = [field.style.width, field.style.maxWidth, field.style.height];
-    expect(box).toEqual(["100%", "352px", "29px"]);
+    const box = [field.style.width, field.style.height];
+    expect(box).toEqual(["100%", "29px"]);
+    // Both fields, one width, 560 or the column's own — set on the wrapper, not the field.
+    const wrapper = field.parentElement!;
+    expect(wrapper.className).toContain("max-w-[560px]");
 
     // save-disabled: cleared name
     fireEvent.change(field, { target: { value: "" } });
     expect(screen.getByRole("button", { name: /Save/ }).getAttribute("aria-disabled")).toBe("true");
-    expect([field.style.width, field.style.maxWidth, field.style.height]).toEqual(box);
+    expect([field.style.width, field.style.height]).toEqual(box);
 
     // and the hint row is present in every state, so no row is ever added
     expect(screen.getByTestId("spine-rename-hint")).toBeTruthy();
@@ -184,7 +185,7 @@ describe("SpineDesktop", () => {
   it("names the deck in the rename trigger's accessible name", () => {
     renderSpine(<SpineDesktop {...props} />);
     expect(
-      screen.getByRole("button", { name: `Rename deck: ${props.deck.name}` }),
+      screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }),
     ).toBeTruthy();
   });
 
@@ -239,7 +240,7 @@ describe("SpineDesktop — the rename glyph", () => {
   // has to work on a phone.
   it("draws it inline, unplated and always visible, at a stated 44px target", () => {
     renderSpine(<SpineDesktop {...props} />);
-    const trigger = screen.getByRole("button", { name: renameCopy.triggerAria(props.deck.name) });
+    const trigger = screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) });
     expect(trigger.className).not.toContain("border");
     expect(trigger.className).not.toContain("opacity-0");
     expect(trigger.className).not.toContain("group-hover");

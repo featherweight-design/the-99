@@ -315,15 +315,15 @@ export const decks = pgTable("decks", {
    */
   noticesLegalSeen: uuid("notices_legal_seen").array(),
   /**
-   * What the player says this deck is FOR, in their words — the standing input deck tuning
-   * (#10) hands the model beside the list and the games. Null until stated, or until a fill
-   * seeds it.
+   * What the player says this deck is for, in their words (H35) — read by Suggested changes and
+   * the deck overview, quoted verbatim, never paraphrased. Null until stated. Up to 240 code
+   * points (was 120, widened for H35).
    */
   intent: text("intent"),
   /**
-   * True while the app's seeded sentence stands unedited. A fill writes true when it seeds;
-   * the player's first save writes false. One column carries both the seeded and the edited
-   * state, which is what lets the chip say which it is showing.
+   * DEAD WEIGHT since H35 (ruling 3): a fill no longer seeds a line, and nothing writes true
+   * here any more. Kept for now rather than dropped — the column's future is engineering's call
+   * — but every seeded row was migrated to null when this stopped.
    */
   intentSeeded: boolean("intent_seeded").notNull().default(false),
   /**
@@ -378,7 +378,8 @@ export const decks = pgTable("decks", {
       sql`${t.declaredBracket} is null or ${t.declaredBracket} between 1 and 5`,
     ),
     // Code points, as Postgres's char_length counts them — the app's cap counts the same way.
-    check("decks_intent_length_check", sql`${t.intent} is null or char_length(${t.intent}) <= 120`),
+    // 240, up from 120 (H35): the description is read by two model readers now, not one.
+    check("decks_intent_length_check", sql`${t.intent} is null or char_length(${t.intent}) <= 240`),
     check("decks_answer_budget_check", sql`${t.answerBudgetCents} is null or (${t.answerBudgetCents} >= 100 and ${t.answerBudgetCents} % 100 = 0)`),
     check("decks_answer_bracket_range", sql`${t.answerBracket} is null or ${t.answerBracket} between 1 and 5`),
     check(

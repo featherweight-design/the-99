@@ -1,10 +1,12 @@
 "use client";
 
-import { useId } from "react";
+import { useId, useState } from "react";
 
 import type { Bracket } from "../../lib/bracket/types";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
+import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { BracketMark } from "./bracket-mark";
+import { DeckDescriptionField } from "./deck-description-field";
 import { ProvenanceOpener } from "./provenance-panel";
 
 const copy = deckAnalysisCopy.panel;
@@ -35,6 +37,8 @@ export function AnalysisEmpty({
   blocked = null,
   note = null,
   see = null,
+  description = null,
+  onSaveDescription,
 }: {
   phase: "idle" | "loading" | "failed";
   /**
@@ -56,8 +60,34 @@ export function AnalysisEmpty({
   note?: string | null;
   /** The overview check's *See which →*, after the note (deck notices HANDOFF §6). */
   see?: { label: string; onPress: () => void } | null;
+  /** The deck's description, read by this field and by Suggested changes (H35). Null until
+   *  stated — the field is empty, never undrawn, since the empty state IS where it is asked. */
+  description?: string | null;
+  /** Saves the description. The press (below) awaits this before it reads (engineering note 1):
+   *  a description typed seconds before Analyze must not be lost to a race. */
+  onSaveDescription?: (value: string) => Promise<DeckMutationResult>;
 }) {
   const noteId = useId();
+  const [draft, setDraft] = useState(description ?? "");
+  const [savingDescription, setSavingDescription] = useState(false);
+  const [descriptionRefused, setDescriptionRefused] = useState<string | null>(null);
+  // A new description from the page (another tab's edit, a revalidate) replaces the held draft,
+  // adjusted during render rather than in an effect — unless the reader is mid-edit here.
+  const [seenDescription, setSeenDescription] = useState(description ?? null);
+  if (seenDescription !== description) {
+    setSeenDescription(description ?? null);
+    setDraft(description ?? "");
+  }
+  async function saveDescription(): Promise<void> {
+    if (!onSaveDescription) return;
+    const trimmed = draft.trim();
+    if (trimmed === (description ?? "").trim()) return;
+    setSavingDescription(true);
+    setDescriptionRefused(null);
+    const result = await onSaveDescription(trimmed);
+    setSavingDescription(false);
+    if (!result.ok) setDescriptionRefused(result.message);
+  }
   const shownNote = blocked === null ? note : null;
   const text = phase === "loading"
     ? stage === "writing" ? copy.writing : copy.loading
@@ -102,11 +132,29 @@ export function AnalysisEmpty({
               {copy.idle.bodyPersist}
             </p>
           ) : null}
+          {/* The description field, between the second paragraph and Analyze (H35, STATES §1).
+              Not drawn during loading — the shipped loading state is unchanged. */}
+          {phase === "idle" ? (
+            <div className="w-full max-w-[540px]">
+              <DeckDescriptionField
+                value={draft}
+                onChange={setDraft}
+                onBlur={() => void saveDescription()}
+                saving={savingDescription}
+                refused={descriptionRefused}
+              />
+            </div>
+          ) : null}
           <div className={`mt-[20px] flex w-full flex-col items-center gap-[6px] md:mt-[22px] md:w-auto md:flex-row md:flex-wrap md:gap-x-[20px] ${shownNote ? "md:gap-y-[12px]" : "md:gap-y-[20px]"}`}>
             {/* A BUTTON, NEVER AUTOMATIC. A silent retry loop is how a wait becomes a bill. */}
             <button
               type="button"
-              onClick={disabled ? undefined : onRequest}
+              onClick={disabled ? undefined : () => {
+                // Nothing to save: read now, synchronously — a caller with no save wired up
+                // (or no pending edit) gets exactly the old one-press behavior.
+                if (!onSaveDescription || draft.trim() === (description ?? "").trim()) { onRequest(); return; }
+                void saveDescription().then(onRequest);
+              }}
               aria-disabled={disabled || undefined}
               aria-describedby={blocked ? "analysis-blocked" : shownNote ? noteId : undefined}
               className={

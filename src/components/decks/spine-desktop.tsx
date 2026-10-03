@@ -6,7 +6,7 @@
 // portrait's 356. On flat ground either way, so nothing here carries a shadow.
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { GhostButton, PrimaryButton } from "@/components/ui/button";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { IdentityPips } from "../commanders/commander-art";
@@ -25,11 +25,13 @@ import { StatusPillBadge } from "./status-pill";
 import { SpineBracketChip } from "./bracket-chip";
 import { HeaderNoticeTag, type HeaderNotice } from "./notice-tag";
 import type { TileBracket } from "../../lib/decks/read";
-import { useDeckRename } from "./use-deck-rename";
+import { useDeckHeaderEdit } from "./use-deck-header-edit";
 import { ProxyTag } from "./proxy-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { shortName } from "../../lib/cards/short-name";
 import { DeckIntentLine } from "./deck-intent-line";
+import { deckDescriptionCopy } from "../../lib/copy/deck-description";
+import { countCharacters } from "../../lib/copy/deck-tuning";
 
 /** The slice of the deck both widths of the header read. Narrower than
     `DeckDetail` on purpose: nothing in this band knows about the decklist. */
@@ -99,13 +101,8 @@ export interface SpineBandProps {
   onOpenNotices?: () => void;
 }
 
-/** §B16 — the field's box, identical in all four editing states. Declared
-    rather than left to layout: zero reflow between states is the point. */
-// `maxWidth`, not a fixed `width`: the title column's inset is 364px below
-// ~1200px of row, so a 768px viewport leaves about 318px of column — less than
-// 352 — and a fixed field would have run under the action controls beside it
-// while renaming. 352 stays the intended size wherever the column can hold it.
-const FIELD_BOX = { width: "100%", maxWidth: 352, height: 29 } as const;
+// §B16's single-field box is retired: editing now draws name and description at one width,
+// `max-w-[560px]`, set inline on the editor block below (H35, STATES §2).
 
 /**
  * Decision 18's shrinking half. Both names take it; the partner additionally
@@ -144,7 +141,8 @@ export function SpineDesktop({
   // ink the state adds reads the same token `statusBarStyle` gives the bar
   // rather than a second alarm colour of its own.
   const overInk = `var(${STATUS_TOKEN[status]})`;
-  const rename = useDeckRename(deck.id, deck.name, () => setRenaming(false));
+  const rename = useDeckHeaderEdit(deck.id, deck.name, deck.intent ?? null, () => setRenaming(false));
+  const descriptionFieldRef = useRef<HTMLTextAreaElement>(null);
 
   // §F, as three booleans rather than a state string: they are not exclusive in
   // the source (a save-disabled field can also be showing a previous error) and
@@ -263,33 +261,60 @@ export function SpineDesktop({
         <div className="flex min-w-0 flex-1 basis-[280px] flex-col">
           <div className="flex items-center">
             {renaming ? (
-              <input
-                autoFocus
-                value={rename.value}
-                onChange={(e) => rename.setValue(e.target.value)}
-                onKeyDown={rename.onKeyDown}
-                onBlur={rename.onBlur}
-                // readOnly, never disabled: a disabled input blurs, and blur
-                // commits.
-                readOnly={saving}
-                maxLength={undefined}
-                aria-label={renameCopy.fieldAria}
-                className="font-display font-[700] focus-visible:outline-none"
-                style={{
-                  ...FIELD_BOX,
-                  boxSizing: "border-box",
-                  background: "var(--surface-sunken)",
-                  border: fieldBorder,
-                  borderRadius: 8,
-                  padding: "1px 10px",
-                  margin: "-2px 0 -2px -11px",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  fontSize: 21,
-                  lineHeight: 1.2,
-                  color: "var(--fg)",
-                }}
-              />
+              // Both fields, one width (STATES-deck-description.md §2, state 3): 560 or the
+              // cover's own width, whichever this column has. One commit for the pair — blur on
+              // the wrapper, never on either field alone.
+              <div className="flex w-full max-w-[560px] flex-col gap-[6px]" style={{ margin: "-2px 0 -2px -11px" }} onBlur={rename.onPairBlur}>
+                <input
+                  autoFocus
+                  value={rename.name}
+                  onChange={(e) => rename.setName(e.target.value)}
+                  onKeyDown={(e) => rename.onNameKeyDown(e, descriptionFieldRef.current)}
+                  readOnly={saving}
+                  aria-label={renameCopy.fieldAria}
+                  className="font-display font-[700] focus-visible:outline-none"
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    background: "var(--surface-sunken)",
+                    border: fieldBorder,
+                    borderRadius: 8,
+                    padding: "1px 10px",
+                    height: 29,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    fontSize: 21,
+                    lineHeight: 1.2,
+                    color: "var(--fg)",
+                  }}
+                />
+                <textarea
+                  ref={descriptionFieldRef}
+                  value={rename.description}
+                  onChange={(e) => {
+                    if (countCharacters(e.target.value) <= deckDescriptionCopy.description.maxLength) {
+                      rename.setDescription(e.target.value);
+                    }
+                  }}
+                  onKeyDown={rename.onDescriptionKeyDown}
+                  readOnly={saving}
+                  rows={2}
+                  placeholder={deckDescriptionCopy.description.placeholder}
+                  aria-label={deckDescriptionCopy.description.fieldAria}
+                  className="resize-none font-sans focus-visible:outline-none"
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    background: "var(--surface-sunken)",
+                    border: "1px dashed var(--border-strong)",
+                    borderRadius: 8,
+                    padding: "6px 10px",
+                    fontSize: 13.5,
+                    lineHeight: 1.45,
+                    color: "var(--fg)",
+                  }}
+                />
+              </div>
             ) : (
               <>
                 {/* Selectable text, not a control — §B15 makes the pencil the
@@ -355,7 +380,7 @@ export function SpineDesktop({
                   <button
                     type="button"
                     onClick={() => setRenaming(true)}
-                    aria-label={renameCopy.triggerAria(deck.name)}
+                    aria-label={deckDescriptionCopy.description.pencilAria(deck.name)}
                     className="inline-flex items-center justify-center bg-transparent text-[color:var(--fg-muted)]"
                     style={{
                       // Stated rather than inferred from the glyph: a 14px font
@@ -380,13 +405,7 @@ export function SpineDesktop({
           </div>
 
           {/* SECOND in the order (placement addendum r3, E2): the deck's purpose, under its name. */}
-          <DeckIntentLine
-            key={deck.id}
-            deckId={deck.id}
-            intent={deck.intent ?? null}
-            seeded={deck.intentSeeded ?? false}
-            width="desktop"
-          />
+          <DeckIntentLine intent={deck.intent ?? null} width="desktop" />
 
           <div
             // Same marker as the phone's row, for the same probe.

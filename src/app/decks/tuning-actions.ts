@@ -10,6 +10,7 @@ import { requireUserId } from "../../lib/auth";
 import { isUuid } from "../../lib/uuid";
 import { creditsCopy } from "../../lib/copy/credits";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { deckSurfaces } from "../../lib/decks/revalidate";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
@@ -54,19 +55,20 @@ function revalidateDeck(deckId: string): void {
 }
 
 /**
- * The deck's one line. Every save clears `intent_seeded`: the app writes `true` when it fills a
- * deck, and the player's first edit — the only thing that calls this — makes the line theirs.
+ * The deck's description (H35): one or two sentences, quoted verbatim by the overview and
+ * Suggested changes. Every save clears `intent_seeded` too, which no longer matters for a new
+ * write (nothing seeds any more) but still holds for a deck that had an old seeded line.
  */
-export async function saveDeckIntent(deckId: string, formData: FormData): Promise<DeckMutationResult> {
+export async function saveDeckDescription(deckId: string, formData: FormData): Promise<DeckMutationResult> {
   const userId = await requireUserId();
-  if (!isUuid(deckId)) return { ok: false, message: deckTuningCopy.intent.refused };
+  if (!isUuid(deckId)) return { ok: false, message: deckDescriptionCopy.description.refused };
   // A field that is missing or not text is a refusal, never an empty line: reading it as ""
-  // would clear the player's intent on a malformed request.
+  // would clear the player's description on a malformed request.
   const raw = formData instanceof FormData ? formData.get("intent") : null;
-  if (typeof raw !== "string") return { ok: false, message: deckTuningCopy.intent.refused };
+  if (typeof raw !== "string") return { ok: false, message: deckDescriptionCopy.description.refused };
   const saved = await saveIntent(deckId, userId, raw);
-  if (saved === "tooLong") return { ok: false, message: deckTuningCopy.intent.tooLong };
-  if (saved === "refused") return { ok: false, message: deckTuningCopy.intent.refused };
+  if (saved === "tooLong") return { ok: false, message: deckDescriptionCopy.description.tooLong };
+  if (saved === "refused") return { ok: false, message: deckDescriptionCopy.description.refused };
   revalidateDeck(deckId);
   return { ok: true };
 }
