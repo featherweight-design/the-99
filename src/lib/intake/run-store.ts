@@ -33,7 +33,7 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type { Billed };
 
 /** The values `intake_reads_error_class_check` allows. */
-export type ReadErrorClass = ModelErrorClass | "nothing_valid" | "interrupted";
+export type ReadErrorClass = Exclude<ModelErrorClass, "upstream_rejected"> | "nothing_valid" | "interrupted";
 
 /** A started read as its caller holds it for the request: the row's id and its unit's id. */
 export type ReadHandle = { readId: string; callId: string };
@@ -245,7 +245,7 @@ export async function startRead(
  */
 export async function settleRead(
   { readId, callId, userId }: ReadHandle & { userId: string },
-  outcome: { kind: "read"; result: ReadResult } | { kind: "failed"; errorClass: ModelErrorClass },
+  outcome: { kind: "read"; result: ReadResult } | { kind: "failed"; errorClass: Exclude<ModelErrorClass, "upstream_rejected"> },
   billed?: Billed,
 ): Promise<boolean> {
   const useful = outcome.kind === "read" && outcome.result.useful;

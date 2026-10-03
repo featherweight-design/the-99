@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../db", () => ({ db: {} }));
 
-import { pressWrites, synopsisStatus } from "./read";
+import { lastWriteFailure, pressWrites, synopsisStatus } from "./read";
 
 // \`nextAt\` follows the allowance rule: set whenever a credit is in use, whether or not any are left.
 const left = { used: 1, limit: 5, reopensAt: null, nextAt: new Date() };
@@ -73,5 +73,32 @@ describe("pressWrites", () => {
   });
   it("does not write for a deck it cannot read", () => {
     expect(pressWrites(null, null)).toBe(false);
+  });
+});
+
+describe("lastWriteFailure (H33)", () => {
+  const at = (ms: number) => new Date(Date.UTC(2026, 9, 2, 12, 0, 0, ms));
+  const run = (outcome: string | null, status = "done") => ({ status, outcome, createdAt: at(10), fingerprint: "A" });
+
+  it("reads a rejected write as a failure, and as a rejection", () => {
+    expect(lastWriteFailure(run("upstream_rejected"), "A", null)).toEqual({ lastFailed: true, lastRejected: true });
+  });
+
+  it("reads a busy write as a failure the player may try again", () => {
+    expect(lastWriteFailure(run("upstream_busy"), "A", null)).toEqual({ lastFailed: true, lastRejected: false });
+  });
+
+  it("reads a rejection over an older overview as this list's failure", () => {
+    expect(lastWriteFailure(run("upstream_rejected"), "A", { createdAt: at(0) })).toEqual({ lastFailed: true, lastRejected: true });
+  });
+
+  it("does not report a rejection written for another list, or older than the overview shown", () => {
+    expect(lastWriteFailure(run("upstream_rejected"), "B", null)).toEqual({ lastFailed: false, lastRejected: false });
+    expect(lastWriteFailure(run("upstream_rejected"), "A", { createdAt: at(20) })).toEqual({ lastFailed: false, lastRejected: false });
+  });
+
+  it("reports nothing for a run still pending or one that survived", () => {
+    expect(lastWriteFailure(run(null, "pending"), "A", null)).toEqual({ lastFailed: false, lastRejected: false });
+    expect(lastWriteFailure(run("survived"), "A", null)).toEqual({ lastFailed: false, lastRejected: false });
   });
 });

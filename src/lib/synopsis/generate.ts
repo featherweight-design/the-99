@@ -362,6 +362,8 @@ export async function finishRun(
     charge: "spent" | "refunded";
     /** What the call was billed for, when it got a response; written on the unit as it settles. */
     billed?: { model: string; usage: ModelUsage };
+    /** The failing call's HTTP status, when it had one (`ModelOutcome.status`). */
+    errorStatus?: number;
   },
   now: Date = new Date(),
 ): Promise<boolean> {
@@ -373,6 +375,7 @@ export async function finishRun(
         content: set.content,
         inputTokens: set.usage?.inputTokens ?? null,
         outputTokens: set.usage?.outputTokens ?? null,
+        errorStatus: set.errorStatus ?? null,
       })
       .where(and(eq(deckSynopses.id, runId), eq(deckSynopses.status, "pending")))
       .returning({ callId: deckSynopses.modelCallId });
@@ -387,6 +390,18 @@ export async function finishRun(
     }
     return rows.length > 0;
   });
+}
+
+/**
+ * What a failed call settles its run with: the call's own class, and its HTTP status when it had
+ * one, so the row says whether the upstream was busy or refused the request (H33). Refunded,
+ * always: no answer came back to charge for.
+ */
+export function failedRunSet(
+  outcome: Extract<ModelOutcome<unknown>, { ok: false }>,
+  billed: { model: string; usage: ModelUsage } | undefined,
+): Parameters<typeof finishRun>[1] {
+  return { outcome: outcome.errorClass, content: null, usage: null, charge: "refunded", billed, errorStatus: outcome.status };
 }
 
 async function run(
@@ -455,7 +470,7 @@ async function run(
     if (outcome.usage) billed = { model: deps.modelName, usage: outcome.usage };
 
     if (!outcome.ok) {
-      const settled = await finishRun(started, { outcome: outcome.errorClass, content: null, usage: null, charge: "refunded", billed }, deps.now());
+      const settled = await finishRun(started, failedRunSet(outcome, billed), deps.now());
       return settled ? { kind: "written", outcome: outcome.errorClass, synopsis: null } : { kind: "superseded" };
     }
 

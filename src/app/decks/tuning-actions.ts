@@ -143,7 +143,8 @@ export async function runTuning(
       effort: TUNING_EFFORT, retryFloorMs: TUNING_RETRY_FLOOR_MS,
     });
     if (outcome.usage) billed = { model: TUNING_MODEL, usage: outcome.usage };
-    if (!outcome.ok) return await fail(outcome.errorClass);
+    // A rejection is stored as busy here: the distinction is kept for the overview only, for now.
+    if (!outcome.ok) return await fail(outcome.errorClass === "upstream_rejected" ? "upstream_busy" : outcome.errorClass);
 
     // One catalog read of every name the model returned; injected so validate.ts stays pure.
     const names = [...new Set(outcome.value.suggestions.flatMap((s) => [s.add, s.cut]))];

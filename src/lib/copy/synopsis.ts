@@ -18,6 +18,9 @@ export const synopsisCopy = {
   writeOne: "Write one",
   /** Ruling A: the deck's own write just failed upstream (busy, timed out, malformed). */
   failed: "We couldn’t write the overview just now. Nothing about your deck changed.",
+  /** The deck's own write was refused upstream (`upstream_rejected`: a bad key, a retired model
+   *  id). No retry fixes it, so there is no Try again and no "just now". Owed to /copy-review. */
+  rejected: "We couldn’t write the overview. Nothing about your deck changed.",
   tryAgain: "Try again",
   /** Ruling D: an older overview beside a fresh reading. */
   olderThanList: "This overview was written before your latest changes.",

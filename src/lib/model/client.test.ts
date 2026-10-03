@@ -94,7 +94,8 @@ describe("callModel", () => {
   it("gives up as upstream_busy after the one retry, leaving a log line for each attempt", async () => {
     const lines: string[] = [];
     const { messages, calls } = scripted([rateLimited(), busy()]);
-    expect(await callModel(req, { messages, log: (l) => lines.push(l) })).toEqual({ ok: false, errorClass: "upstream_busy" });
+    // The status is the LAST attempt's: 529, not the first attempt's 429.
+    expect(await callModel(req, { messages, log: (l) => lines.push(l) })).toEqual({ ok: false, errorClass: "upstream_busy", status: 529 });
     expect(calls).toHaveLength(2);
     expect(lines).toEqual([expect.stringMatching(/^\[model\] upstream: 429/), expect.stringMatching(/^\[model\] upstream: 529/)]);
   });
@@ -169,7 +170,7 @@ describe("callModel", () => {
   it("keeps a malformed first reply's usage when the retry is lost upstream", async () => {
     const { messages } = scripted([reply(null, { input_tokens: 40, output_tokens: 9 }), busy()]);
     expect(await callModel(req, { messages, log: quiet })).toEqual({
-      ok: false, errorClass: "upstream_busy",
+      ok: false, errorClass: "upstream_busy", status: 529,
       usage: { inputTokens: 40, outputTokens: 9, cacheReadTokens: 0, cacheWriteTokens: 0 },
     });
   });
@@ -183,7 +184,7 @@ describe("callModel", () => {
   it("does not retry a key the upstream refused, and logs it as configuration", async () => {
     const lines: string[] = [];
     const { messages, calls } = scripted([unauthorized(), reply({ answer: "x" })]);
-    expect(await callModel(req, { messages, log: (l) => lines.push(l) })).toEqual({ ok: false, errorClass: "upstream_busy" });
+    expect(await callModel(req, { messages, log: (l) => lines.push(l) })).toEqual({ ok: false, errorClass: "upstream_rejected", status: 401 });
     expect(calls).toHaveLength(1);
     expect(lines[0]).toMatch(/^\[model\] configuration:/);
   });
@@ -191,7 +192,7 @@ describe("callModel", () => {
   it("does not retry a request the upstream rejected, and logs it distinctly", async () => {
     const lines: string[] = [];
     const { messages, calls } = scripted([badRequest(), reply({ answer: "x" })]);
-    expect(await callModel(req, { messages, log: (l) => lines.push(l) })).toEqual({ ok: false, errorClass: "upstream_busy" });
+    expect(await callModel(req, { messages, log: (l) => lines.push(l) })).toEqual({ ok: false, errorClass: "upstream_rejected", status: 400 });
     expect(calls).toHaveLength(1);
     expect(lines[0]).toMatch(/^\[model\] request:/);
   });
@@ -207,7 +208,7 @@ describe("callModel", () => {
   it("makes no request without a key, logs configuration, and does not throw", async () => {
     vi.stubEnv("ANTHROPIC_API_KEY", "");
     const lines: string[] = [];
-    expect(await callModel(req, { log: (l) => lines.push(l) })).toEqual({ ok: false, errorClass: "upstream_busy" });
+    expect(await callModel(req, { log: (l) => lines.push(l) })).toEqual({ ok: false, errorClass: "upstream_rejected" });
     expect(lines[0]).toMatch(/configuration: ANTHROPIC_API_KEY/);
   });
 
@@ -262,7 +263,7 @@ describe("callModel", () => {
         return out;
       },
     } as unknown as ModelDeps["messages"];
-    expect(await callModel(req, { messages: slow, now: () => clock, log: quiet })).toEqual({ ok: false, errorClass: "upstream_busy" });
+    expect(await callModel(req, { messages: slow, now: () => clock, log: quiet })).toEqual({ ok: false, errorClass: "upstream_busy", status: 529 });
     expect(calls).toHaveLength(1);
   });
 
@@ -300,5 +301,53 @@ describe("callModel", () => {
     const { calls, deps } = afterFirst(43_000);
     expect((await callModel({ ...req, deadlineMs: 110_000 }, deps)).ok).toBe(true);
     expect(calls[1].opts.timeout).toBe(67_000);
+  });
+});
+
+/**
+ * One case per branch of `classify`, by the error the SDK throws: the class, the status the
+ * outcome carries, and whether a second attempt was made. A RETRYABLE error is followed by the same
+ * error again, so the outcome is the retry's, and a FINAL one by a good reply that must never be
+ * reached. The split this pins (H33): an upstream that was busy may be tried again, and a request
+ * it refused may not, and the two must never share a class.
+ */
+describe("callModel classifies each fault", () => {
+  const h = () => new Headers();
+  const cases: Array<{ name: string; err: () => Error; errorClass: string; status?: number; retried: boolean }> = [
+    { name: "401, a bad key", err: () => new Anthropic.AuthenticationError(401, undefined, "bad key", h()), errorClass: "upstream_rejected", status: 401, retried: false },
+    { name: "403, a key without access", err: () => new Anthropic.PermissionDeniedError(403, undefined, "denied", h()), errorClass: "upstream_rejected", status: 403, retried: false },
+    { name: "404, a retired model id", err: () => new Anthropic.NotFoundError(404, undefined, "model: not found", h()), errorClass: "upstream_rejected", status: 404, retried: false },
+    { name: "400, a malformed request", err: () => new Anthropic.BadRequestError(400, undefined, "bad request", h()), errorClass: "upstream_rejected", status: 400, retried: false },
+    { name: "413, an unnamed 4xx", err: () => Anthropic.APIError.generate(413, undefined, "too large", h()), errorClass: "upstream_rejected", status: 413, retried: false },
+    { name: "429, rate limited", err: () => new Anthropic.RateLimitError(429, undefined, "slow down", h()), errorClass: "upstream_busy", status: 429, retried: true },
+    { name: "500, a server error", err: () => new Anthropic.InternalServerError(500, undefined, "oops", h()), errorClass: "upstream_busy", status: 500, retried: true },
+    { name: "529, overloaded", err: () => new Anthropic.InternalServerError(529, undefined, "overloaded", h()), errorClass: "upstream_busy", status: 529, retried: true },
+    { name: "a dropped connection", err: () => new Anthropic.APIConnectionError({ message: "socket hang up" }), errorClass: "upstream_busy", retried: true },
+    { name: "an error of no known kind", err: () => new TypeError("odd"), errorClass: "upstream_busy", retried: false },
+  ];
+
+  for (const c of cases) {
+    it(`${c.name}: ${c.errorClass}${c.status ? ` ${c.status}` : ""}, ${c.retried ? "retried once" : "not retried"}`, async () => {
+      const { messages, calls } = scripted(c.retried ? [c.err(), c.err(), reply({ answer: "never" })] : [c.err(), reply({ answer: "never" })]);
+      const outcome = await callModel(req, { messages, log: quiet });
+      expect(outcome).toEqual(c.status === undefined
+        ? { ok: false, errorClass: c.errorClass }
+        : { ok: false, errorClass: c.errorClass, status: c.status });
+      expect(calls).toHaveLength(c.retried ? 2 : 1);
+    });
+  }
+
+  it("no key: upstream_rejected with no status, and no request made", async () => {
+    vi.stubEnv("ANTHROPIC_API_KEY", "");
+    expect(await callModel(req, { log: quiet })).toEqual({ ok: false, errorClass: "upstream_rejected" });
+  });
+
+  it("a busy first attempt and a rejected retry: the retry's class and status", async () => {
+    const { messages, calls } = scripted([
+      new Anthropic.InternalServerError(529, undefined, "overloaded", h()),
+      new Anthropic.NotFoundError(404, undefined, "model: not found", h()),
+    ]);
+    expect(await callModel(req, { messages, log: quiet })).toEqual({ ok: false, errorClass: "upstream_rejected", status: 404 });
+    expect(calls).toHaveLength(2);
   });
 });

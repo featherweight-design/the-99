@@ -719,7 +719,7 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 
   **The model is injected and spends nothing.** Outside production the synopsis never calls the
   real model unless `SYNOPSIS_LIVE=1` is set; `src/lib/synopsis/stub.ts` answers instead, built from
-  the deck it is asked about, and `SYNOPSIS_STUB` switches it to `partial`, `refused`, `malformed`,
+  the deck it is asked about, and `SYNOPSIS_STUB` switches it to `partial`, `refused`, `malformed`, `rejected`,
   `busy` or `timeout`. So a dev server and every UI probe run free. `--live` is the one path that
   opts in: it needs `ANTHROPIC_API_KEY`, runs `--max-calls` (default 3, capped at 5) real calls,
   and prints tokens and an estimated cost after each, inside Hugh's $25 eval budget. To measure a

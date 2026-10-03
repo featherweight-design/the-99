@@ -50,6 +50,12 @@ export type SynopsisState = {
    */
   lastFailed: boolean;
   /**
+   * That failure was the upstream REFUSING the request (`upstream_rejected`: a bad key, a retired
+   * model id), which no retry fixes, so the slot offers no Try again and does not say "just now".
+   * True only alongside `lastFailed`.
+   */
+  lastRejected: boolean;
+  /**
    * The deck's newest run was refused in EVERY section, after the overview on screen was written:
    * Round 0's refused state, with the count summed over its sections. Null otherwise.
    */
@@ -70,7 +76,25 @@ export type SynopsisState = {
   illegal: boolean;
 };
 
-const FAILED: readonly SynopsisOutcome[] = ["upstream_busy", "timeout", "malformed", "interrupted"];
+const FAILED: readonly SynopsisOutcome[] = ["upstream_busy", "upstream_rejected", "timeout", "malformed", "interrupted"];
+
+/**
+ * Pure: whether the deck's newest run is a failure the slot reports, and whether that failure was
+ * a rejection (no Try again). Only a run written for the list the reading describes, and newer
+ * than the overview on screen, counts: once the list has moved and been analyzed again, that run
+ * is history, and its failure is not this list's.
+ */
+export function lastWriteFailure(
+  newest: { status: string; outcome: string | null; createdAt: Date; fingerprint: string } | undefined,
+  list: string | undefined,
+  synopsis: Pick<SynopsisRow, "createdAt"> | null,
+): { lastFailed: boolean; lastRejected: boolean } {
+  const forThisList = !!newest && list !== undefined && newest.fingerprint === list;
+  const lastFailed = forThisList && newest!.status === "done"
+    && FAILED.includes(newest!.outcome as SynopsisOutcome)
+    && (!synopsis || newest!.createdAt > synopsis.createdAt);
+  return { lastFailed, lastRejected: lastFailed && newest!.outcome === "upstream_rejected" };
+}
 
 /** Pure: the state from what the reads returned. */
 export function synopsisStatus(input: {
@@ -149,9 +173,7 @@ export async function readSynopsisState(
   // WHAT BECAME OF THE LAST WRITE describes the list it was written for. Once the list has moved
   // and been analyzed again, that run is history: its failure or refusal is not this list's.
   const forThisList = !!newest && !!row && newest.fingerprint === row.list;
-  const lastFailed = forThisList && newest!.status === "done"
-    && FAILED.includes(newest.outcome as SynopsisOutcome)
-    && (!synopsis || newest.createdAt > synopsis.createdAt);
+  const { lastFailed, lastRejected } = lastWriteFailure(newest, row?.list, synopsis);
   const newer = forThisList && (!synopsis || newest!.createdAt > synopsis.createdAt);
   const lastRefused = newer && newest!.status === "done" && newest!.outcome === "refused" && newest!.content
     && !newest!.content.verdicts.some((v) => v.status === "ok")
@@ -159,7 +181,7 @@ export async function readSynopsisState(
     : null;
   const art = synopsis ? await namedArt(synopsis.content) : {};
   return {
-    synopsis, ...status, pressWrites: pressWrites(live, synopsis), allowance, lastFailed, lastRefused, art,
+    synopsis, ...status, pressWrites: pressWrites(live, synopsis), allowance, lastFailed, lastRejected, lastRefused, art,
     pending: newest?.status === "pending",
     illegal,
   };
