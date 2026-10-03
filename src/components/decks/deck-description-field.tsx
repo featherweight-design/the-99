@@ -62,7 +62,9 @@ export function DeckDescriptionField({
         // 16px below `md`: iOS Safari zooms the viewport on focusing any input under 16px, and
         // this field is shared at both widths (pre-open review) — `md:text-[13.5px]` is the
         // desktop size the retired single-field editor used.
-        className="w-full resize-none rounded-[8px] font-sans text-[16px] leading-[1.5] focus-visible:outline-none md:text-[13.5px]"
+        // No `focus-visible:outline-none`: keyboard focus needs the global 2px accent ring
+        // (globals.css), which this class used to suppress with nothing replacing it.
+        className="w-full resize-none rounded-[8px] font-sans text-[16px] leading-[1.5] md:text-[13.5px]"
         style={{
           background: "var(--surface)",
           border: `1px solid ${focused ? "var(--accent)" : "var(--border-strong)"}`,

@@ -321,7 +321,7 @@ export function SpineMobile({
                 aria-label={deckDescriptionCopy.description.fieldAria}
                 // 16px, not 13.5: iOS Safari zooms the viewport on focusing an input under 16px
                 // (pre-open review) — the retired single-field editor used 16px on a phone too.
-                className="w-full resize-none rounded-[8px] border border-dashed border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] text-left font-sans focus-visible:outline-none"
+                className="w-full resize-none rounded-[8px] border border-dashed border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] text-left font-sans"
                 style={{
                   boxSizing: "border-box",
                   padding: "8px 12px",

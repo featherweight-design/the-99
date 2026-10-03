@@ -183,6 +183,15 @@ describe("SpineDesktop", () => {
     expect(screen.getByTestId("spine-rename-hint")).toBeTruthy();
   });
 
+  // Pre-open review round 3: the editor already shows the description as its own field, so the
+  // saved tagline beneath it would read as a duplicate of whatever the draft just replaced.
+  it("hides the saved tagline while the editor is open", () => {
+    const { container } = renderSpine(<SpineDesktop {...props} deck={{ ...props.deck, intent: "Grind it out." }} />);
+    expect(container.querySelector("[data-deck-intent]")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    expect(container.querySelector("[data-deck-intent]")).toBeNull();
+  });
+
   // Pre-open review: Save/Cancel sit in a separate column from the fields, so the pair's blur
   // has to be caught above both columns or focus moving from the description field to Cancel
   // reads as "left the pair" and commits before Cancel is ever pressed.

@@ -87,6 +87,12 @@ export async function saveDeckHeader(
 ): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   if (!isUuid(deckId)) return { ok: false, message: deckDescriptionCopy.description.refused };
+  // A SERVER ACTION IS A PUBLIC ENDPOINT (this file's own header): the TypeScript parameter type
+  // checks nothing at runtime, so a malformed request — `null`, a field that is not a string —
+  // must be refused here rather than reaching `validateDeckName` or `.trim()` and throwing.
+  if (typeof fields !== "object" || fields === null) return { ok: false, message: deckDescriptionCopy.description.refused };
+  if (fields.name !== undefined && typeof fields.name !== "string") return { ok: false, message: deckDescriptionCopy.description.refused };
+  if (fields.description !== undefined && typeof fields.description !== "string") return { ok: false, message: deckDescriptionCopy.description.refused };
   const set: { name?: string; intent?: string | null; intentSeeded?: boolean } = {};
   if (fields.name !== undefined) {
     try {

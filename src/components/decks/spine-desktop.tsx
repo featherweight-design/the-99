@@ -312,7 +312,7 @@ export function SpineDesktop({
                   rows={2}
                   placeholder={deckDescriptionCopy.description.placeholder}
                   aria-label={deckDescriptionCopy.description.fieldAria}
-                  className="resize-none font-sans focus-visible:outline-none"
+                  className="resize-none font-sans"
                   style={{
                     width: "100%",
                     boxSizing: "border-box",
@@ -415,8 +415,12 @@ export function SpineDesktop({
             )}
           </div>
 
-          {/* SECOND in the order (placement addendum r3, E2): the deck's purpose, under its name. */}
-          <DeckIntentLine intent={deck.intent ?? null} width="desktop" />
+          {/* SECOND in the order (placement addendum r3, E2): the deck's purpose, under its name.
+              Hidden while editing (pre-open review round 3): the editor already shows the
+              description as its own field, and drawing the saved tagline too reads as a
+              duplicate of whatever the draft has just replaced. The phone header already hides
+              it the same way, by mounting it only outside the `renaming` branch. */}
+          {renaming ? null : <DeckIntentLine intent={deck.intent ?? null} width="desktop" />}
 
           <div
             // Same marker as the phone's row, for the same probe.
