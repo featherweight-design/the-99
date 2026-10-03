@@ -286,7 +286,9 @@ export async function computeAndStoreProfile(
   // THE LIST, NOT THE VERSION. A reading of this list under an older `PROFILE_VERSION` (a deploy
   // landing between the press and the commit) falls through and is rebuilt and pinned, because a
   // version bump is not an edit: the player analyzed this list, and the reading stays theirs.
-  if (pinTo && (!row || row.fingerprint !== list)) return null;
+  // `sameList`, not a raw comparison: a row written before migration 0054 stores
+  // `profileFingerprint` rather than `listFingerprint`, and is this list all the same.
+  if (pinTo && (!row || !sameList(row, head))) return null;
   // Behind the notices switch (Hugh's release ruling): off, a press keeps ruling 5 unamended.
   const dataMoved = Boolean(isPress && sameAnswer && row && noticesEnabled() && (await readingMoved({
     seenSeq: row.seenSeq,

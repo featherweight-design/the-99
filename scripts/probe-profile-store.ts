@@ -319,6 +319,18 @@ async function run() {
     check("a commit over this list's older-version reading rebuilds it and pins it",
       { computed: computes - before, v: row?.profile_version, pin: row?.version_id },
       { computed: 1, v: PROFILE_VERSION, pin: bumped.id });
+
+    // THE LEGACY FORM of the same case: a row written before 0054 stores `profileFingerprint`, so a
+    // raw comparison with the commit's list misreads it as another list (review round 1).
+    await fixture.execute(sql`update deck_profiles set profile_version = 0, version_id = null,
+      fingerprint = ${profileFingerprint(legacyHeadOf())} where deck_id = ${deck.id}::uuid`);
+    const { version: legacyCommit } = await commitVersion(deck.id, null);
+    const beforeLegacy = computes;
+    await pinAnalysisToVersion(deck.id, USER, { versionId: legacyCommit.id, list: listFingerprint(head) }, deps);
+    const legacyRow = await storedRow(deck.id);
+    check("and so does a commit over a legacy reading of this list",
+      { computed: computes - beforeLegacy, v: legacyRow?.profile_version, pin: legacyRow?.version_id },
+      { computed: 1, v: PROFILE_VERSION, pin: legacyCommit.id });
   }
 
   // 10d · ONLY THE NEWEST VERSION IS PINNED: an older commit's `after()` pin landing last is refused.
