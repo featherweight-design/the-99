@@ -8,7 +8,7 @@ import { slotDeck } from "../../lib/bracket/slot";
 import type { Bracket } from "../../lib/bracket/types";
 import type { ComboRef, FlagSource } from "../../lib/profile/types";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
-import { BracketClimb, NEIGHBOUR_OPACITY, YOURS_TINT } from "./bracket-climb";
+import { BracketClimb, NEIGHBOUR_OPACITY, PERMITTED_BORDER_MIX, YOURS_TINT } from "./bracket-climb";
 import { COMMANDER, deckProfile, profileCard } from "./__fixtures__/deck-profile";
 import { contrast, mixOklab } from "../../lib/theme/color";
 import { parseThemeBlocks } from "../../lib/theme/parse-css";
@@ -360,14 +360,26 @@ describe("the declared range", () => {
     expect(within(permitted).queryByText(copy.aboveAllowed)).toBeNull();
   });
 
-  // The 40% border is a UI edge, not text — measured rather than asserted to a stated bar, since
+  // The rendered permitted rung uses the same constant this measurement does — the contract
+  // tests above assert the tint and opacity this way, and this is the border's version of it.
+  it("renders the permitted rung's border at PERMITTED_BORDER_MIX of the rank's ink", () => {
+    draw("4,5", 5);
+    const permitted = rungs().find((r) => r.dataset.bracket === "4")!;
+    expect(permitted.style.borderColor).toBe(
+      `color-mix(in oklab, var(--bracket-4) ${PERMITTED_BORDER_MIX * 100}%, var(--border))`,
+    );
+  });
+
+  // The border mix is a UI edge, not text — measured rather than asserted to a stated bar, since
   // READINESS carries no threshold for it (only "check it in build"). Report the worst case.
+  // Tied to `PERMITTED_BORDER_MIX` itself, not a second copy of its value, so a change to the
+  // constant moves this measurement rather than silently drifting from what actually ships.
   it("measures the permitted border's contrast against --surface, every rank, every theme", () => {
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "..", "app", "globals.css"), "utf8");
     let floor = Infinity;
     for (const [, tokens] of parseThemeBlocks(css)) {
       for (const rank of [1, 2, 3, 4, 5]) {
-        const mixed = mixOklab(tokens.get(`bracket-${rank}`)!, tokens.get("border")!, 0.4);
+        const mixed = mixOklab(tokens.get(`bracket-${rank}`)!, tokens.get("border")!, PERMITTED_BORDER_MIX);
         const ratio = contrast(mixed, tokens.get("surface")!);
         floor = Math.min(floor, ratio);
       }

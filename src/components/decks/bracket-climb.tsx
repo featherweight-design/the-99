@@ -43,6 +43,13 @@ export const NEIGHBOUR_OPACITY = 0.75;
 export const YOURS_TINT = 0.12;
 
 /**
+ * How much of the rank's ink mixes into `--border` for a `permitted` rung's edge (addendum F,
+ * H34). Exported so the test ties its contrast measurement to the actual formula rather than a
+ * second copy of the figure.
+ */
+export const PERMITTED_BORDER_MIX = 0.4;
+
+/**
  * `climb`'s three roles, plus the two an answered range remaps an in-range rung to (addendum F,
  * H34). `declared` takes `yours`'s whole treatment, at whichever bracket the player answered —
  * not necessarily `permits[0]`. `permitted` is new: no fill, a 40%-ink border, the mark at
@@ -69,8 +76,9 @@ export function BracketClimb({
   const copy = deckAnalysisCopy.climb;
   const rungs = climb(verdict.permits);
   // AN ANSWERED RANGE STOPS ASKING (H34). The declare rung points at the block's chips, and once
-  // the player has chosen there is nothing left for it to point at: `[4,5]` declared reads as the
-  // plain rung above.
+  // the player has chosen there is nothing left for it to point at. Superseded by addendum F
+  // (below): `[4,5]` declared no longer reads as the plain rung above — the two in-range rungs
+  // remap to `declared`/`permitted` instead.
   const answered = declared !== null && declarationAsk(verdict.permits, declared).kind === "answered";
   // THE DECLARED RANGE REMAPS, NOT `climb()` (addendum F, H34). `climb` still decides which
   // three rungs; this only relabels the two rungs INSIDE the answered range. A rung whose
@@ -187,10 +195,11 @@ function Rung({
           ? { background: `color-mix(in oklab, ${ink} ${YOURS_TINT * 100}%, var(--surface))`, borderColor: ink }
           : declares
             ? { borderColor: `color-mix(in oklab, ${ink} 55%, transparent)` }
-            // PERMITTED (addendum F, H34): no fill, an edge at 40% of this rank's ink mixed into
-            // `--border` — a border, not text, so the usual text-contrast bar does not apply.
+            // PERMITTED (addendum F, H34): no fill, an edge at `PERMITTED_BORDER_MIX` of this
+            // rank's ink mixed into `--border` — a border, not text, so the usual text-contrast
+            // bar does not apply.
             : role === "permitted"
-              ? { borderColor: `color-mix(in oklab, ${ink} 40%, var(--border))` }
+              ? { borderColor: `color-mix(in oklab, ${ink} ${PERMITTED_BORDER_MIX * 100}%, var(--border))` }
               : undefined
       }
     >
@@ -254,25 +263,31 @@ function Rung({
           </span>
         </span>
       </span>
-      <span className="flex flex-col gap-1.5">
-        <RungBody bracket={bracket} role={role} declares={declares} verdict={verdict} profile={profile} />
-        {path ? (
-          // Phone: its own row, pushed to the rung's right edge, a 44px target pulled back into
-          // the rung's padding. Desktop: under the body, at its left.
-          <span className="-mt-[6px] -mb-[8px] flex min-h-[44px] items-center justify-end md:m-0 md:block md:min-h-0">
-            <button
-              type="button"
-              aria-haspopup="dialog"
-              onClick={path.onOpen}
-              className="flex min-h-[44px] items-center font-mono text-[11px] text-[color:var(--accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] md:min-h-0"
-            >
-              <span className="border-b border-dotted border-[color:var(--accent)]">
-                {upgradePathCopy.open} <span aria-hidden="true">→</span>
-              </span>
-            </button>
-          </span>
-        ) : null}
-      </span>
+      {role === "permitted" ? null : (
+        // PERMITTED HAS NO SECOND GRID ITEM AT ALL (addendum F, H34), not an empty one: `path`
+        // is never set for this role, so this column would otherwise render nothing but still
+        // claim its `gap-[7px]` row on the phone's single-column layout, making every permitted
+        // rung taller than the label alone.
+        <span className="flex flex-col gap-1.5">
+          <RungBody bracket={bracket} role={role} declares={declares} verdict={verdict} profile={profile} />
+          {path ? (
+            // Phone: its own row, pushed to the rung's right edge, a 44px target pulled back into
+            // the rung's padding. Desktop: under the body, at its left.
+            <span className="-mt-[6px] -mb-[8px] flex min-h-[44px] items-center justify-end md:m-0 md:block md:min-h-0">
+              <button
+                type="button"
+                aria-haspopup="dialog"
+                onClick={path.onOpen}
+                className="flex min-h-[44px] items-center font-mono text-[11px] text-[color:var(--accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] md:min-h-0"
+              >
+                <span className="border-b border-dotted border-[color:var(--accent)]">
+                  {upgradePathCopy.open} <span aria-hidden="true">→</span>
+                </span>
+              </button>
+            </span>
+          ) : null}
+        </span>
+      )}
     </div>
   );
 }
