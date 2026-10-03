@@ -18,6 +18,7 @@
 
 import { useEffect, useId, useState } from "react";
 import { getVersionDiff } from "../../app/decks/actions";
+import { printedFaceName } from "../../lib/collection/browse";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { printsPair } from "../../lib/decks/draft-shape";
@@ -81,7 +82,9 @@ function DiffCardRow({
   wide: boolean;
 }) {
   const moved = printsPair(card);
-  const label = card.printedName ?? card.name;
+  // `printedFaceName`, as every other deck row draws it: a two-faced card owned as a
+  // flavor-named printing names its front face, not the whole `X // Y`.
+  const label = printedFaceName(card);
   const name = moved
     ? deckImportCopy.update.diff.recountedItem(label, String(card.from), String(card.to))
     : label;

@@ -34,16 +34,29 @@ export async function resolveOwnedPrintings(
   userId: string,
   oracleIds: string[],
 ): Promise<Map<string, OwnedPrinting>> {
+  return readOwnedPrintings(userId, oracleIds).catch(() => {
+    recordSoftFailure();
+    return new Map<string, OwnedPrinting>();
+  });
+}
+
+/**
+ * The same read, and it THROWS on a failed read rather than answering "owns nothing".
+ *
+ * For a caller that states ownership itself: the version diff's rows (H31) draw a "not owned"
+ * dot and a buy tag from `quantity`, so an empty map there would claim the reader owns none of
+ * the cards rather than fall back to oracle-level art. That caller lets the failure reach its
+ * own unavailable state instead.
+ */
+export async function readOwnedPrintings(
+  userId: string,
+  oracleIds: string[],
+): Promise<Map<string, OwnedPrinting>> {
   const resolved = new Map<string, OwnedPrinting>();
   // Never an empty `inArray`: a SQL error in some drivers and a full scan in others.
   const ids = [...new Set(oracleIds)];
   if (ids.length === 0) return resolved;
-  const owned = await selectCollectionRows(userId, ids)
-    .then(aggregateCollection)
-    .catch(() => {
-      recordSoftFailure();
-      return [];
-    });
+  const owned = aggregateCollection(await selectCollectionRows(userId, ids));
   for (const c of owned) {
     const p = resolvedPrinting(c);
     if (p) {

@@ -9,7 +9,7 @@ const aggregateCollection = vi.fn<(rows: unknown[]) => unknown[]>();
 const resolvedPrinting = vi.fn<(card: unknown) => unknown>();
 vi.mock("./browse", () => ({ selectCollectionRows, aggregateCollection, resolvedPrinting }));
 
-const { withOwnedCardArt } = await import("./owned-printings");
+const { readOwnedPrintings, resolveOwnedPrintings, withOwnedCardArt } = await import("./owned-printings");
 
 describe("withOwnedCardArt", () => {
   const row = (over: Record<string, unknown> = {}): {
@@ -77,5 +77,20 @@ describe("withOwnedCardArt", () => {
 
     expect(await withOwnedCardArt("user_1", [])).toEqual([]);
     expect(selectCollectionRows).not.toHaveBeenCalled();
+  });
+});
+
+// A failed read is two different answers depending on who asks. The art callers fall back to the
+// oracle-level picture; the version rows (H31) state ownership, so for them "owns nothing" would
+// be a false fact, and the read throws instead.
+describe("a failed collection read", () => {
+  it("resolves to an empty map for the fail-soft reader", async () => {
+    selectCollectionRows.mockRejectedValueOnce(new Error("down"));
+    expect((await resolveOwnedPrintings("user_1", ["o-1"])).size).toBe(0);
+  });
+
+  it("throws from readOwnedPrintings rather than answering that nothing is owned", async () => {
+    selectCollectionRows.mockRejectedValueOnce(new Error("down"));
+    await expect(readOwnedPrintings("user_1", ["o-1"])).rejects.toThrow("down");
   });
 });

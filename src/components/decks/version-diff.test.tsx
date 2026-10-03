@@ -45,6 +45,7 @@ function card(over: Partial<VersionDiffCard> = {}): VersionDiffCard {
     name: "Sol Ring",
     typeLine: "Artifact",
     manaCost: "{1}",
+    layout: "normal",
     from: 0,
     to: 1,
     ownedNow: 1,
@@ -198,6 +199,17 @@ describe("VersionDiff", () => {
     expect(screen.queryByText(copy.todayNote(2))).toBeNull();
   });
 
+  it("names a two-faced card's flavor-named printing by its front face, as the decklist does", async () => {
+    getVersionDiff.mockResolvedValueOnce({
+      newestAsOf: asOf,
+      in: [card({ name: "Bala Ged Recovery // Bala Ged Sanctuary", layout: "modal_dfc", printedName: "Front Name // Back Name" })],
+      out: [],
+    });
+    mount();
+    expect(await screen.findByText("Front Name")).toBeInTheDocument();
+    expect(screen.queryByText(/Back Name/)).toBeNull();
+  });
+
   it("pages the modal across In then Out, in the order the rows are drawn", async () => {
     getVersionDiff.mockResolvedValueOnce({
       newestAsOf: asOf,
@@ -210,10 +222,12 @@ describe("VersionDiff", () => {
     mount();
     await screen.findByText("Mind Stone");
     // Drawn In: Llanowar Elves (Creatures) then Sol Ring (Artifacts); then Out: Mind Stone.
+    // Sol Ring is first in the payload and second on screen, so the payload's own order
+    // would read 1 of 3 here.
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Mind Stone") }));
+      fireEvent.click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }));
     });
-    await waitFor(() => expect(screen.getByText("3 of 3")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("2 of 3")).toBeTruthy());
   });
 
   // A land has no cost and still holds the track, so the names beside it end on

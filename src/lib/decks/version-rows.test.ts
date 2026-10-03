@@ -12,6 +12,7 @@ const row = (over: Partial<VersionDiffBase>): VersionDiffBase => ({
   name: "Bumi, Unleashed",
   typeLine: "Legendary Creature — Human",
   manaCost: "{3}{R}{G}",
+  layout: "normal",
   imageUri: "https://img/oracle.jpg",
   from: 0,
   to: 1,

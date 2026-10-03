@@ -19,7 +19,7 @@ import { clearDormantLocks, pruneOrphanLocks, reviveDormantLocks } from "./locks
 import { pruneOrphanAssignments } from "./prune-assignments";
 import { clearPullReleases } from "./pull-release";
 import { commanderMoved } from "../commander-change/pending";
-import { resolveOwnedPrintings } from "../collection/owned-printings";
+import { readOwnedPrintings } from "../collection/owned-printings";
 import { loadPrices } from "./price-query";
 import {
   assembleVersionRows, pricedIds, type VersionDiffBase, type VersionDiffCard,
@@ -521,6 +521,7 @@ export async function loadVersionDiff(
     name: cards.name,
     typeLine: cards.typeLine,
     manaCost: cards.manaCost,
+    layout: cards.layout,
     imageUri: cards.imageUri,
   }).from(deckVersionCards)
     .innerJoin(cards, eq(cards.oracleId, deckVersionCards.oracleId))
@@ -541,6 +542,7 @@ export async function loadVersionDiff(
       name: described.name,
       typeLine: described.typeLine,
       manaCost: described.manaCost,
+      layout: described.layout,
       imageUri: described.imageUri,
       from: change.from,
       to: change.to,
@@ -552,7 +554,10 @@ export async function loadVersionDiff(
   // Both reads are scoped to the diff's own cards: a version moves a handful, and
   // neither the collection nor the price table is read whole for them.
   const [owned, priced] = await Promise.all([
-    resolveOwnedPrintings(userId, all.map((c) => c.oracleId)),
+    // The throwing read, not `resolveOwnedPrintings`: a failed read there answers "owns
+    // nothing", which these rows would draw as a "not owned" dot and a buy tag on cards the
+    // reader holds. A failure here reaches `getVersionDiff`'s caller as an unavailable diff.
+    readOwnedPrintings(userId, all.map((c) => c.oracleId)),
     loadPrices(pricedIds(all)),
   ]);
   return {

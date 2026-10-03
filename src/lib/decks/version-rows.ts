@@ -13,6 +13,8 @@ export type VersionDiffBase = {
   name: string;
   typeLine: string;
   manaCost: string | null;
+  /** Read for the printed name: a two-faced card's flavor name is cut to its front face. */
+  layout: string;
   /** The catalog's oracle-level image, used when the reader owns no copy. */
   imageUri: string | null;
   from: number;
