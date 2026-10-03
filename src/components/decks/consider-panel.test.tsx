@@ -6,7 +6,8 @@
 // heading above already said.
 import { useState } from "react";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { shelfFoldKey } from "../../lib/decks/shelf-fold";
 import type { SortKey } from "./consider-toolbar";
 import type { DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
@@ -83,7 +84,14 @@ function mount(props: Partial<React.ComponentProps<typeof ConsiderPanel>> = {}) 
   );
 }
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  localStorage.clear();
+});
+
+afterEach(() => {
+  localStorage.clear();
+});
 
 describe("ConsiderPanel — shelves", () => {
   // A shelf's coverage figure counts the slot the card was picked against, so
@@ -125,7 +133,8 @@ describe("ConsiderPanel — shelves", () => {
     });
 
     const headings = screen.getAllByRole("heading", { level: 3 });
-    expect(headings.map((h) => h.textContent)).toEqual(["Removal", "Ramp"]);
+    expect(headings.map((h) => h.querySelector('[data-testid="shelf-label"]')?.textContent))
+      .toEqual(["Removal", "Ramp"]);
   });
 
   // "Threats & synergy" has no target, so it cannot be short of anything and
@@ -140,7 +149,8 @@ describe("ConsiderPanel — shelves", () => {
     });
 
     const headings = screen.getAllByRole("heading", { level: 3 });
-    expect(headings.map((h) => h.textContent)).toEqual(["Ramp", "Threats & synergy"]);
+    expect(headings.map((h) => h.querySelector('[data-testid="shelf-label"]')?.textContent))
+      .toEqual(["Ramp", "Threats & synergy"]);
     expect(screen.getByText(/no target · this is the deck’s plan/)).toBeInTheDocument();
   });
 
@@ -174,6 +184,109 @@ describe("ConsiderPanel — shelves", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /show fewer/i }));
     expect(screen.getAllByRole("listitem")).toHaveLength(SHELF_CAP);
+  });
+});
+
+describe("ConsiderPanel — shelf fold (STATES-consider-tiles.md s1–s5)", () => {
+  // A disclosure button, inside the h3, carries `aria-expanded` and toggles
+  // the shelf's own grid. Found by its accessible name, which — unlike the
+  // region's — carries the label AND the count clause (handoff: chevron,
+  // label, count clause, all inside the one button).
+  function disclosureFor(label: string) {
+    return screen.getByRole("button", { name: new RegExp(`^${label}`) });
+  }
+
+  it("folds a shelf shut — grid gone, Show all hidden, aria-expanded false", () => {
+    const many = Array.from({ length: SHELF_CAP + 2 }, (_, i) => suggestion({ name: `Ramp Card ${i}` }));
+    mount({ suggestions: many });
+
+    const button = disclosureFor("Ramp");
+    expect(button).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getAllByRole("listitem")).toHaveLength(SHELF_CAP);
+    expect(screen.getByRole("button", { name: /show all/i })).toBeInTheDocument();
+
+    fireEvent.click(button);
+
+    expect(button).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryAllByRole("listitem")).toHaveLength(0);
+    expect(screen.queryByRole("button", { name: /show all/i })).toBeNull();
+  });
+
+  // The `<ul id={bodyId}>` is unmounted when folded, not hidden — a bare
+  // `aria-controls={bodyId}` would then name an id no element in the document
+  // carries, the dangling-reference defect this codebase's other disclosures
+  // (builder-tabs.tsx, unresolved-row.tsx, combo-partners-detail.tsx,
+  // issue-inspector.tsx) already guard against (pre-open review).
+  it("drops aria-controls when folded rather than pointing at an unmounted id", () => {
+    mount({ suggestions: [suggestion({ name: "Cultivate", role: "ramp" })] });
+    const button = disclosureFor("Ramp");
+    expect(button).toHaveAttribute("aria-controls");
+
+    fireEvent.click(button);
+    expect(button).not.toHaveAttribute("aria-controls");
+
+    fireEvent.click(button);
+    expect(button).toHaveAttribute("aria-controls");
+  });
+
+  it("unfolds back to the capped grid", () => {
+    mount({ suggestions: [suggestion({ name: "Cultivate", role: "ramp" })] });
+    const button = disclosureFor("Ramp");
+
+    fireEvent.click(button);
+    expect(screen.queryAllByRole("listitem")).toHaveLength(0);
+    fireEvent.click(button);
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+    expect(button).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("clears the expansion on fold — reopening shows the cap again, not what was expanded", () => {
+    const many = Array.from({ length: SHELF_CAP + 2 }, (_, i) => suggestion({ name: `Ramp Card ${i}` }));
+    mount({ suggestions: many });
+
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(`show all ${SHELF_CAP + 2} ramp`, "i") }));
+    expect(screen.getAllByRole("listitem")).toHaveLength(SHELF_CAP + 2);
+
+    const foldButton = disclosureFor("Ramp");
+    fireEvent.click(foldButton); // fold
+    fireEvent.click(foldButton); // unfold
+
+    expect(screen.getAllByRole("listitem")).toHaveLength(SHELF_CAP);
+    expect(screen.getByRole("button", { name: /show all/i })).toBeInTheDocument();
+  });
+
+  it("persists per deck in localStorage, survives a remount, and defaults open", () => {
+    const { unmount } = mount({ suggestions: [suggestion({ name: "Cultivate", role: "ramp" })] });
+    fireEvent.click(disclosureFor("Ramp"));
+    expect(screen.queryAllByRole("listitem")).toHaveLength(0);
+    unmount();
+
+    mount({ suggestions: [suggestion({ name: "Cultivate", role: "ramp" })] });
+    expect(screen.queryAllByRole("listitem")).toHaveLength(0);
+    expect(disclosureFor("Ramp")).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("does not leak fold state across decks", () => {
+    const { unmount } = mount({
+      deckId: "deck-a",
+      suggestions: [suggestion({ name: "Cultivate", role: "ramp" })],
+    });
+    fireEvent.click(disclosureFor("Ramp"));
+    unmount();
+
+    mount({ deckId: "deck-b", suggestions: [suggestion({ name: "Cultivate", role: "ramp" })] });
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+    expect(disclosureFor("Ramp")).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("ignores an unknown stored shelf key rather than erroring", () => {
+    localStorage.setItem(shelfFoldKey("deck-1"), JSON.stringify(["wipes", "not-a-real-key"]));
+    mount({ suggestions: [suggestion({ name: "Cultivate", role: "ramp" })] });
+
+    // The only rendered shelf (ramp) is unaffected by stray keys for shelves
+    // this render never built.
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+    expect(disclosureFor("Ramp")).toHaveAttribute("aria-expanded", "true");
   });
 });
 
@@ -398,7 +511,7 @@ describe("ConsiderPanel — unowned staples", () => {
     });
 
     const headings = screen.getAllByRole("heading", { level: 3 });
-    expect(headings.map((h) => h.textContent))
+    expect(headings.map((h) => h.querySelector('[data-testid="shelf-label"]')?.textContent))
       .toEqual(["Ramp", "Threats & synergy", synergyCopy.shelf.label("Korvold"), "Top picks for Korvold"]);
     expect(screen.getByText("not in your collection")).toBeInTheDocument();
     expect(screen.getByText("· 1 to consider")).toBeInTheDocument();
@@ -471,7 +584,8 @@ describe("ConsiderPanel — synergy shelf", () => {
         suggestion({ name: "Mana Crypt", owned: false }),
       ],
     });
-    const headings = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
+    const headings = screen.getAllByRole("heading", { level: 3 })
+      .map((h) => h.querySelector('[data-testid="shelf-label"]')?.textContent);
     expect(headings.indexOf(synergyCopy.shelf.label("Atraxa")))
       .toBeGreaterThan(headings.findIndex((h) => h?.startsWith("Ramp")));
     expect(headings.indexOf(synergyCopy.shelf.label("Atraxa")))
