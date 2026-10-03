@@ -17,7 +17,7 @@ on:
     # WEEKLY, Tuesdays at 21:17 UTC (Hugh, 2026-10-03). It labels what the input hash says has
     # moved. That is normally a new set, and sets release weekly at most; a catalog correction to
     # a card's text, or a prompt or model change, moves the hash too and waits for the same run. Tuesday is the
-    # day after Monday's combo build, and 21:17 is twelve hours after that day's `Catalog refresh`
+    # day after Monday's combo build, and 21:17 is more than twelve hours after that day's `Catalog refresh`
     # (09:00, daily), because a card the catalog has not ingested cannot be labelled. The margin is
     # wide because GitHub starts a cron hours late when it is busy (17:27Z for 09:00 on
     # 2026-09-28). A set ingested after this run waits for next Tuesday's: that is the cost of
@@ -376,7 +376,7 @@ jobs:
               # content) but does not take over this id's own plan. Sooner is a blank dispatch now.
               echo "The schedule is ON, so next week's run collects these batches at no second charge,"
               echo "provided the model and prompt version have not changed by then: a run collects"
-              echo "only batches asked under its own."
+              echo "any run's batch, but only one asked under the same model and prompt version."
               echo "To finish sooner, dispatch again in the same ISO week with run_id left blank."
             else
               echo "THE SCHEDULE IS OFF — CARD_LABELS_ENABLED is not 'true', so nothing will resume"

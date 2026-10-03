@@ -289,8 +289,10 @@ describe("the card-labels spend bounds", () => {
     // run id is the ISO week, so a daily cron spent the same weekly budget across up to seven
     // runs; one run a week is what makes the per-run figures true. A dash, a list or a `*` in
     // the day-of-week field would bring a second run into the same week.
-    const cron = workflow.match(/^ {4}- cron: '([^']+)'$/m)?.[1];
-    expect(cron).toBeDefined();
+    // EVERY schedule entry, and exactly one: a second `- cron:` line would be a second run a week.
+    const crons = [...workflow.matchAll(/^\s*- cron: '([^']+)'$/gm)].map((m) => m[1]);
+    expect(crons).toHaveLength(1);
+    const cron = crons[0];
     const [minute, hour, dom, month, dow] = cron!.split(" ");
     expect([dom, month]).toEqual(["*", "*"]);
     expect(dow).toMatch(/^[0-6]$/);
