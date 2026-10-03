@@ -422,9 +422,20 @@ describe("the row's art and its position", () => {
   const ART = "https://cards.scryfall.io/art_crop/front/a/b/ab.jpg";
   const art = (container: HTMLElement) => container.querySelector<HTMLElement>(".art-wash-art")!;
 
-  it("draws the first screen's art at once", () => {
-    const { container } = render(<CommanderRow item={view({ artCropUri: ART })} position={EAGER_ART_ROWS - 1} />);
-    expect(art(container).style.backgroundImage).toContain(ART);
+  it("draws the first screen's art at once, never waiting on the viewport", () => {
+    // An observer that never reports: with jsdom's missing one, every row would load at once and
+    // this would pass over a gate that deferred the first screen too.
+    class SilentObserver {
+      observe() {}
+      disconnect() {}
+    }
+    vi.stubGlobal("IntersectionObserver", SilentObserver);
+    try {
+      const { container } = render(<CommanderRow item={view({ artCropUri: ART })} position={EAGER_ART_ROWS - 1} />);
+      expect(art(container).style.backgroundImage).toContain(ART);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("holds a lower row's art until it nears the viewport, keeping the layer's box", () => {

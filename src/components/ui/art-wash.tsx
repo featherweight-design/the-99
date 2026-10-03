@@ -238,10 +238,6 @@ const portrait = (
 type ArtProps = {
   artCropUri: string | null;
   colorIdentity: string[];
-  /** Ask for the crop only after hydration, once the band nears the viewport. A list sets it on
-      every row below its first screen: on the slow profile, /discover's eager crops held its
-      hydration at 14.2s at 390, and deferring all but the first five rows brought it to 6.8s. */
-  deferArt?: boolean;
 };
 
 export type ArtWashProps = ArtProps &
@@ -259,9 +255,15 @@ export type ArtWashProps = ArtProps &
             art. */
         labelAtPx: number;
         portrait?: never;
+        /** Only a left portrait defers its crop: a cover band is not drawn in a long list. */
+        deferArt?: never;
       }
     | {
         strategy: "left-portrait";
+        /** Ask for the crop only after hydration, once the band nears the viewport. A list sets it on
+            every row below its first screen: on the slow profile, /discover's eager crops held its
+            hydration at 14.2s at 390, and deferring all but the first five rows brought it to 6.8s. */
+        deferArt?: boolean;
         height: BandHeight;
         /** Chosen, not derived: one band draws two portraits on the one surface
             whose shape was picked before its height. */
