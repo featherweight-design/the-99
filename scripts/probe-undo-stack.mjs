@@ -21,6 +21,12 @@
 // cards' `collection_items` rows out for the run and puts them back in the
 // `finally`, the same rule `probe:review`'s basics block follows.
 //
+// It also clears the About gate (`clearAboutSheet`) after the first sign-in,
+// same as every browser probe here — without it a reader below `ABOUT_VERSION`
+// gets the one-time sheet over the deck page and every wait below fails having
+// exercised nothing. The row is captured once with `captureAboutSeen`, before
+// the first write, and restored in the `finally`.
+//
 // Point it at `local-dev`, NEVER production. Run by hand against a local
 // `pnpm dev`:
 //   node scripts/probe-undo-stack.mjs
@@ -28,6 +34,7 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { neon, neonConfig } from "@neondatabase/serverless";
 import { chromium } from "playwright";
 import ws from "ws";
+import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about-clear.mjs";
 import { requireEnv } from "./lib/env.mjs";
 import { onPage } from "./lib/surface.mjs";
 
@@ -252,6 +259,7 @@ const deckIds = [];
 let collectionRows = [];
 let userId = null;
 let browser = null;
+let aboutCapture = null;
 
 try {
   await clerkSetup();
@@ -262,6 +270,11 @@ try {
     const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
     const page = await context.newPage();
     userId = await signIn(page);
+    // Captured once, on the first context: the row is per-user and persists
+    // across the second context's sign-in, so a second capture would just
+    // read back what this run itself already wrote.
+    if (!aboutCapture) aboutCapture = await captureAboutSeen(userId, sql);
+    await clearAboutSheet(page, userId);
 
     // ── 1 & 2: list view and card view, three removals, one undo, a nav away ──
     for (const view of ["List view", "Card view"]) {
@@ -431,6 +444,14 @@ try {
     failures.push(
       `could not restore ${collectionRows.length} collection row(s) this run removed (${error?.message ?? error})`,
     );
+  }
+  if (aboutCapture) {
+    try {
+      await restoreAboutSeen(aboutCapture, sql);
+      note("About row restored");
+    } catch (error) {
+      failures.push(`could not restore the About row (${error?.message ?? error})`);
+    }
   }
   if (browser) await browser.close();
 }

@@ -898,7 +898,7 @@ export function BuilderShell({
       });
       // A removal is announced only when it leaves an undo row behind. A stack
       // that decrements keeps its row, and its own count is the receipt.
-      if (card.quantity > 1) return;
+      if (card.quantity > 1) return generation;
       setAnnouncement(
         addPanelCopy.undo.announceRemoved(
           // The pair of `announceUndone` below, and named the same way: the row
@@ -908,6 +908,7 @@ export function BuilderShell({
           bodySize,
         ),
       );
+      return generation;
     },
     [cards, bodySize],
   );
@@ -979,7 +980,12 @@ export function BuilderShell({
     if (from !== (removalRef.current[oracleId] ?? 0)) return;
     setUndoFailure((prev) => ({ ...prev, [oracleId]: message }));
   }, []);
-  const reportRemoveFailure = useCallback((oracleId: string, cardName: string) => {
+  const reportRemoveFailure = useCallback((oracleId: string, cardName: string, from: number) => {
+    // Same rule as `reportUndoFailure`: a failure from a removal attempt that
+    // this card has since moved past (a later removal already bumped its
+    // generation) answers for a receipt that no longer describes the card's
+    // current state, and must not clear a newer one standing in its place.
+    if (from !== (removalRef.current[oracleId] ?? 0)) return;
     setRemoveFailure((prev) => ({ ...prev, [oracleId]: `${cardName}: ${DECK_REMOVE_FALLBACK_MESSAGE}` }));
     // The card never left, so there is nothing to undo. Leaving its own slot
     // would offer to put back a card the deck still holds — every other

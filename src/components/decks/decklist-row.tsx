@@ -337,7 +337,7 @@ export function DecklistRow({
     // Outside `run`: the slot and its announcement are ordinary state, which
     // React holds for the length of an async transition. Inside, they would
     // land only once the server answered — after the window they exist for.
-    markSlotSpent(card);
+    const generation = markSlotSpent(card);
     // Dispatched into the deck-wide list as well as this row's own state, or
     // the row vanishes while the header, the tab counts, the role strip and the
     // group heading all keep claiming it for the length of the round-trip.
@@ -349,7 +349,7 @@ export function DecklistRow({
           // Only when this was the last copy, because only then has the
           // prediction unmounted the row and left `run`'s message with nothing
           // to draw on. A decremented stack still has its own line to say it.
-          if (shellReportsFailure) reportRemoveFailure(card.oracleId, displayName);
+          if (shellReportsFailure) reportRemoveFailure(card.oracleId, displayName, generation);
           throw cause;
         }
       },

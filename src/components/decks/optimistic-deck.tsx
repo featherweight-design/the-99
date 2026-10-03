@@ -32,7 +32,9 @@ type RemoveOptimisticCard = (card: DeckDetailCard) => void;
  * `markSpent` is ordinary state, which React would hold for the length of that
  * async transition, so the row calls it straight from the click instead.
  */
-type MarkSlotSpent = (card: DeckDetailCard) => void;
+/** Returns the generation stamped on this removal, for a caller that needs to
+ *  pass it back on a later failure — see `ReportRemoveFailure`. */
+type MarkSlotSpent = (card: DeckDetailCard) => number;
 /** Undo's announcement, made from the click rather than inside the transition. */
 type AnnounceUndo = (card: DeckDetailCard) => void;
 
@@ -99,8 +101,13 @@ type DeckEdit =
  * `useDeckMutation` has a message, and it remounts clean when the transition
  * reverts. The reason has to be handed to something that outlives the row — keyed
  * on the oracle id (H29), so a refusal for one card never touches another's.
+ *
+ * `from` is the generation `markSpent` stamped at the moment of THIS removal
+ * attempt, same rule as the shell's `reportUndoFailure`: a card removed again
+ * before this one's rejection arrives has moved past this generation, and the
+ * stale failure must not erase the newer attempt's receipt.
  */
-type ReportRemoveFailure = (oracleId: string, cardName: string) => void;
+type ReportRemoveFailure = (oracleId: string, cardName: string, from: number) => void;
 
 /** Putting a card to an unresolved line: the line goes, the card joins the 99. */
 type ResolveOptimisticRow = (rowId: string, card: DeckDetailCard) => void;
@@ -228,7 +235,7 @@ export function useRemoveOptimisticCard(): RemoveOptimisticCard {
 }
 
 export function useMarkSlotSpent(): MarkSlotSpent {
-  return useContext(DeckEditContext)?.markSpent ?? noop;
+  return useContext(DeckEditContext)?.markSpent ?? (() => 0);
 }
 
 export function useAnnounceUndo(): AnnounceUndo {
