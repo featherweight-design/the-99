@@ -1,0 +1,148 @@
+{
+ "model": "sonnet",
+ "cards": 1663,
+ "flags": {
+  "tutor": {
+   "both": 69,
+   "flagOnly": [],
+   "labelOnly": [
+    "Chromescale Drake",
+    "Loot, Exuberant Explorer",
+    "Visage of Bolas",
+    "Buried Alive",
+    "Songbirds' Blessing",
+    "Cazur, Ruthless Stalker",
+    "Hide // Seek",
+    "Legion Angel",
+    "Selective Adaptation",
+    "Demonic Consultation"
+   ]
+  },
+  "massLandDenial~stax": {
+   "both": 8,
+   "flagOnly": [
+    "Chaos Moon",
+    "Liliana of the Veil",
+    "Fall of the Thran"
+   ],
+   "labelOnly": [
+    "Vulshok Gauntlets",
+    "Dehydration",
+    "Weakstone's Subjugation",
+    "Mindlock Orb",
+    "Sen Triplets",
+    "Council of the Absolute",
+    "Disruptor Flute",
+    "Yuriko, Blade of the Mighty",
+    "City in a Bottle",
+    "Elite Spellbinder",
+    "Ranger-Captain of Eos",
+    "Teferi, Time Raveler",
+    "Pollen Lullaby",
+    "Kashi-Tribe Elite",
+    "Thalia, Guardian of Thraben",
+    "Thalia and The Gitrog Monster",
+    "Descent into Madness",
+    "Immolation Shaman",
+    "Mesmerizing Dose",
+    "Tangle",
+    "Yasharn, Implacable Earth",
+    "Hinata, Dawn-Crowned",
+    "An-Zerrin Ruins",
+    "Tax Collector",
+    "Esior, Wardwing Familiar",
+    "Avatar's Wrath",
+    "Hum of the Radix",
+    "Arachne, Psionic Weaver",
+    "Lorthos, the Tidemaker",
+    "Eidolon of Rhetoric",
+    "Silence",
+    "Tamiyo, Compleated Sage",
+    "Vorinclex, Voice of Hunger",
+    "Void Winnower",
+    "Meekstone",
+    "Phyrexian Censor",
+    "Single Combat",
+    "Oppressive Rays",
+    "Glowrider",
+    "Feroz's Ban",
+    "Mana Vapors",
+    "Ghostly Prison",
+    "Uphill Battle",
+    "Early Frost",
+    "Godsend",
+    "Marisi, Breaker of the Coil",
+    "Sphere of Resistance",
+    "Rule of Law",
+    "Aven Mindcensor",
+    "Drannith Magistrate",
+    "Grand Abolisher",
+    "Thorn of Amethyst",
+    "Calamity's Wake",
+    "Ashiok, Dream Render"
+   ]
+  },
+  "extraTurn~finisher": {
+   "both": 2,
+   "flagOnly": [],
+   "labelOnly": [
+    "Insurrection",
+    "Great Train Heist",
+    "Tibalt, the Fiend-Blooded",
+    "Platinum Angel",
+    "Call the Spirit Dragons",
+    "Frodo, Sauron's Bane",
+    "Shaman of Forgotten Ways",
+    "Thassa's Oracle",
+    "Approach of the Second Sun",
+    "Craterhoof Behemoth",
+    "Overrun",
+    "Aggravated Assault",
+    "Relentless Assault",
+    "Helix Pinnacle"
+   ]
+  }
+ },
+ "removalLeaks": {
+  "counterspell": [
+   "Frost Titan",
+   "Drown in the Loch",
+   "Bant Charm",
+   "Fangkeeper's Familiar",
+   "Theorix Charm",
+   "Steel Sabotage",
+   "Obscura Charm",
+   "Ouphe Vandals"
+  ],
+  "discard": [
+   "Nicol Bolas, Planeswalker",
+   "Seeker's Folly",
+   "Compelling Deterrence",
+   "Kefka, Court Mage // Kefka, Ruler of Ruin",
+   "Capital Punishment",
+   "Liliana's Triumph",
+   "The Kami War // O-Kagachi Made Manifest",
+   "Archon of Cruelty",
+   "Liliana of the Veil",
+   "Isildur's Fateful Strike",
+   "Cruel Ultimatum",
+   "The Ruinous Wrecking Crew"
+  ],
+  "tapper": [
+   "Frost Titan",
+   "Kimahri, Valiant Guardian"
+  ]
+ },
+ "tutorsInDraw": [
+  "Cool but Rude",
+  "Sarkhan Unbroken"
+ ],
+ "emptyRate": {
+  "random": 500,
+  "returned": 500,
+  "empty": 53,
+  "rate": 0.106,
+  "baseline": 0.12236286919831224,
+  "deltaPoints": -1.6
+ }
+}
