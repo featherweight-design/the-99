@@ -1,6 +1,7 @@
 # The fill includes the staples (H25)
 
-Plan, 2026-10-02. For Hugh's approval: not merged until he rules.
+Plan, 2026-10-02. Approved by Hugh, 2026-10-03, with his rulings on the five §8 questions
+(recorded in §8 and applied through §4–§7).
 
 Hugh's walk note (intake H25): "Auto-build includes the staples (Sol Ring, Arcane Signet) plus
 per-color staples (Swords to Plowshares…)".
@@ -116,8 +117,9 @@ A new step seeds the deck's staples first, so they are placed before any floor i
 every role they satisfy (§2.5a), exactly as `held` cards do:
 
 1. **Which.** The universal set, plus the deck's own condition's rows above an inclusion bar
-   (proposed: the condition's `avg_inclusion` ≥ 50%). For a deck with no condition
-   (colorless, 4 and 5 colors today), universal only.
+   (the condition's `avg_inclusion` ≥ 50%, Hugh 2026-10-03). For a deck with no exact
+   condition of its own among colorless, four and five colors, universal only (ruled): the
+   `count:3` bucket serves three-color decks alone.
 2. **Owned first.** In `pool: "sleeveable"`, only staples with a free copy. In `"all"`, an unowned
    nonland staple is placed and counted in `bought`, like any unowned top card. An unowned land
    staple is not: the land sweep takes owned lands only ("Lands come from the collection alone",
@@ -128,14 +130,17 @@ every role they satisfy (§2.5a), exactly as `held` cards do:
    catalog staple passed beside them would read no price (refused under any budget) and no Game
    Changer flag (admitted under any bracket). `buildFillPlan` adds them to `scoped` before the
    gate is built. Six staples are Game Changers today (Cyclonic
-   Rift, Demonic Tutor, Jeska's Will, Rhystic Study, Smothering Tithe, Teferi's Protection); a
-   bracket 1–2 answer refuses them through the existing gate, and with no answer they are placed
-   only if owned. Unowned Game Changers are never bought by the staples step.
+   Rift, Demonic Tutor, Jeska's Will, Rhystic Study, Smothering Tithe, Teferi's Protection). The
+   staples step NEVER seeds a Game Changer (Hugh 2026-10-03): a bracket 1–2 answer refuses them
+   through the existing gate, a deck with no bracket answer leaves even an owned one out, and an
+   unowned one is never bought. A Game Changer can still arrive through the role pass exactly as
+   it does today; the ruling is about what the step seeds on the player's behalf.
 4. **Lands.** Land staples (Command Tower, Rogue's Passage, Reliquary Tower, Exotic Orchard) are
    NOT placed by this step. They go to the land sweep, which already has the land ceiling, the
    nonbasic cap and the basics split. The step marks them preferred so the sweep takes them first.
-5. **A cap.** At most 10 nonland staples, so a two-color bucket's 59 rows cannot become a
-   staples deck. Proposed 10; the PR reports the per-condition count above the bar.
+5. **A cap.** At most 10 nonland staples added (ruled), so a two-color bucket's 59 rows cannot
+   become a staples deck. Universal staples come first, then the condition's rows by
+   inclusion; the PR reports the per-condition count above the bar.
 6. **Excluded and selected cards** are skipped, as everywhere in `buildFillPlan`: the staples step
    reads `excludeOracleIds`, which is what keeps a deck's own cards out (the top-off passes its held
    ids there, `actions.ts:2341`; `held` only credits roles).
@@ -169,18 +174,17 @@ staple rows with the foundation rather than the residual.
 **No.** It changes which cards the fill picks and nothing on screen: no new control, state or
 string. Per the standing rule, logic changes need no Design round.
 
-**About entry: Hugh decides.** The existing `auto-fill` entry (`about.ts`) says "we add the cards
-that commander's decks play most", which stays true. Two choices: no change (it is a correction to
-how the fill ranks), or an ordinary edit to that caption naming the staples, at the next version,
-with no new entry. A cosmetic-or-correction change owes no new entry under the card captions
-precedent.
+**About entry: an ordinary edit, no bump (Hugh 2026-10-03).** The existing `auto-fill` entry
+(`about.ts`) says "we add the cards that commander's decks play most", which stays true. Its
+caption is edited to name the staples, with no new entry and NO `ABOUT_VERSION` bump; the
+`about.test.ts` content hash is re-pinned deliberately. The wording goes through `/copy-review`.
 
 ## 6 · Proof
 
 **Unit (`fill.test.ts`).** A single-role card at 80% beats a dual-role card with no figure for the
 same slot; a dual-role card within the band still wins; a staple credits every role it satisfies;
-a staple the gate refuses is skipped; a land staple is not placed by the staples step; the cap
-holds.
+a staple the gate refuses is skipped; a Game Changer staple is never seeded, owned or not, with
+or without a bracket answer; a land staple is not placed by the staples step; the cap holds at 10.
 
 **`probe:fill`, new sections** (real catalog, local-dev or a scratch branch):
 
@@ -192,8 +196,8 @@ holds.
   three-color commander with no exact bucket is served by `count:3`, and a qualifying non-universal
   card from that bucket arrives as a `source: "staple"` row (seeded, not picked later by the role
   pass); a four-color commander's staples step seeds universal staples only.
-- **11 · The gate.** A bracket 2 answer refuses a Game Changer staple; a $20 budget refuses a
-  staple above it.
+- **11 · The gate.** A $20 budget refuses a staple above it, and an OWNED Game Changer staple is
+  not seeded with no bracket answer (nor under bracket 2).
 - **12 · Lands.** Command Tower arrives through the land sweep, once, and the land count is
   unchanged.
 - **13 · The caller's bounds.** A `slots: 1` fill places one card, and a fill with an allow-list
@@ -201,26 +205,33 @@ holds.
   Boots) returns it as a tick.
 
 **Mutations, each must fail the probe:** the band removed (8), the staples step removed (9), the
-condition ignored so only universal staples seed (10), the `count:3` fallback dropped (10), staples placed outside `admits` (11), land
+condition ignored so only universal staples seed (10), the `count:3` fallback dropped (10), staples placed outside `admits` (11), the Game Changer exclusion removed (11), land
 staples placed by the staples step (12), the slot count or the allow-list ignored (13).
 
 **The measurement, rerun:** the scratch-branch run in §1 on the same four commanders, before and
 after, with each deck's role rows and the staples placed. Sol Ring and Arcane Signet must land on
 all four. The assertion is on what the STAPLES STEP seeds (rows with `source: "staple"`), not on
 the finished deck: Swords to Plowshares must be seeded for Thorin (R W, owned) and, under §8
-question 3's proposal, not seeded for Omnath, Locus of Creation (four colors, universal staples
+ruling 3, not seeded for Omnath, Locus of Creation (four colors, universal staples
 only). The role pass may still pick Swords for Omnath as an ordinary removal card, which is right.
 
 ## 7 · PR boundaries
 
-One PR: `fill.ts` (band and staples step), `actions.ts`, the `staples` reader, the rename,
-`sleeveableIds` and create's row filing (the `source` field), `fill.test.ts`, and `probe-fill.ts`. Under ~600 lines.
+Two PRs, in order, never stacked (the second branches from `main` after the first merges):
 
-## 8 · For Hugh
+- **PR 1 · The fill.** `fill.ts` (band and staples step), `actions.ts`, the `staples` reader, the
+  rename, `sleeveableIds` and create's row filing (the `source` field), `fill.test.ts`, and
+  `probe-fill.ts`. Under ~600 lines.
+- **PR 2 · The About caption.** The `auto-fill` entry's caption in `about.ts`, its wording through
+  `/copy-review`, and the deliberate `about.test.ts` hash re-pin. No `ABOUT_VERSION` bump. Opened
+  after PR 1 merges, so the caption never describes a fill that has not shipped.
 
-1. Use `format_staples` (universal plus the deck's identity bucket) as "staple"? (Recommended.)
-2. The inclusion bar for identity staples (proposed 50%) and the cap (proposed 10 nonland).
-3. Colorless, four- and five-color decks: universal staples only (proposed), or also the `count:3`
-   bucket?
-4. Owned Game Changer staples with no bracket answer: place them (proposed) or leave them out?
-5. The About entry: no change, or a caption edit naming the staples.
+## 8 · Hugh's rulings (2026-10-03)
+
+1. **Source:** `format_staples`, universal plus the deck's identity bucket.
+2. **Color staples:** an inclusion bar of 50%, and at most 10 staples added.
+3. **Colorless, four- and five-color decks:** universal staples only.
+4. **An owned Game Changer staple on a deck with no bracket answer:** left out. Unowned Game
+   Changers are never bought.
+5. **About:** an ordinary edit to the `auto-fill` entry's caption, no `ABOUT_VERSION` bump, its
+   wording through `/copy-review`.
