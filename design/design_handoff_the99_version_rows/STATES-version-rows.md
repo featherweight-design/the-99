@@ -2,16 +2,28 @@
 
 "Today" means the reader's collection and the newest price at the moment the version opens.
 
+Two independent facts per In row (corrected 2026-10-03): the **dot** is ownership (`ownedNow > 0`:
+filled `--success`, else dashed `--fg-locked`), and the **tag** is the claim model's `buy` (`to` less
+the copies this deck can call on, Shopping's own figures). Either dot can sit beside either tag.
+
+| Row (`buy`, the claim model) | Beside the name | Tag, lg+ / below lg | Frame |
+|---|---|---|---|
+| In · `buy` 0 | — | — | 1b 1e (Aang, Earthshape) |
+| In · `buy` = `to`, priced | — | `buy · $2.40` / `$2.40` | 1b 1e (Bumi) |
+| In · `buy` = `to`, no price | — | `buy` / `$` (BuyTag `absent`) | — |
+| In · `buy` = `to`, sold out | — | `buy · sold out` / `$` | — |
+| In · 0 < `buy` < `to` | `has N of M` (`N = to − buy`) | `buy · $0.35` / `$0.35` | 1b 1e (Persistent Petitioners) |
+| In · quantity move, `buy` 0 | pair in the name (`Plains 6 → 7`) | — | 1b 1e |
+| In · quantity move, `buy` > 0 | pair, then `has N of M` when `N > 0` | tag | — |
+| In · basic land | — | never (`buy` is always 0) | 1b 1e |
+
+| Dot (ownership, independent of the tag) | Example |
+|---|---|
+| filled: `ownedNow > 0` | Aang, Persistent Petitioners, Basalt Monolith (owned, held by a senior deck, so tagged too), any basic |
+| dashed: `ownedNow = 0` | Bumi; also a proxied slot, which can read `buy` 0 (or `has N of M`) with no copy owned |
+
 | Row | Dot | Beside the name | Tag, lg+ / below lg | Frame |
 |---|---|---|---|---|
-| In · owned ≥ `to` | filled `--success` | — | — | 1b 1e (Aang, Earthshape) |
-| In · owned 0, priced | dashed `--fg-locked` | — | `buy · $2.40` / `$2.40` | 1b 1e (Bumi) |
-| In · owned 0, no price | dashed | — | `buy` / `$` (BuyTag `absent`) | — |
-| In · owned 0, sold out | dashed | — | `buy · sold out` / `$` | — |
-| In · deck holds 0 < N < `to` | filled | `has 1 of 4` | `buy · $0.35` / `$0.35` | 1b 1e (Persistent Petitioners) |
-| In · quantity move, owned ≥ `to` | filled | pair in the name (`Plains 6 → 7`) | — | 1b 1e |
-| In · quantity move, owned < `to` | filled | pair + `own 2 of 4` | tag | — |
-| In · basic land | filled (always) | — | never | 1b 1e |
 | Out · any | none | pair if moved | never | 1c 1e |
 | Hovered (md+, `hover: hover`) | — | — | — | 1e: `--elevated-hover`, 252×352 preview at 240ms |
 | No art (`imageUri` null) | — | — | — | No preview, the modal still opens |
