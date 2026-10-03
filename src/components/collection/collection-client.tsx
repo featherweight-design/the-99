@@ -20,17 +20,21 @@ import { CollectionBrowser } from "./browser";
 import type { CardArt } from "../../lib/collection/browse";
 import type { OwnedSetMeta } from "../../lib/collection/set-filter";
 import { decodeCollection, type CollectionRow, type CollectionWire } from "../../lib/collection/list-wire";
+import type { ViewHint } from "./browser";
 
 export function CollectionClient({
   wire,
   ownedSets,
   availabilityOk,
   hasCollection,
+  viewHint,
 }: {
   wire: CollectionWire;
   ownedSets: OwnedSetMeta[];
   availabilityOk: boolean;
   hasCollection: boolean;
+  /** The page's two view-cookie hints. Absent reads as no hint, as `CollectionBrowser` reads it. */
+  viewHint?: ViewHint;
 }) {
   // Decoded once per payload: the same wire identity is the same list, so everything below
   // that compares `cards` by identity keeps working.
@@ -86,6 +90,7 @@ export function CollectionClient({
         ownedSets={ownedSets}
         availabilityOk={availabilityOk}
         hasCollection={hasCollection}
+        viewHint={viewHint}
       />
     </CardDetailProvider>
   );

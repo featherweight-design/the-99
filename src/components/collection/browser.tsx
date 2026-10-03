@@ -34,12 +34,12 @@ import {
   COLLECTION_VIEW_KEY,
   FilterBar,
   isViewMode,
-  useIsDesktop,
   type FilterChangeIntent,
   type ViewMode,
 } from "./filter-bar";
 import { CHASSIS_WIDE_MIN_PX } from "../ui/filter-chassis";
-import { useMinWidth } from "../ui/use-min-width";
+import { useMinWidth, useMinWidthHinted } from "../ui/use-min-width";
+import { COLLECTION_VIEW_COOKIE, COLLECTION_WIDE_COOKIE } from "../ui/view-cookie";
 import { collectionChips } from "../../lib/collection/chips";
 import { AvailabilityGlyph } from "../ui/availability-marker";
 import { collectionChassisCopy } from "../../lib/copy/collection";
@@ -219,12 +219,16 @@ export function availabilityChangeAnnouncement(
   );
 }
 
+export type ViewHint = { stored: ViewMode | null; wide: boolean | null };
+const NO_VIEW_HINT: ViewHint = { stored: null, wide: null };
+
 export function CollectionBrowser({
   cards: rows,
   served: servedProp,
   ownedSets,
   availabilityOk,
   hasCollection,
+  viewHint = NO_VIEW_HINT,
 }: {
   /**
    * The list, whole cards and WITHHELD ones (list payload plan, PR 4): the page ships the draw
@@ -252,13 +256,23 @@ export function CollectionBrowser({
    * entirely of unmatched cards would read as no collection and hide the sets entry.
    */
   hasCollection: boolean;
+  /**
+   * What the page read from the two view cookies (`ui/view-cookie`): the stored view choice and
+   * whether the window was wide on a past visit. Hints for the SERVER render only; absent, the
+   * first render draws both views. A test that does not care passes nothing.
+   */
+  viewHint?: ViewHint;
 }) {
   const search = useSearchParams();
   // A withheld row lacks only draw fields, which none of the filters, sorts, counts or options
   // below reads, so they take the list as it stands. The views take resolved rows alone.
   const cards = rows as BrowseListCard[];
   const served = servedProp ?? rows;
-  const isDesktop = useIsDesktop();
+  // Whether the window is at least 768px, for the default view. The SERVER render and the
+  // hydration pass take the page's cookie hint, so a desktop reader is drawn the grid from the
+  // first byte instead of rows the grid replaces at hydration (`probe:view-flash`); null with no
+  // hint, and then both views are drawn and CSS picks one (below).
+  const isDesktop = useMinWidthHinted("(min-width: 768px)", viewHint.wide, COLLECTION_WIDE_COOKIE);
   // The result line lives in the chassis, so which of the two it draws follows
   // the CHASSIS's breakpoint rather than this file's 768. `isDesktop` still
   // picks the default view, which is its own question.
@@ -286,8 +300,19 @@ export function CollectionBrowser({
   // exactly as it did before this file knew anything about storage: that press
   // IS a choice made here, and it is what makes the current list shareable.
   // The two are different acts and only one of them touches the URL.
-  const [storedView, chooseView] = useStoredView(COLLECTION_VIEW_KEY, isViewMode);
-  const effectiveView: ViewMode = view ?? storedView ?? (isDesktop ? "grid" : "rows");
+  //
+  // Mirrored into a cookie, so the server render draws the stored choice too.
+  const [storedView, chooseView] = useStoredView(COLLECTION_VIEW_KEY, isViewMode, {
+    cookie: COLLECTION_VIEW_COOKIE,
+    serverValue: viewHint.stored,
+  });
+  // Null only on a first visit's server render and hydration pass: no `?view=`, nothing stored
+  // and no width hint. Both views are drawn then, and the render after hydration picks one.
+  const resolvedView: ViewMode | null =
+    view ?? storedView ?? (isDesktop === null ? null : isDesktop ? "grid" : "rows");
+  // The toggle needs one value even while the views are split by CSS. Grid, the desktop default:
+  // it cannot be pressed before hydration, and hydration settles it within one render.
+  const effectiveView: ViewMode = resolvedView ?? "grid";
   const chooseAndKeepView = useCallback(
     (next: ViewMode) => {
       setView(next);
@@ -642,7 +667,19 @@ export function CollectionBrowser({
             })
           }
         />
-      ) : effectiveView === "rows" ? (
+      ) : resolvedView === null ? (
+        // The first visit, before hydration: both views, CSS picks one at the same 768px the
+        // default reads. The grid copy may be hidden, so its eager tiles are lazy too
+        // (`mayBeHidden`), or a phone downloads a screen of art it never shows.
+        <>
+          <div className="hidden md:block">
+            <GridView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} mayBeHidden />
+          </div>
+          <div className="md:hidden">
+            <RowsView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} />
+          </div>
+        </>
+      ) : resolvedView === "rows" ? (
         <RowsView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} />
       ) : (
         <GridView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} />
