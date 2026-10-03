@@ -139,6 +139,26 @@ export type RowTake = {
   cut: string;
 };
 
+/**
+ * The card being replaced, previewed on hover like every stand-in below it (Hugh's staging walk,
+ * 2026-10-03). Its own component because `usePreviewRow` reads the provider's context, and the sheet
+ * renders that provider itself. A press puts the box away, as a stand-in row's does: the card it opens
+ * stacks under the preview, and a pointer held still fires no leave.
+ */
+function ReplacingLine({ imageUri, children }: { imageUri: string | null; children: React.ReactNode }) {
+  const preview = usePreviewRow(imageUri);
+  return (
+    <div
+      data-testid="stand-ins-replacing"
+      {...preview}
+      onPointerDown={preview.onMouseLeave}
+      className="flex flex-wrap items-center gap-x-[9px] gap-y-[6px]"
+    >
+      {children}
+    </div>
+  );
+}
+
 // Exported with StandInGroup (E3). A pure export: the sheet draws both unchanged.
 export function StandInRow({ row, newestAsOf, take, siblings }: { row: SheetRow; newestAsOf: Date | null; take: RowTake; siblings: readonly Sibling[] }) {
   const preview = usePreviewRow(row.imageUri);
@@ -571,7 +591,7 @@ export function StandInsSheet({
           <span className="font-mono text-[9.5px] tracking-[0.12em] uppercase" style={{ color: "var(--fg-faint)" }}>
             {copy.replacing(tools.deckName)}
           </span>
-          <div className="flex flex-wrap items-center gap-x-[9px] gap-y-[6px]">
+          <ReplacingLine imageUri={card.imageUri ?? (load.state === "ready" ? load.read.original.imageUri : null)}>
             <Thumb imageUri={card.imageUri ?? (load.state === "ready" ? load.read.original.imageUri : null)} side="head" />
             <span aria-hidden="true" className="flex-none w-[7px] h-[7px] rounded-full" style={{ border: "1px dashed var(--fg-faint)" }} />
             <CardDetailTrigger
@@ -588,7 +608,7 @@ export function StandInsSheet({
                 {swapToolsCopy.row.over(formatLimit(tools.limitCents))}
               </span>
             ) : null}
-          </div>
+          </ReplacingLine>
           {model ? (
             <p className="m-0 font-mono text-[10.5px] leading-[1.5]" style={{ color: "var(--fg-muted)" }}>{model.job}</p>
           ) : null}

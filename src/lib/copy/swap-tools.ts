@@ -210,8 +210,9 @@ export const swapToolsCopy = {
     /** E1: the card's jobs reach only cards this deck does not play (a Wolf lord in a Dinosaur deck). */
     noJobHere: (name: string) =>
       `Everything ${name} does is limited to cards this deck doesn’t play, so there are no stand-ins for it.`,
+    /** Neither its text nor, with the stand-ins' labels on, its card label names a job this deck can use. */
     noRole: (name: string) =>
-      `${name} does a job we can’t read from its text, so there are no stand-ins for it. We won’t guess at one.`,
+      `${name} does a job we can’t name, so there are no stand-ins for it. We won’t guess at one.`,
     noRoleLand: (name: string) =>
       `${name}’s job is its own text, not a color it makes or a land it finds, so there are no stand-ins for it. We won’t guess at one.`,
     /** E1: `jobs` are the original's jobs as a stand-in must keep them (ramp by its kind), `or`-joined. Owed to /copy-review. */
