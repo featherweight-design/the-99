@@ -57,6 +57,22 @@ describe("useDrawFields", () => {
     expect(new URL(net.calls[1].url, "http://x").searchParams.get("s")!.split(",")).toHaveLength(50);
   });
 
+  // The reader can wait on more rows than one batch holds (Show more pressed past the first
+  // window, then a refresh that leaves only that window whole), and the route refuses a batch
+  // over its limit, so the waiting rows are split across batches rather than asked for at once.
+  it("never asks for more than one batch's limit, even for rows the reader is waiting on", async () => {
+    const wanted = all.slice(0, 230);
+    renderHook(() => useDrawFields("fit", all, wanted));
+    await waitFor(() => expect(net.calls).toHaveLength(1));
+    const first = new URL(net.calls[0].url, "http://x").searchParams.get("s")!.split(",");
+    expect(first).toHaveLength(200);
+    expect(first).toEqual(wanted.slice(0, 200).map((r) => r.slug));
+    await act(async () => net.calls[0].answer());
+    await waitFor(() => expect(net.calls).toHaveLength(2));
+    const second = new URL(net.calls[1].url, "http://x").searchParams.get("s")!.split(",");
+    expect(second.slice(0, 30)).toEqual(wanted.slice(200).map((r) => r.slug));
+  });
+
   it("resolves a row once its fields have arrived", async () => {
     const wanted = [all[0]];
     const { result } = renderHook(() => useDrawFields("fit", all, wanted));
@@ -210,6 +226,79 @@ describe("useDrawFields", () => {
     expect(new URL(net.calls[1].url, "http://x").searchParams.get("s")!.split(",")[0]).toBe("c0");
     await act(async () => net.calls[1].answer());
     await waitFor(() => expect(result.current.resolve(all[0])?.prose).toBe("c0"));
+  });
+
+  // A batch the reader waits on fails, and the reader leaves before its retry fires: `leave`
+  // cancels the retry, so a failure kept across a back/forward return would hold the window busy
+  // with nothing left to clear it.
+  it("asks again for a failed window when the page comes back from the back/forward cache", async () => {
+    renderHook(() => useDrawFields("fit", all, [all[0]]));
+    await waitFor(() => expect(net.calls).toHaveLength(1));
+    await act(async () => net.calls[0].fail());
+    act(() => { window.dispatchEvent(new Event("pagehide")); });
+    const shown = new Event("pageshow") as Event & { persisted: boolean };
+    Object.defineProperty(shown, "persisted", { value: true });
+    act(() => { window.dispatchEvent(shown); });
+    await waitFor(() => expect(net.calls).toHaveLength(2));
+    expect(new URL(net.calls[1].url, "http://x").searchParams.get("s")!.split(",")[0]).toBe("c0");
+  });
+
+  // A list sent for a fresh read asks for nothing more: what it would fetch belongs to the payload
+  // the page is replacing, and every batch would hold the one in-flight slot.
+  it("asks for nothing more of a list once it has sent the page for a fresh read", async () => {
+    const onStale = vi.fn();
+    const { rerender } = renderHook(({ wanted }: { wanted: DiscoveryRow[] }) => useDrawFields("fit", all, wanted, onStale), {
+      initialProps: { wanted: [all[0]] },
+    });
+    await waitFor(() => expect(net.calls).toHaveLength(1));
+    await act(async () => net.calls[0].omit("c0"));
+    await waitFor(() => expect(onStale).toHaveBeenCalledTimes(1));
+    // Show more on the list being replaced, before the fresh payload lands.
+    rerender({ wanted: [all[0], all[240]] });
+    await new Promise((r) => setTimeout(r, 300));
+    expect(onStale).toHaveBeenCalledTimes(1);
+    expect(net.calls).toHaveLength(1);
+  });
+
+  // A window that spent its retries, then a refresh that hands over a new payload with the same
+  // window: the new payload's rows are asked for, or the list stays busy with nothing to clear it.
+  it("asks afresh for a new payload's rows after the old one's window failed for good", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const { rerender } = renderHook(
+        ({ list, wanted }: { list: DiscoveryRow[]; wanted: DiscoveryRow[] }) => useDrawFields("fit", list, wanted),
+        { initialProps: { list: all, wanted: [all[0]] } },
+      );
+      for (let i = 0; i < 4; i++) {
+        await waitFor(() => expect(net.calls).toHaveLength(i + 1));
+        await act(async () => net.calls[i].fail());
+        await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
+      }
+      expect(net.calls).toHaveLength(4);
+      const fresh = all.map((r) => ({ ...r }));
+      rerender({ list: fresh, wanted: [fresh[0]] });
+      await waitFor(() => expect(net.calls).toHaveLength(5));
+      expect(new URL(net.calls[4].url, "http://x").searchParams.get("s")!.split(",")[0]).toBe("c0");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // A refresh can hand over a new payload with the same window while a background batch for the
+  // old one is still in flight. That batch gives way: it is aborted, so its failure cannot mark the
+  // new payload's window failed, and the new payload's waiting rows are asked for at once.
+  it("gives up an old payload's batch when a new payload arrives for the same window", async () => {
+    const drawn = all.slice(0, 2).map((r) => ({ ...r, ...fieldsFor(r.slug) })) as DiscoveryRow[];
+    const { rerender } = renderHook(
+      ({ list, wanted }: { list: DiscoveryRow[]; wanted: DiscoveryRow[] }) => useDrawFields("fit", list, wanted),
+      { initialProps: { list: all, wanted: drawn } },
+    );
+    await waitFor(() => expect(net.calls).toHaveLength(1));
+    const fresh = all.map((r) => ({ ...r }));
+    rerender({ list: fresh, wanted: [fresh[0], fresh[1]] });
+    expect(net.calls[0].signal.aborted).toBe(true);
+    await waitFor(() => expect(net.calls).toHaveLength(2));
+    expect(new URL(net.calls[1].url, "http://x").searchParams.get("s")!.split(",").slice(0, 2)).toEqual(["c0", "c1"]);
   });
 
   it("asks for nothing when every row arrived drawn", async () => {

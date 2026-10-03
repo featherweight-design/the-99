@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type { Availability } from "../decks/availability";
 import type { BrowseListCard } from "./browse";
-import { decodeCollection, encodeCollection, stemImage, unstemImage } from "./list-wire";
+import {
+  COLLECTION_DRAW_KEYS,
+  collectionDrawFieldsFor,
+  cutCollectionWindow,
+  decodeCollection,
+  encodeCollection,
+  isCollectionDrawn,
+  stemImage,
+  unstemImage,
+} from "./list-wire";
 
 const ID = "c1466ae6-9dbc-4ea3-9f6e-3f5d0a1b2c3d";
 const URL = `https://cards.scryfall.io/normal/front/c/1/${ID}.jpg?1783920591`;
@@ -98,5 +107,45 @@ describe("encodeCollection / decodeCollection", () => {
 
   it("reads a card with no reading as null, not as free", () => {
     expect(decodeCollection(encodeCollection(cards, null)).every((c) => c.availability === null)).toBe(true);
+  });
+});
+
+describe("cutCollectionWindow / collectionDrawFieldsFor (list payload plan, PR 4)", () => {
+  const kept = card("a", { facts: ["gameChanger"], comboPartner: { name: "Card b" }, comboOtherPartners: 2 });
+  const cut = card("b", { imageUri: null, facts: [], comboPartner: { name: "Card a" } });
+  const wire = encodeCollection([kept, cut], null);
+
+  it("ships the window's cards whole and the rest without a single draw field", () => {
+    const [a, b] = decodeCollection(cutCollectionWindow(wire, new Set(["a"])));
+    expect(isCollectionDrawn(a)).toBe(true);
+    expect(a).toEqual({ ...kept, availability: null });
+    expect(isCollectionDrawn(b)).toBe(false);
+    for (const key of COLLECTION_DRAW_KEYS) expect(Object.hasOwn(b, key)).toBe(false);
+    // Everything a filter, a search or a sort reads is still there.
+    expect(b).toMatchObject({ oracleId: "b", name: "Card b", typeLine: "Instant", setCounts: [["RTR", 1]], quantity: 1 });
+  });
+
+  // A NULL image is a drawn card with no art, never a withheld one: the mark comes from the
+  // key's presence, so a card whose catalog row has no picture is not asked for again forever.
+  it("reads a whole card with no art as drawn", () => {
+    const [, b] = decodeCollection(cutCollectionWindow(wire, new Set(["a", "b"])));
+    expect(isCollectionDrawn(b)).toBe(true);
+    expect(b.imageUri).toBeNull();
+  });
+
+  it("leaves the wire it was given untouched", () => {
+    const before = JSON.stringify(wire);
+    cutCollectionWindow(wire, new Set());
+    expect(JSON.stringify(wire)).toBe(before);
+  });
+
+  it("answers the draw fields of the cards named, and nothing for an id not in the list", () => {
+    const fields = collectionDrawFieldsFor([kept, cut], new Set(["b", "not-here"]));
+    expect(Object.keys(fields)).toEqual(["b"]);
+    const [, withheld] = decodeCollection(cutCollectionWindow(wire, new Set()));
+    const { art, ...draw } = fields.b;
+    expect({ ...draw, ...withheld, withheld: undefined }).toEqual({ ...cut, availability: null, withheld: undefined });
+    // And the caption the art was resolved with, read off the same card.
+    expect(art).toEqual({ printedName: cut.printedName, primarySetCode: cut.primarySetCode });
   });
 });

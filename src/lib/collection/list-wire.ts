@@ -39,7 +39,38 @@ export function unstemImage(wire: string): string {
 }
 
 type WireAvailability = Omit<AvailabilitySummary, "claims"> & { claims: number[] };
-type WireCard = Omit<BrowseListCard, "availability"> & { availability?: WireAvailability | null };
+type WireCard = Omit<BrowseListCard, "availability" | CollectionDrawKey> &
+  Partial<Pick<BrowseListCard, CollectionDrawKey>> & { availability?: WireAvailability | null };
+
+/**
+ * The fields a card only DRAWS (list payload plan, PR 4): no filter, search or sort reads them, so
+ * they ship for the URL's first window only and the rest arrive from `/api/collection-fields`.
+ * `printedName`, `layout` and `manaCost` stay on every card: search and the name sort read the
+ * first two, and the third is a few bytes.
+ */
+export const COLLECTION_DRAW_KEYS = ["imageUri", "facts", "comboPartner", "comboOtherPartners"] as const;
+export type CollectionDrawKey = (typeof COLLECTION_DRAW_KEYS)[number];
+/**
+ * What a fields batch answers for a card: its draw fields, and the CAPTION its art was resolved
+ * with. A card's art, printed name and set code come off one printing, and a printing picked on
+ * another device moves all three while the page holds the older two. Sent together, the client
+ * draws the three from one read (see `useCollectionFields`), so no art lands under another
+ * printing's name, and no list-wide version has to stand guard over the batch.
+ */
+export type CollectionDrawFields = Partial<Pick<BrowseListCard, CollectionDrawKey>> & {
+  art?: Pick<BrowseListCard, "printedName" | "primarySetCode">;
+};
+
+/**
+ * A card as the client holds it: whole, or WITHHELD, with its draw fields still to come. The mark
+ * is set by the decoder from the wire card's own shape, never from the fields present on a row
+ * afterwards, because a printing pick lays an `imageUri` over a row whether it was drawn or not.
+ */
+export type CollectionRow =
+  | BrowseListCard
+  | (Omit<BrowseListCard, CollectionDrawKey> & CollectionDrawFields & { withheld: true });
+
+export const isCollectionDrawn = (row: CollectionRow): row is BrowseListCard => !("withheld" in row);
 
 export type CollectionWire = {
   /** Each deck a claim names, once: `[id, name]`. */
@@ -89,13 +120,16 @@ export function encodeCollection(
   };
 }
 
-export function decodeCollection(wire: CollectionWire): BrowseListCard[] {
+export function decodeCollection(wire: CollectionWire): CollectionRow[] {
   return wire.cards.map((card) => {
-    const list: BrowseListCard = {
-      ...card,
-      imageUri: card.imageUri === null ? null : unstemImage(card.imageUri),
+    // `imageUri` is on every whole card, null or not, and on no withheld one.
+    const whole = Object.hasOwn(card, "imageUri");
+    const { imageUri, ...rest } = card;
+    const list = {
+      ...rest,
+      ...(whole ? { imageUri: imageUri == null ? null : unstemImage(imageUri) } : { withheld: true as const }),
       availability: null,
-    };
+    } as CollectionRow;
     if (card.availability) {
       const { claims, ...figures } = card.availability;
       list.availability = {
@@ -108,4 +142,39 @@ export function decodeCollection(wire: CollectionWire): BrowseListCard[] {
     }
     return list;
   });
+}
+
+/**
+ * The wire with every card outside `keep` cut to the columns filtering, search and sort read. The
+ * entry it was given is not touched: the cached list is shared by every URL, and the window
+ * belongs to one.
+ */
+export function cutCollectionWindow(wire: CollectionWire, keep: ReadonlySet<string>): CollectionWire {
+  return {
+    ...wire,
+    cards: wire.cards.map((card) => {
+      if (keep.has(card.oracleId)) return card;
+      const cut = { ...card };
+      for (const key of COLLECTION_DRAW_KEYS) delete cut[key];
+      return cut;
+    }),
+  };
+}
+
+/** The draw fields of the cards named, as the fields route answers them: an id not in `cards` is absent. */
+export function collectionDrawFieldsFor(
+  cards: BrowseListCard[],
+  ids: ReadonlySet<string>,
+): Record<string, CollectionDrawFields> {
+  const out: Record<string, CollectionDrawFields> = {};
+  for (const card of cards) {
+    if (!ids.has(card.oracleId)) continue;
+    const fields: CollectionDrawFields = {};
+    for (const key of COLLECTION_DRAW_KEYS) {
+      if (Object.hasOwn(card, key)) (fields as Record<string, unknown>)[key] = card[key];
+    }
+    fields.art = { printedName: card.printedName, primarySetCode: card.primarySetCode };
+    out[card.oracleId] = fields;
+  }
+  return out;
 }

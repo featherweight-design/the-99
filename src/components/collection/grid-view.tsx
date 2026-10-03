@@ -25,6 +25,19 @@ import { CollectionMarkKey } from "./collection-mark-key";
 import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { CardTileCaption, TILE_ART_CLIP } from "../ui/card-tile-caption";
 import { GhostButton } from "../ui/button";
+import { HydratedImg } from "../ui/hydrated-art";
+
+/**
+ * Tiles whose art the server HTML asks for. The server cannot know the width, so this is a fixed
+ * count rather than columns times rows. The track is `minmax(178px, 1fr)` with a 20px gap beside
+ * the 62px rail and 34px of padding a side, so it holds 6 columns at 1300px, 7 at 1536 and 9 at
+ * 1920, and a first screen is about 18 tiles at 1300x900 and 27 at 1920x1080; on a phone it is
+ * two columns, about 4 tiles. Every eager tile is art downloading beside the page's scripts,
+ * so the count is a trade between first art and time to interactive. Measured on the slow profile
+ * (list payload plan, PR 4): 4 eager tiles hydrate as fast as bare `/collection` at 1300 and 390
+ * and paint first art 10.5s and 4.3s sooner than none; 12 cost ~4.7s of hydration at 1300.
+ */
+export const GRID_EAGER_TILES = 4;
 
 export function GridView({
   cards,
@@ -32,10 +45,17 @@ export function GridView({
   onShowMore,
   onOpen,
   pendingOracleId = null,
+  busy = false,
 }: {
   cards: BrowseListCard[];
   totalCards: number;
   onShowMore: () => void;
+  /**
+   * The rows a filter or `Show more` asked for are still arriving (list payload plan, PR 4): the
+   * list keeps the rows it drew and says so with `aria-busy`, and `Show more` ignores a press
+   * while it waits. No drawn waiting state: the rows land in about one round trip.
+   */
+  busy?: boolean;
   onOpen: (oracleId: string) => void;
   /** The tile whose card is being fetched, which shows the click landed. */
   pendingOracleId?: string | null;
@@ -51,11 +71,11 @@ export function GridView({
        The phone keeps an explicit 2-up. At 390px the track is 362px, which one
        178px floor plus a gap already exceeds, so auto-fill there would collapse
        to a single column. */
-    <div className="grid grid-cols-2 md:grid-cols-[repeat(auto-fill,minmax(178px,1fr))] gap-[12px] md:gap-[20px] px-[14px] md:px-[34px] pt-[4px] md:pt-[20px] pb-[14px] md:pb-[34px]">
+    <div aria-busy={busy || undefined} className="grid grid-cols-2 md:grid-cols-[repeat(auto-fill,minmax(178px,1fr))] gap-[12px] md:gap-[20px] px-[14px] md:px-[34px] pt-[4px] md:pt-[20px] pb-[14px] md:pb-[34px]">
       {/* The gloss travels WITH the view: a surface drawing a wordless mark carries the
           thing that decodes it, rather than trusting a caller to mount one above. */}
       <CollectionMarkKey className="col-span-full" />
-      {cards.map((c) => {
+      {cards.map((c, i) => {
         const state = c.availability ? availabilityState(c.availability) : "free";
         // Addendum 2 §2, matching the row: over-committed keeps its border tint
         // and nothing else.
@@ -94,22 +114,22 @@ export function GridView({
               background: c.imageUri ? undefined : identityGradient(c.colorIdentity),
             }}
           >
-            {/* AN IMG, LOADED LAZILY — not a CSS background. A browser fetches a CSS
-                background for every rendered element whether or not it is on screen, so
-                opening the grid asked for all 200 windowed tiles' art at once: about 22MB
-                of Scryfall `normal` images, which on a slow link kept the page's load
-                event out past 90s (plans/2026-09-28-list-payload-shrink.md, PR 1). A
-                native `loading="lazy"` img asks only near the viewport, and it still
-                starts on the HTML parse, before hydration, where a script-driven observer
-                would wait for the bundle. `object-fit: cover` centred is exactly what
-                `background-size: cover` centred drew. The FILE stays `normal`: `small`
-                is 146px against a 175-178px tile, soft at any density. */}
+            {/* THE ART WAITS FOR THE PAGE, except the first screen's. A CSS background is
+                fetched for every rendered tile, on screen or not, which asked for all 200
+                windowed tiles' art at once (list payload plan, PR 1). A native lazy img fixed
+                that, but it still starts on the HTML parse: on a slow link, once the server
+                draws the grid, ~2.4MB of Scryfall `normal` images landed BEFORE hydration
+                and the page became usable at ~20s instead of ~6s (PR 4's measurement, on
+                `?view=grid`). `HydratedImg` (`ui/hydrated-art`) withholds `src` until the
+                tile is near the viewport, which it can only learn after hydration; the first
+                screen's tiles are `eager` and ask for their art in the server HTML. The FILE
+                stays `normal`: `small` is 146px against a 175-178px tile, soft at any
+                density. `object-fit: cover` centred is what `background-size: cover` drew. */}
             {c.imageUri && (
-              // eslint-disable-next-line @next/next/no-img-element -- Scryfall art is remote; next/image would need a loader per host and would re-encode art the CDN already sizes
-              <img
+              <HydratedImg
+                eager={i < GRID_EAGER_TILES}
                 src={c.imageUri}
                 alt=""
-                loading="lazy"
                 decoding="async"
                 className="absolute inset-0 h-full w-full object-cover object-center"
               />
@@ -236,7 +256,8 @@ export function GridView({
       {cards.length < totalCards && (
         <GhostButton
           type="button"
-          onClick={onShowMore}
+          onClick={busy ? undefined : onShowMore}
+          aria-busy={busy || undefined}
           className="col-span-full mx-auto text-[13px] px-[16px] py-[9px] mt-[6px]"
         >
           Show more ({(totalCards - cards.length).toLocaleString()} more)

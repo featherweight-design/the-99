@@ -142,3 +142,27 @@ describe("GridView count", () => {
     expect(screen.getByText("×3")).toBeInTheDocument();
   });
 });
+
+// The server HTML asks for the first screen's art and no more (PR 4's measurement on
+// `?view=grid`: ~2.4MB of `normal` images landing before hydration held the page at ~20s).
+// Read as SERVER markup on purpose: jsdom has no IntersectionObserver, so a client render
+// grants every tile its art once hydrated and could not tell an eager tile from a waiting one.
+describe("GridView art in the server HTML", () => {
+  it("names art for the first GRID_EAGER_TILES tiles and withholds the rest", async () => {
+    const { renderToString } = await import("react-dom/server");
+    const { GRID_EAGER_TILES } = await import("./grid-view");
+    const cards = Array.from({ length: GRID_EAGER_TILES + 3 }, (_, i) => ({
+      ...card,
+      oracleId: `o${i}`,
+      name: `Card ${i}`,
+      imageUri: `https://cards.scryfall.io/normal/front/a/b/art-${i}.jpg`,
+    }));
+    const html = renderToString(
+      <GridView cards={cards} totalCards={cards.length} onShowMore={() => {}} onOpen={() => {}} />,
+    );
+    const asked = [...html.matchAll(/src="[^"]*art-(\d+)\.jpg"/g)].map((m) => Number(m[1]));
+    expect(asked).toEqual(Array.from({ length: GRID_EAGER_TILES }, (_, i) => i));
+    // Every tile still draws its art box, so nothing moves when the art arrives.
+    expect(html.match(/<img/g)?.length).toBe(cards.length);
+  });
+});

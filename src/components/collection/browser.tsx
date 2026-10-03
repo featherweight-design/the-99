@@ -5,7 +5,7 @@
 // chips + view + open card deep-link (READINESS #6).
 
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   DEFAULT_SORT_DIRECTION,
   filterCards,
@@ -15,24 +15,18 @@ import {
   type SortDirection,
   type SortKey,
 } from "../../lib/collection/browse";
-// SORT_KEYS lives with the Sort ▾ option builder, so the panel's rows and this
-// query-param guard cannot drift apart when a key is added.
-import { SORT_KEYS, parseSortDirection } from "../../lib/collection/sort-options";
 import { buildColorOptions } from "../../lib/collection/color-filter";
 import {
   buildSetOptions,
-  parseSetCodesParam,
   serializeSetCodes,
   type OwnedSetMeta,
 } from "../../lib/collection/set-filter";
 import {
   buildTypeOptions,
-  parseTypesParam,
   serializeTypes,
 } from "../../lib/collection/type-filter";
 import {
   buildAvailabilityOptions,
-  initialAvailability,
   serializeAvailability,
 } from "../../lib/collection/availability-filter";
 import { collectionFilterCopy, type FilterPanelCopy } from "../../lib/copy/collection";
@@ -55,10 +49,11 @@ import { GridView } from "./grid-view";
 import { useStoredView } from "../ui/use-stored-view";
 import { NoResults } from "./no-results";
 import { useCardDetail } from "../cards/card-detail-provider";
-import { parseColors } from "../../lib/color-param";
 import { mirrorUrl } from "../../lib/url/mirror";
+import { PAGE_SIZE, parseBrowseParams } from "../../lib/collection/window";
+import type { CollectionRow } from "../../lib/collection/list-wire";
+import { useCollectionFields } from "./use-collection-fields";
 
-const PAGE_SIZE = 200;
 
 /**
  * The query keys this component owns. Everything else on the URL — a `ref=`, a
@@ -225,12 +220,24 @@ export function availabilityChangeAnnouncement(
 }
 
 export function CollectionBrowser({
-  cards,
+  cards: rows,
+  served: servedProp,
   ownedSets,
   availabilityOk,
   hasCollection,
 }: {
-  cards: BrowseListCard[];
+  /**
+   * The list, whole cards and WITHHELD ones (list payload plan, PR 4): the page ships the draw
+   * fields for its URL's first window only. Nothing here but the views reads a draw field, so
+   * filtering, search, sorting, counting and every option run over these rows as they are, and
+   * only the window is resolved before it is drawn.
+   */
+  cards: CollectionRow[];
+  /**
+   * The list as the page decoded it, before any printing pick: what fetched fields are held
+   * against. `cards` itself when omitted, which is the same list while nothing is picked.
+   */
+  served?: CollectionRow[];
   /** `sets` catalog rows for the sets this user owns — names + release dates. */
   ownedSets: OwnedSetMeta[];
   /**
@@ -247,27 +254,23 @@ export function CollectionBrowser({
   hasCollection: boolean;
 }) {
   const search = useSearchParams();
+  // A withheld row lacks only draw fields, which none of the filters, sorts, counts or options
+  // below reads, so they take the list as it stands. The views take resolved rows alone.
+  const cards = rows as BrowseListCard[];
+  const served = servedProp ?? rows;
   const isDesktop = useIsDesktop();
   // The result line lives in the chassis, so which of the two it draws follows
   // the CHASSIS's breakpoint rather than this file's 768. `isDesktop` still
   // picks the default view, which is its own question.
   const chassisWide = useMinWidth(`(min-width: ${CHASSIS_WIDE_MIN_PX}px)`);
 
-  const [filters, setFilters] = useState<BrowseFilters>(() => ({
-    search: search.get("q") ?? "",
-    colors: parseColors(search.get("c")),
-    types: parseTypesParam(search.get("t")),
-    setCodes: parseSetCodesParam(search.get("s")),
-    availability: initialAvailability(availabilityOk, search.get("avail")),
-  }));
-  // Guard query params — shared URLs can carry unknown values; fall back to defaults.
-  const [sort, setSort] = useState<SortKey>(() => {
-    const s = search.get("sort");
-    return s !== null && (SORT_KEYS as readonly string[]).includes(s) ? (s as SortKey) : "name";
-  });
-  const [sortDirection, setSortDirection] = useState<SortDirection>(() =>
-    parseSortDirection(search.get("dir"), sort),
-  );
+  // The URL's state, parsed by the same function the page runs to cut its first window, so the
+  // rows drawn first are the rows the page shipped whole. Shared URLs can carry unknown values;
+  // each falls back to its default there.
+  const [initial] = useState(() => parseBrowseParams((key) => search.get(key), availabilityOk));
+  const [filters, setFilters] = useState<BrowseFilters>(initial.filters);
+  const [sort, setSort] = useState<SortKey>(initial.sort);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(initial.direction);
   // null = "auto" (no explicit user choice); resolves to rows on mobile, grid on desktop.
   const [view, setView] = useState<ViewMode | null>(() => {
     const v = search.get("view");
@@ -487,7 +490,24 @@ export function CollectionBrowser({
       { search: "", colors: [], types: [], setCodes: [], availability: [] },
       anyFilterActive ? "clear-all" : undefined,
     );
-  const windowed = useMemo(() => sorted.slice(0, shown), [sorted, shown]);
+  // THE ROWS ON SCREEN, which are not always the window. A `Show more`, a filter or a search that
+  // reaches rows whose draw fields have not arrived keeps the rows already drawn on screen, the
+  // list `aria-busy`, until they land: about one round trip, with no drawn waiting state.
+  const wanted = useMemo(() => (sorted as CollectionRow[]).slice(0, shown), [sorted, shown]);
+  const router = useRouter();
+  const refreshStale = useCallback(() => router.refresh(), [router]);
+  const { resolve } = useCollectionFields(served, wanted, refreshStale);
+  const resolvedWanted = wanted.map(resolve);
+  const complete = resolvedWanted.every((r) => r !== null);
+  // The last rows drawn WHOLE, kept as drawn.
+  const [held, setHeld] = useState<{ from: CollectionRow[]; rows: BrowseListCard[] }>(() => ({
+    from: wanted,
+    rows: resolvedWanted.filter((r): r is BrowseListCard => r !== null),
+  }));
+  if (complete && held.from !== wanted) {
+    setHeld({ from: wanted, rows: resolvedWanted as BrowseListCard[] });
+  }
+  const windowed = complete ? (resolvedWanted as BrowseListCard[]) : held.rows;
 
   // The ordered ids Prev/Next pages through — the sorted list, not the window,
   // so paging runs past the 200 cards currently rendered.
@@ -623,9 +643,9 @@ export function CollectionBrowser({
           }
         />
       ) : effectiveView === "rows" ? (
-        <RowsView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} />
+        <RowsView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} />
       ) : (
-        <GridView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} />
+        <GridView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} />
       )}
     </>
   );
