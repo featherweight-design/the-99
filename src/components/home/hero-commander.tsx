@@ -5,6 +5,7 @@
 // this call site and no string is written here (plan ruling 5).
 
 import Link from "next/link";
+import { PendingReporter } from "../shell/pending-reporter";
 import { PrimaryButton } from "@/components/ui/button";
 import { commanderDisplayName } from "../../lib/cards/printed-name";
 import { ArtWash, INK_SHADOW } from "@/components/ui/art-wash";
@@ -138,7 +139,9 @@ export function HeroCommander({ item, inUse }: { item: CommanderListItem; inUse:
           tabIndex={-1}
           data-testid="hero-art-link"
           className="absolute inset-0 z-[1]"
-        />
+        >
+          <PendingReporter href={`/commanders/${item.slug}`} />
+        </Link>
       </div>
 
       {/* §4 — below the divider, on flat ground: the pool clause and the actions. */}
