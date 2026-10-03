@@ -556,9 +556,10 @@ export async function loadVersionDiff(
   const all = [...ins, ...outs];
   // Both reads are scoped to the diff's own cards: a version moves a handful, and
   // neither the collection nor the price table is read whole for them.
-  // Only a non-basic card can carry a buy, so a diff of basics alone (or none) reads no claims: the
-  // user-wide claim model is not paid for nothing, and cannot fail a diff it has no say in.
-  const ids = pricedIds(all);
+  // Only a non-basic IN card can carry a buy (an Out row draws no tag), so a cuts-only or
+  // basics-only diff reads no claims: the user-wide claim model is not paid for nothing, and cannot
+  // fail a diff it has no say in.
+  const ids = pricedIds(ins);
   const draftRows = ids.length === 0 ? [] : await db.select({ oracleId: deckCards.oracleId, quantity: deckCards.quantity })
     .from(deckCards).where(and(eq(deckCards.deckId, deckId), inArray(deckCards.oracleId, ids)));
   const draft = new Map(draftRows.map((r) => [r.oracleId, r.quantity]));
@@ -590,7 +591,8 @@ export async function loadVersionDiff(
   };
   return {
     in: assembleVersionRows(ins, owned, priced, claims),
-    out: assembleVersionRows(outs, owned, priced, claims),
+    // An Out row draws no tag, and its claims were not read: its buy is 0 by construction.
+    out: assembleVersionRows(outs, owned, priced, claims).map((c) => ({ ...c, buy: 0 })),
     newestAsOf: priced.newestAsOf,
   };
 }
