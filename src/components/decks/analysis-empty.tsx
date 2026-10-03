@@ -174,9 +174,16 @@ export function AnalysisEmpty({
                 saving={savingDescription}
                 refused={descriptionRefused}
               />
-              <span role="status" className="sr-only">{descriptionAnnounced}</span>
             </div>
           ) : null}
+          {/* Mounted regardless of phase — a successful save's own callback calls `onRequest`,
+              which can switch to `loading` immediately, and the idle block above (and the
+              announcement with it) would unmount before a screen reader ever read it (round 6).
+              `role` only while there is something to say: `AnalysisPanel` carries its own
+              `role="status"` for the reading-settled announcement, and this span is empty on
+              every render that never saved a description — giving it the role unconditionally
+              would plant a second, always-matching status region beside that one. */}
+          <span role={descriptionAnnounced ? "status" : undefined} className="sr-only">{descriptionAnnounced}</span>
           <div className={`mt-[20px] flex w-full flex-col items-center gap-[6px] md:mt-[22px] md:w-auto md:flex-row md:flex-wrap md:gap-x-[20px] ${shownNote ? "md:gap-y-[12px]" : "md:gap-y-[20px]"}`}>
             {/* A BUTTON, NEVER AUTOMATIC. A silent retry loop is how a wait becomes a bill. */}
             <button

@@ -28,6 +28,15 @@ describe("AnalysisEmpty's check note", () => {
 });
 
 describe("AnalysisEmpty's description field (H35, STATES §1)", () => {
+  // Round 6: giving this span `role="status"` unconditionally planted a second, always-present
+  // status region beside `AnalysisPanel`'s own (for the reading-settled announcement) on every
+  // render, not only the one right after a description save — breaking any caller that queries
+  // by role rather than by this component's own `screen` instance.
+  it("carries no status role until there is something to announce", () => {
+    render(<AnalysisEmpty phase="loading" onRequest={() => {}} description={null} />);
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
   it("draws the field only while idle, never during loading", () => {
     const { rerender } = render(<AnalysisEmpty phase="idle" onRequest={() => {}} description={null} />);
     expect(screen.getByLabelText("Describe your deck")).toBeInTheDocument();
@@ -135,6 +144,24 @@ describe("AnalysisEmpty's description field (H35, STATES §1)", () => {
       await Promise.resolve();
       await Promise.resolve();
     });
+    expect(screen.getByRole("status")).toHaveTextContent("Saved the description.");
+  });
+
+  // Round 6: Analyze's own success callback calls `onRequest`, which can flip the panel to
+  // `loading` immediately — and the status region used to live only inside the idle-only
+  // block, so it unmounted (taking the announcement with it) before a screen reader read it.
+  it("keeps the save announcement live even once Analyze switches the panel to loading", async () => {
+    const onSaveDescription = vi.fn(async () => ({ ok: true as const }));
+    const onRequest = vi.fn();
+    const { rerender } = render(
+      <AnalysisEmpty phase="idle" onRequest={onRequest} description={null} onSaveDescription={onSaveDescription} />,
+    );
+    fireEvent.change(screen.getByLabelText("Describe your deck"), { target: { value: "Grind it out." } });
+    fireEvent.click(screen.getByRole("button", { name: "Analyze" }));
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
+    expect(onRequest).toHaveBeenCalledOnce();
+    // The caller's real `onRequest` would switch `phase` to "loading" about now.
+    rerender(<AnalysisEmpty phase="loading" onRequest={onRequest} description="Grind it out." onSaveDescription={onSaveDescription} />);
     expect(screen.getByRole("status")).toHaveTextContent("Saved the description.");
   });
 

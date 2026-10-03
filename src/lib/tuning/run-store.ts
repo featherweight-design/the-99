@@ -131,8 +131,11 @@ export async function saveIntent(
 ): Promise<"saved" | "tooLong" | "refused"> {
   const intent = raw.trim();
   if (intentTooLong(intent)) return "tooLong";
+  // Round 6: `saveDeckHeader` (the pencil) stamps this too — without it here, the same edit
+  // moved Home's resume order and "edited" timestamp only when made through the pencil, never
+  // through this empty-state field, for the identical column.
   const updated = await db.update(decks)
-    .set({ intent: intent.length > 0 ? intent : null, intentSeeded: false })
+    .set({ intent: intent.length > 0 ? intent : null, intentSeeded: false, lastEditedAt: sql`clock_timestamp()` })
     .where(and(eq(decks.id, deckId), eq(decks.userId, userId)))
     .returning({ id: decks.id });
   return updated.length > 0 ? "saved" : "refused";
