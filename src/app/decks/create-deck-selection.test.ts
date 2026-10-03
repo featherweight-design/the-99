@@ -431,7 +431,7 @@ describe("createDeck with a selection", () => {
 
     await runCreate("My deck");
 
-    expect(vi.mocked(gatherFillStaples).mock.calls[0]?.[0].identity.sort()).toEqual(["B", "G", "W"]);
+    expect([...(vi.mocked(gatherFillStaples).mock.calls[0]?.[0].identity ?? [])].sort()).toEqual(["B", "G", "W"]);
     expect(insertedIds()).toContain(BOOTS);
     const passCards = stub.state.insertCalls.filter((c) => c.table === "fill_pass_cards")
       .map((c) => (c.values as Array<{ oracleId: string }>).map((v) => v.oracleId));
