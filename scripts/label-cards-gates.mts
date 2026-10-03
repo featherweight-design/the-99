@@ -5,7 +5,7 @@
 // Reads `out/sample.json` (written by label-cards-run) and `out/labels-<model>.json` (by label-cards-collect),
 // and the catalog the sample was drawn from, so DATABASE_URL names that catalog. Writes NO database rows.
 //
-//   LABEL_PUBLISH=resample pnpm tsx scripts/label-cards-gates.mts [--publish]
+//   LABEL_PUBLISH=resample-<n> pnpm tsx scripts/label-cards-gates.mts [--publish]
 //
 // With --publish it commits the gates, the sample's set membership and the per-card labels beside the
 // vocabulary plan, which the first sample never did.

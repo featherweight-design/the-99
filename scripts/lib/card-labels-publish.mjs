@@ -23,20 +23,30 @@ export const PUBLISHED = {
 };
 
 /**
- * The vocabulary plan's re-sample (Task 5), published beside the plan it measures and never over the first
- * sample's evidence. Sonnet alone, so its own model set. Chosen with `LABEL_PUBLISH=resample`. The per-card
- * labels and the sample's set membership are committed too: the first sample's stayed in an uncommitted
- * `out/`, and the empty-answer question could not be asked of them afterwards.
+ * The vocabulary plan's re-samples (Task 5), each published beside the plan it measures under its own NUMBER,
+ * so a later re-sample never overwrites an earlier one's evidence and neither touches the first sample's.
+ * Sonnet alone, so their own model set. Chosen with `LABEL_PUBLISH=resample-<n>`. The per-card labels and
+ * the sample's set membership are committed too: the first sample's stayed in an uncommitted `out/`, and the
+ * empty-answer question could not be asked of them afterwards.
+ *
+ * @param {number} n
  */
-const RESAMPLE = "docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample";
-export const RESAMPLE_PUBLISHED = {
-  "out/score.json": `${RESAMPLE}-score.json`,
-  "out/cost.json": `${RESAMPLE}-cost.json`,
-  "out/gates.json": `${RESAMPLE}-gates.json`,
-  "out/sample.json": `${RESAMPLE}-sample.json`,
-  "out/labels-sonnet.json": `${RESAMPLE}-labels-sonnet.json`,
-};
+export function resamplePublished(n) {
+  const at = `docs/superpowers/benchmarks/2026-09-28-card-label-vocabulary-resample-${n}`;
+  return {
+    "out/score.json": `${at}-score.json`,
+    "out/cost.json": `${at}-cost.json`,
+    "out/gates.json": `${at}-gates.json`,
+    "out/sample.json": `${at}-sample.json`,
+    "out/labels-sonnet.json": `${at}-labels-sonnet.json`,
+  };
+}
 const RESAMPLE_MODELS = ["sonnet"];
+/** The re-sample number `LABEL_PUBLISH` names, or null when it names no re-sample. */
+const resampleNumber = () => {
+  const m = /^resample-([1-9][0-9]*)$/.exec(process.env.LABEL_PUBLISH ?? "");
+  return m ? Number(m[1]) : null;
+};
 
 /**
  * Why the labels on disk cannot be published as the submitted run's, or null when they can. The labels file
@@ -61,14 +71,15 @@ export function labelsRunMismatch(models) {
 /** The models the committed set this run publishes to describes: the scorer's publish gate requires exactly these. */
 export const publishModels = () => target().models;
 /** True when this run publishes the re-sample, whose labels must carry the submitted run's stamp. */
-export const publishingResample = () => (process.env.LABEL_PUBLISH ?? "first") === "resample";
+export const publishingResample = () => resampleNumber() !== null;
 
 /** Which committed set this run publishes to, and the models that set describes. */
 function target() {
   const name = process.env.LABEL_PUBLISH ?? "first";
   if (name === "first") return { paths: PUBLISHED, models: Object.keys(MODELS) };
-  if (name === "resample") return { paths: RESAMPLE_PUBLISHED, models: RESAMPLE_MODELS };
-  throw new Error(`LABEL_PUBLISH must be "first" or "resample", got ${JSON.stringify(name)}`);
+  const n = resampleNumber();
+  if (n !== null) return { paths: resamplePublished(n), models: RESAMPLE_MODELS };
+  throw new Error(`LABEL_PUBLISH must be "first" or "resample-<n>", got ${JSON.stringify(name)}`);
 }
 
 /**

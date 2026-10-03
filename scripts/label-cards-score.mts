@@ -308,7 +308,7 @@ for (const [model, byCard] of Object.entries(predictions)) {
 mkdirSync("out", { recursive: true });
 // PUBLISHING an incomplete report would commit a comparison that is not one. The skip
 // above is for exploratory runs; with `--publish` every model the target describes must be
-// present and complete (both for the first sample, Sonnet alone for LABEL_PUBLISH=resample),
+// present and complete (both for the first sample, Sonnet alone for LABEL_PUBLISH=resample-<n>),
 // or the committed artifact silently loses a column the report quotes.
 if (process.argv.includes("--publish")) {
   // The re-sample's score must be of the SUBMITTED run's labels, not a previous run's left on disk.
