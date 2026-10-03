@@ -735,6 +735,9 @@ export async function loadDeckBuyRows(
     -- BOTH COMMANDERS TOO (H28), from the deck's live columns, the draft's own commanders.
     -- Neither is a deck_cards row, so without these arms a deck never bought its commander and
     -- the Shopping list left out the one card a player cannot start without.
+    -- ONLY FOR A DECK WITH A BODY (Hugh, 2026-10-02): a deck with every card removed bills
+    -- nothing, its commander included, until it holds a card again. Its page draws the empty
+    -- state, which has no Shopping list to show the purchase on.
     list_claims as (
       select t.deck_id, t.oracle_id, sum(t.quantity)::int as quantity
       from (
@@ -746,10 +749,12 @@ export async function loadDeckBuyRows(
         select d.id, d.commander_oracle_id, 1
         from decks d
         where d.user_id = ${userId}
+          and exists (select 1 from deck_cards b where b.deck_id = d.id)
         union all
         select d.id, d.partner_oracle_id, 1
         from decks d
         where d.user_id = ${userId} and d.partner_oracle_id is not null
+          and exists (select 1 from deck_cards b where b.deck_id = d.id)
       ) t
       where not exists (
         select 1 from deck_proxies p

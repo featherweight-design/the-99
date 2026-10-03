@@ -53,6 +53,9 @@ const USER_P = `probe-pull-${Date.now()}`;
 // The commander buy rows (H28) get their own user too: every figure is a deck's own bill for its
 // commander, and the seniority fixture's decks would hold the same legends.
 const USER_K = `probe-commander-buy-${Date.now()}`;
+// The empty-body CLAIM case gets its own user: one owned copy, two decks led by it, and nothing
+// else claiming the card, so both readers' figures are worked out by hand.
+const USER_E = `probe-empty-claim-${Date.now()}`;
 
 let failures = 0;
 const check = (label: string, actual: unknown, expected: unknown) => {
@@ -844,16 +847,30 @@ async function commanderBuySection() {
   const partner = legends[1].oracle_id;
   const owes = async (deckId: string, oracleId: string) =>
     (await loadDeckBuyRows(USER_K, [deckId])).find((r) => r.oracleId === oracleId)?.quantity ?? 0;
-  const deck = async (name: string, partnerId: string | null = null) => {
+  // A body card the collection never holds, so the deck is not empty (Hugh, 2026-10-02: a deck
+  // with no body bills nothing, its commander included).
+  const { rows: [filler] } = await fixture.execute<{ oracle_id: string }>(sql`
+    select oracle_id from cards
+    where type_line !~ '\\mBasic\\M' and type_line !~ 'Legendary'
+    order by oracle_id limit 1
+  `);
+  const deck = async (name: string, partnerId: string | null = null, body = true) => {
     const { rows: [d] } = await fixture.execute<{ id: string }>(sql`
       insert into decks (user_id, name, commander_oracle_id, partner_oracle_id)
       values (${USER_K}, ${name}, ${cmd}, ${partnerId}) returning id
     `);
+    if (body) {
+      await fixture.execute(sql`
+        insert into deck_cards (deck_id, oracle_id, quantity) values (${d.id}, ${filler.oracle_id}, 1)
+      `);
+    }
     return d.id;
   };
   try {
+    const empty = await deck("Commander buy empty", null, false);
+    check("a deck with no body bills no commander", await owes(empty, cmd), 0);
     const brew = await deck("Commander buy brew");
-    check("an unowned commander is a buy row", await owes(brew, cmd), 1);
+    check("one body card bills the unowned commander", await owes(brew, cmd), 1);
 
     await fixture.execute(sql`
       insert into collection_items (user_id, oracle_id, quantity, set_code)
@@ -880,6 +897,60 @@ async function commanderBuySection() {
   } finally {
     await fixture.execute(sql`delete from decks where user_id = ${USER_K}`);
     await fixture.execute(sql`delete from collection_items where user_id = ${USER_K}`);
+  }
+}
+
+// ── AN EMPTY BODY STILL CLAIMS ITS COMMANDER ──────────────────────────────────────
+//
+// Hugh's ruling is about BILLING: a deck with no body cards is not told to buy its commander. It
+// says nothing about CLAIMS, and a committed deck led by a commander the player owns still holds
+// that copy against every other deck whether or not it has a body. The rule lives in
+// `loadDeckBuyRows`' own `list_claims`, never in the claim model both readers share; this section
+// is what proves that, through BOTH readers. With the body guard put on the claim model's
+// commander arms, the later deck reads the copy as free and buys nothing.
+async function emptyBodyClaimSection() {
+  const { rows: [legend] } = await fixture.execute<{ oracle_id: string }>(sql`
+    select oracle_id from cards
+    where type_line ~ 'Legendary Creature' and type_line !~ '\\mBasic\\M'
+    order by oracle_id limit 1
+  `);
+  const { rows: [filler] } = await fixture.execute<{ oracle_id: string }>(sql`
+    select oracle_id from cards
+    where type_line !~ '\\mBasic\\M' and type_line !~ 'Legendary'
+    order by oracle_id limit 1
+  `);
+  const cmd = legend.oracle_id;
+  try {
+    await fixture.execute(sql`
+      insert into collection_items (user_id, oracle_id, quantity, set_code)
+      values (${USER_E}, ${cmd}, 1, 'probe')
+    `);
+    // The SENIOR deck: committed, led by the owned commander, and no body at all.
+    const { rows: [held] } = await fixture.execute<{ id: string }>(sql`
+      insert into decks (user_id, name, commander_oracle_id)
+      values (${USER_E}, 'Empty body, committed', ${cmd}) returning id
+    `);
+    await fixture.execute(sql`
+      insert into deck_versions (deck_id, number, committed_at, commander_oracle_id, commander_since)
+      values (${held.id}, 1, now() - interval '1 hour', ${cmd}, now() - interval '1 hour')
+    `);
+    // The LATER deck: a body, and the same commander.
+    const { rows: [later] } = await fixture.execute<{ id: string }>(sql`
+      insert into decks (user_id, name, commander_oracle_id)
+      values (${USER_E}, 'A body, same commander', ${cmd}) returning id
+    `);
+    await fixture.execute(sql`
+      insert into deck_cards (deck_id, oracle_id, quantity) values (${later.id}, ${filler.oracle_id}, 1)
+    `);
+    const av = await loadAvailability(USER_E, { oracleIds: [cmd], excludeDeckId: later.id });
+    check("an empty-body deck still claims its owned commander (loadAvailability)", av.get(cmd)?.free, -1);
+    const owes = (await loadDeckBuyRows(USER_E, [later.id])).find((r) => r.oracleId === cmd)?.quantity ?? 0;
+    check("an empty-body deck still claims its owned commander (loadDeckBuyRows)", owes, 1);
+    const heldOwes = (await loadDeckBuyRows(USER_E, [held.id])).find((r) => r.oracleId === cmd)?.quantity ?? 0;
+    check("and, having no body, is billed nothing itself", heldOwes, 0);
+  } finally {
+    await fixture.execute(sql`delete from decks where user_id = ${USER_E}`);
+    await fixture.execute(sql`delete from collection_items where user_id = ${USER_E}`);
   }
 }
 
@@ -1222,6 +1293,7 @@ try {
   await changesDoorSection();
   await pullReleaseSection();
   await commanderBuySection();
+  await emptyBodyClaimSection();
 } finally {
   // Ordered by dependency; deck_versions and deck_cards cascade off decks.
   await fixture.execute(sql`delete from decks where user_id = ${USER}`);
