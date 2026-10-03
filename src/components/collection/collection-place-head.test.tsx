@@ -160,6 +160,13 @@ describe("refreshing the two figures", () => {
     await waitFor(() => expect(refreshCollectionHeader).toHaveBeenCalledTimes(2));
   });
 
+  it("leaves the header exactly as it was when a refresh fails", async () => {
+    refreshCollectionHeader.mockRejectedValue(new Error("offline"));
+    head("cards", OWNED);
+    await waitFor(() => expect(refreshCollectionHeader).toHaveBeenCalledTimes(1));
+    expect(screen.getByText("4,492 cards · 2,926 unique")).toBeTruthy();
+  });
+
   it("applies only the latest of two in-flight reads", async () => {
     let resolveFirst: (v: { stats: typeof OWNED; lastUpdated: null }) => void = () => {};
     refreshCollectionHeader

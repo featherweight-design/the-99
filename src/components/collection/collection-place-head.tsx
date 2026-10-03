@@ -114,16 +114,22 @@ export function CollectionPlaceHead({
   const latest = useRef(0);
   useEffect(() => {
     const ticket = ++latest.current;
-    void refreshCollectionHeader().then((next) => {
-      if (ticket === latest.current) setLive(next);
-    });
+    void refreshCollectionHeader()
+      .then((next) => {
+        if (ticket === latest.current) setLive(next);
+      })
+      // A failed read leaves the header exactly as it was — the same fallback `DeltaStrip`
+      // takes on a failed focus-time check — rather than an unhandled rejection.
+      .catch(() => {});
   }, [pathname]);
   useEffect(() => {
     const onFocus = () => {
       const ticket = ++latest.current;
-      void refreshCollectionHeader().then((next) => {
-        if (ticket === latest.current) setLive(next);
-      });
+      void refreshCollectionHeader()
+        .then((next) => {
+          if (ticket === latest.current) setLive(next);
+        })
+        .catch(() => {});
     };
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
