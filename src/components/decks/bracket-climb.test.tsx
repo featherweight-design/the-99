@@ -320,6 +320,14 @@ describe("the declared range", () => {
     expect(permitted.dataset.role).toBe("permitted");
     expect(within(declared).getByText(copy.roleDeclared)).toBeTruthy();
     expect(within(permitted).getByText(copy.rolePermitted)).toBeTruthy();
+    // The declared rung's FULL TREATMENT, not just its role name: the same tint and border
+    // `yours` draws, and the full (not chip) mark — so removing the `role === "declared"`
+    // branches cannot regress this to a plain neighbour while the role label still reads right.
+    expect(declared.getAttribute("style")).toContain(
+      `color-mix(in oklab, var(--bracket-2) ${YOURS_TINT * 100}%, var(--surface))`,
+    );
+    expect(declared.getAttribute("style")).toContain("border-color: var(--bracket-2)");
+    expect(within(declared).getByTestId("bracket-mark").dataset.form).toBe("full");
     // No rung on an answered range reads "permits more than this deck uses". A 1/2 deck holds
     // none of the four rules by definition, so the declared rung's empty body is the existing
     // empty-cell rule (README note 2), not asserted here.
@@ -360,6 +368,12 @@ describe("the declared range", () => {
     expect(within(permitted).queryByText(copy.aboveAllowed)).toBeNull();
   });
 
+  // Pinned to the HANDOFF'S LITERAL FIGURE, not only to the constant: a test that compares two
+  // readings of `PERMITTED_BORDER_MIX` still passes if the constant itself drifts from 40%.
+  it("the constant is the handoff's 40%", () => {
+    expect(PERMITTED_BORDER_MIX).toBe(0.4);
+  });
+
   // The rendered permitted rung uses the same constant this measurement does — the contract
   // tests above assert the tint and opacity this way, and this is the border's version of it.
   it("renders the permitted rung's border at PERMITTED_BORDER_MIX of the rank's ink", () => {
@@ -368,6 +382,7 @@ describe("the declared range", () => {
     expect(permitted.style.borderColor).toBe(
       `color-mix(in oklab, var(--bracket-4) ${PERMITTED_BORDER_MIX * 100}%, var(--border))`,
     );
+    expect(permitted.style.borderColor).toContain("40%");
   });
 
   // The border mix is a UI edge, not text — measured rather than asserted to a stated bar, since
