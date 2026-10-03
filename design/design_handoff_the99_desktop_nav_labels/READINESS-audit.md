@@ -10,6 +10,14 @@ This audit was run against `origin/main` at `812be6006` (#1158). It reads the ha
 README's "R2 (current)" section and the canvas's H2, T2, F3, F4 and E2. Where R1's sections
 disagree with R2, R2 governs (finding E3).
 
+## Rulings (Hugh, 2026-10-02)
+
+1. **B1 goes to Design.** The verdict stays 🟠 Orange until Design answers the prompt at the foot
+   of this audit.
+2. **About entry: none.** The change is cosmetic, like card captions: no new entry and no
+   `ABOUT_VERSION` bump. The About item below is resolved.
+3. **The engineering-resolvable list (E1 to E12) is ratified as proposed.**
+
 ## Does it answer the brief
 
 | Brief requirement | Where the handoff answers it |
@@ -102,7 +110,7 @@ falls below the fold of a sticky element, where no scroll reaches it. The canvas
 (768, 1300) and never a height, and K1's reflow row covers zoom only. What the touch rail does
 when its column does not fit is a layout decision.
 
-## Engineering-resolvable
+## Engineering-resolvable (ratified as proposed, Hugh 2026-10-02)
 
 - **E1. Keyboard activation closes the label.** T2 closes on `pointerdown`, which Enter on a
   focused link never fires, so a label opened by focus stays up through the navigation and over
@@ -183,12 +191,12 @@ comment E2 asks to rewrite is a code comment.
 - **N3.** The open delay is 400ms; the card hover preview opens at 240ms. They are different
   objects, so no change, but it is two hover delays in the app.
 
-## About entry
+## About entry (resolved: none owed, Hugh 2026-10-02)
 
 The handoff draws none. My read is that this is **cosmetic**: it names five destinations every
 account already uses and adds nothing the app can do, the same class as card captions (ruled to
 owe no entry, 2026-09-15). No existing entry covers the nav rail, so there is nothing to edit
-either. Flagged for Hugh's call; not blocking.
+either. Hugh ruled on 2026-10-02 that it owes no entry and no version bump.
 
 ## Phone
 
@@ -209,7 +217,8 @@ account control pinned to its foot; when the column overflows, that control fall
 and nothing scrolls it back.
 
 **Constraints.** The account control must stay reachable. No new copy. The phone tab bar stays as
-it is. The pointer rail is not involved.
+it is. The pointer rail is not involved. No About entry is owed: Hugh ruled the change cosmetic, so
+draw none.
 
 **Questions.**
 1. Below what height does the touch rail change, and into what? For example: the labels stay and
