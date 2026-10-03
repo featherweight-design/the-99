@@ -110,17 +110,22 @@ copy composes the line from three separate clauses, so the new key replaces **on
 
 ### Link row — the strip's last line
 
+Also superseded by the addendum above: the row kept its own `md:block md:min-h-0` override even
+after R4, collapsing to the inline link's own box at desktop. That override is gone too — the row
+is now the same flex shape at both widths, which is what "held at both widths now" in the code
+means: a pointer loses nothing from the extra height, and it is one definition rather than two.
+
 | Property | Mobile | Desktop |
 |---|---|---|
-| display | flex | block |
-| align-items | center | — |
-| justify-content | flex-start | — |
-| min-height | **44px** | — |
+| display | flex | flex |
+| align-items | center | center |
+| justify-content | flex-start | flex-start |
+| min-height | **44px** | **44px** |
 | margin-top | **9px** | **9px** |
 | padding | — | — |
 | background | — | — |
 | border | — | — |
-| order in the box | last, below the provenance | last, on the leading edge below the provenance |
+| order in the box | last, below the provenance | last, below the provenance |
 
 The 9px gap is kept at **both** breakpoints and is load-bearing: `outline` takes no layout space, so the
 link's 2px focus ring at 2px offset overlaps that gap rather than displacing the provenance line.
