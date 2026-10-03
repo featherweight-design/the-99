@@ -463,11 +463,8 @@ export const COVERAGE_ROLES: GoldRow[] = [
   },
   {
     name: "Innocuous Researcher", klass: "burstManaNeg",
-    jobs: [
-      j("role", "draw", { af: "each", tr: "attacks" }),
-      j("role", "draw", { af: "self", tr: "attacks" }),
-    ],
-    why: "A HARD NEGATIVE for ramp (d9, 2026-10-02): it untaps your lands in YOUR END STEP, which pays for nothing you cast that turn, so no ramp job. Attacking makes each player draw (draw, each) and investigates for you (Clues you sacrifice to draw: draw, self).",
+    jobs: [j("role", "draw", { af: "each", tr: "attacks" })],
+    why: "A HARD NEGATIVE for ramp (d9, 2026-10-02): it untaps your lands in YOUR END STEP, which pays for nothing you cast that turn, so no ramp job. Attacking makes each player draw: draw, each. The Clues it investigates are no job: they are not creature tokens, and no card reaches a hand until one is sacrificed.",
   },
   {
     name: "Dark Ritual", klass: "burstMana",

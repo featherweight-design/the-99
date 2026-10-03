@@ -72,7 +72,8 @@ export function planChunks(runId: string, model: string, names: readonly string[
 }
 
 /** Per-million-token rates, batch-discounted, as the pricing table holds them. */
-export type Rates = { in: number; out: number };
+/** `system`: the rate the instruction block is booked at, when caching makes it the write rate. */
+export type Rates = { in: number; out: number; system?: number };
 
 /**
  * The WORST case for a run, which is what the cap must bind on.
@@ -89,17 +90,19 @@ export function worstCaseUsd(
   rates: Rates,
   bodyOverheadTokens = 0,
 ): number {
-  // Input is the instruction block once per REQUEST — one system block each, no caching (see
-  // `SENDS_CACHE_BREAKPOINT`) — plus the cards in that request, PLUS the body's own fixed text.
+  // Input is the instruction block once per REQUEST — one system block each — plus the cards in
+  // that request, PLUS the body's own fixed text.
   //
   // That last term was missing and it made the ceiling too low: `renderBody` wraps the cards in
   // a "Label these N cards." line and eleven `---` separators, none of which `perCardTokens`
   // covers. A ceiling that omits part of the request is not a ceiling, and this is the quantity
   // the $55 hard stop is enforced against — so the caller derives it from the real renderer
   // rather than estimating it here.
-  const inTokens = chunks * (systemTokens + bodyOverheadTokens + CARDS_PER_REQUEST * perCardTokens);
+  // With a cache breakpoint the block is booked at the WRITE rate on every request (`rates.system`):
+  // batch requests run in parallel, so the worst case is that none finds a warm cache.
+  const inTokens = chunks * (bodyOverheadTokens + CARDS_PER_REQUEST * perCardTokens);
   const outTokens = chunks * maxTokensPerRequest;
-  return (inTokens * rates.in + outTokens * rates.out) / 1e6;
+  return (chunks * systemTokens * (rates.system ?? rates.in) + inTokens * rates.in + outTokens * rates.out) / 1e6;
 }
 
 export type CapVerdict =

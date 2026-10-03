@@ -54,6 +54,8 @@ let grandTotal = 0;
 type Measured = {
   cards: number; notReturned: number; rejectedJobs: number;
   tokens: { in: number; out: number; cacheWrite: number; cacheRead: number };
+  /** The MEASURED cache hit rate: requests that read, requests that wrote, and read tokens over all cached ones. */
+  cache: { requests: number; readRequests: number; writeRequests: number; tokenHitRate: number | null };
   usd: number; usdPerCard: number;
 };
 const measured: Record<string, Measured> = {};
@@ -70,6 +72,8 @@ for (const [key, id] of Object.entries(submitted)) {
   /** Names the model returned that this batch never asked about. */
   const unexpected: string[] = [];
   let inTok = 0, outTok = 0, cacheW = 0, cacheR = 0, errored = 0;
+  /** Per request, for the measured hit rate: how many read a warm cache, and how many wrote one. */
+  let requests = 0, readReqs = 0, wroteReqs = 0;
 
   /** Every card in a request we cannot read is a MISS, recorded rather than absent. */
   const markMissing = (customId: string) => {
@@ -87,6 +91,9 @@ for (const [key, id] of Object.entries(submitted)) {
     const u = entry.result.message.usage;
     inTok += u.input_tokens; outTok += u.output_tokens;
     cacheW += u.cache_creation_input_tokens ?? 0; cacheR += u.cache_read_input_tokens ?? 0;
+    requests++;
+    if ((u.cache_read_input_tokens ?? 0) > 0) readReqs++;
+    if ((u.cache_creation_input_tokens ?? 0) > 0) wroteReqs++;
 
     const idx = Number(entry.custom_id.split("-")[1]);
     const asked = batches[idx];
@@ -138,7 +145,12 @@ for (const [key, id] of Object.entries(submitted)) {
         if (problems.length) malformed.push(`${card.name} [${job?.kind}]: ${problems.join(", ")}`);
         else kept.push(job);
       }
-      labels[card.name] = withoutRepeats([...(labels[card.name] ?? []), ...kept]);
+      // A repeat is dropped and RECORDED: the prompt says never to write one, so a scored sample has to show
+      // when the model did. Two faces returning the same job count here too, which is rare and still a repeat.
+      const merged = [...(labels[card.name] ?? []), ...kept];
+      const once = withoutRepeats(merged);
+      if (once.length < merged.length) malformed.push(`${card.name}: ${merged.length - once.length} repeated job(s) dropped`);
+      labels[card.name] = once;
     }
     // A card asked for and not returned is a MISS, recorded rather than silently absent.
     for (const name of asked) if (!(name in labels)) labels[name] = labels[name] ?? null;
@@ -159,10 +171,13 @@ for (const [key, id] of Object.entries(submitted)) {
   console.log(`${key}: ${Object.keys(labels).length} cards (${missing} not returned), ${malformed.length} rejected jobs, ${unexpected.length} unexpected names, ${errored} failed requests`);
   if (unexpected.length) console.log(`  unexpected: ${unexpected.slice(0, 5).join(", ")}${unexpected.length > 5 ? " …" : ""}`);
   console.log(`  tokens in=${inTok} out=${outTok} cacheWrite=${cacheW} cacheRead=${cacheR}`);
+  const tokenHitRate = cacheR + cacheW > 0 ? +(cacheR / (cacheR + cacheW)).toFixed(4) : null;
+  console.log(`  cache: ${readReqs} of ${requests} requests read, ${wroteReqs} wrote; pooled hit rate ${tokenHitRate ?? "n/a"}`);
   console.log(`  COST $${cost.toFixed(4)}  (batch rates)`);
   measured[key] = {
     cards: Object.keys(labels).length, notReturned: missing, rejectedJobs: malformed.length,
     tokens: { in: inTok, out: outTok, cacheWrite: cacheW, cacheRead: cacheR },
+    cache: { requests, readRequests: readReqs, writeRequests: wroteReqs, tokenHitRate },
     usd: +cost.toFixed(4), usdPerCard: +(cost / Object.keys(labels).length).toFixed(6),
   };
 }

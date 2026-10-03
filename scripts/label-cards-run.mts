@@ -133,6 +133,9 @@ for (const [i, cards] of batches.entries()) {
   estOut += cards.length * 160;   // ~160 output tokens per card, measured on a pilot
 }
 
+// The card lists alone: every input token that is not an instruction block.
+const estBody = estIn + estCacheRead - sysTokens * batches.length;
+
 // The WORST CASE the request actually permits, which is what a cap has to bind on.
 // `MAX_TOKENS_PER_BATCH` is IMPORTED from the module that sets it, never copied:
 // 8000 per batch of 12 is 667 tokens a card against the 160 measured, so an estimate
@@ -150,11 +153,13 @@ for (const m of Object.keys(chosen) as (keyof typeof MODELS)[]) {
   // another here dropped a full-price block from the Sonnet estimate. The write is
   // booked ON TOP, at the write rate, rather than carved out of the inputs.
   const caching = SENDS_CACHE_BREAKPOINT && PRICING[m].caches;
+  // With a breakpoint, a request that reads no cache WRITES one at the write rate; the worst case is
+  // that none reads (batch requests run in parallel), so it books every block as a write.
   const usage = caching
-    ? { i: estIn, cw: sysTokens, cr: estCacheRead, o: estOut }
+    ? { i: estBody, cw: estIn - estBody, cr: estCacheRead, o: estOut }
     : { i: estIn + estCacheRead, o: estOut };
   const c = costOf(m, usage);
-  const w = costOf(m, { ...usage, o: estOutWorst });
+  const w = costOf(m, caching ? { i: estBody, cw: sysTokens * batches.length, o: estOutWorst } : { ...usage, o: estOutWorst });
   estTotal += c;
   worstTotal += w;
   const how = caching
@@ -224,7 +229,7 @@ mkdirSync("out", { recursive: true });
 // the next invocation reads $0 and authorises the whole run again.
 const perModelWorst = Object.fromEntries((Object.keys(chosen) as (keyof typeof MODELS)[]).map((m) => [m,
   costOf(m, SENDS_CACHE_BREAKPOINT && PRICING[m].caches
-    ? { i: estIn, cw: sysTokens, cr: estCacheRead, o: estOutWorst }
+    ? { i: estBody, cw: sysTokens * batches.length, o: estOutWorst }
     : { i: estIn + estCacheRead, o: estOutWorst })]));
 
 // One id for this run, chosen before anything is submitted, so every ledger write

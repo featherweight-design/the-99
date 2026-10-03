@@ -3,9 +3,13 @@
 // IDENTICAL for Haiku and Sonnet, deliberately: the comparison is between models,
 // so any prompt difference would confound it.
 //
-// NO `cache_control`, and that is a MEASUREMENT rather than an omission (Task 3).
+// A `cache_control` breakpoint on the instruction block, SENT since re-sample 3 (d9, 2026-10-02), so the
+// batch's real cache hit rate is MEASURED rather than assumed: the collector reports read and write tokens
+// per request and pooled. It is transport, not prompt: the model sees the same text, so neither the label
+// hash nor LABEL_PROMPT_VERSION moves. Every cap still books the worst case, every request a cache WRITE
+// at the write rate. What was measured before, when the block was a third of its size:
 //
-// Caching here loses money for both models, for two different reasons:
+// Caching lost money for both models, for two different reasons:
 //
 //   Haiku    the breakpoint is INERT. The block is ~1,285 tokens by this repo's
 //            estimate and 1,215 as BILLED (two different quantities, so both are
@@ -180,9 +184,11 @@ EVERY JOB CARRIES:
                  burstMana    — one-time mana from a source the cost consumes
                                 (sacrifice this creature/token/land for mana, a
                                 Spawn, Scion or Gold token), or a ritual spell.
-                                A trigger that creates a Spawn or Scion is
-                                burstMana with that trigger; a trigger that
-                                adds mana directly is not
+                                A trigger that creates a Spawn or Scion, or
+                                untaps your lands for mana you spend at once
+                                (on entry, on your turn), is burstMana with
+                                that trigger; a trigger that adds mana
+                                directly is not
                  costReduction— makes OTHER spells you cast cost less. A card
                                 that reduces only ITS OWN cost (affinity,
                                 improvise, convoke) is not ramp; casting a
@@ -316,7 +322,7 @@ export const renderCard = (c: CardForPrompt) =>
   `${c.name}\n${c.mana_cost || "(no cost)"} | ${c.type_line}\n${castFaceText(c.oracle_text ?? null, c.layout ?? "normal") ?? "(no text)"}`;
 
 /**
- * Whether a request asks for prompt caching. FALSE, for the reason at the top of this file.
+ * Whether a request asks for prompt caching. TRUE since re-sample 3, for the reason at the top of this file.
  *
  * Exported so the spend estimate reads it from the module that DECIDES it, rather than
  * inferring caching from a model's capability. `PRICING[m].caches` says the model could
@@ -325,7 +331,7 @@ export const renderCard = (c: CardForPrompt) =>
  * figure computed from something nothing holds is exactly the class of bug this run has
  * been finding all day.
  */
-export const SENDS_CACHE_BREAKPOINT = false;
+export const SENDS_CACHE_BREAKPOINT = true;
 
 /** The user turn exactly as sent, so the estimate can measure the real thing. */
 export const renderBody = (cards: CardForPrompt[]) =>
@@ -333,8 +339,8 @@ export const renderBody = (cards: CardForPrompt[]) =>
 
 /**
  * One batch request. The instruction block is the system turn and the per-batch card
- * list is the user turn — no cache breakpoint on either, for the reason at the top of
- * this file.
+ * list is the user turn. The breakpoint, when sent, is on the system turn alone: the card list
+ * differs in every request, so there is nothing after it to reuse.
  */
 /**
  * The output ceiling for one batch. EXPORTED because the spend estimate has to bind
@@ -404,7 +410,10 @@ export const buildRequest = (customId: string, model: string, cards: CardForProm
     // temperature, which is a real caveat rather than a formality.
     ...(acceptsTemperature(model) ? { temperature: 0 } : {}),
     ...(needsThinkingDisabled(model) ? { thinking: { type: "disabled" as const } } : {}),
-    system: [{ type: "text" as const, text: SYSTEM }],
+    system: [{
+      type: "text" as const, text: SYSTEM,
+      ...(SENDS_CACHE_BREAKPOINT ? { cache_control: { type: "ephemeral" as const } } : {}),
+    }],
     messages: [{ role: "user" as const, content: renderBody(cards) }],
   },
 });

@@ -339,8 +339,9 @@ export const COVERAGE_THEMES: GoldRow[] = [
     jobs: [
       j("theme", "theft", { rt: "creature", af: "opponents", rec: "oneShot" }),
       j("role", "removal", { rt: "creature", af: "opponents", meth: null, rec: "oneShot" }),
+      j("role", "ramp", { rk: "burstMana", rt: "land", af: "self", tr: "etb", rec: "oneShot" }),
     ],
-    why: "An Aura that steals the enchanted creature for good: theft, and removal with method null (no method describes a change of control), oneShot. It also untaps five lands on entry. Judgement: the untap is left unlabelled, since it refunds the cost rather than casting free or fitting a ramp kind cleanly (burstMana is the nearest); flagged.",
+    why: "An Aura that steals the enchanted creature for good: theft, and removal with method null (no method describes a change of control), oneShot. It also untaps five lands on entry, on your turn, so the mana is spent at once: ramp burstMana with trigger etb (d9, 2026-10-02), as Peregrine Drake.",
   },
   {
     name: "Act of Treason", klass: "theft",
