@@ -13,10 +13,11 @@ import {
   useState,
   useTransition,
   type ReactNode,
+  type RefObject,
 } from "react";
 
 import { pendingRouteFor, type LoadingKey } from "../../lib/shell/pending-routes";
-import { Report, targetOf, useReportPending, type Reporter } from "./pending-report";
+import { Report, targetOf, useReportPending, type PendingScope, type Reporter } from "./pending-report";
 import { PendingOverlay } from "./pending-overlay";
 import { ShellLoading } from "./shell-loading";
 import { setRoutePath } from "../../lib/url/mirror";
@@ -41,6 +42,28 @@ const MainRef = createContext<React.RefObject<HTMLElement | null> | null>(null);
 export function NavigationPendingProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const mainRef = useRef<HTMLElement | null>(null);
+  // A boundary a route tree installed via `usePendingContentScope` (collection tabs overlay
+  // fix, #1222 follow-up): a run that never leaves it confines its screen to this element
+  // instead of covering the whole `<main>`, so a shared head above it stays visible and
+  // interactive. At most one is ever registered today; a second mount replaces the ref rather
+  // than stacking, which is enough for the one nested boundary that exists.
+  const contentScope = useRef<PendingScope | null>(null);
+  const registerContentScope = useCallback((scope: PendingScope | null) => {
+    contentScope.current = scope;
+  }, []);
+  // Which box the CURRENTLY SHOWN screen covers — decided once, when the run escalates, from
+  // the scope registered at that moment, and held as the resolved ref itself rather than
+  // re-derived at render: reading a ref's `current` during render is exactly the stale-read
+  // hazard `react-hooks/refs` exists to catch, so the decision is made in the effect below and
+  // only the already-decided state is read here.
+  const [overlayBox, setOverlayBox] = useState<RefObject<HTMLElement | null> | null>(null);
+  const boxFor = useCallback(
+    (from: string, to: string) => {
+      const scope = contentScope.current;
+      return scope && scope.contains(from) && scope.contains(to) ? scope.ref : mainRef;
+    },
+    [],
+  );
   // The router's committed path, for the URL mirrors (`lib/url/mirror`). A layout effect: Next
   // writes the address in an insertion effect at the same commit, before this runs, and every
   // page's mirror runs in a passive effect after it.
@@ -97,22 +120,30 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
     if (running.current) {
       // A run that began on a kept route and moved to an overlay route after 400ms shows now.
       const route = pendingRouteFor(last);
-      if (due.current && route.kind === "overlay") setShown(route.key);
+      if (due.current && route.kind === "overlay") {
+        setShown(route.key);
+        setOverlayBox(boxFor(pathname, last));
+      }
       return;
     }
     running.current = true;
     // A new run owes nothing to the last one's screen, even one still fading out: it waits its
     // own 400ms, and a run into a kept route never shows one at all.
     setShown(null);
+    setOverlayBox(null);
     setLeaving(false);
     timer.current = setTimeout(() => {
       timer.current = null;
       due.current = true;
       if (pending.current.size === 0) return;
-      const route = pendingRouteFor([...pending.current.values()].at(-1)!);
-      if (route.kind === "overlay") setShown(route.key);
+      const to = [...pending.current.values()].at(-1)!;
+      const route = pendingRouteFor(to);
+      if (route.kind === "overlay") {
+        setShown(route.key);
+        setOverlayBox(boxFor(pathname, to));
+      }
     }, OVERLAY_AFTER_MS);
-  }, [reports, pathname, end]);
+  }, [reports, pathname, end, boxFor]);
 
   // Code-started navigations (`usePendingPush`) run in `CodePushes`, which this provider mounts,
   // rather than in the component that starts them: that component can unmount before the new page
@@ -135,10 +166,14 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
       run(href);
     }
   }, []);
-  const context = useMemo(() => ({ report, pathname, push }), [report, pathname, push]);
+  const context = useMemo(
+    () => ({ report, pathname, push, registerContentScope }),
+    [report, pathname, push, registerContentScope],
+  );
 
   const onLeft = useCallback(() => {
     setShown(null);
+    setOverlayBox(null);
     setLeaving(false);
   }, []);
 
@@ -146,23 +181,39 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
   const lastRoute = target ? pendingRouteFor(target) : null;
   const screen = shown && lastRoute?.kind === "overlay" ? lastRoute.key : shown;
 
-  // `aria-busy` and `inert` on the shell's own <main>, by ref: two set routes render a nested
-  // <main> of their own, and a selector would find the wrong one (audit correction 2). `inert`
-  // because the screen blocks only the pointer: without it a keyboard could still Tab into the
-  // page it covers and press a link there. The rail and tab bar stay live, as a press there moves
-  // the run to its own target.
+  // `aria-busy` and `inert` on whichever element the screen actually covers — the shell's own
+  // <main> normally (by ref: two set routes render a nested <main> of their own, and a selector
+  // would find the wrong one, audit correction 2), or a registered content scope's own element
+  // when the run is confined to it, so a shared head above that element stays interactive.
+  // `inert` because the screen blocks only the pointer: without it a keyboard could still Tab
+  // into the page it covers and press a link there. The rail and tab bar stay live either way,
+  // as a press there moves the run to its own target.
   const busy = shown !== null && !leaving;
+  // The element busy/inert currently lands on, kept so a RETARGET — a run still escalated when
+  // its box moves from a registered scope to `mainRef` or back, which happens when the pressed
+  // link moves from inside a scope to outside it (or the reverse) before the run ends — clears
+  // the PREVIOUS element rather than abandoning it mid-busy. Without this the old element kept
+  // `aria-busy`/`inert` forever once `overlayBox` changed out from under it: the effect only
+  // ever cleared whatever it currently pointed to, never what it had just stopped pointing to.
+  const busyElRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
-    const main = mainRef.current;
-    if (!main) return;
-    if (busy) {
-      main.setAttribute("aria-busy", "true");
-      main.inert = true;
-    } else {
-      main.removeAttribute("aria-busy");
-      main.inert = false;
+    const prev = busyElRef.current;
+    // Written to the plain ref immediately, and every mutation below reads it back from
+    // there rather than from `overlayBox`/`mainRef` directly: those are hook-tracked values,
+    // and `react-hooks/immutability` (rightly) refuses a direct property write on anything
+    // read straight off one, even though what is actually being mutated is the DOM element a
+    // ref merely points to.
+    busyElRef.current = busy ? (overlayBox ?? mainRef).current : null;
+    const next = busyElRef.current;
+    if (prev && prev !== next) {
+      prev.removeAttribute("aria-busy");
+      prev.inert = false;
     }
-  }, [busy]);
+    if (next) {
+      next.setAttribute("aria-busy", "true");
+      next.inert = true;
+    }
+  }, [busy, overlayBox]);
 
   useEffect(() => () => {
     if (timer.current) clearTimeout(timer.current);
@@ -177,7 +228,7 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
           <PendingOverlay
             screen={screen}
             leaving={leaving}
-            main={mainRef}
+            box={overlayBox ?? mainRef}
             onLeft={onLeft}
           />
         ) : null}

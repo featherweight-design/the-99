@@ -19,7 +19,7 @@ vi.mock("next/link", async () => {
 
 const { default: Link } = await import("next/link");
 const { NavigationPendingProvider, OVERLAY_AFTER_MS, ShellMain } = await import("./navigation-pending");
-const { usePendingReport } = await import("./pending-report");
+const { usePendingReport, usePendingContentScope } = await import("./pending-report");
 const { OVERLAY_OUT_MS } = await import("./pending-overlay");
 const { use, useEffect, useLayoutEffect, useState } = await import("react");
 const { usePendingPush } = await import("./pending-push");
@@ -155,6 +155,116 @@ describe("NavigationPendingProvider", () => {
     act(() => rerender(<App links={LINKS} />));
     act(() => vi.advanceTimersByTime(OVERLAY_OUT_MS));
     expect(overlay()).toBeNull();
+  });
+});
+
+// Collection tabs overlay fix, #1222 follow-up: a route tree that registers a content scope
+// confines a same-scope navigation's busy/inert pair (and the overlay's own box) to that
+// element, leaving the shell's <main> — and whatever a shared head renders above the scope —
+// untouched and interactive.
+describe("a registered content scope", () => {
+  // The hook has to run INSIDE the provider's subtree, as `CollectionContentScope` does in the
+  // app — called in the same component that creates `NavigationPendingProvider`, it would read
+  // the context from above the provider instead of the one it mounts.
+  function Scope({ links }: { links: string[] }) {
+    const ref = usePendingContentScope((p) => p.startsWith("/collection"));
+    return (
+      <div ref={ref as React.Ref<HTMLDivElement>} data-testid="scope">
+        {links.map((href) => (
+          <Link key={href} href={href}>
+            <Reporter href={href} />
+          </Link>
+        ))}
+      </div>
+    );
+  }
+  function ScopedApp({ links }: { links: string[] }) {
+    return (
+      <NavigationPendingProvider>
+        <ShellMain className="">
+          <Scope links={links} />
+        </ShellMain>
+      </NavigationPendingProvider>
+    );
+  }
+  const scope = () => screen.getByTestId("scope");
+
+  it("leaves main free and marks the scope instead, when neither page leaves it", () => {
+    cleanup();
+    state.path = "/collection";
+    state.pending.clear();
+    const { rerender: local } = render(<ScopedApp links={["/collection/sets", "/discover"]} />);
+    state.pending.set("/collection/sets", true);
+    act(() => local(<ScopedApp links={["/collection/sets", "/discover"]} />));
+    act(() => vi.advanceTimersByTime(OVERLAY_AFTER_MS));
+    expect(overlay()).not.toBeNull();
+    expect(main().hasAttribute("aria-busy")).toBe(false);
+    // jsdom reads an untouched `.inert` as `undefined` rather than `false` — this run never
+    // sets it on main at all, unlike the other tests here, which clear it after setting it.
+    expect(main().inert).toBeFalsy();
+    expect(scope().getAttribute("aria-busy")).toBe("true");
+    expect(scope().inert).toBe(true);
+  });
+
+  it("falls back to main when the target leaves the scope", () => {
+    cleanup();
+    state.path = "/collection";
+    state.pending.clear();
+    const { rerender: local } = render(<ScopedApp links={["/collection/sets", "/discover"]} />);
+    state.pending.set("/discover", true);
+    act(() => local(<ScopedApp links={["/collection/sets", "/discover"]} />));
+    act(() => vi.advanceTimersByTime(OVERLAY_AFTER_MS));
+    expect(overlay()).not.toBeNull();
+    expect(main().getAttribute("aria-busy")).toBe("true");
+    expect(scope().hasAttribute("aria-busy")).toBe(false);
+  });
+
+  it("falls back to main when the current page is already outside the scope", () => {
+    cleanup();
+    state.path = "/discover";
+    state.pending.clear();
+    const { rerender: local } = render(<ScopedApp links={["/collection/sets"]} />);
+    state.pending.set("/collection/sets", true);
+    act(() => local(<ScopedApp links={["/collection/sets"]} />));
+    act(() => vi.advanceTimersByTime(OVERLAY_AFTER_MS));
+    expect(overlay()).not.toBeNull();
+    expect(main().getAttribute("aria-busy")).toBe("true");
+    expect(scope().hasAttribute("aria-busy")).toBe(false);
+  });
+
+  it("clears the scope's busy/inert when an already-escalated run retargets outside it", () => {
+    // The rail and tab bar stay live while a confined run is up, so a press there can move the
+    // same run's target from inside the scope to outside it before the run ends.
+    cleanup();
+    state.path = "/collection";
+    state.pending.clear();
+    const { rerender: local } = render(<ScopedApp links={["/collection/sets", "/discover"]} />);
+    state.pending.set("/collection/sets", true);
+    act(() => local(<ScopedApp links={["/collection/sets", "/discover"]} />));
+    act(() => vi.advanceTimersByTime(OVERLAY_AFTER_MS));
+    expect(scope().getAttribute("aria-busy")).toBe("true");
+    expect(main().hasAttribute("aria-busy")).toBe(false);
+    state.pending.set("/discover", true);
+    act(() => local(<ScopedApp links={["/collection/sets", "/discover"]} />));
+    expect(scope().hasAttribute("aria-busy")).toBe(false);
+    expect(scope().inert).toBe(false);
+    expect(main().getAttribute("aria-busy")).toBe("true");
+  });
+
+  it("stops marking the scope once a confined run commits", () => {
+    cleanup();
+    state.path = "/collection";
+    state.pending.clear();
+    const { rerender: local } = render(<ScopedApp links={["/collection/sets"]} />);
+    state.pending.set("/collection/sets", true);
+    act(() => local(<ScopedApp links={["/collection/sets"]} />));
+    act(() => vi.advanceTimersByTime(OVERLAY_AFTER_MS));
+    expect(scope().getAttribute("aria-busy")).toBe("true");
+    state.path = "/collection/sets";
+    state.pending.set("/collection/sets", false);
+    act(() => local(<ScopedApp links={["/collection/sets"]} />));
+    expect(scope().hasAttribute("aria-busy")).toBe(false);
+    expect(scope().inert).toBe(false);
   });
 });
 
