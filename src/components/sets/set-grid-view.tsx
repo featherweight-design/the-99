@@ -1173,9 +1173,13 @@ export function SetGridView(props: SetGridViewProps) {
             line IS the invariant that keeps the head's height constant; collapsing it is
             the bug the three-row rule exists to forbid.
 
-            At desktop it wraps rather than scrolling. At phone the chips scroll
-            horizontally and never wrap, and Clear is outside that scroll — so the clipped
-            item is a chip and never the way out. */}
+            ONE line at every width, scrolling sideways and never wrapping, and Clear is
+            outside that scroll — so the clipped item is a chip and never the way out.
+            Desktop used to wrap, on the claim that three dimensions capped the widest line
+            at ~380px. H10 and H13 broke the claim: `Exactly`, one chip per rarity and
+            missing-only make seven chips beside an always-drawn Clear, about 770px, and a
+            wrap across the 768-900 band grew the sticky head past its measured rest height.
+            So desktop scrolls the way the phone always has. */}
         {/* The chip line is not on the collapsed bar: §31 rules it out, and the `Filters`
             badge already carries the state from the badge count. It is hidden rather
             than unmounted so the horizontal scroll position and the focus inside it
@@ -1194,9 +1198,15 @@ export function SetGridView(props: SetGridViewProps) {
           {/* 44px tall at phone, and that is not spacing: `overflow-x-auto` makes the other
               axis scroll too, so a 44px pseudo target centred in a 22px row is CLIPPED to
               22 and the chip keeps only its small × box. The band gives the overlay
-              somewhere to be. Desktop wraps instead of scrolling and needs none of it. */}
-          <div className="flex min-w-0 flex-1 items-center gap-[6px] overflow-x-auto
-                          h-[44px] md:h-auto md:flex-wrap md:overflow-visible">
+              somewhere to be.
+
+              Desktop scrolls too now, at its own content height rather than the band —
+              44px there would grow the head by a line, which is the motion this row exists
+              to prevent. `overflow-y-hidden` stops the pseudo targets that hang past that
+              height from making the strip scroll vertically; a pointer needs the chip, not
+              a 44px margin around it. Never `flex-wrap`, at any width. */}
+          <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-[6px] overflow-x-auto
+                          h-[44px] md:h-auto md:overflow-y-hidden">
           {chips.length === 0 ? (
             <span
               className="font-mono text-[11px] leading-[14px] py-[3px] whitespace-nowrap"

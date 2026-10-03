@@ -1371,6 +1371,24 @@ describe("SetGridView — the phone chip scroller has room for its targets", () 
   });
 });
 
+// H10 and H13 put up to seven chips on the line beside an always-drawn Clear — about 770px —
+// so a desktop line that wrapped grew the sticky head across the 768-900 band. The line is
+// one row at every width; whether that row fits is a browser measurement, and this pins the
+// classes that decide it.
+describe("SetGridView — the chip line never wraps", () => {
+  it("scrolls sideways at desktop too, with no wrap at any breakpoint", () => {
+    search = "own=missing&r=common,uncommon,rare,mythic&m=exact&c=W,U";
+    const { container } = view([p("1", { colorIdentity: ["W", "U"] }), p("2")], []);
+    const scroller = container.querySelector("[data-set-chips] .overflow-x-auto") as HTMLElement;
+    const classes = scroller.className.split(/\s+/);
+    expect(classes).toContain("flex-nowrap");
+    expect(classes.some((c) => /(^|:)flex-wrap$/.test(c))).toBe(false);
+    expect(classes.some((c) => /(^|:)overflow-(x-)?visible$/.test(c))).toBe(false);
+    expect(classes).toContain("md:overflow-y-hidden");
+    expect(scroller.querySelectorAll("span > button").length).toBe(7);
+  });
+});
+
 // The count is for the eye, the names are for the ear — the split `filter-chassis.tsx`
 // makes with its `spoken` field. §28 rules the VISIBLE label (`3 colours`, never one chip
 // per hue) and says nothing about the accessible name; without the split a screen reader

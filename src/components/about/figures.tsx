@@ -20,10 +20,10 @@ import { CommitmentsCard } from "../home/commitments-card";
 
 import { BrowseFigureBody } from "./browse-figure";
 import { KeyNumeral } from "./numeral";
+import { SetsColourFigure } from "./sets-colour-figure";
 import { ORDER_OPTIONS } from "../commanders/rack/order-options";
 import { explainedCopy } from "../../lib/copy/commander-explained";
 import { setFilterCopy, setPageCopy } from "../../lib/copy/set-collections";
-import { PIP_ORDER, PIP_BACKGROUND } from "../../lib/copy/filter-chassis";
 import {
   ImportFigureBody,
   AddCardsFigureBody,
@@ -467,15 +467,9 @@ function SetsFigure({ width }: { width: AboutWidth }) {
         <span className="flex h-[28px] min-w-[140px] flex-1 items-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)] px-[10px] text-[11px] text-[color:var(--fg-locked)]">
           {setFilterCopy.search.placeholder}
         </span>
-        <span aria-hidden className="flex flex-none gap-[4px]">
-          {PIP_ORDER.map((code) => (
-            <span
-              key={code}
-              className="h-[16px] w-[16px] rounded-full"
-              style={PIP_BACKGROUND[code]}
-            />
-          ))}
-        </span>
+        {/* The live row's colour control, modifier and all (H10), from a client module
+            because it takes handlers. */}
+        <SetsColourFigure />
         <span className="flex h-[26px] items-center gap-[6px] rounded-[7px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] px-[9px] text-[11px] text-[color:var(--fg-muted)]">
           {setFilterCopy.rarityPanel.triggerCount(0)}
           <span aria-hidden className="text-[color:var(--fg-faint)]">▾</span>
