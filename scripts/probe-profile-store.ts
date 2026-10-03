@@ -373,6 +373,20 @@ async function run() {
     check("an edit landing mid-rebuild leaves the reading dirty", (await storedRow(deck.id))?.dirty, true);
     await computeAndStoreProfile(deck.id, USER, deps);
 
+    // A ROW A NEWER DEPLOYMENT WROTE (review round 8, REBUILD RULES 1): older code neither reads,
+    // rebuilds nor pins it, so a rolling deploy never downgrades it.
+    await fixture.execute(sql`update deck_profiles set profile_version = ${PROFILE_VERSION + 1}, version_id = null
+      where deck_id = ${deck.id}::uuid`);
+    const beforeNewer = computes;
+    const newerRead = await readStoredReading(deck.id, USER, deps);
+    const { version: newerCommit } = await commitVersion(deck.id, null);
+    await pinAnalysisToVersion(deck.id, USER, { versionId: newerCommit.id, list: listFingerprint(head) }, deps);
+    const newerRow = await storedRow(deck.id);
+    check("a newer deployment's row is not read, rebuilt or pinned by older code",
+      { read: newerRead, computed: computes - beforeNewer, v: newerRow?.profile_version, pin: newerRow?.version_id },
+      { read: null, computed: 0, v: PROFILE_VERSION + 1, pin: null });
+    await computeAndStoreProfile(deck.id, USER, deps);
+
     // THE LEGACY FORM of the same case: a row written before 0054 stores `profileFingerprint`, so a
     // raw comparison with the commit's list misreads it as another list (review round 1).
     await fixture.execute(sql`update deck_profiles set profile_version = 0, version_id = null,

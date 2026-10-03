@@ -153,7 +153,10 @@ export async function readStoredReading(
 ): Promise<StoredReading | null> {
   const { head, row } = await db.transaction((tx) => readHeadAndRow(tx, deckId, userId), READ_ONLY);
   if (!head || !row) return null;
-  if (row.profileVersion !== PROFILE_VERSION) {
+  // A row a NEWER deployment wrote is a document this code cannot read, and never rebuilds: it
+  // reads as nothing here until the newer code serves the request (see REBUILD RULES).
+  if (row.profileVersion > PROFILE_VERSION) return null;
+  if (row.profileVersion < PROFILE_VERSION) {
     // Rebuilt only over the list the reader analyzed. `dirty` alone cannot say so: a row written
     // before this column existed arrives clean however the deck was edited before the deploy.
     if (row.dirty || !deckLegality(head).legal || !sameList(row, head)) return null;
@@ -289,12 +292,22 @@ export async function computeAndStoreProfile(
   // `sameList`, not a raw comparison: a row written before migration 0054 stores
   // `profileFingerprint` rather than `listFingerprint`, and is this list all the same.
   if (pinTo && (!row || !sameList(row, head))) return null;
-  // WHAT A REBUILD KEEPS: the marks and the date of the analysis it replaces (readiness F4, brief
-  // §6), so a deploy never reads as a new press or swallows a pending notice. A quiet rebuild hands
-  // them over; a commit's pin over this list's older-version reading takes them off the row, and
-  // differs from the quiet rebuild only in the pin it writes (review round 2).
+  // A pin never touches a row a newer deployment wrote (REBUILD RULES).
+  if (pinTo && row && row.profileVersion > PROFILE_VERSION) return null;
+  // REBUILD RULES, the one statement of what a rebuild may overwrite (PR #1164, rounds 2 to 8,
+  // each of which found one edge of this). A rebuild is a deploy's work, never the player's, so:
+  //  1. It replaces only a row of THE SAME LIST at a LOWER `PROFILE_VERSION`. A row a newer
+  //     deployment wrote is never rebuilt, read or pinned by older code (round 8).
+  //  2. It keeps that row's marks, its date (round 2) and its `dirty` flag (round 7): only a
+  //     press stamps a new analysis, and only `clearDirty`, under the edit stamp, clears dirty.
+  //  3. Its write is guarded on rule 1 IN THE WRITE, since a press can land while it computes
+  //     (round 4). A guarded write that matches nothing stores nothing, and the rebuild answers
+  //     with the row the store holds, never with its own discarded result (round 5).
+  // Two entry points take these rules: the quiet rebuild (`readStoredReading`, which hands over
+  // `rebuildOf`) and a commit's pin over this list's older-version reading, which differs from
+  // the quiet rebuild only in the pin it writes.
   const kept: RebuildMarks | null = rebuildOf?.marks
-    ?? (pinTo && row && row.profileVersion !== PROFILE_VERSION
+    ?? (pinTo && row && row.profileVersion < PROFILE_VERSION
       ? { seenSeq: row.seenSeq, rulesVersion: row.rulesVersion, analyzedOracleIds: row.analyzedOracleIds }
       : null);
   // Behind the notices switch (Hugh's release ruling): off, a press keeps ruling 5 unamended.
@@ -429,7 +442,7 @@ export async function computeAndStoreProfile(
           // and a press of the same list can land while it computes (review round 4): the press
           // wrote the current version, and a rebuild finishing after it would put the old marks
           // and date back over a reading the player asked for. Matching nothing, it stores nothing.
-          ...(kept ? { setWhere: sql`${deckProfiles.profileVersion} <> ${PROFILE_VERSION}` } : {}),
+          ...(kept ? { setWhere: sql`${deckProfiles.profileVersion} < ${PROFILE_VERSION}` } : {}),
         })
         .returning({ computedAt: deckProfiles.computedAt });
       if (written) {
