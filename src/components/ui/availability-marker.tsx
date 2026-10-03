@@ -189,12 +189,17 @@ function OverGlyph({ seam, big }: { seam: string; big?: boolean }) {
   const side = big ? BIG_DIAMOND_SIDE_PX : 6;
   const width = big ? AVAILABILITY_CHIP_GLYPH_OVER_PX : 11;
   const height = big ? AVAILABILITY_CHIP_GLYPH_PX : 6;
-  // Positioned by PAINTED edge, not CSS left: the first diamond's paint starts flush with the
-  // wrapper's left (css left = -inset), the second's paint ends flush with the wrapper's right
-  // (css left = width − side − inset).
-  const leftFirst = big ? -BIG_DIAMOND_INSET_PX : 0;
-  const leftSecond = big ? width - side - BIG_DIAMOND_INSET_PX : 5;
-  const top = big ? -BIG_DIAMOND_INSET_PX : 0;
+  // Positioned by PAINTED edge, not CSS left. Rotation about centre moves a box's visual edge
+  // OUTWARD of its CSS edge by `inset`, so a CSS box sits `inset` INSIDE the paint it targets:
+  // `css = paint + inset`. The paint target itself is sized by the ROTATED diamond
+  // (`AVAILABILITY_CHIP_GLYPH_PX`, 16), never the CSS side (`side`, ~11.3) — the first
+  // diamond's paint starts flush with the wrapper's left (paint-left 0), the second's paint
+  // ends flush with the wrapper's right (paint-left `width − AVAILABILITY_CHIP_GLYPH_PX`).
+  const leftFirst = big ? BIG_DIAMOND_INSET_PX : 0;
+  const leftSecond = big
+    ? width - AVAILABILITY_CHIP_GLYPH_PX + BIG_DIAMOND_INSET_PX
+    : 5;
+  const top = big ? BIG_DIAMOND_INSET_PX : 0;
   return (
     <span aria-hidden="true" className="relative block flex-none" style={{ width, height }}>
       <span

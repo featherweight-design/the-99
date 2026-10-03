@@ -599,11 +599,13 @@ describe("AvailabilityMarker glyphOnly", () => {
     expect(overRoot.style.height).toBe(`${AVAILABILITY_CHIP_GLYPH_PX}px`);
   });
 
-  // Found by Copilot's round-1 review: positioning the big diamonds by their unrotated CSS
-  // `left` (the small glyph's own convention) ignores that rotation grows the paint past the
-  // box, so the painted union was ~4.7px wider than the declared 21px. Both diamonds must be
-  // inset by half that growth so their PAINT, not their CSS box, lands flush with the 21x16
-  // wrapper's edges.
+  // Found by Copilot's round-1 and round-2 reviews: positioning the big diamonds by their
+  // unrotated CSS `left` (the small glyph's own convention) ignores that rotation moves a box's
+  // visual edge OUTWARD of its CSS edge by `inset` — a round-1 fix subtracted the inset where it
+  // needed to add it, which this test's own first version also got backwards (asserting the
+  // exact wrong-direction value and passing on the overflow it existed to catch). The PAINTED
+  // edge is `css − inset`, never `css + inset`, and the target paint size is the ROTATED
+  // diamond (`AVAILABILITY_CHIP_GLYPH_PX`), never the CSS side.
   it("insets both big diamonds by the rotation growth, so the painted union stays within 21px", () => {
     const { container } = render(
       <AvailabilityMarker availability={a(1, 2, 0)} density="chip" plate={false} glyphOnly />,
@@ -613,9 +615,14 @@ describe("AvailabilityMarker glyphOnly", () => {
     const inset = (AVAILABILITY_CHIP_GLYPH_PX - side) / 2;
     const firstLeft = parseFloat((first as HTMLElement).style.left);
     const secondLeft = parseFloat((second as HTMLElement).style.left);
-    // The first diamond's PAINTED left edge (css left + inset) sits at the wrapper's own 0.
-    expect(firstLeft + inset).toBeCloseTo(0, 1);
-    // The second's painted right edge (css left + side + inset) sits at the wrapper's own width.
-    expect(secondLeft + side + inset).toBeCloseTo(AVAILABILITY_CHIP_GLYPH_OVER_PX, 1);
+    // The first diamond's PAINTED left edge (css left minus inset) sits at the wrapper's own 0.
+    expect(firstLeft - inset).toBeCloseTo(0, 1);
+    // The second's painted right edge (css left minus inset, plus its ROTATED width — never the
+    // CSS side, which would make this the same expression `leftSecond` was solved from) sits at
+    // the wrapper's own width.
+    expect(secondLeft - inset + AVAILABILITY_CHIP_GLYPH_PX).toBeCloseTo(
+      AVAILABILITY_CHIP_GLYPH_OVER_PX,
+      1,
+    );
   });
 });
