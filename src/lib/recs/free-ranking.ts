@@ -4,16 +4,14 @@
 // This score is NOT persisted. `commander_scores` is keyed on collection
 // generation, and availability changes on every deck mutation, so storing it
 // there would need a whole second invalidation axis for a score most players
-// never ask for. It is computed on demand, only for `?avail=free`, out of
-// whatever the EDHREC cache already holds. `scoreCommander` is a pure function
-// of its pool, so the second score is the same function over a smaller array:
-// zero extra network calls.
+// never ask for. It is computed on demand, only for `?avail=free`, from the
+// stored index and the role targets, and never from EDHREC or its cache.
+// `scoreCommander` is a pure function of its pool, so the second score is the
+// same function over a smaller array: zero network calls.
 
 import { cache } from "react";
-import { readEdhrecCache } from "../edhrec/client";
 import { loadSupportLists } from "../edhrec/support-read";
 import { loadRoleTargetsForCommanders } from "../profile/role-targets";
-import { parseEdhrecPayload } from "../edhrec/parse";
 import { type Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
 import {
@@ -136,12 +134,11 @@ function carryCanonicalArt(
  * Ranks the candidate set against the free pool, narrowed to the commanders the
  * player could actually build from today.
  *
- * Reads the EDHREC cache but never the network. The cache is usually warm, since
- * the canonical ranking filled it — but not guaranteed to be: `getRankedList`
- * can serve persisted scores without touching EDHREC at all, and those rows
- * expire on their own schedule. A miss is therefore an ordinary outcome, and it
- * scores with a null fitSynergy rather than triggering a second fanout. Never
- * add a fetch here to close that gap: this path exists to be free.
+ * Reads neither EDHREC nor its cache. The score's synergy comes from the stored
+ * index, and the one figure the live page would add, each role card's
+ * inclusion, feeds only `roleCards`, which `toListItem` drops before this
+ * returns. Never add a cache read or a fetch here: this path exists to be free,
+ * and the first one read every buildable commander's whole page for nothing.
  *
  * `ok: false` means no trustworthy second ranking could be produced — either the
  * availability read failed, or canonical named a commander the collection no
@@ -251,33 +248,28 @@ export async function rankFree(
   const freeOracleIds = new Set(pool.map((c) => c.oracleId));
   const buildable = candidates.filter(({ card }) => freeOracleIds.has(card.oracleId));
 
-  // Both reads, for the same split as canonical: the index scores, the live
-  // cache supplies `inclusionByName` for the role chips. Ruling D.
-  const [edhrecCache, supportLists, roleTargets] = await Promise.all([
-    readEdhrecCache(buildable.map((c) => c.card.oracleId)),
+  // The index scores, and nothing here reads the live EDHREC cache. Canonical reads it for
+  // `inclusionByName`, which only feeds `roleCards`, and `toListItem` drops those before this
+  // function returns: a cache read here pulled every buildable commander's whole EDHREC page
+  // (~94KB each) for figures nothing drew.
+  const [supportLists, roleTargets] = await Promise.all([
     loadSupportLists(buildable.map((c) => c.card.oracleId)),
     loadRoleTargetsForCommanders(buildable.map((c) => c.card)),
   ]);
   const scored = buildable.map(({ card: commander, canon }) => {
-    // The row holds unparsed JSON, so it has to go through parseEdhrecPayload
-    // before it has `inclusionByName`. An unexpected shape degrades to nulls,
-    // which only costs the role chips their figures — the score comes from the
-    // index and is unaffected by a malformed cache row.
-    const cached = edhrecCache.get(commander.oracleId);
-    const parsed = cached ? parseEdhrecPayload(cached.payload) : null;
     return {
       ...scoreCommander({
         commander,
         collection: pool,
         roleTargets: roleTargets.get(commander.oracleId)!.targets,
         support: supportLists.get(commander.oracleId) ?? null,
-        inclusionByName: parsed?.inclusionByName ?? null,
+        inclusionByName: null,
       }),
       // CARRIED from canonical, never recomputed — the same rule as slugs, and
-      // for a sharper reason. Both modes read the same cache, so a miss here is
-      // a miss there too; but only canonical knows WHY it missed. Recomputing it
-      // from a bare cache read cannot distinguish an outage from a commander
-      // EDHREC does not index, so a list built during an outage would relabel
+      // for a sharper reason. Only canonical asks EDHREC, so only canonical knows
+      // WHY a commander has no live page. Recomputing it here, from nothing or from a
+      // bare cache read, cannot distinguish an outage from a commander EDHREC does
+      // not index, so a list built during an outage would relabel
       // every `degraded` as `absent` on flipping to free — taking the Retry
       // button away at exactly the moment it is the useful control.
       synergyState: canon.synergyState,
