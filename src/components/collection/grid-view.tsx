@@ -19,7 +19,7 @@ import { availabilityState } from "../../lib/decks/availability";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { CardFactMark } from "../cards/card-fact-mark";
 import { comboClauseSpoken } from "../cards/combo-clause";
-import { ComboGlyph } from "../cards/combo-glyph";
+import { ComboMark } from "../cards/combo-mark";
 import { FactTooltip } from "../cards/fact-tooltip";
 import { CollectionMarkKey } from "./collection-mark-key";
 import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
@@ -221,16 +221,13 @@ export function GridView({
                       <CardFactMark fact={mark.fact} silent />
                     </FactTooltip>
                   ) : (
-                    <FactTooltip
-                      key="combo"
-                      sentence={
-                        c.comboPartner
-                          ? comboClauseSpoken(c.comboPartner.name, "ownBoth")
-                          : ""
-                      }
-                    >
-                      <ComboGlyph />
-                    </FactTooltip>
+                    c.comboPartner && (
+                      <ComboMark
+                        key="combo"
+                        partnerName={c.comboPartner.name}
+                        otherPartners={c.comboOtherPartners ?? 0}
+                      />
+                    )
                   ),
                 )}
                 {/* Decided by count on the server, never by measurement (see `MAX_TILE_MARKS`

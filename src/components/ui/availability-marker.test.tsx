@@ -1,6 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { AvailabilityMarker, markerAria } from "./availability-marker";
+import {
+  AVAILABILITY_CHIP_GLYPH_PX,
+  AvailabilityMarker,
+  markerAria,
+} from "./availability-marker";
 import { availabilityCopy } from "../../lib/copy/availability";
 
 // Off-decklist vantage — no excludeDeckId — so `free` really is `owned − hard`
@@ -537,5 +541,38 @@ describe("AvailabilityMarker glyphOnly", () => {
       <AvailabilityMarker availability={a(4, 0, 0)} density="chip" plate={false} glyphOnly />,
     );
     expect(container).toBeEmptyDOMElement();
+  });
+
+  // The caption's meta line is a FIXED 17/18px height (`CardTileCaption`'s `META_LINE`), with
+  // every other occupant a flat, unrotated 16x16 glyph. A 45°-rotated diamond whose CSS side is
+  // the full 16px bounds to ~22.6px and overflows that line — so the diamond's side has to be
+  // smaller, and `AVAILABILITY_CHIP_GLYPH_PX` names the BOUNDING box the rotation produces, not
+  // the diamond's own side.
+  it("keeps every state's rendered box at or under the 16px bounding size the caption's meta line has room for", () => {
+    for (const [owned, hard, soft] of [
+      [1, 1, 0], // hard
+      [2, 0, 1], // soft
+    ] as const) {
+      const { container, unmount } = render(
+        <AvailabilityMarker availability={a(owned, hard, soft)} density="chip" plate={false} glyphOnly />,
+      );
+      const diamond = container.querySelector("[aria-hidden] span, [aria-hidden]")!;
+      const w = parseFloat((diamond as HTMLElement).style.width);
+      const h = parseFloat((diamond as HTMLElement).style.height);
+      // A 45°-rotated square's bounding box is its side times √2 — this is the figure that
+      // must not exceed AVAILABILITY_CHIP_GLYPH_PX, not the raw `w`/`h` the element carries.
+      expect(w * Math.SQRT2).toBeLessThanOrEqual(AVAILABILITY_CHIP_GLYPH_PX + 0.01);
+      expect(h * Math.SQRT2).toBeLessThanOrEqual(AVAILABILITY_CHIP_GLYPH_PX + 0.01);
+      unmount();
+    }
+  });
+
+  it("keeps the over glyph's own box at the handoff's 21x16, not a scaled-up overflow", () => {
+    const { container } = render(
+      <AvailabilityMarker availability={a(1, 2, 0)} density="chip" plate={false} glyphOnly />,
+    );
+    const box = container.querySelector('[aria-hidden="true"]') as HTMLElement;
+    expect(box.style.width).toBe("21px");
+    expect(box.style.height).toBe("16px");
   });
 });

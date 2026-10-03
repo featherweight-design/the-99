@@ -2,10 +2,11 @@
 // as the row: the chip carries a number and never a deck name. The fixtures are
 // deliberately a copy of rows-view.test.tsx's — the two files are read side by
 // side, and a shared module for six lines would cost more than it saves.
-import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { Availability } from "../../lib/decks/availability";
 import type { BrowseListCard } from "../../lib/collection/browse";
+import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import { GRID_EAGER_TILES, GridView } from "./grid-view";
 
 const card: BrowseListCard = {
@@ -128,10 +129,43 @@ describe("GridView printed name", () => {
   });
 });
 
+/** The combo tooltip is pointer-fine only. */
+function stubPointer(fine: boolean) {
+  vi.stubGlobal("matchMedia", (q: string) => ({
+    matches: q.includes("pointer: fine") ? fine : false,
+    media: q,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }));
+}
+
+describe("GridView combo mark", () => {
+  // The glyph is `ComboMark`, which the meta line hands `comboOtherPartners` straight through:
+  // a card with more than one partner must read the same way here as on `rows-view.tsx`.
+  it("counts the partners the tooltip is not naming, not just the one it is", async () => {
+    stubPointer(true);
+    renderTiles({
+      ...card,
+      comboPartner: { name: "Thrasios, Triton Hero" },
+      comboOtherPartners: 2,
+    });
+    // Scoped to the tile's own button: `CollectionMarkKey` above it carries its own
+    // `combo-glyph` sample (same `data-testid`), which an unscoped query would also find.
+    fireEvent.pointerEnter(within(screen.getByRole("button")).getByTestId("combo-glyph"));
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          comboAwarenessCopy.markerTooltip.ownBothMore("Thrasios, Triton Hero", 2),
+        ),
+      ).toBeTruthy(),
+    );
+  });
+});
+
 // Collection surfaces, Call 3: past three glyphs (facts plus the combo lemniscate), the meta
 // line draws the first two and then `+N` rather than a fourth.
 describe("GridView mark overflow", () => {
-  const comboPartner = { oracleId: "o2", name: "Thrasios, Triton Hero" };
+  const comboPartner = { name: "Thrasios, Triton Hero" };
 
   it("draws every mark up to the budget of three, with no +N", () => {
     renderTiles({

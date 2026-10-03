@@ -148,20 +148,27 @@ function label(
 const DIAMOND = "block w-[6px] h-[6px] rotate-45";
 
 /**
- * The 3-up collection tile's glyph-only chip (collection surfaces, Call 3):
- * the same diamond ladder at the size `CardFactMark` draws its glyphs, rather
- * than the 6px size this file's row and captioned chips use alongside a word.
- * The inline `width`/`height` below override the Tailwind-class size, since an
- * arbitrary-value class built from an interpolated number is invisible to
- * Tailwind's static scan and would compile to nothing.
+ * The 3-up collection tile's glyph-only chip (collection surfaces, Call 3): the glyph's own
+ * BOUNDING box, 16px — the figure the handoff states and the size `CardFactMark`'s 16x16
+ * glyphs draw at, rather than the 6px diamond this file's row and captioned chips use
+ * alongside a word.
+ *
+ * The box is the ROTATED diamond's bounding size, not the diamond's own CSS side: a 45°
+ * rotation grows a square's bounding box by `√2`, so a diamond with a 16px side bounds to
+ * ~22.6px — taller than the caption's fixed-height meta line (`CardTileCaption`'s
+ * `META_LINE`, 17/18px) and taller than every other occupant of that line, which are flat
+ * 16x16 glyphs with no rotation to grow past their own box. The diamond's CSS side is
+ * therefore `AVAILABILITY_CHIP_GLYPH_PX / √2`, so ITS bounding box — what the caption's row
+ * actually has to hold — is 16.
  */
 export const AVAILABILITY_CHIP_GLYPH_PX = 16;
+const BIG_DIAMOND_SIDE_PX = AVAILABILITY_CHIP_GLYPH_PX / Math.SQRT2;
 /**
- * The over glyph's own width at that size: the two diamonds keep their 5px
- * offset (`OverGlyph`'s own figure, unscaled) against a 16px diamond, which
- * is exactly 21 — the handoff's second figure, not a derived one.
+ * The over glyph's own box width at that size: the handoff's second figure, not derived from
+ * the 5px offset the row/chip's 6px diamonds use — at this size that ratio would print a wider
+ * box than stated. The offset below is solved FROM this figure instead (`width - side`).
  */
-export const AVAILABILITY_CHIP_GLYPH_OVER_PX = AVAILABILITY_CHIP_GLYPH_PX + 5;
+export const AVAILABILITY_CHIP_GLYPH_OVER_PX = 21;
 
 /**
  * The over-committed glyph is two diamonds overlapping by 1px, with the front
@@ -171,20 +178,23 @@ export const AVAILABILITY_CHIP_GLYPH_OVER_PX = AVAILABILITY_CHIP_GLYPH_PX + 5;
  * colour is a prop rather than a constant (design table line 124).
  */
 function OverGlyph({ seam, big }: { seam: string; big?: boolean }) {
-  const side = big ? AVAILABILITY_CHIP_GLYPH_PX : 6;
+  const side = big ? BIG_DIAMOND_SIDE_PX : 6;
+  const width = big ? AVAILABILITY_CHIP_GLYPH_OVER_PX : 11;
+  const height = big ? AVAILABILITY_CHIP_GLYPH_PX : 6;
+  const offset = big ? width - side : 5;
   return (
-    <span
-      aria-hidden="true"
-      className="relative block flex-none"
-      style={big ? { width: AVAILABILITY_CHIP_GLYPH_OVER_PX, height: side } : { width: 11, height: 6 }}
-    >
+    <span aria-hidden="true" className="relative block flex-none" style={{ width, height }}>
       <span
         className={twMerge(DIAMOND, "absolute left-0 top-0 bg-[color:var(--danger)]")}
-        style={big ? { width: side, height: side } : undefined}
+        style={big ? { width: side, height: side, top: (height - side) / 2 } : undefined}
       />
       <span
-        className={twMerge(DIAMOND, "absolute left-[5px] top-0 bg-[color:var(--danger)]")}
-        style={{ borderLeft: `1px solid ${seam}`, ...(big ? { width: side, height: side } : {}) }}
+        className={twMerge(DIAMOND, "absolute top-0 bg-[color:var(--danger)]")}
+        style={{
+          borderLeft: `1px solid ${seam}`,
+          left: offset,
+          ...(big ? { width: side, height: side, top: (height - side) / 2 } : {}),
+        }}
       />
     </span>
   );
@@ -208,7 +218,7 @@ export function AvailabilityGlyph({
 }: {
   state: Exclude<AvailabilityState, "free">;
   seam: string;
-  /** `AVAILABILITY_CHIP_GLYPH_PX` instead of the row/chip's 6px. See `OverGlyph`. */
+  /** `AVAILABILITY_CHIP_GLYPH_PX`'s bounding box instead of the row/chip's 6px. See `OverGlyph`. */
   big?: boolean;
 }) {
   if (state === "over") return <OverGlyph seam={seam} big={big} />;
@@ -222,7 +232,7 @@ export function AvailabilityGlyph({
           ? "bg-transparent [border:1.5px_solid_var(--avail-soft)]"
           : "bg-[color:var(--avail-hard)]",
       )}
-      style={big ? { width: AVAILABILITY_CHIP_GLYPH_PX, height: AVAILABILITY_CHIP_GLYPH_PX } : undefined}
+      style={big ? { width: BIG_DIAMOND_SIDE_PX, height: BIG_DIAMOND_SIDE_PX } : undefined}
     />
   );
 }
@@ -375,9 +385,10 @@ export function AvailabilityMarker({
             // tile surfaces (A2RM:51–60).
             `absolute left-[6px] top-[6px] gap-[4px] rounded-[4px] border px-[5px] py-[2px] ${CHIP_SKIN[state]}`
           : chip && glyphOnly
-            ? // The glyph alone, in the same outlined box, padded to its own size
-              // instead of the text box's font-sized gutter.
-              "justify-center rounded-[4px] p-[2px]"
+            ? // The glyph alone, in the same outlined box: no padding, since the glyph's own
+              // box (its rotated bounding size, not its CSS side — see `AVAILABILITY_CHIP_GLYPH_PX`)
+              // already is the box the caption's fixed-height meta line has room for.
+              "justify-center rounded-[4px]"
             : chip
               ? // In the caption, on a plate of its own: the shared box, in this
                 // state's ink.
