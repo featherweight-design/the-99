@@ -41,23 +41,33 @@ export type VersionDiffCard = Omit<VersionDiffBase, "imageUri"> & {
 /**
  * What the claim model says this deck can call on today, per card. Shopping's own figures:
  *
- * - `draft` and `deficit`: a card the deck's current list runs. `loadDeckBuyRows` bills the
- *   deficit against the DRAFT's count, so the copies the deck holds are `draft − deficit`; a
- *   version's own count may differ from the draft's, which is why the deficit is never
- *   subtracted from `to` directly.
+ * - `draft`, `deficit` and `surplus`: a card the deck's current list runs. `loadDeckBuyRows` bills
+ *   the deficit against the DRAFT's count and never goes below 0, so `draft − deficit` caps what
+ *   the deck holds at the draft's ask. `surplus` is `loadAvailability`'s `free` from this deck's
+ *   vantage (copies left over after its own ask, negative when short), so `draft + surplus` is the
+ *   uncapped supply. The larger of the two: the deficit carries the proxy rule (a proxied slot is
+ *   never billed) and the surplus the copies beyond the ask. A version's own count may differ
+ *   from the draft's, which is why neither figure is subtracted from `to` directly.
  * - `free`: a card the current list no longer runs, off-decklist `loadAvailability`: owned less
  *   what committed decks hold.
  */
 export type DeckClaims = {
   draft: Map<string, number>;
   deficit: Map<string, number>;
+  surplus: Map<string, number>;
   free: Map<string, number>;
 };
 
 /** The copies this deck can call on for a card, under Shopping's claim model. */
 export function heldForDeck(oracleId: string, claims: DeckClaims): number {
   const draft = claims.draft.get(oracleId);
-  if (draft !== undefined) return Math.max(0, draft - (claims.deficit.get(oracleId) ?? 0));
+  if (draft !== undefined) {
+    const billed = draft - (claims.deficit.get(oracleId) ?? 0);
+    // A card the reader owns no copy of has no availability row, and an absent surplus is not 0
+    // (that would read as the whole ask held): only a figure the read returned extends the bill.
+    const surplus = claims.surplus.get(oracleId);
+    return Math.max(0, billed, surplus === undefined ? 0 : draft + surplus);
+  }
   return Math.max(0, claims.free.get(oracleId) ?? 0);
 }
 

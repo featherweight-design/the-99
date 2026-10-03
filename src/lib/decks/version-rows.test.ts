@@ -31,7 +31,7 @@ const owns = (quantity: number, over: Partial<OwnedPrinting> = {}): OwnedPrintin
 
 /** The claim model's figures: the draft's count and Shopping's deficit, or off-decklist free. */
 const claims = (over: Partial<DeckClaims> = {}): DeckClaims => ({
-  draft: new Map(), deficit: new Map(), free: new Map(), ...over,
+  draft: new Map(), deficit: new Map(), surplus: new Map(), free: new Map(), ...over,
 });
 
 describe("assembleVersionRows", () => {
@@ -60,6 +60,19 @@ describe("assembleVersionRows", () => {
     const [b] = assembleVersionRows([row({ to: 1 })], new Map([["o-1", owns(1)]]), { prices: new Map() },
       claims({ draft: new Map([["o-1", 4]]), deficit: new Map([["o-1", 3]]) }));
     expect(b.buy).toBe(0);
+  });
+
+  // Copilot round 1: Shopping's deficit stops at 0, so copies beyond the draft's ask are its surplus.
+  it("counts copies beyond the draft's ask: the version ran 4, the draft runs 1, 3 more are free", () => {
+    const [r] = assembleVersionRows([row({ to: 4 })], new Map([["o-1", owns(4)]]), { prices: new Map() },
+      claims({ draft: new Map([["o-1", 1]]), surplus: new Map([["o-1", 3]]) }));
+    expect(r.buy).toBe(0);
+  });
+
+  it("keeps a proxied slot unbilled: no deficit, though no copy is owned", () => {
+    const [r] = assembleVersionRows([row({ to: 1 })], new Map(), { prices: new Map() },
+      claims({ draft: new Map([["o-1", 1]]), surplus: new Map([["o-1", -1]]) }));
+    expect(r.buy).toBe(0);
   });
 
   it("reads a card the deck no longer runs off-decklist: owned less what committed decks hold", () => {

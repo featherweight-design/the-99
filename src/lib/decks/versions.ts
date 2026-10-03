@@ -556,12 +556,15 @@ export async function loadVersionDiff(
   const all = [...ins, ...outs];
   // Both reads are scoped to the diff's own cards: a version moves a handful, and
   // neither the collection nor the price table is read whole for them.
-  const ids = [...new Set(all.map((c) => c.oracleId))];
+  // Only a non-basic card can carry a buy, so a diff of basics alone (or none) reads no claims: the
+  // user-wide claim model is not paid for nothing, and cannot fail a diff it has no say in.
+  const ids = pricedIds(all);
   const draftRows = ids.length === 0 ? [] : await db.select({ oracleId: deckCards.oracleId, quantity: deckCards.quantity })
     .from(deckCards).where(and(eq(deckCards.deckId, deckId), inArray(deckCards.oracleId, ids)));
   const draft = new Map(draftRows.map((r) => [r.oracleId, r.quantity]));
+  const onDraft = ids.filter((id) => draft.has(id));
   const offDraft = ids.filter((id) => !draft.has(id));
-  const [owned, priced, buyRows, availability] = await Promise.all([
+  const [owned, priced, buyRows, fromDeck, availability] = await Promise.all([
     // The throwing read, not `resolveOwnedPrintings`: a failed read there answers "owns
     // nothing", which these rows would draw as a "not owned" dot and a buy tag on cards the
     // reader holds. A failure here reaches `getVersionDiff`'s caller as an unavailable diff.
@@ -569,7 +572,12 @@ export async function loadVersionDiff(
     loadPrices(pricedIds(all)),
     // Shopping's own bill for this deck, so a row's tag is Shopping's answer rather than a second
     // reading of ownership. User-wide claims inside, narrowed to this deck's rows.
-    loadDeckBuyRows(userId, [deckId]),
+    ids.length > 0 ? loadDeckBuyRows(userId, [deckId]) : [],
+    // From this deck's vantage: what is left over after its own ask, so a version that ran more
+    // copies than the draft still counts the copies the deck could call on.
+    onDraft.length > 0
+      ? loadAvailability(userId, { oracleIds: onDraft, excludeDeckId: deckId })
+      : new Map<string, Availability>(),
     // A card the deck no longer runs has no Shopping row; the off-decklist read says what the
     // reader holds that no committed deck does.
     offDraft.length > 0 ? loadAvailability(userId, { oracleIds: offDraft }) : new Map<string, Availability>(),
@@ -577,6 +585,7 @@ export async function loadVersionDiff(
   const claims: DeckClaims = {
     draft,
     deficit: new Map(buyRows.map((r) => [r.oracleId, r.quantity])),
+    surplus: new Map([...fromDeck].map(([id, a]) => [id, a.free])),
     free: new Map([...availability].map(([id, a]) => [id, a.free])),
   };
   return {
