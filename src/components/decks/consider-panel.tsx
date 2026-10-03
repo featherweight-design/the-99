@@ -545,7 +545,17 @@ export function ConsiderPanel({
 
           {shelves.map((shelf, i) => (
             <ShelfSection
-              key={shelf.key}
+              // Keyed on deckId too, not just the shelf key: `BuilderShell` is
+              // retained across a deck-to-deck navigation (the same component
+              // instance re-renders with a new `deck` prop rather than
+              // unmounting), so a `ShelfSection` for the same role would
+              // otherwise carry deck A's `expanded` state — a local "Show
+              // all" that is never persisted — straight into deck B's shelf
+              // of the same key (Copilot round 3, medium "previously
+              // missed"). The deckId in the key forces a fresh mount, which
+              // resets every bit of this component's local state at once
+              // rather than tracking one more "did this prop change" case.
+              key={`${deckId}-${shelf.key}`}
               first={i === 0}
               shelf={shelf}
               deckId={deckId}

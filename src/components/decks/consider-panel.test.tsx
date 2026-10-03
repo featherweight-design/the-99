@@ -322,6 +322,28 @@ describe("ConsiderPanel — shelf fold (STATES-consider-tiles.md s1–s5)", () =
     expect(disclosureFor("Ramp")).toHaveAttribute("aria-expanded", "true");
   });
 
+  // `BuilderShell` is retained across a deck-to-deck navigation — the SAME
+  // component instance re-renders with a new `deck` prop rather than
+  // unmounting — so the `unmount()`-based case above cannot exercise this
+  // path. `rerender` keeps the same React tree, the way a client navigation
+  // actually does (Copilot round 3, medium "previously missed").
+  it("does not carry an expanded Show-all into a different deck's same-key shelf, on a retained shell", () => {
+    const many = Array.from({ length: SHELF_CAP + 2 }, (_, i) => suggestion({ name: `Ramp Card ${i}` }));
+    const { rerender } = mount({ deckId: "deck-a", suggestions: many });
+
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(`show all ${SHELF_CAP + 2} ramp`, "i") }));
+    expect(screen.getAllByRole("listitem")).toHaveLength(SHELF_CAP + 2);
+
+    rerender(
+      <CardDetailProvider fetchCard={async () => null}>
+        <Harness deckId="deck-b" suggestions={many} />
+      </CardDetailProvider>,
+    );
+
+    expect(screen.getAllByRole("listitem")).toHaveLength(SHELF_CAP);
+    expect(screen.getByRole("button", { name: /show all/i })).toBeInTheDocument();
+  });
+
   it("ignores an unknown stored shelf key rather than erroring", () => {
     localStorage.setItem(shelfFoldKey("deck-1"), JSON.stringify(["wipes", "not-a-real-key"]));
     mount({ suggestions: [suggestion({ name: "Cultivate", role: "ramp" })] });
