@@ -55,7 +55,7 @@ describe("spellPool's label slice (the run plan's Task 5)", () => {
     identity: sql.param(["G"]), draft: sql.param([]), cut: "00000000-0000-4000-8000-000000000002",
     staples: sql.param([]), mv: 3,
   };
-  const compile = (roles: SpellRole[], labels: string[]) => dialect.sqlToQuery(spellPool({ ...args, roles, labels }));
+  const compile = (roles: SpellRole[] | "any", labels: string[]) => dialect.sqlToQuery(spellPool({ ...args, roles, labels }));
 
   it("reads no label when it is given none, so the switch off leaves the text pool alone", () => {
     expect(compile(["removal"], []).sql).not.toMatch(/card_labels|labelled/);
@@ -69,6 +69,16 @@ describe("spellPool's label slice (the run plan's Task 5)", () => {
     expect(q.sql).toMatch(/cl\.labels @> \$\d+::jsonb or cl\.labels @> \$\d+::jsonb/);
     expect(q.sql).toMatch(/c\.oracle_id in \(select oracle_id from labelled\)/);
     expect(q.params).toEqual(expect.arrayContaining(patterns));
+  });
+
+  // The labels trial's raw pool (vocabulary plan, Task 6b): the cheapest slice with NO role filter,
+  // since the filter is what keeps out the text-mismatched cards a label could newly admit.
+  it("drops the role-word filter for \"any\", and only then", () => {
+    const any = compile("any", []);
+    expect(any.sql).not.toMatch(/split_part\(u\.oracle_text/);
+    expect(any.sql).toMatch(/\n\s+and true\n/);
+    expect(any.sql).not.toMatch(/\n\s+and false\n/);
+    expect(compile(["removal"], []).sql).toMatch(/split_part\(u\.oracle_text/);
   });
 
   it("an original with no role words has an empty text slice, never the whole catalog", () => {

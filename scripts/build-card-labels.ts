@@ -1,8 +1,8 @@
 // Labels every Commander-legal card's jobs and their LIMITS, once, with a model.
 //
 // The one-time backfill is ~32,000 cards; afterwards the weekly refresh labels only what the
-// input hash says has moved, which is a new set and nothing else. Hugh approved this run at
-// about $41 on Sonnet 4.5 with a HARD STOP at $55.
+// input hash says has moved, which is a new set and nothing else. Hugh approved it on Sonnet 4.5
+// at about $61.1 (the v7 prompt's measured rate), with a HARD STOP raised to $65 (2026-10-03).
 //
 // Three properties carry the money, and each one exists because something already went wrong:
 //
@@ -29,28 +29,29 @@ import { parseScope } from "../src/lib/labels/scope";
 import { runLabelBuild } from "./lib/card-labels-build";
 
 /**
- * The cap, and the pause. Hugh's ruling: hard stop $55, and PAUSE AND REPORT if the
- * projection passes $50 rather than spending up to the stop silently.
+ * The cap, and the pause. Hugh's ruling: a hard stop, and PAUSE AND REPORT if the projection
+ * passes the report line rather than spending up to the stop silently. Both $65 since he approved
+ * the full backfill at ~$61.1 (2026-10-03; they were $55 and $50, which would pause that run).
  *
  * Both are bounded ABOVE as well as below: a fat-fingered `LABEL_CAP_USD=5500` is a plausible
  * typo and would authorise a hundred times the approved spend. The cap binds a BUDGET FAMILY
  * (`budgetFamily`): every backfill dispatch shares one, and the weekly cron another.
  */
-const CAP_USD = boundedNumber("LABEL_CAP_USD", process.env.LABEL_CAP_USD, 55, 0, 100);
-const REPORT_AT_USD = boundedNumber("LABEL_REPORT_AT_USD", process.env.LABEL_REPORT_AT_USD, 50, 0, 100);
+const CAP_USD = boundedNumber("LABEL_CAP_USD", process.env.LABEL_CAP_USD, 65, 0, 100);
+const REPORT_AT_USD = boundedNumber("LABEL_REPORT_AT_USD", process.env.LABEL_REPORT_AT_USD, 65, 0, 100);
 
 /** 95% of the cards a batch asked about, per the plan. Below it the batch is held, unpublished. */
 const FLOOR = boundedNumber("LABEL_FLOOR", process.env.LABEL_FLOOR, 0.95, 0, 1);
 
 /**
- * The highest report line `card-labels.yml` will accept from a dispatch — Hugh's $50.
+ * The highest report line `card-labels.yml` will accept from a dispatch — Hugh's $65 (2026-10-03).
  *
  * Here so the PAUSE can tell the operator whether a dispatch can actually resume the run, which
  * is the one thing its previous two wordings both got wrong. It is a SECOND COPY of a figure the
  * workflow enforces, so `card-labels-workflow.test.mts` asserts the two agree; a remediation that
  * names a ceiling the form does not have is exactly the defect this replaced.
  */
-const DISPATCH_REPORT_CEILING_USD = 50;
+const DISPATCH_REPORT_CEILING_USD = 65;
 
 /**
  * The REAL Anthropic endpoint, overridden explicitly.

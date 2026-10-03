@@ -48,7 +48,8 @@ import {
 import type { CardRow } from "../../src/lib/labels/publish";
 import { publishWave, readCardsByName, stampWave } from "../../src/lib/labels/publish";
 import { validateJob } from "../../src/lib/labels/schema";
-import { type LabelScope, scopeCondition } from "../../src/lib/labels/scope";
+import { type LabelScope, scopeCondition, scopeDeck } from "../../src/lib/labels/scope";
+import { labelTrialPool } from "../../src/lib/swaps/gather";
 import type { Job } from "../../src/lib/labels/types";
 import { ALL_MODELS, PRICING } from "./card-labels-pricing.mjs";
 
@@ -90,7 +91,7 @@ export const RATES = ratesFor(MODEL_KEY);
 /**
  * The input figures the WORST CASE is booked on, and both are CEILINGS rather than averages.
  *
- * This matters more than it looks: `waveSize` and `withinCap` bound Hugh's $55 hard stop on
+ * This matters more than it looks: `waveSize` and `withinCap` bound Hugh's hard stop on
  * these numbers, so a figure that is merely typical makes the bound merely typical too.
  *
  * `SYSTEM_TOKENS` is `SYSTEM_TOKENS_BOUND`, one token per character of the block as it is NOW. It was
@@ -196,16 +197,29 @@ const refuse = (why: string): never => { throw new Refusal(why); };
  * ORDERED, so an unchanged stale set chunks the same way on every invocation and an unfinished
  * chunk reproduces its own content-addressed key.
  */
-async function cardsNeedingLabels(scope: LabelScope, only: readonly string[] | undefined): Promise<CardRow[]> {
-  const rows = await db.execute<CardRow>(sql`
-    select c.oracle_id as "oracleId", c.name, c.mana_cost, c.type_line, c.oracle_text, c.layout
+/**
+ * A card to label, with how many catalog rows share its name. Counted over the WHOLE `cards` table,
+ * because a reply is matched by name: a sibling outside this run's set (another scope, an already
+ * current label, a deck trial's pool) is still a row the reply could belong to.
+ */
+type StaleCard = CardRow & { nameRows: number };
+
+async function cardsNeedingLabels(scope: LabelScope, only: readonly string[] | undefined): Promise<StaleCard[]> {
+  const deckId = scopeDeck(scope);
+  const trial = deckId === null ? null : await labelTrialPool(deckId);
+  if (deckId !== null && trial === null) throw new Error(`LABEL_SCOPE names deck ${deckId}, which does not exist`);
+  if (trial !== null) console.log(`  deck ${deckId}: ${trial.length} card(s) in its trial pool`);
+  const rows = await db.execute<StaleCard>(sql`
+    select c.oracle_id as "oracleId", c.name, c.mana_cost, c.type_line, c.oracle_text, c.layout,
+           (select count(*)::int from cards n where n.name = c.name) as "nameRows"
       from cards c
-     where c.commander_legal = true
-       ${scopeCondition(scope)}
+     -- A trial's ids are EXPLICIT: every pool slice already requires legality, and a deck spell
+     -- banned since it was added is still an original its stand-ins sheet compares against.
+     where ${trial === null ? sql`c.commander_legal = true ${scopeCondition(scope)}` : sql`c.oracle_id = any(${sql.param(trial)}::uuid[])`}
        ${only === undefined ? sql`` : sql`and c.oracle_id = any(${sql.param([...only])}::uuid[])`}
      order by c.oracle_id
   `);
-  const all = rows.rows ?? (rows as unknown as CardRow[]);
+  const all = rows.rows ?? (rows as unknown as StaleCard[]);
   const stored = new Map(
     (await db.select({ id: cardLabels.oracleId, hash: cardLabels.inputHash }).from(cardLabels))
       .map((r) => [r.id, r.hash]),
@@ -755,10 +769,10 @@ async function build(opts: BuildOptions): Promise<number> {
   // The prompt asks by name and the model answers by name, so two oracle rows sharing one name are
   // indistinguishable in the reply. `src/lib/tuning/resolve-names.ts` takes the same position:
   // resolve when unambiguous, otherwise drop rather than guess.
-  const byNameCount = new Map<string, number>();
-  for (const c of all) byNameCount.set(c.name, (byNameCount.get(c.name) ?? 0) + 1);
-  const ambiguous = all.filter((c) => (byNameCount.get(c.name) ?? 0) > 1);
-  const stale = all.filter((c) => (byNameCount.get(c.name) ?? 0) === 1);
+  // Counted over the whole catalog (`nameRows`), never over this run's own set: a sibling outside
+  // the set is still a row the reply's name could belong to.
+  const ambiguous = all.filter((c) => Number(c.nameRows) > 1);
+  const stale = all.filter((c) => Number(c.nameRows) === 1);
   if (ambiguous.length > 0) {
     console.warn(`\n${ambiguous.length} card(s) share a name with another oracle row and are `
       + `EXCLUDED — the model's reply could not be attributed to one of them:`);
@@ -864,7 +878,7 @@ async function build(opts: BuildOptions): Promise<number> {
     + `${rateSource} measured rate; worst case if every `
     + `request returns its full ceiling $${worst.toFixed(2)}`);
 
-  // TWO BOUNDS, and they are different questions (d9's ruling on Hugh's $55):
+  // TWO BOUNDS, and they are different questions (d9's ruling on Hugh's backfill stop):
   //
   //   the CAP   each wave's worst case must fit `cap − spent so far`, which is what makes actual
   //             spend unable to pass the cap even if every remaining request maxes out.

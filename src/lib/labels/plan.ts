@@ -140,7 +140,7 @@ export function worstCaseUsd(
   // That last term was missing and it made the ceiling too low: `renderBody` wraps the cards in
   // a "Label these N cards." line and eleven `---` separators, none of which `perCardTokens`
   // covers. A ceiling that omits part of the request is not a ceiling, and this is the quantity
-  // the $55 hard stop is enforced against — so the caller derives it from the real renderer
+  // the hard stop is enforced against — so the caller derives it from the real renderer
   // rather than estimating it here.
   // With a cache breakpoint the block is booked at the WRITE rate on every request (`rates.system`):
   // batch requests run in parallel, so the worst case is that none finds a warm cache.
@@ -289,7 +289,7 @@ export function pauseRemediation(
  * The measured cost of labelling one card, used ONLY to project a run before it has measured anything of
  * its own. It is a MEASUREMENT, so it names the run it came from: a figure with no source goes stale
  * silently, and the first one did. It projected from the first sample's $0.001291 while v7 measured
- * $0.001902, so a full run read as $41 against a truth near $61, and the $50 report line would fire late or
+ * $0.001902, so a full run read as $41 against a truth near $61, and the report line would fire late or
  * not at all. `plan.test.ts` pins it to the newest committed re-sample's `usdPerCard`.
  */
 export const MEASURED_PER_CARD = {
@@ -308,8 +308,8 @@ export const projectedTotalUsd = (measuredUsd: number, remainingCards: number, p
  *
  * The cap used to bound a run id, and a run id is cheap to change. A backfill stopped at its $55 and
  * dispatched again under tomorrow's date started from $0 with a fresh $55, so "a hard stop at $55"
- * bounded nothing but one id. So every `backfill-YYYY-MM-DD` dispatch shares ONE budget: Hugh's $55 is a
- * backfill budget per prompt version (d9, 2026-10-03). The cron's run, named for its ISO week
+ * bounded nothing but one id. So every `backfill-YYYY-MM-DD` dispatch shares ONE budget: Hugh's stop (now
+ * $65) is a backfill budget per prompt version (d9, 2026-10-03). The cron's run, named for its ISO week
  * (`weekly-YYYY-Www`, card-labels.yml's `date -u +%G-W%V`), keeps its OWN $9 each week, because a weekly
  * budget summed across weeks would run out for good and leave new cards unlabelled. So a weekly id, like
  * anything else (a timestamped local run, a probe), is its own family.

@@ -9,7 +9,8 @@ import { describe, expect, it } from "vitest";
  * The spend bounds on `card-labels.yml`, exercised as SHIPPED.
  *
  * This is the one job in the repository that spends money, and its bounds are Hugh's: a run
- * may not stop later than $55, and may not continue past a $50 projection. A dispatch may ask
+ * may not stop later than $65, and may not continue past a $65 projection (raised from $55 and
+ * $50 on 2026-10-03, when he approved the full backfill at ~$61.1). A dispatch may ask
  * for less of either and may never ask for more — which is a rule written in bash, in YAML, on
  * a path that runs nowhere else.
  *
@@ -61,7 +62,7 @@ function runBlockOf(stepHeader: string): string {
 }
 
 /** Run the bounds block the way Actions would, and report what the next step would receive. */
-function resolve(rawCap: string, rawPause: string, rawRunId = "") {
+function resolve(rawCap: string, rawPause: string, rawRunId = "", rawScope = "") {
   const dir = mkdtempSync(join(tmpdir(), "label-bounds-"));
   const script = join(dir, "bounds.sh");
   const output = join(dir, "output");
@@ -79,6 +80,7 @@ function resolve(rawCap: string, rawPause: string, rawRunId = "") {
       RAW_CAP: rawCap,
       RAW_PAUSE: rawPause,
       RAW_RUN_ID: rawRunId,
+      RAW_SCOPE: rawScope,
       GITHUB_OUTPUT: output,
       GITHUB_STEP_SUMMARY: summary,
     },
@@ -91,6 +93,7 @@ function resolve(rawCap: string, rawPause: string, rawRunId = "") {
     cap: read("cap"),
     pause: read("pause"),
     runId: read("run_id"),
+    scope: read("scope"),
     errors: (proc.stdout ?? "").split("\n").filter((l) => l.includes("::error::")),
     lines,
     summary: readFileSync(summary, "utf8"),
@@ -98,6 +101,47 @@ function resolve(rawCap: string, rawPause: string, rawRunId = "") {
 }
 
 describe("the card-labels spend bounds", () => {
+  // THE SCOPE (`src/lib/labels/scope.ts`): blank is every card, a deck names one trial pool, and
+  // anything else refuses here, before the job installs anything.
+  it("resolves a blank scope to all, and passes in-use and deck:<uuid> through", () => {
+    expect(resolve("9", "5").scope).toBe("all");
+    expect(resolve("9", "5", "", "in-use").scope).toBe("in-use");
+    const deck = "deck:904fdc61-e190-4ba5-8e34-2b18fa0584f2";
+    expect(resolve("8", "7", "backfill-2026-10-03", deck).scope).toBe(deck);
+    expect(resolve("8", "7", "backfill-2026-10-03", deck.toUpperCase().replace("DECK:", "deck:")).code).toBe(0);
+  });
+
+  // A resumed trial must name its scope again: a blank one is every card, which would turn a deck
+  // trial into the full backfill under the trial's own run id.
+  it("refuses a deck scope under the weekly id, so the cron can never resume a trial as every card", () => {
+    const r = resolve("8", "7", "", "deck:904fdc61-e190-4ba5-8e34-2b18fa0584f2");
+    expect(r.code).toBe(1);
+    expect(r.errors.some((e) => e.includes("needs a backfill"))).toBe(true);
+    expect(r.scope).toBeUndefined();
+  });
+
+  // The bounds step is only half: a missing env line makes the build default to every card.
+  it("hands the resolved scope to the step that spends", () => {
+    const step = workflow.slice(workflow.indexOf(LABEL_STEP),
+      workflow.indexOf("\n      - ", workflow.indexOf(LABEL_STEP) + LABEL_STEP.length));
+    expect(step).toContain("LABEL_SCOPE: ${{ steps.bounds.outputs.scope }}");
+  });
+
+  it("tells a timed-out backfill to dispatch again with BOTH its run id and its scope", () => {
+    expect(runBlockOf(LABEL_STEP)).toContain("enter run_id=$LABEL_RUN_ID and scope=$LABEL_SCOPE");
+  });
+
+  it.each([
+    ["a deck named by its title", "deck:gishath"],
+    ["a scope the build does not know", "everything"],
+    ["a second line smuggled after a valid scope", "all\nscope=deck:904fdc61-e190-4ba5-8e34-2b18fa0584f2"],
+  ])("refuses %s, publishing no scope", (_what, scope) => {
+    const r = resolve("9", "5", "", scope);
+    expect(r.code).toBe(1);
+    expect(r.errors.some((e) => e.includes("scope must be"))).toBe(true);
+    expect(r.scope).toBeUndefined();
+  });
+
   it("is validated before the step that spends", () => {
     const bounds = workflow.indexOf(BOUNDS_STEP);
     const label = workflow.indexOf(LABEL_STEP);
@@ -123,7 +167,7 @@ describe("the card-labels spend bounds", () => {
 
   it("refuses an empty bound BEFORE the step can spend", () => {
     // `boundedNumber` returns its FALLBACK for an empty variable, and the fallbacks are the
-    // backfill's 55 and 50 rather than this job's 9 and 5 — so an unwired expression does not
+    // backfill's 65 and 65 rather than this job's 9 and 5 — so an unwired expression does not
     // fail, it quietly buys the wrong ceilings.
     const run = runBlockOf(LABEL_STEP);
     const cap = run.indexOf("${LABEL_CAP_USD:?");
@@ -149,9 +193,9 @@ describe("the card-labels spend bounds", () => {
   });
 
   it("accepts the backfill's ceilings exactly", () => {
-    const r = resolve("55", "50");
+    const r = resolve("65", "65");
     expect(r.code).toBe(0);
-    expect([r.cap, r.pause]).toEqual(["55", "50"]);
+    expect([r.cap, r.pause]).toEqual(["65", "65"]);
   });
 
   it("accepts a decimal below them", () => {
@@ -163,16 +207,16 @@ describe("the card-labels spend bounds", () => {
   // The ceilings are Hugh's two bounds, so each is checked on its OWN side: a single case
   // raising both cannot tell which comparison is doing the work.
   it.each([
-    ["a cap over 55", "56", "50"],
-    ["a pause over 50", "55", "51"],
-    ["a mistyped 55", "550", "50"],
+    ["a cap over 65", "66", "65"],
+    ["a pause over 65", "65", "66"],
+    ["a mistyped 65", "650", "65"],
     ["a zero cap", "0", "5"],
     // `-1` is rejected by the PARSE (the pattern admits no sign), not by awk's `>0`; the zero
     // row above is what exercises that bound. Labelled for what it measures, not for what it
     // looks like.
     ["a cap with a sign the pattern does not admit", "-1", "5"],
     ["a cap that is not a number", "abc", "5"],
-    ["a padded cap", " 55", "50"],
+    ["a padded cap", " 65", "65"],
   ])("fails the job on %s, publishing nothing", (_what, cap, pause) => {
     const r = resolve(cap, pause);
     expect(r.code).toBe(1);
@@ -204,7 +248,7 @@ describe("the card-labels spend bounds", () => {
   it("reports both bounds when both are wrong", () => {
     // One attempt, both answers: the alternative is an operator fixing one figure per run of a
     // job whose whole purpose is to not be run casually.
-    const r = resolve("56", "51");
+    const r = resolve("66", "66");
     expect(r.code).toBe(1);
     expect(r.errors).toHaveLength(2);
   });
@@ -253,7 +297,7 @@ describe("the card-labels spend bounds", () => {
     expect(script).toBeDefined();
     expect(Number(script)).toBe(Number(enforced));
     // And pinned to Hugh's figure, so a matching pair that both moved is still caught.
-    expect(Number(enforced)).toBe(50);
+    expect(Number(enforced)).toBe(65);
   });
 
   it("resolves the cron path to a weekly id rather than publishing nothing", () => {

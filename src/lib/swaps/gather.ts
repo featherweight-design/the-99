@@ -290,7 +290,13 @@ function landPool(a: PoolArgs) {
  * With `labels` (the switch on and the original labelled), a second unlisted slice by those labels beside the
  * text's. A label-only original has no role words, so its text slice is empty rather than everything.
  */
-export function spellPool(a: PoolArgs & { mv: number; roles: SpellRole[]; labels: readonly string[]; staples: ReturnType<typeof sql.param> }) {
+export function spellPool(a: PoolArgs & {
+  mv: number;
+  /** The original's roles, or `"any"` to drop the role-word filter (the labels trial's raw pool). */
+  roles: SpellRole[] | "any";
+  labels: readonly string[];
+  staples: ReturnType<typeof sql.param>;
+}) {
   const guards = (alias: string) => sql.raw(`
     ${alias}.commander_legal
     and ${alias}.type_line !~* '^[^/]*\\mland\\M'
@@ -309,7 +315,8 @@ export function spellPool(a: PoolArgs & { mv: number; roles: SpellRole[]; labels
         and u.oracle_id <> all(${a.draft}::uuid[])
         -- The FRONT face's text, as the role reader reads it: a spell whose back face is a land
         -- would otherwise spend a place on words only its back face carries.
-        and ${a.roles.length > 0 ? sql`split_part(u.oracle_text, E'\\n//\\n', 1) ~* ${roleWords(a.roles)}` : sql`false`}
+        and ${a.roles === "any" ? sql`true`
+          : a.roles.length > 0 ? sql`split_part(u.oracle_text, E'\\n//\\n', 1) ~* ${roleWords(a.roles)}` : sql`false`}
       group by p.oracle_id
       -- Ties broken by NAME, the order the sheet draws within a price, so the pool is the first
       -- rows the sheet would show rather than a uuid-ordered slice of a large tie at the floor.
@@ -349,4 +356,62 @@ export function spellPool(a: PoolArgs & { mv: number; roles: SpellRole[]; labels
         ${a.labels.length > 0 ? sql`or c.oracle_id in (select oracle_id from labelled)` : sql``}
         or c.oracle_id = any(${a.staples}::uuid[]))
   `;
+}
+
+/**
+ * Every card a cut on this deck could put on the stand-ins sheet, BEFORE any card is matched: the
+ * labels trial's card set (vocabulary plan, Task 6b), so the trial labels exactly what its
+ * comparisons can read.
+ *
+ * It is built by the same `spellPool` `loadStandIns` reads, for every mana value a spell in the
+ * deck has, as a union of two kinds of slice:
+ *
+ *   - ROLE-FREE: the cheapest unlisted spells with the role-word filter dropped. That filter runs
+ *     before `jobOf` or `sameJob` see a card, so a pool chosen by it leaves out exactly the
+ *     text-mismatched cards labels could newly admit, which are the cards the trial exists to judge.
+ *   - ONE PER ROLE: each single role's own role-filtered slice, which is what the text path's sheet
+ *     can show. The role-free slice alone is not enough: at a wide mana value the cheapest spells
+ *     tie at the floor price and break by name, so a removal card inside the 600 cheapest removal
+ *     cards can sit outside the 600 cheapest spells. A cut's slice filters on the UNION of its roles,
+ *     and a card in the cheapest 600 of a union is in the cheapest 600 of each of its roles alone
+ *     (fewer cards match one role), so the single-role slices cover every cut's.
+ *
+ * The commander's list, the player's own copies and the universal staples come with every slice.
+ * The deck's own spells and its commanders are added, since a cut card is one side of every
+ * comparison. A land cut is compared by text only (no label is read for one), so neither the land
+ * pool nor the deck's lands are part of it. Nor is the label slice: it reads `card_labels`, so before a trial it is empty,
+ * and after one it holds only cards this set already gave a label.
+ *
+ * Null when the deck does not exist.
+ */
+export async function labelTrialPool(deckId: string): Promise<string[] | null> {
+  const deckRows = await db.execute<{ commander: string; partner: string | null; user_id: string }>(sql`
+    select commander_oracle_id as commander, partner_oracle_id as partner, user_id from decks where id = ${deckId}
+  `);
+  const deck = deckRows.rows[0];
+  if (!deck) return null;
+  const commanderIds = deck.partner ? [deck.commander, deck.partner] : [deck.commander];
+  const [cmdrRows, draftRows, staples] = await Promise.all([
+    db.execute<{ color_identity: string[] }>(sql`
+      select color_identity from cards where oracle_id = any(${sql.param(commanderIds)}::uuid[])
+    `),
+    db.execute<{ oracle_id: string; cmc: number; spell: boolean }>(sql`
+      select dc.oracle_id, c.cmc, c.type_line !~* '^[^/]*\\mland\\M' as spell
+      from deck_cards dc join cards c on c.oracle_id = dc.oracle_id where dc.deck_id = ${deckId}
+    `),
+    loadUniversalStaples(),
+  ]);
+  const identity = sql.param([...new Set(cmdrRows.rows.flatMap((r) => r.color_identity))]);
+  const deckIds = draftRows.rows.map((r) => r.oracle_id);
+  const draft = sql.param([...new Set([...deckIds, ...commanderIds])]);
+  // The deck's SPELLS join the set; its lands do not, since no comparison reads a land's label.
+  const deckSpells = draftRows.rows.filter((r) => r.spell).map((r) => r.oracle_id);
+  const mvs = [...new Set(draftRows.rows.filter((r) => r.spell).map((r) => Number(r.cmc)))];
+  const roleSets: (SpellRole[] | "any")[] = ["any", ...(Object.keys(ROLE_WORDS) as SpellRole[]).map((r) => [r])];
+  const pools = await Promise.all(mvs.flatMap((mv) => roleSets.map((roles) => db.execute<{ oracle_id: string }>(spellPool({
+    deck, userId: deck.user_id, identity, draft, mv, roles, labels: [],
+    // The cut is excluded from its own pool; every deck card is added below, so any of them serves.
+    cut: deck.commander, staples: sql.param([...staples]),
+  })).then((r) => r.rows.map((x) => x.oracle_id)))));
+  return [...new Set([...pools.flat(), ...deckSpells, ...commanderIds])].sort();
 }

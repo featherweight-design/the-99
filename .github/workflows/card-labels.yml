@@ -30,15 +30,19 @@ on:
   workflow_dispatch:
     inputs:
       cap:
-        description: 'Hard stop in USD for this run (max 55). Blank uses the weekly 9.'
+        description: 'Hard stop in USD for this run (max 65). Blank uses the weekly 9.'
         required: false
         default: ''
       pause:
-        description: 'Pause and report if the projection passes this (max 50). Blank uses the weekly 5.'
+        description: 'Pause and report if the projection passes this (max 65). Blank uses the weekly 5.'
         required: false
         default: ''
       run_id:
         description: 'Backfill run id, e.g. backfill-2026-09-28. Blank uses this ISO week (the cron behaviour).'
+        required: false
+        default: ''
+      scope:
+        description: 'Which cards: all, in-use, or deck:<uuid> (one deck''s stand-ins pool, the labels trial). Blank is all.'
         required: false
         default: ''
 
@@ -88,10 +92,10 @@ jobs:
         # What this step adds is two things `boundedNumber` cannot:
         #
         #   1. THE CEILINGS. `boundedNumber`'s range for both figures is 0 to 100, which is a
-        #      sanity bound rather than Hugh's. His are 55 and 50, and they are two different
-        #      questions: 55 is the hard stop on what a run may spend, 50 is where it stops and
+        #      sanity bound rather than Hugh's. His are 65 and 65 (below), and they are two
+        #      different questions: the hard stop on what a run may spend, and where it stops and
         #      reports instead of continuing. A dispatch may ask for LESS of either and never for
-        #      more. 60 would pass `boundedNumber` and must not pass here.
+        #      more. 70 would pass `boundedNumber` and must not pass here.
         #   2. THE TIMING. `boundedNumber` runs inside the script, so its refusal lands after the
         #      job has installed and connected. Refusing here is free, and reads as a bad input
         #      rather than as a failed run.
@@ -99,9 +103,11 @@ jobs:
         # An in-range typo is the case neither of us would otherwise catch: 5.5 meant as 55 is a
         # legal figure that silently truncates the wave to almost nothing.
         #
-        # The ceilings are Hugh's, and they are two different bounds rather than one: 55 is the
-        # hard stop on what a run may spend, 50 is where it stops and reports instead of
-        # continuing. A dispatch may ask for LESS of either. It may never ask for more.
+        # The ceilings are Hugh's, and they are two different bounds rather than one: the hard
+        # stop on what a run may spend, and where it stops and reports instead of continuing. A
+        # dispatch may ask for LESS of either. It may never ask for more. Both are 65 since Hugh
+        # approved the full backfill at ~$61.1 with the stop raised to ~$65 (2026-10-03): its
+        # projection sits near $61, so a pause ceiling of 50 would refuse the run he approved.
         env:
           # `github.event.inputs` rather than `inputs`, which is what all six sibling workflows in
           # this repository use and is defined on every event rather than only on a dispatch.
@@ -113,6 +119,7 @@ jobs:
           RAW_CAP: ${{ github.event.inputs.cap }}
           RAW_PAUSE: ${{ github.event.inputs.pause }}
           RAW_RUN_ID: ${{ github.event.inputs.run_id }}
+          RAW_SCOPE: ${{ github.event.inputs.scope }}
         run: |
           # An empty input is the CRON PATH, and also a dispatch that left the box alone: both
           # take the weekly figures. `inputs.*` is empty (never absent) on a schedule, so one
@@ -147,17 +154,17 @@ jobs:
           # Both are checked before either failure exits, so a dispatch that got both wrong is
           # told both times rather than once per attempt.
           ok=0
-          check 'cap'   "$cap"   55 || ok=1
-          check 'pause' "$pause" 50 || ok=1
+          check 'cap'   "$cap"   65 || ok=1
+          check 'pause' "$pause" 65 || ok=1
           [ "$ok" -eq 0 ] || exit 1
 
           # THE RUN ID, and why a backfill must name its own rather than take the calendar's.
           #
           # `LABEL_RUN_ID` names the intents a run writes and the BUDGET it spends from. Since the
           # wave-publish change the cap binds a budget FAMILY rather than one id (`budgetFamily`):
-          # every `backfill-YYYY-MM-DD` dispatch shares one budget (Hugh's $55 per prompt version),
+          # every `backfill-YYYY-MM-DD` dispatch shares one budget per prompt version (Hugh's ~$65),
           # and each cron run named for its ISO week keeps its OWN weekly cap. So a backfill
-          # re-dispatched under a later date continues the same $55 instead of starting a fresh one,
+          # re-dispatched under a later date continues the same budget instead of starting a fresh one,
           # the weekly budget stays weekly, and the two kinds of run never spend from each other's.
           #
           # What used to make a run id costly no longer does: each collected batch publishes its own
@@ -188,16 +195,34 @@ jobs:
             run_id="weekly-$(date -u +%G-W%V)"
           fi
 
+          # THE SCOPE (`src/lib/labels/scope.ts`), anchored for the same reason as the run id: the
+          # value is published with `echo >> "$GITHUB_OUTPUT"`. The build parses it again and
+          # refuses anything else, so this is the early, readable refusal rather than the only one.
+          scope="${RAW_SCOPE:-all}"
+          if ! [[ "$scope" =~ ^(all|in-use|deck:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$ ]]; then
+            echo "::error::scope must be all, in-use or deck:<uuid>, got '$scope'"
+            exit 1
+          fi
+          # A DECK TRIAL NEEDS ITS OWN BACKFILL ID. Under the weekly id, a timed-out trial would be
+          # resumed by the next scheduled run, which passes no scope and so labels every card, on
+          # the weekly budget, under the trial's intents.
+          if [[ "$scope" == deck:* && "$run_id" != backfill-* ]]; then
+            echo "::error::a deck scope needs a backfill-YYYY-MM-DD run_id, got '$run_id'"
+            exit 1
+          fi
+
           echo "cap=$cap"     >> "$GITHUB_OUTPUT"
           echo "pause=$pause" >> "$GITHUB_OUTPUT"
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "scope=$scope" >> "$GITHUB_OUTPUT"
           {
             echo "### Spend bounds"
             echo ""
             echo "| | value | ceiling |"
             echo "|---|---|---|"
-            echo "| hard stop | \$$cap | \$55 |"
-            echo "| pause and report | \$$pause | \$50 |"
+            echo "| hard stop | \$$cap | \$65 |"
+            echo "| pause and report | \$$pause | \$65 |"
+            echo "| scope | $scope | |"
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
           if awk -v p="$pause" -v c="$cap" 'BEGIN{exit !(p>c)}'; then
@@ -218,7 +243,7 @@ jobs:
           # `secrets.DATABASE_URL` is empty there and `requireEnv` would refuse.
           DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          # A PER-RUN CAP sized to a release week, not to the backfill's $55.
+          # A PER-RUN CAP sized to a release week, not to the backfill's ~$65.
           #
           # Measured over recent sets on the real catalog: a single set brings 65-616
           # Commander-legal cards (median 193), and a release WEEK can bring several — 2026-06-26
@@ -253,6 +278,7 @@ jobs:
           RESOLVED_RUN_ID: ${{ steps.bounds.outputs.run_id }}
           LABEL_CAP_USD: ${{ steps.bounds.outputs.cap }}
           LABEL_REPORT_AT_USD: ${{ steps.bounds.outputs.pause }}
+          LABEL_SCOPE: ${{ steps.bounds.outputs.scope }}
         run: |
           # A STABLE RUN ID, and a LOOP that branches on the script's EXIT CODE.
           #
@@ -274,7 +300,7 @@ jobs:
           #   75   more work: a wave went out, or batches are still processing — call again
           #    *   stop and look: refused, paused, or nothing labelable
           # REFUSE AN EMPTY BOUND rather than inheriting a default. `boundedNumber` returns its
-          # FALLBACK for an absent or empty variable, and those fallbacks are 55 and 50 — the
+          # FALLBACK for an absent or empty variable, and those fallbacks are 65 and 65 — the
           # backfill's ceilings, not this job's 9 and 5. (Not the widest it would allow, which is
           # 100; the point is that they are the wrong figures for a cron, not extreme ones.) So if
           # the bounds step is ever reordered after this one, renamed or dropped, these expressions
@@ -328,8 +354,10 @@ jobs:
             if [[ "$LABEL_RUN_ID" == backfill-* ]]; then
               echo ""
               echo "This run was dispatched with a named run id. To continue it, dispatch again"
-              echo "and enter run_id=$LABEL_RUN_ID. Leaving the box blank starts a DIFFERENT run"
-              echo "under this ISO week, which would spend the rest from the weekly budget."
+              echo "and enter run_id=$LABEL_RUN_ID and scope=$LABEL_SCOPE. Leaving run_id blank starts"
+              echo "a DIFFERENT run under this ISO week, which would spend the rest from the weekly"
+              echo "budget; leaving scope blank means every card, which would turn a deck trial into"
+              echo "the full backfill under the trial's run id."
             elif [ "$CRON_ENABLED" = "true" ]; then
               echo "The schedule is ON and this run uses the weekly id, so tomorrow's run resumes it."
             else
