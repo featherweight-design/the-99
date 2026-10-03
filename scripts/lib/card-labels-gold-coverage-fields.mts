@@ -643,20 +643,20 @@ export const COVERAGE_FIELDS: GoldRow[] = [
   {
     name: "Eladamri, Lord of Leaves", klass: "tribal",
     jobs: [
-      j("theme", "evasion", { rt: "Elf", af: "self" }),
-      j("theme", "protection", { rt: "Elf", af: "self" }),
-      j("theme", "tribal", { rt: "Elf", af: "self" }),
+      j("theme", "evasion", { rt: "Elf", af: "each" }),
+      j("theme", "protection", { rt: "Elf", af: "each" }),
+      j("theme", "tribal", { rt: "Elf", af: "each" }),
     ],
-    why: "Other Elves have forestwalk (evasion) and shroud (protection). Both abilities earn tribal Elf, written ONCE: re-sample 2 wrote it twice.",
+    why: "Other Elves, ANYONE'S, have forestwalk (evasion) and shroud (protection): affects each, as Lord of Atlantis. Both abilities earn tribal Elf, written ONCE: re-sample 2 wrote it twice.",
   },
   {
     name: "Exploration Broodship", klass: "toNull",
     jobs: [
-      j("role", "ramp", { rk: "extraLandDrop", af: "self" }),
-      j("theme", "evasion", { rt: "creature", af: "self" }),
+      j("role", "ramp", { rk: "extraLandDrop", af: "self", th: { stat: "counters", op: ">=", value: 3 } }),
+      j("theme", "evasion", { rt: "creature", af: "self", th: { stat: "counters", op: ">=", value: 8 } }),
       j("theme", "recursion", { rt: "permanent", af: "self", dest: null }),
     ],
-    why: "At 3+ an extra land each turn; at 8+ its own flying. It CASTS a permanent spell from your graveyard once a turn, so recursion with `to` null: a card cast moves to no zone. Re-sample 2 wrote `to` battlefield.",
+    why: "At 3+ charge counters an extra land each turn, at 8+ its own flying: each gated by a counter threshold. It CASTS a permanent spell from your graveyard once a turn, so recursion with `to` null: a card cast moves to no zone. Re-sample 2 wrote `to` battlefield.",
   },
   {
     name: "Benalish Sleeper", klass: "affectsEach",

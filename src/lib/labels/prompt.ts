@@ -138,9 +138,9 @@ THEMES (space "theme"): ${THEMES.join(", ")}
                   trigger "dies".
   lifegain      — gains you life.
   drain         — damage or life loss aimed ONLY at opponents. Damage to "any
-                  target" is NEVER drain, though it can hit a player: a burn
-                  spell, a creature flung, a sacrifice outlet that pings. Life
-                  loss for EVERY player, you included, is not drain either.
+                  target" is NEVER drain, whatever deals it, though it can hit
+                  a player. Life loss for EVERY player, you included, is not
+                  drain either.
   spellslinger  — rewards casting instants and sorceries, or noncreature
                   spells. "Whenever you cast a spell" alone is not spellslinger.
   landfall      — does something when a land enters under your control. Label
@@ -224,7 +224,9 @@ EVERY JOB CARRIES:
                            on your own creatures, cards you draw, your library.
                opponents = an opponent's. EVERY removal job is opponents, even
                            where the rules would let you target your own
-                           permanent: "destroy target creature" is opponents.
+                           permanent: "destroy target creature" is opponents,
+                           unless it removes from EVERY player alike ("each
+                           player sacrifices a creature"), which is each.
                each      = every player, you included: "destroy all
                            creatures", "each player draws a card".
                null      = ONLY when the job points at no player at all,
@@ -235,8 +237,9 @@ EVERY JOB CARRIES:
                combat damage, a tax on every player's spells, every player
                gaining control of something, a buff to every creature of a
                type, ANYONE's ("every Bird gets +1/+1"; "Birds you
-               control" is self), a trigger on ANY creature dying (not only
-               yours).
+               control" is self), and the deathTrigger job itself when ANY
+               creature dying triggers it, not only yours. The job that
+               trigger does keeps its own answer: a drain stays opponents.
                  self      = clones (the copy is yours), pump, protection,
                              recursion (even from any graveyard), a land.
                  each      = fog, which prevents combat damage to everyone.
