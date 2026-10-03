@@ -21,14 +21,12 @@ export function useSpentSlotUndo(deckId: string, card: DeckDetailCard) {
   const announceUndo = useAnnounceUndo();
   const shell = useUndoSpentSlot();
 
-  const error = shell
-    ? shell.failure?.oracleId === card.oracleId ? shell.failure.message : null
-    : ownError;
+  const error = shell ? shell.failure[card.oracleId] ?? null : ownError;
 
   function undo() {
     // From the click: an announcement made inside the transition waits for the server.
     announceUndo(card);
-    const removal = shell?.removal ?? 0;
+    const removal = shell?.removal[card.oracleId] ?? 0;
     if (!shell) {
       run(() => addCardToDeck(deckId, card.oracleId, { relock: true }));
       return;

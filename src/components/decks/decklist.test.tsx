@@ -89,7 +89,8 @@ function renderDecklist(
     shoppingFigures?: Record<string, number> | null;
     filled?: boolean;
     fetchCard?: (oracleId: string) => Promise<unknown>;
-    spentSlot?: DeckDetailCard | null;
+    /** Every card drawn as a receipt — H29 lets several stand at once. */
+    spentSlots?: DeckDetailCard[];
     filter?: "all" | "shopping";
     grouping?: "type" | "role";
     newestAsOf?: Date | null;
@@ -147,7 +148,7 @@ function renderDecklist(
           built={cards.reduce((s, c) => s + c.quantity, 0)}
           bodySize={99}
           filled={opts.filled ?? false}
-          spentSlot={opts.spentSlot ?? null}
+          spentSlots={opts.spentSlots ?? []}
           filter={opts.filter ?? "shopping"}
           grouping={opts.grouping ?? "role"}
           onFilterChange={vi.fn()}
@@ -251,24 +252,25 @@ describe("the Shopping list reads dearest first", () => {
   // The rows the feed has nothing for. A sold-out row keeps a stale figure and
   // a never-stocked row has none at all; neither is cheap, and both sort last.
   // The spent slot draws the undo receipt rather than a row, and the receipt has
-  // no buy tag on it — so a dear card whose slot has just been spent shows no
-  // figure while still carrying one. Ranked on its price it would sit at the top
-  // of the group with nothing on it.
-  it("ranks a spent slot as the figure-less row it draws", () => {
+  // no buy tag on it — but H29's "no row shifts" ranks it at its OWN price, not
+  // as the figure-less row it draws: removing the dearest card must not move
+  // every row below it, which ranking the receipt last would do.
+  it("ranks a spent slot at its own price, so no row below it shifts", () => {
     const spent = buyable("crypt", "Mana Crypt", priced(18999), { role: "ramp" });
     renderDecklist([
       buyable("signet", "Arcane Signet", priced(85), { role: "ramp" }),
       buyable("sol", "Sol Ring", priced(3410), { role: "ramp" }),
-    ], { spentSlot: spent, newestAsOf: NEWEST });
+    ], { spentSlots: [spent], newestAsOf: NEWEST });
 
-    // Dearest first among the rows that draw a figure, and the receipt after
-    // the 85c row it would otherwise outrank by a hundredfold.
+    // Dearest first — the receipt leads, exactly where Mana Crypt's own row
+    // would have sorted, and the two live rows keep the order they had before
+    // it was removed.
     const seen = [...document.querySelectorAll("*")]
       .filter((el) => el.children.length === 0)
       .map((el) => el.textContent?.trim() ?? "");
     const at = (needle: string) => seen.findIndex((t) => t.includes(needle));
+    expect(at("Mana Crypt")).toBeLessThan(at("Sol Ring"));
     expect(at("Sol Ring")).toBeLessThan(at("Arcane Signet"));
-    expect(at("Arcane Signet")).toBeLessThan(at("Mana Crypt"));
   });
 
   it("puts the rows with no live figure at the end of their group", () => {
@@ -785,10 +787,10 @@ describe("A deck with nothing contested renders today's Shopping list", () => {
 
 describe("Removing a card from Shopping leaves its undo row in place", () => {
   it("keeps a spoken-for row mounted after its slot is spent", () => {
-    // A spoken-for card is owned, so the pre-amendment `!spentSlot.owned` test
+    // A spoken-for card is owned, so the pre-amendment `!card.owned` test
     // would have dropped it from the list outright and taken the only undo
     // affordance with it. #185 exists to stop exactly that.
-    renderDecklist([rampUnowned, drawSpokenFor], { spentSlot: rampSpokenFor });
+    renderDecklist([rampUnowned, drawSpokenFor], { spentSlots: [rampSpokenFor] });
 
     expect(
       screen.getByText(addPanelCopy.undo.removed(rampSpokenFor.name)),
@@ -797,7 +799,7 @@ describe("Removing a card from Shopping leaves its undo row in place", () => {
 
   it("counts the deck as it now stands, not as the undo row makes it look", () => {
     renderDecklist([rampOwned, rampUnowned, drawSpokenFor], {
-      spentSlot: rampSpokenFor,
+      spentSlots: [rampSpokenFor],
     });
 
     // One unowned card and one spoken-for card remain on the list. The spent row
@@ -816,7 +818,7 @@ describe("Removing a card from Shopping leaves its undo row in place", () => {
   });
 
   it("holds the list open when the spent card was the last thing to buy", () => {
-    renderDecklist([], { spentSlot: rampUnowned, filled: true });
+    renderDecklist([], { spentSlots: [rampUnowned], filled: true });
 
     expect(
       screen.getByText(addPanelCopy.undo.removed(rampUnowned.name)),
@@ -960,7 +962,7 @@ describe("the pending-change notes follow the mark, which both views now draw", 
   it("leaves a spent slot's change out of both figures", () => {
     renderDecklist([drawOwned], {
       filter: "all",
-      spentSlot: rampOwned,
+      spentSlots: [rampOwned],
       pendingChanges: new Map([
         [drawOwned.oracleId, { from: 0, to: 1 }],
         [rampOwned.oracleId, { from: 1, to: 0 }],

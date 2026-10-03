@@ -172,7 +172,7 @@ export function DeckCardTile({
         try {
           await removeCardFromDeck(deckId, card.oracleId);
         } catch (cause) {
-          if (shellReportsFailure) reportRemoveFailure(card.name);
+          if (shellReportsFailure) reportRemoveFailure(card.oracleId, card.name);
           throw cause;
         }
       },

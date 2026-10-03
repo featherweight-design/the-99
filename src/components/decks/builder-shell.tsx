@@ -110,6 +110,16 @@ function scrollToUnresolved() {
   document.getElementById("unresolved-group")?.scrollIntoView({ block: "start" });
 }
 
+/** Immutable omit of one key, for the per-card receipt maps (H29): returns the
+ *  same object when the key is already absent, so a `setState` call built on
+ *  this never schedules a render that changes nothing. */
+function dropKey<T>(map: Record<string, T>, key: string): Record<string, T> {
+  if (!(key in map)) return map;
+  const next = { ...map };
+  delete next[key];
+  return next;
+}
+
 interface BuilderShellProps {
   /** What this deck is compared to, resolved once per request by the route. A PROP rather than
    *  an import: the targets are per-commander now, and a component reaching for a module
@@ -746,18 +756,22 @@ export function BuilderShell({
     };
   }, [deck.cards, deck.built, deck.ownedCount, bodySize]);
 
-  // The spent slot the undo row is drawn from. Decklist state rather than row
-  // state, because the removal unmounts the row: held here it survives a tab
-  // switch to Consider and back, and any re-sort. Cleared by exactly three
-  // things — Undo accepted, the next removal, or leaving the builder route
-  // (this component unmounting). Never by a timer.
-  const [spentSlot, setSpentSlot] = useState<DeckDetailCard | null>(null);
-  // Whether the server has shown the slot's card GONE since the slot was set: its removal landed.
-  // Only then can the card coming back mean an undo succeeded rather than a list from before it.
-  const [slotLanded, setSlotLanded] = useState(false);
+  // The spent slots the undo rows are drawn from, one receipt per removed card
+  // (H29). Decklist state rather than row state, because a removal unmounts
+  // its row: held here it survives a tab switch to Consider and back, and any
+  // re-sort. Keyed on oracle id so several stand independently — undoing one
+  // never touches another. Each receipt is cleared by exactly three things —
+  // its own Undo accepted, its own card removed again, or leaving the builder
+  // route (this component unmounting) or discarding the draft, either of which
+  // clears every receipt at once. Never by a timer.
+  //
+  // `landed` is whether the server has shown that receipt's card GONE since the
+  // slot was set: its removal landed. Only then can the card coming back mean
+  // an undo succeeded rather than a list from before it.
+  const [spentSlots, setSpentSlots] = useState<Record<string, { card: DeckDetailCard; landed: boolean }>>({});
 
   // The swept rows from a clearAutoCards action. Null means no sweep has run
-  // (or it has been undone/navigated away). Lives beside spentSlot: it is decklist
+  // (or it has been undone/navigated away). Lives beside spentSlots: it is decklist
   // state, and its lifetime is the current route per PR #204. Never a timer.
   const [sweptRows, setSweptRows] = useState<SweptRow[] | null>(null);
   // The sweep's optimistic removal has to be dispatched inside a transition or
@@ -778,7 +792,13 @@ export function BuilderShell({
   // empties the list, and the empty state would take the sweep receipt — the
   // only route back — down with it.
   const isEmpty =
-    built === 0 && unresolvedRows.length === 0 && !spentSlot && !sweptRows?.length;
+    built === 0 &&
+    unresolvedRows.length === 0 &&
+    Object.keys(spentSlots).length === 0 &&
+    !sweptRows?.length;
+  // The cards the decklist draws receipts for — every standing one, in no
+  // particular order: the decklist sorts each into its own card's place.
+  const spentSlotCards = Object.values(spentSlots).map((r) => r.card);
   const commanderShortName = shortCommanderName(deck.commander.name);
 
   // An add changes three numbers at once — the tile's button, the tab count and
@@ -835,21 +855,47 @@ export function BuilderShell({
   // for. So the row calls `markSpent` straight from the click, outside `run`,
   // and leaves only the optimistic dispatch inside it.
   // A refused Undo's message, held here because the receipt that asked has unmounted: see
-  // `reportUndoFailure` below.
-  const [undoFailure, setUndoFailure] = useState<{ oracleId: string; message: string } | null>(null);
-  // Which removal an Undo belongs to. The ref is what a late report is checked against (the state
-  // it arrives through may be a render behind); the state is what the receipt hands the undo.
-  const removalRef = useRef(0);
-  const [removal, setRemoval] = useState(0);
+  // `reportUndoFailure` below. Keyed on oracle id (H29) — a map rather than one value, since
+  // several receipts stand at once and a refusal for one must never mark another.
+  const [undoFailure, setUndoFailure] = useState<Record<string, string>>({});
+  // Which removal an Undo belongs to, per card. The ref is what a late report is checked
+  // against (the state it arrives through may be a render behind); the state is what each
+  // receipt hands its own undo. A single counter feeds both maps, so two cards' generations
+  // never collide, but each card's own history is what a report is compared against.
+  const removalCounterRef = useRef(0);
+  const removalRef = useRef<Record<string, number>>({});
+  const [removal, setRemoval] = useState<Record<string, number>>({});
+  // A failed removal outlives the row that asked for it, so its reason is held
+  // here, keyed on oracle id (H29). Cleared only when that card's own state
+  // moves — see `markSpent`, which drops this card's own entry on the next
+  // removal of the same card — never by any server card update: with several
+  // removals in flight, card B landing must not erase card A's refusal.
+  //
+  // Declared ahead of `markSpent` because its setter is read there.
+  const [removeFailure, setRemoveFailure] = useState<Record<string, string>>({});
   const markSpent = useCallback(
     (card: DeckDetailCard) => {
-      // One undo row at a time: this removal settles whatever the last one left,
-      // including a refused undo's message.
-      setSpentSlot(card.quantity <= 1 ? card : null);
-      setSlotLanded(false);
-      setUndoFailure(null);
-      removalRef.current += 1;
-      setRemoval(removalRef.current);
+      removalCounterRef.current += 1;
+      const generation = removalCounterRef.current;
+      removalRef.current = { ...removalRef.current, [card.oracleId]: generation };
+      setRemoval((prev) => ({ ...prev, [card.oracleId]: generation }));
+      // This removal settles whatever this SAME card's last removal left,
+      // including a refused undo's message — but leaves every other card's
+      // receipt and refusal exactly as they were.
+      setUndoFailure((prev) => dropKey(prev, card.oracleId));
+      // "that card's own state moves" (H29 §2): a new removal attempt on this
+      // card is what retires a stale removal refusal, never another card
+      // landing or any other server update.
+      setRemoveFailure((prev) => dropKey(prev, card.oracleId));
+      setSpentSlots((prev) => {
+        if (card.quantity > 1) {
+          // A stack that decrements keeps its row, and its own count is the
+          // receipt — no undo row for this card.
+          if (!(card.oracleId in prev)) return prev;
+          return dropKey(prev, card.oracleId);
+        }
+        return { ...prev, [card.oracleId]: { card, landed: false } };
+      });
       // A removal is announced only when it leaves an undo row behind. A stack
       // that decrements keeps its row, and its own count is the receipt.
       if (card.quantity > 1) return;
@@ -885,43 +931,82 @@ export function BuilderShell({
     },
     [cards, bodySize],
   );
-  // A failed removal outlives the row that asked for it, so its reason is held
-  // here. Cleared when the server answers again: any successful edit replaces
-  // deck.cards, which settles the question the refusal was answering.
-  const [removeFailure, setRemoveFailure] = useState<string | null>(null);
   const [lastServerCards, setLastServerCards] = useState(deck.cards);
   if (lastServerCards !== deck.cards) {
     setLastServerCards(deck.cards);
-    setRemoveFailure(null);
-    // The slot settles on the card being genuinely back in the deck, not on the
-    // undo's promise resolving. Settling on success would drop the receipt
-    // before the new HTML landed, flashing the pre-undo list back for a frame
-    // once the optimistic re-add let go. A refusal needs the slot standing too:
-    // the reverted prediction draws the receipt again, and it reads the message
-    // from `undoFailure`. A revalidation that still lacks the card — the removal
-    // itself — leaves the slot standing. So does a list that holds the card before this slot's own
-    // removal has landed: an undo overtaken by a newer removal answers with the card present, and
-    // settling on that would take the newer receipt away.
-    if (spentSlot) {
-      const back = deck.cards.some((c) => c.oracleId === spentSlot.oracleId);
-      if (!back) setSlotLanded(true);
-      else if (slotLanded) setSpentSlot(null);
+    // Settling runs per receipt, so one undo landing does not take the others
+    // away. The slot settles on the card being genuinely back in the deck, not
+    // on the undo's promise resolving. Settling on success would drop the
+    // receipt before the new HTML landed, flashing the pre-undo list back for a
+    // frame once the optimistic re-add let go. A refusal needs the slot
+    // standing too: the reverted prediction draws the receipt again, and it
+    // reads the message from `undoFailure`. A revalidation that still lacks the
+    // card — the removal itself — leaves the slot standing. So does a list that
+    // holds the card before this slot's own removal has landed: an undo
+    // overtaken by a newer removal answers with the card present, and settling
+    // on that would take the newer receipt away.
+    if (Object.keys(spentSlots).length > 0) {
+      setSpentSlots((prev) => {
+        let changed = false;
+        const next: typeof prev = {};
+        for (const [oracleId, receipt] of Object.entries(prev)) {
+          const back = deck.cards.some((c) => c.oracleId === oracleId);
+          if (!back) {
+            if (receipt.landed) {
+              next[oracleId] = receipt;
+            } else {
+              next[oracleId] = { ...receipt, landed: true };
+              changed = true;
+            }
+          } else if (receipt.landed) {
+            changed = true; // settled: drop the receipt
+          } else {
+            next[oracleId] = receipt; // overtaken; still standing
+          }
+        }
+        return changed ? next : prev;
+      });
     }
   }
-  // A refused Undo outlives the receipt that asked, which the optimistic re-add unmounted. Keyed on
-  // the card, and cleared by the next removal rather than by the next server list: a refusal can
-  // arrive in the same render as a revalidation, and clearing on that would erase it unread.
+  // A refused Undo outlives the receipt that asked, which the optimistic re-add unmounted. Keyed
+  // on the card's oracle id, and dropped only when THAT card has been removed again since its
+  // undo was pressed — its own generation moved — never by any other card's removal or by the
+  // next server list: a refusal can arrive in the same render as a revalidation, and clearing on
+  // that would erase it unread.
   const reportUndoFailure = useCallback((oracleId: string, message: string, from: number) => {
-    // An undo pressed before a newer removal answers for a receipt that no longer exists.
-    if (from !== removalRef.current) return;
-    setUndoFailure({ oracleId, message });
+    // An undo pressed before a newer removal of THIS card answers for a receipt
+    // that no longer exists. Another card's removal never bumps this entry.
+    if (from !== (removalRef.current[oracleId] ?? 0)) return;
+    setUndoFailure((prev) => ({ ...prev, [oracleId]: message }));
   }, []);
-  const reportRemoveFailure = useCallback((cardName: string) => {
-    setRemoveFailure(`${cardName}: ${DECK_REMOVE_FALLBACK_MESSAGE}`);
-    // The card never left, so there is nothing to undo. Leaving the slot would
-    // offer to put back a card the deck still holds.
-    setSpentSlot(null);
+  const reportRemoveFailure = useCallback((oracleId: string, cardName: string) => {
+    setRemoveFailure((prev) => ({ ...prev, [oracleId]: `${cardName}: ${DECK_REMOVE_FALLBACK_MESSAGE}` }));
+    // The card never left, so there is nothing to undo. Leaving its own slot
+    // would offer to put back a card the deck still holds — every other
+    // receipt stands.
+    setSpentSlots((prev) => dropKey(prev, oracleId));
   }, []);
+  // A discard throws the whole draft away (§3): the receipts describe removals
+  // the draft made, and a discard ends the draft without unmounting this
+  // component, so nothing else would ever clear them. `hasChanges` flips from
+  // true to false exactly once a discard lands — a commit never does this in
+  // place, since the review screen it routes through navigates away first.
+  const draftHasChanges = draft ? hasChanges(draft) : false;
+  const [lastDraftHasChanges, setLastDraftHasChanges] = useState(draftHasChanges);
+  if (draftHasChanges !== lastDraftHasChanges) {
+    setLastDraftHasChanges(draftHasChanges);
+    if (lastDraftHasChanges && !draftHasChanges) {
+      setSpentSlots({});
+      setUndoFailure({});
+      setRemoveFailure({});
+      // `removalRef` is a read cache for `reportUndoFailure`'s synchronous
+      // check; a ref must never be written during render. Leaving a stale
+      // generation behind is harmless — nothing reads it without a matching
+      // `spentSlots` entry, and the next removal of that same card overwrites
+      // it exactly as any other removal does.
+      setRemoval({});
+    }
+  }
 
   // The auto count and kept count, computed from the optimistic card list.
   // `autoCount` is how many untouched auto cards remain (these will be swept).
@@ -1152,9 +1237,13 @@ export function BuilderShell({
           </span>
 
           <div className="flex-1 flex flex-col min-w-0">
-            {removeFailure && (
-              <div className="px-[14px] md:px-[20px] pt-[10px]">
-                <MutationError message={removeFailure} />
+            {Object.keys(removeFailure).length > 0 && (
+              <div className="px-[14px] md:px-[20px] pt-[10px] flex flex-col gap-[6px]">
+                {/* One failed removal, one message — several can stand at once
+                    (H29), each naming its own card. */}
+                {Object.entries(removeFailure).map(([oracleId, message]) => (
+                  <MutationError key={oracleId} message={message} />
+                ))}
               </div>
             )}
 
@@ -1696,7 +1785,7 @@ export function BuilderShell({
                 deckOracleIds={deckOracleIds}
                 built={built}
                 bodySize={bodySize}
-                spentSlot={spentSlot}
+                spentSlots={spentSlotCards}
                 filled={deck.filled}
                 filter={filter}
                 grouping={grouping}
