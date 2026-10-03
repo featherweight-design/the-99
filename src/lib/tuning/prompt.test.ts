@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { deckTuningCopy } from "../copy/deck-tuning";
 import type { DeckGame } from "../decks/games";
+import { PLAYER_TEXT_SYSTEM_RULE } from "../model/player-text";
 import { buildPlayGroup } from "../profile/play";
 import type { EvidencePack } from "./evidence";
 import { buildPrompt } from "./prompt";
@@ -135,10 +136,35 @@ describe("the prompt Hugh rated (eval round 4, 2026-09-24)", () => {
   // One of round 4's eight decks as the harness sent it: the pack with the overview and universal
   // staples its `strategy-terse-b` variant added, and the two messages that went to the model. All
   // eight were checked by hand when v2 was built; this one keeps the check running.
+  //
+  // THE FIXTURE FILE ITSELF IS IMMUTABLE — it is the historical record of what the rated run
+  // actually sent, and `tuning-v2-round4.json`'s own header still says so. The player-text
+  // boundary (2026-10-03) changed two lines of `buildPrompt`'s SYSTEM text since that run, so a
+  // byte-for-byte compare against the untouched fixture would now fail — not because the rated
+  // payload moved, but because the code correctly moved past it. The known, documented delta is
+  // applied HERE, to the fixture's text, rather than baked into the fixture file: a round-6
+  // review finding caught an earlier version of this test doing the opposite (editing the
+  // "immutable" fixture to match the new code), which quietly made it claim a provenance it no
+  // longer had.
   const fixture = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../../scripts/fixtures/tuning-v2-round4.json"), "utf8")) as { pack: EvidencePack; system: string; user: string };
 
-  it("reproduces round 4's system and user messages byte for byte", () => {
-    expect(buildPrompt(fixture.pack)).toEqual({ system: fixture.system, user: fixture.user });
+  // The rated run's own literal text for the rule the player-text boundary reworded.
+  const RATED_QUOTED_NOTE_RULE = "A quoted note must be byte-identical to what the player typed, in quotation marks, with its date.";
+
+  const expectedSystem = fixture.system
+    .replace(
+      "You suggest changes to a Magic: The Gathering Commander deck, for the player who built it.\n",
+      `You suggest changes to a Magic: The Gathering Commander deck, for the player who built it.\n${PLAYER_TEXT_SYSTEM_RULE}\n`,
+    )
+    .replace(RATED_QUOTED_NOTE_RULE, deckTuningCopy.suggestionRules.quotedNote);
+
+  it("reproduces round 4's system and user messages byte for byte, plus the known player-text delta since", () => {
+    expect(buildPrompt(fixture.pack)).toEqual({ system: expectedSystem, user: fixture.user });
+  });
+
+  it("the fixture file itself is untouched since the rated run", () => {
+    expect(fixture.system).toContain(RATED_QUOTED_NOTE_RULE);
+    expect(fixture.system).not.toContain(PLAYER_TEXT_SYSTEM_RULE);
   });
 });
 
