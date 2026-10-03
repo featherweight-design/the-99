@@ -11,6 +11,14 @@ only, and are given for contrast reasoning, never to be hardcoded.
 R4 changes **where the deck-level buy action lives**, not what the link looks like. The `ExternalLink`
 primitive ships unchanged from R3, so its rows below are reference for the verify pass, not work.
 
+**Addendum, Hugh's ruling (#1222 follow-up, no Design round):** the Strip container's desktop
+column below is superseded. The total sat at the far top-right under `row-reverse` +
+`space-between`, easily missed, with the provenance line and the buy link on the left. Desktop
+now reuses the mobile column exactly — no `flex-direction`, `align-items` or `justify-content`
+override, and no separate padding. The table's Desktop column is corrected in place rather than
+struck through, since nothing here needs a second "as shipped" row: mobile and desktop are now
+the same value on every line.
+
 ---
 
 ## Component: PriceStrip
@@ -20,18 +28,18 @@ primitive ships unchanged from R3, so its rows below are reference for the verif
 | Property | Mobile | Desktop |
 |---|---|---|
 | display | flex | flex |
-| flex-direction | column | row-reverse |
-| align-items | stretch | baseline |
-| justify-content | flex-start | space-between |
-| gap | 5px | 14px |
+| flex-direction | column | column |
+| align-items | stretch | stretch |
+| justify-content | flex-start | flex-start |
+| gap | 5px | 5px |
 | background | `var(--surface-sunken)` | `var(--surface-sunken)` |
 | border-width | 1px | 1px |
 | border-style | solid | solid |
 | border-color | `var(--border)` | `var(--border)` |
 | border-radius | 9px | 9px |
-| padding-top | 10px | 11px |
+| padding-top | 10px | 10px |
 | padding-right | 13px | 15px |
-| padding-bottom | **0** | 11px |
+| padding-bottom | **0** | **0** |
 | padding-left | 13px | 15px |
 | margin-top | 10px | 10px |
 | margin (other sides) | — | — |
