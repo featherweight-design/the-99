@@ -369,8 +369,9 @@ async function run() {
         return built;
       },
     };
-    await readStoredReading(deck.id, USER, editFirst);
+    const answeredStale = await readStoredReading(deck.id, USER, editFirst);
     check("an edit landing mid-rebuild leaves the reading dirty", (await storedRow(deck.id))?.dirty, true);
+    check("and the rebuild's own answer says stale, as the row does", answeredStale?.fresh, false);
     await computeAndStoreProfile(deck.id, USER, deps);
 
     // A ROW A NEWER DEPLOYMENT WROTE (review round 8, REBUILD RULES 1): older code neither reads,

@@ -302,7 +302,8 @@ export async function computeAndStoreProfile(
   //     press stamps a new analysis, and only `clearDirty`, under the edit stamp, clears dirty.
   //  3. Its write is guarded on rule 1 IN THE WRITE, since a press can land while it computes
   //     (round 4). A guarded write that matches nothing stores nothing, and the rebuild answers
-  //     with the row the store holds, never with its own discarded result (round 5).
+  //     with the row the store holds, never with its own discarded result (round 5); a write
+  //     that lands answers with the freshness it wrote, kept dirt included (round 10).
   // Two entry points take these rules: the quiet rebuild (`readStoredReading`, which hands over
   // `rebuildOf`) and a commit's pin over this list's older-version reading, which differs from
   // the quiet rebuild only in the pin it writes.
@@ -374,6 +375,9 @@ export async function computeAndStoreProfile(
     : await deps.compute(deckId, userId);
   if (!profile) return null;
   let analyzedAt = new Date();
+  // What the row says about freshness once written. A rebuild keeps the row's `dirty` (REBUILD
+  // RULES 2), so an edit landing while it computed is stale in the store and must be in the answer.
+  let writtenDirty = false;
   // THE PIN IS WRITTEN SEPARATELY, after the row, when it names a version that must still be the
   // newest (a commit's, or the version a press found holding the list). That check needs the
   // commit's own lock and a snapshot taken after it, which the row's repeatable-read write
@@ -444,9 +448,10 @@ export async function computeAndStoreProfile(
           // and date back over a reading the player asked for. Matching nothing, it stores nothing.
           ...(kept ? { setWhere: sql`${deckProfiles.profileVersion} < ${PROFILE_VERSION}` } : {}),
         })
-        .returning({ computedAt: deckProfiles.computedAt });
+        .returning({ computedAt: deckProfiles.computedAt, dirty: deckProfiles.dirty });
       if (written) {
         analyzedAt = written.computedAt;
+        writtenDirty = written.dirty;
         stored = true;
       } else if (kept) {
         superseded = true;
@@ -454,6 +459,7 @@ export async function computeAndStoreProfile(
     }, { isolationLevel: "repeatable read" });
     if (stored && pinLater && (await clearDirty(deckId, list, editedAt, versionId, stillNewest))) {
       pinned = versionId ?? null;
+      writtenDirty = false;
     }
   } catch (error) {
     console.warn("deck profile not stored; the next tab open will offer the press again", error);
@@ -466,7 +472,7 @@ export async function computeAndStoreProfile(
   }
   return {
     kind: "ok",
-    reading: { profile, analyzedAt, fresh: true, versionId: pinned, versionNumber: pinned ? versionNumber : null },
+    reading: { profile, analyzedAt, fresh: !writtenDirty, versionId: pinned, versionNumber: pinned ? versionNumber : null },
   };
 }
 
