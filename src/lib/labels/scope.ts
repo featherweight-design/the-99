@@ -25,7 +25,8 @@ import { sql, type SQL } from "drizzle-orm";
 export const LABEL_SCOPES = ["all", "in-use"] as const;
 export type LabelScope = (typeof LABEL_SCOPES)[number] | `deck:${string}`;
 
-const DECK_SCOPE = /^deck:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
+/** Case-insensitive, as the repository's other UUID guards are (`src/lib/uuid.ts`). */
+const DECK_SCOPE = /^deck:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
 
 /** The deck a `deck:<id>` scope names, or null for any other scope. */
 export function scopeDeck(scope: LabelScope): string | null {

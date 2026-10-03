@@ -58,9 +58,9 @@ describe("labelTrialPool (vocabulary plan, Task 6b)", () => {
     expect(pools.map((p) => `${p.roles}@${p.mv}`).sort()).toEqual(want);
   });
 
-  it("is the deduplicated union of every slice, the deck's cards and its commander", async () => {
+  it("is the deduplicated union of every slice, the deck's spells (not its lands) and its commander", async () => {
     const ids = await labelTrialPool(DECK);
     const slices = [2, 4].flatMap((mv) => ["any", ...Object.keys(ROLE_WORDS)].map((roles) => `${roles}@${mv}`));
-    expect(ids).toEqual([...slices, "shared", "deck-spell-2", "deck-spell-4", "deck-land", CMDR].sort());
+    expect(ids).toEqual([...slices, "shared", "deck-spell-2", "deck-spell-4", CMDR].sort());
   });
 });

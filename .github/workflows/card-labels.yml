@@ -199,7 +199,7 @@ jobs:
           # value is published with `echo >> "$GITHUB_OUTPUT"`. The build parses it again and
           # refuses anything else, so this is the early, readable refusal rather than the only one.
           scope="${RAW_SCOPE:-all}"
-          if ! [[ "$scope" =~ ^(all|in-use|deck:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$ ]]; then
+          if ! [[ "$scope" =~ ^(all|in-use|deck:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$ ]]; then
             echo "::error::scope must be all, in-use or deck:<uuid>, got '$scope'"
             exit 1
           fi
@@ -347,8 +347,10 @@ jobs:
             if [[ "$LABEL_RUN_ID" == backfill-* ]]; then
               echo ""
               echo "This run was dispatched with a named run id. To continue it, dispatch again"
-              echo "and enter run_id=$LABEL_RUN_ID. Leaving the box blank starts a DIFFERENT run"
-              echo "under this ISO week, which would spend the rest from the weekly budget."
+              echo "and enter run_id=$LABEL_RUN_ID and scope=$LABEL_SCOPE. Leaving run_id blank starts"
+              echo "a DIFFERENT run under this ISO week, which would spend the rest from the weekly"
+              echo "budget; leaving scope blank means every card, which would turn a deck trial into"
+              echo "the full backfill under the trial's run id."
             elif [ "$CRON_ENABLED" = "true" ]; then
               echo "The schedule is ON and this run uses the weekly id, so tomorrow's run resumes it."
             else

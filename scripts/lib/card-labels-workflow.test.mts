@@ -108,6 +108,13 @@ describe("the card-labels spend bounds", () => {
     expect(resolve("9", "5", "", "in-use").scope).toBe("in-use");
     const deck = "deck:904fdc61-e190-4ba5-8e34-2b18fa0584f2";
     expect(resolve("8", "7", "backfill-2026-10-03", deck).scope).toBe(deck);
+    expect(resolve("8", "7", "backfill-2026-10-03", deck.toUpperCase().replace("DECK:", "deck:")).code).toBe(0);
+  });
+
+  // A resumed trial must name its scope again: a blank one is every card, which would turn a deck
+  // trial into the full backfill under the trial's own run id.
+  it("tells a timed-out backfill to dispatch again with BOTH its run id and its scope", () => {
+    expect(runBlockOf(LABEL_STEP)).toContain("enter run_id=$LABEL_RUN_ID and scope=$LABEL_SCOPE");
   });
 
   it.each([

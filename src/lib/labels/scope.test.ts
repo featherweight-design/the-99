@@ -23,6 +23,8 @@ describe("parseScope", () => {
     expect(scopeDeck("in-use")).toBeNull();
     expect(() => parseScope("deck:gishath")).toThrow(/deck:<uuid>/);
     expect(() => parseScope(`deck:${id}x`)).toThrow(/deck:<uuid>/);
+    // Case-insensitive, as the repository's other UUID guards are.
+    expect(scopeDeck(parseScope(`deck:${id.toUpperCase()}`))).toBe(id.toUpperCase());
   });
 });
 
