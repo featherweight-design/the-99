@@ -1,6 +1,7 @@
 import { axisCopy } from "../copy/game-log";
 import type { GameAxisKey } from "../decks/game-axes";
 import { deckTuningCopy } from "../copy/deck-tuning";
+import { deckDescriptionCopy } from "../copy/deck-description";
 import { playerText, PLAYER_TEXT_SYSTEM_RULE } from "../model/player-text";
 import type { EvidencePack } from "./evidence";
 import { MAX_SUGGESTIONS } from "./limits";
@@ -108,7 +109,7 @@ function renderPack(pack: EvidencePack): string {
 
   lines.push("", pack.intent === null
     ? "What the deck is for: no stated intent."
-    : playerText("What the deck is for, in the player's own words", pack.intent, deckTuningCopy.intent.maxLength));
+    : playerText("What the deck is for, in the player's own words", pack.intent, deckDescriptionCopy.description.maxLength));
 
   lines.push("", "Games:");
   const { summary, games } = pack.play;
