@@ -2827,13 +2827,28 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     ) as HTMLElement;
     expect(hidden).toBeTruthy();
     expect(hidden.className).not.toMatch(/md:hidden/);
-    hidden.focus();
-    scrollTo(2000);
-    expect(isShy(container)).toBe(false);
-    // And once focus leaves, the next read collapses.
-    hidden.blur();
-    scrollTo(2001);
-    expect(isShy(container)).toBe(true);
+    // KEYBOARD focus, which is the only kind that holds the head (H17). jsdom does not say
+    // which kind `.focus()` is, so `:focus-visible` answers as a browser does after a Tab.
+    const matches = Element.prototype.matches;
+    const spy = vi.spyOn(Element.prototype, "matches").mockImplementation(function (
+      this: Element,
+      selector: string,
+    ) {
+      return selector === ":focus-visible"
+        ? this === document.activeElement
+        : matches.call(this, selector);
+    });
+    try {
+      hidden.focus();
+      scrollTo(2000);
+      expect(isShy(container)).toBe(false);
+      // And once focus leaves, the next read collapses.
+      hidden.blur();
+      scrollTo(2001);
+      expect(isShy(container)).toBe(true);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   // H17: a POINTER press leaves focus behind too (the cost strip's toggles take focus on
