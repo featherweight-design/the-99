@@ -9,6 +9,10 @@ const appended: HTMLElement[] = [];
 
 afterEach(() => {
   document.body.style.overflow = "";
+  document.body.style.position = "";
+  document.body.style.top = "";
+  document.body.style.width = "";
+  window.scrollY = 0;
   while (appended.length) appended.pop()?.remove();
 });
 
@@ -128,6 +132,53 @@ describe("useDialogA11y scroll lock", () => {
 
     second.unmount();
     expect(document.body.style.overflow).toBe("scroll");
+  });
+
+  // `overflow: hidden` alone does not hold the page on iOS Safari (it keeps honouring
+  // touch-driven rubber-band scroll on the body regardless), which read on `/collection`,
+  // `/commanders` and `/discover` as the page snapping to the top while a filter sheet was
+  // up, and snapping again on close. Pinning the body to its own current offset — rather
+  // than trusting overflow to hold it — is what stops that.
+  it("pins the body to the scroll offset it held when the lock engaged", () => {
+    window.scrollY = 1500;
+    renderDialog({ lockScroll: true });
+    expect(document.body.style.position).toBe("fixed");
+    expect(document.body.style.top).toBe("-1500px");
+    expect(document.body.style.width).toBe("100%");
+  });
+
+  it("restores position, top, width and the exact scroll offset on unmount", () => {
+    document.body.style.position = "relative";
+    document.body.style.top = "3px";
+    document.body.style.width = "90%";
+    window.scrollY = 712;
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+    const { unmount } = renderDialog({ lockScroll: true });
+    expect(document.body.style.position).toBe("fixed");
+
+    unmount();
+    expect(document.body.style.position).toBe("relative");
+    expect(document.body.style.top).toBe("3px");
+    expect(document.body.style.width).toBe("90%");
+    expect(scrollTo).toHaveBeenCalledWith(0, 712);
+  });
+
+  // Counted exactly as `overflow` is: the offset is captured once, by the first
+  // locker, and restored only once the last one releases — never mid-stack, where
+  // a second dialog's own capture would overwrite the first's with 0.
+  it("captures the offset once, by the first of two dialogs, and restores once, on the last", () => {
+    window.scrollY = 900;
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+    const first = renderDialog({ lockScroll: true });
+    window.scrollY = 50; // the sheet's own effects may move the window meanwhile
+    const second = renderDialog({ lockScroll: true });
+    expect(document.body.style.top).toBe("-900px");
+
+    first.unmount();
+    expect(document.body.style.position).toBe("fixed"); // still held by the second
+
+    second.unmount();
+    expect(scrollTo).toHaveBeenLastCalledWith(0, 900);
   });
 });
 

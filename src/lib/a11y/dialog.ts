@@ -36,6 +36,10 @@ function visibleFocusables(root: HTMLElement): HTMLElement[] {
 // dialog: every hook instance has to see the same count.
 let scrollLocks = 0;
 let overflowBeforeLock = "";
+let positionBeforeLock = "";
+let topBeforeLock = "";
+let widthBeforeLock = "";
+let scrollYBeforeLock = 0;
 
 /**
  * Hold the page still while a surface is up, and let go when the last one closes.
@@ -52,19 +56,45 @@ let overflowBeforeLock = "";
  * a hook that moves focus to the first focusable would break its one rule. They
  * still have to hold the page — an `aria-modal` sheet over a page that scrolls
  * behind it reads as broken — so the lock is the part they share.
+ *
+ * `overflow: hidden` ALONE does not hold the page on iOS Safari: that engine
+ * keeps honouring touch-driven rubber-band scroll on the body regardless, so a
+ * sheet opened partway down the page reads as the page snapping to the top
+ * while the sheet is up, and snapping again on close — reported on `/collection`,
+ * and reachable on `/commanders` and `/discover` too, since all three route
+ * through this one lock. The fix pins the body at its current scroll offset
+ * instead of trusting overflow to hold it: `position: fixed` with `top` set to
+ * the negative of the saved `scrollY`, which keeps the page visually still
+ * because that offset is now the ONLY thing positioning its content, with
+ * `width: 100%` alongside it since a fixed body loses the width it had from
+ * flowing edge to edge and would otherwise narrow to its content. The restore
+ * reverses all four properties and then `scrollTo`s back explicitly, rather
+ * than counting on the browser to remember a position that `position: fixed`
+ * already walked away from.
  */
 export function useScrollLock(locked: boolean) {
   useEffect(() => {
     if (!locked) return;
     if (scrollLocks === 0) {
+      scrollYBeforeLock = window.scrollY;
       overflowBeforeLock = document.body.style.overflow;
+      positionBeforeLock = document.body.style.position;
+      topBeforeLock = document.body.style.top;
+      widthBeforeLock = document.body.style.width;
       document.body.style.overflow = "hidden";
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollYBeforeLock}px`;
+      document.body.style.width = "100%";
     }
     scrollLocks += 1;
     return () => {
       scrollLocks -= 1;
       if (scrollLocks === 0) {
         document.body.style.overflow = overflowBeforeLock;
+        document.body.style.position = positionBeforeLock;
+        document.body.style.top = topBeforeLock;
+        document.body.style.width = widthBeforeLock;
+        window.scrollTo(0, scrollYBeforeLock);
       }
     };
   }, [locked]);
