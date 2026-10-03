@@ -81,6 +81,14 @@ describe("the zoom", () => {
     expect(wash.className).toContain("md:hidden");
     expect(wash.getAttribute("style")).toContain("front.jpg");
     expect(wash.style.filter).toBe("blur(22px)");
+    expect(wash.style.transform).toBe("scale(1.2)");
+    expect(wash.style.opacity).toBe("0.45");
+    // The caption's plate on the phone, where the wash is; reset from `md`, where the scrim is.
+    const caption = within(layer).getByText(/Ravnica Remastered/);
+    for (const cls of ["bg-[color:var(--bg)]", "border-[color:var(--border-strong)]", "rounded-[7px]",
+      "md:bg-transparent", "md:border-0", "md:p-0"]) {
+      expect(caption.className).toContain(cls);
+    }
   });
 
   it("is a region inside the dialog, not a second dialog", () => {
