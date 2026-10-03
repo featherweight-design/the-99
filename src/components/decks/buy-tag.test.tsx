@@ -252,11 +252,13 @@ describe("BuyTag collapsed density", () => {
   // the word and the figure are what the tag is for, and dropping either from
   // the reading order would make the glyph mean nothing to a reader who cannot
   // see it.
-  it("draws a bare $ and speaks the word and the figure in full", () => {
+  it("draws the live figure (not a bare $) and speaks the word and the figure in full", () => {
     render(<BuyTag variant="row" price={PRICED} newestAsOf={NEWEST} density="collapsed" />);
-    expect(screen.getByText("$")).toBeInTheDocument();
+    // A live price always has a figure to show — a bare `$` beside it would read
+    // identically to a sold-out or unpriced card (Copilot round 3, medium).
+    expect(screen.queryByText("$")).toBeNull();
+    expect(screen.getAllByText("$2.10").length).toBeGreaterThan(0);
     expect(screen.getByText(addPanelCopy.unowned.tag)).toBeInTheDocument();
-    expect(screen.getByText("$2.10")).toBeInTheDocument();
   });
 
   it("still speaks the word when there is no price to speak", () => {
@@ -268,6 +270,8 @@ describe("BuyTag collapsed density", () => {
   it("speaks sold out, which is a fact about the shop and never collapses away", () => {
     render(<BuyTag variant="row" price={SOLD_OUT} newestAsOf={NEWEST} density="collapsed" />);
     expect(screen.getByText(priceCopy.tag.soldOut)).toBeInTheDocument();
+    // No LIVE figure exists for this fact, so the glyph keeps standing for the word.
+    expect(screen.getByText("$")).toBeInTheDocument();
   });
 
   it("is the full tag by default", () => {

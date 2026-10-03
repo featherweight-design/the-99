@@ -38,6 +38,7 @@ import { requireEnv } from "./lib/env.mjs";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
 import { onPage } from "./lib/surface.mjs";
+import { clearAboutSheet } from "./lib/about-clear.mjs";
 import { isCommanderCandidate } from "../src/lib/recs/score";
 import { availabilityCopy } from "../src/lib/copy/availability";
 import { loadAvailability } from "../src/lib/decks/availability-query";
@@ -88,6 +89,11 @@ async function signIn(page) {
   if (failure) throw new Error(`Clerk sign-in failed: ${failure}`);
   const userId = await page.evaluate(() => window.Clerk.user?.id ?? null);
   if (!userId) throw new Error("Signed in but Clerk reports no user.");
+  // The version-only gate (pressing "Got it" on /about) advances `about_version_seen` alone,
+  // which leaves any feature-switched entry's id unseen in `about_seen_ids` — a switch left on
+  // in the server this probe runs against would still put the one-time sheet over the route
+  // being measured. `clearAboutSheet` is the one place a probe marks those seen too.
+  await clearAboutSheet(page, userId);
   return userId;
 }
 
@@ -332,25 +338,22 @@ async function buildComboFixture(userId, deckId, commanderOracleId, existingOrac
         fixtureDeckCard = null;
       }
       if (fixtureCollectionRows.length && fixtureCollectionRows[fixtureCollectionRows.length - 1].oracleId === suggested.oracle_id) {
-        const row = fixtureCollectionRows.pop();
+        // Popped only AFTER the DELETE succeeds — same rule as the deck-card rollback above: a
+        // transient failure here must leave the handle in place for the run's own `finally`
+        // to retry, rather than losing it the instant this attempt decided to roll back.
+        const row = fixtureCollectionRows[fixtureCollectionRows.length - 1];
         await pool.query(`delete from collection_items where user_id = $1 and oracle_id = $2`, [row.userId, row.oracleId]);
+        fixtureCollectionRows.pop();
       }
     }
   }
   return null;
 }
 
-async function clearAboutGate(page) {
-  if (!page.url().includes("/about")) return false;
-  const got = onPage(page, 'button:has-text("Got it")').first();
-  const found = await got.count().catch(() => 0);
-  if (found) await Promise.all([page.waitForLoadState("domcontentloaded"), got.click()]);
-  return true;
-}
-
+// The About gate is already cleared for this account at sign-in (`clearAboutSheet`), by
+// id and by version — no per-navigation "Got it" press needed.
 async function goto(page, path) {
   await page.goto(`${BASE}${path}`, { waitUntil: "domcontentloaded" });
-  if (await clearAboutGate(page)) await page.goto(`${BASE}${path}`, { waitUntil: "domcontentloaded" });
 }
 
 /** A deck with open slots, the same way `probe:card-note` finds one. */
@@ -473,16 +476,21 @@ async function readTiles(page) {
   }, synergyCopy.shelf.noSynergy);
 }
 
-/** Reads `--fg-muted` through a throwaway node, so the check needs no var()-parsing of its own. */
-async function fgMutedColour(page) {
-  return page.evaluate(() => {
+/** Reads a CSS custom property through a throwaway node, so a check needs no var()-parsing. */
+async function cssVarColour(page, name) {
+  return page.evaluate((varName) => {
     const probe = document.createElement("span");
-    probe.style.color = "var(--fg-muted)";
+    probe.style.color = `var(${varName})`;
     document.body.appendChild(probe);
     const c = getComputedStyle(probe).color;
     probe.remove();
     return c;
-  });
+  }, name);
+}
+
+/** Reads `--fg-muted`. */
+async function fgMutedColour(page) {
+  return cssVarColour(page, "--fg-muted");
 }
 
 const WIDTHS = [
@@ -685,7 +693,12 @@ async function run() {
         if (!t) {
           report("hard-claimed tile on screen", false, `${fixtures.hard} not found after the fixture — NOT a pass`);
         } else {
-          report("hard claim draws a committed dot", !!t.dotRect, t.dotRect ? `${Math.round(t.dotRect.width)}px` : "none");
+          // A dot existing proves nothing — it exists, unowned-dashed, even without the
+          // fixture's `committed` prop. Compare against the RESOLVED `--avail-hard-fg`, not
+          // just presence (Copilot round 3, medium).
+          const hardColour = await cssVarColour(page, "--avail-hard-fg");
+          report("hard claim draws a committed dot", t.dotColour === hardColour,
+            `${t.dotColour ?? "none"} against ${hardColour}`);
           const wantCaption = availabilityCopy.marker.tileInUse("probe · consider hard claim");
           report("hard claim's in-use caption names the deck", t.inUseText === wantCaption,
             `"${t.inUseText ?? "(none)"}" against "${wantCaption}"`);

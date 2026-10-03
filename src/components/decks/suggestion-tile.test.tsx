@@ -228,3 +228,20 @@ describe("SuggestionTile availability caption", () => {
     expect(screen.queryByText(/free|in a draft|in a brew|short|in use/)).toBeNull();
   });
 });
+
+describe("SuggestionTile ownership dot accessibility", () => {
+  // `OwnershipDot`'s `label` prop lands as an `aria-label` on a bare `<span>`, whose default
+  // role carries no accessible name — browsers discard it. Real visually-hidden text is what
+  // this tile speaks instead, and only for the owned case: the unowned caption slot already
+  // says "not owned" (BuyTag or the availability marker), so a second announcement would
+  // repeat it (Copilot round 3, medium).
+  it("speaks \"Owned\" for an owned card", () => {
+    mountTile({ owned: true });
+    expect(screen.getByText("Owned")).toHaveClass("sr-only");
+  });
+
+  it("speaks nothing extra for an unowned card — the caption already says so", () => {
+    mountTile({ owned: false });
+    expect(screen.queryByText("Owned")).toBeNull();
+  });
+});

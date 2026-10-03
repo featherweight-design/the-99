@@ -295,13 +295,20 @@ export function SuggestionTile({
           <>
             {/* No dot on an applied tile (c9) — the dot is a mark about this player's
                 collection, and the chip beside it already says the card is sleeved. */}
+            {/* `OwnershipDot`'s `label` lands as an `aria-label` on a bare `<span>`, whose
+                default role carries no accessible name — browsers discard it (the same gap
+                `buy-tag.tsx:131-134` documents). Real visually-hidden text, only for the owned
+                case: the unowned caption slot already speaks "not owned" (BuyTag or the
+                availability marker), so a second announcement there would repeat itself. */}
             {!applied && (
-              <OwnershipDot
-                owned={suggestion.owned}
-                committed={availState === "hard" || availState === "over"}
-                className="w-[8px] h-[8px] flex-none"
-                label={suggestion.owned ? "Owned" : "Not owned"}
-              />
+              <>
+                <OwnershipDot
+                  owned={suggestion.owned}
+                  committed={availState === "hard" || availState === "over"}
+                  className="w-[8px] h-[8px] flex-none"
+                />
+                {suggestion.owned && <span className="sr-only">Owned</span>}
+              </>
             )}
             {/* One slot. The chip stays on an applied tile — "already sleeved elsewhere" is
                 exactly what a player needs to know about a card they just added — but no

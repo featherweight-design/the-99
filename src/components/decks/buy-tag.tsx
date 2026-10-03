@@ -255,10 +255,16 @@ export function BuyTag({
     >
       {density === "collapsed" ? (
         <>
-          {/* The glyph is the component's, like the tail's separator — it
-              stands for the word rather than saying it, so it is drawn and
-              never spoken. */}
-          <span aria-hidden="true">$</span>
+          {/* A LIVE price draws its figure here — the collapsed slot's whole point is to fit
+              in the tile's caption line, and a bare `$` beside a real price is visually
+              identical to a sold-out or unpriced card (c5 against c6). Only the no-live-price
+              branch keeps the glyph, which stands for the word rather than saying it, so it is
+              drawn and never spoken. */}
+          {cents !== null ? (
+            <span aria-hidden="true">{formatCents(cents)}</span>
+          ) : (
+            <span aria-hidden="true">$</span>
+          )}
           <span className="sr-only">{content}</span>
         </>
       ) : (
