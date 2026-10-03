@@ -159,6 +159,14 @@ async function run() {
         wellVisibleBefore && !wellVisibleFocused,
         `before ${wellVisibleBefore}, focused ${wellVisibleFocused}`,
       );
+      // Hiding the well must not shrink the row to the search field's own 44px floor — the
+      // row (and the head along with it) is pinned to the well's 50px rendered height.
+      const headBoxFocused = await head.boundingBox();
+      fail(
+        `${width}px · head height unchanged on search focus`,
+        headBoxFocused && near(headBoxFocused.height, oneRow ? 66 : 108, 2),
+        `${headBoxFocused?.height}px against ${oneRow ? 66 : 108}`,
+      );
       // Shift+Tab from Filters must reach the well without it staying hidden under it.
       await search.blur();
       await page.waitForTimeout(100);
@@ -230,30 +238,77 @@ async function run() {
       await context.close();
     }
 
+    // Decision 6 covers an EDIT — a resize crossing 1000px, or a mount into the compact
+    // branch, must not snap the scroll position to the head's rest offset on its own, since
+    // no query/filter/sort changed.
+    {
+      const context = await browser.newContext({ viewport: { width: 1300, height: 900 } });
+      const page = await context.newPage();
+      await signIn(page);
+      await page.goto(`${BASE}/collection?view=rows`, { waitUntil: "networkidle" });
+      await page.waitForTimeout(300);
+      await page.mouse.wheel(0, 3000);
+      await page.waitForTimeout(300);
+      const scrollBefore = await page.evaluate(() => window.scrollY);
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.waitForTimeout(600);
+      const scrollAfter = await page.evaluate(() => window.scrollY);
+      // Read the STATIC sentinel sibling, never the sticky head's own ref — already scrolled
+      // and stuck at this point, the sticky element's `offsetTop` would just track `scrollY`
+      // and the check would measure nothing (see `filter-bar.tsx`'s own comment on this).
+      const restOffset = await page.evaluate(() => {
+        const row = document.querySelector("[data-collection-search-row]");
+        return row ? row.parentElement.previousElementSibling?.offsetTop ?? null : null;
+      });
+      // A reflow at the new width can genuinely move the scroll position — the assertion is
+      // that it did NOT snap to the head's rest offset (the signature of decision 6's effect
+      // firing on the crossing alone), not that it held some exact prior value.
+      fail(
+        "resize across 1000px does not snap scroll to the head's rest offset",
+        restOffset !== null && !near(scrollAfter, restOffset, 5) && scrollAfter > 200,
+        `before ${scrollBefore}, after ${scrollAfter}, rest ${restOffset}`,
+      );
+      await context.close();
+    }
+
     // E6 — a cookieless first visit's view well follows the CSS `md:` split rather than
-    // showing neither segment lit over a view the page is visibly drawing.
+    // showing neither segment lit over a view the page is visibly drawing. Read the FIRST
+    // computed look each segment ever had, stamped by an init script before the document
+    // parses: `networkidle` plus a settle wait (the original form of this check) lets
+    // hydration resolve the real view first, so it reads the normal active-state paint
+    // either way and would pass with the unresolved fallback deleted entirely.
     for (const [width, expectLitIndex] of [[390, 0], [1300, 1]]) {
       const context = await browser.newContext({ viewport: { width, height: 900 } });
       const page = await context.newPage();
-      await signIn(page);
-      await page.goto(`${BASE}/collection`, { waitUntil: "networkidle" });
-      await page.waitForTimeout(500);
-      const count = await onPage(page, '[aria-label="Rows view"], [aria-label="Grid view"]').count();
-      if (count < 2) {
-        fail(`${width}px · view well mounted (cookieless)`, false, `${count} buttons found`);
-      } else {
-        const litLooks = await page.evaluate(() => {
+      await page.addInitScript(() => {
+        const t = (window.__wellFirstLook = { rows: null, grid: null });
+        const tick = () => {
           const rows = document.querySelector('[aria-label="Rows view"]');
           const grid = document.querySelector('[aria-label="Grid view"]');
-          const bg = (el) => getComputedStyle(el).backgroundColor;
-          return [bg(rows), bg(grid)];
-        });
+          if (rows && grid && t.rows === null) {
+            t.rows = getComputedStyle(rows).backgroundColor;
+            t.grid = getComputedStyle(grid).backgroundColor;
+          }
+          if (t.rows === null) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      });
+      await signIn(page);
+      await page.goto(`${BASE}/collection`, { waitUntil: "domcontentloaded" });
+      const settled = await page
+        .waitForFunction(() => window.__wellFirstLook?.rows !== null, null, { timeout: 10000 })
+        .then(() => true, () => false);
+      if (!settled) {
+        fail(`${width}px · view well mounted (cookieless)`, false, "never both drawn");
+      } else {
+        const first = await page.evaluate(() => window.__wellFirstLook);
+        const litLooks = [first.rows, first.grid];
         const transparent = "rgba(0, 0, 0, 0)";
         const litIndex = litLooks.findIndex((c) => c !== transparent && c !== "transparent");
         fail(
           `${width}px · cookieless well paints the ${expectLitIndex === 0 ? "rows" : "grid"} segment`,
           litIndex === expectLitIndex,
-          `looks: ${JSON.stringify(litLooks)}`,
+          `first look: ${JSON.stringify(litLooks)}`,
         );
       }
       await context.close();

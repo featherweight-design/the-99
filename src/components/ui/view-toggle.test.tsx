@@ -46,6 +46,15 @@ describe("ViewToggle", () => {
     expect(a.className).toContain("md:bg-transparent");
     expect(b.className).toContain("bg-transparent");
     expect(b.className).toContain("md:bg-[color:var(--elevated)]");
+    // The `md:` step has to reset weight and shadow too, not only colour — both are part of
+    // the active skin, and literal classes (not a runtime-assembled `variant:` prefix, which
+    // Tailwind's static scanner cannot discover) are what let this reset exist at all.
+    expect(a.className).toContain("font-semibold");
+    expect(a.className).toContain("md:font-normal");
+    expect(a.className).toContain("md:[box-shadow:none]");
+    expect(b.className).toContain("font-normal");
+    expect(b.className).toContain("md:font-semibold");
+    expect(b.className).toContain("md:[box-shadow:inset_0_0_0_1px_var(--border-strong)]");
   });
 
   it("reports the segment pressed", () => {

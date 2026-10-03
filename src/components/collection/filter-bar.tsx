@@ -213,8 +213,21 @@ export function FilterBar({
   // wide chassis is untouched by this brief (decision 10).
   const headRef = useRef<HTMLDivElement>(null);
   const restOffsetSentinelRef = useRef<HTMLDivElement>(null);
+  // The previous render's edit-identifying state, so the effect below can tell an actual
+  // query/filter/sort EDIT apart from the same effect firing on mount or on a `wide` crossing
+  // (a resize, or restoring a scrolled visit) — neither of those is "a change" decision 6 means.
+  const prevEditRef = useRef<{
+    filters: typeof filters;
+    sort: typeof sort;
+    sortDirection: typeof sortDirection;
+  } | null>(null);
   useEffect(() => {
+    const prev = prevEditRef.current;
+    prevEditRef.current = { filters, sort, sortDirection };
     if (wide) return;
+    if (!prev) return; // mount: nothing to return the reader to yet.
+    const edited = prev.filters !== filters || prev.sort !== sort || prev.sortDirection !== sortDirection;
+    if (!edited) return; // only `wide` flipped — a resize or a mount into the compact branch.
     const el = restOffsetSentinelRef.current;
     if (!el) return;
     const offset = el.offsetTop;
@@ -223,14 +236,16 @@ export function FilterBar({
     // `scrollTo` here succeeds — pulls the page back to its pre-reset position. Its source
     // wasn't pinned down (not scroll anchoring: disabling it changes nothing), so rather than
     // chase it, this reasserts the offset for half a second, which reliably wins the race
-    // whatever still causes it.
+    // whatever still causes it. Cancelled on cleanup — a route change or another edit mid-loop
+    // must not keep forcing some other page, or a newer loop, back to this offset.
     let frames = 0;
-    const reassert = () => {
+    let rafId = requestAnimationFrame(reassert);
+    function reassert() {
       if (window.scrollY !== offset) window.scrollTo(0, offset);
       frames++;
-      if (frames < 30) requestAnimationFrame(reassert);
-    };
-    requestAnimationFrame(reassert);
+      if (frames < 30) rafId = requestAnimationFrame(reassert);
+    }
+    return () => cancelAnimationFrame(rafId);
     // `filters` and `sort`/`sortDirection` already change identity on every
     // edit, including a keystroke in search — nothing else needs to key this.
   }, [filters, sort, sortDirection, wide]);
@@ -430,7 +445,12 @@ export function FilterBar({
             focus and drop the reader's focus to nowhere. */}
         <div
           data-collection-search-row
-          className="flex items-center gap-[8px] min-[900px]:flex-1 min-[900px]:min-w-0"
+          // Pinned to the view well's own rendered height (50px, the 108/66 arithmetic's
+          // basis above) rather than left to the row's tallest VISIBLE child: hiding the
+          // well on search focus would otherwise shrink this row — and the head along with
+          // it — by the 6px gap between the well and the 44px search field, moving content
+          // on every focus in a head this brief requires fixed.
+          className="flex min-h-[50px] items-center gap-[8px] min-[900px]:flex-1 min-[900px]:min-w-0"
         >
           <SearchField
             containerClassName="gap-[8px] px-[12px] py-[9px] min-h-[44px] min-w-0 flex-1 rounded-[10px]"

@@ -15,17 +15,6 @@ export type ViewToggleOption<T extends string> = {
   label: string;
 };
 
-/** Every utility in `classes`, individually prefixed with `variant:` — so a
- *  multi-class string can be overridden at a breakpoint without hand-writing
- *  each utility twice. */
-function prefixEach(variant: string, classes: string): string {
-  return classes
-    .split(" ")
-    .filter(Boolean)
-    .map((c) => `${variant}:${c}`)
-    .join(" ");
-}
-
 /**
  * The well's size is arithmetic, not a second declaration: two segments plus
  * the 2px gap plus the well's 2px padding on each side is Design's 94×48 on the
@@ -75,14 +64,20 @@ export function ViewToggle<T extends string>({
         const activeClasses =
           "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)] [box-shadow:inset_0_0_0_1px_var(--border-strong)]";
         const inactiveClasses = "bg-transparent text-[color:var(--fg-faint)] md:hover:text-[color:var(--fg-body)]";
+        // Tailwind's scanner reads the raw source text for class-like tokens — it cannot see a
+        // `variant:` prefix assembled at runtime (`prefixEach`), so the unresolved paint below is
+        // spelled out literally rather than composed, with every property the `md:` step flips
+        // reset explicitly (weight and box-shadow included, not just colour).
         const paintClasses =
           value !== null
             ? active
               ? activeClasses
               : inactiveClasses
             : i === 0
-              ? `${activeClasses} ${prefixEach("md", inactiveClasses)}`
-              : `${inactiveClasses} ${prefixEach("md", activeClasses)}`;
+              ? "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)] [box-shadow:inset_0_0_0_1px_var(--border-strong)] " +
+                "md:font-normal md:text-[color:var(--fg-faint)] md:bg-transparent md:[box-shadow:none] md:hover:text-[color:var(--fg-body)]"
+              : "font-normal bg-transparent text-[color:var(--fg-faint)] " +
+                "md:font-semibold md:text-[color:var(--fg)] md:bg-[color:var(--elevated)] md:[box-shadow:inset_0_0_0_1px_var(--border-strong)]";
         return (
           <button
             key={option.value}
