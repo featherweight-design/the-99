@@ -95,10 +95,11 @@ export function ProxyListView({
     // and a nested main landmark is invalid — it exposes two ambiguous main
     // regions to a screen reader.
     //
-    // Anchored left from `md`, not centred, so "What you're printing" starts under the
-    // Proxies tab of the place head the page draws above it (collection surfaces R2). The way
-    // back is that strip's Cards tab, which is why the breadcrumb is gone.
-    <section className="mx-auto md:mx-0 w-full max-w-[900px] px-[16px] py-[20px] md:px-[34px] md:py-[28px]">
+    // Centred from `md` at its existing max width (Hugh's ruling, #1222 follow-up —
+    // reverses R2's left anchor, which started "What you're printing" under the Proxies
+    // tab). The way back is the place head's Cards tab above it, which is why the
+    // breadcrumb is gone.
+    <section className="mx-auto w-full max-w-[900px] px-[16px] py-[20px] md:px-[34px] md:py-[28px]">
       <h1 className="font-display text-[24px] md:text-[28px]" style={{ color: "var(--fg)" }}>
         {proxyCopy.page.title}
       </h1>
