@@ -17,8 +17,9 @@
  *    than imported, so this module stays beneath every feature that uses it.
  *  - The text itself could spell a tag and try to end the data block early, or open a forged
  *    one of its own. Any tag-shaped run — 1+ bracket characters of EITHER kind (`<`, `>`, `[`,
- *    `]`) around PLAYER_TEXT or END_PLAYER_TEXT (with `end` or a leading `/` reading as the
- *    close), any case, any separator — is stripped of EVERY bracket character, with NO new
+ *    `]`) around PLAYER_TEXT or END_PLAYER_TEXT (with `end`, OR a `/` on either side of its own
+ *    separator — `</player_text>` and `< / player_text >` both read as closing), any case, any
+ *    separator around every piece — is stripped of EVERY bracket character, with NO new
  *    bracketed replacement: a replacement that kept square brackets would itself satisfy this
  *    same classifier. The goal is that nothing inside the block can be mistaken for a
  *    delimiter, not that one exact spelling is blocked.
@@ -62,7 +63,7 @@ const BRACKETS = "[<>[\\]]+";
 const SEP = "[\\s_-]*";
 // A leading `/` reads as closing just as much as the word `end` does — `</player_text>` is an
 // ordinary HTML-style close with no "end" in it at all.
-const TAG_LOOKALIKE = new RegExp(`${BRACKETS}(/?)${SEP}(end${SEP})?player${SEP}text${SEP}${BRACKETS}`, "gi");
+const TAG_LOOKALIKE = new RegExp(`${BRACKETS}${SEP}(/?)${SEP}(end${SEP})?player${SEP}text${SEP}${BRACKETS}`, "gi");
 
 function escapeTags(text: string): string {
   // The replacement carries NO bracket character of any kind — square brackets would satisfy
