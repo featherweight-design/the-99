@@ -1152,7 +1152,10 @@ async function run() {
         return page.evaluate((target) => new Promise((resolve) => {
           const head = document.querySelector("[data-set-head]");
           if (head === null) return resolve(null);
-          const seen = [];
+          // The height BEFORE the scroll is recorded first, so the count does not depend on
+          // whether React commits before or after the first frame: a snap is exactly
+          // [open, bar] either way.
+          const seen = [Math.round(head.getBoundingClientRect().height)];
           window.scrollTo(0, target);
           const t0 = performance.now();
           const tick = () => {

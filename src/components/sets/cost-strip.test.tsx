@@ -296,7 +296,10 @@ describe("CostStrip — the accessible name with no send link", () => {
     expect((container.querySelector("[data-set-cost]") as HTMLElement).className).toMatch(/\brelative\b/);
   });
 
-  it("puts the send button at the left on the phone and the right from md (H15)", () => {
+  // What H15 removed is the PUSH: `ml-auto` drove the button to the right edge, alone on its
+  // own wrapped line. Without it the button takes its place in the flow, after the summary
+  // when it fits and at the line's start when it wraps. Where it lands is the browser's call.
+  it("never pushes the send button right on the phone, and does from md (H15)", () => {
     render(<CostStrip cost={cost()} href="https://manapool.com/add-deck?x=1" />);
     const send = screen.getByRole("link");
     expect(send.className).toMatch(/md:ml-auto/);

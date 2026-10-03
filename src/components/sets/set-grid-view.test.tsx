@@ -2888,11 +2888,14 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
   // strip opened and closed. Only keyboard focus holds it. jsdom cannot tell the two kinds of
   // focus apart, so `:focus-visible` is answered here the way a browser answers it after a tap.
   it("collapses over focus a pointer press left behind (H17)", () => {
-    stubDesktop(true);
-    const { container } = view([p("1", { booster: true }), p("2", { booster: false })], []);
-    const hidden = container.querySelector(
-      '[data-set-shy-hides] a[href="#extras"]',
-    ) as HTMLElement;
+    // The real path: a tap on the cost strip's ▾, whose replacement ▴ takes focus inside a
+    // member the collapse hides. The phone form, where the toggle is drawn.
+    stubDesktop(false);
+    const { container } = view([p("1"), p("2")], []);
+    fireEvent.click(container.querySelector("[data-set-cost-toggle]") as HTMLElement);
+    const hidden = container.querySelector("[data-set-cost-toggle]") as HTMLElement;
+    expect(hidden.getAttribute("aria-expanded")).toBe("true");
+    expect(hidden.closest("[data-set-shy-hides]")).not.toBeNull();
     const matches = Element.prototype.matches;
     const spy = vi.spyOn(Element.prototype, "matches").mockImplementation(function (
       this: Element,
@@ -2901,7 +2904,8 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
       return selector === ":focus-visible" ? false : matches.call(this, selector);
     });
     try {
-      hidden.focus();
+      // Focus is where the press put it, on the replacement toggle.
+      expect(document.activeElement).toBe(hidden);
       scrollTo(2000);
       expect(isShy(container)).toBe(true);
     } finally {
