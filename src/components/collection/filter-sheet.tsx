@@ -220,7 +220,7 @@ function SheetBody({
         <Group heading={copy.typeHeading}>
           {/* A FIXED two-column grid (H8, d9's ruling 2026-10-02): wrapped, each chip was
               as wide as its count, so a filter that zeroed counts took the group from three
-              rows to two and the sheet shrank. Seven types are always four rows here.
+              rows to two and the sheet shrank. Seven types are always four rows from 360px, and seven below it.
               Interim-consistent: Design's Collection round may redraw this sheet.
               ONE column below 360px: measured, two columns stop fitting Enchantment beside a
               five-digit count under ~346px, and 320 is the narrowest phone this app supports.
