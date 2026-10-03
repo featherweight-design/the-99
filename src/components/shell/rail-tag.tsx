@@ -97,9 +97,17 @@ export function useRailTag(pathname: string): {
     closeTimer.current = window.setTimeout(close, CLOSE_DELAY_MS);
   }, [close]);
 
-  // A route change retires the tag: it is drawn only on the route it opened on, and the change
-  // cancels anything waiting to open or close. Losing the pointer as the primary input unmounts it.
-  useEffect(() => cancel, [pathname, hoverCapable, cancel]);
+  // A route change retires the tag: it is drawn only on the route it opened on (`live`, below, so
+  // the frame that commits the new route never draws it), and the change cancels anything waiting
+  // to open or close and forgets the tag, or a Back to the route it opened on would draw it again
+  // with no hover. A change of primary input does the same.
+  useEffect(
+    () => () => {
+      cancel();
+      apply(null);
+    },
+    [pathname, hoverCapable, cancel, apply],
+  );
   const live = open !== null && open.at === pathname ? open : null;
 
   useEffect(() => {

@@ -167,6 +167,10 @@ describe("the pointer rail's name tag", () => {
     pathname = "/decks";
     rerender(<NavRail locked={false} theme="amonkhet" />);
     expect(tag()).toBeNull();
+    // Back to the route it opened on: forgotten, not redrawn.
+    pathname = "/collection";
+    rerender(<NavRail locked={false} theme="amonkhet" />);
+    expect(tag()).toBeNull();
   });
 
   it("closes on Escape and stays closed on that slot until another is entered", () => {
