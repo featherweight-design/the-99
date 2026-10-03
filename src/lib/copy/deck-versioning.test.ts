@@ -29,8 +29,8 @@ describe("deckVersioningCopy", () => {
     );
     // H31 retired `diffNote`: the rows now carry today's figures, and this line says so.
     expect(copy.history.todayNote(3)).toBe("ownership and prices are today’s, not v3’s");
-    expect(copy.history.partialOwned(1, 4)).toBe("own 1 of 4");
-    expect(copy.history.partialA11y(1, 4)).toBe("You own 1 of the 4 this version runs");
+    expect(copy.history.partialOwned(1, 4)).toBe("has 1 of 4");
+    expect(copy.history.partialA11y(1, 4)).toBe("This deck has 1 of the 4 this version runs");
     expect(copy.history.initialBody).toBe(
       "the first list, with nothing before it to compare against.",
     );

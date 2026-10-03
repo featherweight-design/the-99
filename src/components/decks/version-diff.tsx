@@ -4,7 +4,8 @@
 //
 // The cards are what the deck WAS; the figures on them are TODAY's (H31, Hugh 2026-10-03,
 // half reversing deck versioning's decision 7). An In row carries an ownership dot and, when
-// the reader owns fewer than the version runs, `own N of M` and a buy tag at today's price;
+// this deck would have to buy copies of it today, a buy tag at today's price (and `has N of M`
+// when it holds some). What it would buy is Shopping's claim model, never raw ownership;
 // `todayNote` above the columns says the figures are today's. An Out row carries neither.
 // Pull offers stay out: a pull is an offer about the deck as it is now, and this list is the
 // deck as it was. No availability marker and no `committed` dot either, because both describe
@@ -63,8 +64,10 @@ function grouped(cards: VersionDiffCard[]): GroupedCard[] {
  * moves count as one is `printsPair`, shared with the review page and the
  * pending banner for the same reason.
  *
- * An In row draws today's ownership: the dot, and when the reader owns fewer copies than
- * the version runs, `own N of M` (partly owned only) and a buy tag. The tag is `full` from
+ * An In row draws today's ownership as a dot, and a buy tag when the deck would have to buy
+ * copies under Shopping's claim model (`card.buy`), with `has N of M` when it holds some. The
+ * dot is ownership and the tag is the claim: an owned copy a senior deck holds draws both. The
+ * tag is `full` from
  * 1024px and `collapsed` below it: at 820 a partly owned row's fixed parts leave the name
  * about 40px with the full tag (H31 readiness, finding 2).
  */
@@ -92,12 +95,17 @@ function DiffCardRow({
   const previewHandlers = usePreviewRow(card.imageUri);
   const describedId = useId();
   const incoming = side === "in";
-  const short = incoming && card.ownedNow < card.to;
-  const partial = short && card.ownedNow > 0;
+  // Shopping's answer, not ownership's: a copy the reader owns that a senior deck holds is
+  // still a buy here, as it is on Shopping.
+  const short = incoming && card.buy > 0;
+  const covered = card.to - card.buy;
+  const partial = short && covered > 0;
+  // A tagged row says how many this deck holds, never "Owned": an owned copy held by a senior
+  // deck is a buy, and "Owned" over a buy tag would contradict it.
   const description = !incoming
     ? null
-    : partial
-      ? copy.partialA11y(card.ownedNow, card.to)
+    : short
+      ? copy.partialA11y(covered, card.to)
       : card.ownedNow > 0 ? copy.owned : copy.notOwned;
   return (
     <div
@@ -122,7 +130,7 @@ function DiffCardRow({
       </CardDetailTrigger>
       {partial && (
         <span aria-hidden className="flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-          {copy.partialOwned(card.ownedNow, card.to)}
+          {copy.partialOwned(covered, card.to)}
         </span>
       )}
       {short && (

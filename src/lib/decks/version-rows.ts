@@ -25,6 +25,11 @@ export type VersionDiffCard = Omit<VersionDiffBase, "imageUri"> & {
   /** Copies the reader owns TODAY across every printing. A basic reads `to`: basics are
    *  never bought, and every surface treats them as owned. */
   ownedNow: number;
+  /** Copies this version's count would have to BUY today, under Shopping's claim model
+   *  (seniority, committed decks' claims, proxies): `to` less the copies this deck can call on.
+   *  Not `to − ownedNow`: a copy the reader owns can be held by a senior deck, and then this deck
+   *  still buys it (Basalt Monolith in HD Tune, staging, 2026-10-03). Always 0 for a basic. */
+  buy: number;
   /** The owned printing's art where the reader holds one, the catalog's otherwise. */
   imageUri: string | null;
   /** The owned printing's own name (a Secret Lair's flavor name), or null. */
@@ -33,10 +38,45 @@ export type VersionDiffCard = Omit<VersionDiffBase, "imageUri"> & {
   price: PriceFact | null;
 };
 
+/**
+ * What the claim model says this deck can call on today, per card. Shopping's own figures:
+ *
+ * - `draft`, `deficit` and `surplus`: a card the deck's current list runs. `loadDeckBuyRows` bills
+ *   the deficit against the DRAFT's count and never goes below 0, so `draft − deficit` caps what
+ *   the deck holds at the draft's ask. `surplus` is `loadAvailability`'s `free` from this deck's
+ *   vantage (copies left over after its own ask, negative when short), so `draft + surplus` is the
+ *   uncapped supply. The larger of the two: the deficit carries the proxy rule (a proxied slot is
+ *   never billed) and the surplus the copies beyond the ask. A version's own count may differ
+ *   from the draft's, which is why neither figure is subtracted from `to` directly.
+ * - `free`: a card the current list no longer runs, `loadAvailability`'s `free` from this deck's
+ *   vantage with an ask of 0: owned less what senior decks hold, so a copy this deck's own
+ *   committed version still sleeves counts as this deck's.
+ */
+export type DeckClaims = {
+  draft: Map<string, number>;
+  deficit: Map<string, number>;
+  surplus: Map<string, number>;
+  free: Map<string, number>;
+};
+
+/** The copies this deck can call on for a card, under Shopping's claim model. */
+export function heldForDeck(oracleId: string, claims: DeckClaims): number {
+  const draft = claims.draft.get(oracleId);
+  if (draft !== undefined) {
+    const billed = draft - (claims.deficit.get(oracleId) ?? 0);
+    // A card the reader owns no copy of has no availability row, and an absent surplus is not 0
+    // (that would read as the whole ask held): only a figure the read returned extends the bill.
+    const surplus = claims.surplus.get(oracleId);
+    return Math.max(0, billed, surplus === undefined ? 0 : draft + surplus);
+  }
+  return Math.max(0, claims.free.get(oracleId) ?? 0);
+}
+
 export function assembleVersionRows(
   rows: VersionDiffBase[],
   owned: Map<string, OwnedPrinting>,
   { prices }: Pick<PriceRead, "prices">,
+  claims: DeckClaims,
 ): VersionDiffCard[] {
   return rows.map((row) => {
     const copy = owned.get(row.oracleId);
@@ -44,6 +84,7 @@ export function assembleVersionRows(
     return {
       ...row,
       ownedNow: basic ? Math.max(row.to, copy?.quantity ?? 0) : copy?.quantity ?? 0,
+      buy: basic ? 0 : Math.max(0, row.to - heldForDeck(row.oracleId, claims)),
       imageUri: copy?.imageUri ?? row.imageUri,
       printedName: copy?.printedName ?? null,
       price: basic ? null : prices.get(row.oracleId) ?? null,

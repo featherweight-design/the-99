@@ -21,8 +21,10 @@ import { clearPullReleases } from "./pull-release";
 import { commanderMoved } from "../commander-change/pending";
 import { readOwnedPrintings } from "../collection/owned-printings";
 import { loadPrices } from "./price-query";
+import { loadAvailability, loadDeckBuyRows } from "./availability-query";
+import type { Availability } from "./availability";
 import {
-  assembleVersionRows, pricedIds, type VersionDiffBase, type VersionDiffCard,
+  assembleVersionRows, pricedIds, type DeckClaims, type VersionDiffBase, type VersionDiffCard,
 } from "./version-rows";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -511,6 +513,7 @@ export async function loadVersionDiff(
   versionId: string,
   previousVersionId: string | null,
   userId: string,
+  deckId: string,
 ): Promise<VersionDiffPayload> {
   if (previousVersionId === null) return { in: [], out: [], newestAsOf: null };
 
@@ -553,16 +556,41 @@ export async function loadVersionDiff(
   const all = [...ins, ...outs];
   // Both reads are scoped to the diff's own cards: a version moves a handful, and
   // neither the collection nor the price table is read whole for them.
-  const [owned, priced] = await Promise.all([
+  // Only a non-basic IN card can carry a buy (an Out row draws no tag), so a cuts-only or
+  // basics-only diff reads no claims: the user-wide claim model is not paid for nothing, and cannot
+  // fail a diff it has no say in.
+  const ids = pricedIds(ins);
+  const draftRows = ids.length === 0 ? [] : await db.select({ oracleId: deckCards.oracleId, quantity: deckCards.quantity })
+    .from(deckCards).where(and(eq(deckCards.deckId, deckId), inArray(deckCards.oracleId, ids)));
+  const draft = new Map(draftRows.map((r) => [r.oracleId, r.quantity]));
+  const [owned, priced, buyRows, fromDeck] = await Promise.all([
     // The throwing read, not `resolveOwnedPrintings`: a failed read there answers "owns
     // nothing", which these rows would draw as a "not owned" dot and a buy tag on cards the
     // reader holds. A failure here reaches `getVersionDiff`'s caller as an unavailable diff.
     readOwnedPrintings(userId, all.map((c) => c.oracleId)),
     loadPrices(pricedIds(all)),
+    // Shopping's own bill for this deck, so a row's tag is Shopping's answer rather than a second
+    // reading of ownership. User-wide claims inside, narrowed to this deck's rows.
+    ids.length > 0 ? loadDeckBuyRows(userId, [deckId]) : [],
+    // From THIS deck's vantage for every card: what is left over after its own draft ask, so a
+    // version that ran more copies than the draft still counts the copies the deck could call on,
+    // and a card the draft has cut (ask 0) counts the copy this deck's committed version still
+    // sleeves, which an off-decklist read would hold against it (Copilot round 3).
+    ids.length > 0
+      ? loadAvailability(userId, { oracleIds: ids, excludeDeckId: deckId })
+      : new Map<string, Availability>(),
   ]);
+  const vantage = new Map([...fromDeck].map(([id, a]) => [id, a.free]));
+  const claims: DeckClaims = {
+    draft,
+    deficit: new Map(buyRows.map((r) => [r.oracleId, r.quantity])),
+    surplus: new Map([...vantage].filter(([id]) => draft.has(id))),
+    free: new Map([...vantage].filter(([id]) => !draft.has(id))),
+  };
   return {
-    in: assembleVersionRows(ins, owned, priced),
-    out: assembleVersionRows(outs, owned, priced),
+    in: assembleVersionRows(ins, owned, priced, claims),
+    // An Out row draws no tag, and its claims were not read: its buy is 0 by construction.
+    out: assembleVersionRows(outs, owned, priced, claims).map((c) => ({ ...c, buy: 0 })),
     newestAsOf: priced.newestAsOf,
   };
 }
