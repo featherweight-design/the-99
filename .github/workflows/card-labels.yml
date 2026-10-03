@@ -27,7 +27,8 @@ on:
     # It used to run DAILY, so a run that timed out mid-batch would be resumed the next day under
     # the same ISO-week id. Most of that reason is gone: resume is keyed on an intent's CONTENT, so
     # any run id collects a batch another run paid for, and next week's run collects every batch
-    # this week's left open, at no second charge. One run per ISO week means the weekly cap and
+    # this week's left open WITH A BATCH ID, under the same model and prompt version, at no second
+    # charge. One run per ISO week means the weekly cap and
     # pause ($9, $5) bound each run.
     #
     # THE ONE CASE WEEKLY DOES NOT RESUME ON ITS OWN: a crash between a batch's `create` and the

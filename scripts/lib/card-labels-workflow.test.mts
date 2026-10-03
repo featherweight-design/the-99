@@ -290,7 +290,7 @@ describe("the card-labels spend bounds", () => {
     // runs; one run a week is what makes the per-run figures true. A dash, a list or a `*` in
     // the day-of-week field would bring a second run into the same week.
     // EVERY schedule entry, and exactly one: a second `- cron:` line would be a second run a week.
-    const crons = [...workflow.matchAll(/^\s*- cron: '([^']+)'$/gm)].map((m) => m[1]);
+    const crons = [...workflow.matchAll(/^\s*- cron: ['"]?([^'"]+?)['"]?\s*$/gm)].map((m) => m[1]);
     expect(crons).toHaveLength(1);
     const cron = crons[0];
     const [minute, hour, dom, month, dow] = cron!.split(" ");
