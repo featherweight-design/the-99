@@ -1,4 +1,3 @@
-import { seededAnswersIntent } from "../tuning/limits";
 import { isUuid } from "../uuid";
 import type { Bracket } from "./rank";
 
@@ -78,34 +77,23 @@ export type AnswerColumns = {
   answerBracket?: number | null;
   answerCardOracleId?: string | null;
   answerOwnedOnly?: boolean;
-  intent?: string;
-  intentSeeded?: boolean;
 };
 
 /**
  * The deck columns a Help me choose create writes, on the filled path and the empty one alike.
  *
- * THE BRIEF IS WRITTEN AT CREATE, on both paths. It is the player's own answers, true whether or
- * not the fill ran, and at create nobody has had the chance to edit it. It is also the one moment
- * the themes are known. A retry (`fillDeck`) writes no intent, by the rule that path already
- * keeps: by then a player may have written a line and cleared it, and a cleared line reads exactly
- * like one never written.
- *
- * `card` is the build-around card as the create resolved it; null when it was refused.
+ * No `intent` any more (H35, ruling 3): the player's own description is the one line a reader
+ * sees, and nothing is auto-written into it at create. `card` is the build-around card as the
+ * create resolved it; null when it was refused.
  */
 export function answerColumnsFor(
   asked: ValidAnswers,
   card: { oracleId: string; name: string } | null,
-  commanderNames: readonly string[],
 ): AnswerColumns {
   return {
     answerBudgetCents: asked.budgetDollars === null ? null : asked.budgetDollars * 100,
     answerBracket: asked.bracket,
     answerCardOracleId: card?.oracleId ?? null,
     answerOwnedOnly: asked.pool === "own",
-    intent: seededAnswersIntent(commanderNames, {
-      themes: asked.themes, themeJoin: asked.themeJoin, sets: asked.sets, ownOnly: asked.pool === "own", cardName: card?.name ?? null, budgetDollars: asked.budgetDollars, bracket: asked.bracket,
-    }),
-    intentSeeded: true,
   };
 }

@@ -91,7 +91,7 @@ describe("SynopsisOverview", () => {
   it("disables Write one and says when a credit comes back, with every credit out", () => {
     draw(synopsisState({ synopsis: null, wouldSpend: false, allowance: { used: 3, limit: 3, reopensAt: new Date(), nextAt: new Date() } }));
     expect(inert(screen.getByRole("button", { name: copy.writeOne }))).toBe(true);
-    expect(screen.getByText(/0 of 3 left · next one at/)).toBeTruthy();
+    expect(screen.getByText(/0 of 3 left · reset at/)).toBeTruthy();
   });
 
   it("says what shares the credits exactly as before the deeper looks, unless Help me choose is on", () => {

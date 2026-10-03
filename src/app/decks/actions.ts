@@ -61,7 +61,6 @@ import { recordFillPass, summariseFillPasses, type FillPassKind } from "../../li
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { GAME_AXIS_KEYS, isGameAxisKey, type GameAxisKey } from "../../lib/decks/game-axes";
 import { gameLogCopy } from "../../lib/copy/game-log";
-import { seededIntent } from "../../lib/tuning/limits";
 import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { pruneOrphanProxies } from "../../lib/decks/prune-proxies";
 import { writePullRelease } from "../../lib/decks/pull-release";
@@ -440,7 +439,7 @@ export async function createDeck(
   const deckName = validateDeckName(name);
   let deckId: string;
   // Filled in once the build-around card is resolved; the empty-deck fallback writes them too.
-  let answerColumns: AnswerColumns = asked === null ? {} : answerColumnsFor(asked, null, partner ? [commander.name, partner.name] : [commander.name]);
+  let answerColumns: AnswerColumns = asked === null ? {} : answerColumnsFor(asked, null);
   try {
     // A malformed id would otherwise reach Postgres as a failed uuid cast, and
     // the whole create would fall back to an empty deck. Sanitizing here rather
@@ -495,7 +494,7 @@ export async function createDeck(
     const card = asked?.cardOracleId && selectedSet.has(asked.cardOracleId)
       ? candidates.find((c) => c.oracleId === asked.cardOracleId)!
       : null;
-    answerColumns = asked === null ? {} : answerColumnsFor(asked, card, partner ? [commander.name, partner.name] : [commander.name]);
+    answerColumns = asked === null ? {} : answerColumnsFor(asked, card);
 
     const bodySize = deckBodySize(partnerOracleId !== null);
     const plan = await buildFillPlan(
@@ -549,17 +548,6 @@ export async function createDeck(
       const capped = capToBody(rows, bodySize);
       if (capped.length > 0) {
         await tx.insert(deckCards).values(capped).onConflictDoNothing();
-
-        // The brief the fill built to, marked as the app's words — and only when the FILL
-        // placed something. The selection comes first in `capped`, so anything past it is the
-        // app's; a deck of the player's own picks alone has no brief to disclose. In the
-        // creating transaction, so no deck the app filled is ever read unseeded.
-        // A Help me choose deck's brief is the player's answers, already written with the insert.
-        if (capped.length > selected.length && asked === null) {
-          await tx.update(decks)
-            .set({ intent: seededIntent(partner ? [commander.name, partner.name] : [commander.name]), intentSeeded: true })
-            .where(eq(decks.id, deck.id));
-        }
 
         // TWO PASSES, NOT ONE, now that the fill reaches the whole body.
         //

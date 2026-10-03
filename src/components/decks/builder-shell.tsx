@@ -42,6 +42,7 @@ import {
   restoreAutoCards,
   type SweptRow,
 } from "../../app/decks/actions";
+import { saveDeckDescription } from "../../app/decks/tuning-actions";
 import { Decklist } from "./decklist";
 import { BuilderTabs, type BuilderView } from "./builder-tabs";
 import { builderTabSpecs } from "../../lib/decks/builder-tab-specs";
@@ -1516,6 +1517,12 @@ export function BuilderShell({
                   overviewReady={synopsis.view.kind === "ready" && !synopsis.view.busy && !synopsis.view.state.stale && !!synopsis.view.state.synopsis?.content?.overview}
                   pressNote={{ analyze: analyzeNote?.text ?? null, reanalyze: reanalyzeNote?.text ?? null }}
                   pressSee={analyzeNote?.see ? { label: deckNoticesCopy.check.seeWhich, onPress: openNoticesSheet } : null}
+                  description={deck.intent ?? null}
+                  onSaveDescription={(value) => {
+                    const form = new FormData();
+                    form.set("intent", value);
+                    return saveDeckDescription(deck.id, form);
+                  }}
                   legality={{ built, size: bodySize }}
                   declaration={{
                     declared: declaration.declared,

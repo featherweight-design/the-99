@@ -23,7 +23,7 @@ Games-tab pointer line are PR D2 and are listed only under **Deferred to D2**.
 **Precedence:** Hugh's rulings > r3 > r2 > r1 > base. The rulings that override the canvas:
 
 1. **Up to five swaps** per run (RA ruling 2).
-2. **Credit line** reads `{n} of {total} left · next one at {time}`, rolling 24 hours, `{time}` in
+2. **Credit line** reads `{n} of {total} left · reset at {time}`, rolling 24 hours, `{time}` in
    **12-hour** form (`2:20 PM`), via the app's time formatting (RA ruling 5, R3A note 2). Every
    calendar string on the canvas (`left today`, `00:00 UTC`, `14:20`) is superseded.
 3. **Bracket flag** uses the shipped `BracketChip` with `permits={bracketAfter}`; compare the
@@ -208,9 +208,9 @@ Copy strings are recorded for identification only; copy content is `/copy-review
 | line-height | 1.55 | — (1.5 in spent state) | V2:192 / V2:584 |
 | max-width | — | 380px in spent state only | V2:584 |
 | wrap | may wrap | may wrap | V2:496 |
-| never-run form | "Uses a credit. {n} of {total} left · next one at {time}." | same | V2:740 (ruling 2) |
-| again form | "Replaces these suggestions and uses a credit. {n} of {total} left · next one at {time}." (proposed, undrawn) | same | V2:755 + R:108 (ruling 2) |
-| spent form | "0 of {total} left · next one at {time}. Synopses and suggestions share these credits." | same | V2:741 |
+| never-run form | "Uses a credit. {n} of {total} left · reset at {time}." | same | V2:740 (ruling 2) |
+| again form | "Replaces these suggestions and uses a credit. {n} of {total} left · reset at {time}." (proposed, undrawn) | same | V2:755 + R:108 (ruling 2) |
+| spent form | "0 of {total} left · reset at {time}. Synopses and suggestions share these credits." | same | V2:741 |
 | part-answered form | "{applied} of {total} applied · {rejected} rejected · {again form}" | same | V2:496, R:85 |
 | {time} | 12-hour (`2:20 PM`) | 12-hour | R3A note 2 |
 | all credits available | no "next one" time exists; not drawn | not drawn | spec §9.1 |
@@ -1121,96 +1121,14 @@ answered) draws inline "✓ applied" and `9px 12px`. Both are recorded. No 390 f
 
 ---
 
-## Component: DeckIntentAsk (in-panel)
+## Component: DeckIntentAsk (in-panel) — RETIRED
 
-Drawn at 1300 only (OC:327-336, DT:361-402). The 390 form is not drawn; R:384 gives the field's
-phone height and a 44px floor applies to Save.
-
-### Ask block
-
-| Property | 390 | 1300 | Source |
-|---|---|---|---|
-| rendered when | intent absent | intent absent | V2:166, R:175, IW:56 |
-| position | panel body, above the action row | same | V2:166, R:175 |
-| background | var(--surface-sunken) (composed) | var(--surface-sunken) | OC:327 |
-| border | 1px solid var(--border) | 1px solid var(--border) | OC:327 |
-| border-radius | 11px | 11px | OC:327 |
-| padding | not drawn | 16px 18px | OC:327 |
-| margin-bottom | not drawn | 8px | OC:327 |
-
-### Label "What is this deck for?"
-
-| Property | 390 | 1300 | Source |
-|---|---|---|---|
-| font-family | mono | mono | OC:328 |
-| font-size | 10px | 10px | OC:328 |
-| letter-spacing | 0.14em | 0.14em | OC:328 |
-| text-transform | uppercase | uppercase | OC:328 |
-| color | var(--accent) | var(--accent) | OC:328 |
-| margin-bottom | 9px | 9px | OC:328 |
-
-### Pitch
-
-| Property | 390 | 1300 | Source |
-|---|---|---|---|
-| font-size | not drawn | 13.5px | OC:329 |
-| color | not drawn | var(--fg-body) | OC:329 |
-| line-height | not drawn | 1.6 | OC:329 |
-| max-width | not drawn | 600px | OC:329 |
-| emphasis span | not drawn | var(--fg), 600 | OC:329 |
-| copy | `intent.ask(axis, count)` (presumes a marked axis; no-games / unmarked variants undrawn) | same | spec §9.13 |
-
-### Field
-
-| Property | 390 | 1300 | Source |
-|---|---|---|---|
-| min-height | 48px | 46px | R:384 / OC:330 |
-| margin-top | 14px | 14px | OC:330 |
-| background | var(--surface) | var(--surface) | OC:330 |
-| border | 1px dashed var(--border-strong) | 1px dashed var(--border-strong) | OC:330 |
-| border-radius | 8px | 8px | OC:330 |
-| padding | 12px 14px | 12px 14px | OC:330 |
-| display / align | flex, center | flex, center | OC:330 |
-| placeholder | 13.5px, var(--fg-locked) | 13.5px, var(--fg-locked) | OC:331 |
-| maxLength | 120 | 120 | DC `intent.maxLength` |
-
-### Ask action row
-
-| Property | 390 | 1300 | Source |
-|---|---|---|---|
-| display | flex | flex | OC:333 |
-| align-items | center | center | OC:333 |
-| gap | 14px | 14px | OC:333 |
-| margin-top | 12px | 12px | OC:333 |
-| flex-wrap | wrap | wrap | OC:333 |
-
-### "Save this" (outline)
-
-| Property | 390 | 1300 | Source |
-|---|---|---|---|
-| font-weight | 600 | 600 | OC:334 |
-| font-size | 13.5px | 13.5px | OC:334 |
-| color | var(--accent) | var(--accent) | OC:334 |
-| border | 1px solid var(--accent) | 1px solid var(--accent) | OC:334 |
-| border-radius | 8px | 8px | OC:334 |
-| padding | 10px 18px | 10px 18px | OC:334 |
-| min-height | 44px | — | spec §5.2 |
-
-### Skip note
-
-| Property | 390 | 1300 | Source |
-|---|---|---|---|
-| font-family | mono | mono | OC:335 |
-| font-size | 10.5px | 10.5px | OC:335 |
-| color | var(--fg-faint) | var(--fg-faint) | OC:335 |
-| copy | `intent.skip` | same | DC |
-
-### Ask errors / announce
-
-| Property | 390 | 1300 | Source |
-|---|---|---|---|
-| errors | `intent.tooLong` / `intent.refused` | same | DC |
-| announce on save | "Deck intent saved." | same | CS `announce.intentSaved` |
+H35 (deck description, PR 1) removed this component. The description's one door before a first
+reading is now the empty-state field above the Analyze press (`DeckDescriptionField`), with the
+deck header's pencil (`use-deck-header-edit.ts`) as its second door — neither lives inside this
+panel. The property tables this section once carried (ask block, label, pitch, field, action row,
+Save/Skip, errors/announce) describe a surface that no longer renders; see
+`design/design_handoff_the99_deck_description/STATES-deck-description.md` for the shipped states.
 
 ---
 
@@ -1300,7 +1218,7 @@ logged games; `markedCount` stands for games carrying a worked/hurt mark.
 | S-A Never run, games marked | `run == null` (or retired / stopped), `gameCount > 0`, some game marked | heading, `readyLead`, 4 (or 5 with intent) unchecked manifest rows, [intent ask], primary "Suggest changes", credit first-run note | gameCount, axis, marked, allowance.used/limit, reopensAt | C1 (1300); 390 composed from E3 geometry |
 | S-B Never run, no games | as S-A with `gameCount == 0` | `noGamesLead`, dashed "none logged" row + 2 rows ("This list, against the recommended mix", collection), primary, first-run note | gameCount = 0, Log a game → setView('games') | D1 (1300), E3 (390) |
 | S-C Never run, games unmarked | as S-A with `gameCount > 0` and no game marked | `unmarkedLead`, 4 rows with games count "{n} games · no marks", primary, first-run note | gameCount, markedCount = 0 | E5 (1300), E5b (390) |
-| Intent ask shown | any never-run state with intent absent | DeckIntentAsk above the action row | intent == null | OC:327-336; 390 not drawn |
+| Intent ask shown | RETIRED (H35) — superseded by the empty-state field and header pencil, neither of which is drawn in this panel | — | — | see "Component: DeckIntentAsk (in-panel) — RETIRED" above |
 | S-D Loading | `run.status == 'running'` (pending) | accent border, aria-busy, fan + "Shuffling…" heading (role=status) + `loadingLead`, ticking manifest, "Reading…" + "Stop" + progress | per-row done flags, done/total | C2 (1300), C2b (390) |
 | Stopped | user pressed Stop | returns to never-run (S-A/B/C), manifest unchecked, no error, no tag; refunded | — | ST:44, R:91 |
 | S-E Results (full) | `run.status == 'ok'`, all `items[].verdict == null`, `items.length == 5` | read line, `resultsLead` (1300 only), 5 SuggestionCards, "Suggest again", again note | items[], allowance.used/limit | A1 (1300), A2 (390) |

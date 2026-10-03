@@ -553,7 +553,7 @@ async function run() {
     const intentOf = async () => (await rows<{ intent: string | null; seeded: boolean }>(sql`
       select intent, intent_seeded as seeded from decks where id = ${deck}::uuid`))[0];
 
-    check("10 · an over-cap save is refused", await saveIntent(deck, u, "a".repeat(121)), "tooLong");
+    check("10 · an over-cap save is refused", await saveIntent(deck, u, "a".repeat(241)), "tooLong");
     check("10 · and writes nothing", await intentOf(), { intent: "Built around a legend.", seeded: true });
     check("10 · another reader's save is refused", await saveIntent(deck, newUser(), "mine"), "refused");
     check("10 · a save lands", await saveIntent(deck, u, "  grind it out  "), "saved");

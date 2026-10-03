@@ -57,6 +57,8 @@ export function AnalysisPanel({
   overviewReady = false,
   pressNote,
   pressSee,
+  description = null,
+  onSaveDescription,
   children,
 }: {
   state: ProfileState;
@@ -103,6 +105,9 @@ export function AnalysisPanel({
   /** The overview check's *See which →* after that note, opening Notices (deck notices HANDOFF §6);
    *  null when the note is the credit note, which carries none. */
   pressSee?: { label: string; onPress: () => void } | null;
+  /** The deck's description (H35), and its save — passed straight to the empty state's field. */
+  description?: string | null;
+  onSaveDescription?: (value: string) => Promise<import("../../lib/decks/mutation-result").DeckMutationResult>;
   children: ReactNode;
 }) {
   // SAID ONCE, WHEN A READING LANDS (§E): a press settling, never a stored reading painted on open.
@@ -187,6 +192,8 @@ export function AnalysisPanel({
           blocked={blocked}
           note={pressNote?.analyze ?? null}
           see={pressSee ?? null}
+          description={description}
+          onSaveDescription={onSaveDescription}
         />
       ) : null) : null}
       {/* THE FLAG BEING OFF, OR A DECK THAT CANNOT BE READ, DRAWS NO READING: the tab is hidden by

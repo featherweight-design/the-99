@@ -51,7 +51,6 @@ function deps(states: TuningState[], over: Partial<TuningDeps> = {}): TuningDeps
     run: vi.fn(ok),
     cancel: vi.fn(ok),
     evidence: vi.fn(async () => 3),
-    saveIntent: vi.fn(ok),
     card: { apply: ok, undo: ok, reject: ok, restore: ok },
     ...over,
   };
@@ -269,32 +268,9 @@ describe("TuningPanel", () => {
     expect(screen.queryByTestId("tuning-unchanged")).toBeNull();
   });
 
-  it("asks what the deck is for only before a first set, never over one", async () => {
-    const noIntent = { ...facts, intent: null };
-    await draw(deps([fresh]), noIntent);
-    expect(screen.getByText(deckTuningCopy.intent.askLabel)).toBeInTheDocument();
-  });
-
-  // The header's `edit` saves through the page. The ask has to go the moment the page says the
-  // deck has a line, or it asks for one the header is already drawing.
-  it("drops the ask when the page brings a line saved from the header", async () => {
-    const d = deps([fresh]);
-    const noIntent = { ...facts, intent: null };
-    let rerender!: ReturnType<typeof render>["rerender"];
-    await act(async () => {
-      ({ rerender } = render(<TuningPanel deckId="d1" permits={[3]} facts={noIntent} onLogGame={vi.fn()} deps={d} />));
-    });
-    expect(screen.getByText(deckTuningCopy.intent.askLabel)).toBeInTheDocument();
-    await act(async () => {
-      rerender(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} />);
-    });
-    expect(screen.queryByText(deckTuningCopy.intent.askLabel)).toBeNull();
-  });
-
-  it("does not ask what the deck is for over a set of suggestions", async () => {
-    await draw(deps([results]), { ...facts, intent: null });
-    expect(screen.queryByText(deckTuningCopy.intent.askLabel)).toBeNull();
-  });
+  // The in-panel ask is gone (H35): the description's one door before a first reading is now
+  // the empty-state field (`deck-description-field.test.tsx`), with the pencil as its second.
+  // The four tests that lived here covered that door and are retired with it.
 
   it("says a run failed even over a set retired by a commit", async () => {
     const failed = { ...okRun, id: "r2", status: "failed" as const, errorClass: "timeout" };
@@ -419,8 +395,6 @@ describe("TuningPanel: Locked (never cut)", () => {
     expect(primary).toHaveAttribute("aria-disabled", "true");
     await press(copy.suggest);
     expect(d.run).not.toHaveBeenCalled();
-    // Hugh, 2026-09-25: the intent ask's skip line promises the suggestions still run, so it goes.
-    expect(screen.queryByText(deckTuningCopy.intent.skip)).not.toBeInTheDocument();
   });
 
   // Over an existing set, the sentence joins the note (the lead is the set's), and only the

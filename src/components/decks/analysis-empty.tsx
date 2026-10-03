@@ -1,10 +1,13 @@
 "use client";
 
-import { useId } from "react";
+import { useId, useRef, useState } from "react";
 
 import type { Bracket } from "../../lib/bracket/types";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
+import { deckDescriptionCopy } from "../../lib/copy/deck-description";
+import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { BracketMark } from "./bracket-mark";
+import { DeckDescriptionField } from "./deck-description-field";
 import { ProvenanceOpener } from "./provenance-panel";
 
 const copy = deckAnalysisCopy.panel;
@@ -35,6 +38,8 @@ export function AnalysisEmpty({
   blocked = null,
   note = null,
   see = null,
+  description = null,
+  onSaveDescription,
 }: {
   phase: "idle" | "loading" | "failed";
   /**
@@ -56,8 +61,64 @@ export function AnalysisEmpty({
   note?: string | null;
   /** The overview check's *See which →*, after the note (deck notices HANDOFF §6). */
   see?: { label: string; onPress: () => void } | null;
+  /** The deck's description, read by this field and by Suggested changes (H35). Null until
+   *  stated — the field is empty, never undrawn, since the empty state IS where it is asked. */
+  description?: string | null;
+  /** Saves the description. The press (below) awaits this before it reads (engineering note 1):
+   *  a description typed seconds before Analyze must not be lost to a race. */
+  onSaveDescription?: (value: string) => Promise<DeckMutationResult>;
 }) {
   const noteId = useId();
+  const [draft, setDraft] = useState(description ?? "");
+  const [savingDescription, setSavingDescription] = useState(false);
+  const [descriptionRefused, setDescriptionRefused] = useState<string | null>(null);
+  const [descriptionAnnounced, setDescriptionAnnounced] = useState("");
+  // A new description from the page (another tab's edit, a revalidate) replaces the held draft,
+  // adjusted during render rather than in an effect — but only while the draft still matches
+  // what was last seen: a reader mid-edit here must not have their unsaved text overwritten by
+  // a revalidation that landed from, say, their own header save (pre-open review).
+  const [seenDescription, setSeenDescription] = useState(description ?? null);
+  if (seenDescription !== description) {
+    const unedited = draft.trim() === (seenDescription ?? "").trim();
+    setSeenDescription(description ?? null);
+    if (unedited) setDraft(description ?? "");
+  }
+  // Blur fires a save, then a press on Analyze a moment later can fire a SECOND one before the
+  // first settles (pre-open review round 2) — both write and both revalidate, and the one that
+  // resolves last decides what the field ends up reading. Sharing the in-flight promise means a
+  // second call while one is pending joins the first rather than racing it.
+  const pendingSave = useRef<Promise<DeckMutationResult> | null>(null);
+  async function saveDescription(): Promise<DeckMutationResult> {
+    if (pendingSave.current) return pendingSave.current;
+    if (!onSaveDescription) return { ok: true };
+    const trimmed = draft.trim();
+    if (trimmed === (description ?? "").trim()) return { ok: true };
+    setSavingDescription(true);
+    setDescriptionRefused(null);
+    setDescriptionAnnounced("");
+    const run = (async (): Promise<DeckMutationResult> => {
+      try {
+        // Deferred through a microtask, so a callback that THROWS SYNCHRONOUSLY (rather than
+        // returning a rejected promise) still suspends this async function at `await` instead
+        // of running the whole try/catch/finally to completion before `pendingSave.current = run`
+        // below ever executes — which would have the `finally` clear the ref back to null and
+        // this line immediately re-set it to an already-settled promise, stuck until unmount.
+        const result = await Promise.resolve().then(() => onSaveDescription(trimmed));
+        if (result.ok) setDescriptionAnnounced(deckDescriptionCopy.announce.descriptionSaved);
+        else setDescriptionRefused(result.message);
+        return result;
+      } catch {
+        const result: DeckMutationResult = { ok: false, message: deckDescriptionCopy.description.refused };
+        setDescriptionRefused(result.message);
+        return result;
+      } finally {
+        setSavingDescription(false);
+        pendingSave.current = null;
+      }
+    })();
+    pendingSave.current = run;
+    return run;
+  }
   const shownNote = blocked === null ? note : null;
   const text = phase === "loading"
     ? stage === "writing" ? copy.writing : copy.loading
@@ -102,11 +163,51 @@ export function AnalysisEmpty({
               {copy.idle.bodyPersist}
             </p>
           ) : null}
+          {/* The description field, between the second paragraph and Analyze (H35, STATES §1).
+              Not drawn during loading — the shipped loading state is unchanged. */}
+          {phase === "idle" ? (
+            <div className="w-full max-w-[540px]">
+              <DeckDescriptionField
+                value={draft}
+                onChange={setDraft}
+                onBlur={() => void saveDescription()}
+                saving={savingDescription}
+                refused={descriptionRefused}
+              />
+            </div>
+          ) : null}
+          {/* Mounted regardless of phase — a successful save's own callback calls `onRequest`,
+              which can switch to `loading` immediately, and the idle block above (and the
+              announcement with it) would unmount before a screen reader ever read it (round 6).
+              `aria-live`/`aria-atomic` stay on the span from its FIRST render, empty or not
+              (round 8): a region a screen reader has not yet registered as live can miss the
+              very update that turns it live, so the live-ness itself must never be new at the
+              same moment the text is. `role` stays conditional — `AnalysisPanel` carries its own
+              `role="status"` for the reading-settled announcement, and giving this span the
+              role unconditionally would plant a second, always-matching status region beside
+              it for every existing role query. */}
+          <span
+            data-testid="description-save-announce"
+            aria-live="polite"
+            aria-atomic="true"
+            role={descriptionAnnounced ? "status" : undefined}
+            className="sr-only"
+          >
+            {descriptionAnnounced}
+          </span>
           <div className={`mt-[20px] flex w-full flex-col items-center gap-[6px] md:mt-[22px] md:w-auto md:flex-row md:flex-wrap md:gap-x-[20px] ${shownNote ? "md:gap-y-[12px]" : "md:gap-y-[20px]"}`}>
             {/* A BUTTON, NEVER AUTOMATIC. A silent retry loop is how a wait becomes a bill. */}
             <button
               type="button"
-              onClick={disabled ? undefined : onRequest}
+              onClick={disabled ? undefined : () => {
+                // Nothing to save: read now, synchronously — a caller with no save wired up
+                // (or no pending edit) gets exactly the old one-press behavior.
+                if (!onSaveDescription || draft.trim() === (description ?? "").trim()) { onRequest(); return; }
+                // A refused or thrown save leaves the field as it was (including `savingDescription`
+                // reset by `saveDescription`'s own `finally`) and never reads — reading over an
+                // unsaved, refused description would silently drop it (pre-open review).
+                void saveDescription().then((result) => { if (result.ok) onRequest(); });
+              }}
               aria-disabled={disabled || undefined}
               aria-describedby={blocked ? "analysis-blocked" : shownNote ? noteId : undefined}
               className={

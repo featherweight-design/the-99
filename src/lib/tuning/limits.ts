@@ -1,4 +1,5 @@
-import { countCharacters, deckTuningCopy } from "../copy/deck-tuning";
+import { countCharacters } from "../copy/deck-tuning";
+import { deckDescriptionCopy } from "../copy/deck-description";
 
 /**
  * Deck tuning's fixed numbers, in one place. Pure and client-safe.
@@ -37,65 +38,6 @@ export const MODEL_TIMEOUT_MS = 110_000;
  * by strict validation, at $2 / $10 per MTok against the current Opus's $5 / $25.
  */
 export const TUNING_MODEL = "claude-sonnet-5";
-
-/**
- * The intent the app writes when it fills a deck, marked `intent_seeded` so the chip can say
- * who wrote it. Always within the intent's cap, counted in code points as the column counts:
- * the full sentence, then the short one, then the short one with the names cut and closed with
- * an ellipsis. A pair is named as a pair.
- */
-export function seededIntent(commanderNames: readonly string[]): string {
-  const names = commanderNames.join(" and ");
-  const { seededBrief, seededBriefShort, maxLength } = deckTuningCopy.intent;
-  for (const sentence of [seededBrief(names), seededBriefShort(names)]) {
-    if (countCharacters(sentence) <= maxLength) return sentence;
-  }
-  const room = maxLength - countCharacters(seededBriefShort("\u2026"));
-  return seededBriefShort(`${[...names].slice(0, room).join("")}\u2026`);
-}
-
-/**
- * The intent a Help me choose deck is seeded with: what the player asked, as the brief (F2). The
- * same cap and the same kind of chain as `seededIntent`: the full sentence, then the commander and
- * its themes, then `seededIntent`'s own chain. With nothing asked it is `seededIntent`.
- *
- * It is written once, at create, on the filled path and the empty one alike (`answerColumnsFor`):
- * the one moment the themes are known, since they are not stored on the deck.
- */
-export function seededAnswersIntent(
-  commanderNames: readonly string[],
-  answers: {
-    themes: readonly string[];
-    /** Any of joins two or more themes by "or"; absent, or below two themes, they are all of. */
-    themeJoin?: "all" | "any";
-    /** Set codes, drawn upper-case. */
-    sets?: readonly string[];
-    /** The 99 from the player's own cards. */
-    ownOnly?: boolean;
-    cardName: string | null;
-    budgetDollars: number | null;
-    bracket: number | null;
-  },
-): string {
-  const names = commanderNames.join(" and ");
-  const { seededAnswers, answerThemes, answerThemesAny, answerSets, answerOwn, answerCard, answerBudget, answerBracket, maxLength } = deckTuningCopy.intent;
-  const anyOf = answers.themeJoin === "any" && answers.themes.length >= 2;
-  const themes = answers.themes.length > 0 ? [(anyOf ? answerThemesAny : answerThemes)(answers.themes)] : [];
-  const full = [
-    ...themes,
-    ...(answers.sets && answers.sets.length > 0 ? [answerSets(answers.sets.map((c) => c.toUpperCase()))] : []),
-    ...(answers.ownOnly ? [answerOwn] : []),
-    ...(answers.cardName !== null ? [answerCard(answers.cardName)] : []),
-    ...(answers.budgetDollars !== null ? [answerBudget(answers.budgetDollars)] : []),
-    ...(answers.bracket !== null ? [answerBracket(answers.bracket)] : []),
-  ];
-  for (const parts of [full, themes]) {
-    if (parts.length === 0) continue;
-    const sentence = seededAnswers(names, parts);
-    if (countCharacters(sentence) <= maxLength) return sentence;
-  }
-  return seededIntent(commanderNames);
-}
 
 /**
  * The answer's own worst case, from the response schema's caps rather than guessed. One suggestion
@@ -139,9 +81,9 @@ export const TUNING_RETRY_FLOOR_MS = 70_000;
 export const THINKING_HEADROOM_TOKENS = 3_000;
 
 /**
- * Whether a deck intent is over the cap, counted in code points as the column's
+ * Whether a deck description is over the cap (240, H35), counted in code points as the column's
  * `char_length` check counts — `.length` would refuse 61 emoji as 122 characters.
  */
 export function intentTooLong(intent: string): boolean {
-  return countCharacters(intent) > deckTuningCopy.intent.maxLength;
+  return countCharacters(intent) > deckDescriptionCopy.description.maxLength;
 }

@@ -528,14 +528,12 @@ export const exportShoppingCopy = {
   countMeta: (copies: number) => `${copies} cards · to buy`,
 } as const;
 
-/** Deck rename. The hint is the one string that names both keys, so it is set
-    in mono at the same tracking as the rest of the spine's instrument type. */
+/** Deck rename. */
 export const renameCopy = {
   // Named, not bare: the deck header is reachable from list contexts, so a
   // screen-reader user tabbing to this needs to know which deck it renames.
   triggerAria: (name: string) => `Rename deck: ${name}`,
   fieldAria: "Deck name",
-  hint: "↵ save · esc cancel",
   save: "Save",
   saving: "Saving…",
   retry: "Retry",

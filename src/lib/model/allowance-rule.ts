@@ -56,7 +56,7 @@ export type Allowance = {
   limit: number;
   /** When the oldest counted unit leaves the window. Null while units remain. */
   reopensAt: Date | null;
-  /** When the NEXT counted unit leaves the window, spent or not: the credit line's "next one at"
+  /** When the NEXT counted unit leaves the window, spent or not: the credit line's "reset at"
    *  while credits remain as well as once they are gone. Null when nothing counts. */
   nextAt: Date | null;
   /** Present while the app-wide spend cap refuses every call: until the 1st of next UTC month.

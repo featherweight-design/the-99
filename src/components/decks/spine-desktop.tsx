@@ -6,7 +6,7 @@
 // portrait's 356. On flat ground either way, so nothing here carries a shadow.
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { GhostButton, PrimaryButton } from "@/components/ui/button";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { IdentityPips } from "../commanders/commander-art";
@@ -25,11 +25,14 @@ import { StatusPillBadge } from "./status-pill";
 import { SpineBracketChip } from "./bracket-chip";
 import { HeaderNoticeTag, type HeaderNotice } from "./notice-tag";
 import type { TileBracket } from "../../lib/decks/read";
-import { useDeckRename } from "./use-deck-rename";
+import { useDeckHeaderEdit } from "./use-deck-header-edit";
+import { useMinWidth } from "../ui/use-min-width";
 import { ProxyTag } from "./proxy-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { shortName } from "../../lib/cards/short-name";
 import { DeckIntentLine } from "./deck-intent-line";
+import { deckDescriptionCopy } from "../../lib/copy/deck-description";
+import { countCharacters } from "../../lib/copy/deck-tuning";
 
 /** The slice of the deck both widths of the header read. Narrower than
     `DeckDetail` on purpose: nothing in this band knows about the decklist. */
@@ -99,13 +102,8 @@ export interface SpineBandProps {
   onOpenNotices?: () => void;
 }
 
-/** §B16 — the field's box, identical in all four editing states. Declared
-    rather than left to layout: zero reflow between states is the point. */
-// `maxWidth`, not a fixed `width`: the title column's inset is 364px below
-// ~1200px of row, so a 768px viewport leaves about 318px of column — less than
-// 352 — and a fixed field would have run under the action controls beside it
-// while renaming. 352 stays the intended size wherever the column can hold it.
-const FIELD_BOX = { width: "100%", maxWidth: 352, height: 29 } as const;
+// §B16's single-field box is retired: editing now draws name and description at one width,
+// `max-w-[560px]`, set inline on the editor block below (H35, STATES §2).
 
 /**
  * Decision 18's shrinking half. Both names take it; the partner additionally
@@ -144,7 +142,19 @@ export function SpineDesktop({
   // ink the state adds reads the same token `statusBarStyle` gives the bar
   // rather than a second alarm colour of its own.
   const overInk = `var(${STATUS_TOKEN[status]})`;
-  const rename = useDeckRename(deck.id, deck.name, () => setRenaming(false));
+  const rename = useDeckHeaderEdit(deck.id, deck.name, deck.intent ?? null, () => setRenaming(false));
+  const descriptionFieldRef = useRef<HTMLTextAreaElement>(null);
+  // The editor's two halves sit in separate flex columns of the header row, with the partner's
+  // card-details trigger between them in DOM order — so blur has to be checked against BOTH
+  // halves explicitly (pre-open review round 2), not against one shared ancestor that would
+  // also contain that unrelated control.
+  const fieldsWrapperRef = useRef<HTMLDivElement>(null);
+  const actionsWrapperRef = useRef<HTMLDivElement>(null);
+  // This header renders from 768px, which includes landscape iPhones and iPads — devices iOS
+  // Safari still zooms the viewport on focusing a sub-16px input. `pointer: fine` is false on
+  // every touchscreen regardless of viewport width, so the description field keeps 13.5px only
+  // on a mouse/trackpad desktop and falls back to 16px anywhere that protection is needed.
+  const pointerFine = useMinWidth("(pointer: fine)");
 
   // §F, as three booleans rather than a state string: they are not exclusive in
   // the source (a save-disabled field can also be showing a previous error) and
@@ -159,12 +169,9 @@ export function SpineDesktop({
       ? "1px solid var(--danger)"
       : "1px solid var(--accent)";
 
-  const hint = failed ? rename.error : saving ? renameCopy.saving : renameCopy.hint;
-  const hintInk = failed
-    ? "var(--danger)"
-    : inert
-      ? "var(--fg-disabled)"
-      : "var(--fg-faint)";
+  // STATES §2, state 3: "No hint line" — the keyboard hint shown by the retired single-field
+  // editor is gone. State 4 keeps the refusal message, same as the mobile editor's.
+  const hint = failed ? rename.error : null;
 
   return (
     <header
@@ -227,8 +234,11 @@ export function SpineDesktop({
       </div>
       {/* §G — with no crop there is no printing to open, so the pill is absent (the door then
           draws its ⇄ half alone, or nothing with the switch off). It is absolutely
-          positioned, so its absence shifts nothing. */}
-      <ChangeCommanderDoor oracleId={commander.oracleId} width="desktop" hasCrop={Boolean(commander.artCropUri)} />
+          positioned, so its absence shifts nothing. Hidden while editing (STATES §2, state 3:
+          "the corner buttons hide"). */}
+      {!renaming && (
+        <ChangeCommanderDoor oracleId={commander.oracleId} width="desktop" hasCrop={Boolean(commander.artCropUri)} />
+      )}
 
       <div
         // The inset switches on the same breakpoint the portrait does: 592 clears
@@ -263,33 +273,65 @@ export function SpineDesktop({
         <div className="flex min-w-0 flex-1 basis-[280px] flex-col">
           <div className="flex items-center">
             {renaming ? (
-              <input
-                autoFocus
-                value={rename.value}
-                onChange={(e) => rename.setValue(e.target.value)}
-                onKeyDown={rename.onKeyDown}
-                onBlur={rename.onBlur}
-                // readOnly, never disabled: a disabled input blurs, and blur
-                // commits.
-                readOnly={saving}
-                maxLength={undefined}
-                aria-label={renameCopy.fieldAria}
-                className="font-display font-[700] focus-visible:outline-none"
-                style={{
-                  ...FIELD_BOX,
-                  boxSizing: "border-box",
-                  background: "var(--surface-sunken)",
-                  border: fieldBorder,
-                  borderRadius: 8,
-                  padding: "1px 10px",
-                  margin: "-2px 0 -2px -11px",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  fontSize: 21,
-                  lineHeight: 1.2,
-                  color: "var(--fg)",
-                }}
-              />
+              // Both fields, one width (STATES-deck-description.md §2, state 3): 560 or the
+              // cover's own width, whichever this column has. One commit for the pair — blur on
+              // the wrapper, never on either field alone.
+              <div
+                ref={fieldsWrapperRef}
+                className="flex w-full max-w-[560px] flex-col gap-[6px]"
+                style={{ margin: "-2px 0 -2px -11px" }}
+                onBlur={(e) => rename.onPairBlur(e, actionsWrapperRef.current)}
+              >
+                <input
+                  autoFocus
+                  value={rename.name}
+                  onChange={(e) => rename.setName(e.target.value)}
+                  onKeyDown={(e) => rename.onNameKeyDown(e, descriptionFieldRef.current)}
+                  readOnly={saving}
+                  aria-label={renameCopy.fieldAria}
+                  className="font-display font-[700] focus-visible:outline-none"
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    background: "var(--surface-sunken)",
+                    border: fieldBorder,
+                    borderRadius: 8,
+                    padding: "1px 10px",
+                    height: 29,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    fontSize: 21,
+                    lineHeight: 1.2,
+                    color: "var(--fg)",
+                  }}
+                />
+                <textarea
+                  ref={descriptionFieldRef}
+                  value={rename.description}
+                  onChange={(e) => {
+                    if (countCharacters(e.target.value) <= deckDescriptionCopy.description.maxLength) {
+                      rename.setDescription(e.target.value);
+                    }
+                  }}
+                  onKeyDown={rename.onDescriptionKeyDown}
+                  readOnly={saving}
+                  rows={2}
+                  placeholder={deckDescriptionCopy.description.placeholder}
+                  aria-label={deckDescriptionCopy.description.fieldAria}
+                  className="resize-none font-sans"
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    background: "var(--surface-sunken)",
+                    border: "1px dashed var(--border-strong)",
+                    borderRadius: 8,
+                    padding: "6px 10px",
+                    fontSize: pointerFine ? 13.5 : 16,
+                    lineHeight: 1.45,
+                    color: "var(--fg)",
+                  }}
+                />
+              </div>
             ) : (
               <>
                 {/* Selectable text, not a control — §B15 makes the pencil the
@@ -355,7 +397,7 @@ export function SpineDesktop({
                   <button
                     type="button"
                     onClick={() => setRenaming(true)}
-                    aria-label={renameCopy.triggerAria(deck.name)}
+                    aria-label={deckDescriptionCopy.description.pencilAria(deck.name)}
                     className="inline-flex items-center justify-center bg-transparent text-[color:var(--fg-muted)]"
                     style={{
                       // Stated rather than inferred from the glyph: a 14px font
@@ -379,14 +421,12 @@ export function SpineDesktop({
             )}
           </div>
 
-          {/* SECOND in the order (placement addendum r3, E2): the deck's purpose, under its name. */}
-          <DeckIntentLine
-            key={deck.id}
-            deckId={deck.id}
-            intent={deck.intent ?? null}
-            seeded={deck.intentSeeded ?? false}
-            width="desktop"
-          />
+          {/* SECOND in the order (placement addendum r3, E2): the deck's purpose, under its name.
+              Hidden while editing (pre-open review round 3): the editor already shows the
+              description as its own field, and drawing the saved tagline too reads as a
+              duplicate of whatever the draft has just replaced. The phone header already hides
+              it the same way, by mounting it only outside the `renaming` branch. */}
+          {renaming ? null : <DeckIntentLine intent={deck.intent ?? null} width="desktop" />}
 
           <div
             // Same marker as the phone's row, for the same probe.
@@ -588,9 +628,13 @@ export function SpineDesktop({
             it giving anything. */}
         <div className={renaming ? "flex-none" : "min-w-0 shrink-[4] grow-0 basis-auto"}>
           {renaming ? (
-            // §B14 — the actions are replaced, not joined. The hint row is
-            // present in every state, which is what holds the column's height.
-            <div className="flex flex-col items-end" style={{ gap: 7 }}>
+            // §B14 — the actions are replaced, not joined.
+            <div
+              ref={actionsWrapperRef}
+              className="flex flex-col items-end"
+              style={{ gap: 7 }}
+              onBlur={(e) => rename.onPairBlur(e, fieldsWrapperRef.current)}
+            >
               <div className="flex items-center" style={{ gap: 9 }}>
                 <button
                   type="button"
@@ -634,18 +678,16 @@ export function SpineDesktop({
                   {renameCopy.cancel}
                 </button>
               </div>
-              <p
-                data-testid="spine-rename-hint"
-                className="font-mono"
-                style={{
-                  fontSize: 10,
-                  letterSpacing: "0.08em",
-                  minHeight: 16,
-                  color: hintInk,
-                }}
-              >
-                {hint}
-              </p>
+              {hint ? (
+                <p
+                  data-testid="spine-rename-hint"
+                  role="alert"
+                  className="font-mono"
+                  style={{ fontSize: 10, letterSpacing: "0.08em", color: "var(--danger)" }}
+                >
+                  {hint}
+                </p>
+              ) : null}
             </div>
           ) : (
             // `flex-wrap justify-end`: with the first-commit offer present this
@@ -687,6 +729,9 @@ export function SpineDesktop({
           )}
         </div>
       </div>
+      {/* Mounted regardless of `renaming` — a successful save closes the editor via `onDone`,
+          and the announcement has to outlive that unmount to be heard (round 5). */}
+      <span role="status" className="sr-only">{rename.announced}</span>
     </header>
   );
 }

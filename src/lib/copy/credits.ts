@@ -41,14 +41,15 @@ const pausedReason = (deeperLooks = false) =>
     ? "The app has reached its monthly limit for suggestions, overviews and deeper looks. Nothing you did caused this."
     : "The app has reached its monthly limit for suggestions and overviews. Nothing you did caused this.";
 
-/** The count and, when one is out, when the next comes back. */
+/** The count and, when one is out, when the next comes back. "reset at", not "next one at"
+ *  (H35, engineering note 11). */
 function standing(left: number, total: number, next: Date | null): string {
-  return next ? `${left} of ${total} left · next one at ${clockTime(next)}` : `${left} of ${total} left`;
+  return next ? `${left} of ${total} left · reset at ${clockTime(next)}` : `${left} of ${total} left`;
 }
 
 export const creditsCopy = {
   /**
-   * The count and, when one is out, when the next comes back: `4 of 5 left · next one at 2:01 AM`.
+   * The count and, when one is out, when the next comes back: `4 of 5 left · reset at 2:01 AM`.
    * Exported so a surface composing its own lead around the shared line (the overview's press
    * notes) says it in exactly this format rather than a copy of it.
    */

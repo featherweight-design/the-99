@@ -11,7 +11,6 @@ import {
   readTuningPanel,
   restoreSuggestion,
   runTuning,
-  saveDeckIntent,
   undoSuggestion,
 } from "../../app/decks/tuning-actions";
 import { creditsCopy } from "../../lib/copy/credits";
@@ -23,7 +22,6 @@ import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import type { Bracket } from "../../lib/profile/types";
 import { gateReason } from "../../lib/tuning/gate";
 import type { TuningItem, TuningState } from "../../lib/tuning/state";
-import { DeckIntentAsk } from "./deck-intent";
 import { FanShuffle } from "./fan-shuffle";
 import { ManifestRows, type ManifestRow } from "./manifest-rows";
 import { MutationError } from "./mutation-error";
@@ -53,7 +51,6 @@ export type TuningDeps = {
   run: (deckId: string, opts?: { anyway?: boolean; runId?: string }) => Promise<DeckMutationResult>;
   cancel: (deckId: string, runId: string) => Promise<DeckMutationResult>;
   evidence: (deckId: string, step: EvidenceStep) => Promise<number | null>;
-  saveIntent: (deckId: string, formData: FormData) => Promise<DeckMutationResult>;
   card: CardActions;
 };
 
@@ -62,7 +59,6 @@ const SERVER: TuningDeps = {
   run: runTuning,
   cancel: cancelTuningRun,
   evidence: readTuningEvidence,
-  saveIntent: saveDeckIntent,
   card: { apply: applySuggestion, undo: undoSuggestion, reject: dismissSuggestion, restore: restoreSuggestion },
 };
 
@@ -410,18 +406,8 @@ export function TuningPanel({
         {copy.heading}
       </h2>
       {body}
-      {neverRun && intent === null ? (
-        <DeckIntentAsk
-          runBlocked={allLocked !== null}
-          deckId={deckId}
-          fix={facts.fix ? { axis: axisName(facts.fix.key), hurt: facts.fix.hurt, games: facts.gameCount } : null}
-          save={deps.saveIntent}
-          onSaved={(line) => {
-            setIntent(line);
-            setAnnounced(deckTuningCopy.announce.intentSaved);
-          }}
-        />
-      ) : null}
+      {/* The in-panel ask is gone (H35): the description's one door before a first reading is
+          now the empty-state field, above the press, with the pencil as its second door. */}
 
       {/* THE ACTION ROW: one band in every state, the one primary first. */}
       <div

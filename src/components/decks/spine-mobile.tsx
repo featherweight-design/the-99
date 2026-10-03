@@ -6,7 +6,7 @@
 // carries none.
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { GhostButton } from "@/components/ui/button";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { ChangeCommanderDoor } from "./change-commander-door";
@@ -34,7 +34,9 @@ import { verdictHead } from "../../lib/bracket/verdict-head";
  */
 const F18_FACED = "@max-[344px]:hidden";
 const F18_MARKS = "hidden @max-[344px]:contents";
-import { useDeckRename } from "./use-deck-rename";
+import { useDeckHeaderEdit } from "./use-deck-header-edit";
+import { deckDescriptionCopy } from "../../lib/copy/deck-description";
+import { countCharacters } from "../../lib/copy/deck-tuning";
 import { ProxyTag } from "./proxy-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { shortName } from "../../lib/cards/short-name";
@@ -78,7 +80,8 @@ export function SpineMobile({
   // ink the state adds reads the same token `statusBarStyle` gives the bar
   // rather than a second alarm colour of its own.
   const overInk = `var(${STATUS_TOKEN[status]})`;
-  const rename = useDeckRename(deck.id, deck.name, () => setRenaming(false));
+  const rename = useDeckHeaderEdit(deck.id, deck.name, deck.intent ?? null, () => setRenaming(false));
+  const descriptionFieldRef = useRef<HTMLTextAreaElement>(null);
 
   // §C8/§C10 — one row, drawn in the band at rest and below the divider while
   // editing, where the field needs the band's whole width. Its ink differs with
@@ -264,7 +267,10 @@ export function SpineMobile({
         />
         {/* §G — with no crop there is no printing to open; the door then draws its ⇄ half
             alone, or nothing with the switch off. */}
-        <ChangeCommanderDoor oracleId={commander.oracleId} width="mobile" hasCrop={Boolean(commander.artCropUri)} />
+        {/* Hidden while editing (STATES §2, state 3: "the corner buttons hide"). */}
+        {!renaming && (
+          <ChangeCommanderDoor oracleId={commander.oracleId} width="mobile" hasCrop={Boolean(commander.artCropUri)} />
+        )}
 
         <div
           // The block the ramp is keyed to, hooked so a probe measures it rather
@@ -285,13 +291,12 @@ export function SpineMobile({
           }}
         >
           {renaming ? (
-            <>
+            <div className="flex w-full flex-col" style={{ gap: 8 }} onBlur={rename.onPairBlur}>
               <input
                 autoFocus
-                value={rename.value}
-                onChange={(e) => rename.setValue(e.target.value)}
-                onKeyDown={rename.onKeyDown}
-                onBlur={rename.onBlur}
+                value={rename.name}
+                onChange={(e) => rename.setName(e.target.value)}
+                onKeyDown={(e) => rename.onNameKeyDown(e, descriptionFieldRef.current)}
                 // readOnly, never disabled: a disabled input blurs, and blur
                 // commits.
                 readOnly={rename.isPending}
@@ -304,8 +309,32 @@ export function SpineMobile({
                   color: "var(--fg)",
                 }}
               />
+              <textarea
+                ref={descriptionFieldRef}
+                value={rename.description}
+                onChange={(e) => {
+                  if (countCharacters(e.target.value) <= deckDescriptionCopy.description.maxLength) {
+                    rename.setDescription(e.target.value);
+                  }
+                }}
+                onKeyDown={rename.onDescriptionKeyDown}
+                readOnly={rename.isPending}
+                rows={2}
+                placeholder={deckDescriptionCopy.description.placeholderPhone}
+                aria-label={deckDescriptionCopy.description.fieldAria}
+                // 16px, not 13.5: iOS Safari zooms the viewport on focusing an input under 16px
+                // (pre-open review) — the retired single-field editor used 16px on a phone too.
+                className="w-full resize-none rounded-[8px] border border-dashed border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] text-left font-sans"
+                style={{
+                  boxSizing: "border-box",
+                  padding: "8px 12px",
+                  fontSize: 16,
+                  lineHeight: 1.45,
+                  color: "var(--fg)",
+                }}
+              />
               {rename.error ? (
-                <p className="font-mono" style={{ fontSize: 11, color: "var(--danger)" }}>
+                <p role="alert" className="font-mono" style={{ fontSize: 11, color: "var(--danger)" }}>
                   {rename.error}
                 </p>
               ) : null}
@@ -355,7 +384,7 @@ export function SpineMobile({
                   {renameCopy.cancel}
                 </button>
               </div>
-            </>
+            </div>
           ) : (
             <>
               {/* A BLOCK, not a flex row, and that is the whole fix for the
@@ -443,7 +472,7 @@ export function SpineMobile({
                   <button
                     type="button"
                     onClick={() => setRenaming(true)}
-                    aria-label={renameCopy.triggerAria(deck.name)}
+                    aria-label={deckDescriptionCopy.description.pencilAria(deck.name)}
                     className="inline-flex items-center justify-center text-[color:var(--fg-muted)]"
                     style={{
                       // The 44px target is stated rather than inferred from the
@@ -467,13 +496,7 @@ export function SpineMobile({
                 </span>
               </div>
               {/* SECOND in the order (placement addendum r3, E2b), on the art like the name. */}
-              <DeckIntentLine
-                key={deck.id}
-                deckId={deck.id}
-                intent={deck.intent ?? null}
-                seeded={deck.intentSeeded ?? false}
-                width="phone"
-              />
+              <DeckIntentLine intent={deck.intent ?? null} width="phone" />
               {metaRow(true)}
               {chipsRow}
             </>
@@ -572,44 +595,51 @@ export function SpineMobile({
         )}
       </div>
 
-      <div
-        className="flex flex-wrap justify-center"
-        style={{ padding: "4px 16px 14px", gap: 8 }}
-      >
-        {built > 0 && (
-          <GhostButton
-            href={`/decks/${deck.id}/import`}
-            className="flex min-h-[44px] items-center px-[9px] py-[6px] font-mono text-[11px]"
-          >
-            {deckImportCopy.update.entryLabel}
-          </GhostButton>
-        )}
-        {built > 0 && (
-          <button
-            type="button"
-            onClick={onExport}
-            className="flex min-h-[44px] items-center gap-[5px] rounded-[7px] border border-[color:var(--border-strong)] bg-transparent px-[9px] py-[6px] font-mono text-[11px] text-[color:var(--accent)]"
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="var(--fg-faint)"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
+      {/* STATES §2, state 3: Save/Cancel replace Update and Export while editing, at both
+          widths — so this whole row hides rather than sitting under the open editor. */}
+      {!renaming && (
+        <div
+          className="flex flex-wrap justify-center"
+          style={{ padding: "4px 16px 14px", gap: 8 }}
+        >
+          {built > 0 && (
+            <GhostButton
+              href={`/decks/${deck.id}/import`}
+              className="flex min-h-[44px] items-center px-[9px] py-[6px] font-mono text-[11px]"
             >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            {deckHeaderCopy.export}
-          </button>
-        )}
-        {offerFirstCommit && <FirstCommitOffer deckId={deck.id} />}
-      </div>
+              {deckImportCopy.update.entryLabel}
+            </GhostButton>
+          )}
+          {built > 0 && (
+            <button
+              type="button"
+              onClick={onExport}
+              className="flex min-h-[44px] items-center gap-[5px] rounded-[7px] border border-[color:var(--border-strong)] bg-transparent px-[9px] py-[6px] font-mono text-[11px] text-[color:var(--accent)]"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--fg-faint)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              {deckHeaderCopy.export}
+            </button>
+          )}
+          {offerFirstCommit && <FirstCommitOffer deckId={deck.id} />}
+        </div>
+      )}
+      {/* Mounted regardless of `renaming` — a successful save closes the editor via `onDone`,
+          and the announcement has to outlive that unmount to be heard (round 5). */}
+      <span role="status" className="sr-only">{rename.announced}</span>
     </header>
   );
 }

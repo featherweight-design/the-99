@@ -1,15 +1,17 @@
 "use server";
 
-import { inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 
 import { db } from "../../db";
-import { cards } from "../../db/schema";
+import { cards, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { isUuid } from "../../lib/uuid";
 import { creditsCopy } from "../../lib/copy/credits";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { deckDescriptionCopy } from "../../lib/copy/deck-description";
+import { validateDeckName } from "../../lib/decks/deck-name";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { deckSurfaces } from "../../lib/decks/revalidate";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
@@ -29,7 +31,7 @@ import { callModel } from "../../lib/model/client";
 import { buildPlayGroup } from "../../lib/profile/play";
 import { buildEvidencePack } from "../../lib/tuning/evidence";
 import { gateReason } from "../../lib/tuning/gate";
-import { MODEL_TIMEOUT_MS, TUNING_EFFORT, TUNING_MAX_TOKENS, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "../../lib/tuning/limits";
+import { intentTooLong, MODEL_TIMEOUT_MS, TUNING_EFFORT, TUNING_MAX_TOKENS, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "../../lib/tuning/limits";
 import { buildPrompt } from "../../lib/tuning/prompt";
 import { tuningResponseSchema } from "../../lib/tuning/response-schema";
 import { cancelRun, finishRun, persistRun, saveIntent, startRun, type Billed } from "../../lib/tuning/run-store";
@@ -54,19 +56,63 @@ function revalidateDeck(deckId: string): void {
 }
 
 /**
- * The deck's one line. Every save clears `intent_seeded`: the app writes `true` when it fills a
- * deck, and the player's first edit — the only thing that calls this — makes the line theirs.
+ * The deck's description (H35): one or two sentences, quoted verbatim by the overview and
+ * Suggested changes. Every save clears `intent_seeded` too, which no longer matters for a new
+ * write (nothing seeds any more) but still holds for a deck that had an old seeded line.
  */
-export async function saveDeckIntent(deckId: string, formData: FormData): Promise<DeckMutationResult> {
+export async function saveDeckDescription(deckId: string, formData: FormData): Promise<DeckMutationResult> {
   const userId = await requireUserId();
-  if (!isUuid(deckId)) return { ok: false, message: deckTuningCopy.intent.refused };
+  if (!isUuid(deckId)) return { ok: false, message: deckDescriptionCopy.description.refused };
   // A field that is missing or not text is a refusal, never an empty line: reading it as ""
-  // would clear the player's intent on a malformed request.
+  // would clear the player's description on a malformed request.
   const raw = formData instanceof FormData ? formData.get("intent") : null;
-  if (typeof raw !== "string") return { ok: false, message: deckTuningCopy.intent.refused };
+  if (typeof raw !== "string") return { ok: false, message: deckDescriptionCopy.description.refused };
   const saved = await saveIntent(deckId, userId, raw);
-  if (saved === "tooLong") return { ok: false, message: deckTuningCopy.intent.tooLong };
-  if (saved === "refused") return { ok: false, message: deckTuningCopy.intent.refused };
+  if (saved === "tooLong") return { ok: false, message: deckDescriptionCopy.description.tooLong };
+  if (saved === "refused") return { ok: false, message: deckDescriptionCopy.description.refused };
+  revalidateDeck(deckId);
+  return { ok: true };
+}
+
+/**
+ * The header pencil's ONE commit (H35, pre-open review round 2): a name and/or a description,
+ * written in ONE update so a description refusal can never leave a renamed deck behind with no
+ * way for Cancel to undo it. Pass only the fields that changed when the editor's commit began —
+ * a field the caller omits is left exactly as the database holds it, so a concurrent save of the
+ * OTHER field (the empty-state door, say) is never overwritten with a stale closure value.
+ */
+export async function saveDeckHeader(
+  deckId: string,
+  fields: { name?: string; description?: string },
+): Promise<DeckMutationResult> {
+  const userId = await requireUserId();
+  if (!isUuid(deckId)) return { ok: false, message: deckDescriptionCopy.description.refused };
+  // A SERVER ACTION IS A PUBLIC ENDPOINT (this file's own header): the TypeScript parameter type
+  // checks nothing at runtime, so a malformed request — `null`, a field that is not a string —
+  // must be refused here rather than reaching `validateDeckName` or `.trim()` and throwing.
+  if (typeof fields !== "object" || fields === null) return { ok: false, message: deckDescriptionCopy.description.refused };
+  if (fields.name !== undefined && typeof fields.name !== "string") return { ok: false, message: deckDescriptionCopy.description.refused };
+  if (fields.description !== undefined && typeof fields.description !== "string") return { ok: false, message: deckDescriptionCopy.description.refused };
+  const set: { name?: string; intent?: string | null; intentSeeded?: boolean } = {};
+  if (fields.name !== undefined) {
+    try {
+      set.name = validateDeckName(fields.name);
+    } catch {
+      return { ok: false, message: deckDescriptionCopy.description.refused };
+    }
+  }
+  if (fields.description !== undefined) {
+    const trimmed = fields.description.trim();
+    if (intentTooLong(trimmed)) return { ok: false, message: deckDescriptionCopy.description.tooLong };
+    set.intent = trimmed.length > 0 ? trimmed : null;
+    set.intentSeeded = false;
+  }
+  if (Object.keys(set).length === 0) return { ok: true };
+  const updated = await db.update(decks).set({ ...set, lastEditedAt: sql`clock_timestamp()` })
+    .where(and(eq(decks.id, deckId), eq(decks.userId, userId)))
+    .returning({ id: decks.id });
+  if (updated.length === 0) return { ok: false, message: deckDescriptionCopy.description.refused };
+  if (set.name !== undefined) revalidateClaims(deckId, userId);
   revalidateDeck(deckId);
   return { ok: true };
 }

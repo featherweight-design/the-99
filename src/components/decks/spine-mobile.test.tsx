@@ -1,9 +1,18 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { SpineMobile } from "./spine-mobile";
-import { overCopy, renameCopy } from "../../lib/copy/decks-builder";
+import { deckHeaderCopy, overCopy, renameCopy } from "../../lib/copy/decks-builder";
+import { deckImportCopy } from "../../lib/copy/deck-import";
+import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { pairDeck, props } from "./spine-fixtures";
+
+const saveDeckHeader = vi.hoisted(() => vi.fn(async () => ({ ok: true as const })));
+vi.mock("../../app/decks/tuning-actions", () => ({ saveDeckHeader }));
+
+beforeEach(() => {
+  saveDeckHeader.mockClear();
+});
 
 function renderSpine(ui: React.ReactElement) {
   return render(
@@ -86,11 +95,26 @@ describe("SpineMobile", () => {
     );
   });
 
+  // STATES §2, state 3: Save/Cancel replace Update and Export at both widths, and the
+  // corner buttons hide.
+  it("hides Update, Export and the change-commander door while editing", () => {
+    renderSpine(<SpineMobile {...props} />);
+    expect(screen.getByRole("link", { name: deckImportCopy.update.entryLabel })).toBeTruthy();
+    expect(screen.getByRole("button", { name: deckHeaderCopy.export })).toBeTruthy();
+    // With no `ChangeCommanderDoor` provider mounted (as here), the door falls back to today's
+    // plain card-details trigger — the same control the feature replaces.
+    expect(screen.getByRole("button", { name: "View card details" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    expect(screen.queryByRole("link", { name: deckImportCopy.update.entryLabel })).toBeNull();
+    expect(screen.queryByRole("button", { name: deckHeaderCopy.export })).toBeNull();
+    expect(screen.queryByRole("button", { name: "View card details" })).toBeNull();
+  });
+
   it("moves the meta row below the divider while editing", () => {
     const { container } = renderSpine(<SpineMobile {...props} />);
     const band = container.querySelector("[data-testid='spine-band']")!;
     expect(band.textContent).toContain("Atraxa, Praetors’ Voice");
-    fireEvent.click(screen.getByRole("button", { name: renameCopy.triggerAria(props.deck.name) }));
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
     expect(band.textContent).not.toContain("Atraxa, Praetors’ Voice");
     expect(screen.getByText(/Atraxa, Praetors’ Voice/)).toBeTruthy();
   });
@@ -100,10 +124,34 @@ describe("SpineMobile", () => {
   // same rename the tap is about to send.
   it("neither action lets the field's blur fire first", () => {
     renderSpine(<SpineMobile {...props} />);
-    fireEvent.click(screen.getByRole("button", { name: renameCopy.triggerAria(props.deck.name) }));
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
     for (const name of [/Save/, "Cancel"]) {
       expect(fireEvent.mouseDown(screen.getByRole("button", { name }))).toBe(false);
     }
+  });
+
+  // Round 5: `onDone` closes the editor on success, so the announcement has to come from a
+  // region that outlives the editor's unmount to ever be heard.
+  it("announces a successful description save through a status region that outlives the editor", async () => {
+    renderSpine(<SpineMobile {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    const description = screen.getByLabelText(deckDescriptionCopy.description.fieldAria);
+    fireEvent.change(description, { target: { value: "New description" } });
+    fireEvent.click(screen.getByRole("button", { name: /Save/ }));
+    await vi.waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Saved the description."));
+    expect(screen.queryByLabelText("Deck name")).toBeNull();
+    expect(screen.getByRole("status")).toHaveTextContent("Saved the description.");
+  });
+
+  it("shows a save refusal as an alert", async () => {
+    saveDeckHeader.mockResolvedValueOnce({ ok: false, message: "That did not save." } as never);
+    renderSpine(<SpineMobile {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    const name = screen.getByLabelText("Deck name") as HTMLInputElement;
+    fireEvent.change(name, { target: { value: "Changed Name" } });
+    fireEvent.click(screen.getByRole("button", { name: /Save/ }));
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("That did not save.");
   });
 
   // R6 ruling 4. The header is reachable from list contexts, so the label has
@@ -111,7 +159,7 @@ describe("SpineMobile", () => {
   it("names the deck in the rename trigger's accessible name", () => {
     renderSpine(<SpineMobile {...props} />);
     expect(
-      screen.getByRole("button", { name: `Rename deck: ${props.deck.name}` }),
+      screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }),
     ).toBeTruthy();
   });
 
@@ -168,7 +216,7 @@ describe("SpineMobile", () => {
   // centred.
   it("draws the rename trigger inline, unplated, at a 44px hit area", () => {
     renderSpine(<SpineMobile {...props} />);
-    const trigger = screen.getByRole("button", { name: renameCopy.triggerAria(props.deck.name) });
+    const trigger = screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) });
     expect(trigger.className).not.toContain("border");
     expect(trigger.className).not.toContain("bg-");
     expect(trigger.className).toContain("text-[color:var(--fg-muted)]");
@@ -369,7 +417,7 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
   // The field replaces the title in place, so it takes the title's alignment.
   it("left-aligns the rename field, like the title it replaces", () => {
     renderSpine(<SpineMobile {...props} />);
-    fireEvent.click(screen.getByRole("button", { name: renameCopy.triggerAria(props.deck.name) }));
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
     expect(screen.getByLabelText(renameCopy.fieldAria).className).toContain("text-left");
   });
 
@@ -389,7 +437,7 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
     );
     const heading = container.querySelector<HTMLElement>("h1")!;
     const holder = container
-      .querySelector<HTMLElement>('button[aria-label^="Rename deck"]')!
+      .querySelector<HTMLElement>('button[aria-label^="Edit name"]')!
       .parentElement!;
     // Siblings in one inline flow: the heading is `display: inline` and
     // unclamped, so its text wraps as ordinary content and the glyph after it

@@ -1,14 +1,40 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { PgDialect } from "drizzle-orm/pg-core";
+import type { SQL } from "drizzle-orm";
 
 // The actions are public endpoints: what the tests pin is what they do with a wire value that
 // is not what the TypeScript type claims.
 const calls = vi.hoisted(() => ({ inputs: 0, started: 0, applied: 0, saved: 0, startOpts: undefined as unknown, startKind: "in_flight",
   reachModel: false, finished: [] as unknown[][], modelRequest: undefined as unknown, modelOutcome: undefined as unknown,
-  contextRead: 0, packInput: undefined as unknown, allLocked: null as string | null }));
+  contextRead: 0, packInput: undefined as unknown, allLocked: null as string | null,
+  // `saveDeckHeader`'s one query shape: `db.update(decks).set(values).where(cond).returning(shape)`.
+  // `headerUpdateRows` is the row count the "owned deck" where-clause would have matched —
+  // set to `[]` to simulate a deck that is not this user's (or does not exist).
+  headerUpdates: [] as { set: unknown }[], headerUpdateRows: [{ id: "deck_1" }] as { id: string }[],
+  // The WHERE condition passed to `saveDeckHeader`'s update, one per call — rendered to SQL
+  // in the test itself, the same way `combo-map-action.test.ts` proves its own scoping.
+  headerWhere: [] as unknown[] }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("next/cache", () => ({ revalidatePath: () => undefined }));
-vi.mock("../../db", () => ({ db: {} }));
+// `updateTag` too: `saveDeckHeader`'s name path reaches `revalidateClaims` → `revalidateUserLists`.
+vi.mock("next/cache", () => ({ revalidatePath: () => undefined, updateTag: () => undefined }));
+vi.mock("../../db", () => ({
+  db: {
+    update: () => ({
+      set: (values: unknown) => ({
+        where: (cond: unknown) => {
+          calls.headerWhere.push(cond);
+          return {
+            returning: async () => {
+              calls.headerUpdates.push({ set: values });
+              return calls.headerUpdateRows;
+            },
+          };
+        },
+      }),
+    }),
+  },
+}));
 vi.mock("../../lib/decks/tuning-read", () => ({
   EVIDENCE_STEPS: ["games", "notes", "decklist", "intent", "collection"],
   tuningInputs: async () => {
@@ -66,7 +92,7 @@ vi.mock("../../lib/tuning/verdicts", () => ({
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { creditsCopy } from "../../lib/copy/credits";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
-import { applySuggestion, readTuningEvidence, runTuning, saveDeckIntent } from "./tuning-actions";
+import { applySuggestion, readTuningEvidence, runTuning, saveDeckDescription, saveDeckHeader } from "./tuning-actions";
 
 const DECK = "11111111-1111-4111-8111-111111111111";
 
@@ -83,6 +109,8 @@ beforeEach(() => {
   calls.modelOutcome = undefined;
   calls.contextRead = 0;
   calls.packInput = undefined;
+  calls.headerUpdates = [];
+  calls.headerUpdateRows = [{ id: "deck_1" }];
 });
 
 describe("runTuning after the call returned", () => {
@@ -186,12 +214,12 @@ describe("ids off the wire", () => {
   });
 });
 
-describe("saveDeckIntent's field", () => {
+describe("saveDeckDescription's field", () => {
   it("refuses a missing or non-text intent rather than clearing the line", async () => {
     const file = new FormData();
     file.set("intent", new Blob(["x"]), "intent.txt");
     for (const form of [new FormData(), file, null as unknown as FormData]) {
-      expect((await saveDeckIntent(DECK, form)).ok).toBe(false);
+      expect((await saveDeckDescription(DECK, form)).ok).toBe(false);
     }
     expect(calls.saved).toBe(0);
   });
@@ -199,11 +227,61 @@ describe("saveDeckIntent's field", () => {
   it("saves a text intent, empty included, since clearing is a real edit", async () => {
     const form = new FormData();
     form.set("intent", "");
-    expect((await saveDeckIntent(DECK, form)).ok).toBe(true);
+    expect((await saveDeckDescription(DECK, form)).ok).toBe(true);
     expect(calls.saved).toBe(1);
   });
 });
 
+describe("saveDeckHeader (H35, the pencil's one atomic write)", () => {
+  it("writes both fields in one update, scoped to the deck and the reader", async () => {
+    const result = await saveDeckHeader(DECK, { name: "New Name", description: "New desc" });
+    expect(result.ok).toBe(true);
+    expect(calls.headerUpdates).toHaveLength(1);
+    expect(calls.headerUpdates[0].set).toMatchObject({ name: "New Name", intent: "New desc", intentSeeded: false });
+    // The WHERE must carry BOTH predicates — a deck a reader does not own must never match.
+    // Rendered to real SQL rather than inspected as a tree, so dropping either `eq()` call
+    // fails this assertion rather than passing against a mock that ignores its argument.
+    const where = new PgDialect().sqlToQuery(calls.headerWhere[0] as SQL);
+    expect(where.sql).toContain('"decks"."id"');
+    expect(where.sql).toContain('"decks"."user_id"');
+    expect(where.params).toEqual([DECK, "user_1"]);
+  });
+
+  it("sends only the field it was given — the other is left exactly as the row holds it", async () => {
+    await saveDeckHeader(DECK, { name: "New Name" });
+    expect(calls.headerUpdates[0].set).toMatchObject({ name: "New Name" });
+    expect(calls.headerUpdates[0].set).not.toHaveProperty("intent");
+
+    await saveDeckHeader(DECK, { description: "New desc" });
+    expect(calls.headerUpdates[1].set).toMatchObject({ intent: "New desc", intentSeeded: false });
+    expect(calls.headerUpdates[1].set).not.toHaveProperty("name");
+  });
+
+  it("clears an emptied description to null rather than an empty string", async () => {
+    await saveDeckHeader(DECK, { description: "   " });
+    expect(calls.headerUpdates[0].set).toMatchObject({ intent: null, intentSeeded: false });
+  });
+
+  it("refuses when no row matches the deck and the reader together", async () => {
+    calls.headerUpdateRows = [];
+    const result = await saveDeckHeader(DECK, { name: "New Name" });
+    expect(result.ok).toBe(false);
+  });
+
+  it("refuses a malformed request rather than throwing", async () => {
+    for (const fields of [null, { name: 42 }, { description: 42 }, "not an object"] as const) {
+      const result = await saveDeckHeader(DECK, fields as never);
+      expect(result.ok).toBe(false);
+    }
+    expect(calls.headerUpdates).toHaveLength(0);
+  });
+
+  it("writes nothing and still answers ok when neither field is given", async () => {
+    const result = await saveDeckHeader(DECK, {});
+    expect(result.ok).toBe(true);
+    expect(calls.headerUpdates).toHaveLength(0);
+  });
+});
 
 // Locked (never cut): every card but the commander locked. Refused by the gate, BEFORE `startRun`
 // reserves a credit, and even with "anyway": the panel's "No credit is used." is the server's truth.
