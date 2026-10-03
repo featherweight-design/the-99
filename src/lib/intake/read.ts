@@ -27,6 +27,16 @@ import { phraseKey, type Chip, type PhraseIndex } from "./match";
  * the run store settles on that, BEFORE it settles the unit.
  */
 
+/**
+ * Folded into `wordsHash` (`run-store.ts`), never stored as its own column: a settled read is
+ * looked up by that hash alone, so a prompt change has to move the hash or an ask made before
+ * the change keeps answering from its old, unprotected-prompt result forever. Tuning's
+ * `PROMPT_VERSION` is the precedent; this is its intake-read counterpart.
+ * 1 (2026-10-03): the player's words are wrapped in `playerText`'s delimited data block, with
+ * the system rule naming the tags, so they can no longer read as an instruction.
+ */
+export const INTAKE_PROMPT_VERSION = 1;
+
 export const READ_MAX_THEMES = 6;
 export const READ_MAX_CARDS = 3;
 

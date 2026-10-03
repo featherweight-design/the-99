@@ -8,7 +8,7 @@ import { isUniqueViolation } from "../db-error";
 import { AllowanceSpentError, recordModelUsage, reserveModelCall, settleModelCall, type Billed } from "../model/allowance";
 import type { ModelErrorClass } from "../model/client";
 import { INTAKE_REAPER_CUTOFF_MS } from "./limits";
-import type { ReadResult } from "./read";
+import { INTAKE_PROMPT_VERSION, type ReadResult } from "./read";
 
 /**
  * The deeper read's writes (plan, decision 1). SERVER-ONLY: it imports the database. Kept out of
@@ -44,12 +44,14 @@ export type StoredRead = Omit<ReadResult, "useful">;
 export type ReadControls = { budgetDollars: number | null; bracket: number | null };
 
 /**
- * What a read was asked, as the row keeps it: a hash of the words' normalized form and the two
- * controls the validator read them against, and nothing else. A read need not keep what the player
- * wrote to be accounted for. Two presses of the same words under the same controls hash alike
- * however they were spaced or cased, and that is what makes a read offered ONCE per ask: the
- * second press gets the first one's chips back, charged nothing. A changed control is a different
- * ask, since the chips it keeps depend on it.
+ * What a read was asked, as the row keeps it: a hash of the words' normalized form, the two
+ * controls the validator read them against, and the prompt version — and nothing else. A read
+ * need not keep what the player wrote to be accounted for. Two presses of the same words under
+ * the same controls AND the same prompt hash alike however they were spaced or cased, and that
+ * is what makes a read offered ONCE per ask: the second press gets the first one's chips back,
+ * charged nothing. A changed control, or a changed `INTAKE_PROMPT_VERSION`, is a different ask —
+ * the prompt moving the hash is what stops an ask settled before a prompt change from going on
+ * answering from its old result forever, the same way `PROMPT_VERSION` reopens tuning's gate.
  */
 /**
  * The words' form for the hash: Unicode-normalized, case-folded, runs of space collapsed. NOT
@@ -62,7 +64,7 @@ function askKey(words: string): string {
 
 export function wordsHash(words: string, controls: ReadControls): string {
   return createHash("sha256")
-    .update(JSON.stringify([askKey(words), controls.budgetDollars, controls.bracket]))
+    .update(JSON.stringify([askKey(words), controls.budgetDollars, controls.bracket, INTAKE_PROMPT_VERSION]))
     .digest("hex");
 }
 

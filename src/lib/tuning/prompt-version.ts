@@ -5,4 +5,9 @@
 // bracket and result rules.
 // 3 (2026-09-24): v2. The deck's own strategy and Key cards, universal staples, 4 to 5 swaps sized
 // to the gap, and the rationale rules (chips never restated, no repeated opening, notes quoted).
-export const PROMPT_VERSION = 3;
+// 4 (2026-10-03): the deck intent and every note are wrapped in `playerText`'s delimited data
+// block, with the system rule naming the tags, so a player's own words can no longer read as an
+// instruction. A deck with a successful run stored at an earlier version reopens the gate and
+// runs again against the safer prompt rather than going on serving a suggestion generated before
+// this boundary existed.
+export const PROMPT_VERSION = 4;

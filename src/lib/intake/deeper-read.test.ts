@@ -98,4 +98,34 @@ describe("wordsHash", () => {
     expect(wordsHash("Big  Lizards", none)).toBe(wordsHash("big lizards", none));
     expect(wordsHash("big lizards", none)).not.toBe(wordsHash("big lizards", { budgetDollars: 100, bracket: null }));
   });
+
+  // A prompt change HAS to move this hash, the opposite of tuning's fingerprint: there is no
+  // separate `promptVersion` column on an intake read, so the hash itself is what stops an ask
+  // settled under an old prompt from going on answering from its old result forever. Both sides
+  // are imported fresh under their OWN mocked version — not one real, one mocked — so a hash
+  // that stopped reading the constant produces the same value both times and the test catches it.
+  it("moves when INTAKE_PROMPT_VERSION does", async () => {
+    const none = { budgetDollars: null, bracket: null };
+
+    // `importActual`, not a plain dynamic import: this file's own top-level `vi.mock("./run-store",
+    // ...)` is hoisted and would otherwise answer every import of it with the static stub above,
+    // version or no version.
+    const atVersion = async (version: number) => {
+      vi.resetModules();
+      vi.doMock("./read", async () => {
+        const actual = await vi.importActual<typeof import("./read")>("./read");
+        return { ...actual, INTAKE_PROMPT_VERSION: version };
+      });
+      const { wordsHash } = await vi.importActual<typeof import("./run-store")>("./run-store");
+      const result = wordsHash("big lizards", none);
+      vi.doUnmock("./read");
+      return result;
+    };
+
+    const v1 = await atVersion(1);
+    const v2 = await atVersion(2);
+    vi.resetModules();
+
+    expect(v1).not.toBe(v2);
+  });
 });
