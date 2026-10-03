@@ -11,7 +11,7 @@
 // SSR snapshot is false (the narrow branch); hydration corrects it. That way a
 // server render never emits a modal, which is the more expensive thing to undo.
 
-import { useCallback, useEffect, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 import { writeViewCookie } from "./view-cookie";
 
 export function useMinWidth(query: string): boolean {
@@ -56,9 +56,16 @@ export function useMinWidthHinted(query: string, hint: boolean | null, cookie: s
     () => window.matchMedia(query).matches,
     () => hint,
   );
+  // What `cookie` last held, so a resize back to the ORIGINAL hint still corrects a cookie this
+  // effect already moved away from it: comparing against `hint` itself misses that round trip,
+  // since `hint` never changes after the page loaded.
+  const lastWritten = useRef(hint);
   useEffect(() => {
     const now = window.matchMedia(query).matches;
-    if (now !== hint) writeViewCookie(cookie, now ? "1" : "0");
-  }, [query, hint, cookie, matches]);
+    if (now !== lastWritten.current) {
+      lastWritten.current = now;
+      writeViewCookie(cookie, now ? "1" : "0");
+    }
+  }, [query, cookie, matches]);
   return matches;
 }

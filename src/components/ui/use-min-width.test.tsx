@@ -3,11 +3,18 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { stubViewport } from "../../test-utils/stub-viewport";
 import { useIsDesktop } from "./use-is-desktop";
-import { useMinWidth } from "./use-min-width";
+import { useMinWidth, useMinWidthHinted } from "./use-min-width";
 import { CHASSIS_WIDE_MIN_PX } from "./filter-chassis";
+
+const readCookie = (name: string) =>
+  document.cookie.split("; ").find((c) => c.startsWith(`${name}=`))?.split("=")[1] ?? null;
 
 afterEach(() => {
   vi.restoreAllMocks();
+  document.cookie.split("; ").forEach((c) => {
+    const name = c.split("=")[0];
+    if (name) document.cookie = `${name}=; Path=/; Max-Age=0`;
+  });
 });
 
 describe("useMinWidth", () => {
@@ -66,5 +73,43 @@ describe("the chassis breakpoint", () => {
       useMinWidth(`(min-width: ${CHASSIS_WIDE_MIN_PX}px)`),
     );
     expect(result.current).toBe(wide);
+  });
+});
+
+describe("useMinWidthHinted", () => {
+  it("returns the hint on first render, then the real query", () => {
+    stubViewport(1280);
+    const { result } = renderHook(() => useMinWidthHinted("(min-width: 1024px)", false, "w"));
+    // jsdom has no separate SSR pass, so both renders see the live query; the hint only
+    // matters as the SSR snapshot, pinned by `use-min-width.ts`'s own comment and by
+    // `probe:view-flash`, which is the browser proof this unit test cannot be.
+    expect(result.current).toBe(true);
+  });
+
+  it("writes the cookie once the real query disagrees with the hint", () => {
+    stubViewport(390);
+    renderHook(() => useMinWidthHinted("(min-width: 1024px)", true, "w"));
+    expect(readCookie("w")).toBe("0");
+  });
+
+  it("writes nothing when the real query already agrees with the hint", () => {
+    stubViewport(1280);
+    renderHook(() => useMinWidthHinted("(min-width: 1024px)", true, "w"));
+    expect(readCookie("w")).toBeNull();
+  });
+
+  // A resize back to the width the hint started at must still correct the cookie this hook
+  // already moved away from it — comparing against the HINT, rather than the last value
+  // written, misses this round trip and leaves the cookie reading "0" for a wide reader.
+  it("corrects the cookie again on a resize back to the hinted width", () => {
+    const viewport = stubViewport(1280);
+    renderHook(() => useMinWidthHinted("(min-width: 1024px)", true, "w"));
+    expect(readCookie("w")).toBeNull();
+
+    act(() => viewport.resizeTo(390));
+    expect(readCookie("w")).toBe("0");
+
+    act(() => viewport.resizeTo(1280));
+    expect(readCookie("w")).toBe("1");
   });
 });
