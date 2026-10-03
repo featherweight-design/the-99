@@ -1,0 +1,35 @@
+{
+  "feature": "Collection surfaces: the place head and its tabs",
+  "note": "PR 3 of the collection surfaces line (Call 4, R2 §Q1). One `CollectionPlaceHead` heads all three routes, so the sheet photographs each of them at the four widths the audit names: 360 and 390 for the phone, 768 for the narrowest md frame, and 1300. Rows only, no clicks: each tab is a plain link, so a route's own URL is the state the tab lands on. The empty-collection branch is not a row, because neither fixture account is empty; `collection-place-head.test.tsx` pins it, and `probe:collection-tabs` measures the strip's position on every route here.",
+  "widths": [
+    { "label": "phone-360", "width": 360, "height": 780 },
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "md-768", "width": 768, "height": 1024 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "shares": {
+    "module": "src/components/collection/collection-place-head.tsx",
+    "binding": "CollectionPlaceHead",
+    "note": "Each page renders the head directly, so each row's `view` is the page that imports it."
+  },
+  "rows": [
+    {
+      "id": "cards",
+      "label": "/collection — the Cards tab, under the title block from md",
+      "view": "src/app/collection/page.tsx",
+      "steps": [{ "goto": "/collection", "wait": "nav[aria-label=\"Collection sections\"]", "settle": 3000 }]
+    },
+    {
+      "id": "sets",
+      "label": "/collection/sets — the same head, Your sets as the h1 under it",
+      "view": "src/app/collection/sets/page.tsx",
+      "steps": [{ "goto": "/collection/sets", "wait": "nav[aria-label=\"Collection sections\"]", "settle": 3000 }]
+    },
+    {
+      "id": "proxies",
+      "label": "/collection/proxies — the same head, What you're printing as the h1",
+      "view": "src/app/collection/proxies/page.tsx",
+      "steps": [{ "goto": "/collection/proxies", "wait": "nav[aria-label=\"Collection sections\"]", "settle": 3000 }]
+    }
+  ]
+}

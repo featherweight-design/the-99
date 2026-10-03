@@ -4,9 +4,12 @@ import { describe, expect, it } from "vitest";
 import { BROWSE_CELLS, BROWSE_SET_CODE } from "../../lib/about/fixtures";
 import { identityGradient } from "../../lib/collection/gradients";
 import { sortOrderLabel } from "../../lib/collection/sort-options";
-import { collectionChassisCopy, collectionFilterCopy } from "../../lib/copy/collection";
+import {
+  collectionChassisCopy,
+  collectionFilterCopy,
+  collectionTabsCopy,
+} from "../../lib/copy/collection";
 import { chassisCopy, PIP_ORDER } from "../../lib/copy/filter-chassis";
-import { setPageCopy } from "../../lib/copy/set-collections";
 import { BrowseFigureBody } from "./browse-figure";
 
 // This figure was a chip row, a count and two text pills — about a fifth of
@@ -116,7 +119,10 @@ describe("the browse figure", () => {
       screen.getByText(collectionFilterCopy.sort.triggerOne("Name · A–Z")),
     ).toBeInTheDocument();
     expect(screen.getByText(chassisCopy.chips.clearAll)).toBeInTheDocument();
-    expect(screen.getByText(setPageCopy.entryPoint.label)).toBeInTheDocument();
+    // Key line 1's subject: the place strip, by the route's own three names.
+    for (const name of [collectionTabsCopy.cards, collectionTabsCopy.sets, collectionTabsCopy.proxies]) {
+      expect(screen.getByText(name)).toBeInTheDocument();
+    }
 
     // Both count lines, for the same reason: the long one has room beside two
     // controls on the wide bar and does not at 390px.

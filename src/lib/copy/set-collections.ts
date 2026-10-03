@@ -143,7 +143,6 @@ export const setFilterCopy = {
 } as const;
 
 export const setsIndexCopy = {
-  breadcrumb: "Collection / Sets",
   title: "Your sets",
   subtitle: (n: number) =>
     n === 1
@@ -498,10 +497,5 @@ export const setPageCopy = {
     primary: (n: number) => `See ${n === 1 ? "it" : `those ${n}`} in Collection`,
     browse: "Back to your sets",
     secondary: "Back to your sets",
-  },
-
-  entryPoint: {
-    label: "By set",
-    aria: "Browse your collection by set",
   },
 } as const;

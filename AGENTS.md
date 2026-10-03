@@ -1343,6 +1343,20 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   desktop default is the grid, which draws no pips, and a run that took the default would
   sweep nothing clean at the width the defect was reported on. Point it at `local-dev`.
 
+- `pnpm probe:collection-tabs` walks the collection's place head (`CollectionPlaceHead`,
+  collection surfaces Call 4 and R2) on `/collection`, `/collection/sets` and
+  `/collection/proxies` at 1300, 768, 390 and 360. The head is ONE component mounted on three
+  pages, so the property worth proving is that pressing one of its own tabs never moves it: the
+  strip's top and its first tab's TEXT edge (read through a Range, since the link carries 10px of
+  padding) must be equal on all three routes at every width, at y 109 and x 34 at 1300. From `md`
+  each route's one drawn h1 starts on that edge, which is what anchoring Sets and Proxies left
+  (`md:mx-0`) buys; on the phone the strip is first in `<main>`, carries Replace, and
+  `/collection`'s h1 is not drawn. It also reads `aria-current` and the strip's border-box height
+  (40, 48). Two mutations fail it: the Proxies column centred again (h1 at 203 against 34) and
+  the Sets place head pushed down 28px (strip top 137 against 109, at 1300 and 768). Its first run
+  failed on its own arithmetic, expecting the 1px rule outside the 40: the canvas is border-box.
+  Makes no writes; point it at `local-dev`.
+
 - `pnpm probe:nav-labels` walks the desktop rail by input (desktop nav labels handoff): 1300x900
   with a pointer, where it is today's 62px rail with no visible label; 768x1024 and 852x393 under
   `(hover: none)`, where it is 88px and every slot is the tab bar's 72 x 52 slot with its label at

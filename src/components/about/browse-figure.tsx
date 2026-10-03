@@ -11,9 +11,12 @@
 // Every label still comes from the route's own copy: a rename must reach this
 // figure without anyone editing it.
 
-import { collectionChassisCopy, collectionFilterCopy } from "../../lib/copy/collection";
+import {
+  collectionChassisCopy,
+  collectionFilterCopy,
+  collectionTabsCopy,
+} from "../../lib/copy/collection";
 import { chassisCopy, PIP_ORDER, PIP_BACKGROUND } from "../../lib/copy/filter-chassis";
-import { setPageCopy } from "../../lib/copy/set-collections";
 import { sortOrderLabel } from "../../lib/collection/sort-options";
 import { CardTileCaption } from "../ui/card-tile-caption";
 import { identityGradient } from "../../lib/collection/gradients";
@@ -132,6 +135,31 @@ function Cell({
 export function BrowseFigureBody() {
   return (
     <div className="flex flex-col gap-[10px]">
+      {/* ROW 0 — key 1's subject: the place strip the route opens with. Drawn rather than
+          mounted, because `CollectionPlaceHead` is a server component that reads the
+          reader's stats; its three names are the route's copy, so a rename reaches here. */}
+      <div className="flex items-center gap-[8px]">
+        <span className="flex h-[30px] items-stretch gap-[2px] border-b border-solid border-[color:var(--border)]">
+          {[
+            { label: collectionTabsCopy.cards, on: true },
+            { label: collectionTabsCopy.sets, on: false },
+            { label: collectionTabsCopy.proxies, on: false },
+          ].map((tab) => (
+            <span
+              key={tab.label}
+              className={`flex items-center px-[8px] text-[11.5px] ${
+                tab.on
+                  ? "font-semibold text-[color:var(--fg)] shadow-[inset_0_-2px_0_var(--accent)]"
+                  : "font-medium text-[color:var(--fg-muted)]"
+              }`}
+            >
+              {tab.label}
+            </span>
+          ))}
+        </span>
+        <KeyNumeral n={1} />
+      </div>
+
       {/* ROW 1 — the persistent row. The route forks here at 1000px and so does
           this: wide, the search field sits beside the pips and the four
           dimension panels; compact, those controls are behind one `Filters`
@@ -193,10 +221,10 @@ export function BrowseFigureBody() {
         <Trigger label={collectionFilterCopy.sort.triggerOne(sortOrderLabel("name", "asc"))} active />
       </div>
 
-      {/* ROW 2 — key 1's subject: a chip per narrowing, each removable on its
+      {/* ROW 2 — key 2's subject: a chip per narrowing, each removable on its
           own, and one link that clears the lot. */}
       <div className="flex flex-wrap items-center gap-[8px]">
-        <KeyNumeral n={1} />
+        <KeyNumeral n={2} />
         {CHIPS.map((chip) => (
           <FilterChipPill key={chip.key} chip={chip} />
         ))}
@@ -205,7 +233,7 @@ export function BrowseFigureBody() {
         </span>
       </div>
 
-      {/* ROW 3 — the count, and keys 2 and 3. The count is the route's own
+      {/* ROW 3 — the count, and key 3. The count is the route's own
           line at each width: the long form has room beside two controls on the
           wide bar and does not on a phone, which is why the route carries a
           compact one at all. */}
@@ -217,13 +245,6 @@ export function BrowseFigureBody() {
           </span>
         </span>
         <span className="flex items-center gap-[8px]">
-          <KeyNumeral n={2} />
-          <span className="flex items-center gap-[5px] rounded-[8px] border border-solid border-[color:var(--accent)] px-[9px] py-[5px] text-[11.5px] text-[color:var(--fg)]">
-            <span aria-hidden className="text-[8px] text-[color:var(--accent)]">
-              ◆
-            </span>
-            {setPageCopy.entryPoint.label}
-          </span>
           {/* The well, drawn rather than mounted: `ViewToggle` is a radio group
               with a handler, and a specimen is inert. Its two glyphs and both
               names are the route's, so a renamed segment reaches this figure. */}
@@ -246,9 +267,8 @@ export function BrowseFigureBody() {
               </span>
             ))}
           </span>
-          {/* AFTER the well, which is where §3 puts it. Between `By set` and
-              the toggle the mark reads as pointing at the grouping pill, and
-              key line 3 is about the reading choice. */}
+          {/* AFTER the well, which is where §3 puts it: key line 3 is about the
+              reading choice. */}
           <KeyNumeral n={3} />
         </span>
       </div>

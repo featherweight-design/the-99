@@ -113,9 +113,9 @@ export type FilterChassisProps = {
   silentResult?: boolean;
   /**
    * Row 3's trailing edge. `/collection` puts its view toggle here
-   * (decision 21) alongside the `By set` link: both change WHAT SURFACE YOU ARE
-   * ON rather than what is in the list, which is the distinction the control
-   * row is for, so neither belongs among the filters.
+   * (decision 21): it changes HOW THE LIST IS DRAWN rather than what is in
+   * it, which is the distinction the control row is for, so it does not
+   * belong among the filters.
    */
   resultTrailing?: React.ReactNode;
   /** Announced in place of the result line — see `ResultLine`. */

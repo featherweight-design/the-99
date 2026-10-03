@@ -23,8 +23,17 @@ export function EmptyState({ className, children }: Props) {
   return <section className={twMerge(CONTAINER, className)}>{children}</section>;
 }
 
-export function EmptyStateTitle({ className, children }: Props) {
-  return <h1 className={twMerge(TITLE, className)}>{children}</h1>;
+/**
+ * An h1 by default, because most empty states ARE the page. `level={2}` is for a page that
+ * already has its own h1 above the empty state, as /collection's place head does.
+ */
+export function EmptyStateTitle({
+  className,
+  children,
+  level = 1,
+}: Props & { level?: 1 | 2 }) {
+  const Tag = level === 1 ? "h1" : "h2";
+  return <Tag className={twMerge(TITLE, className)}>{children}</Tag>;
 }
 
 export function EmptyStateBody({ className, children }: Props) {

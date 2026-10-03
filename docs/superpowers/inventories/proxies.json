@@ -16,8 +16,8 @@
     },
     {
       "id": "rack-entry",
-      "label": "/collection \u2014 the Proxies link beside By set",
-      "view": "src/components/collection/filter-bar.tsx",
+      "label": "/collection \u2014 the Proxies tab in the place strip",
+      "view": "src/components/collection/collection-place-head.tsx",
       "steps": [
         {
           "goto": "/collection",
