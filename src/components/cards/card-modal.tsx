@@ -41,6 +41,7 @@ import { ExternalLink } from "../ui/external-link";
 import { manapoolCardUrl } from "../../lib/manapool/links";
 import { FitsDoor } from "./fits-door";
 import { cardLinkOutCopy } from "../../lib/copy/collection-browse";
+import { cardCarouselCopy } from "../../lib/copy/card-carousel";
 import { ProxyControl } from "../decks/proxy-control";
 import { proxyCopy } from "../../lib/copy/proxies";
 
@@ -1925,19 +1926,19 @@ export function CardModal({
                 type="button"
                 onClick={onPrev ?? undefined}
                 disabled={!onPrev}
-                aria-label="Previous card"
+                aria-label={cardCarouselCopy.prevAria}
                 className="cursor-pointer text-[15px] disabled:opacity-40 text-[color:var(--fg-faint)]"
               >
                 ‹ Prev
               </button>
               <span className="font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>
-                {position.toLocaleString()} of {total.toLocaleString()}
+                {cardCarouselCopy.position(position, total)}
               </span>
               <button
                 type="button"
                 onClick={onNext ?? undefined}
                 disabled={!onNext}
-                aria-label="Next card"
+                aria-label={cardCarouselCopy.nextAria}
                 className="cursor-pointer text-[15px] disabled:opacity-40 text-[color:var(--accent)]"
               >
                 Next ›

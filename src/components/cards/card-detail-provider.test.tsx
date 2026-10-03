@@ -1322,3 +1322,111 @@ describe("CardDetailProvider prefetch on intent", () => {
     expect(prefetchCard).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("CardDetailProvider reads the neighbors ahead (carousel, H23)", () => {
+  afterEach(() => { vi.restoreAllMocks(); });
+  const A = card("o-a", "Card A");
+  const B = card("o-b", "Card B");
+  const C = card("o-c", "Card C");
+  const byId: Record<string, BrowseCard> = { "o-a": A, "o-b": B, "o-c": C };
+  const mount = (
+    oracleId: string,
+    siblings: Parameters<typeof CardDetailTrigger>[0]["siblings"],
+    prefetchCard: (id: string) => Promise<BrowseCard | null>,
+  ) =>
+    render(
+      <CardDetailProvider fetchCard={async (id) => byId[id] ?? null} prefetchCard={prefetchCard}>
+        <CardDetailTrigger oracleId={oracleId} name={byId[oracleId].name} siblings={siblings}>open</CardDetailTrigger>
+      </CardDetailProvider>,
+    );
+  const press = () => act(async () => { fireEvent.click(screen.getByRole("button", { name: /open|Card/ })); });
+
+  it("reads the next card, then the previous one, once a mid-list card arrives", async () => {
+    const prefetchCard = vi.fn(async (id: string) => byId[id] ?? null);
+    mount("o-b", ["o-a", "o-b", "o-c"], prefetchCard);
+    await press();
+    await waitFor(() => expect(prefetchCard.mock.calls.map((c) => c[0])).toEqual(["o-c", "o-a"]));
+  });
+
+  it("reads only the one neighbor a card at an end has", async () => {
+    const prefetchCard = vi.fn(async (id: string) => byId[id] ?? null);
+    mount("o-c", ["o-a", "o-b", "o-c"], prefetchCard);
+    await press();
+    await waitFor(() => expect(prefetchCard).toHaveBeenCalled());
+    await act(() => new Promise((r) => setTimeout(r, 20)));
+    expect(prefetchCard.mock.calls.map((c) => c[0])).toEqual(["o-b"]);
+  });
+
+  it("reads nothing for a card with no list", async () => {
+    const prefetchCard = vi.fn(async (id: string) => byId[id] ?? null);
+    mount("o-b", undefined, prefetchCard);
+    await press();
+    await screen.findByRole("dialog");
+    await act(() => new Promise((r) => setTimeout(r, 20)));
+    expect(prefetchCard).not.toHaveBeenCalled();
+  });
+
+  it("still reads the neighbors when another card's prefetch was reading as this one arrived", async () => {
+    // The provider keeps one speculative read at a time: with an intent prefetch of another card
+    // still running when the pressed card arrives, both neighbor reads would start nothing.
+    const X = card("o-x", "Card X");
+    let releaseX!: () => void;
+    const prefetchCard = vi.fn((id: string) =>
+      id === "o-x"
+        ? new Promise<BrowseCard | null>((r) => { releaseX = () => r(X); })
+        : Promise.resolve(byId[id] ?? null));
+    render(
+      <CardDetailProvider fetchCard={async (id) => byId[id] ?? null} prefetchCard={prefetchCard}>
+        <CardDetailTrigger oracleId="o-x" name="Card X">rest here</CardDetailTrigger>
+        <CardDetailTrigger oracleId="o-b" name="Card B" siblings={["o-a", "o-b", "o-c"]}>open</CardDetailTrigger>
+      </CardDetailProvider>,
+    );
+    fireEvent.pointerEnter(screen.getByText("rest here"));
+    await act(() => new Promise((r) => setTimeout(r, INTENT_DELAY_MS * 2)));
+    expect(prefetchCard.mock.calls.map((c) => c[0])).toEqual(["o-x"]);
+    await act(async () => { fireEvent.click(screen.getByText("open")); });
+    await screen.findByRole("dialog");
+    await act(async () => { releaseX(); });
+    await waitFor(() => expect(prefetchCard.mock.calls.map((c) => c[0])).toEqual(["o-x", "o-c", "o-a"]));
+  });
+
+  it("reads the neighbors ahead on a cache-hit reopen even when the correction re-ask fails", async () => {
+    // A cache-hit reopen paints `show(hit)` immediately, then re-asks the server for a correction
+    // while `inFlight` stays set — which, on its own, would make `prefetch` bail for both
+    // neighbors (a read is already running). If the re-ask fails, nothing else changes `card`
+    // again, so the read-ahead effect must retry once that re-ask SETTLES rather than waiting on
+    // `card` to change a second time. The first open carries no siblings, so its own read-ahead
+    // and cache writes never touch "o-c"/"o-a" — the reopen is the first time either is asked for.
+    const prefetchCard = vi.fn(async (id: string) => byId[id] ?? null);
+    const fetchCard = vi.fn()
+      .mockResolvedValueOnce(B)
+      .mockRejectedValueOnce(new Error("offline"));
+    render(
+      <CardDetailProvider fetchCard={fetchCard} prefetchCard={prefetchCard}>
+        <CardDetailTrigger oracleId="o-b" name="Card B">open plain</CardDetailTrigger>
+        <CardDetailTrigger oracleId="o-b" name="Card B" siblings={["o-a", "o-b", "o-c"]}>open with list</CardDetailTrigger>
+      </CardDetailProvider>,
+    );
+    await act(async () => { fireEvent.click(screen.getByText("open plain")); });
+    await screen.findByRole("dialog");
+    expect(prefetchCard).not.toHaveBeenCalled();
+    await click(screen.getAllByRole("button", { name: "Close card details" })[0]);
+
+    await act(async () => { fireEvent.click(screen.getByText("open with list")); });
+    await screen.findByRole("dialog");
+    await waitFor(() => expect(fetchCard).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(prefetchCard.mock.calls.map((c) => c[0])).toEqual(["o-c", "o-a"]));
+  });
+
+    it("takes a list of cards carrying art as readily as a list of ids", async () => {
+    const prefetchCard = vi.fn(async (id: string) => byId[id] ?? null);
+    mount("o-b", [
+      { oracleId: "o-a", name: "Card A", imageUri: "https://img/a.jpg", colorIdentity: ["W"] },
+      { oracleId: "o-b" },
+      "o-c",
+    ], prefetchCard);
+    await press();
+    expect(await screen.findByText("2 of 3")).toBeTruthy();
+    await waitFor(() => expect(prefetchCard.mock.calls.map((c) => c[0])).toEqual(["o-c", "o-a"]));
+  });
+});

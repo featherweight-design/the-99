@@ -19,10 +19,13 @@
 //      holds only GETs, so it cannot see a prefetch turned back into an action (whose POST would
 //      not be held); check 2's "no prefetch is a server action" is the one that catches that.
 //   5. No prefetch is ever a server action.
+//   6. Read-ahead (carousel, H23): a mid-list card, once open, reads both of its neighbors as
+//      GETs, and at 1300 a press of Next paints from that read within 300ms.
 //
 // Makes no writes but the account's About row (every entry marked seen, so no sheet covers the
 // page), captured first and put back in a `finally`. Refused on production and staging. Point it at `next start` on local-dev or a scratch
-// branch holding a `pull:staging` copy; the deck is the account's largest with two or more versions.
+// branch holding a `pull:staging` copy; the deck is the account's largest by card rows with two or more versions and twelve or more
+// rows.
 //
 //   PROBE_BASE=http://localhost:3061 pnpm probe:card-prefetch
 
@@ -122,6 +125,20 @@ function recorder(page) {
 const settle = (page, ms) => page.waitForTimeout(ms);
 
 /**
+ * Wait until no card read is in flight. An opened card READS ITS NEIGHBORS AHEAD (carousel, H23),
+ * so a read left over from the last press would otherwise be counted by the next check as the
+ * intent read it is looking for, and a check that a prefetch "was still reading" would pass with
+ * the intent prefetch removed.
+ */
+async function quiet(page, net, since = 0) {
+  for (let i = 0; i < 100; i += 1) {
+    if (net.inFlightAt(Date.now()).filter((r) => r.at >= since).length === 0) return;
+    await settle(page, 100);
+  }
+  throw new Error("card reads never went quiet");
+}
+
+/**
  * Arms an in-page timer: from the first pointerdown or click on the page to the first frame the
  * card dialog paints. Measured INSIDE the page, because while a route is held Playwright's own
  * visibility polling runs late: with card reads held 900ms it reported a dialog ~460ms after the
@@ -195,6 +212,7 @@ async function walk(browser, state, width, deckId) {
   }
 
   // 2. Intent reads once, as a GET; the press paints before any new read answers.
+  await quiet(page, net);
   let t = Date.now();
   await intend(6);
   await settle(page, 400);
@@ -225,6 +243,7 @@ async function walk(browser, state, width, deckId) {
   const alone = await openTime(page);
   await closeDialog(page);
   await settle(page, 1200);
+  await quiet(page, net);
   await intend(10);
   await settle(page, desktop ? 200 : 100);
   t = Date.now();
@@ -242,11 +261,14 @@ async function walk(browser, state, width, deckId) {
     `${raced}ms against ${alone}ms, wait ${PREFETCH_WAIT_MS}ms`);
 
   // 4. A card read held in flight, and an action pressed during it.
+  await quiet(page, net);
   await page.route("**/api/card-detail**", async (route) => {
     await new Promise((r) => setTimeout(r, 4000));
     await route.continue().catch(() => {});
   });
-  await intend(9);
+  // Card 2: no earlier step has read it. Card 9 was read AHEAD as a neighbor of the cards section
+  // 3 opened, so resting on it reads nothing, and this section would measure no prefetch at all.
+  await intend(2);
   await settle(page, 200);
   await onPage(page, "#tab-versions").click();
   const rows = onPage(page, 'button[aria-expanded="false"]').filter({ hasText: /v\d/i });
@@ -262,6 +284,47 @@ async function walk(browser, state, width, deckId) {
   const waited = action ? action.at - t : null;
   report(`${width.label} · a prefetch was still reading when the action was pressed`, held > 0, `${held} in flight`);
   report(`${width.label} · the action starts at once regardless`, waited !== null && waited < 80, waited === null ? "no action seen" : `${waited}ms from press to request`);
+  await page.unroute("**/api/card-detail**");
+  // A read held across the reload is abandoned with the page and never reports finishing.
+  const reloaded = Date.now();
+  await page.goto(`${BASE}/decks/${deckId}`, { waitUntil: "load" });
+  await page.waitForLoadState("networkidle").catch(() => {});
+
+  // 5. READ AHEAD (carousel, H23): a mid-list card, once open, reads both neighbors as GETs, and
+  // a press of Next then paints from that read. Pressed without intent (a programmatic click), so
+  // every GET after it is the read-ahead and nothing else.
+  const list = onPage(page, TRIGGER).filter({ visible: true });
+  await list.nth(5).waitFor({ state: "visible", timeout: 30_000 });
+  // Park the pointer off the list, so no rest starts an intent read inside the count.
+  if (desktop) await page.mouse.move(0, 0);
+  await quiet(page, net, reloaded);
+  t = Date.now();
+  await list.nth(5).evaluate((el) => el.click());
+  await page.locator(DIALOG).waitFor({ state: "visible", timeout: 10_000 });
+  let ahead = [];
+  for (let i = 0; i < 60; i += 1) {
+    ahead = net.reads(t).filter((r) => r.method === "GET");
+    if (ahead.length >= 2 && ahead.every((r) => r.done != null && r.name !== undefined)) break;
+    await settle(page, 100);
+  }
+  const ids = new Set(ahead.map((r) => r.detail));
+  report(`${width.label} · an opened card reads both neighbors ahead`, ahead.length === 2 && ids.size === 2,
+    `${ahead.length} read(s): ${ahead.map((r) => r.name ?? r.detail).join(", ") || "none"}`);
+  report(`${width.label} · no read-ahead is a server action`,
+    net.since(t).filter((r) => r.action).length <= 1, `${net.since(t).filter((r) => r.action).length} action(s), the press's own included`);
+  const nextName = ahead[0]?.name ?? null;
+  const next = page.locator(DIALOG).getByRole("button", { name: "Next card" });
+  if (desktop && nextName) {
+    // Desktop draws the footer's Next; the phone pages from the sheet that PR 3 adds.
+    const before = Date.now();
+    await next.click();
+    await page.locator(`${DIALOG}`).filter({ hasText: nextName }).first().waitFor({ state: "visible", timeout: 5_000 }).catch(() => {});
+    const pagedIn = Date.now() - before;
+    const title = await page.locator("#card-modal-title").first().textContent();
+    report(`${width.label} · the first read is the NEXT card, and Next paints from it`,
+      title?.includes(nextName) && pagedIn < 300, `title ${title}; read ${nextName}; ${pagedIn}ms`);
+  }
+  await closeDialog(page);
   await context.close();
 }
 
@@ -276,9 +339,12 @@ async function main() {
       select d.id from decks d
       where d.user_id = ${userId}
         and (select count(*) from deck_versions v where v.deck_id = d.id) >= 2
-      order by (select coalesce(sum(quantity), 0) from deck_cards c where c.deck_id = d.id) desc, d.id
+        and (select count(*) from deck_cards c where c.deck_id = d.id) >= 12
+      -- ROWS, not summed quantity: a fixture padded to 99 with one stack of Wastes sums to 99 and
+      -- draws a handful of triggers, and the walk needs twelve.
+      order by (select count(*) from deck_cards c where c.deck_id = d.id) desc, d.id
       limit 1`;
-    if (!deck) throw new Error("The account has no deck with two versions; this walk needs one to press a diff.");
+    if (!deck) throw new Error("The account has no deck with two versions and twelve card rows; pull:staging one onto a scratch branch.");
     for (const width of WIDTHS) await walk(browser, state, width, deck.id);
   } finally {
     await browser.close();
