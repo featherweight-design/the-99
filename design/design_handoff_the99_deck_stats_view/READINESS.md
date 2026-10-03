@@ -22,6 +22,21 @@
 
 **Q3 · The starting-mix fallback.** Drawn assuming flat `ROLE_TARGETS` holds lands and the four roles but no curve or types. If it holds more, more rows draw.
 
+## Eng resolutions (orchestrator, 2026-10-03)
+
+**Verdict: GREEN with eng resolutions.** Build stays paused per Hugh.
+
+1. **Starting-mix fallback (Q3).** `ROLE_TARGETS` (`src/lib/recs/roles.ts:6-8`) excludes
+   `"land"`, and `pickRoleTargets()` (`src/lib/profile/build.ts:81-92`) returns only the four
+   role keys at the flat rung — no land figure exists at that rung. Draw only what the rung
+   returns: the four role bars, no land, type or curve rows. `average.baselineNote`'s wording
+   drops "lands" to match; owed to `/copy-review` at build time.
+2. **About placement.** The cited anchor "after `suggested-changes`" names an id that does not
+   exist in `src/lib/copy/about.ts` (chapter 04 has no such entry). Append the entry at the end
+   of chapter 04 instead.
+3. **Thin states for money (c) and jobs (e).** Use the same thin-decklist treatment already
+   drawn for (a), (b) and (d). No new drawing; applied at build time.
+
 ## Check before merge
 - [ ] Switch off: no switch, no fetch.
 - [ ] No success or danger token in Stats. `--warning` only where it means Shopping (To buy, its squares, the Shopping link).
