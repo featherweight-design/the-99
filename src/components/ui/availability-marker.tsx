@@ -164,9 +164,17 @@ const DIAMOND = "block w-[6px] h-[6px] rotate-45";
 export const AVAILABILITY_CHIP_GLYPH_PX = 16;
 const BIG_DIAMOND_SIDE_PX = AVAILABILITY_CHIP_GLYPH_PX / Math.SQRT2;
 /**
+ * Rotating a square about its own centre grows its PAINTED footprint past its CSS box by
+ * `(rotated − css) / 2` on every side — the gap `left-0`/`top-0` positioning (the small,
+ * unrotated glyph's own convention) ignores. Each big diamond's CSS box is inset by this
+ * amount so its rotated paint, not its box, lands flush with the wrapper's edges.
+ */
+const BIG_DIAMOND_INSET_PX = (AVAILABILITY_CHIP_GLYPH_PX - BIG_DIAMOND_SIDE_PX) / 2;
+/**
  * The over glyph's own box width at that size: the handoff's second figure, not derived from
  * the 5px offset the row/chip's 6px diamonds use — at this size that ratio would print a wider
- * box than stated. The offset below is solved FROM this figure instead (`width - side`).
+ * box than stated. The second diamond's position is solved FROM this figure instead, by its
+ * PAINTED right edge rather than its CSS left.
  */
 export const AVAILABILITY_CHIP_GLYPH_OVER_PX = 21;
 
@@ -181,19 +189,25 @@ function OverGlyph({ seam, big }: { seam: string; big?: boolean }) {
   const side = big ? BIG_DIAMOND_SIDE_PX : 6;
   const width = big ? AVAILABILITY_CHIP_GLYPH_OVER_PX : 11;
   const height = big ? AVAILABILITY_CHIP_GLYPH_PX : 6;
-  const offset = big ? width - side : 5;
+  // Positioned by PAINTED edge, not CSS left: the first diamond's paint starts flush with the
+  // wrapper's left (css left = -inset), the second's paint ends flush with the wrapper's right
+  // (css left = width − side − inset).
+  const leftFirst = big ? -BIG_DIAMOND_INSET_PX : 0;
+  const leftSecond = big ? width - side - BIG_DIAMOND_INSET_PX : 5;
+  const top = big ? -BIG_DIAMOND_INSET_PX : 0;
   return (
     <span aria-hidden="true" className="relative block flex-none" style={{ width, height }}>
       <span
-        className={twMerge(DIAMOND, "absolute left-0 top-0 bg-[color:var(--danger)]")}
-        style={big ? { width: side, height: side, top: (height - side) / 2 } : undefined}
+        className={twMerge(DIAMOND, "absolute bg-[color:var(--danger)]")}
+        style={{ left: leftFirst, top, ...(big ? { width: side, height: side } : {}) }}
       />
       <span
-        className={twMerge(DIAMOND, "absolute top-0 bg-[color:var(--danger)]")}
+        className={twMerge(DIAMOND, "absolute bg-[color:var(--danger)]")}
         style={{
           borderLeft: `1px solid ${seam}`,
-          left: offset,
-          ...(big ? { width: side, height: side, top: (height - side) / 2 } : {}),
+          left: leftSecond,
+          top,
+          ...(big ? { width: side, height: side } : {}),
         }}
       />
     </span>
@@ -385,10 +399,11 @@ export function AvailabilityMarker({
             // tile surfaces (A2RM:51–60).
             `absolute left-[6px] top-[6px] gap-[4px] rounded-[4px] border px-[5px] py-[2px] ${CHIP_SKIN[state]}`
           : chip && glyphOnly
-            ? // The glyph alone, in the same outlined box: no padding, since the glyph's own
-              // box (its rotated bounding size, not its CSS side — see `AVAILABILITY_CHIP_GLYPH_PX`)
-              // already is the box the caption's fixed-height meta line has room for.
-              "justify-center rounded-[4px]"
+            ? // The glyph alone, in the same outlined box: an EXPLICIT, non-shrinking box
+              // rather than one that auto-sizes to the glyph's unrotated CSS box — the glyph
+              // paints past that box (rotation grows its visual footprint), so a shrink-to-fit
+              // root draws the outline through the glyph instead of around it.
+              "flex-none justify-center rounded-[4px]"
             : chip
               ? // In the caption, on a plate of its own: the shared box, in this
                 // state's ink.
@@ -398,7 +413,17 @@ export function AvailabilityMarker({
                 "gap-[6px]",
         className,
       )}
-      style={chip && !plate ? slotOutline(CHIP_EDGE[state]) : undefined}
+      style={
+        chip && glyphOnly
+          ? {
+              ...slotOutline(CHIP_EDGE[state]),
+              width: state === "over" ? AVAILABILITY_CHIP_GLYPH_OVER_PX : AVAILABILITY_CHIP_GLYPH_PX,
+              height: AVAILABILITY_CHIP_GLYPH_PX,
+            }
+          : chip && !plate
+            ? slotOutline(CHIP_EDGE[state])
+            : undefined
+      }
     >
       <AvailabilityGlyph
         state={state}

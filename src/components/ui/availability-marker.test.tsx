@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import {
+  AVAILABILITY_CHIP_GLYPH_OVER_PX,
   AVAILABILITY_CHIP_GLYPH_PX,
   AvailabilityMarker,
   markerAria,
@@ -574,5 +575,47 @@ describe("AvailabilityMarker glyphOnly", () => {
     const box = container.querySelector('[aria-hidden="true"]') as HTMLElement;
     expect(box.style.width).toBe("21px");
     expect(box.style.height).toBe("16px");
+  });
+
+  // Found by Copilot's round-1 review: a wrapper that auto-sizes to the diamond's unrotated
+  // CSS box draws its outline through the glyph rather than around it, because rotation grows
+  // the glyph's PAINT past that box. The outlined root must carry its own explicit, non-shrinking
+  // size — the box the caption's row actually reserves — independent of the glyph inside it.
+  it("gives the outlined root an explicit, non-shrinking box matching the glyph's bounding size", () => {
+    const soft = render(
+      <AvailabilityMarker availability={a(2, 0, 1)} density="chip" plate={false} glyphOnly />,
+    );
+    const softRoot = soft.container.firstElementChild as HTMLElement;
+    expect(softRoot.style.width).toBe(`${AVAILABILITY_CHIP_GLYPH_PX}px`);
+    expect(softRoot.style.height).toBe(`${AVAILABILITY_CHIP_GLYPH_PX}px`);
+    expect(softRoot.className).toContain("flex-none");
+    soft.unmount();
+
+    const over = render(
+      <AvailabilityMarker availability={a(1, 2, 0)} density="chip" plate={false} glyphOnly />,
+    );
+    const overRoot = over.container.firstElementChild as HTMLElement;
+    expect(overRoot.style.width).toBe(`${AVAILABILITY_CHIP_GLYPH_OVER_PX}px`);
+    expect(overRoot.style.height).toBe(`${AVAILABILITY_CHIP_GLYPH_PX}px`);
+  });
+
+  // Found by Copilot's round-1 review: positioning the big diamonds by their unrotated CSS
+  // `left` (the small glyph's own convention) ignores that rotation grows the paint past the
+  // box, so the painted union was ~4.7px wider than the declared 21px. Both diamonds must be
+  // inset by half that growth so their PAINT, not their CSS box, lands flush with the 21x16
+  // wrapper's edges.
+  it("insets both big diamonds by the rotation growth, so the painted union stays within 21px", () => {
+    const { container } = render(
+      <AvailabilityMarker availability={a(1, 2, 0)} density="chip" plate={false} glyphOnly />,
+    );
+    const [first, second] = container.querySelectorAll('[class*="rotate-45"]');
+    const side = parseFloat((first as HTMLElement).style.width);
+    const inset = (AVAILABILITY_CHIP_GLYPH_PX - side) / 2;
+    const firstLeft = parseFloat((first as HTMLElement).style.left);
+    const secondLeft = parseFloat((second as HTMLElement).style.left);
+    // The first diamond's PAINTED left edge (css left + inset) sits at the wrapper's own 0.
+    expect(firstLeft + inset).toBeCloseTo(0, 1);
+    // The second's painted right edge (css left + side + inset) sits at the wrapper's own width.
+    expect(secondLeft + side + inset).toBeCloseTo(AVAILABILITY_CHIP_GLYPH_OVER_PX, 1);
   });
 });
