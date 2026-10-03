@@ -31,28 +31,39 @@ import { CardFactMark } from "../cards/card-fact-mark";
 import { ComboGlyph } from "../cards/combo-glyph";
 import { MarkKey } from "./mark-key";
 
-const ENTRIES = [
-  ...CARD_FACTS.map((fact) => ({
-    id: fact,
-    sample: <CardFactMark fact={fact} silent />,
-    word: cardFactName(fact),
-  })),
-  {
-    id: "combo",
-    // AT THE SIZE THE READER SEES — 12px, not the 16 the three above draw at. A key decodes a
-    // glyph, so a sample that is not the glyph on the surface decodes something else, and the
-    // two sizes are both the spec: the facts sit on a NAME line at 16, and the clause leads a
-    // secondary line of 9.5-10.5px mono where 16 is taller than the text it introduces.
-    // `CollectionMarkKey` makes the same pairing for the same reason.
-    sample: <ComboGlyph />,
-    word: comboAwarenessCopy.keyWord,
-  },
-];
+function entries(comboGlyphSize?: number) {
+  return [
+    ...CARD_FACTS.map((fact) => ({
+      id: fact,
+      sample: <CardFactMark fact={fact} silent />,
+      word: cardFactName(fact),
+    })),
+    {
+      id: "combo",
+      // AT THE SIZE THE READER SEES. Both callers draw the lemniscate at
+      // `CARD_FACT_MARK_PX` today (the 2026-09-21 one-size ruling superseded the
+      // 12px-on-a-secondary-line pairing this comment used to describe), but the prop
+      // stays: Consider's §C2 amendment moves the glyph onto the fact-marks name line
+      // while top-off's stays on `ComboClause`'s secondary line, and a future split
+      // between those two hosts should not have to touch this module again.
+      sample: <ComboGlyph size={comboGlyphSize} />,
+      word: comboAwarenessCopy.keyWord,
+    },
+  ];
+}
 
-export function AddSurfaceMarkKey({ className }: { className?: string }) {
+export function AddSurfaceMarkKey({
+  className,
+  comboGlyphSize,
+}: {
+  className?: string;
+  /** Consider tiles and top-off both draw the lemniscate at its one shipped size today;
+   *  pass to pin this key's sample to a host whose own lemniscate size moves independently. */
+  comboGlyphSize?: number;
+}) {
   return (
     <div className={className}>
-      <MarkKey marks={ENTRIES} regionAria={cardMarkCopy.keyRegionAria} />
+      <MarkKey marks={entries(comboGlyphSize)} regionAria={cardMarkCopy.keyRegionAria} />
     </div>
   );
 }
