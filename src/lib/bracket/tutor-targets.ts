@@ -326,3 +326,27 @@ export function tutorReaches(target: TutorTarget, piece: TutorPiece): boolean {
     alternative.every((constraint) => constraint.some((word) => types.includes(word))),
   );
 }
+
+/**
+ * Whether EVERY search of the card's own library can find only lands, with at least one search.
+ *
+ * The card-labels consumer's question, not the bracket's (Hugh, 2026-10-03): the model labels a
+ * few land searches `tutor` against its prompt (`Land Tax`, `Nylea's Intervention`, 8 of 5,631 in
+ * the Gishath trial), and the stand-ins sheet drops that job rather than paying to re-label. It
+ * applies `landOnly`, the 2026-09-22 ruling, to each clause on its own, and differs from
+ * `classifyTutor` in two ways that both matter here:
+ *
+ * - **Every search, not the first.** `Traverse the Ulvenwald` searches for a basic land and, with
+ *   delirium, for a creature or land; its first sentence alone would call it land-only and drop a
+ *   real tutor.
+ * - **No opponent rule.** `classifyTutor` refuses any sentence naming an opponent, for the cards
+ *   where the OPPONENT searches. `Land Tax` names one only in its condition and searches your own
+ *   library, so it is read. `their library` is never read, being someone else's.
+ */
+export function searchesOnlyLands(oracleText: string | null): boolean {
+  if (!oracleText) return false;
+  const targets = [...oracleText.matchAll(/search(?:es)? your library for ([^.;]{1,160})/gi)]
+    .map((m) => m[1].toLowerCase());
+  return targets.length > 0 && targets.every((target) =>
+    landOnly({ kinds: targetWords(target) ?? "any", colors: null, maxManaValue: null, basicOnly: false }));
+}
