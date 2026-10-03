@@ -110,9 +110,11 @@ describe("AnalysisPanel", () => {
     draw({ kind: "ready", ...reading(), profile }, {
       declaration: { declared: 5, version: null, previous: null, onDeclare: vi.fn(), refused: false },
     });
-    const above = screen.getAllByTestId("climb-rung").find((r) => r.dataset.role === "above")!;
-    expect(within(above).queryByText(deckAnalysisCopy.climb.roleDeclare)).toBeNull();
-    expect(within(above).getByText(deckAnalysisCopy.climb.roleAbove)).toBeTruthy();
+    // Addendum F, H34: the rung inside an answered range remaps to `permitted`, not the plain
+    // `above` reading this test originally pinned.
+    const permitted = screen.getAllByTestId("climb-rung").find((r) => r.dataset.role === "permitted")!;
+    expect(within(permitted).queryByText(deckAnalysisCopy.climb.roleDeclare)).toBeNull();
+    expect(within(permitted).getByText(deckAnalysisCopy.climb.rolePermitted)).toBeTruthy();
   });
 
   // The flag off and a deck that cannot be read draw no reading at all.
