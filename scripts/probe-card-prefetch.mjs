@@ -19,10 +19,13 @@
 //      holds only GETs, so it cannot see a prefetch turned back into an action (whose POST would
 //      not be held); check 2's "no prefetch is a server action" is the one that catches that.
 //   5. No prefetch is ever a server action.
+//   6. Read-ahead (carousel, H23): a mid-list card, once open, reads both of its neighbors as
+//      GETs, and at 1300 a press of Next paints from that read within 300ms.
 //
 // Makes no writes but the account's About row (every entry marked seen, so no sheet covers the
 // page), captured first and put back in a `finally`. Refused on production and staging. Point it at `next start` on local-dev or a scratch
-// branch holding a `pull:staging` copy; the deck is the account's largest with two or more versions.
+// branch holding a `pull:staging` copy; the deck is the account's largest by card rows with two or more versions and twelve or more
+// rows.
 //
 //   PROBE_BASE=http://localhost:3061 pnpm probe:card-prefetch
 
@@ -292,6 +295,8 @@ async function walk(browser, state, width, deckId) {
   // every GET after it is the read-ahead and nothing else.
   const list = onPage(page, TRIGGER).filter({ visible: true });
   await list.nth(5).waitFor({ state: "visible", timeout: 30_000 });
+  // Park the pointer off the list, so no rest starts an intent read inside the count.
+  if (desktop) await page.mouse.move(0, 0);
   await quiet(page, net, reloaded);
   t = Date.now();
   await list.nth(5).evaluate((el) => el.click());
@@ -336,7 +341,7 @@ async function main() {
         and (select count(*) from deck_versions v where v.deck_id = d.id) >= 2
         and (select count(*) from deck_cards c where c.deck_id = d.id) >= 12
       -- ROWS, not summed quantity: a fixture padded to 99 with one stack of Wastes sums to 99 and
-      -- draws two triggers, and the walk needs twelve.
+      -- draws a handful of triggers, and the walk needs twelve.
       order by (select count(*) from deck_cards c where c.deck_id = d.id) desc, d.id
       limit 1`;
     if (!deck) throw new Error("The account has no deck with two versions and twelve card rows; pull:staging one onto a scratch branch.");

@@ -60,8 +60,8 @@ type CardDetailContextValue = {
    */
   deckOracleIds: ReadonlySet<string>;
   /**
-   * Open the modal for `oracleId`. `siblings` is the ordered oracle-id list the card belongs
-   * to, which is what Prev/Next page through; omit it where there is no list (the commander,
+   * Open the modal for `oracleId`. `siblings` is the ordered list the card belongs to (oracle ids,
+   * or `SiblingCard`s carrying the art an opener holds), which is what Prev/Next page through; omit it where there is no list (the commander,
    * a suggestion) and the modal renders "1 of 1" with both arrows disabled.
    *
    * `atPrinting` opens the card AT one printing — the set grid's cells each ARE a printing,
@@ -95,7 +95,7 @@ type CardDetailContextValue = {
    */
   openOracleId: string | null;
   /**
-   * Replace the ordered list Prev/Next pages through, without touching the open
+   * Replace the ordered list (ids or `SiblingCard`s) Prev/Next pages through, without touching the open
    * card. A surface whose list is a live filter of something larger re-files it
    * here when that filter moves; otherwise the modal keeps paging the order that
    * happened to be on screen at the moment it was opened.
@@ -145,12 +145,12 @@ type CardDetailContextValue = {
   registerDoor: (door: CardDoor) => () => void;
 };
 
-/** The swap tools' door for one card, in the desktop art column or the phone's strip, or null. */
 /**
  * One card of the list Prev/Next pages through (the carousel, H23). An opener that already holds a
- * card's art and identity passes them, so the neighbors can be drawn before their details are read;
- * one that holds only ids passes those, and a neighbor then draws its identity's gradient or a plain
- * plate (handoff note 2). Bare ids stay valid everywhere a list is accepted.
+ * card's art and identity passes them, for the neighbors the carousel's later rounds draw before
+ * their details are read; one that holds only ids passes those, and a neighbor then draws its
+ * identity's gradient or a plain plate (handoff note 2). Bare ids stay valid everywhere a list is
+ * accepted. Nothing reads the art yet: this round only carries it.
  */
 export type SiblingCard = {
   oracleId: string;
@@ -165,6 +165,7 @@ export function siblingCards(list: readonly Sibling[]): SiblingCard[] {
   return list.map((s) => (typeof s === "string" ? { oracleId: s } : s));
 }
 
+/** The swap tools' door for one card, in the desktop art column or the phone's strip, or null. */
 export type CardDoor = (oracleId: string, layout: "art" | "strip") => ReactNode;
 
 /**
@@ -896,15 +897,26 @@ export function CardDetailProvider({
   useEffect(() => {
     if (!card || (nextId === null && prevId === null)) return;
     const shownId = card.oracleId;
-    const first = nextId ?? prevId!;
-    const second = nextId !== null ? prevId : null;
-    const read = prefetch(first);
-    if (second === null) return;
-    // A first neighbor already cached (or a read in flight) started nothing: try the second now.
-    if (!read) { prefetch(second); return; }
-    void read.finally(() => {
-      if (shownRef.current === shownId) prefetch(second);
-    });
+    const order = [nextId, prevId].filter((id): id is string => id !== null);
+    let cancelled = false;
+    void (async () => {
+      for (const id of order) {
+        // Twice at most per neighbor: now, and once more after a speculative read ALREADY running
+        // settles (an intent prefetch of another card, or the cold prefetch a press outwaited),
+        // since the provider keeps one at a time and `prefetch` starts nothing beside it.
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          if (cancelled || shownRef.current !== shownId) return;
+          const read = prefetch(id);
+          if (read) { await read; break; }
+          const running = prefetching.current?.read;
+          // Cached already, or the card's own re-read is running: this effect runs again when that
+          // re-read shows the card.
+          if (!running) break;
+          await running;
+        }
+      }
+    })();
+    return () => { cancelled = true; };
   }, [card, nextId, prevId, prefetch]);
   // See `openAt`: the printing applies to one card, and the card on screen is not always
   // the one that was asked for.
