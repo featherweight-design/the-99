@@ -63,6 +63,19 @@ describe("buildTypeOptions", () => {
     expect(counts.Instant).toBe(0);
   });
 
+  // H10: a sibling option's count is under the OTHER filters, which now includes the colour
+  // match mode — omitting it counted a card the actual list excludes (the pre-open pass found
+  // it). `gu`'s identity is ["G","U"], a superset of the selection: contains keeps it (identity
+  // holds every selected colour) and exactly excludes it (identity is not the selection itself).
+  it("counts under the colour match mode, not just the colours", () => {
+    const withGU = [...cards, card({ oracleId: "gu", typeLine: "Creature", colorIdentity: ["G", "U"], quantity: 1 })];
+    const contains = buildTypeOptions(withGU, { ...noFilters, colors: ["G"] });
+    const exact = buildTypeOptions(withGU, { ...noFilters, colors: ["G"], match: "exactly" });
+    // `c` (identity ["G"]) matches both modes; `gu` matches contains only.
+    expect(contains.find((o) => o.code === "Creature")!.count).toBe(2);
+    expect(exact.find((o) => o.code === "Creature")!.count).toBe(1);
+  });
+
   it("counts under the set filter", () => {
     const counts = Object.fromEntries(
       buildTypeOptions(cards, { ...noFilters, setCodes: ["MH3"] }).map((o) => [o.code, o.count]),

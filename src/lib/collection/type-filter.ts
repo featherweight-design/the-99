@@ -35,6 +35,7 @@ export function buildTypeOptions(cards: BrowseListCard[], filters: BrowseFilters
   const surviving = filterCards(cards, {
     search: "",
     colors: filters.colors,
+    match: filters.match,
     types: [],
     setCodes: filters.setCodes,
     availability: filters.availability,

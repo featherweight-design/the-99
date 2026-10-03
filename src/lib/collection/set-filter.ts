@@ -60,6 +60,7 @@ export function buildSetOptions(
   const surviving = filterCards(cards, {
     search: "",
     colors: filters.colors,
+    match: filters.match,
     types: filters.types,
     setCodes: [],
     availability: filters.availability,

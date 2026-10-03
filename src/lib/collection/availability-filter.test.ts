@@ -65,6 +65,23 @@ describe("buildAvailabilityOptions", () => {
     expect(options.reduce((n, o) => n + o.count, 0)).toBe(cards.length);
   });
 
+  // H10: counts are under the OTHER filters, which now includes the colour match mode —
+  // omitted, a card Exactly excludes still counted (the pre-open pass found it). "ru"'s
+  // identity ["R","U"] is a superset of the selection ["R"]: contains keeps it, exactly
+  // excludes it (identity is not the selection).
+  it("counts respect the colour match mode, not just the colours", () => {
+    const tagged: BrowseListCard[] = [
+      card("r", 1, 0, 0, 1),
+      card("ru", 1, 0, 0, 1),
+    ];
+    tagged[0].colorIdentity = ["R"];
+    tagged[1].colorIdentity = ["R", "U"];
+    const contains = buildAvailabilityOptions(tagged, { ...empty, colors: ["R"] });
+    const exact = buildAvailabilityOptions(tagged, { ...empty, colors: ["R"], match: "exactly" });
+    expect(contains.find((o) => o.code === "free")!.count).toBe(2);
+    expect(exact.find((o) => o.code === "free")!.count).toBe(1);
+  });
+
   it("labels the options in the design's words", () => {
     expect(buildAvailabilityOptions(cards, empty).map((o) => o.label)).toEqual([
       "Free",

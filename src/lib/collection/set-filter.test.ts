@@ -115,6 +115,20 @@ describe("buildSetOptions", () => {
     expect(options.map((o) => o.count)).toEqual([2, 0]);
   });
 
+  // H10: the colour MATCH mode, not just the colours — omitted, a card Exactly excludes still
+  // counted (the pre-open pass found it). `a`'s identity ["R","U"] is a superset of the
+  // selection ["R"]: contains keeps it, exactly excludes it (identity is not the selection).
+  it("counts respect the colour match mode", () => {
+    const cards = [
+      card({ oracleId: "a", colorIdentity: ["R", "U"], setCounts: [["BLB", 2]] }),
+      card({ oracleId: "b", colorIdentity: ["R"], setCounts: [["MH3", 4]] }),
+    ];
+    const contains = buildSetOptions(cards, { ...noFilters, colors: ["R"] }, meta);
+    const exact = buildSetOptions(cards, { ...noFilters, colors: ["R"], match: "exactly" }, meta);
+    expect(contains.map((o) => o.count)).toEqual([2, 4]);
+    expect(exact.map((o) => o.count)).toEqual([0, 4]);
+  });
+
   it("ignores the free-text search box so counts stay stable while typing", () => {
     const cards = [
       card({ oracleId: "a", name: "Sol Ring", setCounts: [["BLB", 2]] }),

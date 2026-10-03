@@ -343,6 +343,7 @@ export function CollectionBrowser({
   // spreads preserve `colors`' array identity, so it is a sound dep as-is.
   const {
     colors: filterColors,
+    match: filterMatch,
     types: filterTypes,
     setCodes: filterSetCodes,
     availability: filterAvailability,
@@ -354,13 +355,14 @@ export function CollectionBrowser({
         {
           search: "",
           colors: filterColors,
+          match: filterMatch,
           types: filterTypes,
           setCodes: [],
           availability: filterAvailability,
         },
         ownedSets,
       ),
-    [cards, filterColors, filterTypes, filterAvailability, ownedSets],
+    [cards, filterColors, filterMatch, filterTypes, filterAvailability, ownedSets],
   );
 
   // Same rule the other way round: type counts move with the colors and the
@@ -370,11 +372,12 @@ export function CollectionBrowser({
       buildTypeOptions(cards, {
         search: "",
         colors: filterColors,
+        match: filterMatch,
         types: [],
         setCodes: filterSetCodes,
         availability: filterAvailability,
       }),
-    [cards, filterColors, filterSetCodes, filterAvailability],
+    [cards, filterColors, filterMatch, filterSetCodes, filterAvailability],
   );
 
   // Same rule again: color counts move with the types and sets, not with the
@@ -399,10 +402,11 @@ export function CollectionBrowser({
       buildAvailabilityOptions(cards, {
         search: "",
         colors: filterColors,
+        match: filterMatch,
         types: filterTypes,
         setCodes: filterSetCodes,
       }),
-    [cards, filterColors, filterTypes, filterSetCodes],
+    [cards, filterColors, filterMatch, filterTypes, filterSetCodes],
   );
 
 
