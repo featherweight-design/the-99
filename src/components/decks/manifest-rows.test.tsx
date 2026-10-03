@@ -69,4 +69,12 @@ describe("ManifestRows: a disclosure, never a control (manifest-affordance adden
     expect(noGames.className).toMatch(/md:min-h-\[40px\]/);
     expect(screen.queryAllByRole("button")).toHaveLength(0);
   });
+
+  it("gives the no-games row its own right padding while running (H35-E), and leaves it to the button otherwise", () => {
+    const { rerender } = render(<ManifestRows rows={[{ kind: "noGames", key: "games" }]} />);
+    expect(screen.getAllByTestId("manifest-row")[0].className).toMatch(/pr-\[12px\]/);
+    rerender(<ManifestRows rows={[{ kind: "noGames", key: "games" }]} onLogGame={vi.fn()} />);
+    expect(screen.getAllByTestId("manifest-row")[0].className).toContain("pr-0");
+    expect(screen.getAllByTestId("manifest-row")[0].className).not.toMatch(/pr-\[12px\]/);
+  });
 });
