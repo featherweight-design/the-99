@@ -62,9 +62,26 @@ describe("CollectionFilterSheet", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
+  it("draws outside the head that opened it, inside <main> (E1)", () => {
+    // Fixed inside a sticky head, a sheet sits in the head's stacking context, under the tab
+    // bar. It is portalled to <main> rather than <body>, where `onPage` would not find it.
+    const main = document.createElement("main");
+    document.body.appendChild(main);
+    try {
+      const { container } = render(sheet());
+      const dialog = screen.getByRole("dialog");
+      expect(container.contains(dialog)).toBe(false);
+      expect(main.contains(dialog)).toBe(true);
+    } finally {
+      main.remove();
+    }
+  });
+
   it("renders nothing when closed, rather than a hidden duplicate of the row", () => {
-    const { container } = render(sheet({ open: false }));
-    expect(container.innerHTML).toBe("");
+    // Asked of the whole document: the sheet portals, so the render container is empty either way.
+    render(sheet({ open: false }));
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(screen.queryByText("Color identity")).toBeNull();
   });
 
   it("is a modal dialog carrying every dimension the wide row draws", () => {
@@ -225,8 +242,9 @@ describe("CollectionFilterSheet", () => {
   });
 
   it("keeps the status region atomic, so a count is read in its sentence", () => {
-    const { container } = render(sheet());
-    expect(container.querySelector("[role='status']")).toHaveAttribute("aria-atomic", "true");
+    render(sheet());
+    // The sheet is portalled out of the render container (E1), so it is read off the document.
+    expect(document.querySelector("[role='status']")).toHaveAttribute("aria-atomic", "true");
   });
 
   it("tells an empty set vocabulary apart from a failed search", () => {
@@ -247,8 +265,8 @@ describe("CollectionFilterSheet", () => {
   });
 
   it("carries its own live region, because the chassis's line is outside the modal", () => {
-    const { rerender, container } = render(sheet({ shown: 9 }));
-    const region = () => container.querySelector("[role='status']");
+    const { rerender } = render(sheet({ shown: 9 }));
+    const region = () => document.querySelector("[role='status']");
     expect(region()?.textContent).toBe("");
     rerender(sheet({ shown: 3 }));
     // Debounced at 300ms like every other count here, so four taps are one

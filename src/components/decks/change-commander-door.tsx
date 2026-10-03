@@ -14,35 +14,16 @@ import { PENDING_OPACITY } from "../commanders/pending";
 import { useCardDetail, useCardIntent } from "../cards/card-detail-provider";
 import { deckHeaderCopy } from "../../lib/copy/decks-builder";
 import { changeCommanderCopy as copy } from "../../lib/copy/change-commander";
-import { useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { SwapGlyph } from "./change-commander-glyph";
 import { useChangeCommander } from "./change-commander-context";
 import { ChangeCommanderSheet } from "./change-commander-sheet";
+import { useSheetHost } from "../ui/sheet-host";
 
 const PLATE =
   "pointer-events-none absolute rounded-[7px] border border-[color:var(--border-strong)] bg-[color:var(--bg)]";
 
 type Width = "desktop" | "mobile";
-
-/**
- * Where the sheet portals: a host PREPENDED to `<main>`. Out of the spine, because the other spine
- * is `display: none` and a fixed sheet inside it would never draw; inside `<main>`, where every
- * other sheet on the page lives (and what `onPage` scopes). And FIRST in it: the card modal a
- * candidate's name opens is a later child at the same `z-50`, so it paints above the sheet only
- * while the sheet comes earlier in the document (the receipt's rule, `receipt-modal.tsx`).
- */
-function useSheetHost(open: boolean): HTMLElement | null {
-  // Made once, on the client (the server never opens a sheet), and attached only while open.
-  const [host] = useState<HTMLElement | null>(() => (typeof document === "undefined" ? null : document.createElement("div")));
-  // Before paint, so the sheet never draws a frame outside the page.
-  useLayoutEffect(() => {
-    if (!open || !host) return;
-    (document.querySelector("main") ?? document.body).prepend(host);
-    return () => host.remove();
-  }, [open, host]);
-  return host;
-}
 
 /** The sheet, from the door that opened it. */
 function Sheet({ width }: { width: Width }) {

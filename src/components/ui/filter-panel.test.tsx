@@ -100,6 +100,41 @@ describe("FilterPanel form override", () => {
   });
 });
 
+describe("FilterPanel portalSheet (collection surfaces E1)", () => {
+  const mount = (portalSheet: boolean) =>
+    render(
+      <FilterPanel
+        copy={collectionFilterCopy.type}
+        options={[{ code: "Creature", label: "Creature", count: 1, disabled: false }]}
+        selected={[]}
+        onToggle={() => {}}
+        onClear={() => {}}
+        compact
+        portalSheet={portalSheet}
+      />,
+    );
+
+  it("draws its phone sheet into <main>, outside the head, only when asked", () => {
+    setViewport(false);
+    const main = document.createElement("main");
+    document.body.appendChild(main);
+    try {
+      const { container, unmount } = mount(true);
+      fireEvent.click(screen.getByRole("button", { name: /type/i }));
+      const dialog = screen.getByRole("dialog");
+      expect(container.contains(dialog)).toBe(false);
+      expect(main.contains(dialog)).toBe(true);
+      unmount();
+      // Opt-in: every other mount keeps its sheet where it was drawn.
+      const other = mount(false);
+      fireEvent.click(screen.getByRole("button", { name: /type/i }));
+      expect(other.container.contains(screen.getByRole("dialog"))).toBe(true);
+    } finally {
+      main.remove();
+    }
+  });
+});
+
 // Two cases retired with the control they covered: the mobile `Color ▾` panel
 // is gone, because `ColourPips` draws one colour control at both widths rather
 // than a desktop pip row and a phone panel with different ARIA roles for the
