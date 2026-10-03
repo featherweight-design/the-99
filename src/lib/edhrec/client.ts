@@ -1,6 +1,6 @@
-import { inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
-import { edhrecCache } from "../../db/schema";
+import { commanderSupport, edhrecCache } from "../../db/schema";
 import { commanderSlug } from "./slug";
 import { edhrecPageMissing } from "./missing-page";
 import { parseEdhrecPayload, type EdhrecData } from "./parse";
@@ -33,13 +33,56 @@ export type EdhrecCacheRow = {
   commanderOracleId: string;
   payload: unknown;
   fetchedAt: Date;
+  /** When the commander index last fetched this commander (`commander_support.computed_at`),
+      or null when the index holds no row for it. */
+  indexComputedAt: Date | null;
 };
 
-/** One query for many commanders — the fanout would otherwise issue one SELECT each. */
+/**
+ * True when a cached page is older than the index's own fetch of the same commander, and so
+ * describes an EDHREC snapshot the index has since replaced (How it works §5.2, ruled 2026-09-29).
+ *
+ * The index scores a commander from its own fetch and the live half reads this cache, so without
+ * this one commander could show figures from two snapshots up to a month apart. A retired row is
+ * not deleted: it is still the stale-on-error fallback when EDHREC cannot be reached.
+ *
+ * The marker is per commander, and it already lives on both databases: the index build stamps
+ * `computed_at` when it writes that commander, and `db:copy:index` carries the column to
+ * production exactly. So production knows when ITS index changed for this commander without a
+ * ledger row of its own.
+ *
+ * TWO CLOCKS, and why skew cannot matter. Both stamps are JS `new Date()`: `computed_at` on the
+ * index runner (the CI job building staging), `fetched_at` on the app server at the live read.
+ * On production the index stamp only arrives with a copy, which runs after a build of hours, so
+ * every read that can be compared against it follows that stamp by hours, not seconds. On staging
+ * a live read during the build can fall seconds either side of the stamp for that commander, and
+ * either answer is a page from the same build window.
+ */
+export function cacheRowRetired(row: Pick<EdhrecCacheRow, "fetchedAt" | "indexComputedAt">): boolean {
+  return row.indexComputedAt != null && row.fetchedAt < row.indexComputedAt;
+}
+
+/**
+ * One query for many commanders — the fanout would otherwise issue one SELECT each. The index's
+ * stamp rides along in the same statement, so the retirement compares a consistent pair: a copy
+ * landing between two reads costs at most one extra fetch, and stores nothing to undo.
+ */
+export function edhrecCacheQuery(oracleIds: string[]) {
+  return db
+    .select({
+      commanderOracleId: edhrecCache.commanderOracleId,
+      payload: edhrecCache.payload,
+      fetchedAt: edhrecCache.fetchedAt,
+      indexComputedAt: commanderSupport.computedAt,
+    })
+    .from(edhrecCache)
+    .leftJoin(commanderSupport, eq(commanderSupport.commanderOracleId, edhrecCache.commanderOracleId))
+    .where(inArray(edhrecCache.commanderOracleId, oracleIds));
+}
+
 export async function readEdhrecCache(oracleIds: string[]): Promise<Map<string, EdhrecCacheRow>> {
   if (oracleIds.length === 0) return new Map();
-  const rows = await db.select().from(edhrecCache)
-    .where(inArray(edhrecCache.commanderOracleId, oracleIds));
+  const rows = await edhrecCacheQuery(oracleIds);
   return new Map(rows.map((r) => [r.commanderOracleId, r]));
 }
 
@@ -52,7 +95,7 @@ export async function resolveEdhrecData(
   commanderName: string,
   cached: EdhrecCacheRow | undefined,
 ): Promise<EdhrecFetchResult> {
-  if (cached && Date.now() - cached.fetchedAt.getTime() < TTL_MS) {
+  if (cached && Date.now() - cached.fetchedAt.getTime() < TTL_MS && !cacheRowRetired(cached)) {
     return { data: parseEdhrecPayload(cached.payload), unreachable: false };
   }
 

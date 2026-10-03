@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 const stub = vi.hoisted(() => ({ db: {} as Record<string, unknown> }));
 vi.mock("../../db", () => ({ db: stub.db }));
 
-import { fetchEdhrecUncached } from "./client";
+import { cacheRowRetired, fetchEdhrecUncached, resolveEdhrecData, type EdhrecCacheRow } from "./client";
 
 function mockFetch(status: number, htmlStatus = 200): ReturnType<typeof vi.fn> {
   // The JSON API is asked first; a 403 then asks the HTML page, which is the only
@@ -63,5 +63,66 @@ describe("fetchEdhrecUncached", () => {
     mockFetch(404);
     const result = await fetchEdhrecUncached("Ghoulcaller Gisa");
     expect(result).toEqual({ data: null, unreachable: false });
+  });
+});
+
+
+// How it works §5.2: an index build retires every cached page fetched before the index fetched
+// the same commander, so the live half and the index read one EDHREC snapshot.
+describe("the index retires a cached page it has replaced", () => {
+  const day = 24 * 60 * 60 * 1000;
+  const ago = (ms: number) => new Date(Date.now() - ms);
+  const row = (fetchedAt: Date, indexComputedAt: Date | null): EdhrecCacheRow => ({
+    commanderOracleId: "00000000-0000-0000-0000-000000000001",
+    payload: { container: { json_dict: { cardlists: [] } } },
+    fetchedAt,
+    indexComputedAt,
+  });
+  const upserts: unknown[] = [];
+  const answer = (ok: boolean) => {
+    const fn = vi.fn(() =>
+      ok
+        ? Promise.resolve({ status: 200, ok: true, json: () => Promise.resolve({ container: { json_dict: { cardlists: [] } } }) })
+        : Promise.reject(new Error("unreachable")),
+    );
+    vi.stubGlobal("fetch", fn);
+    stub.db.insert = () => ({
+      values: (v: unknown) => ({ onConflictDoUpdate: () => (upserts.push(v), Promise.resolve()) }),
+    });
+    return fn;
+  };
+
+  it("retires a page older than the index's fetch of that commander", () => {
+    expect(cacheRowRetired(row(ago(3 * day), ago(1 * day)))).toBe(true);
+  });
+
+  it("keeps a page fetched after the index's fetch", () => {
+    expect(cacheRowRetired(row(ago(1 * day), ago(3 * day)))).toBe(false);
+  });
+
+  it("keeps a page the index holds no row for: the TTL alone governs it", () => {
+    expect(cacheRowRetired(row(ago(3 * day), null))).toBe(false);
+  });
+
+  it("refetches a retired page even inside the TTL, and stores the new one", async () => {
+    upserts.length = 0;
+    const fetch = answer(true);
+    await resolveEdhrecData("00000000-0000-0000-0000-000000000001", "Atraxa, Praetors' Voice", row(ago(3 * day), ago(1 * day)));
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(upserts).toHaveLength(1);
+  });
+
+  it("serves a current page from the cache without asking EDHREC", async () => {
+    const fetch = answer(true);
+    const result = await resolveEdhrecData("00000000-0000-0000-0000-000000000001", "Atraxa, Praetors' Voice", row(ago(1 * day), ago(3 * day)));
+    expect(fetch).not.toHaveBeenCalled();
+    expect(result.data).not.toBeNull();
+  });
+
+  it("still serves a retired page when EDHREC cannot be reached, rather than nothing", async () => {
+    answer(false);
+    const result = await resolveEdhrecData("00000000-0000-0000-0000-000000000001", "Atraxa, Praetors' Voice", row(ago(3 * day), ago(1 * day)));
+    expect(result).toEqual({ data: expect.anything(), unreachable: false });
+    expect(result.data).not.toBeNull();
   });
 });
