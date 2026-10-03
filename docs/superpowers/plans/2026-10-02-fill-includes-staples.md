@@ -1,0 +1,237 @@
+# The fill includes the staples (H25)
+
+Plan, 2026-10-02. Approved by Hugh, 2026-10-03, with his rulings on the five §8 questions
+(recorded in §8 and applied through §4–§7).
+
+Hugh's walk note (intake H25): "Auto-build includes the staples (Sol Ring, Arcane Signet) plus
+per-color staples (Swords to Plowshares…)".
+
+## 1 · What happens today, measured
+
+**Only the two decks the app filled lack them.** Hugh's staging account (`user_3GkZ…`, 22 decks)
+owns 17 Sol Rings and 15 Arcane Signets. 20 of the 22 decks hold a Sol Ring and 18 hold an
+Arcane Signet. The two holding neither are exactly the two with `decks.filled = true`:
+
+| Deck | Commander | How it was made | Sol Ring | Arcane Signet | Swords |
+|---|---|---|---|---|---|
+| Test Landfall | Omnath, Locus of the Roil | Help me choose, $100, bracket 3 | no | no | n/a (no W) |
+| HD - Omnath | Omnath, Locus of Creation | Help me choose, no budget | no | no | no |
+
+Read-only on staging (`br-polished-pond-a6e63y0b`), 2026-10-02.
+
+**The real fill, run again, still leaves them out.** `buildFillPlan` was run for Hugh's account on
+a scratch branch of staging (`br-floral-cloud-a6gwnw1n`, deleted after). It was run for four
+commanders: both Omnaths, and two decks he built by hand with a Sol Ring (Krenko, Mob Boss and
+Thorin Oakenshield). All four leave out both cards, though the player owns them and EDHREC's inclusion for them is high:
+
+| Commander | Sol Ring inclusion | Arcane Signet inclusion | Placed |
+|---|---|---|---|
+| Omnath, Locus of Creation | 64.7% | 48.2% | neither |
+| Omnath, Locus of the Roil ($100, b3) | 60.2% | 42.3% | neither |
+| Krenko, Mob Boss | 85.2% | 52.6% | neither |
+| Thorin Oakenshield | 75.6% | 65.2% | neither |
+
+**The cause is the role pass's tie-break, not the pool.** Both cards are in the pool, owned,
+classified `ramp`, and ordered near the top of it (`byPreference`, `fill.ts:331`: owned first, then
+inclusion). But the pass does not take the card under the cursor. For each slot it scans up to
+`TIE_BREAK_WINDOW` = 200 other candidates (`fill.ts:204`), and any candidate that closes MORE open
+role floors wins outright, whatever its inclusion (`closes`, the `gain > 0` branch in `planFill`).
+A card that counts as ramp and draw closes two floors. Sol Ring closes one. So every ramp slot went
+to a dual-role card, most of them with no EDHREC figure at all. Omnath, Locus of Creation's role
+rows, in full:
+
+| Row | Card | Inclusion | Roles |
+|---|---|---|---|
+| ramp | Biomechan Engineer | none | ramp, draw |
+| ramp | Drownyard Lurker | none | ramp, draw |
+| ramp | Selvala, Heart of the Wilds | none | ramp, draw |
+| ramp | Solemn Simulacrum | none | ramp, draw |
+| ramp | Big Score | none | ramp, draw |
+| ramp | Deconstruct | none | ramp, removal |
+| ramp | Divert Disaster | none | ramp, removal |
+| ramp | Konstrari Charm | none | ramp, removal |
+| ramp | Abundant Growth | none | ramp, draw |
+| draw | Budding Insurgent | none | draw, removal |
+| removal | Ancient Hydra | none | removal |
+
+All but Ancient Hydra also credit a second role (§2.5a), so eleven rows close every floor: the draw
+floor holds one real draw card, the removal floor one real removal card. Krenko's pass is the same
+shape: Solemn, Mind Stone (20.3%), Commander's Sphere (7.4%), Barrels of Blasting Jelly, Cryptex.
+
+**The residual cannot rescue them.** After the floors, the slots left are ordered by
+`synergyRank` (`actions.ts`, `readSynergyCards`), and EDHREC synergy measures how much MORE a
+commander's decks play a card than decks in general. A card every deck plays scores near zero, so
+a staple sorts to the bottom of exactly the pass that would otherwise take it.
+
+**Two defects, then, and one feature.** The tie-break overrides inclusion (a defect: it builds
+decks of zero-inclusion cards). The residual ranks staples last by construction (a defect for this
+purpose). And nothing in the fill knows what a staple is (the feature Hugh asked for).
+
+## 2 · Which "staple"
+
+"Staple" already means two things (How it works brief, §5 item 3,
+`docs/superpowers/design-briefs/2026-09-28-how-it-works.md`):
+
+- **EDHREC's top cards for this commander** (`data.topCards`): what the fill calls "staples you
+  don't own" (`unownedStaples`, `suggestions-read.ts:97`). Per commander, live, and it already
+  orders the pool through `inclusionPct`.
+- **`format_staples`**: breadth at least 50% of an identity bucket's commanders and inclusion at
+  least 20% within it (`scripts/build-staples.ts`), rebuilt monthly. **Universal** = a staple in at
+  least ¾ of the buckets (`src/lib/staples/universal.ts`).
+
+**This plan uses `format_staples`.** It is the one that answers Hugh's two halves directly, and it
+is what "staple" means everywhere a reader sees the word (Find a deck, Change commander, the
+overview). Measured on staging today: 16 conditions, 776 rows. Universal (≥ 12 of 16): Sol Ring 16,
+Arcane Signet 16, Swiftfoot Boots 16, Rogue's Passage 15, Reliquary Tower 13. The W bucket's first
+four by inclusion: Sol Ring, Swords to Plowshares, Path to Exile, Arcane Signet.
+
+The fill's existing use of EDHREC top cards stays as it is, but the code stops calling them
+"staples" (`unownedStaples` becomes `unownedTopCards`), which closes §5 item 3 as a side effect. The
+About copy already dropped the word in #1143, and `how-it-works.ts` has no fill row, so the rename
+is the only change left.
+
+## 3 · "Per-color staples": the options
+
+| | What it is | For | Against |
+|---|---|---|---|
+| **A · `format_staples` by identity** | The deck's own condition (`W`, `RW`, `count:3`…) via the existing condition chain in `src/lib/staples/condition.ts` | Already built, monthly, measured across every commander in the bucket; Swords is there for every W bucket (54–67%) | Colorless, four- and five-color decks have no condition today: the table holds the 15 mono and two-color identities and `count:3` only (`C`, `count:4` and `count:5` reach `identity_composition` alone, `build-staples.ts:544`), so Omnath, Locus of Creation gets universal staples only. Covered in §4 |
+| B · EDHREC top cards above a bar | This commander's own list, e.g. inclusion ≥ 40% | Commander-specific, already fetched | It is what the fill already ranks by; the defect above is why it did not land, not the list. Fixing the tie-break gives most of B for free |
+| C · A named list | Sol Ring, Arcane Signet, Swords… | Exactly the cards named | Rots with every set; "derived, never named" is the rule `universal.ts` was written under |
+
+**Recommendation: A, with the tie-break fixed (§4.1) so B's ordering also works.** A guarantees
+the staples a reader expects; B (the commander's own list) then fills the rest in the right order.
+
+## 4 · The change
+
+### 4.1 Inclusion bounds the tie-break (the defect)
+
+A swap in the role pass may only choose a card whose inclusion is at least the cursor card's minus
+a band (proposed 10 points), and never a card with no figure over one with a figure. The two-floor
+gain and the type gap stay, inside that band. The owned tier already bounds it the same way
+("WITHIN THE OWNERSHIP TIER", `fill.ts`). Measured effect to report in the PR: role rows per
+commander before and after, on the same four decks.
+
+### 4.2 A staples step, before the role pass (the feature)
+
+A new step seeds the deck's staples first, so they are placed before any floor is open and credit
+every role they satisfy (§2.5a), exactly as `held` cards do:
+
+1. **Which.** The universal set, plus the deck's own condition's rows above an inclusion bar
+   (the condition's `avg_inclusion` ≥ 50%, Hugh 2026-10-03). For a deck with no exact
+   condition of its own among colorless, four and five colors, universal only (ruled): the
+   `count:3` bucket serves three-color decks alone.
+2. **Owned first.** In `pool: "sleeveable"`, only staples with a free copy. In `"all"`, an unowned
+   nonland staple is placed and counted in `bought`, like any unowned top card. An unowned land
+   staple is not: the land sweep takes owned lands only ("Lands come from the collection alone",
+   `fill.ts:545`), so an unowned Command Tower stays out, as it does today.
+3. **Through the gate.** Every staple is offered to `gate.admits` and told to `gate.place`. That
+   needs the staples IN the gate's candidate list: `loadFillGate` reads prices, ownership and
+   Game Changer facts only for the ids it is given (`src/lib/intake/fill-facts.ts:50-59`), so a
+   catalog staple passed beside them would read no price (refused under any budget) and no Game
+   Changer flag (admitted under any bracket). `buildFillPlan` adds them to `scoped` before the
+   gate is built. Six staples are Game Changers today (Cyclonic
+   Rift, Demonic Tutor, Jeska's Will, Rhystic Study, Smothering Tithe, Teferi's Protection). The
+   staples step NEVER seeds a Game Changer (Hugh 2026-10-03): a bracket 1–2 answer refuses them
+   through the existing gate, a deck with no bracket answer leaves even an owned one out, and an
+   unowned one is never bought. A Game Changer can still arrive through the role pass exactly as
+   it does today; the ruling is about what the step seeds on the player's behalf.
+4. **Lands.** Land staples (Command Tower, Rogue's Passage, Reliquary Tower, Exotic Orchard) are
+   NOT placed by this step. They go to the land sweep, which already has the land ceiling, the
+   nonbasic cap and the basics split. The step marks them preferred so the sweep takes them first.
+5. **A cap.** At most 10 nonland staples added (ruled), so a two-color bucket's 59 rows cannot
+   become a staples deck. Universal staples come first, then the condition's rows by
+   inclusion; the PR reports the per-condition count above the bar.
+6. **Excluded and selected cards** are skipped, as everywhere in `buildFillPlan`: the staples step
+   reads `excludeOracleIds`, which is what keeps a deck's own cards out (the top-off passes its held
+   ids there, `actions.ts:2341`; `held` only credits roles).
+7. **Bound by the caller.** The step counts against `slots`, so a one-slot bulk fill places at most
+   one card, and it honors `onlyOracleIds`: the top-off bulk controls fill only from the rows their
+   list draws (`actions.ts:2351`), and a staple with no row there would be a tick with nowhere to
+   land, the defect #1141 fixed. Under an allow-list a staple outside it is simply not offered.
+
+### 4.3 Where it lives
+
+- `src/lib/decks/fill.ts`: the band in the tie-break; a `staples?: FillCandidate[]` argument on
+  `PlanFillArgs`, placed before the role pass, through `admits`/`place`.
+- `src/app/decks/actions.ts` (`buildFillPlan`): reads the deck's staples from `format_staples`
+  through the condition chain, joins them to the pool's candidates (owned) or to the catalog
+  (unowned), and passes them.
+- `src/lib/staples/`: a `loadStaplesFor(identity)` reader beside `loadUniversalStaples`, so the
+  overview, the swap tools and the fill share one definition.
+
+Every fill caller inherits it: create, fill and Help me choose in full, and the top-off bulk
+controls within their slot count and their allow-list (§4.2 items 6 and 7).
+
+**A staple's row says it is a staple.** `FillRow.role` is what consumers read today, and a staple
+with no role (Swiftfoot Boots) would be filed `other`: `sleeveableIds` (`actions.ts:2396-2399`)
+drops `other` rows, so in a one-slot bulk fill it would spend the slot and return no tick, and
+create files `other` rows as undoable residual suggestions. So `FillRow` gains `source: "staple"`
+beside its classified role, `sleeveableIds` keeps a staple row whatever its role, and create files
+staple rows with the foundation rather than the residual.
+
+## 5 · Is it a Design question?
+
+**No.** It changes which cards the fill picks and nothing on screen: no new control, state or
+string. Per the standing rule, logic changes need no Design round.
+
+**About entry: an ordinary edit, no bump (Hugh 2026-10-03).** The existing `auto-fill` entry
+(`about.ts`) says "we add the cards that commander's decks play most", which stays true. Its
+caption is edited to name the staples, with no new entry and NO `ABOUT_VERSION` bump; the
+`about.test.ts` content hash is re-pinned deliberately. The wording goes through `/copy-review`.
+
+## 6 · Proof
+
+**Unit (`fill.test.ts`).** A single-role card at 80% beats a dual-role card with no figure for the
+same slot; a dual-role card within the band still wins; a staple credits every role it satisfies;
+a staple the gate refuses is skipped; a Game Changer staple is never seeded, owned or not, with
+or without a bracket answer; a land staple is not placed by the staples step; the cap holds at 10.
+
+**`probe:fill`, new sections** (real catalog, local-dev or a scratch branch):
+
+- **8 · Inclusion bounds the tie-break.** A fixture of one owned single-role ramp card with a high
+  sentinel inclusion and three owned dual-role ramp cards with none: the high one is placed.
+- **9 · Universal staples land.** An owned Sol Ring and Arcane Signet in a fixture collection are
+  placed in a from-scratch fill for a mono-color commander.
+- **10 · The identity condition.** A W commander's staples step seeds Swords to Plowshares; a
+  three-color commander with no exact bucket is served by `count:3`, and a qualifying non-universal
+  card from that bucket arrives as a `source: "staple"` row (seeded, not picked later by the role
+  pass); a four-color commander's staples step seeds universal staples only.
+- **11 · The gate.** A $20 budget refuses a staple above it, and an OWNED Game Changer staple is
+  not seeded with no bracket answer (nor under bracket 2).
+- **12 · Lands.** Command Tower arrives through the land sweep, once, and the land count is
+  unchanged.
+- **13 · The caller's bounds.** A `slots: 1` fill places one card, and a fill with an allow-list
+  that omits Sol Ring does not place it. A one-slot bulk fill whose staple is roleless (Swiftfoot
+  Boots) returns it as a tick.
+
+**Mutations, each must fail the probe:** the band removed (8), the staples step removed (9), the
+condition ignored so only universal staples seed (10), the `count:3` fallback dropped (10), staples placed outside `admits` (11), the Game Changer exclusion removed (11), land
+staples placed by the staples step (12), the slot count or the allow-list ignored (13).
+
+**The measurement, rerun:** the scratch-branch run in §1 on the same four commanders, before and
+after, with each deck's role rows and the staples placed. Sol Ring and Arcane Signet must land on
+all four. The assertion is on what the STAPLES STEP seeds (rows with `source: "staple"`), not on
+the finished deck: Swords to Plowshares must be seeded for Thorin (R W, owned) and, under §8
+ruling 3, not seeded for Omnath, Locus of Creation (four colors, universal staples
+only). The role pass may still pick Swords for Omnath as an ordinary removal card, which is right.
+
+## 7 · PR boundaries
+
+Two PRs, in order, never stacked (the second branches from `main` after the first merges):
+
+- **PR 1 · The fill.** `fill.ts` (band and staples step), `actions.ts`, the `staples` reader, the
+  rename, `sleeveableIds` and create's row filing (the `source` field), `fill.test.ts`, and
+  `probe-fill.ts`. Under ~600 lines.
+- **PR 2 · The About caption.** The `auto-fill` entry's caption in `about.ts`, its wording through
+  `/copy-review`, and the deliberate `about.test.ts` hash re-pin. No `ABOUT_VERSION` bump. Opened
+  after PR 1 merges, so the caption never describes a fill that has not shipped.
+
+## 8 · Hugh's rulings (2026-10-03)
+
+1. **Source:** `format_staples`, universal plus the deck's identity bucket.
+2. **Color staples:** an inclusion bar of 50%, and at most 10 staples added.
+3. **Colorless, four- and five-color decks:** universal staples only.
+4. **An owned Game Changer staple on a deck with no bracket answer:** left out. Unowned Game
+   Changers are never bought.
+5. **About:** an ordinary edit to the `auto-fill` entry's caption, no `ABOUT_VERSION` bump, its
+   wording through `/copy-review`.
