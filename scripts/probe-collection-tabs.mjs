@@ -9,7 +9,9 @@
 //
 // Dropped (Hugh's ruling, #1222 follow-up): the desktop check that Sets/Proxies' h1 starts
 // on the first tab's edge. Their content column now centers under the place head instead of
-// anchoring left to it, so nothing pins the h1 to that edge any more.
+// anchoring left to it, so nothing pins the h1 to that edge any more — replaced below by a
+// check that the content column's own midpoint sits on <main>'s midpoint, which a revert of
+// either `mx-auto` edit would fail.
 
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
@@ -96,6 +98,9 @@ const MEASURE = (scope) => {
   });
   const replace = [...nav.querySelectorAll('a[href="/collection/replace"]')]
     .find((a) => a.getBoundingClientRect().width > 0);
+  // The h1's own PARENT, not the h1: the h1's text only fills part of the column, so its own
+  // box midpoint would not reflect whether the column it sits in is centered under <main>.
+  const contentCol = visibleH1?.parentElement?.getBoundingClientRect() ?? null;
   return {
     top: navBox.top - mainBox.top + window.scrollY,
     height: navBox.height,
@@ -103,6 +108,8 @@ const MEASURE = (scope) => {
     current: links.filter((a) => a.getAttribute("aria-current") === "page").map((a) => a.getAttribute("data-testid")),
     names: links.map((a) => a.textContent),
     h1: visibleH1 ? { text: visibleH1.textContent, left: textLeft(visibleH1) - mainBox.left } : null,
+    contentMid: contentCol ? contentCol.left + contentCol.width / 2 - mainBox.left : null,
+    mainMid: mainBox.width / 2,
     replaceInStrip: Boolean(replace),
   };
 };
@@ -151,6 +158,16 @@ async function run() {
             fail(`${width}px · /collection · no drawn h1`, m.h1 === null, m.h1 === null ? "sr-only" : `drew "${m.h1.text}"`);
           }
         }
+        // Sets and Proxies center their content column under the place head (Hugh's ruling,
+        // #1222 follow-up); a revert of either route's `mx-auto` edit would put the column's
+        // midpoint off <main>'s midpoint, which the strip-position checks above cannot see.
+        if (desktop && route.tab !== "cards") {
+          fail(
+            `${width}px · ${route.path} · content column centered under <main>`,
+            near(m.contentMid, m.mainMid),
+            `column midpoint ${m.contentMid}px against main midpoint ${m.mainMid}px`,
+          );
+        }
       }
 
       // THE POINT OF THE BLOCK (E21): pressing one of its own tabs never moves the strip.
@@ -168,6 +185,7 @@ async function run() {
         );
         if (width === 1300) {
           fail(`1300px · strip top at 109`, near(first.m.top, 109), `${first.m.top}px`);
+          fail(`1300px · first tab at x 34`, near(first.m.tabLeft, 34), `${first.m.tabLeft}px`);
         }
       }
       await context.close();
