@@ -2114,6 +2114,27 @@ export const cardLabelBatches = pgTable("card_label_batches", {
   batchId: text("batch_id"),
   status: text("status").notNull().default("intended"),
   /**
+   * The `LABEL_PROMPT_VERSION` the request was built under, written with the intent.
+   *
+   * Two rules read it. The spend cap sums a whole budget family's batches (`familySpend`), and a
+   * row's cost is only comparable within one prompt version; and a run may collect, and plan
+   * around, another run's open batch only when it was asked under the prompt this run would ask,
+   * or it would stage one prompt's answer under another's hash. Nullable because every row written
+   * before it has no record, and such a row counts for nothing in either rule rather than being
+   * guessed into one.
+   */
+  promptVersion: text("prompt_version"),
+  /**
+   * Each asked card's `labelInputHash` AT REQUEST TIME, by name, written with the intent.
+   *
+   * A batch can stay pending across a daily catalog refresh, so a card's text may move between
+   * the request and its collection. The collect stages a card only while its current hash still
+   * equals this one; a card that moved is left for the next plan, because its answer describes
+   * text the catalog no longer holds. Null on every row written before it, which the collect
+   * reads as "no record" and stages as it always did.
+   */
+  askedHashes: jsonb("asked_hashes").$type<Record<string, string>>(),
+  /**
    * MEASURED token usage, written when the batch collects. Null until then.
    *
    * These exist so the wave sizing can read what a run has ACTUALLY spent rather than what

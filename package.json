@@ -43,6 +43,7 @@
     "probe:fit-parity": "tsx scripts/probe-fit-parity.mts",
     "probe:declaration": "tsx scripts/probe-declaration.ts",
     "probe:label-build": "tsx scripts/probe-label-build.ts",
+    "probe:card-labels-waves": "tsx scripts/probe-card-labels-waves.mts",
     "probe:help-me-choose-search": "tsx scripts/probe-help-me-choose-search.ts",
     "probe:help-me-choose-fill": "tsx scripts/probe-help-me-choose-fill.ts",
     "probe:help-me-choose-plumbing": "tsx scripts/probe-help-me-choose-plumbing.ts",

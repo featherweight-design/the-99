@@ -540,6 +540,13 @@
       "when": 1790985945198,
       "tag": "0076_parallel_songbird",
       "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1791000976247,
+      "tag": "0077_card_label_batches_prompt_version",
+      "breakpoints": true
     }
   ]
 }

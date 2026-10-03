@@ -44,28 +44,72 @@ export const modelToken = (model: string): string =>
 export type Chunk = { customId: string; intentKey: string; names: string[] };
 
 /**
- * Splits cards into requests, with the ids a resumed run must reproduce EXACTLY.
+ * A short stable fingerprint of the cards one request asks about, in the order it asks.
  *
- * Both ids are deterministic in `(runId, model, index)`, which is what lets a resumed run
- * compute the same key for the same work and find its own intent rather than creating a
- * second. So the input order matters: callers pass cards in a stable order (the query's
- * `order by`), or a resumed run chunks differently and the keys stop matching.
+ * This is what makes a chunk's identity its CONTENT rather than its position. Keyed on an index,
+ * a card entering or leaving the stale set between waves moved every later chunk's contents under
+ * an unchanged key, so a resumed run had to refuse outright rather than skip cards nobody asked
+ * about. Keyed on the names, a shifted set simply produces different chunks for the cards still
+ * unlabelled, and an unchanged chunk reproduces its own key.
+ *
+ * Ten hex characters (40 bits) because the key also goes into `custom_id`, which the provider
+ * caps; within one run's few thousand chunks a collision is not a risk worth modelling, and the
+ * global unique constraint on `custom_id` would refuse one loudly rather than mix two requests.
  */
-export function planChunks(runId: string, model: string, names: readonly string[]): Chunk[] {
+export const chunkHash = (names: readonly string[]): string =>
+  createHash("sha256").update(names.join("\u0000")).digest("hex").slice(0, 10);
+
+/**
+ * Splits cards into requests, with ids derived from WHAT each request asks about.
+ *
+ * Both ids are deterministic in `(runId, model, names, attempt)`, which is what lets a resumed run
+ * compute the same key for the same work and find its own intent rather than creating a second.
+ * Callers still pass cards in a stable order (the query's `order by`), so an unchanged set chunks
+ * the same way and reproduces its keys.
+ *
+ * **The attempt number exists because content addressing reproduces a key that may already be
+ * spent.** A chunk whose batch reached a terminal failure (its results expired, or every request
+ * errored) re-plans to the same names, and so to the same hash; the earlier intent row still holds
+ * that key and that `custom_id`, and both are unique. The insert is the claim, so a reused key
+ * would read as another process's claim and stop the run — or, worse, a recovery could not tell
+ * the two requests apart. So `priorAsked` carries every intent this run already recorded for this
+ * model, whatever its status, and a chunk whose names match one of them takes the next attempt.
+ * Retiring the failed row instead was the alternative and is refused: that row is the evidence of
+ * what was billed (an expired batch is reserved at its worst case from it), and deleting or
+ * rewriting it is how one charge gets counted twice or not at all.
+ */
+export function planChunks(
+  runId: string, model: string, names: readonly string[],
+  priorAsked: readonly (readonly string[])[] = [],
+): Chunk[] {
   const token = runToken(runId);
+  const used = new Map<string, number>();
+  for (const asked of priorAsked) {
+    const h = chunkHash(asked);
+    used.set(h, (used.get(h) ?? 0) + 1);
+  }
   const chunks: Chunk[] = [];
   for (let i = 0; i * CARDS_PER_REQUEST < names.length; i++) {
+    const these = names.slice(i * CARDS_PER_REQUEST, (i + 1) * CARDS_PER_REQUEST);
+    const h = chunkHash(these);
+    // Counted within the plan too, so two identical chunks in one plan (which only a caller that
+    // failed to dedupe names could produce) still get distinct keys rather than one claim.
+    const attempt = (used.get(h) ?? 0) + 1;
+    used.set(h, attempt);
     chunks.push({
-      // Short by construction: run token + MODEL token + index.
+      // Short by construction: run token + MODEL token + content hash + attempt, 28 characters
+      // for any attempt under ten against the provider's 64.
       //
       // `model.slice(0, 1)` was the first version and it does not disambiguate: every Anthropic
       // id starts `claude-`, so `claude-sonnet-4-5` and `claude-sonnet-5` both reduced to `c`.
       // Two models in one run would then produce identical `custom_id`s, which the global unique
       // constraint rejects — and the insert is a claim, so the second model's chunks would be
       // unclaimed while the request still went out, or a recovery could not tell the two apart.
-      customId: `${token}-${modelToken(model)}${i}`,
-      intentKey: `${runId}:${model}:${i}`,
-      names: names.slice(i * CARDS_PER_REQUEST, (i + 1) * CARDS_PER_REQUEST),
+      //
+      // The hash is fixed-width, so the attempt digits after it cannot run into it.
+      customId: `${token}-${modelToken(model)}${h}${attempt}`,
+      intentKey: `${runId}:${model}:${h}:${attempt}`,
+      names: these,
     });
   }
   return chunks;
@@ -258,3 +302,77 @@ export const MEASURED_PER_CARD = {
 /** What a run is projected to cost in all: what it has measured, plus the cards still to do at a rate. */
 export const projectedTotalUsd = (measuredUsd: number, remainingCards: number, perCardUsd: number): number =>
   measuredUsd + remainingCards * perCardUsd;
+
+/**
+ * Which BUDGET a run id spends from: the runs whose spend is summed together against one cap.
+ *
+ * The cap used to bound a run id, and a run id is cheap to change. A backfill stopped at its $55 and
+ * dispatched again under tomorrow's date started from $0 with a fresh $55, so "a hard stop at $55"
+ * bounded nothing but one id. So every `backfill-YYYY-MM-DD` dispatch shares ONE budget: Hugh's $55 is a
+ * backfill budget per prompt version (d9, 2026-10-03). The cron's run, named for its ISO week
+ * (`weekly-YYYY-Www`, card-labels.yml's `date -u +%G-W%V`), keeps its OWN $9 each week, because a weekly
+ * budget summed across weeks would run out for good and leave new cards unlabelled. So a weekly id, like
+ * anything else (a timestamped local run, a probe), is its own family.
+ *
+ * Matched on the workflow's exact shape rather than a loose prefix, so a hand-typed `backfill-x` does not
+ * quietly spend from the backfill budget. The family carries a sigil a run id cannot start with, so a run
+ * literally named `@backfill` cannot alias it.
+ */
+export function budgetFamily(runId: string): string {
+  if (/^backfill-\d{4}-\d{2}-\d{2}$/.test(runId)) return "@backfill";
+  return runId;
+}
+
+/** One ledger row as the spend sum reads it: a single intent, never an aggregate of two. */
+export type SpendRow = {
+  runId: string; status: string; promptVersion: string | null; askedCards: number;
+  inTokens: number | null; outTokens: number | null;
+  cacheWriteTokens: number | null; cacheReadTokens: number | null;
+};
+
+export type FamilySpend = {
+  /** What collected (or floor-held) batches reported, priced. */
+  measuredUsd: number;
+  /** Cards asked by the rows whose usage is measured — the denominator of this run's own rate. */
+  measuredCards: number;
+  /** Intents whose results expired unread: billed, so reserved at the worst case. */
+  expiredChunks: number;
+  reserveUsd: number;
+  totalUsd: number;
+};
+
+/**
+ * What a budget family has ALREADY spent, from the ledger's rows. Pure, so the two ways it can
+ * count wrong are tested rather than trusted.
+ *
+ * EACH ROW IS COUNTED ONCE, by its own status, and a retry is a different row. An expired intent
+ * contributes its worst-case reserve (billed, results gone) and never tokens; the intent that
+ * re-asked its cards contributes its own measured tokens and never a reserve. Both charges were
+ * real, so both are counted — but neither twice, which is what reusing the failed row for the
+ * retry would have done (or hidden one of them). Measured tokens count whatever the status: a
+ * batch held below the floor has been paid for even though its intents stay open, and its usage
+ * is SET on each re-collection rather than added, so re-reading it does not grow the sum.
+ *
+ * A row with no `prompt_version` counts for NOTHING. That column arrived with this rule; a row
+ * written before it carries no record of which prompt it was priced for, and summing a different
+ * prompt's spend into today's cap would stop a run on another prompt's history.
+ */
+export function familySpend(
+  rows: readonly SpendRow[], runId: string, promptVersion: string, rates: Rates,
+  reservePerChunkUsd: number,
+): FamilySpend {
+  const family = budgetFamily(runId);
+  let measuredUsd = 0, measuredCards = 0, expiredChunks = 0;
+  for (const r of rows) {
+    if (r.promptVersion === null || r.promptVersion !== promptVersion) continue;
+    if (budgetFamily(r.runId) !== family) continue;
+    if (r.status === "expired") { expiredChunks++; continue; }
+    if (r.inTokens === null && r.outTokens === null) continue;
+    // Cache writes at 1.25x the input rate and reads at 0.1x, as the provider bills them.
+    measuredUsd += ((r.inTokens ?? 0) * rates.in + (r.outTokens ?? 0) * rates.out
+      + (r.cacheWriteTokens ?? 0) * rates.in * 1.25 + (r.cacheReadTokens ?? 0) * rates.in * 0.1) / 1e6;
+    measuredCards += r.askedCards;
+  }
+  const reserveUsd = expiredChunks * reservePerChunkUsd;
+  return { measuredUsd, measuredCards, expiredChunks, reserveUsd, totalUsd: measuredUsd + reserveUsd };
+}

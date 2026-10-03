@@ -119,3 +119,24 @@ describe("staging is scoped by run", () => {
     }
   });
 });
+
+describe("each intent records the prompt and the inputs it was asked under (migration 0077)", () => {
+  const added = readFileSync("drizzle/0077_card_label_batches_prompt_version.sql", "utf8");
+
+  // NULLABLE, because every row written before the column has no record of its prompt, and the
+  // spend sum counts such a row for nothing rather than guessing which prompt it priced.
+  it("adds a nullable prompt_version and nothing else", () => {
+    expect(cardLabelBatches.promptVersion.notNull).toBe(false);
+    expect(added).toContain('ALTER TABLE "card_label_batches" ADD COLUMN "prompt_version" text;');
+  });
+
+  // NULLABLE for the same reason: a row written before it has no request-time hashes, and the
+  // collect stages such a row's answers as it always did.
+  it("adds a nullable asked_hashes, and the two columns are the whole migration", () => {
+    expect(cardLabelBatches.askedHashes.notNull).toBe(false);
+    expect(added.split("--> statement-breakpoint").map((x) => x.trim())).toEqual([
+      'ALTER TABLE "card_label_batches" ADD COLUMN "prompt_version" text;',
+      'ALTER TABLE "card_label_batches" ADD COLUMN "asked_hashes" jsonb;',
+    ]);
+  });
+});

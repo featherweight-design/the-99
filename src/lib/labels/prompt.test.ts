@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -64,7 +64,7 @@ describe("SYSTEM_TOKENS_BOUND", () => {
   it("is at least one token per character, and is what the build books", () => {
     expect(SYSTEM_TOKENS_BOUND).toBeGreaterThanOrEqual(SYSTEM.length);
     // import.meta.url, not __dirname: Vitest runs tests as ESM.
-    const build = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../../scripts/build-card-labels.ts"), "utf8");
+    const build = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../../scripts/lib/card-labels-build.ts"), "utf8");
     expect(build).toMatch(/const SYSTEM_TOKENS = SYSTEM_TOKENS_BOUND;/);
   });
 });
@@ -187,4 +187,18 @@ describe("labelInputHash", () => {
       expect(labelInputHash(sameRender, "m")).toBe(labelInputHash(card, "m"));
     });
   });
+});
+
+// The ceiling may only be LOWERED: an expired batch is reserved at `MAX_TOKENS_CEILING`, which is a
+// bound on what it cost only if no request can carry more.
+describe("LABEL_MAX_TOKENS", () => {
+  afterEach(() => { vi.unstubAllEnvs(); vi.resetModules(); });
+  const load = async (raw: string) => {
+    vi.stubEnv("LABEL_MAX_TOKENS", raw);
+    vi.resetModules();
+    return (await import("./prompt")).MAX_TOKENS_PER_BATCH;
+  };
+  it("lowers the ceiling", async () => { expect(await load("4000")).toBe(4000); });
+  it("accepts the ceiling itself", async () => { expect(await load("5000")).toBe(5000); });
+  it("refuses to raise it", async () => { await expect(load("5001")).rejects.toThrow(/only lower/); });
 });
