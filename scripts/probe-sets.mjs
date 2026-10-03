@@ -1310,7 +1310,15 @@ async function run() {
     // is inline (`useIsDesktop` is `min-width: 768px`), and the prefix is a member the
     // handoff's row arithmetic never carried — so it is the width where an added item
     // either fits or wraps the row the whole ruling depends on.
-    for (const width of [1440, 1180, 768]) {
+    // The collapsed set name's floor is 40px, so the name can never disappear. ONE named
+    // exception, ruled 2026-10-03: from 768 to 773px the row has no room left once the
+    // colour box drops Any / Exactly (H10). Measured, the 638px row there is the field at its
+    // 132 floor, the colour box 156, the rarity trigger 103, the missing toggle 88, four 8px
+    // gaps, and a 127px prefix whose h1 reads 34px. Hiding a second control to buy 6px in a
+    // 6px band of viewports was judged worse than the dip. So 768-773 holds a 30px floor (the
+    // name is shortened, never gone), and 774 is walked to pin where the band ends.
+    const nameFloor = (w) => (w >= 768 && w <= 773 ? 30 : 40);
+    for (const width of [1440, 1180, 774, 768]) {
       await page.setViewportSize({ width, height: 900 });
       // Below 1000 the COLLAPSED head hides Any / Exactly so the name keeps its room (d9's
       // ruling on H10). The other half of that ruling is read here: the OPEN head still draws
@@ -1472,7 +1480,7 @@ async function run() {
       // right members is exactly what it would still be.
       failures += !report(
         `the set name survives the shrink at ${width}`,
-        row !== null && row.nameWidth >= 40 && row.fieldWidth >= 132,
+        row !== null && row.nameWidth >= nameFloor(width) && row.fieldWidth >= 132,
         row === null ? "no prefix" : `name ${row.nameWidth}px, field ${row.fieldWidth}px; row ${row.members}`,
       );
 
