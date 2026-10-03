@@ -805,17 +805,28 @@ describe("DecksView", () => {
     await waitFor(() => expect(routerStub.refresh).toHaveBeenCalledTimes(1));
   });
 
-  it("reports a refused move as one, so the view can rescue focus", async () => {
-    // `false` means the deck or the folder is gone, which on All decks can take
-    // this card with it. A throw means nothing moved, so the card stays and the
-    // flag stays false.
-    actionStub.move.mockResolvedValueOnce(false);
+  it("rescues focus on a refusal only when it fell to the body", async () => {
+    // `false` means the deck or the folder is gone. The panel closed on the press, so the reader
+    // may have moved on: focus they placed is kept, and only focus left on the body is rescued.
+    const kept = deferred<boolean>();
+    actionStub.move.mockReturnValueOnce(kept.promise);
     renderWide(view(shelvedDecks(), twoFolders));
     fireEvent.click(screen.getAllByRole("button", { name: /^Actions for/ })[0]);
     fireEvent.click(screen.getByRole("button", { name: /^Move / }));
     fireEvent.click(screen.getByRole("button", { name: "Commander night" }));
-    // The selected segment in the line, which is where `focusShelfControl`
-    // puts it at this width.
+    const elsewhere = screen.getAllByRole("button", { name: /^Actions for/ })[1];
+    elsewhere.focus();
+    await act(async () => kept.resolve(false));
+    expect(document.activeElement).toBe(elsewhere);
+
+    const lost = deferred<boolean>();
+    actionStub.move.mockReturnValueOnce(lost.promise);
+    fireEvent.click(screen.getAllByRole("button", { name: /^Actions for/ })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /^Move / }));
+    fireEvent.click(screen.getByRole("button", { name: "Commander night" }));
+    (document.activeElement as HTMLElement | null)?.blur();
+    await act(async () => lost.resolve(false));
+    // The selected segment in the line, which is where `focusShelfControl` puts it at this width.
     await waitFor(() =>
       expect(document.activeElement).toBe(
         document.querySelector("[data-shelf-line] button[aria-current='true']"),

@@ -443,8 +443,11 @@ export function DecksView({
         // screen took back. On the next task, OUTSIDE the action: a state update
         // made inside it is entangled with the transition, which then holds the
         // reverted shelf and the rescued focus with it.
+        // Focus is RESCUED, not taken: the panel closed on the press, so the reader may be
+        // anywhere by now. Only when the refusal took their element away (the deck itself is
+        // gone, and focus fell to the body) does the shelf control take it.
         if (!answer) {
-          focusShelfControl();
+          if (document.activeElement === document.body) focusShelfControl();
           setTimeout(() => say(folderCopy.move.refused), 0);
         }
       });
