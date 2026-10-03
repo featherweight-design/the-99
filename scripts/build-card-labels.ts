@@ -43,14 +43,14 @@ const REPORT_AT_USD = boundedNumber("LABEL_REPORT_AT_USD", process.env.LABEL_REP
 const FLOOR = boundedNumber("LABEL_FLOOR", process.env.LABEL_FLOOR, 0.95, 0, 1);
 
 /**
- * The highest report line `card-labels.yml` will accept from a dispatch — Hugh's $50.
+ * The highest report line `card-labels.yml` will accept from a dispatch — Hugh's $65 (2026-10-03).
  *
  * Here so the PAUSE can tell the operator whether a dispatch can actually resume the run, which
  * is the one thing its previous two wordings both got wrong. It is a SECOND COPY of a figure the
  * workflow enforces, so `card-labels-workflow.test.mts` asserts the two agree; a remediation that
  * names a ceiling the form does not have is exactly the defect this replaced.
  */
-const DISPATCH_REPORT_CEILING_USD = 50;
+const DISPATCH_REPORT_CEILING_USD = 65;
 
 /**
  * The REAL Anthropic endpoint, overridden explicitly.
