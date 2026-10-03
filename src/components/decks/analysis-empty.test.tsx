@@ -37,6 +37,17 @@ describe("AnalysisEmpty's description field (H35, STATES §1)", () => {
     expect(screen.queryByRole("status")).toBeNull();
   });
 
+  // Round 8: `aria-live` must already be on the span's FIRST render, empty or not — a screen
+  // reader that has not yet registered a region as live can miss the very update that turns
+  // it live, so the live-ness can never arrive in the same render as the text it announces.
+  it("is already a live region on its very first render, before anything is announced", () => {
+    render(<AnalysisEmpty phase="idle" onRequest={() => {}} description={null} />);
+    const region = screen.getByTestId("description-save-announce");
+    expect(region).toHaveAttribute("aria-live", "polite");
+    expect(region).toHaveAttribute("aria-atomic", "true");
+    expect(region).toHaveTextContent("");
+  });
+
   it("draws the field only while idle, never during loading", () => {
     const { rerender } = render(<AnalysisEmpty phase="idle" onRequest={() => {}} description={null} />);
     expect(screen.getByLabelText("Describe your deck")).toBeInTheDocument();

@@ -179,11 +179,22 @@ export function AnalysisEmpty({
           {/* Mounted regardless of phase — a successful save's own callback calls `onRequest`,
               which can switch to `loading` immediately, and the idle block above (and the
               announcement with it) would unmount before a screen reader ever read it (round 6).
-              `role` only while there is something to say: `AnalysisPanel` carries its own
-              `role="status"` for the reading-settled announcement, and this span is empty on
-              every render that never saved a description — giving it the role unconditionally
-              would plant a second, always-matching status region beside that one. */}
-          <span role={descriptionAnnounced ? "status" : undefined} className="sr-only">{descriptionAnnounced}</span>
+              `aria-live`/`aria-atomic` stay on the span from its FIRST render, empty or not
+              (round 8): a region a screen reader has not yet registered as live can miss the
+              very update that turns it live, so the live-ness itself must never be new at the
+              same moment the text is. `role` stays conditional — `AnalysisPanel` carries its own
+              `role="status"` for the reading-settled announcement, and giving this span the
+              role unconditionally would plant a second, always-matching status region beside
+              it for every existing role query. */}
+          <span
+            data-testid="description-save-announce"
+            aria-live="polite"
+            aria-atomic="true"
+            role={descriptionAnnounced ? "status" : undefined}
+            className="sr-only"
+          >
+            {descriptionAnnounced}
+          </span>
           <div className={`mt-[20px] flex w-full flex-col items-center gap-[6px] md:mt-[22px] md:w-auto md:flex-row md:flex-wrap md:gap-x-[20px] ${shownNote ? "md:gap-y-[12px]" : "md:gap-y-[20px]"}`}>
             {/* A BUTTON, NEVER AUTOMATIC. A silent retry loop is how a wait becomes a bill. */}
             <button
