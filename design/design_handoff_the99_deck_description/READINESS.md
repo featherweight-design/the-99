@@ -25,3 +25,14 @@
 
 ## Out of scope (per the brief)
 H35-E's three engineering fixes, mix-and-match swaps, and suggestion history.
+
+## Eng calls (audit, 2026-10-03 — orchestrator resolved, no Design round needed)
+
+- **Reduced motion on the checklist timer.** The handoff does not address it. Ruling: under
+  `prefers-reduced-motion`, keep the staggered timing — it is pacing, not motion — and drop
+  only the tick's own animation/transition. Screen readers get ONE announcement at the run's
+  start and one at its end, never one per tick, with or without reduced motion.
+- **Run start/end announcement, stated explicitly.** The handoff implies one announcement via
+  the tagline section but never says "one at the start, one at the end" as plainly as the
+  orchestrator's brief does. Build to that wording; no redraw needed, the mechanism already
+  matches (`STATES-deck-description.md` §3 row 5-6).
