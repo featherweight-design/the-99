@@ -418,6 +418,11 @@ export async function computeAndStoreProfile(
             // microsecond-precise and a Date is not, so a carried value would move the date.
             computedAt: kept ? sql`${deckProfiles}.computed_at` : sql`now()`,
           },
+          // A REBUILD REPLACES ONLY AN OLDER VERSION'S ROW. It carries that row's marks and date,
+          // and a press of the same list can land while it computes (review round 4): the press
+          // wrote the current version, and a rebuild finishing after it would put the old marks
+          // and date back over a reading the player asked for. Matching nothing, it stores nothing.
+          ...(kept ? { setWhere: sql`${deckProfiles.profileVersion} <> ${PROFILE_VERSION}` } : {}),
         })
         .returning({ computedAt: deckProfiles.computedAt });
       if (written) {

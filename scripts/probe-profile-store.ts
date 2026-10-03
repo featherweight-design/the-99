@@ -326,6 +326,26 @@ async function run() {
       { computed: 1, v: PROFILE_VERSION, pin: bumped.id });
     check("and keeps the analysis date and the notice mark it replaced", await marksOf(), marksBefore);
 
+    // A PRESS LANDING WHILE THAT REBUILD COMPUTES (review round 4): the press writes the current
+    // version, and the rebuild finishing after it must not put the old marks and date back.
+    await fixture.execute(sql`update deck_profiles set profile_version = ${PROFILE_VERSION - 1}, version_id = null,
+      computed_at = now() - interval '3 days', seen_seq = 1 where deck_id = ${deck.id}::uuid`);
+    const { version: racedCommit } = await commitVersion(deck.id, null);
+    const pressFirst: StoredProfileDeps = {
+      generation: deps.generation,
+      compute: async (id, user) => {
+        const built = await loadDeckProfile(id, user);
+        await computeAndStoreProfile(deck.id, USER, deps);
+        return built;
+      },
+    };
+    const pressed = await marksOf();
+    await pinAnalysisToVersion(deck.id, USER, { versionId: racedCommit.id, list: listFingerprint(head) }, pressFirst);
+    const afterRace = await marksOf();
+    check("a press landing mid-rebuild keeps its own date and mark",
+      { stale: afterRace.at === pressed.at, seq: afterRace.seq === 1 },
+      { stale: false, seq: false });
+
     // THE LEGACY FORM of the same case: a row written before 0054 stores `profileFingerprint`, so a
     // raw comparison with the commit's list misreads it as another list (review round 1).
     await fixture.execute(sql`update deck_profiles set profile_version = 0, version_id = null,
