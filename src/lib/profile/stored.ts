@@ -408,7 +408,11 @@ export async function computeAndStoreProfile(
           set: {
             userId, fingerprint, catalog, profile, permits,
             profileVersion: PROFILE_VERSION,
-            dirty: false,
+            // A REBUILD KEEPS THE ROW'S `dirty` (review round 7). An edit away and back to this
+            // list while it computes leaves the head fingerprint matching, so only the flag
+            // records it; `clearDirty`, which checks the edit stamp, is the one write that clears
+            // it, and it takes a commit's pin with it.
+            dirty: kept ? sql`${deckProfiles}.dirty` : false,
             // A commit's pin, a rebuild's kept pin, or none: a press's recompute describes a list
             // that differs from the one any earlier pin was for.
             versionId: pinned,

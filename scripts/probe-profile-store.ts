@@ -357,6 +357,22 @@ async function run() {
       answered ? Math.abs(new Date(answered.analyzedAt).getTime() - new Date(`${storedAt}Z`).getTime()) < 5 : "none",
       true);
 
+    // AN EDIT AWAY AND BACK WHILE A REBUILD COMPUTES (review round 7): the list matches again, so
+    // only `dirty` records it, and the rebuild must not clear it.
+    await fixture.execute(sql`update deck_profiles set profile_version = ${PROFILE_VERSION - 1}, dirty = false
+      where deck_id = ${deck.id}::uuid`);
+    const editFirst: StoredProfileDeps = {
+      generation: deps.generation,
+      compute: async (id, user) => {
+        const built = await loadDeckProfile(id, user);
+        await db.transaction((tx) => touchDeck(tx, deck.id));
+        return built;
+      },
+    };
+    await readStoredReading(deck.id, USER, editFirst);
+    check("an edit landing mid-rebuild leaves the reading dirty", (await storedRow(deck.id))?.dirty, true);
+    await computeAndStoreProfile(deck.id, USER, deps);
+
     // THE LEGACY FORM of the same case: a row written before 0054 stores `profileFingerprint`, so a
     // raw comparison with the commit's list misreads it as another list (review round 1).
     await fixture.execute(sql`update deck_profiles set profile_version = 0, version_id = null,
