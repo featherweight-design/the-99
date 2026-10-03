@@ -203,7 +203,8 @@
     "probe:issues-sheet": "node scripts/probe-issues-sheet.mjs",
     "test:clock": "CLOCK_SHIFT_DAYS=${CLOCK_SHIFT_DAYS:-400} pnpm test",
     "probe:nav-pending": "node scripts/probe-nav-pending.mjs",
-    "probe:collection-tabs": "node scripts/probe-collection-tabs.mjs"
+    "probe:collection-tabs": "node scripts/probe-collection-tabs.mjs",
+    "probe:collection-head": "node scripts/probe-collection-head.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.128.0",

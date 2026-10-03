@@ -28,8 +28,18 @@ export function ResultLine({
   revision,
   silent,
   warn,
+  hiddenSuffix,
 }: {
   line: string;
+  /**
+   * A trailing substring of `line` to hide visually below 480px — the result
+   * count's noun, which the pinned head's narrowest row 2 has no room for
+   * beside a full `Sort:` trigger (collection surfaces addendum, Q2). The
+   * visible `<p>` below is already `aria-hidden`, so hiding part of it changes
+   * no accessible name; the live region a few lines down always speaks `line`
+   * whole. Ignored when `line` does not end with it.
+   */
+  hiddenSuffix?: string;
   /**
    * Announced instead of `line` when the surface has something more specific to
    * say. `/collection`'s panels report which value changed — "EOE added. 3
@@ -241,7 +251,14 @@ export function ResultLine({
           warn ? "text-[color:var(--warning)]" : "text-[color:var(--fg-muted)]"
         }`}
       >
-        {line}
+        {hiddenSuffix && line.endsWith(hiddenSuffix) ? (
+          <>
+            {line.slice(0, line.length - hiddenSuffix.length)}
+            <span className="max-[479px]:hidden">{hiddenSuffix}</span>
+          </>
+        ) : (
+          line
+        )}
       </p>
       {/* Atomic, or a reader hears only the number that changed and loses the
           sentence that gave it a denominator. */}

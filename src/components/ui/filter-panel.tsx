@@ -113,12 +113,20 @@ export function FilterPanel({
   portalSheet = false,
   note,
   desktopTriggerHeightPx,
+  compactTriggerHeightPx,
 }: {
   /**
    * Pins the wide trigger's height. The commander rack holds every control at the chassis's 34px
    * rhythm, and the trigger's own padding draws about 38. The compact trigger keeps its 44px.
    */
   desktopTriggerHeightPx?: number;
+  /**
+   * Pins the COMPACT trigger's drawn height below its own 44px, with a 44px hit target kept by
+   * an `after:` overlay — the chip dismiss and chassis Clear-all buttons' own pattern. Collection's
+   * pinned head draws row 2 at 36px (decision 7): drawing the trigger at the shared 44px there
+   * would make the head 8px taller again.
+   */
+  compactTriggerHeightPx?: number;
   /**
    * One quiet line in the panel's head, under the search field. `Printed in ▾` carries one
    * because its rows match printings the reader does not own, which is the opposite of what
@@ -964,7 +972,13 @@ export function FilterPanel({
         // same guard the search input applies to `listId` above.
         aria-controls={open ? panelId : undefined}
         aria-label={triggerAria}
-        style={isDesktop && desktopTriggerHeightPx ? { height: desktopTriggerHeightPx, paddingBlock: 0 } : undefined}
+        style={
+          isDesktop && desktopTriggerHeightPx
+            ? { height: desktopTriggerHeightPx, paddingBlock: 0 }
+            : !isDesktop && compactTriggerHeightPx
+              ? { height: compactTriggerHeightPx, paddingBlock: 0 }
+              : undefined
+        }
         onClick={() => (open ? close() : openPanel(false))}
         onKeyDown={(e) => {
           if (!open && e.key === "ArrowDown") {
@@ -987,7 +1001,9 @@ export function FilterPanel({
             // minimum. Grown on the compact form only: a mouse does not need
             // the margin, and the desktop chip is drawn against a denser
             // toolbar.
-            : "text-[12.5px] px-[13px] py-[8px] min-h-[44px]",
+            : !isDesktop && compactTriggerHeightPx
+              ? "relative text-[12.5px] px-[13px] py-0 min-h-0 after:absolute after:left-1/2 after:top-1/2 after:h-[44px] after:w-full after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
+              : "text-[12.5px] px-[13px] py-[8px] min-h-[44px]",
           "border border-solid",
           disabled
             ? "cursor-not-allowed bg-[color:var(--surface-raised)] text-[color:var(--fg-locked)] border-[color:var(--border)]"
@@ -1010,7 +1026,18 @@ export function FilterPanel({
           </span>
         ) : oneName !== null && copy.triggerOne ? (
           <span className={`${bp("max-w-[230px]", "max-w-[170px]")} overflow-hidden text-ellipsis whitespace-nowrap`}>
-            {copy.triggerOne(oneName)}
+            {(() => {
+              const whole = copy.triggerOne!(oneName);
+              const prefix = copy.triggerOnePrefix;
+              return prefix && whole.startsWith(prefix) ? (
+                <>
+                  <span aria-hidden="true" className="max-[479px]:hidden">{prefix}</span>
+                  {whole.slice(prefix.length)}
+                </>
+              ) : (
+                whole
+              );
+            })()}
           </span>
         ) : (
           <span>{copy.triggerLabel}</span>

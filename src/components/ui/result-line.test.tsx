@@ -27,6 +27,28 @@ describe("ResultLine", () => {
     expect(container.querySelector("[role='status']")?.textContent).toBe("12 of 41 decks");
   });
 
+  // Collection surfaces addendum Q2: row 2's narrowest width has no room for the count's
+  // noun beside a full Sort trigger. The visible line is already `aria-hidden`, so splitting
+  // it changes nothing a screen reader hears — only the sr-only region (the next test) does.
+  it("marks a trailing suffix hidden below 480px, visually only", () => {
+    const { container } = render(<ResultLine line="2,926 results" hiddenSuffix=" results" />);
+    const p = container.querySelector("p");
+    expect(p?.textContent).toBe("2,926 results");
+    const hidden = p?.querySelector("span.max-\\[479px\\]\\:hidden");
+    expect(hidden?.textContent).toBe(" results");
+  });
+
+  it("announces the suffix-split line whole, exactly as an un-split one", () => {
+    const { container } = render(<ResultLine line="41 decks" hiddenSuffix=" decks" />);
+    act(() => vi.advanceTimersByTime(1000));
+    expect(container.querySelector("[role='status']")?.textContent).toBe("");
+  });
+
+  it("ignores a suffix the line does not end with", () => {
+    render(<ResultLine line="41 decks" hiddenSuffix=" results" />);
+    expect(screen.getByText("41 decks")).toBeTruthy();
+  });
+
   it("goes quiet when another surface owns the region", () => {
     // The compact sheet is aria-modal and carries its own region. With both
     // live a filter change is announced twice, from inside the modal and from

@@ -904,3 +904,13 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
     background: Canvas !important;
   }
 }
+
+/* Collection's pinned head (collection surfaces, readiness E2): the view well
+   hides while the search field is focused, so the field can run full width
+   under a phone keyboard. `:focus-within` on the row does this too, but it
+   also fires when the WELL itself takes focus by Tab — which hides the very
+   control that is focused and drops keyboard focus to nowhere. `:has(input:
+   focus)` names the field specifically, so focusing the well never hides it. */
+[data-collection-search-row]:has(input:focus) [data-collection-view-well] {
+  display: none;
+}

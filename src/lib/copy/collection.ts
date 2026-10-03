@@ -46,6 +46,13 @@ export const collectionChassisCopy = {
    */
   resultCompact: (shown: number) => (shown === 1 ? "1 result" : `${count(shown)} results`),
   /**
+   * The trailing word of `resultCompact`'s own output, so the pinned head can
+   * hide it visually below 480px (collection surfaces addendum, Q2) without a
+   * second sentence: `resultCompact(shown).endsWith(resultCompactNoun(shown))`
+   * always holds.
+   */
+  resultCompactNoun: (shown: number) => (shown === 1 ? " result" : " results"),
+  /**
    * The persistent search field, in its two forms.
    *
    * Both were literals in `filter-bar.tsx` until the About page needed to draw
@@ -361,6 +368,12 @@ export const collectionFilterCopy = {
   sort: {
     triggerLabel: "Sort",
     triggerOne: (order: string) => `Sort: ${order}`,
+    // The pinned head's row 2 has no room for the prefix beside a long order
+    // at 390/360 (addendum Q2). `FilterPanel` hides exactly this substring of
+    // `triggerOne`'s own output below 480px — the trigger's accessible name
+    // comes from `panelAriaLabel` below, never from this string, so nothing
+    // about the control's name changes.
+    triggerOnePrefix: "Sort: ",
     triggerAriaCollapsed: "Sort cards, collapsed",
     triggerAriaWithSelection: () => "Sort cards, collapsed",
 
@@ -408,6 +421,13 @@ export type FilterPanelCopy = {
   triggerLabel: string;
   /** The trigger once exactly one option is chosen. Omitted where `triggerCount` names it instead. */
   triggerOne?: (name: string) => string;
+  /**
+   * A prefix of `triggerOne`'s own output that `FilterPanel` may hide visually at narrow widths,
+   * while `triggerOne` keeps returning one whole string — every caller that does not set this is
+   * unaffected. The trigger's accessible name never reads from `triggerOne`, so hiding part of it
+   * changes nothing a screen reader hears. Collection's pinned head is the one caller (addendum Q2).
+   */
+  triggerOnePrefix?: string;
   /**
    * A trigger that COUNTS rather than names, drawn at every selection including none. Set, Type and
    * Availability all carry it: a name grew the trigger (`Set: The Hobbit` by 131px) and pushed the
