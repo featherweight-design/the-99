@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="width:100%;box-sizing:border-box;background:var(--surface-sunken);border:1px solid var(--border);border-radius:12px;padding:{{ card.pad }};display:flex;flex-direction:column;gap:16px;font-family:'IBM Plex Sans',sans-serif;color:var(--fg);">
+  <div style="display:flex;align-items:baseline;gap:10px;padding-bottom:10px;border-bottom:1px solid var(--border);">
+    <span style="font-family:'Metamorphous',serif;font-size:{{ card.titleSize }}px;color:var(--fg);">{{ card.title }}</span>
+    <span style="flex:1;"></span>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);text-align:right;">{{ card.denom }}</span>
+  </div>
+
+  <sc-if value="{{ card.isCurve }}" hint-placeholder-val="{{ false }}">
+    <div style="display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;align-items:end;">
+      <sc-for list="{{ card.cols }}" as="col" hint-placeholder-count="8">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:{{ col.ink }};">{{ col.count }}</span>
+          <div style="display:flex;flex-direction:column-reverse;gap:{{ card.sgap }}px;">
+            <sc-for list="{{ col.sq }}" as="s"><span style="display:block;width:{{ card.sqW }}px;height:{{ s.h }}px;border-radius:2px;background:{{ s.bg }};"></span></sc-for>
+          </div>
+          <span style="align-self:stretch;text-align:center;padding-top:6px;border-top:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ col.label }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <sc-if value="{{ card.hasDonut }}">
+      <div style="display:flex;align-items:center;gap:16px;">
+        <span style="flex:none;position:relative;width:{{ card.donutSize }}px;height:{{ card.donutSize }}px;border-radius:50%;background:{{ card.donut }};display:flex;align-items:center;justify-content:center;"><span style="width:62%;height:62%;border-radius:50%;background:var(--surface-sunken);display:flex;flex-direction:column;align-items:center;justify-content:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--fg);">100</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">cards</span></span></span>
+        <span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ card.donutNote }}</span>
+      </div>
+    </sc-if>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+      <sc-for list="{{ card.types }}" as="t" hint-placeholder-count="8">
+        <span style="display:inline-flex;align-items:center;gap:6px;min-height:{{ card.chipH }}px;padding:0 9px;border-radius:6px;border:1px {{ t.style }} {{ t.border }};font-size:12px;color:{{ t.ink }};"><span style="width:8px;height:8px;border-radius:2px;background:{{ t.sw }};"></span>{{ t.name }}<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">{{ t.n }}</span></span>
+      </sc-for>
+    </div>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.6;color:var(--fg-faint);">{{ card.caption }}</span>
+  </sc-if>
+
+  <sc-if value="{{ card.isColors }}" hint-placeholder-val="{{ false }}">
+    <sc-if value="{{ card.rings }}">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:18px 26px;">
+        <span style="flex:none;width:{{ card.ringSize }}px;height:{{ card.ringSize }}px;border-radius:50%;background:{{ card.outer }};display:flex;align-items:center;justify-content:center;"><span style="width:80%;height:80%;border-radius:50%;background:var(--surface-sunken);display:flex;align-items:center;justify-content:center;"><span style="width:92%;height:92%;border-radius:50%;background:{{ card.inner }};display:flex;align-items:center;justify-content:center;"><span style="width:70%;height:70%;border-radius:50%;background:var(--surface-sunken);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:1.4;color:var(--fg-faint);text-align:center;"><span>pips</span><span>outside</span><span style="margin-top:3px;">sources</span><span>inside</span></span></span></span></span>
+        <div style="flex:1;min-width:180px;display:flex;flex-direction:column;gap:7px;">
+          <div style="display:grid;grid-template-columns:22px minmax(0,1fr) 70px 70px;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--fg-faint);"><span></span><span></span><span style="text-align:right;">PIPS</span><span style="text-align:right;">SOURCES</span></div>
+          <sc-for list="{{ card.rows }}" as="r">
+            <div style="display:grid;grid-template-columns:22px minmax(0,1fr) 70px 70px;gap:8px;align-items:center;">
+              <span style="width:22px;height:22px;border-radius:4px;background:{{ r.c }};color:{{ r.ink }};display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;">{{ r.l }}</span>
+              <span style="font-size:13px;color:var(--fg-body);">{{ r.name }}</span>
+              <span style="text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg);">{{ r.pipLabel }}</span>
+              <span style="text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg);">{{ r.srcLabel }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ card.bf }}">
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 26px minmax(0,1fr);gap:10px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;color:var(--fg-faint);">
+      <span style="text-align:right;">ASKS FOR · PIPS</span><span></span><span>MAKES · LAND SOURCES</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:9px;">
+      <sc-for list="{{ card.rows }}" as="r" hint-placeholder-count="3">
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) 26px minmax(0,1fr);gap:10px;align-items:center;">
+          <div style="display:flex;flex-direction:row-reverse;align-items:center;gap:8px;"><span style="flex:none;width:{{ r.pipW }};height:14px;border-radius:3px;background:{{ r.c }};"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);white-space:nowrap;">{{ r.pipLabel }}</span></div>
+          <span style="width:26px;height:26px;border-radius:5px;background:{{ r.c }};color:{{ r.ink }};display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:600;">{{ r.l }}</span>
+          <div style="display:flex;align-items:center;gap:8px;"><span style="flex:none;width:{{ r.srcW }};height:14px;border-radius:3px;background:{{ r.c }};"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);white-space:nowrap;">{{ r.srcLabel }}</span></div>
+        </div>
+      </sc-for>
+    </div>
+    </sc-if>
+    <div style="display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px dashed var(--border-dashed);">
+      <div style="display:flex;flex-wrap:wrap;gap:3px;"><sc-for list="{{ card.hollow }}" as="h"><span style="width:10px;height:10px;border-radius:2px;border:1px dashed var(--fg-muted);"></span></sc-for></div>
+      <span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ card.nonland }}</span>
+    </div>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.6;color:var(--fg-faint);">{{ card.caption }}</span>
+  </sc-if>
+
+  <sc-if value="{{ card.isJobs }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;">
+      <sc-for list="{{ card.rows }}" as="r" hint-placeholder-count="6">
+        <div style="display:flex;flex-direction:column;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);">
+          <div style="display:grid;grid-template-columns:{{ card.nameW }}px minmax(0,1fr) 30px 12px;gap:10px;align-items:center;min-height:26px;">
+            <span style="font-size:13px;color:{{ r.nameInk }};">{{ r.name }}</span>
+            <div style="display:flex;flex-wrap:wrap;gap:{{ card.jgap }}px;"><sc-for list="{{ r.sq }}" as="s"><span style="width:{{ card.sq }}px;height:{{ card.sq }}px;border-radius:2px;background:{{ s.bg }};"></span></sc-for></div>
+            <span style="text-align:right;font-family:'IBM Plex Mono',monospace;font-size:13px;color:{{ r.ink }};">{{ r.n }}</span>
+            <span style="font-size:12px;color:var(--fg-faint);">{{ r.chev }}</span>
+          </div>
+          <sc-if value="{{ r.open }}"><div style="padding-left:{{ card.namesPad }}px;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.7;color:var(--fg-body);">{{ r.names }}</div></sc-if>
+        </div>
+      </sc-for>
+    </div>
+    <sc-if value="{{ card.hasUnlabeled }}"><div style="display:flex;align-items:center;gap:10px;"><div style="display:flex;gap:3px;"><sc-for list="{{ card.unl }}" as="h"><span style="width:10px;height:10px;border-radius:2px;border:1px dashed var(--fg-muted);"></span></sc-for></div><span style="font-size:12.5px;color:var(--fg-body);">{{ card.unlabeled }}</span></div></sc-if>
+    <div style="display:flex;flex-direction:column;gap:4px;font-size:12.5px;line-height:1.55;color:var(--fg-faint);text-wrap:pretty;"><sc-for list="{{ card.feet }}" as="f"><span>{{ f }}</span></sc-for></div>
+  </sc-if>
+
+  <sc-if value="{{ card.isAvg }}" hint-placeholder-val="{{ false }}">
+    <p style="margin:0;font-size:13px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ card.basis }}</p>
+    <sc-if value="{{ card.hasCurve }}">
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;color:var(--fg-faint);">CURVE, BY MANA VALUE</span>
+        <div style="display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;">
+          <sc-for list="{{ card.mini }}" as="m" hint-placeholder-count="8">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+              <div style="height:22px;width:100%;display:flex;align-items:flex-end;justify-content:center;"><span style="width:14px;height:{{ m.up }}px;background:{{ card.rc }};border-radius:2px 2px 0 0;"></span></div>
+              <span style="width:100%;height:1px;background:var(--border-strong);"></span>
+              <div style="height:22px;width:100%;display:flex;align-items:flex-start;justify-content:center;"><span style="width:14px;height:{{ m.down }}px;background:{{ card.lc }};border-radius:0 0 2px 2px;"></span></div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">{{ m.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+    <div style="display:grid;grid-template-columns:{{ card.labelW }}px minmax(0,1fr) {{ card.figW }}px;gap:10px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.08em;color:var(--fg-faint);"><span></span><span style="display:flex;justify-content:space-between;"><span>FEWER</span><span>MORE</span></span><span style="text-align:right;">YOU · AVG</span></div>
+    <sc-for list="{{ card.groups }}" as="g" hint-placeholder-count="3">
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;color:var(--fg-faint);padding-bottom:4px;">{{ g.name }}</span>
+        <sc-for list="{{ g.rows }}" as="r">
+          <div style="display:grid;grid-template-columns:{{ card.labelW }}px minmax(0,1fr) {{ card.figW }}px;gap:10px;align-items:center;min-height:30px;">
+            <span style="font-size:13px;color:var(--fg-body);">{{ r.name }}</span>
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) 1px minmax(0,1fr);align-items:center;height:22px;">
+              <div style="display:flex;justify-content:flex-end;align-items:center;"><span style="font-size:10px;color:var(--fg);margin-right:2px;">{{ r.lclamp }}</span><span style="width:{{ r.lw }};height:10px;border-radius:2px 0 0 2px;background:{{ card.lc }};"></span></div>
+              <span style="height:22px;background:var(--border-strong);"></span>
+              <div style="display:flex;align-items:center;"><span style="width:{{ r.rw }};height:10px;border-radius:0 2px 2px 0;background:{{ card.rc }};"></span><span style="font-size:10px;color:var(--fg);margin-left:2px;">{{ r.rclamp }}</span></div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg);white-space:nowrap;">{{ r.you }} <span style="color:var(--fg-faint);">· {{ r.avg }}</span></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);white-space:nowrap;">{{ r.diff }}</span>
+              <sc-if value="{{ r.finding }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);border-bottom:1px solid var(--link-rule);white-space:nowrap;">finding ⟶</span></sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-for>
+    <sc-if value="{{ card.hasNote }}"><p style="margin:0;padding-top:10px;border-top:1px dashed var(--border-dashed);font-size:12.5px;line-height:1.55;color:var(--fg-faint);text-wrap:pretty;">{{ card.note }}</p></sc-if>
+  </sc-if>
+
+  <sc-if value="{{ card.isMoney }}" hint-placeholder-val="{{ false }}">
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
+      <sc-for list="{{ card.figs }}" as="f" hint-placeholder-count="3">
+        <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;color:var(--fg-faint);">{{ f.k }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:{{ card.figSize }}px;font-weight:600;color:{{ f.ink }};white-space:nowrap;">{{ f.v }}</span>
+          <span style="font-size:11.5px;line-height:1.45;color:var(--fg-faint);">{{ f.sub }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <sc-if value="{{ card.hasShop }}"><span style="display:flex;align-items:center;min-height:{{ card.chipH }}px;margin-top:-6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--warning);border-bottom:1px solid color-mix(in oklab, var(--warning) 45%, transparent);">{{ card.shopLink }}</span><span style="font-size:12px;color:var(--fg-muted);margin-left:8px;">⟶</span></span></sc-if>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="display:grid;grid-template-columns:repeat({{ card.gcols }}, {{ card.cell }}px);gap:{{ card.ggap }}px;"><sc-for list="{{ card.cells }}" as="c"><span style="width:{{ card.cell }}px;height:{{ card.cell }}px;border-radius:3px;background:{{ c.bg }};border:1px solid {{ c.bd }};box-sizing:border-box;"></span></sc-for></div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px 14px;font-size:11.5px;color:var(--fg-body);">
+        <sc-for list="{{ card.legend }}" as="l"><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:2px;background:{{ l.bg }};border:1px solid {{ l.bd }};box-sizing:border-box;"></span>{{ l.t }}</span></sc-for>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:2px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;color:var(--fg-faint);padding-bottom:6px;">PRICIEST CARDS</span>
+      <sc-for list="{{ card.top }}" as="p" hint-placeholder-count="5">
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) 64px;gap:4px 10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);">
+          <span style="font-size:13px;color:var(--fg);">{{ p.name }} <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:{{ p.tagInk }};margin-left:4px;">{{ p.tag }}</span></span>
+          <span style="text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);">{{ p.price }}</span>
+          <span style="grid-column:1 / span 2;height:4px;border-radius:999px;background:var(--elevated);overflow:hidden;"><span style="display:block;height:100%;width:{{ p.w }};background:{{ p.bar }};"></span></span>
+        </div>
+      </sc-for>
+    </div>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.6;color:var(--fg-faint);">{{ card.caption }}</span>
+  </sc-if>
+
+  <sc-if value="{{ card.isResults }}" hint-placeholder-val="{{ false }}">
+    <sc-if value="{{ card.empty }}">
+      <div style="display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:6px 0 4px;">
+        <div style="display:flex;gap:6px;"><sc-for list="{{ card.ghost }}" as="h"><span style="width:{{ card.bead }}px;height:{{ card.bead }}px;border-radius:5px;border:1px dashed var(--border-dashed);"></span></sc-for></div>
+        <span style="font-size:14px;color:var(--fg-body);">No games logged yet.</span>
+        <span style="font-size:12.5px;line-height:1.55;color:var(--fg-faint);text-wrap:pretty;">The record, the trend and results by version all draw from games you log.</span>
+        <span style="display:flex;align-items:center;min-height:{{ card.chipH }}px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);border-bottom:1px solid var(--link-rule);">Log a game in Games</span><span style="font-size:12px;color:var(--fg-muted);margin-left:8px;">⟶</span></span>
+      </div>
+    </sc-if>
+    <sc-if value="{{ card.full }}">
+      <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px 16px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:34px;font-weight:600;line-height:1;color:var(--fg);">{{ card.record }}</span>
+        <div style="display:flex;flex-direction:column;gap:2px;padding-bottom:2px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">wins · losses · draws</span>
+          <span style="font-size:12.5px;color:var(--fg-body);">{{ card.span }}</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;color:var(--fg-faint);">EVERY GAME, OLDEST FIRST</span>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <sc-for list="{{ card.beads }}" as="b" hint-placeholder-count="6">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <span style="width:{{ card.bead }}px;height:{{ card.bead }}px;border-radius:5px;background:{{ b.bg }};border:1px solid {{ b.bd }};box-sizing:border-box;color:{{ b.ink }};display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:600;">{{ b.l }}</span>
+              <span style="width:100%;height:2px;background:{{ b.under }};"></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);white-space:nowrap;">{{ b.d }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <span style="font-size:12.5px;color:var(--fg-body);">{{ card.trend }}</span>
+      </div>
+      <sc-if value="{{ card.hasVersions }}">
+        <div style="display:flex;flex-direction:column;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;color:var(--fg-faint);padding-bottom:6px;">BY VERSION</span>
+          <sc-for list="{{ card.versions }}" as="v" hint-placeholder-count="3">
+            <div style="display:grid;grid-template-columns:{{ card.verW }}px minmax(0,1fr) auto;gap:10px;align-items:center;min-height:34px;border-top:1px solid var(--border);">
+              <span style="display:flex;flex-direction:column;"><span style="font-size:13px;color:{{ v.ink }};font-style:{{ v.italic }};">{{ v.name }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);">{{ v.sub }}</span></span>
+              <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;"><sc-for list="{{ v.beads }}" as="b"><span style="width:16px;height:16px;border-radius:3px;background:{{ b.bg }};border:1px solid {{ b.bd }};box-sizing:border-box;color:{{ b.ink }};display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;">{{ b.l }}</span></sc-for><span style="font-size:11.5px;color:var(--fg-faint);">{{ v.none }}</span></div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);">{{ v.record }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </sc-if>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:580,&quot;height&quot;:520},&quot;card&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;}}"></script>
+</body>
+</html>

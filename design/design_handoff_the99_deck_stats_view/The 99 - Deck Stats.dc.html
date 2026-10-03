@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&amp;family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0B0E; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: var(--fg); }
+  :root {
+    --bg:#121217; --surface:#1E1F26; --surface-rail:#181920; --surface-sunken:#16171D; --elevated:#2D2E35; --elevated-hover:#212229;
+    --border:#1F222C; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-shadow:#2C405F; --success:#6FA368; --warning:#E0913C; --danger:#D0645A; --brass:#C9A54E; --link-rule:#8E5A78;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+</style>
+</helmet>
+
+<section id="r1" style="font-family:'IBM Plex Sans',sans-serif;color:var(--fg);padding:40px;background:#0B0B0E;display:flex;flex-direction:column;gap:64px;">
+
+  <div style="display:flex;flex-direction:column;gap:14px;max-width:1300px;">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0B0B0E;background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R2</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:var(--fg-faint);">deck stats · round 1 · DECK_STATS_ENABLED · 2026-10-03</div>
+    </div>
+    <h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:34px;color:var(--fg);">The list, drawn. A second view of Your deck, not a sixth tab.</h1>
+    <p style="margin:0;max-width:900px;font-size:14.5px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">Drawn against the brief on PR #1228 (2026-10-03-deck-stats.md). Seven views in six cards: Results holds the record, the trend and results by version together, because they share one drawing. Every figure is a fact: color says what a thing is (a card type, a job, a mana color), never whether it is good. Fixtures: Korvold, Fae-Cursed King, 100 cards, 6 logged games, matching staging’s count.</p>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:10px;max-width:1300px;padding:22px 24px;border:1px solid var(--accent-shadow);border-radius:12px;background:var(--surface-sunken);">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;color:var(--accent);">R2 · HUGH’S PICKS</span>
+    <span style="font-family:'Metamorphous',serif;font-size:24px;color:var(--fg);">Stats joins All and Shopping in one grouped control. Graphs in the card-type palette.</span>
+    <p style="margin:0;max-width:940px;font-size:14px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">Placement A, drawn as the grouped control from R1 (2a). Every view below is redrawn in 2c’s palettes: card types on the curve, a hue per job, violet and blue on the average. Money is 2c’s: owned squares in one neutral, to buy in Shopping’s orange. A draw is now a half-filled bead, so it can’t be mistaken for a loss. The R1 explorations (2b to 2d, and the old switch) are kept in “The 99 - Deck Stats R1 (explorations)”.</p>
+  </div>
+
+  <div id="2a" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--accent);border:1px solid var(--accent-shadow);border-radius:4px;padding:2px 7px;">2a</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);">the Your deck toolbar · All, Shopping, Stats</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;width:1238px;">
+      <div style="display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">All</span><div data-screen-label="2a 1300 All" style="display:flex;align-items:center;gap:10px;min-height:66px;padding:12px 26px;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;"><span style="display:inline-flex;padding:3px;border-radius:9px;border:1px solid var(--border-strong);gap:2px;"><span style="padding:6px 14px;display:flex;align-items:center;gap:6px;border-radius:6px;font-size:13.5px;font-weight:600;color:var(--fg);background:var(--elevated);">All<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">99</span></span><span style="padding:6px 14px;display:flex;align-items:center;gap:6px;border-radius:6px;font-size:13.5px;font-weight:500;color:var(--warning);">Shopping<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">12</span></span><span style="flex:none;width:1px;align-self:stretch;margin:6px 3px;background:var(--border-strong);"></span><span style="padding:6px 14px;display:flex;align-items:center;gap:6px;border-radius:6px;font-size:13.5px;font-weight:500;color:var(--fg-muted);">Stats</span></span><span style="flex:1;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">87 cards are yours now</span><span style="padding:7px 12px;border-radius:7px;border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);">⊡ Lock cards</span><span style="width:1px;height:24px;background:var(--border-strong);"></span><span style="padding:7px 13px;border-radius:999px;background:var(--elevated);font-size:13px;font-weight:600;color:var(--fg);">By type</span><span style="padding:7px 13px;font-size:13px;color:var(--fg-muted);">By role</span><span style="padding:7px 13px;border-radius:7px;border:1px solid var(--border-strong);font-size:13px;font-weight:600;color:var(--fg);">Name · A–Z ▾</span><span style="display:flex;padding:3px;border-radius:7px;border:1px solid var(--border-strong);gap:2px;"><span style="width:28px;height:26px;border-radius:5px;background:var(--elevated);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--fg);">▪</span><span style="width:28px;height:26px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--fg-muted);">▦</span></span></div></div>
+      <div style="display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">Shopping</span><div data-screen-label="2a 1300 Shopping" style="display:flex;align-items:center;gap:10px;min-height:66px;padding:12px 26px;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;"><span style="display:inline-flex;padding:3px;border-radius:9px;border:1px solid var(--border-strong);gap:2px;"><span style="padding:6px 14px;display:flex;align-items:center;gap:6px;border-radius:6px;font-size:13.5px;font-weight:500;color:var(--fg-muted);">All<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">99</span></span><span style="padding:6px 14px;display:flex;align-items:center;gap:6px;border-radius:6px;font-size:13.5px;font-weight:600;color:var(--warning);background:var(--elevated);">Shopping<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">12</span></span><span style="flex:none;width:1px;align-self:stretch;margin:6px 3px;background:var(--border-strong);"></span><span style="padding:6px 14px;display:flex;align-items:center;gap:6px;border-radius:6px;font-size:13.5px;font-weight:500;color:var(--fg-muted);">Stats</span></span><span style="flex:1;"></span><span style="padding:7px 13px;border-radius:999px;background:var(--elevated);font-size:13px;font-weight:600;color:var(--fg);">By type</span><span style="padding:7px 13px;font-size:13px;color:var(--fg-muted);">By role</span><span style="padding:7px 13px;border-radius:7px;border:1px solid var(--border-strong);font-size:13px;font-weight:600;color:var(--fg);">Price · Highest ▾</span></div></div>
+      <div style="display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">Stats</span><div data-screen-label="2a 1300 Stats" style="display:flex;align-items:center;gap:10px;min-height:66px;padding:12px 26px;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;"><span style="display:inline-flex;padding:3px;border-radius:9px;border:1px solid var(--border-strong);gap:2px;"><span style="padding:6px 14px;display:flex;align-items:center;gap:6px;border-radius:6px;font-size:13.5px;font-weight:500;color:var(--fg-muted);">All<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">99</span></span><span style="padding:6px 14px;display:flex;align-items:center;gap:6px;border-radius:6px;font-size:13.5px;font-weight:500;color:var(--warning);">Shopping<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">12</span></span><span style="flex:none;width:1px;align-self:stretch;margin:6px 3px;background:var(--border-strong);"></span><span style="padding:6px 14px;display:flex;align-items:center;gap:6px;border-radius:6px;font-size:13.5px;font-weight:600;color:var(--fg);background:var(--elevated);">Stats</span></span><span style="flex:1;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">drawn from the live list, your collection and logged games</span></div></div>
+    </div>
+    <div style="display:flex;gap:24px;align-items:flex-start;">
+      <div data-screen-label="2a 390 All" style="flex:none;width:390px;background:var(--bg);border:1px solid var(--border-strong);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;"><div style="display:flex;gap:16px;padding:0 18px;border-bottom:1px solid var(--border);font-size:13.5px;font-weight:500;color:var(--fg-muted);white-space:nowrap;overflow:hidden;"><span style="padding:14px 0;color:var(--fg);font-weight:600;border-bottom:2px solid var(--accent);">Your deck <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">99</span></span><span style="padding:14px 0;">Analysis</span><span style="padding:14px 0;">Consider <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">75</span></span><span style="padding:14px 0;">Games <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">6</span></span></div><div style="padding:12px 16px 16px;display:flex;flex-direction:column;gap:10px;"><span style="display:flex;padding:3px;border-radius:9px;border:1px solid var(--border-strong);gap:2px;"><span style="flex:1;min-height:44px;justify-content:center;display:flex;align-items:center;gap:6px;border-radius:6px;font-size:14px;font-weight:600;color:var(--fg);background:var(--elevated);">All<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">99</span></span><span style="flex:1;min-height:44px;justify-content:center;display:flex;align-items:center;gap:6px;border-radius:6px;font-size:14px;font-weight:500;color:var(--warning);">Shopping<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">12</span></span><span style="flex:none;width:1px;align-self:stretch;margin:6px 3px;background:var(--border-strong);"></span><span style="flex:1;min-height:44px;justify-content:center;display:flex;align-items:center;gap:6px;border-radius:6px;font-size:14px;font-weight:500;color:var(--fg-muted);">Stats</span></span><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><span style="min-height:44px;display:flex;align-items:center;padding:0 13px;border-radius:8px;border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-body);">⊡ Lock cards</span><span style="margin-left:auto;display:flex;padding:3px;border-radius:8px;border:1px solid var(--border-strong);gap:2px;"><span style="width:40px;height:38px;border-radius:6px;background:var(--elevated);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--fg);">▪</span><span style="width:40px;height:38px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--fg-muted);">▦</span></span></div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><span style="min-height:40px;display:flex;align-items:center;padding:0 12px;border-radius:999px;background:var(--elevated);font-size:13px;font-weight:600;color:var(--fg);">By type</span><span style="min-height:40px;display:flex;align-items:center;padding:0 8px;font-size:13px;color:var(--fg-muted);">By role</span><span style="min-height:44px;display:flex;align-items:center;padding:0 14px;border-radius:999px;background:var(--elevated);font-size:14px;font-weight:500;color:var(--fg);">Name · A–Z ▾</span></div></div><span style="padding:0 16px 14px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">All</span></div>
+      <div data-screen-label="2a 390 Shopping" style="flex:none;width:390px;background:var(--bg);border:1px solid var(--border-strong);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;"><div style="display:flex;gap:16px;padding:0 18px;border-bottom:1px solid var(--border);font-size:13.5px;font-weight:500;color:var(--fg-muted);white-space:nowrap;overflow:hidden;"><span style="padding:14px 0;color:var(--fg);font-weight:600;border-bottom:2px solid var(--accent);">Your deck <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">99</span></span><span style="padding:14px 0;">Analysis</span><span style="padding:14px 0;">Consider <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">75</span></span><span style="padding:14px 0;">Games <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">6</span></span></div><div style="padding:12px 16px 16px;display:flex;flex-direction:column;gap:10px;"><span style="display:flex;padding:3px;border-radius:9px;border:1px solid var(--border-strong);gap:2px;"><span style="flex:1;min-height:44px;justify-content:center;display:flex;align-items:center;gap:6px;border-radius:6px;font-size:14px;font-weight:500;color:var(--fg-muted);">All<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">99</span></span><span style="flex:1;min-height:44px;justify-content:center;display:flex;align-items:center;gap:6px;border-radius:6px;font-size:14px;font-weight:600;color:var(--warning);background:var(--elevated);">Shopping<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">12</span></span><span style="flex:none;width:1px;align-self:stretch;margin:6px 3px;background:var(--border-strong);"></span><span style="flex:1;min-height:44px;justify-content:center;display:flex;align-items:center;gap:6px;border-radius:6px;font-size:14px;font-weight:500;color:var(--fg-muted);">Stats</span></span><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><span style="min-height:40px;display:flex;align-items:center;padding:0 12px;border-radius:999px;background:var(--elevated);font-size:13px;font-weight:600;color:var(--fg);">By type</span><span style="min-height:40px;display:flex;align-items:center;padding:0 8px;font-size:13px;color:var(--fg-muted);">By role</span><span style="min-height:44px;display:flex;align-items:center;padding:0 14px;border-radius:999px;background:var(--elevated);font-size:14px;font-weight:500;color:var(--fg);">Price · Highest ▾</span></div></div><span style="padding:0 16px 14px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">Shopping</span></div>
+      <div data-screen-label="2a 390 Stats" style="flex:none;width:390px;background:var(--bg);border:1px solid var(--border-strong);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;"><div style="display:flex;gap:16px;padding:0 18px;border-bottom:1px solid var(--border);font-size:13.5px;font-weight:500;color:var(--fg-muted);white-space:nowrap;overflow:hidden;"><span style="padding:14px 0;color:var(--fg);font-weight:600;border-bottom:2px solid var(--accent);">Your deck <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">99</span></span><span style="padding:14px 0;">Analysis</span><span style="padding:14px 0;">Consider <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">75</span></span><span style="padding:14px 0;">Games <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">6</span></span></div><div style="padding:12px 16px 16px;display:flex;flex-direction:column;gap:10px;"><span style="display:flex;padding:3px;border-radius:9px;border:1px solid var(--border-strong);gap:2px;"><span style="flex:1;min-height:44px;justify-content:center;display:flex;align-items:center;gap:6px;border-radius:6px;font-size:14px;font-weight:500;color:var(--fg-muted);">All<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">99</span></span><span style="flex:1;min-height:44px;justify-content:center;display:flex;align-items:center;gap:6px;border-radius:6px;font-size:14px;font-weight:500;color:var(--warning);">Shopping<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">12</span></span><span style="flex:none;width:1px;align-self:stretch;margin:6px 3px;background:var(--border-strong);"></span><span style="flex:1;min-height:44px;justify-content:center;display:flex;align-items:center;gap:6px;border-radius:6px;font-size:14px;font-weight:600;color:var(--fg);background:var(--elevated);">Stats</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.5;color:var(--fg-faint);">drawn from the live list, your collection and logged games</span></div><span style="padding:0 16px 14px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">Stats</span></div>
+    </div>
+    <p style="margin:0;max-width:1238px;font-size:13px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">One segmented control replaces the two loose pills: All · Shopping | Stats, with a hairline before Stats because it is a view, not a filter. Shopping keeps its orange text in every state, so it still reads as Shopping. At 390 the control takes the whole first row, three 44px segments. The phone’s tools move down: Lock cards and the list/grid toggle on row two, grouping and sort on row three. In Shopping the toolbar is as it ships, grouping and sort only. In Stats every tool leaves, and the cards start right under the control.</p>
+  </div>
+
+
+  <div id="1a" style="display:flex;flex-direction:column;gap:16px;max-width:1300px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--accent);border:1px solid var(--accent-shadow);border-radius:4px;padding:2px 7px;">1a</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);">The calls</span>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr);border:1px solid var(--border-strong);border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55;">
+      <sc-for list="{{ calls }}" as="c" hint-placeholder-count="16">
+        <div style="padding:11px 14px;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);background:var(--surface-sunken);">{{ c.q }}</div>
+        <div style="padding:11px 14px;border-top:1px solid var(--border);color:var(--fg-body);text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">{{ c.a }}</b> {{ c.why }}</div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="font-family:'Metamorphous',serif;font-size:22px;color:var(--fg);">1 · Placement: Your deck, List or Stats</div>
+
+  <div id="1b" style="display:flex;flex-direction:column;gap:12px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--accent);border:1px solid var(--accent-shadow);border-radius:4px;padding:2px 7px;">1b</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);">the whole view, populated, 6 games logged</span>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;">
+
+      <div data-screen-label="1b 1300" style="flex:none;width:1300px;display:flex;background:var(--bg);border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;">
+        <div style="flex:none;width:62px;border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding-top:16px;gap:4px;"><span style="font-size:8px;letter-spacing:3px;color:var(--accent);">◆◆◆</span><span style="font-family:'Metamorphous',serif;font-size:24px;color:var(--fg);">99</span></div>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+          <div style="position:relative;height:200px;">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:540px;background:repeating-linear-gradient(135deg, #23242C 0 10px, #1C1D24 10px 20px);"></div>
+            <div style="position:absolute;left:380px;top:0;bottom:0;width:160px;background:linear-gradient(90deg, rgba(18,18,23,0), var(--bg));"></div>
+            <span style="position:absolute;left:16px;top:16px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);background:var(--bg);border-radius:4px;padding:3px 7px;">commander art · Korvold, Fae-Cursed King</span>
+            <div style="position:absolute;inset:0;display:flex;align-items:flex-end;gap:18px;padding:0 24px 20px 592px;">
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+                <div style="display:flex;align-items:center;gap:8px;"><span style="font-family:'Metamorphous',serif;font-size:24px;line-height:1.2;color:var(--fg);">HD - Korvold</span><span style="font-size:12px;color:var(--fg-muted);">✎</span></div>
+                <div style="display:flex;align-items:center;gap:6px;margin-top:6px;"><span style="width:10px;height:10px;border-radius:2px;background:var(--b);"></span><span style="width:10px;height:10px;border-radius:2px;background:var(--r);"></span><span style="width:10px;height:10px;border-radius:2px;background:var(--g);"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);margin-left:3px;">Korvold, Fae-Cursed King · Jund</span></div>
+                <div style="display:flex;align-items:center;gap:10px;margin-top:11px;"><span style="width:170px;height:6px;border-radius:999px;background:var(--success);"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:var(--fg);">99</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);margin-left:-4px;">/ 99</span></div>
+              </div>
+              <div style="flex:none;display:flex;gap:9px;margin-bottom:4px;">
+                <span style="height:32px;display:flex;align-items:center;padding:0 14px;border-radius:7px;border:1px solid var(--border-strong);font-size:12.5px;font-weight:600;color:var(--fg);">Update from a list</span>
+                <span style="height:32px;display:flex;align-items:center;padding:0 14px;border-radius:7px;background:var(--fg);font-size:12.5px;font-weight:600;color:var(--bg);">Export</span>
+              </div>
+            </div>
+          </div>
+          <div style="height:42px;display:flex;align-items:center;padding:0 30px;background:var(--surface-sunken);border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">v3 · committed 30 Sep 2026</div>
+          <div style="display:flex;gap:22px;padding:0 30px;border-bottom:1px solid var(--border);font-size:14px;font-weight:500;color:var(--fg-muted);">
+            <span style="padding:18px 0;color:var(--fg);font-weight:600;border-bottom:2px solid var(--accent);">Your deck <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);">99</span></span>
+            <span style="padding:18px 0;">Analysis</span>
+            <span style="padding:18px 0;">Consider <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);">75</span></span>
+            <span style="padding:18px 0;">Games <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);">6</span></span>
+            <span style="padding:18px 0;">Versions <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);">3</span></span>
+          </div>
+          <div style="padding:18px 30px 30px;display:flex;flex-direction:column;gap:18px;">
+            <div style="display:flex;align-items:center;gap:16px;">
+              <span style="display:inline-flex;padding:3px;border-radius:9px;border:1px solid var(--border-strong);gap:2px;"><span style="padding:6px 14px;display:flex;align-items:center;gap:6px;border-radius:6px;font-size:13.5px;font-weight:500;color:var(--fg-muted);">All<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">99</span></span><span style="padding:6px 14px;display:flex;align-items:center;gap:6px;border-radius:6px;font-size:13.5px;font-weight:500;color:var(--warning);">Shopping<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">12</span></span><span style="flex:none;width:1px;align-self:stretch;margin:6px 3px;background:var(--border-strong);"></span><span style="padding:6px 14px;display:flex;align-items:center;gap:6px;border-radius:6px;font-size:13.5px;font-weight:600;color:var(--fg);background:var(--elevated);">Stats</span></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">drawn from the live list, your collection and logged games</span>
+            </div>
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;">
+              <div style="display:flex;flex-direction:column;gap:16px;">
+                <sc-for list="{{ ovL }}" as="cd" hint-placeholder-count="3"><dc-import name="Stats Card" card="{{ cd }}" hint-size="100%,380px"></dc-import></sc-for>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:16px;">
+                <sc-for list="{{ ovR }}" as="cd" hint-placeholder-count="3"><dc-import name="Stats Card" card="{{ cd }}" hint-size="100%,380px"></dc-import></sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div data-screen-label="1b 390" style="flex:none;width:390px;background:var(--bg);border:1px solid var(--border-strong);border-radius:18px;overflow:hidden;">
+        <div style="position:relative;min-height:150px;display:flex;flex-direction:column;justify-content:flex-end;">
+          <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg, #23242C 0 10px, #1C1D24 10px 20px);"></div>
+          <div style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(18,18,23,0) 20%, rgba(18,18,23,0.9) 85%);"></div>
+          <div style="position:relative;padding:16px 18px 14px;display:flex;flex-direction:column;gap:5px;">
+            <div style="display:flex;align-items:center;gap:6px;"><span style="font-family:'Metamorphous',serif;font-size:22px;color:var(--fg);">HD - Korvold</span><span style="font-size:12px;color:var(--fg-muted);">✎</span></div>
+            <div style="display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;border-radius:2px;background:var(--b);"></span><span style="width:9px;height:9px;border-radius:2px;background:var(--r);"></span><span style="width:9px;height:9px;border-radius:2px;background:var(--g);"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-body);margin-left:3px;">Korvold, Fae-Cursed King · Jund</span></div>
+          </div>
+        </div>
+        <div style="height:36px;display:flex;align-items:center;padding:0 18px;background:var(--surface-sunken);border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">v3 · committed 30 Sep 2026</div>
+        <div style="display:flex;gap:16px;padding:0 18px;border-bottom:1px solid var(--border);font-size:13.5px;font-weight:500;color:var(--fg-muted);white-space:nowrap;overflow:hidden;">
+          <span style="padding:14px 0;color:var(--fg);font-weight:600;border-bottom:2px solid var(--accent);">Your deck <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">99</span></span>
+          <span style="padding:14px 0;">Analysis</span>
+          <span style="padding:14px 0;">Consider <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">75</span></span>
+          <span style="padding:14px 0;">Games <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">6</span></span>
+        </div>
+        <div style="padding:14px 16px 22px;display:flex;flex-direction:column;gap:14px;">
+          <span style="display:flex;padding:3px;border-radius:9px;border:1px solid var(--border-strong);gap:2px;"><span style="flex:1;min-height:44px;justify-content:center;display:flex;align-items:center;gap:6px;border-radius:6px;font-size:14px;font-weight:500;color:var(--fg-muted);">All<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">99</span></span><span style="flex:1;min-height:44px;justify-content:center;display:flex;align-items:center;gap:6px;border-radius:6px;font-size:14px;font-weight:500;color:var(--warning);">Shopping<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">12</span></span><span style="flex:none;width:1px;align-self:stretch;margin:6px 3px;background:var(--border-strong);"></span><span style="flex:1;min-height:44px;justify-content:center;display:flex;align-items:center;gap:6px;border-radius:6px;font-size:14px;font-weight:600;color:var(--fg);background:var(--elevated);">Stats</span></span>
+          <sc-for list="{{ ovN }}" as="cd" hint-placeholder-count="6"><dc-import name="Stats Card" card="{{ cd }}" hint-size="100%,380px"></dc-import></sc-for>
+        </div>
+      </div>
+    </div>
+    <p style="margin:0;max-width:1300px;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.65;color:var(--fg-locked);text-wrap:pretty;">annotation · Stats is the third segment of the All · Shopping control (2a); in Stats the list tools leave. Order at 390 is the reading order: what the deck is (curve, colors, jobs, the average), then what it is worth, then how it has played. At 1300 the same six cards fall into two columns, left column first. Off (DECK_STATS_ENABLED unset): no Stats segment, no fetch; All and Shopping draw as they ship.</p>
+  </div>
+
+  <div style="font-family:'Metamorphous',serif;font-size:22px;color:var(--fg);">2 · Each view, with its thin and empty states</div>
+
+  <sc-for list="{{ groups }}" as="gr" hint-placeholder-count="6">
+    <div style="display:flex;flex-direction:column;gap:36px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.24em;text-transform:uppercase;color:var(--fg-muted);padding-bottom:8px;border-bottom:1px solid var(--border-strong);max-width:1300px;">{{ gr.title }}</div>
+      <sc-for list="{{ gr.states }}" as="s">
+        <div id="{{ s.id }}" style="display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--accent);border:1px solid var(--accent-shadow);border-radius:4px;padding:2px 7px;">{{ s.id }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);">{{ s.label }}</span>
+          </div>
+          <div style="display:flex;gap:40px;align-items:flex-start;">
+            <div data-screen-label="{{ s.id }} 1300" style="flex:none;width:633px;padding:26px;background:var(--bg);border:1px solid var(--border-strong);border-radius:14px;display:flex;flex-direction:column;gap:10px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">1300 · half column, 581px</span>
+              <dc-import name="Stats Card" card="{{ s.wide }}" hint-size="581px,360px"></dc-import>
+            </div>
+            <div data-screen-label="{{ s.id }} 390" style="flex:none;width:390px;padding:16px;background:var(--bg);border:1px solid var(--border-strong);border-radius:18px;display:flex;flex-direction:column;gap:10px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">390 · full width, 358px</span>
+              <dc-import name="Stats Card" card="{{ s.narrow }}" hint-size="358px,360px"></dc-import>
+            </div>
+            <p style="margin:0;flex:1;min-width:240px;max-width:420px;font-size:13px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">{{ s.note }}</p>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </sc-for>
+
+  <div style="font-family:'Metamorphous',serif;font-size:22px;color:var(--fg);">3 · About, a new entry</div>
+
+  <div id="1i" style="display:flex;flex-direction:column;gap:12px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--accent);border:1px solid var(--accent-shadow);border-radius:4px;padding:2px 7px;">1i</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);">About · deck-stats · plate, then the phone reduction</span>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;">
+      <div data-screen-label="1i About plate" style="flex:none;width:900px;padding:30px 34px 34px;background:var(--bg);border:1px solid var(--border-strong);border-radius:14px;display:flex;flex-direction:column;gap:14px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;color:var(--fg-faint);">04 · PLAYING AND TUNING</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:0.1em;color:var(--bg);background:var(--accent);border-radius:4px;padding:2px 6px;">NEW</span>
+        </div>
+        <h3 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:24px;color:var(--fg);">{{ about.title }}</h3>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">/decks <span style="color:var(--fg-faint);">· opens a deck’s Your deck tab, on Stats</span></div>
+        <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);text-wrap:pretty;">{{ about.caption }}</p>
+        <dc-import name="Stats Card" card="{{ about.specWide }}" hint-size="100%,340px"></dc-import>
+        <ol style="margin:4px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;">
+          <sc-for list="{{ about.keys }}" as="k" hint-placeholder-count="3">
+            <li style="display:flex;gap:12px;font-size:13px;line-height:1.6;color:var(--fg-body);"><span style="flex:none;width:18px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);padding-top:2px;">{{ k.n }}</span><span>{{ k.t }}</span></li>
+          </sc-for>
+        </ol>
+      </div>
+      <div data-screen-label="1i About 390" style="flex:none;width:390px;padding:22px 16px 24px;background:var(--bg);border:1px solid var(--border-strong);border-radius:18px;display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;align-items:center;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;color:var(--fg-faint);">04 · PLAYING AND TUNING</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;letter-spacing:0.1em;color:var(--bg);background:var(--accent);border-radius:4px;padding:2px 5px;">NEW</span></div>
+        <h3 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:20px;line-height:1.25;color:var(--fg);">{{ about.title }}</h3>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);">/decks <span style="color:var(--fg-faint);">· opens a deck’s Your deck tab, on Stats</span></div>
+        <p style="margin:0;font-size:13px;line-height:1.6;color:var(--fg-body);">{{ about.caption }}</p>
+        <dc-import name="Stats Card" card="{{ about.specNarrow }}" hint-size="100%,340px"></dc-import>
+        <ol style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:7px;">
+          <sc-for list="{{ about.keys }}" as="k" hint-placeholder-count="3">
+            <li style="display:flex;gap:10px;font-size:12.5px;line-height:1.55;color:var(--fg-body);"><span style="flex:none;width:14px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);padding-top:2px;">{{ k.n }}</span><span>{{ k.t }}</span></li>
+          </sc-for>
+        </ol>
+      </div>
+    </div>
+    <p style="margin:0;max-width:1300px;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.65;color:var(--fg-locked);text-wrap:pretty;">annotation · the specimen is the curve card with Creature lit, at plate width and at 390. It is the one view that shows both what Stats is for (a picture of the list) and its one interaction. Phone reduction: the chips wrap to 44px targets; must not crop the 7+ column or drop the Land chip.</p>
+  </div>
+
+  <div style="font-family:'Metamorphous',serif;font-size:22px;color:var(--fg);">4 · States</div>
+
+  <div id="1j" style="display:flex;flex-direction:column;gap:16px;max-width:1300px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--accent);border:1px solid var(--accent-shadow);border-radius:4px;padding:2px 7px;">1j</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);">States table · STATES-deck-stats.md is the same table</span>
+    </div>
+    <div style="display:grid;grid-template-columns:110px minmax(0,1.1fr) 70px minmax(0,2fr);border:1px solid var(--border-strong);border-radius:10px;overflow:hidden;font-size:12.5px;line-height:1.5;">
+      <div style="padding:9px 12px;background:var(--surface);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;color:var(--fg-faint);">VIEW</div>
+      <div style="padding:9px 12px;background:var(--surface);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;color:var(--fg-faint);">STATE</div>
+      <div style="padding:9px 12px;background:var(--surface);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;color:var(--fg-faint);">CANVAS</div>
+      <div style="padding:9px 12px;background:var(--surface);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;color:var(--fg-faint);">DRAWS</div>
+      <sc-for list="{{ states }}" as="r" hint-placeholder-count="24">
+        <div style="padding:9px 12px;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);background:var(--surface-sunken);">{{ r.v }}</div>
+        <div style="padding:9px 12px;border-top:1px solid var(--border);color:var(--fg);">{{ r.s }}</div>
+        <div style="padding:9px 12px;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">{{ r.c }}</div>
+        <div style="padding:9px 12px;border-top:1px solid var(--border);color:var(--fg-body);text-wrap:pretty;">{{ r.d }}</div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const T_NAMES = [['C','Creature'],['I','Instant'],['S','Sorcery'],['A','Artifact'],['E','Enchantment'],['P','Planeswalker'],['B','Battle']];
+const PIP = { W:['var(--w)','#14110E','White'], U:['var(--u)','#F2F4F4','Blue'], B:['var(--b)','#14110E','Black'], R:['var(--r)','#F2F4F4','Red'], G:['var(--g)','#F2F4F4','Green'], C:['var(--fg-muted)','#14110E','Colorless'] };
+const rng = (n) => Array.from({ length: n }, (_, i) => i);
+const f1 = (n) => (Math.round(n * 10) / 10).toFixed(1).replace(/\.0$/, '');
+
+function shell(kind, nar, o) {
+  return Object.assign({ ['is' + kind]: true, pad: nar ? '16px 14px' : '20px 22px', titleSize: nar ? 17 : 19, chipH: nar ? 44 : 28, jgap: 3, bf: true, lc: 'var(--fg-muted)', rc: 'var(--fg-muted)', sgap: 2 }, o);
+}
+const DIRS = [
+  { id: '2b', sty: 'mana', name: 'Mana colors', line: 'Every card square takes its card’s own color: WUBRG, gold for multicolor, grey for colorless. The deck looks like its colors everywhere. To buy switches to Shopping’s orange and becomes a hollow square, a gap still to fill.', pros: 'Most “this is my deck”. Needs no new palette. Risk: the curve and jobs say color, not type, so type still needs a tap.' },
+  { id: '2c', sty: 'type', name: 'Card-type palette', line: 'One new eight-hue palette for card types (equal lightness and chroma, so no type shouts), and one for jobs. The curve shows its type mix at a glance and the chips become a key. WUBRG stays on pips only, so colors and types never collide.', pros: 'Most informative per glance. Cost: two new palettes to tokenize across six themes.' },
+  { id: '2d', sty: 'fill', name: 'Filled charts', line: 'Same palettes as 2c, drawn as solid forms: the curve as stacked bars plus a type donut, colors as two rings (pips outside, sources inside), jobs as solid bars. Wins go gold everywhere in this and 2b to 2c.', pros: 'Boldest and most familiar. Loses countability: you read a length instead of counting squares.' }
+];
+function dirCards(sty) {
+  return { L: [curve('pop', false, sty), jobs('pop', false, sty), money('pop', false, sty)], R: [colors('pop', false, sty), average('pop', false, sty), results('pop', false, sty)] };
+}
+
+const MANA = { W: 'var(--w)', U: 'var(--u)', B: 'var(--b)', R: 'var(--r)', G: 'var(--g)', M: 'var(--brass)', C: '#7E8592' };
+const PAT = 'BRGMBGRBGRMBRGBM';
+const TYPE_C = { C: 'oklch(0.74 0.12 65)', I: 'oklch(0.72 0.11 235)', S: 'oklch(0.70 0.12 305)', A: 'oklch(0.72 0.03 250)', E: 'oklch(0.74 0.10 185)', P: 'oklch(0.72 0.12 18)', B: 'oklch(0.75 0.10 115)' };
+const LAND_C = 'oklch(0.58 0.05 75)';
+const JOB_C = { 'Ramp': 'oklch(0.72 0.11 150)', 'Card draw': 'oklch(0.72 0.11 235)', 'Removal': 'oklch(0.70 0.13 25)', 'Board wipes': 'oklch(0.70 0.12 330)', 'Protection': 'oklch(0.76 0.10 95)', 'Win conditions': 'var(--brass)' };
+const FEWER_C = 'oklch(0.70 0.11 305)', MORE_C = 'oklch(0.72 0.11 235)';
+function conic(parts) {
+  const tot = parts.reduce((a, p) => a + p[1], 0); let a = 0;
+  return 'conic-gradient(' + parts.filter(p => p[1] > 0).map(([c, v]) => { const s = a; a += v / tot * 360; return `${c} ${s}deg ${a - 1.2}deg, var(--surface-sunken) ${a - 1.2}deg ${a}deg`; }).join(', ') + ')';
+}
+function curve(st, nar, sty) {
+  sty = sty || 'type';
+  const B = st === 'thin' ? ['', 'CA', 'CCS', 'A', 'I', 'C', 'S', '']
+    : ['A', 'CCCAAIISE', 'CCCCAAAIISSSEE', 'CCCCCAAIISSEP', 'CCCCCAISSEB', 'CCCCASSE', 'CCCS', 'CCIS'];
+  const sel = st === 'sel' ? 'C' : null;
+  const lands = st === 'thin' ? 3 : 36;
+  const count = {}; let cast = 0, mv = 0;
+  B.forEach((s, i) => { s.split('').forEach(t => { count[t] = (count[t] || 0) + 1; }); cast += s.length; mv += i * s.length; });
+  const sq = nar ? 7 : 10, unit = nar ? 8 : 10;
+  let k = 0;
+  const colorOf = (t) => {
+    if (sty === 'mana') return MANA[t === 'A' ? 'C' : PAT[k++ % PAT.length]];
+    if (sty === 'type') return TYPE_C[t];
+    return 'var(--fg-muted)';
+  };
+  const cols = B.map((s, i) => {
+    let squares;
+    if (sty === 'fill') {
+      squares = T_NAMES.map(([t]) => [t, s.split('').filter(x => x === t).length]).filter(p => p[1])
+        .map(([t, c]) => ({ h: c * unit, bg: sel && t !== sel ? 'var(--border-strong)' : TYPE_C[t] }));
+    } else {
+      squares = s.split('').map(t => { const c = colorOf(t); return { h: sq, bg: sel ? (t === sel ? (sty === 'grey' ? 'var(--fg)' : c) : 'var(--border-strong)') : c }; });
+    }
+    return { label: i === 7 ? '7+' : String(i), count: String(s.length), ink: s.length ? 'var(--fg-body)' : 'var(--fg-locked)', sq: squares };
+  });
+  const typed = sty === 'type' || sty === 'fill';
+  const types = T_NAMES.map(([k2, n]) => {
+    const c = count[k2] || 0, on = sel === k2;
+    const sw = !c ? 'var(--border-strong)' : typed ? TYPE_C[k2] : on ? 'var(--fg)' : 'var(--fg-muted)';
+    return { name: n, n: String(c), style: 'solid', border: on ? 'var(--fg)' : 'var(--border-strong)', ink: on ? 'var(--fg)' : c ? 'var(--fg-body)' : 'var(--fg-locked)', sw };
+  });
+  types.push({ name: 'Land', n: String(lands), style: 'dashed', border: 'var(--border-dashed)', ink: 'var(--fg-body)', sw: typed ? LAND_C : 'transparent' });
+  const avg = f1(mv / cast);
+  const lead = sty === 'mana' ? 'Each square is its card’s color: gold is multicolor, grey is colorless · ' : '';
+  return shell('Curve', nar, {
+    title: 'The curve, by card type', denom: cast + ' cast', cols, types, sq, sqW: sty === 'fill' ? (nar ? 24 : 34) : sq, sgap: sty === 'fill' ? 1 : 2,
+    hasDonut: sty === 'fill', donutSize: nar ? 84 : 96,
+    donut: conic(T_NAMES.map(([t]) => [TYPE_C[t], count[t] || 0]).concat([[LAND_C, lands]])),
+    donutNote: 'Every card by type, lands included. The bars above leave lands out, so they show what you cast.',
+    caption: sel ? `Creature lit: ${count.C} of ${cast} cast. Tap it again to clear.`
+      : `${lead}Average mana value ${avg}, commander included · ${lands} lands, not on the curve · tap a type to light its cards`
+  });
+}
+
+function colors(st, nar, sty) {
+  sty = sty || 'grey';
+  const D = { pop: [['B', 34, 19], ['R', 29, 18], ['G', 27, 17], ['C', 0, 3]], mono: [['G', 41, 33], ['C', 0, 3]], thin: [['B', 5, 1], ['R', 3, 1], ['G', 4, 1]] }[st];
+  const hollow = { pop: 11, mono: 14, thin: 1 }[st], lands = { pop: 36, mono: 36, thin: 3 }[st];
+  const pT = D.reduce((a, r) => a + r[1], 0), sT = D.reduce((a, r) => a + r[2], 0);
+  const sh = D.map(r => [Math.round(r[1] / pT * 100), Math.round(r[2] / sT * 100)]);
+  const mx = Math.max(...sh.flat());
+  const rows = D.map((r, i) => ({
+    l: r[0], c: PIP[r[0]][0], ink: PIP[r[0]][1], name: PIP[r[0]][2],
+    pipW: r[1] ? (sh[i][0] / mx * 60) + '%' : '0px', pipLabel: r[1] ? `${r[1]} · ${sh[i][0]}%` : '0',
+    srcW: r[2] ? (sh[i][1] / mx * 60) + '%' : '0px', srcLabel: r[2] ? `${r[2]} · ${sh[i][1]}%` : '0'
+  }));
+  const nl = hollow === 1 ? '1 more mana source isn’t a land. It’s counted, but its color isn’t.' : `${hollow} more mana sources aren’t lands: rocks, and creatures that tap for mana. They’re counted here, but their colors aren’t.`;
+  const cap = st === 'mono' ? 'Every pip is green. A land counts once for each color it can add; shares are of all land sources.' : 'A land counts once for each color it can add, so a dual counts twice. Shares are of all pips, and of all land sources.';
+  const fill = sty === 'fill';
+  return shell('Colors', nar, {
+    title: 'Colors, asked for and made', denom: `${pT} pips · ${lands} lands`, rows, hollow: rng(hollow), nonland: nl, caption: cap,
+    bf: !fill, rings: fill, ringSize: nar ? 128 : 148,
+    outer: conic(D.map(r => [PIP[r[0]][0], r[1]])), inner: conic(D.map(r => [PIP[r[0]][0], r[2]]))
+  });
+}
+
+const REMOVAL = 'Terminate · Abrade · Assassin’s Trophy · Go for the Throat · Bedevil · Beast Within · Chaos Warp · Feed the Swarm';
+function jobs(st, nar, sty) {
+  sty = sty || 'type';
+  let k = 0;
+  const jc = (name, open) => sty === 'mana' ? MANA[PAT[k++ % PAT.length]] : sty === 'grey' ? (open ? 'var(--fg)' : 'var(--fg-muted)') : JOB_C[name];
+  const D = st === 'thin' ? [['Ramp', 2], ['Card draw', 0], ['Removal', 1], ['Board wipes', 0], ['Protection', 0], ['Win conditions', 1]]
+    : [['Ramp', 12], ['Card draw', 9], ['Removal', 8, 1], ['Board wipes', 3], ['Protection', 4], ['Win conditions', 5]];
+  const rows = D.map(([name, n, open]) => ({
+    name, n: String(n), ink: n ? 'var(--fg)' : 'var(--fg-locked)', nameInk: n ? 'var(--fg-body)' : 'var(--fg-muted)',
+    chev: n ? (open ? '⌃' : '›') : '', open: !!open, names: REMOVAL,
+    sq: rng(n).map(() => ({ bg: jc(name, open) }))
+  }));
+  return shell('Jobs', nar, {
+    jgap: sty === 'fill' ? 0 : 3,
+    title: 'Jobs', denom: st === 'thin' ? '9 nonland cards' : '64 nonland cards', rows, sq: nar ? 9 : 11, nameW: nar ? 96 : 120, namesPad: nar ? 0 : 130,
+    hasUnlabeled: st === 'thin', unl: rng(3), unlabeled: '3 cards aren’t labeled yet. They join a row once they are.',
+    feet: st === 'thin' ? ['2 nonland cards do none of these jobs.'] : ['7 cards do two or more of these jobs, so the rows add up to more than the cards in them.', '29 nonland cards do none of these jobs.']
+  });
+}
+
+function avgRow(name, you, avg, scale, o) {
+  o = o || {};
+  const d = you - avg, r = Math.abs(d) / scale;
+  const w = Math.min(r, 1) * 100 + '%', clamp = r > 1;
+  const more = o.mv ? 'higher' : 'more', less = o.mv ? 'lower' : 'fewer';
+  return {
+    name, you: f1(you), avg: f1(avg), finding: !!o.finding,
+    diff: Math.abs(d) < 0.05 ? 'the same' : `${f1(Math.abs(d))} ${d > 0 ? more : less}`,
+    lw: d < 0 ? w : '0%', rw: d > 0 ? w : '0%', lclamp: d < 0 && clamp ? '‹' : '', rclamp: d > 0 && clamp ? '›' : ''
+  };
+}
+const AVG_CURVE = [0.6, 8.2, 12.4, 14.1, 11.8, 7.2, 4.9, 3.4];
+function average(st, nar, sty) {
+  const col = sty !== 'grey';
+  const base = { labelW: nar ? 92 : 112, figW: nar ? 82 : 96, lc: col ? FEWER_C : 'var(--fg-muted)', rc: col ? MORE_C : 'var(--fg-muted)' };
+  if (st === 'base') {
+    return shell('Avg', nar, Object.assign(base, {
+      title: 'Against the average deck', denom: 'The 99’s starting mix',
+      basis: 'Aang, at the Crossroads has no average yet: not for the commander, a pair, or its colors. Each bar is this deck’s figure minus The 99’s starting mix.',
+      hasCurve: false,
+      groups: [{ name: 'SHAPE', rows: [avgRow('Lands', 33, 36, 4)] },
+        { name: 'JOBS', rows: [avgRow('Ramp', 7, 10, 4), avgRow('Card draw', 11, 10, 4), avgRow('Removal', 6, 8, 4), avgRow('Board wipes', 1, 3, 4)] }],
+      hasNote: true, note: 'The starting mix has lands and jobs only, so the curve and card types don’t draw here. They return once this commander has an average.'
+    }));
+  }
+  const thin = st === 'thin';
+  const v = thin ? { L: 3, MV: 2.9, C: 4, I: 1, S: 2, A: 2, E: 0, P: 0, B: 0, ramp: 2, draw: 0, rem: 1, wipe: 0, curve: [0, 2, 3, 1, 1, 1, 1, 0] }
+    : { L: 36, MV: 3.3, C: 26, I: 8, S: 12, A: 10, E: 6, P: 1, B: 1, ramp: 12, draw: 9, rem: 8, wipe: 3, curve: [1, 9, 14, 13, 11, 8, 4, 4] };
+  const mini = v.curve.map((y, i) => { const d = y - AVG_CURVE[i], h = Math.min(Math.abs(d) / 2 * 20, 22); return { label: i === 7 ? '7+' : String(i), up: d > 0 ? h : 0, down: d < 0 ? h : 0 }; });
+  return shell('Avg', nar, Object.assign(base, {
+    title: 'Against the average deck', denom: '1,812 Korvold decks',
+    basis: 'Each bar is this deck’s figure minus the average Korvold, Fae-Cursed King deck’s, from EDHREC’s 1,812 decks.',
+    hasCurve: true, mini,
+    groups: [
+      { name: 'SHAPE', rows: [avgRow('Lands', v.L, 35.4, 4), avgRow('Mana value', v.MV, 3.4, 1, { mv: 1 })] },
+      { name: 'CARD TYPES', rows: [avgRow('Creatures', v.C, 29.1, 4), avgRow('Instants', v.I, 7.6, 4), avgRow('Sorceries', v.S, 8.8, 4), avgRow('Artifacts', v.A, 9.4, 4), avgRow('Enchantments', v.E, 6.7, 4), avgRow('Planeswalkers', v.P, 0.9, 4), avgRow('Battles', v.B, 0.1, 4)] },
+      { name: 'JOBS', rows: [avgRow('Ramp', v.ramp, 11.4, 4), avgRow('Card draw', v.draw, 10.2, 4, { finding: !thin }), avgRow('Removal', v.rem, 7.9, 4), avgRow('Board wipes', v.wipe, 2.6, 4)] }
+    ],
+    hasNote: thin, note: '12 of 100 cards so far. A bar that runs past its end is cut off with a mark; the figures on the right are always whole.'
+  }));
+}
+
+const TOP = [['The Great Henge', 38.20, 'buy'], ['Doubling Season', 29.60, 'own'], ['Toxic Deluge', 21.40, 'own'], ['Pitiless Plunderer', 14.75, 'buy'], ['Ancient Tomb', 11.90, 'own']];
+function money(st, nar, sty) {
+  sty = sty || 'type';
+  const col = sty !== 'grey', BUY = col ? 'var(--warning)' : 'var(--accent)';
+  const n = { pop: [76, 12, 12], all: [88, 12, 0], thin: [8, 3, 1] }[st];
+  const cells = [].concat(
+    rng(n[0]).map((i) => { const c = sty === 'mana' ? MANA[PAT[i % PAT.length]] : 'var(--fg-muted)'; return { bg: c, bd: c }; }),
+    rng(n[1]).map(() => ({ bg: 'transparent', bd: 'var(--border-strong)' })),
+    rng(n[2]).map(() => sty === 'mana' ? { bg: 'transparent', bd: BUY } : { bg: BUY, bd: BUY }));
+  const figs = {
+    pop: [{ k: 'DECK VALUE', v: '$486.45', sub: 'every priced copy', ink: 'var(--fg)' }, { k: 'OWNED', v: '$412.30', sub: '76 copies, plus 12 basics', ink: 'var(--fg)' }, { k: 'TO BUY', v: '$74.15', sub: '12 copies, after the ones you own', ink: 'var(--accent)' }],
+    all: [{ k: 'DECK VALUE', v: '$460.25', sub: 'every priced copy', ink: 'var(--fg)' }, { k: 'OWNED', v: '$460.25', sub: '88 copies, plus 12 basics', ink: 'var(--fg)' }, { k: 'TO BUY', v: 'Nothing', sub: 'every copy is in your collection', ink: 'var(--fg-body)' }],
+    thin: [{ k: 'DECK VALUE', v: '$29.30', sub: '8 of 9 copies priced', ink: 'var(--fg)' }, { k: 'OWNED', v: '$29.30', sub: '8 copies, plus 3 basics', ink: 'var(--fg)' }, { k: 'TO BUY', v: '1 copy', sub: 'no price from ManaPool for this one', ink: 'var(--accent)' }]
+  }[st].map(f => f.ink === 'var(--accent)' ? Object.assign({}, f, { ink: BUY }) : f);
+  const list = st === 'thin' ? [['Mayhem Devil', 6.40, 'own'], ['Korvold, Fae-Cursed King', 4.90, 'own'], ['Ophiomancer', null, 'buy']]
+    : TOP.map(t => st === 'all' ? [t[0], t[1], 'own'] : t);
+  const mx = Math.max(...list.map(t => t[1] || 0));
+  const top = list.map(([name, p, k]) => ({
+    name, price: p == null ? 'no price' : '$' + p.toFixed(2), w: p == null ? '0%' : (p / mx * 100) + '%',
+    tag: k === 'buy' ? 'to buy' : 'owned', tagInk: k === 'buy' ? BUY : 'var(--fg-faint)', bar: k === 'buy' ? BUY : (sty === 'mana' ? 'var(--brass)' : 'var(--fg-muted)')
+  }));
+  const legend = [sty === 'mana' ? { t: 'Owned, in its color', bg: 'var(--brass)', bd: 'var(--brass)' } : { t: 'Owned', bg: 'var(--fg-muted)', bd: 'var(--fg-muted)' }, { t: 'Basic land, not priced', bg: 'transparent', bd: 'var(--border-strong)' }];
+  if (n[2]) legend.push(sty === 'mana' ? { t: 'To buy', bg: 'transparent', bd: BUY } : { t: 'To buy', bg: BUY, bd: BUY });
+  return shell('Money', nar, {
+    hasShop: col && n[2] > 0, shopLink: `See ${n[2] === 1 ? 'it' : 'the ' + n[2]} in Shopping`,
+    title: 'Money and ownership', denom: st === 'thin' ? '12 cards' : '100 cards', figs, cells, legend, top,
+    gcols: nar ? 10 : 20, cell: nar ? 26 : 21, ggap: nar ? 5 : 4, figSize: nar ? 16 : 20,
+    caption: 'One square per card, owned first. Prices from ManaPool. Basics are never priced or counted to buy.'
+  });
+}
+
+const BEAD = {
+  W: { bg: 'var(--fg)', bd: 'var(--fg)', ink: 'var(--bg)' },
+  L: { bg: 'transparent', bd: 'var(--fg-muted)', ink: 'var(--fg-body)' },
+  D: { bg: 'linear-gradient(135deg, var(--fg-muted) 0 50%, transparent 50% 100%)', bd: 'var(--fg-muted)', ink: 'var(--fg)' }
+};
+let BEAD_W = null;
+const bead = (r, extra) => Object.assign({ l: r }, BEAD[r], r === 'W' && BEAD_W ? BEAD_W : {}, extra || {});
+function results(st, nar, sty) {
+  BEAD_W = sty !== 'grey' ? { bg: 'var(--brass)', bd: 'var(--brass)', ink: '#14110E' } : null;
+  const out = results0(st, nar);
+  BEAD_W = null;
+  return out;
+}
+function results0(st, nar) {
+  const base = { title: 'Results', bead: nar ? 30 : 28, verW: nar ? 112 : 160 };
+  if (st === 'zero') return shell('Results', nar, Object.assign(base, { denom: 'no games', empty: true, ghost: rng(6) }));
+  const G = st === 'one' ? [['W', '28 Sep']] : [['W', '2 Aug'], ['W', '16 Aug'], ['L', '23 Aug'], ['W', '6 Sep'], ['D', '14 Sep'], ['W', '28 Sep']];
+  const many = G.length > 5;
+  const beads = G.map(([r, d], i) => bead(r, { d, under: many && i >= G.length - 5 ? 'var(--fg-muted)' : 'transparent' }));
+  const versions = st === 'one'
+    ? [{ name: 'v1', sub: 'current · 10 Aug', ink: 'var(--fg)', italic: 'normal', beads: [bead('W')], none: '', record: '1–0–0' }]
+    : [{ name: 'v3', sub: 'current · 30 Sep', ink: 'var(--fg)', italic: 'normal', beads: [], none: 'no games yet', record: '' },
+       { name: 'v2', sub: '1 Sep', ink: 'var(--fg)', italic: 'normal', beads: ['W', 'D', 'W'].map(r => bead(r)), none: '', record: '2–0–1' },
+       { name: 'v1', sub: '10 Aug', ink: 'var(--fg)', italic: 'normal', beads: ['W', 'L'].map(r => bead(r)), none: '', record: '1–1–0' },
+       { name: 'Version not recorded', sub: '', ink: 'var(--fg-muted)', italic: 'italic', beads: [bead('W')], none: '', record: '1–0–0' }];
+  return shell('Results', nar, Object.assign(base, {
+    denom: st === 'one' ? '1 game' : '6 games', full: true,
+    record: st === 'one' ? '1–0–0' : '4–1–1', span: st === 'one' ? '1 game, 28 Sep' : '6 games, 2 Aug to 28 Sep',
+    beads, trend: many ? 'Underlined, the last five: 3–1–1.' : 'The last-five line starts at the sixth game.',
+    hasVersions: true, versions
+  }));
+}
+
+function pair(id, label, fn, st, note) { return { id, label, wide: fn(st, false), narrow: fn(st, true), note }; }
+
+const GROUPS = [
+  { title: 'a · Curve and card types', states: [
+    pair('1c1', 'populated · 64 cast, 36 lands', curve, 'pop', 'One square, one card, never rescaled, so the curve is countable and two decks’ curves compare at a glance. The commander is on its mana value. Lands are a chip, never a ninth column. The chip row is the card-type breakdown, and it is also the control.'),
+    pair('1c2', 'a type lit · Creature', curve, 'sel', 'Tapping a chip keeps that type’s squares in their color and sinks the rest to --border-strong. One at a time; tapping it again clears. Land is not selectable (dashed chip): it is not on the curve. The caption states the lit count.'),
+    pair('1c3', 'thin · a new deck, 12 cards', curve, 'thin', 'Nothing changes but the counts. An empty bucket is a 0 in --fg-locked and no squares; types at 0 stay in the row, faint, so the row never reflows as a deck fills.')
+  ] },
+  { title: 'b · Color demand against color supply', states: [
+    pair('1d1', 'populated · Jund', colors, 'pop', 'A butterfly: share of pips to the left, share of land sources to the right, from the same pip. Both sides are shares, so they compare on one scale; the counts print beside each bar. Colorless sources get a row; colorless pips never do (generic costs ask for no color).'),
+    pair('1d2', 'one color · Marwyn', colors, 'mono', 'Mono decks keep the drawing: green at 100% of pips, and the colorless lands visibly taking a share of sources. The caption says “Every pip is green” so a single bar never looks like a fault.'),
+    pair('1d3', 'thin · 3 lands', colors, 'thin', 'Three basics draw three equal bars; nothing is hidden for being small. If a deck has no lands yet, the right side draws 0 on every row and the caption reads “No lands yet, so no sources are counted.”')
+  ] },
+  { title: 'e · Jobs, from card labels', states: [
+    pair('1e1', 'populated · Removal open', jobs, 'pop', 'One row per job, one square per card. A row opens to name its cards (one at a time). Win conditions is the finisher label. Overlap is said out loud in the foot, so the rows never pretend to sum.'),
+    pair('1e2', 'thin · 3 cards not yet labeled', jobs, 'thin', 'A card whose label is stale or missing is drawn as a dashed square under the rows, counted, never dropped. A job at 0 keeps its row in --fg-muted.')
+  ] },
+  { title: 'd · Against the average deck for this commander', states: [
+    pair('1f1', 'commander average · 1,812 decks', average, 'pop', 'Diverging bars from the average, violet for fewer and blue for more: no green, no red, because more or fewer is a fact, not a grade. Figures are always whole on the right. The curve gets eight tiny diverging columns. Card draw carries “finding ⟶” because the current Analysis reading has a finding on it.'),
+    pair('1f2', 'fallback · The 99’s starting mix', average, 'base', 'The real bottom rung of pickRoleTargets: no pair, commander or identity match. The basis line names the comparison; the rows it cannot fill (curve, mana value, card types) are absent, and the note says why and when they return.'),
+    pair('1f3', 'thin · 12 cards', average, 'thin', 'Against an average 100-card deck, a 12-card deck runs off every bar. The bar caps at its end with ‹ or ›, and the figure stays true. Nothing here suggests the deck is wrong to be small.')
+  ] },
+  { title: 'c · Money and ownership', states: [
+    pair('1g1', 'populated · 12 copies to buy', money, 'pop', 'The deck as one square per card: owned in one neutral, then basics, then to buy in Shopping’s orange. To buy is the claim-model deficit, after copies you already own, and links to Shopping.'),
+    pair('1g2', 'everything owned', money, 'all', '“Nothing” in --fg-body, never $0.00, and the To buy legend drops. The priciest list stays: it’s worth knowing at any ownership.'),
+    pair('1g3', 'thin · 1 copy, no price', money, 'thin', 'An unpriced copy is “no price”, never $0.00; deck value states how many copies it priced.')
+  ] },
+  { title: 'f + g · Results: record, trend, by version', states: [
+    pair('1h1', 'populated · 6 games, one unrecorded', results, 'pop', 'Every game is a bead, oldest first: W gold, L outlined, D half-filled. Letters keep it readable in greyscale. Past five games, the last five are underlined and stated, which is the trend. By version lists the current version even at no games, and puts games with a null version together under “Version not recorded”, which states no cause.'),
+    pair('1h2', 'thin · 1 game', results, 'one', 'One bead, one row. No trend line until the sixth game, because the last five would be the whole record.'),
+    pair('1h3', 'empty · no games logged', results, 'zero', 'Record, trend and by-version collapse into one stated absence: six dashed beads, one sentence, and a link to the Games tab. No 0–0–0, no button.')
+  ] }
+];
+
+const CALLS = [
+  { q: '1 · placement', a: 'Stats is the third segment of the All · Shopping control (R2).', why: 'No sixth tab. Stats is a second way of reading the list the tab already holds, so it belongs in the tab that holds it. The tab row stays five on desktop and keeps its phone scroll as it ships.' },
+  { q: '2 · why not a tab', a: 'A tab is a destination with its own count; Stats has neither.', why: 'It would also be the sixth label on a phone row that already scrolls, which is Hugh’s concern exactly.' },
+  { q: '3 · why not Analysis or Games', a: 'Analysis holds judgment; Games holds the log.', why: 'Folding facts into Analysis makes every figure read as part of a verdict (ruling 2). Games would hide five of seven views behind a tab about play. Results lives in Stats and links to Games.' },
+  { q: '4 · why not a band', a: 'Seven views do not fit a band without becoming sparklines.', why: 'A band forces each figure into a strip, which is what R1 to R3 of the earlier block learned the hard way.' },
+  { q: '5 · layout', a: 'Six cards. One column at 390; two at 1300.', why: 'Each card is a self-contained figure with its own denominator on its rule, so round 2’s views slot in as more cards (evolution, collection share, opening hand), and a shareable snapshot is a button on the switch row.' },
+  { q: '6 · curve + types', a: 'A unit tally in the card-type palette; chips are the key and the filter.', why: 'One square, one card, colored by its type, so the type mix reads without a tap. Tapping a chip still isolates it.' },
+  { q: '7 · demand vs supply', a: 'A butterfly of shares around each color pip.', why: 'Pips and sources are different units; shares put them on one scale and the counts stay printed.' },
+  { q: '8 · color supply', a: 'Lands only, by what each land can add. Other sources are counted, not colored.', why: 'Hollow dashed squares say “counted, color unknown” without a caveat paragraph. Needs a land mana-ability read, not colorIdentity (READINESS).' },
+  { q: '9 · money', a: 'The deck as one square per card, plus the priciest five.', why: 'Owned, basics, then to buy in Shopping’s orange, so the orange tail is the shopping. To buy links to Shopping.' },
+  { q: '10 · against the average', a: 'Diverging bars: violet for fewer, blue for more.', why: 'More or fewer is phrased as a number. The basis is named every time, down to the starting-mix fallback.' },
+  { q: '11 · jobs', a: 'Tally rows from card labels, one hue per job; tap a row for its cards.', why: 'Same square as the curve, so the page reads as one system.' },
+  { q: '12 · results', a: 'Beads, oldest first: win gold, loss outlined, draw half-filled; the last five underlined after the sixth game.', why: 'Six games on staging. A line chart over six points is noise; beads are exact at one game and at sixty.' },
+  { q: '13 · no version', a: '“Version not recorded”.', why: 'True for a pre-versioning game and for a deleted version alike; it states no cause.' },
+  { q: '14 · empty + thin', a: 'Stated absences. Never 0–0–0, avg 0 or $0.00.', why: 'Every thin deck still draws every view at its true size; only Results has an empty state.' },
+  { q: '15 · the Analysis link', a: '“finding ⟶” beside the figure, nothing more.', why: 'It opens the Analysis tab at that finding. It never repeats the finding’s title, which is the judgment. Drawn only when a reading exists and has a finding on that figure.' },
+  { q: '16 · inks', a: 'No success or danger anywhere in Stats; orange only where it means Shopping.', why: 'Card types and jobs get their own equal-lightness palettes so no hue shouts. WUBRG means mana color and nothing else.' }
+];
+
+const STATES = [
+  { v: 'all', s: 'switch off', c: 'n/a', d: 'No Stats segment, no fetch. All and Shopping as they ship.' },
+  { v: 'all', s: 'loading', c: 'n/a', d: 'The six card shells with their titles and rules; bodies empty. No spinner, no skeleton bars.' },
+  { v: 'all', s: 'not analyzed', c: '1b', d: 'Identical, minus every “finding ⟶”. Never a prompt to analyze.' },
+  { v: 'a', s: 'populated', c: '1c1', d: 'Tally, chips, caption with average and lands.' },
+  { v: 'a', s: 'type lit', c: '1c2', d: 'Chip border --fg, its squares keep their type color, others --border-strong. Caption states the lit count.' },
+  { v: 'a', s: 'thin', c: '1c3', d: 'Zero buckets: faint 0, no squares. Zero types keep their chip.' },
+  { v: 'b', s: 'populated', c: '1d1', d: 'Butterfly of shares, counts printed, hollow squares for non-land sources.' },
+  { v: 'b', s: 'one color', c: '1d2', d: 'Caption leads “Every pip is green.”' },
+  { v: 'b', s: 'thin / no lands', c: '1d3', d: 'Equal small bars; at no lands every source is 0 and the caption says so.' },
+  { v: 'c', s: 'populated', c: '1g1', d: 'Three figures, the square grid, the priciest five.' },
+  { v: 'c', s: 'all owned', c: '1g2', d: 'To buy reads Nothing in --fg-body; To buy legend and Shopping link absent.' },
+  { v: 'c', s: 'unpriced', c: '1g3', d: '“no price”, never $0.00; deck value says how many copies it priced.' },
+  { v: 'd', s: 'commander or pair', c: '1f1', d: 'Basis names the commander (or both partners) and the deck count.' },
+  { v: 'd', s: 'identity', c: 'n/a', d: 'As 1f1, basis reads “the average Jund deck”; no deck count.' },
+  { v: 'd', s: 'starting mix', c: '1f2', d: 'Lands and jobs only; the note explains the missing rows.' },
+  { v: 'd', s: 'thin', c: '1f3', d: 'Bars cap with ‹ or ›; figures whole.' },
+  { v: 'e', s: 'populated', c: '1e1', d: 'Six rows, one open at a time; overlap footnote.' },
+  { v: 'e', s: 'unlabeled cards', c: '1e2', d: 'Dashed squares and their count under the rows.' },
+  { v: 'f', s: '6+ games', c: '1h1', d: 'Record, beads, last five underlined and stated.' },
+  { v: 'f', s: '1 to 5 games', c: '1h2', d: 'Record and beads; no last-five line.' },
+  { v: 'f + g', s: 'no games', c: '1h3', d: 'One absence for both; link to Games.' },
+  { v: 'g', s: 'populated', c: '1h1', d: 'Current version first, newest down, Version not recorded last.' },
+  { v: 'g', s: 'brew (no versions)', c: 'n/a', d: 'By version is absent, as the Versions tab is. Record and beads still draw.' },
+  { v: 'g', s: 'version with no games', c: '1h1', d: '“no games yet” in place of beads, no record.' }
+];
+
+const ABOUT = {
+  title: 'Stats: the deck, drawn',
+  caption: 'Your deck has two views, the list and Stats. Stats draws the deck from what is already stored: its curve and card types, the colors its costs ask for against the colors its lands make, its jobs, how it compares with the average deck for its commander, its value and what is left to buy, and the games you have logged, overall and by version. Stats states facts. Where Analysis has a finding about a figure, a link takes you to it.',
+  keys: [
+    { n: '1', t: 'Stats draws whether or not the deck has been analyzed, and never uses a credit.' },
+    { n: '2', t: 'Land sources count the colors a land can add. Mana sources that aren’t lands are counted, but their colors aren’t.' },
+    { n: '3', t: 'Games with no version on record, from before versioning or from a version since deleted, sit together under Version not recorded.' }
+  ],
+  specWide: Object.assign(curve('sel', false), { pad: '22px 24px' }),
+  specNarrow: curve('sel', true)
+};
+
+class Component extends DCLogic {
+  renderVals() {
+    const W = [curve('pop', false), colors('pop', false), jobs('pop', false), average('pop', false), money('pop', false), results('pop', false)];
+    const N = [curve('pop', true), colors('pop', true), jobs('pop', true), average('pop', true), money('pop', true), results('pop', true)];
+    const dirs = DIRS.map(d => Object.assign({}, d, dirCards(d.sty), { n1: curve('pop', true, d.sty), n2: colors('pop', true, d.sty) }));
+    return { dirs, ovN0: N[0], calls: CALLS, ovL: [W[0], W[2], W[4]], ovR: [W[1], W[3], W[5]], ovN: N, groups: GROUPS, about: ABOUT, states: STATES };
+  }
+}
+</script>
+</body>
+</html>
