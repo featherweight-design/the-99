@@ -6,7 +6,8 @@ already ship.
 
 ## The finding
 
-From Hugh's intake, item H35 (`boards/notes-intake-2026-10-02.md`, "## H35 scope"), in his words:
+From Hugh's intake notes, item H35, in his words. (His intake notes are kept outside the repo
+and are quoted in full below.)
 
 > "Describe your deck in 1-2 sentences" replaces "What is this deck for?". Asked in the Analysis
 > flow, it informs the overview and Suggested changes, one per deck, and is shown as the tagline.
@@ -62,9 +63,16 @@ Hugh ruled seven points the same day (quoted in full under "The rulings," below)
    "Only from my collection" today.** Its only inputs are the stored deck list, the stored games,
    what the reader owns, and the commander's recommended mix; the only per-deck memory is the
    intent line itself. (`TuningPanel`, `src/components/decks/tuning-panel.tsx`; the state machine
-   is `src/lib/tuning/state.ts` and `src/lib/tuning/prompt.ts`.) Shopping's own price cap
-   (`src/lib/copy/shopping.ts` or similar) is a different control on a different surface; Hugh's
-   ruling is explicit that this cap is Suggested changes' own.
+   is `src/lib/tuning/state.ts` and `src/lib/tuning/prompt.ts`.) The prior art is Help me choose,
+   not Shopping: Help me choose already asks for a budget, sets (Printed in) and "Only cards I
+   own" (`src/lib/copy/help-me-choose.ts`). Decks already store some of those answers per deck —
+   `decks.answer_budget_cents` and `decks.answer_owned_only` (`src/db/schema.ts`, the block
+   commented "What the player asked for in Help me choose") — but only for decks started from
+   Help me choose, and only for the fill to read; `src/lib/copy/deck-tuning.ts` already renders
+   them into the seeded line (`answerBudget`, `answerSets`, `answerOwn`). It is open for Design
+   whether Suggested changes' per-deck cap, set filter and collection-only toggle reuse Help me
+   choose's controls, and for engineering whether they seed from or share these columns. Hugh's
+   ruling stands either way: this cap is Suggested changes' own and persists per deck.
 7. **The Analysis tab's empty state** (`AnalysisEmpty`, `src/components/decks/analysis-empty.tsx`)
    draws the 150px bracket-mark ring, a heading, Analyze, and a credit note beside it on desktop
    (under it at 390) — and nothing else. There is no field here today. This is where ruling 1 asks
