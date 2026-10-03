@@ -6,29 +6,28 @@
 // "no results" case is triggered when filters return zero (Task 5).
 
 import { cookies } from "next/headers";
-import { requireUserId } from "../../lib/auth";
+import { requireUserId } from "../../../lib/auth";
 import {
   COLLECTION_VIEW_COOKIE,
   COLLECTION_WIDE_COOKIE,
   parseViewCookie,
   parseWideCookie,
-} from "../../components/ui/view-cookie";
-import { getCollectionLastUpdated, getCollectionStats } from "../../lib/home/summary";
-import { loadOwnedSetMeta } from "../../lib/collection/browse";
-import { CardFan } from "../../components/marks";
-import { CollectionClient } from "../../components/collection/collection-client";
-import { cutCollectionWindow, encodeCollection } from "../../lib/collection/list-wire";
-import { loadCollectionList } from "../../lib/collection/payload";
-import { pageWindowIds } from "../../lib/collection/window";
-import { searchParamsToQuery } from "../../lib/commanders/search-params";
-import { loadAvailability } from "../../lib/decks/availability-query";
+} from "../../../components/ui/view-cookie";
+import { getCollectionStats } from "../../../lib/home/summary";
+import { loadOwnedSetMeta } from "../../../lib/collection/browse";
+import { CardFan } from "../../../components/marks";
+import { CollectionClient } from "../../../components/collection/collection-client";
+import { cutCollectionWindow, encodeCollection } from "../../../lib/collection/list-wire";
+import { loadCollectionList } from "../../../lib/collection/payload";
+import { pageWindowIds } from "../../../lib/collection/window";
+import { searchParamsToQuery } from "../../../lib/commanders/search-params";
+import { loadAvailability } from "../../../lib/decks/availability-query";
 import {
   EmptyState,
   EmptyStateBody,
   EmptyStateTitle,
-} from "../../components/ui/empty-state";
-import { PrimaryButton } from "../../components/ui/button";
-import { CollectionPlaceHead } from "../../components/collection/collection-place-head";
+} from "../../../components/ui/empty-state";
+import { PrimaryButton } from "../../../components/ui/button";
 
 export default async function CollectionPage({
   searchParams,
@@ -43,7 +42,7 @@ export default async function CollectionPage({
     stored: parseViewCookie(jar.get(COLLECTION_VIEW_COOKIE)?.value),
     wide: parseWideCookie(jar.get(COLLECTION_WIDE_COOKIE)?.value),
   };
-  const [stats, cards, lastUpdated, ownedSets, availability] = await Promise.all([
+  const [stats, cards, ownedSets, availability] = await Promise.all([
     getCollectionStats(userId),
     // The heaviest read on this page by an order of magnitude, which is why it
     // is the one cached across visits.
@@ -69,7 +68,6 @@ export default async function CollectionPage({
     // `cacheForUser` put on this entry. Building a deck holding both pieces retires the
     // clause on the spot rather than at the hour ceiling.
     loadCollectionList(userId),
-    getCollectionLastUpdated(userId),
     // Set names + release dates for the Set ▾ panel (#86).
     loadOwnedSetMeta(userId),
     // One aggregate for the whole page — never per row (Addendum 2).
@@ -91,16 +89,14 @@ export default async function CollectionPage({
   const keep = pageWindowIds(cards, availability, (key) => query.get(key));
   const wire = cutCollectionWindow(encodeCollection(cards, availability), keep);
 
-  const head = <CollectionPlaceHead current="cards" stats={stats} lastUpdated={lastUpdated} />;
-
-  // Empty collection — shell's state, kept intact, under the same place head as every other
-  // state of this route. The head's strip is how this reader reaches Proxies: before it,
-  // this early return never mounted `FilterBar`, so the one entry point built ungated was
-  // absent for exactly the player it was built for, whose cards are all printed.
+  // Empty collection — the shell's state, kept intact, under the group's place head (shared
+  // `(list)/layout.tsx`) same as every other state of this route. The head's strip is how
+  // this reader reaches Proxies: before it mounted here, this early return never mounted
+  // `FilterBar`, so the one entry point built ungated was absent for exactly the player it
+  // was built for, whose cards are all printed.
   if (stats.uniqueCards === 0) {
     return (
       <section className="flex flex-col">
-        {head}
         <EmptyState className="md:p-[48px]">
           <CardFan variant="mobile" className="mb-[22px] md:hidden" />
           <CardFan variant="desktop" className="mb-[26px] hidden md:block" />
@@ -125,9 +121,7 @@ export default async function CollectionPage({
   }
 
   return (
-    <section className="flex flex-col min-h-[calc(100vh-var(--tabbar-h))] md:min-h-screen">
-      {head}
-
+    <section className="flex flex-col min-h-[calc(100vh-var(--tabbar-h)-var(--collection-head-h))] md:min-h-[calc(100vh-var(--collection-head-h))]">
       {/* The browse list carries no printings or oracle text — the modal fetches the
           one card it is opening, the same way every deck surface does. */}
       <CollectionClient

@@ -136,8 +136,8 @@ export function BrowseFigureBody() {
   return (
     <div className="flex flex-col gap-[10px]">
       {/* ROW 0 — key 1's subject: the place strip the route opens with. Drawn rather than
-          mounted, because `CollectionPlaceHead` is a server component that reads the
-          reader's stats; its three names are the route's copy, so a rename reaches here. */}
+          mounted, because `CollectionPlaceHead` reads the reader's real stats off the current
+          route; its three names are the route's copy, so a rename reaches here. */}
       <div className="flex items-center gap-[8px]">
         <span className="flex h-[30px] items-stretch gap-[2px] border-b border-solid border-[color:var(--border)]">
           {[

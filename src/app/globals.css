@@ -509,6 +509,18 @@ html { --tabbar-h: 74px; }
 html { --rail-w: 62px; }
 @media (hover: none) { html { --rail-w: 88px; } }
 
+/* The collection place head's own height — mounted once by `(list)/layout.tsx` as a
+   sibling of each route's page now, so a page reserving a viewport-relative minimum for
+   its own content (the cards page's filter/browse area) has to subtract it, or the route
+   ends up one head taller than the viewport it was sized against. 48px below `md` is the
+   tab strip alone (the title block collapses to nothing on the phone); 149px from `md` is
+   the strip's own 109px top plus its 40px height there (`collection-place-head.tsx`'s own
+   header states both).
+
+   Not a theme token, for the same reason as `--tabbar-h`. */
+html { --collection-head-h: 48px; }
+@media (min-width: 768px) { html { --collection-head-h: 149px; } }
+
 /* The lift every dialog in the app sits on — the card modal, the export dialog,
    the collection's confirm and issue dialogs, and Clerk's own popover, which is
    skinned to match in `lib/shell/clerk-appearance.ts`. Five copies of the same

@@ -10,25 +10,25 @@
   "shares": {
     "module": "src/components/collection/collection-place-head.tsx",
     "binding": "CollectionPlaceHead",
-    "note": "Each page renders the head directly, so each row's `view` is the page that imports it."
+    "note": "The shared `(list)/layout.tsx` renders the head once for all three routes, so each row's `view` is that layout rather than its own page."
   },
   "rows": [
     {
       "id": "cards",
       "label": "/collection — the Cards tab, under the title block from md",
-      "view": "src/app/collection/page.tsx",
+      "view": "src/app/collection/(list)/layout.tsx",
       "steps": [{ "goto": "/collection", "wait": "nav[aria-label=\"Collection sections\"]", "settle": 3000 }]
     },
     {
       "id": "sets",
       "label": "/collection/sets — the same head, Your sets as the h1 under it",
-      "view": "src/app/collection/sets/page.tsx",
+      "view": "src/app/collection/(list)/layout.tsx",
       "steps": [{ "goto": "/collection/sets", "wait": "nav[aria-label=\"Collection sections\"]", "settle": 3000 }]
     },
     {
       "id": "proxies",
       "label": "/collection/proxies — the same head, What you're printing as the h1",
-      "view": "src/app/collection/proxies/page.tsx",
+      "view": "src/app/collection/(list)/layout.tsx",
       "steps": [{ "goto": "/collection/proxies", "wait": "nav[aria-label=\"Collection sections\"]", "settle": 3000 }]
     }
   ]

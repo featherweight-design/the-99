@@ -1,13 +1,37 @@
-import { describe, expect, it } from "vitest";
-import { render, screen, within } from "@testing-library/react";
-import { CollectionPlaceHead, type CollectionPlace } from "./collection-place-head";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { CollectionPlaceHead, placeFromPathname, type CollectionPlace } from "./collection-place-head";
 import { collectionTabsCopy } from "../../lib/copy/collection";
+
+let pathname = "/collection";
+vi.mock("next/navigation", () => ({ usePathname: () => pathname }));
+
+const refreshCollectionHeader = vi.fn();
+vi.mock("../../app/collection/actions", () => ({
+  refreshCollectionHeader: (...args: unknown[]) => refreshCollectionHeader(...args),
+}));
+
+beforeEach(() => {
+  // Pending forever by default, so every existing test's synchronous assertions read the
+  // seed props untouched; a test exercising the refresh resolves it explicitly.
+  refreshCollectionHeader.mockReset().mockReturnValue(new Promise(() => {}));
+});
+afterEach(() => {
+  pathname = "/collection";
+});
 
 const OWNED = { totalCards: 4492, uniqueCards: 2926 };
 const EMPTY = { totalCards: 0, uniqueCards: 0 };
 
-function head(current: CollectionPlace, stats = OWNED, lastUpdated: Date | null = null) {
-  return render(<CollectionPlaceHead current={current} stats={stats} lastUpdated={lastUpdated} />);
+const PATH_FOR: Record<CollectionPlace, string> = {
+  cards: "/collection",
+  sets: "/collection/sets",
+  proxies: "/collection/proxies",
+};
+
+function head(current: CollectionPlace, stats = OWNED, lastUpdatedLabel: string | null = null) {
+  pathname = PATH_FOR[current];
+  return render(<CollectionPlaceHead stats={stats} lastUpdatedLabel={lastUpdatedLabel} />);
 }
 
 function strip() {
@@ -20,6 +44,20 @@ function tabNames() {
     .filter((a) => a.getAttribute("href") !== "/collection/replace")
     .map((a) => a.textContent);
 }
+
+describe("placeFromPathname", () => {
+  it("names exactly the three routes the group's layout mounts on", () => {
+    expect(placeFromPathname("/collection")).toBe("cards");
+    expect(placeFromPathname("/collection/sets")).toBe("sets");
+    expect(placeFromPathname("/collection/proxies")).toBe("proxies");
+  });
+
+  it("names nothing past them", () => {
+    expect(placeFromPathname("/collection/sets/4ed")).toBeNull();
+    expect(placeFromPathname("/collection/replace")).toBeNull();
+    expect(placeFromPathname("/collection/replace/summary/u1")).toBeNull();
+  });
+});
 
 describe("the place strip", () => {
   it("is a nav of plain links, one per route, with no query on any of them", () => {
@@ -80,8 +118,8 @@ describe("the title block", () => {
   });
 
   it("says when the collection was last updated, on every route", () => {
-    head("sets", OWNED, new Date());
-    expect(screen.getByText(/4,492 cards · 2,926 unique · last updated/)).toBeTruthy();
+    head("sets", OWNED, "today");
+    expect(screen.getByText("4,492 cards · 2,926 unique · last updated today")).toBeTruthy();
   });
 
   it("offers Replace only when there is a collection to replace", () => {
@@ -91,5 +129,75 @@ describe("the title block", () => {
     unmount();
     head("cards", EMPTY);
     expect(screen.queryAllByRole("link", { name: /Replace/ })).toEqual([]);
+  });
+});
+
+// The layout that mounts this once fetches its two props on its own first mount only, and
+// does not re-run on a sibling navigation — so a collection change made in another tab or on
+// another device would otherwise leave the header's counts, and Sets/Replace's visibility,
+// stuck at whatever they were on arrival (round 2, #1222).
+describe("refreshing the two figures", () => {
+  it("does not re-read on mount — the layout's own props are already fresh", async () => {
+    head("cards", OWNED);
+    // Give any accidental effect a tick to fire before asserting it never did (round 5):
+    // repeating the exact read the layout just made would cost a server-action round trip
+    // and two database reads on every entry into these routes.
+    await waitFor(() => expect(refreshCollectionHeader).not.toHaveBeenCalled());
+  });
+
+  it("re-reads when the reader switches tabs within the mounted strip", async () => {
+    refreshCollectionHeader.mockResolvedValue({ stats: EMPTY, lastUpdatedLabel: null });
+    const { rerender } = head("cards", OWNED);
+    pathname = "/collection/sets";
+    rerender(<CollectionPlaceHead stats={OWNED} lastUpdatedLabel={null} />);
+    await waitFor(() => expect(refreshCollectionHeader).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(tabNames()).toEqual([
+      collectionTabsCopy.cards,
+      collectionTabsCopy.sets,
+      collectionTabsCopy.proxies,
+    ]));
+  });
+
+  it("re-reads on window focus, the same cross-tab trigger DeltaStrip polls on", async () => {
+    refreshCollectionHeader.mockResolvedValue({ stats: EMPTY, lastUpdatedLabel: null });
+    head("cards", OWNED);
+    fireEvent(window, new Event("focus"));
+    await waitFor(() => expect(refreshCollectionHeader).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(tabNames()).toEqual([collectionTabsCopy.cards, collectionTabsCopy.proxies]));
+  });
+
+  it("leaves the header exactly as it was when a refresh fails", async () => {
+    refreshCollectionHeader.mockRejectedValue(new Error("offline"));
+    head("cards", OWNED);
+    fireEvent(window, new Event("focus"));
+    await waitFor(() => expect(refreshCollectionHeader).toHaveBeenCalledTimes(1));
+    expect(screen.getByText("4,492 cards · 2,926 unique")).toBeTruthy();
+  });
+
+  it("applies only the latest of two in-flight reads", async () => {
+    let resolveFirst: (v: { stats: typeof OWNED; lastUpdatedLabel: null }) => void = () => {};
+    refreshCollectionHeader
+      .mockImplementationOnce(() => new Promise((r) => { resolveFirst = r; }))
+      .mockResolvedValueOnce({ stats: EMPTY, lastUpdatedLabel: null });
+    const { rerender } = head("cards", OWNED);
+    pathname = "/collection/sets";
+    rerender(<CollectionPlaceHead stats={OWNED} lastUpdatedLabel={null} />);
+    fireEvent(window, new Event("focus"));
+    await waitFor(() => expect(refreshCollectionHeader).toHaveBeenCalledTimes(2));
+    // The stale first read (the tab switch) resolves last; it must not overwrite the
+    // second's (the focus) answer. Read the stats line rather than tabNames: Sets stays
+    // visible on its own route even when empty (E10), so it cannot tell the two states
+    // apart here.
+    resolveFirst({ stats: OWNED, lastUpdatedLabel: null });
+    await waitFor(() => expect(screen.getByText("0 cards · 0 unique")).toBeTruthy());
+  });
+});
+
+describe("rendered on an unrecognised path", () => {
+  it("throws rather than guessing", () => {
+    pathname = "/collection/replace";
+    expect(() => render(<CollectionPlaceHead stats={OWNED} lastUpdatedLabel={null} />)).toThrow(
+      /unrecognised path/,
+    );
   });
 });
