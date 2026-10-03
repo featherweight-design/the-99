@@ -256,6 +256,37 @@ export function AvailabilityGlyph({
   );
 }
 
+/**
+ * `AvailabilityGlyph` at `big`, in an explicit, non-shrinking layout box the size of its
+ * BOUNDING paint — 16x16, or 21x16 for `over`. A CSS `transform` never affects layout, so the
+ * bare glyph (its unrotated CSS side, ~11.3px) reserves less flex space than it paints; a
+ * neighbour sized against the glyph's own true visual footprint (a key's word, this marker's
+ * outlined root) then sits too close, or an outline runs through the glyph instead of around
+ * it. Centering a smaller CSS box inside this one still centers the rotated visual correctly,
+ * since rotation is about the box's own centre.
+ *
+ * `CollectionMarkKey`'s three availability samples use this rather than the bare glyph for
+ * exactly that reason: `MarkKey`'s shared `gap-[5px]` assumes every sample already reserves
+ * its own full paint.
+ */
+export function AvailabilityGlyphBox({
+  state,
+  seam,
+}: {
+  state: Exclude<AvailabilityState, "free">;
+  seam: string;
+}) {
+  const width = state === "over" ? AVAILABILITY_CHIP_GLYPH_OVER_PX : AVAILABILITY_CHIP_GLYPH_PX;
+  return (
+    <span
+      className="inline-flex flex-none items-center justify-center"
+      style={{ width, height: AVAILABILITY_CHIP_GLYPH_PX }}
+    >
+      <AvailabilityGlyph state={state} seam={seam} big />
+    </span>
+  );
+}
+
 // Row 3.4 gives the row density the same lifted foregrounds as the chip: the
 // hard label is --avail-hard-fg on both, and the soft label is --fg-body, a
 // step brighter than the --fg-muted its own glyph outline uses.

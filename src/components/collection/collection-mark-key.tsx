@@ -23,7 +23,7 @@ import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { CardFactMark } from "../cards/card-fact-mark";
 import { ComboGlyph } from "../cards/combo-glyph";
-import { AvailabilityGlyph } from "../ui/availability-marker";
+import { AvailabilityGlyphBox } from "../ui/availability-marker";
 import { MarkKey } from "../decks/mark-key";
 
 const FACT_AND_COMBO_ENTRIES = [
@@ -55,9 +55,12 @@ const FACT_AND_COMBO_ENTRIES = [
 // THE THREE AVAILABILITY STATES (collection surfaces, Call 3): the chip on the 3-up PHONE tile
 // dropped its word — "1 in a draft" is 81px of a 101px caption — and moved it here instead,
 // using the Availability filter's own labels rather than new words for the same three states.
-// `AvailabilityGlyph` directly, `big`, rather than `AvailabilityMarker`: the marker always
-// speaks a REAL card's counts and claimants, and a key entry decodes the glyph alone, with no
-// card behind it to count.
+// `AvailabilityGlyphBox` (an explicit, non-shrinking layout box around `AvailabilityGlyph` at
+// `big`) rather than `AvailabilityMarker`: the marker always speaks a REAL card's counts and
+// claimants, and a key entry decodes the glyph alone, with no card behind it to count. The box
+// matters here specifically: a `transform` never affects layout, so a bare rotated glyph
+// reserves less flex space than it paints, which pulled `MarkKey`'s shared `gap-[5px]` down to
+// ~2.7px against the word and misaligned the sample with the 21x16 over glyph beside it.
 //
 // BELOW `md` ONLY (README.md: "Rows don't get the availability entries, because a row prints
 // the word beside its glyph"). The desktop grid's tile keeps its word too — Call 3 is a
@@ -66,17 +69,17 @@ const FACT_AND_COMBO_ENTRIES = [
 const AVAILABILITY_ENTRIES = [
   {
     id: "avail-soft",
-    sample: <AvailabilityGlyph state="soft" seam="var(--bg)" big />,
+    sample: <AvailabilityGlyphBox state="soft" seam="var(--bg)" />,
     word: availabilityCopy.collection.filterSoft,
   },
   {
     id: "avail-hard",
-    sample: <AvailabilityGlyph state="hard" seam="var(--bg)" big />,
+    sample: <AvailabilityGlyphBox state="hard" seam="var(--bg)" />,
     word: availabilityCopy.collection.filterHard,
   },
   {
     id: "avail-over",
-    sample: <AvailabilityGlyph state="over" seam="var(--bg)" big />,
+    sample: <AvailabilityGlyphBox state="over" seam="var(--bg)" />,
     word: availabilityCopy.collection.filterOver,
   },
 ];
