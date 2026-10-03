@@ -1390,6 +1390,34 @@ describe("CardDetailProvider reads the neighbors ahead (carousel, H23)", () => {
     await waitFor(() => expect(prefetchCard.mock.calls.map((c) => c[0])).toEqual(["o-x", "o-c", "o-a"]));
   });
 
+  it("reads the neighbors ahead on a cache-hit reopen even when the correction re-ask fails", async () => {
+    // A cache-hit reopen paints `show(hit)` immediately, then re-asks the server for a correction
+    // while `inFlight` stays set — which, on its own, would make `prefetch` bail for both
+    // neighbors (a read is already running). If the re-ask fails, nothing else changes `card`
+    // again, so the read-ahead effect must retry once that re-ask SETTLES rather than waiting on
+    // `card` to change a second time. The first open carries no siblings, so its own read-ahead
+    // and cache writes never touch "o-c"/"o-a" — the reopen is the first time either is asked for.
+    const prefetchCard = vi.fn(async (id: string) => byId[id] ?? null);
+    const fetchCard = vi.fn()
+      .mockResolvedValueOnce(B)
+      .mockRejectedValueOnce(new Error("offline"));
+    render(
+      <CardDetailProvider fetchCard={fetchCard} prefetchCard={prefetchCard}>
+        <CardDetailTrigger oracleId="o-b" name="Card B">open plain</CardDetailTrigger>
+        <CardDetailTrigger oracleId="o-b" name="Card B" siblings={["o-a", "o-b", "o-c"]}>open with list</CardDetailTrigger>
+      </CardDetailProvider>,
+    );
+    await act(async () => { fireEvent.click(screen.getByText("open plain")); });
+    await screen.findByRole("dialog");
+    expect(prefetchCard).not.toHaveBeenCalled();
+    await click(screen.getAllByRole("button", { name: "Close card details" })[0]);
+
+    await act(async () => { fireEvent.click(screen.getByText("open with list")); });
+    await screen.findByRole("dialog");
+    await waitFor(() => expect(fetchCard).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(prefetchCard.mock.calls.map((c) => c[0])).toEqual(["o-c", "o-a"]));
+  });
+
     it("takes a list of cards carrying art as readily as a list of ids", async () => {
     const prefetchCard = vi.fn(async (id: string) => byId[id] ?? null);
     mount("o-b", [

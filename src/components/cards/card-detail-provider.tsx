@@ -470,6 +470,11 @@ export function CardDetailProvider({
   const backLabel = sheets.at(-1)?.label;
   const sheetFooter = sheets.at(-1)?.footer;
   const [failed, setFailed] = useState(false);
+  // Bumped whenever a read settles (succeeds, fails, or finds nothing), so the read-ahead effect
+  // retries after a cache-hit reopen's correction read — `card` itself only changes again there
+  // when the correction brings back a new object; a failed or missing correction leaves `card`
+  // exactly as `show(hit)` set it, so nothing else would re-run the effect at all.
+  const [settleTick, setSettleTick] = useState(0);
   // Joined and re-split rather than held as an array, so the callback's dependency is a
   // STRING and cannot churn on identity alone. The deck page happens to memoise its list
   // today, so this buys nothing from that caller — it is a guard on every future one, and
@@ -690,6 +695,7 @@ export function CardDetailProvider({
           // since left costs nothing to forget, because its entry is already gone and the
           // next open pays for the read.
           if (debt !== null && debt === shownRef.current) void loadRef.current(debt);
+          setSettleTick((t) => t + 1);
         }
       }
     },
@@ -890,7 +896,9 @@ export function CardDetailProvider({
   // when that read settles. Through `prefetch` and nothing else, so a press landing mid-read waits
   // on it for `PREFETCH_WAIT_MS` exactly as an intent prefetch is waited on, and a neighbor already
   // cached costs nothing. `prefetch` yields to any read in flight, so the card's own re-read of a
-  // cache hit goes first: this effect runs again when that re-read shows the card.
+  // cache hit goes first: this effect retries on `settleTick` once that re-read settles, whether
+  // or not it brings back a new `card` — a failed or missing correction leaves the shown card
+  // exactly as `show(hit)` set it, with nothing else to re-run the effect.
   // Only the live card's list, never the card held under a sheet, which draws no paging.
   const nextId = !held && index >= 0 && index < siblingIds.length - 1 ? siblingIds[index + 1] : null;
   const prevId = !held && index > 0 ? siblingIds[index - 1] : null;
@@ -917,7 +925,7 @@ export function CardDetailProvider({
       }
     })();
     return () => { cancelled = true; };
-  }, [card, nextId, prevId, prefetch]);
+  }, [card, nextId, prevId, prefetch, settleTick]);
   // See `openAt`: the printing applies to one card, and the card on screen is not always
   // the one that was asked for.
   const openAtPrinting = card && openAt?.oracleId === card.oracleId ? openAt.printing : null;

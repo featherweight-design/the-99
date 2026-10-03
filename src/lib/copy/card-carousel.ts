@@ -5,7 +5,7 @@
  */
 export const cardCarouselCopy = {
   /** The visible counter in the desktop footer (and, from the phone round, its top-left plate). */
-  position: (n: number, total: number) => `${n.toLocaleString()} of ${total.toLocaleString()}`,
+  position: (n: number, total: number) => `${n.toLocaleString("en-US")} of ${total.toLocaleString("en-US")}`,
   prevAria: "Previous card",
   nextAria: "Next card",
 } as const;
