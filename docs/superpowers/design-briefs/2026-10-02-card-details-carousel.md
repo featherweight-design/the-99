@@ -45,7 +45,10 @@ The list is whatever the opener passes. Where an opener passes none, the card op
 | Deck page, List view | The decklist flattened in render order, across type or role groups. | `decks/decklist.tsx:559` |
 | Deck page, Shopping filter | The shopping sections, in their order. | `decks/decklist.tsx:824`, :921 |
 | Deck page, Card view | The same list the List view pages. | `decks/decklist-group.tsx:98–103` |
-| Consider panel, top-off list, stand-ins | One shelf or group each. | `consider-panel.tsx:301`, `top-off-list.tsx:1132`, `stand-ins-sheet.tsx:165` |
+| Consider panel | One shelf. | `consider-panel.tsx:301` |
+| Top-off list | The whole candidate pool, including rows not offered. | `top-off-list.tsx:383` |
+| Stand-ins sheet | The rows the sheet shows, across every group: five of a collapsed group, all of an expanded one. | `stand-ins-sheet.tsx:500–505` |
+| Change commander sheet | Every half of every candidate, yours then to buy. | `change-commander-sheet.tsx:214` |
 | Analysis receipts, lean | The cards in that receipt or combo. | `receipt-modal.tsx`, `lean-line.tsx:52` |
 | Notices sheet | Every card in every notice, across groups. | `notices-body.tsx:62` |
 | Review page (`/decks/[id]/changes`) | One list across both columns. | `review-changes.tsx:331`, :360 |
