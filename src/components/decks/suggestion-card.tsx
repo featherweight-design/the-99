@@ -149,11 +149,11 @@ export function SuggestionCard({
       {/* The phone's marks row: its own line, and only when there is a mark to draw. */}
       {addMark ? <div className="flex items-center gap-[8px] md:hidden">{addMark}</div> : null}
 
-      <p className="hidden max-w-[980px] text-[12.5px] leading-[1.5] md:block" style={{ color: "var(--fg-body)" }}>
+      {/* H35-E: the phone drew only `rationaleShort`, a one-line summary, while desktop drew
+          the full `rationale` paragraph — "why would we hide more insight based on device
+          type?" (Hugh). Both widths now draw the same full reasoning. */}
+      <p className="max-w-[980px] text-[12.5px] leading-[1.55] md:leading-[1.5]" style={{ color: "var(--fg-body)" }}>
         {item.rationale}
-      </p>
-      <p className="text-[12.5px] leading-[1.55] md:hidden" style={{ color: "var(--fg-body)" }}>
-        {item.rationaleShort}
       </p>
 
       {shift && item.bracketAfter ? (

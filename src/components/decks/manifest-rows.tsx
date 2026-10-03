@@ -31,7 +31,7 @@ export function ManifestRows({ rows, onLogGame }: { rows: readonly ManifestRow[]
         <div
           data-testid="manifest-row"
           data-kind="no-games"
-          className="flex min-h-[46px] items-center gap-[10px] rounded-[8px] pl-[12px] pr-0 md:min-h-[40px]"
+          className={`flex min-h-[46px] items-center gap-[10px] rounded-[8px] pl-[12px] md:min-h-[40px] ${onLogGame ? "pr-0" : "pr-[12px]"}`}
           style={{ border: "1px dashed var(--border-dashed)" }}
         >
           <Mark kind="none" />

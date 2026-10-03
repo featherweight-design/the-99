@@ -62,11 +62,12 @@ describe("SuggestionCard", () => {
     expect(screen.queryByText(/%/)).not.toBeInTheDocument();
   });
 
-  it("draws the full reason on desktop and the short one on a phone", () => {
+  it("draws the full reason at both widths (H35-E)", () => {
     draw(item);
-    const full = screen.getByText(item.rationale).className.split(" ");
-    expect(full).toEqual(expect.arrayContaining(["hidden", "md:block"]));
-    expect(screen.getByText(item.rationaleShort).className).toContain("md:hidden");
+    const full = screen.getByText(item.rationale).className;
+    expect(full).not.toMatch(/\bhidden\b/);
+    expect(full).not.toMatch(/\bmd:hidden\b/);
+    expect(screen.queryByText(item.rationaleShort)).not.toBeInTheDocument();
   });
 
   it("opens either card with the pair as the list the modal pages through", async () => {
