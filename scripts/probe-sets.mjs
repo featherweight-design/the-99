@@ -1312,6 +1312,33 @@ async function run() {
     // either fits or wraps the row the whole ruling depends on.
     for (const width of [1440, 1180, 768]) {
       await page.setViewportSize({ width, height: 900 });
+      // Below 1000 the COLLAPSED head hides Any / Exactly so the name keeps its room (d9's
+      // ruling on H10). The other half of that ruling is read here: the OPEN head still draws
+      // the control and a press on it still applies, so the mode is never out of reach.
+      if (width < 1000) {
+        await page.goto(`${BASE}/collection/sets/${code}?c=W`, { waitUntil: "networkidle" });
+        await page.waitForSelector("[data-set-colour]", { timeout: 20_000 });
+        const exactly = onPage(page, '[data-set-colour] [role="radio"][aria-label="Exactly these"]');
+        const shown = await exactly.isVisible();
+        if (shown) await exactly.click();
+        await page.waitForTimeout(300);
+        const applied = new URL(page.url()).searchParams.get("m") === "exact"
+          && (await exactly.getAttribute("aria-checked")) === "true";
+        failures += !report(
+          `the open head draws Any / Exactly and a press applies it at ${width}`,
+          shown && applied,
+          `visible=${shown}, url m=${new URL(page.url()).searchParams.get("m")}`,
+        );
+        await scrollTo(900);
+        await page.waitForTimeout(300);
+        const hidden = !(await exactly.isVisible());
+        const kept = new URL(page.url()).searchParams.get("m") === "exact";
+        failures += !report(
+          `the collapsed head hides it at ${width} and Exactly stays applied`,
+          hidden && kept,
+          `hidden=${hidden}, url m=${new URL(page.url()).searchParams.get("m")}`,
+        );
+      }
       await page.goto(`${BASE}/collection/sets/${code}`, { waitUntil: "networkidle" });
       await waitForCells(page);
       await scrollTo(0);
@@ -1424,7 +1451,10 @@ async function run() {
           members: [...prefix.parentElement.children]
             .filter((c) => c.getClientRects().length > 0)
             .map((c) => `${(c.getAttribute("aria-label") ?? c.textContent ?? "").trim().slice(0, 14)}:${Math.round(c.getBoundingClientRect().width)}`)
-            .join(" "),
+            .join(" ")
+            + ` | row ${Math.round(prefix.parentElement.getBoundingClientRect().width)}`
+            + ` scroll ${prefix.parentElement.scrollWidth}`
+            + ` prefix[${[...prefix.children].map((c) => `${c.tagName}:${Math.round(c.getBoundingClientRect().width)}`).join(",")}]`,
         };
       });
       failures += !report(

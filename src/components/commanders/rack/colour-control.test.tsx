@@ -68,4 +68,16 @@ describe("ColourControl", () => {
     );
     expect(screen.getAllByRole("radiogroup", { name: "Color match" })).toHaveLength(1);
   });
+
+  it("leaves the modifier visible at every width unless a caller opts in", () => {
+    const { container, rerender } = render(
+      <ColourControl wide colors={["w"]} match="contains" onColorsChange={() => {}} onMatchChange={() => {}} />,
+    );
+    const group = () => container.querySelector('[role="radiogroup"]') as HTMLElement;
+    expect(container.innerHTML).not.toContain("max-[999px]:hidden");
+    rerender(
+      <ColourControl wide colors={["w"]} match="contains" onColorsChange={() => {}} onMatchChange={() => {}} hideMatchBelowWide />,
+    );
+    expect(group().className).toContain("max-[999px]:hidden");
+  });
 });

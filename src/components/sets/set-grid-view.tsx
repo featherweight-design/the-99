@@ -1121,6 +1121,7 @@ export function SetGridView(props: SetGridViewProps) {
               colors={filters.colors.map((c) => c.toLowerCase())}
               match={filters.match}
               unavailable={unavailableColours}
+              hideMatchBelowWide={shy}
               onColorsChange={setColours}
               onMatchChange={(m) => setFilters({ ...filters, match: m })}
             />

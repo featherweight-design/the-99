@@ -2103,6 +2103,29 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
 
   beforeEach(() => scrollTo(0));
 
+  // d9's ruling on H10: the collapsed head below 1000px hides Any / Exactly so the set name
+  // keeps its room. Hiding is display only, and this pins that it never changes state.
+  it("hides Any / Exactly in the collapsed head without un-applying Exactly", () => {
+    stubDesktop(true);
+    search = "c=W&m=exact";
+    const { container } = view([p("1", { colorIdentity: ["W"] }), p("2", { colorIdentity: ["W", "U"] })], []);
+    const group = () => container.querySelector('[data-set-colour] [role="radiogroup"]') as HTMLElement;
+    const exactly = () => container.querySelector('[data-set-colour] [role="radio"][aria-label="Exactly these"]') as HTMLElement;
+    const names = () => screen.getAllByRole("button", { name: /in your collection/ })
+      .map((b) => (b.getAttribute("aria-label") ?? "").split(",")[0]);
+    expect(group().className).not.toMatch(/max-\[999px\]:hidden/);
+    scrollTo(200);
+    expect(isShy(container)).toBe(true);
+    expect(group().className).toMatch(/max-\[999px\]:hidden/);
+    expect(exactly().getAttribute("aria-checked")).toBe("true");
+    expect(names()).toEqual(["Card 1"]);
+    for (const [, , url] of replaceState.mock.calls) expect(String(url)).toContain("m=exact");
+    scrollTo(0);
+    expect(isShy(container)).toBe(false);
+    expect(group().className).not.toMatch(/max-\[999px\]:hidden/);
+    expect(exactly().getAttribute("aria-checked")).toBe("true");
+  });
+
   it("stays open until 120px of scroll", () => {
     stubDesktop(false);
     const { container } = view([p("1"), p("2")], []);

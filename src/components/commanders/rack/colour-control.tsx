@@ -31,6 +31,7 @@ export function ColourControl({
   onMatchChange,
   wide,
   unavailable,
+  hideMatchBelowWide = false,
 }: {
   colors: string[];
   match: JoinMode;
@@ -44,7 +45,15 @@ export function ColourControl({
    * not take that away.
    */
   unavailable?: readonly string[];
+  /**
+   * Opt-in, for the set page's COLLAPSED head: below 1000px the hairline and the Any /
+   * Exactly segments are hidden, so the set name keeps its room (H10, d9's ruling). Hiding
+   * is display only: the mode stays applied and the open head shows it lit. Every other
+   * caller leaves it off and renders exactly as before.
+   */
+  hideMatchBelowWide?: boolean;
 }) {
+  const matchHide = hideMatchBelowWide ? " max-[999px]:hidden" : "";
   // With nothing lit there is nothing to be exact about: the modifier is inert,
   // but present and remembered.
   const live = colors.length > 0;
@@ -124,7 +133,7 @@ export function ColourControl({
       {wide && (
         <span
           aria-hidden
-          className="block h-[20px] w-px shrink-0 bg-[color:var(--border)]"
+          className={`block h-[20px] w-px shrink-0 bg-[color:var(--border)]${matchHide}`}
         />
       )}
       {!wide && <Caption>{filterCopy.match.legend}</Caption>}
@@ -141,7 +150,7 @@ export function ColourControl({
         // both sides, and 6px more on this side alone put 16px to the right of
         // `Exactly` against 10px to the left of the first pip — the box read as
         // lopsided at every width. Reported 2026-09-13.
-        className={wide ? "flex items-center gap-[2px]" : "flex gap-[8px]"}
+        className={(wide ? "flex items-center gap-[2px]" : "flex gap-[8px]") + matchHide}
       >
         {segments.map((s, i) => {
           const selected = s.mode === match;
