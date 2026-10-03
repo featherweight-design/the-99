@@ -165,41 +165,46 @@ async function openPanel(page) {
 // options. Scoped to the `role="group"` whose `aria-label` names Availability
 // — "Availability" live, or the degraded sentence (`collectionFilterDisabledAria`,
 // which still contains the word) when the aggregate could not be read — so a
-// phone run cannot wander into the Color or Set groups beside it. Returns
-// null when the sheet carries no such group at all, which the caller treats
-// as its own finding rather than crashing on an empty array.
-// Scoped by the group's own `aria-label`, case-insensitively, through CSS
-// rather than `evaluate` — so this and `availabilityChipsPhone` read the SAME
-// DOM order and an index from one is valid against the other. Matching by
-// NAME instead (`getByRole("switch", { name })`) looked right and was not:
-// a live chip carries no `aria-label` of its own, so Playwright falls back to
-// the accessible-name algorithm, which inserts a space between the label and
-// count text nodes — "Free 2,467" — while reading `textContent` directly
-// concatenates them with none, and the two strings never matched.
-function availabilityChipLocator(page, index) {
-  return page
-    .locator('[role="group"][aria-label*="vailab" i]')
-    .getByRole("switch")
-    .nth(index);
+// phone run cannot wander into the Color or Set groups beside it.
+//
+// Scoped to the SHEET'S OWN dialog, the one `openSheet` returns, never the
+// whole page — the single-scope convention `lib/surface.mjs` states for
+// exactly this reason: an unscoped `[role="group"]` lookup can resolve
+// against a matching group the shell renders outside `<main>`, which is the
+// same substitution that produced two false findings in `probe-sets.mjs`.
+// A caller with no dialog (the trigger never opened) gets `page.locator(...)`
+// with no matches rather than a crash, which still reads as the group not
+// being found.
+function availabilityChipsLocator(dialogOrPage) {
+  return dialogOrPage.locator('[role="group"][aria-label*="vailab" i]').getByRole("switch");
 }
 
-async function availabilityChipsPhone(page) {
-  return page.evaluate(() => {
-    const group = [...document.querySelectorAll('[role="group"]')].find((g) =>
-      /availab/i.test(g.getAttribute("aria-label") ?? ""),
-    );
-    if (!group) return null;
-    return [...group.querySelectorAll('button[role="switch"]')].map((b) => {
-      const box = b.getBoundingClientRect();
-      return {
-        text: (b.textContent ?? "").trim(),
-        aria: b.getAttribute("aria-label"),
-        checked: b.getAttribute("aria-checked"),
-        disabled: b.getAttribute("aria-disabled"),
-        height: Math.round(box.height),
-      };
+function availabilityChipLocator(dialogOrPage, index) {
+  return availabilityChipsLocator(dialogOrPage).nth(index);
+}
+
+// Playwright locators throughout, not `page.evaluate`, so this reads the
+// SAME nodes `availabilityChipLocator` clicks — a `nth(i)` into one is valid
+// against the other only because both walk the same scoped locator. Returns
+// null when the sheet carries no such group at all, which the caller treats
+// as its own finding rather than crashing on an empty array.
+async function availabilityChipsPhone(dialogOrPage) {
+  const switches = availabilityChipsLocator(dialogOrPage);
+  const count = await switches.count();
+  if (count === 0) return null;
+  const chips = [];
+  for (let i = 0; i < count; i++) {
+    const chip = switches.nth(i);
+    const box = await chip.boundingBox();
+    chips.push({
+      text: ((await chip.textContent()) ?? "").trim(),
+      aria: await chip.getAttribute("aria-label"),
+      checked: await chip.getAttribute("aria-checked"),
+      disabled: await chip.getAttribute("aria-disabled"),
+      height: box ? Math.round(box.height) : null,
     });
-  });
+  }
+  return chips;
 }
 
 function show(title, value) {
@@ -212,8 +217,31 @@ function show(title, value) {
   );
 }
 
+// A bounded click, failing LOUDLY rather than hanging. Playwright's default
+// actionability timeout is 30s, and a broken filter effect (the phone path's
+// "Clear all" never clears because no chip's click ever actually applied)
+// waits out that whole 30s before an uncaught `TimeoutError` kills the
+// process — which prints a stack trace, not a named finding, and reads as
+// "still running" for anyone watching rather than as a failure. This prints
+// `FAIL <label>` and exits 1 at a 5s bound instead, so a broken effect is a
+// fast, readable red rather than a slow, silent one.
+async function requireClick(locator, label, opts = {}) {
+  try {
+    await locator.click({ timeout: 5_000, ...opts });
+  } catch (error) {
+    console.log(`\nFAIL ${label}: ${(error?.message ?? String(error)).split("\n")[0]}`);
+    process.exit(1);
+  }
+}
+
 await clerkSetup();
 const browser = await chromium.launch();
+
+// An unreachable phone control used to close its context and move on to the
+// desktop leg silently — a run that found nothing at 390 still exited 0.
+// Both legs still run either way, so a real finding at one width is never
+// hidden by a pass at the other, but the run as a whole reports red.
+let exitCode = 0;
 
 for (const { label, width, height } of VIEWPORTS) {
   const context = await browser.newContext({ viewport: { width, height } });
@@ -233,23 +261,29 @@ for (const { label, width, height } of VIEWPORTS) {
     // width, wide or degraded — `triggerOrder`/`availabilityTrigger` above
     // would read null or absent for it either way, which is the point this
     // branch exists to stop mistaking for "unreachable".
-    const dialog = await openSheet(page);
+    let dialog = await openSheet(page);
     if (!dialog) {
+      // Unreachable, and loudly: closing the context and moving on to the
+      // desktop leg must not look like a pass. A silent `continue` here is
+      // exactly the regression this rewrite exists to stop.
       show("phone — no sheet trigger found", null);
+      exitCode = 1;
       await context.close();
       continue;
     }
     await page.waitForTimeout(300);
 
-    const chipsOnOpen = await availabilityChipsPhone(page);
+    const chipsOnOpen = await availabilityChipsPhone(dialog);
     show("phone — availability chips on open", chipsOnOpen);
     if (chipsOnOpen === null) {
       show("phone — no availability group found in the sheet", null);
+      exitCode = 1;
       await context.close();
       continue;
     }
     if (chipsOnOpen.length > 0 && chipsOnOpen.every((c) => c.disabled === "true")) {
-      // Degraded run: every chip refuses the mouse, and that is the finding.
+      // Degraded run: every chip refuses the mouse, and that is the finding —
+      // not a failure of the probe, so it does not mark `exitCode`.
       show("phone — degraded, every chip disabled", chipsOnOpen);
       await context.close();
       continue;
@@ -261,8 +295,8 @@ for (const { label, width, height } of VIEWPORTS) {
     const dead = deadIndex === -1 ? undefined : chipsOnOpen[deadIndex];
     if (dead) {
       const before = await resultCount(page);
-      const deadChip = availabilityChipLocator(page, deadIndex);
-      await deadChip.click({ force: true });
+      const deadChip = availabilityChipLocator(dialog, deadIndex);
+      await requireClick(deadChip, "phone — zero-count chip (mouse)", { force: true });
       await page.waitForTimeout(300);
       await deadChip.focus();
       await page.keyboard.press("Enter");
@@ -280,13 +314,13 @@ for (const { label, width, height } of VIEWPORTS) {
     // Pick two live states and confirm the URL, the page's own chips and the
     // count agree — read through `aria-checked`, the chip's own state, never
     // `aria-selected`, which `role="switch"` does not carry.
-    const afterDead = await availabilityChipsPhone(page);
+    const afterDead = await availabilityChipsPhone(dialog);
     const liveIndices = afterDead
       .map((c, i) => ({ c, i }))
       .filter(({ c }) => c.disabled !== "true")
       .slice(0, 2);
     for (const { c, i } of liveIndices) {
-      await availabilityChipLocator(page, i).click();
+      await requireClick(availabilityChipLocator(dialog, i), `phone — select "${c.text}"`);
       await page.waitForTimeout(400);
     }
     const live = liveIndices.map(({ c }) => c);
@@ -295,7 +329,7 @@ for (const { label, width, height } of VIEWPORTS) {
       url: page.url(),
       chips: await chips(page),
       count: await resultCount(page),
-      availabilityChips: await availabilityChipsPhone(page),
+      availabilityChips: await availabilityChipsPhone(dialog),
     });
 
     // Resume: the selection has to survive a reload, from the URL alone. The
@@ -311,9 +345,12 @@ for (const { label, width, height } of VIEWPORTS) {
       chips: await chips(page),
       count: await resultCount(page),
     });
-    await openSheet(page);
+    dialog = await openSheet(page);
     await page.waitForTimeout(300);
-    show("phone — chips rebuilt from the URL after reload", await availabilityChipsPhone(page));
+    show(
+      "phone — chips rebuilt from the URL after reload",
+      dialog ? await availabilityChipsPhone(dialog) : null,
+    );
 
     // The sheet's scrim sits over the page's own chip row and intercepts a
     // click aimed at it, so it has to close first — `useDialogA11y` binds
@@ -326,7 +363,10 @@ for (const { label, width, height } of VIEWPORTS) {
     // same whether or not the sheet happens to be open — once it is closed.
     const firstChip = (await chips(page))[0];
     if (firstChip) {
-      await page.getByRole("button", { name: firstChip.aria }).click();
+      await requireClick(
+        page.getByRole("button", { name: firstChip.aria }),
+        "phone — remove filter chip",
+      );
       await page.waitForTimeout(500);
       show("phone — after one chip ✕", {
         removed: firstChip.aria,
@@ -338,13 +378,15 @@ for (const { label, width, height } of VIEWPORTS) {
 
     // Repeat: re-select the same state, then clear everything. `Clear all`
     // is the same page-level control as the ✕ above, not a sheet footer.
-    await openSheet(page);
+    dialog = await openSheet(page);
     await page.waitForTimeout(300);
-    const afterChip = await availabilityChipsPhone(page);
-    const againIndex = afterChip.findIndex((c) => c.disabled !== "true");
-    if (againIndex !== -1) {
-      await availabilityChipLocator(page, againIndex).click();
-      await page.waitForTimeout(400);
+    if (dialog) {
+      const afterChip = await availabilityChipsPhone(dialog);
+      const againIndex = afterChip?.findIndex((c) => c.disabled !== "true") ?? -1;
+      if (againIndex !== -1) {
+        await requireClick(availabilityChipLocator(dialog, againIndex), "phone — re-select a chip");
+        await page.waitForTimeout(400);
+      }
     }
     show("phone — after re-selecting", { url: page.url(), chips: await chips(page) });
 
@@ -353,7 +395,7 @@ for (const { label, width, height } of VIEWPORTS) {
     await page.keyboard.press("Escape");
     await page.waitForTimeout(400);
 
-    await page.getByRole("button", { name: "Clear all" }).click();
+    await requireClick(page.getByRole("button", { name: "Clear all" }), "phone — Clear all");
     await page.waitForTimeout(600);
     show("phone — after Clear all", {
       url: page.url(),
@@ -460,3 +502,4 @@ for (const { label, width, height } of VIEWPORTS) {
 }
 
 await browser.close();
+process.exit(exitCode);
