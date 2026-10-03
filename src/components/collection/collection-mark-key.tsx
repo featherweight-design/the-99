@@ -26,7 +26,7 @@ import { ComboGlyph } from "../cards/combo-glyph";
 import { AvailabilityGlyphBox } from "../ui/availability-marker";
 import { MarkKey } from "../decks/mark-key";
 
-const FACT_AND_COMBO_ENTRIES = [
+const ENTRIES = [
   ...CARD_FACTS.map((fact) => ({
     id: fact,
     sample: <CardFactMark fact={fact} silent />,
@@ -50,23 +50,20 @@ const FACT_AND_COMBO_ENTRIES = [
     sample: <ComboGlyph />,
     word: comboAwarenessCopy.keyWord,
   },
-];
-
-// THE THREE AVAILABILITY STATES (collection surfaces, Call 3): the chip on the 3-up PHONE tile
-// dropped its word — "1 in a draft" is 81px of a 101px caption — and moved it here instead,
-// using the Availability filter's own labels rather than new words for the same three states.
-// `AvailabilityGlyphBox` (an explicit, non-shrinking layout box around `AvailabilityGlyph` at
-// `big`) rather than `AvailabilityMarker`: the marker always speaks a REAL card's counts and
-// claimants, and a key entry decodes the glyph alone, with no card behind it to count. The box
-// matters here specifically: a `transform` never affects layout, so a bare rotated glyph
-// reserves less flex space than it paints, which pulled `MarkKey`'s shared `gap-[5px]` down to
-// ~2.7px against the word and misaligned the sample with the 21x16 over glyph beside it.
-//
-// BELOW `md` ONLY (README.md: "Rows don't get the availability entries, because a row prints
-// the word beside its glyph"). The desktop grid's tile keeps its word too — Call 3 is a
-// below-`md` concession — so this key is a SEPARATE instance (`withAvailability`), never a
-// prop that widens the one every surface shares.
-const AVAILABILITY_ENTRIES = [
+  // THE THREE AVAILABILITY STATES (collection surfaces, Call 3): the chip on the 3-up PHONE tile
+  // dropped its word — "1 in a draft" is 81px of a 101px caption — and moved it here instead,
+  // using the Availability filter's own labels rather than new words for the same three states.
+  // `AvailabilityGlyphBox` (an explicit, non-shrinking layout box around `AvailabilityGlyph` at
+  // `big`) rather than `AvailabilityMarker`: the marker always speaks a REAL card's counts and
+  // claimants, and a key entry decodes the glyph alone, with no card behind it to count. The box
+  // matters here specifically: a `transform` never affects layout, so a bare rotated glyph
+  // reserves less flex space than it paints, which pulled `MarkKey`'s shared `gap-[5px]` down to
+  // ~2.7px against the word and misaligned the sample with the 21x16 over glyph beside it.
+  //
+  // UNCONDITIONAL (Hugh, 2026-10-03), reversing the scoping below `md` had for one round: the
+  // desktop tile's chip spells the state out in words already, but ONE key describing every mark
+  // this surface draws is worth more than trimming three entries the desktop reader did not ask
+  // to have trimmed. Drawn once per mount now, not split into a phone instance and a desktop one.
   {
     id: "avail-soft",
     sample: <AvailabilityGlyphBox state="soft" seam="var(--bg)" />,
@@ -84,26 +81,19 @@ const AVAILABILITY_ENTRIES = [
   },
 ];
 
-export function CollectionMarkKey({
-  className,
-  withAvailability = false,
-}: {
-  className?: string;
-  /** The below-`md` phone grid's own instance. See `AVAILABILITY_ENTRIES` above. */
-  withAvailability?: boolean;
-}) {
+export function CollectionMarkKey({ className }: { className?: string }) {
   // The TILE grid needs `col-span-full` here, exactly as its `Show more` button does: a bare
   // child of that grid takes one CARD CELL — one of two columns at 390px, and one of six
   // ~178px columns at 1300px, stretched to the tile row's height with its entries wrapped
   // three deep. The row view is a flex column and needs nothing.
-  const entries = withAvailability
-    ? [...FACT_AND_COMBO_ENTRIES, ...AVAILABILITY_ENTRIES]
-    : FACT_AND_COMBO_ENTRIES;
   return (
     // Room above and below on the phone (H7): it sat tight against the head and the
     // first row, and read as part of either rather than as the key to both.
     <div className={["py-[10px] md:py-0", className].filter(Boolean).join(" ")}>
-      <MarkKey marks={entries} regionAria={cardMarkCopy.keyRegionAria} phoneColumns={2} />
+      {/* 3, matching the phone grid's own 3 columns (Hugh, 2026-10-03): 2 left every entry
+          sitting in the grid's left two-thirds, reading as the whole key shifted left of the
+          card grid above and below it, rather than landing on the same three vertical lines. */}
+      <MarkKey marks={ENTRIES} regionAria={cardMarkCopy.keyRegionAria} phoneColumns={3} />
     </div>
   );
 }
