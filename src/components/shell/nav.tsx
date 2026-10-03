@@ -138,6 +138,10 @@ function useLockNotes(place: (slot: HTMLElement) => { x: number; y: number }) {
     if (!open) return;
     const { href } = open;
     const onPointerDown = (e: PointerEvent) => {
+      // A press on the About sheet is not a press away from the note (H1): the note is
+      // waiting for that sheet, and its Later or Show me is how the wait ends.
+      const t = e.target as Element | null;
+      if (t?.closest?.("[data-about-sheet]")) return;
       if (!inLock(e.target as Node, href)) setOpen(null);
     };
     const onKeyDown = (e: KeyboardEvent) => {

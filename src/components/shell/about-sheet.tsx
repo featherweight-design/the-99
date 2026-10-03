@@ -98,6 +98,7 @@ export function AboutSheet({ state }: { state: SheetState }) {
   return (
     <div
       ref={card}
+      data-about-sheet
       role="region"
       aria-label={firstRun ? copy.regionLabelFirstRun : copy.regionLabel}
       onKeyDown={(e) => {

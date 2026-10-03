@@ -442,7 +442,16 @@ describe("The lock, phone tab bar", () => {
       const decks = slot("Decks");
       fireEvent.click(decks);
       expect(isOpen(decks)).toBe(false);
+      // The sheet closes the way a reader closes it, with a press on its Later: a
+      // pointerdown outside the lock, which must not clear the waiting note.
+      const later = document.createElement("button");
+      const sheet = document.createElement("div");
+      sheet.setAttribute("data-about-sheet", "");
+      sheet.appendChild(later);
+      document.body.appendChild(sheet);
+      fireEvent.pointerDown(later);
       act(() => setAboutSheetUp(false));
+      sheet.remove();
       expect(isOpen(decks)).toBe(true);
     } finally {
       act(() => setAboutSheetUp(false));
