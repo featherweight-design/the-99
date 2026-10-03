@@ -1,9 +1,10 @@
 import { validateCardForDeck } from "../decks/add-validation";
 import type { TuningCitation } from "../../db/schema";
 import type { EvidencePack } from "./evidence";
+import { playerTextBody } from "../model/player-text";
 import { mentionsDate, noteDate } from "./note-date";
 import { NUMBER_WORDS, presentationFailures, type Quotable, type RuleKey } from "./presentation";
-import { axisLabel, oneLine } from "./prompt";
+import { axisLabel } from "./prompt";
 import type { TuningResponse, TuningSuggestion } from "./response-schema";
 
 /**
@@ -54,11 +55,15 @@ export function validateSuggestions(args: {
   const keyCards = new Set((pack.strategy?.keyCards ?? []).map((k) => k.oracleId));
   const universal = new Set((pack.universal ?? []).map((u) => u.oracleId));
   // Everything the player wrote that a suggestion may quote: each note with its game's date, as
-  // the prompt renders it, and the intent, which has none. In the one-line form the prompt showed.
+  // the prompt renders it, and the intent, which has none. In the exact form the model was shown
+  // — `playerTextBody`, not `oneLine` alone — because a note or intent containing a tag-lookalike
+  // run is shown to the model with its brackets stripped; comparing against the unstripped
+  // original would fail a faithful quote and drop a good suggestion for a mismatch that never
+  // reached the model.
   const year = pack.year;
   const quotable: Quotable[] = [
-    ...pack.play.games.flatMap((g) => (g.note === null ? [] : [{ text: oneLine(g.note), date: noteDate(g.playedAt, year) }])),
-    ...(pack.intent === null ? [] : [{ text: oneLine(pack.intent), date: null }]),
+    ...pack.play.games.flatMap((g) => (g.note === null ? [] : [{ text: playerTextBody(g.note), date: noteDate(g.playedAt, year) }])),
+    ...(pack.intent === null ? [] : [{ text: playerTextBody(pack.intent), date: null }]),
   ];
   const [primary, partner] = pack.commanders;
   const deck = {
@@ -194,7 +199,7 @@ export function validateSuggestions(args: {
         const own = [s.rationale, s.rationaleShort, c.value];
         return pack.play.games.some((g) => {
           if (g.note === null || !mentionsDate(c.value, noteDate(g.playedAt, year))) return false;
-          const note = oneLine(g.note);
+          const note = playerTextBody(g.note);
           return own.some((t) => t.includes(`"${note}"`) || t.includes(`\u201c${note}\u201d`));
         });
       }
@@ -204,7 +209,7 @@ export function validateSuggestions(args: {
         // of them a real word: `ate` out of `late` is not a citation. A citation naming some
         // other purpose is not evidence of this one.
         if (pack.intent === null) return false;
-        const intent = oneLine(pack.intent);
+        const intent = playerTextBody(pack.intent);
         const part = c.value.trim().replace(/^["\u201c]|["\u201d]$/g, "").trim();
         if (c.value.includes(intent)) return true;
         if (!/[A-Za-z]{2,}/.test(part)) return false;

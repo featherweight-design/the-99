@@ -71,6 +71,16 @@ export function playerText(label: string, text: string, maxChars: number): strin
   if (text.length > maxChars) {
     throw new Error(`playerText: "${label}" is ${text.length} characters, over its ${maxChars}-character cap`);
   }
-  const safe = escapeTags(collapseLines(text));
-  return [`${label}:`, PLAYER_TEXT_OPEN, safe, PLAYER_TEXT_CLOSE].join("\n");
+  return [`${label}:`, PLAYER_TEXT_OPEN, playerTextBody(text), PLAYER_TEXT_CLOSE].join("\n");
+}
+
+/**
+ * The transform alone, with no tags and no cap check: what `playerText` puts BETWEEN its tags.
+ * A caller that re-derives what the model was shown for its own purposes — the tuning
+ * validator's quote matching, which compares a citation against the player's text as the model
+ * actually saw it — needs this and not `playerText`, because the model never saw a label or a
+ * tag pair around a note or intent on its own; it saw this exact string, inline in the pack.
+ */
+export function playerTextBody(text: string): string {
+  return escapeTags(collapseLines(text));
 }
