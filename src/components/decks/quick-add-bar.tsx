@@ -304,7 +304,10 @@ export function QuickAddBar({
           margins bleed it to the edges of the sticky container it sits in. */}
       {(open || noResults) && (
         <div
-          className="order-first -mx-[16px] md:-mx-[30px] -mt-[10px] md:-mt-[11px] mb-[10px] md:mb-[11px] px-[16px] md:px-[30px] py-[12px] max-h-[290px] md:max-h-[400px] overflow-y-auto"
+          // `overscroll-contain` (Hugh, 2026-10-03): stops a scroll of these results at
+          // either end from chaining into the page behind, when this dock sits under a
+          // scroll-locked dialog.
+          className="order-first -mx-[16px] md:-mx-[30px] -mt-[10px] md:-mt-[11px] mb-[10px] md:mb-[11px] px-[16px] md:px-[30px] py-[12px] max-h-[290px] md:max-h-[400px] overflow-y-auto overscroll-contain"
           style={{
             background: "var(--bg)",
             borderTop: "1px solid var(--border-strong)",

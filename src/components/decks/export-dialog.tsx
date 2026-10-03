@@ -342,7 +342,9 @@ function DialogContent({
       {/* Body. min-h-0 is load-bearing: a flex item's default min-height is its
           content, so without it the body refuses to shrink and the modal's
           max-height has nothing to give. */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      {/* `overscroll-contain` (Hugh, 2026-10-03): stops a scroll of this body at either
+          end from chaining into the page behind the dialog. */}
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
         {tab === "decklist" ? (
           /* Decklist tab body */
           <div style={{ margin: isMobile ? "14px 18px" : "0 24px" }}>
