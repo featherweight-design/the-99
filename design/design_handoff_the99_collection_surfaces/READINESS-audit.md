@@ -441,7 +441,8 @@ pinned head with or without the shelf, so the ruling does not change this budget
   about 323. In 11px Plex Mono every glyph is 6.6px, so `12,345` is about 40px and the row about
   336, and a four-digit `1,804` (33px) makes it about 329 against 328. A filter leaving more than
   999 unique cards is ordinary on a collection of about 2,900. The addendum's own safety net
-  (`min-width: 0` and an ellipsis on the order label) absorbs a few pixels. Decision: build the net
+  (`min-width: 0` and an ellipsis on the order label) absorbs a few pixels. The canvas's rendered
+  widths put the row at about 295 at 360, so in a real browser it probably fits with room. Decision: build the net
   as drawn. The head probe asserts row 2's `scrollWidth ≤ clientWidth` at 360 with
   `?sort=color&dir=desc` and a filter that leaves at least 1,000 results, as well as the addendum's
   case. If the net cuts more than the last few characters of the order, that comes back as a
