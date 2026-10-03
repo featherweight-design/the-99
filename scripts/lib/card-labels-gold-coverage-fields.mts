@@ -654,9 +654,9 @@ export const COVERAGE_FIELDS: GoldRow[] = [
     jobs: [
       j("role", "ramp", { rk: "extraLandDrop", af: "self", th: { stat: "counters", op: ">=", value: 3 } }),
       j("theme", "evasion", { rt: "creature", af: "self", th: { stat: "counters", op: ">=", value: 8 } }),
-      j("theme", "recursion", { rt: "permanent", af: "self", dest: null }),
+      j("theme", "recursion", { rt: "permanent", af: "self", dest: null, th: { stat: "counters", op: ">=", value: 8 } }),
     ],
-    why: "At 3+ charge counters an extra land each turn, at 8+ its own flying: each gated by a counter threshold. It CASTS a permanent spell from your graveyard once a turn, so recursion with `to` null: a card cast moves to no zone. Re-sample 2 wrote `to` battlefield.",
+    why: "At 3+ charge counters an extra land each turn, at 8+ its own flying and the graveyard cast below it, which sits in the same 8+ box: each gated by a counter threshold. It CASTS a permanent spell from your graveyard once a turn, so recursion with `to` null: a card cast moves to no zone. Re-sample 2 wrote `to` battlefield.",
   },
   {
     name: "Benalish Sleeper", klass: "affectsEach",
