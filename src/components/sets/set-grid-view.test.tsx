@@ -2135,7 +2135,10 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
         return { ...rect.call(this), height, bottom: height } as DOMRect;
       }
       if (this.hasAttribute("data-set-head-reserve")) {
-        return { ...rect.call(this), bottom: 200 - window.scrollY } as DOMRect;
+        // The height the hook last wrote, so a restore starts from the reserve the collapse
+        // left in the document rather than from jsdom's 0.
+        const height = Number.parseFloat(this.style.height) || 0;
+        return { ...rect.call(this), height, bottom: 200 - window.scrollY } as DOMRect;
       }
       return rect.call(this);
     };
@@ -2161,21 +2164,43 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     }
   });
 
-  // The other side of the same switch, and what makes the test above a measurement rather
-  // than a restatement of jsdom: with motion allowed the head and the reserve are animated
-  // TOGETHER, which is what holds the document still across the step.
-  it("animates the head and the reserve as one when motion is allowed", () => {
+  // H14 (Hugh's walk, 2026-10-02): "the collapse jumps to full height first". The head
+  // turns `sticky` in the commit that draws the bar, so a step from the open height pinned a
+  // full-height head over the grid and shrank it there — measured at 390x844 as `top 0,
+  // height 302, sticky` on the collapse's first frame. The collapse waits until the open head
+  // has scrolled entirely past, so there is no open form on screen to shrink: it SNAPS, and
+  // the reserve takes the difference in the same commit.
+  it("does not animate the collapse, and the reserve takes the difference at once", () => {
     const motion = stubMotion(false);
     try {
       const { container } = view([p("1"), p("2")], []);
       scrollTo(400);
       expect(isShy(container)).toBe(true);
+      expect(motion.animate).not.toHaveBeenCalled();
+      const reserve = container.querySelector("[data-set-head-reserve]") as HTMLElement;
+      expect(reserve.style.height).toBe("148px");
+    } finally {
+      motion.restore();
+    }
+  });
+
+  // The other side of the same switch, and what makes the reduced-motion test above a
+  // measurement rather than a restatement of jsdom: with motion allowed the RESTORE animates
+  // the head and the reserve TOGETHER, which is what holds the document still across the step.
+  it("animates the head and the reserve as one on the restore when motion is allowed", () => {
+    const motion = stubMotion(false);
+    try {
+      const { container } = view([p("1"), p("2")], []);
+      scrollTo(400);
+      expect(isShy(container)).toBe(true);
+      scrollTo(0);
+      expect(isShy(container)).toBe(false);
       expect(motion.animate).toHaveBeenCalledTimes(2);
       const [headFrames, headTiming] = motion.animate.mock.calls[0];
       const [spacerFrames, spacerTiming] = motion.animate.mock.calls[1];
-      expect(headFrames).toEqual([{ height: "200px" }, { height: "52px" }]);
-      // The mirror image: the reserve takes on exactly what the head gives up.
-      expect(spacerFrames).toEqual([{ height: "0px" }, { height: "148px" }]);
+      expect(headFrames).toEqual([{ height: "52px" }, { height: "200px" }]);
+      // The mirror image: the reserve gives back exactly what the head takes.
+      expect(spacerFrames).toEqual([{ height: "148px" }, { height: "0px" }]);
       expect(spacerTiming).toEqual(headTiming);
     } finally {
       motion.restore();
@@ -2234,11 +2259,14 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
       const { container } = view([p("1"), p("2")], []);
       scrollTo(400);
       expect(isShy(container)).toBe(true);
-      // The phone's own collapse is animated — the control for what follows.
+      // The phone's own RESTORE is animated — the control for what follows (the collapse
+      // snaps since H14, so it cannot be the control).
+      scrollTo(0);
       expect(animate).toHaveBeenCalled();
-      // And it finishes, so the head is recorded at the bar's height rather than at the one
-      // it is about to arrive at.
+      // And it finishes, so the head is recorded at its own height rather than mid-step.
       act(() => { for (const fn of finishers) fn(); });
+      scrollTo(400);
+      expect(isShy(container)).toBe(true);
       animate.mockClear();
       // And now the window widens. Since addendum 2 the desktop head collapses too, so the
       // crossing is no longer a one-way flip to the open form: the reopen fires because the
@@ -2612,7 +2640,7 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
   // `requestAnimationFrame` version this replaces is a regression in the other direction —
   // it cleared the arm before the settle it was covering — and only `probe:sets` can see
   // that one, because jsdom orders the frame and React's flush the way that happens to work.
-  it("still animates a collapse that follows a crossing it did not settle", () => {
+  it("still animates the step that follows a crossing it did not settle", () => {
     vi.useFakeTimers();
     const listeners: (() => void)[] = [];
     let wide = false;
@@ -2653,11 +2681,15 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
       expect(isShy(container)).toBe(false);
       expect(animate).not.toHaveBeenCalled();
       // And the reader scrolls for real. What takes the arm down is this scroll itself —
-      // the listener clears a stale arm before evaluating — so the step it causes animates
-      // like any other. The timer flush is only to let anything else pending settle first.
+      // the listener clears a stale arm before evaluating. The collapse it causes snaps by
+      // rule since H14, so the step that has to animate like any other is the restore after
+      // it. The timer flush is only to let anything else pending settle first.
       act(() => { vi.runAllTimers(); });
       scrollTo(900);
       expect(isShy(container)).toBe(true);
+      expect(animate).not.toHaveBeenCalled();
+      scrollTo(0);
+      expect(isShy(container)).toBe(false);
       expect(animate).toHaveBeenCalled();
     } finally {
       HTMLElement.prototype.getBoundingClientRect = rect;

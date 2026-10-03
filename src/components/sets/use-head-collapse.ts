@@ -533,7 +533,17 @@ export function useHeadCollapse({
     const settling = settlingCrossingRef.current;
     settlingCrossingRef.current = false;
     if (crossedBreakpoint) crossingPendingRef.current = true;
-    if (el === null || spacer === null || !stepping || crossedBreakpoint || settling
+    // The COLLAPSE is never animated, only the restore (H14, Hugh's walk 2026-10-02: "the
+    // collapse jumps to full height first"). The head turns `sticky` in the same commit that
+    // draws the bar, so a step from the open height pinned a full-height head over the top
+    // of the grid and shrank it there: measured at 390x844, `top 0, height 302, sticky` on
+    // the first frame of the collapse, then 81, 79 … 75. And there is nothing to animate on
+    // that edge: the decision waits until the open head has scrolled entirely past
+    // (`collapseAt` is the grid's top), so the reader never saw the open form shrink — only
+    // a form that was off-screen reappearing at full height. The restore keeps its step,
+    // since that head is in the flow and grows into a band the reader is looking at.
+    const collapsing = shy;
+    if (el === null || spacer === null || !stepping || collapsing || crossedBreakpoint || settling
       || prefersReducedMotion() || typeof el.animate !== "function"
       || from === null || to === null || Math.abs(to - from) < 1) {
       // A bar height measured at one width must not decide a threshold at the other. The
@@ -544,6 +554,13 @@ export function useHeadCollapse({
         barHeightRef.current = null;
         barDesktopRef.current = null;
       }
+      // Switched off BEFORE `sizeSpacer`, never after. Its reads force a layout with the bar
+      // already drawn and the reserve not yet grown, and with anchoring live in that layout
+      // Chrome moved the reader by the reserve's height: measured at 390x844, a collapse at
+      // y=416 landed at y=642, the grid 226px up the screen, on every snapped collapse
+      // (reduced motion's included, which took this branch before H14 too). jsdom does no
+      // anchoring, so only a browser can see this one.
+      if (containerRef.current !== null) containerRef.current.style.overflowAnchor = "none";
       sizeSpacer();
       if (containerRef.current !== null) {
         // The anchoring switch still applies: the leap is the height change's doing, not the
