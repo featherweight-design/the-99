@@ -42,7 +42,7 @@ const card = (over: Partial<BrowseListCard> = {}): BrowseListCard =>
 function view() {
   return (
     <CardDetailProvider fetchCard={async () => null}>
-      <CollectionBrowser cards={[card()]} ownedSets={[]} availabilityOk hasCollection />
+      <CollectionBrowser cards={[card()]} ownedSets={[]} availabilityOk />
     </CardDetailProvider>
   );
 }
@@ -189,7 +189,7 @@ describe("CollectionBrowser — what the server draws", () => {
   const html = (viewHint?: ViewHint) =>
     renderToString(
       <CardDetailProvider fetchCard={async () => null}>
-        <CollectionBrowser cards={[art]} ownedSets={[]} availabilityOk hasCollection viewHint={viewHint} />
+        <CollectionBrowser cards={[art]} ownedSets={[]} availabilityOk viewHint={viewHint} />
       </CardDetailProvider>,
     );
 

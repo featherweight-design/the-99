@@ -134,7 +134,6 @@ export default async function CollectionPage({
         wire={wire}
         ownedSets={ownedSets}
         availabilityOk={availability !== null}
-        hasCollection={stats.totalCards > 0}
         viewHint={viewHint}
       />
     </section>

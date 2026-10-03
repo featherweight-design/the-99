@@ -26,13 +26,11 @@ export function CollectionClient({
   wire,
   ownedSets,
   availabilityOk,
-  hasCollection,
   viewHint,
 }: {
   wire: CollectionWire;
   ownedSets: OwnedSetMeta[];
   availabilityOk: boolean;
-  hasCollection: boolean;
   /** The page's two view-cookie hints. Absent reads as no hint, as `CollectionBrowser` reads it. */
   viewHint?: ViewHint;
 }) {
@@ -89,7 +87,6 @@ export function CollectionClient({
         served={cards}
         ownedSets={ownedSets}
         availabilityOk={availabilityOk}
-        hasCollection={hasCollection}
         viewHint={viewHint}
       />
     </CardDetailProvider>

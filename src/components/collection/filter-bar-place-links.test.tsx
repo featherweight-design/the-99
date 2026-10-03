@@ -24,7 +24,6 @@ function bar(setOptions: SetOption[], filters: Partial<Record<string, unknown>> 
       onClearAll={() => {}}
       resultLine="Showing 0 unique · 0 total"
       availabilityOk
-      hasCollection
       announcement=""
       onAnnounce={() => {}}
       onFiltersChange={() => {}}

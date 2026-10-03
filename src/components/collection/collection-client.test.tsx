@@ -67,7 +67,6 @@ function mount(input?: BrowseListCard[] | CollectionWire) {
       wire={wire}
       ownedSets={[]}
       availabilityOk
-      hasCollection
     />,
   );
 }
@@ -136,7 +135,6 @@ describe("CollectionClient", () => {
         wire={wireOf([card("o1", "Smothering Tithe"), card("o2", "Sol Ring")])}
         ownedSets={[]}
         availabilityOk
-        hasCollection
       />,
     );
     expect(screen.getByTestId("o1").textContent).toBe(
@@ -158,7 +156,7 @@ describe("CollectionClient", () => {
       });
     });
     view.rerender(
-      <CollectionClient wire={wire} ownedSets={[]} availabilityOk hasCollection />,
+      <CollectionClient wire={wire} ownedSets={[]} availabilityOk />,
     );
     expect(screen.getByTestId("o1").textContent).toContain("ELD");
   });

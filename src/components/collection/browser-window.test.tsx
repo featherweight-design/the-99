@@ -57,7 +57,7 @@ function mount() {
   const rows = decodeCollection(cutCollectionWindow(encodeCollection(all, null), keep));
   return render(
     <CardDetailProvider fetchCard={async () => null}>
-      <CollectionBrowser cards={rows} ownedSets={[]} availabilityOk hasCollection />
+      <CollectionBrowser cards={rows} ownedSets={[]} availabilityOk />
     </CardDetailProvider>,
   );
 }

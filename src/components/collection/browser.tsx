@@ -231,7 +231,6 @@ export function CollectionBrowser({
   served: servedProp,
   ownedSets,
   availabilityOk,
-  hasCollection,
   viewHint = NO_VIEW_HINT,
 }: {
   /**
@@ -254,12 +253,6 @@ export function CollectionBrowser({
    * reason. No banner (Addendum 2, implementation notes).
    */
   availabilityOk: boolean;
-  /**
-   * Whether the reader has a collection AT ALL, from the page's own stats. Not derived
-   * from `cards`: that array holds catalog-backed rows only, so a collection made
-   * entirely of unmatched cards would read as no collection and hide the sets entry.
-   */
-  hasCollection: boolean;
   /**
    * What the page read from the two view cookies (`ui/view-cookie`): the stored view choice and
    * whether the window was wide on a past visit. Hints for the SERVER render only; absent, the
@@ -646,7 +639,6 @@ export function CollectionBrowser({
         sort={sort}
         view={resolvedView}
         setOptions={setOptions}
-        hasCollection={hasCollection}
         typeOptions={typeOptions}
         availabilityOptions={availabilityOptions}
         availabilityOk={availabilityOk}

@@ -45,7 +45,7 @@ const fetchCard = async (id: string) => CARDS[id] ?? null;
 function tree(cards: BrowseListCard[]) {
   return (
     <CardDetailProvider fetchCard={fetchCard}>
-      <CollectionBrowser cards={cards} ownedSets={[]} availabilityOk hasCollection />
+      <CollectionBrowser cards={cards} ownedSets={[]} availabilityOk />
     </CardDetailProvider>
   );
 }

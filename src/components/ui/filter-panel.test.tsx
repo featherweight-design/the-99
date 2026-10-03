@@ -755,7 +755,6 @@ describe("FilterPanel Clear announcement", () => {
       onClearAll={() => {}}
       resultLine="Showing 0 unique · 0 total"
     availabilityOk
-        hasCollection
         announcement=""
         onAnnounce={() => {}}
         onFiltersChange={onFiltersChange}
@@ -903,7 +902,6 @@ describe("Type ▾ in the filter bar", () => {
       onClearAll={() => {}}
       resultLine="Showing 0 unique · 0 total"
     availabilityOk
-        hasCollection
         announcement=""
         onAnnounce={() => {}}
         onFiltersChange={onFiltersChange}
@@ -994,7 +992,6 @@ describe("FilterBar sort and color controls", () => {
       onClearAll={() => {}}
       resultLine="Showing 0 unique · 0 total"
     availabilityOk
-        hasCollection
         announcement=""
         onAnnounce={() => {}}
         onFiltersChange={onFiltersChange}
