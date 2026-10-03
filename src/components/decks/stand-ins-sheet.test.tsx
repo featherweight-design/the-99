@@ -410,6 +410,35 @@ describe("StandInsSheet row preview", () => {
       vi.useRealTimers();
     }
   });
+
+  // Hugh's staging walk (2026-10-03): every stand-in previewed and the card being replaced did not.
+  it("previews the card being replaced, like every stand-in below it", async () => {
+    const ORIGINAL_ART = "https://cards.example/anguished-unmaking.jpg";
+    Object.defineProperty(window, "matchMedia", {
+      writable: true, configurable: true,
+      value: (query: string) => ({
+        matches: query === "(hover: hover)", media: query, onchange: null,
+        addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {},
+        dispatchEvent: () => false,
+      }),
+    });
+    const read = withArt as unknown as { original: Record<string, unknown> };
+    loadStandInsAction.mockResolvedValue({ ...read, original: { ...read.original, imageUri: ORIGINAL_ART } } as unknown as StandInsRead);
+    await open();
+    vi.useFakeTimers();
+    try {
+      const line = screen.getByTestId("stand-ins-replacing");
+      fireEvent.mouseEnter(line, { clientX: 200, clientY: 120 });
+      fireEvent.mouseMove(line, { clientX: 206, clientY: 120 });
+      act(() => void vi.advanceTimersByTime(240));
+      expect(screen.getByTestId("hover-preview").getAttribute("style")).toContain(ORIGINAL_ART);
+      fireEvent.pointerDown(line);
+      act(() => void vi.advanceTimersByTime(1000));
+      expect(screen.queryByTestId("hover-preview")).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 // E3 (About launch entries): the group and its rows are exported so the About figure can draw one
