@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { act, render, screen } from "@testing-library/react";
 
-import { CommanderRow, type CommanderRowView } from "./commander-row";
+import { CommanderRow, EAGER_ART_ROWS, type CommanderRowView } from "./commander-row";
 import { commanderRowCopy } from "../../lib/copy/commander-row";
 import { commandersCopy, discoverCopy } from "../../lib/copy/lanes";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
@@ -415,5 +415,47 @@ describe("CommanderRow · nothing is read off ownership", () => {
 
     expect(screen.getAllByRole("link")).toHaveLength(1);
     expect(screen.queryAllByRole("button")).toHaveLength(0);
+  });
+});
+
+describe("the row's art and its position", () => {
+  const ART = "https://cards.scryfall.io/art_crop/front/a/b/ab.jpg";
+  const art = (container: HTMLElement) => container.querySelector<HTMLElement>(".art-wash-art")!;
+
+  it("draws the first screen's art at once, never waiting on the viewport", () => {
+    // An observer that never reports: with jsdom's missing one, every row would load at once and
+    // this would pass over a gate that deferred the first screen too.
+    class SilentObserver {
+      observe() {}
+      disconnect() {}
+    }
+    vi.stubGlobal("IntersectionObserver", SilentObserver);
+    try {
+      const { container } = render(<CommanderRow item={view({ artCropUri: ART })} position={EAGER_ART_ROWS - 1} />);
+      expect(art(container).style.backgroundImage).toContain(ART);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("holds a lower row's art until it nears the viewport, keeping the layer's box", () => {
+    let fire: (() => void) | null = null;
+    class FakeObserver {
+      constructor(private cb: IntersectionObserverCallback) {}
+      observe(el: Element) {
+        fire = () => this.cb([{ isIntersecting: true, target: el } as IntersectionObserverEntry], this as unknown as IntersectionObserver);
+      }
+      disconnect() {}
+    }
+    vi.stubGlobal("IntersectionObserver", FakeObserver);
+    try {
+      const { container } = render(<CommanderRow item={view({ artCropUri: ART })} position={EAGER_ART_ROWS} />);
+      expect(art(container).style.backgroundImage).toBe("");
+      expect(art(container).style.width).not.toBe("");
+      act(() => fire!());
+      expect(art(container).style.backgroundImage).toContain(ART);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

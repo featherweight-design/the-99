@@ -1136,3 +1136,22 @@ describe("DiscoveryView Printed in", () => {
     expect(shown()).toEqual(["Alpha", "Beta", "Gamma"]);
   });
 });
+
+describe("DiscoveryView — the rows' art and their place in the list", () => {
+  it("draws the first screen's art at once and holds the rows below it", () => {
+    // An observer that never reports, so a held row stays held while the test reads it.
+    vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} });
+    try {
+      const items = Array.from({ length: 8 }, (_, i) =>
+        item({ slug: `art-${i}`, name: `Art Commander ${i}`, rank: i + 1, artCropUri: `https://cards.scryfall.io/art_crop/front/${i}.jpg` }),
+      );
+      const { container } = render(<DiscoveryView encoded={list({ items, candidateCount: 8 })} />);
+      const layers = [...container.querySelectorAll<HTMLElement>(".art-wash-art")];
+      expect(layers.length).toBeGreaterThan(5);
+      expect(layers.slice(0, 5).every((l) => l.style.backgroundImage.includes("art_crop"))).toBe(true);
+      expect(layers[5].style.backgroundImage).toBe("");
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});

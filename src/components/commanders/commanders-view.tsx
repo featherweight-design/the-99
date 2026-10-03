@@ -695,6 +695,7 @@ export function CommandersView({
                       delta and the availability mode no longer reach the row —
                       they belong to surfaces that survived it. */}
                   <CommanderRow
+                    position={i}
                     item={{
                       slug: r.slug,
                       name: r.name,

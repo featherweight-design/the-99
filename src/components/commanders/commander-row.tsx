@@ -242,7 +242,11 @@ function PriceFigure({ price, priceOk }: { price: PriceSlotValue; priceOk: boole
   );
 }
 
-export function CommanderRow({ item }: { item: CommanderRowView }) {
+/** Rows above this position draw their art eagerly: they are the first screen, which the reader
+    sees while the page loads. Every row below waits for hydration and the viewport. */
+export const EAGER_ART_ROWS = 5;
+
+export function CommanderRow({ item, position = 0 }: { item: CommanderRowView; position?: number }) {
   // An unmeasured commander keeps its own denominator: `/100` under a score out
   // of 40 would be a reading nobody took.
   //
@@ -310,6 +314,7 @@ export function CommanderRow({ item }: { item: CommanderRowView }) {
           labelAtPx={LABEL_AT_PX}
           artCropUri={item.artCropUri}
           colorIdentity={item.colorIdentity}
+          deferArt={position >= EAGER_ART_ROWS}
         />
 
         <div className="relative flex h-full items-end gap-[10px] p-[12px_13px] sm:p-[20px_24px]">

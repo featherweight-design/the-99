@@ -816,6 +816,7 @@ export function DiscoveryView({
                       LIST-level fact: one read serves every row, so a failed one
                       omits the figure on all of them rather than on some. */}
                   <CommanderRow
+                    position={i}
                     item={{
                       slug: item.slug,
                       name: item.name,
