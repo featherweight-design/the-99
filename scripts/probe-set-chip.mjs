@@ -113,7 +113,7 @@ const COUNTING = [
 async function desktop(page, t) {
   await page.setViewportSize({ width: 1300, height: 900 });
   await page.goto(`${BASE}/collection?view=grid`, { waitUntil: "networkidle" });
-  const trigger = onPage(page, `button[aria-label^="${t.aria}"]:visible`).first();
+  const trigger = onPage(page, `button[aria-label*="${t.aria}"]:visible`).first();
   // Null rather than a 30s wait when the label is missing, so a build without it reports quickly.
   const label = () => trigger.locator("[data-trigger-label]").textContent({ timeout: 2_000 }).catch(() => null);
   const pick = async (nth) => {
@@ -127,7 +127,7 @@ async function desktop(page, t) {
   };
 
   const at0 = await readRow(trigger);
-  const own = at0.findIndex((c) => c.name.startsWith(t.aria));
+  const own = at0.findIndex((c) => c.name.includes(t.aria));
   report(own >= 0 && at0.length > 1, `1300 ${t.name}: the trigger has other controls on its row to measure`, `${at0.length} controls, it at ${own}`);
   report((await label()) === t.labels[0], `1300 ${t.name}: nothing picked reads ${t.labels[0]}`, await label());
 

@@ -145,7 +145,7 @@ async function banner(page) {
 }
 
 async function openPanel(page) {
-  await page.getByRole("button", { name: /^Filter by availability/ }).click();
+  await page.getByRole("button", { name: /Filter by availability/ }).click();
   await page.waitForTimeout(500);
 }
 

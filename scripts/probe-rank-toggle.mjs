@@ -221,7 +221,7 @@ try {
 
     // A colour filter hides rows and leaves a GAP: the numerals are global Fit
     // ranks and mean nothing if they renumber under a filter.
-    const pip = onPageRole(page, "button", /^Filter by /).first();
+    const pip = onPageRole(page, "switch", /^White$/).first();
     if ((await pip.count()) > 0) {
       await pip.click();
       await page.waitForTimeout(1200);
