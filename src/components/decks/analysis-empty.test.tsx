@@ -1,7 +1,7 @@
 // The overview check's *See which →* in the credit note's slot (deck notices HANDOFF §6). The note
 // is the press's `aria-describedby` target, so the description must read the note's words alone
 // and never the control after them; and a blocked press (F13) draws neither.
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { AnalysisEmpty } from "./analysis-empty";
@@ -58,5 +58,38 @@ describe("AnalysisEmpty's description field (H35, STATES §1)", () => {
     render(<AnalysisEmpty phase="idle" onRequest={() => {}} description="Same." onSaveDescription={onSaveDescription} />);
     fireEvent.blur(screen.getByLabelText("Deck description"));
     expect(onSaveDescription).not.toHaveBeenCalled();
+  });
+
+  // Pre-open review: a refused or thrown save must never read, and must not leave the field
+  // stuck looking busy.
+  it("does not read, and shows the refusal, when the save is refused", async () => {
+    const onSaveDescription = vi.fn(async () => ({ ok: false as const, message: "That did not save. Try again." }));
+    const onRequest = vi.fn();
+    render(<AnalysisEmpty phase="idle" onRequest={onRequest} description={null} onSaveDescription={onSaveDescription} />);
+    fireEvent.change(screen.getByLabelText("Deck description"), { target: { value: "Grind it out." } });
+    fireEvent.click(screen.getByRole("button", { name: "Analyze" }));
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    expect(onRequest).not.toHaveBeenCalled();
+    expect(screen.getByText("That did not save. Try again.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Deck description")).not.toHaveAttribute("readonly");
+  });
+
+  it("does not read, and resets the saving state, when the save rejects", async () => {
+    const onSaveDescription = vi.fn(async () => { throw new Error("network"); });
+    const onRequest = vi.fn();
+    render(<AnalysisEmpty phase="idle" onRequest={onRequest} description={null} onSaveDescription={onSaveDescription} />);
+    fireEvent.change(screen.getByLabelText("Deck description"), { target: { value: "Grind it out." } });
+    fireEvent.click(screen.getByRole("button", { name: "Analyze" }));
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    expect(onRequest).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Deck description")).not.toHaveAttribute("readonly");
+  });
+
+  // Pre-open review: a revalidated description must not clobber an unsaved, in-progress edit.
+  it("keeps an unsaved edit across a revalidation that brings a different description", () => {
+    const { rerender } = render(<AnalysisEmpty phase="idle" onRequest={() => {}} description={null} />);
+    fireEvent.change(screen.getByLabelText("Deck description"), { target: { value: "Still typing…" } });
+    rerender(<AnalysisEmpty phase="idle" onRequest={() => {}} description="Saved from the header." />);
+    expect(screen.getByLabelText("Deck description")).toHaveValue("Still typing…");
   });
 });

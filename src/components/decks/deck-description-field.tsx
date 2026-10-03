@@ -59,13 +59,14 @@ export function DeckDescriptionField({
         readOnly={saving}
         placeholder={copy.placeholder}
         aria-label={copy.fieldAria}
-        className="w-full resize-none rounded-[8px] font-sans focus-visible:outline-none"
+        // 16px below `md`: iOS Safari zooms the viewport on focusing any input under 16px, and
+        // this field is shared at both widths (pre-open review) — `md:text-[13.5px]` is the
+        // desktop size the retired single-field editor used.
+        className="w-full resize-none rounded-[8px] font-sans text-[16px] leading-[1.5] focus-visible:outline-none md:text-[13.5px]"
         style={{
           background: "var(--surface)",
           border: `1px solid ${focused ? "var(--accent)" : "var(--border-strong)"}`,
           padding: "10px 12px",
-          fontSize: 13.5,
-          lineHeight: 1.5,
           color: "var(--fg)",
         }}
       />

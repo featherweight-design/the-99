@@ -76,4 +76,29 @@ describe("useDeckHeaderEdit (H35, STATES-deck-description.md §2)", () => {
     });
     expect(renameDeck).not.toHaveBeenCalled();
   });
+
+  // Pre-open review: both widths mount this hook, so a save at one must reach the other's
+  // still-closed editor, and a description saved from the empty-state field must reach the
+  // pencil's own draft — both while an UNEDITED field, never clobbering one mid-edit.
+  it("follows an unedited field to a new prop value", () => {
+    const onDone = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ name, description }) => useDeckHeaderEdit("d1", name, description, onDone),
+      { initialProps: { name: "Old Name", description: "Old desc" } },
+    );
+    rerender({ name: "New Name", description: "New desc" });
+    expect(result.current.name).toBe("New Name");
+    expect(result.current.description).toBe("New desc");
+  });
+
+  it("does not clobber a field the reader is mid-edit on", () => {
+    const onDone = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ name, description }) => useDeckHeaderEdit("d1", name, description, onDone),
+      { initialProps: { name: "Old Name", description: "Old desc" } },
+    );
+    act(() => { result.current.setName("Still typing…"); });
+    rerender({ name: "Saved Elsewhere", description: "Old desc" });
+    expect(result.current.name).toBe("Still typing…");
+  });
 });

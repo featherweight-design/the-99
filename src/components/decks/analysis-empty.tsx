@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 
 import type { Bracket } from "../../lib/bracket/types";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
+import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { BracketMark } from "./bracket-mark";
 import { DeckDescriptionField } from "./deck-description-field";
@@ -72,21 +73,32 @@ export function AnalysisEmpty({
   const [savingDescription, setSavingDescription] = useState(false);
   const [descriptionRefused, setDescriptionRefused] = useState<string | null>(null);
   // A new description from the page (another tab's edit, a revalidate) replaces the held draft,
-  // adjusted during render rather than in an effect — unless the reader is mid-edit here.
+  // adjusted during render rather than in an effect — but only while the draft still matches
+  // what was last seen: a reader mid-edit here must not have their unsaved text overwritten by
+  // a revalidation that landed from, say, their own header save (pre-open review).
   const [seenDescription, setSeenDescription] = useState(description ?? null);
   if (seenDescription !== description) {
+    const unedited = draft.trim() === (seenDescription ?? "").trim();
     setSeenDescription(description ?? null);
-    setDraft(description ?? "");
+    if (unedited) setDraft(description ?? "");
   }
-  async function saveDescription(): Promise<void> {
-    if (!onSaveDescription) return;
+  async function saveDescription(): Promise<DeckMutationResult> {
+    if (!onSaveDescription) return { ok: true };
     const trimmed = draft.trim();
-    if (trimmed === (description ?? "").trim()) return;
+    if (trimmed === (description ?? "").trim()) return { ok: true };
     setSavingDescription(true);
     setDescriptionRefused(null);
-    const result = await onSaveDescription(trimmed);
-    setSavingDescription(false);
-    if (!result.ok) setDescriptionRefused(result.message);
+    try {
+      const result = await onSaveDescription(trimmed);
+      if (!result.ok) setDescriptionRefused(result.message);
+      return result;
+    } catch {
+      const result: DeckMutationResult = { ok: false, message: deckDescriptionCopy.description.refused };
+      setDescriptionRefused(result.message);
+      return result;
+    } finally {
+      setSavingDescription(false);
+    }
   }
   const shownNote = blocked === null ? note : null;
   const text = phase === "loading"
@@ -153,7 +165,10 @@ export function AnalysisEmpty({
                 // Nothing to save: read now, synchronously — a caller with no save wired up
                 // (or no pending edit) gets exactly the old one-press behavior.
                 if (!onSaveDescription || draft.trim() === (description ?? "").trim()) { onRequest(); return; }
-                void saveDescription().then(onRequest);
+                // A refused or thrown save leaves the field as it was (including `savingDescription`
+                // reset by `saveDescription`'s own `finally`) and never reads — reading over an
+                // unsaved, refused description would silently drop it (pre-open review).
+                void saveDescription().then((result) => { if (result.ok) onRequest(); });
               }}
               aria-disabled={disabled || undefined}
               aria-describedby={blocked ? "analysis-blocked" : shownNote ? noteId : undefined}

@@ -33,6 +33,24 @@ export function useDeckHeaderEdit(
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  // A field follows the page's new value while it is UNEDITED, independently of the other
+  // field (pre-open review): both widths mount this hook, so saving at one and resizing opens
+  // the other with the field's old value, and a description saved through the empty-state
+  // field left the pencil's own draft stale until the next remount. Adjusted during render,
+  // never in an effect, so the stale value never paints.
+  const [seenName, setSeenName] = useState(currentName);
+  if (seenName !== currentName) {
+    const unedited = name.trim() === seenName.trim();
+    setSeenName(currentName);
+    if (unedited) setName(currentName);
+  }
+  const [seenDescription, setSeenDescription] = useState(currentDescription ?? null);
+  if (seenDescription !== currentDescription) {
+    const unedited = description.trim() === (seenDescription ?? "").trim();
+    setSeenDescription(currentDescription ?? null);
+    if (unedited) setDescription(currentDescription ?? "");
+  }
+
   const trimmedName = name.trim();
   const changed = trimmedName !== currentName.trim() || description.trim() !== (currentDescription ?? "").trim();
   const canSave = !isPending && trimmedName.length > 0 && changed;
