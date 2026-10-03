@@ -284,6 +284,31 @@ describe("the card-labels spend bounds", () => {
     }
   });
 
+  it("runs WEEKLY, after the catalog refresh, off the hour", () => {
+    // Hugh, 2026-10-03: a weekly new-set job, so the weekly $9 and $5 bound ONE run. The cron's
+    // run id is the ISO week, so a daily cron spent the same weekly budget across up to seven
+    // runs; one run a week is what makes the per-run figures true. A dash, a list or a `*` in
+    // the day-of-week field would bring a second run into the same week.
+    // EVERY schedule entry, and exactly one: a second `- cron:` line would be a second run a week.
+    const crons = [...workflow.matchAll(/^\s*- cron: ['"]?([^'"]+?)['"]?\s*$/gm)].map((m) => m[1]);
+    expect(crons).toHaveLength(1);
+    const cron = crons[0];
+    const [minute, hour, dom, month, dow] = cron!.split(" ");
+    expect([dom, month]).toEqual(["*", "*"]);
+    expect(dow).toMatch(/^[0-6]$/);
+    // ONE minute of one hour: `*` in either field is NaN to the checks below and would pass them
+    // while firing up to 60 times that day, under the same week's id.
+    expect(minute).toMatch(/^[0-9]{1,2}$/);
+    expect(hour).toMatch(/^[0-9]{1,2}$/);
+    // Well after `Catalog refresh` (09:00 UTC), or the new set is not in the catalog yet. GitHub
+    // has started that cron 8.5 hours late (17:27Z on 2026-09-28), so "after 09:00" is not
+    // enough margin. And never at :00, where every scheduled job on the platform lands at once.
+    expect(Number(hour)).toBeGreaterThanOrEqual(18);
+    expect(Number(minute)).not.toBe(0);
+    // And the exact cadence Hugh ruled, so a different day or time is a deliberate edit here too.
+    expect(cron).toBe("17 21 * * 2");
+  });
+
   it("agrees with the script about the highest report line a dispatch may ask for", () => {
     // `build-card-labels.ts` holds a SECOND COPY of this ceiling, because the pause has to tell
     // the operator whether a dispatch can resume the run at all — and its previous two wordings
