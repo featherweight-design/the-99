@@ -510,17 +510,16 @@ describe("useBackDismiss", () => {
   // open re-homes the page (decision 6), and the self-pop this hook issues to clean
   // up its history entry then runs the browser's own scroll restoration against an
   // offset that no longer describes the shorter list — landing mid-list instead of
-  // where the edit left the reader. A capture-phase listener here stands in for
-  // that restoration, moving `scrollY` partway through the same popstate the
-  // self-pop's `back()` produces; this hook's own handler, in the bubble phase,
-  // has to win the argument and leave the reader where they were at `unmount`.
-  // Found by Copilot's round-1 review: landing the simulated restoration DURING
-  // `popstate`'s own dispatch only exercises the loop's first, synchronous call —
-  // the production bug is Firefox's restoration landing LATER, outside that task,
-  // which is exactly why the fix reasserts over 30 frames rather than once. The
-  // disturbance here lands ten frames in, well after the self-pop's `popstate`
-  // has already come and gone, so only a reassertion that keeps running past
-  // frame one can pass this.
+  // where the edit left the reader.
+  //
+  // `disturbLater` stands in for that restoration landing OUTSIDE the task the
+  // self-pop's `popstate` runs in — ten `requestAnimationFrame`s after `unmount`,
+  // well after `pinScrollY`'s own first (also RAF-scheduled, never synchronous)
+  // reassertion has already come and gone. Found by Copilot's round-1 review: an
+  // earlier version of this test moved `scrollY` from a capture-phase `popstate`
+  // listener instead, landing the disturbance inside that same task — which only
+  // exercised `pinScrollY`'s first reassertion, so the test still passed with the
+  // 30-frame loop (the actual fix for Firefox's delayed restoration) deleted.
   it("pins the pre-close scroll offset back after its self-pop, even against a delayed disturbance", async () => {
     window.scrollY = 900;
     const { hook } = open();
