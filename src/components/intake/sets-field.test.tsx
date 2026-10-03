@@ -20,6 +20,26 @@ describe("the Sets field", () => {
   });
 });
 
+describe("the Sets field's copy override (H35 PR 2, \"Kept for this deck\")", () => {
+  const limitsCopy = {
+    triggerLabel: "Set",
+    triggerCount: (n: number) => (n === 0 ? "Set: Any" : n === 1 ? "Set 1" : `Sets ${n}`),
+    sheetTitle: "Set",
+    removeSet: (name: string) => `Drop ${name}`,
+  };
+
+  it("draws the overridden trigger text instead of the default count", () => {
+    render(<SetsField sets={sets} value={[]} onChange={vi.fn()} wide copy={limitsCopy} />);
+    expect(screen.getByText("Set: Any")).toBeTruthy();
+    expect(screen.queryByText("Sets 0")).toBeNull();
+  });
+
+  it("names the chip's remove button from the override, not the default", () => {
+    render(<SetsField sets={sets} value={["hob"]} onChange={vi.fn()} wide copy={limitsCopy} />);
+    expect(screen.getByRole("button", { name: "Drop The Hobbit" })).toBeTruthy();
+  });
+});
+
 describe("the Sets panel's options", () => {
   it("speak a set's name and code, with no count", () => {
     render(<SetsField sets={sets} value={[]} onChange={vi.fn()} wide />);

@@ -334,6 +334,19 @@ export const decks = pgTable("decks", {
    */
   shoppingLimitCents: integer("shopping_limit_cents"),
   /**
+   * "Kept for this deck" (H35, PR 2): what Suggested changes' own swaps stay inside, held per
+   * deck rather than per run. All three null until the player sets them — NO SEEDING, unlike
+   * `shoppingLimitCents`'s $10 default, because an unset limit here means "no limit" rather than
+   * a value the box still has to show. Read, folded into `tuningFingerprint`, and validated the
+   * same way `answerBudgetCents` validates the fill's.
+   */
+  tuningCapCents: integer("tuning_cap_cents"),
+  /** Lower-case set codes, or null for every set. Same shape as `SetsField`'s picker. */
+  tuningSets: text("tuning_sets").array(),
+  /** Only cards the player owns. Null reads as false — "Any card" — same as `answerOwnedOnly`'s
+   *  own default, but nullable here because this one is never seeded at creation. */
+  tuningOwnedOnly: boolean("tuning_owned_only"),
+  /**
    * What the player asked for in Help me choose, when the deck was started from it (F1): the budget
    * cap in whole dollars as cents, the bracket, and the card to build around. Stored as data, so a
    * fill that failed at creation has them when its retry (`fillDeck`) runs: the same budget and
@@ -385,6 +398,10 @@ export const decks = pgTable("decks", {
     check(
       "decks_shopping_limit_check",
       sql`${t.shoppingLimitCents} is null or (${t.shoppingLimitCents} >= 100 and ${t.shoppingLimitCents} % 100 = 0)`,
+    ),
+    check(
+      "decks_tuning_cap_check",
+      sql`${t.tuningCapCents} is null or (${t.tuningCapCents} >= 100 and ${t.tuningCapCents} % 100 = 0)`,
     ),
     check(
       "decks_partner_distinct",

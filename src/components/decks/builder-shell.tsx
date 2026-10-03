@@ -90,6 +90,7 @@ import { openNotices, peekNotices } from "../../lib/notices/actions";
 import { NOTICES_PARAM } from "../../lib/notices/arrival";
 import type { DeckNotices } from "../../lib/notices/read";
 import { mirrorUrl } from "../../lib/url/mirror";
+import type { PrintedInSet } from "../../lib/sets/printed-in";
 
 // Shared by both shelf paths — the one that is already on Consider and the one
 // that has to switch views first — so they land identically.
@@ -127,6 +128,8 @@ interface BuilderShellProps {
    *  constant would draw one deck's recommendation on every deck. */
   mix: RecommendedMix;
   deck: DeckDetail;
+  /** "Kept for this deck"'s Set picker (H35, PR 2) — every set that printed a commander. */
+  printedInSets?: readonly PrintedInSet[];
   suggestions: DeckSuggestionWithFacts[];
   degraded: boolean;
   firstRun: boolean;
@@ -229,6 +232,7 @@ const NO_GAMES: GameSummary = {
 export function BuilderShell({
   mix,
   deck,
+  printedInSets = [],
   suggestions,
   degraded,
   firstRun,
@@ -1584,7 +1588,9 @@ export function BuilderShell({
                         marked: gameSummary.marked,
                         cards: built,
                         intent: deck.intent,
+                        limits: deck.limits ?? { capCents: null, sets: [], ownedOnly: false },
                       }}
+                      printedInSets={printedInSets}
                       onLogGame={() => setView("games")}
                       onSettled={onTuningSettled}
                     />

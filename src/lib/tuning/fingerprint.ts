@@ -36,6 +36,14 @@ export type FingerprintInput = {
    * hashes exactly as before and no gate in production reopens for a feature switched off there.
    */
   locks?: readonly string[];
+  /**
+   * "Kept for this deck" (H35, PR 2): a limit change must reopen the gate, same as an edit to the
+   * list does — a run against the old cap/sets/owned-only answers a question the player no
+   * longer asked. Unconditional, like `intent` and `collection`: every deck gets this field the
+   * day it ships, so every gate reopens once on deploy — the same one-time "changed" a
+   * `PROMPT_VERSION` bump already causes deliberately, not a bug to guard against.
+   */
+  limits: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean };
 };
 
 const byteOrder = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
@@ -56,6 +64,11 @@ export function tuningFingerprint(input: FingerprintInput): string {
       intent: input.intent ?? "",
       collection: input.collection ?? "",
       ...(input.locks && input.locks.length > 0 ? { locks: [...input.locks].sort(byteOrder) } : {}),
+      limits: {
+        capCents: input.limits.capCents,
+        sets: [...input.limits.sets].sort(byteOrder),
+        ownedOnly: input.limits.ownedOnly,
+      },
     }))
     .digest("hex");
 }

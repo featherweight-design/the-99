@@ -41,7 +41,10 @@ const results: TuningState = {
   ...fresh, run: okRun, items: [item], lastOkFingerprint: "fp", lastOkAt: at, stale: false, gameCount: 5,
 };
 
-const facts: TuningFacts = { gameCount: 0, noteCount: 0, fix: null, marked: 0, cards: 99, intent: "go wide" };
+const facts: TuningFacts = {
+  gameCount: 0, noteCount: 0, fix: null, marked: 0, cards: 99, intent: "go wide",
+  limits: { capCents: null, sets: [], ownedOnly: false },
+};
 
 function deps(states: TuningState[], over: Partial<TuningDeps> = {}): TuningDeps {
   const queue = [...states];

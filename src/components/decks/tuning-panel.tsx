@@ -11,6 +11,7 @@ import {
   readTuningPanel,
   restoreSuggestion,
   runTuning,
+  saveDeckLimits,
   undoSuggestion,
 } from "../../app/decks/tuning-actions";
 import { creditsCopy } from "../../lib/copy/credits";
@@ -22,10 +23,12 @@ import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import type { Bracket } from "../../lib/profile/types";
 import { gateReason } from "../../lib/tuning/gate";
 import type { TuningItem, TuningState } from "../../lib/tuning/state";
+import type { PrintedInSet } from "../../lib/sets/printed-in";
 import { FanShuffle } from "./fan-shuffle";
 import { ManifestRows, type ManifestRow } from "./manifest-rows";
 import { MutationError } from "./mutation-error";
 import { SuggestionCard, type CardActions } from "./suggestion-card";
+import { TuningLimitsBox } from "./tuning-limits-box";
 
 /**
  * Suggested changes (placement addendum v2): the last section of the Analysis tab, mounted only
@@ -71,6 +74,8 @@ export type TuningFacts = {
   marked: number;
   cards: number;
   intent: string | null;
+  /** "Kept for this deck" (H35, PR 2). Null/empty/false until the player sets them. */
+  limits: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean };
 };
 
 type Counts = Partial<Record<EvidenceStep, number | null>>;
@@ -88,6 +93,7 @@ export function TuningPanel({
   permits,
   facts,
   onLogGame,
+  printedInSets = [],
   deps = SERVER,
   deeperLooks = false,
   onSettled,
@@ -96,6 +102,9 @@ export function TuningPanel({
   permits: readonly Bracket[];
   facts: TuningFacts;
   onLogGame: () => void;
+  /** Every set that printed a commander, newest first — "Kept for this deck"'s Set picker
+   *  (H35, PR 2), the same list help-me-choose's intake form reads. */
+  printedInSets?: readonly PrintedInSet[];
   deps?: TuningDeps;
   /** `HELP_ME_CHOOSE_ENABLED`: the credit lines name its deeper looks as sharing the credits. Off,
       they read exactly as before the looks existed. */
@@ -123,6 +132,25 @@ export function TuningPanel({
     setSeenIntent(facts.intent);
     setIntent(facts.intent);
   }
+  // "Kept for this deck" (H35, PR 2). Same sync-while-unedited shape as `intent` above: a save
+  // from elsewhere (none exists today — this panel is the only writer — but the shape matches
+  // every other field here) replaces the held draft rather than leaving it stale.
+  const [capDollars, setCapDollars] = useState(facts.limits.capCents === null ? null : facts.limits.capCents / 100);
+  const [limitSets, setLimitSets] = useState(facts.limits.sets);
+  const [ownedOnly, setOwnedOnly] = useState(facts.limits.ownedOnly);
+  const [seenLimits, setSeenLimits] = useState(facts.limits);
+  if (seenLimits !== facts.limits) {
+    setSeenLimits(facts.limits);
+    setCapDollars(facts.limits.capCents === null ? null : facts.limits.capCents / 100);
+    setLimitSets(facts.limits.sets);
+    setOwnedOnly(facts.limits.ownedOnly);
+  }
+  const saveLimits = useCallback(
+    (next: { capDollars: number | null; sets: readonly string[]; ownedOnly: boolean }) => {
+      void saveDeckLimits(deckId, { capDollars: next.capDollars, sets: next.sets, ownedOnly: next.ownedOnly });
+    },
+    [deckId],
+  );
   const headingRef = useRef<HTMLHeadingElement>(null);
   // Each press takes a token, so a run the reader stopped cannot land over what they did next.
   const token = useRef(0);
@@ -408,6 +436,33 @@ export function TuningPanel({
       {body}
       {/* The in-panel ask is gone (H35): the description's one door before a first reading is
           now the empty-state field, above the press, with the pencil as its second door. */}
+
+      {/* "Kept for this deck" (H35, PR 2): drawn above the action row whenever a reading is not
+          in flight (STATES §3 states 1/3/8). No run-wiring yet — a press still reads whatever
+          the fingerprint already covers (PR 4a wires the limits into the prompt itself); this
+          box only persists what the player sets. */}
+      {reading ? null : (
+        <div className="mt-[16px] md:mt-[18px]">
+          <TuningLimitsBox
+            sets={printedInSets}
+            capDollars={capDollars}
+            onCapChange={(next) => {
+              setCapDollars(next);
+              saveLimits({ capDollars: next, sets: limitSets, ownedOnly });
+            }}
+            selectedSets={limitSets}
+            onSetsChange={(next) => {
+              setLimitSets(next);
+              saveLimits({ capDollars, sets: next, ownedOnly });
+            }}
+            ownedOnly={ownedOnly}
+            onOwnedOnlyChange={(next) => {
+              setOwnedOnly(next);
+              saveLimits({ capDollars, sets: limitSets, ownedOnly: next });
+            }}
+          />
+        </div>
+      )}
 
       {/* THE ACTION ROW: one band in every state, the one primary first. */}
       <div

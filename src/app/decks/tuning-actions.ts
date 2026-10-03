@@ -32,6 +32,7 @@ import { buildPlayGroup } from "../../lib/profile/play";
 import { buildEvidencePack } from "../../lib/tuning/evidence";
 import { gateReason } from "../../lib/tuning/gate";
 import { intentTooLong, MODEL_TIMEOUT_MS, TUNING_EFFORT, TUNING_MAX_TOKENS, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "../../lib/tuning/limits";
+import { MAX_BUDGET_DOLLARS } from "../../lib/intake/answers";
 import { buildPrompt } from "../../lib/tuning/prompt";
 import { tuningResponseSchema } from "../../lib/tuning/response-schema";
 import { cancelRun, finishRun, persistRun, saveIntent, startRun, type Billed } from "../../lib/tuning/run-store";
@@ -113,6 +114,42 @@ export async function saveDeckHeader(
     .returning({ id: decks.id });
   if (updated.length === 0) return { ok: false, message: deckDescriptionCopy.description.refused };
   if (set.name !== undefined) revalidateClaims(deckId, userId);
+  revalidateDeck(deckId);
+  return { ok: true };
+}
+
+/**
+ * "Kept for this deck" (H35, PR 2): the per-card cap, the sets and owned-only Suggested changes'
+ * own swaps stay inside. Held per deck, not per run — null/empty/false is "no limit", never
+ * seeded. Checked the same way `lookDeeper`'s `budgetDollars` validates help-me-choose's cap:
+ * whole dollars, 1 to `MAX_BUDGET_DOLLARS`, converted to cents only after that bound holds.
+ */
+export async function saveDeckLimits(
+  deckId: string,
+  fields: { capDollars: number | null; sets: readonly string[]; ownedOnly: boolean },
+): Promise<DeckMutationResult> {
+  const userId = await requireUserId();
+  if (!isUuid(deckId)) return { ok: false, message: deckDescriptionCopy.limits.refused };
+  if (typeof fields !== "object" || fields === null) return { ok: false, message: deckDescriptionCopy.limits.refused };
+  const { capDollars, sets, ownedOnly } = fields;
+  if (
+    !(capDollars === null || (Number.isInteger(capDollars) && capDollars >= 1 && capDollars <= MAX_BUDGET_DOLLARS))
+    || !Array.isArray(sets) || sets.some((s) => typeof s !== "string" || s.length === 0 || s.length > 10)
+    || typeof ownedOnly !== "boolean"
+  ) return { ok: false, message: deckDescriptionCopy.limits.refused };
+  // Deduped and lower-cased: the wire is untrusted, and `SetsField`'s own codes are already
+  // lower-case, so a mismatch here could only be a malformed or replayed request.
+  const dedupedSets = [...new Set(sets.map((s) => s.toLowerCase()))];
+  const updated = await db.update(decks)
+    .set({
+      tuningCapCents: capDollars === null ? null : capDollars * 100,
+      tuningSets: dedupedSets,
+      tuningOwnedOnly: ownedOnly,
+      lastEditedAt: sql`clock_timestamp()`,
+    })
+    .where(and(eq(decks.id, deckId), eq(decks.userId, userId)))
+    .returning({ id: decks.id });
+  if (updated.length === 0) return { ok: false, message: deckDescriptionCopy.limits.refused };
   revalidateDeck(deckId);
   return { ok: true };
 }
