@@ -29,7 +29,13 @@ type Row = {
  * - its row is STALE: `input_hash` no longer equals what the card's current inputs produce under the
  *   row's own model (`labelInputHash`), so the label describes text the card no longer has, or a
  *   prompt (its version or its SYSTEM instruction) the row predates;
- * - any of its jobs fails `validateJob`, so a malformed row is never half-read.
+ * - any of its jobs fails `validateJob`, so a malformed row is never half-read;
+ * - it holds NO job: a stored `[]` is UNLABELLED, never "a fresh label with no jobs". The collector
+ *   drops every job that fails `validateJob` and still stores the card, so `[]` cannot tell "nothing
+ *   in the vocabulary" from "every job was malformed", and 3,237 staging rows (Lightning Bolt,
+ *   Rampant Growth, Sakura-Tribe Elder) were the second kind (2026-10-03). Read as labelled, `[]`
+ *   matches nothing and refuses every pair; absent, the text path reads the card, exactly as with
+ *   the switch off.
  *
  * A `tutor` job on a card whose every library search finds only lands is dropped from an
  * otherwise fresh row (`searchesOnlyLands`): that card is ramp, and the prompt says so. A row the
@@ -61,7 +67,8 @@ export function freshLabels(rows: readonly Row[]): Map<string, Job[]> {
     // A row left with no job by that drop is left OUT, so the text path compares the card and
     // reads it as the ramp it is; an empty row would match nothing and refuse every pair.
     const jobs = searchesOnlyLands(r.oracle_text) ? r.labels.filter((j) => j.kind !== "tutor") : r.labels;
-    if (jobs.length === 0 && r.labels.length > 0) continue;
+    // Absent, whatever emptied it (the drop above, or a stored `[]`): see the doc comment.
+    if (jobs.length === 0) continue;
     out.set(r.oracle_id, jobs);
   }
   return out;

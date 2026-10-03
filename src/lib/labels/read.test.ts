@@ -85,9 +85,14 @@ describe("freshLabels — a land search is never a tutor", () => {
   });
 });
 
-describe("freshLabels — a row the model left empty", () => {
-  it("still reads as labelled with no job", () => {
-    expect(freshLabels([row({ labels: [] })]).get(CARD.oracle_id)).toEqual([]);
+// 2026-10-03: 3,237 staging rows were `[]` because every job failed `validateJob`, and the collector
+// stored the card anyway. Read as labelled, Lightning Bolt matched nothing and got no stand-ins.
+describe("freshLabels — an empty row", () => {
+  it("is unlabelled, so the text path reads the card (Lightning Bolt)", () => {
+    const bolt = row({ labels: [] });
+    const m = freshLabels([bolt]);
+    expect(m.has(CARD.oracle_id)).toBe(false);
+    expect(m.size).toBe(0);
   });
 });
 
