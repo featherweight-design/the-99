@@ -280,6 +280,24 @@ describe("ConsiderPanel — shelf fold (STATES-consider-tiles.md s1–s5)", () =
     expect(screen.getByRole("button", { name: /show all/i })).toBeInTheDocument();
   });
 
+  // A flex-wrap item that wraps starts at the CONTAINER's edge — under the
+  // chevron, not under the preceding sibling — so label and clause must share
+  // their OWN group, separate from the chevron, for "the clause wraps under
+  // the label" (handoff) to hold (Copilot round 2, medium).
+  it("groups the label and clause together, apart from the chevron", () => {
+    mount({ suggestions: [suggestion({ name: "Cultivate", role: "ramp" })] });
+    const labelSpan = screen.getByTestId("shelf-label");
+    const group = labelSpan.parentElement!;
+    const button = group.parentElement!;
+    expect(button.tagName).toBe("BUTTON");
+    // The clause sits beside the label inside that same group…
+    expect(group.textContent).toContain(addPanelCopy.shelf.count(1));
+    // …and the chevron is the BUTTON's own direct child, a sibling of the
+    // group rather than a member of it.
+    expect([...button.children]).not.toContain(labelSpan);
+    expect([...group.children]).toHaveLength(2); // label span + clause span
+  });
+
   it("persists per deck in localStorage, survives a remount, and defaults open", () => {
     const { unmount } = mount({ suggestions: [suggestion({ name: "Cultivate", role: "ramp" })] });
     fireEvent.click(disclosureFor("Ramp"));

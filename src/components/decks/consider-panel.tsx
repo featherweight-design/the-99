@@ -307,7 +307,7 @@ function ShelfSection({
             // already apply to their own disclosures (pre-open review).
             aria-controls={folded ? undefined : bodyId}
             onClick={onToggleFold}
-            className="flex flex-wrap items-baseline gap-x-[8px] md:gap-x-[10px] gap-y-[2px] min-h-[52px] md:min-h-[44px] p-0 border-none bg-transparent cursor-pointer text-left"
+            className="flex items-baseline gap-x-[8px] md:gap-x-[10px] min-h-[52px] md:min-h-[44px] p-0 border-none bg-transparent cursor-pointer text-left"
           >
             <span
               aria-hidden
@@ -316,15 +316,22 @@ function ShelfSection({
             >
               ▸
             </span>
-            <span
-              id={labelId}
-              data-testid="shelf-label"
-              className="font-sans font-semibold text-[16px] md:text-[17px] leading-[1.2]"
-              style={{ color: "var(--fg)" }}
-            >
-              {label}
+            {/* Label and clause share ONE group, not two flex-wrap siblings of the
+                button: a flex-wrap item that wraps starts at the CONTAINER's edge,
+                under the chevron, not under the preceding sibling — which is not
+                what "the clause wraps under the label" means (Copilot round 2,
+                medium "previously missed"). Column on phone, row from `md`. */}
+            <span className="flex flex-col md:flex-row md:items-baseline gap-x-[10px] gap-y-[2px]">
+              <span
+                id={labelId}
+                data-testid="shelf-label"
+                className="font-sans font-semibold text-[16px] md:text-[17px] leading-[1.2]"
+                style={{ color: "var(--fg)" }}
+              >
+                {label}
+              </span>
+              {clause}
             </span>
-            {clause}
           </button>
         </h3>
         {!folded && overflowing && (
