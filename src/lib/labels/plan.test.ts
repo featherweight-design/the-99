@@ -1,7 +1,9 @@
+import { readdirSync, readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
 import {
-  boundedNumber, CARDS_PER_REQUEST, meetsFloor, modelToken, pauseRemediation, planChunks,
+  boundedNumber, CARDS_PER_REQUEST, MEASURED_PER_CARD, meetsFloor, modelToken, pauseRemediation, planChunks, projectedTotalUsd,
   runToken, waveSize,
   withinCap,
   worstCaseUsd,
@@ -283,5 +285,28 @@ describe("what a paused run tells the operator", () => {
     // The boundary in both directions, because `<=` and `<` read identically and differ here.
     expect(pauseRemediation(50, CEILING).canResume).toBe(true);
     expect(pauseRemediation(50.01, CEILING).canResume).toBe(false);
+  });
+});
+
+describe("the projection's measured rate", () => {
+  it("projects measured spend plus the remaining cards at the rate", () => {
+    expect(projectedTotalUsd(0, 28666, MEASURED_PER_CARD.usd)).toBeCloseTo(28666 * 0.001902, 10);
+    expect(projectedTotalUsd(10, 1000, 0.002)).toBeCloseTo(12, 10);
+  });
+
+  // A rate with no source went stale once already. The constant must be the NEWEST committed re-sample's
+  // measured figure, so a later re-sample that is published without moving it fails here.
+  it("is the newest committed re-sample's measured rate, from the run it names", () => {
+    const dir = "docs/superpowers/benchmarks";
+    const newest = readdirSync(dir)
+      .map((f) => /^2026-09-28-card-label-vocabulary-resample-(\d+)-cost\.json$/.exec(f))
+      .filter((m): m is RegExpExecArray => m !== null)
+      .map((m) => Number(m[1]))
+      .sort((a, b) => b - a)[0];
+    const at = `${dir}/2026-09-28-card-label-vocabulary-resample-${newest}`;
+    const cost = JSON.parse(readFileSync(`${at}-cost.json`, "utf8"));
+    expect(MEASURED_PER_CARD.usd).toBe(cost.perModel.sonnet.usdPerCard);
+    expect(MEASURED_PER_CARD.runId).toBe(JSON.parse(readFileSync(`${at}-run.json`, "utf8")).runId);
+    expect(MEASURED_PER_CARD.source).toBe(`${at}-cost.json`);
   });
 });

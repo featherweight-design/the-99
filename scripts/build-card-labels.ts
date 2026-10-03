@@ -31,9 +31,10 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../src/db";
 import { cardLabelBatches, cardLabels, cardLabelsStaging } from "../src/db/schema";
 import { faceResolver, withoutRepeats } from "../src/lib/labels/parse";
+import { parseScope, scopeCondition } from "../src/lib/labels/scope";
 import {
   boundedNumber, CARDS_PER_REQUEST, meetsFloor, pauseRemediation, planChunks, waveSize,
-  withinCap, worstCaseUsd,
+  MEASURED_PER_CARD, projectedTotalUsd, withinCap, worstCaseUsd,
   type Chunk,
 } from "../src/lib/labels/plan";
 import {
@@ -49,6 +50,8 @@ import type { Job } from "../src/lib/labels/types";
 
 /** Sonnet 4.5, Hugh's pick (2026-09-26), chosen on the restriction family rather than price. */
 const MODEL = process.env.LABEL_MODEL ?? "claude-sonnet-4-5";
+/** Which cards this run covers (`src/lib/labels/scope.ts`). Unset is `all`, every build's behaviour so far. */
+const SCOPE = parseScope(process.env.LABEL_SCOPE);
 
 /**
  * The cap, and the pause. Hugh's ruling: hard stop $55, and PAUSE AND REPORT if the
@@ -101,12 +104,12 @@ const RATES = {
 };
 
 /**
- * The sample's measured cost per card, used ONLY to project before this run has measured
- * anything of its own. After the first wave collects, the run's own rate replaces it — a
- * projection that kept using the sample's figure could never notice a run costing more than
- * the sample did, which is the one thing the projection is for.
+ * The measured cost per card (`MEASURED_PER_CARD`, with the run it came from), used ONLY to project before
+ * this run has measured anything of its own. After the first wave collects, the run's own rate replaces it —
+ * a projection that kept using a sample's figure could never notice a run costing more than the sample did,
+ * which is the one thing the projection is for.
  */
-const SAMPLE_PER_CARD_USD = 0.001291;
+const SAMPLE_PER_CARD_USD = MEASURED_PER_CARD.usd;
 
 const dryRun = process.argv.includes("--dry-run");
 /**
@@ -144,8 +147,8 @@ const EXIT_MORE_WORK = 75;
 const EXIT_STOP = 1;
 
 /**
- * Cards that need labelling: Commander-legal, and whose stored hash does not match what
- * their current inputs produce.
+ * Cards that need labelling: Commander-legal, inside this run's scope (`LABEL_SCOPE`), and whose
+ * stored hash does not match what their current inputs produce.
  *
  * ORDERED, and that is load-bearing rather than tidy: `planChunks` is deterministic in the
  * index, so a resumed run must see the same cards in the same order or it chunks differently
@@ -153,10 +156,10 @@ const EXIT_STOP = 1;
  */
 async function cardsNeedingLabels(): Promise<CardRow[]> {
   const rows = await db.execute<CardRow>(sql`
-    select oracle_id as "oracleId", name, mana_cost, type_line, oracle_text, layout
-      from cards
-     where commander_legal = true
-     order by oracle_id
+    select c.oracle_id as "oracleId", c.name, c.mana_cost, c.type_line, c.oracle_text, c.layout
+      from cards c
+     where c.commander_legal = true ${scopeCondition(SCOPE)}
+     order by c.oracle_id
   `);
   const all = rows.rows ?? (rows as unknown as CardRow[]);
   const stored = new Map(
@@ -533,7 +536,7 @@ const BODY_OVERHEAD_TOKENS = renderBody(
 ).length; // characters, for the reason above
 
 async function main(): Promise<void> {
-  console.log(`run ${runId}  model ${MODEL}  cap $${CAP_USD.toFixed(2)}${dryRun ? "  (dry run)" : ""}`);
+  console.log(`run ${runId}  model ${MODEL}  scope ${SCOPE}  cap $${CAP_USD.toFixed(2)}${dryRun ? "  (dry run)" : ""}`);
 
   // RECONCILE FIRST, always, before anything is planned or priced. An in-flight batch this
   // run cannot see is work it would submit again.
@@ -708,7 +711,7 @@ async function main(): Promise<void> {
   console.log(`  this wave: ${wave.length} request(s), worst case $${waveWorst.toFixed(2)}`);
   console.log(`  ${chunks.length - wave.length} request(s) wait for a later wave`);
   console.log(`  whole run expected ~$${(measuredPerCard * cards.length).toFixed(2)} at `
-    + `${usage.cards === 0 ? "the sample's" : "this run's"} measured rate; worst case if every `
+    + `${usage.cards === 0 ? `${MEASURED_PER_CARD.runId}'s` : "this run's"} measured rate; worst case if every `
     + `request returns its full ceiling $${worst.toFixed(2)}`);
 
   // TWO BOUNDS, and they are different questions (d9's ruling on Hugh's $55):
@@ -721,10 +724,10 @@ async function main(): Promise<void> {
   //             before the cap does, which is the point: the cap stops a disaster, the pause
   //             reports a surprise.
   const remainingCards = cards.length - usage.cards;
-  const projected = alreadySpent + remainingCards * measuredPerCard;
+  const projected = projectedTotalUsd(alreadySpent, remainingCards, measuredPerCard);
   console.log(`  projected total $${projected.toFixed(2)} `
     + `(measured $${alreadySpent.toFixed(2)} + ${remainingCards} cards at `
-    + `$${measuredPerCard.toFixed(6)}${usage.cards === 0 ? ", the sample's rate" : ", this run's rate"})`);
+    + `$${measuredPerCard.toFixed(6)}${usage.cards === 0 ? `, measured by ${MEASURED_PER_CARD.runId}` : ", this run's rate"})`);
   if (projected > REPORT_AT_USD) {
     console.error(`\nPAUSED: the projected total is $${projected.toFixed(2)}, past the `
       + `$${REPORT_AT_USD.toFixed(2)} report line (cap $${CAP_USD.toFixed(2)}).`);
