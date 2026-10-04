@@ -143,7 +143,7 @@ describe("labelInputHash", () => {
   // install nothing and report every label as a catalog difference. When this fails: bump
   // LABEL_PROMPT_VERSION, then re-pin both literals here together.
   it("pins SYSTEM to the version it was written under", () => {
-    const pinned = { version: "8", system: "1a8ae57b08f4594ab07b23bacafb4296f7aa9d26488a5d015a23b1840bb0c014" };
+    const pinned = { version: "8", system: "1d65eda70f35bc7442b7e2cfb60bb9aed9c568b4918894262a06e4adb0f82b5c" };
     expect({ version: LABEL_PROMPT_VERSION, system: createHash("sha256").update(SYSTEM).digest("hex") })
       .toEqual(pinned);
   });

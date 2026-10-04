@@ -144,8 +144,8 @@ THEMES (space "theme"): ${THEMES.join(", ")}
   drain         — damage or life loss aimed at opponents. Damage to "any
                   target" is removal FIRST, and drain AS WELL because it can
                   hit a player: label both. Damage that can only hit a
-                  creature or permanent is removal and never drain. Life loss
-                  for EVERY player, you included, is not drain.
+                  creature or permanent is removal and never drain. Damage or
+                  life loss for EVERY player, you included, is not drain.
   spellslinger  — rewards casting instants and sorceries, or noncreature
                   spells. "Whenever you cast a spell" alone is not spellslinger.
   landfall      — does something when a land enters under your control. Label

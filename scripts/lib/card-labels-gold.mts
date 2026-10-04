@@ -140,10 +140,11 @@ const AUDITED: GoldRow[] = [
       j("theme", "counters", { rt: "Elemental", af: "self", tr: "landfall" }),
       j("theme", "landfall", { af: "self", tr: "landfall" }),
       j("role", "removal", { af: "opponents", meth: "shrink", tr: "etb", rec: "oneShot" }),
+      j("theme", "drain", { af: "opponents", tr: "etb", rec: "oneShot" }),
       j("role", "draw", { af: "self", tr: "landfall", th: { stat: "other", op: ">=", value: 8 } }),
       j("theme", "tribal", { rt: "Elemental", af: "self", tr: "landfall" }),
     ],
-    why: "Elemental-restricted counter on landfall. The ETB damage is removal, scaled by Elementals — a threshold in effect but not a gate, so no threshold recorded. Task 4 re-audit: gains role `draw` for the eight-lands landfall draw, which the first labelling missed, and `tribal` (Elemental). The ETB damage goes to any target and is labelled removal by shrink, affects opponents by the removal ruling.",
+    why: "Elemental-restricted counter on landfall. The ETB damage is removal, scaled by Elementals — a threshold in effect but not a gate, so no threshold recorded. Task 4 re-audit: gains role `draw` for the eight-lands landfall draw, which the first labelling missed, and `tribal` (Elemental). The ETB damage goes to any target and is labelled removal by shrink, affects opponents by the removal ruling, and drain as well since v8 (2026-10-04).",
   },
   {
     name: "Keldon Warcaller", klass: "restrictedCounter",
@@ -879,7 +880,7 @@ const AUDITED: GoldRow[] = [
       j("role", "draw", { af: "each", rec: "oneShot" }),
       j("theme", "discard", { af: "each", rec: "oneShot" }),
     ],
-    why: "A symmetrical wheel. The damage is to PLAYERS, so not removal; it is closest to drain but the vocabulary's drain rule wants a life-loss clause, which this has not. Task 4 re-audit: theme `draw` removed (the role covers the wheel); gains `discard`, now in the vocabulary. Both affects each, a judgement: 'friend' can be any player. The damage to foes is still not `drain`, because a foe may be any player, the same reason a Shock is not.",
+    why: "A symmetrical wheel. The damage is to PLAYERS, so not removal; it is closest to drain but the vocabulary's drain rule wants a life-loss clause, which this has not. Task 4 re-audit: theme `draw` removed (the role covers the wheel); gains `discard`, now in the vocabulary. Both affects each, a judgement: 'friend' can be any player. The damage to foes is still not `drain`, because each player chooses friend or foe, so it is not aimed at opponents alone.",
   },
   {
     name: "Lady Octopus, Inspired Inventor", klass: "easy",

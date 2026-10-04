@@ -370,8 +370,8 @@ jobs:
               echo "This run was dispatched with a named run id. To continue it, dispatch again"
               echo "and enter run_id=$LABEL_RUN_ID and scope=$LABEL_SCOPE. Leaving run_id blank starts"
               echo "a DIFFERENT run under this ISO week, which would spend the rest from the weekly"
-              echo "budget; leaving scope blank means every card, which would turn a deck trial into"
-              echo "the full backfill under the trial's run id."
+              echo "budget; leaving scope blank means every card, which would turn a deck or list"
+              echo "trial into the full backfill under the trial's run id."
             elif [ "$CRON_ENABLED" = "true" ]; then
               # Next week's run has a NEW id, so it collects this run's open batches (resume is by
               # content) but does not take over this id's own plan. Sooner is a blank dispatch now.
