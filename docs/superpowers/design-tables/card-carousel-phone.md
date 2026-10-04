@@ -62,6 +62,7 @@ Copy wording is `/copy-review`'s, not this table's. The three R2 keys (`cardShee
 | Cost | pips at the row's end | shipped `ManaCost` | ✅ |
 | Second line | flex, centred, gap 12, margin-top 12, wraps | same | ✅ |
 | Price plate | the shipped plate (`$1.55 from $0.26`) | the shipped phone plate, moved | ✅ see note 1 |
+| Set · number | mono 12px `--fg-muted`, the printing on screen | `cardSheetCopy.printing(setCode, collectorNumber)` from the resolved printing | ✅ |
 | Owned | mono 12px: count `--accent`, `·` `--fg-faint`, availability in `--avail` | `OwnedLine`: the same, availability through `AvailabilityMarker` | ✅ see note 2 |
 
 ## Teaser body
@@ -77,7 +78,7 @@ Copy wording is `/copy-review`'s, not this table's. The three R2 keys (`cardShee
 |---|---|---|---|
 | h1 | Teaser on open and after every page | the modal remounts per card with `sheetFull` false | ✅ |
 | h2 | Dragging follows the finger | `--sheet-drag-top`; 334 measured mid-drag | ✅ |
-| h3 | Full at 64, paging withheld | band drag and arrow keys refuse in full | ✅ |
+| h3 | Full at 64, paging withheld | band drag and arrow keys refuse in full; the covered card and peeks are `inert` | ✅ |
 | h4 | Full with the picker open | the shipped set row and region, in the full sheet | ✅ |
 | h5 | First / last: one side, rubber-band | missing side draws nothing; 0.3x, max 40 | ✅ |
 | h6 | List of one: no counter, no peeks, sheet still expands | contact-sheet row `phone-one` | ✅ |

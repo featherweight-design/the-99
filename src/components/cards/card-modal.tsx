@@ -563,8 +563,8 @@ function siblingArt(sibling: SiblingCard): React.CSSProperties {
  */
 const PhonePeek = React.forwardRef<
   HTMLButtonElement,
-  { sibling: SiblingCard; direction: "previous" | "next"; onPress: () => void }
->(function PhonePeek({ sibling, direction, onPress }, ref) {
+  { sibling: SiblingCard; direction: "previous" | "next"; onPress: () => void; covered: boolean }
+>(function PhonePeek({ sibling, direction, onPress, covered }, ref) {
   const left = direction === "previous"
     ? "calc(50% - var(--card-w) / 2 - 12px - var(--card-w) * 0.7375)"
     : "calc(50% + var(--card-w) / 2 + 12px)";
@@ -573,6 +573,8 @@ const PhonePeek = React.forwardRef<
       ref={ref}
       type="button"
       data-testid={direction === "previous" ? "phone-peek-prev" : "phone-peek-next"}
+      // Withheld with paging under the full sheet, which covers it.
+      inert={covered}
       onClick={onPress}
       aria-label={cardCarouselCopy.neighborAria(direction, sibling.name)}
       className="absolute rounded-[11px] cursor-pointer border-0 p-0"
@@ -1862,9 +1864,13 @@ export function CardModal({
             style={{ "--card-w": "min(320px, calc((100cqh - 85px) * 0.7159))" } as React.CSSProperties}
           >
             {narrow && prevSibling && onPrevPeek ? (
-              <PhonePeek ref={prevPhonePeekRef} sibling={prevSibling} direction="previous" onPress={onPrevPeek} />
+              <PhonePeek ref={prevPhonePeekRef} sibling={prevSibling} direction="previous" onPress={onPrevPeek} covered={full} />
             ) : null}
             <div
+              // Under the full sheet the card and its turn plate are covered, and paging is
+              // withheld there: inert, so neither Tab nor a screen reader reaches what the reader
+              // cannot see. The band itself stays live for the tap that returns to the teaser.
+              inert={full}
               data-testid="modal-art-mobile"
               className={"absolute rounded-[14px]" + (phoneEnterX !== null ? " anim-phone-card-enter" : "")}
               style={{
@@ -1893,7 +1899,7 @@ export function CardModal({
               )}
             </div>
             {narrow && nextSibling && onNextPeek ? (
-              <PhonePeek ref={nextPhonePeekRef} sibling={nextSibling} direction="next" onPress={onNextPeek} />
+              <PhonePeek ref={nextPhonePeekRef} sibling={nextSibling} direction="next" onPress={onNextPeek} covered={full} />
             ) : null}
           </div>
         </div>
@@ -2191,6 +2197,11 @@ export function CardModal({
                     {fromLine(true)}
                   </span>
                 </div>
+              )}
+              {resolved && (
+                <span data-testid="teaser-set" className="font-mono text-[12px]" style={{ color: "var(--fg-muted)" }}>
+                  {cardSheetCopy.printing(resolved.setCode, resolved.collectorNumber)}
+                </span>
               )}
               <OwnedLine card={card} deckPage={deckPage} />
             </div>

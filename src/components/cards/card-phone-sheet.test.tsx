@@ -93,6 +93,43 @@ describe("the sheet's two states", () => {
     expect(hidden(screen.getByTestId("owned-line"))).toBe(false);
   });
 
+  it("names the printing on screen, set and number, on the second line at both snaps", () => {
+    const printings = [{
+      setCode: "rvr", setName: "Ravnica Remastered", collectorNumber: "214", releasedAt: "2024-01-12",
+      quantity: 1, finishes: { nonfoil: 1 }, imageUri: null, flavorName: null,
+    }];
+    mount({ card: { ...card, printings } });
+    expect(screen.getByTestId("teaser-set")).toHaveTextContent("RVR · 214");
+    expect(screen.getByTestId("teaser-set").closest(".max-md\\:hidden")).toBeNull();
+    fireEvent.click(grip());
+    expect(screen.getByTestId("teaser-set")).toHaveTextContent("RVR · 214");
+  });
+
+  it("draws no set line for a card with no printing to name", () => {
+    mount();
+    expect(screen.queryByTestId("teaser-set")).toBeNull();
+  });
+
+  it("makes the card and its peeks inert under the full sheet, and live again on the teaser", () => {
+    mount({
+      position: 2, total: 3, onPrev: vi.fn(), onNext: vi.fn(), onPrevPeek: vi.fn(), onNextPeek: vi.fn(),
+      prevSibling: { oracleId: "o0", name: "Rhystic Study", imageUri: null },
+      nextSibling: { oracleId: "o2", name: "Esper Sentinel", imageUri: null },
+    });
+    const covered = () => [
+      screen.getByTestId("modal-art-mobile"),
+      screen.getByTestId("phone-peek-prev"),
+      screen.getByTestId("phone-peek-next"),
+    ];
+    for (const el of covered()) expect(el.hasAttribute("inert")).toBe(false);
+    fireEvent.click(grip());
+    for (const el of covered()) expect(el.hasAttribute("inert")).toBe(true);
+    // The band itself stays live: its tap is the way back to the teaser.
+    expect(screen.getByTestId("card-band").hasAttribute("inert")).toBe(false);
+    fireEvent.click(grip());
+    for (const el of covered()) expect(el.hasAttribute("inert")).toBe(false);
+  });
+
   it("closes from the teaser on Escape even with the printings picker left open", () => {
     const printings = Array.from({ length: 2 }, (_, i) => ({
       setCode: "RVR", setName: "Ravnica Remastered", collectorNumber: String(i + 1), releasedAt: "2024-01-12",
