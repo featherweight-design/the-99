@@ -110,6 +110,8 @@ export function sheetSnap(top: number, vy: number, fullTop: number, teaserTop: n
 type Drag = {
   pointerId: number;
   source: "band" | "sheet";
+  /** The press began on a control (a peek, the turn plate), whose own click is the tap's job. */
+  onControl: boolean;
   start: { x: number; y: number };
   samples: Sample[];
   axis: Axis | null;
@@ -224,8 +226,9 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
       onSnap(to);
       return;
     }
-    // A tap on the band in the full state returns to the teaser (README R2 "Zoom").
-    if (d.axis === null && !cancelled && d.source === "band" && full) onSnap("teaser");
+    // A tap on the card in the full state returns to the teaser (README R2 "Zoom"). Not a tap on a
+    // control in the band: turning a two-faced card must not also drop the sheet.
+    if (d.axis === null && !cancelled && d.source === "band" && full && !d.onControl) onSnap("teaser");
   }, []);
 
   const move = useCallback((e: PointerEvent) => {
@@ -282,6 +285,7 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
       drag.current = {
         pointerId: e.pointerId,
         source,
+        onControl: e.target instanceof Element && e.target.closest("button, a") !== null,
         start: { x: e.clientX, y: e.clientY },
         samples: [{ t: e.timeStamp, x: e.clientX, y: e.clientY }],
         axis: null,
