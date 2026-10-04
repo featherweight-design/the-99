@@ -824,9 +824,10 @@ export function ReviewChanges({
       total: null,
     },
     {
-      // CARDS, not copies: each contested card is one decision waiting on this page. The ink is
-      // the over state's own, because that is what a contested card is — `marker.over` says
-      // `short n` about the same card on the deck page.
+      // CARDS, not copies: each one is a shortfall this page can only name, not resolve — the
+      // per-row chooser that used to let a reader act on it here was removed (Hugh, 2026-10-04).
+      // The ink is the over state's own, because that is what a contested card is — `marker.over`
+      // says `short n` about the same card on the deck page.
       figure: contestedCount,
       tone: "var(--avail-over-fg)",
       label: copy.chipShort,
