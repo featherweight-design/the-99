@@ -24,7 +24,11 @@ export function parseCapDollars(raw: string): number | null {
 
 const SETS_PANEL_COPY = {
   triggerLabel: "Set",
-  triggerCount: (n: number) => (n === 0 ? copy.setTriggerAny : n === 1 ? "Set 1" : `Sets ${n}`),
+  // Same `Set 0 / Set 1 / Sets n` shape as `collectionFilterCopy.set.triggerCount`
+  // (sets-field.tsx's own default): `FilterPanel`'s trigger sizer is fixed to this
+  // function's own widest digit form (`Sets 9`), so a differently-worded zero case
+  // would be wider than the sizer and visibly narrow the moment a set is picked.
+  triggerCount: (n: number) => (n <= 1 ? `Set ${n}` : `Sets ${n}`),
   sheetTitle: "Set",
   removeSet: copy.removeSet,
 };

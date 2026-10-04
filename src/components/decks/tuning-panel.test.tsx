@@ -1,5 +1,6 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { saveDeckLimits } from "../../app/decks/tuning-actions";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 
 import { creditsCopy } from "../../lib/copy/credits";
@@ -9,7 +10,8 @@ import { manifestRows, readSteps, TuningPanel, type TuningDeps, type TuningFacts
 
 vi.mock("../../app/decks/tuning-actions", () => ({
   applySuggestion: vi.fn(), cancelTuningRun: vi.fn(), dismissSuggestion: vi.fn(), readTuningEvidence: vi.fn(),
-  readTuningPanel: vi.fn(), restoreSuggestion: vi.fn(), runTuning: vi.fn(), saveDeckIntent: vi.fn(), undoSuggestion: vi.fn(),
+  readTuningPanel: vi.fn(), restoreSuggestion: vi.fn(), runTuning: vi.fn(), saveDeckIntent: vi.fn(),
+  saveDeckLimits: vi.fn(async () => ({ ok: true })), undoSuggestion: vi.fn(),
 }));
 vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open: vi.fn() }), useCardIntent: () => ({}) }));
 
@@ -417,6 +419,29 @@ describe("TuningPanel: Locked (never cut)", () => {
     // And its note names the fix, not "log another game" (Hugh, 2026-09-25).
     expect(screen.getByText((t) => t.includes(lockedCardsCopy.tuning.lockedOnlyNote))).toBeInTheDocument();
     expect(screen.queryByText((t) => t.includes(deckTuningCopy.failure.ungrounded.note))).not.toBeInTheDocument();
+  });
+
+  // "Kept for this deck" (H35, PR 2): two keystrokes in one pause must reach the server as ONE
+  // write carrying the latest value, never two unsequenced writes racing each other.
+  it("debounces saveDeckLimits to one write per pause, carrying only the latest value", async () => {
+    vi.useFakeTimers();
+    try {
+      (saveDeckLimits as ReturnType<typeof vi.fn>).mockClear();
+      await act(async () => {
+        render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={deps([fresh])} printedInSets={[]} />);
+      });
+      const input = screen.getByLabelText("Most per card");
+      fireEvent.change(input, { target: { value: "1" } });
+      fireEvent.change(input, { target: { value: "15" } });
+      expect(saveDeckLimits).not.toHaveBeenCalled();
+      await act(async () => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(saveDeckLimits).toHaveBeenCalledTimes(1);
+      expect(saveDeckLimits).toHaveBeenCalledWith("d1", { capDollars: 15, sets: [], ownedOnly: false });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

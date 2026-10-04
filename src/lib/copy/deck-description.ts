@@ -61,7 +61,6 @@ export const deckDescriptionCopy = {
     heading: "Kept for this deck",
     capLabel: "Most per card",
     capPlaceholder: helpMeChooseCopy.intake.budgetPlaceholder, // 'No cap'
-    setTriggerAny: "Set: Any",
     ownLabel: "Cards to add",
     ownAny: "Any card",
     ownOnly: helpMeChooseCopy.intake.poolOwn, // 'Only cards I own'

@@ -58,9 +58,9 @@ describe("TuningLimitsBox (H35 PR 2, \"Kept for this deck\")", () => {
     expect(onCapChange).toHaveBeenCalledWith(null);
   });
 
-  it("the Set trigger reads Set: Any with nothing chosen", () => {
+  it("the Set trigger reads Set 0 with nothing chosen, matching the sizer's widest form", () => {
     renderBox();
-    expect(screen.getByText("Set: Any")).toBeTruthy();
+    expect(screen.getByText("Set 0")).toBeTruthy();
   });
 
   it("toggles owned-only via the two-way control", () => {

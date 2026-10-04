@@ -145,12 +145,26 @@ export function TuningPanel({
     setLimitSets(facts.limits.sets);
     setOwnedOnly(facts.limits.ownedOnly);
   }
+  // Debounced trailing-edge: typing the cap fires `saveLimits` on every keystroke, and two
+  // unsequenced writes can land at the database out of order — the earlier value overwriting
+  // the later one with nothing in the UI to show it happened (pre-open review round 1). Only
+  // the LATEST value within one pause reaches the server, so there is never more than one
+  // write in flight for this deck's limits at a time.
+  const saveLimitsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveLimits = useCallback(
     (next: { capDollars: number | null; sets: readonly string[]; ownedOnly: boolean }) => {
-      void saveDeckLimits(deckId, { capDollars: next.capDollars, sets: next.sets, ownedOnly: next.ownedOnly });
+      if (saveLimitsTimer.current !== null) clearTimeout(saveLimitsTimer.current);
+      saveLimitsTimer.current = setTimeout(() => {
+        void saveDeckLimits(deckId, { capDollars: next.capDollars, sets: next.sets, ownedOnly: next.ownedOnly });
+      }, 500);
     },
     [deckId],
   );
+  useEffect(() => {
+    return () => {
+      if (saveLimitsTimer.current !== null) clearTimeout(saveLimitsTimer.current);
+    };
+  }, []);
   const headingRef = useRef<HTMLHeadingElement>(null);
   // Each press takes a token, so a run the reader stopped cannot land over what they did next.
   const token = useRef(0);
