@@ -238,16 +238,10 @@ export const cardAssignmentsCopy = {
     /** In commit order, NEVER promoted: the order IS the explanation of the default. */
     thisDeck: "this deck",
 
-    /**
-     * On `/decks/[id]/changes`, the one place the distinction from a pull is spelt out.
-     *
-     * A CAPTION, not a warning — giving is the safe action of the two. The row above it keeps
-     * `Pull it`, which takes the card out of another deck's list and leaves that deck a draft;
-     * this panel edits nobody's list, and a reader who confuses them edits a deck they never
-     * meant to.
-     */
-    seamCaption: "no list changes",
-
+    // `seamCaption` ("no list changes") was retired 2026-10-04 with its only caller — the
+    // per-row panel's caption on /decks/[id]/changes, removed from review-changes.tsx (Hugh, no
+    // Design round, a removal). See about.ts's note where the `reservations` About entry used
+    // to be for the fuller context.
 
     /**
      * Refusals. Every sentence does four things in order: names the deck and card, gives the
