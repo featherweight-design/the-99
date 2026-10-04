@@ -2,12 +2,9 @@
 // One contested card: how many copies arrived, and every committed deck that wants one, in the
 // order that decides who gets them.
 //
-// IN THIS PR THE ROW STATES THE DEFAULT AND NOTHING ELSE. The options are in commit order,
-// each carrying the version stamp the order derives from, and each saying what it gets under
-// that default — which is exactly what the section note promises ("the deck that committed the
-// card first gets it, unless you say otherwise"). The control that lets a player say otherwise
-// is the next PR, and it lands on this component; the reason the row is worth having now is
-// that the shortage is real and the summary would otherwise report it without naming it.
+// THE ROW IS AN INTERACTIVE CHOOSER. The options are in commit order, each carrying the
+// version stamp the order derives from, and each saying what it gets under the default — the
+// deck that committed the card first, unless the player says otherwise with `assignCopy`.
 //
 // MOUNTED ON THE IMPORT SUMMARY alone, as of 2026-10-04 (Hugh, no Design round — a removal).
 // It also mounted on `/decks/[id]/changes`, under each contested row; that door was removed

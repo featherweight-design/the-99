@@ -75,17 +75,6 @@ export type SummaryView = {
 
 
 /**
- * Every contested card among `oracleIds`, read live — the `/decks/[id]/changes` door.
- *
- * NOT the deck's own vantage. A row on that page is loaded with `excludeDeckId` set, which is
- * right for its buy tag and its marker but wrong here: the chooser's whole subject is the queue
- * of committed decks INCLUDING this one, and an excluded read leaves the deck the reader is
- * looking at out of its own decision.
- *
- * Filtered by the same two tests the receipt uses: demand above supply, and at least two
- * committed claimants — a shortage with one claimant is a purchase, not a choice.
- */
-/**
  * The two tests a card must pass to count as contested: demand above supply, and at least two
  * committed claimants. Shared by `loadContestedCards` and `countContestedCards`, so the two can
  * never drift into disagreeing about which cards are contested.
@@ -221,15 +210,9 @@ export async function loadSummaryView(uploadId: string, userId: string): Promise
     const a = availability.get(row.oracleId);
     // A card whose contention has since resolved — a deck committed a removal, or copies
     // arrived another way — simply leaves. The payload is a record of one import, not a
-    // promise about now.
-    // The same two tests the payload was built with, re-asked live: the shortage may have been
-    // resolved since (a deck committed a removal, or copies arrived another way), and a row that
-    // has only one committed claimant left is a purchase rather than a choice.
-    if (!a || a.hard <= a.owned) return [];
-    // A row with one committed claimant left is a purchase rather than a choice — see the note
-    // in `arrivals.ts`. Re-asked live because the payload is a record of one import: a deck may
-    // have committed a removal since.
-    if (a.claims.filter((c) => c.mature).length < 2) return [];
+    // promise about now. Same `isContested` test `loadContestedCards` and `countContestedCards`
+    // use, so this reader can never drift from theirs about which cards still count.
+    if (!a || !isContested(a)) return [];
     return [buildContestedCard(row.oracleId, summary?.names.cards[row.oracleId] ?? "", a, {
       arrived: row.arrived,
       fromImport: true,
