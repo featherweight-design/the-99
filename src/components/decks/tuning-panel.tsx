@@ -37,7 +37,8 @@ import { TuningNotesField } from "./tuning-notes-field";
  *
  * Its states, off `TuningState` and what the reader just pressed:
  *  - never run: with marked games (C1), with no games (D1, E3), with games and no marks (E5);
- *  - reading: the manifest ticking as each read lands, the fan shuffling, Stop (C2);
+ *  - reading: the manifest ticking on a pure client-side stagger (H35, PR 3 — not on each read
+ *    landing, which it did through PR 2), the fan shuffling, Stop (C2);
  *  - results, five or fewer (A1, A2, D2); part answered (C3); all answered (C4);
  *  - retired by a commit (C5): the set is cleared and the gate reopens;
  *  - nothing changed (state 5): drawn when a press finds the gate `unchanged`, with Suggest
@@ -980,7 +981,15 @@ export function readSteps(facts: TuningFacts, _intent: string | null): ManifestS
 /** The checklist's rows while a run is reading — `readSteps` plus "Kept for this deck" and
  *  Additional notes, which become rows only once a run starts (STATES §3 state 4: "Limits and
  *  notes become rows"). `intent` kept as a parameter for symmetry with `readSteps`, unused here
- *  since limits/notes carry no presence check of their own. */
+ *  since limits/notes carry no presence check of their own.
+ *
+ *  Pre-open review (round 0): this PR does not yet SEND the limits or the typed note to the
+ *  model — `TuningDeps.run` takes neither, and `pressRun` passes nothing beyond the run id. The
+ *  limits/notes rows here disclose what the checklist will read, not what this run already has;
+ *  the wiring (both rows genuinely true) is PR 4a (limits) and PR 4b (notes), named in the plan.
+ *  `TuningNotesField`'s own comment says the same. Flagging this rather than hiding the rows: per
+ *  PR 2's Settled precedent, shipping the disclosure ahead of the wiring is the deliberate split,
+ *  not an oversight to quietly fix by holding the UI back. */
 export function runSteps(facts: TuningFacts, intent: string | null): ManifestStep[] {
   const preview = readSteps(facts, intent);
   const i = preview.indexOf("description");

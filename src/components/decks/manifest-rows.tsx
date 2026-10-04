@@ -3,8 +3,10 @@ import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 
 /**
  * What a run reads, one row per read (placement addendum v2, canvas :432-437, :459-462,
- * :600-605). The manifest is the honest disclosure of what the model is handed: a row ticks when
- * its read has genuinely landed, never on a timer, and a row with nothing to read says so.
+ * :600-605). The manifest is the honest disclosure of what the model is handed. Through H35
+ * PR 2 a row ticked only when its read had genuinely landed, never on a timer; PR 3 replaces
+ * that with a pure client-side stagger (below) — the disclosure is still honest (the figures a
+ * row shows, when it shows any, are real), but the TICK itself is now presentational pacing.
  *
  * READ-ONLY, and drawn so it cannot read as a control (manifest-affordance addendum, Hugh
  * 2026-09-28). Its rows used to lead with an empty bordered box inside a bordered row, and a
