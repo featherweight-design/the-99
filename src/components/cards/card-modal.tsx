@@ -471,19 +471,25 @@ export function artWidthReservePx(underCardHeight: number): number {
 
 /**
  * A desktop neighbor plate (handoff decision 2): the whole card, scaled down, on the backdrop
- * 24px off the modal, with the name under it in 12.5px `--fg-muted`. 168x235 at 63/88 — the
+ * 24px off the modal, with the name under it in 12.5px `--fg`. 168x235 at 63/88 — the
  * card ratio exactly, which is also how the ~1252px threshold was derived (decision 4).
  *
  * Art first, then identity, then a bare plate (handoff "Notes for engineering" §2): a sibling
  * carrying only an id draws no text at all, since there is none to draw.
  */
 // The dialog's own fixed desktop geometry (`md:w-[820px]`) and the 24px gap decision 2 draws
-// between it and a plate — the same two constants the 1252px threshold comment derives from.
-// Kept here, beside the one place that reads them, rather than exported: nothing else needs
-// them, and the threshold's own comment is free to keep stating the arithmetic in prose.
-const DIALOG_HALF_WIDTH = 410;
+// between it and a plate, from which `NEIGHBOR_MIN_WIDTH` computes the plates' threshold. The
+// half-width is exported for `card-modal-geometry.test.ts`, which pins the dialog's class to it.
+export const DIALOG_HALF_WIDTH = 410;
 const PLATE_GAP = 24;
 const PLATE_WIDTH = 168;
+/**
+ * The neighbor plates' threshold (handoff decision 4, ledger 2): the dialog, plus a plate, its gap
+ * off the dialog and 24px clear of the viewport edge on each side. 1252 today, and COMPUTED, so a
+ * move of the dialog's width moves it too; `card-modal-geometry.test.ts` pins the dialog's
+ * `md:w-[…]` class to `DIALOG_HALF_WIDTH`, the half a Tailwind literal cannot read.
+ */
+export const NEIGHBOR_MIN_WIDTH = 2 * (DIALOG_HALF_WIDTH + PLATE_GAP + PLATE_WIDTH + 24);
 
 const NeighborPlate = React.forwardRef<
   HTMLButtonElement,
@@ -503,17 +509,30 @@ const NeighborPlate = React.forwardRef<
       type="button"
       onClick={(e) => { e.stopPropagation(); onPress(); }}
       aria-label={cardCarouselCopy.neighborAria(direction, sibling.name)}
-      className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center gap-[6px] cursor-pointer bg-transparent border-0 p-0"
+      // `DesktopModal.dc.html` D1: the plate rests at .55 and a hover or keyboard focus raises it to
+      // .92, the focused plate ringed in `--accent` 3px out. The ring is the
+      // plate's, not the button's, so the browser's own ring around both is turned off.
+      className="group absolute top-1/2 -translate-y-1/2 flex flex-col items-center gap-[10px] cursor-pointer bg-transparent border-0 p-0 outline-none"
       style={{ left }}
     >
       <span
         aria-hidden="true"
-        className="block rounded-[10px]"
-        style={{ width: PLATE_WIDTH, height: 235, ...art, boxShadow: "0 12px 30px rgba(0,0,0,0.4)" }}
+        className="block rounded-[9px] opacity-[.55] group-hover:opacity-[.92] group-focus-visible:opacity-[.92] group-focus-visible:outline-2 group-focus-visible:outline-offset-[3px] group-focus-visible:outline-[color:var(--accent)] group-focus-visible:[outline-style:solid]"
+        style={{
+          width: PLATE_WIDTH,
+          height: 235,
+          ...art,
+          boxShadow: "0 18px 40px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3)",
+        }}
       />
       {sibling.name ? (
-        <span className="font-mono text-[12.5px] truncate max-w-[168px]" style={{ color: "var(--fg-muted)" }}>
-          {sibling.name}
+        // `--fg`, not the handoff's `--fg-muted` (ledger 1, measured in build on every backdrop
+        // pixel behind the name, six themes): `--fg-muted` put 39% to 78% of them under AA's 4.5:1
+        // for 12.5px text, and `--fg-body` still up to 6%; `--fg` holds 5.5:1 at its worst pixel.
+        // A hover is carried by the plate rising to .92, since the name has no brighter ink left.
+        <span className="flex gap-[6px] max-w-[168px] text-[12.5px] whitespace-nowrap text-[color:var(--fg)]">
+          <span aria-hidden="true">{direction === "previous" ? "‹" : "›"}</span>
+          <span className="truncate">{sibling.name}</span>
         </span>
       ) : null}
     </button>
@@ -783,9 +802,8 @@ export function CardModal({
   const [expanded, setExpanded] = useState(false);
   // The zoom is a layer inside this dialog, never a dialog of its own (table §3.1).
   const [zoomed, setZoomed] = useState(false);
-  // The neighbor plates' own threshold (handoff decision 4): 820 (the dialog) + 2 x (168 the
-  // plate + 24 off the modal + 24 clear of the viewport edge) = 1252.
-  const wideEnoughForNeighbors = useMinWidth("(min-width: 1252px)");
+  // The neighbor plates' own threshold: see `NEIGHBOR_MIN_WIDTH`.
+  const wideEnoughForNeighbors = useMinWidth(`(min-width: ${NEIGHBOR_MIN_WIDTH}px)`);
   // The phone's peeks, mounted only below `md` as the desktop plates are only above 1252: a
   // hidden duplicate of a control is still a second control to every query that finds it.
   const narrow = !useMinWidth("(min-width: 768px)");

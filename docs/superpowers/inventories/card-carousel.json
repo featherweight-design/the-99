@@ -26,7 +26,7 @@
   "rows": [
     {
       "id": "phone-first",
-      "label": "/collection \u2014 phone teaser on the list's first card: counter, right peek only",
+      "label": "/collection — phone teaser on the list's first card: counter, right peek only",
       "widths": [
         "phone",
         "phone-360"
@@ -46,7 +46,7 @@
     },
     {
       "id": "phone-mid",
-      "label": "/collection \u2014 phone teaser after tapping the next peek: both peeks, 2 of N",
+      "label": "/collection — phone teaser after tapping the next peek: both peeks, 2 of N",
       "widths": [
         "phone",
         "phone-360"
@@ -71,7 +71,7 @@
     },
     {
       "id": "phone-full",
-      "label": "/collection \u2014 phone sheet raised by All details: the shipped details column at y 64",
+      "label": "/collection — phone sheet raised by All details: the shipped details column at y 64",
       "widths": [
         "phone",
         "phone-360"
@@ -96,7 +96,7 @@
     },
     {
       "id": "phone-one",
-      "label": "/collection?q= one card \u2014 a list of one: no counter, no peeks, the sheet still expands",
+      "label": "/collection?q= one card — a list of one: no counter, no peeks, the sheet still expands",
       "widths": [
         "phone",
         "phone-360"
@@ -116,7 +116,7 @@
     },
     {
       "id": "phone-two-faced",
-      "label": "/collection?q= a two-faced card \u2014 the turn plate on the card's corner",
+      "label": "/collection?q= a two-faced card — the turn plate on the card's corner",
       "widths": [
         "phone",
         "phone-360"
@@ -136,7 +136,7 @@
     },
     {
       "id": "deck-row-open",
-      "label": "/decks/[id] \u2014 decklist row opens the modal, mid-list",
+      "label": "/decks/[id] — decklist row opens the modal, mid-list",
       "steps": [
         {
           "goto": "/decks",
@@ -144,7 +144,7 @@
           "settle": 3000
         },
         {
-          "click": "a[href^=\"/decks/\"]",
+          "click": "a[href^=\"/decks/\"]:not([href=\"/decks/import\"]):not([href=\"/decks/new\"]):not([data-notice-link])",
           "wait": "main, [role=main], h1",
           "settle": 7000
         },
@@ -154,11 +154,15 @@
           "wait": "[role=dialog]",
           "settle": 3000
         }
+      ],
+      "widths": [
+        "narrow",
+        "desktop"
       ]
     },
     {
       "id": "deck-row-next",
-      "label": "/decks/[id] \u2014 Next pages to the following card",
+      "label": "/decks/[id] — Next pages to the following card",
       "widths": [
         "narrow",
         "desktop"
@@ -170,7 +174,7 @@
           "settle": 3000
         },
         {
-          "click": "a[href^=\"/decks/\"]",
+          "click": "a[href^=\"/decks/\"]:not([href=\"/decks/import\"]):not([href=\"/decks/new\"]):not([data-notice-link])",
           "wait": "main, [role=main], h1",
           "settle": 7000
         },
