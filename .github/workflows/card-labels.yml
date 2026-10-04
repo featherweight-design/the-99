@@ -42,7 +42,7 @@ on:
   workflow_dispatch:
     inputs:
       cap:
-        description: 'Hard stop in USD for this run (max 65). Blank uses the weekly 9.'
+        description: 'Hard stop in USD for this run (max 75). Blank uses the weekly 9.'
         required: false
         default: ''
       pause:
@@ -105,10 +105,10 @@ jobs:
         # What this step adds is two things `boundedNumber` cannot:
         #
         #   1. THE CEILINGS. `boundedNumber`'s range for both figures is 0 to 100, which is a
-        #      sanity bound rather than Hugh's. His are 65 and 65 (below), and they are two
+        #      sanity bound rather than Hugh's. His are 75 and 65 (below), and they are two
         #      different questions: the hard stop on what a run may spend, and where it stops and
         #      reports instead of continuing. A dispatch may ask for LESS of either and never for
-        #      more. 70 would pass `boundedNumber` and must not pass here.
+        #      more. 80 would pass `boundedNumber` and must not pass here.
         #   2. THE TIMING. `boundedNumber` runs inside the script, so its refusal lands after the
         #      job has installed and connected. Refusing here is free, and reads as a bad input
         #      rather than as a failed run.
@@ -118,9 +118,10 @@ jobs:
         #
         # The ceilings are Hugh's, and they are two different bounds rather than one: the hard
         # stop on what a run may spend, and where it stops and reports instead of continuing. A
-        # dispatch may ask for LESS of either. It may never ask for more. Both are 65 since Hugh
+        # dispatch may ask for LESS of either. It may never ask for more. Both were 65 since Hugh
         # approved the full backfill at ~$61.1 with the stop raised to ~$65 (2026-10-03): its
-        # projection sits near $61, so a pause ceiling of 50 would refuse the run he approved.
+        # projection sits near $61, so a pause ceiling of 50 would refuse the run he approved. The
+        # stop is 75 since he approved the v8 relabel with a $75 cap and a $65 pause (2026-10-04).
         env:
           # `github.event.inputs` rather than `inputs`, which is what all six sibling workflows in
           # this repository use and is defined on every event rather than only on a dispatch.
@@ -167,7 +168,7 @@ jobs:
           # Both are checked before either failure exits, so a dispatch that got both wrong is
           # told both times rather than once per attempt.
           ok=0
-          check 'cap'   "$cap"   65 || ok=1
+          check 'cap'   "$cap"   75 || ok=1
           check 'pause' "$pause" 65 || ok=1
           [ "$ok" -eq 0 ] || exit 1
 
@@ -175,7 +176,7 @@ jobs:
           #
           # `LABEL_RUN_ID` names the intents a run writes and the BUDGET it spends from. Since the
           # wave-publish change the cap binds a budget FAMILY rather than one id (`budgetFamily`):
-          # every `backfill-YYYY-MM-DD` dispatch shares one budget per prompt version (Hugh's ~$65),
+          # every `backfill-YYYY-MM-DD` dispatch shares one budget per prompt version (Hugh's ~$75),
           # and each cron run named for its ISO week keeps its OWN weekly cap. So a backfill
           # re-dispatched under a later date continues the same budget instead of starting a fresh one,
           # the weekly budget stays weekly, and the two kinds of run never spend from each other's.
@@ -233,7 +234,7 @@ jobs:
             echo ""
             echo "| | value | ceiling |"
             echo "|---|---|---|"
-            echo "| hard stop | \$$cap | \$65 |"
+            echo "| hard stop | \$$cap | \$75 |"
             echo "| pause and report | \$$pause | \$65 |"
             echo "| scope | $scope | |"
             echo ""

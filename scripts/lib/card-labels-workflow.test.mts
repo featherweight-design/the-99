@@ -9,8 +9,9 @@ import { describe, expect, it } from "vitest";
  * The spend bounds on `card-labels.yml`, exercised as SHIPPED.
  *
  * This is the one job in the repository that spends money, and its bounds are Hugh's: a run
- * may not stop later than $65, and may not continue past a $65 projection (raised from $55 and
- * $50 on 2026-10-03, when he approved the full backfill at ~$61.1). A dispatch may ask
+ * may not stop later than $75, and may not continue past a $65 projection (the stop raised from
+ * $55 to $65 on 2026-10-03, when he approved the full backfill at ~$61.1, and to $75 on 2026-10-04
+ * for the v8 relabel; the pause from $50 to $65 on 2026-10-03). A dispatch may ask
  * for less of either and may never ask for more — which is a rule written in bash, in YAML, on
  * a path that runs nowhere else.
  *
@@ -205,9 +206,9 @@ describe("the card-labels spend bounds", () => {
   });
 
   it("accepts the backfill's ceilings exactly", () => {
-    const r = resolve("65", "65");
+    const r = resolve("75", "65");
     expect(r.code).toBe(0);
-    expect([r.cap, r.pause]).toEqual(["65", "65"]);
+    expect([r.cap, r.pause]).toEqual(["75", "65"]);
   });
 
   it("accepts a decimal below them", () => {
@@ -219,9 +220,9 @@ describe("the card-labels spend bounds", () => {
   // The ceilings are Hugh's two bounds, so each is checked on its OWN side: a single case
   // raising both cannot tell which comparison is doing the work.
   it.each([
-    ["a cap over 65", "66", "65"],
-    ["a pause over 65", "65", "66"],
-    ["a mistyped 65", "650", "65"],
+    ["a cap over 75", "76", "65"],
+    ["a pause over 65", "75", "66"],
+    ["a mistyped 75", "750", "65"],
     ["a zero cap", "0", "5"],
     // `-1` is rejected by the PARSE (the pattern admits no sign), not by awk's `>0`; the zero
     // row above is what exercises that bound. Labelled for what it measures, not for what it
@@ -260,7 +261,7 @@ describe("the card-labels spend bounds", () => {
   it("reports both bounds when both are wrong", () => {
     // One attempt, both answers: the alternative is an operator fixing one figure per run of a
     // job whose whole purpose is to not be run casually.
-    const r = resolve("66", "66");
+    const r = resolve("76", "66");
     expect(r.code).toBe(1);
     expect(r.errors).toHaveLength(2);
   });

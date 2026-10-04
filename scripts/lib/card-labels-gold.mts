@@ -880,7 +880,7 @@ const AUDITED: GoldRow[] = [
       j("role", "draw", { af: "each", rec: "oneShot" }),
       j("theme", "discard", { af: "each", rec: "oneShot" }),
     ],
-    why: "A symmetrical wheel. The damage is to PLAYERS, so not removal; it is closest to drain but the vocabulary's drain rule wants a life-loss clause, which this has not. Task 4 re-audit: theme `draw` removed (the role covers the wheel); gains `discard`, now in the vocabulary. Both affects each, a judgement: 'friend' can be any player. The damage to foes is still not `drain`, because each player chooses friend or foe, so it is not aimed at opponents alone.",
+    why: "A symmetrical wheel. The damage is to PLAYERS, so not removal; it is closest to drain, the damage-to-opponents job. Task 4 re-audit: theme `draw` removed (the role covers the wheel); gains `discard`, now in the vocabulary. Both affects each, a judgement: 'friend' can be any player. The damage to foes is still not `drain`, because each player chooses friend or foe, so it is not aimed at opponents alone.",
   },
   {
     name: "Lady Octopus, Inspired Inventor", klass: "easy",
