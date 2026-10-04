@@ -8,4 +8,23 @@ export const cardCarouselCopy = {
   position: (n: number, total: number) => `${n.toLocaleString("en-US")} of ${total.toLocaleString("en-US")}`,
   prevAria: "Previous card",
   nextAria: "Next card",
+  /**
+   * The provider's live region, on a successful page (handoff README decision 8, quoted
+   * verbatim): "Name, then position." Never spoken on the first open — the visible counter
+   * covers that — only on Prev/Next landing.
+   */
+  arrived: (name: string, n: number, total: number) => `${name}, ${cardCarouselCopy.position(n, total)}`,
+  /** An arrow key pressed at the start of the list (decision 8, quoted verbatim). */
+  firstCard: "First card in this list",
+  /** An arrow key pressed at the end of the list (decision 8, quoted verbatim). */
+  lastCard: "Last card in this list",
+  /**
+   * The desktop neighbor plate's accessible name (decision 2). Same action as `prevAria` /
+   * `nextAria`, named with the card it leads to when the provider knows it; falls back to the
+   * bare form for a sibling carrying only an id.
+   */
+  neighborAria: (direction: "previous" | "next", name?: string) => {
+    const bare = direction === "previous" ? cardCarouselCopy.prevAria : cardCarouselCopy.nextAria;
+    return name ? `${bare}: ${name}` : bare;
+  },
 } as const;

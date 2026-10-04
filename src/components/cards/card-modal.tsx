@@ -42,6 +42,8 @@ import { manapoolCardUrl } from "../../lib/manapool/links";
 import { FitsDoor } from "./fits-door";
 import { cardLinkOutCopy } from "../../lib/copy/collection-browse";
 import { cardCarouselCopy } from "../../lib/copy/card-carousel";
+import type { SiblingCard } from "./card-detail-provider";
+import { useMinWidth } from "../ui/use-min-width";
 import { ProxyControl } from "../decks/proxy-control";
 import { proxyCopy } from "../../lib/copy/proxies";
 
@@ -424,6 +426,61 @@ const PHONE_TOP: Record<52 | 96 | 140, string> = {
  */
 const DOOR_HEIGHT = 8 + 6 + 16 + 8 + 21;
 
+/**
+ * A desktop neighbor plate (handoff decision 2): the whole card, scaled down, on the backdrop
+ * 24px off the modal, with the name under it in 12.5px `--fg-muted`. 168x235 at 63/88 — the
+ * card ratio exactly, which is also how the ~1252px threshold was derived (decision 4).
+ *
+ * Art first, then identity, then a bare plate (handoff "Notes for engineering" §2): a sibling
+ * carrying only an id draws no text at all, since there is none to draw.
+ */
+// The dialog's own fixed desktop geometry (`md:w-[820px]`) and the 24px gap decision 2 draws
+// between it and a plate — the same two constants the 1252px threshold comment derives from.
+// Kept here, beside the one place that reads them, rather than exported: nothing else needs
+// them, and the threshold's own comment is free to keep stating the arithmetic in prose.
+const DIALOG_HALF_WIDTH = 410;
+const PLATE_GAP = 24;
+const PLATE_WIDTH = 168;
+
+const NeighborPlate = React.forwardRef<
+  HTMLButtonElement,
+  { sibling: SiblingCard; direction: "previous" | "next"; onPress: () => void }
+>(function NeighborPlate({ sibling, direction, onPress }, ref) {
+  const art = sibling.imageUri
+    ? { backgroundImage: cssUrl(sibling.imageUri), backgroundSize: "cover", backgroundPosition: "center" }
+    : sibling.colorIdentity
+    ? { background: identityGradient([...sibling.colorIdentity]) }
+    : { background: "var(--elevated)" };
+  // Anchored from the BACKDROP's own center rather than carried as a flex sibling of the
+  // centered dialog (pre-open review, round 1): a flex sibling present on only one side
+  // shifts the dialog itself by its width-plus-gap, which moved the dialog and its footer
+  // controls under the reader on every page to a list's first or last card.
+  const left = direction === "previous"
+    ? `calc(50% - ${DIALOG_HALF_WIDTH + PLATE_GAP + PLATE_WIDTH}px)`
+    : `calc(50% + ${DIALOG_HALF_WIDTH + PLATE_GAP}px)`;
+  return (
+    <button
+      ref={ref}
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onPress(); }}
+      aria-label={cardCarouselCopy.neighborAria(direction, sibling.name)}
+      className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center gap-[6px] cursor-pointer bg-transparent border-0 p-0"
+      style={{ left }}
+    >
+      <span
+        aria-hidden="true"
+        className="block rounded-[10px]"
+        style={{ width: PLATE_WIDTH, height: 235, ...art, boxShadow: "0 12px 30px rgba(0,0,0,0.4)" }}
+      />
+      {sibling.name ? (
+        <span className="font-mono text-[12.5px] truncate max-w-[168px]" style={{ color: "var(--fg-muted)" }}>
+          {sibling.name}
+        </span>
+      ) : null}
+    </button>
+  );
+});
+
 export function CardModal({
   card,
   position,
@@ -431,6 +488,13 @@ export function CardModal({
   onClose,
   onPrev,
   onNext,
+  onPrevPeek = null,
+  onNextPeek = null,
+  onAtStart,
+  onAtEnd,
+  prevSibling = null,
+  nextSibling = null,
+  enterFrom = null,
   onArtChange,
   openAtPrinting = null,
   deckId = null,
@@ -528,6 +592,25 @@ export function CardModal({
   onClose: () => void;
   onPrev: (() => void) | null;
   onNext: (() => void) | null;
+  /** The neighbor plate's own press (handoff decision 2), separate from `onPrev`/`onNext` so the
+   *  provider can tell a peek from the footer button or an arrow key and restore focus to the
+   *  same role across the remount (handoff "Notes for engineering" §3). Null exactly when
+   *  `onPrev`/`onNext` is: the plate draws nothing at an end either. */
+  onPrevPeek?: (() => void) | null;
+  onNextPeek?: (() => void) | null;
+  /** An arrow key pressed at the start or end of the list (decision 8): announced, nothing else
+   *  moves. Undefined where there is no carousel to have an end (a list of zero or one). */
+  onAtStart?: () => void;
+  onAtEnd?: () => void;
+  /** The cards either side of this one, carrying whatever art and identity their opener had
+   *  (H23 carousel PR 1/1b). Null at a list's end, or with no list at all. */
+  prevSibling?: SiblingCard | null;
+  nextSibling?: SiblingCard | null;
+  /** Which control led to THIS mount, captured once at construction (the carousel's own
+   *  README "Notes for engineering" §1/§3): which side the art slides in from, and which
+   *  control gets focus in place of the usual opening ✕. Null on a fresh open, and on any
+   *  card change that is not a page. */
+  enterFrom?: "prev" | "next" | "prevPeek" | "nextPeek" | null;
   /**
    * Called when the art pick is written, so a caller holding a copy of this card can
    * drop it. The write changes what the card says about itself, and a stale copy would
@@ -567,6 +650,10 @@ export function CardModal({
   }) | null;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  // The fixed backdrop — the one ancestor the dialog and the desktop neighbor plates share.
+  // The arrow-key listener below attaches here rather than to `dialogRef`, since a peek press
+  // can move focus onto a plate, which sits outside the dialog.
+  const backdropRef = useRef<HTMLDivElement>(null);
   // Two card modals are up at once while a card is stacked over a sheet over a card, so the
   // covered one takes its own title id: shared, the top dialog would be named by the held card's
   // heading. The top card keeps the canonical id every other reader of the modal looks for.
@@ -578,6 +665,9 @@ export function CardModal({
   const [expanded, setExpanded] = useState(false);
   // The zoom is a layer inside this dialog, never a dialog of its own (table §3.1).
   const [zoomed, setZoomed] = useState(false);
+  // The neighbor plates' own threshold (handoff decision 4): 820 (the dialog) + 2 x (168 the
+  // plate + 24 off the modal + 24 clear of the viewport edge) = 1252.
+  const wideEnoughForNeighbors = useMinWidth("(min-width: 1252px)");
   // Where focus goes back to on close: the art that opened it, at whichever width
   // is actually on screen.
   const zoomTriggerRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -595,6 +685,16 @@ export function CardModal({
   const heldArtFace = useRef<string | null>(null);
   // The two shipped ✕ buttons, one per breakpoint tree.
   const closeRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  // Captured ONCE, at this instance's own construction: `enterFrom` is the provider's state and
+  // is cleared back to null the moment the arrival is announced (card-detail-provider.tsx), so
+  // reading the prop reactively would hand this already-mounted instance's slide and focus back
+  // to a fresh open partway through. `CardModal` is keyed on oracle id, so a new value here only
+  // ever arrives with a new instance.
+  const [enteredFrom] = useState(enterFrom);
+  const prevButtonRef = useRef<HTMLButtonElement | null>(null);
+  const nextButtonRef = useRef<HTMLButtonElement | null>(null);
+  const prevPeekRef = useRef<HTMLButtonElement | null>(null);
+  const nextPeekRef = useRef<HTMLButtonElement | null>(null);
   // THE NAME BLOCK'S RESERVE follows whatever sits in the close slot. The ✕ is 34px, and 46px
   // clears it; a back pill is as wide as its label, which runs from `Game changers` to `How we
   // determined bracket 4`, so it is measured rather than assumed (readiness finding 10).
@@ -626,15 +726,26 @@ export function CardModal({
    * and sits before the content column — so without this the first thing a keyboard
    * reader lands on would have become "Look at … up close", which is neither where
    * focus used to go nor the same at both widths.
+   *
+   * A PAGED mount (`enteredFrom` non-null) focuses the same-role control instead (handoff
+   * "Notes for engineering" §3): the footer button or the peek that led here, so the remount
+   * this component is built around does not drop focus to the ✕ on every press. Falls back to
+   * the ✕ if that control did not land — this width's footer is hidden at the peek's, say.
    */
   const initialFocusRef = useMemo(
     () => ({
       get current() {
+        const paged = enteredFrom === "prev" ? prevButtonRef.current
+          : enteredFrom === "next" ? nextButtonRef.current
+          : enteredFrom === "prevPeek" ? prevPeekRef.current
+          : enteredFrom === "nextPeek" ? nextPeekRef.current
+          : null;
+        if (paged && paged.getClientRects().length > 0) return paged;
         const mounted = closeRefs.current.filter((el): el is HTMLButtonElement => el !== null);
         return mounted.find((el) => el.getClientRects().length > 0) ?? mounted[0] ?? null;
       },
     }),
-    [],
+    [enteredFrom],
   );
   const [announcement, setAnnouncement] = useState("");
   // No reset on card change: the provider keys this component on oracleId, so
@@ -1094,6 +1205,42 @@ export function CardModal({
   const REGION_MOBILE = "printings-mobile";
   const REGION_DESKTOP = "printings-desktop";
 
+  // Arrow-key paging (handoff decision 4): anywhere in the dialog except the printing search
+  // input, the printing radiogroup, and the zoom — "a look, not a browser", decision 1. A list
+  // of one or two behaves exactly as the buttons do: the missing side is simply absent.
+  //
+  // ATTACHED TO THE BACKDROP, not the dialog (pre-open review, round 1). A peek press moves
+  // focus to the pressed plate via `initialFocusRef` on the REMOUNTED instance, and a neighbor
+  // plate is a sibling of `dialogRef`'s element, outside it — a listener on the dialog alone
+  // never sees a key pressed while focus sits on a plate, which stalled paging dead after the
+  // first peek. The backdrop is the one ancestor both the dialog and the plates share.
+  useEffect(() => {
+    const backdrop = backdropRef.current;
+    if (!backdrop || total <= 1) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      // A modified arrow is somebody else's shortcut — Alt+Left/Right is browser history,
+      // Cmd/Ctrl+Left/Right is a text-editing jump in some inputs (pre-open review, round 2).
+      // Plain Left/Right only, or the carousel silently eats a navigation the reader meant.
+      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      const active = document.activeElement;
+      if (active instanceof HTMLElement) {
+        if (active.tagName === "INPUT") return;
+        if (active.closest('[role="radiogroup"]')) return;
+        if (active.closest(`#${ZOOM_REGION}`)) return;
+      }
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        if (onPrev) onPrev(); else onAtStart?.();
+      } else {
+        e.preventDefault();
+        if (onNext) onNext(); else onAtEnd?.();
+      }
+    };
+    backdrop.addEventListener("keydown", handler);
+    return () => backdrop.removeEventListener("keydown", handler);
+  }, [total, onPrev, onNext, onAtStart, onAtEnd]);
+
   // A back face to turn to, or none (#363). The image is the second condition and
   // not an afterthought: a `transform` row seeded before the back-face column
   // existed carries the layout and no art, and a control that turns to a
@@ -1436,6 +1583,7 @@ export function CardModal({
     // Fixed backdrop wrapper — §Backdrop at 0.72, mixed against the canvas so the
     // dim tracks the theme; blurred collection behind is decorative and out-of-scope
     <div
+      ref={backdropRef}
       className={
         "fixed inset-0 flex items-center justify-center"
         + (covered ? " z-[49]" : " z-50")
@@ -1453,6 +1601,17 @@ export function CardModal({
       }}
       data-stacked={stacked || undefined}
     >
+      {/* Positioned OFF the centering flex row, not beside it (pre-open review, round 1): a
+          plate sized as a flex sibling shifts the centered dialog by its own width-plus-gap
+          whenever only one side has a neighbor (a list's first or last card), moving the
+          dialog and footer controls under the reader mid-page. Anchored instead from the
+          backdrop's own center, by the same 820px dialog half-width and 24px gap the 1252px
+          threshold is built from — so the dialog never moves, with a neighbor on one side,
+          both, or neither. Hidden while the zoom is open (decision 1: "a look, not a
+          browser" — a visible, clickable plate behind the zoom could still page past it). */}
+      {wideEnoughForNeighbors && prevSibling && !zoomed ? (
+        <NeighborPlate ref={prevPeekRef} sibling={prevSibling} direction="previous" onPress={() => onPrevPeek?.()} />
+      ) : null}
       <div
         ref={dialogRef}
         role="dialog"
@@ -1598,7 +1757,12 @@ export function CardModal({
         >
           <div
             data-testid="modal-art-desktop"
-            className="relative rounded-[12px]"
+            className={
+              "relative rounded-[12px]"
+              + (enteredFrom === "prev" || enteredFrom === "prevPeek" ? " anim-carousel-prev"
+                : enteredFrom === "next" || enteredFrom === "nextPeek" ? " anim-carousel-next"
+                : "")
+            }
             style={{
               // THE ART GIVES BACK WHAT THE STACK NEEDS, rather than the stack
               // hanging off a fixed-size box and being clipped by the dialog's
@@ -1923,29 +2087,45 @@ export function CardModal({
                 <FitsDoor cardName={card.name} onPress={onFindDeck} pickerOpen={fitsOpen} layout="row" />
               </span>
             ) : <ExternalLink href={manapoolCardUrl(card.name)} label={cardLinkOutCopy.card} />}
-            <span className="ml-auto flex items-center gap-[14px] flex-none">
-              <button
-                type="button"
-                onClick={onPrev ?? undefined}
-                disabled={!onPrev}
-                aria-label={cardCarouselCopy.prevAria}
-                className="cursor-pointer text-[15px] disabled:opacity-40 text-[color:var(--fg-faint)]"
-              >
-                ‹ Prev
-              </button>
-              <span className="font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>
-                {cardCarouselCopy.position(position, total)}
+            {/* One / two (handoff decision 6): a list of one drops the whole counter and
+                both dead controls, so the link beside it stands alone. */}
+            {total > 1 ? (
+              <span className="ml-auto flex items-center gap-[14px] flex-none">
+                <button
+                  ref={prevButtonRef}
+                  type="button"
+                  onClick={onPrev ?? undefined}
+                  // `aria-disabled`, never `disabled` (decision 5): the native attribute
+                  // takes the control out of the tab order, which is how a reader who
+                  // paged to an end lost focus to the body. `onClick` is already undefined
+                  // there, so the press itself is already a no-op.
+                  aria-disabled={!onPrev}
+                  aria-label={cardCarouselCopy.prevAria}
+                  className={
+                    "cursor-pointer text-[15px] text-[color:var(--fg-faint)]"
+                    + (onPrev ? "" : " opacity-40")
+                  }
+                >
+                  ‹ Prev
+                </button>
+                <span className="font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>
+                  {cardCarouselCopy.position(position, total)}
+                </span>
+                <button
+                  ref={nextButtonRef}
+                  type="button"
+                  onClick={onNext ?? undefined}
+                  aria-disabled={!onNext}
+                  aria-label={cardCarouselCopy.nextAria}
+                  className={
+                    "cursor-pointer text-[15px] text-[color:var(--accent)]"
+                    + (onNext ? "" : " opacity-40")
+                  }
+                >
+                  Next ›
+                </button>
               </span>
-              <button
-                type="button"
-                onClick={onNext ?? undefined}
-                disabled={!onNext}
-                aria-label={cardCarouselCopy.nextAria}
-                className="cursor-pointer text-[15px] disabled:opacity-40 text-[color:var(--accent)]"
-              >
-                Next ›
-              </button>
-            </span>
+            ) : null}
           </div>
           {footer ? <div className="md:hidden flex-none">{footer("column")}</div> : null}
         </div>
@@ -2115,6 +2295,9 @@ export function CardModal({
           </div>
         )}
       </div>
+      {wideEnoughForNeighbors && nextSibling && !zoomed ? (
+        <NeighborPlate ref={nextPeekRef} sibling={nextSibling} direction="next" onPress={() => onNextPeek?.()} />
+      ) : null}
     </div>
   );
 }

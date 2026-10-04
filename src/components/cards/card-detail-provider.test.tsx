@@ -1,7 +1,8 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { printingPickerCopy } from "../../lib/copy/collection";
+import { cardCarouselCopy } from "../../lib/copy/card-carousel";
 
 vi.mock("../../app/collection/actions", () => ({
   setCardArtPreference: vi.fn(async () => true),
@@ -205,25 +206,26 @@ describe("CardDetailProvider", () => {
     await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
     await screen.findByRole("dialog");
 
-    expect(screen.getByRole("button", { name: "Previous card" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Previous card" })).toHaveAttribute("aria-disabled", "true");
     await click(screen.getByRole("button", { name: "Next card" }));
 
     await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Sol Ring"));
-    expect(screen.getByRole("button", { name: "Next card" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Previous card" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Next card" })).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByRole("button", { name: "Previous card" })).toHaveAttribute("aria-disabled", "false");
   });
 
   // The commander and a suggestion belong to no list; forcing paging there would page
-  // through a list of one.
-  it("disables paging when opened without siblings", async () => {
+  // through a list of one — decision 6 drops the whole counter and both controls rather
+  // than disabling them, so the link beside it stands alone.
+  it("draws no carousel at all for a card with no siblings", async () => {
     const fetchCard = vi.fn().mockResolvedValue(SIGNET);
     renderTriggers(fetchCard);
     await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
     await screen.findByRole("dialog");
 
-    expect(screen.getByRole("button", { name: "Previous card" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Next card" })).toBeDisabled();
-    expect(screen.getByText("1 of 1")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Previous card" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Next card" })).not.toBeInTheDocument();
+    expect(screen.queryByText("1 of 1")).not.toBeInTheDocument();
   });
 
   // A surface whose list is a live filter re-files it as that filter moves, and the
@@ -240,7 +242,8 @@ describe("CardDetailProvider", () => {
     );
     await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
     await screen.findByRole("dialog");
-    expect(screen.getByRole("button", { name: "Next card" })).toBeDisabled();
+    // A list of one at open: decision 6 draws no carousel, so there is no button yet.
+    expect(screen.queryByRole("button", { name: "Next card" })).not.toBeInTheDocument();
 
     await click(screen.getByRole("button", { name: "refile" }));
     await click(screen.getByRole("button", { name: "Next card" }));
@@ -1429,4 +1432,233 @@ describe("CardDetailProvider reads the neighbors ahead (carousel, H23)", () => {
     expect(await screen.findByText("2 of 3")).toBeTruthy();
     await waitFor(() => expect(prefetchCard.mock.calls.map((c) => c[0])).toEqual(["o-c", "o-a"]));
   });
+});
+
+describe("CardDetailProvider pages the desktop carousel (H23 PR 2)", () => {
+  afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+  function stubMinWidth(matches: boolean) {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches,
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+      onchange: null,
+      dispatchEvent: () => false,
+    }));
+  }
+  const allLive = () =>
+    [...document.querySelectorAll('[aria-live="polite"]')].map((el) => el.textContent).join("|");
+  const A = card("o-a", "Card A");
+  const B = card("o-b", "Card B");
+  const C = card("o-c", "Card C");
+  const byId: Record<string, BrowseCard> = { "o-a": A, "o-b": B, "o-c": C };
+  const siblings = [
+    { oracleId: "o-a", name: "Card A", imageUri: "https://img/a.jpg" },
+    { oracleId: "o-b", name: "Card B" },
+    { oracleId: "o-c", name: "Card C", colorIdentity: ["U"] },
+  ];
+  const mount = (oracleId: string) =>
+    render(
+      <CardDetailProvider fetchCard={async (id) => byId[id] ?? null}>
+        <CardDetailTrigger oracleId={oracleId} name={byId[oracleId].name} siblings={siblings}>open</CardDetailTrigger>
+      </CardDetailProvider>,
+    );
+  const press = () => act(async () => { fireEvent.click(screen.getByText("open")); });
+
+  it("draws both neighbor plates at the wide threshold, with art and with a gradient", async () => {
+    stubMinWidth(true);
+    mount("o-b");
+    await press();
+    await screen.findByRole("dialog");
+    const prevPlate = screen.getByRole("button", { name: "Previous card: Card A" });
+    const nextPlate = screen.getByRole("button", { name: "Next card: Card C" });
+    expect(within(prevPlate).getByText("Card A")).toBeInTheDocument();
+    expect(within(nextPlate).getByText("Card C")).toBeInTheDocument();
+  });
+
+  it("draws a bare plate with no text for a sibling carrying only an id", async () => {
+    stubMinWidth(true);
+    render(
+      <CardDetailProvider fetchCard={async (id) => byId[id] ?? null}>
+        <CardDetailTrigger oracleId="o-b" name="Card B" siblings={["o-a", "o-b"]}>open</CardDetailTrigger>
+      </CardDetailProvider>,
+    );
+    await press();
+    const dialog = await screen.findByRole("dialog");
+    // The footer's own Prev button shares this exact bare label when a sibling carries no
+    // name, so the plate is the match OUTSIDE the dialog rather than inside it.
+    const prevPlate = screen.getAllByRole("button", { name: cardCarouselCopy.prevAria })
+      .find((el) => !dialog.contains(el));
+    expect(prevPlate).toBeTruthy();
+    expect(within(prevPlate as HTMLElement).queryByText(/./)).not.toBeInTheDocument();
+  });
+
+  it("draws no plates under the width threshold", async () => {
+    stubMinWidth(false);
+    mount("o-b");
+    await press();
+    await screen.findByRole("dialog");
+    // Named with the neighbor's own title, which only a plate ever carries — the footer's
+    // Prev/Next stay in bare form no matter the width, so this name is unambiguous.
+    expect(screen.queryByRole("button", { name: "Previous card: Card A" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Next card: Card C" })).not.toBeInTheDocument();
+  });
+
+  it("pages when a neighbor plate is pressed", async () => {
+    stubMinWidth(true);
+    mount("o-b");
+    await press();
+    await screen.findByRole("dialog");
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Next card: Card C" }));
+    });
+    await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Card C"));
+  });
+
+  // Pre-open review, round 1: the plates used to be flex siblings of the centered dialog,
+  // so a plate present on only one side (every list end) shifted the dialog by its own
+  // width-plus-gap. Positioned absolutely from the backdrop's center now, independent of
+  // how many plates are drawn.
+  it("positions each neighbor plate from the backdrop's center, not as a flex sibling", async () => {
+    stubMinWidth(true);
+    mount("o-b");
+    await press();
+    await screen.findByRole("dialog");
+    const prevPlate = screen.getByRole("button", { name: "Previous card: Card A" });
+    const nextPlate = screen.getByRole("button", { name: "Next card: Card C" });
+    expect(prevPlate.className).toContain("absolute");
+    expect(nextPlate.className).toContain("absolute");
+    expect(prevPlate.style.left).toContain("calc(50% -");
+    expect(nextPlate.style.left).toContain("calc(50% +");
+  });
+
+  // Pre-open review, round 1: at >=1252px a plate sat beside the zoom layer rather than
+  // under it, so it stayed visible and clickable while the zoom was open — pressing one
+  // paged the carousel and unmounted the zoom mid-look, contrary to decision 1 ("a look,
+  // not a browser").
+  it("hides both neighbor plates while the zoom is open", async () => {
+    stubMinWidth(true);
+    mount("o-b");
+    await press();
+    const dialog = await screen.findByRole("dialog");
+    expect(screen.getByRole("button", { name: "Next card: Card C" })).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(within(dialog).getAllByRole("button", { name: /^Look at /i })[0]);
+    });
+    // Named with the neighbor's own title — only a plate ever carries that form, so this
+    // cannot collide with the footer's bare "Previous card"/"Next card" buttons, which stay
+    // mounted (inert behind the zoom) regardless.
+    expect(screen.queryByRole("button", { name: "Previous card: Card A" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Next card: Card C" })).not.toBeInTheDocument();
+  });
+
+  // Pre-open review, round 1: the arrow-key listener lived on the dialog element alone, so
+  // once a peek press moved focus onto the (pressed) plate — a sibling of the dialog, not a
+  // descendant — a further arrow key never reached it and paging stalled.
+  it("keeps paging on arrow keys after focus has moved to a neighbor plate", async () => {
+    stubMinWidth(true);
+    mount("o-a");
+    await press();
+    await screen.findByRole("dialog");
+    const nextPlate = screen.getByRole("button", { name: "Next card: Card B" });
+    await act(async () => { fireEvent.click(nextPlate); });
+    await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Card B"));
+    // The remounted instance restores focus to its own peek plate (H23 PR 2), which jsdom's
+    // zero-rect layout can't exercise through the real focus-restoration path here — moved
+    // by hand instead, to put document.activeElement on an element OUTSIDE the dialog, the
+    // exact condition the old dialog-only listener went deaf under.
+    const arrivedPlate = screen.getByRole("button", { name: "Next card: Card C" });
+    arrivedPlate.focus();
+    expect(arrivedPlate).toHaveFocus();
+    fireEvent.keyDown(arrivedPlate, { key: "ArrowRight" });
+    await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Card C"));
+  });
+
+  it("announces the arrival on a page, and nothing new on the first open", async () => {
+    stubMinWidth(true);
+    mount("o-b");
+    await press();
+    await screen.findByRole("dialog");
+    expect(allLive()).not.toContain(" of ");
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: cardCarouselCopy.nextAria }));
+    });
+    await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Card C"));
+    await waitFor(() => expect(allLive()).toContain(cardCarouselCopy.arrived("Card C", 3, 3)));
+  });
+
+  it("pages with the arrow keys, and announces an end rather than paging past it", async () => {
+    stubMinWidth(true);
+    mount("o-a");
+    await press();
+    await screen.findByRole("dialog");
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowLeft" });
+    await waitFor(() => expect(allLive()).toContain(cardCarouselCopy.firstCard));
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowRight" });
+    await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Card B"));
+  });
+
+  // Pre-open review, round 1: an aria-live region only announces a CHANGE of text, so going
+  // straight from one announcement to an identical one — the same end pressed twice, or
+  // paging A→B, closing, reopening A and paging to B again — was silent the second time.
+  it("re-announces an identical message, by clearing it first", async () => {
+    stubMinWidth(true);
+    mount("o-a");
+    await press();
+    await screen.findByRole("dialog");
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowLeft" });
+    await waitFor(() => expect(allLive()).toContain(cardCarouselCopy.firstCard));
+    // A second press at the same end repeats the identical message. The clear happens
+    // synchronously, before the real text is set on the next frame — a plain repeat of the
+    // same `setState` call would skip the render entirely, since React bails out on an
+    // unchanged primitive value.
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowLeft" });
+    expect(allLive()).not.toContain(cardCarouselCopy.firstCard);
+    await waitFor(() => expect(allLive()).toContain(cardCarouselCopy.firstCard));
+  });
+
+  // Pre-open review (H23 PR 2): a page's `load` and a second, unrelated `load` landing on the
+  // very card the page was headed to used to leave the first call's paging intent standing,
+  // since only the paging handlers ever touched `enterFrom`/`enterTargetId`. A combo-partner
+  // click reaching the same card mid-page is the real-world shape; a second, plain
+  // `CardDetailTrigger` stands in for it here, since both reach `load` with no `page` argument.
+  it("a non-paging read that lands on the card a page was headed to is never announced as one", async () => {
+    stubMinWidth(true);
+    let resolvePaged!: (c: BrowseCard) => void;
+    let resolvePlain!: (c: BrowseCard) => void;
+    let calls = 0;
+    const fetchCard = vi.fn((id: string) => {
+      if (id !== "o-b") return Promise.resolve(byId[id] ?? null);
+      calls += 1;
+      return new Promise<BrowseCard>((r) => { if (calls === 1) resolvePaged = r; else resolvePlain = r; });
+    });
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <CardDetailTrigger oracleId="o-a" name="Card A" siblings={siblings}>open</CardDetailTrigger>
+        <CardDetailTrigger oracleId="o-b" name="Card B">open plain</CardDetailTrigger>
+      </CardDetailProvider>,
+    );
+    await act(async () => { fireEvent.click(screen.getByText("open")); });
+    await screen.findByRole("dialog");
+    // Pages toward B; its read is left pending.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: cardCarouselCopy.nextAria }));
+    });
+    // An unrelated, non-paging read for the SAME card starts and wins the race.
+    await act(async () => {
+      fireEvent.click(screen.getByText("open plain"));
+      resolvePlain(B);
+    });
+    await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Card B"));
+    expect(allLive()).not.toContain(" of ");
+    // The superseded paging read finally resolves too; it must not resurrect the announcement.
+    await act(async () => { resolvePaged(B); });
+    expect(allLive()).not.toContain(" of ");
+  });
+
+  // The exclusion zones themselves (printing search, printing radiogroup, zoom region) are
+  // proved against a real overflowing printing list in card-modal.test.tsx, which can build
+  // that fixture directly; this provider-level suite only proves arrow keys page at all.
 });

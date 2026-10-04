@@ -1306,3 +1306,115 @@ describe("CardModal header — the cost may take its own line", () => {
     expect(nameBlock?.className).not.toContain("basis-");
   });
 });
+
+describe("CardModal carousel arrow keys stop at interactive zones (H23 PR 2)", () => {
+  const catalogPrinting = (setCode: string, collectorNumber: string) => ({
+    setCode,
+    setName: setCode,
+    collectorNumber,
+    releasedAt: "2024-01-12",
+    quantity: 1,
+    finishes: { nonfoil: 1 },
+    imageUri: "https://cards.scryfall.io/normal/tithe.jpg",
+    flavorName: null,
+  });
+
+  // OVERFLOW_THRESHOLD (printing-region.tsx) is 12; one more than that is what makes the
+  // real search input render, rather than stubbing around the gate.
+  const overflowing = {
+    ...card,
+    quantity: 13,
+    printings: Array.from({ length: 13 }, (_, i) => catalogPrinting("RVR", String(i + 1))),
+  };
+
+  it("does not page on an arrow key typed into the printing search field", async () => {
+    const onPrev = vi.fn();
+    const onNext = vi.fn();
+    render(
+      <CardModal card={overflowing} position={2} total={3} onClose={() => {}} onPrev={onPrev} onNext={onNext} />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("button", {
+        name: /13 printings owned/,
+      })[0]);
+    });
+    const search = screen.getAllByPlaceholderText(printingPickerCopy.printing.searchPlaceholder)[0];
+    search.focus();
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowRight" });
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowLeft" });
+    expect(onPrev).not.toHaveBeenCalled();
+    expect(onNext).not.toHaveBeenCalled();
+  });
+
+  it("does not page on an arrow key focused inside the printing radiogroup", async () => {
+    const onPrev = vi.fn();
+    const onNext = vi.fn();
+    render(
+      <CardModal card={overflowing} position={2} total={3} onClose={() => {}} onPrev={onPrev} onNext={onNext} />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("button", {
+        name: /13 printings owned/,
+      })[0]);
+    });
+    screen.getAllByRole("radio", { name: /RVR/ })[0].focus();
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowRight" });
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowLeft" });
+    expect(onPrev).not.toHaveBeenCalled();
+    expect(onNext).not.toHaveBeenCalled();
+  });
+
+  it("pages normally on an arrow key outside any interactive zone", () => {
+    const onPrev = vi.fn();
+    const onNext = vi.fn();
+    render(
+      <CardModal card={card} position={2} total={3} onClose={() => {}} onPrev={onPrev} onNext={onNext} />,
+    );
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowRight" });
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowLeft" });
+    expect(onNext).toHaveBeenCalledTimes(1);
+    expect(onPrev).toHaveBeenCalledTimes(1);
+  });
+
+  // The zoom layer (pre-open review, H23 PR 2): opened via the art, it has no input or
+  // radiogroup of its own, so the one real focusable descendant it can carry is the
+  // two-faced turn control. A card with a back — `layout: "transform"` plus its own
+  // `backImageUri` — is what gets one.
+  it("does not page on an arrow key focused inside the zoom layer", () => {
+    const onPrev = vi.fn();
+    const onNext = vi.fn();
+    const twoFaced = { ...card, layout: "transform", backImageUri: "https://cards.scryfall.io/normal/back.jpg" };
+    render(
+      <CardModal card={twoFaced} position={2} total={3} onClose={() => {}} onPrev={onPrev} onNext={onNext} />,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: /^Look at /i })[0]);
+    // Scoped to the zoom layer: a non-zoomed two-faced card draws its OWN flip control too,
+    // and an unscoped query can match that one instead, which is outside `#card-zoom` and
+    // would pass this test on a build that never excluded the zoom at all.
+    const zoom = screen.getByTestId("card-zoom");
+    within(zoom).getAllByRole("button", { name: /^Turn over to/ })[0].focus();
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowRight" });
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowLeft" });
+    expect(onNext).not.toHaveBeenCalled();
+    expect(onPrev).not.toHaveBeenCalled();
+  });
+
+  // Pre-open review, round 2: Alt+Left/Right is the browser's own history navigation, and
+  // the carousel was consuming it unconditionally, blocking Back/Forward from a card modal.
+  it("ignores a modified arrow key, and still pages on a plain one", () => {
+    const onPrev = vi.fn();
+    const onNext = vi.fn();
+    render(
+      <CardModal card={card} position={2} total={3} onClose={() => {}} onPrev={onPrev} onNext={onNext} />,
+    );
+    const dialog = screen.getByRole("dialog");
+    fireEvent.keyDown(dialog, { key: "ArrowRight", altKey: true });
+    fireEvent.keyDown(dialog, { key: "ArrowLeft", metaKey: true });
+    fireEvent.keyDown(dialog, { key: "ArrowRight", ctrlKey: true });
+    fireEvent.keyDown(dialog, { key: "ArrowLeft", shiftKey: true });
+    expect(onNext).not.toHaveBeenCalled();
+    expect(onPrev).not.toHaveBeenCalled();
+    fireEvent.keyDown(dialog, { key: "ArrowRight" });
+    expect(onNext).toHaveBeenCalledTimes(1);
+  });
+});

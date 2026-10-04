@@ -369,6 +369,41 @@ describe("useDialogA11y and inert subtrees", () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
+  it("closes only the topmost dialog on Escape when focus is on neither dialog's subtree", () => {
+    // The desktop carousel's neighbor plates are siblings of the dialog, not descendants
+    // (H23 PR 2, pre-open review round 2) — focus there satisfies neither dialog's
+    // `closest('[role="dialog"]')`, which used to read as "mine" for every mounted hook.
+    const backgroundClose = vi.fn();
+    const background = document.createElement("div");
+    background.setAttribute("role", "dialog");
+    document.body.appendChild(background);
+    appended.push(background);
+    renderHook(() => {
+      const ref = useRef<HTMLElement | null>(background);
+      useDialogA11y(ref, backgroundClose);
+    });
+
+    const foregroundClose = vi.fn();
+    const foreground = document.createElement("div");
+    foreground.setAttribute("role", "dialog");
+    document.body.appendChild(foreground);
+    appended.push(foreground);
+    renderHook(() => {
+      const ref = useRef<HTMLElement | null>(foreground);
+      useDialogA11y(ref, foregroundClose);
+    });
+
+    // Neither dialog, and neither root — the plate stand-in.
+    const plate = document.createElement("button");
+    document.body.appendChild(plate);
+    appended.push(plate);
+    plate.focus();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(foregroundClose).toHaveBeenCalledTimes(1);
+    expect(backgroundClose).not.toHaveBeenCalled();
+  });
+
 });
 
 // A dialog opened from a control that the SAME commit marks `inert`.
