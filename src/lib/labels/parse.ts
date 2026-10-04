@@ -49,9 +49,15 @@ export function withoutRepeats<T>(jobs: readonly T[]): T[] {
  *
  * Returns `null` for a name the batch does not cover, which the caller records as
  * unexpected rather than inserting.
+ *
+ * Names are compared FOLDED (`foldName`), because a model retypes a name rather than copying
+ * its code points: asked for `Ratonhnhaké꞉ton` (U+A789, a modifier-letter colon), it answered
+ * `Ratonhnhaké:ton` (U+003A), and the card's batch came back under the publish floor on every
+ * run (the v8 relabel, 2026-10-04). The fold only decides which asked name is meant; the
+ * name returned is always the asked one.
  */
-export function faceResolver(asked: readonly string[]): (returned: string) => string | null {
-  const exact = new Set(asked);
+export function faceResolver(asked: readonly string[]): (returned: unknown) => string | null {
+  const exact = new Map(asked.map((name) => [foldName(name), name]));
   // Each FACE of a two-faced name maps back to the joined name. Built once per batch
   // rather than per returned card: the batch is 12 cards and the model may return more.
   const faceOf = new Map<string, string>();
@@ -61,9 +67,19 @@ export function faceResolver(asked: readonly string[]): (returned: string) => st
     // returned lambda checks `exact` before `faceOf`, so that precedence is in the lookup
     // rather than in this loop. A `continue` here for a face that is also a whole name
     // would be unreachable by effect, which is what an earlier version had.
-    for (const face of name.split(" // ")) faceOf.set(face, name);
+    for (const face of name.split(" // ")) faceOf.set(foldName(face), name);
   }
-  return (returned: string) => (exact.has(returned) ? returned : faceOf.get(returned) ?? null);
+  // `returned` is model output: a non-string name is recorded as unexpected, never folded.
+  return (returned: unknown) => {
+    if (typeof returned !== "string") return null;
+    const key = foldName(returned);
+    return exact.get(key) ?? faceOf.get(key) ?? null;
+  };
+}
+
+/** Compatibility-normalized (NFKC), with the modifier-letter colon read as a colon. */
+export function foldName(name: string): string {
+  return name.normalize("NFKC").replace(/\uA789/g, ":");
 }
 
 /** A model reply is data, not code: it may fence its JSON however it likes. */
