@@ -304,9 +304,10 @@ put a +1/+1 counter on target Wolf you control; or create a Treasure token.")
 
 Omit "rampKind" entirely on any job that is not a role "ramp" job (a null is
 accepted there too).
-"jobs": [] is ONLY for a card with no function at all: a vanilla creature, or
-text that is nothing but keywords and stats. A card that deals damage, fetches
-a land, draws, or moves a card does a job: label it. No prose, no markdown fence.`;
+"jobs": [] is ONLY for a card none of whose abilities is one of the jobs above
+(a vanilla creature, a tapper, a card that only scries). Never answer [] for a
+card that deals damage to a creature or player, fetches a land, draws, or moves
+a card: each of those is a job, so label it. No prose, no markdown fence.`;
 
 /**
  * What the SYSTEM block can cost, in tokens, as a CEILING the build's hard stop is enforced against:
@@ -473,7 +474,7 @@ export const buildRequest = (customId: string, model: string, cards: CardForProm
  * reason a run was owed, and what the label copy reads to tell a prompt change from a catalog one.
  */
 // "8": the empty-label fix (2026-10-04): damage that can hit a creature or permanent is removal, any-target
-// damage is removal AND drain, and "jobs": [] is only for a card with no function. v7 left 11.7% of
+// damage is removal AND drain, and "jobs": [] only when no ability maps to a job. v7 left 11.7% of
 // any-target burn empty, because its removal named no damage outside `method` and its drain line said NEVER.
 // "7": re-sample 3's fixes (2026-10-03), the last tuning round: symmetric each (lords, any creature dying,
 // a counter on every player's spells), any minus is never pump, etbDraw is entry only, recursion includes the
