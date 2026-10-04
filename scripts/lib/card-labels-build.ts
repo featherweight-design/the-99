@@ -32,7 +32,7 @@ import { and, eq, inArray, isNotNull, or, sql } from "drizzle-orm";
 
 import { db } from "../../src/db";
 import { cardLabelBatches, cardLabels, cardLabelsStaging } from "../../src/db/schema";
-import { faceResolver, withoutRepeats } from "../../src/lib/labels/parse";
+import { readReply, withoutRepeats } from "../../src/lib/labels/parse";
 import {
   CARDS_PER_REQUEST, MEASURED_PER_CARD, budgetFamily, familySpend, meetsFloor, pauseRemediation, planChunks, waveSize,
   projectedTotalUsd, withinCap, worstCaseUsd,
@@ -47,9 +47,9 @@ import {
 // satisfying this script.
 import type { CardRow } from "../../src/lib/labels/publish";
 import { publishWave, readCardsByName, stampWave } from "../../src/lib/labels/publish";
-import { validateJob } from "../../src/lib/labels/schema";
-import { type LabelScope, scopeCondition, scopeDeck } from "../../src/lib/labels/scope";
+import { type LabelScope, scopeCondition, scopeDeck, scopeList } from "../../src/lib/labels/scope";
 import { labelTrialPool } from "../../src/lib/swaps/gather";
+import { readLabelList } from "./label-list";
 import type { Job } from "../../src/lib/labels/types";
 import { ALL_MODELS, PRICING } from "./card-labels-pricing.mjs";
 
@@ -206,9 +206,10 @@ type StaleCard = CardRow & { nameRows: number };
 
 async function cardsNeedingLabels(scope: LabelScope, only: readonly string[] | undefined): Promise<StaleCard[]> {
   const deckId = scopeDeck(scope);
-  const trial = deckId === null ? null : await labelTrialPool(deckId);
+  const listName = scopeList(scope);
+  const trial = deckId !== null ? await labelTrialPool(deckId) : listName !== null ? readLabelList(listName) : null;
   if (deckId !== null && trial === null) throw new Error(`LABEL_SCOPE names deck ${deckId}, which does not exist`);
-  if (trial !== null) console.log(`  deck ${deckId}: ${trial.length} card(s) in its trial pool`);
+  if (trial !== null) console.log(`  ${scope}: ${trial.length} card(s) in its trial pool`);
   const rows = await db.execute<StaleCard>(sql`
     select c.oracle_id as "oracleId", c.name, c.mana_cost, c.type_line, c.oracle_text, c.layout,
            (select count(*)::int from cards n where n.name = c.name) as "nameRows"
@@ -227,14 +228,9 @@ async function cardsNeedingLabels(scope: LabelScope, only: readonly string[] | u
   return all.filter((c) => stored.get(c.oracleId) !== labelInputHash(c, MODEL));
 }
 
-/** A model reply is data, not code: it may fence its JSON however it likes. */
-const parseReply = (text: string): unknown => {
-  const t = text.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
-  try { return JSON.parse(t); } catch { /* fall through to the bracket scan */ }
-  const a = t.indexOf("["), b = t.lastIndexOf("]");
-  if (a < 0 || b < a) return null;
-  try { return JSON.parse(t.slice(a, b + 1)); } catch { return null; }
-};
+/** A reply's text blocks, joined: what `readReply` reads. */
+const replyText = (message: { content: readonly { type: string; text?: string }[] }): string =>
+  message.content.map((c) => (c.type === "text" ? c.text ?? "" : "")).join("");
 
 type Intent = typeof cardLabelBatches.$inferSelect;
 
@@ -256,7 +252,8 @@ type Collected =
  * - Results are attributed by `custom_id` to the intent that sent it. A result whose id
  *   belongs to no intent here is IGNORED rather than attributed to the nearest one.
  * - A job the schema REJECTS is dropped and recorded, never repaired: a repaired label
- *   stores the repair and the next re-score measures the repair.
+ *   stores the repair and the next re-score measures the repair. The one exception is
+ *   `normalizeJob`'s, a `to` or `method` on a kind that does not take it (Hugh, 2026-10-04).
  * - A missing or non-array `jobs` is NOT an empty answer. The gold set has hard negatives
  *   where `[]` is correct, so coercing malformed output to `[]` credits it as right on
  *   exactly the cards designed to catch over-labelling.
@@ -297,21 +294,10 @@ async function collectBatch(opts: BuildOptions, batchId: string, intents: Intent
       here.cacheW += u.cache_creation_input_tokens ?? 0;
       here.cacheR += u.cache_read_input_tokens ?? 0;
 
-      const parsed = parseReply(
-        entry.result.message.content.map((c) => (c.type === "text" ? c.text : "")).join(""),
-      );
-      if (!Array.isArray(parsed)) { rejected.push(`${entry.custom_id}: unparseable`); continue; }
-      const resolve = faceResolver(intent.asked);
-      for (const card of parsed as { name?: string; jobs?: unknown }[]) {
-        if (!card?.name) continue;
-        const name = resolve(card.name);
-        if (name === null) { rejected.push(`unexpected name ${card.name}`); continue; }
-        if (!Array.isArray(card.jobs)) { rejected.push(`${name}: jobs is not an array`); continue; }
-        const kept = card.jobs.filter((j) => {
-          const bad = validateJob(j);
-          if (bad.length) rejected.push(`${name}: ${bad.join(", ")}`);
-          return bad.length === 0;
-        }) as Job[];
+      const read = readReply(replyText(entry.result.message), intent.asked);
+      if (read === null) { rejected.push(`${entry.custom_id}: unparseable`); continue; }
+      rejected.push(...read.rejected);
+      for (const [name, kept] of read.byName) {
         here.byName.set(name, withoutRepeats([...(here.byName.get(name) ?? []), ...kept]));
       }
     }

@@ -120,6 +120,15 @@ describe("the card-labels spend bounds", () => {
     expect(r.scope).toBeUndefined();
   });
 
+  // A hand-picked list trial (`list:<name>`) follows the deck trial's rule for the same reason.
+  it("passes list:<name> through under a backfill id, and refuses it under the weekly id", () => {
+    expect(resolve("8", "7", "backfill-2026-10-04", "list:v8-trial").scope).toBe("list:v8-trial");
+    const r = resolve("8", "7", "", "list:v8-trial");
+    expect(r.code).toBe(1);
+    expect(r.errors.some((e) => e.includes("needs a backfill"))).toBe(true);
+    expect(r.scope).toBeUndefined();
+  });
+
   // The bounds step is only half: a missing env line makes the build default to every card.
   it("hands the resolved scope to the step that spends", () => {
     const step = workflow.slice(workflow.indexOf(LABEL_STEP),
@@ -134,6 +143,9 @@ describe("the card-labels spend bounds", () => {
   it.each([
     ["a deck named by its title", "deck:gishath"],
     ["a scope the build does not know", "everything"],
+    ["a list name that walks a path", "list:../secrets"],
+    ["a list name in capitals", "list:V8-trial"],
+    ["a second line smuggled after a valid list", "list:v8-trial\nscope=all"],
     ["a second line smuggled after a valid scope", "all\nscope=deck:904fdc61-e190-4ba5-8e34-2b18fa0584f2"],
   ])("refuses %s, publishing no scope", (_what, scope) => {
     const r = resolve("9", "5", "", scope);

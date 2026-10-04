@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { faceResolver, withoutRepeats } from "./parse";
+import { faceResolver, readReply, withoutRepeats } from "./parse";
 
 /**
  * Every case here is a shape the sample actually produced, or a shape that would have
@@ -62,5 +62,31 @@ describe("withoutRepeats", () => {
     const nulled = { ...omitted, rampKind: null };
     expect(withoutRepeats([omitted, nulled])).toEqual([omitted]);
     expect(withoutRepeats([omitted, { ...omitted, restrictedTo: "Goblin" }])).toHaveLength(2);
+  });
+});
+
+// The build's reading of one reply.
+describe("readReply", () => {
+  const ramp = {
+    space: "role", kind: "ramp", rampKind: "fetchesLand", restrictedTo: null, affects: null,
+    to: "battlefield", method: null, trigger: "cast", recurrence: "oneShot", threshold: null, modal: false,
+  };
+
+  it("keeps a ramp job carrying a misplaced to, stripped, and merges two faces under one name", () => {
+    const text = "```json\n" + JSON.stringify([
+      { name: "Rampant Growth", jobs: [ramp] },
+      { name: "Soulcipher Board", jobs: [] },
+    ]) + "\n```";
+    const read = readReply(text, ["Rampant Growth", "Soulcipher Board // Cipherbound Spirit"]);
+    expect(read?.rejected).toEqual([]);
+    expect(read?.byName.get("Rampant Growth")).toEqual([{ ...ramp, to: null }]);
+    expect(read?.byName.get("Soulcipher Board // Cipherbound Spirit")).toEqual([]);
+  });
+
+  it("records a missing jobs list and an invented name, and reads nothing from prose", () => {
+    const read = readReply(JSON.stringify([{ name: "Rampant Growth" }, { name: "Sparkle", jobs: [] }]), ["Rampant Growth"]);
+    expect(read?.byName.size).toBe(0);
+    expect(read?.rejected).toEqual(["Rampant Growth: jobs is not an array", "unexpected name Sparkle"]);
+    expect(readReply("I cannot help with that.", ["Rampant Growth"])).toBeNull();
   });
 });

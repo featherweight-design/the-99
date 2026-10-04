@@ -36,7 +36,8 @@ type Unchecked = Record<string, unknown>;
  * Validates ONE job. Returns a list of complaints, empty when it is well formed.
  *
  * Never repairs: a repaired label stores the repair rather than the model's answer, and
- * the next re-score then measures the repair.
+ * the next re-score then measures the repair. The one sanctioned repair is `normalizeJob`,
+ * below, and it runs BEFORE this rather than inside it, so this stays the strict contract.
  */
 export function validateJob(job: unknown): string[] {
   const bad: string[] = [];
@@ -97,6 +98,29 @@ export function validateJob(job: unknown): string[] {
     if (typeof t?.value !== "number") bad.push(`threshold.value`);
   }
   return bad;
+}
+
+/**
+ * The ONE repair the collector makes before validating: a `to` on a kind outside `TO_KINDS`, or a
+ * `method` on a kind outside `METHOD_KINDS`, is set to null. Anything else comes back unchanged,
+ * and a value that is not an object comes back as it is, for `validateJob` to refuse.
+ *
+ * Sanctioned because the field is MEANINGLESS there rather than wrong. The consumer gates on `to`
+ * and `method` only for the kinds that take them, so on any other kind the field says nothing a
+ * reader acts on, while the rest of the job is a real answer. Rejecting it threw that answer away:
+ * a ramp job carrying `to: "battlefield"` (Rampant Growth, Sakura-Tribe Elder) cost the card its
+ * only job, and 83 cards were stored as `[]` for this defect and no other (Hugh, 2026-10-04).
+ *
+ * A shallow copy, never the input mutated: the caller still holds the model's answer as given.
+ */
+export function normalizeJob(job: unknown): unknown {
+  if (job === null || typeof job !== "object" || Array.isArray(job)) return job;
+  const j = job as Unchecked;
+  const takes = (list: readonly string[]) => typeof j.kind === "string" && list.includes(j.kind);
+  const stripTo = j.to != null && !takes(TO_KINDS);
+  const stripMethod = j.method != null && !takes(METHOD_KINDS);
+  if (!stripTo && !stripMethod) return job;
+  return { ...j, ...(stripTo ? { to: null } : {}), ...(stripMethod ? { method: null } : {}) };
 }
 
 /** True when `validateJob` accepts the value, narrowing it for the caller. */

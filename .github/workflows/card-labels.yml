@@ -54,7 +54,7 @@ on:
         required: false
         default: ''
       scope:
-        description: 'Which cards: all, in-use, or deck:<uuid> (one deck''s stand-ins pool, the labels trial). Blank is all.'
+        description: 'Which cards: all, in-use, deck:<uuid> (one deck''s stand-ins pool) or list:<name> (scripts/data/label-lists/<name>.json). Blank is all.'
         required: false
         default: ''
 
@@ -212,15 +212,15 @@ jobs:
           # value is published with `echo >> "$GITHUB_OUTPUT"`. The build parses it again and
           # refuses anything else, so this is the early, readable refusal rather than the only one.
           scope="${RAW_SCOPE:-all}"
-          if ! [[ "$scope" =~ ^(all|in-use|deck:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$ ]]; then
-            echo "::error::scope must be all, in-use or deck:<uuid>, got '$scope'"
+          if ! [[ "$scope" =~ ^(all|in-use|deck:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|list:[a-z0-9]+(-[a-z0-9]+)*)$ ]]; then
+            echo "::error::scope must be all, in-use, deck:<uuid> or list:<name>, got '$scope'"
             exit 1
           fi
-          # A DECK TRIAL NEEDS ITS OWN BACKFILL ID. Under the weekly id, a timed-out trial would be
+          # A DECK OR LIST TRIAL NEEDS ITS OWN BACKFILL ID. Under the weekly id, a timed-out trial would be
           # resumed by the next scheduled run, which passes no scope and so labels every card, on
           # the weekly budget, under the trial's intents.
-          if [[ "$scope" == deck:* && "$run_id" != backfill-* ]]; then
-            echo "::error::a deck scope needs a backfill-YYYY-MM-DD run_id, got '$run_id'"
+          if [[ ( "$scope" == deck:* || "$scope" == list:* ) && "$run_id" != backfill-* ]]; then
+            echo "::error::a deck or list scope needs a backfill-YYYY-MM-DD run_id, got '$run_id'"
             exit 1
           fi
 

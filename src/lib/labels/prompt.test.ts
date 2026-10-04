@@ -125,17 +125,17 @@ describe("labelInputHash", () => {
     expect(labelInputHash(a, "m")).not.toBe(labelInputHash(b, "m"));
   });
 
-  // Version "7" is re-sample 3's prompt fixes. Recomputing the payload with the constant
-  // itself cannot see a revert, so the literal is pinned and a row hashed under "6" with this SYSTEM is shown
+  // Version "8" is the empty-label fix. Recomputing the payload with the constant
+  // itself cannot see a revert, so the literal is pinned and a row hashed under "7" with this SYSTEM is shown
   // not to match.
-  it("is version 7, so a row hashed under version 6 reads stale", () => {
-    expect(LABEL_PROMPT_VERSION).toBe("7");
-    const underV6 = createHash("sha256")
+  it("is version 8, so a row hashed under version 7 reads stale", () => {
+    expect(LABEL_PROMPT_VERSION).toBe("8");
+    const underV7 = createHash("sha256")
       .update(JSON.stringify([
-        card.oracleId, renderCard(card), "6", "m", createHash("sha256").update(SYSTEM).digest("hex"),
+        card.oracleId, renderCard(card), "7", "m", createHash("sha256").update(SYSTEM).digest("hex"),
       ]))
       .digest("hex");
-    expect(labelInputHash(card, "m")).not.toBe(underV6);
+    expect(labelInputHash(card, "m")).not.toBe(underV7);
   });
 
   // A SYSTEM edit must move the version with it. `copy-card-labels.ts` tells a prompt change from a
@@ -143,7 +143,7 @@ describe("labelInputHash", () => {
   // install nothing and report every label as a catalog difference. When this fails: bump
   // LABEL_PROMPT_VERSION, then re-pin both literals here together.
   it("pins SYSTEM to the version it was written under", () => {
-    const pinned = { version: "7", system: "21233e95f5dce85b60f1e5ec01615f4f6dae58b92ea685f6b1490a827826414a" };
+    const pinned = { version: "8", system: "1a8ae57b08f4594ab07b23bacafb4296f7aa9d26488a5d015a23b1840bb0c014" };
     expect({ version: LABEL_PROMPT_VERSION, system: createHash("sha256").update(SYSTEM).digest("hex") })
       .toEqual(pinned);
   });
@@ -201,4 +201,35 @@ describe("LABEL_MAX_TOKENS", () => {
   it("lowers the ceiling", async () => { expect(await load("4000")).toBe(4000); });
   it("accepts the ceiling itself", async () => { expect(await load("5000")).toBe(5000); });
   it("refuses to raise it", async () => { await expect(load("5001")).rejects.toThrow(/only lower/); });
+});
+
+// The v8 fix (2026-10-04). v7 left 11.7% of any-target burn with no jobs: its removal definition named
+// no damage, its drain line said any-target damage was NEVER drain, and its last line sanctioned an
+// empty answer for any card it could not fit. Each clause is pinned so a revert reads red here, not in
+// a paid run.
+describe("SYSTEM v8: damage and the empty answer", () => {
+  // One definition: from its own "  name — " line up to the next definition's.
+  const def = (role: string) => {
+    const at = SYSTEM.search(new RegExp(`^  ${role} +—`, "m"));
+    const rest = SYSTEM.slice(at + 1);
+    const next = rest.search(/^  [a-zA-Z]+ +—/m);
+    return next === -1 ? rest : rest.slice(0, next);
+  };
+
+  it("counts damage that can hit a creature or permanent as removal", () => {
+    expect(def("removal")).toMatch(/deals damage to it/);
+    expect(def("removal")).toMatch(/"deals 3 damage to any\s+target" and "deals 2 damage to target creature" are both\s+removal/);
+  });
+
+  it("labels any-target damage drain as well, never drain alone", () => {
+    expect(SYSTEM).not.toMatch(/NEVER drain/);
+    expect(def("drain")).toMatch(/removal FIRST, and drain AS WELL/);
+    expect(def("drain")).toMatch(/can only hit a\s+creature or permanent is removal and never drain/);
+  });
+
+  it("keeps an empty answer for a card with no function at all", () => {
+    expect(SYSTEM).not.toMatch(/A card with no job in the vocabulary gets/);
+    expect(SYSTEM).toMatch(/"jobs": \[\] is ONLY for a card with no function at all/);
+    expect(SYSTEM).toMatch(/deals damage, fetches\s+a land, draws, or moves a card does a job/);
+  });
 });

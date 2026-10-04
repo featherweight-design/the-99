@@ -11,7 +11,7 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { jobKey, validateJob } from "../../src/lib/labels/schema.js";
+import { jobKey, normalizeJob, validateJob } from "../../src/lib/labels/schema.js";
 import { METHOD_KINDS, RAMP_KINDS, ROLES, THEMES, TO_KINDS, type Job } from "../../src/lib/labels/types.js";
 
 /** The union in the source file is the authority, not the RULES table beside it. */
@@ -82,6 +82,53 @@ describe("validateJob", () => {
   it("refuses a to or a method on a job that cannot carry one", () => {
     expect(validateJob({ ...warg, to: "hand" })).toContain("to on a ramp job");
     expect(validateJob({ ...warg, method: "exile" })).toContain("method on a ramp job");
+  });
+
+  // The ONE repair (Hugh, 2026-10-04): a `to` or a `method` on a kind that does not take it says
+  // nothing the consumer reads, so it is stripped and the rest of the job kept. `validateJob` stays
+  // strict, which the case above pins, so the repair is visible as a separate step.
+  describe("normalizeJob", () => {
+    const theme = (kind: string) => ({ ...warg, space: "theme" as const, kind, rampKind: undefined });
+
+    it("strips a to from a ramp job, which then validates", () => {
+      const fixed = normalizeJob({ ...warg, to: "battlefield" });
+      expect(fixed).toEqual({ ...warg, to: null });
+      expect(validateJob(fixed)).toEqual([]);
+    });
+
+    it("strips a to from a castFree job and a method from a blink job", () => {
+      const castFree = normalizeJob({ ...theme("castFree"), to: "battlefield" }) as Record<string, unknown>;
+      expect(castFree.to).toBeNull();
+      expect(validateJob(castFree)).toEqual([]);
+      const blink = normalizeJob({ ...theme("blink"), method: "exile" }) as Record<string, unknown>;
+      expect(blink.method).toBeNull();
+      expect(validateJob(blink)).toEqual([]);
+    });
+
+    it("keeps a to on a tutor and a method on a removal job, where the consumer reads them", () => {
+      const tutor = { ...warg, kind: "tutor", rampKind: undefined, to: "hand" };
+      const removal = { ...warg, kind: "removal", rampKind: undefined, method: "exile" };
+      expect(normalizeJob(tutor)).toBe(tutor);
+      expect(normalizeJob(removal)).toBe(removal);
+    });
+
+    it("repairs nothing else: a misplaced to beside a real defect still fails", () => {
+      const fixed = normalizeJob({
+        ...warg, to: "battlefield", threshold: { stat: "creatures", op: ">=", value: "X" },
+      });
+      expect(validateJob(fixed)).toContain("threshold.value");
+      expect(validateJob(fixed).some((p) => p.startsWith("to on a"))).toBe(false);
+    });
+
+    it("never mutates its input, and passes a non-object through for validateJob to refuse", () => {
+      const given = { ...warg, to: "battlefield", method: "exile" };
+      const fixed = normalizeJob(given);
+      expect(given.to).toBe("battlefield");
+      expect(given.method).toBe("exile");
+      expect(fixed).not.toBe(given);
+      expect(normalizeJob(null)).toBeNull();
+      expect(normalizeJob("ramp")).toBe("ramp");
+    });
   });
 
   it("accepts the Bejeweled Warg ramp job", () => {
