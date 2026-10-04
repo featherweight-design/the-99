@@ -19,14 +19,27 @@
  * on the stand-ins sheet, before matching (`labelTrialPool` in `src/lib/swaps/gather.ts`). It has no
  * SQL condition of its own, because its set comes from that function; `scopeCondition` refuses it, so
  * a caller cannot forget to resolve it and label every card instead.
+ *
+ * `list:<name>` is a named list of oracle ids committed at `scripts/data/label-lists/<name>.json`,
+ * for a prompt trial whose cards are chosen by hand (the v8 trial, 2026-10-04: the cards v7 left
+ * empty for a likely-wrong reason, plus well-labelled controls). Like a deck it has no SQL condition:
+ * the build reads the file and labels exactly those ids.
  */
 import { sql, type SQL } from "drizzle-orm";
 
 export const LABEL_SCOPES = ["all", "in-use"] as const;
-export type LabelScope = (typeof LABEL_SCOPES)[number] | `deck:${string}`;
+export type LabelScope = (typeof LABEL_SCOPES)[number] | `deck:${string}` | `list:${string}`;
 
 /** Case-insensitive, as the repository's other UUID guards are (`src/lib/uuid.ts`). */
 const DECK_SCOPE = /^deck:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
+
+/** A list name is a file name, so it is held to lowercase words and hyphens: no path, no dots. */
+const LIST_SCOPE = /^list:([a-z0-9]+(?:-[a-z0-9]+)*)$/;
+
+/** The list a `list:<name>` scope names, or null for any other scope. */
+export function scopeList(scope: LabelScope): string | null {
+  return LIST_SCOPE.exec(scope)?.[1] ?? null;
+}
 
 /** The deck a `deck:<id>` scope names, or null for any other scope. */
 export function scopeDeck(scope: LabelScope): string | null {
@@ -37,8 +50,8 @@ export function scopeDeck(scope: LabelScope): string | null {
 export function parseScope(raw: string | undefined): LabelScope {
   if (raw === undefined || raw === "") return "all";
   if ((LABEL_SCOPES as readonly string[]).includes(raw)) return raw as LabelScope;
-  if (DECK_SCOPE.test(raw)) return raw as LabelScope;
-  throw new Error(`LABEL_SCOPE must be one of ${LABEL_SCOPES.join(", ")} or deck:<uuid>, got ${JSON.stringify(raw)}`);
+  if (DECK_SCOPE.test(raw) || LIST_SCOPE.test(raw)) return raw as LabelScope;
+  throw new Error(`LABEL_SCOPE must be one of ${LABEL_SCOPES.join(", ")}, deck:<uuid> or list:<name>, got ${JSON.stringify(raw)}`);
 }
 
 /**
@@ -47,7 +60,7 @@ export function parseScope(raw: string | undefined): LabelScope {
  */
 export function scopeCondition(scope: LabelScope): SQL {
   if (scope === "all") return sql``;
-  if (scope !== "in-use") throw new Error(`${scope} has no SQL condition: resolve it with labelTrialPool first`);
+  if (scope !== "in-use") throw new Error(`${scope} has no SQL condition: resolve its ids first`);
   return sql`and c.oracle_id in (
     select csc.oracle_id from commander_support_cards csc
     union select csc.commander_oracle_id from commander_support_cards csc

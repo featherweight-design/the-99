@@ -2,7 +2,7 @@ import { PgDialect } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
-import { parseScope, scopeCondition, scopeDeck } from "./scope";
+import { parseScope, scopeCondition, scopeDeck, scopeList } from "./scope";
 
 const render = (scope: "all" | "in-use") =>
   new PgDialect().sqlToQuery(sql`select c.oracle_id from cards c where c.commander_legal = true ${scopeCondition(scope)}`).sql;
@@ -26,12 +26,23 @@ describe("parseScope", () => {
     // Case-insensitive, as the repository's other UUID guards are.
     expect(scopeDeck(parseScope(`deck:${id.toUpperCase()}`))).toBe(id.toUpperCase());
   });
+
+  // A hand-picked prompt trial: the name is a file name, so nothing that could walk a path passes.
+  it("accepts list:<name>, and refuses a name that is not lowercase words and hyphens", () => {
+    expect(scopeList(parseScope("list:v8-trial"))).toBe("v8-trial");
+    expect(scopeList("all")).toBeNull();
+    expect(scopeDeck(parseScope("list:v8-trial"))).toBeNull();
+    for (const bad of ["list:", "list:../x", "list:a/b", "list:V8", "list:a.json", "list:-a", "list:a-"]) {
+      expect(() => parseScope(bad)).toThrow(/list:<name>/);
+    }
+  });
 });
 
 describe("scopeCondition", () => {
   // A deck scope's set comes from `labelTrialPool`; turning it into "no condition" would label every card.
   it("refuses a deck scope rather than adding nothing", () => {
-    expect(() => scopeCondition("deck:904fdc61-e190-4ba5-8e34-2b18fa0584f2")).toThrow(/labelTrialPool/);
+    expect(() => scopeCondition("deck:904fdc61-e190-4ba5-8e34-2b18fa0584f2")).toThrow(/resolve its ids/);
+    expect(() => scopeCondition("list:v8-trial")).toThrow(/resolve its ids/);
   });
 
   it("adds nothing for all: the query is exactly the base query", () => {

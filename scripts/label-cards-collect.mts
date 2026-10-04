@@ -10,9 +10,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import { writeMeasured } from "./lib/card-labels-ledger.mjs";
 import { costOf, type ModelKey } from "./lib/card-labels-pricing.mjs";
 import { publishArtifacts } from "./lib/card-labels-publish.mjs";
-import { validateJob } from "../src/lib/labels/schema.js";
 import type { Job } from "../src/lib/labels/types.js";
-import { faceResolver, withoutRepeats } from "../src/lib/labels/parse.js";
+import { faceResolver, parseReply, screenJobs, withoutRepeats } from "../src/lib/labels/parse.js";
 
 const client = new Anthropic({ baseURL: "https://api.anthropic.com" });
 /**
@@ -32,15 +31,6 @@ let collected = 0;
 /** Publication is gated on THIS run having ended every batch it submitted. */
 let allEnded = false;
 mkdirSync("out", { recursive: true });
-
-/** A model may fence its JSON however it likes; the reply is data, not code. */
-const parseReply = (text: string): unknown => {
-  const t = text.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
-  try { return JSON.parse(t); } catch { /* fall through to the bracket scan */ }
-  const a = t.indexOf("["), b = t.lastIndexOf("]");
-  if (a < 0 || b < a) return null;
-  try { return JSON.parse(t.slice(a, b + 1)); } catch { return null; }
-};
 
 let grandTotal = 0;
 /**
@@ -138,13 +128,11 @@ for (const [key, id] of Object.entries(submitted)) {
       }
       const jobs = card.jobs;
       // A job the schema rejects is DROPPED and RECORDED, never repaired. A
-      // repaired label would score the repair rather than the model.
-      const kept = [];
-      for (const job of jobs) {
-        const problems = validateJob(job);
-        if (problems.length) malformed.push(`${card.name} [${job?.kind}]: ${problems.join(", ")}`);
-        else kept.push(job);
-      }
+      // repaired label would score the repair rather than the model. The one
+      // exception is `normalizeJob`, inside `screenJobs`, which the build screens
+      // through too: a sample scores the screen the labels are written through.
+      const { kept, rejected } = screenJobs(jobs);
+      for (const r of rejected) malformed.push(`${card.name} [${String(r.kind)}]: ${r.problems.join(", ")}`);
       // A repeat is dropped and RECORDED: the prompt says never to write one, so a scored sample has to show
       // when the model did. Two faces returning the same job count here too, which is rare and still a repeat.
       const merged = [...(labels[card.name] ?? []), ...kept];

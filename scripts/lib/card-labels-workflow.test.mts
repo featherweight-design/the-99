@@ -9,8 +9,9 @@ import { describe, expect, it } from "vitest";
  * The spend bounds on `card-labels.yml`, exercised as SHIPPED.
  *
  * This is the one job in the repository that spends money, and its bounds are Hugh's: a run
- * may not stop later than $65, and may not continue past a $65 projection (raised from $55 and
- * $50 on 2026-10-03, when he approved the full backfill at ~$61.1). A dispatch may ask
+ * may not stop later than $75, and may not continue past a $65 projection (the stop raised from
+ * $55 to $65 on 2026-10-03, when he approved the full backfill at ~$61.1, and to $75 on 2026-10-04
+ * for the v8 relabel; the pause from $50 to $65 on 2026-10-03). A dispatch may ask
  * for less of either and may never ask for more — which is a rule written in bash, in YAML, on
  * a path that runs nowhere else.
  *
@@ -120,6 +121,24 @@ describe("the card-labels spend bounds", () => {
     expect(r.scope).toBeUndefined();
   });
 
+  // A hand-picked list trial (`list:<name>`) follows the deck trial's rule for the same reason.
+  it("passes list:<name> through under a backfill id, and refuses it under the weekly id", () => {
+    expect(resolve("8", "7", "backfill-2026-10-04", "list:v8-trial").scope).toBe("list:v8-trial");
+    const r = resolve("8", "7", "", "list:v8-trial");
+    expect(r.code).toBe(1);
+    expect(r.errors.some((e) => e.includes("needs a backfill"))).toBe(true);
+    expect(r.scope).toBeUndefined();
+  });
+
+  // A list trial's labels stay on staging until the trial is judged. Both halves are needed: the
+  // label job has to publish the resolved scope, or `startsWith` reads an empty string and copies.
+  it("skips the production copy for a list trial, and only for one", () => {
+    expect(workflow).toMatch(/^      scope: \$\{\{ steps\.bounds\.outputs\.scope \}\}$/m);
+    const copy = workflow.slice(workflow.indexOf("\n  copy:"));
+    const gate = copy.match(/^    if: (.*)$/m)?.[1];
+    expect(gate).toBe("${{ !cancelled() && needs.label.outputs.ran == 'true' && !startsWith(needs.label.outputs.scope, 'list:') }}");
+  });
+
   // The bounds step is only half: a missing env line makes the build default to every card.
   it("hands the resolved scope to the step that spends", () => {
     const step = workflow.slice(workflow.indexOf(LABEL_STEP),
@@ -134,6 +153,9 @@ describe("the card-labels spend bounds", () => {
   it.each([
     ["a deck named by its title", "deck:gishath"],
     ["a scope the build does not know", "everything"],
+    ["a list name that walks a path", "list:../secrets"],
+    ["a list name in capitals", "list:V8-trial"],
+    ["a second line smuggled after a valid list", "list:v8-trial\nscope=all"],
     ["a second line smuggled after a valid scope", "all\nscope=deck:904fdc61-e190-4ba5-8e34-2b18fa0584f2"],
   ])("refuses %s, publishing no scope", (_what, scope) => {
     const r = resolve("9", "5", "", scope);
@@ -193,9 +215,9 @@ describe("the card-labels spend bounds", () => {
   });
 
   it("accepts the backfill's ceilings exactly", () => {
-    const r = resolve("65", "65");
+    const r = resolve("75", "65");
     expect(r.code).toBe(0);
-    expect([r.cap, r.pause]).toEqual(["65", "65"]);
+    expect([r.cap, r.pause]).toEqual(["75", "65"]);
   });
 
   it("accepts a decimal below them", () => {
@@ -207,9 +229,9 @@ describe("the card-labels spend bounds", () => {
   // The ceilings are Hugh's two bounds, so each is checked on its OWN side: a single case
   // raising both cannot tell which comparison is doing the work.
   it.each([
-    ["a cap over 65", "66", "65"],
-    ["a pause over 65", "65", "66"],
-    ["a mistyped 65", "650", "65"],
+    ["a cap over 75", "76", "65"],
+    ["a pause over 65", "75", "66"],
+    ["a mistyped 75", "750", "65"],
     ["a zero cap", "0", "5"],
     // `-1` is rejected by the PARSE (the pattern admits no sign), not by awk's `>0`; the zero
     // row above is what exercises that bound. Labelled for what it measures, not for what it
@@ -248,7 +270,7 @@ describe("the card-labels spend bounds", () => {
   it("reports both bounds when both are wrong", () => {
     // One attempt, both answers: the alternative is an operator fixing one figure per run of a
     // job whose whole purpose is to not be run casually.
-    const r = resolve("66", "66");
+    const r = resolve("76", "66");
     expect(r.code).toBe(1);
     expect(r.errors).toHaveLength(2);
   });

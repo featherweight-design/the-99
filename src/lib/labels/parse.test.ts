@@ -1,6 +1,9 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
-import { faceResolver, withoutRepeats } from "./parse";
+import { faceResolver, readReply, screenJobs, withoutRepeats } from "./parse";
 
 /**
  * Every case here is a shape the sample actually produced, or a shape that would have
@@ -62,5 +65,50 @@ describe("withoutRepeats", () => {
     const nulled = { ...omitted, rampKind: null };
     expect(withoutRepeats([omitted, nulled])).toEqual([omitted]);
     expect(withoutRepeats([omitted, { ...omitted, restrictedTo: "Goblin" }])).toHaveLength(2);
+  });
+});
+
+// The build's reading of one reply.
+describe("readReply", () => {
+  const ramp = {
+    space: "role", kind: "ramp", rampKind: "fetchesLand", restrictedTo: null, affects: null,
+    to: "battlefield", method: null, trigger: "cast", recurrence: "oneShot", threshold: null, modal: false,
+  };
+
+  it("keeps a ramp job carrying a misplaced to, stripped, and merges two faces under one name", () => {
+    const text = "```json\n" + JSON.stringify([
+      { name: "Rampant Growth", jobs: [ramp] },
+      { name: "Soulcipher Board", jobs: [] },
+    ]) + "\n```";
+    const read = readReply(text, ["Rampant Growth", "Soulcipher Board // Cipherbound Spirit"]);
+    expect(read?.rejected).toEqual([]);
+    expect(read?.byName.get("Rampant Growth")).toEqual([{ ...ramp, to: null }]);
+    expect(read?.byName.get("Soulcipher Board // Cipherbound Spirit")).toEqual([]);
+  });
+
+  it("records a missing jobs list and an invented name, and reads nothing from prose", () => {
+    const read = readReply(JSON.stringify([{ name: "Rampant Growth" }, { name: "Sparkle", jobs: [] }]), ["Rampant Growth"]);
+    expect(read?.byName.size).toBe(0);
+    expect(read?.rejected).toEqual(["Rampant Growth: jobs is not an array", "unexpected name Sparkle"]);
+    expect(readReply("I cannot help with that.", ["Rampant Growth"])).toBeNull();
+  });
+});
+
+// The sample collector screens through the same function the build does, so a sample of v8 replies
+// keeps a ramp job carrying a misplaced `to` exactly as the stored labels do.
+describe("screenJobs", () => {
+  it("keeps a ramp job with to: battlefield as to: null, and drops what still fails with its kind", () => {
+    const ramp = { space: "role", kind: "ramp", rampKind: "fetchesLand", affects: "self", to: "battlefield", method: null,
+      trigger: "none", recurrence: "oneShot", restrictedTo: "land", threshold: null, modal: false };
+    const { kept, rejected } = screenJobs([ramp, { kind: "made-up" }]);
+    expect(kept).toEqual([{ ...ramp, to: null }]);
+    expect(rejected).toHaveLength(1);
+    expect(rejected[0].kind).toBe("made-up");
+  });
+
+  it("is what the sample collector screens through", () => {
+    const collector = readFileSync(join(process.cwd(), "scripts/label-cards-collect.mts"), "utf8");
+    expect(collector).toMatch(/const \{ kept, rejected \} = screenJobs\(jobs\);/);
+    expect(collector).not.toMatch(/validateJob\(/);
   });
 });

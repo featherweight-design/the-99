@@ -17,6 +17,9 @@
  * agreement denominator. Refusing keeps the denominator honest.
  */
 
+import { normalizeJob, validateJob } from "./schema";
+import type { Job } from "./types";
+
 /**
  * A card's jobs with exact repeats dropped. Two abilities can earn one job with the same limits (two
  * clauses each giving tribal Elf), and two faces of one card are merged into one list; either way the
@@ -61,4 +64,68 @@ export function faceResolver(asked: readonly string[]): (returned: string) => st
     for (const face of name.split(" // ")) faceOf.set(face, name);
   }
   return (returned: string) => (exact.has(returned) ? returned : faceOf.get(returned) ?? null);
+}
+
+/** A model reply is data, not code: it may fence its JSON however it likes. */
+export const parseReply = (text: string): unknown => {
+  const t = text.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  try { return JSON.parse(t); } catch { /* fall through to the bracket scan */ }
+  const a = t.indexOf("["), b = t.lastIndexOf("]");
+  if (a < 0 || b < a) return null;
+  try { return JSON.parse(t.slice(a, b + 1)); } catch { return null; }
+};
+
+/**
+ * One card's returned jobs, screened as the stored labels are: each is normalized (`normalizeJob`
+ * strips a misplaced `to` or `method`), then validated, and a job that still fails is dropped and
+ * returned with its problems. The build and the sample collector both screen through this, so a
+ * sample scores the same screen the labels are written through.
+ */
+export function screenJobs(jobs: readonly unknown[]): {
+  kept: Job[]; rejected: { kind: unknown; problems: string[] }[];
+} {
+  const kept: Job[] = [];
+  const rejected: { kind: unknown; problems: string[] }[] = [];
+  for (const raw of jobs) {
+    const j = normalizeJob(raw);
+    const problems = validateJob(j);
+    if (problems.length) rejected.push({ kind: (j as { kind?: unknown } | null)?.kind, problems });
+    else kept.push(j as Job);
+  }
+  return { kept, rejected };
+}
+
+/**
+ * One reply's text, read into the jobs it gives each card it was asked about: parsed, each name
+ * resolved by face against `asked`, each job repaired by `normalizeJob` and then validated. Null
+ * when the reply is not a JSON array at all.
+ *
+ * Here rather than inside the build because it is pure: every rule it applies to a paid reply is
+ * unit tested without a database or a provider.
+ *
+ * A missing or non-array `jobs` is NOT an empty answer, and is recorded rather than read as `[]`:
+ * the gold set has hard negatives where `[]` is correct, so coercing malformed output to `[]`
+ * credits it as right on exactly the cards designed to catch over-labelling. A rejected job is
+ * dropped and recorded, one complaint per job.
+ */
+export function readReply(text: string, asked: readonly string[]): {
+  byName: Map<string, Job[]>; rejected: string[];
+} | null {
+  const parsed = parseReply(text);
+  if (!Array.isArray(parsed)) return null;
+  const resolve = faceResolver(asked);
+  const byName = new Map<string, Job[]>();
+  const rejected: string[] = [];
+  for (const card of parsed as { name?: string; jobs?: unknown }[]) {
+    if (!card?.name) continue;
+    const name = resolve(card.name);
+    if (name === null) { rejected.push(`unexpected name ${card.name}`); continue; }
+    if (!Array.isArray(card.jobs)) { rejected.push(`${name}: jobs is not an array`); continue; }
+    const screened = screenJobs(card.jobs);
+    for (const r of screened.rejected) rejected.push(`${name}: ${r.problems.join(", ")}`);
+    const kept = screened.kept;
+    // Two faces of one card come back as two entries and resolve to one name, so they merge.
+    byName.set(name, withoutRepeats([...(byName.get(name) ?? []), ...kept]));
+  }
+  return { byName, rejected };
 }

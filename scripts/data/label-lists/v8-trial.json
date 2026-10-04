@@ -1,0 +1,1962 @@
+[
+ {
+  "oracleId": "860d0449-8032-458b-8335-30be238d6689",
+  "name": "Ainok Artillerist",
+  "why": "miss"
+ },
+ {
+  "oracleId": "2aa2f96b-5784-4767-b9ea-b8d9222cb1de",
+  "name": "Aladdin's Lamp",
+  "why": "miss"
+ },
+ {
+  "oracleId": "995e2412-3f69-4aaf-a5d6-ae0ecbb95061",
+  "name": "Apocalypse Chime",
+  "why": "miss"
+ },
+ {
+  "oracleId": "e26bf39f-2d1a-4bc1-aed2-d6d4505f1018",
+  "name": "Apprentice Sorcerer",
+  "why": "miss"
+ },
+ {
+  "oracleId": "3517abe3-eb18-49af-9f1c-b372d2039d99",
+  "name": "Aquus Steed",
+  "why": "miss"
+ },
+ {
+  "oracleId": "9376ccf6-1b18-44e9-8f9d-c5ad38927e2f",
+  "name": "Arc Spitter",
+  "why": "miss"
+ },
+ {
+  "oracleId": "f1c26b25-371e-4fbf-a43d-7fd59a364d3a",
+  "name": "Arc Trail",
+  "why": "miss"
+ },
+ {
+  "oracleId": "792f8235-f23b-4858-bdd4-c7a186b7a470",
+  "name": "Arcane Proxy",
+  "why": "miss"
+ },
+ {
+  "oracleId": "4b5806fa-430f-4b78-b874-63d01a8a9de5",
+  "name": "Arcane Subtraction",
+  "why": "miss"
+ },
+ {
+  "oracleId": "0caae56e-5995-4f1b-b735-80580a372707",
+  "name": "Armored Transport",
+  "why": "miss"
+ },
+ {
+  "oracleId": "a680d1ab-99f2-43d0-b289-5fdba4083d03",
+  "name": "Arni, Humble Scribe",
+  "why": "miss"
+ },
+ {
+  "oracleId": "d40fd63b-f55d-49f6-b4e5-a8d00f22e8e1",
+  "name": "Ashmouth Hound",
+  "why": "miss"
+ },
+ {
+  "oracleId": "b337c241-f2c4-48e3-a303-371b172fcd18",
+  "name": "Attune with Aether",
+  "why": "miss"
+ },
+ {
+  "oracleId": "445c46d1-b571-4fe9-92cc-2873242d748f",
+  "name": "Aura Finesse",
+  "why": "miss"
+ },
+ {
+  "oracleId": "45222123-f5e0-48ff-b80c-858727d155d7",
+  "name": "Barbed Field",
+  "why": "miss"
+ },
+ {
+  "oracleId": "1de561c7-4ff4-4eb9-8cbe-a29f568e786a",
+  "name": "Bazaar Krovod",
+  "why": "miss"
+ },
+ {
+  "oracleId": "f637d525-2f29-488a-9269-8e5aa377fbb7",
+  "name": "Bee Sting",
+  "why": "miss"
+ },
+ {
+  "oracleId": "0596920f-9946-42f4-a03b-24aab67f9f1b",
+  "name": "Blaze",
+  "why": "miss"
+ },
+ {
+  "oracleId": "3859873f-2a0f-463b-8ed9-7f2ab5ed393a",
+  "name": "Blowfly Infestation",
+  "why": "miss"
+ },
+ {
+  "oracleId": "8664a004-d786-4357-8856-2f8f5a9ae24d",
+  "name": "Bone Flute",
+  "why": "miss"
+ },
+ {
+  "oracleId": "ffe25048-0bd4-49b5-aecb-2b1b57fb8d8b",
+  "name": "Borderland Ranger",
+  "why": "miss"
+ },
+ {
+  "oracleId": "77a43c24-398f-42c6-a0d3-b28b33a0ce12",
+  "name": "Bounty of the Hunt",
+  "why": "miss"
+ },
+ {
+  "oracleId": "b44816b4-44ef-446d-a254-b4b7bc015a42",
+  "name": "Braidwood Sextant",
+  "why": "miss"
+ },
+ {
+  "oracleId": "81dcb85e-d61f-430b-9540-5a3bb1378d5a",
+  "name": "Brimstone Mage",
+  "why": "miss"
+ },
+ {
+  "oracleId": "4527c622-cebe-41eb-9178-4895cccffe99",
+  "name": "Burning Cloak",
+  "why": "miss"
+ },
+ {
+  "oracleId": "ac2086fe-98ee-4280-9c7c-c5c2d6548a8b",
+  "name": "Burst Lightning",
+  "why": "miss"
+ },
+ {
+  "oracleId": "fce68545-c31d-4dc2-9f1b-aadf924a07d1",
+  "name": "Cabal Trainee",
+  "why": "miss"
+ },
+ {
+  "oracleId": "ab48147c-0bd7-4875-8e11-0e26185453dd",
+  "name": "Cackling Flames",
+  "why": "miss"
+ },
+ {
+  "oracleId": "5b8e0913-47e9-4d56-971d-abd91b0f7587",
+  "name": "Campus Guide",
+  "why": "miss"
+ },
+ {
+  "oracleId": "09fe624f-c66a-46e4-a9af-7e3c3ca1a4e3",
+  "name": "Capricious Sorcerer",
+  "why": "miss"
+ },
+ {
+  "oracleId": "984adc49-421b-488f-b316-ed7323c5735b",
+  "name": "Captain Rex Nebula",
+  "why": "miss"
+ },
+ {
+  "oracleId": "925a3ded-b7bc-4384-8684-79c20c59ab12",
+  "name": "Caravan Vigil",
+  "why": "miss"
+ },
+ {
+  "oracleId": "de3764b9-9572-4f5c-8c90-82dedec47557",
+  "name": "Celebrate the Harvest",
+  "why": "miss"
+ },
+ {
+  "oracleId": "d48eb6ee-d4ca-4bc7-8d7b-0e6261b88ae5",
+  "name": "Centaur Archer",
+  "why": "miss"
+ },
+ {
+  "oracleId": "8785f42f-87b9-4a0a-89ce-ea423649ba9c",
+  "name": "Chain Lightning",
+  "why": "miss"
+ },
+ {
+  "oracleId": "937f0c60-003e-446d-8889-059f7b4a2dd6",
+  "name": "Charge of the Forever-Beast",
+  "why": "miss"
+ },
+ {
+  "oracleId": "c425fe26-0027-4319-80a9-a053925651cb",
+  "name": "Charm Peddler",
+  "why": "miss"
+ },
+ {
+  "oracleId": "01805d0d-3a72-4d26-9475-3e68c278b7fe",
+  "name": "Cinder Elemental",
+  "why": "miss"
+ },
+ {
+  "oracleId": "c7971968-c4ee-4437-92ec-1238bce1935f",
+  "name": "Cinder Storm",
+  "why": "miss"
+ },
+ {
+  "oracleId": "b9e53414-c21f-4479-b8c1-8b36c3e6e006",
+  "name": "Civic Wayfinder",
+  "why": "miss"
+ },
+ {
+  "oracleId": "4523c22b-363b-4bc6-ba23-b428054abc5d",
+  "name": "Cleansing Screech",
+  "why": "miss"
+ },
+ {
+  "oracleId": "7b9ddff4-82f5-4068-8105-116b8a6180d5",
+  "name": "Clockwork Beetle",
+  "why": "miss"
+ },
+ {
+  "oracleId": "b64051c0-e791-4fcb-b79f-4287e1b06468",
+  "name": "Compass Gnome",
+  "why": "miss"
+ },
+ {
+  "oracleId": "9e34ab18-5d39-49d9-9d3d-e1d4a3611b87",
+  "name": "Constricting Tendrils",
+  "why": "miss"
+ },
+ {
+  "oracleId": "4477eeab-a51a-4dc2-9c97-83f2551d8b54",
+  "name": "Cornered Crook",
+  "why": "miss"
+ },
+ {
+  "oracleId": "4459117a-d11c-44f4-9aac-caefc5b2d6f2",
+  "name": "Crippling Chill",
+  "why": "miss"
+ },
+ {
+  "oracleId": "d7cc744b-2fbd-40e6-8a59-392535c17454",
+  "name": "Dark Remedy",
+  "why": "miss"
+ },
+ {
+  "oracleId": "394709f0-2d29-4a2d-be05-7b22fec57763",
+  "name": "Dazzling Lights",
+  "why": "miss"
+ },
+ {
+  "oracleId": "1269f7dc-a5d6-48e9-8887-b581ce38c204",
+  "name": "Deal Broker",
+  "why": "miss"
+ },
+ {
+  "oracleId": "8bdaa661-861b-4f91-83ea-467e34e11cc3",
+  "name": "Death-Mask Duplicant",
+  "why": "miss"
+ },
+ {
+  "oracleId": "a823e880-3d5f-4186-a7da-e710a7db583c",
+  "name": "Deep Reconnaissance",
+  "why": "miss"
+ },
+ {
+  "oracleId": "b75ffa62-a291-44d7-a950-b50c8394e066",
+  "name": "Deepmuck Desperado",
+  "why": "miss"
+ },
+ {
+  "oracleId": "a00e5eb6-b916-4cd6-8ff2-c02f4929abc7",
+  "name": "Delirium",
+  "why": "miss"
+ },
+ {
+  "oracleId": "314a5c76-1a68-433b-a383-1834400254a8",
+  "name": "Demonfire",
+  "why": "miss"
+ },
+ {
+  "oracleId": "2172b724-9004-488e-88d3-a5fc48c50e41",
+  "name": "Demonic Torment",
+  "why": "miss"
+ },
+ {
+  "oracleId": "a6584af7-583d-4d89-9b46-d61be8236413",
+  "name": "Discerning Peddler",
+  "why": "miss"
+ },
+ {
+  "oracleId": "d0ce03fa-2284-4217-85b2-4db6b8a88c94",
+  "name": "Divining Duelist",
+  "why": "miss"
+ },
+ {
+  "oracleId": "e04f46d9-43e7-45ef-b59c-1810f30bec72",
+  "name": "Dizzying Gaze",
+  "why": "miss"
+ },
+ {
+  "oracleId": "77db8db4-9fe4-478e-b919-5348b0b87b0d",
+  "name": "Dominate",
+  "why": "miss"
+ },
+ {
+  "oracleId": "f73ba6ae-87c1-4e5d-ae52-59d11d7d6ba6",
+  "name": "Draconian Gate-Bot",
+  "why": "miss"
+ },
+ {
+  "oracleId": "02de8fa3-ac8d-47e5-b137-d5a0b7d8e951",
+  "name": "Dragonstorm Forecaster",
+  "why": "miss"
+ },
+ {
+  "oracleId": "262c5ac9-af41-42d1-a53a-8a671eedd5a6",
+  "name": "Duel Tactics",
+  "why": "miss"
+ },
+ {
+  "oracleId": "01072a45-ab1c-4d19-b493-76cf4aae351e",
+  "name": "Duplicity",
+  "why": "miss"
+ },
+ {
+  "oracleId": "ecf613a7-a3df-4da6-b3db-4626b5ae8df6",
+  "name": "Dwarven Shrine",
+  "why": "miss"
+ },
+ {
+  "oracleId": "7de2a364-4383-437a-b6d6-55e4721a0141",
+  "name": "Dúnedain Rangers",
+  "why": "miss"
+ },
+ {
+  "oracleId": "4eb67ba3-35e3-47c3-820f-62814cf202a7",
+  "name": "Ebony Horse",
+  "why": "miss"
+ },
+ {
+  "oracleId": "ad4c39d6-a8b3-4dd9-816d-09761fc9651d",
+  "name": "Elanor Gardner",
+  "why": "miss"
+ },
+ {
+  "oracleId": "6f98f270-f6ff-4029-bcdd-3e7f6483eb5d",
+  "name": "Elfhame Sanctuary",
+  "why": "miss"
+ },
+ {
+  "oracleId": "649300e2-c491-435d-92d5-f1b88f0e2e2e",
+  "name": "Elite Javelineer",
+  "why": "miss"
+ },
+ {
+  "oracleId": "04b35e95-2963-4a0a-bd1c-d516cda2dd37",
+  "name": "Elven Farsight",
+  "why": "miss"
+ },
+ {
+  "oracleId": "959bcf99-3c9a-4f99-98b2-13514d3dac16",
+  "name": "Energy Arc",
+  "why": "miss"
+ },
+ {
+  "oracleId": "f30aa897-7027-47e7-ae58-73cbc448c1f0",
+  "name": "Environmental Scientist",
+  "why": "miss"
+ },
+ {
+  "oracleId": "65260087-48b5-4968-8584-7cc561bb312c",
+  "name": "Escape Routes",
+  "why": "miss"
+ },
+ {
+  "oracleId": "8fcf50cd-e6d0-4516-850f-d42ee75dcc3a",
+  "name": "Expedition Map",
+  "why": "miss"
+ },
+ {
+  "oracleId": "ab8301da-f9f7-4d90-afae-bd7e60834c22",
+  "name": "Explosive Apparatus",
+  "why": "miss"
+ },
+ {
+  "oracleId": "7d306de8-a93b-429b-9436-0501be97dc8d",
+  "name": "Farfinder",
+  "why": "miss"
+ },
+ {
+  "oracleId": "48b891b6-3175-4864-bb98-af131098c557",
+  "name": "Fblthp, Knows the Way",
+  "why": "miss"
+ },
+ {
+  "oracleId": "f07bd49d-8e71-4d56-be2a-638514011318",
+  "name": "Fiery Temper",
+  "why": "miss"
+ },
+ {
+  "oracleId": "fece632b-d8d5-4d3d-a4a7-643293b67538",
+  "name": "Fighting Chance",
+  "why": "miss"
+ },
+ {
+  "oracleId": "27e27681-9221-4e64-8c78-e153a86bc6e0",
+  "name": "Fires of Invention",
+  "why": "miss"
+ },
+ {
+  "oracleId": "37e44e1c-481d-4f5d-b76b-036f40e9124e",
+  "name": "Flame Burst",
+  "why": "miss"
+ },
+ {
+  "oracleId": "b45cb1b8-091a-40d2-a53a-2fa95845f4fa",
+  "name": "Flame Fusillade",
+  "why": "miss"
+ },
+ {
+  "oracleId": "05eccdee-84f8-42d5-b79c-36d081656915",
+  "name": "Flame Jab",
+  "why": "miss"
+ },
+ {
+  "oracleId": "58363090-bf89-4174-bbb2-636afc1c7a06",
+  "name": "Flame Javelin",
+  "why": "miss"
+ },
+ {
+  "oracleId": "c65e804b-9222-4fa8-88d1-df06a3279f22",
+  "name": "Flame Lash",
+  "why": "miss"
+ },
+ {
+  "oracleId": "fbb0173d-7ec9-4f43-b457-f8de6703497e",
+  "name": "Fleeting Memories",
+  "why": "miss"
+ },
+ {
+  "oracleId": "457dc141-bc72-42ad-b482-c78183462e34",
+  "name": "Forced March",
+  "why": "miss"
+ },
+ {
+  "oracleId": "e05f3236-dc82-4353-87ab-d26ae7caa0e7",
+  "name": "Fugitive Druid",
+  "why": "miss"
+ },
+ {
+  "oracleId": "2f18967d-c2cd-449d-a288-df6343672743",
+  "name": "Fyndhorn Pollen",
+  "why": "miss"
+ },
+ {
+  "oracleId": "c5a61e61-d5fe-41ef-afd6-ba5e0399b986",
+  "name": "Gaea's Bounty",
+  "why": "miss"
+ },
+ {
+  "oracleId": "dea311c3-9be3-4059-a206-5fbbdca4d6c9",
+  "name": "Gang Up",
+  "why": "miss"
+ },
+ {
+  "oracleId": "0f539127-535f-4e0d-abaa-e884521098d2",
+  "name": "Gatecreeper Vine",
+  "why": "miss"
+ },
+ {
+  "oracleId": "10891656-070f-49f4-80e0-78061b773f17",
+  "name": "Geistblast",
+  "why": "miss"
+ },
+ {
+  "oracleId": "f2561cc9-3840-4bd7-ad8b-a85d35e47f71",
+  "name": "Goblin Bangchuckers",
+  "why": "miss"
+ },
+ {
+  "oracleId": "7cad08c1-4bd9-4d9f-85d2-fb3ab718fbb8",
+  "name": "Goblin Coward Parade",
+  "why": "miss"
+ },
+ {
+  "oracleId": "582fdfbe-c5fe-45d0-b3ff-e66db5183725",
+  "name": "Goblin Legionnaire",
+  "why": "miss"
+ },
+ {
+  "oracleId": "bcf0ca90-134f-43af-890a-558c5e82974e",
+  "name": "Godo's Irregulars",
+  "why": "miss"
+ },
+ {
+  "oracleId": "0230fdda-d916-457e-9dfd-61783fcf4652",
+  "name": "Granger Guildmage",
+  "why": "miss"
+ },
+ {
+  "oracleId": "b7163800-41fc-410a-9650-50ae90842170",
+  "name": "Gristle Glutton",
+  "why": "miss"
+ },
+ {
+  "oracleId": "04b1280a-b084-4f65-a3f4-2ba41d6c26fa",
+  "name": "Grixis Grimblade",
+  "why": "miss"
+ },
+ {
+  "oracleId": "22c8c952-2713-418e-8259-aea09b4e740b",
+  "name": "Grollub",
+  "why": "miss"
+ },
+ {
+  "oracleId": "a1439ace-5880-4fb8-a321-ec8063e7ed0e",
+  "name": "Guilty Conscience",
+  "why": "miss"
+ },
+ {
+  "oracleId": "ee8fd844-4551-4e44-9740-00d2e76eb337",
+  "name": "Hallowed Ground",
+  "why": "miss"
+ },
+ {
+  "oracleId": "f642a43c-f8cc-44ee-ac6a-5d4b3fbc49af",
+  "name": "Hammer Mage",
+  "why": "miss"
+ },
+ {
+  "oracleId": "d72b69aa-fb61-441e-9b62-4534d7a32a69",
+  "name": "Harbor Guardian",
+  "why": "miss"
+ },
+ {
+  "oracleId": "633a0919-9ac3-4645-8f0b-3f00c198db79",
+  "name": "Hellfire Mongrel",
+  "why": "miss"
+ },
+ {
+  "oracleId": "d4c13349-2faa-46ec-bd8e-80a4e59ef407",
+  "name": "Henge Walker",
+  "why": "miss"
+ },
+ {
+  "oracleId": "74716642-fc8c-4f62-a556-154ed0b4af0e",
+  "name": "Heroism",
+  "why": "miss"
+ },
+ {
+  "oracleId": "66805334-1015-4b41-ba9b-116de94b0744",
+  "name": "Honorable Passage",
+  "why": "miss"
+ },
+ {
+  "oracleId": "e0610ab1-88d3-4502-84b7-3a08d0170167",
+  "name": "Horizon Seeker",
+  "why": "miss"
+ },
+ {
+  "oracleId": "50a1c14a-003f-424b-bb8e-2e2d51465a90",
+  "name": "Horn of Deafening",
+  "why": "miss"
+ },
+ {
+  "oracleId": "25edeff3-7727-4b80-9459-2bb6b8587fb9",
+  "name": "Hornet Sting",
+  "why": "miss"
+ },
+ {
+  "oracleId": "6de20c2c-b8a8-4f12-897b-a2f55d7eed87",
+  "name": "Horror of the Broken Lands",
+  "why": "miss"
+ },
+ {
+  "oracleId": "fbfaf009-8276-4687-a3db-5a71dc13f174",
+  "name": "Hundred-Talon Strike",
+  "why": "miss"
+ },
+ {
+  "oracleId": "1af3c6ff-2884-4d8c-a01f-6f74d8ea10cc",
+  "name": "Hunger of the Nim",
+  "why": "miss"
+ },
+ {
+  "oracleId": "4c2059d5-9a2e-4b89-a617-9125eb0cd570",
+  "name": "Hydrosurge",
+  "why": "miss"
+ },
+ {
+  "oracleId": "26112ba7-2859-4af3-93c3-e62c31177216",
+  "name": "Icatian Javelineers",
+  "why": "miss"
+ },
+ {
+  "oracleId": "52a61983-53e2-440f-af03-cebe57b102f2",
+  "name": "Ignoble Soldier",
+  "why": "miss"
+ },
+ {
+  "oracleId": "91b2ffe8-155d-4b9f-82dd-868cc895856b",
+  "name": "Incendiary Flow",
+  "why": "miss"
+ },
+ {
+  "oracleId": "5fcc057e-e6c2-4e37-a786-9a5ef94926e1",
+  "name": "Inescapable Blaze",
+  "why": "miss"
+ },
+ {
+  "oracleId": "287cb63c-d52d-4871-83d1-792a41ae7adc",
+  "name": "Inferno Elemental",
+  "why": "miss"
+ },
+ {
+  "oracleId": "a138ca33-6ea4-468e-9cfb-c908ee62c516",
+  "name": "Ink Dissolver",
+  "why": "miss"
+ },
+ {
+  "oracleId": "c877a430-75bc-45ac-b11d-2365d11ed341",
+  "name": "Invasion of Lorwyn // Winnowing Forces",
+  "why": "miss"
+ },
+ {
+  "oracleId": "323437f5-cc6c-4579-b591-499476dffb3c",
+  "name": "Invasion of Pyrulea // Gargantuan Slabhorn",
+  "why": "miss"
+ },
+ {
+  "oracleId": "448e0cf2-c97c-4dc0-96ef-91f1eb75d97c",
+  "name": "Ion Storm",
+  "why": "miss"
+ },
+ {
+  "oracleId": "dc0decb9-32da-47aa-a51a-0d9c623c534a",
+  "name": "Iron Will",
+  "why": "miss"
+ },
+ {
+  "oracleId": "dded2874-e80f-401a-b700-52c54dd6da60",
+  "name": "Ivory Charm",
+  "why": "miss"
+ },
+ {
+  "oracleId": "ab151429-0890-4231-a3a7-34e8455dac70",
+  "name": "Ivory Crane Netsuke",
+  "why": "miss"
+ },
+ {
+  "oracleId": "8e2017c3-057d-4e30-bd60-f486fddbc6ca",
+  "name": "Ivory Cup",
+  "why": "miss"
+ },
+ {
+  "oracleId": "1e105ab7-fb10-4cfd-ac2f-5e11488cf1b0",
+  "name": "Jade Monolith",
+  "why": "miss"
+ },
+ {
+  "oracleId": "10aab5bc-5758-443b-ba4c-49f6c6d91262",
+  "name": "Journeyer's Kite",
+  "why": "miss"
+ },
+ {
+  "oracleId": "794ad296-4718-45b7-ab85-6ae45903ada7",
+  "name": "Jungle Wayfinder",
+  "why": "miss"
+ },
+ {
+  "oracleId": "b3122a15-c7ab-40f1-9632-f5fbc4484c59",
+  "name": "Karplusan Minotaur",
+  "why": "miss"
+ },
+ {
+  "oracleId": "62320290-ac8e-4f92-bb06-3368f66ae0a9",
+  "name": "Keys to the House",
+  "why": "miss"
+ },
+ {
+  "oracleId": "7b47891f-130a-4d76-b262-53f5e3bb6b95",
+  "name": "Killing Glare",
+  "why": "miss"
+ },
+ {
+  "oracleId": "9397a23b-770a-43fc-8bc2-2c3abb0683c5",
+  "name": "Kindle",
+  "why": "miss"
+ },
+ {
+  "oracleId": "340ec369-1761-4134-a96d-5537b4e08703",
+  "name": "Kiyomaro, First to Stand",
+  "why": "miss"
+ },
+ {
+  "oracleId": "334178f6-cf4b-4ea6-a24f-c7375d1b38de",
+  "name": "Kolaghan Aspirant",
+  "why": "miss"
+ },
+ {
+  "oracleId": "82406175-63b3-4972-be8b-db0e70c908cb",
+  "name": "Krosan Tusker",
+  "why": "miss"
+ },
+ {
+  "oracleId": "e36f4649-934d-4e8a-bd5f-39f164ea6937",
+  "name": "Land Grant",
+  "why": "miss"
+ },
+ {
+  "oracleId": "e48891e3-30a2-4fc8-a858-cec33c6e4ab5",
+  "name": "Lava Dart",
+  "why": "miss"
+ },
+ {
+  "oracleId": "cedc52eb-66a6-4b43-87f1-9bb9f4d4871e",
+  "name": "Lay of the Land",
+  "why": "miss"
+ },
+ {
+  "oracleId": "0a265cb5-47c7-4e06-9030-602e17bedae5",
+  "name": "Leeches",
+  "why": "miss"
+ },
+ {
+  "oracleId": "ba1d34ab-7529-4f47-a5e7-7d8f66d7b901",
+  "name": "Leveler",
+  "why": "miss"
+ },
+ {
+  "oracleId": "91fd731c-e076-4f2d-9f22-872880c3cc3d",
+  "name": "Lightning Blast",
+  "why": "miss"
+ },
+ {
+  "oracleId": "4457ed35-7c10-48c8-9776-456485fdf070",
+  "name": "Lightning Bolt",
+  "why": "miss"
+ },
+ {
+  "oracleId": "a6f6b062-cd7e-4631-9921-40e054ab835d",
+  "name": "Lightning Javelin",
+  "why": "miss"
+ },
+ {
+  "oracleId": "ac3fb7ef-709c-40be-a75b-1b438708388d",
+  "name": "Lightning Rift",
+  "why": "miss"
+ },
+ {
+  "oracleId": "f34b9bc4-7bfe-47fd-ba23-4eeeb46026eb",
+  "name": "Lightning Strike",
+  "why": "miss"
+ },
+ {
+  "oracleId": "93b6083b-f49a-4641-b76f-8ccbec22f91d",
+  "name": "Lightning Volley",
+  "why": "miss"
+ },
+ {
+  "oracleId": "5e414dc2-d0ff-43e5-9aa2-cd9d96de6d89",
+  "name": "Lithomantic Barrage",
+  "why": "miss"
+ },
+ {
+  "oracleId": "528a19d7-ee79-45a5-b27f-e0bff4213193",
+  "name": "Loam Larva",
+  "why": "miss"
+ },
+ {
+  "oracleId": "e6813885-b629-4bd4-b445-da8ab4363080",
+  "name": "Lost in a Labyrinth",
+  "why": "miss"
+ },
+ {
+  "oracleId": "5e642112-9592-475f-ba03-d71544270cfa",
+  "name": "Lunge",
+  "why": "miss"
+ },
+ {
+  "oracleId": "34c66f52-dcbf-4d0a-bf7f-cb294bd93e9c",
+  "name": "Mana Severance",
+  "why": "miss"
+ },
+ {
+  "oracleId": "3fdee2ab-7ec6-4fc6-ad99-f04571f94583",
+  "name": "Marjhan",
+  "why": "miss"
+ },
+ {
+  "oracleId": "08ae9f91-48c8-4721-a82d-063defc1b727",
+  "name": "Marsh Gas",
+  "why": "miss"
+ },
+ {
+  "oracleId": "ef6c0054-3a89-4fac-b822-37c7d2514489",
+  "name": "Matoya, Archon Elder",
+  "why": "miss"
+ },
+ {
+  "oracleId": "fa72c607-7eb4-41b7-9af1-f3d6c69abf09",
+  "name": "Mechan Navigator",
+  "why": "miss"
+ },
+ {
+  "oracleId": "bb244878-6440-4dfe-b96b-c9e18d0abe45",
+  "name": "Merfolk Pupil",
+  "why": "miss"
+ },
+ {
+  "oracleId": "4f5096d4-bbb5-4a48-9dd0-9dabdd2ac125",
+  "name": "Merfolk Secretkeeper // Venture Deeper",
+  "why": "miss"
+ },
+ {
+  "oracleId": "4e9a63d2-b48b-4740-95ba-7966ada95baf",
+  "name": "Merrow Grimeblotter",
+  "why": "miss"
+ },
+ {
+  "oracleId": "211add65-b63d-43ad-8d69-b0598e003fef",
+  "name": "Mesa Lynx",
+  "why": "miss"
+ },
+ {
+  "oracleId": "31f3a9f3-881e-4dc9-b71d-5d1fc86477bf",
+  "name": "Mindblaze",
+  "why": "miss"
+ },
+ {
+  "oracleId": "38ffe614-e8f7-4625-b921-9409e7e7ee5b",
+  "name": "Mirror of Fate",
+  "why": "miss"
+ },
+ {
+  "oracleId": "72a1e724-eb32-4781-b44d-3b1ed02a5a8b",
+  "name": "Misers' Cage",
+  "why": "miss"
+ },
+ {
+  "oracleId": "ac2711b7-318d-478a-b69c-d44baff46f2d",
+  "name": "Moonglove Extract",
+  "why": "miss"
+ },
+ {
+  "oracleId": "af029853-cfb0-403b-af51-141ba02ae2e4",
+  "name": "Mtenda Lion",
+  "why": "miss"
+ },
+ {
+  "oracleId": "e7c4bc25-806c-4a75-85bf-a0e66308d5d8",
+  "name": "Mycosynth Fiend",
+  "why": "miss"
+ },
+ {
+  "oracleId": "9ec43ec6-b625-4be8-8f79-3679e6657dbc",
+  "name": "Mycosynth Wellspring",
+  "why": "miss"
+ },
+ {
+  "oracleId": "916bd025-c44f-49c9-8d76-4b7b2f9a8ba3",
+  "name": "Night of Souls' Betrayal",
+  "why": "miss"
+ },
+ {
+  "oracleId": "8d4ef98d-228e-41ff-9133-53f0987e58d8",
+  "name": "Nissa's Triumph",
+  "why": "miss"
+ },
+ {
+  "oracleId": "35754a21-9fba-4370-a254-292918a777ba",
+  "name": "Nissa, Vastwood Seer // Nissa, Sage Animist",
+  "why": "miss"
+ },
+ {
+  "oracleId": "49598fd5-2aad-4974-b499-38b60fc371b6",
+  "name": "Null Group Biological Assets",
+  "why": "miss"
+ },
+ {
+  "oracleId": "fbfa8b3f-58a7-44ca-8c22-6747b56fdcb9",
+  "name": "Obstinate Familiar",
+  "why": "miss"
+ },
+ {
+  "oracleId": "8b218023-50b8-4d9d-b17b-9647479d3675",
+  "name": "Open Fire",
+  "why": "miss"
+ },
+ {
+  "oracleId": "f38e43b6-9a8c-4f6a-bd1c-d5c4913a28a1",
+  "name": "Open the Gates",
+  "why": "miss"
+ },
+ {
+  "oracleId": "6e5f50b2-0acc-42be-b9fd-32ea390c07fc",
+  "name": "Oracle of Dust",
+  "why": "miss"
+ },
+ {
+  "oracleId": "9ebf3eeb-1a1b-4b88-a760-887c2188d287",
+  "name": "Orcish Cannoneers",
+  "why": "miss"
+ },
+ {
+  "oracleId": "a3055ae8-990d-495a-9cb5-971407990cfa",
+  "name": "Oreskos Explorer",
+  "why": "miss"
+ },
+ {
+  "oracleId": "855a2579-8f78-46ce-a3a8-eddc808bd7b4",
+  "name": "Outcaster Greenblade",
+  "why": "miss"
+ },
+ {
+  "oracleId": "e68d6459-2f32-4320-a062-6d33f85348f9",
+  "name": "Overwhelmed Apprentice",
+  "why": "miss"
+ },
+ {
+  "oracleId": "7179c2c5-c59c-4793-a3b5-28d26d755157",
+  "name": "Paradigm Shift",
+  "why": "miss"
+ },
+ {
+  "oracleId": "6598d988-d60e-4441-88b6-8d0995c4675a",
+  "name": "Phyrexian Unlife",
+  "why": "miss"
+ },
+ {
+  "oracleId": "fbe25c32-db20-464c-a0ed-d90e75b111a9",
+  "name": "Pincer Spider",
+  "why": "miss"
+ },
+ {
+  "oracleId": "08a5445b-e9e6-44c3-9bc4-aff1b91c18a7",
+  "name": "Pipsqueak, Rebel Strongarm",
+  "why": "miss"
+ },
+ {
+  "oracleId": "f8cc1dc4-740d-4c5b-ac51-7355730a6595",
+  "name": "Plaguebearer",
+  "why": "miss"
+ },
+ {
+  "oracleId": "ac5258c1-5b46-4892-a445-bfd56875f039",
+  "name": "Plasma Bolt",
+  "why": "miss"
+ },
+ {
+  "oracleId": "5ffc1e77-152b-4a82-8ea8-2c79cc31d5ef",
+  "name": "Play with Fire",
+  "why": "miss"
+ },
+ {
+  "oracleId": "065cdf8d-6874-4ab6-a08e-79bd88b245bd",
+  "name": "Playable Delusionary Hydra",
+  "why": "miss"
+ },
+ {
+  "oracleId": "e00aa7d7-3c11-463d-a7f5-8d001ea5c021",
+  "name": "Prehistoric Turtlesaurus",
+  "why": "miss"
+ },
+ {
+  "oracleId": "d031d7d2-1e41-4201-9073-c4c1be182ba4",
+  "name": "Primal Druid",
+  "why": "miss"
+ },
+ {
+  "oracleId": "3cbdf37b-7fe3-4791-b33c-8591158b0ce5",
+  "name": "Primal Growth",
+  "why": "miss"
+ },
+ {
+  "oracleId": "08c59e5e-d01c-49b7-a812-8ea75e9e945d",
+  "name": "Princess Yue",
+  "why": "miss"
+ },
+ {
+  "oracleId": "5e961d15-5972-4e4b-9385-1cd7cd7c6bbe",
+  "name": "Prodigal Sorcerer",
+  "why": "miss"
+ },
+ {
+  "oracleId": "7f221ad6-7ec4-483d-a6b5-1456c95c1cad",
+  "name": "Psionic Blast",
+  "why": "miss"
+ },
+ {
+  "oracleId": "1beb81a8-b4aa-4964-93d2-2b5414fc6ce3",
+  "name": "Psychogenic Probe",
+  "why": "miss"
+ },
+ {
+  "oracleId": "c8e53740-c633-42f8-9e02-3434d6dc0b30",
+  "name": "Puncture Bolt",
+  "why": "miss"
+ },
+ {
+  "oracleId": "2c89cf19-8dc6-422e-bbf8-4dd5a399c630",
+  "name": "Pyromania",
+  "why": "miss"
+ },
+ {
+  "oracleId": "9d612686-2d7f-49a3-b9c4-1e99a30134f6",
+  "name": "Rally the Ancestors",
+  "why": "miss"
+ },
+ {
+  "oracleId": "8539f295-5d58-4436-a73a-b9277c4c7795",
+  "name": "Rampant Growth",
+  "why": "miss"
+ },
+ {
+  "oracleId": "265236d1-d96c-4424-835e-a0fe91c41170",
+  "name": "Ravages of War",
+  "why": "miss"
+ },
+ {
+  "oracleId": "21465dcd-c93a-4a2c-ae10-e22ebd5cae2f",
+  "name": "Reality Hemorrhage",
+  "why": "miss"
+ },
+ {
+  "oracleId": "ce6f3c67-8806-416d-9156-6f5bb63d5f4c",
+  "name": "Reclaim the Wastes",
+  "why": "miss"
+ },
+ {
+  "oracleId": "fa879d99-3d2b-4a9a-a17f-d5ac109f8f44",
+  "name": "Remove Enchantments",
+  "why": "miss"
+ },
+ {
+  "oracleId": "b0e1d26e-2fa1-4826-bfe9-01b0bd2c138b",
+  "name": "Resounding Thunder",
+  "why": "miss"
+ },
+ {
+  "oracleId": "51991d28-137e-4690-a674-d852b904bd1a",
+  "name": "Revive",
+  "why": "miss"
+ },
+ {
+  "oracleId": "2b8afa9f-4236-4c02-a8d5-3c145caecfd6",
+  "name": "Rift Bolt",
+  "why": "miss"
+ },
+ {
+  "oracleId": "c79b9187-cbfe-43a0-bdc8-4f7e0d215607",
+  "name": "Ring of Ma'rûf",
+  "why": "miss"
+ },
+ {
+  "oracleId": "1a4c03ab-519a-4840-893a-769dfc5cf161",
+  "name": "Risky Move",
+  "why": "miss"
+ },
+ {
+  "oracleId": "a7f682ce-3d1f-425c-b65a-11a15791aa9e",
+  "name": "Rites of Spring",
+  "why": "miss"
+ },
+ {
+  "oracleId": "da052082-b440-4abb-9c69-05d4d13e5fd2",
+  "name": "Road Rage",
+  "why": "miss"
+ },
+ {
+  "oracleId": "8e42ed82-8b56-46ad-a1ca-e29689a9d030",
+  "name": "Rootwater Hunter",
+  "why": "miss"
+ },
+ {
+  "oracleId": "8f36e0db-eea7-4c97-98ce-4bc2d8c7f734",
+  "name": "Rumbling Ruin",
+  "why": "miss"
+ },
+ {
+  "oracleId": "e310c3ab-a729-404d-944f-9b477258495c",
+  "name": "Safeguard",
+  "why": "miss"
+ },
+ {
+  "oracleId": "e3afc704-220f-498f-9eaa-0821b17dc24c",
+  "name": "Sakura-Tribe Elder",
+  "why": "miss"
+ },
+ {
+  "oracleId": "9b18bbf3-3b1c-4010-bc6f-e7eacb2ffb70",
+  "name": "Salvage Drone",
+  "why": "miss"
+ },
+ {
+  "oracleId": "a524ae69-2594-467d-af0a-27b9984d4300",
+  "name": "Samite Blessing",
+  "why": "miss"
+ },
+ {
+  "oracleId": "3313aa8f-6441-4daa-b8fa-e6144f60bea8",
+  "name": "Sarkhan's Rage",
+  "why": "miss"
+ },
+ {
+  "oracleId": "473c9f27-2091-4d87-b279-64b3662c9af8",
+  "name": "Sawtooth Ogre",
+  "why": "miss"
+ },
+ {
+  "oracleId": "9342fbb8-ab35-4895-946d-951ba6a2b067",
+  "name": "Scorching Spear",
+  "why": "miss"
+ },
+ {
+  "oracleId": "929c231a-12d9-4f1a-9849-64a8b5a65f20",
+  "name": "Scouting Trek",
+  "why": "miss"
+ },
+ {
+  "oracleId": "6974c433-a522-40bb-8791-375fcc242234",
+  "name": "Scroll of Origins",
+  "why": "miss"
+ },
+ {
+  "oracleId": "aafd44c1-74a9-4aa7-a4a2-67eb39a07478",
+  "name": "Searing Spear",
+  "why": "miss"
+ },
+ {
+  "oracleId": "b196045d-ece1-46ac-a647-b65f04225c10",
+  "name": "Searing Wind",
+  "why": "miss"
+ },
+ {
+  "oracleId": "7537b482-7626-4b65-8b67-53b99baf1872",
+  "name": "Seek the Horizon",
+  "why": "miss"
+ },
+ {
+  "oracleId": "e2ef027d-0ef7-4c8b-a594-3918290b02d9",
+  "name": "Serene Sunset",
+  "why": "miss"
+ },
+ {
+  "oracleId": "d96506b1-845d-4a9b-8414-456bb457d80f",
+  "name": "Shape the Sands",
+  "why": "miss"
+ },
+ {
+  "oracleId": "c51fc4f2-76a6-4337-ab8f-1b3e84f82019",
+  "name": "Shard Convergence",
+  "why": "miss"
+ },
+ {
+  "oracleId": "3d19ab38-fb32-4f2b-b68c-28db4a6864c6",
+  "name": "Shard Volley",
+  "why": "miss"
+ },
+ {
+  "oracleId": "98e7bfd4-fcb6-47b1-ad0b-c54b85dc2a79",
+  "name": "Shield Mate",
+  "why": "miss"
+ },
+ {
+  "oracleId": "8148eaa4-6fde-41f2-9b87-ccfc4d8e822f",
+  "name": "Shield Wall",
+  "why": "miss"
+ },
+ {
+  "oracleId": "a9d288b8-cdc1-4e55-a0c9-d6edfc95e65d",
+  "name": "Shock",
+  "why": "miss"
+ },
+ {
+  "oracleId": "5a074b0a-3a4d-4c6f-b161-5d1281f6136d",
+  "name": "Silhouette",
+  "why": "miss"
+ },
+ {
+  "oracleId": "8b70d296-2756-4bda-b51e-f93be395fce7",
+  "name": "Simic Guildmage",
+  "why": "miss"
+ },
+ {
+  "oracleId": "a605864a-f46f-4ebc-8e56-ce7322c918b0",
+  "name": "Sinew Dancer",
+  "why": "miss"
+ },
+ {
+  "oracleId": "8ba0e831-054a-4e01-92ed-2845bd2fa12f",
+  "name": "Skirk Marauder",
+  "why": "miss"
+ },
+ {
+  "oracleId": "85364398-923c-4ee9-8519-576fce1c26f7",
+  "name": "Skittering Surveyor",
+  "why": "miss"
+ },
+ {
+  "oracleId": "fbd71691-d0fd-4842-913b-fe6096d509a3",
+  "name": "Skyshroud Cutter",
+  "why": "miss"
+ },
+ {
+  "oracleId": "1e94e647-9150-4b22-aa9f-d195f64fb20a",
+  "name": "Slaying Fire",
+  "why": "miss"
+ },
+ {
+  "oracleId": "ece3e379-c586-48bd-8742-472b5deccc35",
+  "name": "Solar Blast",
+  "why": "miss"
+ },
+ {
+  "oracleId": "eed353a6-757d-47f6-a118-b951ccf95600",
+  "name": "Soldevi Heretic",
+  "why": "miss"
+ },
+ {
+  "oracleId": "31c77036-8627-476a-996b-2a6b005c9e12",
+  "name": "Somberwald Vigilante",
+  "why": "miss"
+ },
+ {
+  "oracleId": "0544de10-b409-469b-ae96-b88e9452f26f",
+  "name": "Soultether Golem",
+  "why": "miss"
+ },
+ {
+  "oracleId": "f24634f3-49aa-4362-8faa-93598b9324d9",
+  "name": "Spark Jolt",
+  "why": "miss"
+ },
+ {
+  "oracleId": "159427f7-27fe-490d-ac78-fed092952f51",
+  "name": "Spinal Parasite",
+  "why": "miss"
+ },
+ {
+  "oracleId": "dcfa0476-e88f-43b4-8011-d78a3de97f2a",
+  "name": "Spineseeker Centipede",
+  "why": "miss"
+ },
+ {
+  "oracleId": "ff3bc67b-f435-4bb7-9c21-8d24d8808c1a",
+  "name": "Spirit of the Aldergard",
+  "why": "miss"
+ },
+ {
+  "oracleId": "410acdbc-3a00-49db-a712-ad970d24b363",
+  "name": "Spiteful Bully",
+  "why": "miss"
+ },
+ {
+  "oracleId": "cf4d8b19-fd11-4200-9871-896772019f4c",
+  "name": "Spitemare",
+  "why": "miss"
+ },
+ {
+  "oracleId": "52c53132-146a-4912-8e0f-1d4d9937fff3",
+  "name": "Staff of Zegon",
+  "why": "miss"
+ },
+ {
+  "oracleId": "5454dddf-c6e5-4b0d-b96d-4904c13606dc",
+  "name": "Starport Security",
+  "why": "miss"
+ },
+ {
+  "oracleId": "2249001c-08d5-4c0a-86f8-d97519a39f37",
+  "name": "Stoke the Flames",
+  "why": "miss"
+ },
+ {
+  "oracleId": "819a7235-b61a-49d7-a0ad-3d8bbf83091e",
+  "name": "Stormscale Anarch",
+  "why": "miss"
+ },
+ {
+  "oracleId": "f5bdf226-7a83-469b-bc49-87af388d9020",
+  "name": "Stun Sniper",
+  "why": "miss"
+ },
+ {
+  "oracleId": "0391691f-6708-481a-93a5-6677e6fa2ff3",
+  "name": "Sunflare Shaman",
+  "why": "miss"
+ },
+ {
+  "oracleId": "ee24bf27-484d-4e1c-998e-6a74e3d3f6c4",
+  "name": "Sylvan Scrying",
+  "why": "miss"
+ },
+ {
+  "oracleId": "c5577514-d2af-4904-9f94-b472228c6e3d",
+  "name": "Takeno's Cavalry",
+  "why": "miss"
+ },
+ {
+  "oracleId": "f07b821c-bbc1-4def-b009-6c03689478d0",
+  "name": "Tarfire",
+  "why": "miss"
+ },
+ {
+  "oracleId": "1b9dd2b6-d14d-4c1e-9885-00ab2c0bf8da",
+  "name": "Telekinesis",
+  "why": "miss"
+ },
+ {
+  "oracleId": "83ce0859-cb88-45dd-8485-3317792235de",
+  "name": "Tenth District Guard",
+  "why": "miss"
+ },
+ {
+  "oracleId": "57d411c6-68d8-441d-885f-17412f6503c2",
+  "name": "Tephraderm",
+  "why": "miss"
+ },
+ {
+  "oracleId": "d16fcb45-7fe7-4640-a325-badb64cadd62",
+  "name": "Terisian Mindbreaker",
+  "why": "miss"
+ },
+ {
+  "oracleId": "a8995df6-99a7-41a7-bd3e-f34643b27947",
+  "name": "The Modern Age // Vector Glider",
+  "why": "miss"
+ },
+ {
+  "oracleId": "da1ea03f-747f-46c9-8ff5-7e85996df804",
+  "name": "Thought Prison",
+  "why": "miss"
+ },
+ {
+  "oracleId": "ca14f1b6-e8c2-4ea5-9375-5ed63f355052",
+  "name": "Thoughtbound Phantasm",
+  "why": "miss"
+ },
+ {
+  "oracleId": "6c31f06d-bf02-48a7-9c17-be2a226b8eae",
+  "name": "Thran Turbine",
+  "why": "miss"
+ },
+ {
+  "oracleId": "925cacdc-6d09-4fbd-9258-9f0539da180c",
+  "name": "Thrór's Map",
+  "why": "miss"
+ },
+ {
+  "oracleId": "78260893-c443-44c8-ab45-ce86ef347d98",
+  "name": "Thunderous Wrath",
+  "why": "miss"
+ },
+ {
+  "oracleId": "bda87ca2-91d0-48fa-bb82-a3396f0438ac",
+  "name": "Tideforce Elemental",
+  "why": "miss"
+ },
+ {
+  "oracleId": "ebc52f9a-ba0c-48ed-bb04-ed086efeb060",
+  "name": "Tormentor Exarch",
+  "why": "miss"
+ },
+ {
+  "oracleId": "1cdac498-3c94-48d6-b94c-1d98697370ea",
+  "name": "Trailblazer's Torch",
+  "why": "miss"
+ },
+ {
+  "oracleId": "48b561dd-f23d-409a-87c8-e49902b2477b",
+  "name": "Traveler's Amulet",
+  "why": "miss"
+ },
+ {
+  "oracleId": "68a6fd00-9cb0-4518-97aa-b7f475da58c1",
+  "name": "Treefolk Mystic",
+  "why": "miss"
+ },
+ {
+  "oracleId": "7d765055-da62-43f7-9580-98e9d164753b",
+  "name": "Truck Toss",
+  "why": "miss"
+ },
+ {
+  "oracleId": "41841bbf-1c51-494b-b299-c997cce88e44",
+  "name": "Turn // Burn",
+  "why": "miss"
+ },
+ {
+  "oracleId": "4325ae73-af43-4a7d-a552-9909f0dc77db",
+  "name": "Turn Aside",
+  "why": "miss"
+ },
+ {
+  "oracleId": "ebb5b792-3906-4cb5-b8f9-063f94c9d135",
+  "name": "Unfriendly Fire",
+  "why": "miss"
+ },
+ {
+  "oracleId": "a500313b-35e3-4ebc-9144-e9486784757b",
+  "name": "Unyaro Bee Sting",
+  "why": "miss"
+ },
+ {
+  "oracleId": "fddac567-c42c-453b-9c82-c3140b374a06",
+  "name": "Vedalken Shackles",
+  "why": "miss"
+ },
+ {
+  "oracleId": "90898c76-21f9-4597-88fe-dc9179911cde",
+  "name": "Vicious Rivalry",
+  "why": "miss"
+ },
+ {
+  "oracleId": "8b9119b0-9948-497f-aa92-2879d07bed1c",
+  "name": "Viridian Longbow",
+  "why": "miss"
+ },
+ {
+  "oracleId": "846a4f9c-d955-403f-8a08-5c7c3d32e180",
+  "name": "Volcanic Geyser",
+  "why": "miss"
+ },
+ {
+  "oracleId": "c5ba0f0f-65c5-4ffa-987a-f320b401ec8f",
+  "name": "Warning",
+  "why": "miss"
+ },
+ {
+  "oracleId": "1093fdb6-bd4f-46a8-92e3-5aa46b52bb4f",
+  "name": "Weathered Wayfarer",
+  "why": "miss"
+ },
+ {
+  "oracleId": "2c925531-63f8-4a6b-bfe0-bb8cd5d0d63d",
+  "name": "Weird Angel Flame",
+  "why": "miss"
+ },
+ {
+  "oracleId": "d57079ae-7760-4a81-895f-dc8990896ed7",
+  "name": "Whiptail Moloch",
+  "why": "miss"
+ },
+ {
+  "oracleId": "f76a0e5b-74c1-4ee8-b502-e8b988086de4",
+  "name": "Wild Slash",
+  "why": "miss"
+ },
+ {
+  "oracleId": "f6a07af3-e54b-4dcb-ae2a-3dfdac386bab",
+  "name": "Wild-Field Scarecrow",
+  "why": "miss"
+ },
+ {
+  "oracleId": "e9c9a445-4386-4616-ad00-f08064d73dcd",
+  "name": "Wisecrack",
+  "why": "miss"
+ },
+ {
+  "oracleId": "f1ebccc2-d12a-4440-8a73-86c1bc901feb",
+  "name": "Wolfhunter's Quiver",
+  "why": "miss"
+ },
+ {
+  "oracleId": "c5d27469-96e1-44ec-a887-2fc26f9e10d3",
+  "name": "Woolly Razorback",
+  "why": "miss"
+ },
+ {
+  "oracleId": "51d4f95e-aad2-4e5f-9f15-a68bbdf9ab3e",
+  "name": "World Map",
+  "why": "miss"
+ },
+ {
+  "oracleId": "77a000de-76d9-44f8-9789-875aa9f576e7",
+  "name": "Wormfang Behemoth",
+  "why": "miss"
+ },
+ {
+  "oracleId": "f8beeb0a-750f-4afa-a244-10011342bbeb",
+  "name": "Wretched Anurid",
+  "why": "miss"
+ },
+ {
+  "oracleId": "f7016cec-bb17-4f56-bf8e-3d8c83e6e41b",
+  "name": "Wrinkly Monkey Shenanigans",
+  "why": "miss"
+ },
+ {
+  "oracleId": "90a2ec9c-2f1c-4ed4-820d-dfdb6b58c0db",
+  "name": "Zuko's Offense",
+  "why": "miss"
+ },
+ {
+  "oracleId": "bc7b90b1-3517-4e5d-9bd8-68b4d8a259fd",
+  "name": "Zuran Spellcaster",
+  "why": "miss"
+ },
+ {
+  "oracleId": "ab1cc360-b9de-48d9-9983-4dfe4a7d2a37",
+  "name": "Arcane Denial",
+  "why": "control:draw"
+ },
+ {
+  "oracleId": "a5cbd257-c836-493e-bb1a-76242619dea2",
+  "name": "Big Score",
+  "why": "control:draw"
+ },
+ {
+  "oracleId": "36cd2364-d113-47d1-b2c4-b088d9eb88dd",
+  "name": "Brainstorm",
+  "why": "control:draw"
+ },
+ {
+  "oracleId": "457af74a-02b3-4659-846d-63e482667f34",
+  "name": "Deadly Dispute",
+  "why": "control:draw"
+ },
+ {
+  "oracleId": "5def9f38-0a0b-4e8d-9f9d-29dcb46520b4",
+  "name": "Esper Sentinel",
+  "why": "control:draw"
+ },
+ {
+  "oracleId": "3d6fa57a-aa53-4b5c-b8af-a7612c823117",
+  "name": "Faithless Looting",
+  "why": "control:draw"
+ },
+ {
+  "oracleId": "16e015b2-f8a3-4b1a-80be-58a8f5fb5e8c",
+  "name": "Frantic Search",
+  "why": "control:draw"
+ },
+ {
+  "oracleId": "3127ae9b-a7a7-43ec-89d7-688f8445b33d",
+  "name": "Garruk's Uprising",
+  "why": "control:draw"
+ },
+ {
+  "oracleId": "7eff84f1-f772-497a-b350-bbc93d0230f7",
+  "name": "Harmonize",
+  "why": "control:draw"
+ },
+ {
+  "oracleId": "8a52f3c0-2552-4425-b2e3-5496eb2232a7",
+  "name": "Mystic Remora",
+  "why": "control:draw"
+ },
+ {
+  "oracleId": "7ffae8f8-3006-4969-a339-6d30678f87ea",
+  "name": "Night's Whisper",
+  "why": "control:draw"
+ },
+ {
+  "oracleId": "ee579a32-a048-4335-b966-231ba731cdea",
+  "name": "Phyrexian Arena",
+  "why": "control:draw"
+ },
+ {
+  "oracleId": "02090581-61aa-4348-ad57-451be8ee91c2",
+  "name": "Ponder",
+  "why": "control:draw"
+ },
+ {
+  "oracleId": "53236dd7-845a-444c-96d5-f41ed7325d8f",
+  "name": "Rhystic Study",
+  "why": "control:draw"
+ },
+ {
+  "oracleId": "c6207f6a-a624-4754-88f5-dbe700c841ff",
+  "name": "Sign in Blood",
+  "why": "control:draw"
+ },
+ {
+  "oracleId": "65986c1b-8e51-4604-b685-d82fa7d1263a",
+  "name": "Skullclamp",
+  "why": "control:draw"
+ },
+ {
+  "oracleId": "78427103-9543-41fb-b6d4-72963fe87275",
+  "name": "The Great Henge",
+  "why": "control:draw"
+ },
+ {
+  "oracleId": "3aa83ed2-f48b-4ce6-a614-2c54ddf50538",
+  "name": "The One Ring",
+  "why": "control:draw"
+ },
+ {
+  "oracleId": "1cb0610b-a731-42c2-b93f-0a29f63cebf4",
+  "name": "Thrill of Possibility",
+  "why": "control:draw"
+ },
+ {
+  "oracleId": "08becc07-28bc-4a2f-a6b0-28a2998d2f50",
+  "name": "Windfall",
+  "why": "control:draw"
+ },
+ {
+  "oracleId": "0bc7f093-bef0-4f1a-852c-4b75ebf54838",
+  "name": "Arcane Signet",
+  "why": "control:ramp"
+ },
+ {
+  "oracleId": "d3a0b660-358c-41bd-9cd2-41fbf3491b1a",
+  "name": "Birds of Paradise",
+  "why": "control:ramp"
+ },
+ {
+  "oracleId": "d2664f28-49e1-46f8-a863-b217e961a57c",
+  "name": "Black Market Connections",
+  "why": "control:ramp"
+ },
+ {
+  "oracleId": "09b895ff-e729-48d1-bfc1-ea5fd7adda6a",
+  "name": "Caged Sun",
+  "why": "control:ramp"
+ },
+ {
+  "oracleId": "0b67c4e2-f88b-4e01-85a1-9d5f5b8db13b",
+  "name": "Commander's Sphere",
+  "why": "control:ramp"
+ },
+ {
+  "oracleId": "8b755881-a72d-4e21-a369-d2924eb4585a",
+  "name": "Cultivate",
+  "why": "control:ramp"
+ },
+ {
+  "oracleId": "53f7c868-b03e-4fc2-8dcf-a75bbfa3272b",
+  "name": "Dark Ritual",
+  "why": "control:ramp"
+ },
+ {
+  "oracleId": "0a79237e-0811-4a8a-bd4d-db3ca91bff22",
+  "name": "Everflowing Chalice",
+  "why": "control:ramp"
+ },
+ {
+  "oracleId": "495e52e6-4c2b-4574-9474-eadbdcc8b4ac",
+  "name": "Farseek",
+  "why": "control:ramp"
+ },
+ {
+  "oracleId": "95560508-7ac9-4be9-8a3f-3c7d5b52807b",
+  "name": "Fellwar Stone",
+  "why": "control:ramp"
+ },
+ {
+  "oracleId": "0fd114c4-092b-4e28-b0dc-ef529f3bc73e",
+  "name": "Jeska's Will",
+  "why": "control:ramp"
+ },
+ {
+  "oracleId": "1593ea18-2f2f-4ab4-83fb-6ccc0bec8a90",
+  "name": "Kodama's Reach",
+  "why": "control:ramp"
+ },
+ {
+  "oracleId": "68954295-54e3-4303-a6bc-fc4547a4e3a3",
+  "name": "Llanowar Elves",
+  "why": "control:ramp"
+ },
+ {
+  "oracleId": "74d3277a-38e5-4732-afed-084a56148f20",
+  "name": "Mana Drain",
+  "why": "control:ramp"
+ },
+ {
+  "oracleId": "c97361b5-af16-4a7b-af85-a429dbaf4ad2",
+  "name": "Mind Stone",
+  "why": "control:ramp"
+ },
+ {
+  "oracleId": "78826359-fe63-44ad-adc4-a17ffcd710e4",
+  "name": "Nature's Lore",
+  "why": "control:ramp"
+ },
+ {
+  "oracleId": "153376c9-dffd-458c-8ce3-a4c8269bc4e9",
+  "name": "Smothering Tithe",
+  "why": "control:ramp"
+ },
+ {
+  "oracleId": "6ad8011d-3471-4369-9d68-b264cc027487",
+  "name": "Sol Ring",
+  "why": "control:ramp"
+ },
+ {
+  "oracleId": "00c0543c-2a1f-4425-8283-4062d74a1637",
+  "name": "Solemn Simulacrum",
+  "why": "control:ramp"
+ },
+ {
+  "oracleId": "d79cbc61-6c15-48ea-bbba-3cffb819ccba",
+  "name": "Sword of the Animist",
+  "why": "control:ramp"
+ },
+ {
+  "oracleId": "a699c663-8131-4045-9265-a83e86609374",
+  "name": "Thran Dynamo",
+  "why": "control:ramp"
+ },
+ {
+  "oracleId": "1b882a0e-0ede-4d1a-bd1a-9b7cffbcde8e",
+  "name": "Three Visits",
+  "why": "control:ramp"
+ },
+ {
+  "oracleId": "5b9a2b81-a645-43be-8001-03817ac210ca",
+  "name": "Throne of Eldraine",
+  "why": "control:ramp"
+ },
+ {
+  "oracleId": "31f15274-301b-47c5-ba19-0ced04520878",
+  "name": "Wayfarer's Bauble",
+  "why": "control:ramp"
+ },
+ {
+  "oracleId": "f9db72dc-9a5b-48a4-a86e-7464d9a2166a",
+  "name": "Abrade",
+  "why": "control:removal"
+ },
+ {
+  "oracleId": "7c779721-cd1b-4696-9ae9-68ccc284ed2a",
+  "name": "Aetherize",
+  "why": "control:removal"
+ },
+ {
+  "oracleId": "7735eeba-693b-47e2-bd51-414379cf1016",
+  "name": "Beast Within",
+  "why": "control:removal"
+ },
+ {
+  "oracleId": "07a0cba9-8768-4fd9-a3d5-b0f83b4bf8e8",
+  "name": "Chaos Warp",
+  "why": "control:removal"
+ },
+ {
+  "oracleId": "d75b9c82-1b49-4c3e-a1b5-aeef57d6644b",
+  "name": "Cyclonic Rift",
+  "why": "control:removal"
+ },
+ {
+  "oracleId": "0456ec64-2c81-4763-a352-8ff64a4c3d6b",
+  "name": "Deadly Rollick",
+  "why": "control:removal"
+ },
+ {
+  "oracleId": "a7e97fa9-4b72-4548-b854-5be5f18a6f1a",
+  "name": "Disenchant",
+  "why": "control:removal"
+ },
+ {
+  "oracleId": "2e467fab-e808-44d3-99bf-e3621baeb7cb",
+  "name": "Erode",
+  "why": "control:removal"
+ },
+ {
+  "oracleId": "5825997b-10d7-4a36-972c-a80ddd90b8ed",
+  "name": "Feed the Swarm",
+  "why": "control:removal"
+ },
+ {
+  "oracleId": "fae37e28-e137-4177-b973-fa8b4dd8f409",
+  "name": "Generous Gift",
+  "why": "control:removal"
+ },
+ {
+  "oracleId": "2f092562-9e17-43cd-aeb8-d0567f99363e",
+  "name": "Go for the Throat",
+  "why": "control:removal"
+ },
+ {
+  "oracleId": "94f0a572-e91c-4b56-a5d1-6cbbeabd210d",
+  "name": "Infernal Grasp",
+  "why": "control:removal"
+ },
+ {
+  "oracleId": "3e39224c-72ce-4ecc-aa17-12c071ea1f3e",
+  "name": "Krosan Grip",
+  "why": "control:removal"
+ },
+ {
+  "oracleId": "b3d81980-76f2-44e2-b1c9-01e30c726312",
+  "name": "Loran of the Third Path",
+  "why": "control:removal"
+ },
+ {
+  "oracleId": "6d4e558e-9109-4918-a082-fdcbaffd516b",
+  "name": "Nature's Claim",
+  "why": "control:removal"
+ },
+ {
+  "oracleId": "d683d985-9888-4d21-8b5f-69e69ce4a03b",
+  "name": "Path to Exile",
+  "why": "control:removal"
+ },
+ {
+  "oracleId": "05849bd6-8f38-4031-be2b-e2aa03beb8cc",
+  "name": "Pongify",
+  "why": "control:removal"
+ },
+ {
+  "oracleId": "06692cd9-ac2f-4a32-8fd1-043ba3c0fe71",
+  "name": "Rapid Hybridization",
+  "why": "control:removal"
+ },
+ {
+  "oracleId": "70dc830e-d05b-4fc7-88dd-879e140b3fbf",
+  "name": "Reality Shift",
+  "why": "control:removal"
+ },
+ {
+  "oracleId": "777b8ec4-a783-4297-96b7-4f200d0eb734",
+  "name": "Return to Nature",
+  "why": "control:removal"
+ },
+ {
+  "oracleId": "9a107e48-3d50-4941-95b1-10f2b29a4245",
+  "name": "Stroke of Midnight",
+  "why": "control:removal"
+ },
+ {
+  "oracleId": "b1544f21-7e98-461b-aed5-e748b0168c52",
+  "name": "Swords to Plowshares",
+  "why": "control:removal"
+ },
+ {
+  "oracleId": "2c49d24a-98a4-43c2-bb59-1ef13d4214c2",
+  "name": "Untimely Malfunction",
+  "why": "control:removal"
+ },
+ {
+  "oracleId": "3567c3c8-b3c7-45b7-935b-b1fdbc973720",
+  "name": "Vandalblast",
+  "why": "control:removal"
+ },
+ {
+  "oracleId": "ffce81c5-1b58-4882-a4e7-6f8d7cb170de",
+  "name": "Withering Torment",
+  "why": "control:removal"
+ },
+ {
+  "oracleId": "3c1ef404-e2c6-486d-a5a2-d5779c71d498",
+  "name": "Archdruid's Charm",
+  "why": "control:tutor"
+ },
+ {
+  "oracleId": "6789a170-f2c5-4fc0-8a45-2b2361e67410",
+  "name": "Chord of Calling",
+  "why": "control:tutor"
+ },
+ {
+  "oracleId": "82004860-e589-4e38-8d61-8c0210e4ea39",
+  "name": "Demonic Tutor",
+  "why": "control:tutor"
+ },
+ {
+  "oracleId": "038519b9-bca8-4b27-b5ac-2409595469d0",
+  "name": "Diabolic Intent",
+  "why": "control:tutor"
+ },
+ {
+  "oracleId": "14589b6b-1814-46f9-a364-83cc15dacac2",
+  "name": "Diabolic Tutor",
+  "why": "control:tutor"
+ },
+ {
+  "oracleId": "4acb6612-54e8-428d-acb6-c7259a5ad6a8",
+  "name": "Eladamri's Call",
+  "why": "control:tutor"
+ },
+ {
+  "oracleId": "c5229c17-b7be-4b05-b683-f2277edc4849",
+  "name": "Enlightened Tutor",
+  "why": "control:tutor"
+ },
+ {
+  "oracleId": "422e1869-134f-463d-9fa1-86b66a998b3e",
+  "name": "Fabricate",
+  "why": "control:tutor"
+ },
+ {
+  "oracleId": "69872a9a-fe54-4e58-940c-89395af71acd",
+  "name": "Finale of Devastation",
+  "why": "control:tutor"
+ },
+ {
+  "oracleId": "a54f0869-94c8-42af-9080-166efb9486a4",
+  "name": "Gamble",
+  "why": "control:tutor"
+ },
+ {
+  "oracleId": "0d96b60b-a060-48ee-bb83-93f1c4a10669",
+  "name": "Green Sun's Zenith",
+  "why": "control:tutor"
+ },
+ {
+  "oracleId": "e62f8d69-a559-4f13-a5c9-5fb750b4af2c",
+  "name": "Grim Tutor",
+  "why": "control:tutor"
+ },
+ {
+  "oracleId": "57c9ff89-dd30-467b-bb3e-499eeea8cb94",
+  "name": "Idyllic Tutor",
+  "why": "control:tutor"
+ },
+ {
+  "oracleId": "ad3e705f-da57-4eff-84d7-2072522de988",
+  "name": "Insatiable Avarice",
+  "why": "control:tutor"
+ },
+ {
+  "oracleId": "d2d9ecea-7925-420e-98b9-2f87f41f387c",
+  "name": "Land Tax",
+  "why": "control:tutor"
+ },
+ {
+  "oracleId": "0826cf7d-7ccc-459b-a92f-29dc169628f8",
+  "name": "Muddle the Mixture",
+  "why": "control:tutor"
+ },
+ {
+  "oracleId": "fb81f95c-70f8-4eb7-8d15-15d0ae23ec03",
+  "name": "Mystical Tutor",
+  "why": "control:tutor"
+ },
+ {
+  "oracleId": "ab26fbe2-e808-48b9-8d0d-3fbb6c3d554f",
+  "name": "Narset, Parter of Veils",
+  "why": "control:tutor"
+ },
+ {
+  "oracleId": "2ecf7771-8061-4710-ad2e-80b092ae0b4b",
+  "name": "Open the Armory",
+  "why": "control:tutor"
+ },
+ {
+  "oracleId": "f02682f0-26c0-4032-9df3-273b6a45d0a8",
+  "name": "Solve the Equation",
+  "why": "control:tutor"
+ },
+ {
+  "oracleId": "d9abda7e-6ca2-42ea-ab24-c542e57014f1",
+  "name": "Steelshaper's Gift",
+  "why": "control:tutor"
+ },
+ {
+  "oracleId": "0eb11b2d-a397-48da-a0f3-9f0f83f42282",
+  "name": "Tezzeret, Cruel Captain",
+  "why": "control:tutor"
+ },
+ {
+  "oracleId": "ededbdae-d9dc-4206-9335-d7158f2d7700",
+  "name": "Vampiric Tutor",
+  "why": "control:tutor"
+ },
+ {
+  "oracleId": "81c70ae7-3c18-4c9b-8505-e4db9e0e6518",
+  "name": "Wishclaw Talisman",
+  "why": "control:tutor"
+ },
+ {
+  "oracleId": "e8863518-0bfa-49c3-8c6e-6c9116a81051",
+  "name": "Worldly Tutor",
+  "why": "control:tutor"
+ }
+]

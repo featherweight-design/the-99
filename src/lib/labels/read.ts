@@ -34,7 +34,7 @@ type Row = {
  *   staging's 3,237 `[]` rows (2026-10-03): 96% are the model answering no job, some rightly (a
  *   vanilla body) and some not (Lightning Bolt, a plain removal spell), and 4% had every job fail
  *   `validateJob` (Rampant Growth, Sakura-Tribe Elder: a `to` on a ramp job), which the collector
- *   stores as `[]` too. Read as labelled, `[]` matches nothing and refuses every pair, so those
+ *   stored as `[]` too until v8, when `normalizeJob` began stripping that field instead. Read as labelled, `[]` matches nothing and refuses every pair, so those
  *   cards got no stand-ins; absent, the text path reads the card, exactly as with the switch off,
  *   and a body with no job reads as none there too.
  *

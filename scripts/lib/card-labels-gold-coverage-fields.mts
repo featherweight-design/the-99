@@ -521,8 +521,11 @@ export const COVERAGE_FIELDS: GoldRow[] = [
   // ---- method: shrink ------------------------------------------------------------
   {
     name: "Lightning Bolt", klass: "methodShrink",
-    jobs: [j("role", "removal", { af: "opponents", meth: "shrink", rec: "oneShot" })],
-    why: "3 damage to any target: damage is shrink. Not drain, because it can hit any target. rt null because 'any target' spans creatures, planeswalkers, battles and players (judgement).",
+    jobs: [
+      j("role", "removal", { af: "opponents", meth: "shrink", rec: "oneShot" }),
+      j("theme", "drain", { af: "opponents", rec: "oneShot" }),
+    ],
+    why: "3 damage to any target: damage is shrink. Drain as well since v8 (2026-10-04), because it can hit a player. rt null because 'any target' spans creatures, planeswalkers, battles and players (judgement).",
   },
   {
     name: "Flame Slash", klass: "methodShrink",

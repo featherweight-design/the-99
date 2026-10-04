@@ -72,10 +72,16 @@ ROLES (space "role"): ${ROLES.join(", ")}
                  NOT draw: the card replaces itself, so it gains no cards;
                  label nothing for cycling.
   removal      — takes an opponent's permanent away from them: destroys,
-                 exiles, bounces or shrinks it, or gains control of it.
-                 A counterspell, a tapper and hand attack are NOT removal.
+                 exiles, bounces or shrinks it, deals damage to it, or gains
+                 control of it. TARGETED damage that can hit an opponent's
+                 creature or other permanent IS removal, method shrink: "deals
+                 3 damage to any target" and "deals 2 damage to target
+                 creature" are both removal. Damage only to a creature YOU
+                 control is not. Damage to EACH creature is wipes. A
+                 counterspell, a tapper and hand attack are NOT removal.
   wipes        — hits ALL or most creatures at once ("destroy all creatures",
-                 "destroy each creature", "all creatures get -3/-3").
+                 "destroy each creature", "all creatures get -3/-3", "deals 2
+                 damage to each creature").
   land         — the card is a land: its FRONT face's type line says Land, and
                  ONLY then. A spell whose back face is a land is not land. A
                  nonland permanent that adds mana is ramp. Affects self.
@@ -137,10 +143,11 @@ THEMES (space "theme"): ${THEMES.join(", ")}
                   OWN death is not deathTrigger: label the job it does, with
                   trigger "dies".
   lifegain      — gains you life.
-  drain         — damage or life loss aimed ONLY at opponents. Damage to "any
-                  target" is NEVER drain, whatever deals it, though it can hit
-                  a player. Life loss for EVERY player, you included, is not
-                  drain either.
+  drain         — damage or life loss aimed at opponents. Damage to "any
+                  target" is removal FIRST, and drain AS WELL because it can
+                  hit a player: label both. Damage that cannot hit a player
+                  is never drain. Damage or life loss for EVERY player, you
+                  included, is not drain.
   spellslinger  — rewards casting instants and sorceries, or noncreature
                   spells. "Whenever you cast a spell" alone is not spellslinger.
   landfall      — does something when a land enters under your control. Label
@@ -299,7 +306,11 @@ put a +1/+1 counter on target Wolf you control; or create a Treasure token.")
 
 Omit "rampKind" entirely on any job that is not a role "ramp" job (a null is
 accepted there too).
-A card with no job in the vocabulary gets "jobs": []. No prose, no markdown fence.`;
+"jobs": [] is ONLY for a card none of whose abilities is one of the jobs above
+(a vanilla creature, a tapper, a card that only scries or cycles). Damage that
+can hit an opponent or an opponent's permanent is always a job (removal, wipes,
+drain), and so is a NONLAND card's fetchesLand search as defined above (ramp):
+a card that does either is never []. No prose, no markdown fence.`;
 
 /**
  * What the SYSTEM block can cost, in tokens, as a CEILING the build's hard stop is enforced against:
@@ -465,6 +476,9 @@ export const buildRequest = (customId: string, model: string, cards: CardForProm
  * version still moves with every SYSTEM edit (pinned in `prompt.test.ts`): it is the human-readable
  * reason a run was owed, and what the label copy reads to tell a prompt change from a catalog one.
  */
+// "8": the empty-label fix (2026-10-04): damage that can hit a creature or permanent is removal, any-target
+// damage is removal AND drain, and "jobs": [] only when no ability maps to a job. v7 left 11.7% of
+// any-target burn empty, because its removal named no damage outside `method` and its drain line said NEVER.
 // "7": re-sample 3's fixes (2026-10-03), the last tuning round: symmetric each (lords, any creature dying,
 // a counter on every player's spells), any minus is never pump, etbDraw is entry only, recursion includes the
 // top of the library, any-target damage is never drain.
@@ -479,7 +493,7 @@ export const buildRequest = (customId: string, model: string, cards: CardForProm
 // with no bump would be misreported as the latter, so `prompt.test.ts` pins SYSTEM's hash to this version.
 // "2": every job now carries `affects`, `to` and `method` (the vocabulary plan's Task 2), so a row
 // labelled under "1" has none of them and must read stale rather than current.
-export const LABEL_PROMPT_VERSION = "7";
+export const LABEL_PROMPT_VERSION = "8";
 
 /**
  * Whether a stored label still describes its card, mirroring `proseInputHash`.

@@ -776,9 +776,12 @@ export const COVERAGE_THEMES: GoldRow[] = [
     why: "Sanguine Bond on a creature, plus team lifelink for {3}{B}{B}, which is lifegain.",
   },
   {
-    name: "Shock", klass: "drainNeg",
-    jobs: [j("role", "removal", { af: "opponents", meth: "shrink", rec: "oneShot" })],
-    why: "A HARD NEGATIVE for drain, named by the definition: 2 damage to ANY target. Removal by damage.",
+    name: "Shock", klass: "drain",
+    jobs: [
+      j("role", "removal", { af: "opponents", meth: "shrink", rec: "oneShot" }),
+      j("theme", "drain", { af: "opponents", rec: "oneShot" }),
+    ],
+    why: "2 damage to ANY target, named by the definition. Removal by damage, and drain as well since v8 (2026-10-04): it can hit a player. It was a hard negative for drain through v7.",
   },
   {
     name: "Pestilence", klass: "drainNeg",
@@ -786,12 +789,13 @@ export const COVERAGE_THEMES: GoldRow[] = [
     why: "A HARD NEGATIVE for drain: 1 damage to each creature AND EACH PLAYER, you included, so not aimed only at opponents. Judgement: a repeatable damage wipe.",
   },
   {
-    name: "Goblin Bombardment", klass: "drainNeg",
+    name: "Goblin Bombardment", klass: "drain",
     jobs: [
       j("theme", "sacOutlet", { af: "self", tr: "activated" }),
       j("role", "removal", { af: "opponents", meth: "shrink", tr: "activated" }),
+      j("theme", "drain", { af: "opponents", tr: "activated" }),
     ],
-    why: "A HARD NEGATIVE for drain: every sacrifice pings ANY target. A free sac outlet, and removal by damage (judgement: 1 damage at a time).",
+    why: "Every sacrifice pings ANY target. A free sac outlet, removal by damage (judgement: 1 damage at a time), and drain as well since v8 (2026-10-04): it can hit a player. It was a hard negative for drain through v7.",
   },
 
   {
@@ -809,9 +813,22 @@ export const COVERAGE_THEMES: GoldRow[] = [
     why: "Each opponent loses 1 when another creature of yours enters: drain on entry, with no lifegain.",
   },
   {
-    name: "Lightning Strike", klass: "drainNeg",
-    jobs: [j("role", "removal", { af: "opponents", meth: "shrink", rec: "oneShot" })],
-    why: "A HARD NEGATIVE for drain: 3 damage to ANY target, the Shock rule. Removal by damage.",
+    name: "Lightning Strike", klass: "drain",
+    jobs: [
+      j("role", "removal", { af: "opponents", meth: "shrink", rec: "oneShot" }),
+      j("theme", "drain", { af: "opponents", rec: "oneShot" }),
+    ],
+    why: "3 damage to ANY target, the Shock rule: removal by damage, and drain as well since v8 (2026-10-04).",
+  },
+  {
+    name: "Roast", klass: "drainNeg",
+    jobs: [j("role", "removal", { rt: "creature", af: "opponents", meth: "shrink", rec: "oneShot" })],
+    why: "A HARD NEGATIVE for drain since v8 (2026-10-04): 5 damage to a creature without flying can never hit a player, so it is removal and never drain, against Shock.",
+  },
+  {
+    name: "Fiery Impulse", klass: "drainNeg",
+    jobs: [j("role", "removal", { rt: "creature", af: "opponents", meth: "shrink", rec: "oneShot" })],
+    why: "A HARD NEGATIVE for drain since v8 (2026-10-04): 2 or 3 damage to target creature only. Removal by damage, never drain. Spell mastery is a size, not a threshold job.",
   },
 
   // ---- protection ---------------------------------------------------------------------------
@@ -930,8 +947,11 @@ export const COVERAGE_THEMES: GoldRow[] = [
   },
   {
     name: "Fling", klass: "finisherNeg",
-    jobs: [j("role", "removal", { af: "opponents", meth: "shrink", rec: "oneShot" })],
-    why: "A HARD NEGATIVE for finisher: one creature's power thrown at any target is a reach burn spell, not a game-ending attack. Removal by damage; the sacrifice is a one-time cost, not sacOutlet.",
+    jobs: [
+      j("role", "removal", { af: "opponents", meth: "shrink", rec: "oneShot" }),
+      j("theme", "drain", { af: "opponents", rec: "oneShot" }),
+    ],
+    why: "A HARD NEGATIVE for finisher: one creature's power thrown at any target is a reach burn spell, not a game-ending attack. Removal by damage, and drain as well since v8 (2026-10-04) because it can hit a player; the sacrifice is a one-time cost, not sacOutlet.",
   },
 
   // ---- etbDraw ------------------------------------------------------------------------------
