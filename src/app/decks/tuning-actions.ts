@@ -123,30 +123,36 @@ export async function saveDeckHeader(
  * own swaps stay inside. Held per deck, not per run — null/empty/false is "no limit", never
  * seeded. Checked the same way `lookDeeper`'s `budgetDollars` validates help-me-choose's cap:
  * whole dollars, 1 to `MAX_BUDGET_DOLLARS`, converted to cents only after that bound holds.
+ *
+ * PARTIAL, like `saveDeckHeader` above (pre-open review round 2): each control autosaves on its
+ * own debounce, so a caller sends only the field it just changed. Saving all three every time
+ * meant one tab's cap edit could carry another tab's STALE sets/owned-only back over whatever
+ * that tab had since saved — a field this action never touches is never written.
  */
 export async function saveDeckLimits(
   deckId: string,
-  fields: { capDollars: number | null; sets: readonly string[]; ownedOnly: boolean },
+  fields: { capDollars?: number | null; sets?: readonly string[]; ownedOnly?: boolean },
 ): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   if (!isUuid(deckId)) return { ok: false, message: deckDescriptionCopy.limits.refused };
   if (typeof fields !== "object" || fields === null) return { ok: false, message: deckDescriptionCopy.limits.refused };
   const { capDollars, sets, ownedOnly } = fields;
   if (
-    !(capDollars === null || (Number.isInteger(capDollars) && capDollars >= 1 && capDollars <= MAX_BUDGET_DOLLARS))
-    || !Array.isArray(sets) || sets.some((s) => typeof s !== "string" || s.length === 0 || s.length > 10)
-    || typeof ownedOnly !== "boolean"
+    (capDollars !== undefined && !(capDollars === null || (Number.isInteger(capDollars) && capDollars >= 1 && capDollars <= MAX_BUDGET_DOLLARS)))
+    || (sets !== undefined && (!Array.isArray(sets) || sets.some((s) => typeof s !== "string" || s.length === 0 || s.length > 10)))
+    || (ownedOnly !== undefined && typeof ownedOnly !== "boolean")
   ) return { ok: false, message: deckDescriptionCopy.limits.refused };
-  // Deduped and lower-cased: the wire is untrusted, and `SetsField`'s own codes are already
-  // lower-case, so a mismatch here could only be a malformed or replayed request.
-  const dedupedSets = [...new Set(sets.map((s) => s.toLowerCase()))];
+  const set: { tuningCapCents?: number | null; tuningSets?: string[]; tuningOwnedOnly?: boolean } = {};
+  if (capDollars !== undefined) set.tuningCapCents = capDollars === null ? null : capDollars * 100;
+  if (sets !== undefined) {
+    // Deduped and lower-cased: the wire is untrusted, and `SetsField`'s own codes are already
+    // lower-case, so a mismatch here could only be a malformed or replayed request.
+    set.tuningSets = [...new Set(sets.map((s) => s.toLowerCase()))];
+  }
+  if (ownedOnly !== undefined) set.tuningOwnedOnly = ownedOnly;
+  if (Object.keys(set).length === 0) return { ok: true };
   const updated = await db.update(decks)
-    .set({
-      tuningCapCents: capDollars === null ? null : capDollars * 100,
-      tuningSets: dedupedSets,
-      tuningOwnedOnly: ownedOnly,
-      lastEditedAt: sql`clock_timestamp()`,
-    })
+    .set({ ...set, lastEditedAt: sql`clock_timestamp()` })
     .where(and(eq(decks.id, deckId), eq(decks.userId, userId)))
     .returning({ id: decks.id });
   if (updated.length === 0) return { ok: false, message: deckDescriptionCopy.limits.refused };

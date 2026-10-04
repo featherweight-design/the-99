@@ -330,6 +330,35 @@ describe("saveDeckLimits (H35 PR 2, \"Kept for this deck\")", () => {
     const result = await saveDeckLimits(DECK, { capDollars: null, sets: [], ownedOnly: false });
     expect(result.ok).toBe(false);
   });
+
+  // Pre-open review round 2: each control autosaves on its own debounce, so sending all three
+  // every time let one tab's cap edit carry another tab's stale sets/owned-only back over
+  // whatever that tab had since saved. Only the field actually named is ever written.
+  it("writes only the field it is given, leaving the others untouched", async () => {
+    await saveDeckLimits(DECK, { capDollars: 25 });
+    expect(calls.headerUpdates[0].set).toMatchObject({ tuningCapCents: 2500 });
+    expect(calls.headerUpdates[0].set).not.toHaveProperty("tuningSets");
+    expect(calls.headerUpdates[0].set).not.toHaveProperty("tuningOwnedOnly");
+  });
+
+  it("writes only ownedOnly when that is the only field given", async () => {
+    await saveDeckLimits(DECK, { ownedOnly: true });
+    expect(calls.headerUpdates[0].set).toMatchObject({ tuningOwnedOnly: true });
+    expect(calls.headerUpdates[0].set).not.toHaveProperty("tuningCapCents");
+    expect(calls.headerUpdates[0].set).not.toHaveProperty("tuningSets");
+  });
+
+  it("is a no-op that still answers ok when given no fields at all", async () => {
+    const result = await saveDeckLimits(DECK, {});
+    expect(result.ok).toBe(true);
+    expect(calls.headerUpdates).toHaveLength(0);
+  });
+
+  it("still refuses an out-of-bounds cap even when it is the only field given", async () => {
+    const result = await saveDeckLimits(DECK, { capDollars: 0 });
+    expect(result.ok).toBe(false);
+    expect(calls.headerUpdates).toHaveLength(0);
+  });
 });
 
 // Locked (never cut): every card but the commander locked. Refused by the gate, BEFORE `startRun`

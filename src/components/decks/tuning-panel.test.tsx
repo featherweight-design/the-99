@@ -438,7 +438,123 @@ describe("TuningPanel: Locked (never cut)", () => {
         vi.advanceTimersByTime(500);
       });
       expect(saveDeckLimits).toHaveBeenCalledTimes(1);
-      expect(saveDeckLimits).toHaveBeenCalledWith("d1", { capDollars: 15, sets: [], ownedOnly: false });
+      expect(saveDeckLimits).toHaveBeenCalledWith("d1", { capDollars: 15 });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // Pre-open review round 2: each control submits ONLY the field it changed — a cap edit and an
+  // owned-only edit in the same pause must merge into one request carrying both, never two
+  // separate writes where the second could carry the first's stale value for the OTHER field.
+  it("merges edits to different fields made within one pause into a single request", async () => {
+    vi.useFakeTimers();
+    try {
+      (saveDeckLimits as ReturnType<typeof vi.fn>).mockClear();
+      await act(async () => {
+        render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={deps([fresh])} printedInSets={[]} />);
+      });
+      fireEvent.change(screen.getByLabelText("Most per card"), { target: { value: "15" } });
+      fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" }));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      expect(saveDeckLimits).toHaveBeenCalledTimes(1);
+      expect(saveDeckLimits).toHaveBeenCalledWith("d1", { capDollars: 15, ownedOnly: true });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // Pre-open review round 2: a non-empty invalid cap must cancel its OWN pending save without
+  // dropping a sibling field's edit queued in the same patch.
+  it("cancels only the cap's own pending save when the draft goes invalid, keeping a sibling edit", async () => {
+    vi.useFakeTimers();
+    try {
+      (saveDeckLimits as ReturnType<typeof vi.fn>).mockClear();
+      await act(async () => {
+        render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={deps([fresh])} printedInSets={[]} />);
+      });
+      const input = screen.getByLabelText("Most per card");
+      fireEvent.change(input, { target: { value: "10000" } });
+      fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" }));
+      fireEvent.change(input, { target: { value: "100001" } });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      expect(saveDeckLimits).toHaveBeenCalledTimes(1);
+      expect(saveDeckLimits).toHaveBeenCalledWith("d1", { ownedOnly: true });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // Pre-open review round 2: a REVERT while an earlier save for the same field is still in
+  // flight must not be overwritten once that earlier save's response lands and revalidates the
+  // page — an equality check against the old prop would wrongly call the revert "unedited".
+  it("keeps a revert that lands while the first save for that field is still in flight", async () => {
+    vi.useFakeTimers();
+    try {
+      let resolveFirst!: (v: { ok: true }) => void;
+      (saveDeckLimits as ReturnType<typeof vi.fn>).mockClear();
+      (saveDeckLimits as ReturnType<typeof vi.fn>).mockImplementationOnce(
+        () => new Promise((resolve) => { resolveFirst = resolve; }),
+      );
+      const d = deps([fresh]);
+      let utils!: ReturnType<typeof render>;
+      await act(async () => {
+        utils = render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
+      });
+      fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" }));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      expect(saveDeckLimits).toHaveBeenCalledWith("d1", { ownedOnly: true });
+      // The first save is now in flight (its promise unresolved). Revert before it lands.
+      fireEvent.click(screen.getByRole("radio", { name: "Any card" }));
+      // A revalidation reflecting the FIRST save's value arrives, under a new object reference,
+      // while the revert's own request has not even been scheduled yet.
+      const revalidated: TuningFacts = { ...facts, limits: { capCents: null, sets: [], ownedOnly: true } };
+      await act(async () => {
+        utils.rerender(<TuningPanel deckId="d1" permits={[3]} facts={revalidated} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
+      });
+      // The revert must still read as chosen — not reverted back to "Only cards I own" by the
+      // revalidation.
+      expect(screen.getByRole("radio", { name: "Any card" })).toHaveAttribute("aria-checked", "true");
+      resolveFirst({ ok: true });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // Pre-open review round 2: a limit edited moments before the press must be flushed and its
+  // fresh fingerprint read BEFORE the gate decides "unchanged" — the save's own 500ms debounce
+  // must not let a press slip through on the pre-edit fingerprint.
+  it("flushes a pending limit edit and reads fresh before evaluating the run gate", async () => {
+    vi.useFakeTimers();
+    try {
+      (saveDeckLimits as ReturnType<typeof vi.fn>).mockClear();
+      // The server's own read now answers "unchanged" (a successful prior run, stale:false),
+      // reflecting the save that is about to land — press() must see THIS, not the stale
+      // `fresh` the panel mounted with.
+      const d = deps([fresh, { ...results, stale: false }]);
+      await act(async () => {
+        render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
+      });
+      fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" }));
+      expect(saveDeckLimits).not.toHaveBeenCalled();
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: copy.suggest }));
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      expect(saveDeckLimits).toHaveBeenCalledWith("d1", { ownedOnly: true });
+      // The gate read "unchanged" from the fresh read the flush forced, not from the stale
+      // mount-time read — so the run never dispatched.
+      expect(d.run).not.toHaveBeenCalled();
+      expect(screen.getByText(deckTuningCopy.announce.unchanged)).toBeInTheDocument();
     } finally {
       vi.useRealTimers();
     }
@@ -518,10 +634,14 @@ describe("TuningPanel: Locked (never cut)", () => {
       });
       fireEvent.change(screen.getByLabelText("Most per card"), { target: { value: "15" } });
       expect(saveDeckLimits).not.toHaveBeenCalled();
-      act(() => {
+      await act(async () => {
         utils.unmount();
+        // The flush is serialized behind `limitsChain` (even an already-resolved chain costs one
+        // microtask), so give it a tick to actually reach `saveDeckLimits`.
+        await Promise.resolve();
+        await Promise.resolve();
       });
-      expect(saveDeckLimits).toHaveBeenCalledWith("d1", { capDollars: 15, sets: [], ownedOnly: false });
+      expect(saveDeckLimits).toHaveBeenCalledWith("d1", { capDollars: 15 });
     } finally {
       vi.useRealTimers();
     }

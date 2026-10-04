@@ -7,6 +7,7 @@ const sets = [{ code: "hob", name: "The Hobbit" }, { code: "hoc", name: "The Hob
 
 function renderBox(overrides: Partial<Parameters<typeof TuningLimitsBox>[0]> = {}) {
   const onCapChange = vi.fn();
+  const onCapDraftInvalid = vi.fn();
   const onSetsChange = vi.fn();
   const onOwnedOnlyChange = vi.fn();
   render(
@@ -14,6 +15,7 @@ function renderBox(overrides: Partial<Parameters<typeof TuningLimitsBox>[0]> = {
       sets={sets}
       capDollars={null}
       onCapChange={onCapChange}
+      onCapDraftInvalid={onCapDraftInvalid}
       selectedSets={[]}
       onSetsChange={onSetsChange}
       ownedOnly={false}
@@ -21,7 +23,7 @@ function renderBox(overrides: Partial<Parameters<typeof TuningLimitsBox>[0]> = {
       {...overrides}
     />,
   );
-  return { onCapChange, onSetsChange, onOwnedOnlyChange };
+  return { onCapChange, onCapDraftInvalid, onSetsChange, onOwnedOnlyChange };
 }
 
 describe("parseCapDollars", () => {
@@ -44,12 +46,32 @@ describe("TuningLimitsBox (H35 PR 2, \"Kept for this deck\")", () => {
     expect(screen.getByLabelText("Most per card")).toHaveValue("");
   });
 
-  it("types digits only, strips everything else, and reports the parsed dollars", () => {
+  it("strips only $ and commas, and reports the parsed dollars", () => {
     const { onCapChange } = renderBox();
     const field = screen.getByLabelText("Most per card");
-    fireEvent.change(field, { target: { value: "$1,500abc" } });
+    fireEvent.change(field, { target: { value: "$1,500" } });
     expect(field).toHaveValue("1500");
     expect(onCapChange).toHaveBeenCalledWith(1500);
+  });
+
+  // Pre-open review round 2: `replace(/[^\d]/g, "")` used to strip a pasted `$12.50`'s decimal
+  // point too, silently saving $1,250 for a $12.50 paste. Now anything but currency formatting
+  // ($, comma, whitespace) is rejected outright — the draft and any pending save are left
+  // exactly as they were, rather than reinterpreted as a different figure.
+  it("rejects a decimal paste rather than reinterpreting it as a larger whole-dollar figure", () => {
+    const { onCapChange } = renderBox({ capDollars: 10 });
+    const field = screen.getByLabelText("Most per card");
+    fireEvent.change(field, { target: { value: "$12.50" } });
+    expect(field).toHaveValue("10");
+    expect(onCapChange).not.toHaveBeenCalled();
+  });
+
+  it("rejects letters mixed into the figure rather than silently dropping them", () => {
+    const { onCapChange } = renderBox({ capDollars: 10 });
+    const field = screen.getByLabelText("Most per card");
+    fireEvent.change(field, { target: { value: "$1,500abc" } });
+    expect(field).toHaveValue("10");
+    expect(onCapChange).not.toHaveBeenCalled();
   });
 
   it("reports null once the field is cleared", () => {
@@ -75,14 +97,14 @@ describe("TuningLimitsBox (H35 PR 2, \"Kept for this deck\")", () => {
   it("redraws the draft when capDollars changes from outside, not just at mount", () => {
     const { rerender } = render(
       <TuningLimitsBox
-        sets={sets} capDollars={25} onCapChange={vi.fn()} selectedSets={[]} onSetsChange={vi.fn()}
+        sets={sets} capDollars={25} onCapChange={vi.fn()} onCapDraftInvalid={vi.fn()} selectedSets={[]} onSetsChange={vi.fn()}
         ownedOnly={false} onOwnedOnlyChange={vi.fn()}
       />,
     );
     expect(screen.getByLabelText("Most per card")).toHaveValue("25");
     rerender(
       <TuningLimitsBox
-        sets={sets} capDollars={50} onCapChange={vi.fn()} selectedSets={[]} onSetsChange={vi.fn()}
+        sets={sets} capDollars={50} onCapChange={vi.fn()} onCapDraftInvalid={vi.fn()} selectedSets={[]} onSetsChange={vi.fn()}
         ownedOnly={false} onOwnedOnlyChange={vi.fn()}
       />,
     );

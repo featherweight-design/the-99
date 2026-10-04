@@ -23,6 +23,18 @@ export function parseCapDollars(raw: string): number | null {
   return n >= 1 && n <= MAX_BUDGET_DOLLARS ? n : null;
 }
 
+/**
+ * Strips only the currency formatting this field itself offers ($, commas, whitespace) and
+ * refuses anything else — a decimal point included. Pre-open review round 2: the previous
+ * `replace(/[^\d]/g, "")` also stripped a pasted `$12.50`'s decimal point, turning it into
+ * `1250` and saving a $1,250 cap nobody typed. Returns null for a malformed edit, which the
+ * caller must leave the draft (and any pending save) exactly as it was rather than acting on.
+ */
+export function cleanCapInput(raw: string): string | null {
+  const cleaned = raw.replace(/[$,\s]/g, "");
+  return /^\d{0,6}$/.test(cleaned) ? cleaned : null;
+}
+
 const SETS_PANEL_COPY = {
   triggerLabel: "Set",
   // Same `Set 0 / Set 1 / Sets n` shape as `collectionFilterCopy.set.triggerCount`
@@ -38,6 +50,7 @@ export function TuningLimitsBox({
   sets,
   capDollars,
   onCapChange,
+  onCapDraftInvalid,
   selectedSets,
   onSetsChange,
   ownedOnly,
@@ -50,6 +63,10 @@ export function TuningLimitsBox({
    *  converts only at the save boundary (`saveDeckLimits`). */
   capDollars: number | null;
   onCapChange: (next: number | null) => void;
+  /** The draft became a non-empty value outside the bound (`0`, over `MAX_BUDGET_DOLLARS`) —
+   *  the caller must cancel any still-pending cap save, or a stale VALID edit could land under
+   *  an amount the field no longer shows (pre-open review round 2). */
+  onCapDraftInvalid: () => void;
   /** Lower-case codes. */
   selectedSets: readonly string[];
   onSetsChange: (next: string[]) => void;
@@ -89,20 +106,29 @@ export function TuningLimitsBox({
             value={capDraft}
             placeholder={copy.capPlaceholder}
             onChange={(e) => {
-              const digits = e.target.value.replace(/[^\d]/g, "").slice(0, 6);
-              setCapDraft(digits);
-              if (digits === "") {
+              const cleaned = cleanCapInput(e.target.value);
+              // A decimal point, letters, or anything past the six-digit bound — reject the
+              // edit outright, leaving the draft (and any pending save) exactly as it was,
+              // rather than reinterpreting it as a different figure (pre-open review round 2).
+              if (cleaned === null) return;
+              setCapDraft(cleaned);
+              if (cleaned === "") {
                 // An explicit clear — the only case that is allowed to save "no cap".
                 onCapChange(null);
                 return;
               }
-              const parsed = parseCapDollars(digits);
+              const parsed = parseCapDollars(cleaned);
+              if (parsed !== null) {
+                onCapChange(parsed);
+                return;
+              }
               // A non-empty value outside the bound (`0`, over `MAX_BUDGET_DOLLARS`) is a draft
               // still being typed, not a request to clear the cap — nothing saves until it is
-              // either fixed or emptied (pre-open review round 1).
-              if (parsed !== null) onCapChange(parsed);
+              // either fixed or emptied (pre-open review round 1), and any earlier valid edit's
+              // now-stale pending save is cancelled rather than left to land silently (round 2).
+              onCapDraftInvalid();
             }}
-            className="min-w-0 flex-1 border-0 bg-transparent font-mono text-[16px] text-[color:var(--fg)] outline-none placeholder:text-[color:var(--fg-faint)] md:text-[14px]"
+            className="min-w-0 flex-1 border-0 bg-transparent font-mono text-[16px] text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)] md:text-[14px]"
           />
         </div>
       </div>

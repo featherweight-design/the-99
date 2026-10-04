@@ -115,6 +115,12 @@ export function TuningPanel({
   onSettled?: () => void;
 }) {
   const [state, setState] = useState<TuningState | null>(null);
+  // Mirrors `state`, written SYNCHRONOUSLY alongside every `setState` below, for code that must
+  // read the LATEST value after an `await` inside an event handler, where the handler's own
+  // `state` closure is frozen at the render that created it (`press`'s gate check, pre-open
+  // review round 2). Not a `useEffect` mirror — an effect runs only after React commits a
+  // render, and nothing here needs to wait for that.
+  const stateRef = useRef<TuningState | null>(null);
   // Read through a ref, so a new callback from the shell never re-runs the first read.
   const settledRef = useRef(onSettled);
   useEffect(() => {
@@ -137,22 +143,24 @@ export function TuningPanel({
   const [limitSets, setLimitSets] = useState(facts.limits.sets);
   const [ownedOnly, setOwnedOnly] = useState(facts.limits.ownedOnly);
   const [limitsError, setLimitsError] = useState<string | null>(null);
-  // "Kept for this deck" (H35, PR 2). Same sync-while-unedited shape as `intent`/`name`/
-  // `description` above, but per FIELD rather than as one group: a revalidated `facts.limits`
-  // (this panel's own save completing) must not clobber a field the player is mid-edit on in
-  // the SAME render that another field's save lands (pre-open review round 1) — each field only
-  // adopts the server's value when it still matches what this panel last saw, independently of
-  // the others.
+  // "Kept for this deck" (H35, PR 2). Which fields carry an edit this panel has not yet seen
+  // ACKNOWLEDGED by the server — not "does the current value differ from the last-seen prop",
+  // which a deliberate REVERT defeats: flip owned-only on, let its save start, flip it back
+  // before the response lands, and the revert's value happens to equal the old prop again, so
+  // an equality check would wrongly call it unedited and let the first save's echo overwrite it
+  // (pre-open review round 2). A field is dirty from the moment it is typed/picked until a send
+  // that included it settles with no NEWER edit queued behind it.
+  // State, not a ref: this is read during render (the sync-while-unedited check just below),
+  // and a ref may not be read there.
+  const [dirtyLimitFields, setDirtyLimitFields] = useState<ReadonlySet<"capDollars" | "sets" | "ownedOnly">>(
+    () => new Set(),
+  );
   const [seenLimits, setSeenLimits] = useState(facts.limits);
   if (seenLimits !== facts.limits) {
-    const prevCap = seenLimits.capCents === null ? null : seenLimits.capCents / 100;
-    const capUnedited = capDollars === prevCap;
-    const setsUnedited = limitSets.length === seenLimits.sets.length && limitSets.every((s, i) => s === seenLimits.sets[i]);
-    const ownedUnedited = ownedOnly === seenLimits.ownedOnly;
     setSeenLimits(facts.limits);
-    if (capUnedited) setCapDollars(facts.limits.capCents === null ? null : facts.limits.capCents / 100);
-    if (setsUnedited) setLimitSets(facts.limits.sets);
-    if (ownedUnedited) setOwnedOnly(facts.limits.ownedOnly);
+    if (!dirtyLimitFields.has("capDollars")) setCapDollars(facts.limits.capCents === null ? null : facts.limits.capCents / 100);
+    if (!dirtyLimitFields.has("sets")) setLimitSets(facts.limits.sets);
+    if (!dirtyLimitFields.has("ownedOnly")) setOwnedOnly(facts.limits.ownedOnly);
   }
   const headingRef = useRef<HTMLHeadingElement>(null);
   // Each press takes a token, so a run the reader stopped cannot land over what they did next.
@@ -168,54 +176,109 @@ export function TuningPanel({
     try {
       const next = await deps.read(deckId);
       setState(next);
+      stateRef.current = next;
       return next;
     } catch {
       return null;
     }
   }, [deps, deckId]);
 
-  // Debounced trailing-edge: typing the cap fires `saveLimits` on every keystroke, and two
-  // unsequenced writes can land at the database out of order — the earlier value overwriting
-  // the later one with nothing in the UI to show it happened (pre-open review round 1). Only
-  // the LATEST value within one pause reaches the server, so there is never more than one
-  // write in flight for this deck's limits at a time. The pending payload itself is held in a
-  // ref (not just the timer) so a tab switch within the pause can FLUSH it on unmount rather
-  // than silently dropping it.
+  // Debounced trailing-edge, PARTIAL and MERGED: typing the cap fires `saveLimits` on every
+  // keystroke, so only the latest value within one pause reaches the server — and only the
+  // FIELD that changed, never the other two, so one tab's cap edit can't carry another tab's
+  // stale sets/owned-only back over whatever that tab has since saved (pre-open review round
+  // 2). Two edits to DIFFERENT fields inside the same pause merge into one request; a save
+  // already dispatched when a new edit lands is never raced — `limitsChain` serializes every
+  // send, and the next one starts only once the last has settled.
+  type LimitsPatch = { capDollars?: number | null; sets?: readonly string[]; ownedOnly?: boolean };
   const saveLimitsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pendingLimits = useRef<{ capDollars: number | null; sets: readonly string[]; ownedOnly: boolean } | null>(null);
-  const commitLimits = useCallback(
-    async (next: { capDollars: number | null; sets: readonly string[]; ownedOnly: boolean }) => {
-      try {
-        const result = await saveDeckLimits(deckId, { capDollars: next.capDollars, sets: next.sets, ownedOnly: next.ownedOnly });
-        if (!result.ok) {
-          setLimitsError(result.message);
-          return;
-        }
-        setLimitsError(null);
-        // The fingerprint changed server-side, so a prior "unchanged" reading of this exact gate
-        // no longer applies — re-read so the manifest and the gate reopen without waiting for an
-        // unrelated navigation to revalidate the page (pre-open review round 1).
-        await reread();
-        setUnchangedShown(false);
-      } catch {
-        setLimitsError(deckDescriptionCopy.limits.refused);
-      }
+  const pendingLimits = useRef<LimitsPatch | null>(null);
+  const limitsChain = useRef<Promise<unknown>>(Promise.resolve());
+  const limitsInFlight = useRef(0);
+  const sendLimits = useCallback(
+    (patch: LimitsPatch): Promise<boolean> => {
+      const keys = Object.keys(patch) as (keyof LimitsPatch)[];
+      limitsInFlight.current += 1;
+      const sent = limitsChain.current
+        .then(async (): Promise<boolean> => {
+          try {
+            const result = await saveDeckLimits(deckId, patch);
+            if (!result.ok) {
+              setLimitsError(result.message);
+              return false;
+            }
+            setLimitsError(null);
+            // The fingerprint changed server-side, so a prior "unchanged" reading of this exact
+            // gate no longer applies — re-read so the manifest and the gate reopen without
+            // waiting for an unrelated navigation to revalidate the page (round 1).
+            await reread();
+            setUnchangedShown(false);
+            // Settled only for a field with no NEWER edit queued behind this send — checked
+            // now, not at send time, since one could have landed while this request was in
+            // flight (round 2).
+            const settled = keys.filter((key) => !pendingLimits.current || !(key in pendingLimits.current));
+            if (settled.length > 0) {
+              setDirtyLimitFields((prev) => {
+                const next = new Set(prev);
+                settled.forEach((key) => next.delete(key));
+                return next;
+              });
+            }
+            return true;
+          } catch {
+            setLimitsError(deckDescriptionCopy.limits.refused);
+            return false;
+          }
+        })
+        .finally(() => {
+          limitsInFlight.current -= 1;
+        });
+      limitsChain.current = sent;
+      return sent;
     },
     [deckId, reread],
   );
   const saveLimits = useCallback(
-    (next: { capDollars: number | null; sets: readonly string[]; ownedOnly: boolean }) => {
-      pendingLimits.current = next;
+    (patch: LimitsPatch) => {
+      const keys = Object.keys(patch) as (keyof LimitsPatch)[];
+      setDirtyLimitFields((prev) => new Set([...prev, ...keys]));
+      pendingLimits.current = { ...pendingLimits.current, ...patch };
       if (saveLimitsTimer.current !== null) clearTimeout(saveLimitsTimer.current);
       saveLimitsTimer.current = setTimeout(() => {
         saveLimitsTimer.current = null;
-        const pending = pendingLimits.current;
+        const toSend = pendingLimits.current;
         pendingLimits.current = null;
-        if (pending !== null) void commitLimits(pending);
+        if (toSend !== null) void sendLimits(toSend);
       }, 500);
     },
-    [commitLimits],
+    [sendLimits],
   );
+  // The cap draft went invalid (non-empty, out of bounds) — cancel only ITS contribution to a
+  // still-pending patch, leaving a sibling field's queued edit (sets, owned-only) untouched
+  // (pre-open review round 2): without this, a valid cap edit typed moments earlier stays
+  // queued and lands under an amount the field no longer shows.
+  const cancelPendingCap = useCallback(() => {
+    if (pendingLimits.current && "capDollars" in pendingLimits.current) {
+      const { capDollars: _capDollars, ...rest } = pendingLimits.current;
+      pendingLimits.current = Object.keys(rest).length > 0 ? rest : null;
+    }
+  }, []);
+  // Flushes any debounced-but-unsent edit now, and waits for it AND any send already in flight
+  // to settle — `press` needs both before it can trust `stateRef` (pre-open review round 2).
+  // `touched` is false only when there was truly nothing pending or in flight, which is what
+  // lets `press` skip the extra read on the common path where no limit was ever edited.
+  const flushLimitsNow = useCallback(async (): Promise<{ ok: boolean; touched: boolean }> => {
+    if (saveLimitsTimer.current !== null) {
+      clearTimeout(saveLimitsTimer.current);
+      saveLimitsTimer.current = null;
+    }
+    const toSend = pendingLimits.current;
+    pendingLimits.current = null;
+    if (toSend !== null) return { ok: await sendLimits(toSend), touched: true };
+    if (limitsInFlight.current === 0) return { ok: true, touched: false };
+    const ok = await limitsChain.current.then(() => true, () => false);
+    return { ok, touched: true };
+  }, [sendLimits]);
   useEffect(() => {
     return () => {
       if (saveLimitsTimer.current !== null) clearTimeout(saveLimitsTimer.current);
@@ -223,9 +286,9 @@ export function TuningPanel({
       pendingLimits.current = null;
       // A tab switch within the debounce's pause unmounts this panel — flush rather than drop
       // the player's last edit (pre-open review round 1).
-      if (pending !== null) void commitLimits(pending);
+      if (pending !== null) void sendLimits(pending);
     };
-  }, [commitLimits]);
+  }, [sendLimits]);
 
   useEffect(() => {
     let live = true;
@@ -233,6 +296,7 @@ export function TuningPanel({
       (next) => {
         if (!live) return;
         setState(next);
+        stateRef.current = next;
         settledRef.current?.();
       },
       // A first read that fails draws nothing, as a deck with no reading does.
@@ -272,7 +336,21 @@ export function TuningPanel({
   async function press(anyway = false) {
     if (!state) return;
     setRefused(null);
-    if (!anyway && gateReason(state)?.kind === "unchanged") {
+    // A limit edited moments ago still has a pending or in-flight save — flush and wait for it
+    // first, or this press can capture the OLD fingerprint and run stale the instant the save
+    // lands (pre-open review round 2). `touched` is false on the common path (nothing to do
+    // with limits pending), so this costs nothing beyond that check.
+    const { ok: limitsOk, touched } = await flushLimitsNow();
+    if (!limitsOk) {
+      setRefused(deckDescriptionCopy.limits.refused);
+      return;
+    }
+    const current = touched ? stateRef.current : state;
+    if (current === null) {
+      setRefused(deckTuningCopy.run.refused);
+      return;
+    }
+    if (!anyway && gateReason(current)?.kind === "unchanged") {
       setUnchangedShown(true);
       setAnnounced(deckTuningCopy.announce.unchanged);
       return;
@@ -301,7 +379,10 @@ export function TuningPanel({
     // from then on, and this press must not draw or announce over it.
     const next = await deps.read(deckId).catch(() => null);
     if (token.current !== mine) return;
-    if (next) setState(next);
+    if (next) {
+      setState(next);
+      stateRef.current = next;
+    }
     setCounts(null);
     if (!result.ok) {
       setRefused(result.message);
@@ -504,17 +585,18 @@ export function TuningPanel({
             capDollars={capDollars}
             onCapChange={(next) => {
               setCapDollars(next);
-              saveLimits({ capDollars: next, sets: limitSets, ownedOnly });
+              saveLimits({ capDollars: next });
             }}
+            onCapDraftInvalid={cancelPendingCap}
             selectedSets={limitSets}
             onSetsChange={(next) => {
               setLimitSets(next);
-              saveLimits({ capDollars, sets: next, ownedOnly });
+              saveLimits({ sets: next });
             }}
             ownedOnly={ownedOnly}
             onOwnedOnlyChange={(next) => {
               setOwnedOnly(next);
-              saveLimits({ capDollars, sets: limitSets, ownedOnly: next });
+              saveLimits({ ownedOnly: next });
             }}
           />
           {limitsError ? <MutationError message={limitsError} /> : null}
