@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   SHEET,
-  SWIPE,
   bandOffset,
   clampSheetTop,
   lockAxis,
@@ -12,8 +11,8 @@ import {
   velocity,
 } from "./card-sheet-gesture";
 
-// Each boundary is asserted from both sides: a constant that drifts by one in either direction
-// fails one of the pair.
+// Each boundary is asserted from both sides, in LITERALS: a test that reads the constant it is
+// testing cannot see that constant drift.
 describe("lockAxis (R1 lock: 10px, then 1.5x)", () => {
   it("chooses nothing inside the lock distance", () => {
     expect(lockAxis(6, 7)).toBeNull();
@@ -21,8 +20,8 @@ describe("lockAxis (R1 lock: 10px, then 1.5x)", () => {
   });
 
   it("locks at exactly the lock distance", () => {
-    expect(lockAxis(SWIPE.lockPx, 0)).toBe("x");
-    expect(lockAxis(0, -SWIPE.lockPx)).toBe("y");
+    expect(lockAxis(10, 0)).toBe("x");
+    expect(lockAxis(0, -10)).toBe("y");
   });
 
   it("is horizontal only when |dx| beats 1.5 x |dy|", () => {
@@ -56,8 +55,10 @@ describe("bandOffset", () => {
   });
 
   it("never travels past 40px at an end", () => {
-    expect(bandOffset(400, false, true)).toBe(SWIPE.endMaxPx);
-    expect(bandOffset(-400, true, false)).toBe(-SWIPE.endMaxPx);
+    expect(bandOffset(400, false, true)).toBe(40);
+    expect(bandOffset(-400, true, false)).toBe(-40);
+    // Just under the cap, the 0.3x still governs.
+    expect(bandOffset(133, false, true)).toBeCloseTo(39.9);
   });
 });
 
@@ -103,13 +104,28 @@ describe("velocity", () => {
     expect(velocity(samples).vx).toBeCloseTo(50 / 100);
   });
 
+  it("leaves out a sample just older than 100ms", () => {
+    const samples = [
+      { t: 0, x: 0, y: 0 },
+      { t: 399, x: 0, y: 0 },
+      { t: 500, x: 50, y: 0 },
+    ];
+    // The window opens at t 400, so the t 399 sample is out and the last sample stands alone.
+    expect(velocity(samples)).toEqual({ vx: 0, vy: 0 });
+  });
+
   it("is zero for a single sample", () => {
     expect(velocity([{ t: 10, x: 5, y: 5 }])).toEqual({ vx: 0, vy: 0 });
   });
 });
 
 describe("the sheet's two snaps", () => {
-  const teaserTop = 812 - SHEET.teaserHeight;
+  it("are y 64 and a 280px teaser", () => {
+    expect(SHEET.fullTop).toBe(64);
+    expect(SHEET.teaserHeight).toBe(280);
+  });
+
+  const teaserTop = 812 - 280;
 
   it("never follows the finger past either snap", () => {
     expect(clampSheetTop(10, SHEET.fullTop, teaserTop)).toBe(SHEET.fullTop);
@@ -124,7 +140,12 @@ describe("the sheet's two snaps", () => {
   });
 
   it("follows a flick whichever snap is nearer", () => {
-    expect(sheetSnap(teaserTop - 20, -0.5, SHEET.fullTop, teaserTop)).toBe("full");
-    expect(sheetSnap(SHEET.fullTop + 20, 0.5, SHEET.fullTop, teaserTop)).toBe("teaser");
+    expect(sheetSnap(teaserTop - 20, -0.5, 64, teaserTop)).toBe("full");
+    expect(sheetSnap(64 + 20, 0.5, 64, teaserTop)).toBe("teaser");
+  });
+
+  it("does not count a release just under the flick speed as a flick", () => {
+    expect(sheetSnap(teaserTop - 20, -0.49, 64, teaserTop)).toBe("teaser");
+    expect(sheetSnap(64 + 20, 0.49, 64, teaserTop)).toBe("full");
   });
 });

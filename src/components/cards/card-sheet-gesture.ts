@@ -139,6 +139,30 @@ export type CardSheetGestureOptions = {
 const SPRING = "transform 180ms cubic-bezier(0.2, 0.7, 0.2, 1)";
 
 /**
+ * Returns the band to rest: 180ms, or a jump under reduced motion (STATES §Motion, "Phone
+ * return"). The inline `transition` a drag or a spring writes is cleared once the band is home,
+ * because an inline value overrides the stylesheet's own transition on the band (its dim under
+ * the full sheet) for as long as it stays.
+ */
+function springBack(band: HTMLElement) {
+  const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+  if (reduced || !band.style.transform) {
+    band.style.transform = "";
+    band.style.transition = "";
+    return;
+  }
+  band.style.transition = SPRING;
+  band.style.transform = "";
+  const done = () => {
+    band.removeEventListener("transitionend", done);
+    band.style.transition = "";
+  };
+  band.addEventListener("transitionend", done);
+  // `transitionend` never fires for a transition that was interrupted or never ran.
+  setTimeout(done, 240);
+}
+
+/**
  * Pointer handling for the band and the sheet. Spread `onBandPointerDown` on the band,
  * `onSheetPointerDown` on the sheet, and `onClickCapture` on an ancestor of both: a drag that
  * locked an axis cancels the press under it (README decision 3), so a drag that starts on a peek
@@ -164,6 +188,9 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
     const { bandRef, sheetRef, canPrev, canNext, onPage, onSnap, full } = opts.current;
     const band = bandRef.current;
     const sheet = sheetRef.current;
+    // The release itself is a sample. Touch sends no move while a finger rests, so without it a
+    // drag that stopped and then lifted would still read as the flick it was before it stopped.
+    if (!cancelled) d.samples.push({ t: e.timeStamp, x: e.clientX, y: e.clientY });
     if (d.axis !== null) {
       suppressClick.current = true;
       // A drag that ends without a click (released off the element, say) must not swallow the
@@ -178,14 +205,15 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
       const dir = cancelled ? null : pageDecision(dx, vx, d.width, canPrev, canNext);
       if (dir) {
         // Held where the finger left it: the next card enters from exactly here, and with the
-        // neighbors read ahead it arrives before anything could have moved.
+        // neighbors read ahead it arrives before anything could have moved. A card that never
+        // arrives (a failed read) leaves this band mounted, so it springs back after a beat.
         onPage(dir, d.bandX);
+        setTimeout(() => {
+          if (band.isConnected) springBack(band);
+        }, 1000);
         return;
       }
-      // Reduced motion jumps back rather than springing (STATES §Motion, "Phone return").
-      const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-      band.style.transition = reduced ? "none" : SPRING;
-      band.style.transform = "";
+      springBack(band);
       return;
     }
     if (d.axis === "y" && !d.dead && sheet) {
