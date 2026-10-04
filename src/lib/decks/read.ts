@@ -673,6 +673,38 @@ export async function getDeckReviewHeader(
   };
 }
 
+/**
+ * The CURRENT draft size of a small set of other decks — "→ {n} cards" on the Pull it source
+ * list (addendum R1), batched because the list shows every candidate source on a page that
+ * renders several contested rows, never one deck at a time.
+ *
+ * `built` matches `getDeckReviewHeader`'s own definition exactly — `sum(deck_cards.quantity)`,
+ * commander not counted — so a source's size reads in the one vocabulary this route already
+ * uses for "card count" rather than introducing a second one. Scoped to `userId` for the same
+ * reason every other read on this page is: a candidate source is always a claim on a card this
+ * reader's OWN decks hold, but the scope costs nothing to state and a deck id that is not this
+ * reader's returns no row rather than another player's count.
+ */
+export async function loadSourceDeckSizes(
+  deckIds: string[],
+  userId: string,
+): Promise<Map<string, number>> {
+  const sizes = new Map<string, number>();
+  if (deckIds.length === 0) return sizes;
+  const rows = await db
+    .select({
+      id: decks.id,
+      built: sql<number>`coalesce((
+        select sum(dc.quantity) from ${deckCards} dc
+        where dc.deck_id = ${decks}.id
+      ), 0)::int`,
+    })
+    .from(decks)
+    .where(and(inArray(decks.id, deckIds), eq(decks.userId, userId)));
+  for (const row of rows) sizes.set(row.id, row.built);
+  return sizes;
+}
+
 export type DeckListItem = {
   id: string;
   name: string;

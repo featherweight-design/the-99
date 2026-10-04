@@ -1,8 +1,21 @@
-import { and, eq, sql } from "drizzle-orm";
-import type { db } from "../../db";
-import { pullReleases } from "../../db/schema";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { db } from "../../db";
+import { decks, pullReleases } from "../../db/schema";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * `writePullRelease`'s own SET clause, pulled out so a test can render the exact SQL it emits
+ * without executing a write — see `pull-release.test.ts`. A second pull of the same card from
+ * the same draft for the same deck takes one more copy, and `createdAt` is bumped alongside it
+ * (see the column's own comment): without that, a re-pull from a source whose row already
+ * existed would leave this looking OLDER than a different source's row made in between, and
+ * `latestReleaseSources` would name the wrong deck.
+ */
+export const PULL_RELEASE_UPSERT_SET = {
+  copies: sql`${pullReleases.copies} + 1`,
+  createdAt: sql`now()`,
+};
 
 /**
  * The release a `Pull it` writes (Hugh's ruling, 2026-09-27; see `pullReleases` in the schema).
@@ -21,9 +34,8 @@ export async function writePullRelease(
 ): Promise<void> {
   await tx.insert(pullReleases).values({ ...release, copies: 1 }).onConflictDoUpdate({
     target: [pullReleases.sourceDeckId, pullReleases.oracleId, pullReleases.askingDeckId],
-    // A second pull of the same card from the same draft for the same deck takes one more copy.
     // A pull for a DIFFERENT deck is its own row, so every asker is told when this is undone.
-    set: { copies: sql`${pullReleases.copies} + 1` },
+    set: PULL_RELEASE_UPSERT_SET,
   });
 }
 
@@ -56,4 +68,47 @@ export async function releaseAskers(
     .from(pullReleases)
     .where(and(eq(pullReleases.sourceDeckId, sourceDeckId), eq(pullReleases.oracleId, oracleId)));
   return rows.map((r) => r.askingDeckId);
+}
+
+/**
+ * The deck a reader's most recent pull, for this asking deck and this card, took the copy
+ * out of — for the review row's post-pull label (addendum R1, "pulled from {deck}").
+ *
+ * The primary key is `(sourceDeckId, oracleId, askingDeckId)`, ONE ROW PER SOURCE — so a deck
+ * asking for two or more copies of a card can hold two release rows for the same card if the
+ * copies came from different decks over time. The handoff names "the" release row; this reads
+ * the newest one (`created_at desc`) when there is more than one, since the label is about the
+ * most recent action, and no frame covers naming several. `created_at` means last TOUCHED, not
+ * first created — `writePullRelease` bumps it on every pull, including a re-pull from a source
+ * whose row already existed — which is load-bearing here: without that bump, a second pull from
+ * an OLD source would keep that row's original, now-stale timestamp, and a pull from a different
+ * source made in between would read as newer even though it happened first.
+ *
+ * Batched over every oracle id the page's rows carry, not called per row: the asking deck is
+ * one page's worth of cards, and this is read on every render.
+ */
+export async function latestReleaseSources(
+  askingDeckId: string,
+  oracleIds: string[],
+): Promise<Map<string, { sourceDeckId: string; sourceDeckName: string }>> {
+  const byCard = new Map<string, { sourceDeckId: string; sourceDeckName: string }>();
+  if (oracleIds.length === 0) return byCard;
+  const rows = await db
+    .select({
+      oracleId: pullReleases.oracleId,
+      sourceDeckId: pullReleases.sourceDeckId,
+      sourceDeckName: decks.name,
+    })
+    .from(pullReleases)
+    .innerJoin(decks, eq(decks.id, pullReleases.sourceDeckId))
+    .where(and(eq(pullReleases.askingDeckId, askingDeckId), inArray(pullReleases.oracleId, oracleIds)))
+    .orderBy(desc(pullReleases.createdAt));
+  // Rows arrive newest first; the first one seen per card is kept and every later (older) one
+  // for the same card is dropped.
+  for (const row of rows) {
+    if (!byCard.has(row.oracleId)) {
+      byCard.set(row.oracleId, { sourceDeckId: row.sourceDeckId, sourceDeckName: row.sourceDeckName });
+    }
+  }
+  return byCard;
 }

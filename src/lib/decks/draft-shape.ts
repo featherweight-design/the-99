@@ -212,6 +212,37 @@ export function pullCandidate(a: Availability | undefined): DeckClaim | null {
 }
 
 /**
+ * Every claim a reader could be asked to pick between, when a card is held by
+ * more than one deck that can give it up (addendum R1, `design_handoff_the99_pull_source`).
+ *
+ * Named `pullSourceChoices` rather than `pullSources` — `availability.ts` already exports a
+ * `pullSources` (the hard, senior claimants a pull could take from, projected to `HardDeck[]`
+ * for the marker strings) that answers a different, narrower question and returns a different
+ * shape; this one is the FULL picker list for the UI, every claim included for display.
+ *
+ * `claims` arrives ordered alphabetically by deck NAME (`availability-query.ts`'s
+ * `jsonb_agg(... order by cd.name, cd.deck_id)`), not by commit order — so this
+ * sorts by `since` itself rather than assuming the array already reflects it.
+ * Ascending: the longest-committed source leads, which is where `pullCandidate`'s
+ * own first-match behaviour already lands when there is exactly one releasable
+ * claim and no sort is needed to see it.
+ *
+ * The filter is a SUPERSET of `releasableClaims`: a locked or commander claim is
+ * included for DISPLAY, as a disabled row with its reason, even though neither
+ * is ever pullable — matching `pullCandidate`'s own fallback, which already
+ * names them rather than returning null. A claim that is none of the three
+ * (a junior sleeved holder) is excluded, same as today: nothing a pull can
+ * reach and nothing a guard can explain.
+ */
+export function pullSourceChoices(a: Availability | undefined): DeckClaim[] {
+  if (!a) return [];
+  return a.claims
+    .filter((c) => c.mature && (c.senior || c.locked || c.commander))
+    .slice()
+    .sort((x, y) => (x.since ?? Infinity) - (y.since ?? Infinity));
+}
+
+/**
  * The ownership dot's third state: the player owns a copy of this card and every
  * copy that could have covered the add is sleeved in another deck.
  *

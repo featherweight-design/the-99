@@ -35,8 +35,8 @@ import { loadCommanderRows } from "../commander-change/draft-rows";
 // caller has one import for the whole model.
 export type { DraftAdd, DraftState } from "./draft-shape";
 export {
-  changeCount, hasChanges, heldElsewhere, printsPair, pullCandidate, releasableClaims,
-  releasedCopies,
+  changeCount, hasChanges, heldElsewhere, printsPair, pullCandidate, pullSourceChoices,
+  releasableClaims, releasedCopies,
 } from "./draft-shape";
 
 /**
