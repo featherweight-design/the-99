@@ -471,16 +471,15 @@ export function artWidthReservePx(underCardHeight: number): number {
 
 /**
  * A desktop neighbor plate (handoff decision 2): the whole card, scaled down, on the backdrop
- * 24px off the modal, with the name under it in 12.5px `--fg-muted`. 168x235 at 63/88 — the
+ * 24px off the modal, with the name under it in 12.5px `--fg-body`. 168x235 at 63/88 — the
  * card ratio exactly, which is also how the ~1252px threshold was derived (decision 4).
  *
  * Art first, then identity, then a bare plate (handoff "Notes for engineering" §2): a sibling
  * carrying only an id draws no text at all, since there is none to draw.
  */
 // The dialog's own fixed desktop geometry (`md:w-[820px]`) and the 24px gap decision 2 draws
-// between it and a plate — the same two constants the 1252px threshold comment derives from.
-// Kept here, beside the one place that reads them, rather than exported: nothing else needs
-// them, and the threshold's own comment is free to keep stating the arithmetic in prose.
+// between it and a plate, from which `NEIGHBOR_MIN_WIDTH` computes the plates' threshold. The
+// half-width is exported for `card-modal-geometry.test.ts`, which pins the dialog's class to it.
 export const DIALOG_HALF_WIDTH = 410;
 const PLATE_GAP = 24;
 const PLATE_WIDTH = 168;
@@ -520,8 +519,8 @@ const NeighborPlate = React.forwardRef<
       />
       {sibling.name ? (
         // `--fg-body`, not the handoff's `--fg-muted` (ledger 1, measured in build): over the
-        // dimmed backdrop `--fg-muted` held a median 3.8 to 4.9:1 across the six themes, under
-        // AA for 12.5px text on half the pixels or more; `--fg-body` holds 4.4 to 5.1 at worst.
+        // dimmed backdrop `--fg-muted` held a median 3.8 to 4.9:1 across the six themes, with 39%
+        // to 78% of pixels under AA's 4.5:1 for 12.5px text; `--fg-body` holds 4.4 to 5.1 at worst.
         <span className="font-mono text-[12.5px] truncate max-w-[168px]" style={{ color: "var(--fg-body)" }}>
           {sibling.name}
         </span>
