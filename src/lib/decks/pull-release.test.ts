@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { db } from "../../db";
 import { pullReleases } from "../../db/schema";
-import { newestPerCard, pullReleaseInsertValues, PULL_RELEASE_UPSERT_SET } from "./pull-release";
+import {
+  latestReleaseSourcesQuery,
+  newestPerCard,
+  pullReleaseInsertValues,
+  PULL_RELEASE_UPSERT_SET,
+} from "./pull-release";
 
 // `.toSQL()` only — never executed. See the correlated-subquery section of AGENTS.md for why
 // this file exists: a query built correctly in TypeScript can still render SQL nobody checked.
@@ -69,5 +74,20 @@ describe("newestPerCard", () => {
 
   it("is empty for no rows", () => {
     expect(newestPerCard([])).toEqual(new Map());
+  });
+});
+
+// Round-9 finding: every newestPerCard test above supplies rows already in newest-first order,
+// so nothing caught the actual database query's own ordering being dropped, flipped, or pointed
+// at the wrong column — the pure-reduction tests would stay green while the label silently
+// named an arbitrary or older source.
+describe("latestReleaseSourcesQuery", () => {
+  it("orders by created_at DESC, and filters on userId, askingDeckId and the oracle id list", () => {
+    const { sql: text, params } = latestReleaseSourcesQuery("u1", "d2", ["o1", "o2"]).toSQL();
+    expect(text).toMatch(/order by\s+"pull_releases"\."created_at"\s+desc/i);
+    expect(text).toMatch(/"pull_releases"\."user_id"\s*=/i);
+    expect(text).toMatch(/"pull_releases"\."asking_deck_id"\s*=/i);
+    expect(text).toMatch(/"pull_releases"\."oracle_id"\s+in\b/i);
+    expect(params).toEqual(["u1", "d2", "o1", "o2"]);
   });
 });

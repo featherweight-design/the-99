@@ -132,13 +132,20 @@ export function newestPerCard(rowsNewestFirst: ReleaseRow[]): Map<string, Releas
  * Batched over every oracle id the page's rows carry, not called per row: the asking deck is
  * one page's worth of cards, and this is read on every render.
  */
-export async function latestReleaseSources(
+/**
+ * `latestReleaseSources`'s own query, pulled out so a `.toSQL()` test can assert the
+ * `created_at DESC` ordering directly — see `pull-release.test.ts`. Found by Copilot's
+ * round-9 review: every `newestPerCard` test supplies rows already in newest-first order, so
+ * nothing caught this `orderBy` being dropped, flipped to ascending, or pointed at the wrong
+ * column — any of which would leave the pure-reduction tests green while the label silently
+ * named an arbitrary or older source.
+ */
+export function latestReleaseSourcesQuery(
   userId: string,
   askingDeckId: string,
   oracleIds: string[],
-): Promise<Map<string, ReleaseSource>> {
-  if (oracleIds.length === 0) return new Map();
-  const rows = await db
+) {
+  return db
     .select({
       oracleId: pullReleases.oracleId,
       sourceDeckId: pullReleases.sourceDeckId,
@@ -152,5 +159,14 @@ export async function latestReleaseSources(
       inArray(pullReleases.oracleId, oracleIds),
     ))
     .orderBy(desc(pullReleases.createdAt));
+}
+
+export async function latestReleaseSources(
+  userId: string,
+  askingDeckId: string,
+  oracleIds: string[],
+): Promise<Map<string, ReleaseSource>> {
+  if (oracleIds.length === 0) return new Map();
+  const rows = await latestReleaseSourcesQuery(userId, askingDeckId, oracleIds);
   return newestPerCard(rows);
 }
