@@ -87,7 +87,7 @@ clause rather than drawing a wrong one or erroring the panel.
 
 ### 2.3 `pull_releases` allows more than one row per (card, asker) — the "pulled from" label needs a tie-break
 
-`pull_releases`' primary key is `(sourceDeckId, oracleId, askingDeckId)` (`schema.ts:960`) — one
+`pull_releases`' primary key is `(sourceDeckId, oracleId, askingDeckId)` (`schema.ts:966`) — one
 row per SOURCE. A deck asking for 2+ copies of a card can be satisfied by pulls from two DIFFERENT
 sources over time, leaving two release rows for the same `(oracleId, askingDeckId)`. Engineering
 note 4 says to read "the `pull_releases` row" (singular) to name the post-pull source, which is

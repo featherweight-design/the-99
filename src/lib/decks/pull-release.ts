@@ -34,15 +34,31 @@ export const PULL_RELEASE_UPSERT_SET = {
  * lacks, so it stops subtracting while the card is back and counts again if the card is cut again
  * before the commit. Deleting it on a return path would lose that second cut's release.
  */
+/**
+ * `writePullRelease`'s insert VALUES, pulled out for the same reason `PULL_RELEASE_UPSERT_SET`
+ * is — see `pull-release.test.ts`. `createdAt` is explicit here too, found by Copilot's round-7
+ * review: the column's own `defaultNow()` is SQL `now()`, the same transaction-start-time trap
+ * the conflict path already avoids with `clock_timestamp()` — a first pull whose insert won the
+ * row lock late would otherwise default to an older timestamp than the pull it actually followed.
+ */
+export function pullReleaseInsertValues(
+  release: { userId: string; sourceDeckId: string; oracleId: string; askingDeckId: string },
+) {
+  return { ...release, copies: 1, createdAt: sql`clock_timestamp()` };
+}
+
 export async function writePullRelease(
   tx: Tx,
   release: { userId: string; sourceDeckId: string; oracleId: string; askingDeckId: string },
 ): Promise<void> {
-  await tx.insert(pullReleases).values({ ...release, copies: 1 }).onConflictDoUpdate({
-    target: [pullReleases.sourceDeckId, pullReleases.oracleId, pullReleases.askingDeckId],
-    // A pull for a DIFFERENT deck is its own row, so every asker is told when this is undone.
-    set: PULL_RELEASE_UPSERT_SET,
-  });
+  await tx
+    .insert(pullReleases)
+    .values(pullReleaseInsertValues(release))
+    .onConflictDoUpdate({
+      target: [pullReleases.sourceDeckId, pullReleases.oracleId, pullReleases.askingDeckId],
+      // A pull for a DIFFERENT deck is its own row, so every asker is told when this is undone.
+      set: PULL_RELEASE_UPSERT_SET,
+    });
 }
 
 /**

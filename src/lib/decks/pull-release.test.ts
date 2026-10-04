@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { db } from "../../db";
 import { pullReleases } from "../../db/schema";
-import { newestPerCard, PULL_RELEASE_UPSERT_SET } from "./pull-release";
+import { newestPerCard, pullReleaseInsertValues, PULL_RELEASE_UPSERT_SET } from "./pull-release";
 
 // `.toSQL()` only — never executed. See the correlated-subquery section of AGENTS.md for why
 // this file exists: a query built correctly in TypeScript can still render SQL nobody checked.
@@ -30,6 +30,18 @@ describe("the pull_releases upsert's SET clause", () => {
     // `touch.ts` for the same rule on an analogous stamp.
     expect(text).toMatch(/"created_at"\s*=\s*clock_timestamp\(\)/i);
     expect(text).toMatch(/"copies"\s*=\s*"pull_releases"\."copies"\s*\+\s*1/i);
+  });
+
+  // Round-7 finding: the conflict path's clock_timestamp() fix did not cover the INSERT path —
+  // a first pull still relied on the column's own `defaultNow()` (SQL `now()`), the identical
+  // transaction-start-time trap.
+  it("stamps the insert row with clock_timestamp(), not the column's now()-based default", () => {
+    const values = pullReleaseInsertValues({
+      userId: "u1", sourceDeckId: "d1", oracleId: "o1", askingDeckId: "d2",
+    });
+    const { sql: text } = db.insert(pullReleases).values(values).toSQL();
+    expect(text).toMatch(/insert into "pull_releases".*clock_timestamp\(\)/i);
+    expect(text).not.toMatch(/\bnow\(\)/i);
   });
 });
 
