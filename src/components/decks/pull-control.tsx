@@ -100,7 +100,17 @@ export function PullControl({ deckId, card, claims, defaultId, sourceFigures, on
   // does not turn a single-source row into a two-or-more one.
   const choosable = claims.filter((c) => !c.commander && !c.locked);
 
-  if (choosable.length <= 1) {
+  // STICKY once a list has been offered — found by Copilot's round-3 review: a refusal whose
+  // cause is the chosen source going locked/commander drops `choosable.length` back to 1 on the
+  // next read, and recomputing this gate fresh every render switched the whole subtree to
+  // `SinglePull`, unmounting the open `SourcePicker` mid-session and discarding the refusal with
+  // it — contrary to design state 9's "the list stays open". Adjusted during render (this
+  // repo's own rule for a changed prop, not an effect): the gate can only move from single-tap
+  // to list, never back, for the life of this row's control.
+  const [everMultiSource, setEverMultiSource] = useState(choosable.length > 1);
+  if (choosable.length > 1 && !everMultiSource) setEverMultiSource(true);
+
+  if (!everMultiSource) {
     // Today's shape, unchanged: one claim, which is either the single source
     // that can be chosen, or — when there is none — the guard (commander takes
     // precedence over locked, `pullCandidate`'s own order) this row has instead.
@@ -410,6 +420,11 @@ function SourcePicker({
           setOpen((o) => !o);
           setSelectedId(defaultId);
           setError(null);
+          // Found by Copilot's round-3 review: left set from a PRIOR successful pull, a stale
+          // target here would be read by `useDialogA11y`'s cleanup on this session's own
+          // cancel/outside-press, sending focus to a card trigger instead of back to this
+          // button. Cleared on every open — the next write to it, if any, is this session's own.
+          returnFocusAfterPull.current = null;
         }}
       >
         {copy.pull} <span aria-hidden="true">▾</span>

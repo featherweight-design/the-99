@@ -610,4 +610,82 @@ describe("PullControl — 2+ choosable sources", () => {
       screen.getByRole("button", { name: cardDetailCopy.triggerAria(CARD.name) }),
     );
   });
+
+  // Found by Copilot's round-3 review: starting at exactly 2 choosable sources, a refusal
+  // caused by the CHOSEN one going locked/commander drops choosableCount to 1 on the next read —
+  // recomputing the single-tap/list gate fresh on that render used to switch the whole subtree
+  // to the one-tap arm, unmounting the open list and discarding the refusal with it.
+  it("keeps the list open across a 2-to-1 choosable drop mid-session, rather than switching to the single-tap arm", () => {
+    setViewport(true);
+    const view = render(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claims={[FREE_TO_PULL, OTHER_SOURCE]}
+        defaultId={FREE_TO_PULL.id}
+        onPulled={noop}
+      />,
+    );
+    act(() => {
+      screen.getByRole("button", { name: MANY_NAME }).click();
+    });
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    // The server's fresh read: FREE_TO_PULL (the one claim) has gone locked, leaving only
+    // OTHER_SOURCE choosable — `claims.filter(choosable).length` is now 1.
+    view.rerender(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claims={[{ ...FREE_TO_PULL, locked: true }, OTHER_SOURCE]}
+        defaultId={FREE_TO_PULL.id}
+        onPulled={noop}
+      />,
+    );
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect(
+      screen.getByRole("radio", { name: new RegExp(OTHER_SOURCE.name) }).getAttribute("aria-checked"),
+    ).toBe("true");
+  });
+
+  // Found by Copilot's round-3 review: a successful pull's return-focus target survived in the
+  // ref after the row (still 2+ sources) kept this same component instance mounted, so the NEXT
+  // session's own cancel reused the stale card-trigger target instead of this session's trigger.
+  it("does not reuse a prior pull's focus target on a later session's cancel", async () => {
+    setViewport(true);
+    vi.mocked(pullCardFromDeck).mockResolvedValue({ ok: true, buy: 1, total: "$1.00" });
+    render(
+      <div>
+        <button type="button" aria-label={cardDetailCopy.triggerAria(CARD.name)}>
+          {CARD.name}
+        </button>
+        <PullControl
+          deckId="d"
+          card={CARD}
+          claims={[FREE_TO_PULL, OTHER_SOURCE, { ...OTHER_SOURCE, id: "d5", name: "Third Source" }]}
+          defaultId={FREE_TO_PULL.id}
+          onPulled={noop}
+        />
+      </div>,
+    );
+    const manyName3 = copy.pullManyA11y(CARD.name, 3);
+    act(() => {
+      screen.getByRole("button", { name: manyName3 }).click();
+    });
+    await act(async () => {
+      screen.getByRole("button", { name: sourceCopy.confirm(FREE_TO_PULL.name) }).click();
+    });
+    // Re-open the same control for a second pull, then cancel it. The `claims` prop is static in
+    // this test (no parent re-render), so the trigger's own label is unchanged. Focused
+    // explicitly first: a bare `.click()` does not reliably move jsdom's own focus the way a
+    // real click does, and the dialog's own pre-open capture needs it to be deterministic here.
+    const trigger = screen.getByRole("button", { name: manyName3 });
+    act(() => {
+      trigger.focus();
+      trigger.click();
+    });
+    act(() => {
+      screen.getByRole("button", { name: sourceCopy.cancel }).click();
+    });
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: manyName3 }));
+  });
 });
