@@ -37,7 +37,6 @@ import { DISCARD_RECEIPT_HASH, draftAnnouncer } from "./draft-announcer";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { HoverPreviewProvider } from "./hover-preview";
 import { PullControl } from "./pull-control";
-import type { ContestedCard } from "../../lib/collection/summary-read";
 import { PutBackControl } from "./put-back-control";
 import { MutationError } from "./mutation-error";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
@@ -70,13 +69,15 @@ type ReviewChangesProps = {
   rows: DraftRows["rows"];
   state: DraftState;
   /**
-   * The cards on this page more committed decks want than the collection holds. Drives the
+   * How many cards on this page more committed decks want than the collection holds. Drives the
    * `chipShort` summary figure; the per-row chooser that used to hang under each one was
    * removed (Hugh, 2026-10-04 — no Design round, a removal), with a replacement going to
-   * Design separately. Loaded unexcluded, for reasons the route (`page.tsx`) states — including
-   * that the chip must keep counting this deck's own shortfall.
+   * Design separately. A bare count rather than the full records — `countContestedCards`
+   * (Copilot round 1, #1244) — since this component no longer draws anything per card. Loaded
+   * unexcluded, for reasons the route (`page.tsx`) states — including that the chip must keep
+   * counting this deck's own shortfall.
    */
-  contested: ContestedCard[];
+  contestedCount: number;
   /** The two whole lists the shape strip folds — the newest version's, and the
    *  draft's. Read by the route rather than derived here: the changed rows cannot
    *  say what a role or a card type held, and `before` is a query of its own.
@@ -466,7 +467,7 @@ export function ReviewChanges({
   deckName,
   rows,
   state,
-  contested,
+  contestedCount,
   before,
   after,
   cardCount,
@@ -823,10 +824,10 @@ export function ReviewChanges({
       total: null,
     },
     {
-      // CARDS, not copies: each contested row is one decision waiting on this page. The ink is
+      // CARDS, not copies: each contested card is one decision waiting on this page. The ink is
       // the over state's own, because that is what a contested card is — `marker.over` says
       // `short n` about the same card on the deck page.
-      figure: contested.length,
+      figure: contestedCount,
       tone: "var(--avail-over-fg)",
       label: copy.chipShort,
       total: null,

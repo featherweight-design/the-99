@@ -25,7 +25,7 @@ import { commitVersion, restoreDraftFromVersion } from "../src/lib/decks/version
 import { addCardToDeckFor } from "../src/lib/decks/add-card";
 import { assignCopyFor } from "../src/lib/decks/assign";
 import { pruneOrphanAssignments } from "../src/lib/decks/prune-assignments";
-import { loadContestedCards } from "../src/lib/collection/summary-read";
+import { loadContestedCards, countContestedCards } from "../src/lib/collection/summary-read";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -755,10 +755,13 @@ async function assignmentWriteSection() {
 
 // ── THE SECOND DOOR'S OWN READ ─────────────────────────────────────────────────
 //
-// `loadContestedCards` is what `/decks/[id]/changes` reads for its `chipShort` summary figure
-// (the per-row chooser this read used to also feed was removed 2026-10-04, no Design round — a
-// replacement is going to Design separately; the read itself is unaffected), and two of its
-// rules are invisible to a component test fed hand-built props:
+// `countContestedCards` is what `/decks/[id]/changes` reads for its `chipShort` summary figure
+// (Copilot round 1 of #1244: the per-row chooser this read used to also feed was removed
+// 2026-10-04, no Design round — a replacement is going to Design separately — and the route
+// moved off `loadContestedCards` to this count-only sibling, so it stops paying for claimant
+// records and a `cards.name` query nothing here draws any more). Both share one `isContested`
+// predicate, so this section checks them together: two of that predicate's rules are invisible
+// to a component test fed hand-built props:
 //
 //   IT READS UNEXCLUDED. A row on that page is loaded from the deck's own vantage, which is right
 //   for its buy tag and wrong here — the queue's subject is the committed decks INCLUDING the one
@@ -810,6 +813,9 @@ async function changesDoorSection() {
     check("and both committed claimants", contested?.claimants.length, 2);
     check("in commit order", contested?.claimants[0]?.deckId, senior);
     check("with the junior deck buying", contested?.claimants[1]?.allocated, 0);
+    // The route's own read agrees with the records read above, on the SAME scenario — the two
+    // share one predicate, so a future change to either cannot drift without this failing.
+    check("countContestedCards agrees", await countContestedCards([card], USER_D), 1);
 
     // A SHORTAGE WITH ONE CLAIMANT IS NOT A CHOICE. The junior deck goes; the senior one asks for
     // two copies against the one owned, which is short by one and has nobody to be short against.
@@ -820,6 +826,7 @@ async function changesDoorSection() {
     `);
     const alone = await loadContestedCards([card], USER_D);
     check("one claimant short of two copies is not contested", alone.length, 0);
+    check("and countContestedCards agrees", await countContestedCards([card], USER_D), 0);
 
     // AND NEITHER IS A CARD WITH ENOUGH COPIES FOR EVERYONE.
     await fixture.execute(sql`
@@ -827,6 +834,7 @@ async function changesDoorSection() {
     `);
     const covered = await loadContestedCards([card], USER_D);
     check("nor a card the collection covers", covered.length, 0);
+    check("and countContestedCards agrees", await countContestedCards([card], USER_D), 0);
   } finally {
     await fixture.execute(sql`delete from decks where user_id = ${USER_D}`);
     await fixture.execute(sql`delete from collection_items where user_id = ${USER_D}`);

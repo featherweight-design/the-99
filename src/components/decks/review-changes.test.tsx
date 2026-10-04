@@ -12,7 +12,6 @@ import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { BrowseCard } from "../../lib/collection/browse";
 import type { Availability } from "../../lib/decks/availability";
-import type { ContestedCard } from "../../lib/collection/summary-read";
 import type { ShapeCard } from "../../lib/decks/draft-state";
 import { cardDetailCopy } from "../cards/card-detail-provider";
 import { BREW, COMMITTED } from "./__fixtures__/draft-state";
@@ -66,10 +65,10 @@ const STATE = COMMITTED;
  *  two columns, and `changed-strip.test.tsx` owns every figure the strip draws
  *  from them. Empty `before` is also what keeps the strip silent about movement,
  *  so nothing it draws can be mistaken for a column's own figure. */
-// `contested` rides with the shape props because nearly every case here is about a row rather
-// than about the chooser: an empty list draws no panel, which is the state these were written in.
-const SHAPE: { before: ShapeCard[]; after: ShapeCard[]; contested: ContestedCard[] } =
-  { before: [], after: [], contested: [] };
+// `contestedCount` rides with the shape props because nearly every case here is about a row
+// rather than about the chip: zero draws no chip, which is the state these were written in.
+const SHAPE: { before: ShapeCard[]; after: ShapeCard[]; contestedCount: number } =
+  { before: [], after: [], contestedCount: 0 };
 
 /** The server's count of the list a commit would freeze, handed down to the sheet
  *  at the foot of the page. Nothing here counts rows to get it. */
@@ -513,6 +512,29 @@ describe("ReviewChanges", () => {
     expect(screen.queryByText(deckVersioningCopy.review.chipPullable)).toBeNull();
     // Nor is the out chip, with no column behind it.
     expect(screen.queryByText(deckVersioningCopy.review.chipOut)).toBeNull();
+  });
+
+  // Copilot round 1 of #1244 (CONFIRMED): deleting the "second door" describe block removed the
+  // only coverage of `chipShort`, and of the guarantee that a nonzero `contestedCount` still
+  // draws no per-row control — the two things a reader of the removal diff would most want
+  // pinned. `contestedCount` is a bare number now (`countContestedCards`, not
+  // `loadContestedCards`), so there is no row data left to build a chooser from even if someone
+  // reached for one — this test is what would catch a future PR reintroducing a panel without
+  // reconnecting it to real per-card data.
+  it("chips a nonzero contestedCount as still short, drawing no per-row control for it", () => {
+    render(
+      <ReviewChanges mix={TEST_MIX}
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row()], out: [] }}
+        {...SHAPE} contestedCount={2} state={STATE}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    expect(screen.getByText(deckVersioningCopy.review.chipShort)).toBeTruthy();
+    expect(screen.getByText("2")).toBeTruthy();
+    expect(screen.queryAllByRole("radiogroup")).toEqual([]);
+    expect(screen.queryAllByRole("radio")).toEqual([]);
   });
 
   // The pair goes inside the row the card is already named on. A caption under
@@ -1190,7 +1212,7 @@ describe("ReviewChanges", () => {
       const shape = {
         before: [{ role: "ramp" as const, quantity: 1, typeLine: "Artifact", cmc: 1 }],
         after: [] as typeof SHAPE.after,
-        contested: [] as typeof SHAPE.contested,
+        contestedCount: 0,
       };
       render(
         <ReviewChanges mix={TEST_MIX}
