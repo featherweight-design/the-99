@@ -130,6 +130,15 @@ describe("the card-labels spend bounds", () => {
     expect(r.scope).toBeUndefined();
   });
 
+  // A list trial's labels stay on staging until the trial is judged. Both halves are needed: the
+  // label job has to publish the resolved scope, or `startsWith` reads an empty string and copies.
+  it("skips the production copy for a list trial, and only for one", () => {
+    expect(workflow).toMatch(/^      scope: \$\{\{ steps\.bounds\.outputs\.scope \}\}$/m);
+    const copy = workflow.slice(workflow.indexOf("\n  copy:"));
+    const gate = copy.match(/^    if: (.*)$/m)?.[1];
+    expect(gate).toBe("${{ !cancelled() && needs.label.outputs.ran == 'true' && !startsWith(needs.label.outputs.scope, 'list:') }}");
+  });
+
   // The bounds step is only half: a missing env line makes the build default to every card.
   it("hands the resolved scope to the step that spends", () => {
     const step = workflow.slice(workflow.indexOf(LABEL_STEP),

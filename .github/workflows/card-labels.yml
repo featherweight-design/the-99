@@ -76,6 +76,8 @@ jobs:
     outputs:
       # Set once the build has STARTED, whatever it then exits with. Read by `copy`, below.
       ran: ${{ steps.build.outputs.ran }}
+      # The resolved scope, so `copy` can leave a list trial on staging.
+      scope: ${{ steps.bounds.outputs.scope }}
     # Batches are asynchronous and this job POLLS until they are collected and published, so the
     # window has to cover the provider's turnaround. Measured on the sample: a 43-request batch
     # ended within minutes, but the API's stated ceiling is 24 hours and a set week is ~75
@@ -400,7 +402,11 @@ jobs:
     # carry those labels to production. The label job stays red for every non-zero exit, so a
     # failure still blocks and still reads as one; this job only moves what already passed,
     # and installs a label only when production's own hash matches it.
-    if: ${{ !cancelled() && needs.label.outputs.ran == 'true' }}
+    #
+    # EXCEPT A LIST TRIAL, whose labels stay on staging until the trial is judged: a `list:` run is
+    # a prompt trial, not a release. The next run of any other scope copies them with the rest,
+    # since the copy installs every staging label whose hash production's own text produces.
+    if: ${{ !cancelled() && needs.label.outputs.ran == 'true' && !startsWith(needs.label.outputs.scope, 'list:') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: catalog-production
