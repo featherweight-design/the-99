@@ -78,3 +78,50 @@ describe("ManifestRows: a disclosure, never a control (manifest-affordance adden
     expect(screen.getAllByTestId("manifest-row")[0].className).not.toMatch(/pr-\[12px\]/);
   });
 });
+
+describe("ManifestRows: the writing row (H35, PR 3)", () => {
+  it("draws the writing row pending, then active, with its own pulsing mark", () => {
+    const { rerender } = render(
+      <ManifestRows rows={[read("decklist", true), { kind: "writing", label: "Writing your suggestions…", active: false }]} />,
+    );
+    const rows = screen.getAllByTestId("manifest-row");
+    const writing = rows[rows.length - 1];
+    expect(writing.dataset.kind).toBe("writing");
+    expect(writing.dataset.active).toBeUndefined();
+    expect(writing.querySelector('[data-mark="pending"]')).not.toBeNull();
+    rerender(
+      <ManifestRows rows={[read("decklist", true), { kind: "writing", label: "Writing your suggestions…", active: true }]} />,
+    );
+    const active = screen.getAllByTestId("manifest-row").at(-1)!;
+    expect(active.dataset.active).toBe("true");
+    expect(active.querySelector('[data-mark="writing"]')).not.toBeNull();
+    // The pulse is `.anim-dots` (H35, PR 3), reusing globals.css's own reduced-motion fallback
+    // rather than inventing a new one: dropping to a still dot is already wired for that class.
+    expect(active.querySelector('[data-mark="writing"] > span')?.className).toContain("anim-dots");
+  });
+
+  it("shows the long-wait line only once it is given one, under the list", () => {
+    const { rerender } = render(
+      <ManifestRows rows={[{ kind: "writing", label: "Writing your suggestions…", active: true }]} />,
+    );
+    expect(screen.queryByText("Taking longer than usual.")).toBeNull();
+    rerender(
+      <ManifestRows
+        rows={[{ kind: "writing", label: "Writing your suggestions…", active: true }]}
+        writingLong="Taking longer than usual."
+      />,
+    );
+    expect(screen.getByText("Taking longer than usual.")).toBeInTheDocument();
+  });
+
+  it("offers the description row's own link only when the row is absent and the caller wants it", () => {
+    const row: ManifestRow = { kind: "read", key: "description", label: "Your description", count: "none yet", done: false, describeLink: true };
+    const onDescribe = vi.fn();
+    const { rerender } = render(<ManifestRows rows={[row]} />);
+    expect(screen.queryByRole("button", { name: "Describe your deck →" })).toBeNull();
+    rerender(<ManifestRows rows={[row]} onDescribe={onDescribe} />);
+    const button = screen.getByRole("button", { name: "Describe your deck →" });
+    fireEvent.click(button);
+    expect(onDescribe).toHaveBeenCalledOnce();
+  });
+});

@@ -36,7 +36,6 @@ vi.mock("../../db", () => ({
   },
 }));
 vi.mock("../../lib/decks/tuning-read", () => ({
-  EVIDENCE_STEPS: ["games", "notes", "decklist", "intent", "collection"],
   tuningInputs: async () => {
     calls.inputs += 1;
     return { head: {}, games: [], intent: null, declared: null, fingerprint: "fp", locked: [], allLocked: calls.allLocked };
@@ -47,7 +46,6 @@ vi.mock("../../lib/decks/tuning-read", () => ({
     stale: false, modelVersionMoved: false, retired: null, allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null }, gameCount: 0, newestPriceAsOf: null,
     allLocked: opts?.allLocked ?? null,
   }),
-  readEvidenceStep: async () => 1,
   readOwnedOracleIds: async () => new Set(),
   readTuningContext: async () => { calls.contextRead += 1; return { overview: { strategy: ["Attack."], keyCards: ["Oxen"] }, universal: [{ oracleId: "ring", name: "Sol Ring" }] }; },
   profileOfHead: async () => {
@@ -92,7 +90,7 @@ vi.mock("../../lib/tuning/verdicts", () => ({
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { creditsCopy } from "../../lib/copy/credits";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
-import { applySuggestion, readTuningEvidence, runTuning, saveDeckDescription, saveDeckHeader, saveDeckLimits } from "./tuning-actions";
+import { applySuggestion, runTuning, saveDeckDescription, saveDeckHeader, saveDeckLimits } from "./tuning-actions";
 
 const DECK = "11111111-1111-4111-8111-111111111111";
 
@@ -209,10 +207,6 @@ describe("ids off the wire", () => {
     expect(calls.applied).toBe(0);
   });
 
-  it("reads no evidence step it does not know", async () => {
-    expect(await readTuningEvidence(DECK, "prices" as never)).toBeNull();
-    expect(await readTuningEvidence(DECK, "games")).toBe(1);
-  });
 });
 
 describe("saveDeckDescription's field", () => {
