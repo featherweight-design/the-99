@@ -14,7 +14,7 @@
 // button or a link (`update-diff-row.tsx`). One mechanism in one place beats a
 // `stopPropagation` in every control the plate happens to contain.
 
-import { useEffect, useId, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useId, useRef, useState, useTransition } from "react";
 import { pullCardFromDeck, type PullResult } from "../../app/decks/actions";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
@@ -283,6 +283,24 @@ function SourcePicker({
     draftAnnouncer();
   }, []);
 
+  // `useCallback`, not a plain function — found by Copilot's round-1 review: the outside-press
+  // effect below depends on `close` to enforce design state 8 ("outside press does nothing
+  // while pulling"), and a plain function is a new identity every render, which either goes
+  // missing from the deps array (the stale-closure bug the review caught) or re-subscribes the
+  // listener on every render if it is added. `pending` in its own deps is what makes a FRESH
+  // `close` available exactly when pulling starts or ends.
+  const close = useCallback(
+    (restoreFocus = true) => {
+      // Design state 8: pulling disables Cancel too, and Esc/the scrim do nothing.
+      if (pending) return;
+      setOpen(false);
+      setSelectedId(defaultId);
+      setError(null);
+      if (restoreFocus) triggerRef.current?.focus();
+    },
+    [pending, defaultId, triggerRef],
+  );
+
   // The popover has no backdrop (desktop only — the sheet has its own scrim and
   // dismisses through `useDialogA11y`/`Sheet`'s own wiring), so an outside press
   // is what dismisses it, scoped to the wrapper so the trigger's own toggle is
@@ -294,17 +312,7 @@ function SourcePicker({
     }
     window.addEventListener("pointerdown", onPointerDown);
     return () => window.removeEventListener("pointerdown", onPointerDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `close` is stable in shape, not identity
-  }, [isDesktop, open]);
-
-  function close(restoreFocus = true) {
-    // Design state 8: pulling disables Cancel too, and Esc/the scrim do nothing.
-    if (pending) return;
-    setOpen(false);
-    setSelectedId(defaultId);
-    setError(null);
-    if (restoreFocus) triggerRef.current?.focus();
-  }
+  }, [isDesktop, open, close]);
 
   const chosen = claims.find((c) => c.id === selectedId) ?? null;
 

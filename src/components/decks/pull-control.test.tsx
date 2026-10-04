@@ -5,7 +5,7 @@
 // its own.
 
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DeckClaim } from "../../lib/decks/availability";
@@ -434,5 +434,39 @@ describe("PullControl — 2+ choosable sources", () => {
     });
     expect(screen.getByRole("dialog")).toBeTruthy();
     expect(screen.getByRole("alert").textContent).toContain("Release the card there");
+  });
+
+  // Design state 8: "Esc and scrim do nothing" while pulling. Found by Copilot's round-1
+  // review: the outside-press listener closed over a stale `close` that still believed
+  // nothing was pending, so a press landing during the write dismissed the list anyway.
+  it("ignores an outside press while a pull is in flight", async () => {
+    setViewport(true);
+    let resolvePull: (r: Awaited<ReturnType<typeof pullCardFromDeck>>) => void;
+    vi.mocked(pullCardFromDeck).mockReturnValue(
+      new Promise((resolve) => {
+        resolvePull = resolve;
+      }),
+    );
+    render(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claims={[FREE_TO_PULL, OTHER_SOURCE]}
+        defaultId={FREE_TO_PULL.id}
+        onPulled={noop}
+      />,
+    );
+    act(() => {
+      screen.getByRole("button", { name: MANY_NAME }).click();
+    });
+    act(() => {
+      screen.getByRole("button", { name: sourceCopy.confirm(FREE_TO_PULL.name) }).click();
+    });
+    // Still pending — the write has not resolved yet.
+    fireEvent.pointerDown(document.body);
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    await act(async () => {
+      resolvePull({ ok: true, buy: 1, total: "$1.00" });
+    });
   });
 });
