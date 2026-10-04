@@ -114,10 +114,42 @@ describe("validateJob", () => {
 
     it("repairs nothing else: a misplaced to beside a real defect still fails", () => {
       const fixed = normalizeJob({
-        ...warg, to: "battlefield", threshold: { stat: "creatures", op: ">=", value: "X" },
+        ...warg, to: "battlefield", threshold: { stat: "creatures", op: "~", value: 3 },
       });
-      expect(validateJob(fixed)).toContain("threshold.value");
+      expect(validateJob(fixed)).toContain('threshold.op "~"');
       expect(validateJob(fixed).some((p) => p.startsWith("to on a"))).toBe(false);
+    });
+
+    // The v8 trial's other rejection (2026-10-04): a cap stated as a variable has no number, and the
+    // gold set's ruling is that such a cap is no threshold. Killing Glare, Dominate, Forced March.
+    it("strips a threshold whose value is not a number, which then validates", () => {
+      const removal = { ...warg, kind: "removal", rampKind: undefined, method: "destroy" };
+      for (const value of ["X", null, undefined]) {
+        const fixed = normalizeJob({ ...removal, threshold: { stat: "power", op: "<=", value } });
+        expect(fixed).toEqual({ ...removal, threshold: null });
+        expect(validateJob(fixed)).toEqual([]);
+      }
+    });
+
+    // Misers' Cage and Scroll of Origins: a stat the vocabulary does not have.
+    it("strips a threshold whose stat is not in the vocabulary", () => {
+      const fixed = normalizeJob({ ...warg, threshold: { stat: "cardsInHand", op: ">=", value: 7 } });
+      expect(fixed).toEqual({ ...warg, threshold: null });
+      expect(validateJob(fixed)).toEqual([]);
+    });
+
+    // Only a threshold OBJECT is repaired: an array or a string is malformed output, still refused.
+    it("leaves a threshold that is not an object for validateJob to refuse", () => {
+      for (const threshold of [[], "X"]) {
+        const job = { ...warg, threshold };
+        expect(normalizeJob(job)).toBe(job);
+        expect(validateJob(job).length).toBeGreaterThan(0);
+      }
+    });
+
+    it("keeps a readable threshold exactly as given", () => {
+      const job = { ...warg, threshold: { stat: "creatures", op: ">=", value: 3 } };
+      expect(normalizeJob(job)).toBe(job);
     });
 
     it("never mutates its input, and passes a non-object through for validateJob to refuse", () => {

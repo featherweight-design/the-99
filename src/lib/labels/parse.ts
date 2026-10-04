@@ -77,9 +77,10 @@ export const parseReply = (text: string): unknown => {
 
 /**
  * One card's returned jobs, screened as the stored labels are: each is normalized (`normalizeJob`
- * strips a misplaced `to` or `method`), then validated, and a job that still fails is dropped and
- * returned with its problems. The build and the sample collector both screen through this, so a
- * sample scores the same screen the labels are written through.
+ * strips a misplaced `to` or `method`, and a threshold with no number or an unknown stat), then
+ * validated, and a job that still fails is dropped and returned with its problems. The build and
+ * the sample collector both screen through this, so a sample scores the same screen the labels
+ * are written through.
  */
 export function screenJobs(jobs: readonly unknown[]): {
   kept: Job[]; rejected: { kind: unknown; problems: string[] }[];
