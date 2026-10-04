@@ -206,9 +206,13 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
       const dx = (d.samples[d.samples.length - 1]?.x ?? d.start.x) - d.start.x;
       const dir = cancelled ? null : pageDecision(dx, vx, d.width, canPrev, canNext);
       if (dir) {
-        // Held where the finger left it: the next card enters from exactly here, and with the
-        // neighbors read ahead it arrives before anything could have moved. A card that never
-        // arrives (a failed read) leaves this band mounted, so it springs back after a beat.
+        // Held where the finger left it, at the RELEASE rather than the last move (the two differ
+        // when the finger travelled after its final move event): the next card enters from
+        // exactly here, and with the neighbors read ahead it arrives before anything could have
+        // moved. A card that never arrives (a failed read) leaves this band mounted, so it
+        // springs back after a beat.
+        d.bandX = bandOffset(dx, canPrev, canNext);
+        band.style.transform = `translateX(${d.bandX}px)`;
         onPage(dir, d.bandX);
         setTimeout(() => {
           if (band.isConnected) springBack(band);
@@ -220,6 +224,11 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
     }
     if (d.axis === "y" && !d.dead && sheet) {
       const { vy } = velocity(d.samples);
+      // The release, not the last move, is where the sheet was let go.
+      if (!cancelled) {
+        const dy = (d.samples[d.samples.length - 1]?.y ?? d.start.y) - d.start.y;
+        d.sheetTop = clampSheetTop(d.startTop + dy, SHEET.fullTop, d.teaserTop);
+      }
       const to = cancelled ? (full ? "full" : "teaser") : sheetSnap(d.sheetTop, vy, SHEET.fullTop, d.teaserTop);
       sheet.style.removeProperty("--sheet-drag-top");
       delete sheet.dataset.dragging;

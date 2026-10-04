@@ -72,6 +72,35 @@ describe("useCardSheetGestures", () => {
     expect(onPage).toHaveBeenCalledWith("next", -450);
   });
 
+  it("hands over the offset at the release, not at the last move", () => {
+    const onPage = vi.fn();
+    render(<Harness onPage={onPage} />);
+    const band = screen.getByTestId("band");
+    fireEvent.pointerDown(band, { pointerId: 1, clientX: 700, clientY: 300, button: 0, pointerType: "touch" });
+    fireEvent.pointerMove(window, { pointerId: 1, clientX: 400, clientY: 302, pointerType: "touch" });
+    // The finger travels on past its last move event before it lifts.
+    fireEvent.pointerUp(window, { pointerId: 1, clientX: 250, clientY: 303, pointerType: "touch" });
+    expect(onPage).toHaveBeenCalledWith("next", -450);
+    expect(band.style.transform).toBe("translateX(-450px)");
+  });
+
+  it("snaps the sheet from where it was let go, not from its last move", () => {
+    // Timestamps set by hand: the release comes a second after the last move, so no flick is
+    // read and only the release POSITION can carry the sheet to full.
+    const at = (type: string, y: number, t: number) => {
+      const e = new PointerEvent(type, { pointerId: 1, clientX: 200, clientY: y, button: 0, pointerType: "touch", bubbles: true });
+      Object.defineProperty(e, "timeStamp", { value: t });
+      return e;
+    };
+    render(<Harness />);
+    const s = sheet();
+    fireEvent(s, at("pointerdown", 700, 0));
+    // A last move that alone would read as nearer the teaser.
+    fireEvent(window, at("pointermove", 690, 10));
+    fireEvent(window, at("pointerup", 200, 1000));
+    expect(s).toHaveAttribute("data-sheet", "full");
+  });
+
   it("follows the finger 1:1 while dragging, and springs back at an end without paging", () => {
     const onPage = vi.fn();
     render(<Harness canPrev={false} onPage={onPage} />);
