@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { Job } from "../labels/types";
-import { applyConsiderLabels, considerLabels, type ConsiderLabelDeps } from "./consider-labels";
+import { applyConsiderLabels, considerLabels, DEFAULT_DEPS, type ConsiderLabelDeps } from "./consider-labels";
 
 const ELF_RAMP: Job = {
   space: "role", kind: "ramp", rampKind: "tapsForMana", restrictedTo: "Elf", affects: "self", to: null, method: null,
@@ -38,10 +38,14 @@ describe("considerLabels", () => {
     expect(applyConsiderLabels(SUGGESTIONS, read)).toBe(SUGGESTIONS);
   });
 
-  it("reads the default switch per request, off unless exactly 'true'", async () => {
-    vi.stubEnv("LABEL_SURFACES_ENABLED", "1");
+  // The default deps read the switch per request, exactly 'true' and nothing else. Asserted on
+  // `enabled()` itself: a considerLabels call with no ids answers null whichever way the switch is.
+  it("reads the default switch per request, on only for exactly 'true'", () => {
     try {
-      expect(await considerLabels({ ...ARGS, suggestionIds: [] })).toBeNull();
+      for (const [value, on] of [["true", true], ["1", false], ["TRUE", false], ["", false]] as const) {
+        vi.stubEnv("LABEL_SURFACES_ENABLED", value);
+        expect(DEFAULT_DEPS.enabled()).toBe(on);
+      }
     } finally {
       vi.unstubAllEnvs();
     }

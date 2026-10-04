@@ -51,7 +51,7 @@ async function readLensRows(deckId: string): Promise<LensRow[]> {
   return rows.rows.map((r) => ({ oracleId: r.oracle_id, typeLine: r.type_line, oracleText: r.oracle_text, quantity: Number(r.quantity) }));
 }
 
-const DEFAULT_DEPS: ConsiderLabelDeps = {
+export const DEFAULT_DEPS: ConsiderLabelDeps = {
   enabled: () => labelSurfacesEnabled(),
   readLabels, loadCreatureTypes, loadNoncreatureSubtypes, readLensRows,
 };
