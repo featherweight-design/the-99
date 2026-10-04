@@ -404,26 +404,41 @@ describe("TuningPanel", () => {
     expect(screen.getByText(new RegExp(deckTuningCopy.failure.timeout.note))).toBeInTheDocument();
   });
 
-  // H35, PR 4a (pre-open review, round 0): a run with a MIX of a locked cut and some other
-  // dropped rule (e.g. the new price/set/owned filters) is not all-`neverCut`, so `runTuning`
-  // classifies it `ungrounded`, not `locked_only` — and the refusal sentence must still name the
-  // lock, not fall back to the fully generic body.
-  it("names a locked card over the generic body, for an ungrounded run with a mixed cause", async () => {
+  // H35, PR 4a (pre-open review, round 0; presentation per review round 3/STATES §3 state 9): a
+  // run with a MIX of a locked cut and some other dropped rule (e.g. the new price/set/owned
+  // filters) is not all-`neverCut`, so `runTuning` classifies it `ungrounded`, not `locked_only`
+  // — and the refusal sentence must still name the lock, in AnalysisBanner's "note" frame, never
+  // the generic `Failure` body.
+  it("names a locked card in AnalysisBanner's note frame, for an ungrounded run with a mixed cause", async () => {
     const failed = {
       ...okRun, id: "r2", status: "failed" as const, errorClass: "ungrounded",
       validationReport: { askedCount: 8, survivedCount: 0, keptCount: 0, refusal: { reason: "locked" as const, name: "Sol Ring" } },
     };
     await draw(deps([{ ...results, run: failed, stale: true }]));
-    expect(screen.getByTestId("tuning-failure")).toHaveTextContent(deckDescriptionCopy.refusal.locked("Sol Ring"));
+    expect(screen.queryByTestId("tuning-failure")).toBeNull();
+    const banner = screen.getByTestId("analysis-banner");
+    expect(banner).toHaveAttribute("data-mode", "note");
+    expect(banner).toHaveTextContent(deckDescriptionCopy.refusal.locked("Sol Ring"));
   });
 
-  it("names several locked cards over the generic body, for an ungrounded run with a mixed cause", async () => {
+  it("names several locked cards in AnalysisBanner's note frame, for an ungrounded run with a mixed cause", async () => {
     const failed = {
       ...okRun, id: "r2", status: "failed" as const, errorClass: "ungrounded",
       validationReport: { askedCount: 8, survivedCount: 0, keptCount: 0, refusal: { reason: "lockedMany" as const, count: 3 } },
     };
     await draw(deps([{ ...results, run: failed, stale: true }]));
-    expect(screen.getByTestId("tuning-failure")).toHaveTextContent(deckDescriptionCopy.refusal.lockedMany(3));
+    expect(screen.getByTestId("analysis-banner")).toHaveTextContent(deckDescriptionCopy.refusal.lockedMany(3));
+  });
+
+  // H35, PR 4a, review round 3: the "tooMany" caption must show at BOTH widths, in AnalysisBanner's
+  // note frame — a `desktopOnly` Lead silently hid it from every phone-width reader.
+  it("names tooMany in AnalysisBanner's note frame, with no width restriction", async () => {
+    const run = { ...okRun, validationReport: { askedCount: 8, survivedCount: 7, keptCount: 5 } };
+    await draw(deps([{ ...results, run }]));
+    const banner = screen.getByTestId("analysis-banner");
+    expect(banner).toHaveAttribute("data-mode", "note");
+    expect(banner).toHaveTextContent(deckDescriptionCopy.refusal.tooMany(8));
+    expect(banner.className).not.toMatch(/\bhidden\b/);
   });
 
   it("disables the press when every credit is out even on an unchanged deck", async () => {

@@ -25,6 +25,7 @@ import { gateReason } from "../../lib/tuning/gate";
 import type { TuningItem, TuningState } from "../../lib/tuning/state";
 import type { RefusalDetail } from "../../lib/tuning/validate";
 import type { PrintedInSet } from "../../lib/sets/printed-in";
+import { AnalysisBanner } from "./analysis-banner";
 import { FanShuffle } from "./fan-shuffle";
 import { ManifestRows, type ManifestRow } from "./manifest-rows";
 import { MutationError } from "./mutation-error";
@@ -635,7 +636,7 @@ export function TuningPanel({
       setAnnounced(result.message);
       return;
     }
-    const failure = next?.run?.status === "failed" ? failureCopy(next.run.errorClass, next.run.validationReport?.refusal) : null;
+    const failure = next?.run?.status === "failed" ? failureCopy(next.run.errorClass) : null;
     // `result.ok` alone does not mean a set of suggestions landed — `runTuning` answers ok after
     // persisting a run that itself failed (e.g. `upstream_busy`, `locked_only`, `ungrounded`),
     // review round 1. Round 2: `!failure` alone is not enough either — a closing read that
@@ -740,7 +741,13 @@ export function TuningPanel({
   let note: string | null = null;
   let neverRun = false;
 
-  const failure = !reading && state.run?.status === "failed" ? failureCopy(state.run.errorClass, state.run.validationReport?.refusal) : null;
+  const failure = !reading && state.run?.status === "failed" ? failureCopy(state.run.errorClass) : null;
+  // "Refusal" (STATES §3 state 9): AnalysisBanner's own frame, one sentence, no button, above
+  // the set — never the generic Failure chrome. Only `ungrounded` carries a `refusal` the
+  // validator can name; `locked_only` keeps its own established copy (F10, Hugh 2026-09-25).
+  const refusal = !reading && state.run?.status === "failed" && state.run.errorClass === "ungrounded"
+    ? refusalBody(state.run.validationReport?.refusal ?? { reason: "nothingLeft" })
+    : null;
   // A failed or stopped re-run leaves the set it would have replaced on screen, still open.
   const hasSet = !reading && !state.retired && state.items.length > 0;
   const neverRunRows = manifestRows(facts, intent, null, previewSteps);
@@ -786,7 +793,7 @@ export function TuningPanel({
     if (failure) primary = { label: deckTuningCopy.failure.retry, again: false };
     body = (
       <>
-        {failure ? <Failure failure={failure} /> : null}
+        {failure ? (refusal ? <AnalysisBanner variant="note" sentence={refusal} /> : <Failure failure={failure} />) : null}
         <Lead>{copy.retiredLead(state.retired.from, state.retired.to)}</Lead>
         {checklist}
       </>
@@ -813,9 +820,9 @@ export function TuningPanel({
       : null;
     body = (
       <>
-        {failure ? <Failure failure={failure} /> : null}
+        {failure ? (refusal ? <AnalysisBanner variant="note" sentence={refusal} /> : <Failure failure={failure} />) : null}
         {answered ? null : <ReadFrom state={state} facts={facts} />}
-        {tooMany ? <Lead desktopOnly wide>{tooMany}</Lead> : null}
+        {tooMany ? <AnalysisBanner variant="note" sentence={tooMany} /> : null}
         {unchangedShown ? (
           <Unchanged state={state} intent={intent} fix={facts.fix} />
         ) : lead ? (
@@ -838,7 +845,7 @@ export function TuningPanel({
     );
     if (applied + rejected > 0 && !answered) note = copy.tally(applied, total, rejected);
   } else if (failure) {
-    body = <Failure failure={failure} />;
+    body = refusal ? <AnalysisBanner variant="note" sentence={refusal} /> : <Failure failure={failure} />;
     // No set is on screen, so the press replaces nothing: the first-run note.
     primary = { label: deckTuningCopy.failure.retry, again: false };
   } else {
@@ -1152,12 +1159,13 @@ function Unchanged({ state, intent, fix }: { state: TuningState; intent: string 
 type FailureCopy = { tag: string; heading: string; body: string; kept: string; note: string };
 
 /** "Kept for this deck" (H35, PR 4a): the sentence that names what actually caused an empty
- *  result, in place of `ungrounded`'s generic body. `locked`/`lockedMany` do reach here: a run
- *  whose drops are a MIX of a locked cut and some other rule (e.g. the new `overCap`/`offSet`
- *  filters) is not all-`neverCut`, so `runTuning` classifies it `ungrounded`, not `locked_only`
- *  (pre-open review, round 0) — `locked_only`'s own established copy (F10, Hugh 2026-09-25)
- *  covers only the all-locked case. */
-function refusalBody(refusal: RefusalDetail): string | null {
+ *  result — drawn in AnalysisBanner's own "note" frame (STATES §3 state 9: one sentence, no
+ *  button, above the set), never `Failure`'s generic chrome (review round 3). `locked`/
+ *  `lockedMany` do reach here: a run whose drops are a MIX of a locked cut and some other rule
+ *  (e.g. the new `overCap`/`offSet` filters) is not all-`neverCut`, so `runTuning` classifies it
+ *  `ungrounded`, not `locked_only` (pre-open review, round 0) — `locked_only`'s own established
+ *  copy (F10, Hugh 2026-09-25) covers only the all-locked case and keeps its own `Failure` box. */
+function refusalBody(refusal: RefusalDetail): string {
   const r = deckDescriptionCopy.refusal;
   switch (refusal.reason) {
     case "commander": return r.commander(refusal.name);
@@ -1168,16 +1176,13 @@ function refusalBody(refusal: RefusalDetail): string | null {
   }
 }
 
-function failureCopy(errorClass: string | null, refusal?: RefusalDetail | null): FailureCopy {
+function failureCopy(errorClass: string | null): FailureCopy {
   const f = deckTuningCopy.failure;
   switch (errorClass) {
     case "upstream_busy": return f.unavailable;
     case "timeout": return f.timeout;
     case "malformed": return f.malformed;
-    case "ungrounded": {
-      const body = refusal ? refusalBody(refusal) : null;
-      return body ? { ...f.ungrounded, body } : f.ungrounded;
-    }
+    case "ungrounded": return f.ungrounded;
     // F10: every suggestion cut a card the player locked. `ungrounded`'s frame, with the body and
     // the note naming the actual cause (Hugh, 2026-09-25: "log another game" does not fit it).
     case "locked_only": return { ...f.ungrounded, body: lockedCardsCopy.tuning.lockedOnlyBody, note: lockedCardsCopy.tuning.lockedOnlyNote };

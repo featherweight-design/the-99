@@ -23,26 +23,42 @@ import { WorkPulse } from "./work-pulse";
  *   ONE node, reordered at `md:`: sentence, note, button at 1300 (the note right-aligned beside the
  *   press); sentence, button, note at 390. Tied to the button by `aria-describedby`, so the cost is
  *   heard before the press. None over a blocked deck, whose press writes nothing (finding 10b).
+ *
+ * `variant="note"` (H35, PR 4a; deck-description handoff §3 state 9, engineering note 10): the
+ * SAME frame with no button and no busy/blocked machinery — Suggested changes' own refusal
+ * sentence and its `tooMany` caption, one sentence, shown at both widths, above whatever set is
+ * drawn below it. Not a new component, as the handoff asks: a second shape of this one.
  */
-export function AnalysisBanner({
-  mode,
-  busy,
-  blocked,
-  onRequest,
-  note = null,
-  see = null,
-}: {
-  mode: "stale" | "failed";
-  busy: boolean;
-  /** The line to say instead, when the deck cannot be analyzed as it stands. */
-  blocked: string | null;
-  onRequest: () => void;
-  note?: string | null;
-  /** The overview check's *See which →*, after the note (deck notices HANDOFF §6). */
-  see?: { label: string; onPress: () => void } | null;
-}) {
-  const copy = deckAnalysisCopy.banner;
+export function AnalysisBanner(props:
+  | { variant: "note"; sentence: string }
+  | {
+      variant?: "banner";
+      mode: "stale" | "failed";
+      busy: boolean;
+      /** The line to say instead, when the deck cannot be analyzed as it stands. */
+      blocked: string | null;
+      onRequest: () => void;
+      note?: string | null;
+      /** The overview check's *See which →*, after the note (deck notices HANDOFF §6). */
+      see?: { label: string; onPress: () => void } | null;
+    }) {
   const noteId = useId();
+  if (props.variant === "note") {
+    return (
+      <div
+        role="status"
+        data-testid="analysis-banner"
+        data-mode="note"
+        className="flex flex-col items-stretch gap-[12px] rounded-[11px] border border-[color:var(--border-strong)] bg-[color:var(--surface-rail)] px-[15px] py-[14px] md:py-[14px] md:pl-[20px] md:pr-[16px]"
+      >
+        <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)] md:text-[13.5px]">
+          {props.sentence}
+        </p>
+      </div>
+    );
+  }
+  const { mode, busy, blocked, onRequest, note = null, see = null } = props;
+  const copy = deckAnalysisCopy.banner;
   const disabled = busy || blocked !== null;
   const shownNote = blocked === null && !busy ? note : null;
   const sentence = blocked ?? (mode === "failed" ? copy.failedHeld : copy.stale);

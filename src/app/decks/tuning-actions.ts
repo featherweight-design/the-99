@@ -262,19 +262,16 @@ export async function runTuning(
     // `pool: "sleeveable"` already use, scoped to the model's own named cards — the pack-time
     // `owned` set above only covers cards already in the deck or in the skeleton's staples, never
     // a genuinely new suggestion.
-    // A price-read failure must never go silent while a cap is active: swallowing it turns every
-    // candidate's price into null, and the validator deliberately exempts a null price from the
-    // cap (never dropped for a cap it cannot be checked against) — so a transient failure would
-    // silently disable the cap rather than refuse the run. Swallow only when nothing is checking
-    // the figure (pre-open review round 1: price is read either way, since it's the buy tag's
-    // own figure, but only a cap depends on it surviving).
+    // Read only while a cap is active: review round 3 found that, unlike the ownership read
+    // alongside it, this figure is NEVER displayed either — the buy tag re-reads its own prices
+    // independently (`readItems`, tuning-read.ts) — so an inactive cap has no consumer to protect
+    // (round 1's own comment was wrong about that). A price-read failure must still never go
+    // silent while a cap IS active: swallowing it turns every candidate's price into null, and
+    // the validator deliberately exempts a null price from the cap (never dropped for a cap it
+    // cannot be checked against) — so a transient failure would silently disable the cap rather
+    // than refuse the run.
     const [{ prices, newestAsOf }, suggestedOwned] = await Promise.all([
-      limits.capCents === null
-        ? loadPrices(nameRows.map((r) => r.oracleId)).catch((e): Awaited<ReturnType<typeof loadPrices>> => {
-            console.error("tuning run: price read failed", e);
-            return { prices: new Map(), newestAsOf: null };
-          })
-        : loadPrices(nameRows.map((r) => r.oracleId)),
+      limits.capCents === null ? { prices: new Map(), newestAsOf: null } : loadPrices(nameRows.map((r) => r.oracleId)),
       // Read only while the owned-only filter is active: unlike price, `owned` here is never
       // displayed, only checked (`notOwned`), so an inactive filter has no consumer to protect.
       // A failure would otherwise refund a paid, otherwise-valid answer over a read nothing needs.

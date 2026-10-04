@@ -15,9 +15,13 @@ import { lockedCardsCopy } from "../copy/locked-cards";
  * instructions and the validator's checklist, one text, so the two cannot drift.
  *
  * The USER message renders what the pack holds, with three deliberate absences:
- *  - OWNERSHIP AND PRICE are not rendered. `suggestionRules.ownershipNotRanking`: they may not
- *    affect which cards are suggested or their order, and a model cannot be swayed by a fact it
- *    was never shown. The card states ownership afterwards, from the database.
+ *  - PER-CARD OWNERSHIP AND PRICE are not rendered. `suggestionRules.ownershipNotRanking`: a
+ *    fact about one candidate card may not sway which cards are suggested or their order, and a
+ *    model cannot be swayed by a fact it was never shown. The card states ownership afterwards,
+ *    from the database. This is narrower than, and does not contradict, "Kept for this deck"'s
+ *    limits (H35, PR 4a): a CONFIGURED cap, set or owned-only rule is told to the model as a
+ *    structured run parameter (`limitsRules`) and is meant to affect candidate selection — it is
+ *    the player's own rule, never a per-card fact leaking in to bias a choice.
  *  - NO BRACKET FIGURE. The app flags a swap that moves the bracket itself, through `slotDeck`.
  *  - NO NET and NO PROPORTION: the pack has already dropped both.
  * And one deliberate presence: at zero games the message SAYS no games are logged, rather than

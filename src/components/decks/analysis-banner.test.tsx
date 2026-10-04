@@ -26,3 +26,16 @@ describe("AnalysisBanner's check note", () => {
     expect(screen.queryByRole("button", { name: /See which/ })).toBeNull();
   });
 });
+
+// `variant="note"` (H35, PR 4a; deck-description handoff §3 state 9): one sentence, no button,
+// at both widths — never hidden on phone.
+describe("AnalysisBanner's note variant", () => {
+  it("shows one sentence, no button, with no width restriction", () => {
+    render(<AnalysisBanner variant="note" sentence="Sol Ring is this deck's commander, so no swap cuts it." />);
+    const banner = screen.getByTestId("analysis-banner");
+    expect(banner).toHaveAttribute("data-mode", "note");
+    expect(banner).toHaveTextContent("Sol Ring is this deck's commander, so no swap cuts it.");
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(banner.className).not.toMatch(/\bhidden\b/);
+  });
+});
