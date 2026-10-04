@@ -278,10 +278,36 @@ function SourcePicker({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const { at, place, triggerRef, panelRef } = useAnchoredPanel({ open, width: POPOVER_WIDTH });
+  // Where focus goes once a successful pull unmounts the dialog — the row's own card trigger,
+  // which survives the refresh. `useDialogA11y`'s own default (the popover/sheet trigger) is
+  // right for every OTHER close path, so this is set only inside `confirm`'s success branch
+  // and read once, at cleanup — see `returnFocusRef`'s own doc in `dialog.ts`.
+  const returnFocusAfterPull = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     draftAnnouncer();
   }, []);
+
+  // Design state 9: a refusal caused by the source going locked/commander between this list
+  // opening and the confirm leaves a STALE pick — found by Copilot's round-2 review. Reconciled
+  // during RENDER, not an effect (this repo's own rule — adjusting state from a changed prop is
+  // exactly the case React's effect-avoidance guide names, and this codebase's eslint config
+  // rejects a synchronous `setState` inside a plain effect for it): whenever `claims` arrives as
+  // a NEW array — a refresh after any refusal, triggered below — the first still-choosable claim
+  // takes the current pick's place if it has stopped being one, the same claim the list's own
+  // default would land on if it were opening fresh.
+  // `useState`, not a ref: this lint config rejects reading or writing a ref during render
+  // (the React Compiler rule), so the "did this prop change" comparison is state too, following
+  // React's own "adjusting state when a prop changes" pattern.
+  const [prevClaims, setPrevClaims] = useState(claims);
+  if (prevClaims !== claims) {
+    setPrevClaims(claims);
+    const stillChoosable = claims.some((c) => c.id === selectedId && !c.commander && !c.locked);
+    if (!stillChoosable) {
+      const next = claims.find((c) => !c.commander && !c.locked);
+      if (next && next.id !== selectedId) setSelectedId(next.id);
+    }
+  }
 
   // `useCallback`, not a plain function — found by Copilot's round-1 review: the outside-press
   // effect below depends on `close` to enforce design state 8 ("outside press does nothing
@@ -328,16 +354,21 @@ function SourcePicker({
         return;
       }
       if (!result.ok) {
-        // Design state 9: refused, the list stays open with the pick kept — the
-        // reader can try again or choose a different source.
+        // Design state 9: refused, the list stays open with the pick kept — the reader can try
+        // again or choose a different source. `onPulled` still runs: every figure on this page
+        // is the server's, so a refusal is also a reason to re-read — it is what lets a claim
+        // that went locked or commander in the meantime redraw disabled, which the reconciling
+        // effect above then moves the pick off of.
         setError(result.message);
+        onPulled();
         return;
       }
       draftAnnouncer().textContent =
         result.buy === null
           ? deckVersioningCopy.commit.pullAnnouncedBuyUnknown(card.name, chosen.name)
           : deckVersioningCopy.commit.pullAnnounced(card.name, chosen.name, result.buy, result.total);
-      rowTrigger(wrapperRef.current, card.name)?.focus();
+      // Read at `useDialogA11y`'s cleanup, not now — see the ref's own doc above.
+      returnFocusAfterPull.current = rowTrigger(wrapperRef.current, card.name);
       setOpen(false);
       onPulled();
     });
@@ -369,7 +400,12 @@ function SourcePicker({
         aria-expanded={open}
         aria-label={copy.pullManyA11y(card.name, claims.filter((c) => !c.commander && !c.locked).length)}
         className={PULL_BUTTON}
+        // Design state 8 extends to the trigger itself — found by Copilot's round-2 review: an
+        // enabled trigger still visible above the popover could be pressed mid-pull, toggling
+        // `open` closed and silently dropping a refusal the reader never saw.
+        disabled={pending}
         onClick={() => {
+          if (pending) return;
           if (!open) place();
           setOpen((o) => !o);
           setSelectedId(defaultId);
@@ -379,19 +415,19 @@ function SourcePicker({
         {copy.pull} <span aria-hidden="true">▾</span>
       </button>
       {open && isDesktop && (
-        <Popover ref={panelRef} at={at} titleId={titleId} onDismiss={close}>
+        <Popover ref={panelRef} at={at} titleId={titleId} onDismiss={close} returnFocusRef={returnFocusAfterPull}>
           {body}
         </Popover>
       )}
       {open && !isDesktop && (
-        <Sheet
-          open={open}
+        <MobileSheet
           onDismiss={close}
-          ariaLabel={sourceCopy.title(card.name)}
           panelRef={panelRef}
+          returnFocusRef={returnFocusAfterPull}
+          ariaLabel={sourceCopy.title(card.name)}
         >
           {body}
-        </Sheet>
+        </MobileSheet>
       )}
     </div>
   );
@@ -402,18 +438,20 @@ function Popover({
   at,
   titleId,
   onDismiss,
+  returnFocusRef,
   children,
 }: {
   ref: React.RefObject<HTMLDivElement | null>;
   at: { top: number; left: number } | null;
   titleId: string;
   onDismiss: () => void;
+  returnFocusRef: React.RefObject<HTMLElement | null>;
   children: React.ReactNode;
 }) {
   // `lockScroll: false` — a non-modal popover with no backdrop; an outside press
   // dismisses it (above), the same exemption the account menu and the deck ⋯
   // menu's own panel take.
-  useDialogA11y(ref, onDismiss, { lockScroll: false });
+  useDialogA11y(ref, onDismiss, { lockScroll: false, returnFocusRef });
   return (
     <div
       ref={ref}
@@ -426,6 +464,36 @@ function Popover({
     >
       {children}
     </div>
+  );
+}
+
+/**
+ * `Sheet` deliberately owns no focus trap, Escape handling or scroll lock of its own — every
+ * caller already holds the page through `useDialogA11y` or `useScrollLock` (`sheet.tsx`'s own
+ * header comment). Found MISSING here by Copilot's round-2 review: the mobile branch mounted
+ * `Sheet` directly, so at phone widths Tab could escape the list, Escape did nothing and the
+ * page stayed scrollable behind an `aria-modal` surface. A separate component, not a hook call
+ * inlined into `SourcePicker`, because `useDialogA11y` has to mount and unmount WITH the dialog
+ * — the same shape `deck-filter-sheet.tsx`'s own `SheetBody` takes for the same reason.
+ */
+function MobileSheet({
+  onDismiss,
+  panelRef,
+  returnFocusRef,
+  ariaLabel,
+  children,
+}: {
+  onDismiss: () => void;
+  panelRef: React.RefObject<HTMLDivElement | null>;
+  returnFocusRef: React.RefObject<HTMLElement | null>;
+  ariaLabel: string;
+  children: React.ReactNode;
+}) {
+  useDialogA11y(panelRef, onDismiss, { returnFocusRef });
+  return (
+    <Sheet open onDismiss={onDismiss} ariaLabel={ariaLabel} panelRef={panelRef}>
+      {children}
+    </Sheet>
   );
 }
 
@@ -478,6 +546,11 @@ function SourcePickerBody({
       <p id={`${titleId}-title`} className="m-0 font-sans text-[13px] font-semibold text-[color:var(--fg)]">
         {sourceCopy.title(card.name)}
       </p>
+      {/* Found missing by Copilot's round-2 review: `sourceCopy.order` was defined for exactly
+          this line (the handoff draws it under the title in both shells) and never rendered. */}
+      <p className="m-0 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--fg-faint)]">
+        {sourceCopy.order}
+      </p>
       <div role="radiogroup" aria-labelledby={`${titleId}-title`} className="flex flex-col gap-[6px]">
         {claims.map((claim, i) => {
           const disabled = claim.commander || claim.locked;
@@ -498,9 +571,11 @@ function SourcePickerBody({
               onClick={() => !disabled && onSelect(claim.id)}
               onKeyDown={onKeyDown}
               aria-label={
-                disabled
-                  ? lockedCardsCopy.pull.a11y(claim.name, card.name)
-                  : sourceCopy.optionA11y(claim.name, stamp(claim), leaves ?? claim.quantity, claim.pending)
+                claim.commander
+                  ? copy.commanderGuardA11y(claim.name, card.name)
+                  : claim.locked
+                    ? lockedCardsCopy.pull.a11y(claim.name, card.name)
+                    : sourceCopy.optionA11y(claim.name, stamp(claim), leaves, claim.pending)
               }
               className={`flex items-center justify-between gap-[10px] rounded-[8px] px-[10px] py-[8px] text-left font-sans text-[12.5px] ${
                 disabled

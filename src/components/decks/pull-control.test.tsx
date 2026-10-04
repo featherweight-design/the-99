@@ -469,4 +469,145 @@ describe("PullControl — 2+ choosable sources", () => {
       resolvePull({ ok: true, buy: 1, total: "$1.00" });
     });
   });
+
+  it("disables the trigger itself while pulling, so it cannot be pressed to dismiss the list", async () => {
+    setViewport(true);
+    let resolvePull: (r: Awaited<ReturnType<typeof pullCardFromDeck>>) => void;
+    vi.mocked(pullCardFromDeck).mockReturnValue(
+      new Promise((resolve) => {
+        resolvePull = resolve;
+      }),
+    );
+    render(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claims={[FREE_TO_PULL, OTHER_SOURCE]}
+        defaultId={FREE_TO_PULL.id}
+        onPulled={noop}
+      />,
+    );
+    act(() => {
+      screen.getByRole("button", { name: MANY_NAME }).click();
+    });
+    act(() => {
+      screen.getByRole("button", { name: sourceCopy.confirm(FREE_TO_PULL.name) }).click();
+    });
+    expect(screen.getByRole("button", { name: MANY_NAME })).toBeDisabled();
+    await act(async () => {
+      resolvePull({ ok: true, buy: 1, total: "$1.00" });
+    });
+  });
+
+  it("names the chronological order under the title", () => {
+    setViewport(true);
+    render(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claims={[FREE_TO_PULL, OTHER_SOURCE]}
+        defaultId={FREE_TO_PULL.id}
+        onPulled={noop}
+      />,
+    );
+    act(() => {
+      screen.getByRole("button", { name: MANY_NAME }).click();
+    });
+    expect(screen.getByText(sourceCopy.order)).toBeTruthy();
+  });
+
+  // Design state 9: a refusal caused by the source going locked/commander in the meantime moves
+  // the pick off a now-stale claim once fresher `claims` arrive (a parent refresh after the
+  // refusal — `onPulled` is called on a refusal too, see `review-changes.test.tsx`).
+  it("moves the pick off a claim that stops being choosable once fresher claims arrive", () => {
+    setViewport(true);
+    // A THIRD choosable claim, so choosableCount stays at 2 once FREE_TO_PULL locks — otherwise
+    // the row would drop to the single-tap arm (design call 5) and the list would not be the
+    // thing being asserted here.
+    const THIRD: DeckClaim = { ...OTHER_SOURCE, id: "d5", name: "Third Source", pending: false };
+    const view = render(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claims={[FREE_TO_PULL, OTHER_SOURCE, THIRD]}
+        defaultId={FREE_TO_PULL.id}
+        onPulled={noop}
+      />,
+    );
+    act(() => {
+      screen.getByRole("button", { name: copy.pullManyA11y(CARD.name, 3) }).click();
+    });
+    expect(
+      screen.getByRole("radio", { name: new RegExp(FREE_TO_PULL.name) }).getAttribute("aria-checked"),
+    ).toBe("true");
+    // The server's fresh read: FREE_TO_PULL has gone locked.
+    view.rerender(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claims={[{ ...FREE_TO_PULL, locked: true }, OTHER_SOURCE, THIRD]}
+        defaultId={FREE_TO_PULL.id}
+        onPulled={noop}
+      />,
+    );
+    expect(
+      screen.getByRole("radio", { name: new RegExp(OTHER_SOURCE.name) }).getAttribute("aria-checked"),
+    ).toBe("true");
+    expect(
+      screen.getByRole("radio", { name: new RegExp(FREE_TO_PULL.name) }).getAttribute("aria-checked"),
+    ).toBe("false");
+  });
+
+  // Found missing by Copilot's round-2 review: `Sheet` owns no focus trap or Escape handling of
+  // its own — every caller wires `useDialogA11y` itself, and the mobile branch here did not.
+  it("wires Escape to dismiss at phone width too", () => {
+    setViewport(false);
+    render(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claims={[FREE_TO_PULL, OTHER_SOURCE]}
+        defaultId={FREE_TO_PULL.id}
+        onPulled={noop}
+      />,
+    );
+    act(() => {
+      screen.getByRole("button", { name: MANY_NAME }).click();
+    });
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    act(() => {
+      fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    });
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  // Found by Copilot's round-2 review: `useDialogA11y`'s own default returns focus to the
+  // POPOVER trigger on unmount, undoing a manual focus call made just before closing it.
+  it("leaves focus on the row's card trigger after a successful pull from the list", async () => {
+    setViewport(true);
+    vi.mocked(pullCardFromDeck).mockResolvedValue({ ok: true, buy: 1, total: "$1.00" });
+    render(
+      <div>
+        <button type="button" aria-label={cardDetailCopy.triggerAria(CARD.name)}>
+          {CARD.name}
+        </button>
+        <PullControl
+          deckId="d"
+          card={CARD}
+          claims={[FREE_TO_PULL, OTHER_SOURCE]}
+          defaultId={FREE_TO_PULL.id}
+          onPulled={noop}
+        />
+      </div>,
+    );
+    act(() => {
+      screen.getByRole("button", { name: MANY_NAME }).click();
+    });
+    await act(async () => {
+      screen.getByRole("button", { name: sourceCopy.confirm(FREE_TO_PULL.name) }).click();
+    });
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: cardDetailCopy.triggerAria(CARD.name) }),
+    );
+  });
 });

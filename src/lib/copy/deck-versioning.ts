@@ -250,8 +250,12 @@ export const deckVersioningCopy = {
       joinsDraft: "joins its draft",
       lockedReason: "locked there, so Pull it passes it by",
       commanderReason: "its commander",
-      optionA11y: (deck: string, stamp: string, count: number, joins: boolean) =>
-        `${deck}, ${stamp}. Leaves it ${count} cards${joins ? ", in its draft" : ", in a new draft"}.`,
+      // `count` is null when the figure read failed — the same degrade the visible text makes
+      // (round-2 finding: a prior version filled a missing figure with the card's own `quantity`,
+      // which is not a card count at all, and announced it as one).
+      optionA11y: (deck: string, stamp: string, count: number | null, joins: boolean) =>
+        `${deck}, ${stamp}.` +
+        (count === null ? "" : ` Leaves it ${count} cards${joins ? ", in its draft" : ", in a new draft"}.`),
       consequenceNew: (deck: string, card: string) =>
         `${deck} goes into a draft with ${card} going out. Discard that draft and the card goes back.`,
       consequenceJoins: (deck: string, card: string) =>
