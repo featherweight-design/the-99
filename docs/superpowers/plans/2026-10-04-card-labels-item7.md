@@ -35,7 +35,7 @@ Written 2026-10-04 against `origin/main`, after the v8 relabel (#1241, #1246, #1
 
 ## The switch
 
-Add `LABEL_SURFACES_ENABLED` (`src/lib/labels/read.ts`, `labelSurfacesEnabled()`, exact string `'true'`, read per request). Reusing `STAND_IN_LABELS_ENABLED` would switch these Consider changes on in staging the moment they deploy and tie their production release to the stand-ins sheet's, which Hugh walks separately (every feature behind its own switch, the 2026-09-24 release ruling). No About entry is owed (a refinement of an existing surface, not a new capability; Hugh's call), so the switch is not added to `SWITCHES` in `src/lib/about/visible.ts`; if Hugh rules an entry is owed, the switch is added there in the same PR as the entry.
+Add `LABEL_SURFACES_ENABLED` (`src/lib/labels/read.ts`, `labelSurfacesEnabled()`, exact string `'true'`, read per request). Reusing `STAND_IN_LABELS_ENABLED` would switch these Consider changes on in staging the moment they deploy and tie their production release to the stand-ins sheet's, which Hugh walks separately (every feature behind its own switch, the 2026-09-24 release ruling). The plan ASSUMES no About entry is owed (a refinement of an existing surface, not a new capability), pending Hugh's answer to Open question 4; until he answers, the switch is not added to `SWITCHES` in `src/lib/about/visible.ts`. If he rules an entry is owed, the switch is added there in the same PR as the entry.
 
 ## Design round
 
@@ -63,15 +63,20 @@ Files (about 9, under 450 lines):
 
 ```ts
 // src/lib/labels/lens.ts
+type LensRow = { typeLine: string; oracleText: string | null; quantity: number };
 export type LensInput = {
-  draft: readonly { typeLine: string; oracleText: string | null; quantity: number }[];
-  commanderTypeLines: readonly string[];
+  /** The FULL draft: `keyType` reads these, as gather.ts:183-189 does. */
+  keyRows: readonly LensRow[];
+  /** Draft rows PLUS commander rows (type line AND oracle text, so a commander's token subtypes
+   *  count), MINUS any cut card: `held` and `heldTypes` read these. */
+  heldRows: readonly LensRow[];
   creatureTypes: ReadonlySet<string>;
   noncreatureSubtypes: ReadonlySet<string>;
 };
 export function deckLens(i: LensInput): DeckLens // keyType, isSubtype, held, heldTypes, exactly as gather.ts builds them
 ```
-- [ ] Move the body of gather.ts `lens()` here; gather passes `others` (the cut card excluded) as `draft` plus commander rows, as today.
+- [ ] Move the body of gather.ts `lens()` here. The two inputs stay separate because gather computes them from different rows: `keyType` from the full draft, `held`/`heldTypes` from draft plus commander rows minus the cut card. gather passes exactly those; the deck page passes the full draft for both plus its commander rows, with no cut.
+- [ ] Tests: `keyType` ignores the cut card's exclusion and the commander rows; a commander's oracle-text token subtype (a Treasure maker) is held; a cut card is not held.
 - [ ] Run `pnpm test src/lib/swaps` before and after; same pass count, no snapshot change.
 
 ### Task A2: the rule
@@ -101,19 +106,19 @@ Tests (`consider.test.ts`):
 
 ```ts
 // src/lib/decks/consider-labels.ts
-export type ConsiderLabelDeps = { readLabels; loadCreatureTypes; loadNoncreatureSubtypes; readLensRows: (deckId: string) => Promise<LensInput["draft"]> };
+export type ConsiderLabelDeps = { readLabels; loadCreatureTypes; loadNoncreatureSubtypes; readLensRows: (deckId: string) => Promise<LensInput["keyRows"]> };
 export async function considerLabels(args: { deckId: string; suggestionIds: string[]; commanderTypeLines: string[] },
   deps?: ConsiderLabelDeps): Promise<{ labels: Map<string, Job[]>; lens: DeckLens; commanderTypes: string[]; isCreatureType } | null>
 ```
 `readLensRows` is one query: draft `deck_cards` joined to `cards` for `type_line, oracle_text, quantity`, scoped by the deck id the page has already guarded.
 - [ ] Test: switch off returns null and calls no dep.
 - [ ] Test: `readLabels` is called once, with exactly the suggestion ids (no candidates, no deck cards).
-- [ ] Page: run it in the existing `Promise.all` at ~L313, `.catch(() => null)` like its neighbours (a failed read filters nothing). Apply `filterConsider` to `suggestions` before `ownedIds`/`pricedSuggestions` are built.
+- [ ] Page: run it in the existing `Promise.all` at ~L313, `.catch(() => null)` like its neighbours (a failed read filters nothing). `ownedIds` is built before that wave (~L278), so the ancillary reads OVERFETCH over the pre-filter suggestions, deliberately: a dropped pick costs a few extra ids in reads that are already batched, and nothing is serialized ahead of the wave. `filterConsider` is applied at the render boundary, after the wave, to the list the panel receives.
 - [ ] Mutations, each must fail a test: drop the `reasonType === "role"` guard; drop the commander-type lens; treat an absent label as irrelevant; ignore the switch.
 
 ### Task A4: verify
 - [ ] Pre-push gate (`pnpm typecheck && pnpm lint && pnpm test`, stub-DB build).
-- [ ] Throwaway READ-ONLY staging measurement (scratchpad script, `default_transaction_read_only=on` asserted, as the comparison did): for every staging deck, build the owned pool (`ownedColorLegalPool`), the mix (`loadSkeletonForCommanders`), `suggestDeck` with `edhrecTopCards: null` (no EDHREC fetch, which would write `edhrec_cache`), and count role picks the filter drops, with the ten most-dropped names. Numbers and names go in the PR body. A drop on a card that plainly helps the deck is a stop.
+- [ ] Throwaway READ-ONLY staging measurement (scratchpad script, `default_transaction_read_only=on` asserted, as the comparison did). `suggestDeck` adds EDHREC picks first and counts their roles before choosing role-gap picks (`suggest.ts:197-227`), and the loader excludes cards already in the deck (`suggestions-read.ts:170-174`), so the measurement must reproduce both: EDHREC picks from the STORED `edhrec_cache` rows only (never a fetch, which writes the cache), the same available pool and deck exclusion as `loadDeckSuggestions`. A deck whose EDHREC page is not cached is reported as not reproducible rather than measured with `edhrecTopCards: null`. Count role picks the filter drops, with the ten most-dropped names, in the PR body. A drop on a card that plainly helps the deck is a stop.
 - [ ] Contact sheet: `docs/superpowers/inventories/label-surfaces.json`, the Consider tab reached by a press, 390 and 1300, on a `pull:staging` copy in local-dev, switch on and off.
 
 ## PR B: shelf grouping for EDHREC picks (item 3)
@@ -137,7 +142,7 @@ export function shelfRoleOf(s: DeckSuggestion & { labelRole?: MixRole | null }):
   return s.labelRole ?? "other";                                            // promote from Other only
 }
 ```
-`labelRole` is required on the attached type and nullable in value, the `facts` rule. **Promote from Other only**: a card text already shelves never moves, which keeps the label from relocating text-correct cards and keeps the header mismatch (Open question 1) to cards that today sit under Other. `role` is untouched, so the optimistic add and the strip are unchanged.
+`labelRole` is attached ONLY while the switch is on: with it off, no property is added and the serialized suggestion is byte-identical to main. Enabled suggestions use a separate type (`DeckSuggestionWithFacts & { labelRole: MixRole | null }`), required and nullable there, the `facts` rule, so the switch-on path cannot forget it. **Promote from Other only**: a card text already shelves never moves, which keeps the label from relocating text-correct cards and keeps the header mismatch (Open question 1) to cards that today sit under Other. `role` is untouched, so the optimistic add and the strip are unchanged.
 
 Tests:
 - [ ] Cyclonic Rift (text other, label removal/bounce): Removal shelf. Nature's Lore (text other, label ramp/fetchesLand): Ramp.
