@@ -1478,6 +1478,26 @@ describe("CardDetailProvider pages the desktop carousel (H23 PR 2)", () => {
     );
   const press = () => act(async () => { fireEvent.click(screen.getByText("open")); });
 
+  it("carries a phone swipe's release offset through to the arriving card's entrance", async () => {
+    // End to end: the gesture's `onNext(offset)`, the provider's `enterOffset` state, and the
+    // arriving modal's `--enter-x`. Each half has its own test; this one breaks if the bridge does.
+    stubMinWidth(false);
+    mount("o-b");
+    await press();
+    const band = await screen.findByTestId("card-band");
+    await act(async () => {
+      fireEvent.pointerDown(band, { pointerId: 1, clientX: 700, clientY: 300, button: 0, pointerType: "touch" });
+      for (let i = 1; i <= 4; i++) {
+        fireEvent.pointerMove(window, { pointerId: 1, clientX: 700 - (450 * i) / 4, clientY: 300 + i, pointerType: "touch" });
+      }
+      fireEvent.pointerUp(window, { pointerId: 1, clientX: 250, clientY: 305, pointerType: "touch" });
+    });
+    await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName(/Card C/));
+    const art = screen.getByTestId("modal-art-mobile");
+    expect(art).toHaveClass("anim-phone-card-enter");
+    expect(art.style.getPropertyValue("--enter-x")).toBe("calc(86.875% + 12px + -450px)");
+  });
+
   it("draws both neighbor plates at the wide threshold, with art and with a gradient", async () => {
     stubMinWidth(true);
     mount("o-b");

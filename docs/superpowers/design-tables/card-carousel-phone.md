@@ -9,7 +9,8 @@ and a browser walk at 390x844 and 360x640 (Chromium with real CDP touch, and Web
 are from `getBoundingClientRect` at 390x844 unless marked.
 
 Copy wording is `/copy-review`'s, not this table's. The three R2 keys (`cardSheetCopy.expand`,
-`grabberAria(expanded)`) are verified as structure only.
+`grabberAria(expanded)` and `printing(setCode, collectorNumber)`) are verified as structure only:
+the right key at the right place with the right arguments.
 
 ## Wash (whole dialog)
 
