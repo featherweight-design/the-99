@@ -7,6 +7,12 @@ import type { SQL } from "drizzle-orm";
 const calls = vi.hoisted(() => ({ inputs: 0, started: 0, applied: 0, saved: 0, startOpts: undefined as unknown, startKind: "in_flight",
   reachModel: false, finished: [] as unknown[][], modelRequest: undefined as unknown, modelOutcome: undefined as unknown,
   contextRead: 0, packInput: undefined as unknown, allLocked: null as string | null,
+  // H35, PR 4a (8-asked/5-kept): a test-supplied pack and catalog, so a full run can reach the
+  // real catalog read, price read and `validateSuggestions` rather than throwing on a bare `db`
+  // stub. `persisted` captures `persistRun`'s own arguments, the first of which is `withBracketAfter`'s
+  // return — mocked here to echo its own `sized` argument back, since the real slicing happens
+  // BEFORE that call.
+  evidencePack: undefined as unknown, catalogRows: [] as unknown[], persisted: [] as unknown[][],
   // `saveDeckHeader`'s one query shape: `db.update(decks).set(values).where(cond).returning(shape)`.
   // `headerUpdateRows` is the row count the "owned deck" where-clause would have matched —
   // set to `[]` to simulate a deck that is not this user's (or does not exist).
@@ -33,12 +39,19 @@ vi.mock("../../db", () => ({
         },
       }),
     }),
+    // The one catalog read `runTuning` makes after a reply: `db.select({...}).from(cards).where(...)`.
+    // Canned, never a real query — `calls.catalogRows` is the only thing a test configures.
+    select: () => ({ from: () => ({ where: async () => calls.catalogRows }) }),
   },
 }));
+vi.mock("../../lib/decks/price-query", () => ({ loadPrices: async () => ({ prices: new Map(), newestAsOf: null }) }));
 vi.mock("../../lib/decks/tuning-read", () => ({
   tuningInputs: async () => {
     calls.inputs += 1;
-    return { head: {}, games: [], intent: null, declared: null, fingerprint: "fp", locked: [], allLocked: calls.allLocked };
+    return {
+      head: {}, games: [], intent: null, declared: null, fingerprint: "fp", locked: [], allLocked: calls.allLocked,
+      limits: { capCents: null, sets: [], ownedOnly: false },
+    };
   },
   // A deck whose last run saw exactly this fingerprint: the gate reads `unchanged`.
   readTuningState: async (_d: string, _u: string, _f: string, _n: Date, opts?: { allLocked?: string | null }) => ({
@@ -52,7 +65,9 @@ vi.mock("../../lib/decks/tuning-read", () => ({
     if (!calls.reachModel) throw new Error("stop after the gate");
     return { cards: [], skeleton: { staples: [] } };
   },
-  withBracketAfter: async () => [],
+  // Echoes its own `sized` argument back: the real 8-to-5 slice happens before this call, so
+  // this must never reshape what reaches `persistRun`.
+  withBracketAfter: async (..._args: unknown[]) => _args[3],
   commanderName: async () => "Kykar, Wind's Fury",
 }));
 vi.mock("../../lib/tuning/run-store", () => ({
@@ -63,11 +78,13 @@ vi.mock("../../lib/tuning/run-store", () => ({
     return calls.startKind === "started" ? { kind: "started", runId: "run_1", callId: "call_1" } : { kind: calls.startKind };
   },
   finishRun: async (...args: unknown[]) => { calls.finished.push(args); return true; },
-  persistRun: async () => true,
+  persistRun: async (...args: unknown[]) => { calls.persisted.push(args); return true; },
   cancelRun: async () => true,
 }));
 vi.mock("../../lib/profile/play", () => ({ buildPlayGroup: () => ({}) }));
-vi.mock("../../lib/tuning/evidence", () => ({ buildEvidencePack: (input: unknown) => { calls.packInput = input; return { cards: [] }; } }));
+vi.mock("../../lib/tuning/evidence", () => ({
+  buildEvidencePack: (input: unknown) => { calls.packInput = input; return calls.evidencePack ?? { cards: [] }; },
+}));
 vi.mock("../../lib/tuning/prompt", () => ({ buildPrompt: () => ({ system: "s", user: "u" }) }));
 // A reply that came back, billed, and names cards: the catalog read after it is what throws here,
 // since `db` is a stub.
@@ -110,6 +127,9 @@ beforeEach(() => {
   calls.headerUpdates = [];
   calls.headerWhere = [];
   calls.headerUpdateRows = [{ id: "deck_1" }];
+  calls.evidencePack = undefined;
+  calls.catalogRows = [];
+  calls.persisted = [];
 });
 
 describe("runTuning after the call returned", () => {
@@ -154,6 +174,49 @@ describe("runTuning's model call (v2)", () => {
       { status: "failed", errorClass: "malformed", droppedCount: undefined },
       { model: "claude-sonnet-5", usage },
     ]]);
+  });
+});
+
+// H35, PR 4a: eight asked, five kept. Review round 2 (Low, previously missed): the production
+// slice and its persisted report are otherwise unexercised, since every other test's `db` stub
+// throws before reaching the catalog read.
+describe("runTuning's 8-asked/5-kept slice", () => {
+  const CARD = (n: number) => ({
+    add: `Add ${n}`, cut: `Cut ${n}`, rationale: "Good value for this deck.", rationaleShort: "Good value.",
+    evidence: [{ kind: "decklist" as const, value: "x" }],
+  });
+  const EIGHT = Array.from({ length: 8 }, (_, i) => CARD(i));
+
+  beforeEach(() => {
+    calls.startKind = "started";
+    calls.reachModel = true;
+    calls.modelOutcome = {
+      ok: true,
+      value: { suggestions: EIGHT },
+      usage: { inputTokens: 4_000, outputTokens: 900, cacheReadTokens: 0, cacheWriteTokens: 0 },
+    };
+    calls.evidencePack = {
+      commanders: [{ oracleId: "cmd", name: "Commander" }],
+      colorIdentity: [],
+      cards: Array.from({ length: 8 }, (_, i) => ({ oracleId: `cut${i}`, name: `Cut ${i}`, commander: false })),
+      play: { games: [], summary: { count: 0, record: { wins: 0, losses: 0, draws: 0 }, marked: 0, axes: [] } },
+      intent: null,
+      limits: { capCents: null, sets: [], ownedOnly: false },
+    };
+    calls.catalogRows = Array.from({ length: 8 }, (_, i) => [
+      { oracleId: `add${i}`, name: `Add ${i}`, colorIdentity: [], commanderLegal: true, printedInSelectedSets: true },
+      { oracleId: `cut${i}`, name: `Cut ${i}`, colorIdentity: [], commanderLegal: true, printedInSelectedSets: true },
+    ]).flat();
+  });
+
+  it("keeps only the first five of eight valid survivors", async () => {
+    await runTuning(DECK, { anyway: true });
+    expect(calls.persisted).toHaveLength(1);
+    const [, flagged, droppedCount, , report] = calls.persisted[0] as [unknown, { addOracleId: string }[], number, unknown, { askedCount: number; survivedCount: number; keptCount: number }];
+    expect(flagged).toHaveLength(5);
+    expect(flagged.map((f) => f.addOracleId)).toEqual(["add0", "add1", "add2", "add3", "add4"]);
+    expect(droppedCount).toBe(0);
+    expect(report).toEqual({ askedCount: 8, survivedCount: 8, keptCount: 5 });
   });
 });
 

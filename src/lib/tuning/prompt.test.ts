@@ -129,7 +129,7 @@ describe("v2's strategy and rationale rules", () => {
     expect(user).not.toContain("How this deck plays");
     expect(system).not.toContain("Key card");
     expect(system).not.toContain("just to fix a role count");
-    expect(system).toContain("Make 4 or 5 suggestions when the deck supports that many.");
+    expect(system).toContain("Size suggestions to the gap.");
   });
 });
 
@@ -162,7 +162,9 @@ describe("the prompt Hugh rated (eval round 4, 2026-09-24)", () => {
       `You suggest changes to a Magic: The Gathering Commander deck, for the player who built it.\n${PLAYER_TEXT_SYSTEM_RULE}\n`,
     )
     .replace(RATED_QUOTED_NOTE_RULE, deckTuningCopy.suggestionRules.quotedNote)
-    .replace(RATED_SWAPS_RULE, "Propose up to 8 swaps. Each swap cuts exactly one card from the deck and adds exactly one card.");
+    .replace(RATED_SWAPS_RULE, "Propose up to 8 swaps. Each swap cuts exactly one card from the deck and adds exactly one card.")
+    // "Make 4 or 5 suggestions..." removed (round 2): it contradicted "Propose up to 8 swaps".
+    .replace("Make 4 or 5 suggestions when the deck supports that many.\n", "");
 
   it("reproduces round 4's system and user messages byte for byte, plus the known player-text delta since", () => {
     // The fixture predates limits (H35, PR 4a); a neutral default here, never written into the

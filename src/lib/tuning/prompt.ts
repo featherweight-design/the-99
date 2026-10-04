@@ -47,7 +47,9 @@ export function buildPrompt(pack: EvidencePack): { system: string; user: string 
  */
 function strategyRules(universal: string[], hasOverview: boolean): string[] {
   return [
-    "Make 4 or 5 suggestions when the deck supports that many.",
+    // "Make 4 or 5 suggestions..." removed (H35, PR 4a review round 2): it contradicted the
+    // SYSTEM array's own "Propose up to 8 swaps" line, so a compliant model could stop at five
+    // and defeat the eight-candidate buffer the hard filters need.
     "Size suggestions to the gap. A role that is one short of its target gets one suggestion; if you offer two for it, say in each rationale that they are alternatives to each other.",
     "Prefer swaps grounded in how this deck plays, its strategy and its cards' interactions, over swaps that only move a role count toward its target.",
     ...(hasOverview ? ["Never suggest cutting a Key card listed under \"How this deck plays\"."] : []),

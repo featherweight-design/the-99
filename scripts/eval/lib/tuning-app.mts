@@ -91,19 +91,26 @@ export async function openTuning() {
     return items.map(({ pack, value }) => {
       const inDeck = new Set(pack.cards.map((c) => c.oracleId));
       const resolve = nameResolver(catalog, inDeck);
-      const { kept, droppedCount, drops } = validateSuggestions({ response: value, pack, resolveName: resolve });
+      const { droppedCount, drops } = validateSuggestions({ response: value, pack, resolveName: resolve });
       const outside = value.suggestions.reduce((n, s) => {
         const cut = resolve(s.cut);
         return n + (cut === null || !inDeck.has(cut.oracleId) ? 1 : 0) + (resolve(s.add) === null ? 1 : 0);
       }, 0);
+      // 8-asked/5-kept (H35, PR 4a): the app slices to the first MAX_SUGGESTIONS survivors, in
+      // their original reply order, before showing or persisting anything — `drops` carries the
+      // ORIGINAL reply index, never `validateSuggestions`' own renumbered `position`, so the
+      // not-dropped indices here are already in that order.
+      const notDropped = value.suggestions.map((_, i) => i).filter((i) => !drops.some((d) => d.position === i));
+      const keptPositions = notDropped.slice(0, limits.MAX_SUGGESTIONS);
       return {
-        outcome: kept.length > 0 ? "survived" : "ungrounded",
+        outcome: keptPositions.length > 0 ? "survived" : "ungrounded",
         returned: value.suggestions.length,
-        kept: kept.length,
+        kept: keptPositions.length,
         droppedCount,
         drops: drops.map((d) => d.rule),
-        // Which of the reply's suggestions a player would see: positions not dropped, in order.
-        keptPositions: value.suggestions.map((_, i) => i).filter((i) => !drops.some((d) => d.position === i)),
+        // Which of the reply's suggestions a player would see: positions not dropped AND inside
+        // the five-kept slice, in order.
+        keptPositions,
         outsideNames: outside,
       };
     });

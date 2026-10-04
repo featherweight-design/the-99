@@ -275,7 +275,10 @@ export async function runTuning(
             return { prices: new Map(), newestAsOf: null };
           })
         : loadPrices(nameRows.map((r) => r.oracleId)),
-      nameRows.length === 0 ? new Set<string>() : readOwnedOracleIds(userId, nameRows.map((r) => r.oracleId)),
+      // Read only while the owned-only filter is active: unlike price, `owned` here is never
+      // displayed, only checked (`notOwned`), so an inactive filter has no consumer to protect.
+      // A failure would otherwise refund a paid, otherwise-valid answer over a read nothing needs.
+      nameRows.length === 0 || !limits.ownedOnly ? new Set<string>() : readOwnedOracleIds(userId, nameRows.map((r) => r.oracleId)),
     ]);
     const rows = nameRows.map((r) => {
       const fact = prices.get(r.oracleId) ?? null;
