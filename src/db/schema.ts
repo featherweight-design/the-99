@@ -953,6 +953,12 @@ export const pullReleases = pgTable("pull_releases", {
    *  source's version claims it again, as for any removal nobody has committed. */
   askingDeckId: uuid("asking_deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
   copies: integer("copies").notNull().default(1),
+  /** When this row was last TOUCHED, not merely created: `writePullRelease`'s conflict path
+   *  bumps this on a second pull of the same card from the same source for the same asker, same
+   *  as the insert path. `latestReleaseSources` (`pull-release.ts`) orders by this to find which
+   *  source a reader's most recent pull on a card came from — without the bump, a conflict-path
+   *  update left this at the row's FIRST pull, so a later re-pull from the same source could read
+   *  older than a different source's pull made in between, naming the wrong deck. */
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => [
   // One row per card per source PER ASKER, so undoing the release can tell every deck it freed a

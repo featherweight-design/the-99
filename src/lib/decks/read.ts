@@ -673,6 +673,113 @@ export async function getDeckReviewHeader(
   };
 }
 
+/** A source deck's current size, and whether the ONE card a reader might pull from it is still
+ *  in that deck's draft. See `loadSourceDeckFigures`. */
+export type SourceDeckFigure = { built: number; inDraft: boolean };
+
+/**
+ * The CURRENT draft size of a small set of other decks, and whether each one still HOLDS the
+ * specific card a reader might pull from it — "→ {n} cards" on the Pull it source list
+ * (addendum R1), batched because the list shows every candidate source on a page that renders
+ * several contested rows, never one deck at a time.
+ *
+ * Found by Copilot's round-1 review: `pullCardFromDeck` (`actions.ts`) only touches
+ * `deck_cards` when the card is still `inDraft` there — a claim can outlive the draft row it
+ * came from (the player cut the card themselves; the claim still stands against the deck's
+ * committed version until the draft is re-committed or discarded), and a pull against THAT
+ * claim writes only the release, leaving the source's size unchanged. "current size minus
+ * one" is wrong for that case; "current size" is wrong for the ordinary one. Returning both
+ * halves lets the caller pick, per card, the same way the action does.
+ *
+ * `built` matches `getDeckReviewHeader`'s own definition exactly — `sum(deck_cards.quantity)`,
+ * commander not counted — so a source's size reads in the one vocabulary this route already
+ * uses for "card count" rather than introducing a second one. Scoped to `userId` for the same
+ * reason every other read on this page is: a candidate source is always a claim on a card this
+ * reader's OWN decks hold, but the scope costs nothing to state and a deck id that is not this
+ * reader's returns no row rather than another player's count.
+ */
+type SourceFigureQuerier = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * The ownership-and-size half of `loadSourceDeckFigures`, pulled out so a `.toSQL()` test can
+ * assert the `userId` filter without a database — see `read.test.ts`. Rendered inside the
+ * transaction in the real call, and standalone off `db` in the test.
+ */
+export function sourceDeckSizesQuery(tx: SourceFigureQuerier, deckIds: string[], userId: string) {
+  return tx
+    .select({
+      id: decks.id,
+      built: sql<number>`coalesce((
+        select sum(dc.quantity) from ${deckCards} dc
+        where dc.deck_id = ${decks}.id
+      ), 0)::int`,
+    })
+    .from(decks)
+    .where(and(inArray(decks.id, deckIds), eq(decks.userId, userId)));
+}
+
+/**
+ * The membership half of `loadSourceDeckFigures`, pulled out so a `.toSQL()` test can assert
+ * both dimensions are filtered — see `read.test.ts`. Every (deckId, oracleId) actually present
+ * in `deck_cards` among the asked-for decks and cards; both dimensions filtered, so a returned
+ * row IS a real membership for that exact pair, with no cross-contamination to guard against.
+ */
+export function sourceDeckPresenceQuery(
+  tx: SourceFigureQuerier,
+  deckIds: string[],
+  oracleIds: string[],
+) {
+  return tx
+    .select({ deckId: deckCards.deckId, oracleId: deckCards.oracleId })
+    .from(deckCards)
+    .where(and(inArray(deckCards.deckId, deckIds), inArray(deckCards.oracleId, oracleIds)));
+}
+
+/**
+ * The join of a reader's own asked-for pairs against each source deck's current size and
+ * membership, pulled out so a test can assert the combination without a database — see
+ * `read.test.ts`. A pair whose `deckId` is absent from `built` names a deck `loadSourceDeckFigures`
+ * did not own (filtered out by the ownership query), and is skipped rather than reported with a
+ * size of zero.
+ */
+export function assembleSourceFigures(
+  pairs: { deckId: string; oracleId: string }[],
+  built: Map<string, number>,
+  present: Set<string>,
+): Map<string, SourceDeckFigure> {
+  const figures = new Map<string, SourceDeckFigure>();
+  for (const { deckId, oracleId } of pairs) {
+    const size = built.get(deckId);
+    if (size === undefined) continue;
+    figures.set(`${deckId}:${oracleId}`, { built: size, inDraft: present.has(`${deckId}:${oracleId}`) });
+  }
+  return figures;
+}
+
+export async function loadSourceDeckFigures(
+  pairs: { deckId: string; oracleId: string }[],
+  userId: string,
+): Promise<Map<string, SourceDeckFigure>> {
+  if (pairs.length === 0) return new Map();
+  const deckIds = [...new Set(pairs.map((p) => p.deckId))];
+  const oracleIds = [...new Set(pairs.map((p) => p.oracleId))];
+  // ONE repeatable-read, read-only transaction — found by Copilot's round-2 review: two
+  // separate statements can straddle a write to the source's draft between them (a cut, or
+  // another pull), returning an impossible pair such as the OLD size with the NEW absence.
+  // Same rule `readSnapshot` (`draft-state.ts:178`) and `tuning-read.ts` already follow for a
+  // multi-read comparison. Not asserted by a test, same as those two — Drizzle's transaction
+  // options are not part of the rendered SQL a `.toSQL()` test could check.
+  const { built, present } = await db.transaction(async (tx) => {
+    const sizeRows = await sourceDeckSizesQuery(tx, deckIds, userId);
+    const presentRows = await sourceDeckPresenceQuery(tx, deckIds, oracleIds);
+    return {
+      built: new Map(sizeRows.map((r) => [r.id, r.built])),
+      present: new Set(presentRows.map((r) => `${r.deckId}:${r.oracleId}`)),
+    };
+  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+  return assembleSourceFigures(pairs, built, present);
+}
+
 export type DeckListItem = {
   id: string;
   name: string;

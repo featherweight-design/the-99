@@ -3,7 +3,7 @@ import type { Availability, DeckClaim } from "./availability";
 import { summarisePrices } from "./price";
 import {
   bucketDraftAdds, changeCount, hasChanges, heldElsewhere, printsPair, pullCandidate, pullHints,
-  releasableClaims,
+  pullSourceChoices, releasableClaims,
   releasedCopies, unfreeAdds, type DraftAdd, type DraftState,
 } from "./draft-state";
 
@@ -301,6 +301,63 @@ describe("pullCandidate", () => {
     expect(pullCandidate(undefined)).toBeNull();
   });
 
+});
+
+// Addendum R1 (Pull it picks its source deck): the full picker list, as opposed to
+// `pullCandidate`'s single pick.
+describe("pullSourceChoices", () => {
+  const claim = (over: Partial<DeckClaim> = {}): DeckClaim => ({
+    id: "d-1", name: "Kykar, Wind's Fury", quantity: 1,
+    mature: true, pending: false, commander: false, senior: true, ...over,
+  });
+  const availability = (claims: DeckClaim[]): Availability =>
+    ({ owned: 1, hard: 1, soft: 0, free: 0, claims });
+
+  // The array itself is ordered alphabetically by deck NAME (`availability-query.ts`'s own
+  // `order by cd.name`), deliberately the opposite of `since` order here — a sort that
+  // accidentally matched the input order would pass with no sort at all.
+  it("sorts by since ascending, not by the array's own (alphabetical) order", () => {
+    const ids = pullSourceChoices(availability([
+      claim({ id: "d-b-newest", name: "B Newest", since: 3000 }),
+      claim({ id: "d-a-oldest", name: "A Oldest", since: 1000 }),
+      claim({ id: "d-c-middle", name: "C Middle", since: 2000 }),
+    ])).map((c) => c.id);
+    expect(ids).toEqual(["d-a-oldest", "d-c-middle", "d-b-newest"]);
+  });
+
+  // Found by Copilot's round-2 review: two equal `since` values otherwise kept the claims
+  // array's own alphabetical-by-NAME order, which could disagree with the commit-ordered list
+  // elsewhere. Named so "Z" sorts first by name and last by id, to tell the two apart.
+  it("tie-breaks equal since values by deck id, not by name", () => {
+    const ids = pullSourceChoices(availability([
+      claim({ id: "d-z", name: "Z Deck", since: 1000 }),
+      claim({ id: "d-a", name: "A Deck", since: 1000 }),
+    ])).map((c) => c.id);
+    expect(ids).toEqual(["d-a", "d-z"]);
+  });
+
+  it("includes a locked and a commander claim, disabled rows rather than excluded", () => {
+    const ids = pullSourceChoices(availability([
+      claim({ id: "d-free", since: 1000 }),
+      claim({ id: "d-locked", locked: true, senior: false, since: 2000 }),
+      claim({ id: "d-commander", commander: true, senior: false, since: 3000 }),
+    ])).map((c) => c.id);
+    expect(ids).toEqual(["d-free", "d-locked", "d-commander"]);
+  });
+
+  // A junior sleeved holder is neither pullable nor explainable by a guard tag — excluded,
+  // same as `pullCandidate`'s own silence on it.
+  it("excludes a junior sleeved holder that is none of senior, locked or commander", () => {
+    expect(pullSourceChoices(availability([claim({ senior: false })]))).toEqual([]);
+  });
+
+  it("excludes a draft-only (immature) holder", () => {
+    expect(pullSourceChoices(availability([claim({ mature: false })]))).toEqual([]);
+  });
+
+  it("is empty for undefined availability", () => {
+    expect(pullSourceChoices(undefined)).toEqual([]);
+  });
 });
 
 // The ownership dot's third state. The bucket cannot answer it: `claimed` means
