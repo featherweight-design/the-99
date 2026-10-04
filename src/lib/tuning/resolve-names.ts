@@ -20,6 +20,13 @@ export function nameResolver(
     const candidates = byName.get(name) ?? [];
     const held = candidates.filter((c) => deckOracleIds.has(c.oracleId));
     const pick = held.length === 1 ? held[0] : held.length === 0 && candidates.length === 1 ? candidates[0] : null;
-    return pick ? { oracleId: pick.oracleId, colorIdentity: pick.colorIdentity, commanderLegal: pick.commanderLegal } : null;
+    return pick ? {
+      oracleId: pick.oracleId,
+      colorIdentity: pick.colorIdentity,
+      commanderLegal: pick.commanderLegal,
+      priceCents: pick.priceCents,
+      printedInSelectedSets: pick.printedInSelectedSets,
+      owned: pick.owned,
+    } : null;
   };
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "deck_suggestion_runs" ADD COLUMN "validation_report" jsonb;

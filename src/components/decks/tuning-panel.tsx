@@ -18,11 +18,14 @@ import { numberWord } from "../../lib/copy/deck-analysis";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { axisCopy } from "../../lib/copy/game-log";
+import { formatCents } from "../../lib/decks/price";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import type { Bracket } from "../../lib/profile/types";
 import { gateReason } from "../../lib/tuning/gate";
 import type { TuningItem, TuningState } from "../../lib/tuning/state";
+import type { RefusalDetail } from "../../lib/tuning/validate";
 import type { PrintedInSet } from "../../lib/sets/printed-in";
+import { AnalysisBanner } from "./analysis-banner";
 import { FanShuffle } from "./fan-shuffle";
 import { ManifestRows, type ManifestRow } from "./manifest-rows";
 import { MutationError } from "./mutation-error";
@@ -739,6 +742,12 @@ export function TuningPanel({
   let neverRun = false;
 
   const failure = !reading && state.run?.status === "failed" ? failureCopy(state.run.errorClass) : null;
+  // "Refusal" (STATES §3 state 9): AnalysisBanner's own frame, one sentence, no button, above
+  // the set — never the generic Failure chrome. Only `ungrounded` carries a `refusal` the
+  // validator can name; `locked_only` keeps its own established copy (F10, Hugh 2026-09-25).
+  const refusal = !reading && state.run?.status === "failed" && state.run.errorClass === "ungrounded"
+    ? refusalBody(state.run.validationReport?.refusal ?? { reason: "nothingLeft" })
+    : null;
   // A failed or stopped re-run leaves the set it would have replaced on screen, still open.
   const hasSet = !reading && !state.retired && state.items.length > 0;
   const neverRunRows = manifestRows(facts, intent, null, previewSteps);
@@ -784,7 +793,7 @@ export function TuningPanel({
     if (failure) primary = { label: deckTuningCopy.failure.retry, again: false };
     body = (
       <>
-        {failure ? <Failure failure={failure} /> : null}
+        {failure ? (refusal ? <AnalysisBanner variant="note" sentence={refusal} /> : <Failure failure={failure} />) : null}
         <Lead>{copy.retiredLead(state.retired.from, state.retired.to)}</Lead>
         {checklist}
       </>
@@ -802,10 +811,18 @@ export function TuningPanel({
       : dropped > 0
         ? total === 1 ? copy.fewerLeadOne(cap(numberWord(dropped))) : copy.fewerLead(cap(numberWord(total)), cap(numberWord(dropped)))
         : total === 1 ? copy.resultsLeadOne : copy.resultsLead(cap(numberWord(total)));
+    // "tooMany" (H35, PR 4a): the model handed back more survivors than the five shown, named
+    // before the player wonders where the rest went. `fresh` only — an already-answered run has
+    // moved past the question this caption answers.
+    const report = state.run?.validationReport;
+    const tooMany = !failure && !answered && report && report.survivedCount > report.keptCount
+      ? deckDescriptionCopy.refusal.tooMany(report.askedCount)
+      : null;
     body = (
       <>
-        {failure ? <Failure failure={failure} /> : null}
+        {failure ? (refusal ? <AnalysisBanner variant="note" sentence={refusal} /> : <Failure failure={failure} />) : null}
         {answered ? null : <ReadFrom state={state} facts={facts} />}
+        {tooMany ? <AnalysisBanner variant="note" sentence={tooMany} /> : null}
         {unchangedShown ? (
           <Unchanged state={state} intent={intent} fix={facts.fix} />
         ) : lead ? (
@@ -828,7 +845,7 @@ export function TuningPanel({
     );
     if (applied + rejected > 0 && !answered) note = copy.tally(applied, total, rejected);
   } else if (failure) {
-    body = <Failure failure={failure} />;
+    body = refusal ? <AnalysisBanner variant="note" sentence={refusal} /> : <Failure failure={failure} />;
     // No set is on screen, so the press replaces nothing: the first-run note.
     primary = { label: deckTuningCopy.failure.retry, again: false };
   } else {
@@ -1080,15 +1097,24 @@ function Lead({ children, desktopOnly = false, wide = false }: { children: React
 }
 
 function ReadFrom({ state, facts }: { state: TuningState; facts: TuningFacts }) {
+  // "your limits" (H35, PR 4a): only when a limit is actually set, since an unset limit reads
+  // nothing and filters nothing (`descriptionManifest.readLimits`, "Kept for this deck"). And
+  // only over a FRESH result (review round 4): `facts.limits` is the LIVE deck setting, and a
+  // stale result on screen was generated before the player's latest limits edit — the tuning
+  // fingerprint already includes limits (`src/lib/tuning/fingerprint.ts`), so `state.stale` is
+  // exactly the signal that the live setting still describes the shown run.
+  const { capCents, sets, ownedOnly } = facts.limits;
+  const limitsRead = !state.stale && (capCents !== null || sets.length > 0 || ownedOnly) ? [descriptionManifest.readLimits] : [];
   const parts =
     state.gameCount === 0
-      ? [manifest.readCards(facts.cards), manifest.readMix, manifest.readCollection]
+      ? [manifest.readCards(facts.cards), manifest.readMix, manifest.readCollection, ...limitsRead]
       : [
           manifest.readGames(state.gameCount),
           ...(facts.noteCount > 0 ? [manifest.readNotes(facts.noteCount)] : []),
           manifest.readCards(facts.cards),
           manifest.readMix,
           manifest.readCollection,
+          ...limitsRead,
         ];
   return (
     <p className="mt-[8px] font-mono text-[9.5px] leading-[1.5] md:mt-[9px] md:text-[10.5px]" style={{ color: "var(--fg-faint)" }}>
@@ -1135,6 +1161,24 @@ function Unchanged({ state, intent, fix }: { state: TuningState; intent: string 
 }
 
 type FailureCopy = { tag: string; heading: string; body: string; kept: string; note: string };
+
+/** "Kept for this deck" (H35, PR 4a): the sentence that names what actually caused an empty
+ *  result — drawn in AnalysisBanner's own "note" frame (STATES §3 state 9: one sentence, no
+ *  button, above the set), never `Failure`'s generic chrome (review round 3). `locked`/
+ *  `lockedMany` do reach here: a run whose drops are a MIX of a locked cut and some other rule
+ *  (e.g. the new `overCap`/`offSet` filters) is not all-`neverCut`, so `runTuning` classifies it
+ *  `ungrounded`, not `locked_only` (pre-open review, round 0) — `locked_only`'s own established
+ *  copy (F10, Hugh 2026-09-25) covers only the all-locked case and keeps its own `Failure` box. */
+function refusalBody(refusal: RefusalDetail): string {
+  const r = deckDescriptionCopy.refusal;
+  switch (refusal.reason) {
+    case "commander": return r.commander(refusal.name);
+    case "locked": return r.locked(refusal.name);
+    case "lockedMany": return r.lockedMany(refusal.count);
+    case "overCap": return r.overCap(refusal.name, formatCents(refusal.capCents));
+    case "nothingLeft": return r.nothingLeft;
+  }
+}
 
 function failureCopy(errorClass: string | null): FailureCopy {
   const f = deckTuningCopy.failure;

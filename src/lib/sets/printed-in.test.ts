@@ -1,5 +1,7 @@
 import { PgDialect } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
+import { db } from "../../db";
 import { cards } from "../../db/schema";
 import {
   buildCommanderPrintings,
@@ -37,6 +39,25 @@ describe("printedIn", () => {
 
   it("is no filter at all for an empty selection", () => {
     expect(render([]).sql).toBe("true");
+  });
+
+  // H35, PR 4a (deck tuning's hard filters): Drizzle drops the qualifier from a bare column
+  // reference interpolated into the projection of a single-table select (AGENTS.md, "A
+  // correlated subquery in a single-table select must alias and qualify"). `printedIn`'s own
+  // isolated render above is correctly qualified; this pins the ACTUAL call site's shape —
+  // embedded as a projection value beside other real columns, rather than rendered alone — since
+  // that embedding is exactly where the rule bites and a passing isolated test cannot see it.
+  it("stays qualified once embedded in a real multi-column projection", () => {
+    const q = db
+      .select({
+        oracleId: cards.oracleId,
+        name: cards.name,
+        printedInSelectedSets: sql<boolean>`${printedIn(cards.oracleId, ["lea"])}`,
+      })
+      .from(cards)
+      .toSQL();
+    expect(q.sql).toContain('pi.oracle_id = "cards"."oracle_id"');
+    expect(q.sql).not.toMatch(/pi\.oracle_id = "oracle_id"/);
   });
 });
 

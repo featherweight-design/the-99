@@ -17,6 +17,7 @@ const pack: EvidencePack = {
   play: buildPlayGroup([]),
   intent: null,
   year: 2026,
+  limits: { capCents: null, sets: [], ownedOnly: false },
 };
 
 // The strategy variant reads stored per-deck context; the test supplies it rather than a file.

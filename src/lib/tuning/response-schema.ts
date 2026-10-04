@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { MAX_SUGGESTIONS } from "./limits";
+import { ASK_SUGGESTIONS } from "./limits";
 
 /**
  * The shape a model reply must have. Handed to the client as the structured-output format, so
@@ -26,7 +26,7 @@ export const suggestionSchema = z.object({
 });
 
 export const tuningResponseSchema = z.object({
-  suggestions: z.array(suggestionSchema).max(MAX_SUGGESTIONS),
+  suggestions: z.array(suggestionSchema).max(ASK_SUGGESTIONS),
 });
 
 export type TuningResponse = z.infer<typeof tuningResponseSchema>;

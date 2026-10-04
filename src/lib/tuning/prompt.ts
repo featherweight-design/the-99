@@ -4,7 +4,7 @@ import { deckTuningCopy } from "../copy/deck-tuning";
 import { deckDescriptionCopy } from "../copy/deck-description";
 import { playerText, PLAYER_TEXT_SYSTEM_RULE } from "../model/player-text";
 import type { EvidencePack } from "./evidence";
-import { MAX_SUGGESTIONS } from "./limits";
+import { ASK_SUGGESTIONS } from "./limits";
 import { noteDate } from "./note-date";
 import { lockedCardsCopy } from "../copy/locked-cards";
 
@@ -15,9 +15,13 @@ import { lockedCardsCopy } from "../copy/locked-cards";
  * instructions and the validator's checklist, one text, so the two cannot drift.
  *
  * The USER message renders what the pack holds, with three deliberate absences:
- *  - OWNERSHIP AND PRICE are not rendered. `suggestionRules.ownershipNotRanking`: they may not
- *    affect which cards are suggested or their order, and a model cannot be swayed by a fact it
- *    was never shown. The card states ownership afterwards, from the database.
+ *  - PER-CARD OWNERSHIP AND PRICE are not rendered. `suggestionRules.ownershipNotRanking`: a
+ *    fact about one candidate card may not sway which cards are suggested or their order, and a
+ *    model cannot be swayed by a fact it was never shown. The card states ownership afterwards,
+ *    from the database. This is narrower than, and does not contradict, "Kept for this deck"'s
+ *    limits (H35, PR 4a): a CONFIGURED cap, set or owned-only rule is told to the model as a
+ *    structured run parameter (`limitsRules`) and is meant to affect candidate selection — it is
+ *    the player's own rule, never a per-card fact leaking in to bias a choice.
  *  - NO BRACKET FIGURE. The app flags a swap that moves the bracket itself, through `slotDeck`.
  *  - NO NET and NO PROPORTION: the pack has already dropped both.
  * And one deliberate presence: at zero games the message SAYS no games are logged, rather than
@@ -31,7 +35,7 @@ export function buildPrompt(pack: EvidencePack): { system: string; user: string 
   // deck with none sends today's prompt byte for byte (`prompt.test.ts` pins it). No PROMPT_VERSION
   // bump: the lock ids join the gate's fingerprint, which reopens a locked deck's gate alone.
   const base = pack.cards.some((c) => c.locked) ? SYSTEM.replace(COMMANDER_RULE, LOCKED_RULE) : SYSTEM;
-  const system = [base, ...strategyRules(universalNames, !!pack.strategy), ...RATIONALE_RULES].join("\n");
+  const system = [base, ...strategyRules(universalNames, !!pack.strategy), ...limitsRules(pack.limits), ...RATIONALE_RULES].join("\n");
   const block = pack.strategy ? strategyBlock(pack.strategy) : null;
   return { system, user: block ? `${renderPack(pack)}\n\n${block}` : renderPack(pack) };
 }
@@ -47,12 +51,31 @@ export function buildPrompt(pack: EvidencePack): { system: string; user: string 
  */
 function strategyRules(universal: string[], hasOverview: boolean): string[] {
   return [
-    "Make 4 or 5 suggestions when the deck supports that many.",
+    // "Make 4 or 5 suggestions..." removed (H35, PR 4a review round 2): it contradicted the
+    // SYSTEM array's own "Propose up to 8 swaps" line, so a compliant model could stop at five
+    // and defeat the eight-candidate buffer the hard filters need.
     "Size suggestions to the gap. A role that is one short of its target gets one suggestion; if you offer two for it, say in each rationale that they are alternatives to each other.",
     "Prefer swaps grounded in how this deck plays, its strategy and its cards' interactions, over swaps that only move a role count toward its target.",
     ...(hasOverview ? ["Never suggest cutting a Key card listed under \"How this deck plays\"."] : []),
     ...(universal.length > 0 ? [`Never suggest cutting ${universal.join(", ")} just to fix a role count.`] : []),
   ];
+}
+
+/**
+ * "Kept for this deck" (H35, PR 4a): run parameters, never player text, so they bypass
+ * `playerText` entirely — structured data the player set through the limits box, not a free-text
+ * field they typed. Told to the model up front (orchestrator ruling, 2026-10-04) rather than left
+ * for the validator alone: an unknowing model otherwise spends most of its 8 candidates on cards
+ * the hard filters then drop, leaving needless empty answers. Absent for a deck with none set,
+ * so that deck's prompt stays byte for byte today's (no `PROMPT_VERSION` bump needed; a limit
+ * change already reopens the gate through the fingerprint).
+ */
+function limitsRules(limits: EvidencePack["limits"]): string[] {
+  const lines: string[] = [];
+  if (limits.capCents !== null) lines.push(`Every suggested add must cost $${(limits.capCents / 100).toFixed(2)} or less.`);
+  if (limits.sets.length > 0) lines.push(`Every suggested add must be printed in one of these sets: ${limits.sets.map((s) => s.toUpperCase()).join(", ")}.`);
+  if (limits.ownedOnly) lines.push("Every suggested add must be a card the player already owns.");
+  return lines;
 }
 
 /** Each rationale is drawn above its citation chips, so it never restates their figures. */
@@ -76,7 +99,7 @@ const LOCKED_RULE = lockedCardsCopy.tuning.promptRule;
 const SYSTEM = [
   "You suggest changes to a Magic: The Gathering Commander deck, for the player who built it.",
   PLAYER_TEXT_SYSTEM_RULE,
-  `Propose at most ${MAX_SUGGESTIONS} swaps. Each swap cuts exactly one card from the deck and adds exactly one card. Fewer is better than padding: one swap you can back beats three you cannot, and an empty list is an acceptable answer.`,
+  `Propose up to ${ASK_SUGGESTIONS} swaps. Each swap cuts exactly one card from the deck and adds exactly one card.`,
   "Ground every swap in the evidence you are given: the player's games and notes, the decklist and its targets, and what the player says the deck is for. Cite what you used.",
   "Cite with one of five kinds: games, note, decklist, intent, mix. One figure per citation. A figure with no name, or one the evidence does not give, is discarded.",
   "A games citation names what it counts, in the words the games section uses, with the figure it gives: \"Mana hurt in 3 of 5 games\", \"Lost 4 of 5 games\".",
@@ -106,6 +129,11 @@ function renderPack(pack: EvidencePack): string {
 
   lines.push(`Commander: ${pack.commanders.map((c) => c.name).join(" and ")}`);
   lines.push(`Colour identity: ${pack.colorIdentity.length > 0 ? pack.colorIdentity.join("") : "colourless"}`);
+
+  // "Kept for this deck" (H35, PR 4a): absent when nothing is set, so a deck with none sends
+  // today's user message byte for byte.
+  const limitLines = limitsRules(pack.limits);
+  if (limitLines.length > 0) lines.push("", "Limits set for this deck:", ...limitLines.map((l) => `- ${l}`));
 
   lines.push("", pack.intent === null
     ? "What the deck is for: no stated intent."

@@ -31,6 +31,7 @@ const pack: EvidencePack = {
   play: buildPlayGroup([game("g1", { hurt: ["mana"], note: "flooded out on turn six" }), game("g2", { hurt: ["mana"] })]),
   intent: null,
   year: 2026,
+  limits: { capCents: null, sets: [], ownedOnly: false },
 };
 
 describe("buildPrompt", () => {
@@ -98,6 +99,44 @@ describe("buildPrompt", () => {
   });
 });
 
+// "Kept for this deck" (H35, PR 4a, review round 5): no existing fixture carries an active
+// limit, so `limitsRules` could be deleted entirely and this suite would stay green. Pins the
+// model-facing text itself, in BOTH messages, for a deck with every limit set and for one with
+// none.
+describe("limits in the prompt", () => {
+  // `limits.sets` arrives already normalized (`normalizeSetCodes`, saved by `saveDeckLimits`);
+  // `limitsRules` only upper-cases for display, in the given order.
+  const withLimits = { ...pack, limits: { capCents: 450, sets: ["lea", "cmm"], ownedOnly: true } };
+
+  it("tells the model every active limit, dollars formatted and set codes upper-cased, in the system message", () => {
+    const { system } = buildPrompt(withLimits);
+    expect(system).toContain("Every suggested add must cost $4.50 or less.\n"
+      + "Every suggested add must be printed in one of these sets: LEA, CMM.\n"
+      + "Every suggested add must be a card the player already owns.");
+  });
+
+  it("repeats the same limits section in the user message", () => {
+    const { user } = buildPrompt(withLimits);
+    expect(user).toContain("Limits set for this deck:\n- Every suggested add must cost $4.50 or less.");
+    expect(user).toContain("in one of these sets: LEA, CMM.");
+    expect(user).toContain("Every suggested add must be a card the player already owns.");
+  });
+
+  it("names only the limits actually set", () => {
+    const capOnly = { ...pack, limits: { capCents: 100, sets: [], ownedOnly: false } };
+    const { system } = buildPrompt(capOnly);
+    expect(system).toContain("Every suggested add must cost $1.00 or less.");
+    expect(system).not.toContain("printed in one of these sets");
+    expect(system).not.toContain("already owns");
+  });
+
+  it("sends no limits section at all for a deck with none set, byte for byte today's prompt", () => {
+    const { system, user } = buildPrompt(pack);
+    expect(system).not.toContain("Limits set for this deck");
+    expect(user).not.toContain("Limits set for this deck");
+  });
+});
+
 describe("v2's strategy and rationale rules", () => {
   const withV2: EvidencePack = {
     ...pack,
@@ -128,7 +167,7 @@ describe("v2's strategy and rationale rules", () => {
     expect(user).not.toContain("How this deck plays");
     expect(system).not.toContain("Key card");
     expect(system).not.toContain("just to fix a role count");
-    expect(system).toContain("Make 4 or 5 suggestions when the deck supports that many.");
+    expect(system).toContain("Size suggestions to the gap.");
   });
 });
 
@@ -151,15 +190,25 @@ describe("the prompt Hugh rated (eval round 4, 2026-09-24)", () => {
   // The rated run's own literal text for the rule the player-text boundary reworded.
   const RATED_QUOTED_NOTE_RULE = "A quoted note must be byte-identical to what the player typed, in quotation marks, with its date.";
 
+  // The rated run's own literal text for the swaps line H35 PR 4a replaced (8-asked/5-kept).
+  const RATED_SWAPS_RULE = "Propose at most 5 swaps. Each swap cuts exactly one card from the deck and adds exactly one card. "
+    + "Fewer is better than padding: one swap you can back beats three you cannot, and an empty list is an acceptable answer.";
+
   const expectedSystem = fixture.system
     .replace(
       "You suggest changes to a Magic: The Gathering Commander deck, for the player who built it.\n",
       `You suggest changes to a Magic: The Gathering Commander deck, for the player who built it.\n${PLAYER_TEXT_SYSTEM_RULE}\n`,
     )
-    .replace(RATED_QUOTED_NOTE_RULE, deckTuningCopy.suggestionRules.quotedNote);
+    .replace(RATED_QUOTED_NOTE_RULE, deckTuningCopy.suggestionRules.quotedNote)
+    .replace(RATED_SWAPS_RULE, "Propose up to 8 swaps. Each swap cuts exactly one card from the deck and adds exactly one card.")
+    // "Make 4 or 5 suggestions..." removed (round 2): it contradicted "Propose up to 8 swaps".
+    .replace("Make 4 or 5 suggestions when the deck supports that many.\n", "");
 
   it("reproduces round 4's system and user messages byte for byte, plus the known player-text delta since", () => {
-    expect(buildPrompt(fixture.pack)).toEqual({ system: expectedSystem, user: fixture.user });
+    // The fixture predates limits (H35, PR 4a); a neutral default here, never written into the
+    // immutable fixture file, since no limit set renders nothing new in either message.
+    const fixturePack: EvidencePack = { ...fixture.pack, limits: fixture.pack.limits ?? { capCents: null, sets: [], ownedOnly: false } };
+    expect(buildPrompt(fixturePack)).toEqual({ system: expectedSystem, user: fixture.user });
   });
 
   it("the fixture file itself is untouched since the rated run", () => {

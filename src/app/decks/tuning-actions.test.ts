@@ -7,6 +7,19 @@ import type { SQL } from "drizzle-orm";
 const calls = vi.hoisted(() => ({ inputs: 0, started: 0, applied: 0, saved: 0, startOpts: undefined as unknown, startKind: "in_flight",
   reachModel: false, finished: [] as unknown[][], modelRequest: undefined as unknown, modelOutcome: undefined as unknown,
   contextRead: 0, packInput: undefined as unknown, allLocked: null as string | null,
+  // H35, PR 4a (8-asked/5-kept): a test-supplied pack and catalog, so a full run can reach the
+  // real catalog read, price read and `validateSuggestions` rather than throwing on a bare `db`
+  // stub. `persisted` captures `persistRun`'s own arguments, the first of which is `withBracketAfter`'s
+  // return — mocked here to echo its own `sized` argument back, since the real slicing happens
+  // BEFORE that call.
+  evidencePack: undefined as unknown, catalogRows: [] as unknown[], persisted: [] as unknown[][],
+  // Review round 4: configurable so a test can prove the mocked reads actually flow into the
+  // hard filters, not just that the validator's own unit tests apply them in isolation.
+  priceRows: new Map<string, number>(), ownedIds: new Set<string>(), freeCopies: new Map<string, number>(),
+  // The ONE source of truth for limits: `tuningInputs` hands it to `runTuning`, which passes the
+  // SAME value on to `buildEvidencePack` — so the mocked pack mirrors whatever was read in,
+  // rather than risking two configs that could silently disagree with production's own flow.
+  limits: { capCents: null as number | null, sets: [] as readonly string[], ownedOnly: false },
   // `saveDeckHeader`'s one query shape: `db.update(decks).set(values).where(cond).returning(shape)`.
   // `headerUpdateRows` is the row count the "owned deck" where-clause would have matched —
   // set to `[]` to simulate a deck that is not this user's (or does not exist).
@@ -33,12 +46,31 @@ vi.mock("../../db", () => ({
         },
       }),
     }),
+    // The one catalog read `runTuning` makes after a reply: `db.select({...}).from(cards).where(...)`.
+    // Canned, never a real query — `calls.catalogRows` is the only thing a test configures.
+    select: () => ({ from: () => ({ where: async () => calls.catalogRows }) }),
+  },
+}));
+vi.mock("../../lib/decks/availability-query", () => ({
+  // SLEEVEABLE MEANS SLEEVEABLE (review round 6): a row absent here reads as "nothing known",
+  // same as `fill.ts`'s own predicate (`a === undefined || a.free > 0`).
+  loadAvailability: async () => new Map([...calls.freeCopies].map(([id, free]) => [id, { free }])),
+}));
+vi.mock("../../lib/decks/price-query", () => ({
+  loadPrices: async () => {
+    if (calls.priceRows.size === 0) return { prices: new Map(), newestAsOf: null };
+    const asOf = new Date(0);
+    const prices = new Map([...calls.priceRows].map(([id, cents]) => [id, { cents, foilCents: null, etchedCents: null, asOf }]));
+    return { prices, newestAsOf: asOf };
   },
 }));
 vi.mock("../../lib/decks/tuning-read", () => ({
   tuningInputs: async () => {
     calls.inputs += 1;
-    return { head: {}, games: [], intent: null, declared: null, fingerprint: "fp", locked: [], allLocked: calls.allLocked };
+    return {
+      head: {}, games: [], intent: null, declared: null, fingerprint: "fp", locked: [], allLocked: calls.allLocked,
+      limits: calls.limits,
+    };
   },
   // A deck whose last run saw exactly this fingerprint: the gate reads `unchanged`.
   readTuningState: async (_d: string, _u: string, _f: string, _n: Date, opts?: { allLocked?: string | null }) => ({
@@ -46,13 +78,15 @@ vi.mock("../../lib/decks/tuning-read", () => ({
     stale: false, modelVersionMoved: false, retired: null, allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null }, gameCount: 0, newestPriceAsOf: null,
     allLocked: opts?.allLocked ?? null,
   }),
-  readOwnedOracleIds: async () => new Set(),
+  readOwnedOracleIds: async () => calls.ownedIds,
   readTuningContext: async () => { calls.contextRead += 1; return { overview: { strategy: ["Attack."], keyCards: ["Oxen"] }, universal: [{ oracleId: "ring", name: "Sol Ring" }] }; },
   profileOfHead: async () => {
     if (!calls.reachModel) throw new Error("stop after the gate");
     return { cards: [], skeleton: { staples: [] } };
   },
-  withBracketAfter: async () => [],
+  // Echoes its own `sized` argument back: the real 8-to-5 slice happens before this call, so
+  // this must never reshape what reaches `persistRun`.
+  withBracketAfter: async (..._args: unknown[]) => _args[3],
   commanderName: async () => "Kykar, Wind's Fury",
 }));
 vi.mock("../../lib/tuning/run-store", () => ({
@@ -63,11 +97,18 @@ vi.mock("../../lib/tuning/run-store", () => ({
     return calls.startKind === "started" ? { kind: "started", runId: "run_1", callId: "call_1" } : { kind: calls.startKind };
   },
   finishRun: async (...args: unknown[]) => { calls.finished.push(args); return true; },
-  persistRun: async () => true,
+  persistRun: async (...args: unknown[]) => { calls.persisted.push(args); return true; },
   cancelRun: async () => true,
 }));
 vi.mock("../../lib/profile/play", () => ({ buildPlayGroup: () => ({}) }));
-vi.mock("../../lib/tuning/evidence", () => ({ buildEvidencePack: (input: unknown) => { calls.packInput = input; return { cards: [] }; } }));
+vi.mock("../../lib/tuning/evidence", () => ({
+  buildEvidencePack: (input: { limits: unknown }) => {
+    calls.packInput = input;
+    // Mirrors the real flow: `runTuning` passes the SAME `limits` it read from `tuningInputs` on
+    // to `buildEvidencePack`, so the mocked pack never risks disagreeing with it.
+    return { ...(calls.evidencePack as object ?? { cards: [] }), limits: input.limits };
+  },
+}));
 vi.mock("../../lib/tuning/prompt", () => ({ buildPrompt: () => ({ system: "s", user: "u" }) }));
 // A reply that came back, billed, and names cards: the catalog read after it is what throws here,
 // since `db` is a stub.
@@ -110,6 +151,13 @@ beforeEach(() => {
   calls.headerUpdates = [];
   calls.headerWhere = [];
   calls.headerUpdateRows = [{ id: "deck_1" }];
+  calls.evidencePack = undefined;
+  calls.catalogRows = [];
+  calls.persisted = [];
+  calls.priceRows = new Map();
+  calls.ownedIds = new Set();
+  calls.freeCopies = new Map();
+  calls.limits = { capCents: null, sets: [], ownedOnly: false };
 });
 
 describe("runTuning after the call returned", () => {
@@ -154,6 +202,104 @@ describe("runTuning's model call (v2)", () => {
       { status: "failed", errorClass: "malformed", droppedCount: undefined },
       { model: "claude-sonnet-5", usage },
     ]]);
+  });
+});
+
+// H35, PR 4a: eight asked, five kept. Review round 2 (Low, previously missed): the production
+// slice and its persisted report are otherwise unexercised, since every other test's `db` stub
+// throws before reaching the catalog read.
+describe("runTuning's 8-asked/5-kept slice", () => {
+  const CARD = (n: number) => ({
+    add: `Add ${n}`, cut: `Cut ${n}`, rationale: "Good value for this deck.", rationaleShort: "Good value.",
+    evidence: [{ kind: "decklist" as const, value: "x" }],
+  });
+  const EIGHT = Array.from({ length: 8 }, (_, i) => CARD(i));
+
+  beforeEach(() => {
+    calls.startKind = "started";
+    calls.reachModel = true;
+    calls.modelOutcome = {
+      ok: true,
+      value: { suggestions: EIGHT },
+      usage: { inputTokens: 4_000, outputTokens: 900, cacheReadTokens: 0, cacheWriteTokens: 0 },
+    };
+    calls.evidencePack = {
+      commanders: [{ oracleId: "cmd", name: "Commander" }],
+      colorIdentity: [],
+      cards: Array.from({ length: 8 }, (_, i) => ({ oracleId: `cut${i}`, name: `Cut ${i}`, commander: false })),
+      play: { games: [], summary: { count: 0, record: { wins: 0, losses: 0, draws: 0 }, marked: 0, axes: [] } },
+      intent: null,
+      limits: { capCents: null, sets: [], ownedOnly: false },
+    };
+    calls.catalogRows = Array.from({ length: 8 }, (_, i) => [
+      { oracleId: `add${i}`, name: `Add ${i}`, colorIdentity: [], commanderLegal: true, printedInSelectedSets: true },
+      { oracleId: `cut${i}`, name: `Cut ${i}`, colorIdentity: [], commanderLegal: true, printedInSelectedSets: true },
+    ]).flat();
+  });
+
+  it("keeps only the first five of eight valid survivors", async () => {
+    await runTuning(DECK, { anyway: true });
+    expect(calls.persisted).toHaveLength(1);
+    const [, flagged, droppedCount, , report] = calls.persisted[0] as [unknown, { addOracleId: string }[], number, unknown, { askedCount: number; survivedCount: number; keptCount: number }];
+    expect(flagged).toHaveLength(5);
+    expect(flagged.map((f) => f.addOracleId)).toEqual(["add0", "add1", "add2", "add3", "add4"]);
+    expect(droppedCount).toBe(0);
+    expect(report).toEqual({ askedCount: 8, survivedCount: 8, keptCount: 5 });
+  });
+
+  // Review round 4: proves the mocked `loadPrices`/`readOwnedOracleIds` results actually reach
+  // the hard filters through the real wiring, not just that `validateSuggestions` applies them
+  // in its own isolated unit tests.
+  it("drops a candidate over an active price cap, from the price read's own result", async () => {
+    calls.limits = { capCents: 300, sets: [], ownedOnly: false };
+    calls.priceRows = new Map([["add0", 1000], ...Array.from({ length: 7 }, (_, i) => [`add${i + 1}`, 100] as const)]);
+    await runTuning(DECK, { anyway: true });
+    const [, flagged, droppedCount, , report] = calls.persisted[0] as [unknown, { addOracleId: string }[], number, unknown, { askedCount: number; survivedCount: number; keptCount: number }];
+    expect(flagged.map((f) => f.addOracleId)).not.toContain("add0");
+    expect(flagged).toHaveLength(5);
+    expect(droppedCount).toBe(1);
+    expect(report).toEqual({ askedCount: 8, survivedCount: 7, keptCount: 5 });
+  });
+
+  it("drops an unowned candidate when owned-only is active, from the ownership read's own result", async () => {
+    calls.limits = { capCents: null, sets: [], ownedOnly: true };
+    calls.ownedIds = new Set(Array.from({ length: 7 }, (_, i) => `add${i + 1}`));
+    await runTuning(DECK, { anyway: true });
+    const [, flagged, droppedCount, , report] = calls.persisted[0] as [unknown, { addOracleId: string }[], number, unknown, { askedCount: number; survivedCount: number; keptCount: number }];
+    expect(flagged.map((f) => f.addOracleId)).not.toContain("add0");
+    expect(flagged).toHaveLength(5);
+    expect(droppedCount).toBe(1);
+    expect(report).toEqual({ askedCount: 8, survivedCount: 7, keptCount: 5 });
+  });
+
+  // Review round 6: "owned" alone is not "sleeveable" — a collection row with every copy
+  // already claimed by another deck must still be dropped, the same rule `fill.ts`'s
+  // `pool: "sleeveable"` applies (`a === undefined || a.free > 0`).
+  it("drops a candidate the player owns but has no free copy of", async () => {
+    calls.limits = { capCents: null, sets: [], ownedOnly: true };
+    calls.ownedIds = new Set(Array.from({ length: 8 }, (_, i) => `add${i}`));
+    calls.freeCopies = new Map([["add0", 0]]);
+    await runTuning(DECK, { anyway: true });
+    const [, flagged, droppedCount, , report] = calls.persisted[0] as [unknown, { addOracleId: string }[], number, unknown, { askedCount: number; survivedCount: number; keptCount: number }];
+    expect(flagged.map((f) => f.addOracleId)).not.toContain("add0");
+    expect(flagged).toHaveLength(5);
+    expect(droppedCount).toBe(1);
+    expect(report).toEqual({ askedCount: 8, survivedCount: 7, keptCount: 5 });
+  });
+
+  // Review round 6 (Low): the Set limit's own wiring was untested at the action level — the
+  // validator test injects `printedInSelectedSets` directly, and `printed-in.test.ts`
+  // reconstructs a separate query, so a regression here (an empty set list reaching the real
+  // query, say) would leave both green.
+  it("drops a candidate printed outside the deck's selected sets, from the catalog read's own result", async () => {
+    calls.limits = { capCents: null, sets: ["lea"], ownedOnly: false };
+    calls.catalogRows = (calls.catalogRows as { oracleId: string }[]).map((r) => (r.oracleId === "add0" ? { ...r, printedInSelectedSets: false } : r));
+    await runTuning(DECK, { anyway: true });
+    const [, flagged, droppedCount, , report] = calls.persisted[0] as [unknown, { addOracleId: string }[], number, unknown, { askedCount: number; survivedCount: number; keptCount: number }];
+    expect(flagged.map((f) => f.addOracleId)).not.toContain("add0");
+    expect(flagged).toHaveLength(5);
+    expect(droppedCount).toBe(1);
+    expect(report).toEqual({ askedCount: 8, survivedCount: 7, keptCount: 5 });
   });
 });
 
@@ -368,6 +514,20 @@ describe("saveDeckLimits (H35 PR 2, \"Kept for this deck\")", () => {
   it("still accepts a well-formed set code at each bound", async () => {
     await saveDeckLimits(DECK, { sets: ["mh", "lcisomhc"] });
     expect(calls.headerUpdates[0].set).toMatchObject({ tuningSets: ["mh", "lcisomhc"] });
+  });
+
+  // Review round 6: the shape check bounds each code, not the array — an unbounded Sets answer
+  // is serialized twice into a paid model request and once into SQL every run. Bounded the same
+  // way the create flow bounds its own Sets answer (MAX_SETS).
+  it("refuses more than MAX_SETS codes, though every one is individually well-formed", async () => {
+    const result = await saveDeckLimits(DECK, { sets: Array.from({ length: 9 }, (_, i) => `s${i}`) });
+    expect(result.ok).toBe(false);
+    expect(calls.headerUpdates).toHaveLength(0);
+  });
+
+  it("still accepts exactly MAX_SETS codes", async () => {
+    await saveDeckLimits(DECK, { sets: Array.from({ length: 8 }, (_, i) => `s${i}`) });
+    expect(calls.headerUpdates).toHaveLength(1);
   });
 });
 

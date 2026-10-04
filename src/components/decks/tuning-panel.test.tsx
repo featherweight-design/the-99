@@ -404,6 +404,55 @@ describe("TuningPanel", () => {
     expect(screen.getByText(new RegExp(deckTuningCopy.failure.timeout.note))).toBeInTheDocument();
   });
 
+  // H35, PR 4a (pre-open review, round 0; presentation per review round 3/STATES §3 state 9): a
+  // run with a MIX of a locked cut and some other dropped rule (e.g. the new price/set/owned
+  // filters) is not all-`neverCut`, so `runTuning` classifies it `ungrounded`, not `locked_only`
+  // — and the refusal sentence must still name the lock, in AnalysisBanner's "note" frame, never
+  // the generic `Failure` body.
+  it("names a locked card in AnalysisBanner's note frame, for an ungrounded run with a mixed cause", async () => {
+    const failed = {
+      ...okRun, id: "r2", status: "failed" as const, errorClass: "ungrounded",
+      validationReport: { askedCount: 8, survivedCount: 0, keptCount: 0, refusal: { reason: "locked" as const, name: "Sol Ring" } },
+    };
+    await draw(deps([{ ...results, run: failed, stale: true }]));
+    expect(screen.queryByTestId("tuning-failure")).toBeNull();
+    const banner = screen.getByTestId("analysis-banner");
+    expect(banner).toHaveAttribute("data-mode", "note");
+    expect(banner).toHaveTextContent(deckDescriptionCopy.refusal.locked("Sol Ring"));
+  });
+
+  it("names several locked cards in AnalysisBanner's note frame, for an ungrounded run with a mixed cause", async () => {
+    const failed = {
+      ...okRun, id: "r2", status: "failed" as const, errorClass: "ungrounded",
+      validationReport: { askedCount: 8, survivedCount: 0, keptCount: 0, refusal: { reason: "lockedMany" as const, count: 3 } },
+    };
+    await draw(deps([{ ...results, run: failed, stale: true }]));
+    expect(screen.getByTestId("analysis-banner")).toHaveTextContent(deckDescriptionCopy.refusal.lockedMany(3));
+  });
+
+  // H35, PR 4a, review round 3: the "tooMany" caption must show at BOTH widths, in AnalysisBanner's
+  // note frame — a `desktopOnly` Lead silently hid it from every phone-width reader.
+  it("names tooMany in AnalysisBanner's note frame, with no width restriction", async () => {
+    const run = { ...okRun, validationReport: { askedCount: 8, survivedCount: 7, keptCount: 5 } };
+    await draw(deps([{ ...results, run }]));
+    const banner = screen.getByTestId("analysis-banner");
+    expect(banner).toHaveAttribute("data-mode", "note");
+    expect(banner).toHaveTextContent(deckDescriptionCopy.refusal.tooMany(8));
+    expect(banner.className).not.toMatch(/\bhidden\b/);
+  });
+
+  // H35, PR 4a, review round 4: "your limits" is read off the LIVE deck setting (`facts.limits`),
+  // which only still describes the shown run while nothing has changed since it ran — exactly
+  // what `state.stale` already tracks, since the tuning fingerprint includes limits.
+  it("reads your limits only for a fresh result, never a stale one with the same live setting", async () => {
+    const withCap: TuningFacts = { ...facts, limits: { capCents: 500, sets: [], ownedOnly: false } };
+    await draw(deps([results]), withCap);
+    expect(screen.getByText((text) => text.includes(deckDescriptionCopy.manifest.readLimits))).toBeInTheDocument();
+    cleanup();
+    await draw(deps([{ ...results, stale: true }]), withCap);
+    expect(screen.queryByText((text) => text.includes(deckDescriptionCopy.manifest.readLimits))).toBeNull();
+  });
+
   it("disables the press when every credit is out even on an unchanged deck", async () => {
     const next = new Date("2026-09-24T14:20:00Z");
     const d = deps([{ ...results, allowance: { used: 5, limit: 5, reopensAt: next, nextAt: next } }]);

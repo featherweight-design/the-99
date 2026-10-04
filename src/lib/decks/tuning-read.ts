@@ -235,6 +235,7 @@ export async function readTuningState(
       errorClass: deckSuggestionRuns.errorClass,
       createdAt: deckSuggestionRuns.createdAt,
       droppedCount: deckSuggestionRuns.droppedCount,
+      validationReport: deckSuggestionRuns.validationReport,
     }).from(deckSuggestionRuns).where(and(runOf, mine))
       .orderBy(desc(deckSuggestionRuns.createdAt)).limit(1),
     db.select({
