@@ -4,7 +4,7 @@ import { CollectionMarkKey } from "./collection-mark-key";
 import { CARD_FACTS, cardFactName } from "../../lib/copy/card-mark";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import { availabilityCopy } from "../../lib/copy/availability";
-import { AVAILABILITY_CHIP_GLYPH_OVER_PX, AVAILABILITY_CHIP_GLYPH_PX } from "../ui/availability-marker";
+import { KEY_DIAMOND_BOX_PX, KEY_DIAMOND_OVER_PX } from "../ui/availability-marker";
 
 describe("the collection mark key", () => {
   // Every fact plus the combo clause, asserted by NAME rather than by count — a count of 5
@@ -26,9 +26,9 @@ describe("the collection mark key", () => {
   });
 
   // Found by Copilot's round-5 review: a CSS `transform` never affects layout, so the bare
-  // rotated glyph (its unrotated ~11.3px CSS side) reserved less flex space than it PAINTS,
-  // shrinking `MarkKey`'s shared 5px sample-to-word gap and misaligning the soft/hard samples
-  // against the wider over one. Each sample's own wrapper must reserve its true visual size.
+  // rotated glyph (its unrotated CSS side) reserved less flex space than it PAINTS, shrinking
+  // `MarkKey`'s shared 5px sample-to-word gap and misaligning the soft/hard samples against the
+  // wider over one. Each sample's own wrapper must reserve its true visual size.
   it("reserves each availability sample's own full bounding box, not its unrotated CSS size", () => {
     render(<CollectionMarkKey />);
     // `MarkKey` wraps each sample in its own `aria-hidden` span, so the box is one level
@@ -37,10 +37,36 @@ describe("the collection mark key", () => {
       .previousElementSibling!.firstElementChild as HTMLElement;
     const overSample = screen.getByText(availabilityCopy.collection.filterOver)
       .previousElementSibling!.firstElementChild as HTMLElement;
-    expect(softSample.style.width).toBe(`${AVAILABILITY_CHIP_GLYPH_PX}px`);
-    expect(softSample.style.height).toBe(`${AVAILABILITY_CHIP_GLYPH_PX}px`);
-    expect(overSample.style.width).toBe(`${AVAILABILITY_CHIP_GLYPH_OVER_PX}px`);
-    expect(overSample.style.height).toBe(`${AVAILABILITY_CHIP_GLYPH_PX}px`);
+    expect(softSample.style.width).toBe(`${KEY_DIAMOND_BOX_PX}px`);
+    expect(softSample.style.height).toBe(`${KEY_DIAMOND_BOX_PX}px`);
+    expect(overSample.style.width).toBe(`${KEY_DIAMOND_OVER_PX}px`);
+    expect(overSample.style.height).toBe(`${KEY_DIAMOND_BOX_PX}px`);
+  });
+
+  // Hugh's ruling, 2026-10-03 follow-up: the key's three commitment samples draw at 8px,
+  // smaller than the chip's own `big` 11.3px scale, so they sit with the key's other 16x16
+  // marks rather than reading larger. `size="key"` on `AvailabilityGlyphBox` is the only call
+  // site that passes it — this pins the choice rather than its downstream box math, which the
+  // test above already covers.
+  //
+  // Copilot round 2 (CONFIRMED): the first version read its expected value off the production
+  // constant (so changing that constant would still pass) and checked only the soft sample (so
+  // dropping `size="key"` from hard or over alone would too). Pinned to the literal 8 here, and
+  // every sample checked — `.rotate-45` is the diamond's own class, present on the soft/hard
+  // sample's single diamond and on BOTH of the over sample's two diamonds, so a selector that
+  // finds zero or more than expected is itself a finding.
+  it("draws the three commitment samples' diamonds at 8x8, not the chip's ~11.3x11.3 big one", () => {
+    render(<CollectionMarkKey />);
+    const diamondSides = (labelText: string) => {
+      const box = screen.getByText(labelText).previousElementSibling!.firstElementChild as HTMLElement;
+      return [...box.querySelectorAll<HTMLElement>(".rotate-45")].map((el) => [el.style.width, el.style.height]);
+    };
+    expect(diamondSides(availabilityCopy.collection.filterSoft)).toEqual([["8px", "8px"]]);
+    expect(diamondSides(availabilityCopy.collection.filterHard)).toEqual([["8px", "8px"]]);
+    expect(diamondSides(availabilityCopy.collection.filterOver)).toEqual([
+      ["8px", "8px"],
+      ["8px", "8px"],
+    ]);
   });
 
   it("keeps every entry in one group", () => {

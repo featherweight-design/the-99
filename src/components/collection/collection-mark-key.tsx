@@ -53,12 +53,16 @@ const ENTRIES = [
   // THE THREE AVAILABILITY STATES (collection surfaces, Call 3): the chip on the 3-up PHONE tile
   // dropped its word — "1 in a draft" is 81px of a 101px caption — and moved it here instead,
   // using the Availability filter's own labels rather than new words for the same three states.
-  // `AvailabilityGlyphBox` (an explicit, non-shrinking layout box around `AvailabilityGlyph` at
-  // `big`) rather than `AvailabilityMarker`: the marker always speaks a REAL card's counts and
+  // `AvailabilityGlyphBox` (an explicit, non-shrinking layout box around `AvailabilityGlyph`)
+  // rather than `AvailabilityMarker`: the marker always speaks a REAL card's counts and
   // claimants, and a key entry decodes the glyph alone, with no card behind it to count. The box
   // matters here specifically: a `transform` never affects layout, so a bare rotated glyph
   // reserves less flex space than it paints, which pulled `MarkKey`'s shared `gap-[5px]` down to
-  // ~2.7px against the word and misaligned the sample with the 21x16 over glyph beside it.
+  // ~2.7px against the word and misaligned the sample with the over glyph beside it.
+  //
+  // `size="key"` (Hugh, 2026-10-03 follow-up): the box's own `"big"` default read ~11.3px of
+  // diamond as larger than this key's other 16x16 marks, whose own ink covers less of their box
+  // than a filled/outlined diamond does. 8px sits with them instead.
   //
   // UNCONDITIONAL (Hugh, 2026-10-03), reversing the scoping below `md` had for one round: the
   // desktop tile's chip spells the state out in words already, but ONE key describing every mark
@@ -66,17 +70,17 @@ const ENTRIES = [
   // to have trimmed. Drawn once per mount now, not split into a phone instance and a desktop one.
   {
     id: "avail-soft",
-    sample: <AvailabilityGlyphBox state="soft" seam="var(--bg)" />,
+    sample: <AvailabilityGlyphBox state="soft" seam="var(--bg)" size="key" />,
     word: availabilityCopy.collection.filterSoft,
   },
   {
     id: "avail-hard",
-    sample: <AvailabilityGlyphBox state="hard" seam="var(--bg)" />,
+    sample: <AvailabilityGlyphBox state="hard" seam="var(--bg)" size="key" />,
     word: availabilityCopy.collection.filterHard,
   },
   {
     id: "avail-over",
-    sample: <AvailabilityGlyphBox state="over" seam="var(--bg)" />,
+    sample: <AvailabilityGlyphBox state="over" seam="var(--bg)" size="key" />,
     word: availabilityCopy.collection.filterOver,
   },
 ];

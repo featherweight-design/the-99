@@ -1,10 +1,31 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import type { ComponentProps, MouseEvent, ReactNode } from "react";
 import { CollectionPlaceHead, placeFromPathname, type CollectionPlace } from "./collection-place-head";
 import { collectionTabsCopy } from "../../lib/copy/collection";
 
 let pathname = "/collection";
 vi.mock("next/navigation", () => ({ usePathname: () => pathname }));
+
+// The real Link's own click handler returns before calling `onNavigate` at all when it finds
+// no AppRouterContext (`if (!router) return;`), so a test with no router provider would never
+// exercise it. This mock renders a plain <a> and fires onNavigate on click instead, keeping
+// every existing assertion (href, aria-current, data-testid, text) on the real DOM shape.
+vi.mock("next/link", () => ({
+  default: ({
+    href,
+    onNavigate,
+    children,
+    ...rest
+  }: ComponentProps<"a"> & { href: string; onNavigate?: (e: MouseEvent) => void; children: ReactNode }) => (
+    <a href={href} onClick={(e) => onNavigate?.(e)} {...rest}>
+      {children}
+    </a>
+  ),
+  // PendingReporter (inside each tab's Link) reads this; always idle is fine here — this file
+  // is not testing the pending overlay, only the optimistic highlight.
+  useLinkStatus: () => ({ pending: false }),
+}));
 
 const refreshCollectionHeader = vi.fn();
 vi.mock("../../app/collection/actions", () => ({
@@ -190,6 +211,71 @@ describe("refreshing the two figures", () => {
     // apart here.
     resolveFirst({ stats: OWNED, lastUpdatedLabel: null });
     await waitFor(() => expect(screen.getByText("0 cards · 0 unique")).toBeTruthy());
+  });
+});
+
+function currentTestId(): string | undefined {
+  return within(strip())
+    .getAllByRole("link")
+    .find((a) => a.getAttribute("aria-current") === "page")
+    ?.getAttribute("data-testid")
+    ?.replace("collection-tab-", "");
+}
+
+function pressTab(place: CollectionPlace) {
+  fireEvent.click(screen.getByTestId(`collection-tab-${place}`));
+}
+
+// A press must move the underline and aria-current to the pressed tab at once, not once its
+// content has loaded — pathname (the mocked prop driving `current`) is NEVER changed by these
+// presses alone, so any movement proves the optimistic state, not a real commit (#1222 follow-up,
+// Hugh's ruling).
+describe("optimistic tab highlight", () => {
+  it("moves aria-current to the pressed tab before the pathname commits", () => {
+    const { rerender } = head("cards");
+    pressTab("sets");
+    rerender(<CollectionPlaceHead stats={OWNED} lastUpdatedLabel={null} />);
+    expect(currentTestId()).toBe("sets");
+  });
+
+  it("a second press before the first lands overwrites the target rather than stacking", () => {
+    const { rerender } = head("cards");
+    pressTab("sets");
+    rerender(<CollectionPlaceHead stats={OWNED} lastUpdatedLabel={null} />);
+    pressTab("proxies");
+    rerender(<CollectionPlaceHead stats={OWNED} lastUpdatedLabel={null} />);
+    expect(currentTestId()).toBe("proxies");
+  });
+
+  it("reconciles to whatever the pathname actually commits to, not necessarily the press", () => {
+    const { rerender } = head("cards");
+    pressTab("sets");
+    rerender(<CollectionPlaceHead stats={OWNED} lastUpdatedLabel={null} />);
+    expect(currentTestId()).toBe("sets");
+    // The real navigation lands somewhere else entirely — a race with another press, or a
+    // route the reader typed. The optimistic guess is discarded in favor of the real pathname.
+    pathname = "/collection/proxies";
+    rerender(<CollectionPlaceHead stats={OWNED} lastUpdatedLabel={null} />);
+    expect(currentTestId()).toBe("proxies");
+  });
+
+  it("reconciles back to the starting tab after a real round trip, with no stuck guess", () => {
+    // A Back that genuinely lands the reader on the tab they started from still passes
+    // through a REAL commit to get there — Next never re-commits the identical pathname
+    // without an intervening navigation, so there is no state where pendingPlace and the
+    // live pathname can disagree forever; the effect above fires on every actual commit,
+    // whichever route it resolves to.
+    const { rerender } = head("cards");
+    pressTab("sets");
+    rerender(<CollectionPlaceHead stats={OWNED} lastUpdatedLabel={null} />);
+    pathname = "/collection/sets";
+    rerender(<CollectionPlaceHead stats={OWNED} lastUpdatedLabel={null} />);
+    expect(currentTestId()).toBe("sets");
+    pressTab("cards");
+    rerender(<CollectionPlaceHead stats={OWNED} lastUpdatedLabel={null} />);
+    pathname = "/collection";
+    rerender(<CollectionPlaceHead stats={OWNED} lastUpdatedLabel={null} />);
+    expect(currentTestId()).toBe("cards");
   });
 });
 
