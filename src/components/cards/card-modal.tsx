@@ -481,9 +481,16 @@ export function artWidthReservePx(underCardHeight: number): number {
 // between it and a plate — the same two constants the 1252px threshold comment derives from.
 // Kept here, beside the one place that reads them, rather than exported: nothing else needs
 // them, and the threshold's own comment is free to keep stating the arithmetic in prose.
-const DIALOG_HALF_WIDTH = 410;
+export const DIALOG_HALF_WIDTH = 410;
 const PLATE_GAP = 24;
 const PLATE_WIDTH = 168;
+/**
+ * The neighbor plates' threshold (handoff decision 4, ledger 2): the dialog, plus a plate, its gap
+ * off the dialog and 24px clear of the viewport edge on each side. 1252 today, and COMPUTED, so a
+ * move of the dialog's width moves it too; `card-modal-geometry.test.ts` pins the dialog's
+ * `md:w-[…]` class to `DIALOG_HALF_WIDTH`, the half a Tailwind literal cannot read.
+ */
+export const NEIGHBOR_MIN_WIDTH = 2 * (DIALOG_HALF_WIDTH + PLATE_GAP + PLATE_WIDTH + 24);
 
 const NeighborPlate = React.forwardRef<
   HTMLButtonElement,
@@ -512,7 +519,10 @@ const NeighborPlate = React.forwardRef<
         style={{ width: PLATE_WIDTH, height: 235, ...art, boxShadow: "0 12px 30px rgba(0,0,0,0.4)" }}
       />
       {sibling.name ? (
-        <span className="font-mono text-[12.5px] truncate max-w-[168px]" style={{ color: "var(--fg-muted)" }}>
+        // `--fg-body`, not the handoff's `--fg-muted` (ledger 1, measured in build): over the
+        // dimmed backdrop `--fg-muted` held a median 3.8 to 4.9:1 across the six themes, under
+        // AA for 12.5px text on half the pixels or more; `--fg-body` holds 4.4 to 5.1 at worst.
+        <span className="font-mono text-[12.5px] truncate max-w-[168px]" style={{ color: "var(--fg-body)" }}>
           {sibling.name}
         </span>
       ) : null}
@@ -783,9 +793,8 @@ export function CardModal({
   const [expanded, setExpanded] = useState(false);
   // The zoom is a layer inside this dialog, never a dialog of its own (table §3.1).
   const [zoomed, setZoomed] = useState(false);
-  // The neighbor plates' own threshold (handoff decision 4): 820 (the dialog) + 2 x (168 the
-  // plate + 24 off the modal + 24 clear of the viewport edge) = 1252.
-  const wideEnoughForNeighbors = useMinWidth("(min-width: 1252px)");
+  // The neighbor plates' own threshold: see `NEIGHBOR_MIN_WIDTH`.
+  const wideEnoughForNeighbors = useMinWidth(`(min-width: ${NEIGHBOR_MIN_WIDTH}px)`);
   // The phone's peeks, mounted only below `md` as the desktop plates are only above 1252: a
   // hidden duplicate of a control is still a second control to every query that finds it.
   const narrow = !useMinWidth("(min-width: 768px)");

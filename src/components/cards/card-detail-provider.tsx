@@ -948,9 +948,10 @@ export function CardDetailProvider({
   // cache hit goes first: this effect retries on `settleTick` once that re-read settles, whether
   // or not it brings back a new `card` — a failed or missing correction leaves the shown card
   // exactly as `show(hit)` set it, with nothing else to re-run the effect.
-  // Only the live card's list, never the card held under a sheet, which draws no paging.
-  const nextId = !held && index >= 0 && index < siblingIds.length - 1 ? siblingIds[index + 1] : null;
-  const prevId = !held && index > 0 ? siblingIds[index - 1] : null;
+  // The live card's list: with a card held under a sheet, that is the TOP card's, which pages its
+  // own list (carousel PR 4, call #9). The held card pages nothing and reads nothing ahead.
+  const nextId = index >= 0 && index < siblingIds.length - 1 ? siblingIds[index + 1] : null;
+  const prevId = index > 0 ? siblingIds[index - 1] : null;
   useEffect(() => {
     if (!card || (nextId === null && prevId === null)) return;
     const shownId = card.oracleId;
