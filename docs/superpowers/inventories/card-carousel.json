@@ -144,7 +144,7 @@
           "settle": 3000
         },
         {
-          "click": "a[href^=\"/decks/\"]:not([href=\"/decks/import\"]):not([href=\"/decks/new\"])",
+          "click": "a[href^=\"/decks/\"]:not([href=\"/decks/import\"]):not([href=\"/decks/new\"]):not([data-notice-link])",
           "wait": "main, [role=main], h1",
           "settle": 7000
         },
@@ -174,7 +174,7 @@
           "settle": 3000
         },
         {
-          "click": "a[href^=\"/decks/\"]:not([href=\"/decks/import\"]):not([href=\"/decks/new\"])",
+          "click": "a[href^=\"/decks/\"]:not([href=\"/decks/import\"]):not([href=\"/decks/new\"]):not([data-notice-link])",
           "wait": "main, [role=main], h1",
           "settle": 7000
         },
