@@ -452,7 +452,7 @@ describe("ReviewChanges", () => {
       fireEvent.click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }));
     });
     await waitFor(() => {
-      expect(screen.getByText("3 of 3")).toBeTruthy();
+      expect(screen.getAllByText("3 of 3")).not.toHaveLength(0);
     });
   });
 

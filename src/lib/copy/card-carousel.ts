@@ -28,3 +28,17 @@ export const cardCarouselCopy = {
     return name ? `${bare}: ${name}` : bare;
   },
 } as const;
+
+/**
+ * The phone's card-first sheet (carousel R2, handoff `card-carousel · copy strings.ts`, quoted
+ * verbatim). The teaser's own button and the grip's accessible name, the grip being a real control
+ * for a reader who cannot drag it (plan PR 3, engineering call 2026-10-03).
+ */
+export const cardSheetCopy = {
+  /** The teaser's expand button, pinned above the home inset. */
+  expand: "All details",
+  /** The grip, as a button toggling between the teaser and the full sheet. */
+  grabberAria: (expanded: boolean) => (expanded ? "Show less" : "Show all details"),
+  /** The teaser's `set · number` (README R2 "Teaser"): the printing on screen, as data. */
+  printing: (setCode: string, collectorNumber: string) => `${setCode.toUpperCase()} · ${collectorNumber}`,
+} as const;

@@ -377,9 +377,8 @@ async function run() {
             titleLines: Math.round(box.height / Number.parseFloat(cs.lineHeight)),
           };
         });
-        // BOTH widths. The name block is in this row on a phone too — the art
-        // header only takes it when `compactArt` is true, and that wants the
-        // printing picker expanded, which it is not as the modal opens.
+        // BOTH widths. On a phone this row is the head of the card sheet, at both
+        // of its snaps (card carousel R2).
         //
         // Asserted as an INVARIANT rather than as an outcome: a cost sharing the
         // name's line means the name was not squeezed by it. Demanding the cost

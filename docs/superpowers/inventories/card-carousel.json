@@ -2,14 +2,141 @@
   "feature": "Card details carousel (H23)",
   "clearAbout": true,
   "widths": [
-    { "label": "phone", "width": 390, "height": 844 },
-    { "label": "narrow", "width": 1100, "height": 900 },
-    { "label": "desktop", "width": 1300, "height": 900 }
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "phone-360",
+      "width": 360,
+      "height": 640
+    },
+    {
+      "label": "narrow",
+      "width": 1100,
+      "height": 900
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
   ],
   "rows": [
     {
+      "id": "phone-first",
+      "label": "/collection \u2014 phone teaser on the list's first card: counter, right peek only",
+      "widths": [
+        "phone",
+        "phone-360"
+      ],
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "button[aria-busy]",
+          "settle": 3000
+        },
+        {
+          "click": "button[aria-busy]",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "phone-mid",
+      "label": "/collection \u2014 phone teaser after tapping the next peek: both peeks, 2 of N",
+      "widths": [
+        "phone",
+        "phone-360"
+      ],
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "button[aria-busy]",
+          "settle": 3000
+        },
+        {
+          "click": "button[aria-busy]",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Next card: ",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "phone-full",
+      "label": "/collection \u2014 phone sheet raised by All details: the shipped details column at y 64",
+      "widths": [
+        "phone",
+        "phone-360"
+      ],
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "button[aria-busy]",
+          "settle": 3000
+        },
+        {
+          "click": "button[aria-busy]",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^All details$",
+          "settle": 1000
+        }
+      ]
+    },
+    {
+      "id": "phone-one",
+      "label": "/collection?q= one card \u2014 a list of one: no counter, no peeks, the sheet still expands",
+      "widths": [
+        "phone",
+        "phone-360"
+      ],
+      "steps": [
+        {
+          "goto": "/collection?q=${CAROUSEL_ONE_CARD}",
+          "wait": "button[aria-busy]",
+          "settle": 3000
+        },
+        {
+          "click": "button[aria-busy]",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "phone-two-faced",
+      "label": "/collection?q= a two-faced card \u2014 the turn plate on the card's corner",
+      "widths": [
+        "phone",
+        "phone-360"
+      ],
+      "steps": [
+        {
+          "goto": "/collection?q=${CAROUSEL_TWO_FACED}",
+          "wait": "button[aria-busy]",
+          "settle": 3000
+        },
+        {
+          "click": "button[aria-busy]",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
       "id": "deck-row-open",
-      "label": "/decks/[id] — decklist row opens the modal, mid-list",
+      "label": "/decks/[id] \u2014 decklist row opens the modal, mid-list",
       "steps": [
         {
           "goto": "/decks",
@@ -31,8 +158,11 @@
     },
     {
       "id": "deck-row-next",
-      "label": "/decks/[id] — Next pages to the following card",
-      "widths": ["narrow", "desktop"],
+      "label": "/decks/[id] \u2014 Next pages to the following card",
+      "widths": [
+        "narrow",
+        "desktop"
+      ],
       "steps": [
         {
           "goto": "/decks",
@@ -58,5 +188,5 @@
       ]
     }
   ],
-  "note": "The desktop neighbor plates (handoff decision 2) only draw at 1252px and up. `deck-row-next` runs at both `narrow` (1100) and `desktop` (1300) so the sheet shows the paged state with the plates correctly ABSENT below the threshold and present above it, footer paging working at both. Both rows open the account's first listed deck rather than naming one, since any deck with more than one card shows the carousel."
+  "note": "The desktop neighbor plates (handoff decision 2) only draw at 1252px and up. `deck-row-next` runs at both `narrow` (1100) and `desktop` (1300) so the sheet shows the paged state with the plates correctly ABSENT below the threshold and present above it, footer paging working at both. Both rows open the account's first listed deck rather than naming one, since any deck with more than one card shows the carousel. The phone rows (PR 3) open from /collection, whose rows are the list's siblings, and need CAROUSEL_ONE_CARD (a search matching exactly one owned card) and CAROUSEL_TWO_FACED (a search whose first match is a two-faced card) in the environment. They run at 390x844, the drawn size, and 360x640, where the card shrinks by the README's sizing rule."
 }

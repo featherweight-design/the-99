@@ -406,7 +406,7 @@ describe("the detail modal pages Shopping in the order the list draws", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("2 of 2")).toBeInTheDocument();
+      expect(screen.getAllByText("2 of 2")).not.toHaveLength(0);
     });
   });
 });

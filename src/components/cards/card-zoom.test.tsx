@@ -245,35 +245,6 @@ describe("the zoom", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it("still opens from the 72px thumb once the header has collapsed", () => {
-    // The compact header withholds the MARK and keeps the GESTURE — withholding a
-    // mark is visual, withholding a gesture is functional — so the thumb has to stay
-    // a trigger with nothing drawn on it to say so.
-    const many = Array.from({ length: 14 }, (_, i) => ({
-      ...card().printings[0],
-      scryfallId: `s-${i}`,
-      collectorNumber: String(i),
-    }));
-    mount(card({ printings: many }));
-    fireEvent.click(screen.getAllByRole("button", { name: /printings owned/ })[0]);
-
-    // Scoped to the PHONE art box: both breakpoint trees are mounted, and the
-    // desktop one never collapses — a query across both would pass on the desktop
-    // trigger while the thumb had lost its own.
-    const thumb = screen.getByTestId("modal-art-mobile");
-    const trigger = thumb.querySelector("button");
-    expect(trigger).not.toBeNull();
-    // Present AND reachable: `querySelector` finds a hidden button just as happily.
-    expect(trigger).toBeVisible();
-    expect(trigger?.getAttribute("aria-label")).toBe(cardZoomCopy.zoomAria("Smothering Tithe"));
-    // And the mark is withheld here, which is the other half of the ruling.
-    expect(thumb.textContent).not.toContain("⤢");
-
-    fireEvent.click(trigger as HTMLElement);
-
-    expect(screen.getByTestId("card-zoom")).toBeInTheDocument();
-  });
-
   it("reports its own state on the trigger", () => {
     mount();
     const trigger = screen.getAllByRole("button", { name: cardZoomCopy.zoomAria("Smothering Tithe") })[0];
@@ -534,13 +505,13 @@ describe("what sits under the card", () => {
     name: "Delver of Secrets // Insectile Aberration",
   });
 
-  it("names the gesture each width actually has", () => {
+  it("hints the desktop's gesture, and the phone, whose zoom retired, has none", () => {
     mount();
-    // Both breakpoint trees mount, one per width, and the word for the gesture is
-    // the one thing a hint like this cannot get wrong.
+    // Both breakpoint trees mount. The phone's card is 320px, already the zoom's 318
+    // (carousel R2), so its zoom, its trigger and its "Tap to zoom" all retired.
     const hints = screen.getAllByTestId("modal-zoom-hint").map((n) => n.textContent);
-    expect(hints).toContain(cardZoomCopy.hintDesktop);
-    expect(hints).toContain(cardZoomCopy.hintPhone);
+    expect(hints).toEqual([cardZoomCopy.hintDesktop]);
+    expect(within(screen.getByTestId("modal-art-mobile")).queryByRole("button", { name: /Look at/ })).toBeNull();
   });
 
   it("draws no ⤢ plate anywhere — the hint replaced it", () => {

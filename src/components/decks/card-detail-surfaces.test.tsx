@@ -230,6 +230,6 @@ describe("deck card-detail triggers", () => {
       quantity: 1, printings: [], setCodes: [], primarySetCode: "", preferredPrinting: null,
     });
     await clickTrigger("Grizzly Bears");
-    expect(await screen.findByText("1 of 3")).toBeInTheDocument();
+    expect(await screen.findAllByText("1 of 3")).not.toHaveLength(0);
   });
 });
