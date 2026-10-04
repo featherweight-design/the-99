@@ -262,11 +262,19 @@ export async function runTuning(
     // `pool: "sleeveable"` already use, scoped to the model's own named cards — the pack-time
     // `owned` set above only covers cards already in the deck or in the skeleton's staples, never
     // a genuinely new suggestion.
+    // A price-read failure must never go silent while a cap is active: swallowing it turns every
+    // candidate's price into null, and the validator deliberately exempts a null price from the
+    // cap (never dropped for a cap it cannot be checked against) — so a transient failure would
+    // silently disable the cap rather than refuse the run. Swallow only when nothing is checking
+    // the figure (pre-open review round 1: price is read either way, since it's the buy tag's
+    // own figure, but only a cap depends on it surviving).
     const [{ prices, newestAsOf }, suggestedOwned] = await Promise.all([
-      loadPrices(nameRows.map((r) => r.oracleId)).catch((e): Awaited<ReturnType<typeof loadPrices>> => {
-        console.error("tuning run: price read failed", e);
-        return { prices: new Map(), newestAsOf: null };
-      }),
+      limits.capCents === null
+        ? loadPrices(nameRows.map((r) => r.oracleId)).catch((e): Awaited<ReturnType<typeof loadPrices>> => {
+            console.error("tuning run: price read failed", e);
+            return { prices: new Map(), newestAsOf: null };
+          })
+        : loadPrices(nameRows.map((r) => r.oracleId)),
       nameRows.length === 0 ? new Set<string>() : readOwnedOracleIds(userId, nameRows.map((r) => r.oracleId)),
     ]);
     const rows = nameRows.map((r) => {

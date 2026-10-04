@@ -51,9 +51,11 @@ export const TUNING_MODEL = "claude-sonnet-5";
 /**
  * The answer's own worst case, from the response schema's caps rather than guessed. One suggestion
  * at its longest is 200 + 200 + 400 + 80 characters of text plus four 160-character citations:
- * 1,520 characters, about 400 tokens, and about 460 with its JSON keys. Five of those is 2,300.
+ * 1,520 characters, about 400 tokens, and about 460 with its JSON keys. `ASK_SUGGESTIONS` (8, H35
+ * PR 4a) of those is 3,680 — the schema's own ceiling, not `MAX_SUGGESTIONS` (5, what is kept):
+ * a reply sized for the worst case the schema allows, not the worst case the panel shows.
  */
-export const ANSWER_TOKENS_WORST_CASE = 2_300;
+export const ANSWER_TOKENS_WORST_CASE = 3_680;
 
 /**
  * The output ceiling, which must hold ADAPTIVE THINKING as well as the answer. `callModel` sends
