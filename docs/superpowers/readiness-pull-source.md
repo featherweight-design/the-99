@@ -55,9 +55,13 @@ coincidence — "HD" sorts before "Prismari" too — so this did not surface fro
 it surfaced from reading the query.
 
 **Resolution:** the new candidate-list function sorts explicitly by `since` ascending (committed
-longest ago first, which is what "today's pick" already favors via `releasableClaims`'s own
-first-match behavior). `pullCandidate()` itself is untouched — it stays the single source of truth
-for `defaultId`, independent of how the full list is sorted for display.
+longest ago first) — this is NEW ordering, introduced for the displayed list only. Today's
+default pick is unchanged and does NOT follow commit order: `pullCandidate()` takes
+`releasableClaims(a)[0]`, i.e. whichever claim is first in `Availability.claims`'s own
+alphabetical-by-deck-name order (§2.1 above). The fixture's longest-committed source happens to
+also sort first alphabetically, which is why the two orders agree there, but that is coincidence,
+not a rule either function follows. `pullCandidate()` itself is untouched — it stays the single
+source of truth for `defaultId`, independent of how the full list is sorted for display.
 
 ### 2.2 "→ {n} cards" needs a new read — no surface on this page has it today
 
