@@ -131,6 +131,40 @@ describe("TuningPanel", () => {
     expect(d.run).toHaveBeenCalledWith("d1", { anyway: true, runId: expect.any(String) });
   });
 
+  // Pre-open review round 4 (previously missed): the re-entry guard set at the start of a press
+  // stayed held until `pressRun` itself settled — up to the model's own timeout — even after
+  // Stop had already cancelled that run and reset the visible state. A second Suggest press
+  // during that window silently did nothing.
+  it("releases the re-entry guard on Stop, letting Suggest start a new run while the first request is still unresolved", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    // This panel's own press stamps its run with `crypto.randomUUID()` — fixed here so Stop's
+    // own read (by that id) matches the fixture below.
+    const randomUUID = vi.spyOn(crypto, "randomUUID").mockReturnValue("r2" as unknown as ReturnType<typeof crypto.randomUUID>);
+    try {
+      const pending: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "pending" } };
+      const cancelled: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "cancelled" } };
+      // The run itself never settles — the thing Stop cannot abort.
+      const run = vi.fn(() => new Promise<never>(() => {}));
+      const d = deps([fresh, pending, cancelled], { run });
+      await draw(d);
+      await press(copy.suggest);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(run).toHaveBeenCalledTimes(1);
+      await press(copy.stop);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+      expect(d.cancel).toHaveBeenCalledWith("d1", "r2");
+      await press(copy.suggest);
+      expect(run).toHaveBeenCalledTimes(2);
+    } finally {
+      randomUUID.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
   it("offers Stop only while a run is pending, and Stop cancels the pending run", async () => {
     const pending: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "pending" } };
     const cancelled: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "cancelled" } };
@@ -752,6 +786,107 @@ describe("TuningPanel: Locked (never cut)", () => {
         await Promise.resolve();
       });
       expect(d.run).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // Pre-open review round 4 (previously missed): the sync block marked `facts.limits` as SEEN
+  // even for a field it skipped applying because that field was dirty. Once the dirty marker
+  // later cleared with no FURTHER prop change, nothing re-ran this block, so a newer server
+  // value that had already arrived (and was correctly skipped then) was never applied.
+  it("applies an already-seen-but-skipped authoritative value once the dirty marker clears, with no further prop change", async () => {
+    vi.useFakeTimers();
+    try {
+      let resolveSave!: (v: { ok: true }) => void;
+      (saveDeckLimits as ReturnType<typeof vi.fn>).mockClear();
+      (saveDeckLimits as ReturnType<typeof vi.fn>).mockImplementationOnce(
+        () => new Promise((resolve) => { resolveSave = resolve; }),
+      );
+      const d = deps([fresh]);
+      let utils!: ReturnType<typeof render>;
+      await act(async () => {
+        utils = render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
+      });
+      fireEvent.change(screen.getByLabelText("Most per card"), { target: { value: "50" } });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      expect(screen.getByLabelText("Most per card")).toHaveValue("50");
+      // Another tab's write lands while this cap edit is still dirty — correctly skipped.
+      const fromAnotherTab: TuningFacts = { ...facts, limits: { capCents: 7500, sets: [], ownedOnly: false } };
+      await act(async () => {
+        utils.rerender(<TuningPanel deckId="d1" permits={[3]} facts={fromAnotherTab} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
+      });
+      expect(screen.getByLabelText("Most per card")).toHaveValue("50");
+      // This tab's own save acknowledges. No FURTHER prop change follows.
+      resolveSave({ ok: true });
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      expect(screen.getByLabelText("Most per card")).toHaveValue("75");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // Pre-open review round 4 (previously missed): cancelling an invalid cap draft removed it
+  // from the pending patch, but left the field DIRTY — so nothing ever reconciled the display
+  // back to the authoritative value, and the cancelled, never-saved draft sat there looking
+  // saved indefinitely.
+  it("redraws the authoritative cap once a draft that went invalid is cancelled", async () => {
+    vi.useFakeTimers();
+    try {
+      (saveDeckLimits as ReturnType<typeof vi.fn>).mockClear();
+      const withCap: TuningFacts = { ...facts, limits: { capCents: 2500, sets: [], ownedOnly: false } };
+      await act(async () => {
+        render(<TuningPanel deckId="d1" permits={[3]} facts={withCap} onLogGame={vi.fn()} deps={deps([fresh])} printedInSets={[]} />);
+      });
+      const input = screen.getByLabelText("Most per card");
+      expect(input).toHaveValue("25");
+      fireEvent.change(input, { target: { value: "15" } });
+      fireEvent.change(input, { target: { value: "0" } });
+      expect(saveDeckLimits).not.toHaveBeenCalled();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      // Nothing saved — and the field reads the authoritative $25 again, not "15" sitting
+      // unsaved-but-displayed.
+      expect(saveDeckLimits).not.toHaveBeenCalled();
+      expect(input).toHaveValue("25");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // Pre-open review round 4 (previously missed): a save that succeeded but whose own re-read
+  // failed left `stateRef` on the PRE-SAVE fingerprint — a gate check right after could read
+  // "unchanged" from state the save had already retired.
+  it("retries the gate's fresh read when the save's own re-read failed", async () => {
+    vi.useFakeTimers();
+    try {
+      (saveDeckLimits as ReturnType<typeof vi.fn>).mockClear();
+      let readCalls = 0;
+      const read = vi.fn(async () => {
+        readCalls += 1;
+        // Call 1: the mount read. Call 2: the save's own re-read — fails. Call 3: press's retry.
+        if (readCalls === 2) throw new Error("down");
+        return readCalls === 1 ? fresh : { ...results, stale: false };
+      });
+      await act(async () => {
+        render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={deps([fresh], { read })} printedInSets={[]} />);
+      });
+      fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" }));
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: copy.suggest }));
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      expect(saveDeckLimits).toHaveBeenCalledWith("d1", { ownedOnly: true });
+      expect(readCalls).toBeGreaterThanOrEqual(3);
+      // The retried read answered "unchanged" (a successful prior run) — the run never started.
+      expect(screen.getByText(deckTuningCopy.announce.unchanged)).toBeInTheDocument();
     } finally {
       vi.useRealTimers();
     }

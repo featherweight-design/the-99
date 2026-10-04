@@ -155,13 +155,17 @@ export function TuningPanel({
   const [dirtyLimitFields, setDirtyLimitFields] = useState<ReadonlySet<"capDollars" | "sets" | "ownedOnly">>(
     () => new Set(),
   );
-  const [seenLimits, setSeenLimits] = useState(facts.limits);
-  if (seenLimits !== facts.limits) {
-    setSeenLimits(facts.limits);
-    if (!dirtyLimitFields.has("capDollars")) setCapDollars(facts.limits.capCents === null ? null : facts.limits.capCents / 100);
-    if (!dirtyLimitFields.has("sets")) setLimitSets(facts.limits.sets);
-    if (!dirtyLimitFields.has("ownedOnly")) setOwnedOnly(facts.limits.ownedOnly);
-  }
+  // Reconciled every render, not gated behind "did `facts.limits` change reference" — a field
+  // whose dirty marker was SKIPPED while its prop changed never got a second look once that
+  // marker later cleared, since by then the prop reference was already stale-equal to what
+  // this block had last seen (pre-open review round 4, a previously-missed finding): a value
+  // another tab saved in between stayed invisible until some UNRELATED prop change happened to
+  // re-trigger a reference comparison. Checking the actual VALUE every render, guarded by its
+  // own `!==`, needs no reference tracking and settles the moment dirty clears.
+  const wantedCapDollars = facts.limits.capCents === null ? null : facts.limits.capCents / 100;
+  if (!dirtyLimitFields.has("capDollars") && capDollars !== wantedCapDollars) setCapDollars(wantedCapDollars);
+  if (!dirtyLimitFields.has("sets") && limitSets !== facts.limits.sets) setLimitSets(facts.limits.sets);
+  if (!dirtyLimitFields.has("ownedOnly") && ownedOnly !== facts.limits.ownedOnly) setOwnedOnly(facts.limits.ownedOnly);
   const headingRef = useRef<HTMLHeadingElement>(null);
   // Each press takes a token, so a run the reader stopped cannot land over what they did next.
   const token = useRef(0);
@@ -171,8 +175,10 @@ export function TuningPanel({
   // A SYNCHRONOUS re-entry guard over `press`'s whole body: `reading` (which the render uses to
   // disable the button) only goes true once `setCounts({})` runs below, so a second click during
   // the flush-and-gate-check preamble would otherwise start a SECOND `press`, racing `token` and
-  // `ownRun` against the first (pre-open review round 3).
-  const preparingRun = useRef(false);
+  // `ownRun` against the first (pre-open review round 3). Holds the TOKEN the active press is
+  // running under, or null — `stop()` clears it unconditionally, and a press's own `finally`
+  // only clears it when it still names that exact press (round 4).
+  const preparingRun = useRef<number | null>(null);
 
   // EVERY server call here can reject (a dropped connection, an unexpected database error), and a
   // rejection must never strand the panel: a failed re-read keeps what is on screen, and a failed
@@ -213,6 +219,11 @@ export function TuningPanel({
   // edit queued in the SAME unsent patch; a newer edit that had already moved into its OWN,
   // separately-chained send was invisible to that check.
   const limitFieldRevision = useRef<Record<LimitField, number>>({ capDollars: 0, sets: 0, ownedOnly: 0 });
+  // True when the re-read a successful save just tried to force did NOT land (an exception, or
+  // a resolved-null read) — `stateRef` then still holds the PRE-SAVE fingerprint, which a gate
+  // check must not trust (pre-open review round 4, previously missed): the save genuinely
+  // happened, but the "unchanged" verdict it was meant to retire is still sitting in `stateRef`.
+  const limitsStaleRead = useRef(false);
   const sendLimits = useCallback(
     (patch: LimitsPatch, revisionAtSend: Partial<Record<LimitField, number>>): Promise<boolean> => {
       const keys = Object.keys(patch) as LimitField[];
@@ -230,7 +241,7 @@ export function TuningPanel({
             // The fingerprint changed server-side, so a prior "unchanged" reading of this exact
             // gate no longer applies — re-read so the manifest and the gate reopen without
             // waiting for an unrelated navigation to revalidate the page (round 1).
-            await reread();
+            limitsStaleRead.current = (await reread()) === null;
             setUnchangedShown(false);
             keys.forEach((key) => failedLimitFields.current.delete(key));
             const settled = keys.filter((key) => limitFieldRevision.current[key] === revisionAtSend[key]);
@@ -291,6 +302,16 @@ export function TuningPanel({
       const { capDollars: _capDollars, ...rest } = pendingLimits.current;
       pendingLimits.current = Object.keys(rest).length > 0 ? rest : null;
     }
+    // No send will ever carry this field now, so nothing will ever clear its dirty marker the
+    // usual way — clear it here instead, so the reconciliation above redraws the field from the
+    // AUTHORITATIVE server value on the very next render rather than leaving the cancelled
+    // draft sitting indefinitely, looking saved (pre-open review round 4, previously missed).
+    setDirtyLimitFields((prev) => {
+      if (!prev.has("capDollars")) return prev;
+      const next = new Set(prev);
+      next.delete("capDollars");
+      return next;
+    });
   }, []);
   // Flushes any debounced-but-unsent edit now, and waits for it AND any send already in flight
   // to settle — `press` needs both before it can trust `stateRef` (pre-open review round 2).
@@ -372,9 +393,13 @@ export function TuningPanel({
     if (!state) return;
     // Held for the whole press, released on every exit by the `finally` below — not just the
     // preamble, since `reading`'s own disablement only starts once `setCounts({})` runs further
-    // down (pre-open review round 3).
-    if (preparingRun.current) return;
-    preparingRun.current = true;
+    // down (pre-open review round 3). Stamped with THIS press's own token (bumped here, not
+    // inside `pressRun`), so `stop()` can release it explicitly without the `finally` of an
+    // already-superseded press then clearing a NEWER press's guard (round 4): the `finally`
+    // only clears it when the guard still names the token it set.
+    if (preparingRun.current !== null) return;
+    const mine = ++token.current;
+    preparingRun.current = mine;
     try {
       setRefused(null);
       // A limit edited moments ago still has a pending or in-flight save — flush and wait for it
@@ -392,7 +417,14 @@ export function TuningPanel({
         setRefused(deckDescriptionCopy.limits.refused);
         return;
       }
-      const current = flushed.touched ? stateRef.current : state;
+      let current = flushed.touched ? stateRef.current : state;
+      // The save's own re-read failed — `current` is the PRE-SAVE fingerprint, not the one this
+      // press must judge "unchanged" against. One retry here, rather than trusting it (round 4,
+      // previously missed).
+      if (flushed.touched && limitsStaleRead.current) {
+        current = await reread();
+        limitsStaleRead.current = current === null;
+      }
       if (current === null) {
         setRefused(deckTuningCopy.run.refused);
         return;
@@ -403,14 +435,14 @@ export function TuningPanel({
         return;
       }
       setUnchangedShown(false);
-      await pressRun(anyway);
+      await pressRun(mine, anyway);
     } finally {
-      preparingRun.current = false;
+      if (preparingRun.current === mine) preparingRun.current = null;
     }
   }
 
-  async function pressRun(anyway: boolean) {
-    const mine = ++token.current;
+  async function pressRun(mine: number, anyway: boolean) {
+    if (token.current !== mine) return;
     const runId = crypto.randomUUID();
     ownRun.current = runId;
     setCounts({});
@@ -450,6 +482,12 @@ export function TuningPanel({
 
   async function stop() {
     token.current += 1;
+    // Release the guard so a NEW press can start right away — the request `pressRun` is still
+    // awaiting (the model call, its closing read) can run up to the model timeout, and this
+    // panel's own `press` should not stay unresponsive until it settles (pre-open review round
+    // 4). Unconditional: a `press` whose `finally` later runs will find its own token already
+    // superseded and leave this null alone.
+    preparingRun.current = null;
     // The run this Stop is about: the one this panel's own press started, by the id it gave it,
     // or else the pending run already on screen, started elsewhere. Only that id is ever
     // cancelled, so a Stop never reaches a run another tab started.

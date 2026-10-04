@@ -139,7 +139,11 @@ export async function saveDeckLimits(
   const { capDollars, sets, ownedOnly } = fields;
   if (
     (capDollars !== undefined && !(capDollars === null || (Number.isInteger(capDollars) && capDollars >= 1 && capDollars <= MAX_BUDGET_DOLLARS)))
-    || (sets !== undefined && (!Array.isArray(sets) || sets.some((s) => typeof s !== "string" || s.length === 0 || s.length > 10)))
+    // Same set-code shape `validateCreateAnswers` checks (`answers.ts`): a malformed code (a
+    // single letter, a space, a NUL byte) was previously accepted here and either persisted as
+    // an unmatchable filter or made Postgres reject the whole update outright, never answering
+    // the field's own refusal (pre-open review round 4, a previously-missed finding).
+    || (sets !== undefined && (!Array.isArray(sets) || sets.some((s) => typeof s !== "string" || !/^[a-z0-9]{2,8}$/.test(s.toLowerCase()))))
     || (ownedOnly !== undefined && typeof ownedOnly !== "boolean")
   ) return { ok: false, message: deckDescriptionCopy.limits.refused };
   const set: { tuningCapCents?: number | null; tuningSets?: string[]; tuningOwnedOnly?: boolean } = {};

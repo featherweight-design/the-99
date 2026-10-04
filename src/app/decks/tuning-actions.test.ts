@@ -359,6 +359,22 @@ describe("saveDeckLimits (H35 PR 2, \"Kept for this deck\")", () => {
     expect(result.ok).toBe(false);
     expect(calls.headerUpdates).toHaveLength(0);
   });
+
+  // Pre-open review round 4 (previously missed): a single letter, a space, or a NUL byte were
+  // all accepted — persisted as an unmatchable filter, or made Postgres reject the update
+  // outright rather than ever returning this action's own refusal.
+  it("refuses a malformed set code rather than persisting it or reaching Postgres", async () => {
+    for (const sets of [["x"], ["bad code"], ["mh\u0000"], ["toolongcode9"]]) {
+      const result = await saveDeckLimits(DECK, { sets });
+      expect(result.ok).toBe(false);
+    }
+    expect(calls.headerUpdates).toHaveLength(0);
+  });
+
+  it("still accepts a well-formed set code at each bound", async () => {
+    await saveDeckLimits(DECK, { sets: ["mh", "lcisomhc"] });
+    expect(calls.headerUpdates[0].set).toMatchObject({ tuningSets: ["mh", "lcisomhc"] });
+  });
 });
 
 // Locked (never cut): every card but the commander locked. Refused by the gate, BEFORE `startRun`
