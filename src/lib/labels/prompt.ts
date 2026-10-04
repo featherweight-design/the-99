@@ -308,9 +308,9 @@ Omit "rampKind" entirely on any job that is not a role "ramp" job (a null is
 accepted there too).
 "jobs": [] is ONLY for a card none of whose abilities is one of the jobs above
 (a vanilla creature, a tapper, a card that only scries or cycles). Damage that
-can hit an opponent or an opponent's permanent, and a land fetched, are always
-jobs (removal, wipes, drain, ramp), so a card that does either is never []. No
-prose, no markdown fence.`;
+can hit an opponent or an opponent's permanent is always a job (removal, wipes,
+drain), and so is a NONLAND card's fetchesLand search as defined above (ramp):
+a card that does either is never []. No prose, no markdown fence.`;
 
 /**
  * What the SYSTEM block can cost, in tokens, as a CEILING the build's hard stop is enforced against:

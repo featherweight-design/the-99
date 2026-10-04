@@ -710,8 +710,9 @@ const AUDITED: GoldRow[] = [
     jobs: [
       j("role", "land", { af: "self" }),
       j("role", "removal", { af: "opponents", meth: "shrink", tr: "activated", rec: "oneShot", th: { stat: "cardsInGraveyard", op: ">=", value: 7 } }),
+      j("theme", "drain", { af: "opponents", tr: "activated", rec: "oneShot", th: { stat: "cardsInGraveyard", op: ">=", value: 7 } }),
     ],
-    why: "Threshold in the literal sense: removal only with seven cards in the graveyard, and it sacrifices the land.",
+    why: "Threshold in the literal sense: removal only with seven cards in the graveyard, and it sacrifices the land. Its 2 damage goes to any target, so drain as well since v8 (2026-10-04), under the same threshold.",
   },
   {
     name: "Wandering Fumarole", klass: "lands",

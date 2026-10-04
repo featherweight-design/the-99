@@ -143,7 +143,7 @@ describe("labelInputHash", () => {
   // install nothing and report every label as a catalog difference. When this fails: bump
   // LABEL_PROMPT_VERSION, then re-pin both literals here together.
   it("pins SYSTEM to the version it was written under", () => {
-    const pinned = { version: "8", system: "dea47df720aa1fbb4f719f63f3f429b68e12c911bd91cb2b1dc628facc9ede1b" };
+    const pinned = { version: "8", system: "826775f8b8851f3ed337225304f9fb0baeb31baf2505ece20a5ea5d47f90f43d" };
     expect({ version: LABEL_PROMPT_VERSION, system: createHash("sha256").update(SYSTEM).digest("hex") })
       .toEqual(pinned);
   });
@@ -242,7 +242,9 @@ describe("SYSTEM v8: damage and the empty answer", () => {
   it("keeps an empty answer for a card whose abilities map to no job", () => {
     expect(SYSTEM).not.toMatch(/A card with no job in the vocabulary gets/);
     expect(SYSTEM).toMatch(/"jobs": \[\] is ONLY for a card none of whose abilities is one of the jobs above/);
-    expect(SYSTEM).toMatch(/Damage that\s+can hit an opponent or an opponent's permanent, and a land fetched, are always\s+jobs/);
+    expect(SYSTEM).toMatch(/Damage that\s+can hit an opponent or an opponent's permanent is always a job/);
+    // A land is never ramp (Escape Tunnel), and landcycling is not fetchesLand (Topiary Panther).
+    expect(SYSTEM).toMatch(/a NONLAND card's fetchesLand search as defined above \(ramp\)/);
     // Cycling is NOT draw (the draw definition), so the never-empty clause must not name drawing.
     expect(SYSTEM).not.toMatch(/never answer \[\] for a\s+card that[^.]*draws/i);
   });
