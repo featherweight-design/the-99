@@ -26,6 +26,11 @@ describe("sourceDeckSizesQuery", () => {
     expect(params).toContain("d1");
     expect(params).toContain("d2");
   });
+
+  it("qualifies the correlated subquery's predicate against the outer deck's id — see AGENTS.md's correlated-subquery section; found by Copilot's round-5 review, the exact pitfall that section warns about", () => {
+    const { sql: text } = sourceDeckSizesQuery(db, ["d1"], "user_1").toSQL();
+    expect(text).toMatch(/where\s+dc\.deck_id\s*=\s*"decks"\.id/i);
+  });
 });
 
 describe("sourceDeckPresenceQuery", () => {
