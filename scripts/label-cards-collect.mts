@@ -10,9 +10,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import { writeMeasured } from "./lib/card-labels-ledger.mjs";
 import { costOf, type ModelKey } from "./lib/card-labels-pricing.mjs";
 import { publishArtifacts } from "./lib/card-labels-publish.mjs";
-import { normalizeJob, validateJob } from "../src/lib/labels/schema.js";
 import type { Job } from "../src/lib/labels/types.js";
-import { faceResolver, parseReply, withoutRepeats } from "../src/lib/labels/parse.js";
+import { faceResolver, parseReply, screenJobs, withoutRepeats } from "../src/lib/labels/parse.js";
 
 const client = new Anthropic({ baseURL: "https://api.anthropic.com" });
 /**
@@ -130,15 +129,10 @@ for (const [key, id] of Object.entries(submitted)) {
       const jobs = card.jobs;
       // A job the schema rejects is DROPPED and RECORDED, never repaired. A
       // repaired label would score the repair rather than the model. The one
-      // exception is `normalizeJob`, because the build applies it before storing:
-      // a sample scores the collector the labels are written through.
-      const kept = [];
-      for (const raw of jobs) {
-        const job = normalizeJob(raw) as Job; // validated on the next line
-        const problems = validateJob(job);
-        if (problems.length) malformed.push(`${card.name} [${job?.kind}]: ${problems.join(", ")}`);
-        else kept.push(job);
-      }
+      // exception is `normalizeJob`, inside `screenJobs`, which the build screens
+      // through too: a sample scores the screen the labels are written through.
+      const { kept, rejected } = screenJobs(jobs);
+      for (const r of rejected) malformed.push(`${card.name} [${String(r.kind)}]: ${r.problems.join(", ")}`);
       // A repeat is dropped and RECORDED: the prompt says never to write one, so a scored sample has to show
       // when the model did. Two faces returning the same job count here too, which is rare and still a repeat.
       const merged = [...(labels[card.name] ?? []), ...kept];

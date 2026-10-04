@@ -2,6 +2,8 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { type LabelScope, scopeList } from "../../src/lib/labels/scope";
+
 /**
  * The oracle ids a `list:<name>` scope names, read from `scripts/data/label-lists/<name>.json`: an
  * array of `{ oracleId }` rows, with whatever else a reader of the file needs beside each. The name
@@ -17,6 +19,16 @@ export function readLabelList(name: string, dir = resolve(import.meta.dirname, "
   });
   if (new Set(ids).size !== ids.length) throw new Error(`label list ${name} names an oracle id twice`);
   return ids;
+}
+
+/**
+ * The ids a scope labels when it is a list, or null for any other scope. The build plans exactly
+ * these and nothing else: `scopeCondition` refuses a list, so a build that skipped this would stop
+ * before labelling any card rather than label every one.
+ */
+export function listScopeIds(scope: LabelScope, dir?: string): string[] | null {
+  const name = scopeList(scope);
+  return name === null ? null : readLabelList(name, dir);
 }
 
 /** Case-insensitive, as `scope.ts`'s deck guard is. */

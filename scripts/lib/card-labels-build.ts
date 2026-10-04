@@ -47,9 +47,9 @@ import {
 // satisfying this script.
 import type { CardRow } from "../../src/lib/labels/publish";
 import { publishWave, readCardsByName, stampWave } from "../../src/lib/labels/publish";
-import { type LabelScope, scopeCondition, scopeDeck, scopeList } from "../../src/lib/labels/scope";
+import { type LabelScope, scopeCondition, scopeDeck } from "../../src/lib/labels/scope";
 import { labelTrialPool } from "../../src/lib/swaps/gather";
-import { readLabelList } from "./label-list";
+import { listScopeIds } from "./label-list";
 import type { Job } from "../../src/lib/labels/types";
 import { ALL_MODELS, PRICING } from "./card-labels-pricing.mjs";
 
@@ -206,8 +206,7 @@ type StaleCard = CardRow & { nameRows: number };
 
 async function cardsNeedingLabels(scope: LabelScope, only: readonly string[] | undefined): Promise<StaleCard[]> {
   const deckId = scopeDeck(scope);
-  const listName = scopeList(scope);
-  const trial = deckId !== null ? await labelTrialPool(deckId) : listName !== null ? readLabelList(listName) : null;
+  const trial = deckId !== null ? await labelTrialPool(deckId) : listScopeIds(scope);
   if (deckId !== null && trial === null) throw new Error(`LABEL_SCOPE names deck ${deckId}, which does not exist`);
   if (trial !== null) console.log(`  ${scope}: ${trial.length} card(s) in its trial pool`);
   const rows = await db.execute<StaleCard>(sql`

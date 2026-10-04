@@ -76,6 +76,26 @@ export const parseReply = (text: string): unknown => {
 };
 
 /**
+ * One card's returned jobs, screened as the stored labels are: each is normalized (`normalizeJob`
+ * strips a misplaced `to` or `method`), then validated, and a job that still fails is dropped and
+ * returned with its problems. The build and the sample collector both screen through this, so a
+ * sample scores the same screen the labels are written through.
+ */
+export function screenJobs(jobs: readonly unknown[]): {
+  kept: Job[]; rejected: { kind: unknown; problems: string[] }[];
+} {
+  const kept: Job[] = [];
+  const rejected: { kind: unknown; problems: string[] }[] = [];
+  for (const raw of jobs) {
+    const j = normalizeJob(raw);
+    const problems = validateJob(j);
+    if (problems.length) rejected.push({ kind: (j as { kind?: unknown } | null)?.kind, problems });
+    else kept.push(j as Job);
+  }
+  return { kept, rejected };
+}
+
+/**
  * One reply's text, read into the jobs it gives each card it was asked about: parsed, each name
  * resolved by face against `asked`, each job repaired by `normalizeJob` and then validated. Null
  * when the reply is not a JSON array at all.
@@ -101,13 +121,9 @@ export function readReply(text: string, asked: readonly string[]): {
     const name = resolve(card.name);
     if (name === null) { rejected.push(`unexpected name ${card.name}`); continue; }
     if (!Array.isArray(card.jobs)) { rejected.push(`${name}: jobs is not an array`); continue; }
-    const kept: Job[] = [];
-    for (const raw of card.jobs) {
-      const j = normalizeJob(raw);
-      const bad = validateJob(j);
-      if (bad.length) rejected.push(`${name}: ${bad.join(", ")}`);
-      else kept.push(j as Job);
-    }
+    const screened = screenJobs(card.jobs);
+    for (const r of screened.rejected) rejected.push(`${name}: ${r.problems.join(", ")}`);
+    const kept = screened.kept;
     // Two faces of one card come back as two entries and resolve to one name, so they merge.
     byName.set(name, withoutRepeats([...(byName.get(name) ?? []), ...kept]));
   }
