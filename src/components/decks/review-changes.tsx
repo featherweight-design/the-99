@@ -19,11 +19,13 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useOptimistic, useRef, useState, useTransition } from "react";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import {
-  heldElsewhere, printsPair, pullCandidate, releasedCopies, type DraftState,
+  heldElsewhere, printsPair, pullCandidate, pullSourceChoices, releasedCopies, type DraftState,
 } from "../../lib/decks/draft-shape";
-// Types only: `draft-state.ts` reaches `src/db`, which throws at module init in
-// a browser. See `src/lib/client-bundle-safety.test.ts`.
+// Types only: `draft-state.ts` and `read.ts`/`pull-release.ts` reach `src/db`, which throws at
+// module init in a browser. See `src/lib/client-bundle-safety.test.ts`.
 import type { DraftRow, DraftRows, ShapeCard } from "../../lib/decks/draft-state";
+import type { SourceDeckFigure } from "../../lib/decks/read";
+import type { ReleaseSource } from "../../lib/decks/pull-release";
 import { groupByCardType } from "../../lib/decks/grouping";
 import { CardDetailProvider, type Sibling } from "../cards/card-detail-provider";
 import { PrimaryButton } from "../ui/button";
@@ -87,6 +89,16 @@ type ReviewChangesProps = {
   /** The server's count of the cards the commit would freeze, passed straight
    *  through to the sheet — see `commit-sheet.tsx`. */
   cardCount: number;
+  /** "→ {n} cards" per candidate source, keyed `${deckId}:${oracleId}` — see
+   *  `loadSourceDeckFigures`. A pair absent from this map (a failed read, or a
+   *  candidate this reader does not own) draws no figure rather than a wrong one.
+   *  Optional so the many fixture-driven tests of this component that have
+   *  nothing to do with the source picker need not pass one. */
+  sourceFigures?: Map<string, SourceDeckFigure>;
+  /** The most recent pull's source, per card, for the post-pull `pulled from
+   *  {deck}` label — see `latestReleaseSources`. Absent for a row never pulled.
+   *  Optional for the same reason as `sourceFigures`. */
+  releaseSources?: Map<string, ReleaseSource>;
 };
 
 /**
@@ -183,6 +195,8 @@ export function Column({
   newestAsOf,
   claimsKnown,
   zoneHint,
+  sourceFigures,
+  releaseSources,
 }: {
   deckId: string;
   heading: string;
@@ -221,6 +235,11 @@ export function Column({
    *  printed its figure would be the one thing on the page pricing a commit
    *  nobody could cost. */
   claimsKnown: boolean;
+  /** See `ReviewChangesProps`. Absent (undefined) in the `Going out` column, which draws no
+   *  `PullControl` and no post-pull label — passing empty maps there would cost two allocations
+   *  nothing reads. */
+  sourceFigures?: Map<string, SourceDeckFigure>;
+  releaseSources?: Map<string, ReleaseSource>;
 }) {
   const renderGroup = ([group, groupRows]: TypeGroup) => (
     <div key={group} className="mb-[16px] last:mb-0">
@@ -249,6 +268,14 @@ export function Column({
             row.direction === "in" && row.bucket === "claimed"
               ? pullCandidate(row.availability ?? undefined)
               : null;
+          // The full picker list (addendum R1) — a superset of `pullClaim`'s single pick,
+          // including guarded rows for display. Empty wherever `pullClaim` is null, by the
+          // same `direction`/`bucket` gate.
+          const pullChoices = pullClaim ? pullSourceChoices(row.availability ?? undefined) : [];
+          // "Only sources that can be chosen count" (design call 5) — a locked or commander
+          // row drawn in the list for display is never one more tap, so it does not turn a
+          // single-source row into a two-or-more one.
+          const choosableCount = pullChoices.filter((c) => !c.commander && !c.locked).length;
           // Wherever the control is refusing to offer a pull, the word behind
           // the colour is the guard it drew instead: a commander's copy is
           // claimed and no route releases it, and a locked copy stays where the
@@ -316,9 +343,17 @@ export function Column({
                   card={card}
                   review
                   sourceLine={null}
-                  // The deck the pull would raid, named on the row rather than
-                  // only inside the control's accessible name.
-                  heldBy={pullClaim?.name ?? null}
+                  // 2+ choosable sources: "in {n} decks" rather than naming one — the SINGLE
+                  // claim `pullCandidate` would pick is one of several equally true answers,
+                  // and naming it would claim a decision the reader has not made yet.
+                  // Otherwise unchanged: one name, whether it is the one choosable source or
+                  // the guard (commander/locked) this row has instead.
+                  heldBy={choosableCount > 1 ? null : pullClaim?.name ?? null}
+                  heldByCount={choosableCount > 1 ? choosableCount : null}
+                  // Post-pull — the most recent pull's source, linked. Checked ahead of
+                  // `heldBy` above: once a release row exists, the claim it freed is gone from
+                  // `Availability`, so `pullClaim` is already null and the two never conflict.
+                  pulledFrom={releaseSources?.get(row.oracleId) ?? null}
                   siblings={siblings}
                   describedBy={word ? wordId : undefined}
                   recount={recount}
@@ -337,7 +372,9 @@ export function Column({
                           <PullControl
                             deckId={deckId}
                             card={{ oracleId: row.oracleId, name: row.name }}
-                            claim={pullClaim}
+                            claims={pullChoices}
+                            defaultId={pullClaim.id}
+                            sourceFigures={sourceFigures}
                             onPulled={onPulled}
                           />
                         )
@@ -471,6 +508,8 @@ export function ReviewChanges({
   before,
   after,
   cardCount,
+  sourceFigures,
+  releaseSources,
   commitOpen,
 }: ReviewChangesProps) {
   const descriptionId = useId();
@@ -978,6 +1017,8 @@ export function ReviewChanges({
               // the heading, the buy count, the row's own tag — so a pull that
               // moved a copy is read again rather than patched in place.
               onPulled={() => router.refresh()}
+              sourceFigures={sourceFigures}
+              releaseSources={releaseSources}
             />
           )}
           {outCount > 0 && (

@@ -29,6 +29,7 @@ const EXEMPT: Record<string, string> = {
   "components/decks/pending-banner.tsx :: reviewHref(deckId)": KEPT,
   "components/decks/proxy-list-view.tsx :: `/decks/${deck.id}`": KEPT,
   "components/decks/review-changes.tsx :: `/decks/${deckId}`": KEPT,
+  "components/decks/update-diff-row.tsx :: `/decks/${deck.sourceDeckId}`": KEPT,
   "components/home/resume-decks.tsx :: `/decks/${deck.id}`": KEPT,
   "components/intake/hand-off-answers.tsx :: changeHref": KEPT,
   "components/intake/help-me-choose-door.tsx :: CHOOSE_PATH": KEPT,

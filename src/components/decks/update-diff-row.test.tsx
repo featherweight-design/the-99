@@ -75,6 +75,43 @@ describe("the review page's mounting", () => {
     expect(lines[1].className).toContain("pl-[16px]");
   });
 
+  // Addendum R1: 2+ sources that could be chosen — the row names a count, not one
+  // of them, since the reader has not picked yet.
+  it("names a count rather than a deck when 2+ sources could be chosen", () => {
+    draw(
+      <DiffRowIn
+        review
+        card={card({ manaCost: "{1}{U}" })}
+        sourceLine={null}
+        heldBy="Kess Storm"
+        heldByCount={3}
+        action={<button type="button">Pull it</button>}
+      />,
+    );
+    expect(screen.getByText(deckVersioningCopy.review.heldByMany(3))).toBeTruthy();
+    expect(screen.queryByText(deckVersioningCopy.review.heldBy("Kess Storm"))).toBeNull();
+  });
+
+  // Addendum R1: after the pull, the same slot links to the source instead.
+  it("draws the post-pull label linked to the source deck, over heldBy/heldByCount", () => {
+    draw(
+      <DiffRowIn
+        review
+        card={card({ manaCost: "{1}{U}" })}
+        sourceLine={null}
+        heldBy="Kess Storm"
+        heldByCount={3}
+        pulledFrom={{ sourceDeckId: "d9", sourceDeckName: "Prismari Artistry" }}
+      />,
+    );
+    const link = screen.getByRole("link", {
+      name: deckVersioningCopy.review.pulledFrom("Prismari Artistry"),
+    });
+    expect(link.getAttribute("href")).toBe("/decks/d9");
+    expect(screen.queryByText(deckVersioningCopy.review.heldByMany(3))).toBeNull();
+    expect(screen.queryByText(deckVersioningCopy.review.heldBy("Kess Storm"))).toBeNull();
+  });
+
   it("keeps one line on a row with nothing to decide", () => {
     const row = draw(<DiffRowIn review card={card({ manaCost: "{1}{U}" })} sourceLine={null} />);
     expect(row.className).not.toContain("flex-col");

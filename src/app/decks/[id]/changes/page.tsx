@@ -2,7 +2,9 @@
 // commit: what comes in, what goes out, and what it costs.
 import { notFound, redirect } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
-import { getDeckReviewHeader } from "../../../../lib/decks/read";
+import { getDeckReviewHeader, loadSourceDeckFigures, type SourceDeckFigure } from "../../../../lib/decks/read";
+import { latestReleaseSources, type ReleaseSource } from "../../../../lib/decks/pull-release";
+import { pullSourceChoices } from "../../../../lib/decks/draft-shape";
 import { indexGeneration } from "../../../../lib/cache/index-generation";
 import { cacheForUser } from "../../../../lib/cache/user-lists";
 import { loadDeckMix } from "../../../../lib/decks/deck-mix";
@@ -112,7 +114,18 @@ export default async function ChangesPage({
   // every write to this deck revalidates the page that drew them. Folding two
   // more round trips into that transaction would hold it open to buy consistency
   // between two readings of a list the reader is about to commit anyway.
-  const [before, after, contestedCount] = await Promise.all([
+  // Every (sourceDeckId, oracleId) pair the picker could show, across every claimed row on
+  // this page — batched into ONE read rather than one per row (addendum R1, "Pull it picks
+  // its source deck"). A row the claim read failed on is skipped: `pullSourceChoices` needs
+  // an `Availability` to filter, and `loadDraftRows` already renders the unknown-claims state
+  // for that case.
+  const claimedInRows = rows.in.filter((r) => r.bucket === "claimed");
+  const sourcePairs = claimedInRows.flatMap((r) =>
+    pullSourceChoices(r.availability ?? undefined).map((c) => ({ deckId: c.id, oracleId: r.oracleId })),
+  );
+  const claimedOracleIds = [...new Set(claimedInRows.map((r) => r.oracleId))];
+
+  const [before, after, contestedCount, sourceFigures, releaseSources] = await Promise.all([
     state.version ? loadVersionShape(state.version.id) : Promise.resolve(null),
     loadDraftShape(id),
     // THE INCOMING ROWS ONLY, read UNEXCLUDED, and degrading to nothing.
@@ -133,6 +146,12 @@ export default async function ChangesPage({
     // count a copy no deck is actually short of.
     countContestedCards(rows.in.filter((r) => !r.proxied).map((r) => r.oracleId), userId)
       .catch(() => 0),
+    // "→ {n} cards" per candidate source — degrades to an empty map, same as the contested
+    // count above: a failed read omits the figure rather than drawing a wrong one.
+    loadSourceDeckFigures(sourcePairs, userId).catch(() => new Map<string, SourceDeckFigure>()),
+    // The post-pull "pulled from {deck}" label, for every claimed row — a row with no release
+    // yet (not pulled, or pulled before this read existed) simply has no entry.
+    latestReleaseSources(userId, id, claimedOracleIds).catch(() => new Map<string, ReleaseSource>()),
   ]);
 
   // The same mix the deck page draws, through the one reader that defines it — the
@@ -163,6 +182,8 @@ export default async function ChangesPage({
       contestedCount={contestedCount}
       before={before}
       after={after}
+      sourceFigures={sourceFigures}
+      releaseSources={releaseSources}
       commitOpen={wantsCommit}
       // `built`, not `total`: the snapshot holds the matched cards, and `total`
       // adds the unresolved lines no version can freeze.

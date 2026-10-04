@@ -23,6 +23,7 @@
 //   row that owned both would be a row that offers a Keep on a surface where
 //   putting a card back means adding it to the deck.
 
+import Link from "next/link";
 import { hasFrontFaceCost } from "../../lib/cards/faces";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
@@ -326,6 +327,31 @@ function HeldBy({ deck }: { deck: string }) {
   );
 }
 
+/** 2+ sources a pull could choose between (addendum R1) — the same slot and
+ *  geometry as `HeldBy`, naming a count rather than a deck: the reader has not
+ *  chosen one yet, so this row names no single answer. */
+function HeldByMany({ n }: { n: number }) {
+  return (
+    <span className="flex-1 min-w-[90px] truncate font-mono text-[10px] text-[color:var(--fg-faint)]">
+      {deckVersioningCopy.review.heldByMany(n)}
+    </span>
+  );
+}
+
+/** After the pull (addendum R1) — the same slot `HeldBy` draws before it, now
+ *  linked: the control and the buy tag are both gone, so this is the row's one
+ *  remaining way to the deck the copy came from. */
+function PulledFrom({ deck }: { deck: { sourceDeckId: string; sourceDeckName: string } }) {
+  return (
+    <Link
+      href={`/decks/${deck.sourceDeckId}`}
+      className="flex-1 min-w-[90px] truncate font-mono text-[10px] text-[color:var(--fg-faint)] underline-offset-2 hover:underline"
+    >
+      {deckVersioningCopy.review.pulledFrom(deck.sourceDeckName)}
+    </Link>
+  );
+}
+
 /** The auto tag, and the invisible box it keeps when there is no tag to draw.
  *  That box is the update flow's rhythm and not a slot the design reserves, so a
  *  row drawing a cost track — which has a fixed trailing column of its own —
@@ -535,6 +561,8 @@ export function DiffRowIn({
   recount,
   review = false,
   heldBy = null,
+  heldByCount = null,
+  pulledFrom = null,
 }: {
   card: DiffRowCard;
   sourceLine: number | null;
@@ -544,8 +572,16 @@ export function DiffRowIn({
   /** The review page's box, hover fill and pointer hint — see `DiffRowOut`. */
   review?: boolean;
   /** The deck sleeving the copy, on a sleeved add. Null on a free or unowned one,
-   *  which no deck holds. */
+   *  which no deck holds — and null whenever `heldByCount` or `pulledFrom` applies
+   *  instead (addendum R1: a row shows exactly one of the three). */
   heldBy?: string | null;
+  /** 2+ sources a pull could choose between (addendum R1) — "in {n} decks" rather
+   *  than naming one of them. */
+  heldByCount?: number | null;
+  /** The source of the reader's most recent pull on this card, for this asking
+   *  deck (addendum R1) — "pulled from {deck}", linked to it. Takes priority over
+   *  `heldBy`/`heldByCount`: once a release exists the claim it freed is gone. */
+  pulledFrom?: { sourceDeckId: string; sourceDeckName: string } | null;
 } & DiffRowNameExtras) {
   const rowOpen = useRowOpen(card, siblings, review);
   const previewHandlers = usePreviewRow(card.imageUri);
@@ -573,7 +609,13 @@ export function DiffRowIn({
   );
   const metaLine = (
     <>
-      {heldBy ? <HeldBy deck={heldBy} /> : null}
+      {pulledFrom ? (
+        <PulledFrom deck={pulledFrom} />
+      ) : heldByCount ? (
+        <HeldByMany n={heldByCount} />
+      ) : heldBy ? (
+        <HeldBy deck={heldBy} />
+      ) : null}
       {/* The slot sits BEFORE the trailing column, not after it. The name is the
           only flexible item, so anything that can disappear has to sit on the
           name's side of the fixed column — with the slot trailing, an owned row's
