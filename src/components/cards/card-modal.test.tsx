@@ -17,7 +17,7 @@ vi.mock("../../app/collection/actions", () => ({
   clearCardArtPreference: vi.fn(async () => {}),
 }));
 
-const { CardModal } = await import("./card-modal");
+const { CardModal, artWidthReservePx } = await import("./card-modal");
 
 const card: BrowseCard = {
   oracleId: "o1",
@@ -1416,5 +1416,29 @@ describe("CardModal carousel arrow keys stop at interactive zones (H23 PR 2)", (
     expect(onPrev).not.toHaveBeenCalled();
     fireEvent.keyDown(dialog, { key: "ArrowRight" });
     expect(onNext).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Hugh's walk: the stand-ins door sat flush against the desktop art column's bottom edge,
+// with none of the 28px breathing room every other edge of the column shows. jsdom lays
+// nothing out and cannot even RETAIN this property: it drops `width` from the rendered
+// element's style attribute entirely rather than fail to parse the `calc(min(...))` syntax,
+// so a jsdom assertion against the rendered DOM proves nothing either way here (confirmed:
+// `getAttribute("style")` omits `width` while every sibling property in the same object —
+// `aspectRatio`, `perspective`, `background`, `boxShadow` — is present). The real proof is
+// the before/after screenshots at 1300x900: the gap below "See cheaper stand-ins →"
+// went from 11.375px to 25.77px. This pins the one number a regression could silently drift
+// without either showing up in a diff review: the padding reserved below the stack, which
+// must equal the column's own padding on every other edge.
+describe("CardModal desktop art column reserves the door's room (pre-open review follow-up)", () => {
+  it("reserves the stack's height doubled, plus the column's 28px foot padding on both sides", () => {
+    // Independently computed right-hand side, not derived from the function's own constant:
+    // a drift in the exported padding (or in the doubling) fails this even though the function
+    // still agrees with itself.
+    const underCardHeight = 10 + 15 + 27; // no two-faced row, no door
+    expect(artWidthReservePx(underCardHeight)).toBe(2 * underCardHeight + 56);
+
+    const withDoor = underCardHeight + 59; // DOOR_HEIGHT
+    expect(artWidthReservePx(withDoor)).toBe(2 * withDoor + 56);
   });
 });
