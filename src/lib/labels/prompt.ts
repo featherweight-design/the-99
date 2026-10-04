@@ -305,9 +305,9 @@ put a +1/+1 counter on target Wolf you control; or create a Treasure token.")
 Omit "rampKind" entirely on any job that is not a role "ramp" job (a null is
 accepted there too).
 "jobs": [] is ONLY for a card none of whose abilities is one of the jobs above
-(a vanilla creature, a tapper, a card that only scries). Never answer [] for a
-card that deals damage to a creature or player, fetches a land, draws, or moves
-a card: each of those is a job, so label it. No prose, no markdown fence.`;
+(a vanilla creature, a tapper, a card that only scries or cycles). Damage to a
+creature or player and a land fetched are always jobs (removal, drain, ramp),
+so a card that does either is never []. No prose, no markdown fence.`;
 
 /**
  * What the SYSTEM block can cost, in tokens, as a CEILING the build's hard stop is enforced against:

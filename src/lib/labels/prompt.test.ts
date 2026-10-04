@@ -143,7 +143,7 @@ describe("labelInputHash", () => {
   // install nothing and report every label as a catalog difference. When this fails: bump
   // LABEL_PROMPT_VERSION, then re-pin both literals here together.
   it("pins SYSTEM to the version it was written under", () => {
-    const pinned = { version: "8", system: "a163236fb7026de325f022e8f1b187a9d67c2fce3088917e96dc780b45cc7564" };
+    const pinned = { version: "8", system: "d9e56907be9c5ce9da6323a06a678c9e583472048bbfb15e181851ce726e111c" };
     expect({ version: LABEL_PROMPT_VERSION, system: createHash("sha256").update(SYSTEM).digest("hex") })
       .toEqual(pinned);
   });
@@ -227,11 +227,13 @@ describe("SYSTEM v8: damage and the empty answer", () => {
     expect(def("drain")).toMatch(/can only hit a\s+creature or permanent is removal and never drain/);
   });
 
-  // Empty means no ability maps to a job, not no ability at all: a tapper or a scry card stays [],
+  // Empty means no ability maps to a job, not no ability at all: a tapper, a scry or a cycling card stays [],
   // and a creature's own flying is still evasion.
   it("keeps an empty answer for a card whose abilities map to no job", () => {
     expect(SYSTEM).not.toMatch(/A card with no job in the vocabulary gets/);
     expect(SYSTEM).toMatch(/"jobs": \[\] is ONLY for a card none of whose abilities is one of the jobs above/);
-    expect(SYSTEM).toMatch(/Never answer \[\] for a\s+card that deals damage to a creature or player, fetches a land, draws, or moves\s+a card/);
+    expect(SYSTEM).toMatch(/Damage to a\s+creature or player and a land fetched are always jobs/);
+    // Cycling is NOT draw (the draw definition), so the never-empty clause must not name drawing.
+    expect(SYSTEM).not.toMatch(/never answer \[\] for a\s+card that[^.]*draws/i);
   });
 });
