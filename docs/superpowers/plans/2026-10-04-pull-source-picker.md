@@ -4,10 +4,11 @@ Source: `design/design_handoff_the99_pull_source/` (docs PR #1245). Readiness: G
 (`docs/superpowers/readiness-pull-source.md`, 2026-10-04), three eng-resolved findings logged
 there. No open design or product question — proceeding straight to PR 1.
 
-**Rebase dependency:** `#1244` ("Changes view: remove the per-row card-assignment panel") is open
-and touches the same two files (`contested-card-row.tsx`, `review-changes.tsx`) with no logical
-overlap — see READINESS §header. This build starts from `#1244`'s branch tip and rebases onto
-`main` once #1244 merges, before either of this plan's PRs opens, to keep every push's diff clean.
+**Rebase dependency, resolved.** `#1244` ("Changes view: remove the per-row card-assignment
+panel") touched the same two files (`contested-card-row.tsx`, `review-changes.tsx`) with no
+logical overlap — see READINESS §header. It merged ahead of PR 1 opening; PR 1's branch was
+rebased onto the result, surfacing one real naming collision (both `pullSourceChoices` and
+#1244's own `pullSources` wanted to exist), resolved by renaming — see the PR 1 boundary below.
 
 ## Current-code map (confirmed by direct read, 2026-10-04)
 
@@ -87,9 +88,14 @@ Pure functions and loaders, each independently unit-testable, no UI change.
   round-1 finding: `pullCardFromDeck` only decrements a source when the card is `inDraft`
   there, so "size minus one" is wrong whenever a claim has outlived its draft row. Mirrors
   `loadVersionShape`'s per-deck query shape (`versions.ts`) but batched across several decks
-  and cards in two round trips.
-- Wire both into `page.tsx`'s existing `Promise.all`, degrading to an empty map on
-  failure (never failing the route).
+  and cards in two round trips, in one repeatable-read transaction (round-2 finding: two bare
+  statements could straddle a write to the source's draft and return an impossible pair).
+
+Neither loader has a caller yet — found by Copilot's round-2 review, which read an earlier
+draft of this plan as claiming otherwise. **Wiring both into `page.tsx`'s `Promise.all` is a
+PR 2 task**, not PR 1's: the set of (deck, card) pairs to batch comes from the picker's own
+candidate lists (`pullSourceChoices` per contested row), which PR 2 assembles — wiring the
+loader in PR 1 with no real pair list yet would be dead code wearing a caller's clothes.
 
 **PR 2 — UI: the popover/sheet, the row wiring, the post-pull label.**
 
@@ -98,8 +104,10 @@ Pure functions and loaders, each independently unit-testable, no UI change.
   reads `Pull from {deck}` and calls the unchanged `pullCardFromDeck(chosenId, ...)`. Reuses
   `useDialogA11y`/`useScrollLock` (`src/lib/a11y/dialog.ts`) for the popover/sheet's own focus
   trap and scroll lock — no new dialog mechanism.
-- `review-changes.tsx`: wire `pullSourceChoices`, the new deck-size map, and `defaultId` through to
-  `PullControl`.
+- `review-changes.tsx`: wire `pullSourceChoices`, `defaultId`, and `page.tsx`'s new
+  `loadSourceDeckFigures`/`latestReleaseSources` reads (both added in PR 1, neither called
+  yet) through to `PullControl` — `page.tsx`'s `Promise.all` gains both once the contested
+  rows' (deck, card) pairs are known.
 - `update-diff-row.tsx`: the post-pull `pulled from {deck}` state on `HeldBy`'s slot, linked to
   the source deck.
 - Copy: `design/design_handoff_the99_pull_source/pull-source · copy strings.ts` are placeholders

@@ -239,7 +239,15 @@ export function pullSourceChoices(a: Availability | undefined): DeckClaim[] {
   return a.claims
     .filter((c) => c.mature && (c.senior || c.locked || c.commander))
     .slice()
-    .sort((x, y) => (x.since ?? Infinity) - (y.since ?? Infinity));
+    // Tie-broken by deck id, the same tie-break `allocate.ts`'s own commit-order sort uses —
+    // found by Copilot's round-2 review: without it, two claims with equal `since` kept the
+    // claims array's own alphabetical-by-NAME order, which could disagree with the
+    // commit-ordered list this is supposed to match.
+    // Tie-broken by deck id, the same tie-break `allocate.ts`'s own commit-order sort uses —
+    // found by Copilot's round-2 review: without it, two claims with equal `since` kept the
+    // claims array's own alphabetical-by-NAME order, which could disagree with the
+    // commit-ordered list this is supposed to match.
+    .sort((x, y) => (x.since ?? Infinity) - (y.since ?? Infinity) || x.id.localeCompare(y.id));
 }
 
 /**

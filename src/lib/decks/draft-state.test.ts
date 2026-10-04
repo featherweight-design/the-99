@@ -325,6 +325,17 @@ describe("pullSourceChoices", () => {
     expect(ids).toEqual(["d-a-oldest", "d-c-middle", "d-b-newest"]);
   });
 
+  // Found by Copilot's round-2 review: two equal `since` values otherwise kept the claims
+  // array's own alphabetical-by-NAME order, which could disagree with the commit-ordered list
+  // elsewhere. Named so "Z" sorts first by name and last by id, to tell the two apart.
+  it("tie-breaks equal since values by deck id, not by name", () => {
+    const ids = pullSourceChoices(availability([
+      claim({ id: "d-z", name: "Z Deck", since: 1000 }),
+      claim({ id: "d-a", name: "A Deck", since: 1000 }),
+    ])).map((c) => c.id);
+    expect(ids).toEqual(["d-a", "d-z"]);
+  });
+
   it("includes a locked and a commander claim, disabled rows rather than excluded", () => {
     const ids = pullSourceChoices(availability([
       claim({ id: "d-free", since: 1000 }),

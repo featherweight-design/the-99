@@ -706,27 +706,34 @@ export async function loadSourceDeckFigures(
   if (pairs.length === 0) return figures;
   const deckIds = [...new Set(pairs.map((p) => p.deckId))];
   const oracleIds = [...new Set(pairs.map((p) => p.oracleId))];
-  const sizeRows = await db
-    .select({
-      id: decks.id,
-      built: sql<number>`coalesce((
-        select sum(dc.quantity) from ${deckCards} dc
-        where dc.deck_id = ${decks}.id
-      ), 0)::int`,
-    })
-    .from(decks)
-    .where(and(inArray(decks.id, deckIds), eq(decks.userId, userId)));
-  const built = new Map(sizeRows.map((r) => [r.id, r.built]));
-  // Every (deckId, oracleId) actually present in `deck_cards` among the asked-for decks and
-  // cards — both dimensions filtered, so a returned row IS a real membership for that exact
-  // pair; there is no cross-contamination to guard against.
-  const presentRows = deckIds.length && oracleIds.length
-    ? await db
-        .select({ deckId: deckCards.deckId, oracleId: deckCards.oracleId })
-        .from(deckCards)
-        .where(and(inArray(deckCards.deckId, deckIds), inArray(deckCards.oracleId, oracleIds)))
-    : [];
-  const present = new Set(presentRows.map((r) => `${r.deckId}:${r.oracleId}`));
+  // ONE repeatable-read, read-only transaction — found by Copilot's round-2 review: two
+  // separate statements can straddle a write to the source's draft between them (a cut, or
+  // another pull), returning an impossible pair such as the OLD size with the NEW absence.
+  // Same rule `readSnapshot` (`draft-state.ts:178`) and `tuning-read.ts` already follow for a
+  // multi-read comparison.
+  const { built, present } = await db.transaction(async (tx) => {
+    const sizeRows = await tx
+      .select({
+        id: decks.id,
+        built: sql<number>`coalesce((
+          select sum(dc.quantity) from ${deckCards} dc
+          where dc.deck_id = ${decks}.id
+        ), 0)::int`,
+      })
+      .from(decks)
+      .where(and(inArray(decks.id, deckIds), eq(decks.userId, userId)));
+    // Every (deckId, oracleId) actually present in `deck_cards` among the asked-for decks and
+    // cards — both dimensions filtered, so a returned row IS a real membership for that exact
+    // pair; there is no cross-contamination to guard against.
+    const presentRows = await tx
+      .select({ deckId: deckCards.deckId, oracleId: deckCards.oracleId })
+      .from(deckCards)
+      .where(and(inArray(deckCards.deckId, deckIds), inArray(deckCards.oracleId, oracleIds)));
+    return {
+      built: new Map(sizeRows.map((r) => [r.id, r.built])),
+      present: new Set(presentRows.map((r) => `${r.deckId}:${r.oracleId}`)),
+    };
+  }, { isolationLevel: "repeatable read", accessMode: "read only" });
   for (const { deckId, oracleId } of pairs) {
     const size = built.get(deckId);
     if (size === undefined) continue;
