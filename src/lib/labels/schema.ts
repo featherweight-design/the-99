@@ -101,15 +101,24 @@ export function validateJob(job: unknown): string[] {
 }
 
 /**
- * The ONE repair the collector makes before validating: a `to` on a kind outside `TO_KINDS`, or a
- * `method` on a kind outside `METHOD_KINDS`, is set to null. Anything else comes back unchanged,
- * and a value that is not an object comes back as it is, for `validateJob` to refuse.
+ * The repairs the collector makes before validating, and the only ones: a `to` on a kind outside
+ * `TO_KINDS`, or a `method` on a kind outside `METHOD_KINDS`, is set to null, and so is a
+ * `threshold` whose value is not a number or whose stat is not in `THRESHOLD_STATS`. Anything else
+ * comes back unchanged, and a value that is not an object comes back as it is, for `validateJob`
+ * to refuse.
  *
  * Sanctioned because the field is MEANINGLESS there rather than wrong. The consumer gates on `to`
  * and `method` only for the kinds that take them, so on any other kind the field says nothing a
  * reader acts on, while the rest of the job is a real answer. Rejecting it threw that answer away:
  * a ramp job carrying `to: "battlefield"` (Rampant Growth, Sakura-Tribe Elder) cost the card its
  * only job, and 83 cards were stored as `[]` for this defect and no other (Hugh, 2026-10-04).
+ *
+ * The threshold is the same case. A cap the card states as a variable ("power X or less") has no
+ * number to record, and the gold set's own ruling is that such a cap is no threshold: Killing
+ * Glare, Dominate and Forced March came back with `value: "X"`, Vedalken Shackles with `null`,
+ * Misers' Cage and Scroll of Origins with a stat (`cardsInHand`) the vocabulary does not have.
+ * Each lost its only job over the gate, which is the least of what the job says (v8 trial,
+ * 2026-10-04: 9 jobs on 392 cards). A threshold with a bad `op` alone is still refused.
  *
  * A shallow copy, never the input mutated: the caller still holds the model's answer as given.
  */
@@ -119,8 +128,16 @@ export function normalizeJob(job: unknown): unknown {
   const takes = (list: readonly string[]) => typeof j.kind === "string" && list.includes(j.kind);
   const stripTo = j.to != null && !takes(TO_KINDS);
   const stripMethod = j.method != null && !takes(METHOD_KINDS);
-  if (!stripTo && !stripMethod) return job;
-  return { ...j, ...(stripTo ? { to: null } : {}), ...(stripMethod ? { method: null } : {}) };
+  const t = j.threshold as Unchecked | null | undefined;
+  const stripThreshold = t != null && typeof t === "object"
+    && (typeof t.value !== "number" || !(typeof t.stat === "string" && (THRESHOLD_STATS as readonly string[]).includes(t.stat)));
+  if (!stripTo && !stripMethod && !stripThreshold) return job;
+  return {
+    ...j,
+    ...(stripTo ? { to: null } : {}),
+    ...(stripMethod ? { method: null } : {}),
+    ...(stripThreshold ? { threshold: null } : {}),
+  };
 }
 
 /** True when `validateJob` accepts the value, narrowing it for the caller. */
