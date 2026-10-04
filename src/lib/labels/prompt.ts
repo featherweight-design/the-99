@@ -73,13 +73,14 @@ ROLES (space "role"): ${ROLES.join(", ")}
                  label nothing for cycling.
   removal      — takes an opponent's permanent away from them: destroys,
                  exiles, bounces or shrinks it, deals damage to it, or gains
-                 control of it. Damage that can hit a creature or other
-                 permanent IS removal, method shrink: "deals 3 damage to any
-                 target" and "deals 2 damage to target creature" are both
-                 removal. A counterspell, a tapper and hand attack are NOT
-                 removal.
+                 control of it. TARGETED damage that can hit a creature or
+                 other permanent IS removal, method shrink: "deals 3 damage to
+                 any target" and "deals 2 damage to target creature" are both
+                 removal. Damage to EACH creature is wipes, not removal. A
+                 counterspell, a tapper and hand attack are NOT removal.
   wipes        — hits ALL or most creatures at once ("destroy all creatures",
-                 "destroy each creature", "all creatures get -3/-3").
+                 "destroy each creature", "all creatures get -3/-3", "deals 2
+                 damage to each creature").
   land         — the card is a land: its FRONT face's type line says Land, and
                  ONLY then. A spell whose back face is a land is not land. A
                  nonland permanent that adds mana is ramp. Affects self.
@@ -306,8 +307,8 @@ Omit "rampKind" entirely on any job that is not a role "ramp" job (a null is
 accepted there too).
 "jobs": [] is ONLY for a card none of whose abilities is one of the jobs above
 (a vanilla creature, a tapper, a card that only scries or cycles). Damage to a
-creature or player and a land fetched are always jobs (removal, drain, ramp),
-so a card that does either is never []. No prose, no markdown fence.`;
+creature or player and a land fetched are always jobs (removal, wipes, drain,
+ramp), so a card that does either is never []. No prose, no markdown fence.`;
 
 /**
  * What the SYSTEM block can cost, in tokens, as a CEILING the build's hard stop is enforced against:

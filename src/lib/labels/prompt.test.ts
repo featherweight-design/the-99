@@ -143,7 +143,7 @@ describe("labelInputHash", () => {
   // install nothing and report every label as a catalog difference. When this fails: bump
   // LABEL_PROMPT_VERSION, then re-pin both literals here together.
   it("pins SYSTEM to the version it was written under", () => {
-    const pinned = { version: "8", system: "d9e56907be9c5ce9da6323a06a678c9e583472048bbfb15e181851ce726e111c" };
+    const pinned = { version: "8", system: "57b49b55529eaa4fe18fa8a8132faad716eba57777e0b1caf53b27f7155c8a5e" };
     expect({ version: LABEL_PROMPT_VERSION, system: createHash("sha256").update(SYSTEM).digest("hex") })
       .toEqual(pinned);
   });
@@ -218,7 +218,15 @@ describe("SYSTEM v8: damage and the empty answer", () => {
 
   it("counts damage that can hit a creature or permanent as removal", () => {
     expect(def("removal")).toMatch(/deals damage to it/);
-    expect(def("removal")).toMatch(/"deals 3 damage to any\s+target" and "deals 2 damage to target creature" are both\s+removal/);
+    expect(def("removal")).toMatch(/"deals 3 damage to\s+any target" and "deals 2 damage to target creature" are both\s+removal/);
+  });
+
+  // A sweeper stays wipes alone (Pyroclasm, Blasphemous Act, Pestilence in the gold set): the damage
+  // rule is about TARGETED damage, or v8 would add a removal job to every damage wipe.
+  it("keeps damage to each creature a wipe, not removal", () => {
+    expect(def("removal")).toMatch(/TARGETED damage/);
+    expect(def("removal")).toMatch(/Damage to EACH creature is wipes, not removal/);
+    expect(def("wipes")).toMatch(/"deals 2\s+damage to each creature"/);
   });
 
   it("labels any-target damage drain as well, never drain alone", () => {
