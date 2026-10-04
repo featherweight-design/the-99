@@ -7,10 +7,10 @@ import { creditsCopy } from "../../lib/copy/credits";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import type { TuningItem, TuningState } from "../../lib/tuning/state";
-import { manifestRows, readSteps, TuningPanel, type TuningDeps, type TuningFacts } from "./tuning-panel";
+import { manifestRows, readSteps, runSteps, TuningPanel, type TuningDeps, type TuningFacts } from "./tuning-panel";
 
 vi.mock("../../app/decks/tuning-actions", () => ({
-  applySuggestion: vi.fn(), cancelTuningRun: vi.fn(), dismissSuggestion: vi.fn(), readTuningEvidence: vi.fn(),
+  applySuggestion: vi.fn(), cancelTuningRun: vi.fn(), dismissSuggestion: vi.fn(),
   readTuningPanel: vi.fn(), restoreSuggestion: vi.fn(), runTuning: vi.fn(), saveDeckIntent: vi.fn(),
   saveDeckLimits: vi.fn(async () => ({ ok: true })), undoSuggestion: vi.fn(),
 }));
@@ -56,7 +56,6 @@ function deps(states: TuningState[], over: Partial<TuningDeps> = {}): TuningDeps
     read: vi.fn(async () => (queue.length > 1 ? queue.shift()! : queue[0])),
     run: vi.fn(ok),
     cancel: vi.fn(ok),
-    evidence: vi.fn(async () => 3),
     card: { apply: ok, undo: ok, reject: ok, restore: ok },
     ...over,
   };
@@ -110,15 +109,111 @@ describe("TuningPanel", () => {
     expect(screen.getByText(copy.unmarkedLead("Four"))).toBeInTheDocument();
   });
 
-  it("runs, ticks the manifest on the reads that land, and shows the results", async () => {
-    const d = deps([fresh, results]);
-    await draw(d);
-    await press(copy.suggest);
-    expect(d.run).toHaveBeenCalledWith("d1", { runId: expect.stringMatching(/^[0-9a-f-]{36}$/) });
-    expect(d.evidence).toHaveBeenCalledTimes(readSteps(facts, "go wide").length);
-    expect(screen.getByRole("heading", { name: copy.heading })).toBeInTheDocument();
-    expect(screen.getByText("Rhystic Study")).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent(deckTuningCopy.announce.ready(1));
+  it("runs, ticks the manifest on a pure client stagger, and shows the results", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      let resolveRun!: (v: { ok: true }) => void;
+      const run = vi.fn(() => new Promise<{ ok: true }>((resolve) => { resolveRun = resolve; }));
+      const d = deps([fresh, results], { run });
+      await draw(d);
+      await press(copy.suggest);
+      expect(d.run).toHaveBeenCalledWith("d1", { runId: expect.stringMatching(/^[0-9a-f-]{36}$/) });
+      const total = runSteps(facts, "go wide").length;
+      // Nothing ticked yet, and the model has not been asked to resolve.
+      expect(screen.getAllByTestId("manifest-row").filter((r) => r.dataset.done === "true")).toHaveLength(0);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(total * 350);
+      });
+      // Every read row has ticked, by the stagger alone — the run is still pending.
+      expect(screen.getAllByTestId("manifest-row").filter((r) => r.dataset.kind === "read" && r.dataset.done === "true")).toHaveLength(total);
+      expect(document.querySelector('[data-kind="writing"][data-active]')).not.toBeNull();
+      await act(async () => {
+        resolveRun({ ok: true });
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      expect(screen.getByRole("heading", { name: copy.heading })).toBeInTheDocument();
+      expect(screen.getByText("Rhystic Study")).toBeInTheDocument();
+      expect(screen.getByRole("status")).toHaveTextContent(deckTuningCopy.announce.ready(1));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("ticks every remaining row at once when the result lands before the stagger finishes", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      // The run resolves almost immediately — well before the stagger's own pacing finishes —
+      // but the closing read is held, so the ticked-all-at-once frame is observable before the
+      // panel moves on to the results.
+      let releaseRead!: (s: TuningState) => void;
+      const reads = [async () => fresh, () => new Promise<TuningState>((r) => { releaseRead = r; })];
+      let n = 0;
+      const d = deps([fresh], { read: vi.fn(() => reads[Math.min(n++, reads.length - 1)]()) });
+      await draw(d);
+      await press(copy.suggest);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      const total = runSteps(facts, "go wide").length;
+      expect(screen.getAllByTestId("manifest-row").filter((r) => r.dataset.kind === "read" && r.dataset.done === "true")).toHaveLength(total);
+      await act(async () => {
+        releaseRead(results);
+      });
+      expect(screen.getByText("Rhystic Study")).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // H35, PR 3: the stagger ticks rows on its own timer, but `announced` must only ever move at
+  // the run's start and its end — never once per tick, with or without reduced motion (this
+  // suite runs with no media-query override, i.e. motion allowed).
+  it("announces only the run's start and its end, never once per tick", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      let resolveRun!: (v: { ok: true }) => void;
+      const run = vi.fn(() => new Promise<{ ok: true }>((resolve) => { resolveRun = resolve; }));
+      const d = deps([fresh, results], { run });
+      await draw(d);
+      await press(copy.suggest);
+      expect(screen.getByRole("status")).toHaveTextContent(deckTuningCopy.announce.started);
+      const total = runSteps(facts, "go wide").length;
+      for (let i = 0; i < total; i++) {
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(350);
+        });
+        expect(screen.getByRole("status")).toHaveTextContent(deckTuningCopy.announce.started);
+      }
+      await act(async () => {
+        resolveRun({ ok: true });
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      expect(screen.getByRole("status")).toHaveTextContent(deckTuningCopy.announce.ready(1));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("grows a mono long-wait line past 20 seconds, with Stop still offered", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const run = vi.fn(() => new Promise<{ ok: true }>(() => {}));
+      const d = deps([fresh, results], { run });
+      await draw(d);
+      await press(copy.suggest);
+      expect(screen.queryByText(deckDescriptionCopy.manifest.writingLong)).toBeNull();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(20_000);
+      });
+      expect(screen.getByText(deckDescriptionCopy.manifest.writingLong)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: copy.stop })).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("draws the unchanged state on a press over an unchanged deck, and Suggest again anyway runs", async () => {
@@ -163,6 +258,17 @@ describe("TuningPanel", () => {
       randomUUID.mockRestore();
       vi.useRealTimers();
     }
+  });
+
+  // Copilot review, previously missed: a run already pending when the panel opens (a reload, or
+  // another tab) must still animate the checklist — reconstructed from the run's own
+  // `createdAt`, since the stagger otherwise only ever starts inside `pressRun`.
+  it("reconstructs the stagger from a run already pending on open, old enough to be past it", async () => {
+    const longAgo = { ...okRun, id: "r2", status: "pending" as const, createdAt: new Date("2020-01-01T00:00:00Z") };
+    await draw(deps([{ ...fresh, run: longAgo }]));
+    const total = runSteps(facts, "go wide").length;
+    expect(screen.getAllByTestId("manifest-row").filter((r) => r.dataset.kind === "read" && r.dataset.done === "true")).toHaveLength(total);
+    expect(document.querySelector('[data-kind="writing"][data-active]')).not.toBeNull();
   });
 
   it("offers Stop only while a run is pending, and Stop cancels the pending run", async () => {
@@ -347,6 +453,56 @@ describe("TuningPanel", () => {
     }
   });
 
+  // Copilot review: `staggerTimer`/`longWaitTimer` are shared refs. Stop lets a NEW press start
+  // while the first press's own `deps.run` is still unresolved; if that first run's promise
+  // settles LATE, after the second press has its own stagger running, it must not reach in and
+  // clear the SECOND press's live timers.
+  it("does not let a superseded run's late settle clear a newer press's own stagger", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const randomUUID = vi.spyOn(crypto, "randomUUID").mockReturnValue("r2" as unknown as ReturnType<typeof crypto.randomUUID>);
+    try {
+      let resolveFirst!: (v: { ok: true }) => void;
+      const run = vi.fn()
+        .mockImplementationOnce(() => new Promise<{ ok: true }>((resolve) => { resolveFirst = resolve; }))
+        .mockImplementationOnce(() => new Promise<{ ok: true }>(() => {}));
+      const pending: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "pending" } };
+      const cancelled: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "cancelled" } };
+      const d = deps([fresh, pending, cancelled], { run });
+      await draw(d);
+      await press(copy.suggest);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(run).toHaveBeenCalledTimes(1);
+      await press(copy.stop);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+      expect(d.cancel).toHaveBeenCalledWith("d1", "r2");
+      await press(copy.suggest);
+      expect(run).toHaveBeenCalledTimes(2);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(350);
+      });
+      const total = runSteps(facts, "go wide").length;
+      expect(screen.getAllByTestId("manifest-row").filter((r) => r.dataset.kind === "read" && r.dataset.done === "true")).toHaveLength(1);
+      // The first press's run settles now — late, and over a run this panel already stopped.
+      await act(async () => {
+        resolveFirst({ ok: true });
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      // The second press's own stagger is still running: it ticks further rows afterward.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync((total - 1) * 350);
+      });
+      expect(screen.getAllByTestId("manifest-row").filter((r) => r.dataset.kind === "read" && r.dataset.done === "true")).toHaveLength(total);
+    } finally {
+      randomUUID.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
   it("lets a Stop pressed during the closing read own the panel", async () => {
     let release: (s: TuningState) => void = () => {};
     const reads = [
@@ -375,10 +531,9 @@ describe("TuningPanel", () => {
     expect(d.run).toHaveBeenCalledWith("d1", { anyway: true, runId: expect.any(String) });
   });
 
-  it("leaves the reading state with a refusal when the run or a read rejects", async () => {
+  it("leaves the reading state with a refusal when the run itself rejects", async () => {
     const d = deps([fresh, fresh], {
       run: vi.fn(() => Promise.reject(new Error("network"))),
-      evidence: vi.fn(() => Promise.reject(new Error("network"))),
     });
     await draw(d);
     await press(copy.suggest);
@@ -398,8 +553,8 @@ describe("TuningPanel", () => {
 describe("manifestRows", () => {
   it("shows the page's own figures unticked before a run", () => {
     const f = { ...facts, gameCount: 9, noteCount: 2, marked: 8, fix: { key: "speed", hurt: 5 } };
-    const rows = manifestRows(f, null, null, readSteps(f, null));
-    expect(rows.every((r) => r.kind === "read" && !r.done)).toBe(true);
+    const rows = manifestRows(f, "go wide", null, readSteps(f, "go wide"));
+    expect(rows.every((r) => r.kind !== "read" || !r.done)).toBe(true);
     expect(rows[0]).toMatchObject({ key: "games", count: "9 games" });
     expect(rows[1]).toMatchObject({ key: "notes", count: "on 2 of 9 games" });
   });
@@ -409,17 +564,46 @@ describe("manifestRows", () => {
     expect(manifestRows(f, null, null, readSteps(f, null))[0]).toMatchObject({ count: "4 games · no marks" });
   });
 
-  it("ticks a row only when its read has landed", () => {
+  it("ticks a row only once the stagger has added it to the ticked set", () => {
     const f = { ...facts, gameCount: 9 };
-    const rows = manifestRows(f, null, { games: 9 }, readSteps(f, null));
-    expect(rows.find((r) => r.key === "games")).toMatchObject({ done: true });
-    expect(rows.find((r) => r.key === "decklist")).toMatchObject({ done: false, count: null });
+    const rows = manifestRows(f, null, new Set(["games"]), readSteps(f, null));
+    expect(rows.find((r) => r.kind === "read" && r.key === "games")).toMatchObject({ done: true, count: null });
+    expect(rows.find((r) => r.kind === "read" && r.key === "decklist")).toMatchObject({ done: false, count: null });
+  });
+
+  it("carries no secondary text on any running row, ticked or not — not even a games count", () => {
+    const f = { ...facts, gameCount: 9, marked: 8, fix: { key: "speed", hurt: 5 } };
+    const rows = manifestRows(f, null, new Set(["games", "decklist"]), readSteps(f, null));
+    expect(rows.every((r) => r.kind !== "read" || r.count === null)).toBe(true);
   });
 
   it("draws the dashed games row, unread, when there are no games", () => {
     const rows = manifestRows(facts, null, null, readSteps(facts, null));
     expect(rows[0]).toEqual({ kind: "noGames", key: "games" });
-    expect(rows.some((r) => r.key === "notes")).toBe(false);
+    expect(rows.some((r) => r.kind === "read" && r.key === "notes")).toBe(false);
+  });
+
+  it("always includes a description row in the preview, dashed with its own link when there is none", () => {
+    const rows = manifestRows(facts, null, null, readSteps(facts, null));
+    const row = rows.find((r) => r.kind !== "writing" && r.key === "description");
+    expect(row).toMatchObject({ kind: "absent", caption: "none yet", actionLabel: "Describe your deck →" });
+  });
+
+  it("shows the description row as an ordinary filled row once there is one", () => {
+    const rows = manifestRows(facts, "go wide", null, readSteps(facts, "go wide"));
+    const row = rows.find((r) => r.kind !== "writing" && r.key === "description");
+    expect(row?.kind).toBe("read");
+    expect(row && row.kind === "read" ? row.count : undefined).not.toBe("none yet");
+  });
+
+  it("runSteps adds limits and notes rows, only once a run is reading", () => {
+    const preview = readSteps(facts, "go wide");
+    const run = runSteps(facts, "go wide");
+    expect(preview).not.toContain("limits");
+    expect(preview).not.toContain("playerNotes");
+    expect(run).toContain("limits");
+    expect(run).toContain("playerNotes");
+    expect(run.length).toBe(preview.length + 2);
   });
 });
 
@@ -929,6 +1113,184 @@ describe("TuningPanel: Locked (never cut)", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("TuningPanel: Additional notes (H35, PR 3)", () => {
+  it("mounts the field above the action row, hidden while reading", async () => {
+    await draw(deps([fresh]));
+    expect(screen.getByLabelText("Additional notes")).toBeInTheDocument();
+  });
+
+  it("clears the note once a successful run lands", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const d = deps([fresh, results]);
+      await draw(d);
+      fireEvent.change(screen.getByLabelText("Additional notes"), { target: { value: "more removal" } });
+      await press(copy.suggest);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(runSteps(facts, "go wide").length * 350);
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      expect(screen.getByLabelText("Additional notes")).toHaveValue("");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("keeps a typed note over a run that fails", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const d = deps([fresh, fresh], { run: vi.fn(async () => ({ ok: false as const, message: "no" })) });
+      await draw(d);
+      fireEvent.change(screen.getByLabelText("Additional notes"), { target: { value: "more removal" } });
+      await press(copy.suggest);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(runSteps(facts, "go wide").length * 350);
+        await Promise.resolve();
+      });
+      expect(screen.getByLabelText("Additional notes")).toHaveValue("more removal");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // Copilot review: `runTuning` answers `{ ok: true }` for a run it PERSISTED even when the run
+  // itself failed (upstream_busy, locked_only, ungrounded, ...) — `result.ok` alone is never
+  // proof a set of suggestions landed.
+  it("keeps the note over a run the server accepted but that itself came back failed", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const failed: TuningState = { ...fresh, run: { ...okRun, status: "failed", errorClass: "timeout" } };
+      const d = deps([fresh, failed], { run: vi.fn(async () => ({ ok: true as const })) });
+      await draw(d);
+      fireEvent.change(screen.getByLabelText("Additional notes"), { target: { value: "more removal" } });
+      await press(copy.suggest);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(runSteps(facts, "go wide").length * 350);
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      expect(screen.getByLabelText("Additional notes")).toHaveValue("more removal");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe("TuningPanel: Describing in place (H35, PR 3)", () => {
+  const noDescription: TuningFacts = { ...facts, intent: null };
+
+  it("opens the editor from the dashed description row's link, and Cancel reverts it", async () => {
+    await draw(deps([fresh]), noDescription);
+    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
+    expect(screen.getByLabelText("Deck description")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByLabelText("Deck description")).toBeNull();
+    expect(screen.getByRole("button", { name: "Describe your deck →" })).toBeInTheDocument();
+  });
+
+  it("Escape also reverts the editor to the dashed row", async () => {
+    await draw(deps([fresh]), noDescription);
+    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
+    fireEvent.keyDown(screen.getByLabelText("Deck description"), { key: "Escape" });
+    expect(screen.queryByLabelText("Deck description")).toBeNull();
+  });
+
+  // Copilot review: Escape cancels an IME composition candidate first — it must not also
+  // discard the open editor in the same keystroke.
+  it("ignores Escape while an IME composition is active", async () => {
+    await draw(deps([fresh]), noDescription);
+    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
+    fireEvent.keyDown(screen.getByLabelText("Deck description"), { key: "Escape", isComposing: true });
+    expect(screen.getByLabelText("Deck description")).toBeInTheDocument();
+  });
+
+  it("saves through onSaveDescription and shows the row filled, with an announcement", async () => {
+    const onSaveDescription = vi.fn(async () => ({ ok: true as const }));
+    await act(async () => {
+      render(
+        <TuningPanel deckId="d1" permits={[3]} facts={noDescription} onLogGame={vi.fn()} deps={deps([fresh])} onSaveDescription={onSaveDescription} />,
+      );
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
+    fireEvent.change(screen.getByLabelText("Deck description"), { target: { value: "Go wide, win late." } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    });
+    expect(onSaveDescription).toHaveBeenCalledWith("Go wide, win late.");
+    expect(screen.queryByLabelText("Deck description")).toBeNull();
+    expect(screen.queryByText("none yet")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Describe your deck →" })).toBeNull();
+    expect(screen.getByRole("status")).toHaveTextContent(deckDescriptionCopy.announce.descriptionSaved);
+  });
+
+  // Copilot review round 2: a REJECTED promise (a network/transport failure, not a `{ok:false}`
+  // answer) must not escape as an unhandled rejection — it gets the same refusal copy.
+  it("shows the refusal rather than an unhandled rejection when the save itself rejects", async () => {
+    const onSaveDescription = vi.fn(() => Promise.reject(new Error("network")));
+    await act(async () => {
+      render(
+        <TuningPanel deckId="d1" permits={[3]} facts={noDescription} onLogGame={vi.fn()} deps={deps([fresh])} onSaveDescription={onSaveDescription} />,
+      );
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    });
+    expect(screen.getByText(deckDescriptionCopy.description.refused)).toBeInTheDocument();
+    expect(screen.getByLabelText("Deck description")).toBeInTheDocument();
+  });
+
+  it("shows the refusal and keeps the editor open when the save fails", async () => {
+    const onSaveDescription = vi.fn(async () => ({ ok: false as const, message: "Nope." }));
+    await act(async () => {
+      render(
+        <TuningPanel deckId="d1" permits={[3]} facts={noDescription} onLogGame={vi.fn()} deps={deps([fresh])} onSaveDescription={onSaveDescription} />,
+      );
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    });
+    expect(screen.getByText("Nope.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Deck description")).toBeInTheDocument();
+  });
+
+  // Copilot review round 2: the optimistic state must be NORMALIZED the same way `saveIntent`
+  // stores it (trimmed) — comparing the raw draft against the server's normalized `facts.intent`
+  // would never match, blocking a LATER external edit (the header pencil) from ever syncing in.
+  it("normalizes the saved draft so a later external edit still syncs in", async () => {
+    const onSaveDescription = vi.fn(async () => ({ ok: true as const }));
+    let utils!: ReturnType<typeof render>;
+    await act(async () => {
+      utils = render(
+        <TuningPanel deckId="d1" permits={[3]} facts={noDescription} onLogGame={vi.fn()} deps={deps([fresh])} onSaveDescription={onSaveDescription} />,
+      );
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
+    fireEvent.change(screen.getByLabelText("Deck description"), { target: { value: "  Go wide.  " } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    });
+    expect(onSaveDescription).toHaveBeenCalledWith("  Go wide.  ");
+    expect(screen.queryByRole("button", { name: "Describe your deck →" })).toBeNull();
+    // The server's own revalidation echoes back the TRIMMED value it actually stored.
+    await act(async () => {
+      utils.rerender(
+        <TuningPanel deckId="d1" permits={[3]} facts={{ ...noDescription, intent: "Go wide." }} onLogGame={vi.fn()} deps={deps([fresh])} onSaveDescription={onSaveDescription} />,
+      );
+    });
+    // A LATER external edit (the header pencil clearing it) now syncs in, proving the earlier
+    // optimistic value was released rather than permanently blocking this sync.
+    await act(async () => {
+      utils.rerender(
+        <TuningPanel deckId="d1" permits={[3]} facts={noDescription} onLogGame={vi.fn()} deps={deps([fresh])} onSaveDescription={onSaveDescription} />,
+      );
+    });
+    expect(screen.getByRole("button", { name: "Describe your deck →" })).toBeInTheDocument();
   });
 });
 

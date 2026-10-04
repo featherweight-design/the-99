@@ -417,6 +417,17 @@ export function BuilderShell({
   const visitKey = `${deck.id}:${visit.n}`;
   const [tuningSettled, setTuningSettled] = useState<string | null>(null);
   const onTuningSettled = useCallback(() => setTuningSettled(visitKey), [visitKey]);
+  // Shared by the empty-state field (`AnalysisEmpty`, via `AnalysisPanel`) and the checklist's
+  // own "Describing in place" editor (`TuningPanel`, H35 PR 3 review fix) — the two mounts are
+  // mutually exclusive, but both write through the same action.
+  const saveDescription = useCallback(
+    (value: string) => {
+      const form = new FormData();
+      form.set("intent", value);
+      return saveDeckDescription(deck.id, form);
+    },
+    [deck.id],
+  );
   const holding = holdsOpening({
     peekPending: isOpening({ shown: true, kind: profile.state.kind, storedPermits, peekSettled: profile.peekSettled }),
     overviewSettled: !analysisEnabled || synopsis.settled,
@@ -1522,11 +1533,7 @@ export function BuilderShell({
                   pressNote={{ analyze: analyzeNote?.text ?? null, reanalyze: reanalyzeNote?.text ?? null }}
                   pressSee={analyzeNote?.see ? { label: deckNoticesCopy.check.seeWhich, onPress: openNoticesSheet } : null}
                   description={deck.intent ?? null}
-                  onSaveDescription={(value) => {
-                    const form = new FormData();
-                    form.set("intent", value);
-                    return saveDeckDescription(deck.id, form);
-                  }}
+                  onSaveDescription={saveDescription}
                   legality={{ built, size: bodySize }}
                   declaration={{
                     declared: declaration.declared,
@@ -1593,6 +1600,7 @@ export function BuilderShell({
                       printedInSets={printedInSets}
                       onLogGame={() => setView("games")}
                       onSettled={onTuningSettled}
+                      onSaveDescription={saveDescription}
                     />
                   )}
                 >

@@ -18,14 +18,11 @@ import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import {
   profileOfHead,
   commanderName,
-  readEvidenceStep,
   readOwnedOracleIds,
   readTuningContext,
   readTuningState,
   tuningInputs,
   withBracketAfter,
-  EVIDENCE_STEPS,
-  type EvidenceStep,
 } from "../../lib/decks/tuning-read";
 import { callModel } from "../../lib/model/client";
 import { buildPlayGroup } from "../../lib/profile/play";
@@ -284,16 +281,6 @@ export async function readTuningPanel(deckId: string): Promise<TuningState | nul
   const inputs = await tuningInputs(deckId, userId);
   if (!inputs) return null;
   return readTuningState(deckId, userId, inputs.fingerprint, new Date(), { allLocked: inputs.allLocked });
-}
-
-/**
- * One of the generating manifest's reads. The panel calls them in turn, so each tick lands
- * on a read that finished. Disclosure only: the run rebuilds everything itself.
- */
-export async function readTuningEvidence(deckId: string, step: EvidenceStep): Promise<number | null> {
-  const userId = await requireUserId();
-  if (!isUuid(deckId) || !EVIDENCE_STEPS.includes(step)) return null;
-  return readEvidenceStep(deckId, userId, step);
 }
 
 async function verdict(

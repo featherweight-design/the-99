@@ -7,7 +7,6 @@ import {
   applySuggestion,
   cancelTuningRun,
   dismissSuggestion,
-  readTuningEvidence,
   readTuningPanel,
   restoreSuggestion,
   runTuning,
@@ -17,9 +16,8 @@ import {
 import { creditsCopy } from "../../lib/copy/credits";
 import { numberWord } from "../../lib/copy/deck-analysis";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
-import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { axisCopy } from "../../lib/copy/game-log";
-import type { EvidenceStep } from "../../lib/decks/tuning-read";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import type { Bracket } from "../../lib/profile/types";
 import { gateReason } from "../../lib/tuning/gate";
@@ -30,6 +28,7 @@ import { ManifestRows, type ManifestRow } from "./manifest-rows";
 import { MutationError } from "./mutation-error";
 import { SuggestionCard, type CardActions } from "./suggestion-card";
 import { TuningLimitsBox } from "./tuning-limits-box";
+import { TuningNotesField } from "./tuning-notes-field";
 
 /**
  * Suggested changes (placement addendum v2): the last section of the Analysis tab, mounted only
@@ -38,7 +37,8 @@ import { TuningLimitsBox } from "./tuning-limits-box";
  *
  * Its states, off `TuningState` and what the reader just pressed:
  *  - never run: with marked games (C1), with no games (D1, E3), with games and no marks (E5);
- *  - reading: the manifest ticking as each read lands, the fan shuffling, Stop (C2);
+ *  - reading: the manifest ticking on a pure client-side stagger (H35, PR 3 — not on each read
+ *    landing, which it did through PR 2), the fan shuffling, Stop (C2);
  *  - results, five or fewer (A1, A2, D2); part answered (C3); all answered (C4);
  *  - retired by a commit (C5): the set is cleared and the gate reopens;
  *  - nothing changed (state 5): drawn when a press finds the gate `unchanged`, with Suggest
@@ -54,7 +54,6 @@ export type TuningDeps = {
   read: (deckId: string) => Promise<TuningState | null>;
   run: (deckId: string, opts?: { anyway?: boolean; runId?: string }) => Promise<DeckMutationResult>;
   cancel: (deckId: string, runId: string) => Promise<DeckMutationResult>;
-  evidence: (deckId: string, step: EvidenceStep) => Promise<number | null>;
   card: CardActions;
 };
 
@@ -62,7 +61,6 @@ const SERVER: TuningDeps = {
   read: readTuningPanel,
   run: runTuning,
   cancel: cancelTuningRun,
-  evidence: readTuningEvidence,
   card: { apply: applySuggestion, undo: undoSuggestion, reject: dismissSuggestion, restore: restoreSuggestion },
 };
 
@@ -79,15 +77,25 @@ export type TuningFacts = {
   limits: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean };
 };
 
-type Counts = Partial<Record<EvidenceStep, number | null>>;
+/** The checklist's own vocabulary (H35, PR 3) — a row the panel already knows how to draw,
+ *  never a real per-step database read. `notes` here is the game log's notes row, unchanged
+ *  since before this PR; `playerNotes` is the new Additional notes row, named differently so
+ *  the two are never confused in a switch. */
+export type ManifestStep = "games" | "notes" | "decklist" | "description" | "limits" | "playerNotes" | "collection";
 
 const copy = deckTuningCopy.panel;
 const manifest = deckTuningCopy.manifest;
+const descriptionManifest = deckDescriptionCopy.manifest;
 /** How often a run begun elsewhere (another tab, a reload mid-run) is re-read until it settles. */
 const WATCH_MS = 3000;
 /** How long Stop looks for a run's pending row that its press may have beaten to the database. */
 const STOP_TRIES = 5;
 const STOP_WAIT_MS = 300;
+/** The checklist's own pacing (H35, PR 3): presentational, never a real read landing. STATES
+ *  §3 state 5 — "~350ms apart from 350ms". */
+const STAGGER_MS = 350;
+/** Past this, the writing row grows its own mono line (STATES §3 state 7). */
+const LONG_WAIT_MS = 20_000;
 
 export function TuningPanel({
   deckId,
@@ -98,6 +106,7 @@ export function TuningPanel({
   deps = SERVER,
   deeperLooks = false,
   onSettled,
+  onSaveDescription,
 }: {
   deckId: string;
   permits: readonly Bracket[];
@@ -113,6 +122,11 @@ export function TuningPanel({
   /** The first read has answered or failed: the tab's opening holds its loader until it has, so
    *  Suggested changes and its credit line never arrive after the rest of the tab. */
   onSettled?: () => void;
+  /** The absent description row's own "Describing in place" editor (STATES §3 state 2, H35
+   *  PR 3 review fix): `AnalysisEmpty`'s empty-state field cannot be reached from here — the two
+   *  are mutually exclusive mounts (this panel only exists once a reading has happened). The
+   *  same save `builder-shell.tsx` already wires to `AnalysisPanel`'s empty-state field. */
+  onSaveDescription?: (value: string) => Promise<DeckMutationResult>;
 }) {
   const [state, setState] = useState<TuningState | null>(null);
   // Mirrors `state`, written SYNCHRONOUSLY alongside every `setState` below, for code that must
@@ -126,8 +140,22 @@ export function TuningPanel({
   useEffect(() => {
     settledRef.current = onSettled;
   }, [onSettled]);
-  // Reading: the counts that have landed, by step; null before a press.
-  const [counts, setCounts] = useState<Counts | null>(null);
+  // Reading: the steps the stagger has ticked so far; null before a press (H35, PR 3 — a pure
+  // client-side timer, never a real read landing).
+  const [ticked, setTicked] = useState<ReadonlySet<ManifestStep> | null>(null);
+  // Every read row has ticked and the model call has not yet settled (the writing row, active).
+  const [writingActive, setWritingActive] = useState(false);
+  // Past LONG_WAIT_MS with the model still out.
+  const [longWait, setLongWait] = useState(false);
+  const staggerTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const longWaitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // "Additional notes" (H35, PR 3): one note per press, never saved — held here and nowhere else.
+  const [notes, setNotes] = useState("");
+  // The absent description row's own "Describing in place" editor (STATES §3 state 2).
+  const [describing, setDescribing] = useState(false);
+  const [descDraft, setDescDraft] = useState("");
+  const [descSaving, setDescSaving] = useState(false);
+  const [descRefused, setDescRefused] = useState<string | null>(null);
   const [unchangedShown, setUnchangedShown] = useState(false);
   const [refused, setRefused] = useState<string | null>(null);
   const [announced, setAnnounced] = useState("");
@@ -135,7 +163,14 @@ export function TuningPanel({
   // The header's `edit` is the line's other door, and its save revalidates the page: a new line
   // from the page replaces the one held here, adjusted during render so the old one never paints.
   const [seenIntent, setSeenIntent] = useState(facts.intent);
-  if (seenIntent !== facts.intent) {
+  // "Describing in place"'s own save sets `intent` optimistically, ahead of the revalidated
+  // `facts.intent` prop this panel does not control the timing of. Held here so the sync below
+  // does not immediately revert that optimistic value back to the stale prop on the very next
+  // render (review fix's own corollary) — cleared once the prop actually catches up, which
+  // re-arms the sync for a LATER external change (the header pencil, say).
+  const [savedIntent, setSavedIntent] = useState<string | null>(null);
+  if (savedIntent !== null && facts.intent === savedIntent) setSavedIntent(null);
+  if (savedIntent === null && seenIntent !== facts.intent) {
     setSeenIntent(facts.intent);
     setIntent(facts.intent);
   }
@@ -173,7 +208,7 @@ export function TuningPanel({
   // run and no other: the pending row a read turns up may be another tab's.
   const ownRun = useRef<string | null>(null);
   // A SYNCHRONOUS re-entry guard over `press`'s whole body: `reading` (which the render uses to
-  // disable the button) only goes true once `setCounts({})` runs below, so a second click during
+  // disable the button) only goes true once `setTicked(new Set())` runs below, so a second click during
   // the flush-and-gate-check preamble would otherwise start a SECOND `press`, racing `token` and
   // `ownRun` against the first (pre-open review round 3). Holds the TOKEN the active press is
   // running under, or null — `stop()` clears it unconditionally, and a press's own `finally`
@@ -365,18 +400,87 @@ export function TuningPanel({
     };
   }, [deps, deckId]);
 
-  // A run already in flight when the panel opened: tick what can be read and watch it settle.
-  const pendingElsewhere = state?.run?.status === "pending" && counts === null;
+  // Computed here, ahead of the `state === null` early return below, since the following effect
+  // (every hook must run unconditionally) needs them as a dependency.
+  const previewSteps = readSteps(facts, intent);
+  const runStepsList = runSteps(facts, intent);
+
+  // A run already in flight when the panel opened (another tab, a reload mid-run): reconstruct
+  // the stagger from the run's own `createdAt` — review round 2 (previously missed): without
+  // this, `ticked` stays null for the WHOLE run (the stagger only ever starts inside `pressRun`),
+  // so every row sits at 0/N and the writing row never activates until the run finally settles.
+  // Keyed on the run's own id, not on `ticked`, so setting `ticked` here does not immediately
+  // retrigger (and tear down) this same effect.
+  const pendingRunId = state?.run?.status === "pending" ? state.run.id : null;
+  const pendingRunCreatedAt = state?.run?.status === "pending" ? state.run.createdAt.getTime() : null;
+  const watchedRunId = useRef<string | null>(null);
   useEffect(() => {
-    if (!pendingElsewhere) return;
-    const id = setInterval(() => void reread(), WATCH_MS);
-    return () => clearInterval(id);
-  }, [pendingElsewhere, reread]);
+    if (pendingRunId === null || pendingRunCreatedAt === null) {
+      watchedRunId.current = null;
+      return;
+    }
+    if (watchedRunId.current === pendingRunId) return;
+    watchedRunId.current = pendingRunId;
+    const elapsed = Date.now() - pendingRunCreatedAt;
+    const already = Math.min(Math.max(0, Math.floor(elapsed / STAGGER_MS)), runStepsList.length);
+    // This effect is reconstructing state from an external system — a run already under way,
+    // read off its own `createdAt` — the case `use-card-search.ts` already disables this same
+    // rule for, rather than deferring the call through a 0ms timer: that deferral raced a
+    // synchronous Stop landing in the SAME tick in a test with no fake timers (the 0ms timeout
+    // fired after Stop's own `setTicked(null)`, reviving `ticked`).
+    setTicked(new Set(runStepsList.slice(0, already)));
+    let localStagger: ReturnType<typeof setInterval> | null = null;
+    if (already >= runStepsList.length) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setWritingActive(true);
+    } else {
+      let i = already;
+      localStagger = setInterval(() => {
+        const step = runStepsList[i];
+        i += 1;
+        setTicked((prev) => new Set(prev ?? []).add(step));
+        if (i >= runStepsList.length) {
+          if (localStagger !== null) clearInterval(localStagger);
+          localStagger = null;
+          staggerTimer.current = null;
+          setWritingActive(true);
+        }
+      }, STAGGER_MS);
+      staggerTimer.current = localStagger;
+    }
+    let localLongWait: ReturnType<typeof setTimeout> | null = null;
+    if (elapsed >= LONG_WAIT_MS) {
+      setLongWait(true);
+    } else {
+      localLongWait = setTimeout(() => setLongWait(true), LONG_WAIT_MS - elapsed);
+      longWaitTimer.current = localLongWait;
+    }
+    const watchId = setInterval(() => void reread(), WATCH_MS);
+    return () => {
+      clearInterval(watchId);
+      if (localStagger !== null) clearInterval(localStagger);
+      if (localLongWait !== null) clearTimeout(localLongWait);
+      staggerTimer.current = null;
+      longWaitTimer.current = null;
+    };
+    // `runStepsList` is deliberately NOT a dependency below — it is a fresh array every render
+    // (like `facts` itself), and listing it would tear this effect's interval down on every
+    // unrelated re-render. `pendingRunId`/`pendingRunCreatedAt` (stable primitives) are what
+    // this effect actually needs to re-run on; it reads the step list from whichever render's
+    // closure is current when that happens, same as the rest of this component reads
+    // `facts`/`intent`.
+  }, [pendingRunId, pendingRunCreatedAt, reread]); // eslint-disable-line react-hooks/exhaustive-deps
+  // The stagger and its long-wait timer are cleared on every unmount, same as a Stop would.
+  useEffect(() => {
+    return () => {
+      if (staggerTimer.current !== null) clearInterval(staggerTimer.current);
+      if (longWaitTimer.current !== null) clearTimeout(longWaitTimer.current);
+    };
+  }, []);
 
   if (state === null) return null;
 
-  const steps = readSteps(facts, intent);
-  const reading = counts !== null || state.run?.status === "pending";
+  const reading = ticked !== null || state.run?.status === "pending";
   // Spent is read off the allowance itself, never off `gateReason`: that answers "unchanged" first,
   // and a player with no credits left on an unchanged deck must still see the press disabled.
   const spent = state.allowance.used >= state.allowance.limit;
@@ -392,7 +496,7 @@ export function TuningPanel({
   async function press(anyway = false) {
     if (!state) return;
     // Held for the whole press, released on every exit by the `finally` below — not just the
-    // preamble, since `reading`'s own disablement only starts once `setCounts({})` runs further
+    // preamble, since `reading`'s own disablement only starts once `setTicked(new Set())` runs further
     // down (pre-open review round 3). Stamped with THIS press's own token (bumped here, not
     // inside `pressRun`), so `stop()` can release it explicitly without the `finally` of an
     // already-superseded press then clearing a NEWER press's guard (round 4): the `finally`
@@ -447,21 +551,72 @@ export function TuningPanel({
     if (token.current !== mine) return;
     const runId = crypto.randomUUID();
     ownRun.current = runId;
-    setCounts({});
+    setTicked(new Set());
+    setWritingActive(false);
+    setLongWait(false);
     setAnnounced(deckTuningCopy.announce.started);
     // Settled to a result whatever happens, so an unexpected throw is a refusal like any other.
     const running = deps.run(deckId, anyway ? { anyway: true, runId } : { runId }).catch(
       (): DeckMutationResult => ({ ok: false, message: deckTuningCopy.run.refused }),
     );
-    // The manifest ticks on reads that genuinely land, one after another. A read that fails
-    // stays unticked; the run is what decides the outcome.
-    for (const step of steps) {
-      const n = await deps.evidence(deckId, step).catch(() => null);
-      if (token.current !== mine) return;
-      if (n !== null) setCounts((c) => (c === null ? c : { ...c, [step]: n }));
+    // The checklist ticks on a pure client-side stagger (H35, PR 3), never on a real read
+    // landing — it shows the page's own already-known figures. A result that lands before the
+    // stagger finishes ticks the remaining rows at once, below, rather than waiting it out.
+    if (runStepsList.length === 0) {
+      setTicked(new Set());
+      setWritingActive(true);
+    } else {
+      let i = 0;
+      staggerTimer.current = setInterval(() => {
+        if (token.current !== mine) {
+          if (staggerTimer.current !== null) clearInterval(staggerTimer.current);
+          staggerTimer.current = null;
+          return;
+        }
+        // Snapshotted now, not read inside the `setTicked` updater: React may defer running that
+        // updater past this tick's own synchronous end, by which point a later tick has already
+        // moved `i` on — the updater would then add whatever step `i` points to AT THAT TIME,
+        // not the one this tick meant.
+        // Snapshotted now, not read inside the `setTicked` updater: React may defer running that
+        // updater past this tick's own synchronous end, by which point a later tick has already
+        // moved `i` on — the updater would then add whatever step `i` points to AT THAT TIME,
+        // not the one this tick meant.
+        const step = runStepsList[i];
+        i += 1;
+        setTicked((prev) => {
+          const next = new Set(prev ?? []);
+          next.add(step);
+          return next;
+        });
+        if (i >= runStepsList.length) {
+          if (staggerTimer.current !== null) clearInterval(staggerTimer.current);
+          staggerTimer.current = null;
+          setWritingActive(true);
+        }
+      }, STAGGER_MS);
     }
+    longWaitTimer.current = setTimeout(() => {
+      if (token.current === mine) setLongWait(true);
+    }, LONG_WAIT_MS);
     const result = await running;
+    // Checked BEFORE touching the timer refs, not after (review fix): `staggerTimer`/
+    // `longWaitTimer` are this component's shared refs, and `stop()` lets a new press start
+    // while this press's own `deps.run` is still unresolved (pre-open review round 4, PR 2). If
+    // that superseded run's promise settles late, it must not reach in and clear a NEWER press's
+    // own live timers out from under it.
     if (token.current !== mine) return;
+    if (staggerTimer.current !== null) {
+      clearInterval(staggerTimer.current);
+      staggerTimer.current = null;
+    }
+    if (longWaitTimer.current !== null) {
+      clearTimeout(longWaitTimer.current);
+      longWaitTimer.current = null;
+    }
+    // The result landed — tick every row at once, covering both the common case (the stagger
+    // already finished) and an early result that beat it (STATES §3: "ticks the rest at once").
+    setTicked(new Set(runStepsList));
+    setWritingActive(false);
     ownRun.current = null;
     // Token-checked AFTER the read too: a Stop pressed while this read is in flight owns the panel
     // from then on, and this press must not draw or announce over it.
@@ -471,19 +626,37 @@ export function TuningPanel({
       setState(next);
       stateRef.current = next;
     }
-    setCounts(null);
+    setTicked(null);
+    setLongWait(false);
     if (!result.ok) {
       setRefused(result.message);
       setAnnounced(result.message);
       return;
     }
     const failure = next?.run?.status === "failed" ? failureCopy(next.run.errorClass) : null;
+    // `result.ok` alone does not mean a set of suggestions landed — `runTuning` answers ok after
+    // persisting a run that itself failed (e.g. `upstream_busy`, `locked_only`, `ungrounded`),
+    // review round 1. Round 2: `!failure` alone is not enough either — a closing read that
+    // failed or returned a run in some OTHER non-`ok` status is also not a success, and must
+    // not be read as one just because it also isn't the `failed` branch. Only an explicit `ok`
+    // clears the note.
+    if (next?.run?.status === "ok") setNotes("");
     setAnnounced(failure ? failure.heading : deckTuningCopy.announce.ready(next?.items.length ?? 0));
     headingRef.current?.focus();
   }
 
   async function stop() {
     token.current += 1;
+    if (staggerTimer.current !== null) {
+      clearInterval(staggerTimer.current);
+      staggerTimer.current = null;
+    }
+    if (longWaitTimer.current !== null) {
+      clearTimeout(longWaitTimer.current);
+      longWaitTimer.current = null;
+    }
+    setWritingActive(false);
+    setLongWait(false);
     // Release the guard so a NEW press can start right away — the request `pressRun` is still
     // awaiting (the model call, its closing read) can run up to the model timeout, and this
     // panel's own `press` should not stay unresponsive until it settles (pre-open review round
@@ -511,7 +684,7 @@ export function TuningPanel({
       if (cancelled || (seen !== null && seen.status !== "pending") || (seen === null && own === null)) break;
       if (attempt < STOP_TRIES - 1) await new Promise((r) => setTimeout(r, STOP_WAIT_MS));
     }
-    setCounts(null);
+    setTicked(null);
     await reread();
     if (cancelled) setAnnounced(deckTuningCopy.announce.stopped);
   }
@@ -519,6 +692,44 @@ export function TuningPanel({
   async function settled(announce: string) {
     setAnnounced(announce);
     await reread();
+  }
+
+  // The absent description row's own "Describing in place" editor (STATES §3 state 2, review
+  // fix): `AnalysisEmpty`'s empty-state field is a different, mutually exclusive mount — this
+  // panel only exists once a reading has happened — so the row opens its own small editor
+  // instead of trying to reach that field.
+  function describeDeck() {
+    setDescDraft(intent ?? "");
+    setDescRefused(null);
+    setDescribing(true);
+  }
+  function cancelDescribing() {
+    setDescribing(false);
+    setDescRefused(null);
+  }
+  async function saveDescribing() {
+    if (!onSaveDescription) return;
+    setDescSaving(true);
+    try {
+      // Normalized the same way `saveIntent` stores it (trimmed, blank mapped to null) — review
+      // round 2: comparing the RAW draft against the server's normalized `facts.intent` meant a
+      // value with surrounding whitespace, or an explicit clear, never matched, leaving
+      // `savedIntent` set indefinitely and blocking a LATER external edit from syncing in.
+      const normalized = normalizeIntent(descDraft);
+      const result = await onSaveDescription(descDraft).catch(
+        (): DeckMutationResult => ({ ok: false, message: deckDescriptionCopy.description.refused }),
+      );
+      if (!result.ok) {
+        setDescRefused(result.message);
+        return;
+      }
+      setIntent(normalized);
+      setSavedIntent(normalized);
+      setDescribing(false);
+      setAnnounced(deckDescriptionCopy.announce.descriptionSaved);
+    } finally {
+      setDescSaving(false);
+    }
   }
 
   // ── The body ──────────────────────────────────────────────────────────
@@ -530,9 +741,27 @@ export function TuningPanel({
   const failure = !reading && state.run?.status === "failed" ? failureCopy(state.run.errorClass) : null;
   // A failed or stopped re-run leaves the set it would have replaced on screen, still open.
   const hasSet = !reading && !state.retired && state.items.length > 0;
-  const neverRunRows = manifestRows(facts, intent, null, steps);
+  const neverRunRows = manifestRows(facts, intent, null, previewSteps);
+  // "Describing in place" (STATES §3 state 2) replaces the checklist with its own editor; Cancel
+  // and a successful Save both return to the ordinary checklist.
+  const checklist = describing ? (
+    <DescribingInPlace
+      value={descDraft}
+      onChange={setDescDraft}
+      onSave={() => void saveDescribing()}
+      onCancel={cancelDescribing}
+      saving={descSaving}
+      refused={descRefused}
+    />
+  ) : (
+    <ManifestRows rows={neverRunRows} onLogGame={onLogGame} onDescribe={describeDeck} />
+  );
 
   if (reading) {
+    const runRows: ManifestRow[] = [
+      ...manifestRows(facts, intent, ticked ?? new Set(), runStepsList),
+      { kind: "writing", label: descriptionManifest.writing, active: writingActive },
+    ];
     body = (
       <>
         <div className="mt-[14px] flex flex-col items-center gap-[10px] text-center md:mt-[12px] md:flex-row md:items-center md:gap-[20px] md:text-left">
@@ -547,7 +776,7 @@ export function TuningPanel({
             </span>
           </span>
         </div>
-        <ManifestRows rows={manifestRows(facts, intent, counts ?? {}, steps)} />
+        <ManifestRows rows={runRows} writingLong={longWait ? descriptionManifest.writingLong : null} />
       </>
     );
   } else if (state.retired) {
@@ -557,7 +786,7 @@ export function TuningPanel({
       <>
         {failure ? <Failure failure={failure} /> : null}
         <Lead>{copy.retiredLead(state.retired.from, state.retired.to)}</Lead>
-        <ManifestRows rows={neverRunRows} onLogGame={onLogGame} />
+        {checklist}
       </>
     );
   } else if (hasSet) {
@@ -616,7 +845,7 @@ export function TuningPanel({
               ? copy.unmarkedLead(cap(numberWord(facts.gameCount)))
               : copy.readyLead(cap(numberWord(facts.gameCount)), axisName(facts.fix.key), facts.fix.hurt, facts.gameCount)}
         </Lead>
-        <ManifestRows rows={neverRunRows} onLogGame={onLogGame} />
+        {checklist}
       </>
     );
   }
@@ -697,6 +926,15 @@ export function TuningPanel({
         </div>
       )}
 
+      {/* "Additional notes" (H35, PR 3): one note per press, never saved — placed below the
+          limits box, above the action row (STATES §3 states 1/3). Hidden while reading, same as
+          the limits box, since its text becomes a checklist row instead. */}
+      {reading ? null : (
+        <div className="mt-[16px] md:mt-[18px]">
+          <TuningNotesField value={notes} onChange={setNotes} />
+        </div>
+      )}
+
       {/* THE ACTION ROW: one band in every state, the one primary first. */}
       <div
         className={`mt-[16px] flex flex-col gap-[9px] pt-[15px] md:mt-[18px] md:min-h-[56px] md:flex-row md:flex-wrap md:items-center md:pt-[16px] ${reading ? "md:gap-[12px]" : "md:gap-[16px]"}`}
@@ -721,7 +959,9 @@ export function TuningPanel({
               </button>
             </div>
             <span className="-mt-[1px] text-center font-mono text-[9.5px] md:mt-0 md:text-left md:text-[11px]" style={{ color: "var(--fg-faint)" }}>
-              {manifest.progress(steps.filter((s) => counts?.[s] != null).length, steps.length)}
+              {writingActive
+                ? descriptionManifest.progressWriting(runStepsList.length, runStepsList.length)
+                : manifest.progress(ticked?.size ?? 0, runStepsList.length)}
             </span>
           </>
         ) : (
@@ -750,6 +990,82 @@ export function TuningPanel({
 }
 
 // ── The pieces ──────────────────────────────────────────────────────────
+
+/** "Describing in place" (STATES §3 state 2): the absent description row's own editor, with
+ *  explicit Save/Cancel rather than the empty-state field's blur-to-save. */
+function DescribingInPlace({
+  value,
+  onChange,
+  onSave,
+  onCancel,
+  saving,
+  refused,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  onSave: () => void;
+  onCancel: () => void;
+  saving: boolean;
+  refused: string | null;
+}) {
+  const descCopy = deckDescriptionCopy.description;
+  const n = countCharacters(value);
+  const over = n > descCopy.maxLength;
+  const warn = n >= descCopy.warnAt;
+  return (
+    <div className="mt-[14px] flex flex-col gap-[6px]">
+      <label htmlFor="tuning-describing-field" className="block font-mono text-[10px] uppercase tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>
+        {descCopy.label}
+      </label>
+      <textarea
+        id="tuning-describing-field"
+        autoFocus
+        value={value}
+        onChange={(e) => {
+          if (countCharacters(e.target.value) <= descCopy.maxLength) onChange(e.target.value);
+        }}
+        onKeyDown={(e) => {
+          // Escape cancels an IME composition candidate first, same as the deck header's own
+          // description editor (`use-deck-header-edit.ts`) — without this guard, Escape during
+          // Japanese/Chinese/Korean input discards the whole draft instead.
+          if (e.nativeEvent.isComposing) return;
+          if (e.key === "Escape") onCancel();
+        }}
+        readOnly={saving}
+        rows={2}
+        placeholder={descCopy.placeholder}
+        aria-label={descCopy.fieldAria}
+        className="w-full resize-none rounded-[8px] font-sans text-[16px] leading-[1.5] md:text-[13.5px]"
+        style={{ background: "var(--surface)", border: "1px solid var(--accent)", padding: "10px 12px", color: "var(--fg)" }}
+      />
+      <p className="m-0 flex items-baseline justify-between gap-[10px] text-[12px] leading-[1.5]" style={{ color: "var(--fg-faint)" }}>
+        <span>{descCopy.help}</span>
+        <span className="flex-none text-right font-mono" style={{ width: "9ch", color: over ? "var(--danger)" : warn ? "var(--warning)" : "var(--fg-faint)" }}>
+          {descCopy.counter(n, descCopy.maxLength)}
+        </span>
+      </p>
+      {refused ? <MutationError message={refused} /> : null}
+      <div className="flex gap-[8px]">
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={saving || over}
+          className="h-[36px] rounded-[7px] px-[14px] text-[12.5px] font-semibold text-[color:var(--accent)] [border:1px_solid_var(--accent)] disabled:cursor-default disabled:opacity-50"
+        >
+          {descCopy.save}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={saving}
+          className="h-[36px] rounded-[7px] px-[14px] text-[12.5px] font-medium text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)]"
+        >
+          {descCopy.cancel}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function Lead({ children, desktopOnly = false, wide = false }: { children: ReactNode; desktopOnly?: boolean; wide?: boolean }) {
   // Capped at 680px over a set of cards (A1); a lead over a manifest runs the panel's width.
@@ -859,66 +1175,114 @@ function Failure({ failure }: { failure: FailureCopy }) {
 
 // ── Pure helpers ────────────────────────────────────────────────────────
 
-/** The reads a run discloses, in manifest order. Games and notes only when there are games. */
-export function readSteps(facts: TuningFacts, intent: string | null): EvidenceStep[] {
+/** The checklist's preview rows (never run), in manifest order. Games and notes only when there
+ *  are games. `description` is always included, present or absent (H35, PR 3 — it used to drop
+ *  out entirely with no description; the row now shows itself either way). `_intent` stays a
+ *  parameter only for parity with `runSteps` and every call site's `readSteps(facts, intent)` —
+ *  the row list itself no longer branches on it; `manifestRows`'s `known`/`countOf` still do. */
+export function readSteps(facts: TuningFacts, _intent: string | null): ManifestStep[] {
   return [
     ...(facts.gameCount > 0 ? (["games", "notes"] as const) : []),
     "decklist",
-    ...(intent !== null ? (["intent"] as const) : []),
+    "description",
     "collection",
   ];
 }
 
-/** The manifest's rows: with `counts` null, the page's own figures and nothing ticked. */
+/** The checklist's rows while a run is reading — `readSteps` plus "Kept for this deck" and
+ *  Additional notes, which become rows only once a run starts (STATES §3 state 4: "Limits and
+ *  notes become rows"). `intent` kept as a parameter for symmetry with `readSteps`, unused here
+ *  since limits/notes carry no presence check of their own.
+ *
+ *  Pre-open review (round 0): this PR does not yet SEND the limits or the typed note to the
+ *  model — `TuningDeps.run` takes neither, and `pressRun` passes nothing beyond the run id. The
+ *  limits/notes rows here disclose what the checklist will read, not what this run already has;
+ *  the wiring (both rows genuinely true) is PR 4a (limits) and PR 4b (notes), named in the plan.
+ *  `TuningNotesField`'s own comment says the same. Flagging this rather than hiding the rows: per
+ *  PR 2's Settled precedent, shipping the disclosure ahead of the wiring is the deliberate split,
+ *  not an oversight to quietly fix by holding the UI back. */
+export function runSteps(facts: TuningFacts, intent: string | null): ManifestStep[] {
+  const preview = readSteps(facts, intent);
+  const i = preview.indexOf("description");
+  return [...preview.slice(0, i + 1), "limits", "playerNotes", ...preview.slice(i + 1)];
+}
+
+/** The manifest's rows. `ticked` null is the never-run preview (the page's own figures, nothing
+ *  ticked); a set is a run reading — every row's `count` is null while reading (no run row
+ *  carries secondary text except Your games' `none logged`, drawn separately as `noGames`), and
+ *  `done` is membership in `ticked`. */
 export function manifestRows(
   facts: TuningFacts,
   intent: string | null,
-  counts: Counts | null,
-  steps: readonly EvidenceStep[],
+  ticked: ReadonlySet<ManifestStep> | null,
+  steps: readonly ManifestStep[],
 ): ManifestRow[] {
   const rows: ManifestRow[] = facts.gameCount === 0 ? [{ kind: "noGames", key: "games" }] : [];
   for (const step of steps) {
-    const landed = counts === null ? undefined : counts[step];
-    const n = counts === null ? known(facts, intent, step) : landed ?? null;
+    if (ticked !== null) {
+      rows.push({ kind: "read", key: step, label: labelOf(step, facts), count: null, done: ticked.has(step) });
+      continue;
+    }
+    // The preview only — the absent description gets the games row's own dashed treatment
+    // (review fix), not a plain read row with a link tacked on the end.
+    if (step === "description" && intent === null) {
+      rows.push({
+        kind: "absent",
+        key: "description",
+        label: descriptionManifest.description,
+        caption: deckDescriptionCopy.description.rowNone,
+        actionLabel: deckDescriptionCopy.description.rowOpen,
+      });
+      continue;
+    }
+    const n = known(facts, intent, step);
     rows.push({
       kind: "read",
       key: step,
       label: labelOf(step, facts),
       count: n === null ? null : countOf(step, n, facts),
-      done: counts !== null && landed != null,
+      done: false,
     });
   }
   return rows;
 }
 
-function known(facts: TuningFacts, intent: string | null, step: EvidenceStep): number | null {
+function known(facts: TuningFacts, intent: string | null, step: ManifestStep): number | null {
   switch (step) {
     case "games": return facts.gameCount;
     case "notes": return facts.noteCount;
     case "decklist": return facts.cards;
-    case "intent": return intent === null ? 0 : 1;
+    case "description": return intent === null ? 0 : 1;
     // Worded without a figure, so the unchecked row reads the same before and after its read.
     case "collection": return 0;
+    // Only ever drawn while reading, where `ticked !== null` short-circuits before this runs.
+    case "limits": case "playerNotes": return null;
   }
 }
 
-function labelOf(step: EvidenceStep, facts: TuningFacts): string {
+function labelOf(step: ManifestStep, facts: TuningFacts): string {
   switch (step) {
     case "games": return manifest.games;
     case "notes": return manifest.notes;
     case "decklist": return facts.fix === null ? manifest.listVsMix : manifest.list;
-    case "intent": return manifest.intent;
+    case "description": return descriptionManifest.description;
+    case "limits": return descriptionManifest.limits;
+    case "playerNotes": return descriptionManifest.notes;
     case "collection": return manifest.collection;
   }
 }
 
-function countOf(step: EvidenceStep, n: number, facts: TuningFacts): string {
+function countOf(step: ManifestStep, n: number, facts: TuningFacts): string {
   switch (step) {
     case "games": return facts.fix === null && facts.marked === 0 ? manifest.gamesUnmarked(n) : manifest.gamesCount(n);
     case "notes": return manifest.notesCount(n, facts.gameCount);
     case "decklist": return manifest.listCount(n);
-    case "intent": return manifest.intentCount;
+    // `n` is never 0 here — the absent case is handled by `manifestRows`'s own "absent" row,
+    // above, before `countOf` is ever reached for this step.
+    case "description": return descriptionManifest.descriptionCount;
     case "collection": return manifest.collectionCount;
+    // Only ever drawn while reading, where `countOf` is never called for them.
+    case "limits": case "playerNotes": return "";
   }
 }
 
@@ -929,4 +1293,12 @@ function axisName(key: string): string {
 
 function cap(word: string): string {
   return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
+/** The same normalization `saveIntent` applies server-side (trimmed, blank mapped to null) —
+ *  so an optimistic local value can be compared against the revalidated `facts.intent` for
+ *  equality, rather than never matching over whitespace or an explicit clear (review round 2). */
+function normalizeIntent(raw: string): string | null {
+  const trimmed = raw.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }
