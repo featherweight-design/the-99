@@ -531,7 +531,10 @@ async function run() {
       context.universal.map((u2) => u2.oracleId).sort(), [...universalIds].sort());
 
     const profile = await loadDeckProfileFromHead(head);
-    const pack = buildEvidencePack({ profile, play: buildPlayGroup([]), intent: null, owned: new Set(), ...context });
+    const pack = buildEvidencePack({
+      profile, play: buildPlayGroup([]), intent: null, owned: new Set(), ...context,
+      limits: { capCents: null, sets: [], ownedOnly: false },
+    });
     check("13 · the pack keeps the Key card the deck holds", pack.strategy?.keyCards.map((k) => k.oracleId), [c.body[0]]);
     const { system, user } = buildPrompt(pack);
     check("13 · the prompt carries the strategy and the Key card",
@@ -540,7 +543,12 @@ async function run() {
 
     const resolved = new Map([[key, c.body[0]], [other, c.body[1]], [add, c.add]]);
     const response = { suggestions: [{ add, cut: key, rationale: "r", rationaleShort: "r", evidence: [{ kind: "decklist", value: key }] }] } as TuningResponse;
-    const { drops } = validateSuggestions({ response, pack, resolveName: (n) => resolved.has(n) ? { oracleId: resolved.get(n)!, colorIdentity: [], commanderLegal: true } : null });
+    const { drops } = validateSuggestions({
+      response, pack,
+      resolveName: (n) => resolved.has(n)
+        ? { oracleId: resolved.get(n)!, colorIdentity: [], commanderLegal: true, priceCents: null, printedInSelectedSets: true, owned: false }
+        : null,
+    });
     check("13 · the validator drops a cut of that Key card", drops.map((d) => d.rule), ["keyCard"]);
   }
 

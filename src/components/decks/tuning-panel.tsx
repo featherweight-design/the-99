@@ -18,10 +18,12 @@ import { numberWord } from "../../lib/copy/deck-analysis";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { axisCopy } from "../../lib/copy/game-log";
+import { formatCents } from "../../lib/decks/price";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import type { Bracket } from "../../lib/profile/types";
 import { gateReason } from "../../lib/tuning/gate";
 import type { TuningItem, TuningState } from "../../lib/tuning/state";
+import type { RefusalDetail } from "../../lib/tuning/validate";
 import type { PrintedInSet } from "../../lib/sets/printed-in";
 import { FanShuffle } from "./fan-shuffle";
 import { ManifestRows, type ManifestRow } from "./manifest-rows";
@@ -633,7 +635,7 @@ export function TuningPanel({
       setAnnounced(result.message);
       return;
     }
-    const failure = next?.run?.status === "failed" ? failureCopy(next.run.errorClass) : null;
+    const failure = next?.run?.status === "failed" ? failureCopy(next.run.errorClass, next.run.validationReport?.refusal) : null;
     // `result.ok` alone does not mean a set of suggestions landed — `runTuning` answers ok after
     // persisting a run that itself failed (e.g. `upstream_busy`, `locked_only`, `ungrounded`),
     // review round 1. Round 2: `!failure` alone is not enough either — a closing read that
@@ -738,7 +740,7 @@ export function TuningPanel({
   let note: string | null = null;
   let neverRun = false;
 
-  const failure = !reading && state.run?.status === "failed" ? failureCopy(state.run.errorClass) : null;
+  const failure = !reading && state.run?.status === "failed" ? failureCopy(state.run.errorClass, state.run.validationReport?.refusal) : null;
   // A failed or stopped re-run leaves the set it would have replaced on screen, still open.
   const hasSet = !reading && !state.retired && state.items.length > 0;
   const neverRunRows = manifestRows(facts, intent, null, previewSteps);
@@ -802,10 +804,18 @@ export function TuningPanel({
       : dropped > 0
         ? total === 1 ? copy.fewerLeadOne(cap(numberWord(dropped))) : copy.fewerLead(cap(numberWord(total)), cap(numberWord(dropped)))
         : total === 1 ? copy.resultsLeadOne : copy.resultsLead(cap(numberWord(total)));
+    // "tooMany" (H35, PR 4a): the model handed back more survivors than the five shown, named
+    // before the player wonders where the rest went. `fresh` only — an already-answered run has
+    // moved past the question this caption answers.
+    const report = state.run?.validationReport;
+    const tooMany = !failure && !answered && report && report.survivedCount > report.keptCount
+      ? deckDescriptionCopy.refusal.tooMany(report.askedCount)
+      : null;
     body = (
       <>
         {failure ? <Failure failure={failure} /> : null}
         {answered ? null : <ReadFrom state={state} facts={facts} />}
+        {tooMany ? <Lead desktopOnly wide>{tooMany}</Lead> : null}
         {unchangedShown ? (
           <Unchanged state={state} intent={intent} fix={facts.fix} />
         ) : lead ? (
@@ -1080,15 +1090,20 @@ function Lead({ children, desktopOnly = false, wide = false }: { children: React
 }
 
 function ReadFrom({ state, facts }: { state: TuningState; facts: TuningFacts }) {
+  // "your limits" (H35, PR 4a): only when a limit is actually set, since an unset limit reads
+  // nothing and filters nothing (`descriptionManifest.readLimits`, "Kept for this deck").
+  const { capCents, sets, ownedOnly } = facts.limits;
+  const limitsRead = capCents !== null || sets.length > 0 || ownedOnly ? [descriptionManifest.readLimits] : [];
   const parts =
     state.gameCount === 0
-      ? [manifest.readCards(facts.cards), manifest.readMix, manifest.readCollection]
+      ? [manifest.readCards(facts.cards), manifest.readMix, manifest.readCollection, ...limitsRead]
       : [
           manifest.readGames(state.gameCount),
           ...(facts.noteCount > 0 ? [manifest.readNotes(facts.noteCount)] : []),
           manifest.readCards(facts.cards),
           manifest.readMix,
           manifest.readCollection,
+          ...limitsRead,
         ];
   return (
     <p className="mt-[8px] font-mono text-[9.5px] leading-[1.5] md:mt-[9px] md:text-[10.5px]" style={{ color: "var(--fg-faint)" }}>
@@ -1136,13 +1151,30 @@ function Unchanged({ state, intent, fix }: { state: TuningState; intent: string 
 
 type FailureCopy = { tag: string; heading: string; body: string; kept: string; note: string };
 
-function failureCopy(errorClass: string | null): FailureCopy {
+/** "Kept for this deck" (H35, PR 4a): the sentence that names what actually caused an empty
+ *  result, in place of `ungrounded`'s generic body. `locked`/`lockedMany` are left for `locked_only`'s
+ *  own established copy (F10, Hugh 2026-09-25) rather than taken here — the Locked feature's
+ *  `neverCut` drops only ever reach that branch today. */
+function refusalBody(refusal: RefusalDetail): string | null {
+  const r = deckDescriptionCopy.refusal;
+  switch (refusal.reason) {
+    case "commander": return r.commander(refusal.name);
+    case "overCap": return r.overCap(refusal.name, formatCents(refusal.capCents));
+    case "nothingLeft": return r.nothingLeft;
+    default: return null;
+  }
+}
+
+function failureCopy(errorClass: string | null, refusal?: RefusalDetail | null): FailureCopy {
   const f = deckTuningCopy.failure;
   switch (errorClass) {
     case "upstream_busy": return f.unavailable;
     case "timeout": return f.timeout;
     case "malformed": return f.malformed;
-    case "ungrounded": return f.ungrounded;
+    case "ungrounded": {
+      const body = refusal ? refusalBody(refusal) : null;
+      return body ? { ...f.ungrounded, body } : f.ungrounded;
+    }
     // F10: every suggestion cut a card the player locked. `ungrounded`'s frame, with the body and
     // the note naming the actual cause (Hugh, 2026-09-25: "log another game" does not fit it).
     case "locked_only": return { ...f.ungrounded, body: lockedCardsCopy.tuning.lockedOnlyBody, note: lockedCardsCopy.tuning.lockedOnlyNote };

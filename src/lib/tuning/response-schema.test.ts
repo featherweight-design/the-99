@@ -18,9 +18,10 @@ describe("tuningResponseSchema", () => {
     expect(tuningResponseSchema.safeParse({ suggestions: [] }).success).toBe(true);
   });
 
-  it("takes up to five suggestions and rejects a sixth", () => {
-    expect(tuningResponseSchema.safeParse({ suggestions: [one, one, one, one, one] }).success).toBe(true);
-    expect(tuningResponseSchema.safeParse({ suggestions: [one, one, one, one, one, one] }).success).toBe(false);
+  it("takes up to eight suggestions (ASK_SUGGESTIONS) and rejects a ninth", () => {
+    const eight = new Array(8).fill(one);
+    expect(tuningResponseSchema.safeParse({ suggestions: eight }).success).toBe(true);
+    expect(tuningResponseSchema.safeParse({ suggestions: [...eight, one] }).success).toBe(false);
   });
 
   it("rejects a suggestion with no evidence", () => {

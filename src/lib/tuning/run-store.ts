@@ -9,7 +9,7 @@ import { neverCutEnabled } from "../decks/never-cut-flag";
 import { PROFILE_VERSION } from "../profile/version";
 import { intentTooLong, TUNING_MODEL } from "./limits";
 import { PROMPT_VERSION } from "./prompt-version";
-import type { ValidatedSuggestion } from "./validate";
+import type { ValidatedSuggestion, ValidationReport } from "./validate";
 
 /**
  * The two writes that settle a tuning run. SERVER-ONLY: it imports the database.
@@ -144,7 +144,7 @@ export async function saveIntent(
 /** A failed run: the outcome, no items, and its unit back. False when the run was superseded. */
 export async function finishRun(
   { runId, callId }: RunHandle,
-  set: { status: "failed"; errorClass: ErrorClass; droppedCount?: number },
+  set: { status: "failed"; errorClass: ErrorClass; droppedCount?: number; validationReport?: ValidationReport },
   /** The call's usage, when it got a response: a refund still records what it burned. */
   billed?: Billed,
 ): Promise<boolean> {
@@ -172,11 +172,12 @@ export async function persistRun(
   kept: ValidatedSuggestion[],
   droppedCount: number,
   billed?: Billed,
+  validationReport?: ValidationReport,
 ): Promise<boolean> {
   try {
     await db.transaction(async (tx) => {
       const written = await tx.update(deckSuggestionRuns)
-        .set({ status: "ok", droppedCount })
+        .set({ status: "ok", droppedCount, validationReport })
         .where(and(eq(deckSuggestionRuns.id, runId), eq(deckSuggestionRuns.status, "pending")))
         .returning({ callId: deckSuggestionRuns.modelCallId });
       if (written.length === 0) throw new RunSupersededError();

@@ -10,6 +10,7 @@ import type { EdhrecTag } from "../lib/edhrec/parse";
 import type { CommanderEngine } from "../lib/recs/engine";
 import type { DeckProfile } from "../lib/profile/types";
 import type { CheckedSynopsis } from "../lib/synopsis/types";
+import type { ValidationReport } from "../lib/tuning/validate";
 
 /**
  * Scryfall's set catalog (api.scryfall.com/sets). Sourced from /sets rather than derived
@@ -1877,6 +1878,11 @@ export const deckSuggestionRuns = pgTable("deck_suggestion_runs", {
    *  A later version retires the set. Numbers rather than clocks: a commit's `committed_at` is its
    *  transaction's start, so no timestamp can say whether the run saw it. */
   readVersion: integer("read_version"),
+  /** "Kept for this deck"'s own measurement (H35, PR 4a): asked/survived/kept counts, and which
+   *  hard filter or structural drop caused an empty result, with the card name a refusal
+   *  sentence needs. Null for every run from before this column, and additive — nothing reads it
+   *  as a status. */
+  validationReport: jsonb("validation_report").$type<ValidationReport>(),
 }, (t) => [
   check(
     "deck_suggestion_runs_status_check",

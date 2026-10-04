@@ -2,6 +2,7 @@ import type { TuningCitation } from "../../db/schema";
 import type { Availability } from "../decks/availability";
 import type { PriceFact } from "../decks/price";
 import type { Allowance } from "../model/allowance-rule";
+import type { ValidationReport } from "./validate";
 
 /**
  * What the tuning panel and `runTuning` read. Types only, and pure, so the gate and the panel
@@ -55,6 +56,9 @@ export type TuningRun = {
   errorClass: string | null;
   createdAt: Date;
   droppedCount: number;
+  /** What the run measured about its own answer (H35, PR 4a). Null or absent for a run
+   *  persisted before the column existed, or a test fixture that predates it. */
+  validationReport?: ValidationReport | null;
 };
 
 export type TuningState = {

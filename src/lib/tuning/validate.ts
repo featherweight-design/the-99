@@ -28,7 +28,23 @@ import type { TuningResponse, TuningSuggestion } from "./response-schema";
  * lead's "we dropped N"): a cut of a card the player locked is the player's rule working, not a
  * suggestion the model got wrong (Locked, F4). Survivors are renumbered, so the card list has no holes.
  */
-export type ResolvedCard = { oracleId: string; colorIdentity: string[]; commanderLegal: boolean };
+export type ResolvedCard = {
+  oracleId: string;
+  colorIdentity: string[];
+  commanderLegal: boolean;
+  /**
+   * "Kept for this deck" (H35, PR 4a): the SAME figure the buy tag shows (`priceOf`/`priceState`
+   * over `loadPrices`), cents, cheapest live printing. Null with no usable price (sold out,
+   * never listed) — never dropped for a cap it cannot be checked against.
+   */
+  priceCents: number | null;
+  /** The same `printedIn` rule decision 9 gave the Set control — true for every card when no
+   *  set is selected, since an empty selection filters nothing. */
+  printedInSelectedSets: boolean;
+  /** The same ownership rule `pool: "sleeveable"` filters a fill's candidates on (`fill.ts`):
+   *  a plain boolean, already read once per run. */
+  owned: boolean;
+};
 
 export type ValidatedSuggestion = {
   addOracleId: string;
@@ -42,8 +58,61 @@ export type ValidatedSuggestion = {
 };
 
 /** Why a suggestion was dropped: a rule key the model was instructed with, or one of the
- *  structural checks no instruction covers. */
-export type Drop = { position: number; rule: RuleKey | "cardExists" | "addNotLegal" | "duplicate" | "keyCard" | "universalStaple" | "neverCut" };
+ *  structural checks no instruction covers. `commander` is split out of the generic
+ *  `cutInDeck` (H35, PR 4a) so a refusal can name the commander specifically; `overCap`/
+ *  `offSet`/`notOwned` are "Kept for this deck"'s three hard filters, checked on the ADD. */
+export type Drop = {
+  position: number;
+  rule: RuleKey | "cardExists" | "addNotLegal" | "duplicate" | "keyCard" | "universalStaple" | "neverCut"
+    | "commander" | "overCap" | "offSet" | "notOwned";
+  /** The card this drop is about, for a refusal sentence that names it — the model's own
+   *  spelling (`s.cut`/`s.add`), not a resolved catalog name, since drops the model got wrong
+   *  before a card ever resolved (`cardExists`) have none to give. */
+  name?: string;
+};
+
+/**
+ * What a run measured about its own answer (H35, PR 4a) — persisted so a drop rate can be read
+ * back without re-deriving it, and so the refusal note (an empty result) names what caused it.
+ * `survivedCount` is before the 8-asked/5-kept slice; `keptCount` after it, what was actually
+ * persisted. `survivedCount > keptCount` is the `tooMany` caption's own condition.
+ */
+export type ValidationReport = {
+  askedCount: number;
+  survivedCount: number;
+  keptCount: number;
+  refusal?: RefusalDetail;
+};
+
+export type RefusalDetail =
+  | { reason: "commander"; name: string }
+  | { reason: "locked"; name: string }
+  | { reason: "lockedMany"; count: number }
+  | { reason: "overCap"; name: string; capCents: number }
+  | { reason: "nothingLeft" };
+
+/**
+ * The refusal sentence's own selection (H35, PR 4a review-approved precedence): `commander` >
+ * `locked`/`lockedMany` > `overCap` > `nothingLeft`. Pure, over the `drops` an empty-result run
+ * already produced — the model never writes this sentence, the app does.
+ *
+ * `locked`/`lockedMany` read the existing `neverCut` drops (Locked, never cut): the only
+ * populated "locked" cause today. `playerText`'s own notes-driven lock concept (H35, PR 4b)
+ * reaches the SAME two sentences once it ships, through the same drops.
+ */
+export function chooseRefusal(drops: readonly Drop[], capCents: number | null): RefusalDetail {
+  const commander = drops.find((d) => d.rule === "commander" && d.name);
+  if (commander) return { reason: "commander", name: commander.name! };
+
+  const lockedNames = [...new Set(drops.filter((d) => d.rule === "neverCut" && d.name).map((d) => d.name!))];
+  if (lockedNames.length === 1) return { reason: "locked", name: lockedNames[0] };
+  if (lockedNames.length > 1) return { reason: "lockedMany", count: lockedNames.length };
+
+  const overCap = drops.find((d) => d.rule === "overCap" && d.name);
+  if (overCap && capCents !== null) return { reason: "overCap", name: overCap.name!, capCents };
+
+  return { reason: "nothingLeft" };
+}
 
 export function validateSuggestions(args: {
   response: TuningResponse;
@@ -83,7 +152,7 @@ export function validateSuggestions(args: {
   response.suggestions.forEach((s, position) => {
     const reason = firstFailure(s);
     if (reason) {
-      drops.push({ position, rule: reason });
+      drops.push({ position, ...reason });
       return;
     }
     const add = resolveName(s.add)!;
@@ -106,35 +175,47 @@ export function validateSuggestions(args: {
   // failed suggestion. Still listed in `drops`, so a run whose every drop is one can say so (F10).
   return { kept, droppedCount: drops.filter((d) => d.rule !== "neverCut").length, drops };
 
-  function firstFailure(s: TuningSuggestion): Drop["rule"] | null {
+  function firstFailure(s: TuningSuggestion): { rule: Drop["rule"]; name?: string } | null {
     const add = resolveName(s.add);
     const cut = resolveName(s.cut);
-    if (!add || !cut) return "cardExists";
+    if (!add || !cut) return { rule: "cardExists" };
 
     const cutRow = inDeck.get(cut.oracleId);
-    if (!cutRow || cutRow.commander) return "cutInDeck";
+    if (!cutRow) return { rule: "cutInDeck" };
+    // Named, so the refusal note can name the commander directly (H35, PR 4a) — split out of
+    // the generic `cutInDeck` it used to share.
+    if (cutRow.commander) return { rule: "commander", name: s.cut };
     // Never cut (Locked): a FILTER, whatever the prompt told the model (D4).
-    if (cutRow.locked) return "neverCut";
-    if (keyCards.has(cut.oracleId)) return "keyCard";
+    if (cutRow.locked) return { rule: "neverCut", name: s.cut };
+    if (keyCards.has(cut.oracleId)) return { rule: "keyCard" };
     // "Just to fix a role count": a universal staple may still go for a reason the PLAYER gave, a
     // game, a note or their stated intent, each checked against what they wrote below. A role
     // count is not that, and neither is a decklist citation, which `citationHolds` cannot check
     // and which would otherwise let a count-only cut through by adding one.
-    if (universal.has(cut.oracleId) && !s.evidence.some((c) => c.kind === "games" || c.kind === "note" || c.kind === "intent")) return "universalStaple";
+    if (universal.has(cut.oracleId) && !s.evidence.some((c) => c.kind === "games" || c.kind === "note" || c.kind === "intent")) return { rule: "universalStaple" };
 
     const rejection = validateCardForDeck(add, deck);
-    if (rejection === "off-color-identity") return "colourIdentity";
-    if (rejection !== null || inDeck.has(add.oracleId) || add.oracleId === cut.oracleId) return "addNotLegal";
+    if (rejection === "off-color-identity") return { rule: "colourIdentity" };
+    if (rejection !== null || inDeck.has(add.oracleId) || add.oracleId === cut.oracleId) return { rule: "addNotLegal" };
+    // "Kept for this deck" (H35, PR 4a): hard filters on the ADD, checked on the model's own
+    // resolved card rather than left to the model to self-police. A card with no usable price
+    // is never dropped for the cap — `priceCents` is null for sold-out or never-listed, not for
+    // "free".
+    if (pack.limits.capCents !== null && add.priceCents !== null && add.priceCents > pack.limits.capCents) {
+      return { rule: "overCap", name: s.add };
+    }
+    if (pack.limits.sets.length > 0 && !add.printedInSelectedSets) return { rule: "offSet" };
+    if (pack.limits.ownedOnly && !add.owned) return { rule: "notOwned" };
     // Two suggestions adding the same card, or cutting the same one, cannot both be applied.
-    if (usedAdds.has(add.oracleId) || usedCuts.has(cut.oracleId)) return "duplicate";
+    if (usedAdds.has(add.oracleId) || usedCuts.has(cut.oracleId)) return { rule: "duplicate" };
 
     for (const c of s.evidence) {
-      if (!citationHolds(c, s)) return "citation";
+      if (!citationHolds(c, s)) return { rule: "citation" };
     }
 
     for (const text of [s.rationale, s.rationaleShort, ...s.evidence.map((c) => c.value)]) {
       const [broken] = presentationFailures(text, quotable);
-      if (broken) return broken;
+      if (broken) return { rule: broken };
     }
     return null;
   }

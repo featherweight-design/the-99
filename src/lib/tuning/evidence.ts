@@ -63,6 +63,10 @@ export type EvidencePack = {
   /** Every universal staple (`src/lib/staples/universal.ts`), one per oracle card, sorted by name
    *  as round 4 of the eval named them. None is cut just to fix a role count. Absent is none. */
   universal?: { oracleId: string; name: string }[];
+  /** "Kept for this deck" (H35, PR 4a): hard filters, told to the model up front AND enforced by
+   *  the validator against the model's own resolved cards. Null/empty/false until the player sets
+   *  them, same shape as `TuningFacts["limits"]`. */
+  limits: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean };
 };
 
 export function buildEvidencePack(input: {
@@ -78,6 +82,9 @@ export function buildEvidencePack(input: {
   overview?: { strategy: string[]; keyCards: string[] } | null;
   /** The universal staples, resolved to names. */
   universal?: readonly { oracleId: string; name: string }[];
+  /** "Kept for this deck" (H35, PR 4a). Optional: a neutral default (no filter) for every
+   *  caller that does not carry limits — the eval harness, and older tests. */
+  limits?: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean };
 }): EvidencePack {
   const { profile, play, intent, owned } = input;
   const commanderIds = new Set(profile.commanderOracleIds);
@@ -150,6 +157,7 @@ export function buildEvidencePack(input: {
     year: currentYear(input.now),
     strategy: input.overview ? strategyOf(input.overview, profile.cards) : null,
     universal: universalOf(input.universal ?? []),
+    limits: input.limits ?? { capCents: null, sets: [], ownedOnly: false },
   };
 }
 

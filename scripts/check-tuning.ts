@@ -55,6 +55,9 @@ async function resolveAll(names: readonly string[]): Promise<Map<string, Resolve
       oracleId: card.oracle_id,
       colorIdentity: card.color_identity ?? [],
       commanderLegal: card.legalities?.commander === "legal",
+      priceCents: null,
+      printedInSelectedSets: true,
+      owned: false,
     });
   }
   return out;

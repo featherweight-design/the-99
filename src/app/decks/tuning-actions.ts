@@ -28,14 +28,17 @@ import { callModel } from "../../lib/model/client";
 import { buildPlayGroup } from "../../lib/profile/play";
 import { buildEvidencePack } from "../../lib/tuning/evidence";
 import { gateReason } from "../../lib/tuning/gate";
-import { intentTooLong, MODEL_TIMEOUT_MS, TUNING_EFFORT, TUNING_MAX_TOKENS, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "../../lib/tuning/limits";
+import { intentTooLong, MAX_SUGGESTIONS, MODEL_TIMEOUT_MS, TUNING_EFFORT, TUNING_MAX_TOKENS, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "../../lib/tuning/limits";
 import { MAX_BUDGET_DOLLARS } from "../../lib/intake/answers";
 import { buildPrompt } from "../../lib/tuning/prompt";
 import { tuningResponseSchema } from "../../lib/tuning/response-schema";
 import { cancelRun, finishRun, persistRun, saveIntent, startRun, type Billed } from "../../lib/tuning/run-store";
 import type { TuningState } from "../../lib/tuning/state";
 import { nameResolver } from "../../lib/tuning/resolve-names";
-import { validateSuggestions } from "../../lib/tuning/validate";
+import { chooseRefusal, validateSuggestions, type ValidationReport } from "../../lib/tuning/validate";
+import { loadPrices } from "../../lib/decks/price-query";
+import { priceOf, priceState } from "../../lib/decks/price";
+import { printedIn } from "../../lib/sets/printed-in";
 import { applyItem, setDismissed, undoItem } from "../../lib/tuning/verdicts";
 
 /**
@@ -185,7 +188,7 @@ export async function runTuning(
 
   const inputs = await tuningInputs(deckId, userId);
   if (!inputs) return { ok: false, message: deckTuningCopy.run.refused };
-  const { head, games, intent, declared, fingerprint, readVersion, locked, allLocked } = inputs;
+  const { head, games, intent, declared, fingerprint, readVersion, locked, allLocked, limits } = inputs;
 
   // `allLocked` is a gate reason, so this refusal lands BEFORE `startRun` reserves a credit: the
   // panel's "No credit is used." is true of the server, not only of a disabled button.
@@ -209,8 +212,12 @@ export async function runTuning(
   // failed one, since a refund still burned the tokens, and a late one that finds the run already
   // Stopped or reaped, since the call billed all the same (`run-store.ts`, `recordLate`).
   let billed: Billed | undefined;
-  const fail = async (errorClass: Parameters<typeof finishRun>[1]["errorClass"], droppedCount?: number) => {
-    if (await finishRun(run, { status: "failed", errorClass, droppedCount }, billed)) revalidateDeck(deckId);
+  const fail = async (
+    errorClass: Parameters<typeof finishRun>[1]["errorClass"],
+    droppedCount?: number,
+    validationReport?: ValidationReport,
+  ) => {
+    if (await finishRun(run, { status: "failed", errorClass, droppedCount, validationReport }, billed)) revalidateDeck(deckId);
     return { ok: true } as const;
   };
 
@@ -224,7 +231,7 @@ export async function runTuning(
       readTuningContext(head),
     ]);
     const pack = buildEvidencePack({
-      profile, play: buildPlayGroup(games), intent, owned, overview, universal, locked: new Set(locked),
+      profile, play: buildPlayGroup(games), intent, owned, overview, universal, locked: new Set(locked), limits,
     });
     const { system, user } = buildPrompt(pack);
     const outcome = await callModel({
@@ -236,25 +243,60 @@ export async function runTuning(
     // A rejection is stored as busy here: the distinction is kept for the overview only, for now.
     if (!outcome.ok) return await fail(outcome.errorClass === "upstream_rejected" ? "upstream_busy" : outcome.errorClass);
 
+    const askedCount = outcome.value.suggestions.length;
     // One catalog read of every name the model returned; injected so validate.ts stays pure.
     const names = [...new Set(outcome.value.suggestions.flatMap((s) => [s.add, s.cut]))];
-    const rows = names.length === 0 ? [] : await db
-      .select({ oracleId: cards.oracleId, name: cards.name, colorIdentity: cards.colorIdentity, commanderLegal: cards.commanderLegal })
+    const nameRows = names.length === 0 ? [] : await db
+      .select({
+        oracleId: cards.oracleId,
+        name: cards.name,
+        colorIdentity: cards.colorIdentity,
+        commanderLegal: cards.commanderLegal,
+        // Decision 9's rule (`printedIn`, src/lib/sets/printed-in.ts): any printing in the
+        // selection, folding to `true` when the player set no Set limit at all.
+        printedInSelectedSets: sql<boolean>`${printedIn(cards.oracleId, limits.sets)}`,
+      })
       .from(cards)
       .where(inArray(cards.name, names));
+    // "Kept for this deck" (H35, PR 4a): the SAME two reads the buy tag and a fill's
+    // `pool: "sleeveable"` already use, scoped to the model's own named cards — the pack-time
+    // `owned` set above only covers cards already in the deck or in the skeleton's staples, never
+    // a genuinely new suggestion.
+    const [{ prices, newestAsOf }, suggestedOwned] = await Promise.all([
+      loadPrices(nameRows.map((r) => r.oracleId)).catch((e): Awaited<ReturnType<typeof loadPrices>> => {
+        console.error("tuning run: price read failed", e);
+        return { prices: new Map(), newestAsOf: null };
+      }),
+      nameRows.length === 0 ? new Set<string>() : readOwnedOracleIds(userId, nameRows.map((r) => r.oracleId)),
+    ]);
+    const rows = nameRows.map((r) => {
+      const fact = prices.get(r.oracleId) ?? null;
+      const state = priceState(fact, newestAsOf);
+      return {
+        ...r,
+        priceCents: fact ? priceOf(fact, state) : null,
+        owned: suggestedOwned.has(r.oracleId),
+      };
+    });
     const resolveName = nameResolver(rows, new Set(pack.cards.map((c) => c.oracleId)));
 
     const { kept, droppedCount, drops } = validateSuggestions({ response: outcome.value, pack, resolveName });
+    // 8-asked/5-kept (H35, PR 4a): the first survivors in whatever order the validator already
+    // gives — no new ranking pass, no retry, no second model call. Fewer than 5 is shown as-is.
+    const sized = kept.slice(0, MAX_SUGGESTIONS);
+    const report: ValidationReport = { askedCount, survivedCount: kept.length, keptCount: sized.length };
     // F10: every suggestion cut a card the player locked. Its own class, so the empty result says
     // that rather than `ungrounded`'s three causes. Refunded like every failure.
-    if (kept.length === 0 && drops.length > 0 && drops.every((d) => d.rule === "neverCut")) {
-      return await fail("locked_only", droppedCount);
+    if (sized.length === 0 && drops.length > 0 && drops.every((d) => d.rule === "neverCut")) {
+      return await fail("locked_only", droppedCount, { ...report, refusal: chooseRefusal(drops, limits.capCents) });
     }
-    if (kept.length === 0) return await fail("ungrounded", droppedCount);
+    if (sized.length === 0) {
+      return await fail("ungrounded", droppedCount, { ...report, refusal: chooseRefusal(drops, limits.capCents) });
+    }
 
     // The bracket flag: shown, never dropped (Hugh, 2026-09-23).
-    const flagged = await withBracketAfter(head, profile, declared, kept);
-    if (await persistRun(run, flagged, droppedCount, billed)) revalidateDeck(deckId);
+    const flagged = await withBracketAfter(head, profile, declared, sized);
+    if (await persistRun(run, flagged, droppedCount, billed, report)) revalidateDeck(deckId);
     return { ok: true };
   } catch (err) {
     await fail("upstream_busy");

@@ -8,9 +8,18 @@ import { deckDescriptionCopy } from "../copy/deck-description";
  * in `src/lib/model/allowance-rule.ts`.
  */
 
-/** At most five swaps (Hugh, 2026-09-23, as Design drew). Fewer is legitimate; zero that survive
- *  checking is `ungrounded`. */
+/** At most five swaps SHOWN (Hugh, 2026-09-23, as Design drew). Fewer is legitimate; zero that
+ *  survive checking is `ungrounded`. The model is asked for more than this (`ASK_SUGGESTIONS`,
+ *  H35 PR 4a) so a run with some invalid candidates still has enough survivors to fill five. */
 export const MAX_SUGGESTIONS = 5;
+
+/**
+ * How many candidates the model is ASKED for (H35, PR 4a, orchestrator via Hugh, 2026-10-03):
+ * the schema's own ceiling and the prompt's "Propose up to N swaps" line. `validateSuggestions`
+ * drops the invalid ones and `runTuning` keeps the first `MAX_SUGGESTIONS` survivors in whatever
+ * order the validator already gives — no second ranking pass, no retry, no second model call.
+ */
+export const ASK_SUGGESTIONS = 8;
 
 /** A pending run older than this was abandoned, and the read-time reaper fails it. */
 export const REAPER_CUTOFF_MS = 5 * 60 * 1000;

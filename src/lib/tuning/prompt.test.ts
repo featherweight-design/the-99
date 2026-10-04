@@ -31,6 +31,7 @@ const pack: EvidencePack = {
   play: buildPlayGroup([game("g1", { hurt: ["mana"], note: "flooded out on turn six" }), game("g2", { hurt: ["mana"] })]),
   intent: null,
   year: 2026,
+  limits: { capCents: null, sets: [], ownedOnly: false },
 };
 
 describe("buildPrompt", () => {
@@ -151,15 +152,23 @@ describe("the prompt Hugh rated (eval round 4, 2026-09-24)", () => {
   // The rated run's own literal text for the rule the player-text boundary reworded.
   const RATED_QUOTED_NOTE_RULE = "A quoted note must be byte-identical to what the player typed, in quotation marks, with its date.";
 
+  // The rated run's own literal text for the swaps line H35 PR 4a replaced (8-asked/5-kept).
+  const RATED_SWAPS_RULE = "Propose at most 5 swaps. Each swap cuts exactly one card from the deck and adds exactly one card. "
+    + "Fewer is better than padding: one swap you can back beats three you cannot, and an empty list is an acceptable answer.";
+
   const expectedSystem = fixture.system
     .replace(
       "You suggest changes to a Magic: The Gathering Commander deck, for the player who built it.\n",
       `You suggest changes to a Magic: The Gathering Commander deck, for the player who built it.\n${PLAYER_TEXT_SYSTEM_RULE}\n`,
     )
-    .replace(RATED_QUOTED_NOTE_RULE, deckTuningCopy.suggestionRules.quotedNote);
+    .replace(RATED_QUOTED_NOTE_RULE, deckTuningCopy.suggestionRules.quotedNote)
+    .replace(RATED_SWAPS_RULE, "Propose up to 8 swaps. Each swap cuts exactly one card from the deck and adds exactly one card.");
 
   it("reproduces round 4's system and user messages byte for byte, plus the known player-text delta since", () => {
-    expect(buildPrompt(fixture.pack)).toEqual({ system: expectedSystem, user: fixture.user });
+    // The fixture predates limits (H35, PR 4a); a neutral default here, never written into the
+    // immutable fixture file, since no limit set renders nothing new in either message.
+    const fixturePack: EvidencePack = { ...fixture.pack, limits: fixture.pack.limits ?? { capCents: null, sets: [], ownedOnly: false } };
+    expect(buildPrompt(fixturePack)).toEqual({ system: expectedSystem, user: fixture.user });
   });
 
   it("the fixture file itself is untouched since the rated run", () => {

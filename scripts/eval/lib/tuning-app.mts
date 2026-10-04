@@ -69,7 +69,10 @@ export async function openTuning() {
           hurt: g.hurt,
         })) as DeckGame[];
       }
-      const pack = buildEvidencePack({ profile, play: buildPlayGroup(games), intent, owned, now: new Date(OVERLAY_ANCHOR) });
+      const pack = buildEvidencePack({
+        profile, play: buildPlayGroup(games), intent, owned, now: new Date(OVERLAY_ANCHOR),
+        limits: { capCents: null, sets: [], ownedOnly: false },
+      });
       const { pack: shown, messages } = applyVariant(variant, pack, buildPrompt, deckId);
       out.push({ deckId, pack: shown, ...messages });
     }
@@ -79,10 +82,12 @@ export async function openTuning() {
   /** The real accept contract over parsed replies, with one catalog read for every name. */
   async function score(items: readonly { pack: EvidencePack; value: TuningResponse }[]) {
     const names = [...new Set(items.flatMap((a) => a.value.suggestions.flatMap((s) => [s.add, s.cut])))];
-    const catalog = names.length === 0 ? [] : await db
+    const catalogRows = names.length === 0 ? [] : await db
       .select({ oracleId: cards.oracleId, name: cards.name, colorIdentity: cards.colorIdentity, commanderLegal: cards.commanderLegal })
       .from(cards)
       .where(inArray(cards.name, names));
+    // No real limits in this eval harness, so every candidate passes the hard filters untouched.
+    const catalog = catalogRows.map((r) => ({ ...r, priceCents: null, printedInSelectedSets: true, owned: false }));
     return items.map(({ pack, value }) => {
       const inDeck = new Set(pack.cards.map((c) => c.oracleId));
       const resolve = nameResolver(catalog, inDeck);

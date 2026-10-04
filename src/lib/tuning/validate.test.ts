@@ -4,7 +4,7 @@ import type { DeckGame } from "../decks/games";
 import { buildPlayGroup } from "../profile/play";
 import type { EvidencePack } from "./evidence";
 import type { TuningResponse, TuningSuggestion } from "./response-schema";
-import { validateSuggestions, type ResolvedCard } from "./validate";
+import { chooseRefusal, validateSuggestions, type Drop, type ResolvedCard } from "./validate";
 
 const game = (id: string, over: Partial<DeckGame> = {}): DeckGame => ({
   id, result: "loss", podSize: 4, playedAt: new Date("2026-09-01T20:00:00Z"),
@@ -29,17 +29,19 @@ const pack: EvidencePack = {
   ]),
   intent: null,
   year: 2026,
+  limits: { capCents: null, sets: [], ownedOnly: false },
 };
 
+const neutral = { priceCents: null, printedInSelectedSets: true, owned: false };
 const CATALOG: Record<string, ResolvedCard> = {
-  "Cultivate": { oracleId: "cult", colorIdentity: ["G"], commanderLegal: true },
-  "Rampant Growth": { oracleId: "rg", colorIdentity: ["G"], commanderLegal: true },
-  "Lightning Bolt": { oracleId: "bolt", colorIdentity: ["R"], commanderLegal: true },
-  "Banned Thing": { oracleId: "ban", colorIdentity: ["G"], commanderLegal: false },
-  "Grizzly Bears": { oracleId: "bear", colorIdentity: ["G"], commanderLegal: true },
-  "Oxen": { oracleId: "ox", colorIdentity: ["G"], commanderLegal: true },
-  "Commander": { oracleId: "cmd", colorIdentity: ["G"], commanderLegal: true },
-  "Not In Deck": { oracleId: "nid", colorIdentity: ["G"], commanderLegal: true },
+  "Cultivate": { oracleId: "cult", colorIdentity: ["G"], commanderLegal: true, ...neutral },
+  "Rampant Growth": { oracleId: "rg", colorIdentity: ["G"], commanderLegal: true, ...neutral },
+  "Lightning Bolt": { oracleId: "bolt", colorIdentity: ["R"], commanderLegal: true, ...neutral },
+  "Banned Thing": { oracleId: "ban", colorIdentity: ["G"], commanderLegal: false, ...neutral },
+  "Grizzly Bears": { oracleId: "bear", colorIdentity: ["G"], commanderLegal: true, ...neutral },
+  "Oxen": { oracleId: "ox", colorIdentity: ["G"], commanderLegal: true, ...neutral },
+  "Commander": { oracleId: "cmd", colorIdentity: ["G"], commanderLegal: true, ...neutral },
+  "Not In Deck": { oracleId: "nid", colorIdentity: ["G"], commanderLegal: true, ...neutral },
 };
 const resolveName = (name: string) => CATALOG[name] ?? null;
 
@@ -68,7 +70,7 @@ describe("validateSuggestions", () => {
   });
 
   it("drops a cut that names a commander", () => {
-    expect(run({ ...good, cut: "Commander" }).drops).toEqual([{ position: 0, rule: "cutInDeck" }]);
+    expect(run({ ...good, cut: "Commander" }).drops).toEqual([{ position: 0, rule: "commander", name: "Commander" }]);
   });
 
   it("drops an add outside the colour identity", () => {
@@ -321,7 +323,7 @@ describe("Locked (never cut): the validator's filter", () => {
   it("drops a suggestion that cuts a locked card, whatever it cites (D4)", () => {
     const out = check(good);
     expect(out.kept).toHaveLength(0);
-    expect(out.drops).toEqual([{ position: 0, rule: "neverCut" }]);
+    expect(out.drops).toEqual([{ position: 0, rule: "neverCut", name: "Grizzly Bears" }]);
   });
 
   // F4: the lead's "dropped N" is about suggestions the model got wrong; a locked cut is the
@@ -334,5 +336,81 @@ describe("Locked (never cut): the validator's filter", () => {
 
   it("keeps a cut of an unlocked card in the same deck", () => {
     expect(check({ ...good, cut: "Oxen" }).kept).toHaveLength(1);
+  });
+});
+
+describe("Kept for this deck: the hard filters on the ADD (H35, PR 4a)", () => {
+  const catalogWith = (over: Partial<ResolvedCard>) => (name: string) =>
+    name === "Cultivate" ? { ...CATALOG.Cultivate, ...over } : CATALOG[name] ?? null;
+
+  it("drops an add over the deck's price cap", () => {
+    const resolve = catalogWith({ priceCents: 500 });
+    const withCap = { ...pack, limits: { capCents: 300, sets: [], ownedOnly: false } };
+    expect(validateSuggestions({ response: { suggestions: [good] }, pack: withCap, resolveName: resolve }).drops)
+      .toEqual([{ position: 0, rule: "overCap", name: "Cultivate" }]);
+  });
+
+  it("never drops an add for the cap when its price cannot be checked (sold out or never listed)", () => {
+    const resolve = catalogWith({ priceCents: null });
+    const withCap = { ...pack, limits: { capCents: 1, sets: [], ownedOnly: false } };
+    expect(validateSuggestions({ response: { suggestions: [good] }, pack: withCap, resolveName: resolve }).kept).toHaveLength(1);
+  });
+
+  it("keeps an add at or under the cap", () => {
+    const resolve = catalogWith({ priceCents: 300 });
+    const withCap = { ...pack, limits: { capCents: 300, sets: [], ownedOnly: false } };
+    expect(validateSuggestions({ response: { suggestions: [good] }, pack: withCap, resolveName: resolve }).kept).toHaveLength(1);
+  });
+
+  it("drops an add printed in none of the selected sets", () => {
+    const resolve = catalogWith({ printedInSelectedSets: false });
+    const withSets = { ...pack, limits: { capCents: null, sets: ["lea"], ownedOnly: false } };
+    expect(validateSuggestions({ response: { suggestions: [good] }, pack: withSets, resolveName: resolve }).drops)
+      .toEqual([{ position: 0, rule: "offSet" }]);
+  });
+
+  it("drops an unowned add when owned-only is set", () => {
+    const resolve = catalogWith({ owned: false });
+    const withOwned = { ...pack, limits: { capCents: null, sets: [], ownedOnly: true } };
+    expect(validateSuggestions({ response: { suggestions: [good] }, pack: withOwned, resolveName: resolve }).drops)
+      .toEqual([{ position: 0, rule: "notOwned" }]);
+  });
+
+  it("keeps an owned add when owned-only is set", () => {
+    const resolve = catalogWith({ owned: true });
+    const withOwned = { ...pack, limits: { capCents: null, sets: [], ownedOnly: true } };
+    expect(validateSuggestions({ response: { suggestions: [good] }, pack: withOwned, resolveName: resolve }).kept).toHaveLength(1);
+  });
+});
+
+describe("chooseRefusal: the empty-result sentence's own precedence (H35, PR 4a)", () => {
+  const drop = (rule: Drop["rule"], name?: string): Drop => ({ position: 0, rule, name });
+
+  it("names the commander first, over everything else", () => {
+    expect(chooseRefusal([drop("commander", "Gisa"), drop("neverCut", "Sol Ring"), drop("overCap", "Cultivate")], 300))
+      .toEqual({ reason: "commander", name: "Gisa" });
+  });
+
+  it("names a single locked card next", () => {
+    expect(chooseRefusal([drop("neverCut", "Sol Ring"), drop("overCap", "Cultivate")], 300))
+      .toEqual({ reason: "locked", name: "Sol Ring" });
+  });
+
+  it("counts locked cards by distinct name, not by drop", () => {
+    expect(chooseRefusal([drop("neverCut", "Sol Ring"), drop("neverCut", "Sol Ring"), drop("neverCut", "Mana Crypt")], null))
+      .toEqual({ reason: "lockedMany", count: 2 });
+  });
+
+  it("names the cap next, with the cap it holds the run to", () => {
+    expect(chooseRefusal([drop("overCap", "Cultivate"), drop("offSet")], 300))
+      .toEqual({ reason: "overCap", name: "Cultivate", capCents: 300 });
+  });
+
+  it("never names overCap when the deck has no cap set", () => {
+    expect(chooseRefusal([drop("overCap", "Cultivate")], null)).toEqual({ reason: "nothingLeft" });
+  });
+
+  it("falls back to nothingLeft when no named cause survives", () => {
+    expect(chooseRefusal([drop("citation"), drop("duplicate")], null)).toEqual({ reason: "nothingLeft" });
   });
 });

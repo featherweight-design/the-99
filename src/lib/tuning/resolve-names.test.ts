@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { nameResolver } from "./resolve-names";
 
-const row = (oracleId: string, name: string) => ({ oracleId, name, colorIdentity: [], commanderLegal: true });
+const row = (oracleId: string, name: string) => ({
+  oracleId, name, colorIdentity: [], commanderLegal: true,
+  priceCents: null, printedInSelectedSets: true, owned: false,
+});
 
 describe("nameResolver", () => {
   it("resolves a name one catalog card carries", () => {
