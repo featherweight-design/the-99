@@ -15,7 +15,7 @@ const calls = vi.hoisted(() => ({ inputs: 0, started: 0, applied: 0, saved: 0, s
   evidencePack: undefined as unknown, catalogRows: [] as unknown[], persisted: [] as unknown[][],
   // Review round 4: configurable so a test can prove the mocked reads actually flow into the
   // hard filters, not just that the validator's own unit tests apply them in isolation.
-  priceRows: new Map<string, number>(), ownedIds: new Set<string>(),
+  priceRows: new Map<string, number>(), ownedIds: new Set<string>(), freeCopies: new Map<string, number>(),
   // The ONE source of truth for limits: `tuningInputs` hands it to `runTuning`, which passes the
   // SAME value on to `buildEvidencePack` — so the mocked pack mirrors whatever was read in,
   // rather than risking two configs that could silently disagree with production's own flow.
@@ -50,6 +50,11 @@ vi.mock("../../db", () => ({
     // Canned, never a real query — `calls.catalogRows` is the only thing a test configures.
     select: () => ({ from: () => ({ where: async () => calls.catalogRows }) }),
   },
+}));
+vi.mock("../../lib/decks/availability-query", () => ({
+  // SLEEVEABLE MEANS SLEEVEABLE (review round 6): a row absent here reads as "nothing known",
+  // same as `fill.ts`'s own predicate (`a === undefined || a.free > 0`).
+  loadAvailability: async () => new Map([...calls.freeCopies].map(([id, free]) => [id, { free }])),
 }));
 vi.mock("../../lib/decks/price-query", () => ({
   loadPrices: async () => {
@@ -151,6 +156,7 @@ beforeEach(() => {
   calls.persisted = [];
   calls.priceRows = new Map();
   calls.ownedIds = new Set();
+  calls.freeCopies = new Map();
   calls.limits = { capCents: null, sets: [], ownedOnly: false };
 });
 
@@ -258,6 +264,36 @@ describe("runTuning's 8-asked/5-kept slice", () => {
   it("drops an unowned candidate when owned-only is active, from the ownership read's own result", async () => {
     calls.limits = { capCents: null, sets: [], ownedOnly: true };
     calls.ownedIds = new Set(Array.from({ length: 7 }, (_, i) => `add${i + 1}`));
+    await runTuning(DECK, { anyway: true });
+    const [, flagged, droppedCount, , report] = calls.persisted[0] as [unknown, { addOracleId: string }[], number, unknown, { askedCount: number; survivedCount: number; keptCount: number }];
+    expect(flagged.map((f) => f.addOracleId)).not.toContain("add0");
+    expect(flagged).toHaveLength(5);
+    expect(droppedCount).toBe(1);
+    expect(report).toEqual({ askedCount: 8, survivedCount: 7, keptCount: 5 });
+  });
+
+  // Review round 6: "owned" alone is not "sleeveable" — a collection row with every copy
+  // already claimed by another deck must still be dropped, the same rule `fill.ts`'s
+  // `pool: "sleeveable"` applies (`a === undefined || a.free > 0`).
+  it("drops a candidate the player owns but has no free copy of", async () => {
+    calls.limits = { capCents: null, sets: [], ownedOnly: true };
+    calls.ownedIds = new Set(Array.from({ length: 8 }, (_, i) => `add${i}`));
+    calls.freeCopies = new Map([["add0", 0]]);
+    await runTuning(DECK, { anyway: true });
+    const [, flagged, droppedCount, , report] = calls.persisted[0] as [unknown, { addOracleId: string }[], number, unknown, { askedCount: number; survivedCount: number; keptCount: number }];
+    expect(flagged.map((f) => f.addOracleId)).not.toContain("add0");
+    expect(flagged).toHaveLength(5);
+    expect(droppedCount).toBe(1);
+    expect(report).toEqual({ askedCount: 8, survivedCount: 7, keptCount: 5 });
+  });
+
+  // Review round 6 (Low): the Set limit's own wiring was untested at the action level — the
+  // validator test injects `printedInSelectedSets` directly, and `printed-in.test.ts`
+  // reconstructs a separate query, so a regression here (an empty set list reaching the real
+  // query, say) would leave both green.
+  it("drops a candidate printed outside the deck's selected sets, from the catalog read's own result", async () => {
+    calls.limits = { capCents: null, sets: ["lea"], ownedOnly: false };
+    calls.catalogRows = (calls.catalogRows as { oracleId: string }[]).map((r) => (r.oracleId === "add0" ? { ...r, printedInSelectedSets: false } : r));
     await runTuning(DECK, { anyway: true });
     const [, flagged, droppedCount, , report] = calls.persisted[0] as [unknown, { addOracleId: string }[], number, unknown, { askedCount: number; survivedCount: number; keptCount: number }];
     expect(flagged.map((f) => f.addOracleId)).not.toContain("add0");
@@ -478,6 +514,20 @@ describe("saveDeckLimits (H35 PR 2, \"Kept for this deck\")", () => {
   it("still accepts a well-formed set code at each bound", async () => {
     await saveDeckLimits(DECK, { sets: ["mh", "lcisomhc"] });
     expect(calls.headerUpdates[0].set).toMatchObject({ tuningSets: ["mh", "lcisomhc"] });
+  });
+
+  // Review round 6: the shape check bounds each code, not the array — an unbounded Sets answer
+  // is serialized twice into a paid model request and once into SQL every run. Bounded the same
+  // way the create flow bounds its own Sets answer (MAX_SETS).
+  it("refuses more than MAX_SETS codes, though every one is individually well-formed", async () => {
+    const result = await saveDeckLimits(DECK, { sets: Array.from({ length: 9 }, (_, i) => `s${i}`) });
+    expect(result.ok).toBe(false);
+    expect(calls.headerUpdates).toHaveLength(0);
+  });
+
+  it("still accepts exactly MAX_SETS codes", async () => {
+    await saveDeckLimits(DECK, { sets: Array.from({ length: 8 }, (_, i) => `s${i}`) });
+    expect(calls.headerUpdates).toHaveLength(1);
   });
 });
 

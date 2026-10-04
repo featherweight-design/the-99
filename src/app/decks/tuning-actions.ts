@@ -29,7 +29,7 @@ import { buildPlayGroup } from "../../lib/profile/play";
 import { buildEvidencePack } from "../../lib/tuning/evidence";
 import { gateReason } from "../../lib/tuning/gate";
 import { intentTooLong, MAX_SUGGESTIONS, MODEL_TIMEOUT_MS, TUNING_EFFORT, TUNING_MAX_TOKENS, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "../../lib/tuning/limits";
-import { MAX_BUDGET_DOLLARS } from "../../lib/intake/answers";
+import { MAX_BUDGET_DOLLARS, MAX_SETS } from "../../lib/intake/answers";
 import { buildPrompt } from "../../lib/tuning/prompt";
 import { tuningResponseSchema } from "../../lib/tuning/response-schema";
 import { cancelRun, finishRun, persistRun, saveIntent, startRun, type Billed } from "../../lib/tuning/run-store";
@@ -37,6 +37,7 @@ import type { TuningState } from "../../lib/tuning/state";
 import { nameResolver } from "../../lib/tuning/resolve-names";
 import { chooseRefusal, validateSuggestions, type ValidationReport } from "../../lib/tuning/validate";
 import { loadPrices } from "../../lib/decks/price-query";
+import { loadAvailability } from "../../lib/decks/availability-query";
 import { priceOf, priceState } from "../../lib/decks/price";
 import { printedIn } from "../../lib/sets/printed-in";
 import { applyItem, setDismissed, undoItem } from "../../lib/tuning/verdicts";
@@ -143,7 +144,10 @@ export async function saveDeckLimits(
     // single letter, a space, a NUL byte) was previously accepted here and either persisted as
     // an unmatchable filter or made Postgres reject the whole update outright, never answering
     // the field's own refusal (pre-open review round 4, a previously-missed finding).
-    || (sets !== undefined && (!Array.isArray(sets) || sets.some((s) => typeof s !== "string" || !/^[a-z0-9]{2,8}$/.test(s.toLowerCase()))))
+    // Bounded the same way the create flow bounds its own Sets answer (`MAX_SETS`, review
+    // round 6): an unbounded array is untrusted past the shape check alone, and it is serialized
+    // twice into a paid model request and once into SQL every run.
+    || (sets !== undefined && (!Array.isArray(sets) || sets.length > MAX_SETS || sets.some((s) => typeof s !== "string" || !/^[a-z0-9]{2,8}$/.test(s.toLowerCase()))))
     || (ownedOnly !== undefined && typeof ownedOnly !== "boolean")
   ) return { ok: false, message: deckDescriptionCopy.limits.refused };
   const set: { tuningCapCents?: number | null; tuningSets?: string[]; tuningOwnedOnly?: boolean } = {};
@@ -270,20 +274,28 @@ export async function runTuning(
     // the validator deliberately exempts a null price from the cap (never dropped for a cap it
     // cannot be checked against) — so a transient failure would silently disable the cap rather
     // than refuse the run.
-    const [{ prices, newestAsOf }, suggestedOwned] = await Promise.all([
-      limits.capCents === null ? { prices: new Map(), newestAsOf: null } : loadPrices(nameRows.map((r) => r.oracleId)),
+    const suggestedIds = nameRows.map((r) => r.oracleId);
+    const [{ prices, newestAsOf }, suggestedOwned, availability] = await Promise.all([
+      limits.capCents === null ? { prices: new Map(), newestAsOf: null } : loadPrices(suggestedIds),
       // Read only while the owned-only filter is active: unlike price, `owned` here is never
       // displayed, only checked (`notOwned`), so an inactive filter has no consumer to protect.
       // A failure would otherwise refund a paid, otherwise-valid answer over a read nothing needs.
-      nameRows.length === 0 || !limits.ownedOnly ? new Set<string>() : readOwnedOracleIds(userId, nameRows.map((r) => r.oracleId)),
+      nameRows.length === 0 || !limits.ownedOnly ? new Set<string>() : readOwnedOracleIds(userId, suggestedIds),
+      // SLEEVEABLE MEANS SLEEVEABLE (review round 6, same rule as `fill.ts`'s `pool:
+      // "sleeveable"`): a collection row is owned whether or not a copy is FREE. Without this, a
+      // card whose every copy is already claimed by another deck would pass "owned" and the
+      // reader's own client would strip the applied swap on arrival. Fails closed (no `.catch`)
+      // while the filter is active, same as the cap and the price read above it.
+      nameRows.length === 0 || !limits.ownedOnly ? new Map() : loadAvailability(userId, { oracleIds: suggestedIds, excludeDeckId: deckId }),
     ]);
     const rows = nameRows.map((r) => {
       const fact = prices.get(r.oracleId) ?? null;
       const state = priceState(fact, newestAsOf);
+      const avail = availability.get(r.oracleId);
       return {
         ...r,
         priceCents: fact ? priceOf(fact, state) : null,
-        owned: suggestedOwned.has(r.oracleId),
+        owned: suggestedOwned.has(r.oracleId) && (avail === undefined || avail.free > 0),
       };
     });
     const resolveName = nameResolver(rows, new Set(pack.cards.map((c) => c.oracleId)));
