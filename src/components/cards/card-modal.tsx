@@ -1219,6 +1219,10 @@ export function CardModal({
     if (!backdrop || total <= 1) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      // A modified arrow is somebody else's shortcut — Alt+Left/Right is browser history,
+      // Cmd/Ctrl+Left/Right is a text-editing jump in some inputs (pre-open review, round 2).
+      // Plain Left/Right only, or the carousel silently eats a navigation the reader meant.
+      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
       const active = document.activeElement;
       if (active instanceof HTMLElement) {
         if (active.tagName === "INPUT") return;

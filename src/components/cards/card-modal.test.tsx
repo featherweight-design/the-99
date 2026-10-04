@@ -1398,4 +1398,23 @@ describe("CardModal carousel arrow keys stop at interactive zones (H23 PR 2)", (
     expect(onNext).not.toHaveBeenCalled();
     expect(onPrev).not.toHaveBeenCalled();
   });
+
+  // Pre-open review, round 2: Alt+Left/Right is the browser's own history navigation, and
+  // the carousel was consuming it unconditionally, blocking Back/Forward from a card modal.
+  it("ignores a modified arrow key, and still pages on a plain one", () => {
+    const onPrev = vi.fn();
+    const onNext = vi.fn();
+    render(
+      <CardModal card={card} position={2} total={3} onClose={() => {}} onPrev={onPrev} onNext={onNext} />,
+    );
+    const dialog = screen.getByRole("dialog");
+    fireEvent.keyDown(dialog, { key: "ArrowRight", altKey: true });
+    fireEvent.keyDown(dialog, { key: "ArrowLeft", metaKey: true });
+    fireEvent.keyDown(dialog, { key: "ArrowRight", ctrlKey: true });
+    fireEvent.keyDown(dialog, { key: "ArrowLeft", shiftKey: true });
+    expect(onNext).not.toHaveBeenCalled();
+    expect(onPrev).not.toHaveBeenCalled();
+    fireEvent.keyDown(dialog, { key: "ArrowRight" });
+    expect(onNext).toHaveBeenCalledTimes(1);
+  });
 });

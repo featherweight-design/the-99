@@ -37,6 +37,17 @@ function visibleFocusables(root: HTMLElement): HTMLElement[] {
 let scrollLocks = 0;
 let overflowBeforeLock = "";
 
+// Every mounted dialog's root, in mount order (H23 PR 2's pre-open review). Ownership of a
+// key is settled by DOM containment (`closest('[role="dialog"]')`) whenever focus is inside
+// one — the stack below decides only the AMBIGUOUS case, focus on neither dialog's subtree,
+// which the desktop carousel's neighbor plates made reachable for the first time: they are
+// siblings of the dialog, not descendants, so paging via one and then pressing Escape left
+// `document.activeElement` outside every `[role="dialog"]`. Before that, every mounted hook
+// read the same ambiguous state as "mine", and a card opened over a receipt or a Stand-ins
+// sheet closed both layers on one Escape. The topmost (most recently mounted) dialog is the
+// one a reader is actually looking at, so it is the one ambiguous focus belongs to.
+const dialogStack: HTMLElement[] = [];
+
 /**
  * While locked, true unless the wheel/touchmove's own target sits inside a region that
  * can genuinely scroll — a sheet's own options list, for one. Walking up rather than
@@ -529,6 +540,19 @@ export function useDialogA11y(
   // modal, which Back is not for.
   useBackDismiss(lockScroll && !inert, onClose, () => closeOnEscape);
 
+  // Registers this dialog's root on the module-level stack while it is up, in mount order —
+  // the tiebreaker the key guard below reaches for when focus is ambiguous.
+  useEffect(() => {
+    if (inert) return;
+    const root = dialogRef.current;
+    if (!root) return;
+    dialogStack.push(root);
+    return () => {
+      const i = dialogStack.indexOf(root);
+      if (i !== -1) dialogStack.splice(i, 1);
+    };
+  }, [dialogRef, inert]);
+
   // Escape closes; Tab wraps within the dialog.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -547,6 +571,13 @@ export function useDialogA11y(
       const active = document.activeElement as HTMLElement | null;
       const activeDialog = active?.closest('[role="dialog"]') ?? null;
       if (activeDialog !== null && activeDialog !== root) return;
+      // Focus is on NEITHER dialog's subtree — the desktop carousel's neighbor plates are
+      // the case (pre-open review, round 2): siblings of the dialog, not descendants. Every
+      // mounted hook reads this the same way, so the tiebreaker is the stack: only the
+      // topmost (most recently mounted) dialog may treat ambiguous focus as its own. A dialog
+      // opened over an existing sheet mounts after it, so it is topmost, and the sheet
+      // beneath it correctly defers.
+      if (activeDialog === null && dialogStack[dialogStack.length - 1] !== root) return;
 
       if (e.key === "Escape") {
         // Swallowed either way: a dialog that refuses Escape should still stop
