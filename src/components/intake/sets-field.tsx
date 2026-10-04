@@ -29,6 +29,7 @@ export function SetsField({
   value,
   onChange,
   wide,
+  copy: copyOverride,
 }: {
   /** Every set that printed a commander, newest first. */
   sets: readonly PrintedInSet[];
@@ -36,7 +37,19 @@ export function SetsField({
   value: readonly string[];
   onChange: (next: string[]) => void;
   wide: boolean;
+  /**
+   * Overrides the trigger's label/count/sheet-title and the chip's remove aria, for a caller
+   * whose box names itself differently (H35 PR 2's "Kept for this deck": "Set: Any" rather than
+   * "Set 0"). Everything else — search, groups, the panel's own aria strings — stays the shared
+   * `printedInPanelCopy`/intake copy, so the two callers' panels behave identically past the
+   * trigger.
+   */
+  copy?: { triggerLabel: string; triggerCount: (n: number) => string; sheetTitle: string; removeSet: (name: string) => string };
 }) {
+  const panelCopy: FilterPanelCopy = copyOverride
+    ? { ...PANEL_COPY, triggerLabel: copyOverride.triggerLabel, triggerCount: copyOverride.triggerCount, sheetTitle: copyOverride.sheetTitle }
+    : PANEL_COPY;
+  const removeSet = copyOverride?.removeSet ?? copy.removeSet;
   const options = sets.map((s) => ({ code: s.code, label: s.name, hint: s.code.toUpperCase(), count: 0, disabled: false }));
   const nameOf = (code: string) => sets.find((s) => s.code === code)?.name ?? code.toUpperCase();
   return (
@@ -45,7 +58,7 @@ export function SetsField({
         // Keyed on the form, as every chassis panel is: it holds its own `open`.
         key={wide ? "wide" : "compact"}
         compact={!wide}
-        copy={PANEL_COPY}
+        copy={panelCopy}
         options={options}
         selected={[...value]}
         searchable
@@ -64,7 +77,7 @@ export function SetsField({
           <span>{nameOf(code)}</span>
           <button
             type="button"
-            aria-label={copy.removeSet(nameOf(code))}
+            aria-label={removeSet(nameOf(code))}
             onClick={() => onChange(value.filter((c) => c !== code))}
             className="relative flex items-center justify-center w-[18px] h-[18px] border-0 bg-transparent text-[color:var(--fg-faint)] cursor-pointer after:absolute after:inset-[-13px] after:content-['']"
           >

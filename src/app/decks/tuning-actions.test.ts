@@ -92,7 +92,7 @@ vi.mock("../../lib/tuning/verdicts", () => ({
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { creditsCopy } from "../../lib/copy/credits";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
-import { applySuggestion, readTuningEvidence, runTuning, saveDeckDescription, saveDeckHeader } from "./tuning-actions";
+import { applySuggestion, readTuningEvidence, runTuning, saveDeckDescription, saveDeckHeader, saveDeckLimits } from "./tuning-actions";
 
 const DECK = "11111111-1111-4111-8111-111111111111";
 
@@ -110,6 +110,7 @@ beforeEach(() => {
   calls.contextRead = 0;
   calls.packInput = undefined;
   calls.headerUpdates = [];
+  calls.headerWhere = [];
   calls.headerUpdateRows = [{ id: "deck_1" }];
 });
 
@@ -280,6 +281,99 @@ describe("saveDeckHeader (H35, the pencil's one atomic write)", () => {
     const result = await saveDeckHeader(DECK, {});
     expect(result.ok).toBe(true);
     expect(calls.headerUpdates).toHaveLength(0);
+  });
+});
+
+describe("saveDeckLimits (H35 PR 2, \"Kept for this deck\")", () => {
+  it("converts whole dollars to cents, scoped to the deck and the reader", async () => {
+    const result = await saveDeckLimits(DECK, { capDollars: 25, sets: ["MH3", "lci"], ownedOnly: true });
+    expect(result.ok).toBe(true);
+    expect(calls.headerUpdates[0].set).toMatchObject({ tuningCapCents: 2500, tuningSets: ["mh3", "lci"], tuningOwnedOnly: true });
+    const where = new PgDialect().sqlToQuery(calls.headerWhere[0] as SQL);
+    expect(where.sql).toContain('"decks"."id"');
+    expect(where.sql).toContain('"decks"."user_id"');
+    expect(where.params).toEqual([DECK, "user_1"]);
+  });
+
+  it("clears the cap and sets to no limit at all", async () => {
+    await saveDeckLimits(DECK, { capDollars: null, sets: [], ownedOnly: false });
+    expect(calls.headerUpdates[0].set).toMatchObject({ tuningCapCents: null, tuningSets: [], tuningOwnedOnly: false });
+  });
+
+  it("dedupes sets, case-insensitively", async () => {
+    await saveDeckLimits(DECK, { capDollars: null, sets: ["mh3", "MH3", "lci"], ownedOnly: false });
+    expect(calls.headerUpdates[0].set).toMatchObject({ tuningSets: ["mh3", "lci"] });
+  });
+
+  it("refuses a cap out of bounds, zero, or non-integer", async () => {
+    for (const capDollars of [0, -5, 1.5, 100_001]) {
+      const result = await saveDeckLimits(DECK, { capDollars, sets: [], ownedOnly: false });
+      expect(result.ok).toBe(false);
+    }
+    expect(calls.headerUpdates).toHaveLength(0);
+  });
+
+  it("refuses a malformed request rather than throwing", async () => {
+    for (const fields of [
+      null, "not an object", { capDollars: "25", sets: [], ownedOnly: false },
+      { capDollars: null, sets: "mh3", ownedOnly: false }, { capDollars: null, sets: [1], ownedOnly: false },
+      { capDollars: null, sets: [], ownedOnly: "yes" },
+    ] as const) {
+      const result = await saveDeckLimits(DECK, fields as never);
+      expect(result.ok).toBe(false);
+    }
+    expect(calls.headerUpdates).toHaveLength(0);
+  });
+
+  it("refuses when no row matches the deck and the reader together", async () => {
+    calls.headerUpdateRows = [];
+    const result = await saveDeckLimits(DECK, { capDollars: null, sets: [], ownedOnly: false });
+    expect(result.ok).toBe(false);
+  });
+
+  // Pre-open review round 2: each control autosaves on its own debounce, so sending all three
+  // every time let one tab's cap edit carry another tab's stale sets/owned-only back over
+  // whatever that tab had since saved. Only the field actually named is ever written.
+  it("writes only the field it is given, leaving the others untouched", async () => {
+    await saveDeckLimits(DECK, { capDollars: 25 });
+    expect(calls.headerUpdates[0].set).toMatchObject({ tuningCapCents: 2500 });
+    expect(calls.headerUpdates[0].set).not.toHaveProperty("tuningSets");
+    expect(calls.headerUpdates[0].set).not.toHaveProperty("tuningOwnedOnly");
+  });
+
+  it("writes only ownedOnly when that is the only field given", async () => {
+    await saveDeckLimits(DECK, { ownedOnly: true });
+    expect(calls.headerUpdates[0].set).toMatchObject({ tuningOwnedOnly: true });
+    expect(calls.headerUpdates[0].set).not.toHaveProperty("tuningCapCents");
+    expect(calls.headerUpdates[0].set).not.toHaveProperty("tuningSets");
+  });
+
+  it("is a no-op that still answers ok when given no fields at all", async () => {
+    const result = await saveDeckLimits(DECK, {});
+    expect(result.ok).toBe(true);
+    expect(calls.headerUpdates).toHaveLength(0);
+  });
+
+  it("still refuses an out-of-bounds cap even when it is the only field given", async () => {
+    const result = await saveDeckLimits(DECK, { capDollars: 0 });
+    expect(result.ok).toBe(false);
+    expect(calls.headerUpdates).toHaveLength(0);
+  });
+
+  // Pre-open review round 4 (previously missed): a single letter, a space, or a NUL byte were
+  // all accepted — persisted as an unmatchable filter, or made Postgres reject the update
+  // outright rather than ever returning this action's own refusal.
+  it("refuses a malformed set code rather than persisting it or reaching Postgres", async () => {
+    for (const sets of [["x"], ["bad code"], ["mh\u0000"], ["toolongcode9"]]) {
+      const result = await saveDeckLimits(DECK, { sets });
+      expect(result.ok).toBe(false);
+    }
+    expect(calls.headerUpdates).toHaveLength(0);
+  });
+
+  it("still accepts a well-formed set code at each bound", async () => {
+    await saveDeckLimits(DECK, { sets: ["mh", "lcisomhc"] });
+    expect(calls.headerUpdates[0].set).toMatchObject({ tuningSets: ["mh", "lcisomhc"] });
   });
 });
 

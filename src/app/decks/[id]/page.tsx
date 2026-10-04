@@ -8,6 +8,7 @@ import { loadCompletionPartners } from "../../../lib/combos/near-miss";
 import { comboFor, comboLookupIds } from "../../../lib/combos/attach";
 import { requireUserId } from "../../../lib/auth";
 import { getDeckDetail, listDecksWithStats } from "../../../lib/decks/read";
+import { loadCommanderPrintings } from "../../../lib/sets/printed-in-read";
 import { cacheForUser } from "../../../lib/cache/user-lists";
 import { readDeckSynergy } from "../../../lib/decks/deck-synergy";
 import { indexGeneration } from "../../../lib/cache/index-generation";
@@ -134,6 +135,11 @@ export default async function DeckBuilderPage({
   const draftRead = early(perf.timed("draft", () => loadDraftState(id, userId)));
   // The rail rides the deck's own `Versions` tab, so its rows are part of this page.
   const versionsRead = early(perf.timed("versions", () => listVersions(id, userId)));
+  // "Kept for this deck"'s Set picker (H35, PR 2) — the same cached, unscoped list
+  // help-me-choose's intake form reads. Degrades to an empty picker rather than failing the page.
+  const printedInSetsRead = early(
+    perf.timed("printedInSets", () => loadCommanderPrintings().then((x) => x.sets).catch(() => [])),
+  );
   const detail = await detailRead;
   if (!detail) notFound();
   // The commander's art, asked for NOW. The header draws it as a CSS background, which the browser
@@ -191,6 +197,7 @@ export default async function DeckBuilderPage({
     fillPasses,
     draft,
     versions,
+    printedInSets,
   ] = await Promise.all([
       suggestionsRead,
       allDecksRead,
@@ -209,6 +216,7 @@ export default async function DeckBuilderPage({
       fillPassesRead,
       draftRead,
       versionsRead,
+      printedInSetsRead,
     ]);
 
   // The figures the version held, for the `was n` line in the mix cells. Read
@@ -415,6 +423,7 @@ export default async function DeckBuilderPage({
       provenance={priced?.newestAsOf ? provenanceForm(priced.newestAsOf, new Date()) : null}
       degraded={degraded}
       shoppingFigures={shoppingFigures}
+      printedInSets={printedInSets}
       firstRun={firstRun}
       commanderIdentity={commanderIdentity}
       candidates={candidates}

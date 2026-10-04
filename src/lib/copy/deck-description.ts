@@ -61,10 +61,12 @@ export const deckDescriptionCopy = {
     heading: "Kept for this deck",
     capLabel: "Most per card",
     capPlaceholder: helpMeChooseCopy.intake.budgetPlaceholder, // 'No cap'
-    setTriggerAny: "Set: Any",
     ownLabel: "Cards to add",
     ownAny: "Any card",
     ownOnly: helpMeChooseCopy.intake.poolOwn, // 'Only cards I own'
+    // Not in the handoff's copy file — this box's own save had no refusal string there.
+    refused: "That did not save. Try again.",
+    removeSet: helpMeChooseCopy.intake.removeSet, // 'Remove {name}', shared with the intake chip
   },
 
   // ── Additional notes: one press, never saved ──

@@ -227,6 +227,9 @@ export type DeckDetail = {
   intent: string | null;
   /** True while the intent is the app's own words; the player's first edit clears it for good. */
   intentSeeded: boolean;
+  /** "Kept for this deck" (H35, PR 2). Null/empty/false until the player sets them. Optional on
+   *  the type — not every caller builds this field by hand — but `getDeckDetail` always sets it. */
+  limits?: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean };
   /**
    * How many of each note-bearing kind this deck's list already holds, counted by COPIES.
    *
@@ -279,6 +282,9 @@ export function deckDetailReads(deckId: string, userId: string) {
         declaredBracket: decks.declaredBracket,
         intent: decks.intent,
         intentSeeded: decks.intentSeeded,
+        tuningCapCents: decks.tuningCapCents,
+        tuningSets: decks.tuningSets,
+        tuningOwnedOnly: decks.tuningOwnedOnly,
       })
       .from(decks)
       .where(ownDeck),
@@ -528,6 +534,11 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     declaredBracket: (deck.declaredBracket as Bracket | null) ?? null,
     intent: deck.intent,
     intentSeeded: deck.intentSeeded,
+    limits: {
+      capCents: deck.tuningCapCents,
+      sets: deck.tuningSets ?? [],
+      ownedOnly: deck.tuningOwnedOnly ?? false,
+    },
     noteCounts: countNoteKinds(cardRows, commanderRows, bracketFlags),
     ...deckCounts(detailCards, unresolvedCardCount(unresolvedRows)),
   };

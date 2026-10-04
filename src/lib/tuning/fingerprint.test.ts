@@ -7,13 +7,16 @@ const base: FingerprintInput = {
   games: [{ id: "g1", result: "loss", podSize: 4, worked: [], hurt: ["mana"], note: null }],
   intent: null,
   collection: null,
+  limits: { capCents: null, sets: [], ownedOnly: false },
 };
 
 describe("tuningFingerprint", () => {
   // Locked, D6. The hash of a deck with no locks must not move, or every tuning gate in production
   // (where the switch is off) would reopen at once. Pinned to the literal hash, not only to itself.
   it("hashes a deck with no locks exactly as before locks existed", () => {
-    const before = "890518455c4146b0351e082f4cbac27fb2d65357bd493557c4aea280cf707c8f";
+    // Re-pinned for H35 PR 2: `limits` joined the hash unconditionally (every deck gets the
+    // field the day it ships), so this literal moved once, deliberately.
+    const before = "264c02c0c5c18ad7c94f453c32a38c78953e6ed335b2012a27726b9a59cde1eb";
     expect(tuningFingerprint(base)).toBe(before);
     expect(tuningFingerprint({ ...base, locks: [] })).toBe(before);
   });
@@ -38,6 +41,15 @@ describe("tuningFingerprint", () => {
     expect(tuningFingerprint({ ...base, games: [{ ...base.games[0], note: "flooded" }] })).not.toBe(at);
     expect(tuningFingerprint({ ...base, intent: "go wide" })).not.toBe(at);
     expect(tuningFingerprint({ ...base, collection: "2026-09-23T10:00:00.000Z" })).not.toBe(at);
+  });
+
+  it("changes with the cap, the set of sets and owned-only, but not the sets' order", () => {
+    const at = tuningFingerprint(base);
+    expect(tuningFingerprint({ ...base, limits: { ...base.limits, capCents: 500 } })).not.toBe(at);
+    expect(tuningFingerprint({ ...base, limits: { ...base.limits, sets: ["mh3"] } })).not.toBe(at);
+    expect(tuningFingerprint({ ...base, limits: { ...base.limits, ownedOnly: true } })).not.toBe(at);
+    const ordered = tuningFingerprint({ ...base, limits: { ...base.limits, sets: ["mh3", "lci"] } });
+    expect(tuningFingerprint({ ...base, limits: { ...base.limits, sets: ["lci", "mh3"] } })).toBe(ordered);
   });
 
   it("tells a mark moving from worked to hurt apart from staying put", () => {

@@ -55,6 +55,8 @@ export type TuningInputs = {
   locked: string[];
   /** The commander's name when every other card is locked, else null (the gate's `allLocked`). */
   allLocked: string | null;
+  /** "Kept for this deck" (H35, PR 2). Null/empty/false until the player sets them — no seeding. */
+  limits: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean };
 };
 
 /** Null when the deck is not the reader's. Ownership is in `loadProfileHead`'s `where`. */
@@ -73,7 +75,12 @@ export async function tuningInputs(deckId: string, userId: string): Promise<Tuni
   const { head, readVersion, locked } = snapshot;
   const [games, [deck], [upload]] = await Promise.all([
     listDeckGames(deckId, userId),
-    db.select({ intent: decks.intent })
+    db.select({
+      intent: decks.intent,
+      tuningCapCents: decks.tuningCapCents,
+      tuningSets: decks.tuningSets,
+      tuningOwnedOnly: decks.tuningOwnedOnly,
+    })
       .from(decks)
       .where(and(eq(decks.id, deckId), eq(decks.userId, userId))),
     db.select({ confirmedAt: max(csvUploads.confirmedAt) })
@@ -82,12 +89,18 @@ export async function tuningInputs(deckId: string, userId: string): Promise<Tuni
   ]);
   if (!deck) return null;
   const intent = deck.intent;
+  const limits = {
+    capCents: deck.tuningCapCents,
+    sets: deck.tuningSets ?? [],
+    ownedOnly: deck.tuningOwnedOnly ?? false,
+  };
   const fingerprint = tuningFingerprint({
     list: listFingerprint(head),
     games,
     intent,
     collection: upload?.confirmedAt ? new Date(upload.confirmedAt).toISOString() : null,
     locks: locked,
+    limits,
   });
   // Every card but the commander locked: a body card is every `deck_cards` row, the commander is not
   // one (membership is `deck_cards`), and an empty body has nothing locked either.
@@ -97,7 +110,7 @@ export async function tuningInputs(deckId: string, userId: string): Promise<Tuni
     ? await commanderName(head)
     : null;
   return {
-    head, games, intent, declared: (head.declaredBracket as Bracket | null) ?? null, fingerprint, readVersion, locked, allLocked,
+    head, games, intent, declared: (head.declaredBracket as Bracket | null) ?? null, fingerprint, readVersion, locked, allLocked, limits,
   };
 }
 
