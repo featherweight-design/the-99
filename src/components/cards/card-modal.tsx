@@ -29,7 +29,7 @@ import { ManaCost } from "./mana-pips";
 import { CardFactMark } from "./card-fact-mark";
 import { ComboPartnersDetail } from "./combo-partners-detail";
 import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
-import { PrintingRegion, OVERFLOW_THRESHOLD, printingEntryCount, printingKey } from "./printing-region";
+import { PrintingRegion, printingKey } from "./printing-region";
 import { PriceTag } from "./price-tag";
 import { cheapestLiveCents, priceFor, priceKeyFor } from "../../lib/cards/price-lookup";
 import { formatCents, priceOf, priceState } from "../../lib/decks/price";
@@ -41,7 +41,8 @@ import { ExternalLink } from "../ui/external-link";
 import { manapoolCardUrl } from "../../lib/manapool/links";
 import { FitsDoor } from "./fits-door";
 import { cardLinkOutCopy } from "../../lib/copy/collection-browse";
-import { cardCarouselCopy } from "../../lib/copy/card-carousel";
+import { cardCarouselCopy, cardSheetCopy } from "../../lib/copy/card-carousel";
+import { SHEET, useCardSheetGestures } from "./card-sheet-gesture";
 import type { SiblingCard } from "./card-detail-provider";
 import { useMinWidth } from "../ui/use-min-width";
 import { ProxyControl } from "../decks/proxy-control";
@@ -264,6 +265,29 @@ function claimLabel(claim: DeckClaim, allocated: number, contested: boolean): st
   return `${holds} · ${c.detailClaimGets}`;
 }
 
+/**
+ * `×5 · ◆ short` (README R2 "Teaser price"): what the reader owns, and the availability marker
+ * when copies are spoken for. The marker is the same component every availability figure in the
+ * app draws, so its glyph and its label's ink come from the marker's own state map (plan PR 3,
+ * the `--avail` resolution) and never from a token of this sheet's own.
+ */
+function OwnedLine({ card, deckPage }: { card: BrowseCard; deckPage: boolean }) {
+  const a = card.availability;
+  const state = a ? availabilityState(a) : "free";
+  return (
+    <span data-testid="owned-line" className="inline-flex items-center gap-[8px] font-mono text-[12px]">
+      {/* `a.owned` where the availability read landed, for the reason the block below gives. */}
+      <span style={{ color: "var(--accent)" }}>×{a ? a.owned : card.quantity}</span>
+      {a && state !== "free" && (
+        <>
+          <span aria-hidden style={{ color: "var(--fg-faint)" }}>·</span>
+          <AvailabilityMarker availability={a} density="row" nameless bareOne={deckPage} className="font-mono text-[12px]" />
+        </>
+      )}
+    </span>
+  );
+}
+
 function AvailabilityDetail({ card, deckPage }: { card: BrowseCard; deckPage: boolean }) {
   const a = card.availability;
   if (!a) return null;
@@ -465,11 +489,7 @@ const NeighborPlate = React.forwardRef<
   HTMLButtonElement,
   { sibling: SiblingCard; direction: "previous" | "next"; onPress: () => void }
 >(function NeighborPlate({ sibling, direction, onPress }, ref) {
-  const art = sibling.imageUri
-    ? { backgroundImage: cssUrl(sibling.imageUri), backgroundSize: "cover", backgroundPosition: "center" }
-    : sibling.colorIdentity
-    ? { background: identityGradient([...sibling.colorIdentity]) }
-    : { background: "var(--elevated)" };
+  const art = siblingArt(sibling);
   // Anchored from the BACKDROP's own center rather than carried as a flex sibling of the
   // centered dialog (pre-open review, round 1): a flex sibling present on only one side
   // shifts the dialog itself by its width-plus-gap, which moved the dialog and its footer
@@ -500,6 +520,74 @@ const NeighborPlate = React.forwardRef<
   );
 });
 
+/**
+ * An element's own height, kept current as it changes. Zero while `active` is false or the element
+ * has no layout, which is every element below a `display: none` ancestor.
+ */
+function useOwnHeight(ref: React.RefObject<HTMLElement | null>, active: boolean): number {
+  const [height, setHeight] = useState(0);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!active || !el) {
+      setHeight(0);
+      return;
+    }
+    const measure = () => setHeight(el.offsetHeight);
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [ref, active]);
+  return height;
+}
+
+/** A neighbor's face: its art, else its identity, else a bare plate (README "Notes" §2). */
+function siblingArt(sibling: SiblingCard): React.CSSProperties {
+  return sibling.imageUri
+    ? { backgroundImage: cssUrl(sibling.imageUri), backgroundSize: "cover", backgroundPosition: "center" }
+    : sibling.colorIdentity
+    ? { background: identityGradient([...sibling.colorIdentity]) }
+    : { background: "var(--elevated)" };
+}
+
+/**
+ * A phone peek (carousel R2, `PhoneHero.dc.html`): the neighbor at 236/320 of the card's width and
+ * opacity .5, 12px off the card and centred on it, cut by the screen edge. Read against the
+ * band's `--card-w`, so a smaller card (a short screen, a stacked sheet) brings its peeks with it.
+ * A button, so a tap pages and a reader can reach it; the band's drag handling cancels the press
+ * when the touch became a swipe.
+ */
+const PhonePeek = React.forwardRef<
+  HTMLButtonElement,
+  { sibling: SiblingCard; direction: "previous" | "next"; onPress: () => void }
+>(function PhonePeek({ sibling, direction, onPress }, ref) {
+  const left = direction === "previous"
+    ? "calc(50% - var(--card-w) / 2 - 12px - var(--card-w) * 0.7375)"
+    : "calc(50% + var(--card-w) / 2 + 12px)";
+  return (
+    <button
+      ref={ref}
+      type="button"
+      data-testid={direction === "previous" ? "phone-peek-prev" : "phone-peek-next"}
+      onClick={onPress}
+      aria-label={cardCarouselCopy.neighborAria(direction, sibling.name)}
+      className="absolute rounded-[11px] cursor-pointer border-0 p-0"
+      style={{
+        left,
+        // (447 - 330) / 2 at the drawn size: the gap between the two heights, halved, as a share
+        // of the card's width (88/63 x 0.2625 / 2).
+        top: "calc(64px + var(--card-w) * 0.18333)",
+        width: "calc(var(--card-w) * 0.7375)",
+        aspectRatio: "63/88",
+        opacity: 0.5,
+        ...siblingArt(sibling),
+        boxShadow: "0 16px 36px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3)",
+      }}
+    />
+  );
+});
+
 export function CardModal({
   card,
   position,
@@ -514,6 +602,7 @@ export function CardModal({
   prevSibling = null,
   nextSibling = null,
   enterFrom = null,
+  enterOffset = 0,
   onArtChange,
   openAtPrinting = null,
   deckId = null,
@@ -609,8 +698,10 @@ export function CardModal({
   position: number;
   total: number;
   onClose: () => void;
-  onPrev: (() => void) | null;
-  onNext: (() => void) | null;
+  /** Called with the phone band's offset when a swipe paged (carousel R2), and with nothing for
+   *  every other way of paging, so the next card enters from wherever the reader let go. */
+  onPrev: ((offset?: number) => void) | null;
+  onNext: ((offset?: number) => void) | null;
   /** The neighbor plate's own press (handoff decision 2), separate from `onPrev`/`onNext` so the
    *  provider can tell a peek from the footer button or an arrow key and restore focus to the
    *  same role across the remount (handoff "Notes for engineering" §3). Null exactly when
@@ -630,6 +721,9 @@ export function CardModal({
    *  control gets focus in place of the usual opening ✕. Null on a fresh open, and on any
    *  card change that is not a page. */
   enterFrom?: "prev" | "next" | "prevPeek" | "nextPeek" | null;
+  /** Where the phone's card band stood when the swipe that led here committed, in px (0 for any
+   *  other page). Captured once at construction, like `enterFrom`. */
+  enterOffset?: number;
   /**
    * Called when the art pick is written, so a caller holding a copy of this card can
    * drop it. The write changes what the card says about itself, and a stale copy would
@@ -687,6 +781,9 @@ export function CardModal({
   // The neighbor plates' own threshold (handoff decision 4): 820 (the dialog) + 2 x (168 the
   // plate + 24 off the modal + 24 clear of the viewport edge) = 1252.
   const wideEnoughForNeighbors = useMinWidth("(min-width: 1252px)");
+  // The phone's peeks, mounted only below `md` as the desktop plates are only above 1252: a
+  // hidden duplicate of a control is still a second control to every query that finds it.
+  const narrow = !useMinWidth("(min-width: 768px)");
   // Where focus goes back to on close: the art that opened it, at whichever width
   // is actually on screen.
   const zoomTriggerRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -710,6 +807,22 @@ export function CardModal({
   // to a fresh open partway through. `CardModal` is keyed on oracle id, so a new value here only
   // ever arrives with a new instance.
   const [enteredFrom] = useState(enterFrom);
+  const [enteredOffset] = useState(enterOffset);
+  /**
+   * The phone's sheet (carousel R2): the teaser on every open and every page, which a remount
+   * per card gives by construction, or the full details column. Set only by the phone's own
+   * controls and gestures; everything else reads `sheetOpen`, which is false at desktop widths.
+   */
+  const [sheetFull, setSheetFull] = useState(false);
+  // What the rest of the modal reads. The state can only be set from the phone's own controls
+  // and gestures, but a window widened with the sheet up must not leave the desktop's Escape
+  // and arrow keys behaving as if a sheet nobody can see were still open.
+  const sheetOpen = narrow && sheetFull;
+  const bandRef = useRef<HTMLDivElement | null>(null);
+  const sheetRef = useRef<HTMLDivElement | null>(null);
+  const gripRef = useRef<HTMLButtonElement | null>(null);
+  const prevPhonePeekRef = useRef<HTMLButtonElement | null>(null);
+  const nextPhonePeekRef = useRef<HTMLButtonElement | null>(null);
   const prevButtonRef = useRef<HTMLButtonElement | null>(null);
   const nextButtonRef = useRef<HTMLButtonElement | null>(null);
   const prevPeekRef = useRef<HTMLButtonElement | null>(null);
@@ -754,12 +867,15 @@ export function CardModal({
   const initialFocusRef = useMemo(
     () => ({
       get current() {
-        const paged = enteredFrom === "prev" ? prevButtonRef.current
-          : enteredFrom === "next" ? nextButtonRef.current
-          : enteredFrom === "prevPeek" ? prevPeekRef.current
-          : enteredFrom === "nextPeek" ? nextPeekRef.current
-          : null;
-        if (paged && paged.getClientRects().length > 0) return paged;
+        // A peek exists at each width (the desktop plate, the phone's card band), and only the
+        // one on screen has layout.
+        const candidates = enteredFrom === "prev" ? [prevButtonRef.current]
+          : enteredFrom === "next" ? [nextButtonRef.current]
+          : enteredFrom === "prevPeek" ? [prevPeekRef.current, prevPhonePeekRef.current]
+          : enteredFrom === "nextPeek" ? [nextPeekRef.current, nextPhonePeekRef.current]
+          : [];
+        const paged = candidates.find((el) => el && el.getClientRects().length > 0);
+        if (paged) return paged;
         const mounted = closeRefs.current.filter((el): el is HTMLButtonElement => el !== null);
         return mounted.find((el) => el.getClientRects().length > 0) ?? mounted[0] ?? null;
       },
@@ -1022,10 +1138,6 @@ export function CardModal({
     [card.printings],
   );
   const hasPicker = ownedPrintings.length > 1;
-  const overflowing = printingEntryCount(ownedPrintings, pick) > OVERFLOW_THRESHOLD;
-  // The 180px phone header plus a 62px row plus search plus chips leaves about one tile row on
-  // an 812px phone, so past the threshold — and only there — the header collapses.
-  const compactArt = hasPicker && expanded && overflowing;
 
   /**
    * Closing unmounts the layer.
@@ -1068,18 +1180,23 @@ export function CardModal({
     setZoomed(true);
   }, []);
 
-  // Three rungs: the zoom, then the printing region (returning focus to the Set
-  // field), then the dialog. The region's shipped two-stage shape with one added on
-  // top rather than a new shape to learn.
+  // Four rungs: the zoom, the phone's full sheet, the printing region (returning focus to
+  // the Set field), then the dialog. The region's shipped two-stage shape with rungs added
+  // on top rather than a new shape to learn (§3.11).
   const onEscape = useCallback(() => {
-    // Zoom first, then the region, then the dialog — the printing region's shipped
-    // two-stage shape with one rung added rather than a new shape to learn (§3.11).
     if (covered) return;
     if (zoomed) {
       closeZoom();
       return;
     }
-    if (!expanded) {
+    // The phone's sheet (README R2 "Escape": full, then teaser, then close).
+    if (sheetOpen) {
+      setSheetFull(false);
+      return;
+    }
+    // In the phone's teaser the printing region is out of sight with the rest of the full
+    // column, so an Escape that collapsed it would change nothing a reader can see: it closes.
+    if (!expanded || narrow) {
       onClose();
       return;
     }
@@ -1094,10 +1211,51 @@ export function CardModal({
         return;
       }
     }
-  }, [closeZoom, covered, expanded, onClose, zoomed]);
+  }, [closeZoom, covered, expanded, narrow, onClose, sheetOpen, zoomed]);
 
   // Focus trap + Escape + focus-return — shared hook, shared with the export dialog.
   useDialogA11y(dialogRef, onEscape, { initialFocusRef });
+
+  // THE TEASER'S HEIGHT, which places the sheet and sizes the card band above it. A fixed 280
+  // (README R2 "States"), plus the swap tools' two surfaces where a card carries them: the
+  // stand-ins door's strip at the sheet's head, and a stacked stand-in's Take footer at its foot.
+  // Neither is drawn on the R2 canvas; both keep the room they had under the retired art header.
+  // Both are MEASURED: a renderer can draw nothing for a card (the door does for a locked one),
+  // and a figure assumed from the prop would leave a blank gap in the teaser.
+  const doorStrip = door ? door("strip") : null;
+  const doorRef = useRef<HTMLDivElement | null>(null);
+  const footerRef = useRef<HTMLDivElement | null>(null);
+  const doorHeight = useOwnHeight(doorRef, doorStrip !== null);
+  const footerHeight = useOwnHeight(footerRef, footer !== null);
+  const teaserHeight = SHEET.teaserHeight + doorHeight + footerHeight;
+
+  const gestures = useCardSheetGestures({
+    bandRef,
+    sheetRef,
+    full: sheetFull,
+    teaserHeight,
+    canPrev: onPrev !== null,
+    canNext: onNext !== null,
+    onPage: (dir, offset) => (dir === "next" ? onNext?.(offset) : onPrev?.(offset)),
+    onSnap: (to) => setSheetFull(to === "full"),
+  });
+
+  // Focus follows the sheet when the control that moved it is gone: `All details` unmounts as the
+  // sheet opens, and the whole full column is hidden as it closes. The grip is the one control
+  // standing in both states, and it is the same toggle.
+  const wasFull = useRef(false);
+  useEffect(() => {
+    if (wasFull.current === sheetFull) return;
+    wasFull.current = sheetFull;
+    const active = document.activeElement;
+    if (
+      active instanceof HTMLElement
+      && active !== document.body
+      && dialogRef.current?.contains(active)
+      && active.getClientRects().length > 0
+    ) return;
+    gripRef.current?.focus();
+  }, [sheetFull]);
 
   // Focus follows the layer. In: to the flip control when the card has a back face,
   // otherwise to the close (row 3.12). Out: to the art that opened it, at whichever
@@ -1242,6 +1400,8 @@ export function CardModal({
       // Cmd/Ctrl+Left/Right is a text-editing jump in some inputs (pre-open review, round 2).
       // Plain Left/Right only, or the carousel silently eats a navigation the reader meant.
       if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      // Paging is withheld while the phone's sheet is full (STATES h3); the counter stays.
+      if (sheetOpen) return;
       const active = document.activeElement;
       if (active instanceof HTMLElement) {
         if (active.tagName === "INPUT") return;
@@ -1258,7 +1418,7 @@ export function CardModal({
     };
     backdrop.addEventListener("keydown", handler);
     return () => backdrop.removeEventListener("keydown", handler);
-  }, [total, onPrev, onNext, onAtStart, onAtEnd]);
+  }, [total, onPrev, onNext, onAtStart, onAtEnd, sheetOpen]);
 
   // A back face to turn to, or none (#363). The image is the second condition and
   // not an afterthought: a `transform` row seeded before the back-face column
@@ -1509,8 +1669,10 @@ export function CardModal({
     ) : null;
 
   /**
-   * What sits under the card, in one order at both widths (#3, #4): the zoom
-   * hint, then the turn control, then the price.
+   * What sits under the desktop card (#3, #4): the zoom hint, then the turn
+   * control, then the price. The phone's stack retired with its art header and
+   * its zoom (carousel R2): the turn plate sits on the card's corner there, and
+   * the price on the sheet's second line.
    *
    * The ⤢ plate that used to sit in the art's bottom-left corner is gone, and
    * the turn control has come off the art with it. A glyph on the picture had to
@@ -1544,7 +1706,7 @@ export function CardModal({
    */
   const underCardHeight = 10 + 15 + (twoFaced ? 38 : 0) + 27 + (door ? DOOR_HEIGHT : 0);
 
-  const underCard = (phone: boolean) => (
+  const underCard = (
     <>
       <p
         aria-hidden
@@ -1552,51 +1714,42 @@ export function CardModal({
         className="m-0 whitespace-nowrap font-mono text-[10px]"
         style={{ color: "var(--fg-locked)" }}
       >
-        {phone ? cardZoomCopy.hintPhone : cardZoomCopy.hintDesktop}
+        {cardZoomCopy.hintDesktop}
       </p>
       {twoFaced && (
         <FlipControl
           flipAria={flipLabel(!showingBack)}
           onFlip={onFlip}
-          // A real 44px target on the phone. 32 on the desktop, where the column
-          // below the art is 97px tall at the drawn dialog height and this stack
-          // has to fit three rows inside it.
-          size={phone ? 44 : 32}
+          // 32 on the desktop, where the column below the art is 97px tall at the
+          // drawn dialog height and this stack has to fit three rows inside it.
+          size={32}
         />
       )}
       {priceTag && (
-        <div data-testid={phone ? "modal-price-mobile" : "modal-price-desktop"}>
-          {phone ? (
-            // THE PLATE, as the art-wash ratification defines it: opaque `--bg`
-            // under one `--border-strong` hairline at radius 7. The phone's stack
-            // sits over the blurred wash; the desktop's sits on flat `--bg` and
-            // needs none, which is the one difference between the two widths.
-            //
-            // The `from` figure rides INSIDE the plate with the tag rather than
-            // beside it: over the blurred wash a bare 10px line has nothing to be
-            // legible against, and that is the whole reason the plate exists.
-            <span
-              className="inline-flex items-center gap-[6px] rounded-[7px] p-[2px]"
-              style={{ background: "var(--bg)", border: "1px solid var(--border-strong)" }}
-            >
-              <span data-testid="modal-price-tag-mobile">{priceTag}</span>
-              {fromLine(true)}
-            </span>
-          ) : (
-            // One ROW, not one more row: the stack's height is reserved by
-            // `underCardHeight` and a second line under the tag would need that
-            // figure moved — and would put the art's width under the reader at
-            // the moment a pick made the line appear, which is the defect row
-            // 1.14 already forbids one level up.
-            <span className="inline-flex items-center gap-[6px]">
-              <span data-testid="modal-price-tag-desktop">{priceTag}</span>
-              {fromLine(false)}
-            </span>
-          )}
+        <div data-testid="modal-price-desktop">
+          {/* One ROW, not one more row: the stack's height is reserved by
+              `underCardHeight` and a second line under the tag would need that
+              figure moved — and would put the art's width under the reader at
+              the moment a pick made the line appear, which is the defect row
+              1.14 already forbids one level up. */}
+          <span className="inline-flex items-center gap-[6px]">
+            <span data-testid="modal-price-tag-desktop">{priceTag}</span>
+            {fromLine(false)}
+          </span>
         </div>
       )}
     </>
   );
+
+  // THE PHONE'S ENTRANCE (STATES §Motion, "Phone commit"): a paged card arrives from where its
+  // peek stood, at the peek's scale and opacity, plus wherever a swipe left the band, and settles
+  // in 240ms. Centre to centre is half the card, the 12px gap and half the peek (0.86875 of the
+  // card's own width, plus 12). Reduced motion draws it in place (`globals.css`).
+  const phoneEnterX = enteredFrom === "next" || enteredFrom === "nextPeek"
+    ? `calc(86.875% + 12px + ${enteredOffset}px)`
+    : enteredFrom === "prev" || enteredFrom === "prevPeek"
+    ? `calc(-86.875% - 12px + ${enteredOffset}px)`
+    : null;
 
   return (
     // Fixed backdrop wrapper — §Backdrop at 0.72, mixed against the canvas so the
@@ -1637,6 +1790,9 @@ export function CardModal({
         aria-modal="true"
         aria-labelledby={titleId}
         onClick={(e) => e.stopPropagation()}
+        // A swipe that began on a peek, the grip or the turn plate ends in that control's click;
+        // a drag that locked an axis is not a press, so the gestures swallow it here.
+        onClickCapture={gestures.onClickCapture}
         // Mobile: full-screen sheet (§Mobile: Full-Screen Sheet Container: bg var(--surface-sunken))
         // Desktop: 820px centered, bg --surface-rail, border 1px --border-strong, radius 16px, shadow --modal-shadow
         // Desktop height is fixed rather than h-auto: oracle text runs from one
@@ -1656,117 +1812,111 @@ export function CardModal({
           boxShadow: "var(--modal-shadow)",
         }}
       >
-        {/* MOBILE art header — §Mobile: Art Header. The band and the tile inside it
-            draw the same picture, and at full sharpness the two competed: the
-            card's own text was legible twice over, at two sizes, one behind the
-            other. The band keeps the art as atmosphere — blurred, dimmed, and
-            scaled past its own edges so the blur has no transparent rim — and
-            the tile is the only sharp copy. */}
+        {/* PHONE, CARD FIRST (carousel R2, `PhoneHero.dc.html`). The art washes the whole screen;
+            the card sits at y 64 in a band that ends where the teaser begins, between its two
+            neighbors at .5; the counter and the ✕ ride the wash's top corners; and the sheet (the
+            content column, at this width) rises over the band to y 64 when full. The 180px art
+            header, its 72px compact form and the phone zoom all retire: a 320px card is already
+            the zoom's 318. */}
         <div
-          // Inert while the zoom is up: the shipped ✕ and every control under the layer
-          // stay mounted for layout, and `useDialogA11y` collects every button in the
-          // dialog — so without this, Tab or a screen reader reaches the covered
-          // `Close card details` and dismisses the whole dialog instead of the zoom.
+          aria-hidden
+          data-testid="mobile-art-wash"
+          className="md:hidden pointer-events-none absolute inset-0 z-0"
+          style={{ ...artStyle, filter: "blur(28px)", transform: "scale(1.25)", opacity: 0.55 }}
+        />
+        <div
+          aria-hidden
+          className="md:hidden pointer-events-none absolute inset-0 z-0"
+          style={{ background: "linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.45) 100%)" }}
+        />
+        {/* The band pages under a horizontal drag and moves the sheet under a vertical one, so it
+            takes every touch itself (`touch-none`): nothing in it scrolls. Its height is what the
+            card is sized from — `100cqh` is the band — so a taller teaser (a door, a footer) or a
+            shorter, stacked dialog gives the card less room rather than covering it. */}
+        <div
+          ref={bandRef}
           inert={zoomed}
-          className={`relative overflow-hidden md:hidden ${compactArt ? "flex items-end gap-[14px]" : ""}`}
-          style={{
-            padding: compactArt ? "44px 20px 14px" : "44px 20px 20px",
-            background: "var(--surface-sunken)",
-            boxShadow: "inset 0 -60px 60px -40px rgba(0,0,0,0.55)",
-          }}
+          data-testid="card-band"
+          onPointerDown={narrow ? gestures.onBandPointerDown : undefined}
+          className="md:hidden band-dim absolute inset-x-0 top-0 z-[1] touch-none [container-type:size]"
+          style={{ height: `calc(100% - ${teaserHeight}px)`, opacity: sheetFull ? 0.35 : 1 }}
         >
           <div
-            aria-hidden
-            data-testid="mobile-art-wash"
-            className="absolute inset-0 z-0"
-            style={{
-              ...artStyle,
-              filter: "blur(22px)",
-              transform: "scale(1.2)",
-              opacity: 0.45,
-            }}
-          />
-          <button
-            type="button"
-            ref={(el) => { closeRefs.current[0] = el; }}
-            onClick={onClose}
-            // Stacked over a sheet, the phone's × is the way back to it, named as the desktop pill is.
-            aria-label={back ? `Back to ${back}` : "Close card details"}
-            // §Mobile: Art Close Button
-            className="absolute rounded-full flex items-center justify-center bg-[color-mix(in_oklab,var(--bg)_55%,transparent)] text-[color:var(--fg)]"
-            style={{ top: 22, right: 18, width: 32, height: 32, fontSize: 16 }}
+            className="absolute inset-0"
+            // Card width = min(320px, (100dvh - 85px - 280px) x 0.7159) (README R2 "Sizing"): 85 is
+            // the 64 above the card and 21 below it, and the band already ends at the teaser.
+            style={{ "--card-w": "min(320px, calc((100cqh - 85px) * 0.7159))" } as React.CSSProperties}
           >
-            ✕
-          </button>
-          {/* §Mobile: Art Image — 180px, aspect 63/88, radius 10px. Past the overflow
-              threshold it collapses to a 72px thumbnail and the name comes with it. */}
-          <div
-            data-testid="modal-art-mobile"
-            className={`relative z-[1] rounded-[10px] ${compactArt ? "flex-none" : "mx-auto"}`}
-            style={{
-              width: compactArt ? 72 : 180, aspectRatio: "63/88",
-              marginTop: compactArt ? 0 : 6,
-              perspective: "1400px",
-              // A two-faced card paints its faces inside; this box only holds
-              // them, turns them, and keeps the drop shadow. The inset seam moves
-              // onto each face, or the turn would show the ring and not the card.
-              ...(twoFaced ? null : artStyle),
-              boxShadow: twoFaced
-                ? "0 20px 40px rgba(0,0,0,0.5)"
-                : "0 20px 40px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3)",
-            }}
-          >
-            {turningArt("rounded-[10px]")}
-            {/* The art is the trigger — the silent affordance the builder spine and the
-                commander column already use. A stretched button rather than the art
-                element itself, so it sits OUTSIDE the box that turns: riding the
-                rotation it would face away from the reader on the back. */}
-            <button
-              type="button"
-              ref={(el) => { zoomTriggerRefs.current[0] = el; }}
-              onClick={openZoom}
-              aria-label={cardZoomCopy.zoomAria(printedNameOf(preview))}
-              aria-expanded={zoomed}
-              aria-controls={zoomed ? ZOOM_REGION : undefined}
-              className="absolute inset-0 rounded-[10px] cursor-pointer bg-transparent border-0 p-0"
-            />
-          </div>
-          {/* Hint, turn, price — 9px under the sharp art and centred on it. Last in
-              the column, so an absent price removes its row without moving anything
-              above it (table row 1.14).
-
-              Withheld entirely on the 72px thumbnail: the collapsed header is a
-              printing-picker state where the art is a locator rather than the thing
-              being read, and it has the name and type line beside it instead. */}
-          {!compactArt && (
+            {narrow && prevSibling && onPrevPeek ? (
+              <PhonePeek ref={prevPhonePeekRef} sibling={prevSibling} direction="previous" onPress={onPrevPeek} />
+            ) : null}
             <div
-              data-testid="modal-under-card"
-              className="relative z-[1] mt-[9px] flex flex-col items-center gap-[8px]"
+              data-testid="modal-art-mobile"
+              className={"absolute rounded-[14px]" + (phoneEnterX !== null ? " anim-phone-card-enter" : "")}
+              style={{
+                top: 64,
+                left: "calc(50% - var(--card-w) / 2)",
+                width: "var(--card-w)",
+                aspectRatio: "63/88",
+                perspective: "1400px",
+                // A two-faced card paints its faces inside; this box only holds them, turns them,
+                // and keeps the drop shadow, as the desktop's does.
+                ...(twoFaced ? null : artStyle),
+                boxShadow: twoFaced
+                  ? "0 24px 50px rgba(0,0,0,0.55)"
+                  : "0 24px 50px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(0,0,0,0.3)",
+                ...(phoneEnterX !== null ? ({ "--enter-x": phoneEnterX } as React.CSSProperties) : null),
+              }}
             >
-              {underCard(true)}
+              {turningArt("rounded-[14px]")}
+              {/* The shipped turn plate, on the card's bottom-right corner (README R2 "Zoom"): the
+                  stack it sat in under the old header is gone. OUTSIDE the box that turns, for the
+                  reason the desktop's is. */}
+              {twoFaced && (
+                <span className="absolute" style={{ right: 10, bottom: 10 }}>
+                  <FlipControl flipAria={flipLabel(!showingBack)} onFlip={onFlip} size={44} />
+                </span>
+              )}
             </div>
-          )}
-          {compactArt && (
-            <div className="relative z-[1] min-w-0">
-              {/* The dialog's accessible name still comes from the h3 below, which stays in
-                  the DOM (display:none on phone) — this copy is the visual half of the same
-                  heading. */}
-              <div aria-hidden style={{ textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
-                <div className="font-display font-bold text-[22px] leading-[1.15]" style={{ color: "var(--fg)" }}>
-                  {/* The same source as the h3 below it — these are two halves of one
-                      heading, and reading them off different objects is how the compact
-                      header ended up naming a printing the art is not showing. */}
-                  {printedNameOf(preview)}
-                </div>
-                <p className="text-[13px] mt-[4px] m-0" style={{ color: "var(--fg-muted)" }}>
-                  {card.typeLine}
-                </p>
-              </div>
-            </div>
-          )}
+            {narrow && nextSibling && onNextPeek ? (
+              <PhonePeek ref={nextPhonePeekRef} sibling={nextSibling} direction="next" onPress={onNextPeek} />
+            ) : null}
+          </div>
         </div>
-
-        {door ? <div inert={zoomed} className="md:hidden flex-none">{door("strip")}</div> : null}
+        {/* One / two (decision 6): a list of one draws no counter. Off the band, so it stays put
+            while the band slides, and above the sheet, which stops at y 64 below it. */}
+        {total > 1 ? (
+          <div
+            data-testid="modal-counter-mobile"
+            className="md:hidden absolute z-[3] flex items-center rounded-[16px] font-mono text-[11px]"
+            style={{
+              top: 22,
+              left: 18,
+              height: 32,
+              padding: "0 12px",
+              background: "color-mix(in oklab, var(--bg) 55%, transparent)",
+              color: "var(--fg-body)",
+            }}
+          >
+            {cardCarouselCopy.position(position, total)}
+          </div>
+        ) : null}
+        <button
+          type="button"
+          ref={(el) => { closeRefs.current[0] = el; }}
+          // Inert under the zoom with everything else it would otherwise sit beside in the focus
+          // trap. The zoom opens only from the desktop's art, where this is not drawn, but a
+          // window narrowed with the zoom up would otherwise leave it reachable.
+          inert={zoomed}
+          onClick={onClose}
+          // Stacked over a sheet, the phone's × is the way back to it, named as the desktop pill is.
+          aria-label={back ? `Back to ${back}` : "Close card details"}
+          // §Mobile: Art Close Button
+          className="md:hidden absolute z-[3] rounded-full flex items-center justify-center bg-[color-mix(in_oklab,var(--bg)_55%,transparent)] text-[color:var(--fg)]"
+          style={{ top: 22, right: 18, width: 32, height: 32, fontSize: 16 }}
+        >
+          ✕
+        </button>
 
         {/* DESKTOP art column — §Desktop: Art Column: 320px, padding 28px, bg --bg */}
         <div
@@ -1853,17 +2003,58 @@ export function CardModal({
               data-testid="modal-under-card"
               className="absolute top-full left-1/2 mt-[10px] flex -translate-x-1/2 flex-col items-center gap-[6px] whitespace-nowrap"
             >
-              {underCard(false)}
+              {underCard}
               {door ? <div className="mt-[8px]">{door("art")}</div> : null}
             </div>
           </div>
         </div>
 
-        {/* Content column — mobile: flex-1 padding 20px; desktop: padding 30px 32px.
-            On desktop the column is a flex stack: the body scrolls, the Prev/Next
-            row sits below it so it stays bottom-aligned whatever the oracle text
-            length. */}
-        <div inert={zoomed} className="flex-1 min-w-0 relative flex flex-col overflow-hidden">
+        {/* Content column — desktop: padding 30px 32px, a flex stack whose body scrolls while
+            the Prev/Next row stays bottom-aligned whatever the oracle text length.
+
+            ON THE PHONE IT IS THE SHEET (carousel R2): risen over the card band, at the teaser's
+            top or at y 64, in `--surface-rail` with an 18px top radius. One element at both widths
+            rather than a second copy of the details for the phone, so nothing in it is drawn
+            twice; the phone-only rows inside are `md:hidden`. A drag writes `--sheet-drag-top`
+            over the snap until the release, and the top transitions to whichever snap it chose. */}
+        <div
+          ref={sheetRef}
+          inert={zoomed}
+          data-testid="card-sheet"
+          data-sheet={sheetFull ? "full" : "teaser"}
+          // The phone's alone: on the desktop this column is a column, and a drag-select in its
+          // text must stay a drag-select.
+          onPointerDown={narrow ? gestures.onSheetPointerDown : undefined}
+          className={
+            "min-w-0 flex flex-col overflow-hidden md:flex-1 md:relative"
+            + " max-md:absolute max-md:inset-x-0 max-md:bottom-0 max-md:z-[2] max-md:top-[var(--sheet-drag-top,var(--sheet-top))]"
+            + " max-md:rounded-t-[18px] max-md:border-t max-md:border-[color:var(--border-strong)] max-md:bg-[color:var(--surface-rail)]"
+            + " max-md:shadow-[0_-14px_34px_rgba(0,0,0,0.45)]"
+            + " sheet-snap"
+            // The teaser does not scroll, so a vertical drag anywhere on it is the sheet's; it fills
+            // to the 34px home inset. The full sheet's body scrolls and only its grip drags it.
+            + (sheetFull ? "" : " max-md:touch-none max-md:pb-[34px]")
+          }
+          style={{ "--sheet-top": sheetFull ? `${SHEET.fullTop}px` : `calc(100% - ${teaserHeight}px)` } as React.CSSProperties}
+        >
+          {/* THE GRIP (plan PR 3, engineering call 2026-10-03): a native button, so Enter and
+              Space work and a reader who cannot drag has the toggle `All details` gives. Its
+              label names what a press does, so it carries no `aria-expanded` beside it. */}
+          <button
+            ref={gripRef}
+            type="button"
+            data-sheet-grip=""
+            onClick={() => setSheetFull((f) => !f)}
+            aria-label={cardSheetCopy.grabberAria(sheetFull)}
+            // The ring draws INSIDE the grip: the sheet clips everything outside its own box, so
+            // the default 2px offset left a reader one stray line under the grip.
+            className="md:hidden flex h-[22px] w-full flex-none cursor-grab touch-none items-center justify-center rounded-t-[18px] border-0 bg-transparent p-0 focus-visible:-outline-offset-2"
+          >
+            <span aria-hidden className="block h-[4px] w-[36px] rounded-[2px]" style={{ background: "var(--border-strong)" }} />
+          </button>
+          {/* The stand-ins door (swap tools), which sat under the retired art header: at the
+              sheet's head, at both snaps, with the teaser grown by its 44px to hold it. */}
+          {doorStrip !== null ? <div ref={doorRef} className="md:hidden flex-none">{doorStrip}</div> : null}
           {/* Desktop close button — §Desktop: Close Button. Over a sheet that names itself it
               becomes the way back to that sheet, in the same slot and on the same plate. */}
           {back ? (
@@ -1894,7 +2085,12 @@ export function CardModal({
 
           {/* `overscroll-contain` (Hugh, 2026-10-03): stops a scroll of this body at either
               end from chaining into the page behind the modal. */}
-          <div className="flex-1 overflow-auto overscroll-contain p-[20px] md:p-[30px_32px]">
+          <div
+            className={
+              "flex-1 overflow-auto overscroll-contain p-[20px] md:p-[30px_32px] max-md:pt-0"
+              + (sheetFull ? "" : " max-md:flex max-md:flex-col max-md:overflow-hidden max-md:pb-0")
+            }
+          >
             {/* Name + type + mana pips — §Mobile: Name + Type Header.
                 Right padding on desktop clears the absolutely-positioned close
                 button, which otherwise sits on top of the mana pips. */}
@@ -1912,33 +2108,18 @@ export function CardModal({
                 below still reads correctly. `probe:mana-symbols` measures the
                 cost's own top against the title's for that reason.
 
-                BOTH widths. The name block is in this row on a phone too — the
-                art header only takes it when `compactArt` is true, and that wants
-                the printing picker expanded. */}
+                BOTH widths: on the phone this row is the head of the sheet, at both
+                snaps. */}
             <div
               className="flex flex-wrap items-start justify-between gap-[12px] md:pr-[var(--close-reserve)]"
               style={{ "--close-reserve": `${closeReserve}px` } as React.CSSProperties}
             >
-              {/* The tag survives the collapse and moves out of the art (card-detail R2,
-                  table rows 2.1-2.2): a 72px thumb has no room beneath it. It lands
-                  beside the mana cost, which is the one thing still drawn in this row on
-                  a phone — the name and type line move into the art header, and the
-                  heading there is aria-hidden, so a figure placed inside it would reach
-                  no assistive technology at all (erratum E10). */}
-              {compactArt && priceTag && (
-                // The `from` figure comes with it. This is the state where the
-                // printing PICKER is open — the one moment the reader is choosing
-                // between printings — so a header that named the cheapest nowhere
-                // would withhold it exactly where it is being asked for.
-                <div className="md:hidden flex items-center gap-[6px]" data-testid="modal-price-compact">
-                  <span data-testid="modal-price-tag-compact">{priceTag}</span>
-                  {fromLine(true)}
-                </div>
-              )}
-              <div className={compactArt ? "min-w-0 hidden md:block" : "min-w-0"}>
+              <div className="min-w-0">
+                {/* 24px at the phone's regular weight, as `PhoneHero.dc.html` draws the sheet's
+                    head; the desktop's 29px bold is unchanged. */}
                 <h3
                   id={titleId}
-                  className="font-display font-bold text-[22px] md:text-[29px] m-0 leading-[1.15] md:leading-[1.1]"
+                  className="font-display font-normal md:font-bold text-[24px] md:text-[29px] m-0 leading-[1.15] md:leading-[1.1]"
                   style={{ color: "var(--fg)" }}
                 >
                   {printedNameOf(preview)}
@@ -1974,133 +2155,181 @@ export function CardModal({
                   {card.typeLine}
                 </p>
               </div>
-              {/* The hook the compact placement's test anchors on: E12 puts the price
-                  tag beside this, and a tag that drifted elsewhere in the column would
-                  otherwise still satisfy a presence check. */}
               <div data-testid="modal-mana-cost" className="flex-none">
                 <ManaCost cost={card.manaCost} />
               </div>
             </div>
 
-            {/* Oracle text block — §Oracle Text Block: bg --bg, border 1px --border, radius 10px, padding 14px 16px / 18px 20px, margin-top 16/22px, 13.5/15px, --fg-body, line-height 1.6/1.65 */}
-            {card.oracleText && (
-              <div
-                className="rounded-[10px] mt-[16px] md:mt-[22px] p-[14px_16px] md:p-[18px_20px] text-[13.5px] md:text-[15px] leading-[1.6] md:leading-[1.65]"
-                style={{
-                  background: "var(--bg)",
-                  border: "1px solid var(--border)",
-                  color: "var(--fg-body)",
-                }}
-              >
-                <OracleText text={card.oracleText} keywords={card.keywords} />
-              </div>
-            )}
-
-            <BracketFactsDetail card={card} />
-            {/* SECOND IN THE STACK: card fact, then PAIR fact, then copy facts. This block is
-                the hinge where the reader crosses from what the card IS to what they HAVE,
-                which is exactly what a pair fact is. */}
-            <ComboPartnersDetail
-              card={card}
-              deckName={deckName}
-              onSelectPartner={onSelectCard}
-            />
-            <AvailabilityDetail card={card} deckPage={deckPage} />
-            <ProxyDetail card={card} />
-
-            {/* Deck-scoped, and absent without a deck: opened from `/collection`
-                there is nothing for it to be about. */}
-            {deckId && deckHolds && (
-              <ProxyControl
-                deckId={deckId}
-                deckName={deckName ?? ""}
-                oracleId={card.oracleId}
-                cardName={card.name}
-                proxied={(card.proxiedBy ?? []).some((d) => d.id === deckId)}
-                known={card.proxiedBy !== null && card.proxiedBy !== undefined}
-                onSaved={onProxyWrite}
-              />
-            )}
-
-            {/* MOBILE meta grid — §Mobile: Meta 2×2 Grid. At 2+ printings the Set cell is
-                promoted out of the grid into a full-width row below Rarity and Identity, so
-                the disclosure and its region are last in the column and the grid is not
-                pushed off-screen the moment you expand. */}
-            <div
-              className="md:hidden mt-[16px] grid grid-cols-2 rounded-[10px] overflow-hidden"
-              style={{ background: "var(--border)", gap: 1, border: "1px solid var(--border)" }}
-            >
-              {!hasPicker && (
-                // Set + collector number of the printing on screen (§Phase 5) — the art is a
-                // specific printing now, so the caption names it.
-                <MetaCell label="Set" value={caption} />
-              )}
-              <MetaCell label="Rarity" value={RARITY_LABEL[card.rarity]} rarity />
-              <MetaCell label="Identity" value={identityName(card.colorIdentity)} identity={card.colorIdentity} />
-              <MetaCell
-                label="You own"
-                value={`×${card.quantity}`}
-                quantity
-                span={hasPicker ? 2 : undefined}
-              />
-            </div>
-
-            {hasPicker && (
-              <div className="md:hidden mt-[12px]">
-                <MobileSetRow
-                  ref={mobileTriggerRef}
-                  controls={REGION_MOBILE}
-                  caption={caption}
-                  count={ownedPrintings.length}
-                  picked={pick !== null}
-                  expanded={expanded}
-                  imageUri={resolved?.imageUri ?? null}
-                  colorIdentity={card.colorIdentity}
-                  onClick={toggleExpanded}
-                />
-                {renderRegion(REGION_MOBILE)}
-              </div>
-            )}
-
-            {/* DESKTOP meta flex row — §Desktop: Meta Fields */}
-            <div className="hidden md:flex flex-wrap gap-[26px] mt-[24px]">
-              {hasPicker ? (
-                <PickerTrigger
-                  ref={desktopTriggerRef}
-                  controls={REGION_DESKTOP}
-                  caption={caption}
-                  count={ownedPrintings.length}
-                  picked={pick !== null}
-                  expanded={expanded}
-                  onClick={toggleExpanded}
-                />
-              ) : (
-                <MetaField label="Set" value={caption} />
-              )}
-              <MetaField label="Rarity" value={RARITY_LABEL[card.rarity]} rarity />
-              <MetaField label="Identity" value={identityName(card.colorIdentity)} identity={card.colorIdentity} />
-              <MetaField label="You own" value={`×${card.quantity} ${card.quantity === 1 ? "copy" : "copies"}`} quantity />
-            </div>
-
-            {hasPicker && <div className="hidden md:block">{renderRegion(REGION_DESKTOP)}</div>}
-
-            {/* MOBILE link-out — in flow at the end of the scrolling column, not
-                pinned. The hairline is load-bearing: it separates the link from
-                the printings disclosure so it never reads as "buy this
-                printing". Above md: the link lives in the pinned nav row. */}
-            {footer ? null : (
-              <div
-                className="md:hidden flex flex-col mt-[14px]"
-                style={{ borderTop: "1px solid var(--border)" }}
-              >
-                <div className="flex items-center min-h-[44px]">
-                  <ExternalLink href={manapoolCardUrl(card.name)} label={cardLinkOutCopy.card} />
+            {/* THE SHEET'S SECOND LINE, at both snaps (README R2 "Teaser price"): the shipped price
+                plate, moved here from under the retired art header, beside what the reader owns. */}
+            <div className="md:hidden mt-[12px] flex flex-wrap items-center gap-[12px]">
+              {priceTag && (
+                <div data-testid="modal-price-mobile">
+                  {/* THE PLATE, as the art-wash ratification defines it: opaque `--bg` under one
+                      `--border-strong` hairline at radius 7, with the `from` figure inside it. */}
+                  <span
+                    className="inline-flex items-center gap-[6px] rounded-[7px] p-[2px]"
+                    style={{ background: "var(--bg)", border: "1px solid var(--border-strong)" }}
+                  >
+                    <span data-testid="modal-price-tag-mobile">{priceTag}</span>
+                    {fromLine(true)}
+                  </span>
                 </div>
-                {onFindDeck ? (
-                  <FitsDoor cardName={card.name} onPress={onFindDeck} pickerOpen={fitsOpen} layout="column" />
-                ) : null}
+              )}
+              <OwnedLine card={card} deckPage={deckPage} />
+            </div>
+
+            {/* THE TEASER (README R2): three lines of oracle text under a fade, then `All details`,
+                pinned above the home inset. A short text leaves its slack above the button, which
+                is also the keyboard's and the screen reader's way to the rest. */}
+            {!sheetFull && (
+              <div className="md:hidden flex min-h-0 flex-1 flex-col">
+                {card.oracleText && (
+                  <div
+                    data-testid="teaser-oracle"
+                    className="mt-[12px] max-h-[64px] min-h-0 overflow-hidden text-[13.5px] leading-[1.6]"
+                    style={{
+                      color: "var(--fg-body)",
+                      WebkitMaskImage: "linear-gradient(180deg, #000 55%, transparent)",
+                      maskImage: "linear-gradient(180deg, #000 55%, transparent)",
+                    }}
+                  >
+                    <OracleText text={card.oracleText} keywords={card.keywords} />
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setSheetFull(true)}
+                  className="-mx-[20px] mt-auto flex min-h-[44px] flex-none cursor-pointer items-center justify-center gap-[8px] border-t border-[color:var(--border)] bg-transparent p-0 text-[13.5px] text-[color:var(--fg-body)] focus-visible:-outline-offset-2"
+                >
+                  {cardSheetCopy.expand}
+                  <span aria-hidden style={{ color: "var(--fg-faint)" }}>▴</span>
+                </button>
               </div>
             )}
+
+            {/* The shipped details column. Always at desktop; on the phone, only in the full sheet. */}
+            <div className={sheetFull ? undefined : "max-md:hidden"}>
+              {/* Oracle text block — §Oracle Text Block: bg --bg, border 1px --border, radius 10px, padding 14px 16px / 18px 20px, margin-top 16/22px, 13.5/15px, --fg-body, line-height 1.6/1.65 */}
+              {card.oracleText && (
+                <div
+                  className="rounded-[10px] mt-[16px] md:mt-[22px] p-[14px_16px] md:p-[18px_20px] text-[13.5px] md:text-[15px] leading-[1.6] md:leading-[1.65]"
+                  style={{
+                    background: "var(--bg)",
+                    border: "1px solid var(--border)",
+                    color: "var(--fg-body)",
+                  }}
+                >
+                  <OracleText text={card.oracleText} keywords={card.keywords} />
+                </div>
+              )}
+
+              <BracketFactsDetail card={card} />
+              {/* SECOND IN THE STACK: card fact, then PAIR fact, then copy facts. This block is
+                  the hinge where the reader crosses from what the card IS to what they HAVE,
+                  which is exactly what a pair fact is. */}
+              <ComboPartnersDetail
+                card={card}
+                deckName={deckName}
+                onSelectPartner={onSelectCard}
+              />
+              <AvailabilityDetail card={card} deckPage={deckPage} />
+              <ProxyDetail card={card} />
+
+              {/* Deck-scoped, and absent without a deck: opened from `/collection`
+                  there is nothing for it to be about. */}
+              {deckId && deckHolds && (
+                <ProxyControl
+                  deckId={deckId}
+                  deckName={deckName ?? ""}
+                  oracleId={card.oracleId}
+                  cardName={card.name}
+                  proxied={(card.proxiedBy ?? []).some((d) => d.id === deckId)}
+                  known={card.proxiedBy !== null && card.proxiedBy !== undefined}
+                  onSaved={onProxyWrite}
+                />
+              )}
+
+              {/* MOBILE meta grid — §Mobile: Meta 2×2 Grid. At 2+ printings the Set cell is
+                  promoted out of the grid into a full-width row below Rarity and Identity, so
+                  the disclosure and its region are last in the column and the grid is not
+                  pushed off-screen the moment you expand. */}
+              <div
+                className="md:hidden mt-[16px] grid grid-cols-2 rounded-[10px] overflow-hidden"
+                style={{ background: "var(--border)", gap: 1, border: "1px solid var(--border)" }}
+              >
+                {!hasPicker && (
+                  // Set + collector number of the printing on screen (§Phase 5) — the art is a
+                  // specific printing now, so the caption names it.
+                  <MetaCell label="Set" value={caption} />
+                )}
+                <MetaCell label="Rarity" value={RARITY_LABEL[card.rarity]} rarity />
+                <MetaCell label="Identity" value={identityName(card.colorIdentity)} identity={card.colorIdentity} />
+                <MetaCell
+                  label="You own"
+                  value={`×${card.quantity}`}
+                  quantity
+                  span={hasPicker ? 2 : undefined}
+                />
+              </div>
+
+              {hasPicker && (
+                <div className="md:hidden mt-[12px]">
+                  <MobileSetRow
+                    ref={mobileTriggerRef}
+                    controls={REGION_MOBILE}
+                    caption={caption}
+                    count={ownedPrintings.length}
+                    picked={pick !== null}
+                    expanded={expanded}
+                    imageUri={resolved?.imageUri ?? null}
+                    colorIdentity={card.colorIdentity}
+                    onClick={toggleExpanded}
+                  />
+                  {renderRegion(REGION_MOBILE)}
+                </div>
+              )}
+
+              {/* DESKTOP meta flex row — §Desktop: Meta Fields */}
+              <div className="hidden md:flex flex-wrap gap-[26px] mt-[24px]">
+                {hasPicker ? (
+                  <PickerTrigger
+                    ref={desktopTriggerRef}
+                    controls={REGION_DESKTOP}
+                    caption={caption}
+                    count={ownedPrintings.length}
+                    picked={pick !== null}
+                    expanded={expanded}
+                    onClick={toggleExpanded}
+                  />
+                ) : (
+                  <MetaField label="Set" value={caption} />
+                )}
+                <MetaField label="Rarity" value={RARITY_LABEL[card.rarity]} rarity />
+                <MetaField label="Identity" value={identityName(card.colorIdentity)} identity={card.colorIdentity} />
+                <MetaField label="You own" value={`×${card.quantity} ${card.quantity === 1 ? "copy" : "copies"}`} quantity />
+              </div>
+
+              {hasPicker && <div className="hidden md:block">{renderRegion(REGION_DESKTOP)}</div>}
+
+              {/* MOBILE link-out — in flow at the end of the scrolling column, not
+                  pinned. The hairline is load-bearing: it separates the link from
+                  the printings disclosure so it never reads as "buy this
+                  printing". Above md: the link lives in the pinned nav row. */}
+              {footer ? null : (
+                <div
+                  className="md:hidden flex flex-col mt-[14px]"
+                  style={{ borderTop: "1px solid var(--border)" }}
+                >
+                  <div className="flex items-center min-h-[44px]">
+                    <ExternalLink href={manapoolCardUrl(card.name)} label={cardLinkOutCopy.card} />
+                  </div>
+                  {onFindDeck ? (
+                    <FitsDoor cardName={card.name} onPress={onFindDeck} pickerOpen={fitsOpen} layout="column" />
+                  ) : null}
+                </div>
+              )}
+            </div>
           </div>
 
 
@@ -2126,7 +2355,7 @@ export function CardModal({
                 <button
                   ref={prevButtonRef}
                   type="button"
-                  onClick={onPrev ?? undefined}
+                  onClick={onPrev ? () => onPrev() : undefined}
                   // `aria-disabled`, never `disabled` (decision 5): the native attribute
                   // takes the control out of the tab order, which is how a reader who
                   // paged to an end lost focus to the body. `onClick` is already undefined
@@ -2146,7 +2375,7 @@ export function CardModal({
                 <button
                   ref={nextButtonRef}
                   type="button"
-                  onClick={onNext ?? undefined}
+                  onClick={onNext ? () => onNext() : undefined}
                   aria-disabled={!onNext}
                   aria-label={cardCarouselCopy.nextAria}
                   className={
@@ -2159,7 +2388,7 @@ export function CardModal({
               </span>
             ) : null}
           </div>
-          {footer ? <div className="md:hidden flex-none">{footer("column")}</div> : null}
+          {footer ? <div ref={footerRef} className="md:hidden flex-none">{footer("column")}</div> : null}
         </div>
         {/* The modal's one live region (handoff §Accessibility). Do not add a second.
             A direct child of the dialog rather than of the content column, because the

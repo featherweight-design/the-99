@@ -344,7 +344,8 @@ describe("CardModal allocation receipt", () => {
       quantity: 1,
       availability: withClaims(1, [claim("d1", "Atraxa", 1, true)]),
     });
-    expect(screen.getByText(availabilityCopy.marker.hard)).toBeInTheDocument();
+    // The block's summary and the phone sheet's second line both draw the marker; neither names.
+    expect(screen.getAllByText(availabilityCopy.marker.hard)).not.toHaveLength(0);
     expect(screen.queryByText(availabilityCopy.marker.hardIn("Atraxa"))).toBeNull();
   });
 });

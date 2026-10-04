@@ -563,43 +563,45 @@ describe("a card opened at a printing", () => {
   });
 });
 
-describe("the compact art header", () => {
-  // Reached only with 2+ owned printings and the region open past the overflow
-  // threshold, which is the state the R1 handoff did not draw and R2 rules.
+describe("the phone sheet's second line (carousel R2)", () => {
+  // The compact 72px header retired with the 180px one (README R2 "Full"): the art lives in the
+  // card band now, so opening the picker past the overflow threshold collapses nothing and the
+  // tag has nowhere to move to.
   const many = Array.from({ length: 14 }, (_, i) =>
     printing({ scryfallId: `s-${i}`, collectorNumber: String(i), quantity: 1 }));
 
   function openPicker(c: BrowseCard) {
     mount(c);
-    // Both breakpoint trees render a trigger; the first is the phone's, which is
-    // the one whose header collapses.
+    // Both breakpoint trees render a trigger; the first is the phone's.
     fireEvent.click(
       screen.getAllByRole("button", { name: /printings owned/ })[0],
     );
   }
 
-  it("moves the tag beside the mana cost rather than dropping it", () => {
+  it("keeps the tag beside what the reader owns with the picker open past the threshold", () => {
     openPicker(card({ printings: many, prices: indexPriceRows([priceRow({ scryfall_id: "s-0", collector_number: "0" })]) }));
 
-    const tag = screen.getByTestId("modal-price-compact");
+    const tag = screen.getByTestId("modal-price-mobile");
     expect(tag).toHaveTextContent("$2.41");
-    expect(screen.queryByTestId("modal-price-mobile")).toBeNull();
-    // E12 makes the relationship part of the contract: on a phone in this state the
-    // name is in the art header and the mana cost is here, so "beside the mana cost"
-    // is the half of the drawing that can be honoured — and a tag that drifted
-    // elsewhere in the content column would otherwise still pass.
-    // Siblings, not merely both somewhere in the column: a `querySelector` from the
-    // tag's parent would find the mana cost anywhere below it and pass for a tag that
-    // had drifted to the bottom of the content column.
-    expect(screen.getByTestId("modal-mana-cost").parentElement).toBe(tag.parentElement);
+    // Siblings on one line, as `PhoneHero.dc.html` draws them: a tag that drifted elsewhere in
+    // the sheet would still pass a presence check.
+    expect(screen.getByTestId("owned-line").parentElement).toBe(tag.parentElement);
   });
 
-  it("keeps the figure out of the aria-hidden heading", () => {
-    // The compact heading is aria-hidden because the h3 stays in the DOM as the
-    // dialog's accessible name. A figure inside it would be invisible to assistive
-    // tech — the one trap this placement has.
+  it("draws the tag at both snaps, outside the column the teaser hides", () => {
+    mount(card({ prices: indexPriceRows([priceRow({ scryfall_id: "s-0", collector_number: "0" })]), printings: [printing({ scryfallId: "s-0", collectorNumber: "0", quantity: 1 })] }));
+    const hidden = (el: Element) => el.closest(".max-md\\:hidden") !== null;
+    const tag = () => screen.getByTestId("modal-price-mobile");
+    expect(tag()).toHaveTextContent("$2.41");
+    expect(hidden(tag())).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "Show all details" }));
+    expect(tag()).toHaveTextContent("$2.41");
+    expect(hidden(tag())).toBe(false);
+  });
+
+  it("is reachable by assistive technology", () => {
     openPicker(card({ printings: many, prices: indexPriceRows([priceRow({ scryfall_id: "s-0", collector_number: "0" })]) }));
 
-    expect(screen.getByTestId("modal-price-compact").closest("[aria-hidden]")).toBeNull();
+    expect(screen.getByTestId("modal-price-mobile").closest("[aria-hidden]")).toBeNull();
   });
 });

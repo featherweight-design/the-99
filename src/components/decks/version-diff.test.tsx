@@ -246,7 +246,7 @@ describe("VersionDiff", () => {
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }));
     });
-    await waitFor(() => expect(screen.getByText("2 of 3")).toBeTruthy());
+    await waitFor(() => expect(screen.getAllByText("2 of 3")).not.toHaveLength(0));
   });
 
   // A land has no cost and still holds the track, so the names beside it end on

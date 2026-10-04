@@ -481,6 +481,10 @@ export function CardDetailProvider({
   // handoff README decisions 2/7/8). Null on a fresh open, which is also how `initialFocusRef`
   // tells a page from an open: the carousel never announces or slides on the first card.
   const [enterFrom, setEnterFrom] = useState<"prev" | "next" | "prevPeek" | "nextPeek" | null>(null);
+  // Where the phone's card band stood when a swipe committed (carousel R2), so the card the swipe
+  // led to enters from the spot the reader let go of rather than from its resting peek. Zero for
+  // every page that was not a swipe. Set inside `load`, beside `enterFrom`, for the same reason.
+  const [enterOffset, setEnterOffset] = useState(0);
   // The oracle id the IN-FLIGHT paging read is for, set and cleared by `load` itself (its
   // `page` argument) rather than by the handler that calls it. Two reasons it lives there and
   // not beside `setEnterFrom` in the handler: `load` resolves asynchronously, so the render
@@ -625,10 +629,13 @@ export function CardDetailProvider({
       // intent (or declares none), so the latest call standing is always the one the arrival effect
       // believes.
       page?: "prev" | "next" | "prevPeek" | "nextPeek",
+      // The band's offset at a swipe's release; see `enterOffset`.
+      offset?: number,
     ) => {
       const request = ++latest.current;
       enterTargetId.current = page ? oracleId : null;
       setEnterFrom(page ?? null);
+      setEnterOffset(page ? offset ?? 0 : 0);
       // EVERY read decides the pending printing, including the reads that have none: paging,
       // a re-read and an owed re-read all pass nothing, which clears whatever an earlier
       // open left behind. That is what binds the value to a read rather than to an oracle
@@ -1080,11 +1087,11 @@ export function CardDetailProvider({
           // Shopping door: the partner was reached from the combo block, not a Shopping row.
           onSelectCard={(id) => void load(id, undefined, undefined, { door: false })}
           onPrev={paging && index > 0
-            ? () => { void load(siblingIds[index - 1], undefined, undefined, undefined, "prev"); }
+            ? (offset?: number) => { void load(siblingIds[index - 1], undefined, undefined, undefined, "prev", offset); }
             : null}
           onNext={
             paging && index < siblings.length - 1
-              ? () => { void load(siblingIds[index + 1], undefined, undefined, undefined, "next"); }
+              ? (offset?: number) => { void load(siblingIds[index + 1], undefined, undefined, undefined, "next", offset); }
               : null
           }
           onPrevPeek={paging && index > 0
@@ -1098,6 +1105,7 @@ export function CardDetailProvider({
           prevSibling={prevSibling}
           nextSibling={nextSibling}
           enterFrom={enterFrom}
+          enterOffset={enterOffset}
         />
       ) : null}
       {/* Before the third layer in the document, so a card opened from the picker paints over it:
@@ -1141,11 +1149,11 @@ export function CardDetailProvider({
           // Shopping door: the partner was reached from the combo block, not a Shopping row.
           onSelectCard={(id) => void load(id, undefined, undefined, { door: false })}
           onPrev={paging && index > 0
-            ? () => { void load(siblingIds[index - 1], undefined, undefined, undefined, "prev"); }
+            ? (offset?: number) => { void load(siblingIds[index - 1], undefined, undefined, undefined, "prev", offset); }
             : null}
           onNext={
             paging && index < siblings.length - 1
-              ? () => { void load(siblingIds[index + 1], undefined, undefined, undefined, "next"); }
+              ? (offset?: number) => { void load(siblingIds[index + 1], undefined, undefined, undefined, "next", offset); }
               : null
           }
           onPrevPeek={paging && index > 0
@@ -1159,6 +1167,7 @@ export function CardDetailProvider({
           prevSibling={prevSibling}
           nextSibling={nextSibling}
           enterFrom={enterFrom}
+          enterOffset={enterOffset}
         />
       ) : null}
     </CardDetailContext.Provider>

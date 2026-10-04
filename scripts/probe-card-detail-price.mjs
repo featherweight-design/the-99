@@ -2,14 +2,10 @@
 //
 // What a browser proves and a test cannot — LAID-OUT GEOMETRY, and nothing else:
 // that the tag paints at all; where the stack under the card begins relative to the
-// art (10px desktop, 9px phone) and in what order its rows sit; that it fits a
-// short window rather than being clipped by the dialog; that the art turns; and
-// that the zoom is the DIALOG's rectangle rather than the viewport's.
-//
-// The compact header is NOT among them any more. It asks whether the tag survives
-// a move, which is a fact about the tree — `card-modal-price.test.tsx` asserts it
-// against a 14-printing fixture with a real price, and the state needs data no
-// database here holds. See the note at the foot of the phone pass.
+// art (10px) and in what order its rows sit; that it fits a short window rather than
+// being clipped by the dialog; that the art turns; and that the zoom is the DIALOG's
+// rectangle rather than the viewport's. DESKTOP ONLY: the phone's art header, its
+// stack and its zoom retired with the card carousel's phone round (R2).
 //
 // It makes no writes. It used to pick a different printing to prove the figure
 // follows the art; that is proved by `card-modal-price.test.tsx` instead, and picking
@@ -25,9 +21,7 @@
 // failure rather than a state the run could not judge. It is the caller's claim
 // on purpose: read off the page it would be an assertion that cannot fail.
 //
-// PROBE_CARD can be any card the signed-in account owns. It no longer has to
-// reach the compact header: that check moved to `card-modal-price.test.tsx`,
-// where it can actually run — see the note at the foot of the phone pass.
+// PROBE_CARD can be any card the signed-in account owns.
 // Not part of `pnpm test`: it needs a browser and a signed-in session.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
@@ -83,8 +77,7 @@ async function signIn(page) {
 }
 
 /**
- * What each placement is showing, and — for the compact one — whether assistive
- * tech can reach it. `aria-hidden` is asked of the ANCESTOR chain rather than the
+ * What each placement is showing, and whether assistive tech can reach it. `aria-hidden` is asked of the ANCESTOR chain rather than the
  * node, because the trap is a heading wrapper, not the tag itself.
  */
 async function readPrice(page) {
@@ -120,10 +113,7 @@ async function readPrice(page) {
         })(),
       };
     };
-    // No `compact` key. The compact header is not probed here any more — see the
-    // note at the foot of the phone pass — and a `compact: null` in every dump
-    // reads as a figure that failed to render rather than a state nobody asked
-    // about.
+    // No `compact` key: the compact header retired with the phone's art header.
     return {
       desktop: read("modal-price-desktop"),
       mobile: read("modal-price-mobile"),
@@ -134,7 +124,7 @@ async function readPrice(page) {
 /**
  * What sits UNDER the card, and in what order (#3, #4): the zoom hint, then the
  * turn control, then the price. The stack's own top is the placement ruling now
- * — 10px under the art at desktop, 9px at phone — because the price is its last
+ * — 10px under the desktop art — because the price is its last
  * row rather than its only one, and measuring the price against the art would
  * turn every change of line-height above it into a failing figure.
  *
@@ -303,7 +293,7 @@ try {
   console.log(`\n── desktop · ${CARD} ──`);
   console.log(JSON.stringify(desktop, null, 2));
   // The placement is the ruling; a stack that has drifted away from the art
-  // satisfies nothing. Table row 1.1: 10px under the art at desktop, 9px at phone.
+  // satisfies nothing. Table row 1.1: 10px under the art at desktop.
   assertUnderCard("desktop", await readUnderCard(page), 10, "Click to zoom", EXPECT_PRICED);
 
   // WHAT THIS PROBE DELIBERATELY DOES NOT DO: pick a different printing.
@@ -317,8 +307,7 @@ try {
   // by reverting `priceFor` and watching eight cases fail).
   //
   // What a browser proves and a test cannot is what is on this page: that the tag
-  // paints, where it sits relative to the art, and that the compact placement is
-  // not sealed inside the aria-hidden heading. That is all this probe claims now,
+  // paints and where it sits relative to the art. That is all this probe claims now,
   // and it makes no writes at all.
 
   // The zoom, at this width. 372x520 is the drawn figure; the layer is the dialog's
@@ -536,73 +525,10 @@ try {
   }
   await shortCtx.close();
 
-  // ── phone, including the compact header ──────────────────────────────────
-  const phone = await browser.newContext({ viewport: { width: 390, height: 844 } });
-  const phonePage = await phone.newPage();
-  await signIn(phonePage);
-  await openCard(phonePage, CARD);
-  const phoneRead = await readPrice(phonePage);
-  console.log(`\n── phone · ${CARD} ──`);
-  console.log(JSON.stringify(phoneRead, null, 2));
-  assertUnderCard("phone", await readUnderCard(phonePage), 9, "Tap to zoom", EXPECT_PRICED);
-
-  // The phone zoom is a different pair of numbers (318x444) drawn by CSS alone, so
-  // it is measured rather than assumed from the desktop pass.
-  await phonePage.getByRole("button", { name: /^Look at / }).first().click();
-  await phonePage.waitForSelector('[data-testid="card-zoom"]', { timeout: 5_000 });
-  await settled(onPage(phonePage, '[data-testid="card-zoom"]')).catch(() => {});
-  const phoneZoom = await readZoom(phonePage);
-  console.log("\n── phone · zoom ──");
-  console.log(JSON.stringify(phoneZoom, null, 2));
-  if (!phoneZoom?.coversDialog || phoneZoom.dialogs !== 1) {
-    console.log("\nFAIL: the phone zoom must be a region inside the one dialog, sized to it.");
-    process.exitCode = 1;
-  }
-  // 318 is the phone's drawn width, and it survives the turn control moving under
-  // the card: at 844px tall the height arm of the min() is nowhere near binding.
-  if (!phoneZoom?.card
-    || Math.abs(phoneZoom.card.width - 318) > 2
-    || Math.abs(phoneZoom.card.height - 444) > 3) {
-    console.log(`\nFAIL: phone zoomed card is ${JSON.stringify(phoneZoom?.card)}, expected about 318x444.`);
-    process.exitCode = 1;
-  }
-  await phonePage.keyboard.press("Escape");
-  await phonePage.waitForSelector('[data-testid="card-zoom"]', { state: "detached", timeout: 5_000 });
-
-  // Said out loud, in the run's own output. A reader scanning a green log should
-  // not have to know what this file stopped doing to know what it covered.
-  console.log(
-    "\n── phone · the compact header ──\nNOT PROBED HERE. Both its claims — the tag is a"
-      + " sibling of the mana cost (E12), and outside the aria-hidden heading (E10) — are"
-      + " asserted in `card-modal-price.test.tsx` § \"the compact art header\", against a"
-      + " 14-printing fixture with a real price. Neither is a fact about laid-out geometry.",
-  );
-
-  // THE COMPACT HEADER IS NOT PROBED HERE, AND THAT IS THE RULING.
-  //
-  // It was: the run opened the printing region past the overflow threshold and
-  // asserted the tag survived the move out of the art into the name block (E12)
-  // without being sealed in the `aria-hidden` heading (E10).
-  //
-  // It never executed. Not once, on any database this repo can reach — the state
-  // needs a card owned in more than twelve printings that the feed has ALSO
-  // priced, and no collection here holds both at once. What the check produced
-  // instead was four rounds of review across two PRs, every one of them about
-  // how to word the fact that it had not run: a tree of five conditions, each
-  // branch added to tell one un-run state from another.
-  //
-  // Both claims are covered where they can actually be exercised —
-  // `card-modal-price.test.tsx` § "the compact art header", against a 14-printing
-  // fixture with a real price. It asserts the tag is a SIBLING of the mana cost
-  // rather than merely somewhere in the column, and that it sits outside the
-  // aria-hidden heading. Neither is a fact about laid-out geometry, which is the
-  // only thing this file exists for.
-  //
-  // What a browser still answers here and a test cannot: where the stack sits
-  // under the art, in what order, whether it fits a short window, whether the
-  // card turns, and whether the zoom is the dialog's rectangle. All of that is
-  // above, and all of it runs.
-  await phone.close();
+  // NO PHONE PASS since the card carousel's phone round (R2): the phone's art header, the stack
+  // under it and the phone zoom this pass measured are all retired. The phone's card, sheet and
+  // price line are in the carousel's contact-sheet inventory (`card-carousel.json`) and its
+  // property table (`design-tables/card-carousel-phone.md`).
 } finally {
   await browser.close();
 }

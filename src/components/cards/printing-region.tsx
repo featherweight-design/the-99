@@ -28,16 +28,6 @@ export function printingKey(p: { setCode: string; collectorNumber: string }): st
   return `${p.setCode}|${p.collectorNumber}`;
 }
 
-/**
- * Tiles the region will render, which is the owned printings plus the dormant tile for a pick
- * that is no longer owned. The modal collapses its art header on the same count the region
- * overflows on, so both must count the dormant tile or the two thresholds part company.
- */
-export function printingEntryCount(printings: BrowsePrinting[], preferred: PreferredPrinting | null): number {
-  const dormant = preferred !== null && !printings.some((p) => matchesPreference(p, preferred));
-  return printings.length + (dormant ? 1 : 0);
-}
-
 type FinishFilter = "all" | "foil" | "nonfoil";
 
 /** A printing entry, plus the pick the user no longer owns (quantity 0, not selectable). */

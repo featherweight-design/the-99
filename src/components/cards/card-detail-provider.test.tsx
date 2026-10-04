@@ -46,6 +46,16 @@ async function click(el: HTMLElement) {
   });
 }
 
+/**
+ * The desktop footer's Prev/Next. A sibling known only by id gives the phone's peek the same bare
+ * name, and jsdom lays out neither width, so a test that means the footer says so.
+ */
+function footer(name: "Previous card" | "Next card"): HTMLElement {
+  const found = screen.getAllByRole("button", { name }).filter((el) => !el.closest('[data-testid="card-band"]'));
+  if (found.length !== 1) throw new Error(`expected one footer "${name}", found ${found.length}`);
+  return found[0];
+}
+
 function renderTriggers(
   fetchCard: (
     oracleId: string,
@@ -206,12 +216,12 @@ describe("CardDetailProvider", () => {
     await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
     await screen.findByRole("dialog");
 
-    expect(screen.getByRole("button", { name: "Previous card" })).toHaveAttribute("aria-disabled", "true");
-    await click(screen.getByRole("button", { name: "Next card" }));
+    expect(footer("Previous card")).toHaveAttribute("aria-disabled", "true");
+    await click(footer("Next card"));
 
     await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Sol Ring"));
-    expect(screen.getByRole("button", { name: "Next card" })).toHaveAttribute("aria-disabled", "true");
-    expect(screen.getByRole("button", { name: "Previous card" })).toHaveAttribute("aria-disabled", "false");
+    expect(footer("Next card")).toHaveAttribute("aria-disabled", "true");
+    expect(footer("Previous card")).toHaveAttribute("aria-disabled", "false");
   });
 
   // The commander and a suggestion belong to no list; forcing paging there would page
@@ -246,7 +256,7 @@ describe("CardDetailProvider", () => {
     expect(screen.queryByRole("button", { name: "Next card" })).not.toBeInTheDocument();
 
     await click(screen.getByRole("button", { name: "refile" }));
-    await click(screen.getByRole("button", { name: "Next card" }));
+    await click(footer("Next card"));
     await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Sol Ring"));
   });
 
@@ -336,9 +346,9 @@ describe("CardDetailProvider card cache", () => {
     await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
     await screen.findByRole("dialog");
 
-    await click(screen.getByRole("button", { name: "Next card" }));
+    await click(footer("Next card"));
     await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Sol Ring"));
-    await click(screen.getByRole("button", { name: "Previous card" }));
+    await click(footer("Previous card"));
 
     expect(screen.getByRole("dialog")).toHaveAccessibleName("Arcane Signet");
     expect(screen.queryByText(cardDetailCopy.loading)).not.toBeInTheDocument();
@@ -862,9 +872,9 @@ describe("CardDetailProvider open-at-printing scope", () => {
     await screen.findByRole("dialog");
     expect(art().some((b) => b.includes("rvr-24"))).toBe(true);
 
-    await click(screen.getAllByRole("button", { name: "Next card" })[0]);
+    await click(footer("Next card"));
     await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
-    await click(screen.getAllByRole("button", { name: "Previous card" })[0]);
+    await click(footer("Previous card"));
 
     await waitFor(() => expect(art().some((b) => b.includes("rvr-24"))).toBe(false));
   });
@@ -904,7 +914,7 @@ describe("CardDetailProvider open-at-printing scope", () => {
     await screen.findByRole("dialog");
     expect(art().some((b) => b.includes("rvr-24"))).toBe(true);
 
-    await click(screen.getAllByRole("button", { name: "Next card" })[0]);
+    await click(footer("Next card"));
     await waitFor(() => expect(fetchCard).toHaveBeenCalledWith("o-sol", undefined));
     // Arcane Signet is still the card on screen, and still wearing the printing that was
     // clicked. The page did not happen.
@@ -1429,7 +1439,8 @@ describe("CardDetailProvider reads the neighbors ahead (carousel, H23)", () => {
       "o-c",
     ], prefetchCard);
     await press();
-    expect(await screen.findByText("2 of 3")).toBeTruthy();
+    // The phone's counter plate and the desktop footer both draw it; jsdom lays out neither width.
+    expect(await screen.findAllByText("2 of 3")).not.toHaveLength(0);
     await waitFor(() => expect(prefetchCard.mock.calls.map((c) => c[0])).toEqual(["o-c", "o-a"]));
   });
 });
@@ -1500,10 +1511,13 @@ describe("CardDetailProvider pages the desktop carousel (H23 PR 2)", () => {
     mount("o-b");
     await press();
     await screen.findByRole("dialog");
-    // Named with the neighbor's own title, which only a plate ever carries — the footer's
-    // Prev/Next stay in bare form no matter the width, so this name is unambiguous.
-    expect(screen.queryByRole("button", { name: "Previous card: Card A" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Next card: Card C" })).not.toBeInTheDocument();
+    // Named with the neighbor's own title, which only a plate or the phone's peek carries. Under
+    // the threshold the phone draws its peeks INSIDE the dialog, so a desktop plate, which sits on
+    // the backdrop outside it, is what must be absent.
+    const dialog = screen.getByRole("dialog");
+    const plates = (name: string) => screen.queryAllByRole("button", { name }).filter((el) => !dialog.contains(el));
+    expect(plates("Previous card: Card A")).toHaveLength(0);
+    expect(plates("Next card: Card C")).toHaveLength(0);
   });
 
   it("pages when a neighbor plate is pressed", async () => {

@@ -223,15 +223,12 @@ export const cardZoomCopy = {
   close: "Close the large view",
 
   /**
-   * The quiet hint under the art, at BOTH widths. It replaces the ⤢ plate that
+   * The quiet hint under the desktop art. It replaces the ⤢ plate that
    * sat on the art: a glyph in a corner had to be decoded, and the line under
    * the card says the same thing in words for the same pixels.
    *
-   * Two strings because the gesture is two gestures, and the word for it is the
-   * one thing a hint like this cannot get wrong. This overrules the earlier
-   * rejection of "Tap to zoom" on the grounds that zoom is a verb about a
-   * viewer — a later instruction, and the plainer phrase.
+   * Desktop only since the card carousel's phone round (R2), which retired the
+   * phone zoom and its "Tap to zoom" with the art header it sat under.
    */
   hintDesktop: "Click to zoom",
-  hintPhone: "Tap to zoom",
 } as const;
