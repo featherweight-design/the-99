@@ -1509,6 +1509,21 @@ describe("CardDetailProvider pages the desktop carousel (H23 PR 2)", () => {
     expect(within(nextPlate).getByText("Card C")).toBeInTheDocument();
   });
 
+  it("draws each plate at D1's resting .55 with a hidden chevron toward its side", async () => {
+    // jsdom computes no styles, so the specimen's values are read off the classes the plate wears.
+    stubMinWidth(true);
+    mount("o-b");
+    await press();
+    await screen.findByRole("dialog");
+    for (const [name, glyph] of [["Previous card: Card A", "‹"], ["Next card: Card C", "›"]] as const) {
+      const plate = screen.getByRole("button", { name });
+      const art = plate.firstElementChild as HTMLElement;
+      expect(art).toHaveClass("opacity-[.55]", "group-hover:opacity-[.92]", "rounded-[9px]");
+      const chevron = within(plate).getByText(glyph);
+      expect(chevron).toHaveAttribute("aria-hidden", "true");
+    }
+  });
+
   it("draws a bare plate with no text for a sibling carrying only an id", async () => {
     stubMinWidth(true);
     render(

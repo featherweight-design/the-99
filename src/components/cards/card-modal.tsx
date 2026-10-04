@@ -471,7 +471,7 @@ export function artWidthReservePx(underCardHeight: number): number {
 
 /**
  * A desktop neighbor plate (handoff decision 2): the whole card, scaled down, on the backdrop
- * 24px off the modal, with the name under it in 12.5px `--fg-body`. 168x235 at 63/88 — the
+ * 24px off the modal, with the name under it in 12.5px `--fg`. 168x235 at 63/88 — the
  * card ratio exactly, which is also how the ~1252px threshold was derived (decision 4).
  *
  * Art first, then identity, then a bare plate (handoff "Notes for engineering" §2): a sibling
@@ -509,20 +509,30 @@ const NeighborPlate = React.forwardRef<
       type="button"
       onClick={(e) => { e.stopPropagation(); onPress(); }}
       aria-label={cardCarouselCopy.neighborAria(direction, sibling.name)}
-      className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center gap-[6px] cursor-pointer bg-transparent border-0 p-0"
+      // `DesktopModal.dc.html` D1: the plate rests at .55 and a hover or keyboard focus raises it to
+      // .92, the focused plate ringed in `--accent` 3px out. The ring is the
+      // plate's, not the button's, so the browser's own ring around both is turned off.
+      className="group absolute top-1/2 -translate-y-1/2 flex flex-col items-center gap-[10px] cursor-pointer bg-transparent border-0 p-0 outline-none"
       style={{ left }}
     >
       <span
         aria-hidden="true"
-        className="block rounded-[10px]"
-        style={{ width: PLATE_WIDTH, height: 235, ...art, boxShadow: "0 12px 30px rgba(0,0,0,0.4)" }}
+        className="block rounded-[9px] opacity-[.55] group-hover:opacity-[.92] group-focus-visible:opacity-[.92] group-focus-visible:outline-2 group-focus-visible:outline-offset-[3px] group-focus-visible:outline-[color:var(--accent)] group-focus-visible:[outline-style:solid]"
+        style={{
+          width: PLATE_WIDTH,
+          height: 235,
+          ...art,
+          boxShadow: "0 18px 40px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3)",
+        }}
       />
       {sibling.name ? (
-        // `--fg-body`, not the handoff's `--fg-muted` (ledger 1, measured in build): over the
-        // dimmed backdrop `--fg-muted` held a median 3.8 to 4.9:1 across the six themes, with 39%
-        // to 78% of pixels under AA's 4.5:1 for 12.5px text; `--fg-body` holds 4.4 to 5.1 at worst.
-        <span className="font-mono text-[12.5px] truncate max-w-[168px]" style={{ color: "var(--fg-body)" }}>
-          {sibling.name}
+        // `--fg`, not the handoff's `--fg-muted` (ledger 1, measured in build on every backdrop
+        // pixel behind the name, six themes): `--fg-muted` put 39% to 78% of them under AA's 4.5:1
+        // for 12.5px text, and `--fg-body` still up to 6%; `--fg` holds 5.5:1 at its worst pixel.
+        // A hover is carried by the plate rising to .92, since the name has no brighter ink left.
+        <span className="flex gap-[6px] max-w-[168px] text-[12.5px] whitespace-nowrap text-[color:var(--fg)]">
+          <span aria-hidden="true">{direction === "previous" ? "‹" : "›"}</span>
+          <span className="truncate">{sibling.name}</span>
         </span>
       ) : null}
     </button>
