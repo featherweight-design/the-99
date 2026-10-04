@@ -427,6 +427,25 @@ const PHONE_TOP: Record<52 | 96 | 140, string> = {
 const DOOR_HEIGHT = 8 + 6 + 16 + 8 + 21;
 
 /**
+ * The art column's own padding (28px, matching its other three edges).
+ */
+const ART_COLUMN_FOOT_PADDING_PX = 28;
+
+/**
+ * How much the art width formula's `calc()` subtracts: the stack's own height, doubled (equal
+ * slack above and below the art), plus the column's 28px foot padding on both sides of that
+ * doubling (one for the padding the bottom half must still show, one because shrinking the art
+ * only buys back half of it on each side — see the derivation at the call site).
+ *
+ * Exported and pure so a test can assert the wiring directly, without parsing a rendered
+ * `calc()` string back out of jsdom's style attribute: jsdom drops this property rather than
+ * retain a value in a syntax it cannot parse.
+ */
+export function artWidthReservePx(underCardHeight: number): number {
+  return 2 * underCardHeight + ART_COLUMN_FOOT_PADDING_PX * 2;
+}
+
+/**
  * A desktop neighbor plate (handoff decision 2): the whole card, scaled down, on the backdrop
  * 24px off the modal, with the name under it in 12.5px `--fg-muted`. 168x235 at 63/88 — the
  * card ratio exactly, which is also how the ~1252px threshold was derived (decision 4).
@@ -1768,26 +1787,39 @@ export function CardModal({
               // hanging off a fixed-size box and being clipped by the dialog's
               // `overflow-hidden`.
               //
-              // The column CENTRES the art, so the room under it is half the
-              // column's slack plus the column's own 28px of bottom padding:
+              // The column's `items-center` centres the ART'S OWN BOX within the
+              // column's CONTENT box — the box left after its own 28px padding
+              // (top and bottom, 56 total) is already subtracted. The stack hangs
+              // off the art via `position: absolute`, deliberately outside normal
+              // flow (so the art never moves when a door appears or a pick changes
+              // the caption), which means flex centring never sees it, and it sits
+              // in the BOTTOM half of that content box's slack. Found by a Hugh
+              // walk, reproduced by measuring the real DOM: the stack ate into the
+              // column's own 28px padding instead of fitting inside the content
+              // box ahead of it, down to an 11px gap where the other three edges
+              // show 28.
               //
-              //   room = (H - artH) / 2 + 28,  H = min(620px, 85vh) - 56px
+              //   innerH = min(620px, 85vh) - 2px - 56px   (content box height)
+              //   (innerH - artH) / 2 >= stack             (bottom slack holds it)
               //
-              // Setting `room >= stack` and solving for the height gives
-              // `artH <= min(620px, 85vh) - 2 * stack`, which is why the figure
-              // below is doubled — halving the slack is the whole point, and a
-              // formula that subtracted the stack once looked right and still
-              // clipped.
+              // Solving for the height gives `artH <= innerH - 2 * stack`, i.e.
+              // `min(620px, 85vh) - 2px - 56px - 2 * stack` — the column's own
+              // padding (56, once) already removed from `innerH`, plus the stack
+              // doubled because shrinking the art by any amount only buys back
+              // HALF of it on each side. The defect this replaces used the full
+              // `min(620px, 85vh) - 2px` as if it were the content box, so the
+              // column's own padding was never subtracted and the stack could
+              // finish exactly on the column's outer edge.
               //
               // ONE dimension is set and the ratio derives the other, the zoom's
               // own rule: a definite width AND a height cap is how an
               // `aspect-ratio` box gets squashed. 63/88 is 0.7159, so the art is
-              // 264px wherever there is room and narrower only where there is not
-              // — at 900px tall it is 264 in every state.
+              // 264px wherever there is room and narrower only where a tall stack
+              // (the door, say) needs the column to give some back.
               // The extra 2px is the dialog's own 1px border, top and bottom: the
               // box-sizing is border-box, so `h-[620px]` is 618px of padding box —
               // the height the column actually stretches to.
-              width: `min(264px, calc((min(620px, 85vh) - 2px - ${2 * underCardHeight}px) * 0.7159))`,
+              width: `min(264px, calc((min(620px, 85vh) - 2px - ${artWidthReservePx(underCardHeight)}px) * 0.7159))`,
               aspectRatio: "63/88",
               perspective: "1400px",
               ...(twoFaced ? null : artStyle),

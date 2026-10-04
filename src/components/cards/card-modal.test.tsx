@@ -2,6 +2,9 @@
 // place on /collection that names the deck holding a card, so the count-only
 // rule that governs rows and tiles stops here — and the claiming deck's status
 // pill is deliberately absent rather than guessed.
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import type { Availability, DeckClaim } from "../../lib/decks/availability";
@@ -17,7 +20,7 @@ vi.mock("../../app/collection/actions", () => ({
   clearCardArtPreference: vi.fn(async () => {}),
 }));
 
-const { CardModal } = await import("./card-modal");
+const { CardModal, artWidthReservePx } = await import("./card-modal");
 
 const card: BrowseCard = {
   oracleId: "o1",
@@ -1416,5 +1419,43 @@ describe("CardModal carousel arrow keys stop at interactive zones (H23 PR 2)", (
     expect(onPrev).not.toHaveBeenCalled();
     fireEvent.keyDown(dialog, { key: "ArrowRight" });
     expect(onNext).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Hugh's walk: the stand-ins door sat flush against the desktop art column's bottom edge,
+// with none of the 28px breathing room every other edge of the column shows. jsdom lays
+// nothing out and cannot even RETAIN this property: it drops `width` from the rendered
+// element's style attribute entirely rather than fail to parse the `calc(min(...))` syntax,
+// so a jsdom assertion against the rendered DOM proves nothing either way here (confirmed:
+// `getAttribute("style")` omits `width` while every sibling property in the same object —
+// `aspectRatio`, `perspective`, `background`, `boxShadow` — is present). The real proof is
+// the before/after screenshots at 1300x900: the gap below "See cheaper stand-ins →"
+// went from 11.375px to 25.77px. This pins the one number a regression could silently drift
+// without either showing up in a diff review: the padding reserved below the stack, which
+// must equal the column's own padding on every other edge.
+describe("CardModal desktop art column reserves the door's room (pre-open review follow-up)", () => {
+  it("reserves the stack's height doubled, plus the column's 28px foot padding on both sides", () => {
+    // Independently computed right-hand side, not derived from the function's own constant:
+    // a drift in the exported padding (or in the doubling) fails this even though the function
+    // still agrees with itself.
+    const underCardHeight = 10 + 15 + 27; // no two-faced row, no door
+    expect(artWidthReservePx(underCardHeight)).toBe(2 * underCardHeight + 56);
+
+    const withDoor = underCardHeight + 59; // DOOR_HEIGHT
+    expect(artWidthReservePx(withDoor)).toBe(2 * withDoor + 56);
+  });
+
+  it("wires the width calc through artWidthReservePx, not an inline duplicate of its formula", () => {
+    // A source-level check, not a DOM one: Copilot's finding was that reverting the call site
+    // to the old inline `2 * underCardHeight` expression left the arithmetic test above green,
+    // since that test only exercises the helper, never the component. jsdom cannot render the
+    // real assertion (it drops `width` from the style attribute for this calc() entirely), so
+    // this reads the source directly, the same pattern status-style.test.ts and limits.test.ts
+    // use for a property only a real stylesheet or page module can show.
+    const source = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "card-modal.tsx"),
+      "utf8",
+    );
+    expect(source).toMatch(/artWidthReservePx\(underCardHeight\)/);
   });
 });
