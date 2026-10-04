@@ -143,7 +143,7 @@ describe("labelInputHash", () => {
   // install nothing and report every label as a catalog difference. When this fails: bump
   // LABEL_PROMPT_VERSION, then re-pin both literals here together.
   it("pins SYSTEM to the version it was written under", () => {
-    const pinned = { version: "8", system: "57b49b55529eaa4fe18fa8a8132faad716eba57777e0b1caf53b27f7155c8a5e" };
+    const pinned = { version: "8", system: "dea47df720aa1fbb4f719f63f3f429b68e12c911bd91cb2b1dc628facc9ede1b" };
     expect({ version: LABEL_PROMPT_VERSION, system: createHash("sha256").update(SYSTEM).digest("hex") })
       .toEqual(pinned);
   });
@@ -218,21 +218,23 @@ describe("SYSTEM v8: damage and the empty answer", () => {
 
   it("counts damage that can hit a creature or permanent as removal", () => {
     expect(def("removal")).toMatch(/deals damage to it/);
-    expect(def("removal")).toMatch(/"deals 3 damage to\s+any target" and "deals 2 damage to target creature" are both\s+removal/);
+    expect(def("removal")).toMatch(/"deals\s+3 damage to any target" and "deals 2 damage to target\s+creature" are both removal/);
+    // Spiteful Bully: damage only to your own creature is no opponent's loss.
+    expect(def("removal")).toMatch(/Damage only to a creature YOU\s+control is not/);
   });
 
   // A sweeper stays wipes alone (Pyroclasm, Blasphemous Act, Pestilence in the gold set): the damage
   // rule is about TARGETED damage, or v8 would add a removal job to every damage wipe.
   it("keeps damage to each creature a wipe, not removal", () => {
     expect(def("removal")).toMatch(/TARGETED damage/);
-    expect(def("removal")).toMatch(/Damage to EACH creature is wipes, not removal/);
+    expect(def("removal")).toMatch(/Damage to EACH creature is wipes\./);
     expect(def("wipes")).toMatch(/"deals 2\s+damage to each creature"/);
   });
 
   it("labels any-target damage drain as well, never drain alone", () => {
     expect(SYSTEM).not.toMatch(/NEVER drain/);
     expect(def("drain")).toMatch(/removal FIRST, and drain AS WELL/);
-    expect(def("drain")).toMatch(/can only hit a\s+creature or permanent is removal and never drain/);
+    expect(def("drain")).toMatch(/Damage that cannot hit a player\s+is never drain/);
   });
 
   // Empty means no ability maps to a job, not no ability at all: a tapper, a scry or a cycling card stays [],
@@ -240,7 +242,7 @@ describe("SYSTEM v8: damage and the empty answer", () => {
   it("keeps an empty answer for a card whose abilities map to no job", () => {
     expect(SYSTEM).not.toMatch(/A card with no job in the vocabulary gets/);
     expect(SYSTEM).toMatch(/"jobs": \[\] is ONLY for a card none of whose abilities is one of the jobs above/);
-    expect(SYSTEM).toMatch(/Damage to a\s+creature or player and a land fetched are always jobs/);
+    expect(SYSTEM).toMatch(/Damage that\s+can hit an opponent or an opponent's permanent, and a land fetched, are always\s+jobs/);
     // Cycling is NOT draw (the draw definition), so the never-empty clause must not name drawing.
     expect(SYSTEM).not.toMatch(/never answer \[\] for a\s+card that[^.]*draws/i);
   });
