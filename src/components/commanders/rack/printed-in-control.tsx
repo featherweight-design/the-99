@@ -33,7 +33,9 @@ const LIST_COPY: SetListSheetCopy = {
   optionAriaUnavailable: printedInPanelCopy.optionAriaUnavailable,
   announceMatches: printedInPanelCopy.announceMatches,
   announceResult: copy.listShown,
-  done: printedInPanelCopy.done,
+  // Overridden from the shared default: this sheet is always the second layer over the filter
+  // sheet, never standalone, so its own dismiss names what pressing it returns to.
+  done: "Back to filters",
 };
 
 function toggle(list: readonly string[], code: string): string[] {
