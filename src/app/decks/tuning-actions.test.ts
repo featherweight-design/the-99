@@ -13,6 +13,13 @@ const calls = vi.hoisted(() => ({ inputs: 0, started: 0, applied: 0, saved: 0, s
   // return — mocked here to echo its own `sized` argument back, since the real slicing happens
   // BEFORE that call.
   evidencePack: undefined as unknown, catalogRows: [] as unknown[], persisted: [] as unknown[][],
+  // Review round 4: configurable so a test can prove the mocked reads actually flow into the
+  // hard filters, not just that the validator's own unit tests apply them in isolation.
+  priceRows: new Map<string, number>(), ownedIds: new Set<string>(),
+  // The ONE source of truth for limits: `tuningInputs` hands it to `runTuning`, which passes the
+  // SAME value on to `buildEvidencePack` — so the mocked pack mirrors whatever was read in,
+  // rather than risking two configs that could silently disagree with production's own flow.
+  limits: { capCents: null as number | null, sets: [] as readonly string[], ownedOnly: false },
   // `saveDeckHeader`'s one query shape: `db.update(decks).set(values).where(cond).returning(shape)`.
   // `headerUpdateRows` is the row count the "owned deck" where-clause would have matched —
   // set to `[]` to simulate a deck that is not this user's (or does not exist).
@@ -44,13 +51,20 @@ vi.mock("../../db", () => ({
     select: () => ({ from: () => ({ where: async () => calls.catalogRows }) }),
   },
 }));
-vi.mock("../../lib/decks/price-query", () => ({ loadPrices: async () => ({ prices: new Map(), newestAsOf: null }) }));
+vi.mock("../../lib/decks/price-query", () => ({
+  loadPrices: async () => {
+    if (calls.priceRows.size === 0) return { prices: new Map(), newestAsOf: null };
+    const asOf = new Date(0);
+    const prices = new Map([...calls.priceRows].map(([id, cents]) => [id, { cents, foilCents: null, etchedCents: null, asOf }]));
+    return { prices, newestAsOf: asOf };
+  },
+}));
 vi.mock("../../lib/decks/tuning-read", () => ({
   tuningInputs: async () => {
     calls.inputs += 1;
     return {
       head: {}, games: [], intent: null, declared: null, fingerprint: "fp", locked: [], allLocked: calls.allLocked,
-      limits: { capCents: null, sets: [], ownedOnly: false },
+      limits: calls.limits,
     };
   },
   // A deck whose last run saw exactly this fingerprint: the gate reads `unchanged`.
@@ -59,7 +73,7 @@ vi.mock("../../lib/decks/tuning-read", () => ({
     stale: false, modelVersionMoved: false, retired: null, allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null }, gameCount: 0, newestPriceAsOf: null,
     allLocked: opts?.allLocked ?? null,
   }),
-  readOwnedOracleIds: async () => new Set(),
+  readOwnedOracleIds: async () => calls.ownedIds,
   readTuningContext: async () => { calls.contextRead += 1; return { overview: { strategy: ["Attack."], keyCards: ["Oxen"] }, universal: [{ oracleId: "ring", name: "Sol Ring" }] }; },
   profileOfHead: async () => {
     if (!calls.reachModel) throw new Error("stop after the gate");
@@ -83,7 +97,12 @@ vi.mock("../../lib/tuning/run-store", () => ({
 }));
 vi.mock("../../lib/profile/play", () => ({ buildPlayGroup: () => ({}) }));
 vi.mock("../../lib/tuning/evidence", () => ({
-  buildEvidencePack: (input: unknown) => { calls.packInput = input; return calls.evidencePack ?? { cards: [] }; },
+  buildEvidencePack: (input: { limits: unknown }) => {
+    calls.packInput = input;
+    // Mirrors the real flow: `runTuning` passes the SAME `limits` it read from `tuningInputs` on
+    // to `buildEvidencePack`, so the mocked pack never risks disagreeing with it.
+    return { ...(calls.evidencePack as object ?? { cards: [] }), limits: input.limits };
+  },
 }));
 vi.mock("../../lib/tuning/prompt", () => ({ buildPrompt: () => ({ system: "s", user: "u" }) }));
 // A reply that came back, billed, and names cards: the catalog read after it is what throws here,
@@ -130,6 +149,9 @@ beforeEach(() => {
   calls.evidencePack = undefined;
   calls.catalogRows = [];
   calls.persisted = [];
+  calls.priceRows = new Map();
+  calls.ownedIds = new Set();
+  calls.limits = { capCents: null, sets: [], ownedOnly: false };
 });
 
 describe("runTuning after the call returned", () => {
@@ -217,6 +239,31 @@ describe("runTuning's 8-asked/5-kept slice", () => {
     expect(flagged.map((f) => f.addOracleId)).toEqual(["add0", "add1", "add2", "add3", "add4"]);
     expect(droppedCount).toBe(0);
     expect(report).toEqual({ askedCount: 8, survivedCount: 8, keptCount: 5 });
+  });
+
+  // Review round 4: proves the mocked `loadPrices`/`readOwnedOracleIds` results actually reach
+  // the hard filters through the real wiring, not just that `validateSuggestions` applies them
+  // in its own isolated unit tests.
+  it("drops a candidate over an active price cap, from the price read's own result", async () => {
+    calls.limits = { capCents: 300, sets: [], ownedOnly: false };
+    calls.priceRows = new Map([["add0", 1000], ...Array.from({ length: 7 }, (_, i) => [`add${i + 1}`, 100] as const)]);
+    await runTuning(DECK, { anyway: true });
+    const [, flagged, droppedCount, , report] = calls.persisted[0] as [unknown, { addOracleId: string }[], number, unknown, { askedCount: number; survivedCount: number; keptCount: number }];
+    expect(flagged.map((f) => f.addOracleId)).not.toContain("add0");
+    expect(flagged).toHaveLength(5);
+    expect(droppedCount).toBe(1);
+    expect(report).toEqual({ askedCount: 8, survivedCount: 7, keptCount: 5 });
+  });
+
+  it("drops an unowned candidate when owned-only is active, from the ownership read's own result", async () => {
+    calls.limits = { capCents: null, sets: [], ownedOnly: true };
+    calls.ownedIds = new Set(Array.from({ length: 7 }, (_, i) => `add${i + 1}`));
+    await runTuning(DECK, { anyway: true });
+    const [, flagged, droppedCount, , report] = calls.persisted[0] as [unknown, { addOracleId: string }[], number, unknown, { askedCount: number; survivedCount: number; keptCount: number }];
+    expect(flagged.map((f) => f.addOracleId)).not.toContain("add0");
+    expect(flagged).toHaveLength(5);
+    expect(droppedCount).toBe(1);
+    expect(report).toEqual({ askedCount: 8, survivedCount: 7, keptCount: 5 });
   });
 });
 

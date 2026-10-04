@@ -1098,9 +1098,13 @@ function Lead({ children, desktopOnly = false, wide = false }: { children: React
 
 function ReadFrom({ state, facts }: { state: TuningState; facts: TuningFacts }) {
   // "your limits" (H35, PR 4a): only when a limit is actually set, since an unset limit reads
-  // nothing and filters nothing (`descriptionManifest.readLimits`, "Kept for this deck").
+  // nothing and filters nothing (`descriptionManifest.readLimits`, "Kept for this deck"). And
+  // only over a FRESH result (review round 4): `facts.limits` is the LIVE deck setting, and a
+  // stale result on screen was generated before the player's latest limits edit — the tuning
+  // fingerprint already includes limits (`src/lib/tuning/fingerprint.ts`), so `state.stale` is
+  // exactly the signal that the live setting still describes the shown run.
   const { capCents, sets, ownedOnly } = facts.limits;
-  const limitsRead = capCents !== null || sets.length > 0 || ownedOnly ? [descriptionManifest.readLimits] : [];
+  const limitsRead = !state.stale && (capCents !== null || sets.length > 0 || ownedOnly) ? [descriptionManifest.readLimits] : [];
   const parts =
     state.gameCount === 0
       ? [manifest.readCards(facts.cards), manifest.readMix, manifest.readCollection, ...limitsRead]

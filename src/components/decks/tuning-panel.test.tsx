@@ -441,6 +441,18 @@ describe("TuningPanel", () => {
     expect(banner.className).not.toMatch(/\bhidden\b/);
   });
 
+  // H35, PR 4a, review round 4: "your limits" is read off the LIVE deck setting (`facts.limits`),
+  // which only still describes the shown run while nothing has changed since it ran — exactly
+  // what `state.stale` already tracks, since the tuning fingerprint includes limits.
+  it("reads your limits only for a fresh result, never a stale one with the same live setting", async () => {
+    const withCap: TuningFacts = { ...facts, limits: { capCents: 500, sets: [], ownedOnly: false } };
+    await draw(deps([results]), withCap);
+    expect(screen.getByText((text) => text.includes(deckDescriptionCopy.manifest.readLimits))).toBeInTheDocument();
+    cleanup();
+    await draw(deps([{ ...results, stale: true }]), withCap);
+    expect(screen.queryByText((text) => text.includes(deckDescriptionCopy.manifest.readLimits))).toBeNull();
+  });
+
   it("disables the press when every credit is out even on an unchanged deck", async () => {
     const next = new Date("2026-09-24T14:20:00Z");
     const d = deps([{ ...results, allowance: { used: 5, limit: 5, reopensAt: next, nextAt: next } }]);
