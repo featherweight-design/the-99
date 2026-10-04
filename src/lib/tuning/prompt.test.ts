@@ -99,6 +99,44 @@ describe("buildPrompt", () => {
   });
 });
 
+// "Kept for this deck" (H35, PR 4a, review round 5): no existing fixture carries an active
+// limit, so `limitsRules` could be deleted entirely and this suite would stay green. Pins the
+// model-facing text itself, in BOTH messages, for a deck with every limit set and for one with
+// none.
+describe("limits in the prompt", () => {
+  // `limits.sets` arrives already normalized (`normalizeSetCodes`, saved by `saveDeckLimits`);
+  // `limitsRules` only upper-cases for display, in the given order.
+  const withLimits = { ...pack, limits: { capCents: 450, sets: ["lea", "cmm"], ownedOnly: true } };
+
+  it("tells the model every active limit, dollars formatted and set codes upper-cased, in the system message", () => {
+    const { system } = buildPrompt(withLimits);
+    expect(system).toContain("Every suggested add must cost $4.50 or less.\n"
+      + "Every suggested add must be printed in one of these sets: LEA, CMM.\n"
+      + "Every suggested add must be a card the player already owns.");
+  });
+
+  it("repeats the same limits section in the user message", () => {
+    const { user } = buildPrompt(withLimits);
+    expect(user).toContain("Limits set for this deck:\n- Every suggested add must cost $4.50 or less.");
+    expect(user).toContain("in one of these sets: LEA, CMM.");
+    expect(user).toContain("Every suggested add must be a card the player already owns.");
+  });
+
+  it("names only the limits actually set", () => {
+    const capOnly = { ...pack, limits: { capCents: 100, sets: [], ownedOnly: false } };
+    const { system } = buildPrompt(capOnly);
+    expect(system).toContain("Every suggested add must cost $1.00 or less.");
+    expect(system).not.toContain("printed in one of these sets");
+    expect(system).not.toContain("already owns");
+  });
+
+  it("sends no limits section at all for a deck with none set, byte for byte today's prompt", () => {
+    const { system, user } = buildPrompt(pack);
+    expect(system).not.toContain("Limits set for this deck");
+    expect(user).not.toContain("Limits set for this deck");
+  });
+});
+
 describe("v2's strategy and rationale rules", () => {
   const withV2: EvidencePack = {
     ...pack,

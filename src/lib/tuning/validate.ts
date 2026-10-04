@@ -34,8 +34,10 @@ export type ResolvedCard = {
   commanderLegal: boolean;
   /**
    * "Kept for this deck" (H35, PR 4a): the SAME figure the buy tag shows (`priceOf`/`priceState`
-   * over `loadPrices`), cents, cheapest live printing. Null with no usable price (sold out,
-   * never listed) — never dropped for a cap it cannot be checked against.
+   * over `loadPrices`), cents, the buy tag's PREFERRED live printing — never "cheapest": real
+   * non-foil stock outranks foil-only at any price (`price-query.ts`, "a $50 non-foil is never
+   * displaced by a $2.10 foil"). Null with no usable price (sold out, never listed) — never
+   * dropped for a cap it cannot be checked against.
    */
   priceCents: number | null;
   /** The same `printedIn` rule decision 9 gave the Set control — true for every card when no
