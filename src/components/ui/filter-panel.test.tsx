@@ -227,7 +227,7 @@ describe("FilterPanel", () => {
     // `detail: 1` is a real press. `fireEvent.click` defaults it to 0, which is what a
     // native button reports for Enter and Space — so the default is the KEYBOARD case, and
     // a test that omits it is testing the other branch.
-    fireEvent.click(screen.getByRole("button", { name: "Done" }), { detail: 1 });
+    fireEvent.click(screen.getByRole("button", { name: "Back to filters" }), { detail: 1 });
     expect(focus).toHaveBeenCalledWith({ preventScroll: true });
   });
 
@@ -240,7 +240,7 @@ describe("FilterPanel", () => {
     const trigger = screen.getByRole("button", { name: /Filter by set/ });
     const focus = vi.spyOn(trigger, "focus");
     fireEvent.click(trigger);
-    fireEvent.click(screen.getByRole("button", { name: "Done" }), { detail: 0 });
+    fireEvent.click(screen.getByRole("button", { name: "Back to filters" }), { detail: 0 });
     expect(focus).toHaveBeenCalledWith({ preventScroll: false });
   });
 
@@ -317,7 +317,7 @@ describe("FilterPanel", () => {
     expect(dialog).toHaveAttribute("aria-modal", "true");
     expect(screen.getAllByRole("dialog")).toHaveLength(1);
     expect(screen.getAllByRole("listbox")).toHaveLength(1);
-    expect(screen.getByRole("button", { name: "Done" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Back to filters" })).toBeTruthy();
   });
 
   it("filters the list as the search field is typed into", () => {
@@ -363,8 +363,8 @@ describe("FilterPanel", () => {
     openPanel();
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "zzzz" } });
     expect(screen.getByText(collectionFilterCopy.set.emptyTitle)).toBeTruthy();
-    // Desktop drops the footer here; the sheet cannot — Done is its way out.
-    expect(screen.getByRole("button", { name: "Done" })).toBeTruthy();
+    // Desktop drops the footer here; the sheet cannot — Back to filters is its way out.
+    expect(screen.getByRole("button", { name: "Back to filters" })).toBeTruthy();
   });
 
   it("closes the desktop popover when focus tabs out of it", () => {

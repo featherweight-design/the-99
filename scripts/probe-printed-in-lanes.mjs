@@ -140,11 +140,11 @@ async function pickSet(page, wide) {
   const best = await busiestOption(layer.getByRole("switch"));
   if (!best) return null;
   await best.option.click();
-  await layer.getByRole("button", { name: "Done" }).click();
+  await layer.getByRole("button", { name: "Back to filters" }).click();
   await layer.waitFor({ state: "detached", timeout: 5_000 });
-  // Done closes the set list alone; the sheet under it takes its focus back and stays.
+  // "Back to filters" closes the set list alone; the sheet under it takes its focus back and stays.
   const stillOpen = await sheet.isVisible();
-  check("Done closes the set list and leaves the sheet up", stillOpen, `sheet visible=${stillOpen}`);
+  check("Back to filters closes the set list and leaves the sheet up", stillOpen, `sheet visible=${stillOpen}`);
   await sheet.getByRole("button", { name: /^Show / }).click();
   return { count: best.count };
 }

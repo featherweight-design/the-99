@@ -99,6 +99,10 @@ export const printedInPanelCopy: FilterPanelCopy = {
   footerTotal: (total: number) => `${n(total)} ${total === 1 ? "set" : "sets"}`,
   footerSelected: (count: number, total: number) => `${n(count)} of ${n(total)} selected`,
   clear: "Clear",
+  // The nested form (PrintedInControl's SetListSheet, a layer over the filter sheet) overrides
+  // this to "Back to filters" at its own call site. This object also backs SetsField's
+  // standalone phone sheet (intake, deck tuning) with no filter sheet to return to, so the
+  // shared default stays "Done".
   done: "Done",
   closeLabel: "Close",
   emptyTitle: "No set by that name",
