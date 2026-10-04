@@ -2,6 +2,9 @@
 // place on /collection that names the deck holding a card, so the count-only
 // rule that governs rows and tiles stops here — and the claiming deck's status
 // pill is deliberately absent rather than guessed.
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import type { Availability, DeckClaim } from "../../lib/decks/availability";
@@ -1440,5 +1443,19 @@ describe("CardModal desktop art column reserves the door's room (pre-open review
 
     const withDoor = underCardHeight + 59; // DOOR_HEIGHT
     expect(artWidthReservePx(withDoor)).toBe(2 * withDoor + 56);
+  });
+
+  it("wires the width calc through artWidthReservePx, not an inline duplicate of its formula", () => {
+    // A source-level check, not a DOM one: Copilot's finding was that reverting the call site
+    // to the old inline `2 * underCardHeight` expression left the arithmetic test above green,
+    // since that test only exercises the helper, never the component. jsdom cannot render the
+    // real assertion (it drops `width` from the style attribute for this calc() entirely), so
+    // this reads the source directly, the same pattern status-style.test.ts and limits.test.ts
+    // use for a property only a real stylesheet or page module can show.
+    const source = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "card-modal.tsx"),
+      "utf8",
+    );
+    expect(source).toMatch(/artWidthReservePx\(underCardHeight\)/);
   });
 });

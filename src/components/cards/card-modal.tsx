@@ -1787,27 +1787,29 @@ export function CardModal({
               // hanging off a fixed-size box and being clipped by the dialog's
               // `overflow-hidden`.
               //
-              // The column's `items-center` centres the ART'S OWN BOX ONLY — the
-              // stack hangs off it via `position: absolute`, deliberately outside
-              // normal flow (so the art never moves when a door appears or a pick
-              // changes the caption), which means flex centring never sees it. Both
-              // halves of the column's slack come out equal, (H - artH) / 2 each,
-              // and the bottom half has to hold the stack AND still leave the
-              // column's own 28px of padding showing beneath it, exactly as every
-              // other edge of the column does — found by a Hugh walk, reproduced by
-              // measuring the real DOM: the stack ate into that padding instead of
-              // sitting inside slack reserved for it, down to an 11px gap where the
-              // other three edges show 28.
+              // The column's `items-center` centres the ART'S OWN BOX within the
+              // column's CONTENT box — the box left after its own 28px padding
+              // (top and bottom, 56 total) is already subtracted. The stack hangs
+              // off the art via `position: absolute`, deliberately outside normal
+              // flow (so the art never moves when a door appears or a pick changes
+              // the caption), which means flex centring never sees it, and it sits
+              // in the BOTTOM half of that content box's slack. Found by a Hugh
+              // walk, reproduced by measuring the real DOM: the stack ate into the
+              // column's own 28px padding instead of fitting inside the content
+              // box ahead of it, down to an 11px gap where the other three edges
+              // show 28.
               //
-              //   (H - artH) / 2 >= stack + 28,  H = min(620px, 85vh) - 56px
+              //   innerH = min(620px, 85vh) - 2px - 56px   (content box height)
+              //   (innerH - artH) / 2 >= stack             (bottom slack holds it)
               //
-              // Solving for the height gives `artH <= min(620px, 85vh) - 2 * stack
-              // - 56`, the two 28s doubled out from both sides of the inequality —
-              // one for the padding the bottom half must still show, one because
-              // shrinking the art by any amount only buys back HALF of it on each
-              // side. A derivation that stopped at `room >= stack` (no `+ 28` on
-              // the right) is satisfied by the stack alone finishing exactly on the
-              // column's inner edge, which is the defect this replaces.
+              // Solving for the height gives `artH <= innerH - 2 * stack`, i.e.
+              // `min(620px, 85vh) - 2px - 56px - 2 * stack` — the column's own
+              // padding (56, once) already removed from `innerH`, plus the stack
+              // doubled because shrinking the art by any amount only buys back
+              // HALF of it on each side. The defect this replaces used the full
+              // `min(620px, 85vh) - 2px` as if it were the content box, so the
+              // column's own padding was never subtracted and the stack could
+              // finish exactly on the column's outer edge.
               //
               // ONE dimension is set and the ratio derives the other, the zoom's
               // own rule: a definite width AND a height cap is how an
