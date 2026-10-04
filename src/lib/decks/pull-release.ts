@@ -70,29 +70,52 @@ export async function releaseAskers(
   return rows.map((r) => r.askingDeckId);
 }
 
+export type ReleaseSource = { sourceDeckId: string; sourceDeckName: string };
+type ReleaseRow = ReleaseSource & { oracleId: string };
+
+/**
+ * The first (newest, by the caller's own ordering) row seen per card, pure so it can be unit
+ * tested without a database — see `pull-release.test.ts`. The handoff names "the" release row
+ * for a card, but the primary key is `(sourceDeckId, oracleId, askingDeckId)`, ONE ROW PER
+ * SOURCE, so a deck asking for two or more copies of a card can hold two release rows for it
+ * if the copies came from different decks over time; this picks the newest, since the label is
+ * about the most recent action and no frame covers naming several.
+ */
+export function newestPerCard(rowsNewestFirst: ReleaseRow[]): Map<string, ReleaseSource> {
+  const byCard = new Map<string, ReleaseSource>();
+  for (const row of rowsNewestFirst) {
+    if (!byCard.has(row.oracleId)) {
+      byCard.set(row.oracleId, { sourceDeckId: row.sourceDeckId, sourceDeckName: row.sourceDeckName });
+    }
+  }
+  return byCard;
+}
+
 /**
  * The deck a reader's most recent pull, for this asking deck and this card, took the copy
  * out of — for the review row's post-pull label (addendum R1, "pulled from {deck}").
  *
- * The primary key is `(sourceDeckId, oracleId, askingDeckId)`, ONE ROW PER SOURCE — so a deck
- * asking for two or more copies of a card can hold two release rows for the same card if the
- * copies came from different decks over time. The handoff names "the" release row; this reads
- * the newest one (`created_at desc`) when there is more than one, since the label is about the
- * most recent action, and no frame covers naming several. `created_at` means last TOUCHED, not
- * first created — `writePullRelease` bumps it on every pull, including a re-pull from a source
- * whose row already existed — which is load-bearing here: without that bump, a second pull from
- * an OLD source would keep that row's original, now-stale timestamp, and a pull from a different
- * source made in between would read as newer even though it happened first.
+ * `created_at` means last TOUCHED, not first created — `writePullRelease` bumps it on every
+ * pull, including a re-pull from a source whose row already existed — which is load-bearing
+ * for `newestPerCard`'s ordering: without that bump, a second pull from an OLD source would
+ * keep that row's original, now-stale timestamp, and a pull from a different source made in
+ * between would read as newer even though it happened first.
+ *
+ * Filtered on `userId` as well as `askingDeckId`/`oracleId`, found by Copilot's round-1
+ * review: the table's only secondary index is `pull_releases_user_idx`, and the primary key
+ * starts with `sourceDeckId` — neither covers a query on `(askingDeckId, oracleId)` alone,
+ * which would scan every release row in the table as they accumulate across every player.
+ * `userId` is already in hand (the page's own reader) and narrows the scan to the index.
  *
  * Batched over every oracle id the page's rows carry, not called per row: the asking deck is
  * one page's worth of cards, and this is read on every render.
  */
 export async function latestReleaseSources(
+  userId: string,
   askingDeckId: string,
   oracleIds: string[],
-): Promise<Map<string, { sourceDeckId: string; sourceDeckName: string }>> {
-  const byCard = new Map<string, { sourceDeckId: string; sourceDeckName: string }>();
-  if (oracleIds.length === 0) return byCard;
+): Promise<Map<string, ReleaseSource>> {
+  if (oracleIds.length === 0) return new Map();
   const rows = await db
     .select({
       oracleId: pullReleases.oracleId,
@@ -101,14 +124,11 @@ export async function latestReleaseSources(
     })
     .from(pullReleases)
     .innerJoin(decks, eq(decks.id, pullReleases.sourceDeckId))
-    .where(and(eq(pullReleases.askingDeckId, askingDeckId), inArray(pullReleases.oracleId, oracleIds)))
+    .where(and(
+      eq(pullReleases.userId, userId),
+      eq(pullReleases.askingDeckId, askingDeckId),
+      inArray(pullReleases.oracleId, oracleIds),
+    ))
     .orderBy(desc(pullReleases.createdAt));
-  // Rows arrive newest first; the first one seen per card is kept and every later (older) one
-  // for the same card is dropped.
-  for (const row of rows) {
-    if (!byCard.has(row.oracleId)) {
-      byCard.set(row.oracleId, { sourceDeckId: row.sourceDeckId, sourceDeckName: row.sourceDeckName });
-    }
-  }
-  return byCard;
+  return newestPerCard(rows);
 }

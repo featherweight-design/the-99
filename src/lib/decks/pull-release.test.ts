@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { db } from "../../db";
 import { pullReleases } from "../../db/schema";
-import { PULL_RELEASE_UPSERT_SET } from "./pull-release";
+import { newestPerCard, PULL_RELEASE_UPSERT_SET } from "./pull-release";
 
 // `.toSQL()` only — never executed. See the correlated-subquery section of AGENTS.md for why
 // this file exists: a query built correctly in TypeScript can still render SQL nobody checked.
@@ -26,5 +26,32 @@ describe("the pull_releases upsert's SET clause", () => {
     const { sql: text } = emitted();
     expect(text).toMatch(/"created_at"\s*=\s*now\(\)/i);
     expect(text).toMatch(/"copies"\s*=\s*"pull_releases"\."copies"\s*\+\s*1/i);
+  });
+});
+
+// Found by Copilot's round-1 review: the newest-wins reduction itself (`newestPerCard`,
+// extracted so it can be tested without a database) had no test — only the upsert's SET
+// clause did, so changing the reduction could regress silently.
+describe("newestPerCard", () => {
+  it("picks the newer of two sources for the same card, when given newest first", () => {
+    const result = newestPerCard([
+      { oracleId: "o1", sourceDeckId: "d-newer", sourceDeckName: "Newer Deck" },
+      { oracleId: "o1", sourceDeckId: "d-older", sourceDeckName: "Older Deck" },
+    ]);
+    expect(result.get("o1")).toEqual({ sourceDeckId: "d-newer", sourceDeckName: "Newer Deck" });
+  });
+
+  it("selects independently per card in a batch", () => {
+    const result = newestPerCard([
+      { oracleId: "o1", sourceDeckId: "d-a", sourceDeckName: "Deck A" },
+      { oracleId: "o2", sourceDeckId: "d-b", sourceDeckName: "Deck B" },
+      { oracleId: "o1", sourceDeckId: "d-c", sourceDeckName: "Deck C" },
+    ]);
+    expect(result.get("o1")).toEqual({ sourceDeckId: "d-a", sourceDeckName: "Deck A" });
+    expect(result.get("o2")).toEqual({ sourceDeckId: "d-b", sourceDeckName: "Deck B" });
+  });
+
+  it("is empty for no rows", () => {
+    expect(newestPerCard([])).toEqual(new Map());
   });
 });

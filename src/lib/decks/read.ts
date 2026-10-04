@@ -673,10 +673,23 @@ export async function getDeckReviewHeader(
   };
 }
 
+/** A source deck's current size, and whether the ONE card a reader might pull from it is still
+ *  in that deck's draft. See `loadSourceDeckFigures`. */
+export type SourceDeckFigure = { built: number; inDraft: boolean };
+
 /**
- * The CURRENT draft size of a small set of other decks — "→ {n} cards" on the Pull it source
- * list (addendum R1), batched because the list shows every candidate source on a page that
- * renders several contested rows, never one deck at a time.
+ * The CURRENT draft size of a small set of other decks, and whether each one still HOLDS the
+ * specific card a reader might pull from it — "→ {n} cards" on the Pull it source list
+ * (addendum R1), batched because the list shows every candidate source on a page that renders
+ * several contested rows, never one deck at a time.
+ *
+ * Found by Copilot's round-1 review: `pullCardFromDeck` (`actions.ts`) only touches
+ * `deck_cards` when the card is still `inDraft` there — a claim can outlive the draft row it
+ * came from (the player cut the card themselves; the claim still stands against the deck's
+ * committed version until the draft is re-committed or discarded), and a pull against THAT
+ * claim writes only the release, leaving the source's size unchanged. "current size minus
+ * one" is wrong for that case; "current size" is wrong for the ordinary one. Returning both
+ * halves lets the caller pick, per card, the same way the action does.
  *
  * `built` matches `getDeckReviewHeader`'s own definition exactly — `sum(deck_cards.quantity)`,
  * commander not counted — so a source's size reads in the one vocabulary this route already
@@ -685,13 +698,15 @@ export async function getDeckReviewHeader(
  * reader's OWN decks hold, but the scope costs nothing to state and a deck id that is not this
  * reader's returns no row rather than another player's count.
  */
-export async function loadSourceDeckSizes(
-  deckIds: string[],
+export async function loadSourceDeckFigures(
+  pairs: { deckId: string; oracleId: string }[],
   userId: string,
-): Promise<Map<string, number>> {
-  const sizes = new Map<string, number>();
-  if (deckIds.length === 0) return sizes;
-  const rows = await db
+): Promise<Map<string, SourceDeckFigure>> {
+  const figures = new Map<string, SourceDeckFigure>();
+  if (pairs.length === 0) return figures;
+  const deckIds = [...new Set(pairs.map((p) => p.deckId))];
+  const oracleIds = [...new Set(pairs.map((p) => p.oracleId))];
+  const sizeRows = await db
     .select({
       id: decks.id,
       built: sql<number>`coalesce((
@@ -701,8 +716,23 @@ export async function loadSourceDeckSizes(
     })
     .from(decks)
     .where(and(inArray(decks.id, deckIds), eq(decks.userId, userId)));
-  for (const row of rows) sizes.set(row.id, row.built);
-  return sizes;
+  const built = new Map(sizeRows.map((r) => [r.id, r.built]));
+  // Every (deckId, oracleId) actually present in `deck_cards` among the asked-for decks and
+  // cards — both dimensions filtered, so a returned row IS a real membership for that exact
+  // pair; there is no cross-contamination to guard against.
+  const presentRows = deckIds.length && oracleIds.length
+    ? await db
+        .select({ deckId: deckCards.deckId, oracleId: deckCards.oracleId })
+        .from(deckCards)
+        .where(and(inArray(deckCards.deckId, deckIds), inArray(deckCards.oracleId, oracleIds)))
+    : [];
+  const present = new Set(presentRows.map((r) => `${r.deckId}:${r.oracleId}`));
+  for (const { deckId, oracleId } of pairs) {
+    const size = built.get(deckId);
+    if (size === undefined) continue;
+    figures.set(`${deckId}:${oracleId}`, { built: size, inDraft: present.has(`${deckId}:${oracleId}`) });
+  }
+  return figures;
 }
 
 export type DeckListItem = {

@@ -20,10 +20,17 @@ overlap — see READINESS §header. This build starts from `#1244`'s branch tip 
   cd.deck_id)` — alphabetical by deck name. The new list function sorts by `since` itself
   (READINESS §2.1); the query is **untouched**.
 - `PullControl` (`pull-control.tsx`, 189 lines) — takes one `claim: DeckClaim`. Becomes
-  `claims: DeckClaim[]` + `defaultId: string | null`. The three existing render arms (commander
-  guard, locked guard, single-pull button) stay exactly as they are for `claims.length <= 1`
-  (the `n === 1` case renders whichever of the three arms that one claim is, unchanged); a new
-  arm renders the popover/sheet trigger for `claims.length > 1`.
+  `claims: DeckClaim[]` + `defaultId: string | null`. **The arm is chosen by the count of
+  RELEASABLE claims (`releasableClaims(a).length`), never `claims.length`** — found by
+  Copilot's round-1 review of this plan: `pullSourceChoices` is a superset that also includes
+  locked/commander rows for display, so "one free source plus one locked" is
+  `pullSourceChoices.length === 2` but `releasableClaims.length === 1`, and design call 5 is
+  explicit that this stays ONE-TAP ("only sources that can be chosen count"). The three
+  existing render arms (commander guard, locked guard, single-pull button) stay exactly as
+  they are whenever `releasableClaims(a).length <= 1` — unchanged in every case that reaches
+  them today, guard-only included; a new arm renders the popover/sheet trigger only when
+  `releasableClaims(a).length > 1`, using the full `pullSourceChoices` list to draw every row
+  (the releasable ones selectable, the rest disabled with their reason).
 - `review-changes.tsx:255` — `pullClaim = pullCandidate(row.availability)`. Becomes two reads:
   `pullCandidate` for `defaultId` (unchanged call) and a new `pullSourceChoices(row.availability)` for
   the full list, both pure and both already have the `Availability` in scope. Named
@@ -40,15 +47,14 @@ overlap — see READINESS §header. This build starts from `#1244`'s branch tip 
   meaning — a row either HOLDS (pre-pull) or WAS PULLED FROM (post-pull), never both, so two
   props with one drawn at a time is clearer than one prop whose meaning depends on a flag beside
   it.
-- `page.tsx:115` (`Promise.all` block) — gains one more member: the batched source-deck-size read
-  (READINESS §2.2), degrading to `null` per-deck on failure like `loadContestedCards` does for
-  the whole list. `loadContestedCards` itself is deleted by #1244 — this build does not touch
-  that removal, only adds its own new batched read beside wherever #1244 leaves the block.
-- `pull-release.ts` — gains one read function, `latestReleaseSource(tx, askingDeckId, oracleId)`
-  (or a batched equivalent read outside a transaction for the page's render path — see PR 1),
-  ordered by `created_at desc limit 1`, beside the existing `writePullRelease` / `clearPullReleases`
-  / `releaseAskers`. No schema change — the primary key already allows the multiple rows this
-  reads around.
+- `page.tsx:115` (`Promise.all` block) — gains one more member: the batched source-deck-figures
+  read (`loadSourceDeckFigures`, READINESS §2.2), degrading to an empty map on failure like
+  `loadContestedCards` does for the whole list. `loadContestedCards` itself is deleted by
+  #1244 — this build does not touch that removal, only adds its own new batched read beside
+  wherever #1244 leaves the block.
+- `pull-release.ts` — gains `latestReleaseSources(userId, askingDeckId, oracleIds)` (built in
+  PR 1), beside the existing `writePullRelease` / `clearPullReleases` / `releaseAskers`. No
+  schema change — the primary key already allows the multiple rows this reads around.
 - `pullCardFromDeck(sourceDeckId, oracleId, askingDeckId)` (`actions.ts:1968`) — **untouched**.
   Already takes the chosen source id as a parameter; every guard inside it (ownership, commander,
   locked, claim-based authorization) is already general over any candidate the UI might send,
@@ -70,14 +76,19 @@ Pure functions and loaders, each independently unit-testable, no UI change.
   ascending (nulls last, though none are expected in this filtered set — `mature` implies a
   version, which always carries `since`). Unit test: fixture with claims in deliberately
   non-alphabetical, non-chronological insertion order; assert the sort, not just the filter.
-- `pull-release.ts`: `latestReleaseSource` (or equivalent), ordered by `created_at desc`. Unit
-  test: two release rows for one `(oracleId, askingDeckId)` from different sources at different
-  times; assert the newer one wins.
-- A new loader (name TBD at implementation — `loadSourceDeckSizes` or folded into the page
-  directly) batching `cardCount` for a set of deck ids, mirroring `loadVersionShape`'s per-deck
-  query shape (`versions.ts`) but batched across several ids in one round trip. Unit test against
-  a fixture with 2–3 decks of known sizes.
-- Wire the new loader into `page.tsx`'s existing `Promise.all`, degrading to an empty map on
+- `pull-release.ts`: `latestReleaseSources(userId, askingDeckId, oracleIds)`, filtered on
+  `userId` so the read uses `pull_releases_user_idx` rather than scanning every release row in
+  the table (round-1 finding) — neither the primary key nor the index covers
+  `(askingDeckId, oracleId)` alone. The newest-wins reduction is pulled into its own pure
+  `newestPerCard`, unit tested directly (round-1 finding: the DB-backed function had no test
+  covering the reduction itself, only the upsert's SET clause).
+- `read.ts`: `loadSourceDeckFigures(pairs, userId)`, batching BOTH each candidate deck's
+  current size and whether the specific (deck, card) pair is still present in `deck_cards` —
+  round-1 finding: `pullCardFromDeck` only decrements a source when the card is `inDraft`
+  there, so "size minus one" is wrong whenever a claim has outlived its draft row. Mirrors
+  `loadVersionShape`'s per-deck query shape (`versions.ts`) but batched across several decks
+  and cards in two round trips.
+- Wire both into `page.tsx`'s existing `Promise.all`, degrading to an empty map on
   failure (never failing the route).
 
 **PR 2 — UI: the popover/sheet, the row wiring, the post-pull label.**

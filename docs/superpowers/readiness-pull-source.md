@@ -68,12 +68,21 @@ CARD's ask on that deck, not the deck's total. `pullCandidate`'s single-pick pat
 site in `versions.ts` and `draft-state.ts`: each is per-card or per-this-deck, never a batched read
 of several OTHER decks' totals.
 
-**Resolution:** add one batched loader, in the same shape as `loadContestedCards` (`page.tsx:115`,
-also batched and swallowed-on-failure): given the distinct set of candidate source deck ids across
-every contested row on the page (at most a handful), one query returns each one's current card
-count. Threaded down beside `contested` was removed by #1244, but the PATTERN — one extra
-`Promise.all` member, read after admission, degrading to an empty/absent figure on failure rather
-than failing the route — is the one to copy. A failed read of this figure omits the `→ N cards`
+**Resolution (revised during PR 1, by a second round-1 finding):** "current size minus one" is
+itself only sometimes right. `pullCardFromDeck` (`actions.ts`) touches `deck_cards` only when
+the card is still `inDraft` there — a claim can outlive the draft row it came from (the player
+cut the card themselves; the claim stands until the draft is re-committed or discarded), and a
+pull against that claim writes only the release, leaving the source's size unchanged. The
+loader returns BOTH figures per (deck, card) pair — `built` and `inDraft` — so the caller
+applies the same branch the action does: `built − 1` when `inDraft`, `built` otherwise.
+
+Shape: one batched loader, in the spirit of `loadContestedCards` (`page.tsx:115`, also batched
+and swallowed-on-failure): given the distinct (deck id, oracle id) pairs across every contested
+row on the page (at most a handful), two queries — one for each candidate deck's current size,
+one for which of the asked-for (deck, card) pairs are actually present in `deck_cards`. Threaded
+down beside `contested` was removed by #1244, but the PATTERN — one extra `Promise.all` member,
+read after admission, degrading to an empty/absent figure on failure rather than failing the
+route — is the one to copy. A failed read of this figure omits the `→ N cards`
 clause rather than drawing a wrong one or erroring the panel.
 
 ### 2.3 `pull_releases` allows more than one row per (card, asker) — the "pulled from" label needs a tie-break
