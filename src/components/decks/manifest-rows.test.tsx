@@ -114,10 +114,15 @@ describe("ManifestRows: the writing row (H35, PR 3)", () => {
     expect(screen.getByText("Taking longer than usual.")).toBeInTheDocument();
   });
 
-  it("offers the description row's own link only when the row is absent and the caller wants it", () => {
-    const row: ManifestRow = { kind: "read", key: "description", label: "Your description", count: "none yet", done: false, describeLink: true };
+  it("draws the absent description row dashed, like the empty-games row, with its own link", () => {
+    const row: ManifestRow = { kind: "absent", key: "description", label: "Your description", caption: "none yet", actionLabel: "Describe your deck →" };
     const onDescribe = vi.fn();
     const { rerender } = render(<ManifestRows rows={[row]} />);
+    const [withoutLink] = screen.getAllByTestId("manifest-row");
+    expect(withoutLink.dataset.kind).toBe("absent");
+    expect(withoutLink.style.border).toBe("1px dashed var(--border-dashed)");
+    expect(withoutLink.querySelector('[data-mark="none"]')?.textContent).toBe("–");
+    expect(screen.getByText("none yet")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Describe your deck →" })).toBeNull();
     rerender(<ManifestRows rows={[row]} onDescribe={onDescribe} />);
     const button = screen.getByRole("button", { name: "Describe your deck →" });

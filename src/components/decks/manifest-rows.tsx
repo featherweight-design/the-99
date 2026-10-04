@@ -1,4 +1,3 @@
-import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 
 /**
@@ -21,12 +20,18 @@ import { deckTuningCopy } from "../../lib/copy/deck-tuning";
  * The one row that is shown without being read is the empty games row, drawn dashed with a way
  * to log a game: nothing is what the model is handed there, and the row says it.
  *
+ * `absent` is the same dashed, pre-read treatment as `noGames`, generalised (H35, PR 3 review
+ * fix): the description row, shown this way only in the never-run preview when there is no
+ * description yet, with its own `Describe your deck →`. Unlike `noGames` it carries no caption
+ * of its own — "none yet" lives in its `label`, matching how a filled description row reads.
+ *
  * `writing` is the final row (H35, PR 3): pending until every read row above it has ticked, then
  * active (an accent pulse) until the model call settles. It carries no `key` of its own — there
  * is only ever one.
  */
 export type ManifestRow =
-  | { kind: "read"; key: string; label: string; count: string | null; done: boolean; describeLink?: boolean }
+  | { kind: "read"; key: string; label: string; count: string | null; done: boolean }
+  | { kind: "absent"; key: string; label: string; caption: string; actionLabel: string }
   | { kind: "writing"; label: string; active: boolean }
   | { kind: "noGames"; key: "games" };
 
@@ -47,6 +52,7 @@ export function ManifestRows({
 }) {
   // `manifestRows` always puts the empty-games row first, so it is drawn above the ruled list.
   const noGames = rows.find((r) => r.kind === "noGames");
+  const absent = rows.filter((r): r is Extract<ManifestRow, { kind: "absent" }> => r.kind === "absent");
   const reads = rows.filter(
     (r): r is Extract<ManifestRow, { kind: "read" } | { kind: "writing" }> => r.kind === "read" || r.kind === "writing",
   );
@@ -79,6 +85,34 @@ export function ManifestRows({
           ) : null}
         </div>
       ) : null}
+      {absent.map((row) => (
+        <div
+          key={row.key}
+          data-testid="manifest-row"
+          data-kind="absent"
+          className={`flex min-h-[46px] items-center gap-[10px] rounded-[8px] pl-[12px] md:min-h-[40px] ${onDescribe ? "pr-0" : "pr-[12px]"}`}
+          style={{ border: "1px dashed var(--border-dashed)" }}
+        >
+          <Mark kind="none" />
+          <span className="flex min-w-0 flex-1 flex-col gap-[1px] md:flex-row md:items-center md:gap-[10px]">
+            <span className="text-[12.5px] md:flex-1 md:text-[13px]" style={{ color: "var(--fg-faint)" }}>
+              {row.label}
+            </span>
+            <span className="font-mono text-[10px] md:text-[11px]" style={{ color: "var(--fg-faint)" }}>
+              {row.caption}
+            </span>
+          </span>
+          {onDescribe ? (
+            <button
+              type="button"
+              onClick={onDescribe}
+              className="flex h-[44px] flex-none items-center rounded-[6px] px-[12px] text-[12.5px] font-semibold text-[color:var(--accent)] outline-none hover:underline focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] md:h-[38px]"
+            >
+              {row.actionLabel}
+            </button>
+          ) : null}
+        </div>
+      ))}
       {reads.length > 0 ? (
         <ul className="flex flex-col" style={{ borderTop: "1px solid var(--border)" }}>
           {reads.map((row) =>
@@ -120,15 +154,6 @@ export function ManifestRows({
                   <span className="flex-none font-mono text-[10px] md:text-[11px]" style={{ color: "var(--fg-faint)" }}>
                     {row.count}
                   </span>
-                ) : null}
-                {row.describeLink && onDescribe ? (
-                  <button
-                    type="button"
-                    onClick={onDescribe}
-                    className="flex-none text-[11px] font-semibold text-[color:var(--accent)] outline-none hover:underline focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] md:text-[12px]"
-                  >
-                    {deckDescriptionCopy.description.rowOpen}
-                  </button>
                 ) : null}
               </li>
             ),

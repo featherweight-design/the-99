@@ -16,7 +16,7 @@ import {
 import { creditsCopy } from "../../lib/copy/credits";
 import { numberWord } from "../../lib/copy/deck-analysis";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
-import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { axisCopy } from "../../lib/copy/game-log";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import type { Bracket } from "../../lib/profile/types";
@@ -106,6 +106,7 @@ export function TuningPanel({
   deps = SERVER,
   deeperLooks = false,
   onSettled,
+  onSaveDescription,
 }: {
   deckId: string;
   permits: readonly Bracket[];
@@ -121,6 +122,11 @@ export function TuningPanel({
   /** The first read has answered or failed: the tab's opening holds its loader until it has, so
    *  Suggested changes and its credit line never arrive after the rest of the tab. */
   onSettled?: () => void;
+  /** The absent description row's own "Describing in place" editor (STATES §3 state 2, H35
+   *  PR 3 review fix): `AnalysisEmpty`'s empty-state field cannot be reached from here — the two
+   *  are mutually exclusive mounts (this panel only exists once a reading has happened). The
+   *  same save `builder-shell.tsx` already wires to `AnalysisPanel`'s empty-state field. */
+  onSaveDescription?: (value: string) => Promise<DeckMutationResult>;
 }) {
   const [state, setState] = useState<TuningState | null>(null);
   // Mirrors `state`, written SYNCHRONOUSLY alongside every `setState` below, for code that must
@@ -145,6 +151,11 @@ export function TuningPanel({
   const longWaitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // "Additional notes" (H35, PR 3): one note per press, never saved — held here and nowhere else.
   const [notes, setNotes] = useState("");
+  // The absent description row's own "Describing in place" editor (STATES §3 state 2).
+  const [describing, setDescribing] = useState(false);
+  const [descDraft, setDescDraft] = useState("");
+  const [descSaving, setDescSaving] = useState(false);
+  const [descRefused, setDescRefused] = useState<string | null>(null);
   const [unchangedShown, setUnchangedShown] = useState(false);
   const [refused, setRefused] = useState<string | null>(null);
   const [announced, setAnnounced] = useState("");
@@ -152,7 +163,14 @@ export function TuningPanel({
   // The header's `edit` is the line's other door, and its save revalidates the page: a new line
   // from the page replaces the one held here, adjusted during render so the old one never paints.
   const [seenIntent, setSeenIntent] = useState(facts.intent);
-  if (seenIntent !== facts.intent) {
+  // "Describing in place"'s own save sets `intent` optimistically, ahead of the revalidated
+  // `facts.intent` prop this panel does not control the timing of. Held here so the sync below
+  // does not immediately revert that optimistic value back to the stale prop on the very next
+  // render (review fix's own corollary) — cleared once the prop actually catches up, which
+  // re-arms the sync for a LATER external change (the header pencil, say).
+  const [savedIntent, setSavedIntent] = useState<string | null>(null);
+  if (savedIntent !== null && facts.intent === savedIntent) setSavedIntent(null);
+  if (savedIntent === null && seenIntent !== facts.intent) {
     setSeenIntent(facts.intent);
     setIntent(facts.intent);
   }
@@ -520,6 +538,12 @@ export function TuningPanel({
       if (token.current === mine) setLongWait(true);
     }, LONG_WAIT_MS);
     const result = await running;
+    // Checked BEFORE touching the timer refs, not after (review fix): `staggerTimer`/
+    // `longWaitTimer` are this component's shared refs, and `stop()` lets a new press start
+    // while this press's own `deps.run` is still unresolved (pre-open review round 4, PR 2). If
+    // that superseded run's promise settles late, it must not reach in and clear a NEWER press's
+    // own live timers out from under it.
+    if (token.current !== mine) return;
     if (staggerTimer.current !== null) {
       clearInterval(staggerTimer.current);
       staggerTimer.current = null;
@@ -528,7 +552,6 @@ export function TuningPanel({
       clearTimeout(longWaitTimer.current);
       longWaitTimer.current = null;
     }
-    if (token.current !== mine) return;
     // The result landed — tick every row at once, covering both the common case (the stagger
     // already finished) and an early result that beat it (STATES §3: "ticks the rest at once").
     setTicked(new Set(runStepsList));
@@ -544,13 +567,16 @@ export function TuningPanel({
     }
     setTicked(null);
     setLongWait(false);
-    if (result.ok) setNotes("");
     if (!result.ok) {
       setRefused(result.message);
       setAnnounced(result.message);
       return;
     }
     const failure = next?.run?.status === "failed" ? failureCopy(next.run.errorClass) : null;
+    // `result.ok` alone does not mean a set of suggestions landed — `runTuning` answers ok after
+    // persisting a run that itself failed (e.g. `upstream_busy`, `locked_only`, `ungrounded`),
+    // review fix. The note is kept over exactly those, same as a kept-but-failed run's set.
+    if (!failure) setNotes("");
     setAnnounced(failure ? failure.heading : deckTuningCopy.announce.ready(next?.items.length ?? 0));
     headingRef.current?.focus();
   }
@@ -604,11 +630,35 @@ export function TuningPanel({
     await reread();
   }
 
-  // The absent description row's own link (H35, PR 3): the empty-state field sits in this same
-  // tab, just above this panel, so a focus is all this needs — no new prop to thread down from
-  // the page.
+  // The absent description row's own "Describing in place" editor (STATES §3 state 2, review
+  // fix): `AnalysisEmpty`'s empty-state field is a different, mutually exclusive mount — this
+  // panel only exists once a reading has happened — so the row opens its own small editor
+  // instead of trying to reach that field.
   function describeDeck() {
-    document.getElementById("deck-description-field")?.focus();
+    setDescDraft(intent ?? "");
+    setDescRefused(null);
+    setDescribing(true);
+  }
+  function cancelDescribing() {
+    setDescribing(false);
+    setDescRefused(null);
+  }
+  async function saveDescribing() {
+    if (!onSaveDescription) return;
+    setDescSaving(true);
+    try {
+      const result = await onSaveDescription(descDraft);
+      if (!result.ok) {
+        setDescRefused(result.message);
+        return;
+      }
+      setIntent(descDraft);
+      setSavedIntent(descDraft);
+      setDescribing(false);
+      setAnnounced(deckDescriptionCopy.announce.descriptionSaved);
+    } finally {
+      setDescSaving(false);
+    }
   }
 
   // ── The body ──────────────────────────────────────────────────────────
@@ -621,6 +671,20 @@ export function TuningPanel({
   // A failed or stopped re-run leaves the set it would have replaced on screen, still open.
   const hasSet = !reading && !state.retired && state.items.length > 0;
   const neverRunRows = manifestRows(facts, intent, null, previewSteps);
+  // "Describing in place" (STATES §3 state 2) replaces the checklist with its own editor; Cancel
+  // and a successful Save both return to the ordinary checklist.
+  const checklist = describing ? (
+    <DescribingInPlace
+      value={descDraft}
+      onChange={setDescDraft}
+      onSave={() => void saveDescribing()}
+      onCancel={cancelDescribing}
+      saving={descSaving}
+      refused={descRefused}
+    />
+  ) : (
+    <ManifestRows rows={neverRunRows} onLogGame={onLogGame} onDescribe={describeDeck} />
+  );
 
   if (reading) {
     const runRows: ManifestRow[] = [
@@ -651,7 +715,7 @@ export function TuningPanel({
       <>
         {failure ? <Failure failure={failure} /> : null}
         <Lead>{copy.retiredLead(state.retired.from, state.retired.to)}</Lead>
-        <ManifestRows rows={neverRunRows} onLogGame={onLogGame} onDescribe={describeDeck} />
+        {checklist}
       </>
     );
   } else if (hasSet) {
@@ -710,7 +774,7 @@ export function TuningPanel({
               ? copy.unmarkedLead(cap(numberWord(facts.gameCount)))
               : copy.readyLead(cap(numberWord(facts.gameCount)), axisName(facts.fix.key), facts.fix.hurt, facts.gameCount)}
         </Lead>
-        <ManifestRows rows={neverRunRows} onLogGame={onLogGame} onDescribe={describeDeck} />
+        {checklist}
       </>
     );
   }
@@ -855,6 +919,78 @@ export function TuningPanel({
 }
 
 // ── The pieces ──────────────────────────────────────────────────────────
+
+/** "Describing in place" (STATES §3 state 2): the absent description row's own editor, with
+ *  explicit Save/Cancel rather than the empty-state field's blur-to-save. */
+function DescribingInPlace({
+  value,
+  onChange,
+  onSave,
+  onCancel,
+  saving,
+  refused,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  onSave: () => void;
+  onCancel: () => void;
+  saving: boolean;
+  refused: string | null;
+}) {
+  const descCopy = deckDescriptionCopy.description;
+  const n = countCharacters(value);
+  const over = n > descCopy.maxLength;
+  const warn = n >= descCopy.warnAt;
+  return (
+    <div className="mt-[14px] flex flex-col gap-[6px]">
+      <label htmlFor="tuning-describing-field" className="block font-mono text-[10px] uppercase tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>
+        {descCopy.label}
+      </label>
+      <textarea
+        id="tuning-describing-field"
+        autoFocus
+        value={value}
+        onChange={(e) => {
+          if (countCharacters(e.target.value) <= descCopy.maxLength) onChange(e.target.value);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") onCancel();
+        }}
+        readOnly={saving}
+        rows={2}
+        placeholder={descCopy.placeholder}
+        aria-label={descCopy.fieldAria}
+        className="w-full resize-none rounded-[8px] font-sans text-[16px] leading-[1.5] md:text-[13.5px]"
+        style={{ background: "var(--surface)", border: "1px solid var(--accent)", padding: "10px 12px", color: "var(--fg)" }}
+      />
+      <p className="m-0 flex items-baseline justify-between gap-[10px] text-[12px] leading-[1.5]" style={{ color: "var(--fg-faint)" }}>
+        <span>{descCopy.help}</span>
+        <span className="flex-none text-right font-mono" style={{ width: "9ch", color: over ? "var(--danger)" : warn ? "var(--warning)" : "var(--fg-faint)" }}>
+          {descCopy.counter(n, descCopy.maxLength)}
+        </span>
+      </p>
+      {refused ? <MutationError message={refused} /> : null}
+      <div className="flex gap-[8px]">
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={saving || over}
+          className="h-[36px] rounded-[7px] px-[14px] text-[12.5px] font-semibold text-[color:var(--accent)] [border:1px_solid_var(--accent)] disabled:cursor-default disabled:opacity-50"
+        >
+          {descCopy.save}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={saving}
+          className="h-[36px] rounded-[7px] px-[14px] text-[12.5px] font-medium text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)]"
+        >
+          {descCopy.cancel}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function Lead({ children, desktopOnly = false, wide = false }: { children: ReactNode; desktopOnly?: boolean; wide?: boolean }) {
   // Capped at 680px over a set of cards (A1); a lead over a manifest runs the panel's width.
@@ -1012,6 +1148,18 @@ export function manifestRows(
       rows.push({ kind: "read", key: step, label: labelOf(step, facts), count: null, done: ticked.has(step) });
       continue;
     }
+    // The preview only — the absent description gets the games row's own dashed treatment
+    // (review fix), not a plain read row with a link tacked on the end.
+    if (step === "description" && intent === null) {
+      rows.push({
+        kind: "absent",
+        key: "description",
+        label: descriptionManifest.description,
+        caption: deckDescriptionCopy.description.rowNone,
+        actionLabel: deckDescriptionCopy.description.rowOpen,
+      });
+      continue;
+    }
     const n = known(facts, intent, step);
     rows.push({
       kind: "read",
@@ -1019,7 +1167,6 @@ export function manifestRows(
       label: labelOf(step, facts),
       count: n === null ? null : countOf(step, n, facts),
       done: false,
-      describeLink: step === "description" && intent === null,
     });
   }
   return rows;
@@ -1055,7 +1202,9 @@ function countOf(step: ManifestStep, n: number, facts: TuningFacts): string {
     case "games": return facts.fix === null && facts.marked === 0 ? manifest.gamesUnmarked(n) : manifest.gamesCount(n);
     case "notes": return manifest.notesCount(n, facts.gameCount);
     case "decklist": return manifest.listCount(n);
-    case "description": return n === 0 ? deckDescriptionCopy.description.rowNone : descriptionManifest.descriptionCount;
+    // `n` is never 0 here — the absent case is handled by `manifestRows`'s own "absent" row,
+    // above, before `countOf` is ever reached for this step.
+    case "description": return descriptionManifest.descriptionCount;
     case "collection": return manifest.collectionCount;
     // Only ever drawn while reading, where `countOf` is never called for them.
     case "limits": case "playerNotes": return "";

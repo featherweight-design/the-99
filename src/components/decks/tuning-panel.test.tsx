@@ -143,14 +143,24 @@ describe("TuningPanel", () => {
   it("ticks every remaining row at once when the result lands before the stagger finishes", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
-      const d = deps([fresh, results]);
+      // The run resolves almost immediately — well before the stagger's own pacing finishes —
+      // but the closing read is held, so the ticked-all-at-once frame is observable before the
+      // panel moves on to the results.
+      let releaseRead!: (s: TuningState) => void;
+      const reads = [async () => fresh, () => new Promise<TuningState>((r) => { releaseRead = r; })];
+      let n = 0;
+      const d = deps([fresh], { read: vi.fn(() => reads[Math.min(n++, reads.length - 1)]()) });
       await draw(d);
       await press(copy.suggest);
-      // The result lands almost immediately — well before the stagger's own pacing finishes.
       await act(async () => {
         await vi.advanceTimersByTimeAsync(0);
         await Promise.resolve();
         await Promise.resolve();
+      });
+      const total = runSteps(facts, "go wide").length;
+      expect(screen.getAllByTestId("manifest-row").filter((r) => r.dataset.kind === "read" && r.dataset.done === "true")).toHaveLength(total);
+      await act(async () => {
+        releaseRead(results);
       });
       expect(screen.getByText("Rhystic Study")).toBeInTheDocument();
     } finally {
@@ -432,6 +442,56 @@ describe("TuningPanel", () => {
     }
   });
 
+  // Copilot review: `staggerTimer`/`longWaitTimer` are shared refs. Stop lets a NEW press start
+  // while the first press's own `deps.run` is still unresolved; if that first run's promise
+  // settles LATE, after the second press has its own stagger running, it must not reach in and
+  // clear the SECOND press's live timers.
+  it("does not let a superseded run's late settle clear a newer press's own stagger", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const randomUUID = vi.spyOn(crypto, "randomUUID").mockReturnValue("r2" as unknown as ReturnType<typeof crypto.randomUUID>);
+    try {
+      let resolveFirst!: (v: { ok: true }) => void;
+      const run = vi.fn()
+        .mockImplementationOnce(() => new Promise<{ ok: true }>((resolve) => { resolveFirst = resolve; }))
+        .mockImplementationOnce(() => new Promise<{ ok: true }>(() => {}));
+      const pending: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "pending" } };
+      const cancelled: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "cancelled" } };
+      const d = deps([fresh, pending, cancelled], { run });
+      await draw(d);
+      await press(copy.suggest);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(run).toHaveBeenCalledTimes(1);
+      await press(copy.stop);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+      expect(d.cancel).toHaveBeenCalledWith("d1", "r2");
+      await press(copy.suggest);
+      expect(run).toHaveBeenCalledTimes(2);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(350);
+      });
+      const total = runSteps(facts, "go wide").length;
+      expect(screen.getAllByTestId("manifest-row").filter((r) => r.dataset.kind === "read" && r.dataset.done === "true")).toHaveLength(1);
+      // The first press's run settles now — late, and over a run this panel already stopped.
+      await act(async () => {
+        resolveFirst({ ok: true });
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      // The second press's own stagger is still running: it ticks further rows afterward.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync((total - 1) * 350);
+      });
+      expect(screen.getAllByTestId("manifest-row").filter((r) => r.dataset.kind === "read" && r.dataset.done === "true")).toHaveLength(total);
+    } finally {
+      randomUUID.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
   it("lets a Stop pressed during the closing read own the panel", async () => {
     let release: (s: TuningState) => void = () => {};
     const reads = [
@@ -482,8 +542,8 @@ describe("TuningPanel", () => {
 describe("manifestRows", () => {
   it("shows the page's own figures unticked before a run", () => {
     const f = { ...facts, gameCount: 9, noteCount: 2, marked: 8, fix: { key: "speed", hurt: 5 } };
-    const rows = manifestRows(f, null, null, readSteps(f, null));
-    expect(rows.every((r) => r.kind === "read" && !r.done)).toBe(true);
+    const rows = manifestRows(f, "go wide", null, readSteps(f, "go wide"));
+    expect(rows.every((r) => r.kind !== "read" || !r.done)).toBe(true);
     expect(rows[0]).toMatchObject({ key: "games", count: "9 games" });
     expect(rows[1]).toMatchObject({ key: "notes", count: "on 2 of 9 games" });
   });
@@ -512,17 +572,17 @@ describe("manifestRows", () => {
     expect(rows.some((r) => r.kind === "read" && r.key === "notes")).toBe(false);
   });
 
-  it("always includes a description row in the preview, absent with its own link when there is none", () => {
+  it("always includes a description row in the preview, dashed with its own link when there is none", () => {
     const rows = manifestRows(facts, null, null, readSteps(facts, null));
-    const row = rows.find((r) => r.kind === "read" && r.key === "description");
-    expect(row).toMatchObject({ count: "none yet", describeLink: true });
+    const row = rows.find((r) => r.kind !== "writing" && r.key === "description");
+    expect(row).toMatchObject({ kind: "absent", caption: "none yet", actionLabel: "Describe your deck →" });
   });
 
-  it("shows the description row filled, with no link, once there is one", () => {
+  it("shows the description row as an ordinary filled row once there is one", () => {
     const rows = manifestRows(facts, "go wide", null, readSteps(facts, "go wide"));
-    const row = rows.find((r) => r.kind === "read" && r.key === "description");
-    expect(row).toMatchObject({ describeLink: false });
-    expect(row && "count" in row ? row.count : undefined).not.toBe("none yet");
+    const row = rows.find((r) => r.kind !== "writing" && r.key === "description");
+    expect(row?.kind).toBe("read");
+    expect(row && row.kind === "read" ? row.count : undefined).not.toBe("none yet");
   });
 
   it("runSteps adds limits and notes rows, only once a run is reading", () => {
@@ -1084,6 +1144,82 @@ describe("TuningPanel: Additional notes (H35, PR 3)", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  // Copilot review: `runTuning` answers `{ ok: true }` for a run it PERSISTED even when the run
+  // itself failed (upstream_busy, locked_only, ungrounded, ...) — `result.ok` alone is never
+  // proof a set of suggestions landed.
+  it("keeps the note over a run the server accepted but that itself came back failed", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const failed: TuningState = { ...fresh, run: { ...okRun, status: "failed", errorClass: "timeout" } };
+      const d = deps([fresh, failed], { run: vi.fn(async () => ({ ok: true as const })) });
+      await draw(d);
+      fireEvent.change(screen.getByLabelText("Additional notes"), { target: { value: "more removal" } });
+      await press(copy.suggest);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(runSteps(facts, "go wide").length * 350);
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      expect(screen.getByLabelText("Additional notes")).toHaveValue("more removal");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe("TuningPanel: Describing in place (H35, PR 3)", () => {
+  const noDescription: TuningFacts = { ...facts, intent: null };
+
+  it("opens the editor from the dashed description row's link, and Cancel reverts it", async () => {
+    await draw(deps([fresh]), noDescription);
+    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
+    expect(screen.getByLabelText("Deck description")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByLabelText("Deck description")).toBeNull();
+    expect(screen.getByRole("button", { name: "Describe your deck →" })).toBeInTheDocument();
+  });
+
+  it("Escape also reverts the editor to the dashed row", async () => {
+    await draw(deps([fresh]), noDescription);
+    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
+    fireEvent.keyDown(screen.getByLabelText("Deck description"), { key: "Escape" });
+    expect(screen.queryByLabelText("Deck description")).toBeNull();
+  });
+
+  it("saves through onSaveDescription and shows the row filled, with an announcement", async () => {
+    const onSaveDescription = vi.fn(async () => ({ ok: true as const }));
+    await act(async () => {
+      render(
+        <TuningPanel deckId="d1" permits={[3]} facts={noDescription} onLogGame={vi.fn()} deps={deps([fresh])} onSaveDescription={onSaveDescription} />,
+      );
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
+    fireEvent.change(screen.getByLabelText("Deck description"), { target: { value: "Go wide, win late." } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    });
+    expect(onSaveDescription).toHaveBeenCalledWith("Go wide, win late.");
+    expect(screen.queryByLabelText("Deck description")).toBeNull();
+    expect(screen.queryByText("none yet")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Describe your deck →" })).toBeNull();
+    expect(screen.getByRole("status")).toHaveTextContent(deckDescriptionCopy.announce.descriptionSaved);
+  });
+
+  it("shows the refusal and keeps the editor open when the save fails", async () => {
+    const onSaveDescription = vi.fn(async () => ({ ok: false as const, message: "Nope." }));
+    await act(async () => {
+      render(
+        <TuningPanel deckId="d1" permits={[3]} facts={noDescription} onLogGame={vi.fn()} deps={deps([fresh])} onSaveDescription={onSaveDescription} />,
+      );
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    });
+    expect(screen.getByText("Nope.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Deck description")).toBeInTheDocument();
   });
 });
 
