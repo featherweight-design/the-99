@@ -1152,16 +1152,19 @@ function Unchanged({ state, intent, fix }: { state: TuningState; intent: string 
 type FailureCopy = { tag: string; heading: string; body: string; kept: string; note: string };
 
 /** "Kept for this deck" (H35, PR 4a): the sentence that names what actually caused an empty
- *  result, in place of `ungrounded`'s generic body. `locked`/`lockedMany` are left for `locked_only`'s
- *  own established copy (F10, Hugh 2026-09-25) rather than taken here — the Locked feature's
- *  `neverCut` drops only ever reach that branch today. */
+ *  result, in place of `ungrounded`'s generic body. `locked`/`lockedMany` do reach here: a run
+ *  whose drops are a MIX of a locked cut and some other rule (e.g. the new `overCap`/`offSet`
+ *  filters) is not all-`neverCut`, so `runTuning` classifies it `ungrounded`, not `locked_only`
+ *  (pre-open review, round 0) — `locked_only`'s own established copy (F10, Hugh 2026-09-25)
+ *  covers only the all-locked case. */
 function refusalBody(refusal: RefusalDetail): string | null {
   const r = deckDescriptionCopy.refusal;
   switch (refusal.reason) {
     case "commander": return r.commander(refusal.name);
+    case "locked": return r.locked(refusal.name);
+    case "lockedMany": return r.lockedMany(refusal.count);
     case "overCap": return r.overCap(refusal.name, formatCents(refusal.capCents));
     case "nothingLeft": return r.nothingLeft;
-    default: return null;
   }
 }
 

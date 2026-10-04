@@ -404,6 +404,28 @@ describe("TuningPanel", () => {
     expect(screen.getByText(new RegExp(deckTuningCopy.failure.timeout.note))).toBeInTheDocument();
   });
 
+  // H35, PR 4a (pre-open review, round 0): a run with a MIX of a locked cut and some other
+  // dropped rule (e.g. the new price/set/owned filters) is not all-`neverCut`, so `runTuning`
+  // classifies it `ungrounded`, not `locked_only` — and the refusal sentence must still name the
+  // lock, not fall back to the fully generic body.
+  it("names a locked card over the generic body, for an ungrounded run with a mixed cause", async () => {
+    const failed = {
+      ...okRun, id: "r2", status: "failed" as const, errorClass: "ungrounded",
+      validationReport: { askedCount: 8, survivedCount: 0, keptCount: 0, refusal: { reason: "locked" as const, name: "Sol Ring" } },
+    };
+    await draw(deps([{ ...results, run: failed, stale: true }]));
+    expect(screen.getByTestId("tuning-failure")).toHaveTextContent(deckDescriptionCopy.refusal.locked("Sol Ring"));
+  });
+
+  it("names several locked cards over the generic body, for an ungrounded run with a mixed cause", async () => {
+    const failed = {
+      ...okRun, id: "r2", status: "failed" as const, errorClass: "ungrounded",
+      validationReport: { askedCount: 8, survivedCount: 0, keptCount: 0, refusal: { reason: "lockedMany" as const, count: 3 } },
+    };
+    await draw(deps([{ ...results, run: failed, stale: true }]));
+    expect(screen.getByTestId("tuning-failure")).toHaveTextContent(deckDescriptionCopy.refusal.lockedMany(3));
+  });
+
   it("disables the press when every credit is out even on an unchanged deck", async () => {
     const next = new Date("2026-09-24T14:20:00Z");
     const d = deps([{ ...results, allowance: { used: 5, limit: 5, reopensAt: next, nextAt: next } }]);
