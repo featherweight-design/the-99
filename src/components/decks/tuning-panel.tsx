@@ -419,9 +419,11 @@ export function TuningPanel({
       }
       let current = flushed.touched ? stateRef.current : state;
       // The save's own re-read failed — `current` is the PRE-SAVE fingerprint, not the one this
-      // press must judge "unchanged" against. One retry here, rather than trusting it (round 4,
-      // previously missed).
-      if (flushed.touched && limitsStaleRead.current) {
+      // press must judge "unchanged" against. Checked on the FLAG alone, not `flushed.touched`:
+      // a press made after that save (and its failed re-read) had already settled sees
+      // `touched: false` here, since nothing was pending or in flight by the time THIS press
+      // ran, but the flag itself survives across presses until a read actually lands (round 5).
+      if (limitsStaleRead.current) {
         current = await reread();
         limitsStaleRead.current = current === null;
       }

@@ -891,5 +891,44 @@ describe("TuningPanel: Locked (never cut)", () => {
       vi.useRealTimers();
     }
   });
+
+  // Pre-open review round 5: the round-4 fix only retried the stale read when THIS press's own
+  // flush had something pending or in flight — a press made AFTER the save and its failed
+  // re-read had already settled saw `touched: false` and skipped the retry entirely, despite
+  // the flag itself still being set.
+  it("retries the stale read on a press made after the save and its failed re-read already settled", async () => {
+    vi.useFakeTimers();
+    try {
+      (saveDeckLimits as ReturnType<typeof vi.fn>).mockClear();
+      let readCalls = 0;
+      const read = vi.fn(async () => {
+        readCalls += 1;
+        // Call 1: the mount read. Call 2: the save's own re-read — fails. Call 3: the LATER
+        // press's retry, made once the save has already fully settled.
+        if (readCalls === 2) throw new Error("down");
+        return readCalls === 1 ? fresh : { ...results, stale: false };
+      });
+      await act(async () => {
+        render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={deps([fresh], { read })} printedInSets={[]} />);
+      });
+      fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" }));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      expect(saveDeckLimits).toHaveBeenCalledWith("d1", { ownedOnly: true });
+      expect(readCalls).toBe(2); // mount + the save's own failed re-read; nothing pending now.
+      // A LATER press, with nothing of its own to flush (`touched` will read false).
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: copy.suggest }));
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      expect(readCalls).toBe(3);
+      expect(screen.getByText(deckTuningCopy.announce.unchanged)).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
