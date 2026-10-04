@@ -25,4 +25,16 @@ describe("TuningNotesField", () => {
     fireEvent.keyDown(screen.getByLabelText("Additional notes"), { key: "Escape" });
     expect(onChange).toHaveBeenCalledWith("");
   });
+
+  // Copilot review: Escape cancels an IME composition candidate first (typing Japanese/Chinese/
+  // Korean) — it must not also clear the whole draft in the same keystroke.
+  it("ignores Escape while an IME composition is active", () => {
+    const onChange = vi.fn();
+    render(<TuningNotesField value="more removal" onChange={onChange} />);
+    fireEvent.keyDown(screen.getByLabelText("Additional notes"), {
+      key: "Escape",
+      isComposing: true,
+    });
+    expect(onChange).not.toHaveBeenCalled();
+  });
 });

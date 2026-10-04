@@ -260,6 +260,17 @@ describe("TuningPanel", () => {
     }
   });
 
+  // Copilot review, previously missed: a run already pending when the panel opens (a reload, or
+  // another tab) must still animate the checklist — reconstructed from the run's own
+  // `createdAt`, since the stagger otherwise only ever starts inside `pressRun`.
+  it("reconstructs the stagger from a run already pending on open, old enough to be past it", async () => {
+    const longAgo = { ...okRun, id: "r2", status: "pending" as const, createdAt: new Date("2020-01-01T00:00:00Z") };
+    await draw(deps([{ ...fresh, run: longAgo }]));
+    const total = runSteps(facts, "go wide").length;
+    expect(screen.getAllByTestId("manifest-row").filter((r) => r.dataset.kind === "read" && r.dataset.done === "true")).toHaveLength(total);
+    expect(document.querySelector('[data-kind="writing"][data-active]')).not.toBeNull();
+  });
+
   it("offers Stop only while a run is pending, and Stop cancels the pending run", async () => {
     const pending: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "pending" } };
     const cancelled: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "cancelled" } };
@@ -1188,6 +1199,15 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
     expect(screen.queryByLabelText("Deck description")).toBeNull();
   });
 
+  // Copilot review: Escape cancels an IME composition candidate first — it must not also
+  // discard the open editor in the same keystroke.
+  it("ignores Escape while an IME composition is active", async () => {
+    await draw(deps([fresh]), noDescription);
+    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
+    fireEvent.keyDown(screen.getByLabelText("Deck description"), { key: "Escape", isComposing: true });
+    expect(screen.getByLabelText("Deck description")).toBeInTheDocument();
+  });
+
   it("saves through onSaveDescription and shows the row filled, with an announcement", async () => {
     const onSaveDescription = vi.fn(async () => ({ ok: true as const }));
     await act(async () => {
@@ -1207,6 +1227,23 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
     expect(screen.getByRole("status")).toHaveTextContent(deckDescriptionCopy.announce.descriptionSaved);
   });
 
+  // Copilot review round 2: a REJECTED promise (a network/transport failure, not a `{ok:false}`
+  // answer) must not escape as an unhandled rejection — it gets the same refusal copy.
+  it("shows the refusal rather than an unhandled rejection when the save itself rejects", async () => {
+    const onSaveDescription = vi.fn(() => Promise.reject(new Error("network")));
+    await act(async () => {
+      render(
+        <TuningPanel deckId="d1" permits={[3]} facts={noDescription} onLogGame={vi.fn()} deps={deps([fresh])} onSaveDescription={onSaveDescription} />,
+      );
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    });
+    expect(screen.getByText(deckDescriptionCopy.description.refused)).toBeInTheDocument();
+    expect(screen.getByLabelText("Deck description")).toBeInTheDocument();
+  });
+
   it("shows the refusal and keeps the editor open when the save fails", async () => {
     const onSaveDescription = vi.fn(async () => ({ ok: false as const, message: "Nope." }));
     await act(async () => {
@@ -1220,6 +1257,40 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
     });
     expect(screen.getByText("Nope.")).toBeInTheDocument();
     expect(screen.getByLabelText("Deck description")).toBeInTheDocument();
+  });
+
+  // Copilot review round 2: the optimistic state must be NORMALIZED the same way `saveIntent`
+  // stores it (trimmed) — comparing the raw draft against the server's normalized `facts.intent`
+  // would never match, blocking a LATER external edit (the header pencil) from ever syncing in.
+  it("normalizes the saved draft so a later external edit still syncs in", async () => {
+    const onSaveDescription = vi.fn(async () => ({ ok: true as const }));
+    let utils!: ReturnType<typeof render>;
+    await act(async () => {
+      utils = render(
+        <TuningPanel deckId="d1" permits={[3]} facts={noDescription} onLogGame={vi.fn()} deps={deps([fresh])} onSaveDescription={onSaveDescription} />,
+      );
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
+    fireEvent.change(screen.getByLabelText("Deck description"), { target: { value: "  Go wide.  " } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    });
+    expect(onSaveDescription).toHaveBeenCalledWith("  Go wide.  ");
+    expect(screen.queryByRole("button", { name: "Describe your deck →" })).toBeNull();
+    // The server's own revalidation echoes back the TRIMMED value it actually stored.
+    await act(async () => {
+      utils.rerender(
+        <TuningPanel deckId="d1" permits={[3]} facts={{ ...noDescription, intent: "Go wide." }} onLogGame={vi.fn()} deps={deps([fresh])} onSaveDescription={onSaveDescription} />,
+      );
+    });
+    // A LATER external edit (the header pencil clearing it) now syncs in, proving the earlier
+    // optimistic value was released rather than permanently blocking this sync.
+    await act(async () => {
+      utils.rerender(
+        <TuningPanel deckId="d1" permits={[3]} facts={noDescription} onLogGame={vi.fn()} deps={deps([fresh])} onSaveDescription={onSaveDescription} />,
+      );
+    });
+    expect(screen.getByRole("button", { name: "Describe your deck →" })).toBeInTheDocument();
   });
 });
 

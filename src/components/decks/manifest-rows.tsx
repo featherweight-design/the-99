@@ -22,8 +22,9 @@ import { deckTuningCopy } from "../../lib/copy/deck-tuning";
  *
  * `absent` is the same dashed, pre-read treatment as `noGames`, generalised (H35, PR 3 review
  * fix): the description row, shown this way only in the never-run preview when there is no
- * description yet, with its own `Describe your deck →`. Unlike `noGames` it carries no caption
- * of its own — "none yet" lives in its `label`, matching how a filled description row reads.
+ * description yet, with its own `Describe your deck →`. `label` names the row ("Your
+ * description", matching a filled row's label) and `caption` carries its own "none yet" —
+ * unlike `noGames`, which hardcodes "none logged" rather than taking it as data.
  *
  * `writing` is the final row (H35, PR 3): pending until every read row above it has ticked, then
  * active (an accent pulse) until the model call settles. It carries no `key` of its own — there

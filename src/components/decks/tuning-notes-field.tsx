@@ -41,6 +41,10 @@ export function TuningNotesField({ value, onChange }: { value: string; onChange:
           if (countCharacters(e.target.value) <= copy.maxLength) onChange(e.target.value);
         }}
         onKeyDown={(e) => {
+          // Escape cancels an IME composition candidate first, same as the deck header's own
+          // description editor — without this guard, Escape during Japanese/Chinese/Korean
+          // input clears the whole draft instead (review round 2).
+          if (e.nativeEvent.isComposing) return;
           // Esc clears the draft rather than committing it — there is nothing server-side to
           // cancel (this field is never saved), so a reset to empty is the whole of "Cancel".
           if (e.key === "Escape") onChange("");

@@ -400,13 +400,76 @@ export function TuningPanel({
     };
   }, [deps, deckId]);
 
-  // A run already in flight when the panel opened: tick what can be read and watch it settle.
-  const pendingElsewhere = state?.run?.status === "pending" && ticked === null;
+  // Computed here, ahead of the `state === null` early return below, since the following effect
+  // (every hook must run unconditionally) needs them as a dependency.
+  const previewSteps = readSteps(facts, intent);
+  const runStepsList = runSteps(facts, intent);
+
+  // A run already in flight when the panel opened (another tab, a reload mid-run): reconstruct
+  // the stagger from the run's own `createdAt` — review round 2 (previously missed): without
+  // this, `ticked` stays null for the WHOLE run (the stagger only ever starts inside `pressRun`),
+  // so every row sits at 0/N and the writing row never activates until the run finally settles.
+  // Keyed on the run's own id, not on `ticked`, so setting `ticked` here does not immediately
+  // retrigger (and tear down) this same effect.
+  const pendingRunId = state?.run?.status === "pending" ? state.run.id : null;
+  const pendingRunCreatedAt = state?.run?.status === "pending" ? state.run.createdAt.getTime() : null;
+  const watchedRunId = useRef<string | null>(null);
   useEffect(() => {
-    if (!pendingElsewhere) return;
-    const id = setInterval(() => void reread(), WATCH_MS);
-    return () => clearInterval(id);
-  }, [pendingElsewhere, reread]);
+    if (pendingRunId === null || pendingRunCreatedAt === null) {
+      watchedRunId.current = null;
+      return;
+    }
+    if (watchedRunId.current === pendingRunId) return;
+    watchedRunId.current = pendingRunId;
+    const elapsed = Date.now() - pendingRunCreatedAt;
+    const already = Math.min(Math.max(0, Math.floor(elapsed / STAGGER_MS)), runStepsList.length);
+    // This effect is reconstructing state from an external system — a run already under way,
+    // read off its own `createdAt` — the case `use-card-search.ts` already disables this same
+    // rule for, rather than deferring the call through a 0ms timer: that deferral raced a
+    // synchronous Stop landing in the SAME tick in a test with no fake timers (the 0ms timeout
+    // fired after Stop's own `setTicked(null)`, reviving `ticked`).
+    setTicked(new Set(runStepsList.slice(0, already)));
+    let localStagger: ReturnType<typeof setInterval> | null = null;
+    if (already >= runStepsList.length) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setWritingActive(true);
+    } else {
+      let i = already;
+      localStagger = setInterval(() => {
+        const step = runStepsList[i];
+        i += 1;
+        setTicked((prev) => new Set(prev ?? []).add(step));
+        if (i >= runStepsList.length) {
+          if (localStagger !== null) clearInterval(localStagger);
+          localStagger = null;
+          staggerTimer.current = null;
+          setWritingActive(true);
+        }
+      }, STAGGER_MS);
+      staggerTimer.current = localStagger;
+    }
+    let localLongWait: ReturnType<typeof setTimeout> | null = null;
+    if (elapsed >= LONG_WAIT_MS) {
+      setLongWait(true);
+    } else {
+      localLongWait = setTimeout(() => setLongWait(true), LONG_WAIT_MS - elapsed);
+      longWaitTimer.current = localLongWait;
+    }
+    const watchId = setInterval(() => void reread(), WATCH_MS);
+    return () => {
+      clearInterval(watchId);
+      if (localStagger !== null) clearInterval(localStagger);
+      if (localLongWait !== null) clearTimeout(localLongWait);
+      staggerTimer.current = null;
+      longWaitTimer.current = null;
+    };
+    // `runStepsList` is deliberately NOT a dependency below — it is a fresh array every render
+    // (like `facts` itself), and listing it would tear this effect's interval down on every
+    // unrelated re-render. `pendingRunId`/`pendingRunCreatedAt` (stable primitives) are what
+    // this effect actually needs to re-run on; it reads the step list from whichever render's
+    // closure is current when that happens, same as the rest of this component reads
+    // `facts`/`intent`.
+  }, [pendingRunId, pendingRunCreatedAt, reread]); // eslint-disable-line react-hooks/exhaustive-deps
   // The stagger and its long-wait timer are cleared on every unmount, same as a Stop would.
   useEffect(() => {
     return () => {
@@ -417,8 +480,6 @@ export function TuningPanel({
 
   if (state === null) return null;
 
-  const previewSteps = readSteps(facts, intent);
-  const runStepsList = runSteps(facts, intent);
   const reading = ticked !== null || state.run?.status === "pending";
   // Spent is read off the allowance itself, never off `gateReason`: that answers "unchanged" first,
   // and a player with no credits left on an unchanged deck must still see the press disabled.
@@ -575,8 +636,11 @@ export function TuningPanel({
     const failure = next?.run?.status === "failed" ? failureCopy(next.run.errorClass) : null;
     // `result.ok` alone does not mean a set of suggestions landed — `runTuning` answers ok after
     // persisting a run that itself failed (e.g. `upstream_busy`, `locked_only`, `ungrounded`),
-    // review fix. The note is kept over exactly those, same as a kept-but-failed run's set.
-    if (!failure) setNotes("");
+    // review round 1. Round 2: `!failure` alone is not enough either — a closing read that
+    // failed or returned a run in some OTHER non-`ok` status is also not a success, and must
+    // not be read as one just because it also isn't the `failed` branch. Only an explicit `ok`
+    // clears the note.
+    if (next?.run?.status === "ok") setNotes("");
     setAnnounced(failure ? failure.heading : deckTuningCopy.announce.ready(next?.items.length ?? 0));
     headingRef.current?.focus();
   }
@@ -647,13 +711,20 @@ export function TuningPanel({
     if (!onSaveDescription) return;
     setDescSaving(true);
     try {
-      const result = await onSaveDescription(descDraft);
+      // Normalized the same way `saveIntent` stores it (trimmed, blank mapped to null) — review
+      // round 2: comparing the RAW draft against the server's normalized `facts.intent` meant a
+      // value with surrounding whitespace, or an explicit clear, never matched, leaving
+      // `savedIntent` set indefinitely and blocking a LATER external edit from syncing in.
+      const normalized = normalizeIntent(descDraft);
+      const result = await onSaveDescription(descDraft).catch(
+        (): DeckMutationResult => ({ ok: false, message: deckDescriptionCopy.description.refused }),
+      );
       if (!result.ok) {
         setDescRefused(result.message);
         return;
       }
-      setIntent(descDraft);
-      setSavedIntent(descDraft);
+      setIntent(normalized);
+      setSavedIntent(normalized);
       setDescribing(false);
       setAnnounced(deckDescriptionCopy.announce.descriptionSaved);
     } finally {
@@ -954,6 +1025,10 @@ function DescribingInPlace({
           if (countCharacters(e.target.value) <= descCopy.maxLength) onChange(e.target.value);
         }}
         onKeyDown={(e) => {
+          // Escape cancels an IME composition candidate first, same as the deck header's own
+          // description editor (`use-deck-header-edit.ts`) — without this guard, Escape during
+          // Japanese/Chinese/Korean input discards the whole draft instead.
+          if (e.nativeEvent.isComposing) return;
           if (e.key === "Escape") onCancel();
         }}
         readOnly={saving}
@@ -1218,4 +1293,12 @@ function axisName(key: string): string {
 
 function cap(word: string): string {
   return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
+/** The same normalization `saveIntent` applies server-side (trimmed, blank mapped to null) —
+ *  so an optimistic local value can be compared against the revalidated `facts.intent` for
+ *  equality, rather than never matching over whitespace or an explicit clear (review round 2). */
+function normalizeIntent(raw: string): string | null {
+  const trimmed = raw.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }
