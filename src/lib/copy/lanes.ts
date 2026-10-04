@@ -99,7 +99,7 @@ export const printedInPanelCopy: FilterPanelCopy = {
   footerTotal: (total: number) => `${n(total)} ${total === 1 ? "set" : "sets"}`,
   footerSelected: (count: number, total: number) => `${n(count)} of ${n(total)} selected`,
   clear: "Clear",
-  done: "Done",
+  done: "Back to filters",
   closeLabel: "Close",
   emptyTitle: "No set by that name",
   emptyBody: (query: string) => ({

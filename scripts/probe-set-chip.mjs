@@ -159,7 +159,7 @@ async function phone(page) {
   const sets = onPage(page, '[role="dialog"][aria-label="Filter by set"]');
   await sets.waitFor({ state: "visible", timeout: 5_000 });
   await sets.locator('button[role="switch"][aria-checked="false"]:not([aria-disabled="true"])').first().click();
-  await sets.getByRole("button", { name: "Done" }).click();
+  await sets.getByRole("button", { name: "Back to filters" }).click();
   await page.keyboard.press("Escape");
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(300);

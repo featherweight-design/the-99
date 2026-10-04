@@ -189,7 +189,7 @@ export const collectionFilterCopy = {
     footerTotal: (total: number) => `${count(total)} sets owned`,
     footerSelected: (n: number, total: number) => `${count(n)} of ${count(total)} selected`,
     clear: "Clear",
-    done: "Done",
+    done: "Back to filters",
     /** Accessible name for the sheet's ✕ — the sheet's one accessible close control. */
     closeLabel: "Close",
 
