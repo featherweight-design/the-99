@@ -12,15 +12,15 @@ sends the round back to Design.
   card-assignment control on the card modal and on `/collection` is untouched, even where the
   handoff's engineering notes brush against shared copy modules — Hugh will flag those separately
   if he wants them touched.
-- **Rebase dependency:** `#1244` ("Changes view: remove the per-row card-assignment panel") is
-  still open and touches `contested-card-row.tsx` and `review-changes.tsx` — the same two files
-  this build edits. Confirmed the overlap is structural, not logical: #1244 removes "THE SECOND
+- **Rebase dependency, resolved.** `#1244` ("Changes view: remove the per-row card-assignment
+  panel") touched `contested-card-row.tsx` and `review-changes.tsx` — the same two files this
+  build edits. Confirmed the overlap was structural, not logical: #1244 removes "THE SECOND
   DOOR" block (`contestedCard && (...)` around `review-changes.tsx:388-409`, the `ContestedCardRow`
   import, and the `contested` prop plumbing) — a wholly separate mechanism from the
   `pullClaim`/`PullControl` path this build touches (`review-changes.tsx:250-360`). No shared
-  state, no shared component. **Build on top of #1244's branch, or rebase onto `main` once it
-  merges, before opening either PR** — the diff will be clean either way, but opening before #1244
-  lands means resolving a textual (not logical) conflict on every push.
+  state, no shared component. It merged ahead of PR 1 opening; PR 1's branch was rebased onto the
+  result, surfacing one real naming collision (both this build's `pullSourceChoices` and #1244's
+  own `pullSources` wanted to exist) — resolved by renaming, see the plan's PR 1 boundary.
 
 ## §1 The ruling, and it holds
 
@@ -32,9 +32,9 @@ Checked each clause against the shipped tree:
 
 | Clause | Source | Result |
 |---|---|---|
-| A pull edits the source's draft, commits nothing | `pull-release.ts:8-16` (`writePullRelease` doc comment), `actions.ts:1968-` (`pullCardFromDeck` deletes a `deck_cards` row, no version write) | **True** |
+| A pull edits the source's draft, commits nothing | `pull-release.ts:26-36` (`writePullRelease` doc comment), `actions.ts:1968-` (`pullCardFromDeck` deletes a `deck_cards` row, no version write) | **True** |
 | A release clears the asker's buy tag | `assign.ts:108-120` sums `pullReleases.copies` into the claim model's `all_claims`, which is what `shortfall`/`bucket` read | **True** |
-| Discard undoes it | `pull-release.ts:29-34` (`clearPullReleases`, called on commit AND discard) | **True** |
+| Discard undoes it | `pull-release.ts:48-59` (`clearPullReleases`, called on commit AND discard) | **True** |
 | A locked copy is never offered | `pull-control.tsx:108-116` (guard tag, no control) + `actions.ts` `PULL_REFUSED_LOCKED` under `isLiveLocked` inside the transaction | **True**, both halves |
 | Draft-only decks are never sources | `draft-shape.ts:192` `releasableClaims` filters `c.mature` (committed), and `pullCandidate`'s fallback also filters `(a?.claims ?? []).filter(c => c.mature)` | **True** |
 

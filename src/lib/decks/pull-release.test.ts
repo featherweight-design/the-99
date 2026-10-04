@@ -24,7 +24,11 @@ describe("the pull_releases upsert's SET clause", () => {
 
   it("bumps created_at as well as copies, so a re-pull from an old source reads as the newest touch", () => {
     const { sql: text } = emitted();
-    expect(text).toMatch(/"created_at"\s*=\s*now\(\)/i);
+    // `clock_timestamp()`, not `now()` — round-3 finding: `now()` is fixed at the transaction's
+    // START, before this statement waits on the row lock a concurrent pull could hold, so a pull
+    // that queued behind another could stamp an EARLIER time than the one it followed. See
+    // `touch.ts` for the same rule on an analogous stamp.
+    expect(text).toMatch(/"created_at"\s*=\s*clock_timestamp\(\)/i);
     expect(text).toMatch(/"copies"\s*=\s*"pull_releases"\."copies"\s*\+\s*1/i);
   });
 });

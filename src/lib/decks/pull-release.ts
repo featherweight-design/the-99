@@ -14,7 +14,13 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
  */
 export const PULL_RELEASE_UPSERT_SET = {
   copies: sql`${pullReleases.copies} + 1`,
-  createdAt: sql`now()`,
+  // `clock_timestamp()`, NOT `now()` — found by Copilot's round-3 review, the same rule
+  // `touch.ts` states: `now()` is read at the TRANSACTION's start, before this statement
+  // waits on the row lock a concurrent pull for the same card takes, so a pull that queued
+  // behind another one could still stamp an EARLIER time than the one it followed —
+  // `latestReleaseSources`'s whole `created_at desc` ordering depends on this being the
+  // moment the write actually landed.
+  createdAt: sql`clock_timestamp()`,
 };
 
 /**
