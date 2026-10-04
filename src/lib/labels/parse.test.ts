@@ -13,6 +13,16 @@ import { faceResolver, readReply, screenJobs, withoutRepeats } from "./parse";
 describe("faceResolver", () => {
   const asked = ["Soulcipher Board // Cipherbound Spirit", "Runadi, Behemoth Caller"];
 
+  // The v8 relabel's one held batch: asked with U+A789, answered with an ASCII colon.
+  it("matches a name the model retyped with an ASCII colon, and returns the asked name", () => {
+    const resolve = faceResolver(["Ratonhnhak\u00e9\ua789ton"]);
+    expect(resolve("Ratonhnhak\u00e9:ton")).toBe("Ratonhnhak\u00e9\ua789ton");
+    expect(resolve("Ratonhnhak\u00e9\ua789ton")).toBe("Ratonhnhak\u00e9\ua789ton");
+    // A decomposed accent is the same name under NFKC.
+    expect(resolve("Ratonhnhake\u0301:ton")).toBe("Ratonhnhak\u00e9\ua789ton");
+    expect(resolve("Ratonhnhake:ton")).toBeNull();
+  });
+
   it("passes through a name the batch asked for", () => {
     expect(faceResolver(asked)("Runadi, Behemoth Caller")).toBe("Runadi, Behemoth Caller");
   });
