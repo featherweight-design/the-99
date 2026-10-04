@@ -16,6 +16,7 @@ import {
 } from "../../app/decks/tuning-actions";
 import { creditsCopy } from "../../lib/copy/credits";
 import { numberWord } from "../../lib/copy/deck-analysis";
+import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { axisCopy } from "../../lib/copy/game-log";
 import type { EvidenceStep } from "../../lib/decks/tuning-read";
@@ -132,39 +133,27 @@ export function TuningPanel({
     setSeenIntent(facts.intent);
     setIntent(facts.intent);
   }
-  // "Kept for this deck" (H35, PR 2). Same sync-while-unedited shape as `intent` above: a save
-  // from elsewhere (none exists today — this panel is the only writer — but the shape matches
-  // every other field here) replaces the held draft rather than leaving it stale.
   const [capDollars, setCapDollars] = useState(facts.limits.capCents === null ? null : facts.limits.capCents / 100);
   const [limitSets, setLimitSets] = useState(facts.limits.sets);
   const [ownedOnly, setOwnedOnly] = useState(facts.limits.ownedOnly);
+  const [limitsError, setLimitsError] = useState<string | null>(null);
+  // "Kept for this deck" (H35, PR 2). Same sync-while-unedited shape as `intent`/`name`/
+  // `description` above, but per FIELD rather than as one group: a revalidated `facts.limits`
+  // (this panel's own save completing) must not clobber a field the player is mid-edit on in
+  // the SAME render that another field's save lands (pre-open review round 1) — each field only
+  // adopts the server's value when it still matches what this panel last saw, independently of
+  // the others.
   const [seenLimits, setSeenLimits] = useState(facts.limits);
   if (seenLimits !== facts.limits) {
+    const prevCap = seenLimits.capCents === null ? null : seenLimits.capCents / 100;
+    const capUnedited = capDollars === prevCap;
+    const setsUnedited = limitSets.length === seenLimits.sets.length && limitSets.every((s, i) => s === seenLimits.sets[i]);
+    const ownedUnedited = ownedOnly === seenLimits.ownedOnly;
     setSeenLimits(facts.limits);
-    setCapDollars(facts.limits.capCents === null ? null : facts.limits.capCents / 100);
-    setLimitSets(facts.limits.sets);
-    setOwnedOnly(facts.limits.ownedOnly);
+    if (capUnedited) setCapDollars(facts.limits.capCents === null ? null : facts.limits.capCents / 100);
+    if (setsUnedited) setLimitSets(facts.limits.sets);
+    if (ownedUnedited) setOwnedOnly(facts.limits.ownedOnly);
   }
-  // Debounced trailing-edge: typing the cap fires `saveLimits` on every keystroke, and two
-  // unsequenced writes can land at the database out of order — the earlier value overwriting
-  // the later one with nothing in the UI to show it happened (pre-open review round 1). Only
-  // the LATEST value within one pause reaches the server, so there is never more than one
-  // write in flight for this deck's limits at a time.
-  const saveLimitsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const saveLimits = useCallback(
-    (next: { capDollars: number | null; sets: readonly string[]; ownedOnly: boolean }) => {
-      if (saveLimitsTimer.current !== null) clearTimeout(saveLimitsTimer.current);
-      saveLimitsTimer.current = setTimeout(() => {
-        void saveDeckLimits(deckId, { capDollars: next.capDollars, sets: next.sets, ownedOnly: next.ownedOnly });
-      }, 500);
-    },
-    [deckId],
-  );
-  useEffect(() => {
-    return () => {
-      if (saveLimitsTimer.current !== null) clearTimeout(saveLimitsTimer.current);
-    };
-  }, []);
   const headingRef = useRef<HTMLHeadingElement>(null);
   // Each press takes a token, so a run the reader stopped cannot land over what they did next.
   const token = useRef(0);
@@ -184,6 +173,59 @@ export function TuningPanel({
       return null;
     }
   }, [deps, deckId]);
+
+  // Debounced trailing-edge: typing the cap fires `saveLimits` on every keystroke, and two
+  // unsequenced writes can land at the database out of order — the earlier value overwriting
+  // the later one with nothing in the UI to show it happened (pre-open review round 1). Only
+  // the LATEST value within one pause reaches the server, so there is never more than one
+  // write in flight for this deck's limits at a time. The pending payload itself is held in a
+  // ref (not just the timer) so a tab switch within the pause can FLUSH it on unmount rather
+  // than silently dropping it.
+  const saveLimitsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingLimits = useRef<{ capDollars: number | null; sets: readonly string[]; ownedOnly: boolean } | null>(null);
+  const commitLimits = useCallback(
+    async (next: { capDollars: number | null; sets: readonly string[]; ownedOnly: boolean }) => {
+      try {
+        const result = await saveDeckLimits(deckId, { capDollars: next.capDollars, sets: next.sets, ownedOnly: next.ownedOnly });
+        if (!result.ok) {
+          setLimitsError(result.message);
+          return;
+        }
+        setLimitsError(null);
+        // The fingerprint changed server-side, so a prior "unchanged" reading of this exact gate
+        // no longer applies — re-read so the manifest and the gate reopen without waiting for an
+        // unrelated navigation to revalidate the page (pre-open review round 1).
+        await reread();
+        setUnchangedShown(false);
+      } catch {
+        setLimitsError(deckDescriptionCopy.limits.refused);
+      }
+    },
+    [deckId, reread],
+  );
+  const saveLimits = useCallback(
+    (next: { capDollars: number | null; sets: readonly string[]; ownedOnly: boolean }) => {
+      pendingLimits.current = next;
+      if (saveLimitsTimer.current !== null) clearTimeout(saveLimitsTimer.current);
+      saveLimitsTimer.current = setTimeout(() => {
+        saveLimitsTimer.current = null;
+        const pending = pendingLimits.current;
+        pendingLimits.current = null;
+        if (pending !== null) void commitLimits(pending);
+      }, 500);
+    },
+    [commitLimits],
+  );
+  useEffect(() => {
+    return () => {
+      if (saveLimitsTimer.current !== null) clearTimeout(saveLimitsTimer.current);
+      const pending = pendingLimits.current;
+      pendingLimits.current = null;
+      // A tab switch within the debounce's pause unmounts this panel — flush rather than drop
+      // the player's last edit (pre-open review round 1).
+      if (pending !== null) void commitLimits(pending);
+    };
+  }, [commitLimits]);
 
   useEffect(() => {
     let live = true;
@@ -475,6 +517,7 @@ export function TuningPanel({
               saveLimits({ capDollars, sets: limitSets, ownedOnly: next });
             }}
           />
+          {limitsError ? <MutationError message={limitsError} /> : null}
         </div>
       )}
 

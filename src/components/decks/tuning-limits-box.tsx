@@ -4,11 +4,12 @@
 // the set and owned-only Suggested changes' own swaps stay inside — held per deck, never seeded,
 // drawn above the action row whether or not a reading has ever run.
 
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { MAX_BUDGET_DOLLARS } from "../../lib/intake/answers";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import type { PrintedInSet } from "../../lib/sets/printed-in";
 import { SetsField } from "../intake/sets-field";
+import { useIsDesktop } from "../ui/use-is-desktop";
 
 const copy = deckDescriptionCopy.limits;
 
@@ -56,7 +57,16 @@ export function TuningLimitsBox({
   onOwnedOnlyChange: (next: boolean) => void;
 }) {
   const [capDraft, setCapDraft] = useState(capDollars === null ? "" : String(capDollars));
+  // A revalidated `capDollars` (another tab's save, or the page's own "unedited" sync in
+  // `TuningPanel`) only reaches the mount-time `useState` above once, at mount — a later change
+  // from outside this field had nothing to redraw it (pre-open review round 1).
+  const [seenCapDollars, setSeenCapDollars] = useState(capDollars);
+  if (seenCapDollars !== capDollars) {
+    setSeenCapDollars(capDollars);
+    setCapDraft(capDollars === null ? "" : String(capDollars));
+  }
   const capId = useId();
+  const wide = useIsDesktop();
   return (
     <div
       data-testid="tuning-limits-box"
@@ -81,8 +91,16 @@ export function TuningLimitsBox({
             onChange={(e) => {
               const digits = e.target.value.replace(/[^\d]/g, "").slice(0, 6);
               setCapDraft(digits);
-              // `parseCapDollars("")` already answers null — nothing past the slice needs it.
-              onCapChange(parseCapDollars(digits));
+              if (digits === "") {
+                // An explicit clear — the only case that is allowed to save "no cap".
+                onCapChange(null);
+                return;
+              }
+              const parsed = parseCapDollars(digits);
+              // A non-empty value outside the bound (`0`, over `MAX_BUDGET_DOLLARS`) is a draft
+              // still being typed, not a request to clear the cap — nothing saves until it is
+              // either fixed or emptied (pre-open review round 1).
+              if (parsed !== null) onCapChange(parsed);
             }}
             className="min-w-0 flex-1 border-0 bg-transparent font-mono text-[16px] text-[color:var(--fg)] outline-none placeholder:text-[color:var(--fg-faint)] md:text-[14px]"
           />
@@ -90,7 +108,7 @@ export function TuningLimitsBox({
       </div>
 
       {/* No label row of its own — SetsField's trigger already reads "Set: Any" / "Set n". */}
-      <SetsField sets={sets} value={selectedSets} onChange={onSetsChange} wide copy={SETS_PANEL_COPY} />
+      <SetsField sets={sets} value={selectedSets} onChange={onSetsChange} wide={wide} copy={SETS_PANEL_COPY} />
 
       <div className="flex flex-col gap-[6px]">
         <span className="block font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">
@@ -107,13 +125,18 @@ export function TuningLimitsBox({
  *  `Pool` union and copy, neither of which this box shares. */
 function OwnedOnlyToggle({ value, onChange }: { value: boolean; onChange: (next: boolean) => void }) {
   const options: readonly boolean[] = [false, true];
+  const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const current = options.indexOf(value);
   return (
     <div role="radiogroup" aria-label={copy.ownLabel} className="flex gap-[6px]">
-      {options.map((o) => {
+      {options.map((o, i) => {
         const selected = o === value;
         return (
           <button
             key={String(o)}
+            ref={(node) => {
+              refs.current[i] = node;
+            }}
             type="button"
             role="radio"
             aria-checked={selected}
@@ -122,7 +145,12 @@ function OwnedOnlyToggle({ value, onChange }: { value: boolean; onChange: (next:
             onKeyDown={(e) => {
               if (e.key !== "ArrowRight" && e.key !== "ArrowLeft" && e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
               e.preventDefault();
-              onChange(!value);
+              // Same shape as `PoolRadios` (intake-form.tsx): focus follows the new choice, so
+              // a second arrow press or a Space lands on the option that is now checked, not the
+              // one that was (pre-open review round 1).
+              const next = (current + 1) % options.length;
+              refs.current[next]?.focus();
+              onChange(options[next]);
             }}
             className={[
               "flex h-[40px] flex-[1_1_0] min-w-0 items-center justify-center rounded-[7px] border border-solid text-[13px] cursor-pointer",

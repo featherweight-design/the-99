@@ -443,5 +443,88 @@ describe("TuningPanel: Locked (never cut)", () => {
       vi.useRealTimers();
     }
   });
+
+  // pre-open review round 1: the sync-while-unedited check used to compare the whole `limits`
+  // object by reference, so ANY revalidation (even one that hands back the same, still-unsaved
+  // content under a new object) overwrote every field — including one mid-edit.
+  it("keeps a field mid-edit when facts.limits re-renders with a new reference but the same content", async () => {
+    const d = deps([fresh]);
+    const utils = await (async () => {
+      let out!: ReturnType<typeof render>;
+      await act(async () => {
+        out = render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
+      });
+      return out;
+    })();
+    fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" }));
+    expect(screen.getByRole("radio", { name: "Only cards I own" })).toHaveAttribute("aria-checked", "true");
+    const revalidated: TuningFacts = { ...facts, limits: { capCents: null, sets: [], ownedOnly: false } };
+    await act(async () => {
+      utils.rerender(<TuningPanel deckId="d1" permits={[3]} facts={revalidated} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
+    });
+    expect(screen.getByRole("radio", { name: "Only cards I own" })).toHaveAttribute("aria-checked", "true");
+  });
+
+  // pre-open review round 1: `saveLimits` used to `void` its call, discarding both an
+  // `{ ok: false }` refusal and a rejection — the controls kept showing an unsaved value as if
+  // it had landed.
+  it("shows the limits save failure near the box rather than discarding it", async () => {
+    vi.useFakeTimers();
+    try {
+      (saveDeckLimits as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ ok: false, message: "Nope." });
+      await act(async () => {
+        render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={deps([fresh])} printedInSets={[]} />);
+      });
+      fireEvent.change(screen.getByLabelText("Most per card"), { target: { value: "15" } });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      expect(screen.getByText("Nope.")).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // pre-open review round 1: the fingerprint moves server-side on a successful limits save, so
+  // a prior "unchanged" reading of this exact gate no longer applies — the panel must re-read
+  // rather than wait for an unrelated navigation to revalidate the page.
+  it("re-reads tuning state after a successful limits save", async () => {
+    vi.useFakeTimers();
+    try {
+      const d = deps([fresh]);
+      await act(async () => {
+        render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
+      });
+      expect(d.read).toHaveBeenCalledTimes(1);
+      fireEvent.change(screen.getByLabelText("Most per card"), { target: { value: "15" } });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      expect(d.read).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // pre-open review round 1: switching tabs within the 500ms pause unmounted this panel and
+  // cancelled its only pending save with no record of the choice.
+  it("flushes a pending limits save on unmount instead of dropping it", async () => {
+    vi.useFakeTimers();
+    try {
+      (saveDeckLimits as ReturnType<typeof vi.fn>).mockClear();
+      let utils!: ReturnType<typeof render>;
+      await act(async () => {
+        utils = render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={deps([fresh])} printedInSets={[]} />);
+      });
+      fireEvent.change(screen.getByLabelText("Most per card"), { target: { value: "15" } });
+      expect(saveDeckLimits).not.toHaveBeenCalled();
+      act(() => {
+        utils.unmount();
+      });
+      expect(saveDeckLimits).toHaveBeenCalledWith("d1", { capDollars: 15, sets: [], ownedOnly: false });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
