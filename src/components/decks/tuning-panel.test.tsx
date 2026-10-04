@@ -4,6 +4,7 @@ import { saveDeckLimits } from "../../app/decks/tuning-actions";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 
 import { creditsCopy } from "../../lib/copy/credits";
+import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import type { TuningItem, TuningState } from "../../lib/tuning/state";
 import { manifestRows, readSteps, TuningPanel, type TuningDeps, type TuningFacts } from "./tuning-panel";
@@ -530,6 +531,60 @@ describe("TuningPanel: Locked (never cut)", () => {
     }
   });
 
+  // Pre-open review round 3: the round-2 fix only checked whether the field was still sitting
+  // in the UNSENT `pendingLimits` patch — it missed a revert whose OWN send had already been
+  // dispatched and was itself queued behind the first, slower send in `limitsChain`.
+  it("keeps a revert through the WHOLE queue, not just the first send still in flight", async () => {
+    vi.useFakeTimers();
+    try {
+      let resolveFirst!: (v: { ok: true }) => void;
+      let resolveSecond!: (v: { ok: true }) => void;
+      (saveDeckLimits as ReturnType<typeof vi.fn>).mockClear();
+      (saveDeckLimits as ReturnType<typeof vi.fn>)
+        .mockImplementationOnce(() => new Promise((resolve) => { resolveFirst = resolve; }))
+        .mockImplementationOnce(() => new Promise((resolve) => { resolveSecond = resolve; }));
+      const d = deps([fresh]);
+      let utils!: ReturnType<typeof render>;
+      await act(async () => {
+        utils = render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
+      });
+      fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" })); // true
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      expect(saveDeckLimits).toHaveBeenCalledTimes(1); // the first send, unresolved
+      fireEvent.click(screen.getByRole("radio", { name: "Any card" })); // revert: false
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      // The revert's OWN send is now scheduled, but chained behind the first — not yet called.
+      expect(saveDeckLimits).toHaveBeenCalledTimes(1);
+      resolveFirst({ ok: true });
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      // The first settling released the chain — the revert's send has now actually dispatched.
+      expect(saveDeckLimits).toHaveBeenCalledTimes(2);
+      expect(saveDeckLimits).toHaveBeenLastCalledWith("d1", { ownedOnly: false });
+      // A revalidation reflecting the FIRST save's value (true) arrives while the revert's own
+      // send is still unresolved.
+      const revalidated: TuningFacts = { ...facts, limits: { capCents: null, sets: [], ownedOnly: true } };
+      await act(async () => {
+        utils.rerender(<TuningPanel deckId="d1" permits={[3]} facts={revalidated} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
+      });
+      expect(screen.getByRole("radio", { name: "Any card" })).toHaveAttribute("aria-checked", "true");
+      resolveSecond({ ok: true });
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   // Pre-open review round 2: a limit edited moments before the press must be flushed and its
   // fresh fingerprint read BEFORE the gate decides "unchanged" — the save's own 500ms debounce
   // must not let a press slip through on the pre-edit fingerprint.
@@ -642,6 +697,61 @@ describe("TuningPanel: Locked (never cut)", () => {
         await Promise.resolve();
       });
       expect(saveDeckLimits).toHaveBeenCalledWith("d1", { capDollars: 15 });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // Pre-open review round 3: `flushLimitsNow` used to report only the LATEST chain link's own
+  // result — a later, different-field send's success erased an EARLIER field's unresolved
+  // failure, letting a press through on an unsaved cap.
+  it("blocks the press over an earlier failed save even once a later, different field has since succeeded", async () => {
+    vi.useFakeTimers();
+    try {
+      (saveDeckLimits as ReturnType<typeof vi.fn>).mockClear();
+      (saveDeckLimits as ReturnType<typeof vi.fn>).mockImplementationOnce(async () => ({ ok: false as const, message: "Nope." }));
+      await act(async () => {
+        render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={deps([fresh])} printedInSets={[]} />);
+      });
+      fireEvent.change(screen.getByLabelText("Most per card"), { target: { value: "15" } });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      expect(screen.getByText("Nope.")).toBeInTheDocument();
+      // A different field saves fine afterward.
+      fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" }));
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: copy.suggest }));
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      // The cap's own failure is still unresolved — the run must not have started.
+      expect(screen.getByText(deckDescriptionCopy.limits.refused)).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // Pre-open review round 3: a second press during the flush-and-gate-check preamble (before
+  // `reading` disables the button) used to start a SECOND `press`, racing `token`/`ownRun`
+  // against the first.
+  it("ignores a second press while the first is still preparing", async () => {
+    vi.useFakeTimers();
+    try {
+      const d = deps([fresh, results]);
+      await act(async () => {
+        render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
+      });
+      const button = screen.getByRole("button", { name: copy.suggest });
+      // Fire two presses back to back, before the first's flush (empty, but still an await) has
+      // had a chance to resolve.
+      fireEvent.click(button);
+      fireEvent.click(button);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      expect(d.run).toHaveBeenCalledTimes(1);
     } finally {
       vi.useRealTimers();
     }

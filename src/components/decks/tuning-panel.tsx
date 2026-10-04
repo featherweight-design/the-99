@@ -168,6 +168,11 @@ export function TuningPanel({
   // The id this panel gave the run its press started, until that press settles. Stop cancels this
   // run and no other: the pending row a read turns up may be another tab's.
   const ownRun = useRef<string | null>(null);
+  // A SYNCHRONOUS re-entry guard over `press`'s whole body: `reading` (which the render uses to
+  // disable the button) only goes true once `setCounts({})` runs below, so a second click during
+  // the flush-and-gate-check preamble would otherwise start a SECOND `press`, racing `token` and
+  // `ownRun` against the first (pre-open review round 3).
+  const preparingRun = useRef(false);
 
   // EVERY server call here can reject (a dropped connection, an unexpected database error), and a
   // rejection must never strand the panel: a failed re-read keeps what is on screen, and a failed
@@ -190,14 +195,27 @@ export function TuningPanel({
   // 2). Two edits to DIFFERENT fields inside the same pause merge into one request; a save
   // already dispatched when a new edit lands is never raced — `limitsChain` serializes every
   // send, and the next one starts only once the last has settled.
+  type LimitField = "capDollars" | "sets" | "ownedOnly";
   type LimitsPatch = { capDollars?: number | null; sets?: readonly string[]; ownedOnly?: boolean };
   const saveLimitsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingLimits = useRef<LimitsPatch | null>(null);
   const limitsChain = useRef<Promise<unknown>>(Promise.resolve());
   const limitsInFlight = useRef(0);
+  // Which field is in trouble right now — a send that answered `{ ok: false }` or threw, not
+  // yet cleared by a LATER successful send covering that same field (pre-open review round 3).
+  // Checking only the last chain link's own boolean missed an EARLIER failure a later,
+  // different-field send's success had nothing to do with.
+  const failedLimitFields = useRef<Set<LimitField>>(new Set());
+  // The edit count per field, bumped on every local change and SNAPSHOTTED into the patch a
+  // send carries. A send clears a field's dirty marker only when the ack's snapshot still
+  // equals the CURRENT count — i.e. no further edit has queued behind it anywhere in the chain
+  // (pre-open review round 3). Checking "is this key still in `pendingLimits`" only caught an
+  // edit queued in the SAME unsent patch; a newer edit that had already moved into its OWN,
+  // separately-chained send was invisible to that check.
+  const limitFieldRevision = useRef<Record<LimitField, number>>({ capDollars: 0, sets: 0, ownedOnly: 0 });
   const sendLimits = useCallback(
-    (patch: LimitsPatch): Promise<boolean> => {
-      const keys = Object.keys(patch) as (keyof LimitsPatch)[];
+    (patch: LimitsPatch, revisionAtSend: Partial<Record<LimitField, number>>): Promise<boolean> => {
+      const keys = Object.keys(patch) as LimitField[];
       limitsInFlight.current += 1;
       const sent = limitsChain.current
         .then(async (): Promise<boolean> => {
@@ -205,6 +223,7 @@ export function TuningPanel({
             const result = await saveDeckLimits(deckId, patch);
             if (!result.ok) {
               setLimitsError(result.message);
+              keys.forEach((key) => failedLimitFields.current.add(key));
               return false;
             }
             setLimitsError(null);
@@ -213,10 +232,8 @@ export function TuningPanel({
             // waiting for an unrelated navigation to revalidate the page (round 1).
             await reread();
             setUnchangedShown(false);
-            // Settled only for a field with no NEWER edit queued behind this send — checked
-            // now, not at send time, since one could have landed while this request was in
-            // flight (round 2).
-            const settled = keys.filter((key) => !pendingLimits.current || !(key in pendingLimits.current));
+            keys.forEach((key) => failedLimitFields.current.delete(key));
+            const settled = keys.filter((key) => limitFieldRevision.current[key] === revisionAtSend[key]);
             if (settled.length > 0) {
               setDirtyLimitFields((prev) => {
                 const next = new Set(prev);
@@ -227,6 +244,7 @@ export function TuningPanel({
             return true;
           } catch {
             setLimitsError(deckDescriptionCopy.limits.refused);
+            keys.forEach((key) => failedLimitFields.current.add(key));
             return false;
           }
         })
@@ -238,9 +256,20 @@ export function TuningPanel({
     },
     [deckId, reread],
   );
+  const scheduleSend = useCallback((toSend: LimitsPatch) => {
+    const keys = Object.keys(toSend) as LimitField[];
+    const revisionAtSend: Partial<Record<LimitField, number>> = {};
+    keys.forEach((key) => {
+      revisionAtSend[key] = limitFieldRevision.current[key];
+    });
+    return sendLimits(toSend, revisionAtSend);
+  }, [sendLimits]);
   const saveLimits = useCallback(
     (patch: LimitsPatch) => {
-      const keys = Object.keys(patch) as (keyof LimitsPatch)[];
+      const keys = Object.keys(patch) as LimitField[];
+      keys.forEach((key) => {
+        limitFieldRevision.current[key] += 1;
+      });
       setDirtyLimitFields((prev) => new Set([...prev, ...keys]));
       pendingLimits.current = { ...pendingLimits.current, ...patch };
       if (saveLimitsTimer.current !== null) clearTimeout(saveLimitsTimer.current);
@@ -248,10 +277,10 @@ export function TuningPanel({
         saveLimitsTimer.current = null;
         const toSend = pendingLimits.current;
         pendingLimits.current = null;
-        if (toSend !== null) void sendLimits(toSend);
+        if (toSend !== null) void scheduleSend(toSend);
       }, 500);
     },
-    [sendLimits],
+    [scheduleSend],
   );
   // The cap draft went invalid (non-empty, out of bounds) — cancel only ITS contribution to a
   // still-pending patch, leaving a sibling field's queued edit (sets, owned-only) untouched
@@ -267,6 +296,9 @@ export function TuningPanel({
   // to settle — `press` needs both before it can trust `stateRef` (pre-open review round 2).
   // `touched` is false only when there was truly nothing pending or in flight, which is what
   // lets `press` skip the extra read on the common path where no limit was ever edited.
+  // `ok` reports every field currently in `failedLimitFields`, not just the LAST chain link's
+  // own result — a successful sets-only send must not erase an earlier failed cap send's
+  // refusal (pre-open review round 3).
   const flushLimitsNow = useCallback(async (): Promise<{ ok: boolean; touched: boolean }> => {
     if (saveLimitsTimer.current !== null) {
       clearTimeout(saveLimitsTimer.current);
@@ -274,11 +306,14 @@ export function TuningPanel({
     }
     const toSend = pendingLimits.current;
     pendingLimits.current = null;
-    if (toSend !== null) return { ok: await sendLimits(toSend), touched: true };
-    if (limitsInFlight.current === 0) return { ok: true, touched: false };
-    const ok = await limitsChain.current.then(() => true, () => false);
-    return { ok, touched: true };
-  }, [sendLimits]);
+    if (toSend !== null) {
+      await scheduleSend(toSend);
+      return { ok: failedLimitFields.current.size === 0, touched: true };
+    }
+    if (limitsInFlight.current === 0) return { ok: failedLimitFields.current.size === 0, touched: false };
+    await limitsChain.current.catch(() => undefined);
+    return { ok: failedLimitFields.current.size === 0, touched: true };
+  }, [scheduleSend]);
   useEffect(() => {
     return () => {
       if (saveLimitsTimer.current !== null) clearTimeout(saveLimitsTimer.current);
@@ -286,9 +321,9 @@ export function TuningPanel({
       pendingLimits.current = null;
       // A tab switch within the debounce's pause unmounts this panel — flush rather than drop
       // the player's last edit (pre-open review round 1).
-      if (pending !== null) void sendLimits(pending);
+      if (pending !== null) void scheduleSend(pending);
     };
-  }, [sendLimits]);
+  }, [scheduleSend]);
 
   useEffect(() => {
     let live = true;
@@ -335,27 +370,46 @@ export function TuningPanel({
 
   async function press(anyway = false) {
     if (!state) return;
-    setRefused(null);
-    // A limit edited moments ago still has a pending or in-flight save — flush and wait for it
-    // first, or this press can capture the OLD fingerprint and run stale the instant the save
-    // lands (pre-open review round 2). `touched` is false on the common path (nothing to do
-    // with limits pending), so this costs nothing beyond that check.
-    const { ok: limitsOk, touched } = await flushLimitsNow();
-    if (!limitsOk) {
-      setRefused(deckDescriptionCopy.limits.refused);
-      return;
+    // Held for the whole press, released on every exit by the `finally` below — not just the
+    // preamble, since `reading`'s own disablement only starts once `setCounts({})` runs further
+    // down (pre-open review round 3).
+    if (preparingRun.current) return;
+    preparingRun.current = true;
+    try {
+      setRefused(null);
+      // A limit edited moments ago still has a pending or in-flight save — flush and wait for it
+      // first, or this press can capture the OLD fingerprint and run stale the instant the save
+      // lands (pre-open review round 2). LOOPED: an edit made DURING that wait (the controls stay
+      // interactive until `reading` goes true) would otherwise sit outside the one snapshot this
+      // flushed, and the run would start without it (round 3). `touched` false on the loop's
+      // first pass is the common case (nothing to do with limits pending) and costs nothing
+      // beyond the one check.
+      let flushed = await flushLimitsNow();
+      while (flushed.ok && flushed.touched && pendingLimits.current !== null) {
+        flushed = await flushLimitsNow();
+      }
+      if (!flushed.ok) {
+        setRefused(deckDescriptionCopy.limits.refused);
+        return;
+      }
+      const current = flushed.touched ? stateRef.current : state;
+      if (current === null) {
+        setRefused(deckTuningCopy.run.refused);
+        return;
+      }
+      if (!anyway && gateReason(current)?.kind === "unchanged") {
+        setUnchangedShown(true);
+        setAnnounced(deckTuningCopy.announce.unchanged);
+        return;
+      }
+      setUnchangedShown(false);
+      await pressRun(anyway);
+    } finally {
+      preparingRun.current = false;
     }
-    const current = touched ? stateRef.current : state;
-    if (current === null) {
-      setRefused(deckTuningCopy.run.refused);
-      return;
-    }
-    if (!anyway && gateReason(current)?.kind === "unchanged") {
-      setUnchangedShown(true);
-      setAnnounced(deckTuningCopy.announce.unchanged);
-      return;
-    }
-    setUnchangedShown(false);
+  }
+
+  async function pressRun(anyway: boolean) {
     const mine = ++token.current;
     const runId = crypto.randomUUID();
     ownRun.current = runId;
