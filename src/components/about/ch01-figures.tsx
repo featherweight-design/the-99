@@ -22,7 +22,6 @@ import {
   CONTESTED_ARRIVAL,
   ADD_RESULTS,
   CARDS,
-  CONTESTED_RESERVATION,
   CREATE_COMMANDERS,
   REVIEW_IN_ROWS,
   DECK_FOLDERS,
@@ -1403,21 +1402,9 @@ export function FoldersFigureBody() {
   );
 }
 
-/**
- * `reservations` — the contested-card row itself.
- *
- * The figure was two legend rows: the phrase "first committed" — which is this
- * page's summary of the rule rather than anything the app prints — and the
- * chooser's heading with no chooser under it. The row is the rule: two decks,
- * one copy, seniority deciding until the player picks.
- *
- * It is drawn with no `thisDeckId`. That prop tags the deck whose page the row
- * is on, and a figure has no such page — passing one would mark a deck
- * "this one" in a picture with no deck behind it.
- */
-export function ReservationsFigureBody() {
-  return <ContestedCardRow card={CONTESTED_RESERVATION} />;
-}
+// `ReservationsFigureBody` (the `reservations` entry) was retired with the entry — see
+// about.ts. `ContestedCardRow` is still a live component (the import summary still mounts it);
+// only this entry's own demonstration of it, from a deck's review page, is gone.
 
 /**
  * `themes` — the six tiles, as the picker draws them, with the reader's own
@@ -1577,9 +1564,10 @@ export function ProxiesFigureBody() {
  * claim query failed, every bucket goes null and no row can draw a control —
  * which is a real state and the wrong one to teach here.
  *
- * `contested` is empty and `onRestore` is null: the chooser belongs to the
- * contested rows, which `reservations` draws, and a column of adds has nothing
- * to put back.
+ * `onRestore` is null: a column of adds has nothing to put back. `Column` no longer takes a
+ * `contested` prop at all — the per-row chooser it fed was retired (see `about.ts`'s note where
+ * `reservations` used to be), and the figure never needed the aggregate `chipShort` count that
+ * data still feeds elsewhere, so there is nothing left here for a removed prop to be empty.
  */
 export function ReviewAndCommitFigureBody() {
   return (
@@ -1609,7 +1597,6 @@ export function ReviewAndCommitFigureBody() {
         headingTone="var(--success)"
         note={deckVersioningCopy.review.groupInBreakdown(5, 3, 1)}
         rows={REVIEW_IN_ROWS}
-        contested={[]}
         siblings={[]}
         claimsKnown
         newestAsOf={PRICES[0].fact.asOf}

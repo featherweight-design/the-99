@@ -37,8 +37,6 @@ import { DISCARD_RECEIPT_HASH, draftAnnouncer } from "./draft-announcer";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { HoverPreviewProvider } from "./hover-preview";
 import { PullControl } from "./pull-control";
-import { ContestedCardRow } from "./contested-card-row";
-import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import type { ContestedCard } from "../../lib/collection/summary-read";
 import { PutBackControl } from "./put-back-control";
 import { MutationError } from "./mutation-error";
@@ -72,12 +70,11 @@ type ReviewChangesProps = {
   rows: DraftRows["rows"];
   state: DraftState;
   /**
-   * The cards on this page more committed decks want than the collection holds.
-   *
-   * Read by the route, unexcluded: a row here is loaded from this deck's own vantage, which is
-   * right for its buy tag and wrong for the chooser — the queue's whole subject is the committed
-   * decks INCLUDING this one, and an excluded read leaves the reader's own deck out of its own
-   * decision.
+   * The cards on this page more committed decks want than the collection holds. Drives the
+   * `chipShort` summary figure; the per-row chooser that used to hang under each one was
+   * removed (Hugh, 2026-10-04 — no Design round, a removal), with a replacement going to
+   * Design separately. Loaded unexcluded, for reasons the route (`page.tsx`) states — including
+   * that the chip must keep counting this deck's own shortfall.
    */
   contested: ContestedCard[];
   /** The two whole lists the shape strip folds — the newest version's, and the
@@ -174,7 +171,6 @@ export function Column({
   headingTone,
   note,
   rows,
-  contested,
   siblings,
   descriptionId,
   hiddenOnPhone,
@@ -188,8 +184,6 @@ export function Column({
   zoneHint,
 }: {
   deckId: string;
-  /** The contested cards among this column's rows. The chooser hangs under the ones that match. */
-  contested: ContestedCard[];
   heading: string;
   /** `--success` coming in, `--warning` going out. The direction is the one fact
    *  the header carries that the rows below it do not. */
@@ -309,10 +303,6 @@ export function Column({
           const recount = printsPair(row)
             ? { from: String(row.from), to: String(row.to) }
             : undefined;
-          // The chooser hangs BELOW the row, never inside it. The decklist row keeps its floor —
-          // name, one availability slot, `Pull it` — and the panel is a second geometry with a
-          // second meaning, which is what stops the two verbs reading as one control.
-          const contestedCard = contested.find((c) => c.oracleId === row.oracleId) ?? null;
           return (
             <div key={row.oracleId}>
               {word && (
@@ -384,30 +374,6 @@ export function Column({
                       : null
                   }
                 />
-              )}
-              {/* THE SECOND DOOR. A contested card gets the chooser as a panel beneath its row,
-                  with the caption that spells out the distinction from the control above it:
-                  `Pull it` takes the card out of another deck's list, leaving that deck a
-                  draft, and this edits nobody's list. A caption rather than a warning, because
-                  giving is the safe one of the two. */}
-              {contestedCard && (
-                <div
-                  className="mt-[6px] mb-[10px] ml-[10px] pl-[11px]"
-                  style={{ borderLeft: "2px solid var(--accent)" }}
-                >
-                  <p
-                    id={`seam-${contestedCard.oracleId}`}
-                    className="font-mono text-[10px] uppercase tracking-[0.13em] mt-0 mb-[6px]"
-                    style={{ color: "var(--fg-faint)" }}
-                  >
-                    {cardAssignmentsCopy.contested.seamCaption}
-                  </p>
-                  <ContestedCardRow
-                    card={contestedCard}
-                    thisDeckId={deckId}
-                    describedBy={`seam-${contestedCard.oracleId}`}
-                  />
-                </div>
               )}
             </div>
           );
@@ -987,7 +953,6 @@ export function ReviewChanges({
             <Column
               zoneHint={(id, added) => commanderZoneHint(state, id, added)}
               deckId={deckId}
-              contested={contested}
               heading={copy.groupIn(inCount)}
               headingTone="var(--success)"
               note={
@@ -1017,7 +982,6 @@ export function ReviewChanges({
             <Column
               zoneHint={(id, added) => commanderZoneHint(state, id, added)}
               deckId={deckId}
-              contested={contested}
               heading={copy.groupOut(outCount)}
               headingTone="var(--warning)"
               // A trade's only cut is the new commander leaving for the command zone, which the

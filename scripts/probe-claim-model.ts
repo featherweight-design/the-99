@@ -755,8 +755,10 @@ async function assignmentWriteSection() {
 
 // ── THE SECOND DOOR'S OWN READ ─────────────────────────────────────────────────
 //
-// `loadContestedCards` is what `/decks/[id]/changes` hangs its chooser off, and two of its rules
-// are invisible to a component test fed hand-built props:
+// `loadContestedCards` is what `/decks/[id]/changes` reads for its `chipShort` summary figure
+// (the per-row chooser this read used to also feed was removed 2026-10-04, no Design round — a
+// replacement is going to Design separately; the read itself is unaffected), and two of its
+// rules are invisible to a component test fed hand-built props:
 //
 //   IT READS UNEXCLUDED. A row on that page is loaded from the deck's own vantage, which is right
 //   for its buy tag and wrong here — the queue's subject is the committed decks INCLUDING the one

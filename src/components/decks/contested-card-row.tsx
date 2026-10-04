@@ -9,8 +9,11 @@
 // is the next PR, and it lands on this component; the reason the row is worth having now is
 // that the shortage is real and the summary would otherwise report it without naming it.
 //
-// ONE COMPONENT, MEANT FOR TWO SURFACES: the summary and `/decks/[id]/changes`. There is no
-// deck-page door — that was ruled out on 2026-09-14 and the availability marker stays inert.
+// MOUNTED ON THE IMPORT SUMMARY alone, as of 2026-10-04 (Hugh, no Design round — a removal).
+// It also mounted on `/decks/[id]/changes`, under each contested row; that door was removed
+// (`review-changes.tsx` no longer imports this component), and a replacement chooser for that
+// surface is going to Design separately. The component itself is untouched, and still supports
+// `fromImport: false` for whenever that door returns.
 //
 // THE ORDER IS THE EXPLANATION, so `this deck` is tagged and never promoted: moving a player's
 // own deck to the top would hide why it lost.
