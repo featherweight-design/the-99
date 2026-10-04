@@ -251,8 +251,9 @@ type Collected =
  * - Results are attributed by `custom_id` to the intent that sent it. A result whose id
  *   belongs to no intent here is IGNORED rather than attributed to the nearest one.
  * - A job the schema REJECTS is dropped and recorded, never repaired: a repaired label
- *   stores the repair and the next re-score measures the repair. The one exception is
- *   `normalizeJob`'s, a `to` or `method` on a kind that does not take it (Hugh, 2026-10-04).
+ *   stores the repair and the next re-score measures the repair. The exceptions are
+ *   `normalizeJob`'s: a `to` or `method` on a kind that does not take it, and a threshold
+ *   with no number or an unknown stat, each set to null (Hugh, 2026-10-04).
  * - A missing or non-array `jobs` is NOT an empty answer. The gold set has hard negatives
  *   where `[]` is correct, so coercing malformed output to `[]` credits it as right on
  *   exactly the cards designed to catch over-labelling.
