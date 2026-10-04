@@ -93,7 +93,9 @@ Copy wording is `/copy-review`'s, not this table's. The three R2 keys (`cardShee
    marker's own state map, so the figure is drawn by the marker component itself.
 3. Not drawn by R2, kept rather than cut: the stand-ins door's strip at the sheet's head, and a
    stacked stand-in's Take footer at its foot. The teaser grows by each one's MEASURED height (a door
-   renderer can draw nothing for a locked card), so the card band gives the room back. Stacked sheets
-   (96 / 140) are PR 4's spec check.
+   renderer can draw nothing for a locked card), so the card band gives the room back. Where that
+   would leave the card under 120px wide (a stacked stand-in with its footer on a 360x640 phone, about
+   28px), the teaser is not offered: the sheet opens full and stays full, with no grip, and Escape
+   closes. Stacked sheets (96 / 140) are PR 4's spec check.
 
 VERDICT: 0 visual gaps, 0 state gaps.

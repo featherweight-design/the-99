@@ -520,6 +520,9 @@ const NeighborPlate = React.forwardRef<
   );
 });
 
+/** The narrowest card the phone's teaser may leave room for; below it the sheet opens full. */
+const MIN_TEASER_CARD_WIDTH = 120;
+
 /**
  * An element's own height, kept current as it changes. Zero while `active` is false or the element
  * has no layout, which is every element below a `display: none` ancestor.
@@ -814,10 +817,33 @@ export function CardModal({
    * controls and gestures; everything else reads `sheetOpen`, which is false at desktop widths.
    */
   const [sheetFull, setSheetFull] = useState(false);
-  // What the rest of the modal reads. The state can only be set from the phone's own controls
-  // and gestures, but a window widened with the sheet up must not leave the desktop's Escape
-  // and arrow keys behaving as if a sheet nobody can see were still open.
-  const sheetOpen = narrow && sheetFull;
+
+  // THE TEASER'S HEIGHT, which places the sheet and sizes the card band above it. A fixed 280
+  // (README R2 "States"), plus the swap tools' two surfaces where a card carries them: the
+  // stand-ins door's strip at the sheet's head, and a stacked stand-in's Take footer at its foot.
+  // Neither is drawn on the R2 canvas; both keep the room they had under the retired art header.
+  // Both are MEASURED: a renderer can draw nothing for a card (the door does for a locked one),
+  // and a figure assumed from the prop would leave a blank gap in the teaser.
+  const doorStrip = door ? door("strip") : null;
+  const doorRef = useRef<HTMLDivElement | null>(null);
+  const footerRef = useRef<HTMLDivElement | null>(null);
+  const doorHeight = useOwnHeight(doorRef, doorStrip !== null);
+  const footerHeight = useOwnHeight(footerRef, footer !== null);
+  const teaserHeight = SHEET.teaserHeight + doorHeight + footerHeight;
+
+  // A TEASER THAT WOULD CRUSH THE CARD IS NOT OFFERED. A short screen under a stacked sheet (a
+  // stand-in at 140, with its Take footer) can leave the band so little room that the card would
+  // draw tens of pixels wide; there the sheet opens full and stays full, the way the stacked
+  // sheet drew its details before R2, and Escape closes it. 120 keeps the card at least the
+  // size of a readable thumbnail. Stacked sheets' own spec check is the carousel's PR 4.
+  const dialogHeight = useOwnHeight(dialogRef, narrow);
+  const cramped = dialogHeight > 0 && (dialogHeight - teaserHeight - 85) * 0.7159 < MIN_TEASER_CARD_WIDTH;
+  // What the sheet DRAWS: full when the reader raised it, or when the teaser is not offered.
+  const full = sheetFull || cramped;
+  // What Escape and the arrow keys read. Phone width only: a window widened with the sheet up
+  // must not leave the desktop's keys answering to a sheet nobody can see. And a cramped sheet
+  // has no teaser to step down to, so its Escape closes.
+  const sheetOpen = narrow && sheetFull && !cramped;
   const bandRef = useRef<HTMLDivElement | null>(null);
   const sheetRef = useRef<HTMLDivElement | null>(null);
   const gripRef = useRef<HTMLButtonElement | null>(null);
@@ -1216,23 +1242,11 @@ export function CardModal({
   // Focus trap + Escape + focus-return — shared hook, shared with the export dialog.
   useDialogA11y(dialogRef, onEscape, { initialFocusRef });
 
-  // THE TEASER'S HEIGHT, which places the sheet and sizes the card band above it. A fixed 280
-  // (README R2 "States"), plus the swap tools' two surfaces where a card carries them: the
-  // stand-ins door's strip at the sheet's head, and a stacked stand-in's Take footer at its foot.
-  // Neither is drawn on the R2 canvas; both keep the room they had under the retired art header.
-  // Both are MEASURED: a renderer can draw nothing for a card (the door does for a locked one),
-  // and a figure assumed from the prop would leave a blank gap in the teaser.
-  const doorStrip = door ? door("strip") : null;
-  const doorRef = useRef<HTMLDivElement | null>(null);
-  const footerRef = useRef<HTMLDivElement | null>(null);
-  const doorHeight = useOwnHeight(doorRef, doorStrip !== null);
-  const footerHeight = useOwnHeight(footerRef, footer !== null);
-  const teaserHeight = SHEET.teaserHeight + doorHeight + footerHeight;
 
   const gestures = useCardSheetGestures({
     bandRef,
     sheetRef,
-    full: sheetFull,
+    full,
     teaserHeight,
     canPrev: onPrev !== null,
     canNext: onNext !== null,
@@ -1401,7 +1415,7 @@ export function CardModal({
       // Plain Left/Right only, or the carousel silently eats a navigation the reader meant.
       if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
       // Paging is withheld while the phone's sheet is full (STATES h3); the counter stays.
-      if (sheetOpen) return;
+      if (narrow && full) return;
       const active = document.activeElement;
       if (active instanceof HTMLElement) {
         if (active.tagName === "INPUT") return;
@@ -1418,7 +1432,7 @@ export function CardModal({
     };
     backdrop.addEventListener("keydown", handler);
     return () => backdrop.removeEventListener("keydown", handler);
-  }, [total, onPrev, onNext, onAtStart, onAtEnd, sheetOpen]);
+  }, [total, onPrev, onNext, onAtStart, onAtEnd, narrow, full]);
 
   // A back face to turn to, or none (#363). The image is the second condition and
   // not an afterthought: a `transform` row seeded before the back-face column
@@ -1839,7 +1853,7 @@ export function CardModal({
           data-testid="card-band"
           onPointerDown={narrow ? gestures.onBandPointerDown : undefined}
           className="md:hidden band-dim absolute inset-x-0 top-0 z-[1] touch-none [container-type:size]"
-          style={{ height: `calc(100% - ${teaserHeight}px)`, opacity: sheetFull ? 0.35 : 1 }}
+          style={{ height: `calc(100% - ${teaserHeight}px)`, opacity: full ? 0.35 : 1 }}
         >
           <div
             className="absolute inset-0"
@@ -2021,7 +2035,7 @@ export function CardModal({
           ref={sheetRef}
           inert={zoomed}
           data-testid="card-sheet"
-          data-sheet={sheetFull ? "full" : "teaser"}
+          data-sheet={full ? "full" : "teaser"}
           // The phone's alone: on the desktop this column is a column, and a drag-select in its
           // text must stay a drag-select.
           onPointerDown={narrow ? gestures.onSheetPointerDown : undefined}
@@ -2033,25 +2047,27 @@ export function CardModal({
             + " sheet-snap"
             // The teaser does not scroll, so a vertical drag anywhere on it is the sheet's; it fills
             // to the 34px home inset. The full sheet's body scrolls and only its grip drags it.
-            + (sheetFull ? "" : " max-md:touch-none max-md:pb-[34px]")
+            + (full ? "" : " max-md:touch-none max-md:pb-[34px]")
           }
-          style={{ "--sheet-top": sheetFull ? `${SHEET.fullTop}px` : `calc(100% - ${teaserHeight}px)` } as React.CSSProperties}
+          style={{ "--sheet-top": full ? `${SHEET.fullTop}px` : `calc(100% - ${teaserHeight}px)` } as React.CSSProperties}
         >
           {/* THE GRIP (plan PR 3, engineering call 2026-10-03): a native button, so Enter and
               Space work and a reader who cannot drag has the toggle `All details` gives. Its
               label names what a press does, so it carries no `aria-expanded` beside it. */}
-          <button
-            ref={gripRef}
-            type="button"
-            data-sheet-grip=""
-            onClick={() => setSheetFull((f) => !f)}
-            aria-label={cardSheetCopy.grabberAria(sheetFull)}
-            // The ring draws INSIDE the grip: the sheet clips everything outside its own box, so
-            // the default 2px offset left a reader one stray line under the grip.
-            className="md:hidden flex h-[22px] w-full flex-none cursor-grab touch-none items-center justify-center rounded-t-[18px] border-0 bg-transparent p-0 focus-visible:-outline-offset-2"
-          >
-            <span aria-hidden className="block h-[4px] w-[36px] rounded-[2px]" style={{ background: "var(--border-strong)" }} />
-          </button>
+          {cramped ? null : (
+            <button
+              ref={gripRef}
+              type="button"
+              data-sheet-grip=""
+              onClick={() => setSheetFull((f) => !f)}
+              aria-label={cardSheetCopy.grabberAria(sheetFull)}
+              // The ring draws INSIDE the grip: the sheet clips everything outside its own box, so
+              // the default 2px offset left a reader one stray line under the grip.
+              className="md:hidden flex h-[22px] w-full flex-none cursor-grab touch-none items-center justify-center rounded-t-[18px] border-0 bg-transparent p-0 focus-visible:-outline-offset-2"
+            >
+              <span aria-hidden className="block h-[4px] w-[36px] rounded-[2px]" style={{ background: "var(--border-strong)" }} />
+            </button>
+          )}
           {/* The stand-ins door (swap tools), which sat under the retired art header: at the
               sheet's head, at both snaps, with the teaser grown by its 44px to hold it. */}
           {doorStrip !== null ? <div ref={doorRef} className="md:hidden flex-none">{doorStrip}</div> : null}
@@ -2088,7 +2104,7 @@ export function CardModal({
           <div
             className={
               "flex-1 overflow-auto overscroll-contain p-[20px] md:p-[30px_32px] max-md:pt-0"
-              + (sheetFull ? "" : " max-md:flex max-md:flex-col max-md:overflow-hidden max-md:pb-0")
+              + (full ? "" : " max-md:flex max-md:flex-col max-md:overflow-hidden max-md:pb-0")
             }
           >
             {/* Name + type + mana pips — §Mobile: Name + Type Header.
@@ -2182,7 +2198,7 @@ export function CardModal({
             {/* THE TEASER (README R2): three lines of oracle text under a fade, then `All details`,
                 pinned above the home inset. A short text leaves its slack above the button, which
                 is also the keyboard's and the screen reader's way to the rest. */}
-            {!sheetFull && (
+            {!full && (
               <div className="md:hidden flex min-h-0 flex-1 flex-col">
                 {card.oracleText && (
                   <div
@@ -2209,7 +2225,7 @@ export function CardModal({
             )}
 
             {/* The shipped details column. Always at desktop; on the phone, only in the full sheet. */}
-            <div className={sheetFull ? undefined : "max-md:hidden"}>
+            <div className={full ? undefined : "max-md:hidden"}>
               {/* Oracle text block — §Oracle Text Block: bg --bg, border 1px --border, radius 10px, padding 14px 16px / 18px 20px, margin-top 16/22px, 13.5/15px, --fg-body, line-height 1.6/1.65 */}
               {card.oracleText && (
                 <div

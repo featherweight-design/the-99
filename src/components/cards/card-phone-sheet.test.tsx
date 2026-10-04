@@ -115,6 +115,41 @@ describe("the swap tools' door", () => {
   });
 });
 
+describe("a screen too short for the teaser", () => {
+  it("opens the sheet full and closes on the first Escape when the teaser would crush the card", () => {
+    // A stacked stand-in on a 360x640 phone: a 500px dialog, and a 96px Take footer on top of the
+    // 280 teaser, would leave the card 28px wide. jsdom lays nothing out, so the two heights the
+    // modal measures are given here.
+    const heights = vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockImplementation(function (this: HTMLElement) {
+      if (this.getAttribute("role") === "dialog") return 500;
+      if (this.querySelector('[data-testid="take-footer"]')) return 96;
+      return 0;
+    });
+    try {
+      const { onClose } = mount({ footer: () => <div data-testid="take-footer">Take</div> });
+      expect(sheet()).toHaveAttribute("data-sheet", "full");
+      // No teaser to step down to, so no grip offering one.
+      expect(screen.queryByRole("button", { name: /Show all details|Show less/ })).toBeNull();
+      act(() => { fireEvent.keyDown(document, { key: "Escape" }); });
+      expect(onClose).toHaveBeenCalled();
+    } finally {
+      heights.mockRestore();
+    }
+  });
+
+  it("offers the teaser where the card keeps its room", () => {
+    const heights = vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockImplementation(function (this: HTMLElement) {
+      return this.getAttribute("role") === "dialog" ? 844 : 0;
+    });
+    try {
+      mount();
+      expect(sheet()).toHaveAttribute("data-sheet", "teaser");
+    } finally {
+      heights.mockRestore();
+    }
+  });
+});
+
 describe("at desktop widths", () => {
   it("leaves the sheet alone: a drag-select in the column is not a gesture", () => {
     const wide = vi.spyOn(window, "matchMedia").mockImplementation((query: string) => ({
