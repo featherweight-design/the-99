@@ -82,7 +82,8 @@ property that produced it does not.
 
 ## Entry count
 
-§3's own heading reads **"thirty-three entries, thirty-three figures"**. The code has 46. Seven are the launch entries `help-me-choose`, `locked-cards`,
+§3's own heading reads **"thirty-three entries, thirty-three figures"**. The code has 45 (was 46;
+`reservations` was retired 2026-10-04, a removal — see about.ts). Seven are the launch entries `help-me-choose`, `locked-cards`,
 `fits-your-decks`, `stand-ins` and `change-commander`, drawn by the
 launch-entries addendum, and `deck-analysis` and `card-marks`, from the Analysis tab's
 `ABOUT-entry.md`, all shown only while their features' switches are on. The six other

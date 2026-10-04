@@ -75,16 +75,14 @@ export type SummaryView = {
 
 
 /**
- * Every contested card among `oracleIds`, read live — the `/decks/[id]/changes` door.
- *
- * NOT the deck's own vantage. A row on that page is loaded with `excludeDeckId` set, which is
- * right for its buy tag and its marker but wrong here: the chooser's whole subject is the queue
- * of committed decks INCLUDING this one, and an excluded read leaves the deck the reader is
- * looking at out of its own decision.
- *
- * Filtered by the same two tests the receipt uses: demand above supply, and at least two
- * committed claimants — a shortage with one claimant is a purchase, not a choice.
+ * The two tests a card must pass to count as contested: demand above supply, and at least two
+ * committed claimants. Shared by `loadContestedCards` and `countContestedCards`, so the two can
+ * never drift into disagreeing about which cards are contested.
  */
+function isContested(a: Availability): boolean {
+  return a.hard > a.owned && a.claims.filter((c) => c.mature).length >= 2;
+}
+
 export async function loadContestedCards(
   oracleIds: string[],
   userId: string,
@@ -95,7 +93,7 @@ export async function loadContestedCards(
   const names = new Map<string, string>();
   const ids = [...availability.keys()].filter((oracleId) => {
     const a = availability.get(oracleId);
-    return a && a.hard > a.owned && a.claims.filter((c) => c.mature).length >= 2;
+    return a && isContested(a);
   });
   if (ids.length === 0) return [];
   for (const row of await db.select({ oracleId: cards.oracleId, name: cards.name })
@@ -118,6 +116,23 @@ export async function loadContestedCards(
     }));
   }
   return contested;
+}
+
+/**
+ * How many of `oracleIds` are contested, read live — for `/decks/[id]/changes`'s `chipShort`
+ * figure, which no longer draws a per-row chooser and so has no use for a card's name, its
+ * claimants or its brew names (Copilot round 1, #1244: `loadContestedCards` still ran the
+ * `cards.name` query and `allocateClaims` over every contested card, and still sent every
+ * claimant's name and figures across the RSC boundary, to feed a count). Same unexcluded read
+ * and the SAME `isContested` predicate `loadContestedCards` uses, so the two can never disagree
+ * about which cards count — just without building a record for each.
+ */
+export async function countContestedCards(oracleIds: string[], userId: string): Promise<number> {
+  if (oracleIds.length === 0) return 0;
+  const availability = await loadAvailability(userId, { oracleIds });
+  let n = 0;
+  for (const a of availability.values()) if (isContested(a)) n++;
+  return n;
 }
 
 /**
@@ -195,15 +210,9 @@ export async function loadSummaryView(uploadId: string, userId: string): Promise
     const a = availability.get(row.oracleId);
     // A card whose contention has since resolved — a deck committed a removal, or copies
     // arrived another way — simply leaves. The payload is a record of one import, not a
-    // promise about now.
-    // The same two tests the payload was built with, re-asked live: the shortage may have been
-    // resolved since (a deck committed a removal, or copies arrived another way), and a row that
-    // has only one committed claimant left is a purchase rather than a choice.
-    if (!a || a.hard <= a.owned) return [];
-    // A row with one committed claimant left is a purchase rather than a choice — see the note
-    // in `arrivals.ts`. Re-asked live because the payload is a record of one import: a deck may
-    // have committed a removal since.
-    if (a.claims.filter((c) => c.mature).length < 2) return [];
+    // promise about now. Same `isContested` test `loadContestedCards` and `countContestedCards`
+    // use, so this reader can never drift from theirs about which cards still count.
+    if (!a || !isContested(a)) return [];
     return [buildContestedCard(row.oracleId, summary?.names.cards[row.oracleId] ?? "", a, {
       arrived: row.arrived,
       fromImport: true,

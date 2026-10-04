@@ -2,15 +2,15 @@
 // One contested card: how many copies arrived, and every committed deck that wants one, in the
 // order that decides who gets them.
 //
-// IN THIS PR THE ROW STATES THE DEFAULT AND NOTHING ELSE. The options are in commit order,
-// each carrying the version stamp the order derives from, and each saying what it gets under
-// that default — which is exactly what the section note promises ("the deck that committed the
-// card first gets it, unless you say otherwise"). The control that lets a player say otherwise
-// is the next PR, and it lands on this component; the reason the row is worth having now is
-// that the shortage is real and the summary would otherwise report it without naming it.
+// THE ROW IS AN INTERACTIVE CHOOSER. The options are in commit order, each carrying the
+// version stamp the order derives from, and each saying what it gets under the default — the
+// deck that committed the card first, unless the player says otherwise with `assignCopy`.
 //
-// ONE COMPONENT, MEANT FOR TWO SURFACES: the summary and `/decks/[id]/changes`. There is no
-// deck-page door — that was ruled out on 2026-09-14 and the availability marker stays inert.
+// MOUNTED ON THE IMPORT SUMMARY alone, as of 2026-10-04 (Hugh, no Design round — a removal).
+// It also mounted on `/decks/[id]/changes`, under each contested row; that door was removed
+// (`review-changes.tsx` no longer imports this component), and a replacement chooser for that
+// surface is going to Design separately. The component itself is untouched, and still supports
+// `fromImport: false` for whenever that door returns.
 //
 // THE ORDER IS THE EXPLANATION, so `this deck` is tagged and never promoted: moving a player's
 // own deck to the top would hide why it lost.

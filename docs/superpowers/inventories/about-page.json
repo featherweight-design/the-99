@@ -444,19 +444,6 @@
       ]
     },
     {
-      "id": "fig-reservations",
-      "label": "/about \u2014 the reservations figure",
-      "view": "src/components/about/figures.tsx",
-      "steps": [
-        {
-          "goto": "/about",
-          "wait": "[data-specimen='reservations']",
-          "settle": 1200,
-          "scrollTo": "[data-specimen='reservations']"
-        }
-      ]
-    },
-    {
       "id": "fig-proxies",
       "label": "/about \u2014 the proxies figure",
       "view": "src/components/about/figures.tsx",

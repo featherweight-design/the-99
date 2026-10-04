@@ -11,7 +11,6 @@ import type { VersionSummary } from "../decks/versions";
 import type { DeckListItem } from "../decks/read";
 import type { DeckFolderWithCount } from "../decks/folders";
 import type { ShelfCounts } from "../decks/folder-view";
-import type { ContestedCard } from "../collection/summary-read";
 import type { GameSummary } from "../decks/games";
 import type { DraftRow } from "../decks/draft-state";
 import type { DeckClaim } from "../decks/availability";
@@ -1575,56 +1574,9 @@ export const SHELF_COUNTS: ShelfCounts = {
   ]),
 };
 
-/**
- * `reservations` — one contested card with two committed claimants.
- *
- * The row is the app's whole answer to this entry: two decks want the card,
- * one copy exists, and seniority decides until the player says otherwise.
- * `since` is what orders the list and draws the stamp, so the older claim is
- * the earlier instant — the default holder, stated as a DATE rather than as a
- * flag, because that is how the model decides it.
- *
- * `granted: 0` on both: nobody has overridden anything yet, which is the state
- * the caption's first clause describes. `allocated` is the allocation as it
- * stands, so the senior deck has the copy and the other reads short — the
- * caption's "the other reads as short either way".
- *
- * `fromImport` is FALSE. The same row is drawn on two surfaces and the flag is
- * what tells them apart: true would make `arrived` an arrival and print `1 new
- * copy`, which on a deck's own page tells the reader their collection turned
- * up this morning.
- */
-export const CONTESTED_RESERVATION: ContestedCard = {
-  oracleId: "about-contested",
-  cardName: CARDS.removed,
-  arrived: 1,
-  fromImport: false,
-  ownedBefore: 1,
-  owned: 1,
-  brewNames: [],
-  claimants: [
-    {
-      deckId: "about-resume-edited",
-      deckName: "HD - Brago",
-      quantity: 1,
-      commanderCopies: 0,
-      granted: 0,
-      since: new Date("2026-08-01T00:00:00.000Z").getTime(),
-      versionNumber: 2,
-      allocated: 1,
-    },
-    {
-      deckId: "about-resume-committed",
-      deckName: "HD - Atraxa",
-      quantity: 1,
-      commanderCopies: 0,
-      granted: 0,
-      since: new Date("2026-09-05T00:00:00.000Z").getTime(),
-      versionNumber: 4,
-      allocated: 0,
-    },
-  ],
-};
+// `CONTESTED_RESERVATION` (the `reservations` entry's fixture, `fromImport: false`, drawn as a
+// deck review page's own row) was retired with the entry it fed — see about.ts. The review
+// page no longer draws a per-row chooser, so this fixture has nowhere left to be true.
 
 /**
  * `log-findings` — a seven-game summary, with every part of the aggregate the

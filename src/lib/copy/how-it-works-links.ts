@@ -38,7 +38,6 @@ export const entryRow: Record<string, string> = {
   "help-me-choose": "how-recommendations",
   availability: "how-availability",
   "commander-availability": "how-availability",
-  reservations: "how-availability",
   "post-import": "how-availability",
   commitments: "how-availability",
   "buy-tag": "how-prices",

@@ -881,20 +881,13 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [],
     since: 1,
   },
-  {
-    id: 'reservations',
-    chapter: '04',
-    title: 'Which deck gets a shared copy',
-    route: '/decks',
-    opens: 'opens a deck’s review page',
-    // 'inset' at the canvas, where the figure was a legend. Mounted,
-    // the contested row draws two deck choices side by side with their stamps.
-    width: 'plate',
-    caption:
-      'When two decks want the same card and you own one, the deck that committed it first holds it by default, and you can override that, giving the copy to whichever deck you would rather sleeve it in. The other reads as short either way.',
-    keys: [],
-    since: 1,
-  },
+  // 'reservations' (chapter 04, 'Which deck gets a shared copy') was retired 2026-10-04 (Hugh,
+  // no Design round — a removal): it demonstrated overriding the default FROM A DECK'S REVIEW
+  // PAGE, and that override no longer exists there (the per-row panel on /decks/[id]/changes
+  // was removed; a replacement chooser is going to Design separately). The rule it taught is
+  // still true and still shown where it is still live — `post-import`'s own key bullet states
+  // it: "when two committed decks want the copy that arrived, the first to sleeve it keeps it
+  // unless you say otherwise." No orphaned fact; one entry fewer.
   {
     id: 'proxies',
     chapter: '04',

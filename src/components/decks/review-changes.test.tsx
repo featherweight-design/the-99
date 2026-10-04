@@ -12,8 +12,6 @@ import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { BrowseCard } from "../../lib/collection/browse";
 import type { Availability } from "../../lib/decks/availability";
-import type { ContestedCard } from "../../lib/collection/summary-read";
-import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import type { ShapeCard } from "../../lib/decks/draft-state";
 import { cardDetailCopy } from "../cards/card-detail-provider";
 import { BREW, COMMITTED } from "./__fixtures__/draft-state";
@@ -67,10 +65,10 @@ const STATE = COMMITTED;
  *  two columns, and `changed-strip.test.tsx` owns every figure the strip draws
  *  from them. Empty `before` is also what keeps the strip silent about movement,
  *  so nothing it draws can be mistaken for a column's own figure. */
-// `contested` rides with the shape props because nearly every case here is about a row rather
-// than about the chooser: an empty list draws no panel, which is the state these were written in.
-const SHAPE: { before: ShapeCard[]; after: ShapeCard[]; contested: ContestedCard[] } =
-  { before: [], after: [], contested: [] };
+// `contestedCount` rides with the shape props because nearly every case here is about a row
+// rather than about the chip: zero draws no chip, which is the state these were written in.
+const SHAPE: { before: ShapeCard[]; after: ShapeCard[]; contestedCount: number } =
+  { before: [], after: [], contestedCount: 0 };
 
 /** The server's count of the list a commit would freeze, handed down to the sheet
  *  at the foot of the page. Nothing here counts rows to get it. */
@@ -514,6 +512,29 @@ describe("ReviewChanges", () => {
     expect(screen.queryByText(deckVersioningCopy.review.chipPullable)).toBeNull();
     // Nor is the out chip, with no column behind it.
     expect(screen.queryByText(deckVersioningCopy.review.chipOut)).toBeNull();
+  });
+
+  // Copilot round 1 of #1244 (CONFIRMED): deleting the "second door" describe block removed the
+  // only coverage of `chipShort`, and of the guarantee that a nonzero `contestedCount` still
+  // draws no per-row control — the two things a reader of the removal diff would most want
+  // pinned. `contestedCount` is a bare number now (`countContestedCards`, not
+  // `loadContestedCards`), so there is no row data left to build a chooser from even if someone
+  // reached for one — this test is what would catch a future PR reintroducing a panel without
+  // reconnecting it to real per-card data.
+  it("chips a nonzero contestedCount as still short, drawing no per-row control for it", () => {
+    render(
+      <ReviewChanges mix={TEST_MIX}
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row()], out: [] }}
+        {...SHAPE} contestedCount={2} state={STATE}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    expect(screen.getByText(deckVersioningCopy.review.chipShort)).toBeTruthy();
+    expect(screen.getByText("2")).toBeTruthy();
+    expect(screen.queryAllByRole("radiogroup")).toEqual([]);
+    expect(screen.queryAllByRole("radio")).toEqual([]);
   });
 
   // The pair goes inside the row the card is already named on. A caption under
@@ -1191,7 +1212,7 @@ describe("ReviewChanges", () => {
       const shape = {
         before: [{ role: "ramp" as const, quantity: 1, typeLine: "Artifact", cmc: 1 }],
         after: [] as typeof SHAPE.after,
-        contested: [] as typeof SHAPE.contested,
+        contestedCount: 0,
       };
       render(
         <ReviewChanges mix={TEST_MIX}
@@ -1502,143 +1523,6 @@ describe("a printed add on the review screen", () => {
     cleanup();
     render(<ReviewChanges mix={TEST_MIX} deckId="d" deckName="Korvold" rows={{ in: [freeRow], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />);
     expect(screen.queryByText(proxyCopy.review.a11y("Sol Ring"))).not.toBeInTheDocument();
-  });
-});
-
-describe("ReviewChanges — the second door", () => {
-  const contestedCard = (over: Partial<ContestedCard> = {}): ContestedCard => ({
-    oracleId: "o1",
-    cardName: "Brushland",
-    arrived: 1,
-    ownedBefore: 0,
-    // FALSE, matching what `loadContestedCards` supplies on this route: nothing arrived on the
-    // deck's own review page. A fixture saying otherwise exercises the receipt's wording here
-    // and would stay green if the door wired the wrong surface.
-    fromImport: false,
-    owned: 1,
-    brewNames: [],
-    // In commit order, as the loader returns them: the earlier deck first. The component does not
-    // re-sort — that is the loader's job — so this is what "never promoted" is asserted against.
-    claimants: [
-      { deckId: "d2", deckName: "Other deck", quantity: 1, commanderCopies: 0, granted: 0, since: 0, versionNumber: 1, allocated: 1 },
-      { deckId: "d", deckName: "This deck", quantity: 1, commanderCopies: 0, granted: 0, since: 1, versionNumber: 3, allocated: 0 },
-    ],
-    ...over,
-  });
-
-  // The door is for INCOMING rows. An outgoing row is a card this draft removes, and committing
-  // that removal prunes any reservation made for it — so a chooser there offers a decision the
-  // next commit discards. The page passes only its in-rows; this pins the component beside it.
-  it("hangs the chooser under a contested row, with the caption that separates it from a pull", () => {
-    render(
-      <ReviewChanges mix={TEST_MIX}
-        deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }}
-        {...SHAPE} contested={[contestedCard()]} state={STATE} cardCount={CARD_COUNT}
-      />,
-    );
-    expect(screen.getByRole("radiogroup")).toBeTruthy();
-    // The one place the distinction is spelt out: `Pull it` cuts the other deck a version, and
-    // this edits nobody's list.
-    expect(screen.getByText(cardAssignmentsCopy.contested.seamCaption)).toBeTruthy();
-  });
-
-  it("counts the contested cards on the strip, in the over state's own ink", () => {
-    render(
-      <ReviewChanges mix={TEST_MIX}
-        deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }}
-        {...SHAPE}
-        // TWO cards, one of them asking for three copies. The figure is a count of CARDS —
-        // decisions waiting on this page — so a regression to copies would read 4 here, and a
-        // test that only proves the label exists would stay green through it.
-        contested={[
-          contestedCard({ arrived: 3, owned: 3 }),
-          contestedCard({ oracleId: "o2", cardName: "Birds of Paradise" }),
-        ]}
-        state={STATE} cardCount={CARD_COUNT}
-      />,
-    );
-    const chip = screen.getByText(deckVersioningCopy.review.chipShort).closest("span")
-      ?.parentElement;
-    expect(chip?.textContent).toContain("2");
-    expect(chip?.textContent).not.toContain("4");
-  });
-
-  it("points the chooser at the caption that says how it differs from Pull it", () => {
-    render(
-      <ReviewChanges mix={TEST_MIX}
-        deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }}
-        {...SHAPE} contested={[contestedCard()]} state={STATE} cardCount={CARD_COUNT}
-      />,
-    );
-    // A reader who tabs into the group never passes the paragraph above it, so the group has to
-    // carry it: the caption is the ONLY thing separating giving a copy away from `Pull it`.
-    const group = screen.getByRole("radiogroup");
-    const id = group.getAttribute("aria-describedby");
-    expect(id).toBeTruthy();
-    expect(document.getElementById(id!)?.textContent).toBe(
-      cardAssignmentsCopy.contested.seamCaption,
-    );
-  });
-
-  it("drops the chip at nought rather than drawing a nought", () => {
-    render(
-      <ReviewChanges mix={TEST_MIX}
-        deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }}
-        {...SHAPE} state={STATE} cardCount={CARD_COUNT}
-      />,
-    );
-    expect(screen.queryByText(deckVersioningCopy.review.chipShort)).toBeNull();
-  });
-
-  it("draws no panel on a row nobody is contesting", () => {
-    render(
-      <ReviewChanges mix={TEST_MIX}
-        deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }}
-        {...SHAPE} state={STATE} cardCount={CARD_COUNT}
-      />,
-    );
-    expect(screen.queryByRole("radiogroup")).toBeNull();
-    expect(screen.queryByText(cardAssignmentsCopy.contested.seamCaption)).toBeNull();
-  });
-
-  // The row keeps its own floor — name, availability, `Pull it` — and the panel is a second
-  // geometry below it. Folding the chooser into the row is what the card-row floor refuses.
-  it("leaves the decklist row's own controls where they were", () => {
-    render(
-      <ReviewChanges mix={TEST_MIX}
-        deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }}
-        {...SHAPE} contested={[contestedCard()]} state={STATE} cardCount={CARD_COUNT}
-      />,
-    );
-    const group = screen.getByRole("radiogroup");
-    // The panel is a SIBLING of the row, not a descendant of it — asserted against the row's own
-    // element rather than a selector nothing renders. An earlier version reached for
-    // `closest("[data-diff-row]")`, an attribute no diff row carries, so it returned null however
-    // the markup was nested and proved nothing at all.
-    const rowName = screen.getByText("Sol Ring");
-    const rowEl = rowName.closest("div");
-    expect(rowEl).toBeTruthy();
-    expect(rowEl?.contains(group)).toBe(false);
-    // …and it follows the row in document order, which is what "beneath" means here.
-    expect(rowName.compareDocumentPosition(group) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-
-  // `this deck` is tagged and stays where the queue puts it: the order IS the explanation of the
-  // default, and lifting the reader's own deck to the top hides why it lost.
-  it("tags the deck being reviewed among the claimants, without promoting it", () => {
-    render(
-      <ReviewChanges mix={TEST_MIX}
-        deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }}
-        {...SHAPE} contested={[contestedCard()]} state={STATE} cardCount={CARD_COUNT}
-      />,
-    );
-    expect(screen.getByText(cardAssignmentsCopy.contested.thisDeck)).toBeTruthy();
-    // Still in commit order: the earlier deck leads, however much this page belongs to `d`.
-    // Read off the OPTIONS rather than by text sweep — the page's live regions quote deck names
-    // too, and a sweep picks one of those up first.
-    const options = screen.getAllByRole("radio").map((o) => o.getAttribute("aria-label") ?? "");
-    expect(options[0]).toContain("Other deck");
-    expect(options[1]).toContain("This deck");
   });
 });
 

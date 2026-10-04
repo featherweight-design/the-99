@@ -11,7 +11,7 @@ import {
   changeCount, loadDraftRows, loadDraftShape, loadVersionShape,
 } from "../../../../lib/decks/draft-state";
 import { ReviewChanges } from "../../../../components/decks/review-changes";
-import { loadContestedCards } from "../../../../lib/collection/summary-read";
+import { countContestedCards } from "../../../../lib/collection/summary-read";
 import { admitsReview } from "./admits-review";
 import { isUuid } from "../../../../lib/uuid";
 import { commanderKeyParts } from "../../../../lib/commander-change/mix-key";
@@ -112,14 +112,14 @@ export default async function ChangesPage({
   // every write to this deck revalidates the page that drew them. Folding two
   // more round trips into that transaction would hold it open to buy consistency
   // between two readings of a list the reader is about to commit anyway.
-  const [before, after, contested] = await Promise.all([
+  const [before, after, contestedCount] = await Promise.all([
     state.version ? loadVersionShape(state.version.id) : Promise.resolve(null),
     loadDraftShape(id),
     // THE INCOMING ROWS ONLY, read UNEXCLUDED, and degrading to nothing.
     //
     // Incoming: an outgoing row is a card this draft is REMOVING, and committing that removal
-    // prunes any reservation made for it — so a chooser there offers a decision the next commit
-    // throws away. It would also leave the `still short` chip counting a row `Put back` has
+    // prunes any reservation made for it, so counting it here would count a row the next commit
+    // makes irrelevant. It would also leave the `still short` chip counting a row `Put back` has
     // optimistically taken off the page.
     //
     // Unexcluded: the queue's subject is the committed decks INCLUDING the one the reader is
@@ -127,12 +127,12 @@ export default async function ChangesPage({
     //
     // Swallowed: the rest of this page already degrades when a claim read fails — `loadDraftRows`
     // catches its own and renders the unknown-claims state — and an uncaught one here would turn
-    // the same transient failure into a route error, losing the whole review to lose a panel.
+    // the same transient failure into a route error, losing the whole review to lose a chip.
     // PROXIED ADDS EXCLUDED. A printed card asks the collection for nothing — the draft buckets
-    // it as `proxied` precisely because no physical copy is owed — so offering to give it one of
-    // a contested card's copies would let a proxy take a copy off a deck that needs a real one.
-    loadContestedCards(rows.in.filter((r) => !r.proxied).map((r) => r.oracleId), userId)
-      .catch(() => []),
+    // it as `proxied` precisely because no physical copy is owed — so counting it here would
+    // count a copy no deck is actually short of.
+    countContestedCards(rows.in.filter((r) => !r.proxied).map((r) => r.oracleId), userId)
+      .catch(() => 0),
   ]);
 
   // The same mix the deck page draws, through the one reader that defines it — the
@@ -160,7 +160,7 @@ export default async function ChangesPage({
       deckName={detail.name}
       rows={rows}
       state={state}
-      contested={contested}
+      contestedCount={contestedCount}
       before={before}
       after={after}
       commitOpen={wantsCommit}

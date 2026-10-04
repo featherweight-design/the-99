@@ -34,7 +34,6 @@ import {
   ReviewAndCommitFigureBody,
   ThemesFigureBody,
   LogAGameFigureBody,
-  ReservationsFigureBody,
   ResumeFigureBody,
   ExportFigureBody,
   ReadyToBuildFigureBody,
@@ -854,14 +853,6 @@ function ResumeFigure({ width }: { width: AboutWidth }) {
   );
 }
 
-function ReservationsFigure({ width }: { width: AboutWidth }) {
-  return (
-    <Specimen label="reservations" width={width}>
-      <ReservationsFigureBody />
-    </Specimen>
-  );
-}
-
 function ProxiesFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="proxies" width={width}>
@@ -1010,6 +1001,5 @@ export const FIGURES: Partial<
   "log-a-game": LogAGameFigure,
   folders: FoldersFigure,
   resume: ResumeFigure,
-  reservations: ReservationsFigure,
   proxies: ProxiesFigure,
 };
