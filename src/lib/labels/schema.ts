@@ -129,7 +129,7 @@ export function normalizeJob(job: unknown): unknown {
   const stripTo = j.to != null && !takes(TO_KINDS);
   const stripMethod = j.method != null && !takes(METHOD_KINDS);
   const t = j.threshold as Unchecked | null | undefined;
-  const stripThreshold = t != null && typeof t === "object"
+  const stripThreshold = t != null && typeof t === "object" && !Array.isArray(t)
     && (typeof t.value !== "number" || !(typeof t.stat === "string" && (THRESHOLD_STATS as readonly string[]).includes(t.stat)));
   if (!stripTo && !stripMethod && !stripThreshold) return job;
   return {

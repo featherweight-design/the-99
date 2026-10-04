@@ -138,6 +138,15 @@ describe("validateJob", () => {
       expect(validateJob(fixed)).toEqual([]);
     });
 
+    // Only a threshold OBJECT is repaired: an array or a string is malformed output, still refused.
+    it("leaves a threshold that is not an object for validateJob to refuse", () => {
+      for (const threshold of [[], "X"]) {
+        const job = { ...warg, threshold };
+        expect(normalizeJob(job)).toBe(job);
+        expect(validateJob(job).length).toBeGreaterThan(0);
+      }
+    });
+
     it("keeps a readable threshold exactly as given", () => {
       const job = { ...warg, threshold: { stat: "creatures", op: ">=", value: 3 } };
       expect(normalizeJob(job)).toBe(job);
