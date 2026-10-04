@@ -123,7 +123,12 @@ export default async function ChangesPage({
   const sourcePairs = claimedInRows.flatMap((r) =>
     pullSourceChoices(r.availability ?? undefined).map((c) => ({ deckId: c.id, oracleId: r.oracleId })),
   );
-  const claimedOracleIds = [...new Set(claimedInRows.map((r) => r.oracleId))];
+  // EVERY incoming row, not just `claimed` ones — found by the pre-open review: a successful
+  // pull releases the source's claim, which moves the asking deck's OWN row out of `claimed`
+  // (it now reads `free`) on the very next load. Scoping this to `claimed` meant the post-pull
+  // "pulled from {deck}" label could never find the release that caused the row to leave that
+  // bucket in the first place — the single most common case this addendum exists for.
+  const inOracleIds = [...new Set(rows.in.map((r) => r.oracleId))];
 
   const [before, after, contestedCount, sourceFigures, releaseSources] = await Promise.all([
     state.version ? loadVersionShape(state.version.id) : Promise.resolve(null),
@@ -149,9 +154,10 @@ export default async function ChangesPage({
     // "→ {n} cards" per candidate source — degrades to an empty map, same as the contested
     // count above: a failed read omits the figure rather than drawing a wrong one.
     loadSourceDeckFigures(sourcePairs, userId).catch(() => new Map<string, SourceDeckFigure>()),
-    // The post-pull "pulled from {deck}" label, for every claimed row — a row with no release
-    // yet (not pulled, or pulled before this read existed) simply has no entry.
-    latestReleaseSources(userId, id, claimedOracleIds).catch(() => new Map<string, ReleaseSource>()),
+    // The post-pull "pulled from {deck}" label, for every incoming row — see the note above
+    // `inOracleIds` for why this is not scoped to `claimed`. A row with no release yet (never
+    // pulled, or pulled before this read existed) simply has no entry.
+    latestReleaseSources(userId, id, inOracleIds).catch(() => new Map<string, ReleaseSource>()),
   ]);
 
   // The same mix the deck page draws, through the one reader that defines it — the

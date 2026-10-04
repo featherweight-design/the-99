@@ -350,10 +350,16 @@ export function Column({
                   // the guard (commander/locked) this row has instead.
                   heldBy={choosableCount > 1 ? null : pullClaim?.name ?? null}
                   heldByCount={choosableCount > 1 ? choosableCount : null}
-                  // Post-pull — the most recent pull's source, linked. Checked ahead of
-                  // `heldBy` above: once a release row exists, the claim it freed is gone from
-                  // `Availability`, so `pullClaim` is already null and the two never conflict.
-                  pulledFrom={releaseSources?.get(row.oracleId) ?? null}
+                  // Post-pull — the most recent pull's source, linked. Gated on `!pullClaim`,
+                  // found by the pre-open review: with 2+ choosable sources, pulling ONE of them
+                  // can leave the row still needing another copy — `pullClaim` stays non-null,
+                  // pointing at what remains — and a release row for the FIRST pull already
+                  // exists by then. Showing `pulledFrom` there would draw "pulled from {deck}"
+                  // beside a still-live control for a DIFFERENT source, implying the row is done
+                  // when it is not. Once nothing is left to pull, `pullClaim` is null and this is
+                  // the row's one remaining way to the source — design state 7's "the control
+                  // goes" is exactly this condition.
+                  pulledFrom={pullClaim ? null : releaseSources?.get(row.oracleId) ?? null}
                   siblings={siblings}
                   describedBy={word ? wordId : undefined}
                   recount={recount}
