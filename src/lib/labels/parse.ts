@@ -56,7 +56,7 @@ export function withoutRepeats<T>(jobs: readonly T[]): T[] {
  * run (the v8 relabel, 2026-10-04). The fold only decides which asked name is meant; the
  * name returned is always the asked one.
  */
-export function faceResolver(asked: readonly string[]): (returned: string) => string | null {
+export function faceResolver(asked: readonly string[]): (returned: unknown) => string | null {
   const exact = new Map(asked.map((name) => [foldName(name), name]));
   // Each FACE of a two-faced name maps back to the joined name. Built once per batch
   // rather than per returned card: the batch is 12 cards and the model may return more.
@@ -69,7 +69,9 @@ export function faceResolver(asked: readonly string[]): (returned: string) => st
     // would be unreachable by effect, which is what an earlier version had.
     for (const face of name.split(" // ")) faceOf.set(foldName(face), name);
   }
-  return (returned: string) => {
+  // `returned` is model output: a non-string name is recorded as unexpected, never folded.
+  return (returned: unknown) => {
+    if (typeof returned !== "string") return null;
     const key = foldName(returned);
     return exact.get(key) ?? faceOf.get(key) ?? null;
   };

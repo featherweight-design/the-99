@@ -23,6 +23,14 @@ describe("faceResolver", () => {
     expect(resolve("Ratonhnhake:ton")).toBeNull();
   });
 
+  // A malformed reply must be recorded as an unexpected name, not throw inside the fold: a throw
+  // fails the collect before the batch is recorded, so every retry of it fails the same way.
+  it("returns null for a name that is not a string", () => {
+    const resolve = faceResolver(["Runadi, Behemoth Caller"]);
+    for (const name of [123, null, undefined, {}, ["x"]]) expect(resolve(name)).toBeNull();
+    expect(readReply('[{"name":123,"jobs":[]}]', ["Runadi, Behemoth Caller"])?.rejected).toEqual(["unexpected name 123"]);
+  });
+
   it("passes through a name the batch asked for", () => {
     expect(faceResolver(asked)("Runadi, Behemoth Caller")).toBe("Runadi, Behemoth Caller");
   });
