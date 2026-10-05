@@ -555,7 +555,8 @@ export function StandInsSheet({
     // THE PHONE (stacked sheets R1, call 9). A buy price plate would repeat the teaser's second line,
     // so it goes, with two exceptions: a FREE row keeps its chip, because that line shows a buy price
     // and nothing else on the phone says the reader already owns a spare copy (pre-open review); and
-    // a card whose own price read failed draws no line, so the stand-in's figure stays (round 1).
+    // a card whose price line names no figure (a failed read, or `no stock`) keeps the stand-in's
+    // (rounds 1 and 2).
     const plate = row.free || priced === false ? <PricePlate row={row} newestAsOf={listAsOf} /> : null;
     if (layout === "teaserNote") {
       return (

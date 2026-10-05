@@ -182,8 +182,8 @@ export type CardDoor = (oracleId: string, layout: "art" | "strip") => ReactNode;
  */
 export type SheetFooterLayout = "row" | "teaserNote" | "teaserAction" | "foot";
 /**
- * `priced`: whether the card on screen draws its own price, so a phone footer that leaves its plate
- * to the teaser's price line can keep it when that line has nothing (a failed price read).
+ * `priced`: whether the card on screen draws a price FIGURE, so a phone footer that leaves its plate
+ * to the teaser's price line can keep it when that line has none (a failed read, or `no stock`).
  */
 export type SheetFooter = (oracleId: string, layout: SheetFooterLayout, priced?: boolean) => ReactNode;
 

@@ -37,11 +37,13 @@ const original = {
   price: { cents: 1500, foilCents: null, etchedCents: null, asOf },
 } as unknown as DeckDetailCard;
 
-// A card whose own price read landed: the store answered for the printing on screen (it carries
-// none of it, which is still an answer), so the teaser draws a price line.
+// A card whose own price read landed with a figure for the printing on screen.
 const priced = {
-  byScryfallId: {}, byPrintingKey: {}, ambiguousKeys: [], catalogIds: [], catalogKeys: ["SLD|7"], newestAsOf: asOf,
+  byScryfallId: {}, byPrintingKey: { "SLD|7": { cents: 450, foilCents: null, etchedCents: null, asOf } } as Record<string, unknown>,
+  ambiguousKeys: [], catalogIds: [], catalogKeys: ["SLD|7"], newestAsOf: asOf,
 };
+// The read landed and the store has never stocked this printing: the line says `no stock`, no figure.
+const noStock = { ...priced, byPrintingKey: {} as Record<string, unknown> };
 const browse = (name: string, prices: typeof priced | null): BrowseCard => ({
   oracleId: `id-${name}`, name, typeLine: "Instant", manaCost: "{W}", cmc: 1, oracleText: null, keywords: [], rarity: "rare",
   colorIdentity: ["W"], imageUri: null, printedName: null, quantity: 1, setCodes: ["SLD"], primarySetCode: "SLD",
@@ -83,6 +85,13 @@ describe("a stacked stand-in's footer on the phone", () => {
 
   it("keeps the stand-in's buy price where the card's own price read failed and draws no line", async () => {
     await openStandIn("Chaos Warp", null);
+    expect(screen.getByTestId("teaser-footer-note")).toHaveTextContent("$3");
+    fireEvent.click(screen.getByRole("button", { name: /Show all details/ }));
+    expect(screen.getByTestId("sheet-footer-foot")).toHaveTextContent("$3");
+  });
+
+  it("keeps the stand-in's buy price where the card's line reads no stock and names no figure", async () => {
+    await openStandIn("Chaos Warp", noStock);
     expect(screen.getByTestId("teaser-footer-note")).toHaveTextContent("$3");
     fireEvent.click(screen.getByRole("button", { name: /Show all details/ }));
     expect(screen.getByTestId("sheet-footer-foot")).toHaveTextContent("$3");

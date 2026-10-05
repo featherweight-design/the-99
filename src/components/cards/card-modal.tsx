@@ -1632,6 +1632,9 @@ export function CardModal({
     cheapestCents !== null && (shownCents === null || cheapestCents < shownCents)
       ? cheapestCents
       : null;
+  // Whether the price line carries a FIGURE: a read that answered `no stock`, with no `from`
+  // beside it, names no amount, so a phone footer keeps its own (stacked sheets R1, round 2).
+  const figured = price !== null && (shownCents !== null || fromCents !== null);
   // The same split `PriceTag` makes, and for the reason recorded there: an
   // `aria-label` on a bare span lands on the generic role and is dropped, so the
   // visible words go `aria-hidden` and an `sr-only` sibling carries the sentence.
@@ -2267,7 +2270,7 @@ export function CardModal({
                   // line, then a foot row shared 1 : 1.35 between All details and the sheet's action,
                   // so the teaser stays 280 and the card keeps its 320.
                   <>
-                    <div data-testid="teaser-footer-note" className="mt-auto pb-[6px] min-w-0">{footer("teaserNote", price !== null)}</div>
+                    <div data-testid="teaser-footer-note" className="mt-auto pb-[6px] min-w-0">{footer("teaserNote", figured)}</div>
                     <div className="-mx-[20px] grid min-h-[44px] flex-none grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] border-t border-[color:var(--border)]">
                       <button
                         type="button"
@@ -2474,7 +2477,7 @@ export function CardModal({
             ) : null}
           </div>
           {/* In the full sheet the sheet's action pins to its foot (call 9); the teaser draws its own. */}
-          {footer && full ? <div data-testid="sheet-footer-foot" className="md:hidden flex-none">{footer("foot", price !== null)}</div> : null}
+          {footer && full ? <div data-testid="sheet-footer-foot" className="md:hidden flex-none">{footer("foot", figured)}</div> : null}
         </div>
         {/* The modal's one live region (handoff §Accessibility). Do not add a second.
             A direct child of the dialog rather than of the content column, because the
