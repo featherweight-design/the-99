@@ -349,9 +349,7 @@ export default async function DeckBuilderPage({
     // nothing that entry's key carries. Off (`LABEL_SURFACES_ENABLED`), it reads nothing and answers
     // null. Swallowed like its neighbours: a failed read filters nothing.
     perf.timed("considerLabels", () => considerLabels({
-      deckId: id,
       suggestionIds: suggestions.map((s) => s.oracleId),
-      commanders: [detail.commander, ...(detail.partner ? [detail.partner] : [])],
     })).catch(() => null),
   ]);
 
@@ -370,7 +368,7 @@ export default async function DeckBuilderPage({
   // Owned tiles only, for the reason the read above is scoped that way: an
   // unowned oracle id can never come back from the collection.
   //
-  // A role-gap pick whose fresh label says it does nothing for this deck is left out here
+  // A role-gap pick whose fresh label names no job of the role it fills is left out here
   // (`filterConsider`). Never an EDHREC pick, and never a card with no fresh label. The ids it
   // drops were priced above with the rest, which costs a row in a read already made.
   const pricedSuggestions = applyConsiderLabels(suggestions, considerRead).map((s) => ({

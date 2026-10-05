@@ -3,28 +3,21 @@ import { describe, expect, it, vi } from "vitest";
 import type { Job } from "../labels/types";
 import { applyConsiderLabels, considerLabels, DEFAULT_DEPS, type ConsiderLabelDeps } from "./consider-labels";
 
-const ELF_RAMP: Job = {
-  space: "role", kind: "ramp", rampKind: "tapsForMana", restrictedTo: "Elf", affects: "self", to: null, method: null,
-  trigger: "none", recurrence: "repeatable", threshold: null, modal: false,
-};
+const GRAVEYARD_HATE: Job = {
+  space: "theme", kind: "graveyardHate", restrictedTo: null, affects: "opponents", to: null, method: null,
+  trigger: "activated", recurrence: "repeatable", threshold: null, modal: false,
+} as Job;
 
 const deps = (enabled: boolean): ConsiderLabelDeps => ({
   enabled: vi.fn(() => enabled),
-  readLabels: vi.fn(async () => new Map([["archdruid", [ELF_RAMP]]])),
-  loadCreatureTypes: vi.fn(async () => new Set(["Elf", "Druid", "Dinosaur", "Shaman"])),
-  loadNoncreatureSubtypes: vi.fn(async () => new Set(["Treasure"])),
-  readLensRows: vi.fn(async () => Array.from({ length: 6 }, (_, i) => ({ oracleId: `dino-${i}`, typeLine: "Creature — Dinosaur", oracleText: null, quantity: 1 }))),
+  readLabels: vi.fn(async () => new Map([["lantern", [GRAVEYARD_HATE]]])),
 });
 
 const SUGGESTIONS = [
-  { oracleId: "archdruid", reasonType: "role" as const, typeLine: "Creature — Elf Druid" },
-  { oracleId: "staple", reasonType: "edhrec" as const, typeLine: "Instant" },
+  { oracleId: "lantern", reason: "removal" as const, reasonType: "role" as const, typeLine: "Artifact" },
+  { oracleId: "staple", reason: "edhrec" as const, reasonType: "edhrec" as const, typeLine: "Instant" },
 ];
-const ARGS = {
-  deckId: "deck-1",
-  suggestionIds: SUGGESTIONS.map((s) => s.oracleId),
-  commanders: [{ oracleId: "cmdr", typeLine: "Legendary Creature — Dinosaur", oracleText: null }],
-};
+const ARGS = { suggestionIds: SUGGESTIONS.map((s) => s.oracleId) };
 
 describe("considerLabels", () => {
   it("off: reads nothing and answers null, so the suggestions pass through as the same list", async () => {
@@ -32,9 +25,6 @@ describe("considerLabels", () => {
     const read = await considerLabels(ARGS, d);
     expect(read).toBeNull();
     expect(d.readLabels).not.toHaveBeenCalled();
-    expect(d.loadCreatureTypes).not.toHaveBeenCalled();
-    expect(d.loadNoncreatureSubtypes).not.toHaveBeenCalled();
-    expect(d.readLensRows).not.toHaveBeenCalled();
     expect(applyConsiderLabels(SUGGESTIONS, read)).toBe(SUGGESTIONS);
   });
 
@@ -55,30 +45,17 @@ describe("considerLabels", () => {
     const d = deps(true);
     await considerLabels(ARGS, d);
     expect(d.readLabels).toHaveBeenCalledTimes(1);
-    expect(d.readLabels).toHaveBeenCalledWith(["archdruid", "staple"]);
-    expect(d.readLensRows).toHaveBeenCalledWith("deck-1");
+    expect(d.readLabels).toHaveBeenCalledWith(["lantern", "staple"]);
   });
 
-  it("on: drops the Elf role pick from a Dinosaur deck and keeps the EDHREC pick", async () => {
+  it("on: drops the graveyard-hate card offered as removal and keeps the EDHREC pick", async () => {
     const read = await considerLabels(ARGS, deps(true));
-    expect(read?.lens.keyType).toBe("Dinosaur");
-    expect(read?.commanderTypes).toEqual(["Dinosaur"]);
     expect(applyConsiderLabels(SUGGESTIONS, read).map((s) => s.oracleId)).toEqual(["staple"]);
   });
 
-  it("on: an Elf commander's own type keeps the Elf pick in a deck with no key type yet", async () => {
-    const d = { ...deps(true), readLensRows: vi.fn(async () => []) };
-    const read = await considerLabels({ ...ARGS, commanders: [{ oracleId: "lathril", typeLine: "Legendary Creature — Elf Noble", oracleText: null }] }, d);
-    expect(read?.lens.keyType).toBeNull();
-    expect(applyConsiderLabels(SUGGESTIONS, read).map((s) => s.oracleId)).toEqual(["archdruid", "staple"]);
-  });
-
-  it("on: a commander's own token text counts as held, and no deck card is left out", async () => {
-    const read = await considerLabels(
-      { ...ARGS, commanders: [{ oracleId: "cmdr", typeLine: "Legendary Creature — Dinosaur", oracleText: "Whenever this attacks, create a Treasure token." }] },
-      deps(true),
-    );
-    expect(read?.lens.held.has("Treasure")).toBe(true);
-    expect(read?.lens.heldTypes.has("creature")).toBe(true);
+  it("on with no suggestions: reads nothing", async () => {
+    const d = deps(true);
+    expect(await considerLabels({ suggestionIds: [] }, d)).toBeNull();
+    expect(d.readLabels).not.toHaveBeenCalled();
   });
 });

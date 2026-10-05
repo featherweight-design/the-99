@@ -22,12 +22,13 @@ import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { loadAvailability } from "../decks/availability-query";
 import { loadPrices } from "../decks/price-query";
+import { keyCreatureType } from "../recs/themes";
 import { loadUniversalStaples } from "../staples/universal";
-import { labelPatterns } from "../labels/match";
-import { deckLens } from "../labels/lens";
+import { heldCardTypes, labelPatterns } from "../labels/match";
 import { readLabels, standInLabelsEnabled } from "../labels/read";
 import type { Job as LabelJob } from "../labels/types";
 import { isLandFace } from "../cards/facet";
+import { heldSubtypes } from "./honest";
 import { jobOf, rankStandIns, STAND_IN_GROUP_CAP, type Candidate, type CardRow, type SpellRole, type StandInGroups } from "./stand-ins";
 
 /** How many of the cheapest unlisted spells are read before roles are checked. */
@@ -179,16 +180,16 @@ export async function loadStandIns(deckId: string, userId: string, cutOracleId: 
   // BEFORE the pool: its label slice is chosen from the jobs that count for this deck, as matching reads.
   const typeLists = () => Promise.all([loadCreatureTypes(), loadNoncreatureSubtypes()]);
   const early = originalLabels && job.kind !== "land" && job.kind !== "fetch" ? await typeLists() : null;
-  const lens = (noncreatureSubtypes: Set<string>) => deckLens({
-    draft: draftRows.rows.map((r) => ({ typeLine: r.type_line, quantity: r.quantity })),
-    commanderTypeLines: cmdrRows.rows.map((r) => r.type_line),
-    holding: [...draftRows.rows, ...cmdrRows.rows].map((r) => ({ oracleId: r.oracle_id, typeLine: r.type_line, oracleText: r.oracle_text })),
+  const others = [...draftRows.rows, ...cmdrRows.rows].filter((r) => r.oracle_id !== cutOracleId);
+  const lens = (creatureTypes: Set<string>, noncreatureSubtypes: Set<string>) => ({
+    keyType: keyCreatureType(draftRows.rows.map((r) => ({ typeLine: r.type_line, quantity: Number(r.quantity) })), cmdrRows.rows.map((r) => r.type_line)),
+    isSubtype: (w: string) => noncreatureSubtypes.has(w),
     // The card being replaced is leaving, so what it holds does not count (d9).
-    leaving: cutOracleId,
-    noncreatureSubtypes,
+    held: heldSubtypes(others.map((r) => ({ typeLine: r.type_line, oracleText: r.oracle_text }))),
+    heldTypes: heldCardTypes(others.map((r) => r.type_line)),
   });
   const patterns = originalLabels && early
-    ? labelPatterns(originalLabels, lens(early[1]), (w) => early[0].has(w))
+    ? labelPatterns(originalLabels, lens(early[0], early[1]), (w) => early[0].has(w))
     : [];
   // A labelled spell whose text names no job still gets a spell pool, from its label slice alone;
   // whether its label does a job for this deck is `rankStandIns`'s call.
@@ -230,7 +231,7 @@ export async function loadStandIns(deckId: string, userId: string, cutOracleId: 
 
   return {
     ...rankStandIns(original, pool, priced, (w) => creatureTypes.has(w), full ? null : STAND_IN_GROUP_CAP,
-      lens(noncreatureSubtypes), labels),
+      lens(creatureTypes, noncreatureSubtypes), labels),
     original,
     commanders,
     newestAsOf: priced.newestAsOf,
