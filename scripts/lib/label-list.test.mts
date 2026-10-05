@@ -58,7 +58,8 @@ describe("listScopeIds", () => {
     expect(read).toBeLessThan(build.indexOf("const all = await cardsNeedingLabels("));
     const query = build.slice(read, build.indexOf("const all = await cardsNeedingLabels("));
     expect(query).toContain("inArray(cardLabelBatches.status, OPEN_STATUSES)");
-    expect(query).toMatch(/sql`\$\{cardLabelBatches\.promptVersion\} is distinct from \$\{LABEL_PROMPT_VERSION\}`/);
+    // `<>` on purpose: a NULL (pre-migration) version can never be collected, so it never blocks.
+    expect(query).toMatch(/sql`\$\{cardLabelBatches\.promptVersion\} <> \$\{LABEL_PROMPT_VERSION\}`/);
     // Matched against `cards`, after the shared-name and in-flight exclusions, and before submit.
     const check = build.indexOf("const elsewhere = inFlightElsewhere(otherVersionIntents, LABEL_PROMPT_VERSION, new Set(cards.map((c) => c.name)));");
     expect(check).toBeGreaterThan(build.indexOf("const cards = stale.filter("));

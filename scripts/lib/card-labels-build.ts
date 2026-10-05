@@ -760,12 +760,13 @@ async function build(opts: BuildOptions): Promise<number> {
   // Open intents of ANOTHER prompt version, read BEFORE the stale snapshot below: an older-version
   // collector that publishes a card and closes its intent between the two reads is then seen one
   // way or the other (its open intent here, or its published label in the snapshot), never neither.
-  // `is distinct from`, not `<>`: a pre-migration intent has a NULL version, which `<>` never matches.
+  // Plain `<>`, which leaves out a NULL version: a pre-migration intent can never be collected by any
+  // checkout (`reconcile` selects by version), so it can never publish and never blocks.
   const otherVersionIntents = opts.dryRun ? [] : await db
     .select({ promptVersion: cardLabelBatches.promptVersion, asked: cardLabelBatches.asked })
     .from(cardLabelBatches).where(and(
       inArray(cardLabelBatches.status, OPEN_STATUSES),
-      sql`${cardLabelBatches.promptVersion} is distinct from ${LABEL_PROMPT_VERSION}`,
+      sql`${cardLabelBatches.promptVersion} <> ${LABEL_PROMPT_VERSION}`,
     ));
 
   const all = await cardsNeedingLabels(opts.scope, opts.onlyOracleIds);

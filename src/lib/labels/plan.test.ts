@@ -483,11 +483,13 @@ describe("inFlightElsewhere", () => {
     expect(inFlightElsewhere([{ promptVersion: null, asked: ["Shock"] }], "8", planned).intents).toBe(0);
   });
 
-  it("names a NULL version as unrecorded, and never counts the current version", () => {
+  // No checkout can collect a NULL-version intent, so it can never publish: blocking on it would
+  // refuse every run with nothing that could clear it.
+  it("never blocks on a NULL version even when it asks for a planned card, nor on the current one", () => {
     const r = inFlightElsewhere([
       { promptVersion: null, asked: ["Rampant Growth"] },
       { promptVersion: "8", asked: ["Lightning Bolt"] },
     ], "8", planned);
-    expect(r).toEqual({ intents: 1, versions: ["unrecorded"], cards: ["Rampant Growth"] });
+    expect(r).toEqual({ intents: 0, versions: [], cards: [] });
   });
 });

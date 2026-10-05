@@ -386,14 +386,18 @@ export function familySpend(
  * intent whose cards have all been labelled since (the never-submitted, pre-migration intents of
  * 2026-09-28, whose cards the v8 relabel covered) asks for nothing this run plans, and blocking on it
  * would stop every later run for good.
+ *
+ * A NULL version (an intent from before the version column) never blocks: no checkout can collect
+ * it, since `reconcile` selects by version, so its answer can never be published and nothing waits
+ * on it. Blocking on one would refuse every run with no way to clear it.
  */
 export function inFlightElsewhere(
   intents: readonly { promptVersion: string | null; asked: readonly string[] | null }[],
   currentVersion: string,
   planned: ReadonlySet<string>,
 ): { intents: number; versions: string[]; cards: string[] } {
-  const hits = intents.filter((i) => i.promptVersion !== currentVersion)
-    .map((i) => ({ version: i.promptVersion ?? "unrecorded", cards: (i.asked ?? []).filter((n) => planned.has(n)) }))
+  const hits = intents.flatMap((i) => (i.promptVersion === null || i.promptVersion === currentVersion ? []
+    : [{ version: i.promptVersion, cards: (i.asked ?? []).filter((n) => planned.has(n)) }]))
     .filter((h) => h.cards.length > 0);
   return {
     intents: hits.length,
