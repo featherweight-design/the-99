@@ -28,7 +28,10 @@
  *     target — there is no `--replace` here, because a prior fill-history copy onto these decks
  *     is a mistake to surface, not a state to overwrite.
  *   - Every `oracle_id` `fill_pass_cards` references is checked against the target's own `cards`
- *     table before anything is written, exactly as the deck copy does.
+ *     table before anything is written, exactly as the deck copy does — AND against the
+ *     target deck's own `deck_cards`, so a fill pass staging created after `copy:staging-decks`
+ *     already ran (newer than the snapshot this history is being attached to) is refused rather
+ *     than imported as provenance for a card the target deck never actually held.
  *   - Every copied `fill_passes.id` is checked for a collision against the WHOLE target table
  *     (not only these decks) before anything is written — ids are UUIDs so this should never
  *     fire, but the earlier script's review found real value in not assuming that.
@@ -217,6 +220,37 @@ if (missingOracleIds.length > 0) {
   console.log("All resolve on production.");
 }
 
+// BOUND TO THE SNAPSHOT `copy:staging-decks` ACTUALLY COPIED (Copilot round 5), not to whatever
+// staging holds right now. This script reads fill_passes live, so a pass created on staging
+// AFTER that earlier copy ran would otherwise be imported as production history for a deck
+// whose deck_cards were frozen at an older moment — if that pass names a card still marked
+// `auto` on the older target snapshot, the ledger would attribute it to a pass the target deck
+// never actually went through. Checked by requiring every (deck_id, oracle_id) a copied pass
+// card names to already be present in the TARGET's own deck_cards for that deck: that is
+// exactly the set `copy:staging-decks` froze, so a pass naming anything outside it is provably
+// newer than the snapshot this history is being attached to.
+const passByCard = new Map(fillPasses.map((p) => [p.id as string, p.deck_id as string]));
+const targetDeckCardRows = (await dst.query(
+  "select deck_id, oracle_id from deck_cards where deck_id = any($1)",
+  [deckIds],
+)) as { deck_id: string; oracle_id: string }[];
+const targetDeckCards = new Set(targetDeckCardRows.map((r) => `${r.deck_id}:${r.oracle_id}`));
+const staleCards = fillPassCards.filter((c) => {
+  const deckId = passByCard.get(c.pass_id as string);
+  return !deckId || !targetDeckCards.has(`${deckId}:${c.oracle_id}`);
+});
+if (staleCards.length > 0) {
+  console.log(
+    `\n${staleCards.length} fill_pass_cards row(s) name a card not in the target deck's own ` +
+      "deck_cards — this pass is newer than the snapshot copy:staging-decks already copied:",
+  );
+  for (const c of staleCards) {
+    console.log(`  pass_id=${c.pass_id} deck_id=${passByCard.get(c.pass_id as string)} oracle_id=${c.oracle_id}`);
+  }
+} else {
+  console.log(`\nEvery fill_pass_cards row names a card already in the target deck's snapshot.`);
+}
+
 // ID COLLISION, whole table — see copy-staging-decks-to-prod.mts's note on why this is checked
 // against every row rather than assumed impossible for a UUID primary key.
 const passIds = fillPasses.map((p) => p.id as string);
@@ -234,6 +268,7 @@ const refused =
   missingDecks.length > 0 ||
   alreadyHasRows.length > 0 ||
   missingOracleIds.length > 0 ||
+  staleCards.length > 0 ||
   idConflictRows.length > 0;
 
 if (DRY) {
@@ -264,6 +299,15 @@ if (missingOracleIds.length > 0) {
   console.error(
     "\nRefusing to write: the oracle_id(s) above do not exist on the target and the insert " +
       "would fail on a foreign key partway through the transaction.",
+  );
+  process.exit(1);
+}
+if (staleCards.length > 0) {
+  console.error(
+    `\nRefusing to write: ${staleCards.length} fill_pass_cards row(s) above name a card the ` +
+      "target deck's own snapshot does not have — that pass is newer than what copy:staging-decks " +
+      "copied, and attaching it now would attribute provenance for a card the target's deck " +
+      "never actually held at that snapshot.",
   );
   process.exit(1);
 }
