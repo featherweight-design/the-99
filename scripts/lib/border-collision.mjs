@@ -13,16 +13,46 @@
 export const COLLIDING_SIDES = ["r", "b"];
 
 /**
- * Comments stripped first, the same reason `tokens.mjs` strips them: a bare `border-b` inside a
- * `//` note about this very collision would otherwise be "found" as live source.
+ * Comments and quoted/template-literal strings, found in ONE pass with shared state — fixing a
+ * real miss Copilot's review caught (round 1, PR #1272): stripping comments with a standalone
+ * `//` regex first, then finding string spans in the result, lets a STRING containing a literal
+ * `" // "` (`change-commander-sheet.tsx:32`: `name.split(" // ")`) get read as a comment start.
+ * That blanks the rest of the line, including the string's own closing quote, which desyncs every
+ * later quote-pairing in the file and silently drops real findings after it (line 162, that file,
+ * returned none). A single scanner that tracks "am I inside a string" never makes that mistake,
+ * because it only treats `/` as a comment marker in the NORMAL state, never inside one.
  */
-function stripComments(text) {
-  // Blanked to the SAME LENGTH, newlines kept — found by this script's own first run: replacing a
-  // multi-line block comment with a single space shifted every later offset (and so every
-  // reported line number) by however many characters and newlines the comment had contained.
-  return text
-    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
-    .replace(/(^|[^:])\/\/[^\n]*/g, (m, p1) => p1 + " ".repeat(m.length - p1.length));
+function scan(text) {
+  const spans = [];
+  let i = 0;
+  const n = text.length;
+  while (i < n) {
+    const c = text[i];
+    if (c === "/" && text[i + 1] === "/") {
+      while (i < n && text[i] !== "\n") i++;
+      continue;
+    }
+    if (c === "/" && text[i + 1] === "*") {
+      i += 2;
+      while (i < n && !(text[i] === "*" && text[i + 1] === "/")) i++;
+      i += 2;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === "`") {
+      const quote = c;
+      const start = i;
+      i++;
+      while (i < n && text[i] !== quote) {
+        if (text[i] === "\\") i++;
+        i++;
+      }
+      i++; // past the closing quote (or past end of file on an unterminated string)
+      spans.push({ start, text: text.slice(start, i) });
+      continue;
+    }
+    i++;
+  }
+  return spans;
 }
 
 /**
@@ -65,9 +95,8 @@ function hasSideOverride(text, side) {
  * className on the same file does not reach this one.
  */
 export function unresolvedCollisions(text) {
-  const stripped = stripComments(text);
   const out = [];
-  for (const span of classStringSpans(stripped)) {
+  for (const span of scan(text)) {
     for (const { side, index } of bareCollisions(span.text)) {
       if (!hasSideOverride(span.text, side)) {
         out.push({ side, offsetInFile: span.start + index });
@@ -75,23 +104,6 @@ export function unresolvedCollisions(text) {
     }
   }
   return out;
-}
-
-/**
- * Every quoted or template-literal string in the source, as a span of (start offset, text) —
- * the unit a collision and its fix have to share to interact. Deliberately coarse: a template
- * literal's `${...}` interpolations are left IN PLACE rather than parsed out, because an
- * interpolated class name is exactly where a conditional color override might live
- * (`` `border-b ${open ? "border-b-[color:var(--accent)]" : ""}` ``) and dropping it would make
- * a real fix invisible to this scan.
- */
-function classStringSpans(text) {
-  const spans = [];
-  const re = /`(?:\\.|[^`\\])*`|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g;
-  for (const m of text.matchAll(re)) {
-    spans.push({ start: m.index, text: m[0] });
-  }
-  return spans;
 }
 
 /** `offsetInFile` to a 1-based line number, for a readable report. */

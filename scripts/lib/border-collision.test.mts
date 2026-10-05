@@ -70,6 +70,20 @@ describe("unresolvedCollisions", () => {
     const text = '<div className={"border-b " + "border-b-[color:var(--x)]"} />';
     expect(unresolvedCollisions(text)).toHaveLength(1);
   });
+
+  it("a literal `//` inside an earlier string does not desync later string spans (PR #1272 round 1)", () => {
+    // The shape that defeated the old two-pass version: `stripComments` ran a standalone `//`
+    // regex before string spans were found, so `name.split(" // ")` was read as a comment start,
+    // blanking the rest of that line — including the string's own closing quote — and desyncing
+    // every later quote pairing in the file. The real bare `border-b` after it went unreported.
+    const text = [
+      'function helper() { return name.split(" // ")[0]; }',
+      '<p className="border-b border-[color:var(--border)]" />',
+    ].join("\n");
+    const found = unresolvedCollisions(text);
+    expect(found).toHaveLength(1);
+    expect(lineAt(text, found[0].offsetInFile)).toBe(2);
+  });
 });
 
 describe("the shipped tree", () => {
