@@ -66,7 +66,7 @@
  *   THE_99_NEON_STAGING_DIRECT=<staging> \
  *   DECK_COPY_TARGET_URL=<production> DECK_COPY_TARGET_BRANCH=br-… \
  *   DECK_COPY_SOURCE_USER_ID=<staging user> DECK_COPY_TARGET_USER_ID=<production user> \
- *   DECK_COPY_SNAPSHOT_AT=<ISO-8601 with a "Z"/offset — when you LAUNCHED copy:staging-decks> \
+ *   DECK_COPY_SNAPSHOT_AT=<ISO-8601 with "Z"/offset — a few minutes BEFORE you launched copy:staging-decks> \
  *   pnpm copy:staging-fill-history --dry-run
  *
  *   …same, plus --confirm-production-write   # only once Hugh's go has been relayed
@@ -96,9 +96,15 @@ const {
   // script's write finished (Copilot round 7) — those are different moments, and a fill pass
   // committed on staging in between the two would pass a "when the write finished" cutoff while
   // describing cards the copied snapshot never actually held. That script does not log its own
-  // snapshot instant, so the safe, always-correct value is the moment the OPERATOR LAUNCHED
-  // copy:staging-decks — necessarily at or before its source transaction opened. Earlier is
-  // always safe here; later than the true snapshot moment is the only mistake that matters.
+  // snapshot instant, so the safe value is the moment the OPERATOR LAUNCHED copy:staging-decks,
+  // WITH A FEW MINUTES OF BUFFER SUBTRACTED — `created_at` on a Postgres `timestamp` column
+  // defaults to the inserting transaction's START, not its commit (Copilot round 8), so a fill
+  // transaction that was already open before the operator launched the deck copy and only
+  // committed afterward would carry a created_at before the naive launch moment while still
+  // being invisible to the deck copy's actual snapshot. A buffer of several minutes comfortably
+  // covers any ordinarily-long transaction; there is no retroactive proof available for the run
+  // that already happened (see this PR's Settled section for why a precise fix isn't being
+  // chased here), so this is a practical bound, not a cryptographic one.
   DECK_COPY_SNAPSHOT_AT: SNAPSHOT_AT_RAW,
 } = requireEnv([
   "THE_99_NEON_STAGING_DIRECT",
