@@ -100,17 +100,32 @@ export function PullControl({ deckId, card, claims, defaultId, sourceFigures, on
   // does not turn a single-source row into a two-or-more one.
   const choosable = claims.filter((c) => !c.commander && !c.locked);
 
-  // STICKY once a list has been offered — found by Copilot's round-3 review: a refusal whose
-  // cause is the chosen source going locked/commander drops `choosable.length` back to 1 on the
-  // next read, and recomputing this gate fresh every render switched the whole subtree to
-  // `SinglePull`, unmounting the open `SourcePicker` mid-session and discarding the refusal with
-  // it — contrary to design state 9's "the list stays open". Adjusted during render (this
-  // repo's own rule for a changed prop, not an effect): the gate can only move from single-tap
-  // to list, never back, for the life of this row's control.
-  const [everMultiSource, setEverMultiSource] = useState(choosable.length > 1);
-  if (choosable.length > 1 && !everMultiSource) setEverMultiSource(true);
+  // STICKY ACROSS A REFUSAL, RE-EVALUATED ONLY WHEN FRESH `claims` ACTUALLY ARRIVE — found by
+  // Copilot's round-3 review: a refusal whose cause is the chosen source going locked/commander
+  // drops `choosable.length` back to 1 on the next read, and recomputing this gate fresh every
+  // render switched the whole subtree to `SinglePull`, discarding the open `SourcePicker` and
+  // its refusal mid-session (design state 9 says the list stays open).
+  //
+  // Round-4 found the fix for that too sticky: a plain "upgrade when choosable > 1" check ran on
+  // EVERY render, including the one right after a SUCCESSFUL pull, which still carries the OLD
+  // `claims` prop — `router.refresh()` is async, so the fresh (shorter) list has not arrived yet
+  // — and re-stickified the gate before it ever could. `pendingReset` is the fix: `onResolved`
+  // (success only, never a refusal) arms it, and it is spent exactly once, the moment `claims`
+  // is next a genuinely NEW array — never on a render that still holds the array this gate was
+  // already evaluated against.
+  const [prevClaims, setPrevClaims] = useState(claims);
+  const [stickyList, setStickyList] = useState(choosable.length > 1);
+  const [pendingReset, setPendingReset] = useState(false);
+  if (prevClaims !== claims) {
+    setPrevClaims(claims);
+    setPendingReset(false);
+    if (choosable.length > 1) setStickyList(true);
+    else if (pendingReset) setStickyList(false);
+    // else: fresh claims still show <= 1 choosable with no pending reset — a refusal's refresh,
+    // which must stay sticky — so `stickyList` is left exactly as it was.
+  }
 
-  if (!everMultiSource) {
+  if (!stickyList) {
     // Today's shape, unchanged: one claim, which is either the single source
     // that can be chosen, or — when there is none — the guard (commander takes
     // precedence over locked, `pullCandidate`'s own order) this row has instead.
@@ -124,6 +139,7 @@ export function PullControl({ deckId, card, claims, defaultId, sourceFigures, on
       deckId={deckId}
       card={card}
       claims={claims}
+      onResolved={() => setPendingReset(true)}
       defaultId={defaultId}
       sourceFigures={sourceFigures}
       onPulled={onPulled}
@@ -272,6 +288,7 @@ function SourcePicker({
   defaultId,
   sourceFigures,
   onPulled,
+  onResolved,
 }: {
   deckId: string;
   card: { oracleId: string; name: string };
@@ -279,6 +296,9 @@ function SourcePicker({
   defaultId: string;
   sourceFigures?: Map<string, SourceDeckFigure>;
   onPulled: () => void;
+  /** A successful pull, never a refusal — lets the parent's sticky list gate (round-4 finding)
+   *  re-evaluate from the current claims rather than staying open forever. */
+  onResolved: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [selectedId, setSelectedId] = useState(defaultId);
@@ -380,6 +400,7 @@ function SourcePicker({
       // Read at `useDialogA11y`'s cleanup, not now — see the ref's own doc above.
       returnFocusAfterPull.current = rowTrigger(wrapperRef.current, card.name);
       setOpen(false);
+      onResolved();
       onPulled();
     });
   }

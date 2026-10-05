@@ -688,4 +688,41 @@ describe("PullControl — 2+ choosable sources", () => {
     });
     expect(document.activeElement).toBe(screen.getByRole("button", { name: manyName3 }));
   });
+
+  // Found by Copilot's round-4 review: the round-3 fix for the refusal case was too sticky — it
+  // also survived a SUCCESSFUL pull that left exactly one source behind, which should return to
+  // the one-tap path rather than opening a dialog whose own label says "choose from 1 deck."
+  it("returns to the single-tap path after a successful pull leaves exactly one source", async () => {
+    setViewport(true);
+    vi.mocked(pullCardFromDeck).mockResolvedValue({ ok: true, buy: 1, total: "$1.00" });
+    const view = render(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claims={[FREE_TO_PULL, OTHER_SOURCE]}
+        defaultId={FREE_TO_PULL.id}
+        onPulled={noop}
+      />,
+    );
+    act(() => {
+      screen.getByRole("button", { name: MANY_NAME }).click();
+    });
+    await act(async () => {
+      screen.getByRole("button", { name: sourceCopy.confirm(FREE_TO_PULL.name) }).click();
+    });
+    // The server's fresh read after the pull: only OTHER_SOURCE is left.
+    view.rerender(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claims={[OTHER_SOURCE]}
+        defaultId={OTHER_SOURCE.id}
+        onPulled={noop}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: deckVersioningCopy.review.pullA11y(CARD.name, OTHER_SOURCE.name) }),
+    ).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
 });
