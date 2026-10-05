@@ -342,6 +342,20 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
         const d = drag.current;
         const touch = ev.touches[0];
         if (!d || !d.pull || !touch) return;
+        // A second finger is a pinch, and zoom is never held back (the dialog's scroll lock exempts
+        // multi-touch for the same reason, `lib/a11y/dialog.ts`): the pull is dropped whole, and
+        // the sheet returns to its snap.
+        if (ev.touches.length > 1) {
+          drag.current = null;
+          detach.current?.();
+          detach.current = null;
+          const sheet = opts.current.sheetRef.current;
+          if (sheet) {
+            sheet.style.removeProperty("--sheet-drag-top");
+            delete sheet.dataset.dragging;
+          }
+          return;
+        }
         if (touch.clientY - d.start.y < 0 && d.axis === null) {
           drag.current = null;
           detach.current?.();

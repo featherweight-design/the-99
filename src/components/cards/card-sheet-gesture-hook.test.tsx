@@ -243,6 +243,23 @@ describe("useCardSheetGestures", () => {
     expect(sheet()).toHaveAttribute("data-sheet", "full");
   });
 
+  it("lets a second finger pinch: the pull drops and holds nothing back", () => {
+    render(<Harness startFull />);
+    const pinch = (ys: number[]) => {
+      const ev = new Event("touchmove", { bubbles: true, cancelable: true }) as TouchEvent;
+      Object.defineProperty(ev, "touches", { value: ys.map((y) => ({ clientX: 200, clientY: y })) });
+      window.dispatchEvent(ev);
+      return ev.defaultPrevented;
+    };
+    fireEvent.pointerDown(screen.getByText("body"), { pointerId: 1, clientX: 200, clientY: 200, button: 0, pointerType: "touch" });
+    expect(pinch([210, 400])).toBe(false);
+    // Dropped for the rest of the gesture, even back to one finger moving down.
+    expect(pinch([240])).toBe(false);
+    fireEvent.pointerMove(window, { pointerId: 1, clientX: 200, clientY: 600, pointerType: "touch" });
+    fireEvent.pointerUp(window, { pointerId: 1, clientX: 200, clientY: 700, pointerType: "touch" });
+    expect(sheet()).toHaveAttribute("data-sheet", "full");
+  });
+
   it("pulls only from the scrolling body, not from a strip beside it", () => {
     render(<Harness startFull />);
     drag(screen.getByText("strip"), [200, 200], [200, 700]);
