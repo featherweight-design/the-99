@@ -13,4 +13,7 @@
 // 5 (2026-10-04, H35 PR 4a): "Propose up to 8 swaps" replaces "at most 5... fewer is better... an
 // empty list is acceptable" — unconditional for every deck, unlike the limits rules below it,
 // which stay absent (and so version-exempt) for a deck with none set.
-export const PROMPT_VERSION = 5;
+// 6 (2026-10-05, H35 PR 4b): "one of six kinds" replaces "one of five kinds", and a new "A notes
+// citation quotes..." line names the sixth — unconditional for every deck, like version 5's
+// swaps-count change above it, never absent the way the limits/notes rules themselves are.
+export const PROMPT_VERSION = 6;

@@ -1111,8 +1111,11 @@ function ReadFrom({ state, facts }: { state: TuningState; facts: TuningFacts }) 
   const descriptionRead = !state.stale && facts.intent !== null ? [descriptionManifest.readDescription] : [];
   // "your notes" (H35, PR 4b): the Additional notes field is never saved, so only the run's own
   // record (`validationReport.hadNotes`) can say whether it carried text — there is no LIVE
-  // value to compare against, so this reads off the run directly rather than off `facts`.
-  const notesRead = state.run?.validationReport?.hadNotes ? [descriptionManifest.readNotes] : [];
+  // value to compare against. Read off `itemsValidationReport`, the report belonging to the
+  // SAME run `items` came from, never `state.run`'s own: those differ after a failed retry
+  // (review round 1), and `state.run`'s report would then describe an attempt that produced
+  // none of what is shown.
+  const notesRead = state.itemsValidationReport?.hadNotes ? [descriptionManifest.readNotes] : [];
   const parts =
     state.gameCount === 0
       ? [manifest.readCards(facts.cards), manifest.readMix, manifest.readCollection, ...descriptionRead, ...limitsRead, ...notesRead]

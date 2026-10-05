@@ -65,6 +65,12 @@ export type TuningState = {
   /** The newest run of any status, or null for a deck that has never generated. */
   run: TuningRun | null;
   items: TuningItem[];
+  /** The report belonging to the SAME run `items` came from (the newest OK run), never the
+   *  newest run of any status — those differ whenever a retry failed, and `run`'s own report
+   *  would then describe an attempt that produced none of what is shown. "Additional notes"
+   *  (H35, PR 4b): what `ReadFrom`'s "your notes" line reads. Null for a run persisted before
+   *  the column existed, same as every other optional field on `ValidationReport`. */
+  itemsValidationReport: ValidationReport | null;
   /** The newest ok run's fingerprint, or null if there has never been one. */
   lastOkFingerprint: string | null;
   /** That same row's `createdAt`. Null exactly when lastOkFingerprint is. */

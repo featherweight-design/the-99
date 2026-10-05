@@ -22,6 +22,7 @@ const at = new Date("2026-09-23T12:00:00Z");
 const fresh: TuningState = {
   run: null,
   items: [],
+  itemsValidationReport: null,
   lastOkFingerprint: null,
   lastOkAt: null,
   stale: true,
@@ -468,14 +469,28 @@ describe("TuningPanel", () => {
     expect(screen.queryByText((text) => text.includes(deckDescriptionCopy.manifest.readDescription))).toBeNull();
   });
 
-  // "Additional notes" (H35, PR 4b): the field is never saved, so only the run's own record
-  // (`validationReport.hadNotes`) can say whether it carried text for THIS run.
-  it("reads your notes only when the run's own record says it carried any", async () => {
-    const withNotes = { ...results, run: { ...okRun, validationReport: { askedCount: 8, survivedCount: 8, keptCount: 5, hadNotes: true } } };
+  // "Additional notes" (H35, PR 4b): the field is never saved, so only the report belonging to
+  // the run that produced the shown items (`itemsValidationReport`) can say whether it carried
+  // text — never `state.run`'s own, which describes the NEWEST run of any status and can be a
+  // failed retry that produced none of what is shown (review round 1).
+  it("reads your notes only when the report for the shown items says it carried any", async () => {
+    const withNotes = { ...results, itemsValidationReport: { askedCount: 8, survivedCount: 8, keptCount: 5, hadNotes: true } };
     await draw(deps([withNotes]));
     expect(screen.getByText((text) => text.includes(deckDescriptionCopy.manifest.readNotes))).toBeInTheDocument();
     cleanup();
     await draw(deps([results]));
+    expect(screen.queryByText((text) => text.includes(deckDescriptionCopy.manifest.readNotes))).toBeNull();
+  });
+
+  // The defect review flagged: a failed retry must not borrow its own (possibly notes-bearing)
+  // report for items that came from an earlier, different successful run.
+  it("never reads your notes off a failed retry's own report, only the shown items' run", async () => {
+    const failedRetry = {
+      ...results,
+      run: { ...okRun, id: "r2", status: "failed" as const, errorClass: "timeout", validationReport: { askedCount: 8, survivedCount: 0, keptCount: 0, hadNotes: true } },
+      itemsValidationReport: { askedCount: 8, survivedCount: 8, keptCount: 5, hadNotes: false },
+    };
+    await draw(deps([failedRetry]));
     expect(screen.queryByText((text) => text.includes(deckDescriptionCopy.manifest.readNotes))).toBeNull();
   });
 
