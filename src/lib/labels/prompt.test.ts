@@ -117,8 +117,12 @@ describe("labelInputHash", () => {
   // old formula, copied verbatim, and a digest the OLD function returned for this card before the
   // change (captured on the pre-change tree), which does not depend on SYSTEM at all.
   it("returns exactly what the pre-registry function did for version 8", () => {
-    const oldLabelInputHash = (c: typeof card, model: string, system: string = SYSTEM) => createHash("sha256")
-      .update(JSON.stringify([c.oracleId, renderCard(c), "8", model, createHash("sha256").update(system).digest("hex")]))
+    // The old formula hashed the CURRENT SYSTEM, so it only reproduces v8 while SYSTEM is still v8's
+    // text. After a v9 bump, compare against the frozen v8 hash: the literal pin below is the one
+    // that guards the stored v8 hashes independently of SYSTEM.
+    const V8_SYSTEM_SHA256 = PROMPT_SYSTEM_SHA256["8"];
+    const oldLabelInputHash = (c: typeof card, model: string) => createHash("sha256")
+      .update(JSON.stringify([c.oracleId, renderCard(c), "8", model, V8_SYSTEM_SHA256]))
       .digest("hex");
     for (const model of ["m", "claude-sonnet-4-5"]) {
       expect(labelInputHash(card, model, "8")).toBe(oldLabelInputHash(card, model));
@@ -131,8 +135,9 @@ describe("labelInputHash", () => {
       .toBe("d7a54b0705b3f3a960cce838f5a295d822221b6448584435b8f08c5e083d437a");
   });
 
-  // The model is in the payload so switching models relabels rather than silently mixing
-  // two models' output in one table.
+  // The model is in the payload so a row records which model wrote it: the hash a row is checked
+  // against is built under the row's OWN model. A model switch therefore relabels nothing by itself;
+  // a `list:` run is how rows of another model are deliberately redone.
   it("changes when the model changes", () => {
     expect(labelInputHash(card, "haiku")).not.toBe(labelInputHash(card, "sonnet"));
   });
