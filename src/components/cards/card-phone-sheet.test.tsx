@@ -323,6 +323,14 @@ describe("gestures", () => {
     expect(sheet()).toHaveAttribute("data-sheet", "teaser");
   });
 
+  it("keeps a stacked card's full sheet on a pull down its details", () => {
+    mount({ stacked: true });
+    fireEvent.click(grip());
+    const text = within(sheet()).getAllByText(/Whenever an opponent draws a card/)[0];
+    drag(text, [200, 200], [200, 700]);
+    expect(sheet()).toHaveAttribute("data-sheet", "full");
+  });
+
   it("raises the sheet on a vertical drag that starts on the band", () => {
     mount();
     drag(screen.getByTestId("card-band"), [200, 450], [200, 150]);

@@ -1275,7 +1275,9 @@ export function CardModal({
     onPage: (dir, offset) => (dir === "next" ? onNext?.(offset) : onPrev?.(offset)),
     onSnap: (to) => setSheetFull(to === "full"),
     bodyRef: sheetBodyRef,
-    canCollapse: !cramped,
+    // Not on a stacked card: its sheets are being redrawn (a second sheet squeezes the card), and
+    // until then it keeps the grip-only drag it shipped with.
+    canCollapse: !cramped && !stacked,
   });
 
   // Focus follows the sheet when the control that moved it is gone: `All details` unmounts as the

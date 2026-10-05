@@ -306,7 +306,9 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
       let pull = false;
       if (source === "sheet" && full && !(e.target instanceof Element && e.target.closest("[data-sheet-grip]"))) {
         const body = bodyRef?.current;
+        // The body's own presses only: the door strip above it is a sibling with no scroll at all.
         if (!canCollapse || !body || body.scrollTop > 0) return;
+        if (!(e.target instanceof Node && body.contains(e.target))) return;
         pull = true;
       }
       const sheet = sheetRef.current;

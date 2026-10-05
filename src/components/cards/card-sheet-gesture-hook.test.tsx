@@ -47,6 +47,7 @@ function Harness({
       </div>
       <div ref={sheetRef} data-testid="sheet" data-sheet={full ? "full" : "teaser"} onPointerDown={g.onSheetPointerDown}>
         <button type="button" data-sheet-grip="">grip</button>
+        <p>strip</p>
         <div
           ref={(el) => {
             bodyRef.current = el;
@@ -239,6 +240,12 @@ describe("useCardSheetGestures", () => {
     // Handed to the scroll for the rest of the gesture, even if the finger turns back down.
     expect(touchMove(230)).toBe(false);
     fireEvent.pointerUp(window, { pointerId: 2, clientX: 200, clientY: 230, pointerType: "touch" });
+    expect(sheet()).toHaveAttribute("data-sheet", "full");
+  });
+
+  it("pulls only from the scrolling body, not from a strip beside it", () => {
+    render(<Harness startFull />);
+    drag(screen.getByText("strip"), [200, 200], [200, 700]);
     expect(sheet()).toHaveAttribute("data-sheet", "full");
   });
 
