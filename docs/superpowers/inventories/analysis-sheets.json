@@ -33,7 +33,7 @@
     },
     {
       "id": "receipt-stacked-card",
-      "label": "/decks/[id] Analysis \u2014 a card stacked on the receipt: the \u2190 Game changers pill on desktop, the 96px sheet on the phone",
+      "label": "/decks/[id] Analysis \u2014 a card stacked on the receipt: the \u2190 Game changers pill at both widths, the card in the receipt's place on the phone",
       "view": "src/components/decks/receipt-modal.tsx",
       "steps": [
         {

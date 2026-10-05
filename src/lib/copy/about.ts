@@ -263,7 +263,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens the card detail',
     width: 'inset',
     caption:
-      'The printings you own of a card, its art at full size, and the back of a double-faced card. A tick marks the printing you picked to represent the card; a hollow diamond marks the one being shown right now. The cost beside the name is drawn with the real mana symbols, and a card that prints two costs (a split, an adventure, or a card with a castable back) shows both. It opens from a card anywhere in the app, not only here. Opened from a list, it pages through that list: the arrow keys or the cards beside it on a computer, a swipe on a phone.',
+      'The printings you own of a card, its art at full size, and the back of a double-faced card. A tick marks the printing you picked to represent the card; a hollow diamond marks the one being shown right now. The cost beside the name is drawn with the real mana symbols, and a card that prints two costs (a split, an adventure, or a card with a castable back) shows both. It opens from a card anywhere in the app, not only here. Opened from a list, it pages through that list: the arrow keys or the cards beside it on a computer, a swipe on a phone. On a phone, a card opened from a sheet takes the sheet’s place, and the pill at the top names that sheet and goes back to it.',
     keys: [],
     since: 1,
   },

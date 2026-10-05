@@ -13,7 +13,7 @@ vi.mock("../../lib/swaps/actions", () => actions);
 vi.mock("next/link", () => ({ default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => <a href={href} {...rest}>{children}</a> }));
 
 const { FitsPicker } = await import("./fits-picker");
-const { CardDetailProvider } = await import("./card-detail-provider");
+const { CardDetailProvider, STACK_DROP_MS } = await import("./card-detail-provider");
 
 const copy = swapToolsCopy.fits;
 const card = {
@@ -388,7 +388,8 @@ describe("a card opened from the picker", () => {
     await openPickerCard();
     const top = dialogNamed("Fraying Sanity")!;
     await act(async () => fireEvent.keyDown(top, { key: "Escape" }));
-    await settle();
+    // jsdom matches no media query, so this is the phone's drop off the picker (stacked sheets R1).
+    await act(() => new Promise<void>((r) => { setTimeout(r, STACK_DROP_MS); }));
     expect(dialogNamed("Fraying Sanity")).toBeUndefined();
     expect(screen.getByTestId("fits-picker")).toBeInTheDocument();
   });

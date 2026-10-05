@@ -1,0 +1,143 @@
+{
+  "feature": "Stacked sheets on the phone (R1): a card opened from a sheet replaces it, with the way back as a pill",
+  "note": "Phone is the subject; desktop is the regression check (desktop stacking is unchanged). FINDINGS_DECK is `d0000000-0000-4000-8000-00000000cafe` and SHOP_DECK `d0000000-0000-4000-8000-00000000d5c1` on `local-dev`, both under the e2e account; Aura Shards in SHOP_DECK has stand-ins. PULL_DECK is a fixture of three decks on the e2e account, built for the 2026-10-05 walk and deleted after it: one deck asks for a card (its draft adds `Silence`) that two older committed decks each sleeve, so Pull it offers two sources; rebuild it the same way to photograph s5. The server needs SWAP_TOOLS_ENABLED=true for the stand-ins door. Never press Analyze or Re-analyze here: every row reads an analysis the fixture already holds. Every cell is photographed after the rise has settled, so the motion itself is not in the picture; the property table records it frame by frame.",
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
+  ],
+  "rows": [
+    {
+      "id": "s1",
+      "label": "s1 /decks/[id] Analysis: a card opened from Game changers, the pill in the ✕'s slot",
+      "view": "src/components/cards/card-modal.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${FINDINGS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 800
+        },
+        {
+          "wait": "[data-testid='findings-block']",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "Show the \\d+ game changers in this deck",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='receipt-modal']",
+          "settle": 900
+        },
+        {
+          "click": "[data-testid='receipt-modal'] button[aria-label^='View details for']",
+          "settle": 1500
+        },
+        {
+          "wait": "[aria-labelledby='card-modal-title']",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "s6",
+      "label": "s6 /decks/[id] Shopping: Cheaper stand-ins over a card, `← {card}` in its head",
+      "view": "src/components/decks/stand-ins-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SHOP_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "click": "button:has-text('Shopping'):visible",
+          "settle": 1200
+        },
+        {
+          "click": "button[aria-label='View details for Aura Shards']:visible",
+          "settle": 1800
+        },
+        {
+          "click": "[data-testid=stand-in-door]:visible button, [data-testid=stand-in-door]:visible a",
+          "settle": 2500
+        },
+        {
+          "wait": "[data-testid='receipt-modal']",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "s4",
+      "label": "s4/s7 /decks/[id] Shopping: a stand-in opened from the sheet, Take beside All details",
+      "view": "src/components/decks/stand-ins-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SHOP_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "click": "button:has-text('Shopping'):visible",
+          "settle": 1200
+        },
+        {
+          "click": "button[aria-label='View details for Aura Shards']:visible",
+          "settle": 1800
+        },
+        {
+          "click": "[data-testid=stand-in-door]:visible button, [data-testid=stand-in-door]:visible a",
+          "settle": 2500
+        },
+        {
+          "click": "[data-testid='receipt-modal'] li button[aria-label^='View details for']:visible",
+          "settle": 2000
+        },
+        {
+          "wait": "[aria-labelledby='card-modal-title']",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "s5",
+      "label": "s5 /decks/[id]/changes: a card opened from Pull it's list head, `← Which deck to pull from`",
+      "view": "src/components/decks/pull-control.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/${PULL_DECK}/changes",
+          "wait": "button:has-text('Pull it')",
+          "settle": 1500
+        },
+        {
+          "click": "button:has-text('Pull it')",
+          "settle": 1200
+        },
+        {
+          "click": "[role=dialog] button[aria-label^='View details for']",
+          "settle": 1500
+        },
+        {
+          "wait": "[aria-labelledby='card-modal-title']",
+          "settle": 600
+        }
+      ]
+    }
+  ]
+}

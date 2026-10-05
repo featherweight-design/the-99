@@ -17,7 +17,7 @@ vi.mock("next/link", () => ({
   default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => <a href={href} {...rest}>{children}</a>,
 }));
 
-const { CardDetailProvider, CardDetailTrigger, useCardDetail } = await import("./card-detail-provider");
+const { CardDetailProvider, CardDetailTrigger, useCardDetail, STACK_DROP_MS } = await import("./card-detail-provider");
 const { ModalChrome } = await import("../decks/receipt-modal");
 
 const birds: BrowseCard = {
@@ -41,6 +41,9 @@ async function openFromSheet() {
     fireEvent.click(screen.getByText("open birds"));
   });
 }
+
+// A card over a sheet drops for STACK_DROP_MS on the phone before it goes.
+const landed = () => act(() => new Promise<void>((r) => { setTimeout(r, STACK_DROP_MS); }));
 
 const cardDialog = () => document.querySelector('[aria-labelledby="card-modal-title"]') as HTMLElement;
 const pill = () => screen.getByTestId("card-modal-back-mobile");
@@ -81,6 +84,7 @@ describe("a card opened from a sheet, on the phone", () => {
     await act(async () => {
       fireEvent.click(pill());
     });
+    await landed();
     expect(cardDialog()).toBeNull();
     expect(screen.getByTestId("receipt-modal")).toBeInTheDocument();
   });
@@ -92,6 +96,7 @@ describe("a card opened from a sheet, on the phone", () => {
     act(() => { fireEvent.keyDown(document, { key: "Escape" }); });
     expect(screen.getByTestId("card-sheet")).toHaveAttribute("data-sheet", "teaser");
     await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+    await landed();
     expect(cardDialog()).toBeNull();
     expect(screen.getByTestId("receipt-modal")).toBeInTheDocument();
   });
@@ -102,6 +107,7 @@ describe("a card opened from a sheet, on the phone", () => {
     await openFromSheet();
     expect(document.activeElement).toBe(pill());
     await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+    await landed();
     expect(cardDialog()).toBeNull();
     expect(document.activeElement).toBe(screen.getByText("open birds"));
   });
@@ -112,6 +118,7 @@ describe("a card opened from a sheet, on the phone", () => {
     (document.activeElement as HTMLElement | null)?.blur();
     await openFromSheet();
     await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+    await landed();
     expect(cardDialog()).toBeNull();
     expect(document.activeElement).toBe(screen.getByText("open birds"));
   });
@@ -127,6 +134,7 @@ describe("a card opened from a sheet, on the phone", () => {
     // Not inert: an inert sheet refuses the focus the card hands back to its opener as it closes.
     expect(under()).not.toHaveAttribute("inert");
     await act(async () => { fireEvent.click(pill()); });
+    await landed();
     expect(under()).not.toHaveAttribute("aria-hidden");
     expect(under().style.opacity).toBe("");
     expect(under().style.pointerEvents).toBe("");
@@ -180,6 +188,7 @@ describe("the way back through three layers (page · card · sheet · card)", ()
     await act(async () => rerender(view(true)));
     await act(async () => { fireEvent.click(screen.getByText("sheet trigger")); });
     await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+    await landed();
     await act(async () => rerender(view(false)));
     await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
     expect(document.querySelector('[aria-labelledby^="card-modal-title"]')).toBeNull();
@@ -316,5 +325,143 @@ describe("a sheet with its own phone name (s2)", () => {
     expect(pill()).toHaveTextContent("What would have to go");
     expect(pill()).toHaveAccessibleName(cardSheetCopy.back.a11y("What would have to go"));
     expect(screen.getByTestId("card-modal-back")).toHaveTextContent("Core");
+  });
+});
+
+describe("the rise and the drop (motion)", () => {
+  const stubMedia = (matching: string) => {
+    const saved = window.matchMedia;
+    window.matchMedia = ((query: string) => ({
+      matches: query === matching, media: query, onchange: null,
+      addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {},
+      dispatchEvent: () => false,
+    })) as typeof window.matchMedia;
+    return () => { window.matchMedia = saved; };
+  };
+
+  it("starts the drop from the card's current transform, so a dismissal mid-rise reverses", async () => {
+    const calls: { from: unknown; to: unknown }[] = [];
+    const saved = (HTMLElement.prototype as unknown as { animate?: unknown }).animate;
+    const savedStyle = window.getComputedStyle;
+    (HTMLElement.prototype as unknown as { animate: unknown }).animate = function (frames: Keyframe[]) {
+      calls.push({ from: frames[0].transform, to: frames[1].transform });
+      return { cancel: () => {} };
+    };
+    window.getComputedStyle = ((el: Element) => {
+      const real = savedStyle(el);
+      return el.getAttribute("aria-labelledby") === "card-modal-title"
+        ? ({ ...real, transform: "matrix(1, 0, 0, 1, 0, 300)" } as CSSStyleDeclaration) : real;
+    }) as typeof window.getComputedStyle;
+    try {
+      draw();
+      await openFromSheet();
+      await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+      expect(calls).toEqual([{ from: "matrix(1, 0, 0, 1, 0, 300)", to: "translateY(100%)" }]);
+      await landed();
+    } finally {
+      (HTMLElement.prototype as unknown as { animate?: unknown }).animate = saved;
+      window.getComputedStyle = savedStyle;
+    }
+  });
+
+  it("answers nothing while it drops: Escape then ArrowRight pages no card in", async () => {
+    const cards: Record<string, BrowseCard> = {
+      "o-a": { ...birds, oracleId: "o-a", name: "Card A" },
+      "o-b": { ...birds, oracleId: "o-b", name: "Card B" },
+    };
+    const fetchCard = vi.fn(async (id: string) => cards[id] ?? null);
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <ModalChrome title="Game changers" closeLabel="Close game changers" onClose={vi.fn()} width={760}>
+          <CardDetailTrigger oracleId="o-a" name="Card A" siblings={["o-a", "o-b"]}>open a</CardDetailTrigger>
+        </ModalChrome>
+      </CardDetailProvider>,
+    );
+    await act(async () => { fireEvent.click(screen.getByText("open a")); });
+    await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+    expect(cardDialog().closest("[data-stack-dropping]")).toHaveAttribute("inert");
+    await act(async () => { fireEvent.keyDown(document, { key: "ArrowRight" }); });
+    expect(document.getElementById("card-modal-title")).toHaveTextContent("Card A");
+    await landed();
+    expect(cardDialog()).toBeNull();
+  });
+
+  it("rises over the sheet on arrival", async () => {
+    draw();
+    await openFromSheet();
+    expect(cardDialog()).toHaveClass("anim-stack-rise");
+  });
+
+  it("rises once on arrival, and not again when paged inside the sheet's list", async () => {
+    const cards: Record<string, BrowseCard> = {
+      "o-a": { ...birds, oracleId: "o-a", name: "Card A" },
+      "o-b": { ...birds, oracleId: "o-b", name: "Card B" },
+    };
+    render(
+      <CardDetailProvider fetchCard={async (id) => cards[id] ?? null}>
+        <ModalChrome title="Game changers" closeLabel="Close game changers" onClose={vi.fn()} width={760}>
+          <CardDetailTrigger oracleId="o-a" name="Card A" siblings={["o-a", "o-b"]}>open a</CardDetailTrigger>
+        </ModalChrome>
+      </CardDetailProvider>,
+    );
+    await act(async () => { fireEvent.click(screen.getByText("open a")); });
+    expect(cardDialog()).toHaveClass("anim-stack-rise");
+    await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: "Next card" })[0]); });
+    await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: "Previous card" })[0]); });
+    expect(document.getElementById("card-modal-title")).toHaveTextContent("Card A");
+    expect(cardDialog()).not.toHaveClass("anim-stack-rise");
+  });
+
+  it("does not rise when opened from the page", async () => {
+    render(
+      <CardDetailProvider fetchCard={async () => birds}>
+        <CardDetailTrigger oracleId="o-birds" name="Birds of Paradise">page trigger</CardDetailTrigger>
+      </CardDetailProvider>,
+    );
+    await act(async () => { fireEvent.click(screen.getByText("page trigger")); });
+    expect(cardDialog()).not.toHaveClass("anim-stack-rise");
+  });
+
+  it("drops for STACK_DROP_MS with the sheet already back under it, then goes", async () => {
+    draw();
+    await openFromSheet();
+    await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+    // The drop runs on the Web Animations API from the card's current transform (jsdom has none,
+    // so this asserts the state that starts it); the rise class stays on underneath (#1268).
+    expect(cardDialog().closest("[data-stack-dropping]")).not.toBeNull();
+    expect(cardDialog()).toHaveClass("anim-stack-rise");
+    // Drawn again while the card drops, but still out of the accessibility tree and unpressable:
+    // the card is still the modal dialog until it really closes (#1268).
+    const cover = screen.getByTestId("receipt-modal").closest("[data-hidden-under-card]") as HTMLElement;
+    expect(cover).toHaveAttribute("aria-hidden", "true");
+    expect(cover.style.opacity).toBe("");
+    expect(cover.style.pointerEvents).toBe("none");
+    await landed();
+    expect(cardDialog()).toBeNull();
+    expect(screen.getByTestId("receipt-modal").closest("[data-hidden-under-card]")).toBeNull();
+  });
+
+  it("swaps out at once under reduced motion", async () => {
+    const restore = stubMedia("(prefers-reduced-motion: reduce)");
+    try {
+      draw();
+      await openFromSheet();
+      await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+      expect(cardDialog()).toBeNull();
+    } finally {
+      restore();
+    }
+  });
+
+  it("closes at once on desktop, where nothing drops", async () => {
+    const restore = stubMedia("(min-width: 768px)");
+    try {
+      draw();
+      await openFromSheet();
+      await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+      expect(cardDialog()).toBeNull();
+    } finally {
+      restore();
+    }
   });
 });

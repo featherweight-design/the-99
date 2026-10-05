@@ -15,7 +15,7 @@ vi.mock("../../app/collection/actions", () => ({
 }));
 vi.mock("../../app/decks/actions", () => ({ setCardProxied: vi.fn(async () => ({ ok: true })) }));
 
-const { CardDetailProvider, useCardDetail } = await import("../cards/card-detail-provider");
+const { CardDetailProvider, useCardDetail, STACK_DROP_MS } = await import("../cards/card-detail-provider");
 const { FindingsBlock } = await import("./findings-block");
 
 const copy = deckAnalysisCopy;
@@ -179,6 +179,8 @@ describe("a card opened from the receipt", () => {
     await openCardFromReceipt();
     cardDialog().querySelector("button")!.focus();
     await act(async () => { fireEvent.keyDown(window, { key: "Escape" }); });
+    // jsdom matches no media query, so this is the phone's drop (stacked sheets R1, motion).
+    await act(() => new Promise<void>((r) => { setTimeout(r, STACK_DROP_MS); }));
     expect(screen.queryAllByRole("dialog").some((d) => d.getAttribute("aria-labelledby") === "card-modal-title")).toBe(false);
     const receipt = screen.getByTestId("receipt-modal");
     expect(receipt.dataset.behind).toBeUndefined();
@@ -194,6 +196,7 @@ describe("a card opened from the receipt", () => {
     const receipt = screen.getByTestId("receipt-modal");
     expect((receipt.lastElementChild as HTMLElement).style.opacity).toBe("0.35");
     await act(async () => { fireEvent.click(back); });
+    await act(() => new Promise<void>((r) => { setTimeout(r, STACK_DROP_MS); }));
     expect(screen.queryAllByRole("dialog").some((d) => d.getAttribute("aria-labelledby") === "card-modal-title")).toBe(false);
     expect(screen.getByTestId("receipt-modal")).toBeTruthy();
   });
@@ -232,6 +235,7 @@ describe("a card opened from the receipt", () => {
   it("is not stacked once the receipt has closed", async () => {
     await openCardFromReceipt();
     await act(async () => { fireEvent.keyDown(window, { key: "Escape" }); });
+    await act(() => new Promise<void>((r) => { setTimeout(r, STACK_DROP_MS); }));
     fireEvent.click(within(screen.getByTestId("receipt-modal")).getByRole("button", { name: copy.receipt.closeAria("Game changers") }));
     expect(screen.queryByTestId("receipt-modal")).toBeNull();
     await act(async () => { fireEvent.click(screen.getByText("open elsewhere")); });

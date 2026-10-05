@@ -96,6 +96,12 @@ type CardDetailContextValue = {
    */
   openOracleId: string | null;
   /**
+   * True while a card over a sheet drops on the phone (stacked sheets R1, motion). The card is still
+   * up and still the dialog, so a sheet under it stays out of the accessibility tree and takes no
+   * presses (`openOracleId` is still set); this only says it may be DRAWN again, fading back in.
+   */
+  revealing: boolean;
+  /**
    * Replace the ordered list (ids or `SiblingCard`s) Prev/Next pages through, without touching the open
    * card. A surface whose list is a live filter of something larger re-files it
    * here when that filter moves; otherwise the modal keeps paging the order that
@@ -368,6 +374,8 @@ export function CardDetailTrigger({
 /** Stable, so the context value's identity does not change every render. */
 const EMPTY_IDS: ReadonlySet<string> = new Set();
 const NOOP = () => {};
+import { STACK_DROP_MS } from "./card-modal";
+export { STACK_DROP_MS };
 
 type OpenAt = {
   oracleId: string;
@@ -490,6 +498,18 @@ export function CardDetailProvider({
   // `← What would have to go` where desktop keeps `← {target}`.
   const phoneBackLabel = sheets.at(-1)?.phoneLabel;
   const sheetFooter = sheets.at(-1)?.footer;
+  // THE RISE AND THE DROP (stacked sheets R1, motion). A card a sheet opens rises over it once, on
+  // arrival: paging inside it, or the held card coming back under a closing sheet, does not re-run
+  // it. Adjusted during render, so the first frame already carries it.
+  const arrivalId = card?.oracleId ?? null;
+  const [arrival, setArrival] = useState<{ id: string | null; rise: boolean }>({ id: null, rise: false });
+  if (arrival.id !== arrivalId) {
+    setArrival({ id: arrivalId, rise: arrival.id === null && arrivalId !== null && sheetsBelow > 0 });
+  }
+  // Closing it on the phone drops it for `STACK_DROP_MS` first, with the sheet already fading back
+  // in under it (`revealing`), though still covered for assistive technology; see `dismiss`.
+  const [leaving, setLeaving] = useState(false);
+  const leavingTimer = useRef<number | null>(null);
   const [failed, setFailed] = useState(false);
   // Bumped whenever a read settles (succeeds, fails, or finds nothing), so the read-ahead effect
   // retries after a cache-hit reopen's correction read — `card` itself only changes again there
@@ -806,6 +826,12 @@ export function CardDetailProvider({
       // The control this open came from, for the modal to hand focus back to. Set on every open, so
       // an opener that names none falls back to the dialog's own capture rather than an older one.
       openerRef.current = opts?.opener ?? null;
+      // An open landing while a card drops replaces it rather than waiting for it to leave.
+      if (leavingTimer.current !== null) {
+        window.clearTimeout(leavingTimer.current);
+        leavingTimer.current = null;
+        setLeaving(false);
+      }
       // A prefetch reading this card asked for its art already.
       if (opts?.art && !cache.current.has(oracleId) && prefetching.current?.oracleId !== oracleId) {
         preloadCardArt(opts.art);
@@ -851,6 +877,28 @@ export function CardDetailProvider({
     // nothing held (the picker's own card going) takes the picker with it.
     if (heldRef.current === null) setFitsFor(null);
   }, [show, setFitsFor]);
+
+  // Every close of the live card goes through here: the ✕ or the pill, Escape, hardware Back and
+  // the backdrop. A card over a sheet on the phone drops before it goes (stacked sheets R1: "the
+  // card drops in 200ms", never sideways); anywhere else, and under reduced motion, it is a swap.
+  const dismiss = useCallback(() => {
+    if (leavingTimer.current !== null) return;
+    const phone = !window.matchMedia?.("(min-width: 768px)")?.matches;
+    const still = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    if (sheetsBelow === 0 || !phone || still) {
+      close();
+      return;
+    }
+    setLeaving(true);
+    leavingTimer.current = window.setTimeout(() => {
+      leavingTimer.current = null;
+      setLeaving(false);
+      close();
+    }, STACK_DROP_MS);
+  }, [close, sheetsBelow]);
+  useEffect(() => () => {
+    if (leavingTimer.current !== null) window.clearTimeout(leavingTimer.current);
+  }, []);
 
   // The card a sheet opened OVER (the door's stand-ins sheet): lifted out of the live slot while the
   // sheet is up, so a card opened from the sheet stacks over both instead of replacing it, and put
@@ -978,6 +1026,7 @@ export function CardDetailProvider({
       prefetch,
       pendingOracleId,
       openOracleId: card?.oracleId ?? null,
+      revealing: leaving,
       setSiblings,
       evict,
       close,
@@ -986,7 +1035,7 @@ export function CardDetailProvider({
       registerSheet,
       registerDoor,
     }),
-    [open, prefetch, pendingOracleId, card, evict, close, deckId, deckOracleIds, registerSheet, registerDoor],
+    [open, prefetch, pendingOracleId, card, leaving, evict, close, deckId, deckOracleIds, registerSheet, registerDoor],
   );
 
   const index = card ? siblingIds.indexOf(card.oracleId) : -1;
@@ -1114,9 +1163,11 @@ export function CardDetailProvider({
           }}
           position={paging ? index + 1 : 1}
           total={paging ? siblings.length : 1}
-          onClose={close}
+          onClose={dismiss}
           returnFocusRef={returnFocusRef}
           stacked={sheetsBelow > 0}
+          rise={arrival.rise}
+          dropping={leaving}
           // Only a card the sheet has a footer FOR swaps its Mana Pool link out: the original, or any
           // card after a take, keeps the link rather than drawing nothing in its place.
           footer={sheetFooter && sheetFooter(card.oracleId, "row") !== null
@@ -1183,10 +1234,12 @@ export function CardDetailProvider({
           }}
           position={paging ? index + 1 : 1}
           total={paging ? siblings.length : 1}
-          onClose={close}
+          onClose={dismiss}
           returnFocusRef={returnFocusRef}
           stacked
           dropped
+          rise={arrival.rise}
+          dropping={leaving}
           // Only a card the sheet has a footer FOR swaps its Mana Pool link out: the original, or any
           // card after a take, keeps the link rather than drawing nothing in its place.
           footer={sheetFooter && sheetFooter(card.oracleId, "row") !== null

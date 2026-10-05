@@ -460,6 +460,8 @@ export function artWidthReservePx(underCardHeight: number): number {
 // between it and a plate, from which `NEIGHBOR_MIN_WIDTH` computes the plates' threshold. The
 // half-width is exported for `card-modal-geometry.test.ts`, which pins the dialog's class to it.
 export const DIALOG_HALF_WIDTH = 410;
+/** The phone's drop off a sheet (stacked sheets R1, motion), and how long the provider waits on it. */
+export const STACK_DROP_MS = 200;
 const PLATE_GAP = 24;
 const PLATE_WIDTH = 168;
 /**
@@ -623,6 +625,8 @@ export function CardModal({
   door = null,
   covered = false,
   dropped = false,
+  rise = false,
+  dropping = false,
   returnFocusRef,
 }: {
   card: BrowseCard;
@@ -640,6 +644,13 @@ export function CardModal({
   covered?: boolean;
   /** Drawn 80px lower on desktop: a stand-in over a sheet over its original, so the original's head shows. */
   dropped?: boolean;
+  /**
+   * The phone's motion over a sheet (stacked sheets R1): `rise` as a card a sheet opened arrives
+   * (`.anim-stack-rise`; desktop and reduced motion draw none), and `dropping` while it leaves (the
+   * provider only sets it on the phone with motion allowed).
+   */
+  rise?: boolean;
+  dropping?: boolean;
   /** Where focus goes when this card closes: the control that opened it, when the provider knows it. */
   returnFocusRef?: React.RefObject<HTMLElement | null>;
   /**
@@ -776,6 +787,9 @@ export function CardModal({
   // covered one takes its own title id: shared, the top dialog would be named by the held card's
   // heading. The top card keeps the canonical id every other reader of the modal looks for.
   const titleId = covered ? "card-modal-title-held" : "card-modal-title";
+  // A card dropping off a sheet is leaving (#1268): nothing in it answers a key, a swipe or a press,
+  // or Escape-then-ArrowRight could page a new card in while the timer closes it.
+  const locked = covered || dropping;
   // One trigger per breakpoint tree; only one has layout at a time, and focus() on the
   // display:none one is a no-op, so Escape hands focus to whichever is actually on screen.
   const mobileTriggerRef = useRef<HTMLButtonElement>(null);
@@ -842,6 +856,19 @@ export function CardModal({
   // must not leave the desktop's keys answering to a sheet nobody can see. And a cramped sheet
   // has no teaser to step down to, so its Escape closes.
   const sheetOpen = narrow && sheetFull && !cramped;
+  // THE DROP (stacked sheets R1, motion): from wherever the card is, so a dismissal during the
+  // 240ms rise reverses it rather than snapping the card to the top first (#1268). The rise class
+  // stays on, still running, and this animation, being script-made, composites over it.
+  useLayoutEffect(() => {
+    const el = dialogRef.current;
+    if (!dropping || !el || typeof el.animate !== "function") return;
+    const from = getComputedStyle(el).transform;
+    const drop = el.animate(
+      [{ transform: from === "none" ? "translateY(0)" : from }, { transform: "translateY(100%)" }],
+      { duration: STACK_DROP_MS, easing: "cubic-bezier(0.4, 0, 1, 1)", fill: "forwards" },
+    );
+    return () => drop.cancel();
+  }, [dropping]);
   const bandRef = useRef<HTMLDivElement | null>(null);
   const sheetRef = useRef<HTMLDivElement | null>(null);
   // The sheet's scrolling body: a pull down from its top returns the full sheet to the teaser.
@@ -1211,7 +1238,7 @@ export function CardModal({
   // the Set field), then the dialog. The region's shipped two-stage shape with rungs added
   // on top rather than a new shape to learn (§3.11).
   const onEscape = useCallback(() => {
-    if (covered) return;
+    if (locked) return;
     if (zoomed) {
       closeZoom();
       return;
@@ -1238,7 +1265,7 @@ export function CardModal({
         return;
       }
     }
-  }, [closeZoom, covered, expanded, narrow, onClose, sheetOpen, zoomed]);
+  }, [closeZoom, locked, expanded, narrow, onClose, sheetOpen, zoomed]);
 
   // Focus trap + Escape + focus-return — shared hook, shared with the export dialog.
   useDialogA11y(dialogRef, onEscape, { initialFocusRef, returnFocusRef });
@@ -1257,6 +1284,7 @@ export function CardModal({
     // Not on a stacked card: its sheets are being redrawn (a second sheet squeezes the card), and
     // until then it keeps the grip-only drag it shipped with.
     canCollapse: !cramped && !stacked,
+    disabled: locked,
   });
 
   // Focus follows the sheet when the control that moved it is gone: `All details` unmounts as the
@@ -1418,7 +1446,7 @@ export function CardModal({
   // modal is open; a card held under a sheet (`covered`) attaches no listener at all.
   useEffect(() => {
     const backdrop = backdropRef.current;
-    if (!backdrop || total <= 1 || covered) return;
+    if (!backdrop || total <= 1 || locked) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
       if (e.defaultPrevented) return;
@@ -1446,7 +1474,7 @@ export function CardModal({
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [total, onPrev, onNext, onAtStart, onAtEnd, narrow, full, covered]);
+  }, [total, onPrev, onNext, onAtStart, onAtEnd, narrow, full, locked]);
 
   // A back face to turn to, or none (#363). The image is the second condition and
   // not an afterthought: a `transform` row seeded before the back-face column
@@ -1791,9 +1819,9 @@ export function CardModal({
         "fixed inset-0 flex items-center justify-center"
         + (covered ? " z-[49]" : " z-50")
       }
-      inert={covered}
+      inert={locked}
       role="presentation"
-      onClick={covered ? undefined : onClose}
+      onClick={locked ? undefined : onClose}
       style={{
         // A stand-in over a sheet over its original draws its own lighter scrim (addendum §3), so the
         // two layers under it read as two steps down; any other stacked card leaves the sheet's.
@@ -1802,6 +1830,7 @@ export function CardModal({
           : stacked ? "transparent" : "color-mix(in oklab, var(--bg) 72%, transparent)",
       }}
       data-stacked={stacked || undefined}
+      data-stack-dropping={dropping || undefined}
     >
       {/* Positioned OFF the centering flex row, not beside it (pre-open review, round 1): a
           plate sized as a flex sibling shifts the centered dialog by its own width-plus-gap
@@ -1837,6 +1866,7 @@ export function CardModal({
         className={""
           // 80px down, or as far as the room under a centred card allows on a short window.
           + (dropped ? "md:translate-y-[min(80px,calc((100vh-min(620px,85vh))/2-8px))] " : "")
+          + (rise ? "anim-stack-rise " : "")
           + "relative flex flex-col overflow-hidden w-full h-full md:h-[620px] md:max-h-[85vh] md:w-[820px] md:flex-row md:rounded-2xl bg-[color:var(--surface-sunken)] md:bg-[color:var(--surface-rail)] md:[border:1px_solid_var(--border-strong)]"}
         style={{
           boxShadow: "var(--modal-shadow)",

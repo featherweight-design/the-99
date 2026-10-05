@@ -148,7 +148,7 @@ export function ModalChrome({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
-  const { registerSheet, openOracleId } = useCardDetail();
+  const { registerSheet, openOracleId, revealing } = useCardDetail();
   useDialogA11y(ref, onClose);
   // The footer is read through a ref, so a sheet whose state moves does not re-register itself (and
   // flicker the stacked card's way back) on every render.
@@ -165,7 +165,9 @@ export function ModalChrome({
 
   // The card in front of this one. The sheet steps down a ground behind it, which is the second
   // half of what lets a reader see where a dismissal lands.
-  const behind = openOracleId !== null;
+  // While the card drops (`revealing`) the sheet already draws as itself, so it fades back at its own
+  // ground rather than stepped down and then snapping.
+  const behind = openOracleId !== null && !revealing;
   // On the phone a card REPLACES this sheet (stacked sheets R1, call 1): the sheet stays mounted
   // with its scroll kept, but it is not drawn, not pressable and not announced while the card is up.
   // Desktop keeps the stepped ground beside the card.
@@ -175,7 +177,10 @@ export function ModalChrome({
   // refused the focus and it fell to <body> (measured in Chromium and WebKit at 390). The card's own
   // dialog already traps Tab, so `inert` added nothing a keyboard reader could reach.
   const narrow = !useMinWidth("(min-width: 768px)");
-  const hidden = behind && narrow;
+  // Covered for assistive technology and presses until the card has really closed (#1268): the card
+  // is still the modal dialog while it drops. Only the drawing comes back early.
+  const covered = openOracleId !== null && narrow;
+  const hidden = covered && !revealing;
 
   return (
     <div
@@ -183,15 +188,17 @@ export function ModalChrome({
         "fixed inset-0 z-50 flex items-end justify-center "
         // Over a card, the sheet's top sits 40px under the card's, which is centred at its own height.
         + (onCard ? "md:items-start md:pt-[calc((100vh-min(620px,85vh))/2+40px)]" : "md:items-center")
+        // Fading under the card's rise, and back under its drop (stacked sheets R1, motion).
+        + (hidden ? " motion-safe:transition-opacity motion-safe:duration-[240ms]" : " motion-safe:transition-opacity motion-safe:duration-200")
       }
       role="presentation"
       onClick={onClose}
-      aria-hidden={hidden || undefined}
-      data-hidden-under-card={hidden || undefined}
+      aria-hidden={covered || undefined}
+      data-hidden-under-card={covered || undefined}
       style={{
         background: `color-mix(in oklab, var(--bg) ${onCard ? 60 : 72}%, transparent)`,
         opacity: hidden ? 0 : undefined,
-        pointerEvents: hidden ? "none" : undefined,
+        pointerEvents: covered ? "none" : undefined,
       }}
     >
       <div
