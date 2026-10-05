@@ -138,7 +138,7 @@ type CardDetailContextValue = {
    * widths (Analysis tab handoff §3; stacked sheets R1, call 2). The newest registration's label is the one drawn, because that
    * is the sheet a dismissal lands on.
    */
-  registerSheet: (backLabel?: string, footer?: SheetFooter, overCard?: boolean) => () => void;
+  registerSheet: (backLabel?: string, footer?: SheetFooter, overCard?: boolean, phoneBackLabel?: string) => () => void;
   /**
    * Declare the door a card opened with `{ door: true }` draws, and get back the call that withdraws
    * it. The deck page's Shopping list is the one caller: it knows the limit and the rows, and the
@@ -481,9 +481,14 @@ export function CardDetailProvider({
   const [pendingOracleId, setPendingOracleId] = useState<string | null>(null);
   // One entry per sheet underneath, in the order they registered. A token rather than the label
   // identifies an entry, since two sheets may carry the same label.
-  const [sheets, setSheets] = useState<{ token: object; label: string | undefined; footer?: SheetFooter }[]>([]);
+  const [sheets, setSheets] = useState<
+    { token: object; label: string | undefined; footer?: SheetFooter; phoneLabel?: string }[]
+  >([]);
   const sheetsBelow = sheets.length;
   const backLabel = sheets.at(-1)?.label;
+  // The phone's own name for the sheet, where it differs (stacked sheets R1, s2): the pill reads
+  // `← What would have to go` where desktop keeps `← {target}`.
+  const phoneBackLabel = sheets.at(-1)?.phoneLabel;
   const sheetFooter = sheets.at(-1)?.footer;
   const [failed, setFailed] = useState(false);
   // Bumped whenever a read settles (succeeds, fails, or finds nothing), so the read-ahead effect
@@ -854,9 +859,9 @@ export function CardDetailProvider({
   useEffect(() => {
     live.current = { card, siblings, openAt, door };
   });
-  const registerSheet = useCallback((label?: string, footer?: SheetFooter, overCard = false) => {
+  const registerSheet = useCallback((label?: string, footer?: SheetFooter, overCard = false, phoneLabel?: string) => {
     const token = {};
-    setSheets((list) => [...list, { token, label, footer }]);
+    setSheets((list) => [...list, { token, label, footer, phoneLabel }]);
     const lifting = overCard ? live.current : null;
     if (lifting?.card) {
       const held: Held = {
@@ -1118,6 +1123,7 @@ export function CardDetailProvider({
             ? (layout, priced) => sheetFooter(card.oracleId, layout, priced)
             : null}
           backLabel={backLabel}
+          phoneBackLabel={phoneBackLabel}
           // Fits your decks' door, on a card with no sheet under it (stacked sheets R1, call 8): nothing
           // in a stacked card opens a further layer, and a stand-in's Take replaces the door anyway.
           onFindDeck={sheetsBelow > 0 ? null : fitsDoor(card)}
@@ -1187,6 +1193,7 @@ export function CardDetailProvider({
             ? (layout, priced) => sheetFooter(card.oracleId, layout, priced)
             : null}
           backLabel={backLabel}
+          phoneBackLabel={phoneBackLabel}
           // The combo block's partner name, through the same `load` that pages Prev/Next —
           // so a partner replaces the open card exactly as a sibling does, and the back
           // gesture returns to the card the reader started from. It arrives without the

@@ -112,6 +112,7 @@ export function ModalChrome({
   onClose,
   width,
   backLabel = title,
+  phoneBackLabel,
   ground = "var(--surface-raised)",
   titleClassName = "truncate leading-tight text-[15px] md:text-[16px]",
   stackFooter,
@@ -125,6 +126,8 @@ export function ModalChrome({
   onClose: () => void;
   width: 560 | 640 | 700 | 760;
   backLabel?: string;
+  /** What a card stacked on this sheet calls it on the phone, where that differs (stacked sheets R1, s2). */
+  phoneBackLabel?: string;
   ground?: string;
   /**
    * The title's size and how it fits. Every title is one truncated line but what would have to
@@ -156,8 +159,8 @@ export function ModalChrome({
   const hasFooter = stackFooter !== undefined;
   const onCard = overCard !== undefined;
   useEffect(
-    () => registerSheet(backLabel, hasFooter ? (id, layout, priced) => footerRef.current?.(id, layout, priced) ?? null : undefined, onCard),
-    [registerSheet, backLabel, hasFooter, onCard],
+    () => registerSheet(backLabel, hasFooter ? (id, layout, priced) => footerRef.current?.(id, layout, priced) ?? null : undefined, onCard, phoneBackLabel),
+    [registerSheet, backLabel, hasFooter, onCard, phoneBackLabel],
   );
 
   // The card in front of this one. The sheet steps down a ground behind it, which is the second

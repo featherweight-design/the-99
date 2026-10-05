@@ -50,11 +50,26 @@ Walked on `d5c1` (Aura Shards → Cheaper stand-ins → Astral Slide), 390x844, 
 | Price plate | not in the footer (the teaser's second line has it) | a buy price is dropped from the phone layouts; a FREE row keeps its `free` chip in the note and the foot, since the teaser's line shows a buy price, and any row keeps its plate where the card's line names no figure (a failed read, or `no stock`); desktop `row` keeps the plate | ✅ |
 | Counter in the footer | dropped | the phone footer never drew one after R2 (audit A9) | ✅ |
 
+## The phone's own names, and Pull it as an opener (s2, s5, PR C)
+
+Walked at 390x844 in Chromium (touch) and WebKit: s2 on `cafe` (What would have to go → Jeska's
+Will), s5 on a local-dev fixture of three decks where `Silence` is asked for by one and sleeved in
+two (Pull it → choose from 2 decks → the list head's name).
+
+| Property | Design | Built | |
+|---|---|---|---|
+| s2 pill (phone) | `← What would have to go` | `phoneBackLabel={deckAnalysisCopy.sheets.upgradePath}`; measured `←What would have to go`, 178 wide | ✅ |
+| s2 pill (desktop) | `← {target}`, unchanged | `backLabel` unchanged; the phone reads `phoneBackLabel ?? backLabel` | ✅ |
+| s5 opener | the list head's card name | the title's name is a `CardDetailTrigger` (`TitleOpeningCard`); one per sheet | ✅ |
+| s5 pill | `← Which deck to pull from` | `review.source.backLabel`; measured, named `Back to Which deck to pull from` | ✅ |
+| s5 sheet under the card | hidden, kept mounted with the reader's pick | wrapper `aria-hidden`, opacity 0, `pointer-events: none` while the card is up | ✅ |
+| s5 card | 320 x 447 at y 64, focus on the pill | measured; focus on the pill | ✅ |
+| s5 way back | Escape, the pill and Back each pop one layer, focus back on the opener | all three measured; focus returned to `View details for Silence` | ✅ |
+
 ## Later PRs
 
 | Row | PR |
 |---|---|
-| s2 phone label `What would have to go`; s5 Pull it opener and `Which deck to pull from` | C |
 | Open rise 240ms, pop drop 200ms, reduced-motion swap; pill contrast on six themes | D |
 
-VERDICT (PR A and B rows): 0 visual gaps, 0 state gaps.
+VERDICT (PR A, B and C rows): 0 visual gaps, 0 state gaps.

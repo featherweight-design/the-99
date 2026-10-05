@@ -616,6 +616,7 @@ export function CardModal({
   onSelectCard,
   stacked = false,
   backLabel,
+  phoneBackLabel,
   footer = null,
   onFindDeck = null,
   fitsOpen = false,
@@ -658,6 +659,8 @@ export function CardModal({
    * lands before making it.
    */
   backLabel?: string;
+  /** The phone pill's label where the sheet names itself differently there (stacked sheets R1, s2). */
+  phoneBackLabel?: string;
   /**
    * The sheet underneath's own footer for this card (swap tools: a stand-in's Take). It replaces the
    * Mana Pool link in the desktop nav row beside Prev/Next. On the phone (stacked sheets R1, call 9)
@@ -854,6 +857,7 @@ export function CardModal({
   // clears it; a back pill is as wide as its label, which runs from `Game changers` to `How we
   // determined bracket 4`, so it is measured rather than assumed (readiness finding 10).
   const back = stacked && backLabel ? backLabel : null;
+  const phoneBack = stacked ? (phoneBackLabel ?? backLabel ?? null) : null;
   const backRef = useRef<HTMLButtonElement | null>(null);
   const [closeReserve, setCloseReserve] = useState(46);
   useLayoutEffect(() => {
@@ -1931,7 +1935,7 @@ export function CardModal({
             {cardCarouselCopy.position(position, total)}
           </div>
         ) : null}
-        {back ? (
+        {phoneBack ? (
           // STACKED OVER A SHEET (stacked sheets R1, calls 2 and 3): the ✕'s slot holds the way back,
           // `← {sheet}` on the counter's plate, and no ✕ beside it, one control for one layer. It caps
           // at 266 beside the counter and 354 without, and an invisible 44px band (y 16 to 60) makes
@@ -1941,7 +1945,7 @@ export function CardModal({
             ref={(el) => { closeRefs.current[0] = el; }}
             inert={zoomed}
             onClick={onClose}
-            aria-label={cardSheetCopy.back.a11y(back)}
+            aria-label={cardSheetCopy.back.a11y(phoneBack)}
             data-testid="card-modal-back-mobile"
             className={
               "md:hidden absolute z-[3] flex items-center gap-[6px] h-[32px] px-[12px] rounded-full cursor-pointer border-0"
@@ -1956,7 +1960,7 @@ export function CardModal({
             style={{ top: 22, right: 18 }}
           >
             <span aria-hidden="true" className="flex-none text-[color:var(--fg-muted)]">←</span>
-            <span className="min-w-0 truncate">{back}</span>
+            <span className="min-w-0 truncate">{phoneBack}</span>
           </button>
         ) : (
           <button
