@@ -1034,9 +1034,6 @@ export function CardDetailProvider({
           total={heldIndex >= 0 && held.siblings.length > 1 ? held.siblings.length : 1}
           onClose={NOOP}
           covered
-          // Where it sat live: 52 for a card whose Shopping door drew (F16), by the same test the live
-          // card uses; full height for any other, including a Shopping card its door has nothing for.
-          phoneTop={held.door && doorRender && doorRender(held.card.oracleId, "art") !== null ? 52 : undefined}
           door={held.door && doorRender ? (layout) => doorRender(held.card.oracleId, layout) : null}
           // Kept mounted under the picker it opened, so its close can hand focus back to the door.
           onFindDeck={fitsDoor(held.card)}
@@ -1073,15 +1070,13 @@ export function CardDetailProvider({
             ? (layout) => sheetFooter(card.oracleId, layout)
             : null}
           backLabel={backLabel}
-          // Fits your decks' door, on a card whose footer is still its own: a stand-in's Take replaces it.
-          onFindDeck={sheetFooter && sheetFooter(card.oracleId, "row") !== null ? null : fitsDoor(card)}
+          // Fits your decks' door, on a card with no sheet under it (stacked sheets R1, call 8): nothing
+          // in a stacked card opens a further layer, and a stand-in's Take replaces the door anyway.
+          onFindDeck={sheetsBelow > 0 ? null : fitsDoor(card)}
           fitsOpen={fitsFor !== null}
           // Only a card the door has something for: a door with nothing in it would still take its room
           // from the art.
           door={liveDoor ? (layout) => doorRender!(card.oracleId, layout) : null}
-          // Opened from a Shopping row, the phone's card starts at 52 so a sheet opened over it steps
-          // down from there (audit F16); every other opener keeps the full-height card.
-          phoneTop={liveDoor && sheetsBelow === 0 ? 52 : undefined}
           // The combo block's partner name, through the same `load` that pages Prev/Next —
           // so a partner replaces the open card exactly as a sibling does, and the back
           // gesture returns to the card the reader started from. It arrives without the
@@ -1136,7 +1131,6 @@ export function CardDetailProvider({
           total={paging ? siblings.length : 1}
           onClose={close}
           stacked
-          phoneTop={140}
           dropped
           // Only a card the sheet has a footer FOR swaps its Mana Pool link out: the original, or any
           // card after a take, keeps the link rather than drawing nothing in its place.
