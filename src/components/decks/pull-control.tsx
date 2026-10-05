@@ -563,7 +563,11 @@ function TitleOpeningCard({ card }: { card: { oracleId: string; name: string } }
   const opened = useRef(false);
   const live = useRef({ close, ours: false });
   useEffect(() => {
-    live.current = { close, ours: opened.current && (openOracleId === card.oracleId || pendingOracleId === card.oracleId) };
+    // The SESSION, not the id: a combo partner reached from All details replaces the card in place
+    // (#1267 round 2), and nothing else can open a card while this sheet is up, since the page under
+    // it is behind its scrim and the sheet takes no presses while covered.
+    if (openOracleId === null && pendingOracleId === null) opened.current = false;
+    live.current = { close, ours: opened.current };
   });
   useEffect(() => () => {
     if (live.current.ours) live.current.close();

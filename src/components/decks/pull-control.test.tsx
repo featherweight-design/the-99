@@ -11,7 +11,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DeckClaim } from "../../lib/decks/availability";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
-import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
+import { CardDetailProvider, cardDetailCopy, useCardDetail } from "../cards/card-detail-provider";
 import { DRAFT_ANNOUNCER_ID } from "./draft-announcer";
 import { PullControl } from "./pull-control";
 
@@ -670,6 +670,32 @@ describe("PullControl — 2+ choosable sources", () => {
     act(() => { screen.getByRole("button", { name: sourceCopy.cancel }).click(); });
     expect(screen.queryByRole("dialog")).toBeNull();
     await act(async () => { land(solRing); });
+    expect(cardUp()).toBeNull();
+  });
+
+  // #1267 round 2: a combo partner reached from All details replaces the card in place, and it is
+  // still the list's card session when the phone turns.
+  it("closes a partner that replaced the head's card when the sheet gives way to the popover", async () => {
+    setViewport(false);
+    const partner = { ...solRing, oracleId: "o2", name: "Mana Vault" } as BrowseCard;
+    function Partner() {
+      const { open } = useCardDetail();
+      return <button type="button" onClick={() => open("o2")}>partner</button>;
+    }
+    const ui = (
+      <CardDetailProvider fetchCard={async (id) => (id === "o2" ? partner : solRing)}>
+        <PullControl deckId="d" card={CARD} claims={[FREE_TO_PULL, OTHER_SOURCE]} defaultId={FREE_TO_PULL.id} onPulled={noop} />
+        <Partner />
+      </CardDetailProvider>
+    );
+    const view = render(ui);
+    act(() => { screen.getByRole("button", { name: MANY_NAME }).click(); });
+    const head = screen.getByRole("dialog").querySelector('p[id$="-title"] button') as HTMLElement;
+    await act(async () => { fireEvent.click(head); });
+    await act(async () => { fireEvent.click(screen.getByText("partner")); });
+    expect(document.getElementById("card-modal-title")).toHaveTextContent("Mana Vault");
+    setViewport(true);
+    await act(async () => { view.rerender(ui); window.dispatchEvent(new Event("resize")); });
     expect(cardUp()).toBeNull();
   });
 
