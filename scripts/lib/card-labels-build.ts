@@ -734,6 +734,20 @@ async function build(opts: BuildOptions): Promise<number> {
         + `${[...new Set(otherModel.map((r) => r.model))].join(", ")}, not ${MODEL}. Their cost is not `
         + `known yet. Finish them under that LABEL_MODEL first.`);
     }
+    // ONE PROMPT VERSION IN FLIGHT. A label stays fresh under the version that wrote it, so a prompt
+    // bump costs nothing by itself, but an intent asked under an older version is still out: its
+    // cards have no published row, so this run would plan and pay for them again, and `reconcile`
+    // only collects the current version's intents. Any run id, any model: the double pay is per card.
+    const otherVersion = await db.select({ promptVersion: cardLabelBatches.promptVersion })
+      .from(cardLabelBatches).where(and(
+        inArray(cardLabelBatches.status, OPEN_STATUSES),
+        sql`${cardLabelBatches.promptVersion} <> ${LABEL_PROMPT_VERSION}`,
+      ));
+    if (otherVersion.length > 0) {
+      return refuse(`${otherVersion.length} open intent(s) were asked under prompt version(s) `
+        + `${[...new Set(otherVersion.map((r) => r.promptVersion))].join(", ")}, not ${LABEL_PROMPT_VERSION}. `
+        + `Their cards would be paid for twice. Collect them with that version's checkout first.`);
+    }
   }
   if (abandoned.length > 0) {
     console.error(`\n${abandoned.length} intent(s) ABANDONED — submitted, id lost, and no longer`);

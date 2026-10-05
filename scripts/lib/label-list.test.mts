@@ -48,6 +48,19 @@ describe("listScopeIds", () => {
   // Version-aware freshness (Hugh, 2026-10-04): the stale set is `needsLabel` over each card's own
   // row (its model, version and hash), and a LIST scope alone is the deliberate redo. `needsLabel`'s
   // rule is unit tested in `prompt.test.ts`; this pins that the build calls it with those inputs.
+  // A prompt bump costs nothing by itself, but an intent asked under an older version is still out
+  // and its cards have no row: planning them would pay twice. The build refuses until it lands.
+  it("refuses to plan while an intent of another prompt version is open", () => {
+    const build = readFileSync(join(process.cwd(), "scripts/lib/card-labels-build.ts"), "utf8");
+    const at = build.indexOf("const otherVersion = await db.select");
+    expect(at).toBeGreaterThan(-1);
+    const block = build.slice(at, build.indexOf("return refuse(", at));
+    expect(block).toContain("inArray(cardLabelBatches.status, OPEN_STATUSES)");
+    expect(block).toMatch(/sql`\$\{cardLabelBatches\.promptVersion\} <> \$\{LABEL_PROMPT_VERSION\}`/);
+    // Before planning: the refusal sits ahead of the stale-set read.
+    expect(at).toBeLessThan(build.indexOf("const all = await cardsNeedingLabels("));
+  });
+
   it("plans the stale set with needsLabel, redoing only on a list scope", () => {
     const build = readFileSync(join(process.cwd(), "scripts/lib/card-labels-build.ts"), "utf8");
     expect(build).toMatch(/model: cardLabels\.model, promptVersion: cardLabels\.promptVersion, inputHash: cardLabels\.inputHash,/);

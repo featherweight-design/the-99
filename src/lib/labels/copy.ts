@@ -109,7 +109,10 @@ export function planCopy(
     if (!Object.hasOwn(registry, row.promptVersion)) { unknownVersion.push(row.oracleId); continue; }
     if (!labelIsFresh(row, card, registry)) { mismatched.push(row.oracleId); continue; }
     const held = heldById.get(row.oracleId);
-    if (held !== undefined && olderVersion(row.promptVersion, held.promptVersion) && labelIsFresh(held, card, registry)) {
+    // A target row of a version this checkout does not know is treated as newer, never as stale: an
+    // older checkout (a rollback, an old manual run) must not overwrite what a newer prompt wrote.
+    if (held !== undefined && olderVersion(row.promptVersion, held.promptVersion)
+      && (!Object.hasOwn(registry, held.promptVersion) || labelIsFresh(held, card, registry))) {
       targetNewer.push(row.oracleId);
       continue;
     }
