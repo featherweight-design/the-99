@@ -202,10 +202,16 @@ describe("useCardSheetGestures", () => {
   it("keeps the full sheet on a short pull from the top, by the grip's own snap", () => {
     // The same rule as the grip: a slow release snaps to the nearer state, so a 100px pull stays.
     render(<Harness startFull />);
-    const body = screen.getByText("body");
-    fireEvent.pointerDown(body, { pointerId: 1, clientX: 200, clientY: 200, button: 0, pointerType: "touch", timeStamp: 0 });
-    fireEvent.pointerMove(window, { pointerId: 1, clientX: 200, clientY: 300, pointerType: "touch", timeStamp: 400 });
-    fireEvent.pointerUp(window, { pointerId: 1, clientX: 200, clientY: 300, pointerType: "touch", timeStamp: 800 });
+    // fireEvent drops a `timeStamp` option, and jsdom's own clock can read a 100px move as a flick
+    // under load, so each event carries a defined time: slow enough that only distance decides.
+    const at = (type: string, y: number, t: number) => {
+      const e = new PointerEvent(type, { pointerId: 1, clientX: 200, clientY: y, button: 0, pointerType: "touch", bubbles: true });
+      Object.defineProperty(e, "timeStamp", { value: t });
+      return e;
+    };
+    fireEvent(screen.getByText("body"), at("pointerdown", 200, 0));
+    fireEvent(window, at("pointermove", 300, 400));
+    fireEvent(window, at("pointerup", 300, 800));
     expect(sheet()).toHaveAttribute("data-sheet", "full");
   });
 
