@@ -2272,7 +2272,7 @@ export function CardModal({
                       <button
                         type="button"
                         onClick={() => setSheetFull(true)}
-                        className="flex cursor-pointer items-center justify-center gap-[8px] border-0 border-r border-[color:var(--border)] bg-transparent p-0 text-[13.5px] text-[color:var(--fg-body)] focus-visible:-outline-offset-2"
+                        className="flex cursor-pointer items-center justify-center gap-[8px] border-0 border-r border-r-[color:var(--border)] bg-transparent p-0 text-[13.5px] text-[color:var(--fg-body)] focus-visible:-outline-offset-2"
                       >
                         {cardSheetCopy.expand}
                         <span aria-hidden style={{ color: "var(--fg-faint)" }}>▴</span>
