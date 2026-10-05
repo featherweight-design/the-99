@@ -221,10 +221,11 @@ function useOpen(item: TuningItem, side: "cut" | "add") {
   const preview = usePreviewRow(side === "cut" ? item.cutImageUri : item.addImageUri);
   const intent = useCardIntent(id);
   return {
-    onClick: () => open(id, [
+    // The pressed control names itself, so focus comes back to it on close even in Safari.
+    onClick: (event: React.MouseEvent<HTMLElement>) => open(id, [
       { oracleId: item.cutOracleId, name: item.cutName, imageUri: item.cutImageUri },
       { oracleId: item.addOracleId, name: item.addName, imageUri: item.addImageUri },
-    ]),
+    ], undefined, { opener: event.currentTarget }),
     ...preview,
     ...intent,
   };

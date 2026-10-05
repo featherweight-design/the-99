@@ -88,7 +88,7 @@ export function ChangeCommanderDoor({
           type="button"
           aria-label="View card details"
           aria-busy={pending}
-          onClick={() => open(oracleId)}
+          onClick={(e) => open(oracleId, undefined, undefined, { opener: e.currentTarget })}
           {...intent}
           className="relative flex h-[44px] items-center bg-transparent p-0 font-mono whitespace-nowrap text-[color:var(--fg)]"
           style={{ gap: 6, padding: "0 9px", fontSize: 11, cursor: "pointer" }}
@@ -165,7 +165,7 @@ export function ChangeCommanderDoor({
         type="button"
         aria-label="View card details"
         aria-busy={pending}
-        onClick={() => open(oracleId)}
+        onClick={(e) => open(oracleId, undefined, undefined, { opener: e.currentTarget })}
         {...intent}
         className="absolute flex items-center justify-center bg-transparent p-0"
         style={{ left: 0, width: 44, top: half, height: 44, paddingBottom: overhang, cursor: "pointer" }}

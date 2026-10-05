@@ -210,3 +210,33 @@ describe("paging keeps focus in the card", () => {
     expect(focused).toEqual(["opener"]);
   });
 });
+
+describe("a list sheet over a card, on the phone (call 7)", () => {
+  it("draws `← {card}` in its head, named for the card, with no × beside it", () => {
+    const onClose = vi.fn();
+    render(
+      <CardDetailProvider fetchCard={async () => birds}>
+        <ModalChrome
+          title="Cheaper stand-ins"
+          closeLabel="Close cheaper stand-ins"
+          onClose={onClose}
+          width={560}
+          overCard={{ name: "Plateau", backAria: "Back to Plateau" }}
+        >
+          <p>rows</p>
+        </ModalChrome>
+      </CardDetailProvider>,
+    );
+    const sheet = screen.getByTestId("receipt-modal");
+    const back = screen.getByRole("button", { name: "Back to Plateau" });
+    expect(back).toHaveTextContent("Plateau");
+    // At both widths now: not the desktop-only class it shipped with.
+    expect(back).not.toHaveClass("hidden");
+    expect(screen.queryByRole("button", { name: "Close cheaper stand-ins" })).toBeNull();
+    expect(sheet.textContent).not.toContain("×");
+    // At 52 over the card, as any sheet, not the retired 96.
+    expect(sheet).toHaveClass("h-[calc(100%-52px)]");
+    fireEvent.click(back);
+    expect(onClose).toHaveBeenCalled();
+  });
+});
