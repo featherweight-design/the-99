@@ -10,6 +10,8 @@
 // Source: `design/design_handoff_the99_deck_tuning/deck-tuning · copy strings.ts`
 // and `docs/superpowers/design-tables/deck-tuning.md` §Game Log Form — Note Field.
 
+import { deckDescriptionCopy } from "./deck-description";
+
 /**
  * Characters as the database counts them.
  *
@@ -193,7 +195,7 @@ export const deckTuningCopy = {
     bracketLowers: "Applying it lowers the deck\u2019s bracket to",
     bracketChanges: "Applying it changes the deck\u2019s bracket to",
     // Citation chips: source · value. The source is the evidence kind, named for a reader.
-    cite: { games: "games", note: "note", decklist: "list", intent: "you said", mix: "mix" },
+    cite: { games: "games", note: "note", decklist: "list", intent: "you said", mix: "mix", notes: deckDescriptionCopy.notes.cite },
     open: (name: string) => `Open ${name}`,
     swap: (cut: string, add: string) => `Swap ${cut} for ${add}`,
     applyRefused: "We couldn\u2019t make that swap. The deck is unchanged.",

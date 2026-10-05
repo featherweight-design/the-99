@@ -1919,7 +1919,9 @@ export type ApplySnapshot = {
 };
 
 export type TuningCitation = {
-  kind: "games" | "note" | "decklist" | "intent" | "mix";
+  // "notes" (H35, PR 4b): the player's free-text "Additional notes" for that run, distinct from
+  // a per-game "note" and from the deck's standing "intent" (description).
+  kind: "games" | "note" | "decklist" | "intent" | "mix" | "notes";
   /** Rendered by the card. Never a percentage, never a net figure. */
   value: string;
 };

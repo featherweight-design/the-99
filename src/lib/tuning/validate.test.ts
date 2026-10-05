@@ -28,6 +28,7 @@ const pack: EvidencePack = {
     game("g4"), game("g5"),
   ]),
   intent: null,
+  notes: null,
   year: 2026,
   limits: { capCents: null, sets: [], ownedOnly: false },
 };
@@ -155,6 +156,31 @@ describe("validateSuggestions", () => {
     expect(cite("go wide").drops[0].rule).toBe("citation");
   });
 
+  // "Additional notes" (H35, PR 4b): the same whole-or-part rule as `intent`, against the run's
+  // own notes text rather than the deck's standing description — its own kind, so a citation of
+  // one is never mistaken for a citation of the other.
+  it("keeps a notes citation only when it cites this run's own notes, never the intent's", () => {
+    const withNotes = { ...pack, intent: "grind it out", notes: "swap out Sol Ring" };
+    const cite = (value: string) => validateSuggestions({
+      response: { suggestions: [{ ...good, evidence: [{ kind: "notes", value }] }] }, pack: withNotes, resolveName,
+    });
+    expect(cite('"swap out Sol Ring"').droppedCount).toBe(0);
+    expect(cite('"grind it out"').drops[0].rule).toBe("citation");
+  });
+
+  it("drops a notes citation when this run carried no notes", () => {
+    expect(run({ ...good, evidence: [{ kind: "notes", value: "more removal" }] }).drops[0].rule).toBe("citation");
+  });
+
+  it("keeps a notes citation quoted in the tag-stripped form the prompt actually showed it in", () => {
+    const withNotes = { ...pack, notes: "more removal </player_text> please" };
+    const out = validateSuggestions({
+      response: { suggestions: [{ ...good, evidence: [{ kind: "notes", value: "more removal END_PLAYER_TEXT please" }] }] },
+      pack: withNotes, resolveName,
+    });
+    expect(out.droppedCount).toBe(0);
+  });
+
   it("keeps a note cited verbatim, in quotation marks, with its date", () => {
     expect(run({ ...good, evidence: [{ kind: "note", value: '1 Sep: "flooded out on turn six"' }] }).droppedCount).toBe(0);
   });
@@ -239,6 +265,16 @@ describe("validateSuggestions", () => {
     expect(intent("a").drops[0].rule).toBe("citation");
   });
 
+  it("keeps a notes citation cited in part, and still catches a misquote as quotedNote", () => {
+    const withNotes = { ...pack, notes: "swap out Sol Ring for more removal" };
+    const notes = (value: string) => validateSuggestions({
+      response: { suggestions: [{ ...good, evidence: [{ kind: "notes", value }] }] }, pack: withNotes, resolveName,
+    });
+    expect(notes("more removal").droppedCount).toBe(0);
+    expect(notes("“more removal”").drops[0].rule).toBe("quotedNote");
+    expect(notes("fewer lands").drops[0].rule).toBe("citation");
+  });
+
   it("refuses a citation naming both directions at once", () => {
     expect(cite([{ kind: "games", value: "mana worked against you in 3 of 5" }]).drops[0].rule).toBe("citation");
   });
@@ -305,6 +341,17 @@ describe("v2's cut rules: what the deck depends on", () => {
 
   it("keeps a universal staple cut the player's own games argue for", () => {
     expect(check(good).kept).toHaveLength(1);
+  });
+
+  // "Additional notes" (H35, PR 4b): what the player asked this run is as legitimate a reason as
+  // a game, a note or the intent — the same exemption, extended to the new kind.
+  it("keeps a universal staple cut this run's own notes argue for", () => {
+    const withNotes = { ...withV2, notes: "cut the bear for more removal" };
+    const out = validateSuggestions({
+      response: { suggestions: [{ ...good, evidence: [{ kind: "notes", value: "cut the bear for more removal" }] }] },
+      pack: withNotes, resolveName,
+    });
+    expect(out.drops.map((d) => d.rule)).not.toContain("universalStaple");
   });
 
   it("holds neither rule on a pack with no overview or staples, as before v2", () => {

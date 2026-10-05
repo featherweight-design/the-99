@@ -50,6 +50,9 @@ export type EvidencePack = {
   staples: { oracleId: string; name: string; commanders: number; commanderTotal: number; owned: boolean }[];
   play: ProfilePlay;
   intent: string | null;
+  /** "Additional notes" (H35, PR 4b): the player's free text for THIS run alone, never saved.
+   *  Null for a run with none, the same shape as `intent`. */
+  notes: string | null;
   /** The year note dates are judged against (`noteDate`), taken ONCE, when the pack is built, so
    *  the prompt and the validator format a date alike even if the model call crosses a New Year. */
   year: number;
@@ -73,6 +76,9 @@ export function buildEvidencePack(input: {
   profile: DeckProfile;
   play: ProfilePlay;
   intent: string | null;
+  /** "Additional notes" (H35, PR 4b). Optional: absent/null for every caller that does not
+   *  carry one — the eval harness, and older tests — the same shape as `intent`. */
+  notes?: string | null;
   owned: ReadonlySet<string>;
   /** The deck's live locks (D5): an INPUT, like `owned`, read in the run's own request and never
    *  stored in the analysis, so toggling a lock never marks a reading stale. */
@@ -154,6 +160,7 @@ export function buildEvidencePack(input: {
       })),
     play,
     intent,
+    notes: input.notes ?? null,
     year: currentYear(input.now),
     strategy: input.overview ? strategyOf(input.overview, profile.cards) : null,
     universal: universalOf(input.universal ?? []),

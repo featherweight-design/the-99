@@ -101,10 +101,11 @@ const SYSTEM = [
   PLAYER_TEXT_SYSTEM_RULE,
   `Propose up to ${ASK_SUGGESTIONS} swaps. Each swap cuts exactly one card from the deck and adds exactly one card.`,
   "Ground every swap in the evidence you are given: the player's games and notes, the decklist and its targets, and what the player says the deck is for. Cite what you used.",
-  "Cite with one of five kinds: games, note, decklist, intent, mix. One figure per citation. A figure with no name, or one the evidence does not give, is discarded.",
+  "Cite with one of six kinds: games, note, decklist, intent, mix, notes. One figure per citation. A figure with no name, or one the evidence does not give, is discarded.",
   "A games citation names what it counts, in the words the games section uses, with the figure it gives: \"Mana hurt in 3 of 5 games\", \"Lost 4 of 5 games\".",
   "A note citation names the date of the note you quote, as the notes list writes it: \"26 Aug\". Quote that note in the rationale.",
   "An intent citation quotes the player's own words, whole or a part of them.",
+  "A notes citation quotes the player's own words from what they asked for this run, whole or a part of them.",
   "A mix citation names a target and its figure as the targets list writes it: \"draw 4 of 10\".",
   `Name cards exactly as the decklist and the staples list spell them. ${COMMANDER_RULE}`,
   "Rules. A suggestion that breaks any of these is discarded before the player sees it:",
@@ -138,6 +139,12 @@ function renderPack(pack: EvidencePack): string {
   lines.push("", pack.intent === null
     ? "What the deck is for: no stated intent."
     : playerText("What the deck is for, in the player's own words", pack.intent, deckDescriptionCopy.description.maxLength));
+
+  // "Additional notes" (H35, PR 4b): absent with no text this run, so a run with none sends
+  // today's user message byte for byte (same rule "Kept for this deck" follows for limits).
+  if (pack.notes !== null) {
+    lines.push("", playerText("What the player is asking for this run, in their own words", pack.notes, deckDescriptionCopy.notes.maxLength));
+  }
 
   lines.push("", "Games:");
   const { summary, games } = pack.play;

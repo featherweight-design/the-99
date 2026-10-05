@@ -9,7 +9,7 @@ import { cards, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { isUuid } from "../../lib/uuid";
 import { creditsCopy } from "../../lib/copy/credits";
-import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { validateDeckName } from "../../lib/decks/deck-name";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
@@ -178,7 +178,7 @@ export async function saveDeckLimits(
  */
 export async function runTuning(
   deckId: string,
-  opts: { anyway?: boolean; runId?: string } = {},
+  opts: { anyway?: boolean; runId?: string; notes?: string } = {},
 ): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   if (!isUuid(deckId)) return { ok: false, message: deckTuningCopy.run.refused };
@@ -189,6 +189,19 @@ export async function runTuning(
   if (requested !== undefined && (typeof requested !== "string" || !isUuid(requested))) {
     return { ok: false, message: deckTuningCopy.run.refused };
   }
+  // "Additional notes" (H35, PR 4b): never saved, so the request carries the player's own text
+  // for this run alone. A field that is present but not text, or over its own cap, is a refusal
+  // rather than a silent drop — the client already enforces the cap on every keystroke, so this
+  // can only be a forged or stale request.
+  const rawNotes = typeof opts === "object" && opts !== null ? opts.notes : undefined;
+  if (rawNotes !== undefined && typeof rawNotes !== "string") {
+    return { ok: false, message: deckTuningCopy.run.refused };
+  }
+  const trimmedNotes = rawNotes === undefined ? null : rawNotes.trim();
+  if (trimmedNotes !== null && countCharacters(trimmedNotes) > deckDescriptionCopy.notes.maxLength) {
+    return { ok: false, message: deckTuningCopy.run.refused };
+  }
+  const notes = trimmedNotes === "" ? null : trimmedNotes;
 
   const inputs = await tuningInputs(deckId, userId);
   if (!inputs) return { ok: false, message: deckTuningCopy.run.refused };
@@ -235,7 +248,7 @@ export async function runTuning(
       readTuningContext(head),
     ]);
     const pack = buildEvidencePack({
-      profile, play: buildPlayGroup(games), intent, owned, overview, universal, locked: new Set(locked), limits,
+      profile, play: buildPlayGroup(games), intent, owned, overview, universal, locked: new Set(locked), limits, notes,
     });
     const { system, user } = buildPrompt(pack);
     const outcome = await callModel({
@@ -304,7 +317,7 @@ export async function runTuning(
     // 8-asked/5-kept (H35, PR 4a): the first survivors in whatever order the validator already
     // gives — no new ranking pass, no retry, no second model call. Fewer than 5 is shown as-is.
     const sized = kept.slice(0, MAX_SUGGESTIONS);
-    const report: ValidationReport = { askedCount, survivedCount: kept.length, keptCount: sized.length };
+    const report: ValidationReport = { askedCount, survivedCount: kept.length, keptCount: sized.length, hadNotes: notes !== null };
     // F10: every suggestion cut a card the player locked. Its own class, so the empty result says
     // that rather than `ungrounded`'s three causes. Refunded like every failure.
     if (sized.length === 0 && drops.length > 0 && drops.every((d) => d.rule === "neverCut")) {

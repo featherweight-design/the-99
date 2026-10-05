@@ -16,6 +16,7 @@ const pack: EvidencePack = {
   staples: Array.from({ length: 30 }, (_, i) => ({ oracleId: `st${i}`, name: `Staple ${i}`, commanders: 30 - i, commanderTotal: 336, owned: false })),
   play: buildPlayGroup([]),
   intent: null,
+  notes: null,
   year: 2026,
   limits: { capCents: null, sets: [], ownedOnly: false },
 };

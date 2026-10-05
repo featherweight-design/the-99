@@ -62,6 +62,14 @@ describe("SuggestionCard", () => {
     expect(screen.queryByText(/%/)).not.toBeInTheDocument();
   });
 
+  // "Additional notes" (H35, PR 4b): its own chip key beside the shipped "you said" (`intent`),
+  // so a reader can tell the standing description from what was asked for this one run.
+  it("names a notes citation with its own chip, never the description's", () => {
+    draw({ ...item, evidence: [{ kind: "notes", value: "more removal" }] });
+    expect(screen.getByText(copy.cite.notes)).toBeInTheDocument();
+    expect(screen.queryByText(copy.cite.intent)).not.toBeInTheDocument();
+  });
+
   it("draws the full reason at both widths (H35-E)", () => {
     draw(item);
     const full = screen.getByText(item.rationale).className;

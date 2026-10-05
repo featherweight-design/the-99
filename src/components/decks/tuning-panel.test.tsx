@@ -117,7 +117,7 @@ describe("TuningPanel", () => {
       const d = deps([fresh, results], { run });
       await draw(d);
       await press(copy.suggest);
-      expect(d.run).toHaveBeenCalledWith("d1", { runId: expect.stringMatching(/^[0-9a-f-]{36}$/) });
+      expect(d.run).toHaveBeenCalledWith("d1", { runId: expect.stringMatching(/^[0-9a-f-]{36}$/), notes: "" });
       const total = runSteps(facts, "go wide").length;
       // Nothing ticked yet, and the model has not been asked to resolve.
       expect(screen.getAllByTestId("manifest-row").filter((r) => r.dataset.done === "true")).toHaveLength(0);
@@ -223,7 +223,7 @@ describe("TuningPanel", () => {
     expect(screen.getByTestId("tuning-unchanged")).toBeInTheDocument();
     expect(d.run).not.toHaveBeenCalled();
     await press(copy.unchangedCta);
-    expect(d.run).toHaveBeenCalledWith("d1", { anyway: true, runId: expect.any(String) });
+    expect(d.run).toHaveBeenCalledWith("d1", { anyway: true, runId: expect.any(String), notes: "" });
   });
 
   // Pre-open review round 4 (previously missed): the re-entry guard set at the start of a press
@@ -453,6 +453,32 @@ describe("TuningPanel", () => {
     expect(screen.queryByText((text) => text.includes(deckDescriptionCopy.manifest.readLimits))).toBeNull();
   });
 
+  // "Additional notes" (H35, PR 4b): the same staleness rule as limits, since `facts.intent` is
+  // the LIVE deck value and a stale result predates the player's latest edit to it.
+  it("reads your description only for a fresh result, never a stale one with the same live value", async () => {
+    await draw(deps([results]));
+    expect(screen.getByText((text) => text.includes(deckDescriptionCopy.manifest.readDescription))).toBeInTheDocument();
+    cleanup();
+    await draw(deps([{ ...results, stale: true }]));
+    expect(screen.queryByText((text) => text.includes(deckDescriptionCopy.manifest.readDescription))).toBeNull();
+  });
+
+  it("reads no description when the deck has none", async () => {
+    await draw(deps([results]), { ...facts, intent: null });
+    expect(screen.queryByText((text) => text.includes(deckDescriptionCopy.manifest.readDescription))).toBeNull();
+  });
+
+  // "Additional notes" (H35, PR 4b): the field is never saved, so only the run's own record
+  // (`validationReport.hadNotes`) can say whether it carried text for THIS run.
+  it("reads your notes only when the run's own record says it carried any", async () => {
+    const withNotes = { ...results, run: { ...okRun, validationReport: { askedCount: 8, survivedCount: 8, keptCount: 5, hadNotes: true } } };
+    await draw(deps([withNotes]));
+    expect(screen.getByText((text) => text.includes(deckDescriptionCopy.manifest.readNotes))).toBeInTheDocument();
+    cleanup();
+    await draw(deps([results]));
+    expect(screen.queryByText((text) => text.includes(deckDescriptionCopy.manifest.readNotes))).toBeNull();
+  });
+
   it("disables the press when every credit is out even on an unchanged deck", async () => {
     const next = new Date("2026-09-24T14:20:00Z");
     const d = deps([{ ...results, allowance: { used: 5, limit: 5, reopensAt: next, nextAt: next } }]);
@@ -577,7 +603,7 @@ describe("TuningPanel", () => {
     await draw(d);
     await press(deckTuningCopy.failure.retry);
     expect(screen.queryByTestId("tuning-unchanged")).not.toBeInTheDocument();
-    expect(d.run).toHaveBeenCalledWith("d1", { anyway: true, runId: expect.any(String) });
+    expect(d.run).toHaveBeenCalledWith("d1", { anyway: true, runId: expect.any(String), notes: "" });
   });
 
   it("leaves the reading state with a refusal when the run itself rejects", async () => {
@@ -1169,6 +1195,15 @@ describe("TuningPanel: Additional notes (H35, PR 3)", () => {
   it("mounts the field above the action row, hidden while reading", async () => {
     await draw(deps([fresh]));
     expect(screen.getByLabelText("Additional notes")).toBeInTheDocument();
+  });
+
+  // "Additional notes" (H35, PR 4b): the typed text rides into the run it starts.
+  it("sends the typed note to deps.run", async () => {
+    const d = deps([fresh, results]);
+    await draw(d);
+    fireEvent.change(screen.getByLabelText("Additional notes"), { target: { value: "more removal" } });
+    await press(copy.suggest);
+    expect(d.run).toHaveBeenCalledWith("d1", { runId: expect.any(String), notes: "more removal" });
   });
 
   it("clears the note once a successful run lands", async () => {

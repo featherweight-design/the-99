@@ -2,7 +2,7 @@
 
 // "Additional notes" (H35, STATES-deck-description.md §3 states 1/3, PR 3): one note per press,
 // held in the panel's own state and never saved anywhere — it rides into the next run's prompt
-// (PR 4b) and is gone once that run lands.
+// (PR 4b, `tuning-actions.ts`'s `runTuning`) and is gone once that run lands.
 
 import { useEffect, useRef } from "react";
 import { countCharacters } from "../../lib/copy/deck-tuning";
