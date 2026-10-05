@@ -321,6 +321,24 @@ describe("useDialogA11y and inert subtrees", () => {
     expect(document.activeElement).toBe(el.querySelector("#first"));
   });
 
+  // A child focused by script (a stand-in's taken row, landed on once a take replaced the row the
+  // reader was on) is outside the list too, but in the MIDDLE: Tab goes on to the next control in
+  // document order, its own Undo, rather than back to the dialog's first.
+  it("moves on from a script-focused child to the controls either side of it", () => {
+    const el = renderRootFocused();
+    const row = document.createElement("div");
+    row.tabIndex = -1;
+    row.innerHTML = `<button id="undo">undo</button>`;
+    el.insertBefore(row, el.querySelector("#last"));
+    el.querySelector<HTMLElement>("#undo")!.getClientRects = () => [{ width: 10, height: 10 }] as unknown as DOMRectList;
+    row.focus();
+    fireEvent.keyDown(window, { key: "Tab" });
+    expect(document.activeElement).toBe(el.querySelector("#undo"));
+    row.focus();
+    fireEvent.keyDown(window, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(el.querySelector("#first"));
+  });
+
 
   it("leaves another dialog's Tab alone when two are mounted", () => {
     // The listener is on `window`, so every mounted hook sees every Tab, and

@@ -11,7 +11,7 @@
  * Take is PR 4b's: a press that swaps needs its receipt, its refusal and its undo, and a Take drawn
  * without them would be a control that does nothing. The row's grid keeps its first two columns.
  */
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type Ref } from "react";
 
 import { printedFaceName } from "../../lib/collection/browse";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
@@ -330,10 +330,13 @@ export function PricePlate({ row, newestAsOf }: { row: Pick<SheetRow, "free" | "
 }
 
 /** The pressed row once its take has landed (suggestion-card's applied row, stamped `taken`). */
-function TakenRow({ cut, add, busy, error, onUndo }: { cut: string; add: string; busy: boolean; error: string | null; onUndo: () => void }) {
+function TakenRow({ cut, add, busy, error, onUndo, rowRef }: { cut: string; add: string; busy: boolean; error: string | null; onUndo: () => void; rowRef?: Ref<HTMLDivElement> }) {
   return (
     <li className="border-b border-[color:var(--border)]">
       <div
+        ref={rowRef}
+        // Where focus lands once a take replaces the row it was on (see `StandInsSheet`).
+        tabIndex={-1}
         data-testid="stand-in-taken"
         className="flex flex-wrap items-center gap-[9px] my-[8px] px-[12px] py-[10px] rounded-[9px] border border-[color:var(--success)]"
         style={{ background: "var(--surface)" }}
@@ -444,6 +447,31 @@ export function StandInsSheet({
   });
   // Whether the sheet is still up: a take the reader closed the sheet on lands after this has unmounted.
   const mounted = useRef(true);
+  // FOCUS AFTER A TAKE. The take replaces the row the reader pressed in, whether they pressed its
+  // Take or a stacked card's (whose close hands focus back to that row's name), so the focused
+  // control leaves the document and focus falls to <body>. It lands on the taken row instead, or on
+  // the sheet's heading where no row stands.
+  const takenRowRef = useRef<HTMLDivElement | null>(null);
+  const sheetBodyRef = useRef<HTMLDivElement | null>(null);
+  // Undo is the same move backwards: the taken row, and its focused Undo, give way to the row's own
+  // Take again, so focus lands there (pre-open review).
+  const lastTaken = useRef<{ add: string } | null>(null);
+  useEffect(() => {
+    const undone = !taken ? lastTaken.current : null;
+    lastTaken.current = taken ? { add: taken.add } : null;
+    const active = document.activeElement;
+    if (active && active !== document.body && active.isConnected) return;
+    const heading = sheetBodyRef.current?.closest('[role="dialog"]')?.querySelector<HTMLElement>("h2");
+    if (taken) {
+      (takenRowRef.current ?? heading)?.focus();
+      return;
+    }
+    if (!undone) return;
+    const label = copy.takeAria(undone.add, printedFaceName(card));
+    const back = [...(sheetBodyRef.current?.querySelectorAll<HTMLElement>("button[aria-label]") ?? [])]
+      .find((b) => b.getAttribute("aria-label") === label);
+    (back ?? heading)?.focus();
+  }, [taken, card]);
   useEffect(() => () => {
     mounted.current = false;
     if (takenSwap.current) landOnReceipt(takenSwap.current);
@@ -616,7 +644,7 @@ export function StandInsSheet({
       stackFooter={stackFooter}
       overCard={fromCard ? { name, backAria: copy.backToCardAria(name) } : undefined}
     >
-      <div data-testid="stand-ins-sheet" className="flex flex-col gap-[12px] md:gap-[14px] px-[16px] pt-[14px] pb-[24px] md:px-[18px] md:pt-[16px] md:pb-[18px]">
+      <div ref={sheetBodyRef} data-testid="stand-ins-sheet" className="flex flex-col gap-[12px] md:gap-[14px] px-[16px] pt-[14px] pb-[24px] md:px-[18px] md:pt-[16px] md:pb-[18px]">
         <section
           className="flex flex-col gap-[6px] px-[13px] pt-[11px] pb-[12px] rounded-[10px] border border-[color:var(--border)]"
           style={{ background: "var(--bg)" }}
@@ -717,7 +745,7 @@ export function StandInsSheet({
           >
             {(row) => (
               taken?.addId === row.oracleId ? (
-                <TakenRow key={row.oracleId} cut={name} add={row.name} busy={undoing} error={undoFailed ? copy.undoRefused : null} onUndo={() => void undo()} />
+                <TakenRow key={row.oracleId} rowRef={takenRowRef} cut={name} add={row.name} busy={undoing} error={undoFailed ? copy.undoRefused : null} onUndo={() => void undo()} />
               ) : (
                 <StandInRow
                   key={row.oracleId}

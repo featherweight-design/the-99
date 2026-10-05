@@ -193,12 +193,11 @@ export function ComboPartnersDetail({
                     other end, and the name is the half a reader is looking for — it REPLACES
                     this modal rather than stacking on it, which the addendum refuses by name.
 
-                    WHAT IT DOES NOT DO YET is return: `load` replaces the provider's card and
-                    keeps no history, so closing from a partner closes the modal rather than
-                    going back to the card you followed it from. The addendum asks for that
-                    return, and giving it one means deciding what CLOSE means on a partner —
-                    back, or shut — which is a design call rather than an omission. Flagged
-                    rather than invented. */}
+                    AND IT RETURNS: the provider puts the card this was pressed in on a trail
+                    (`selectPartner`), the partner names it as its way back (`← {card}`, the
+                    stacked-sheets pill), and closing the partner by any route puts that card
+                    back (from Hugh's testing, 2026-10-05: a card opened from inside another
+                    card goes back to it). */}
                 {onSelectPartner ? (
                   <button
                     type="button"

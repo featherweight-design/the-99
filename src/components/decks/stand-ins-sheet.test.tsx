@@ -224,6 +224,40 @@ describe("StandInsSheet", () => {
   });
 
   describe("Take", () => {
+    // The take replaces the row the reader pressed in, so the focused control leaves the document.
+    // Focus lands on the taken row rather than falling to <body> (orchestrator, 2026-10-05).
+    it("moves focus to the taken row once the take replaces the row it was on", async () => {
+      loadStandInsAction.mockReset().mockResolvedValue(READ);
+      takeStandInAction.mockResolvedValue({ ok: true, swapId: "s1", addWasFree: false, cutLeft: 0 });
+      await open();
+      const button = takeButton("Chaos Warp");
+      button.focus();
+      await act(async () => button.click());
+      expect(document.activeElement).toBe(screen.getByTestId("stand-in-taken"));
+    });
+
+    it("moves focus back to the row's Take once Undo gives the taken row back", async () => {
+      loadStandInsAction.mockReset().mockResolvedValue(READ);
+      takeStandInAction.mockResolvedValue({ ok: true, swapId: "s1", addWasFree: false, cutLeft: 0 });
+      undoSwapAction.mockResolvedValue({ ok: true });
+      await open();
+      await act(async () => takeButton("Chaos Warp").click());
+      const undo = screen.getByRole("button", { name: swapToolsCopy.row.undoSwapAria("Anguished Unmaking", "Chaos Warp") });
+      undo.focus();
+      await act(async () => undo.click());
+      expect(document.activeElement).toBe(takeButton("Chaos Warp"));
+    });
+
+    it("leaves focus where it is when the take did not take it away", async () => {
+      loadStandInsAction.mockReset().mockResolvedValue(READ);
+      takeStandInAction.mockResolvedValue({ ok: true, swapId: "s1", addWasFree: false, cutLeft: 0 });
+      await open();
+      const heading = screen.getByRole("heading", { level: 2 });
+      heading.focus();
+      await act(async () => takeButton("Chaos Warp").click());
+      expect(document.activeElement).toBe(heading);
+    });
+
     it("lands the taken row, puts Take away on the others, leaves a receipt, and undoes", async () => {
       loadStandInsAction.mockReset().mockResolvedValue(READ);
       takeStandInAction.mockResolvedValue({ ok: true, swapId: "s1", addWasFree: false, cutLeft: 0 });

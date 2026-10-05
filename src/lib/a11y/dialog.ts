@@ -603,11 +603,21 @@ export function useDialogA11y(
       // neither `first` nor `last`. Both branches below then missed, and the
       // very first Shift+Tab after opening walked out of an `aria-modal`
       // surface into the page behind it. Anything not in the list — the root,
-      // or a child that opted out — enters at the appropriate end instead.
+      // or a child that opted out — moves to the next control after it in document
+      // order (Shift+Tab: the last one before it), wrapping at the ends. For the
+      // root that is the first control (or, backwards, the last), as before; for a
+      // child focused by script (a stand-in's taken row, which replaced the row the
+      // reader was on) it is the control the reader would expect next, its own Undo,
+      // where entering at an end threw them back to the dialog's first control.
       const inTrap = active !== null && focusables.includes(active);
       if (!inTrap) {
         e.preventDefault();
-        (e.shiftKey ? last : first).focus();
+        const follows = (el: HTMLElement) =>
+          active !== null && (active.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+        const target = e.shiftKey
+          ? [...focusables].reverse().find((el) => active !== null && !follows(el) && !el.contains(active)) ?? last
+          : focusables.find(follows) ?? first;
+        target.focus();
         return;
       }
       if (e.shiftKey && active === first) {
