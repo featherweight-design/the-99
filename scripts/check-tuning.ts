@@ -65,10 +65,17 @@ async function resolveAll(names: readonly string[]): Promise<Map<string, Resolve
 
 async function main() {
   const dryRun = process.argv.includes("--dry-run");
-  // The fixture predates limits (H35, PR 4a); buildPrompt now reads pack.limits unconditionally,
-  // so a legacy fixture with none needs a neutral default (no filter) rather than a crash.
-  const loaded = JSON.parse(readFileSync(FIXTURE, "utf8")) as Omit<EvidencePack, "limits"> & { limits?: EvidencePack["limits"] };
-  const pack: EvidencePack = { ...loaded, limits: loaded.limits ?? { capCents: null, sets: [], ownedOnly: false } };
+  // The fixture predates limits (H35, PR 4a) and notes (H35, PR 4b); buildPrompt now reads both
+  // unconditionally, so a legacy fixture with neither needs a neutral default rather than a crash.
+  const loaded = JSON.parse(readFileSync(FIXTURE, "utf8")) as Omit<EvidencePack, "limits" | "notes"> & {
+    limits?: EvidencePack["limits"];
+    notes?: EvidencePack["notes"];
+  };
+  const pack: EvidencePack = {
+    ...loaded,
+    limits: loaded.limits ?? { capCents: null, sets: [], ownedOnly: false },
+    notes: loaded.notes ?? null,
+  };
   const { system, user } = buildPrompt(pack);
 
   if (dryRun) {
