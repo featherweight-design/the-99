@@ -11,7 +11,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DeckClaim } from "../../lib/decks/availability";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
-import { CardDetailProvider, cardDetailCopy, useCardDetail } from "../cards/card-detail-provider";
+import { CardDetailProvider, STACK_DROP_MS, cardDetailCopy, useCardDetail } from "../cards/card-detail-provider";
 import { DRAFT_ANNOUNCER_ID } from "./draft-announcer";
 import { PullControl } from "./pull-control";
 
@@ -619,6 +619,8 @@ describe("PullControl — 2+ choosable sources", () => {
     const cover = list.closest("[data-hidden-under-card]");
     expect(cover).toHaveAttribute("aria-hidden", "true");
     await act(async () => { fireEvent.click(pill); });
+    // The card drops before it closes on the phone (stacked sheets R1, motion).
+    await act(() => new Promise<void>((r) => { setTimeout(r, STACK_DROP_MS); }));
     expect(list.closest("[data-hidden-under-card]")).toBeNull();
     expect([...list.querySelectorAll('[role="radio"]')].findIndex((r) => r.getAttribute("aria-checked") === "true")).toBe(picked);
   });

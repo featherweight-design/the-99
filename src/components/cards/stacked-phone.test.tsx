@@ -134,6 +134,7 @@ describe("a card opened from a sheet, on the phone", () => {
     // Not inert: an inert sheet refuses the focus the card hands back to its opener as it closes.
     expect(under()).not.toHaveAttribute("inert");
     await act(async () => { fireEvent.click(pill()); });
+    await landed();
     expect(under()).not.toHaveAttribute("aria-hidden");
     expect(under().style.opacity).toBe("");
     expect(under().style.pointerEvents).toBe("");
@@ -379,9 +380,15 @@ describe("the rise and the drop (motion)", () => {
     await openFromSheet();
     await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
     expect(cardDialog()).toHaveClass("anim-stack-drop");
-    expect(screen.getByTestId("receipt-modal").closest("[data-hidden-under-card]")).toBeNull();
+    // Drawn again while the card drops, but still out of the accessibility tree and unpressable:
+    // the card is still the modal dialog until it really closes (#1268).
+    const cover = screen.getByTestId("receipt-modal").closest("[data-hidden-under-card]") as HTMLElement;
+    expect(cover).toHaveAttribute("aria-hidden", "true");
+    expect(cover.style.opacity).toBe("");
+    expect(cover.style.pointerEvents).toBe("none");
     await landed();
     expect(cardDialog()).toBeNull();
+    expect(screen.getByTestId("receipt-modal").closest("[data-hidden-under-card]")).toBeNull();
   });
 
   it("swaps out at once under reduced motion", async () => {

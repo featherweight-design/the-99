@@ -235,6 +235,7 @@ describe("a card opened from the receipt", () => {
   it("is not stacked once the receipt has closed", async () => {
     await openCardFromReceipt();
     await act(async () => { fireEvent.keyDown(window, { key: "Escape" }); });
+    await act(() => new Promise<void>((r) => { setTimeout(r, STACK_DROP_MS); }));
     fireEvent.click(within(screen.getByTestId("receipt-modal")).getByRole("button", { name: copy.receipt.closeAria("Game changers") }));
     expect(screen.queryByTestId("receipt-modal")).toBeNull();
     await act(async () => { fireEvent.click(screen.getByText("open elsewhere")); });

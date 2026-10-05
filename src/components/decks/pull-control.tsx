@@ -532,16 +532,19 @@ function MobileSheet({
   // A card opened from this list (its head's name, stacked sheets R1 s5) stacks over it, names it as
   // the way back, and REPLACES it on screen: the list stays mounted with the reader's pick, hidden
   // and out of the accessibility tree while the card is up, as every sheet under a card is.
-  const { registerSheet, openOracleId } = useCardDetail();
+  const { registerSheet, openOracleId, revealing } = useCardDetail();
   useEffect(() => registerSheet(sourceCopy.backLabel), [registerSheet]);
+  // Covered (out of the accessibility tree, no presses) until the card closes; drawn again while it
+  // drops (#1268).
   const covered = openOracleId !== null;
+  const faded = covered && !revealing;
   return (
     <div
       aria-hidden={covered || undefined}
       data-hidden-under-card={covered || undefined}
       // Fading under the card's rise and back under its drop, as the other sheets do.
-      className={"motion-safe:transition-opacity " + (covered ? "motion-safe:duration-[240ms]" : "motion-safe:duration-200")}
-      style={covered ? { opacity: 0, pointerEvents: "none" } : undefined}
+      className={"motion-safe:transition-opacity " + (faded ? "motion-safe:duration-[240ms]" : "motion-safe:duration-200")}
+      style={covered ? { opacity: faded ? 0 : undefined, pointerEvents: "none" } : undefined}
     >
       <Sheet open onDismiss={onDismiss} ariaLabel={ariaLabel} panelRef={panelRef}>
         {children}

@@ -96,6 +96,12 @@ type CardDetailContextValue = {
    */
   openOracleId: string | null;
   /**
+   * True while a card over a sheet drops on the phone (stacked sheets R1, motion). The card is still
+   * up and still the dialog, so a sheet under it stays out of the accessibility tree and takes no
+   * presses (`openOracleId` is still set); this only says it may be DRAWN again, fading back in.
+   */
+  revealing: boolean;
+  /**
    * Replace the ordered list (ids or `SiblingCard`s) Prev/Next pages through, without touching the open
    * card. A surface whose list is a live filter of something larger re-files it
    * here when that filter moves; otherwise the modal keeps paging the order that
@@ -501,7 +507,7 @@ export function CardDetailProvider({
     setArrival({ id: arrivalId, rise: arrival.id === null && arrivalId !== null && sheetsBelow > 0 });
   }
   // Closing it on the phone drops it for `STACK_DROP_MS` first, with the sheet already fading back
-  // in under it (`openOracleId` reads null while it leaves); see `dismiss`.
+  // in under it (`revealing`), though still covered for assistive technology; see `dismiss`.
   const [leaving, setLeaving] = useState(false);
   const leavingTimer = useRef<number | null>(null);
   const [failed, setFailed] = useState(false);
@@ -1019,7 +1025,8 @@ export function CardDetailProvider({
       open,
       prefetch,
       pendingOracleId,
-      openOracleId: leaving ? null : card?.oracleId ?? null,
+      openOracleId: card?.oracleId ?? null,
+      revealing: leaving,
       setSiblings,
       evict,
       close,
