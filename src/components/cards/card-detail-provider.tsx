@@ -23,7 +23,7 @@
 // answered, send the action and show ONLY the action's answer.
 
 import {
-  createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
+  createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject,
 } from "react";
 import { twMerge } from "tailwind-merge";
 import type { BrowseCard, CardArt, PreferredPrinting } from "../../lib/collection/browse";
@@ -85,7 +85,7 @@ type CardDetailContextValue = {
      * printing pick the provider re-reads and re-caches the card, so the next press is a hit and the
      * opener's old URL is never fetched.
      */
-    opts?: { door?: boolean; art?: string | null },
+    opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null },
   ) => void;
   /** The id whose fetch is in flight, so its trigger can show the click landed. */
   pendingOracleId: string | null;
@@ -125,16 +125,17 @@ type CardDetailContextValue = {
    * Declare a sheet that stays open UNDER the card modal, and get back the call that
    * withdraws it.
    *
-   * The Analysis tab's receipt is the one caller: the verdict addendum rules that a card opened
-   * from a receipt STACKS on it rather than replacing it, and that on a phone the card sheet
-   * sits lower so the receipt's header stays visible above it. The provider owns the modal and
-   * the receipt owns nothing of it, so the receipt says it is there and the modal reads that.
+   * Every `ModalChrome` sheet registers: the verdict addendum rules that a card opened from a
+   * receipt STACKS on it rather than replacing it. On a phone the card covers the sheet at full
+   * height, with the sheet kept mounted and hidden under it (stacked sheets R1, call 1). The
+   * provider owns the modal and the sheet owns nothing of it, so the sheet says it is there and
+   * the modal reads that.
    *
    * Counted rather than a flag, for the reason the scroll lock is counted: a flag set by one
    * mount and cleared by another's unmount is a race whenever two overlap.
    *
-   * `backLabel` names the sheet, and the stacked card's desktop close becomes `← {backLabel}`
-   * (Analysis tab handoff §3). The newest registration's label is the one drawn, because that
+   * `backLabel` names the sheet, and the stacked card's close becomes `← {backLabel}` at both
+   * widths (Analysis tab handoff §3; stacked sheets R1, call 2). The newest registration's label is the one drawn, because that
    * is the sheet a dismissal lands on.
    */
   registerSheet: (backLabel?: string, footer?: SheetFooter, overCard?: boolean) => () => void;
@@ -326,7 +327,9 @@ export function CardDetailTrigger({
       type="button"
       {...intent}
       data-testid={testId}
-      onClick={() => open(oracleId, siblings, undefined, door || imageUri ? { door, art: imageUri } : undefined)}
+      // The trigger names itself: Safari focuses no button on a click, so the dialog's own capture
+      // of the focused element finds <body> there, and focus could never come back to this control.
+      onClick={(e) => open(oracleId, siblings, undefined, { door, art: imageUri, opener: e.currentTarget })}
       aria-label={ariaLabel ?? cardDetailCopy.triggerAria(name)}
       aria-describedby={describedBy}
       aria-busy={pending}
@@ -360,7 +363,8 @@ type OpenAt = {
   printing: PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null };
 } | null;
 /** A card lifted out of the live slot by a sheet opened over it, with what it needs to come back. */
-type Held = { card: BrowseCard; siblings: SiblingCard[]; openAt: OpenAt; door: boolean };
+/** `opener`: the control the held card was opened from, handed back when the sheet over it goes. */
+type Held = { card: BrowseCard; siblings: SiblingCard[]; openAt: OpenAt; door: boolean; opener: HTMLElement | null };
 
 export function CardDetailProvider({
   children,
@@ -752,13 +756,40 @@ export function CardDetailProvider({
   );
   useEffect(() => { loadRef.current = load; }, [load]);
 
+  // WHERE FOCUS GOES BACK when the card closes: the trigger that opened it, while it is still in
+  // the document (stacked sheets R1, engineering 3: "on back, focus goes to the opener inside the
+  // sheet"). A getter, so an opener that has since left the page reads null and the dialog falls
+  // back to the element it captured.
+  //
+  // Only on a real CLOSE (`show(null)` has cleared `shownRef`). A page remounts the keyed modal too,
+  // and its cleanup reads this: there the arriving card places focus itself (the control that
+  // paged), so the getter hands back a DETACHED element whose `focus()` does nothing. Falling back to
+  // the capture instead would jump focus out to the first card's opener and back on every page.
+  const openerRef = useRef<HTMLElement | null>(null);
+  const pagingSink = useRef<HTMLElement | null>(null);
+  const returnFocusRef = useMemo<RefObject<HTMLElement | null>>(
+    () => ({
+      get current() {
+        if (shownRef.current !== null) {
+          pagingSink.current ??= document.createElement("span");
+          return pagingSink.current;
+        }
+        const el = openerRef.current;
+        return el?.isConnected ? el : null;
+      },
+    }),
+    [],
+  );
   const open = useCallback(
     (
       oracleId: string,
       list?: readonly Sibling[],
       atPrinting?: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null; scryfallId?: string }) | null,
-      opts?: { door?: boolean; art?: string | null },
+      opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null },
     ) => {
+      // The control this open came from, for the modal to hand focus back to. Set on every open, so
+      // an opener that names none falls back to the dialog's own capture rather than an older one.
+      openerRef.current = opts?.opener ?? null;
       // A prefetch reading this card asked for its art already.
       if (opts?.art && !cache.current.has(oracleId) && prefetching.current?.oracleId !== oracleId) {
         preloadCardArt(opts.art);
@@ -817,7 +848,9 @@ export function CardDetailProvider({
     setSheets((list) => [...list, { token, label, footer }]);
     const lifting = overCard ? live.current : null;
     if (lifting?.card) {
-      const held: Held = { card: lifting.card, siblings: lifting.siblings, openAt: lifting.openAt, door: lifting.door };
+      const held: Held = {
+        card: lifting.card, siblings: lifting.siblings, openAt: lifting.openAt, door: lifting.door, opener: openerRef.current,
+      };
       heldRef.current = held;
       setHeld(held);
       latest.current++;
@@ -846,6 +879,8 @@ export function CardDetailProvider({
       setSiblingList(back.siblings);
       setOpenAt(back.openAt);
       setDoor(back.door);
+      // A card opened from the sheet took the opener slot; the card coming back takes its own.
+      openerRef.current = back.opener;
     };
   }, []);
 
@@ -1033,10 +1068,8 @@ export function CardDetailProvider({
           position={heldIndex >= 0 && held.siblings.length > 1 ? heldIndex + 1 : 1}
           total={heldIndex >= 0 && held.siblings.length > 1 ? held.siblings.length : 1}
           onClose={NOOP}
+          returnFocusRef={returnFocusRef}
           covered
-          // Where it sat live: 52 for a card whose Shopping door drew (F16), by the same test the live
-          // card uses; full height for any other, including a Shopping card its door has nothing for.
-          phoneTop={held.door && doorRender && doorRender(held.card.oracleId, "art") !== null ? 52 : undefined}
           door={held.door && doorRender ? (layout) => doorRender(held.card.oracleId, layout) : null}
           // Kept mounted under the picker it opened, so its close can hand focus back to the door.
           onFindDeck={fitsDoor(held.card)}
@@ -1066,6 +1099,7 @@ export function CardDetailProvider({
           position={paging ? index + 1 : 1}
           total={paging ? siblings.length : 1}
           onClose={close}
+          returnFocusRef={returnFocusRef}
           stacked={sheetsBelow > 0}
           // Only a card the sheet has a footer FOR swaps its Mana Pool link out: the original, or any
           // card after a take, keeps the link rather than drawing nothing in its place.
@@ -1073,15 +1107,13 @@ export function CardDetailProvider({
             ? (layout) => sheetFooter(card.oracleId, layout)
             : null}
           backLabel={backLabel}
-          // Fits your decks' door, on a card whose footer is still its own: a stand-in's Take replaces it.
-          onFindDeck={sheetFooter && sheetFooter(card.oracleId, "row") !== null ? null : fitsDoor(card)}
+          // Fits your decks' door, on a card with no sheet under it (stacked sheets R1, call 8): nothing
+          // in a stacked card opens a further layer, and a stand-in's Take replaces the door anyway.
+          onFindDeck={sheetsBelow > 0 ? null : fitsDoor(card)}
           fitsOpen={fitsFor !== null}
           // Only a card the door has something for: a door with nothing in it would still take its room
           // from the art.
           door={liveDoor ? (layout) => doorRender!(card.oracleId, layout) : null}
-          // Opened from a Shopping row, the phone's card starts at 52 so a sheet opened over it steps
-          // down from there (audit F16); every other opener keeps the full-height card.
-          phoneTop={liveDoor && sheetsBelow === 0 ? 52 : undefined}
           // The combo block's partner name, through the same `load` that pages Prev/Next —
           // so a partner replaces the open card exactly as a sibling does, and the back
           // gesture returns to the card the reader started from. It arrives without the
@@ -1135,8 +1167,8 @@ export function CardDetailProvider({
           position={paging ? index + 1 : 1}
           total={paging ? siblings.length : 1}
           onClose={close}
+          returnFocusRef={returnFocusRef}
           stacked
-          phoneTop={140}
           dropped
           // Only a card the sheet has a footer FOR swaps its Mana Pool link out: the original, or any
           // card after a take, keeps the link rather than drawing nothing in its place.

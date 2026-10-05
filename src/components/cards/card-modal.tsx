@@ -424,27 +424,6 @@ function identityName(id: string[]): string {
 }
 
 /**
- * How far below the top a STACKED card sheet starts on the phone: 96px, drawn by this class.
- *
- * 96 is the canvas's figure (`The 99 - Verdict Addendum.dc.html` §5a): the receipt sits at 52
- * and the card sheet 44 below it, which is the receipt's header row — its glyph, its title and
- * its count, so the reader can read what they will land on. The addendum's prose says "12px
- * lower", which leaves a hairline of chrome and no header; the drawing and the prose's own
- * reason ("a visible strip of the receipt's own chrome") both say 44.
- */
-const STACKED_SHEET =
-  "max-md:!h-[calc(100%-96px)] max-md:rounded-t-[14px] max-md:border-t max-md:border-[color:var(--border-strong)]";
-/**
- * The swap tools' card → sheet → card path draws a third depth (audit F16): the card itself at 52
- * once a sheet opens over it, that sheet at 96, and a stand-in over the sheet at 140. The step is
- * 44, which leaves each layer's header showing above the one on top as the way back.
- */
-const PHONE_TOP: Record<52 | 96 | 140, string> = {
-  52: "max-md:!h-[calc(100%-52px)] max-md:rounded-t-[14px] max-md:border-t max-md:border-[color:var(--border-strong)]",
-  96: STACKED_SHEET,
-  140: "max-md:!h-[calc(100%-140px)] max-md:rounded-t-[14px] max-md:border-t max-md:border-[color:var(--border-strong)]",
-};
-/**
  * The door's rows in the desktop art column, added to the stack's reservation so the art gives
  * them room: 8 above the block, the stack's 6 gap, a 16px limit line, 8 between, and a 21px link.
  */
@@ -641,9 +620,9 @@ export function CardModal({
   onFindDeck = null,
   fitsOpen = false,
   door = null,
-  phoneTop,
   covered = false,
   dropped = false,
+  returnFocusRef,
 }: {
   card: BrowseCard;
   /**
@@ -652,8 +631,6 @@ export function CardModal({
    * (audit F17), and never for a stand-in stacked over the sheet.
    */
   door?: ((layout: "art" | "strip") => ReactNode) | null;
-  /** How far down the phone sheet starts, when this card is one layer of a stack (audit F16). */
-  phoneTop?: 52 | 96 | 140;
   /**
    * A sheet is open OVER this card (the door's stand-ins sheet). The card stays mounted with its
    * scroll, under the sheet: below it in the stacking order, inert, and deaf to Escape, which peels
@@ -662,23 +639,23 @@ export function CardModal({
   covered?: boolean;
   /** Drawn 80px lower on desktop: a stand-in over a sheet over its original, so the original's head shows. */
   dropped?: boolean;
+  /** Where focus goes when this card closes: the control that opened it, when the provider knows it. */
+  returnFocusRef?: React.RefObject<HTMLElement | null>;
   /**
    * A sheet is open UNDER this one — the Analysis tab's receipt, whose addendum ruling is that
    * a card opened from it stacks rather than replaces.
    *
-   * Two changes, both so a reader can see what a dismissal lands on before making it. On the
-   * phone the sheet starts 96px from the top, leaving the receipt's own header visible
-   * above it — the canvas's 96px against the receipt's 52. And the backdrop is not drawn: the
-   * receipt has already dimmed the page, and a second wash over it would hide the one strip of
-   * chrome this offset exists to show. Pressing that strip still dismisses THIS sheet, because
-   * the backdrop element is still there and still takes the press.
+   * On the phone (stacked sheets R1, call 1) it REPLACES the sheet: the same full-height geometry as
+   * any card, so the card keeps its 320, with the sheet underneath kept mounted and hidden, and the
+   * way back is the `← {backLabel}` pill in the ✕'s slot. On desktop the backdrop is not drawn: the
+   * sheet has already dimmed the page, and the card sits over it with its own pill.
    */
   stacked?: boolean;
   /**
    * The sheet underneath, by name. When `stacked` with one, the desktop close becomes a
-   * `← {backLabel}` pill in the same slot and plate (Analysis tab handoff §3): the reader sees
-   * where a dismissal lands before making it. The phone is unchanged, because there the strip of
-   * the sheet behind is already the way back.
+   * `← {backLabel}` pill in the same slot and plate (Analysis tab handoff §3), and on the phone the ✕
+   * becomes the same pill on the wash (stacked sheets R1, call 2): the reader sees where a dismissal
+   * lands before making it.
    */
   backLabel?: string;
   /**
@@ -1262,7 +1239,7 @@ export function CardModal({
   }, [closeZoom, covered, expanded, narrow, onClose, sheetOpen, zoomed]);
 
   // Focus trap + Escape + focus-return — shared hook, shared with the export dialog.
-  useDialogA11y(dialogRef, onEscape, { initialFocusRef });
+  useDialogA11y(dialogRef, onEscape, { initialFocusRef, returnFocusRef });
 
 
   const gestures = useCardSheetGestures({
@@ -1808,7 +1785,6 @@ export function CardModal({
       className={
         "fixed inset-0 flex items-center justify-center"
         + (covered ? " z-[49]" : " z-50")
-        + (stacked || phoneTop ? " max-md:items-end" : "")
       }
       inert={covered}
       role="presentation"
@@ -1853,7 +1829,7 @@ export function CardModal({
         // is the fixed backdrop, so the layer would cover the viewport — a second
         // full-screen thing over a dialog over a backdrop, and clicks outside the
         // dialog would dismiss the zoom instead of reaching the backdrop.
-        className={(phoneTop ? PHONE_TOP[phoneTop] + " " : stacked ? STACKED_SHEET + " " : "")
+        className={""
           // 80px down, or as far as the room under a centred card allows on a short window.
           + (dropped ? "md:translate-y-[min(80px,calc((100vh-min(620px,85vh))/2-8px))] " : "")
           + "relative flex flex-col overflow-hidden w-full h-full md:h-[620px] md:max-h-[85vh] md:w-[820px] md:flex-row md:rounded-2xl bg-[color:var(--surface-sunken)] md:bg-[color:var(--surface-rail)] md:[border:1px_solid_var(--border-strong)]"}
@@ -1954,22 +1930,50 @@ export function CardModal({
             {cardCarouselCopy.position(position, total)}
           </div>
         ) : null}
-        <button
-          type="button"
-          ref={(el) => { closeRefs.current[0] = el; }}
-          // Inert under the zoom with everything else it would otherwise sit beside in the focus
-          // trap. The zoom opens only from the desktop's art, where this is not drawn, but a
-          // window narrowed with the zoom up would otherwise leave it reachable.
-          inert={zoomed}
-          onClick={onClose}
-          // Stacked over a sheet, the phone's × is the way back to it, named as the desktop pill is.
-          aria-label={back ? `Back to ${back}` : "Close card details"}
-          // §Mobile: Art Close Button
-          className="md:hidden absolute z-[3] rounded-full flex items-center justify-center bg-[color-mix(in_oklab,var(--bg)_55%,transparent)] text-[color:var(--fg)]"
-          style={{ top: 22, right: 18, width: 32, height: 32, fontSize: 16 }}
-        >
-          ✕
-        </button>
+        {back ? (
+          // STACKED OVER A SHEET (stacked sheets R1, calls 2 and 3): the ✕'s slot holds the way back,
+          // `← {sheet}` on the counter's plate, and no ✕ beside it, one control for one layer. It caps
+          // at 266 beside the counter and 354 without, and an invisible 44px band (y 16 to 60) makes
+          // the 32px plate a full-height target.
+          <button
+            type="button"
+            ref={(el) => { closeRefs.current[0] = el; }}
+            inert={zoomed}
+            onClick={onClose}
+            aria-label={cardSheetCopy.back.a11y(back)}
+            data-testid="card-modal-back-mobile"
+            className={
+              "md:hidden absolute z-[3] flex items-center gap-[6px] h-[32px] px-[12px] rounded-full cursor-pointer border-0"
+              + " bg-[color-mix(in_oklab,var(--bg)_55%,transparent)] text-[13px] font-medium text-[color:var(--fg)]"
+              + " before:absolute before:inset-x-0 before:-inset-y-[6px] before:content-['']"
+              + " transition-transform active:scale-[.97] active:bg-[color-mix(in_oklab,var(--fg)_16%,color-mix(in_oklab,var(--bg)_55%,transparent))]"
+              + " focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] focus-visible:[outline-style:solid]"
+              // 266 and 354 are the 390 frame's; on a narrower phone the cap also keeps clear of the
+              // counter's plate (its right edge near 88 at 360 with two digits) and an 18px gutter.
+              + (total > 1 ? " max-w-[min(266px,calc(100%-114px))]" : " max-w-[min(354px,calc(100%-36px))]")
+            }
+            style={{ top: 22, right: 18 }}
+          >
+            <span aria-hidden="true" className="flex-none text-[color:var(--fg-muted)]">←</span>
+            <span className="min-w-0 truncate">{back}</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            ref={(el) => { closeRefs.current[0] = el; }}
+            // Inert under the zoom with everything else it would otherwise sit beside in the focus
+            // trap. The zoom opens only from the desktop's art, where this is not drawn, but a
+            // window narrowed with the zoom up would otherwise leave it reachable.
+            inert={zoomed}
+            onClick={onClose}
+            aria-label="Close card details"
+            // §Mobile: Art Close Button
+            className="md:hidden absolute z-[3] rounded-full flex items-center justify-center bg-[color-mix(in_oklab,var(--bg)_55%,transparent)] text-[color:var(--fg)]"
+            style={{ top: 22, right: 18, width: 32, height: 32, fontSize: 16 }}
+          >
+            ✕
+          </button>
+        )}
 
         {/* DESKTOP art column — §Desktop: Art Column: 320px, padding 28px, bg --bg */}
         <div
@@ -2118,7 +2122,7 @@ export function CardModal({
               type="button"
               ref={(el) => { closeRefs.current[1] = el; backRef.current = el; }}
               onClick={onClose}
-              aria-label={`Back to ${back}`}
+              aria-label={cardSheetCopy.back.a11y(back)}
               data-testid="card-modal-back"
               className="hidden md:flex absolute items-center gap-[7px] whitespace-nowrap rounded-full bg-[color:var(--surface-raised)] border border-[color:var(--border-strong)] font-mono text-[11px] text-[color:var(--fg)]"
               style={{ top: 22, right: 24, height: 34, padding: "0 14px 0 12px" }}

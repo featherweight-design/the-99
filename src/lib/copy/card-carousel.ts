@@ -41,4 +41,11 @@ export const cardSheetCopy = {
   grabberAria: (expanded: boolean) => (expanded ? "Show less" : "Show all details"),
   /** The teaser's `set · number` (README R2 "Teaser"): the printing on screen, as data. */
   printing: (setCode: string, collectorNumber: string) => `${setCode.toUpperCase()} · ${collectorNumber}`,
+  /**
+   * The way back from a card stacked over a sheet (stacked sheets R1, call 3): the pill draws
+   * `← {label}`, the arrow a glyph hidden from the accessible name, which is the whole phrase.
+   */
+  back: {
+    a11y: (label: string) => `Back to ${label}`,
+  },
 } as const;

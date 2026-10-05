@@ -11,6 +11,7 @@ import { useDialogA11y } from "../../lib/a11y/dialog";
 import type { CardRef } from "../../lib/profile/types";
 import { CardDetailTrigger, useCardDetail, type SheetFooter, type Sibling } from "../cards/card-detail-provider";
 import { CostPips } from "../ui/cost-pips";
+import { useMinWidth } from "../ui/use-min-width";
 import { FindingMark } from "./finding-mark";
 
 /**
@@ -134,10 +135,10 @@ export function ModalChrome({
   /** What a card stacked over this sheet draws in place of its Mana Pool link (the stand-ins' Take). */
   stackFooter?: SheetFooter;
   /**
-   * The sheet opened over a card (the swap tools' door, addendum §3). The card stays under it, so
-   * the sheet sits a step lower (96 on the phone, 40px down on desktop) over a lighter scrim, and
-   * its close is the way back to that card: `← {name}` on desktop, a × named `Back to {name}` on
-   * the phone.
+   * The sheet opened over a card (the swap tools' door, addendum §3). The card stays under it, at
+   * full size on the phone (stacked sheets R1, call 7), with this sheet at its usual 52 and 40px down
+   * on desktop, over a lighter scrim; its close is the way back to that card, `← {name}` at both
+   * widths, named `Back to {name}`.
    */
   overCard?: { name: string; backAria: string };
   children: React.ReactNode;
@@ -162,6 +163,16 @@ export function ModalChrome({
   // The card in front of this one. The sheet steps down a ground behind it, which is the second
   // half of what lets a reader see where a dismissal lands.
   const behind = openOracleId !== null;
+  // On the phone a card REPLACES this sheet (stacked sheets R1, call 1): the sheet stays mounted
+  // with its scroll kept, but it is not drawn, not pressable and not announced while the card is up.
+  // Desktop keeps the stepped ground beside the card.
+  //
+  // NOT `inert`, though the handoff names it. The card closes, and hands focus back to its opener in
+  // this sheet, in the commit BEFORE this sheet re-renders without the flag, so an inert sheet
+  // refused the focus and it fell to <body> (measured in Chromium and WebKit at 390). The card's own
+  // dialog already traps Tab, so `inert` added nothing a keyboard reader could reach.
+  const narrow = !useMinWidth("(min-width: 768px)");
+  const hidden = behind && narrow;
 
   return (
     <div
@@ -172,7 +183,13 @@ export function ModalChrome({
       }
       role="presentation"
       onClick={onClose}
-      style={{ background: `color-mix(in oklab, var(--bg) ${onCard ? 60 : 72}%, transparent)` }}
+      aria-hidden={hidden || undefined}
+      data-hidden-under-card={hidden || undefined}
+      style={{
+        background: `color-mix(in oklab, var(--bg) ${onCard ? 60 : 72}%, transparent)`,
+        opacity: hidden ? 0 : undefined,
+        pointerEvents: hidden ? "none" : undefined,
+      }}
     >
       <div
         ref={ref}
@@ -183,10 +200,9 @@ export function ModalChrome({
         data-behind={behind || undefined}
         onClick={(e) => e.stopPropagation()}
         className={
-          // Phone: a sheet from 52px down — the canvas's figure, and the top of the strip the
-          // stacked card sheet leaves visible. Desktop: centered.
-          "flex flex-col w-full rounded-t-[14px] border-t "
-          + (onCard ? "h-[calc(100%-96px)] " : "h-[calc(100%-52px)] ")
+          // Phone: a sheet from 52px down, over a card too (stacked sheets R1, call 7: the card under
+          // it no longer steps down to 52, so neither does this sheet to 96). Desktop: centered.
+          "flex flex-col w-full rounded-t-[14px] border-t h-[calc(100%-52px)] "
           + "md:h-auto md:rounded-[14px] md:border overflow-hidden "
           // Over a card its top is pushed down, so its height is capped to end 20px above the fold.
           + (onCard ? "md:max-h-[calc((100vh+min(620px,85vh))/2-60px)] " : "md:max-h-[85vh] ")
@@ -216,30 +232,29 @@ export function ModalChrome({
               {aside}
             </span>
           ) : null}
-          {/* 44px to press. The header around it is pinned to 43px on the phone, because the
-              stacked card sheet starts at 96 and this sheet at 52 behind a 1px border: a header
-              any taller is cut along its bottom edge by the sheet that exists to show it. The
-              probe measured 46 before the pin. On desktop nothing stacks over the header, so it
-              keeps its padding and the control is pulled back into it. */}
+          {/* Over a card, the way back to it is `← {card}` at both widths (stacked sheets R1, call 7),
+              in place of the ×. 44px to press: the header is pinned to 43px on the phone, so the
+              pill's 32px plate carries an invisible band reaching the full height. */}
           {overCard ? (
             <button
               type="button"
               onClick={onClose}
               aria-label={overCard.backAria}
-              className="hidden md:inline-flex ml-auto flex-none items-center gap-[6px] h-[32px] px-[12px] rounded-full text-[12.5px] font-semibold leading-none whitespace-nowrap cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] [border:1px_solid_var(--border-strong)]"
+              className="relative inline-flex ml-auto min-w-0 max-w-[60%] flex-none items-center gap-[6px] h-[32px] px-[12px] rounded-full text-[12.5px] font-semibold leading-none whitespace-nowrap cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] [border:1px_solid_var(--border-strong)] before:absolute before:inset-x-0 before:-inset-y-[6px] before:content-['']"
             >
               <span aria-hidden="true">←</span>
-              {overCard.name}
+              <span className="min-w-0 truncate">{overCard.name}</span>
             </button>
-          ) : null}
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={overCard ? overCard.backAria : closeLabel}
-            className={(overCard ? "md:hidden " : "") + "ml-auto -mr-[10px] md:-my-[14px] flex flex-none h-[44px] w-[44px] items-center justify-center bg-transparent border-0 font-mono text-[14px] cursor-pointer text-[color:var(--fg-faint)]"}
-          >
-            ×
-          </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={closeLabel}
+              className="ml-auto -mr-[10px] md:-my-[14px] flex flex-none h-[44px] w-[44px] items-center justify-center bg-transparent border-0 font-mono text-[14px] cursor-pointer text-[color:var(--fg-faint)]"
+            >
+              ×
+            </button>
+          )}
         </div>
         {/* Behind a card the body steps down further than the header (0.35 against 0.55): the
             header is the strip that says where a dismissal lands, and the body is only context.

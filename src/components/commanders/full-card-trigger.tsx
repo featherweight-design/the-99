@@ -121,7 +121,7 @@ export function FullCardTrigger({
         <div
           aria-hidden="true"
           className="absolute inset-0 cursor-pointer"
-          onClick={() => open(oracleId)}
+          onClick={(e) => open(oracleId, undefined, undefined, { opener: e.currentTarget })}
           {...intent}
         />
       ) : null}
@@ -170,7 +170,7 @@ export function FullCardTrigger({
         // CardDetailTrigger is not: disabling the focused element blurs it, and
         // the modal's focus-return would have nothing to hand focus back to.
         aria-busy={pending}
-        onClick={() => open(oracleId)}
+        onClick={(e) => open(oracleId, undefined, undefined, { opener: e.currentTarget })}
         {...intent}
       >
         {/* The pending dim lands on the GLYPH, never on the plate. Dimming the

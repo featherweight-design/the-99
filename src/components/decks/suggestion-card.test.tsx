@@ -85,9 +85,14 @@ describe("SuggestionCard", () => {
       { oracleId: "cut", name: "Divination", imageUri: null },
       { oracleId: "add", name: "Rhystic Study", imageUri: null },
     ];
-    expect(open).toHaveBeenLastCalledWith("cut", pair);
+    // The pressed control rides along as the opener, so focus can come back to it on close.
+    expect(open).toHaveBeenLastCalledWith("cut", pair, undefined, {
+      opener: screen.getByRole("button", { name: copy.open("Divination") }),
+    });
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: copy.open("Rhystic Study") })); });
-    expect(open).toHaveBeenLastCalledWith("add", pair);
+    expect(open).toHaveBeenLastCalledWith("add", pair, undefined, {
+      opener: screen.getByRole("button", { name: copy.open("Rhystic Study") }),
+    });
   });
 
   it("draws the buy tag for an add the player does not own", () => {

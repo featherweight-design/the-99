@@ -210,8 +210,9 @@ async function walk(page, label, width) {
       const c = document.querySelector('[role="dialog"][aria-labelledby="card-modal-title"]');
       return { up: !!r, headBottom: Math.round(r.firstElementChild.getBoundingClientRect().bottom), cardTop: Math.round(c.getBoundingClientRect().top) };
     });
-    report(`${label}px · a tutor opens stacked on the reasoning`, s.up && (!phone || s.headBottom <= s.cardTop),
-      `reasoning ${s.up ? "stays" : "gone"}${phone ? `, header to ${s.headBottom}, card from ${s.cardTop}` : ""}`);
+    // The phone's header-above-the-card geometry was retired by stacked sheets R1 (the card covers
+    // the reasoning at full height); only the stacking itself is checked here.
+    report(`${label}px · a tutor opens stacked on the reasoning`, s.up, `reasoning ${s.up ? "stays" : "gone"}`);
     if (!phone) {
       // The way back is named for the reasoning: its own title (Analysis tab handoff §3).
       const title = await modal.locator("h2").innerText();
