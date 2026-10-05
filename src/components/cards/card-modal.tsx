@@ -1284,6 +1284,7 @@ export function CardModal({
     // Not on a stacked card: its sheets are being redrawn (a second sheet squeezes the card), and
     // until then it keeps the grip-only drag it shipped with.
     canCollapse: !cramped && !stacked,
+    disabled: locked,
   });
 
   // Focus follows the sheet when the control that moved it is gone: `All details` unmounts as the

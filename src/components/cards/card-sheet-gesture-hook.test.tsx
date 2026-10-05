@@ -17,11 +17,12 @@ type HarnessProps = {
   /** Where the full sheet's body is scrolled to. */
   bodyScrollTop?: number;
   canCollapse?: boolean;
+  disabled?: boolean;
 };
 
 function Harness({
   canPrev = true, canNext = true, startFull = false, onPage = () => {}, onPeek = () => {}, onTurn = () => {},
-  bodyScrollTop = 0, canCollapse = true,
+  bodyScrollTop = 0, canCollapse = true, disabled = false,
 }: HarnessProps) {
   const bandRef = useRef<HTMLDivElement | null>(null);
   const sheetRef = useRef<HTMLDivElement | null>(null);
@@ -38,6 +39,7 @@ function Harness({
     onSnap: (to) => setFull(to === "full"),
     bodyRef,
     canCollapse,
+    disabled,
   });
   return (
     <div onClickCapture={g.onClickCapture}>
@@ -318,6 +320,24 @@ describe("useCardSheetGestures", () => {
     unmount();
     fireEvent.pointerMove(window, { pointerId: 1, clientX: 250, clientY: 305, pointerType: "touch" });
     fireEvent.pointerUp(window, { pointerId: 1, clientX: 250, clientY: 305, pointerType: "touch" });
+    expect(onPage).not.toHaveBeenCalled();
+  });
+});
+
+// #1268: a stacked card dropping off its sheet is leaving. A swipe held when the drop begins must
+// not page on release, and a new one must not start.
+describe("disabled (a card leaving)", () => {
+  it("abandons a drag in progress, so its release pages nothing, and starts no new one", () => {
+    const onPage = vi.fn();
+    const view = render(<Harness onPage={onPage} />);
+    const band = screen.getByTestId("band");
+    fireEvent.pointerDown(band, { pointerId: 1, clientX: 600, clientY: 100, button: 0, pointerType: "touch" });
+    fireEvent.pointerMove(window, { pointerId: 1, clientX: 400, clientY: 100, pointerType: "touch" });
+    act(() => { view.rerender(<Harness onPage={onPage} disabled />); });
+    fireEvent.pointerMove(window, { pointerId: 1, clientX: 200, clientY: 100, pointerType: "touch" });
+    fireEvent.pointerUp(window, { pointerId: 1, clientX: 100, clientY: 100, pointerType: "touch" });
+    expect(onPage).not.toHaveBeenCalled();
+    drag(band, [600, 100], [100, 100]);
     expect(onPage).not.toHaveBeenCalled();
   });
 });

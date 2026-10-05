@@ -142,6 +142,11 @@ export type CardSheetGestureOptions = {
   bodyRef?: RefObject<HTMLElement | null>;
   /** False where there is no teaser to return to (a screen too short for one). */
   canCollapse?: boolean;
+  /**
+   * True while the card is leaving (a stacked card's drop, #1268): a drag in progress is abandoned
+   * at once, with its window listeners, so its release cannot page or snap, and no new one starts.
+   */
+  disabled?: boolean;
 };
 
 const SPRING = "transform 180ms cubic-bezier(0.2, 0.7, 0.2, 1)";
@@ -186,6 +191,22 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
   const detach = useRef<(() => void) | null>(null);
 
   useEffect(() => () => detach.current?.(), []);
+
+  // Abandoned, not ended: an end reads the release and may page or snap; this puts the band and the
+  // sheet back where they rest and stops listening.
+  useEffect(() => {
+    if (!options.disabled || !drag.current) return;
+    drag.current = null;
+    detach.current?.();
+    detach.current = null;
+    const { bandRef, sheetRef } = opts.current;
+    if (bandRef.current) springBack(bandRef.current);
+    const sheet = sheetRef.current;
+    if (sheet) {
+      sheet.style.removeProperty("--sheet-drag-top");
+      delete sheet.dataset.dragging;
+    }
+  }, [options.disabled]);
 
   const end = useCallback((e: PointerEvent, cancelled: boolean) => {
     const d = drag.current;
@@ -295,7 +316,7 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
 
   const begin = useCallback(
     (e: ReactPointerEvent, source: "band" | "sheet") => {
-      if (drag.current) return;
+      if (drag.current || opts.current.disabled) return;
       if (e.pointerType === "mouse" && e.button !== 0) return;
       if (startsAtSystemEdge(e.clientX, window.innerWidth)) return;
       const { sheetRef, bodyRef, full, teaserHeight, canCollapse = true } = opts.current;
