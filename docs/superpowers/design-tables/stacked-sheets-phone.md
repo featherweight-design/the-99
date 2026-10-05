@@ -47,7 +47,7 @@ Walked on `d5c1` (Aura Shards → Cheaper stand-ins → Astral Slide), 390x844, 
 | All details cell | 13.5 `--fg-body`, `▴` `--fg-faint`, border-right 1 `--border` | same; the divider names `border-r-[color:var(--border)]` (a bare `border-r` resolves to the `--r` token) | ✅ |
 | Take (teaser) | 34 tall, padding 0 14, border 1 `--accent`, radius 8, 13.5/500 `--accent`, nowrap | `teaserAction`, measured 133 x 34 | ✅ |
 | Take (full) | pinned at the foot: padding 10 20 44, `--surface-sunken`, border-top; `in place of` mono 11 beside a 44-tall Take | `foot`, measured 740 to 844 | ✅ |
-| Price plate | not in the footer (the teaser's second line has it) | dropped from the phone layouts; desktop `row` keeps it | ✅ |
+| Price plate | not in the footer (the teaser's second line has it) | a buy price is dropped from the phone layouts; a FREE row keeps its `free` chip in the note and the foot, since the teaser's line shows a buy price, and any row keeps its plate where the card's line names no figure (a failed read, or `no stock`); desktop `row` keeps the plate | ✅ |
 | Counter in the footer | dropped | the phone footer never drew one after R2 (audit A9) | ✅ |
 
 ## Later PRs
