@@ -23,7 +23,7 @@
 // answered, send the action and show ONLY the action's answer.
 
 import {
-  createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
+  createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject,
 } from "react";
 import { twMerge } from "tailwind-merge";
 import type { BrowseCard, CardArt, PreferredPrinting } from "../../lib/collection/browse";
@@ -85,7 +85,7 @@ type CardDetailContextValue = {
      * printing pick the provider re-reads and re-caches the card, so the next press is a hit and the
      * opener's old URL is never fetched.
      */
-    opts?: { door?: boolean; art?: string | null },
+    opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null },
   ) => void;
   /** The id whose fetch is in flight, so its trigger can show the click landed. */
   pendingOracleId: string | null;
@@ -326,7 +326,9 @@ export function CardDetailTrigger({
       type="button"
       {...intent}
       data-testid={testId}
-      onClick={() => open(oracleId, siblings, undefined, door || imageUri ? { door, art: imageUri } : undefined)}
+      // The trigger names itself: Safari focuses no button on a click, so the dialog's own capture
+      // of the focused element finds <body> there, and focus could never come back to this control.
+      onClick={(e) => open(oracleId, siblings, undefined, { door, art: imageUri, opener: e.currentTarget })}
       aria-label={ariaLabel ?? cardDetailCopy.triggerAria(name)}
       aria-describedby={describedBy}
       aria-busy={pending}
@@ -752,13 +754,30 @@ export function CardDetailProvider({
   );
   useEffect(() => { loadRef.current = load; }, [load]);
 
+  // WHERE FOCUS GOES BACK when the card closes: the trigger that opened it, while it is still in
+  // the document (stacked sheets R1, engineering 3: "on back, focus goes to the opener inside the
+  // sheet"). A getter, so an opener that has since left the page reads null and the dialog falls
+  // back to the element it captured.
+  const openerRef = useRef<HTMLElement | null>(null);
+  const returnFocusRef = useMemo<RefObject<HTMLElement | null>>(
+    () => ({
+      get current() {
+        const el = openerRef.current;
+        return el?.isConnected ? el : null;
+      },
+    }),
+    [],
+  );
   const open = useCallback(
     (
       oracleId: string,
       list?: readonly Sibling[],
       atPrinting?: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null; scryfallId?: string }) | null,
-      opts?: { door?: boolean; art?: string | null },
+      opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null },
     ) => {
+      // The control this open came from, for the modal to hand focus back to. Set on every open, so
+      // an opener that names none falls back to the dialog's own capture rather than an older one.
+      openerRef.current = opts?.opener ?? null;
       // A prefetch reading this card asked for its art already.
       if (opts?.art && !cache.current.has(oracleId) && prefetching.current?.oracleId !== oracleId) {
         preloadCardArt(opts.art);
@@ -1033,6 +1052,7 @@ export function CardDetailProvider({
           position={heldIndex >= 0 && held.siblings.length > 1 ? heldIndex + 1 : 1}
           total={heldIndex >= 0 && held.siblings.length > 1 ? held.siblings.length : 1}
           onClose={NOOP}
+          returnFocusRef={returnFocusRef}
           covered
           door={held.door && doorRender ? (layout) => doorRender(held.card.oracleId, layout) : null}
           // Kept mounted under the picker it opened, so its close can hand focus back to the door.
@@ -1063,6 +1083,7 @@ export function CardDetailProvider({
           position={paging ? index + 1 : 1}
           total={paging ? siblings.length : 1}
           onClose={close}
+          returnFocusRef={returnFocusRef}
           stacked={sheetsBelow > 0}
           // Only a card the sheet has a footer FOR swaps its Mana Pool link out: the original, or any
           // card after a take, keeps the link rather than drawing nothing in its place.
@@ -1130,6 +1151,7 @@ export function CardDetailProvider({
           position={paging ? index + 1 : 1}
           total={paging ? siblings.length : 1}
           onClose={close}
+          returnFocusRef={returnFocusRef}
           stacked
           dropped
           // Only a card the sheet has a footer FOR swaps its Mana Pool link out: the original, or any

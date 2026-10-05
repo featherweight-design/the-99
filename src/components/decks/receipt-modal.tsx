@@ -164,8 +164,13 @@ export function ModalChrome({
   // half of what lets a reader see where a dismissal lands.
   const behind = openOracleId !== null;
   // On the phone a card REPLACES this sheet (stacked sheets R1, call 1): the sheet stays mounted
-  // with its scroll kept, but it is not drawn, not reachable and not announced while the card is up.
+  // with its scroll kept, but it is not drawn, not pressable and not announced while the card is up.
   // Desktop keeps the stepped ground beside the card.
+  //
+  // NOT `inert`, though the handoff names it. The card closes, and hands focus back to its opener in
+  // this sheet, in the commit BEFORE this sheet re-renders without the flag, so an inert sheet
+  // refused the focus and it fell to <body> (measured in Chromium and WebKit at 390). The card's own
+  // dialog already traps Tab, so `inert` added nothing a keyboard reader could reach.
   const narrow = !useMinWidth("(min-width: 768px)");
   const hidden = behind && narrow;
 
@@ -178,12 +183,12 @@ export function ModalChrome({
       }
       role="presentation"
       onClick={onClose}
-      inert={hidden}
       aria-hidden={hidden || undefined}
       data-hidden-under-card={hidden || undefined}
       style={{
         background: `color-mix(in oklab, var(--bg) ${onCard ? 60 : 72}%, transparent)`,
         opacity: hidden ? 0 : undefined,
+        pointerEvents: hidden ? "none" : undefined,
       }}
     >
       <div

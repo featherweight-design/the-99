@@ -622,6 +622,7 @@ export function CardModal({
   door = null,
   covered = false,
   dropped = false,
+  returnFocusRef,
 }: {
   card: BrowseCard;
   /**
@@ -638,6 +639,8 @@ export function CardModal({
   covered?: boolean;
   /** Drawn 80px lower on desktop: a stand-in over a sheet over its original, so the original's head shows. */
   dropped?: boolean;
+  /** Where focus goes when this card closes: the control that opened it, when the provider knows it. */
+  returnFocusRef?: React.RefObject<HTMLElement | null>;
   /**
    * A sheet is open UNDER this one — the Analysis tab's receipt, whose addendum ruling is that
    * a card opened from it stacks rather than replaces.
@@ -1236,7 +1239,7 @@ export function CardModal({
   }, [closeZoom, covered, expanded, narrow, onClose, sheetOpen, zoomed]);
 
   // Focus trap + Escape + focus-return — shared hook, shared with the export dialog.
-  useDialogA11y(dialogRef, onEscape, { initialFocusRef });
+  useDialogA11y(dialogRef, onEscape, { initialFocusRef, returnFocusRef });
 
 
   const gestures = useCardSheetGestures({

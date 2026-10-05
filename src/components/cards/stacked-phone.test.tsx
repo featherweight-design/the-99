@@ -95,18 +95,40 @@ describe("a card opened from a sheet, on the phone", () => {
     expect(screen.getByTestId("receipt-modal")).toBeInTheDocument();
   });
 
+  it("hands focus back to the opener inside the sheet on the way back", async () => {
+    draw();
+    screen.getByText("open birds").focus();
+    await openFromSheet();
+    expect(document.activeElement).toBe(pill());
+    await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+    expect(cardDialog()).toBeNull();
+    expect(document.activeElement).toBe(screen.getByText("open birds"));
+  });
+
+  it("hands focus back to the opener even when the press focused nothing, as in Safari", async () => {
+    draw();
+    // A Safari click focuses no button, so the dialog's own capture would find <body>.
+    (document.activeElement as HTMLElement | null)?.blur();
+    await openFromSheet();
+    await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+    expect(cardDialog()).toBeNull();
+    expect(document.activeElement).toBe(screen.getByText("open birds"));
+  });
+
   it("hides the sheet underneath while the card is up, and draws it again after", async () => {
     draw();
     const under = () => screen.getByTestId("receipt-modal").parentElement as HTMLElement;
     expect(under()).not.toHaveAttribute("aria-hidden");
     await openFromSheet();
     expect(under()).toHaveAttribute("aria-hidden", "true");
-    expect(under()).toHaveAttribute("inert");
     expect(under().style.opacity).toBe("0");
+    expect(under().style.pointerEvents).toBe("none");
+    // Not inert: an inert sheet refuses the focus the card hands back to its opener as it closes.
+    expect(under()).not.toHaveAttribute("inert");
     await act(async () => { fireEvent.click(pill()); });
     expect(under()).not.toHaveAttribute("aria-hidden");
-    expect(under()).not.toHaveAttribute("inert");
     expect(under().style.opacity).toBe("");
+    expect(under().style.pointerEvents).toBe("");
   });
 
   it("offers no Find a deck: nothing in a stacked card opens a further layer", async () => {
