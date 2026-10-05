@@ -87,12 +87,14 @@ property that produced it does not.
 that it was 46, with `reservations` retired 2026-10-04, a removal). Seven are the launch entries `help-me-choose`, `locked-cards`,
 `fits-your-decks`, `stand-ins` and `change-commander`, drawn by the
 launch-entries addendum, and `deck-analysis` and `card-marks`, from the Analysis tab's
-`ABOUT-entry.md`, all shown only while their features' switches are on. The six other
+`ABOUT-entry.md`, all shown only while their features' switches are on. The seven other
 extras are `decklist-order`, added after #642 shipped the decklist's sort control;
 `commander-availability`, added by #683; `review-and-commit` and `new-deck`, drawn on the §G
 template as R5 after a coverage sweep found two routes a reader could reach with nothing on the
-page explaining them; `informed-build`, which closes sub-project 2 of the deck-analysis line; and
-`combo-awareness`, which closes sub-project 3. All six arrived after the canvas was drawn. The rule in `AGENTS.md`
+page explaining them; `informed-build`, which closes sub-project 2 of the deck-analysis line;
+`combo-awareness`, which closes sub-project 3; and `suggested-changes`, added 2026-10-05 (H35
+ruling 7). All seven arrived after the canvas was drawn — fourteen additions and one retirement
+(`reservations`, 2026-10-04, which belonged to the canvas's 33) for the net difference of 13. The rule in `AGENTS.md`
 is that a feature designs and builds its own About entry, so this table's count is expected to trail
 the code and the gap is not a finding. `about.test.ts` pins the figure, so it cannot go stale
 silently.
