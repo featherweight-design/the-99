@@ -87,7 +87,7 @@ the sheet confirmed the scope back to its author.
 
 **Forty-six are `Specimen`-rooted and zero are `Legend`-rooted.** (`suggested-changes` is also
 `Specimen`-rooted, added 2026-10-05 — see about.ts. Before that it was forty-five, and before
-`reservations`, itself `Specimen`-rooted, was retired 2026-10-04, forty-six.) This record said "four mount
+`reservations`, itself `Specimen`-rooted, was retired 2026-10-04, it was forty-six.) This record said "four mount
 and the rest are legends" — wrong when written, and wrong in the paragraph correcting a previous
 wrong count, which was the second time a figure here was written down without being counted. It is
 now every figure: chapter 04 converted the last four, and `Legend`, `Line` and `LegendBox` went

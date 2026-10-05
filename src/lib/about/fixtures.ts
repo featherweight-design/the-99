@@ -1195,7 +1195,9 @@ export const SUGGESTED_CHANGES = {
   request: "more removal, and swap out Aang",
   description:
     "A deck built to flip the commander into his transformed state, by utilizing fire, water, earth, and air bending.",
-  credit: { left: 5, limit: 5, nextAt: new Date("2026-10-06T00:00:00.000Z") },
+  // `nextAt` is the next reset once a unit has been spent (tuning-panel.tsx:898) — with
+  // `left` at `limit`, nothing has been spent yet, and the real panel's own `nextAt` is null.
+  credit: { left: 5, limit: 5, nextAt: null },
 };
 
 /**
