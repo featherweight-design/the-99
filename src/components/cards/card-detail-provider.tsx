@@ -27,6 +27,7 @@ import {
 } from "react";
 import { twMerge } from "tailwind-merge";
 import type { BrowseCard, CardArt, PreferredPrinting } from "../../lib/collection/browse";
+import { resolvedPrinting } from "../../lib/collection/browse";
 import { getCardDetail } from "../../app/card-detail-action";
 import { fetchCardDetail } from "../../lib/cards/fetch-card-detail";
 import { FitsPicker } from "./fits-picker";
@@ -592,6 +593,17 @@ export function CardDetailProvider({
   // and send no signal a client cache could listen for, so the only honest way to hold
   // a card across them is to re-ask and correct what is already on screen.
   const cache = useRef(new Map<string, BrowseCard>());
+  // WHAT THE MODAL WILL DRAW, for every card the provider has read: the same `resolvedPrinting` the
+  // modal draws its art from, so the copy the reader owns or picked. A neighbor plate draws this
+  // over whatever art its opener passed, which is often the oracle-level printing (a different
+  // frame: the art visibly jumped when the card opened) or nothing at all (a blank plate). The read
+  // ahead fills both neighbors as soon as a card arrives.
+  const [readArt, setReadArt] = useState<ReadonlyMap<string, string>>(() => new Map());
+  const file = useCallback((oracleId: string, next: BrowseCard) => {
+    cache.current.set(oracleId, next);
+    const art = resolvedPrinting(next)?.imageUri ?? null;
+    setReadArt((m) => (art === null || m.get(oracleId) === art ? m : new Map(m).set(oracleId, art)));
+  }, []);
   // How many times each card has been evicted. A read that started before an eviction
   // answers with what the write it raced has not replaced yet, so the count taken when
   // the read starts is compared against the count when it lands: a read from the wrong
@@ -788,7 +800,7 @@ export function CardDetailProvider({
         }
         answers.current.set(oracleId, (answers.current.get(oracleId) ?? 0) + 1);
         if (next) {
-          cache.current.set(oracleId, next);
+          file(oracleId, next);
           if (arrival) setDoor(arrival.door);
           show(next);
         } else {
@@ -821,7 +833,7 @@ export function CardDetailProvider({
         }
       }
     },
-    [fetchCard, show, comboScope, setSiblings],
+    [fetchCard, show, comboScope, setSiblings, file],
   );
   useEffect(() => { loadRef.current = load; }, [load]);
 
@@ -1090,7 +1102,7 @@ export function CardDetailProvider({
               (evictions.current.get(oracleId) ?? 0) === evictedAt &&
               scope === comboScopeRef.current
             ) {
-              cache.current.set(oracleId, next);
+              file(oracleId, next);
             }
             return next;
           },
@@ -1102,7 +1114,7 @@ export function CardDetailProvider({
         if (prefetching.current === entry) prefetching.current = null;
       });
     },
-    [prefetchCard, comboScope],
+    [prefetchCard, comboScope, file],
   );
 
   const value = useMemo<CardDetailContextValue>(
@@ -1170,8 +1182,13 @@ export function CardDetailProvider({
   // The desktop neighbor plates (handoff decision 2): the card either side of the one on
   // screen, or null at a list's end — same bound as `nextId`/`prevId` above, which read the
   // same positions to prefetch them.
-  const prevSibling = paging && index > 0 ? siblings[index - 1] : null;
-  const nextSibling = paging && index < siblings.length - 1 ? siblings[index + 1] : null;
+  const plate = (s: SiblingCard | undefined): SiblingCard | null => {
+    if (!s) return null;
+    const art = readArt.get(s.oracleId);
+    return art && art !== s.imageUri ? { ...s, imageUri: art } : s;
+  };
+  const prevSibling = paging && index > 0 ? plate(siblings[index - 1]) : null;
+  const nextSibling = paging && index < siblings.length - 1 ? plate(siblings[index + 1]) : null;
   // Announced once the paged card has actually arrived, never on the first open (decision 8:
   // "First open announces nothing new"). `enterFrom` is null on a fresh open and on any card
   // change that is not a page (the combo block's partner swap, for one), so this effect is

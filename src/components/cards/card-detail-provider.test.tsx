@@ -254,6 +254,48 @@ describe("CardDetailProvider", () => {
     });
   });
 
+  // PREVIEW ART IS THE MODAL'S ART (Hugh: a neighbor plate drew an older frame than the card it
+  // opened, and Commander Details' plates drew nothing). A plate draws what the provider READ for
+  // that card, through the same `resolvedPrinting` the modal draws from, over the opener's art.
+  describe("a neighbor plate's art", () => {
+    const owned = (id: string, name: string, art: string): BrowseCard => ({
+      ...card(id, name),
+      printings: [{ setCode: "CMM", collectorNumber: "676", imageUri: art, quantity: 1 }] as unknown as BrowseCard["printings"],
+    });
+    const peek = () => screen.getAllByTestId("phone-peek-next")[0];
+
+    it("draws the printing the modal will show, over the oracle-level art the opener passed", async () => {
+      const sol = owned("o-sol", "Sol Ring", "https://cards.scryfall.io/owned-sol.jpg");
+      render(
+        <CardDetailProvider fetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)} prefetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)}>
+          <CardDetailTrigger
+            oracleId="o-signet"
+            name="Arcane Signet"
+            siblings={[{ oracleId: "o-signet" }, { oracleId: "o-sol", name: "Sol Ring", imageUri: "https://cards.scryfall.io/oracle-sol.jpg" }]}
+          >
+            Arcane Signet
+          </CardDetailTrigger>
+        </CardDetailProvider>,
+      );
+      await click(screen.getByText("Arcane Signet"));
+      await waitFor(() => expect(peek().outerHTML).toContain("owned-sol.jpg"));
+      expect(peek().outerHTML).not.toContain("oracle-sol.jpg");
+    });
+
+    it("fills a plate the opener passed no art for", async () => {
+      const sol = owned("o-sol", "Sol Ring", "https://cards.scryfall.io/owned-sol.jpg");
+      render(
+        <CardDetailProvider fetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)} prefetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)}>
+          <CardDetailTrigger oracleId="o-signet" name="Arcane Signet" siblings={["o-signet", "o-sol"]}>
+            Arcane Signet
+          </CardDetailTrigger>
+        </CardDetailProvider>,
+      );
+      await click(screen.getByText("Arcane Signet"));
+      await waitFor(() => expect(peek().outerHTML).toContain("owned-sol.jpg"));
+    });
+  });
+
   // THE COMBO SCOPE REACHES THE READ. It is what makes `in this deck` sayable and the scope
   // line renderable, and it is the deck page's alone — every other route sends nothing.
   //
