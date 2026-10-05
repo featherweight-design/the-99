@@ -350,25 +350,35 @@ if (wouldRefuse) {
 }
 
 /**
- * ID COLLISIONS AGAINST ANY OWNER, not only `TARGET_USER` — `--replace` clears what the target
- * user holds, but every copied id is a primary key with no `on conflict do nothing`, so a row
- * that already exists under a DIFFERENT production user fails the insert outright regardless of
- * `--replace`. Checked here so the dry run can report it instead of the first anyone learning of
- * it being an FK/PK violation after the production locks are already held.
+ * ID COLLISIONS AGAINST A DIFFERENT OWNER — `--replace` clears what `TARGET_USER` already
+ * holds before inserting, so a copied id that exists under THAT user is not a conflict, it is
+ * the row about to be deleted and replaced (Copilot round 7: the first version flagged every
+ * existing id regardless of owner, which refused a legitimate re-run of this same script).
+ * What is still a real, un-clearable conflict is a copied id that exists under a DIFFERENT
+ * production user — every copied id is a primary key with no `on conflict do nothing`, so that
+ * fails the insert outright no matter what `--replace` says. `deck_versions` has no `user_id` of
+ * its own; ownership is its deck's.
  */
-const PK_TABLES: { table: string; ids: string[] }[] = [
-  { table: "decks", ids: decks.map((d) => d.id as string) },
-  { table: "deck_folders", ids: folders.map((f) => f.id as string) },
-  { table: "deck_versions", ids: (byDeck.deck_versions ?? []).map((v) => v.id as string) },
-  { table: "deck_games", ids: (byDeck.deck_games ?? []).map((g) => g.id as string) },
-];
 const idConflicts: { table: string; ids: string[] }[] = [];
-for (const { table, ids } of PK_TABLES) {
-  if (ids.length === 0) continue;
-  const rows = (await dst.query(`select id from ${table} where id = any($1)`, [ids])) as {
-    id: string;
-  }[];
+const conflictCheck = async (table: string, ids: string[], ownerSql: string) => {
+  if (ids.length === 0) return;
+  const rows = (await dst.query(
+    `select id from ${table} where id = any($1) and (${ownerSql}) != $2`,
+    [ids, TARGET_USER],
+  )) as { id: string }[];
   if (rows.length > 0) idConflicts.push({ table, ids: rows.map((r) => r.id) });
+};
+await conflictCheck("decks", decks.map((d) => d.id as string), "user_id");
+await conflictCheck("deck_folders", folders.map((f) => f.id as string), "user_id");
+await conflictCheck("deck_games", (byDeck.deck_games ?? []).map((g) => g.id as string), "user_id");
+if ((byDeck.deck_versions ?? []).length > 0) {
+  const ids = (byDeck.deck_versions ?? []).map((v) => v.id as string);
+  const rows = (await dst.query(
+    "select dv.id from deck_versions dv join decks d on d.id = dv.deck_id " +
+      "where dv.id = any($1) and d.user_id != $2",
+    [ids, TARGET_USER],
+  )) as { id: string }[];
+  if (rows.length > 0) idConflicts.push({ table: "deck_versions", ids: rows.map((r) => r.id) });
 }
 if (idConflicts.length > 0) {
   console.log(`\nID collision(s) against production (any owner), which no --replace clears:`);
