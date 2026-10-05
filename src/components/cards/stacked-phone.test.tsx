@@ -238,6 +238,9 @@ describe("a list sheet over a card, on the phone (call 7)", () => {
     expect(sheet).toHaveClass("h-[calc(100%-52px)]");
     fireEvent.click(back);
     expect(onClose).toHaveBeenCalled();
+  });
+});
+
 describe("a stacked stand-in's Take on the phone (call 9)", () => {
   const take = vi.fn();
   function FooterSheet() {

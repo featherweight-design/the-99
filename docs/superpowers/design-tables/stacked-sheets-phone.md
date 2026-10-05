@@ -16,7 +16,7 @@ Each row is verified against the code, its tests (`stacked-phone.test.tsx`) and 
 | Pill focus (b3) | 2px `--accent` ring, offset 2 | same, `focus-visible` | ✅ |
 | Hit target (b4) | 44 tall (y 16 to 60) | a `before:` band 6px over and under the 32px plate | ✅ |
 | Width (b5, b6) | 266 with the counter, 354 without, then an ellipsis | `max-w-[266px]` / `max-w-[354px]`, label `truncate` | ✅ |
-| Disabled while a Take is pending (b7) | 40%, `aria-disabled` | PR B, with Take in the teaser | PR B |
+| Disabled while a Take is pending (b7) | 40%, `aria-disabled` | Not reachable: Take closes the card before the swap runs (`press` calls `closeCard()` first, as shipped), so no pill is drawn while one is pending; the receipt's own Undo carries the wait | ✅ n/a |
 | Accessible name | `Back to {sheet}` | `cardSheetCopy.back.a11y(label)` at both widths | ✅ |
 | Focus on open | the pill | measured: the pill, both engines | ✅ |
 | Escape / Back | full → teaser → the sheet | the card's `onEscape` ladder; history pops run it too (audit A5); walked in both engines | ✅ |
@@ -33,12 +33,28 @@ Each row is verified against the code, its tests (`stacked-phone.test.tsx`) and 
 | Way back | `← {card}` in the sheet's head, `Back to {card}` | a pill in the head at both widths; no × | ✅ |
 | Escape | the sheet, then the card, focus on the door | walked: focus lands on `See cheaper stand-ins` | ✅ |
 
+## Take on a stacked stand-in (call 9, PR B)
+
+Walked on `d5c1` (Aura Shards → Cheaper stand-ins → Astral Slide), 390x844, Chromium and WebKit.
+
+| Property | Design | Built | |
+|---|---|---|---|
+| Teaser height | stays 280 | `teaserHeight` no longer adds the footer; teaser top measured 564 at 844 | ✅ |
+| Card | 320 x 447 | measured 35, 64, 320x447 | ✅ |
+| Oracle | two lines (max-height 44) when Take is in | `max-h-[44px]` with a footer, `64` without | ✅ |
+| `in place of` line | margin-top auto, padding-bottom 6, mono 11, `--fg-muted`, one line | `teaserNote`: mono 11 `--fg-muted`, truncated; measured y 744 | ✅ |
+| Foot row | border-top 1 `--border`, min-height 44, grid 1 : 1.35 | measured All details 166 of 390 (= 1 / 2.35), 43 tall | ✅ |
+| All details cell | 13.5 `--fg-body`, `▴` `--fg-faint`, border-right 1 `--border` | same; the divider names `border-r-[color:var(--border)]` (a bare `border-r` resolves to the `--r` token) | ✅ |
+| Take (teaser) | 34 tall, padding 0 14, border 1 `--accent`, radius 8, 13.5/500 `--accent`, nowrap | `teaserAction`, measured 133 x 34 | ✅ |
+| Take (full) | pinned at the foot: padding 10 20 44, `--surface-sunken`, border-top; `in place of` mono 11 beside a 44-tall Take | `foot`, measured 740 to 844 | ✅ |
+| Price plate | not in the footer (the teaser's second line has it) | dropped from the phone layouts; desktop `row` keeps it | ✅ |
+| Counter in the footer | dropped | the phone footer never drew one after R2 (audit A9) | ✅ |
+
 ## Later PRs
 
 | Row | PR |
 |---|---|
-| Take in the teaser's foot row, `in place of` as an oracle line, the pill disabled while pending | B |
 | s2 phone label `What would have to go`; s5 Pull it opener and `Which deck to pull from` | C |
 | Open rise 240ms, pop drop 200ms, reduced-motion swap; pill contrast on six themes | D |
 
-VERDICT (PR A rows): 0 visual gaps, 0 state gaps.
+VERDICT (PR A and B rows): 0 visual gaps, 0 state gaps.
