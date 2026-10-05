@@ -114,14 +114,15 @@ const {
   "DECK_COPY_TARGET_USER_ID",
   "DECK_COPY_SNAPSHOT_AT",
 ]);
-// An explicit offset is required (Copilot round 7) — a bare "2026-10-05 09:00:00" is ambiguous
-// between engines (some read it as local time, some as UTC), and this value gates a production
-// write. "Z" or "+HH:MM"/"-HH:MM" only.
-if (!/Z$|[+-]\d{2}:\d{2}$/.test(SNAPSHOT_AT_RAW)) {
+// The FULL ISO-8601 shape is enforced, not just the suffix (Copilot round 9) — checking only
+// for a trailing "Z"/offset let a locale-ambiguous string like "10/05/2026 09:00:00 +00:00"
+// through, which `Date`'s fallback parser accepts and reads as October 5th even though an
+// operator writing day-first could mean May 10th. This value gates a production write.
+if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/.test(SNAPSHOT_AT_RAW)) {
   console.error(
-    `DECK_COPY_SNAPSHOT_AT (${SNAPSHOT_AT_RAW}) has no explicit UTC offset. Use an ISO-8601 ` +
-      'timestamp ending in "Z" (or an explicit "+HH:MM"/"-HH:MM") — never a bare local-looking ' +
-      "string, which parses ambiguously.",
+    `DECK_COPY_SNAPSHOT_AT (${SNAPSHOT_AT_RAW}) is not an ISO-8601 timestamp. Use the shape ` +
+      '"YYYY-MM-DDTHH:MM:SSZ" (or an explicit "+HH:MM"/"-HH:MM" offset) — never a locale-' +
+      "ambiguous or bare local-looking string.",
   );
   process.exit(1);
 }
