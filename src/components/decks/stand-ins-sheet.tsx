@@ -552,12 +552,15 @@ export function StandInsSheet({
         </span>
       );
     }
-    // THE PHONE (stacked sheets R1, call 9). No price plate: the teaser's second line already shows
-    // the card's price, and the footer's own was a second copy of it.
+    // THE PHONE (stacked sheets R1, call 9). A buy price plate would repeat the teaser's second line,
+    // so it goes; a FREE row keeps its chip, because that line shows a buy price and nothing else
+    // on the phone says the reader already owns a spare copy (pre-open review).
+    const freeChip = row.free ? <PricePlate row={row} newestAsOf={listAsOf} /> : null;
     if (layout === "teaserNote") {
       return (
-        <span data-testid="stand-in-footer" className="block truncate font-mono text-[11px]" style={{ color: "var(--fg-muted)" }}>
-          {where}
+        <span data-testid="stand-in-footer" className="flex min-w-0 items-center gap-[8px] font-mono text-[11px]" style={{ color: "var(--fg-muted)" }}>
+          <span className="min-w-0 truncate">{where}</span>
+          {freeChip}
         </span>
       );
     }
@@ -581,6 +584,7 @@ export function StandInsSheet({
         style={{ background: "var(--surface-sunken)" }}
       >
         <span className="flex-1 min-w-0 font-mono text-[11px]" style={{ color: "var(--fg-muted)" }}>{where}</span>
+        {freeChip}
         <button
           type="button"
           onClick={press}

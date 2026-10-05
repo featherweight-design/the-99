@@ -826,8 +826,8 @@ export function CardModal({
   const doorHeight = useOwnHeight(doorRef, doorStrip !== null);
   const teaserHeight = SHEET.teaserHeight + doorHeight;
 
-  // A TEASER THAT WOULD CRUSH THE CARD IS NOT OFFERED. A short screen under a stacked sheet (a
-  // stand-in at 140, with its Take footer) can leave the band so little room that the card would
+  // A TEASER THAT WOULD CRUSH THE CARD IS NOT OFFERED. A short screen (or a teaser grown by a
+  // door strip) can leave the band so little room that the card would
   // draw tens of pixels wide; there the sheet opens full and stays full, the way the stacked
   // sheet drew its details before R2, and Escape closes it. 120 keeps the card at least the
   // size of a readable thumbnail. Stacked sheets' own spec check is the carousel's PR 4.
