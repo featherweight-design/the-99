@@ -4,13 +4,14 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { RoleCard, RoleName } from "../../../lib/recs/score";
 
-const { requireUserId, resolveCommanderSlug, scoreOneCommander, loadAvailability, loadFreePool } = vi.hoisted(
+const { requireUserId, resolveCommanderSlug, scoreOneCommander, loadAvailability, loadFreePool, resolveOwnedPrintings } = vi.hoisted(
   () => ({
     requireUserId: vi.fn(),
     resolveCommanderSlug: vi.fn(),
     scoreOneCommander: vi.fn(),
     loadAvailability: vi.fn(),
     loadFreePool: vi.fn(),
+    resolveOwnedPrintings: vi.fn(),
   }),
 );
 
@@ -19,6 +20,7 @@ vi.mock("../../../lib/discovery/resolve-slug", () => ({ resolveCommanderSlug }))
 vi.mock("../../../lib/recs/recommend", () => ({ scoreOneCommander }));
 vi.mock("../../../lib/recs/free-ranking", () => ({ loadFreePool }));
 vi.mock("../../../lib/decks/availability-query", () => ({ loadAvailability }));
+vi.mock("../../../lib/collection/owned-printings", () => ({ resolveOwnedPrintings }));
 
 /** A hard claim, so a stamped card reads as something other than free. */
 const CLAIMED = {
@@ -46,6 +48,7 @@ beforeEach(() => {
   scoreOneCommander.mockReset();
   loadAvailability.mockReset().mockResolvedValue(new Map());
   loadFreePool.mockReset().mockResolvedValue([{ oracleId: "free-1" }]);
+  resolveOwnedPrintings.mockReset().mockResolvedValue(new Map());
 });
 
 describe("retryCoverageFigures", () => {
@@ -72,6 +75,22 @@ describe("retryCoverageFigures", () => {
     expect(out!.ramp[0].availability).toEqual(CLAIMED);
     // Narrowed to the cards this payload actually carries, not the whole shelf.
     expect(loadAvailability).toHaveBeenCalledWith("user_1", { oracleIds: ["sol"] });
+  });
+
+  // The page gives every role card the owned copy's art, which is what Role Coverage hands its
+  // siblings for the neighbor plates. The scored cards carry none, so handing them back bare
+  // blanked every plate on a successful retry until a read-ahead filled it.
+  it("re-stamps the owned copy's art onto the recovered cards", async () => {
+    const cards: Record<RoleName, RoleCard[]> = {
+      ...roleCards,
+      ramp: [{ oracleId: "sol", name: "Sol Ring", inclusionPct: 82, committedTo: null, availability: null }],
+    };
+    scoreOneCommander.mockResolvedValue({ synergyState: "ok", roleCards: cards });
+    resolveOwnedPrintings.mockResolvedValue(new Map([["sol", { imageUri: "https://img/owned-sol.jpg" }]]));
+
+    const out = await retryCoverageFigures("korvold", "all");
+    expect(out!.ramp[0].imageUri).toBe("https://img/owned-sol.jpg");
+    expect(resolveOwnedPrintings).toHaveBeenCalledWith("user_1", ["sol"]);
   });
 
   // A claim-read failure REJECTS rather than returning null-stamped cards, and

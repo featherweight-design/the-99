@@ -7,6 +7,7 @@ import { loadFreePool } from "../../../lib/recs/free-ranking";
 import type { RoleCard, RoleName } from "../../../lib/recs/score";
 import { loadAvailability } from "../../../lib/decks/availability-query";
 import { withAvailability } from "../../../lib/decks/availability";
+import { resolveOwnedPrintings } from "../../../lib/collection/owned-printings";
 
 /** A1: one retry for the whole section. Re-resolves EDHREC and hands back only
     the role cards — the four panels read one payload, so there is one action,
@@ -108,14 +109,21 @@ export async function retryCoverageFigures(
   const roleCardIds = Object.values(scored.roleCards)
     .flat()
     .map((c) => c.oracleId);
-  const availability = await loadAvailability(userId, {
-    oracleIds: [...new Set(roleCardIds)],
-  });
+  //
+  // The ART is re-stamped for the same reason: the page gives every role card the art of the copy
+  // the reader owns, and the bare scored cards carry none, so a successful retry would blank the
+  // neighbor plates until a read-ahead filled them. Fail-soft, unlike the claim read: a missing
+  // picture is what the plates drew before, and no reason to throw recovered figures away.
+  const ids = [...new Set(roleCardIds)];
+  const [availability, ownedArt] = await Promise.all([
+    loadAvailability(userId, { oracleIds: ids }),
+    resolveOwnedPrintings(userId, ids),
+  ]);
 
   return Object.fromEntries(
     Object.entries(scored.roleCards).map(([role, cards]) => [
       role,
-      withAvailability(cards, availability),
+      withAvailability(cards, availability).map((c) => ({ ...c, imageUri: ownedArt.get(c.oracleId)?.imageUri ?? null })),
     ]),
   ) as Record<RoleName, RoleCard[]>;
 }

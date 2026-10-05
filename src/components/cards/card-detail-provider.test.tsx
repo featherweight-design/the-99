@@ -294,6 +294,59 @@ describe("CardDetailProvider", () => {
       await click(screen.getByText("Arcane Signet"));
       await waitFor(() => expect(peek().outerHTML).toContain("owned-sol.jpg"));
     });
+
+    // The modal draws its gradient for a printing with no image, so the plate pointing at that
+    // card draws none either, rather than keeping the opener's oracle-level art.
+    it("draws no art over the opener's when the card read has no image", async () => {
+      const bare = card("o-sol", "Sol Ring");
+      let read = false;
+      const fetchCard = async (id: string) => (id === "o-sol" ? bare : SIGNET);
+      const prefetchCard = async (id: string) => { if (id === "o-sol") read = true; return fetchCard(id); };
+      render(
+        <CardDetailProvider fetchCard={fetchCard} prefetchCard={prefetchCard}>
+          <CardDetailTrigger
+            oracleId="o-signet"
+            name="Arcane Signet"
+            siblings={[{ oracleId: "o-signet" }, { oracleId: "o-sol", name: "Sol Ring", imageUri: "https://cards.scryfall.io/oracle-sol.jpg" }]}
+          >
+            Arcane Signet
+          </CardDetailTrigger>
+        </CardDetailProvider>,
+      );
+      await click(screen.getByText("Arcane Signet"));
+      await waitFor(() => expect(read).toBe(true));
+      await waitFor(() => expect(peek().outerHTML).not.toContain("oracle-sol.jpg"));
+    });
+
+    // An art pick evicts the card it changed, and the reader can page away before the write
+    // settles, after which nothing re-reads it. The plate must not stay on the printing the
+    // pick replaced: eviction drops what it read, and the plate falls back to its opener's art,
+    // which the list updates through `onArtChange`.
+    it("stops drawing a card's read art once that card is evicted", async () => {
+      const sol = owned("o-sol", "Sol Ring", "https://cards.scryfall.io/owned-sol.jpg");
+      let evictCard!: (id: string) => void;
+      function Grab() {
+        evictCard = useCardDetail().evict;
+        return null;
+      }
+      render(
+        <CardDetailProvider fetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)} prefetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)}>
+          <Grab />
+          <CardDetailTrigger
+            oracleId="o-signet"
+            name="Arcane Signet"
+            siblings={[{ oracleId: "o-signet" }, { oracleId: "o-sol", name: "Sol Ring", imageUri: "https://cards.scryfall.io/picked-sol.jpg" }]}
+          >
+            Arcane Signet
+          </CardDetailTrigger>
+        </CardDetailProvider>,
+      );
+      await click(screen.getByText("Arcane Signet"));
+      await waitFor(() => expect(peek().outerHTML).toContain("owned-sol.jpg"));
+      await act(async () => evictCard("o-sol"));
+      expect(peek().outerHTML).toContain("picked-sol.jpg");
+      expect(peek().outerHTML).not.toContain("owned-sol.jpg");
+    });
   });
 
   // THE COMBO SCOPE REACHES THE READ. It is what makes `in this deck` sayable and the scope

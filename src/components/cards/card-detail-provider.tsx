@@ -598,11 +598,16 @@ export function CardDetailProvider({
   // over whatever art its opener passed, which is often the oracle-level printing (a different
   // frame: the art visibly jumped when the card opened) or nothing at all (a blank plate). The read
   // ahead fills both neighbors as soon as a card arrives.
-  const [readArt, setReadArt] = useState<ReadonlyMap<string, string>>(() => new Map());
+  //
+  // NULL IS AN ANSWER: a read whose printing has no image draws the modal's gradient, so its plate
+  // draws none either, whatever its opener passed. An absent entry is a card not read yet, and only
+  // that falls back to the opener. Evicting a card drops its entry with the cache's, so a pick in
+  // flight never leaves the plate on the printing it replaced.
+  const [readArt, setReadArt] = useState<ReadonlyMap<string, string | null>>(() => new Map());
   const file = useCallback((oracleId: string, next: BrowseCard) => {
     cache.current.set(oracleId, next);
     const art = resolvedPrinting(next)?.imageUri ?? null;
-    setReadArt((m) => (art === null || m.get(oracleId) === art ? m : new Map(m).set(oracleId, art)));
+    setReadArt((m) => (m.has(oracleId) && m.get(oracleId) === art ? m : new Map(m).set(oracleId, art)));
   }, []);
   // How many times each card has been evicted. A read that started before an eviction
   // answers with what the write it raced has not replaced yet, so the count taken when
@@ -1061,6 +1066,12 @@ export function CardDetailProvider({
      */
     (oracleId: string, { reread = true }: { reread?: boolean } = {}) => {
       cache.current.delete(oracleId);
+      setReadArt((m) => {
+        if (!m.has(oracleId)) return m;
+        const next = new Map(m);
+        next.delete(oracleId);
+        return next;
+      });
       evictions.current.set(oracleId, (evictions.current.get(oracleId) ?? 0) + 1);
       // Dropping the entry is not enough when the evicted card is the one on screen. A read
       // taken inside the write's own window answers with what the write has not replaced
@@ -1184,8 +1195,9 @@ export function CardDetailProvider({
   // same positions to prefetch them.
   const plate = (s: SiblingCard | undefined): SiblingCard | null => {
     if (!s) return null;
-    const art = readArt.get(s.oracleId);
-    return art && art !== s.imageUri ? { ...s, imageUri: art } : s;
+    if (!readArt.has(s.oracleId)) return s;
+    const art = readArt.get(s.oracleId) ?? null;
+    return art !== (s.imageUri ?? null) ? { ...s, imageUri: art } : s;
   };
   const prevSibling = paging && index > 0 ? plate(siblings[index - 1]) : null;
   const nextSibling = paging && index < siblings.length - 1 ? plate(siblings[index + 1]) : null;
