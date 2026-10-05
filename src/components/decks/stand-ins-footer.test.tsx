@@ -37,16 +37,23 @@ const original = {
   price: { cents: 1500, foilCents: null, etchedCents: null, asOf },
 } as unknown as DeckDetailCard;
 
-const browse = (name: string): BrowseCard => ({
+// A card whose own price read landed: the store answered for the printing on screen (it carries
+// none of it, which is still an answer), so the teaser draws a price line.
+const priced = {
+  byScryfallId: {}, byPrintingKey: {}, ambiguousKeys: [], catalogIds: [], catalogKeys: ["SLD|7"], newestAsOf: asOf,
+};
+const browse = (name: string, prices: typeof priced | null): BrowseCard => ({
   oracleId: `id-${name}`, name, typeLine: "Instant", manaCost: "{W}", cmc: 1, oracleText: null, keywords: [], rarity: "rare",
-  colorIdentity: ["W"], imageUri: null, printedName: null, quantity: 1, printings: [], setCodes: [], primarySetCode: "",
+  colorIdentity: ["W"], imageUri: null, printedName: null, quantity: 1, setCodes: ["SLD"], primarySetCode: "SLD",
+  printings: [{ setCode: "SLD", collectorNumber: "7", imageUri: null, quantity: 1 }] as unknown as BrowseCard["printings"],
   preferredPrinting: null, commanderLegal: true, hasDecks: true,
-});
+  ...(prices ? { prices } : {}),
+} as BrowseCard);
 
-async function openStandIn(name: string) {
+async function openStandIn(name: string, prices: typeof priced | null = priced) {
   await act(async () => {
     render(
-      <CardDetailProvider fetchCard={async (id: string) => browse(id.replace(/^id-/, ""))}>
+      <CardDetailProvider fetchCard={async (id: string) => browse(id.replace(/^id-/, ""), prices)}>
         <SwapToolsProvider deckId="d1" deckName="HD Gishath" storedLimitCents={null}>
           <StandInsSheet card={original} newestAsOf={asOf} onClose={() => {}} />
         </SwapToolsProvider>
@@ -72,5 +79,22 @@ describe("a stacked stand-in's footer on the phone", () => {
     const note = screen.getByTestId("teaser-footer-note");
     expect(note).not.toHaveTextContent(swapToolsCopy.sheet.free);
     expect(note).not.toHaveTextContent("$3");
+  });
+
+  it("keeps the stand-in's buy price where the card's own price read failed and draws no line", async () => {
+    await openStandIn("Chaos Warp", null);
+    expect(screen.getByTestId("teaser-footer-note")).toHaveTextContent("$3");
+    fireEvent.click(screen.getByRole("button", { name: /Show all details/ }));
+    expect(screen.getByTestId("sheet-footer-foot")).toHaveTextContent("$3");
+  });
+
+  it("bounds the full sheet's Take and truncates its label, keeping the whole name for a screen reader", async () => {
+    await openStandIn("Chaos Warp");
+    fireEvent.click(screen.getByRole("button", { name: /Show all details/ }));
+    const take = within(screen.getByTestId("sheet-footer-foot")).getByRole("button", {
+      name: swapToolsCopy.sheet.takeAria("Chaos Warp", "Anguished Unmaking"),
+    });
+    expect(take).toHaveClass("min-w-0", "max-w-[62%]");
+    expect(take.firstElementChild).toHaveClass("truncate");
   });
 });

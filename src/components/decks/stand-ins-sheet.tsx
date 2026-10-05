@@ -532,7 +532,7 @@ export function StandInsSheet({
 
   // A stand-in's card, stacked over the sheet, takes it from where the reader is (§7.3). Nothing for
   // a card that is not one of the list's, and nothing once a take has landed.
-  const stackFooter: SheetFooter = (oracleId, layout) => {
+  const stackFooter: SheetFooter = (oracleId, layout, priced) => {
     const row = rows.find((r) => r.oracleId === oracleId);
     if (!row || taken) return null;
     const press = () => {
@@ -553,14 +553,15 @@ export function StandInsSheet({
       );
     }
     // THE PHONE (stacked sheets R1, call 9). A buy price plate would repeat the teaser's second line,
-    // so it goes; a FREE row keeps its chip, because that line shows a buy price and nothing else
-    // on the phone says the reader already owns a spare copy (pre-open review).
-    const freeChip = row.free ? <PricePlate row={row} newestAsOf={listAsOf} /> : null;
+    // so it goes, with two exceptions: a FREE row keeps its chip, because that line shows a buy price
+    // and nothing else on the phone says the reader already owns a spare copy (pre-open review); and
+    // a card whose own price read failed draws no line, so the stand-in's figure stays (round 1).
+    const plate = row.free || priced === false ? <PricePlate row={row} newestAsOf={listAsOf} /> : null;
     if (layout === "teaserNote") {
       return (
         <span data-testid="stand-in-footer" className="flex min-w-0 items-center gap-[8px] font-mono text-[11px]" style={{ color: "var(--fg-muted)" }}>
           <span className="min-w-0 truncate">{where}</span>
-          {freeChip}
+          {plate}
         </span>
       );
     }
@@ -584,14 +585,16 @@ export function StandInsSheet({
         style={{ background: "var(--surface-sunken)" }}
       >
         <span className="flex-1 min-w-0 font-mono text-[11px]" style={{ color: "var(--fg-muted)" }}>{where}</span>
-        {freeChip}
+        {plate}
         <button
           type="button"
           onClick={press}
           aria-label={copy.takeAria(row.name, name)}
-          className="flex h-[44px] flex-none items-center rounded-[8px] px-[16px] text-[13.5px] font-medium whitespace-nowrap bg-transparent cursor-pointer text-[color:var(--accent)] [border:1px_solid_var(--accent)]"
+          // Bounded and truncated as the teaser's is: a long name (a `Front // Back` card) must not
+          // push the note out or run past the sheet's edge (round 1).
+          className="flex h-[44px] min-w-0 max-w-[62%] flex-none items-center rounded-[8px] px-[16px] text-[13.5px] font-medium whitespace-nowrap bg-transparent cursor-pointer text-[color:var(--accent)] [border:1px_solid_var(--accent)]"
         >
-          {takeLabel}
+          <span className="truncate">{takeLabel}</span>
         </button>
       </div>
     );

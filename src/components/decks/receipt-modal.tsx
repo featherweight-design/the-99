@@ -156,7 +156,7 @@ export function ModalChrome({
   const hasFooter = stackFooter !== undefined;
   const onCard = overCard !== undefined;
   useEffect(
-    () => registerSheet(backLabel, hasFooter ? (id, layout) => footerRef.current?.(id, layout) ?? null : undefined, onCard),
+    () => registerSheet(backLabel, hasFooter ? (id, layout, priced) => footerRef.current?.(id, layout, priced) ?? null : undefined, onCard),
     [registerSheet, backLabel, hasFooter, onCard],
   );
 

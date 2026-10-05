@@ -664,7 +664,7 @@ export function CardModal({
    * it shares the teaser's foot row with All details, its note taking one of the oracle's lines,
    * and in the full sheet it pins to the foot. Drawn per layout (`SheetFooterLayout`).
    */
-  footer?: ((layout: SheetFooterLayout) => ReactNode) | null;
+  footer?: ((layout: SheetFooterLayout, priced?: boolean) => ReactNode) | null;
   /**
    * Fits your decks (swap tools, R2): the footer's `Find a deck for it →` door, under the Mana Pool
    * link. Null draws none, which is every card that is not Commander-legal, every reader with no deck,
@@ -2267,7 +2267,7 @@ export function CardModal({
                   // line, then a foot row shared 1 : 1.35 between All details and the sheet's action,
                   // so the teaser stays 280 and the card keeps its 320.
                   <>
-                    <div data-testid="teaser-footer-note" className="mt-auto pb-[6px] min-w-0">{footer("teaserNote")}</div>
+                    <div data-testid="teaser-footer-note" className="mt-auto pb-[6px] min-w-0">{footer("teaserNote", price !== null)}</div>
                     <div className="-mx-[20px] grid min-h-[44px] flex-none grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] border-t border-[color:var(--border)]">
                       <button
                         type="button"
@@ -2474,7 +2474,7 @@ export function CardModal({
             ) : null}
           </div>
           {/* In the full sheet the sheet's action pins to its foot (call 9); the teaser draws its own. */}
-          {footer && full ? <div data-testid="sheet-footer-foot" className="md:hidden flex-none">{footer("foot")}</div> : null}
+          {footer && full ? <div data-testid="sheet-footer-foot" className="md:hidden flex-none">{footer("foot", price !== null)}</div> : null}
         </div>
         {/* The modal's one live region (handoff §Accessibility). Do not add a second.
             A direct child of the dialog rather than of the content column, because the

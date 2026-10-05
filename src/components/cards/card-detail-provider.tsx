@@ -181,7 +181,11 @@ export type CardDoor = (oracleId: string, layout: "art" | "strip") => ReactNode;
  * - `foot`: the phone's full sheet, pinned at its foot.
  */
 export type SheetFooterLayout = "row" | "teaserNote" | "teaserAction" | "foot";
-export type SheetFooter = (oracleId: string, layout: SheetFooterLayout) => ReactNode;
+/**
+ * `priced`: whether the card on screen draws its own price, so a phone footer that leaves its plate
+ * to the teaser's price line can keep it when that line has nothing (a failed price read).
+ */
+export type SheetFooter = (oracleId: string, layout: SheetFooterLayout, priced?: boolean) => ReactNode;
 
 const CardDetailContext = createContext<CardDetailContextValue | null>(null);
 
@@ -1111,7 +1115,7 @@ export function CardDetailProvider({
           // Only a card the sheet has a footer FOR swaps its Mana Pool link out: the original, or any
           // card after a take, keeps the link rather than drawing nothing in its place.
           footer={sheetFooter && sheetFooter(card.oracleId, "row") !== null
-            ? (layout) => sheetFooter(card.oracleId, layout)
+            ? (layout, priced) => sheetFooter(card.oracleId, layout, priced)
             : null}
           backLabel={backLabel}
           // Fits your decks' door, on a card with no sheet under it (stacked sheets R1, call 8): nothing
@@ -1180,7 +1184,7 @@ export function CardDetailProvider({
           // Only a card the sheet has a footer FOR swaps its Mana Pool link out: the original, or any
           // card after a take, keeps the link rather than drawing nothing in its place.
           footer={sheetFooter && sheetFooter(card.oracleId, "row") !== null
-            ? (layout) => sheetFooter(card.oracleId, layout)
+            ? (layout, priced) => sheetFooter(card.oracleId, layout, priced)
             : null}
           backLabel={backLabel}
           // The combo block's partner name, through the same `load` that pages Prev/Next —
