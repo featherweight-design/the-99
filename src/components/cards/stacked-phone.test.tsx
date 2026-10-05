@@ -186,3 +186,27 @@ describe("the way back through three layers (page · card · sheet · card)", ()
     expect(document.activeElement).toBe(screen.getByText("page trigger"));
   });
 });
+
+describe("paging keeps focus in the card", () => {
+  it("never hands focus to the opener while paging, only when the card closes", async () => {
+    const cards: Record<string, BrowseCard> = {
+      "o-a": { ...birds, oracleId: "o-a", name: "Card A" },
+      "o-b": { ...birds, oracleId: "o-b", name: "Card B" },
+    };
+    render(
+      <CardDetailProvider fetchCard={async (id) => cards[id] ?? null}>
+        <CardDetailTrigger oracleId="o-a" name="Card A" siblings={["o-a", "o-b"]}>open a</CardDetailTrigger>
+      </CardDetailProvider>,
+    );
+    const opener = screen.getByText("open a");
+    const focused: string[] = [];
+    opener.addEventListener("focus", () => focused.push("opener"));
+    await act(async () => { fireEvent.click(opener); });
+    const next = screen.getAllByRole("button", { name: "Next card" })[0];
+    await act(async () => { fireEvent.click(next); });
+    expect(document.getElementById("card-modal-title")).toHaveTextContent("Card B");
+    expect(focused).toEqual([]);
+    await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+    expect(focused).toEqual(["opener"]);
+  });
+});

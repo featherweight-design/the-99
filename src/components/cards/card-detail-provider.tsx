@@ -760,10 +760,20 @@ export function CardDetailProvider({
   // the document (stacked sheets R1, engineering 3: "on back, focus goes to the opener inside the
   // sheet"). A getter, so an opener that has since left the page reads null and the dialog falls
   // back to the element it captured.
+  //
+  // Only on a real CLOSE (`show(null)` has cleared `shownRef`). A page remounts the keyed modal too,
+  // and its cleanup reads this: there the arriving card places focus itself (the control that
+  // paged), so the getter hands back a DETACHED element whose `focus()` does nothing. Falling back to
+  // the capture instead would jump focus out to the first card's opener and back on every page.
   const openerRef = useRef<HTMLElement | null>(null);
+  const pagingSink = useRef<HTMLElement | null>(null);
   const returnFocusRef = useMemo<RefObject<HTMLElement | null>>(
     () => ({
       get current() {
+        if (shownRef.current !== null) {
+          pagingSink.current ??= document.createElement("span");
+          return pagingSink.current;
+        }
         const el = openerRef.current;
         return el?.isConnected ? el : null;
       },
