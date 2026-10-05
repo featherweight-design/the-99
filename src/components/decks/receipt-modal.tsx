@@ -102,7 +102,8 @@ export function ReceiptModal({
  *
  * `backLabel` is what a card stacked on this sheet calls it: `← {backLabel}` in the card's close
  * slot. It defaults to the title, which is right for every sheet but what would have to go,
- * whose title is a sentence and whose way back is the target bracket's name.
+ * whose title is a sentence and whose way back is the sheet's own name instead, at both widths
+ * (Hugh, 2026-10-05 — the bracket name alone read as a place in the climb, not a way back here).
  */
 export function ModalChrome({
   mark,
