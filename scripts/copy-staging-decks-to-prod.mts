@@ -381,10 +381,10 @@ if ((byDeck.deck_versions ?? []).length > 0) {
   if (rows.length > 0) idConflicts.push({ table: "deck_versions", ids: rows.map((r) => r.id) });
 }
 if (idConflicts.length > 0) {
-  console.log(`\nID collision(s) against production (any owner), which no --replace clears:`);
+  console.log(`\nID collision(s) against production under a DIFFERENT owner — no --replace clears these:`);
   for (const { table, ids } of idConflicts) console.log(`  ${table}: ${ids.join(", ")}`);
 } else {
-  console.log(`\nNo copied id collides with an existing production row under any owner.`);
+  console.log(`\nNo copied id collides with an existing production row under a different owner.`);
 }
 
 const refused = wouldRefuse || missingOracleIds.length > 0 || idConflicts.length > 0;
