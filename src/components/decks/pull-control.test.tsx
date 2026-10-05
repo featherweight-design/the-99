@@ -4,6 +4,7 @@
 // them is that the control prints what it was given rather than arithmetic of
 // its own.
 
+import type { BrowseCard } from "../../lib/collection/browse";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { act, cleanup, fireEvent, render as rtlRender, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -650,16 +651,16 @@ describe("PullControl — 2+ choosable sources", () => {
     oracleId: "o1", name: "Sol Ring", typeLine: "Artifact", manaCost: "{1}", cmc: 1, oracleText: null, keywords: [],
     rarity: "uncommon", colorIdentity: [], imageUri: null, printedName: null, quantity: 1, printings: [], setCodes: [],
     primarySetCode: "", preferredPrinting: null,
-  };
+  } as unknown as BrowseCard;
   const cardUp = () => document.querySelector('[aria-labelledby="card-modal-title"]');
 
   // #1267 round 1: a card the list's head asked for, still reading when the list goes, must not
   // arrive afterwards over a page with no list to return to.
   it("abandons the head's card when the list is dismissed before it arrives", async () => {
     setViewport(false);
-    let land: (c: typeof solRing) => void = () => {};
+    let land: (c: BrowseCard | null) => void = () => {};
     render(
-      <CardDetailProvider fetchCard={() => new Promise((r) => { land = r; })}>
+      <CardDetailProvider fetchCard={() => new Promise<BrowseCard | null>((r) => { land = r; })}>
         <PullControl deckId="d" card={CARD} claims={[FREE_TO_PULL, OTHER_SOURCE]} defaultId={FREE_TO_PULL.id} onPulled={noop} />
       </CardDetailProvider>,
     );
