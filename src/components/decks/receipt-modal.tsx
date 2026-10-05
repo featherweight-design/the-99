@@ -232,7 +232,10 @@ export function ModalChrome({
           {mark}
           <h2
             id={titleId}
-            className={"m-0 min-w-0 font-display font-bold " + titleClassName}
+            // Focusable by script, never by Tab: where the control a reader was on is gone (a
+            // stand-in's Take replaces its own row), focus lands on the sheet's name.
+            tabIndex={-1}
+            className={"m-0 min-w-0 font-display font-bold outline-none " + titleClassName}
             style={{ color: behind ? "var(--fg-muted)" : "var(--fg)" }}
           >
             {title}
