@@ -145,6 +145,7 @@
     "build:combo-features": "tsx scripts/build-combo-features.mts",
     "check:spellbook": "tsx scripts/check-spellbook-contract.ts",
     "pull:staging": "tsx scripts/pull-staging-decks.mts",
+    "copy:staging-decks": "tsx scripts/copy-staging-decks-to-prod.mts",
     "measure:facts-cost": "tsx scripts/measure-facts-cost.mts",
     "measure:profile-cost": "tsx scripts/measure-profile-cost.mts",
     "measure:load": "node scripts/measure-load.mjs",
