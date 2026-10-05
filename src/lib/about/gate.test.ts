@@ -163,39 +163,40 @@ describe("gateDecision", () => {
 describe("the appendix's line on the sheet (plan 2026-09-28, PR C)", () => {
   const all = aboutEntries.filter((e) => !e.switch);
   const seen = (version: number, ids: string[] = []) => ({ version, ids });
+  const V = ABOUT_VERSION;
 
   it("rides a sheet already drawing, after its entries", () => {
-    const d = sheetDecision({ userId: "u", seen: seen(8), visible: all, version: 9, appendix: true });
+    const d = sheetDecision({ userId: "u", seen: seen(V - 1), visible: all, version: V, appendix: true });
     expect(d.show && d.header.split(",").at(-1)).toBe("how-it-works");
   });
 
   it("never summons a sheet on its own", () => {
-    expect(sheetDecision({ userId: "u", seen: seen(9), visible: all, version: 9, appendix: true }).show).toBe(false);
+    expect(sheetDecision({ userId: "u", seen: seen(V), visible: all, version: V, appendix: true }).show).toBe(false);
   });
 
   // With HOW_IT_WORKS_ENABLED off the proxy's decision is today's, byte for byte, in every state:
   // the header and cookie a reader gets do not move until the switch does.
   it("decides exactly as it did before the appendix, with the switch off", () => {
-    const states = [seen(0), seen(8), seen(9), seen(8, ["how-it-works"]), seen(3, ["x"])];
+    const states = [seen(0), seen(V - 1), seen(V), seen(V - 1, ["how-it-works"]), seen(3, ["x"])];
     for (const s of states) {
-      const off = sheetDecision({ userId: "u", seen: s, visible: all, version: 9, appendix: false });
-      expect(off).toEqual(sheetDecision({ userId: "u", seen: s, visible: all, version: 9 }));
+      const off = sheetDecision({ userId: "u", seen: s, visible: all, version: V, appendix: false });
+      expect(off).toEqual(sheetDecision({ userId: "u", seen: s, visible: all, version: V }));
       const unseen = all.filter((e) => e.since > s.version);
       const today =
         s.version === 0 && s.ids.length === 0
-          ? { show: true, header: "0", cookie: "u.9" }
+          ? { show: true, header: "0", cookie: `u.${V}` }
           : unseen.length === 0
-            ? { show: false, cookie: "u.9" }
-            : { show: true, header: unseen.map((e) => e.id).join(","), cookie: "u.9" };
+            ? { show: false, cookie: `u.${V}` }
+            : { show: true, header: unseen.map((e) => e.id).join(","), cookie: `u.${V}` };
       expect(off).toEqual(today);
     }
   });
 
   it("stays off a first-run sheet, a reader who has seen it, and a deployment with the switch off", () => {
-    expect(sheetDecision({ userId: "u", seen: seen(0), visible: all, version: 9, appendix: true })).toMatchObject({ header: "0" });
-    const seenIt = sheetDecision({ userId: "u", seen: seen(8, ["how-it-works"]), visible: all, version: 9, appendix: true });
+    expect(sheetDecision({ userId: "u", seen: seen(0), visible: all, version: V, appendix: true })).toMatchObject({ header: "0" });
+    const seenIt = sheetDecision({ userId: "u", seen: seen(V - 1, ["how-it-works"]), visible: all, version: V, appendix: true });
     expect(seenIt.show && seenIt.header).not.toContain("how-it-works");
-    const off = sheetDecision({ userId: "u", seen: seen(8), visible: all, version: 9 });
+    const off = sheetDecision({ userId: "u", seen: seen(V - 1), visible: all, version: V });
     expect(off.show && off.header).not.toContain("how-it-works");
   });
 });
@@ -204,24 +205,25 @@ describe("the sheet (R6)", () => {
   // The page with every feature switch off: an entry tied to one is not drawn.
   const all = aboutEntries.filter((e) => !e.switch);
   const seen = (version: number, ids: string[] = []) => ({ version, ids });
+  const V = ABOUT_VERSION;
 
   it("shows the sheet to a reader who is behind, naming what they have not seen", () => {
-    const d = sheetDecision({ userId: "u", seen: seen(8), visible: all, version: 9 });
-    const want = all.filter((e) => e.since > 8).map((e) => e.id).join(",");
-    expect(d).toEqual({ show: true, header: want, cookie: "u.9" });
+    const d = sheetDecision({ userId: "u", seen: seen(V - 1), visible: all, version: V });
+    const want = all.filter((e) => e.since > V - 1).map((e) => e.id).join(",");
+    expect(d).toEqual({ show: true, header: want, cookie: `u.${V}` });
   });
 
   it("shows the first-run variant to a brand-new account", () => {
-    expect(sheetDecision({ userId: "u", seen: seen(0), visible: all, version: 9 })).toEqual({
+    expect(sheetDecision({ userId: "u", seen: seen(0), visible: all, version: V })).toEqual({
       show: true,
       header: "0",
-      cookie: "u.9",
+      cookie: `u.${V}`,
     });
   });
 
   it("does not show it to a current reader, but still marks the browser", () => {
-    expect(sheetDecision({ userId: "u", seen: seen(9), visible: all, version: 9 })).toEqual({ show: false, cookie: "u.9" });
-    expect(sheetDecision({ userId: "u", seen: seen(12), visible: all, version: 9 })).toEqual({ show: false, cookie: "u.9" });
+    expect(sheetDecision({ userId: "u", seen: seen(V), visible: all, version: V })).toEqual({ show: false, cookie: `u.${V}` });
+    expect(sheetDecision({ userId: "u", seen: seen(V + 3), visible: all, version: V })).toEqual({ show: false, cookie: `u.${V}` });
   });
 
   it("uses a new cookie, never the gate's (E1)", () => {
@@ -230,10 +232,10 @@ describe("the sheet (R6)", () => {
   });
 
   it("binds the cookie to the reader and the version", () => {
-    expect(sheetCookieIsCurrent("u.9", "u", all, 9)).toBe(true);
-    expect(sheetCookieIsCurrent("u.9", "other", all, 9)).toBe(false);
-    expect(sheetCookieIsCurrent("u.8", "u", all, 9)).toBe(false);
-    expect(sheetCookieIsCurrent(undefined, "u", all, 9)).toBe(false);
+    expect(sheetCookieIsCurrent(`u.${V}`, "u", all, V)).toBe(true);
+    expect(sheetCookieIsCurrent(`u.${V}`, "other", all, V)).toBe(false);
+    expect(sheetCookieIsCurrent(`u.${V - 1}`, "u", all, V)).toBe(false);
+    expect(sheetCookieIsCurrent(undefined, "u", all, V)).toBe(false);
   });
 
   it("acts on document loads only, never a client transition or a prefetch", () => {

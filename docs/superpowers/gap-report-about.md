@@ -51,15 +51,18 @@ with `padding:30px 30px 34px`, so it sits 30px clear of the edge and never stick
 app has no top chrome at that width, so `top:0` puts the Contents label against the viewport edge
 the moment the page scrolls. The drawn clearance transfers; the property that produced it does not.
 
-**The code has 45 entries (was 46; `reservations` was retired 2026-10-04, a removal — see
-about.ts) and the canvas drew 33.** Seven are the launch entries `help-me-choose`,
+**The code has 46 entries (was 45; `suggested-changes` was added 2026-10-05, H35 ruling 7, a
+feature launch — see about.ts; before that it was 46, with `reservations` retired 2026-10-04, a
+removal) and the canvas drew 33.** Seven are the launch entries `help-me-choose`,
 `locked-cards`, `fits-your-decks`, `stand-ins` and `change-commander`, drawn by the launch-entries addendum, and
 `deck-analysis` and `card-marks`, from the Analysis tab's `ABOUT-entry.md`, all shown only while their features'
-switches are on. The six other extras are `decklist-order`, added
+switches are on. The seven other extras are `decklist-order`, added
 after #642 shipped the decklist's sort control; `commander-availability`, added by #683;
 `review-and-commit` and `new-deck`, drawn on the §G template as R5; `informed-build`, which closes
-sub-project 2 of the deck-analysis line; and `combo-awareness`, which closes sub-project 3. All six
-arrived after the canvas was drawn. Earlier text here said "a handoff that drew thirty-four" — it drew
+sub-project 2 of the deck-analysis line; `combo-awareness`, which closes sub-project 3; and
+`suggested-changes`, added 2026-10-05 (H35 ruling 7). All seven arrived after the canvas was
+drawn — fourteen additions and one retirement (`reservations`, which belonged to the canvas's
+33) for the net difference of 13. Earlier text here said "a handoff that drew thirty-four" — it drew
 thirty-three, and the code's own figure has moved twice while this PR was in review, which is why
 `about.test.ts` now pins it rather than leaving it to be re-read.
 

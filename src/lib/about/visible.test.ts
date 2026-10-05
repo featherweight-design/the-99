@@ -75,10 +75,13 @@ describe("an entry tied to a switch", () => {
   });
 
   it("reads unseen for a returning reader at the current version, in the shipped catalog", () => {
-    // The shipped launch entries carry `since` equal to ABOUT_VERSION, which every returning
-    // reader has reached. Were the version floor applied to them, a flip would announce nothing.
+    // The shipped launch entries all carry `since: 9`, the version active when the switch
+    // convention was adopted (Hugh, 2026-09-25) — a fixed historical stamp, not a live tracker
+    // of ABOUT_VERSION. `suggested-changes` (2026-10-05, ruling 7) bumped ABOUT_VERSION to 10
+    // without touching these, by design: `isSeen` ignores `since` entirely for a switch-tied
+    // entry, so the bump cannot make one of them unseen again.
     const launch = aboutEntries.filter((e) => e.switch);
-    expect(launch.map((e) => e.since)).toEqual(launch.map(() => ABOUT_VERSION));
+    expect(launch.map((e) => e.since)).toEqual(launch.map(() => 9));
     expect(unseenEntries(visibleEntries(ON), seen(ABOUT_VERSION)).map((e) => e.id)).toEqual([
       "help-me-choose",
       "deck-analysis",

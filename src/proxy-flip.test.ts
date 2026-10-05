@@ -10,9 +10,10 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ABOUT_VERSION } from "./lib/copy/about";
 
 const session = vi.fn(async () => ({ userId: "user_1" as string | null }));
-const stored = { version: 9, ids: [] as string[] };
+const stored = { version: ABOUT_VERSION, ids: [] as string[] };
 
 vi.mock("@clerk/nextjs/server", () => ({
   clerkMiddleware: (fn: unknown) => fn,
@@ -39,7 +40,7 @@ const cookieOf = (res: NextResponse | undefined) => res?.cookies.get("about_shee
 
 beforeEach(() => {
   process.env.ABOUT_SHEET_ENABLED = "true";
-  stored.version = 9;
+  stored.version = ABOUT_VERSION;
   stored.ids = [];
 });
 afterEach(() => {
@@ -53,14 +54,14 @@ describe("a switch flipped on", () => {
     // Nothing switched on: a current reader sees nothing, and the browser is marked.
     const quiet = await load();
     expect(header(quiet)).toBeNull();
-    expect(cookieOf(quiet)).toBe("user_1.9");
+    expect(cookieOf(quiet)).toBe(`user_1.${ABOUT_VERSION}`);
 
     // Change commander switched on: the old cookie no longer matches, so the proxy decides
     // again, and names the one entry the reader has not met.
     process.env.CHANGE_COMMANDER_ENABLED = "true";
     const first = await load(cookieOf(quiet));
     expect(header(first)).toBe("change-commander");
-    expect(cookieOf(first)).toBe("user_1.9+change-commander");
+    expect(cookieOf(first)).toBe(`user_1.${ABOUT_VERSION}+change-commander`);
 
     // The reader opens /about, which records the switched ids the page drew.
     stored.ids = ["change-commander"];
@@ -70,7 +71,7 @@ describe("a switch flipped on", () => {
     process.env.NEVER_CUT_ENABLED = "true";
     const second = await load(cookieOf(first));
     expect(header(second)).toBe("locked-cards");
-    expect(cookieOf(second)).toBe("user_1.9+locked-cards+change-commander");
+    expect(cookieOf(second)).toBe(`user_1.${ABOUT_VERSION}+locked-cards+change-commander`);
   });
 
   it("costs no read once this browser has shown the sheet for these entries", async () => {

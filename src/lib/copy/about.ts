@@ -21,6 +21,15 @@
 // them. `deck-page` is unedited for the same reason: it has no switch, and with the tab off
 // the deck page draws four tabs, so the fifth is named in `deck-analysis` instead.
 //
+// `suggested-changes`, 2026-10-05 (`design_handoff_the99_deck_description/ABOUT-entry.md`,
+// ruling 7): the one entry that overrides the rule directly above it. Hugh ruled the bump
+// (9 -> 10) regardless of the tab's switch, on the condition engineering confirm
+// ANALYSIS_TAB_ENABLED is on everywhere this ships, "or drop switch" (the handoff's own
+// words). Confirmed via `vercel env pull`: `"true"` on staging, `"false"` on production — not
+// everywhere — so this entry carries NO `switch` field. It is the one entry in this file drawn
+// unconditionally for a capability a production reader without the tab cannot yet reach; that
+// is the handoff's own authorized fallback, not an oversight.
+//
 // Voice: Kitchen Table. An entry explains a thing the app already does, to a
 // player who has met it and wants to know what it meant.
 //
@@ -38,7 +47,7 @@
 // changes. about.test.ts pins a content hash, so a change forces either a
 // deliberate bump or a deliberate re-pin.
 
-export const ABOUT_VERSION = 9;
+export const ABOUT_VERSION = 10;
 
 export type AboutChapter = '01' | '02' | '03' | '04';
 export type AboutWidth = 'inset' | 'plate';
@@ -827,6 +836,25 @@ export const aboutEntries: readonly AboutEntry[] = [
       'an axis marked for you as often as against you is stated rather than filed: one line, never a third column.',
     ],
     since: 1,
+  },
+  {
+    id: 'suggested-changes',
+    chapter: '04',
+    title: 'Suggested changes, told what you want',
+    route: '/decks',
+    opens: "opens a deck’s Analysis tab",
+    width: 'plate',
+    // NO switch (see the header comment above): ANALYSIS_TAB_ENABLED is confirmed on for
+    // staging and off for production, so a switch here would hide this entry on production
+    // forever rather than announcing it — the opposite of ruling 7's bump.
+    caption:
+      'Describe a deck in a sentence or two and it sits under the deck’s name; the pencil beside the name edits both. The Overview and Suggested changes read it the next time each runs, and saving it rewrites nothing already written. Suggested changes, at the foot of the Analysis tab, offers up to five swaps, each a card out and a card in. Three limits are kept for the deck: the most a card may cost, the sets an added card is printed in, and whether adds come only from cards you own. Additional notes take one run’s instructions in your words and are cleared once read.',
+    keys: [
+      'the description is optional, and asked beside Analyze before a deck’s first reading. After that it is the pencil’s.',
+      'additional notes last one press and are never saved. What should hold every time belongs in the description or the limits.',
+      'the commander, a locked card and the limits always win. When the notes ask past one, the reply says in one line what it did not do, and the rest still lands.',
+    ],
+    since: 10,
   },
   {
     id: 'statuses',
