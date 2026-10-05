@@ -333,6 +333,25 @@ try {
     process.exit(1);
   }
 
+  // OWNERSHIP, re-checked under the SAME lock (Copilot round 3) — the preflight's "every deck
+  // exists under TARGET_USER" check runs before this transaction opens, so a deck re-owned (or
+  // deleted) in that window would otherwise insert fill history for it anyway: the FK on
+  // fill_passes.deck_id validates only that the deck id exists, not who owns it now.
+  const stillOwned = (
+    await out.query("select id from decks where id = any($1) and user_id = $2", [
+      deckIds,
+      TARGET_USER,
+    ])
+  ).rows as { id: string }[];
+  if (stillOwned.length !== deckIds.length) {
+    await out.query("rollback");
+    console.error(
+      `\n${deckIds.length - stillOwned.length} of these deck(s) no longer belong to ` +
+        `${TARGET_USER} on production (re-owned or deleted since the preflight ran). Refusing.`,
+    );
+    process.exit(1);
+  }
+
   await insert("fill_passes", fillPasses);
   await insert("fill_pass_cards", fillPassCards);
 
