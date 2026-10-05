@@ -323,12 +323,14 @@ describe("gestures", () => {
     expect(sheet()).toHaveAttribute("data-sheet", "teaser");
   });
 
-  it("keeps a stacked card's full sheet on a pull down its details", () => {
+  // A card opened from a sheet (Change Commander's candidates, a receipt, stand-ins) pulls down the
+  // same way: the stacked exception went with the squeezed geometry it was for.
+  it("returns a stacked card's full sheet to the teaser on the same pull", () => {
     mount({ stacked: true });
     fireEvent.click(grip());
     const text = within(sheet()).getAllByText(/Whenever an opponent draws a card/)[0];
     drag(text, [200, 200], [200, 700]);
-    expect(sheet()).toHaveAttribute("data-sheet", "full");
+    expect(sheet()).toHaveAttribute("data-sheet", "teaser");
   });
 
   it("raises the sheet on a vertical drag that starts on the band", () => {

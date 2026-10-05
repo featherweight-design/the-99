@@ -384,6 +384,8 @@ type OpenAt = {
 /** A card lifted out of the live slot by a sheet opened over it, with what it needs to come back. */
 /** `opener`: the control the held card was opened from, handed back when the sheet over it goes. */
 type Held = { card: BrowseCard; siblings: SiblingCard[]; openAt: OpenAt; door: boolean; opener: HTMLElement | null };
+/** A card a combo partner was opened FROM, put back when the partner closes. */
+type TrailEntry = Omit<Held, "opener">;
 
 export function CardDetailProvider({
   children,
@@ -463,6 +465,15 @@ export function CardDetailProvider({
   // Opened from a Shopping row: the swap tools' door draws (audit F17).
   const [door, setDoor] = useState(false);
   const [held, setHeld] = useState<Held | null>(null);
+  // THE WAY BACK FROM A COMBO PARTNER: each card a partner was opened from, oldest first. The
+  // partner draws as stacked, `← {that card}` at both widths, and every way out of it (the pill,
+  // Escape, hardware Back, the backdrop) puts that card back rather than closing them all. A ref
+  // beside the state, because `dismiss` must read it in the press that pops it.
+  const [trail, setTrail] = useState<TrailEntry[]>([]);
+  const trailRef = useRef<TrailEntry[]>([]);
+  // The card the live one is a partner of, which its way back names. Only for the live slot: a card
+  // over a held one names the sheet between them instead.
+  const partnerOf = trail.at(-1)?.card ?? null;
   // The printing the caller asked to open at, carrying the oracle id it belongs to.
   //
   // NOTHING here moves when a card is merely asked for — only when one arrives. That is the
@@ -826,6 +837,9 @@ export function CardDetailProvider({
       // The control this open came from, for the modal to hand focus back to. Set on every open, so
       // an opener that names none falls back to the dialog's own capture rather than an older one.
       openerRef.current = opts?.opener ?? null;
+      // A fresh open is a new card, not a step from one: no way back to an earlier partner chain.
+      trailRef.current = [];
+      setTrail([]);
       // An open landing while a card drops replaces it rather than waiting for it to leave.
       if (leavingTimer.current !== null) {
         window.clearTimeout(leavingTimer.current);
@@ -875,14 +889,44 @@ export function CardDetailProvider({
     // The picker sits over a HELD card, and a card opened from the picker stacks over both. Closing
     // that top card is a step back to the picker, the stand-ins sheet's rule, so only a close with
     // nothing held (the picker's own card going) takes the picker with it.
-    if (heldRef.current === null) setFitsFor(null);
+    if (heldRef.current === null) {
+      setFitsFor(null);
+      trailRef.current = [];
+      setTrail([]);
+    }
   }, [show, setFitsFor]);
+
+  // One step back along the partner trail: the card the partner was opened from, exactly as it was.
+  // False when there is nowhere to step back to. A card held under a sheet keeps its trail for when
+  // it comes back; the card over the sheet is not on it.
+  const stepBack = useCallback(() => {
+    const back = heldRef.current === null ? trailRef.current.at(-1) : undefined;
+    if (!back) return false;
+    const next = trailRef.current.slice(0, -1);
+    trailRef.current = next;
+    setTrail(next);
+    latest.current++;
+    inFlight.current = null;
+    owed.current = null;
+    pendingAt.current = null;
+    openRef.current = back.card.oracleId;
+    shownRef.current = back.card.oracleId;
+    setEnterFrom(null);
+    setCard(back.card);
+    setSiblingList(back.siblings);
+    setOpenAt(back.openAt);
+    setDoor(back.door);
+    setPendingOracleId(null);
+    setFailed(false);
+    return true;
+  }, []);
 
   // Every close of the live card goes through here: the ✕ or the pill, Escape, hardware Back and
   // the backdrop. A card over a sheet on the phone drops before it goes (stacked sheets R1: "the
   // card drops in 200ms", never sideways); anywhere else, and under reduced motion, it is a swap.
   const dismiss = useCallback(() => {
     if (leavingTimer.current !== null) return;
+    if (stepBack()) return;
     const phone = !window.matchMedia?.("(min-width: 768px)")?.matches;
     const still = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
     if (sheetsBelow === 0 || !phone || still) {
@@ -895,7 +939,7 @@ export function CardDetailProvider({
       setLeaving(false);
       close();
     }, STACK_DROP_MS);
-  }, [close, sheetsBelow]);
+  }, [close, sheetsBelow, stepBack]);
   useEffect(() => () => {
     if (leavingTimer.current !== null) window.clearTimeout(leavingTimer.current);
   }, []);
@@ -904,6 +948,18 @@ export function CardDetailProvider({
   // sheet is up, so a card opened from the sheet stacks over both instead of replacing it, and put
   // back, with its list, printing and door, when the sheet goes.
   const live = useRef({ card, siblings, openAt, door });
+  // A combo partner, through the same `load` that pages, with the card it was reached from put on
+  // the trail first. It arrives without the Shopping door: the partner was reached from the combo
+  // block, not a Shopping row.
+  const selectPartner = useCallback((oracleId: string) => {
+    const from = live.current;
+    if (from.card && from.card.oracleId !== oracleId) {
+      const next = [...trailRef.current, { card: from.card, siblings: from.siblings, openAt: from.openAt, door: from.door }];
+      trailRef.current = next;
+      setTrail(next);
+    }
+    void load(oracleId, undefined, undefined, { door: false });
+  }, [load]);
   useEffect(() => {
     live.current = { card, siblings, openAt, door };
   });
@@ -1165,7 +1221,7 @@ export function CardDetailProvider({
           total={paging ? siblings.length : 1}
           onClose={dismiss}
           returnFocusRef={returnFocusRef}
-          stacked={sheetsBelow > 0}
+          stacked={sheetsBelow > 0 || partnerOf !== null}
           rise={arrival.rise}
           dropping={leaving}
           // Only a card the sheet has a footer FOR swaps its Mana Pool link out: the original, or any
@@ -1173,8 +1229,8 @@ export function CardDetailProvider({
           footer={sheetFooter && sheetFooter(card.oracleId, "row") !== null
             ? (layout, priced) => sheetFooter(card.oracleId, layout, priced)
             : null}
-          backLabel={backLabel}
-          phoneBackLabel={phoneBackLabel}
+          backLabel={partnerOf ? partnerOf.name : backLabel}
+          phoneBackLabel={partnerOf ? undefined : phoneBackLabel}
           // Fits your decks' door, on a card with no sheet under it (stacked sheets R1, call 8): nothing
           // in a stacked card opens a further layer, and a stand-in's Take replaces the door anyway.
           onFindDeck={sheetsBelow > 0 ? null : fitsDoor(card)}
@@ -1186,7 +1242,7 @@ export function CardDetailProvider({
           // so a partner replaces the open card exactly as a sibling does, and the back
           // gesture returns to the card the reader started from. It arrives without the
           // Shopping door: the partner was reached from the combo block, not a Shopping row.
-          onSelectCard={(id) => void load(id, undefined, undefined, { door: false })}
+          onSelectCard={selectPartner}
           onPrev={paging && index > 0
             ? (offset?: number) => { void load(siblingIds[index - 1], undefined, undefined, undefined, "prev", offset); }
             : null}
@@ -1251,7 +1307,7 @@ export function CardDetailProvider({
           // so a partner replaces the open card exactly as a sibling does, and the back
           // gesture returns to the card the reader started from. It arrives without the
           // Shopping door: the partner was reached from the combo block, not a Shopping row.
-          onSelectCard={(id) => void load(id, undefined, undefined, { door: false })}
+          onSelectCard={selectPartner}
           onPrev={paging && index > 0
             ? (offset?: number) => { void load(siblingIds[index - 1], undefined, undefined, undefined, "prev", offset); }
             : null}

@@ -1281,9 +1281,10 @@ export function CardModal({
     onPage: (dir, offset) => (dir === "next" ? onNext?.(offset) : onPrev?.(offset)),
     onSnap: (to) => setSheetFull(to === "full"),
     bodyRef: sheetBodyRef,
-    // Not on a stacked card: its sheets are being redrawn (a second sheet squeezes the card), and
-    // until then it keeps the grip-only drag it shipped with.
-    canCollapse: !cramped && !stacked,
+    // Every card that has a teaser, stacked or not: since stacked sheets R1 a card opened from a sheet
+    // draws at the unstacked geometry, so the old stacked exception (a squeezed card, grip-only) left
+    // only a set of surfaces without the pull, Change Commander's candidates among them.
+    canCollapse: !cramped,
     disabled: locked,
   });
 

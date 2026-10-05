@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { printingPickerCopy } from "../../lib/copy/collection";
-import { cardCarouselCopy } from "../../lib/copy/card-carousel";
+import { cardCarouselCopy, cardSheetCopy } from "../../lib/copy/card-carousel";
 
 vi.mock("../../app/collection/actions", () => ({
   setCardArtPreference: vi.fn(async () => true),
@@ -123,6 +123,53 @@ describe("CardDetailProvider", () => {
     // The provider fetched the PARTNER, which is what `load` does and a spy on the modal
     // cannot see.
     expect(fetchCard).toHaveBeenCalledWith("o-sol", undefined);
+  });
+
+  // A COMBO PARTNER HAS A WAY BACK (Hugh's test: Ghoulcaller Gisa → its combo → Intruder Alarm drew
+  // only an ×). The partner names the card it came from, on the phone's pill and the desktop's, and
+  // every way out of it puts that card back rather than closing both.
+  describe("the way back from a combo partner", () => {
+    const withPartner = {
+      ...SIGNET,
+      comboPartners: [{ oracleId: "o-sol", name: "Sol Ring", state: "owned" as const, popularity: 9 }],
+    };
+    const openPartner = async () => {
+      renderTriggers(vi.fn(async (id: string) => (id === "o-sol" ? SOL : withPartner)));
+      await click(screen.getByText("Arcane Signet"));
+      await act(async () => { screen.getByRole("button", { name: /Two-card combos/ }).click(); });
+      await act(async () => { screen.getByRole("button", { name: "Sol Ring" }).click(); });
+      expect(document.getElementById("card-modal-title")).toHaveTextContent("Sol Ring");
+    };
+    const title = () => document.getElementById("card-modal-title");
+
+    it("names the card it came from, on the phone's pill and the desktop's", async () => {
+      await openPartner();
+      expect(screen.getByTestId("card-modal-back-mobile")).toHaveAccessibleName(cardSheetCopy.back.a11y("Arcane Signet"));
+      expect(screen.getByTestId("card-modal-back")).toHaveTextContent("Arcane Signet");
+    });
+
+    it("goes back to that card on Escape, and closes only on the next", async () => {
+      await openPartner();
+      await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+      expect(title()).toHaveTextContent("Arcane Signet");
+      expect(screen.queryByTestId("card-modal-back-mobile")).toBeNull();
+      await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+      expect(title()).toBeNull();
+    });
+
+    it("goes back to that card from the pill", async () => {
+      await openPartner();
+      await act(async () => { fireEvent.click(screen.getByTestId("card-modal-back-mobile")); });
+      expect(title()).toHaveTextContent("Arcane Signet");
+    });
+
+    it("forgets the way back once the card is closed and another opened", async () => {
+      await openPartner();
+      await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+      await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+      await click(screen.getByText("Arcane Signet"));
+      expect(screen.queryByTestId("card-modal-back-mobile")).toBeNull();
+    });
   });
 
   // THE COMBO SCOPE REACHES THE READ. It is what makes `in this deck` sayable and the scope
