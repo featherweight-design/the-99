@@ -737,9 +737,11 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   0% { transform: none; }
   100% { transform: translateY(100%); }
 }
-@media (max-width: 47.999rem) {
-  .anim-stack-rise { animation: stack-rise 0.24s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
-  .anim-stack-drop { animation: stack-drop 0.2s cubic-bezier(0.4, 0, 1, 1) both; }
+.anim-stack-rise { animation: stack-rise 0.24s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.anim-stack-drop { animation: stack-drop 0.2s cubic-bezier(0.4, 0, 1, 1) both; }
+@media (min-width: 48rem) {
+  .anim-stack-rise,
+  .anim-stack-drop { animation: none; }
 }
 .anim-backdrop-in { animation: backdrop-in 0.18s ease-out both; }
 .anim-quickadd-in { animation: quickadd-in 0.14s ease-out both; }
