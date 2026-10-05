@@ -72,10 +72,10 @@ Sampled every 40ms at 390x844 in Chromium (touch) and WebKit, on `cafe` (Game ch
 
 | Property | Design | Built | |
 |---|---|---|---|
-| Open | the card rises 812 → 0 over 240ms `cubic-bezier(.2,.7,.2,1)` | `.anim-stack-rise`: `translateY(100%)` → none, 0.24s, that curve; phone only (`animation: none` from `48rem`); measured y 635, 199, 79, 28 at 40ms steps (WebKit 482, 179, 68, 22) | ✅ |
-| Sheet on open | fades to 0 onto its scrim | `motion-safe:transition-opacity` 240ms on the hidden sheet (`ModalChrome`, the Pull it wrapper); measured 0.99, 0.70, 0.30, 0.11 | ✅ |
+| Open | the card rises 812 → 0 over 240ms `cubic-bezier(.2,.7,.2,1)` | `.anim-stack-rise`: `translateY(100%)` → none, 0.24s, that curve; phone only (`animation: none` from `48rem`); measured y 728, 286, 92, 34 at 40ms steps (WebKit 418, 153, 58, 18) | ✅ |
+| Sheet on open | fades to 0 onto its scrim | `motion-safe:transition-opacity` 240ms on the hidden sheet (`ModalChrome`, the Pull it wrapper); measured 1.00, 0.85, 0.35, 0.13 | ✅ |
 | Rise only on arrival | paging inside the card is sideways and does not re-rise | the provider marks the rise when a card arrives over a sheet from nothing; a page or a held card coming back does not | ✅ |
-| Back | the card drops in 200ms, the sheet fades back | `dismiss`: `.anim-stack-drop` 0.2s and `openOracleId` reads null at once, then the card closes after `STACK_DROP_MS`; measured y 0, 84, 238, 441, 683 with the sheet at 0, 0.24, 0.72, 0.92, 0.99 | ✅ |
+| Back | the card drops in 200ms, the sheet fades back | `dismiss`: `.anim-stack-drop` 0.2s and `openOracleId` reads null at once, then the card closes after `STACK_DROP_MS`; measured y 0, 82, 236, 438, 678 with the sheet at 0, 0.23, 0.72, 0.92, 0.99 | ✅ |
 | Every way back drops | Escape, the pill, hardware Back, the backdrop | all route through `dismiss` | ✅ |
 | Never sideways | | rise and drop are vertical only | ✅ |
 | Reduced motion | a swap | both animations `none`; `dismiss` closes at once; the sheet's fade is `motion-safe` only; measured: no intermediate frame in either direction | ✅ |
