@@ -1649,6 +1649,35 @@ describe("CardDetailProvider pages the desktop carousel (H23 PR 2)", () => {
     await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Card B"));
   });
 
+  // A click on plain text in the dialog focuses nothing, so focus falls to <body>; the arrow keys
+  // must still page from there, and must not page for a key aimed at something else on the page.
+  it("keeps paging on arrow keys after a click on plain text drops focus to the body", async () => {
+    stubMinWidth(true);
+    mount("o-b");
+    await press();
+    await screen.findByRole("dialog");
+    (document.activeElement as HTMLElement | null)?.blur();
+    expect(document.activeElement).toBe(document.body);
+    fireEvent.keyDown(document.body, { key: "ArrowRight" });
+    await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Card C"));
+  });
+
+  it("leaves an arrow key alone when it is aimed at something outside the modal", async () => {
+    stubMinWidth(true);
+    const outside = document.createElement("button");
+    document.body.appendChild(outside);
+    try {
+      mount("o-b");
+      await press();
+      await screen.findByRole("dialog");
+      fireEvent.keyDown(outside, { key: "ArrowRight" });
+      await new Promise((r) => setTimeout(r, 50));
+      expect(screen.getByRole("dialog")).toHaveAccessibleName("Card B");
+    } finally {
+      outside.remove();
+    }
+  });
+
   // Pre-open review, round 1: an aria-live region only announces a CHANGE of text, so going
   // straight from one announcement to an identical one — the same end pressed twice, or
   // paging A→B, closing, reopening A and paging to B again — was silent the second time.
