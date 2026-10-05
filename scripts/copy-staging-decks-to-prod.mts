@@ -349,12 +349,50 @@ if (wouldRefuse) {
   console.log(`--replace is set — the real write would delete those first.`);
 }
 
+/**
+ * ID COLLISIONS AGAINST ANY OWNER, not only `TARGET_USER` — `--replace` clears what the target
+ * user holds, but every copied id is a primary key with no `on conflict do nothing`, so a row
+ * that already exists under a DIFFERENT production user fails the insert outright regardless of
+ * `--replace`. Checked here so the dry run can report it instead of the first anyone learning of
+ * it being an FK/PK violation after the production locks are already held.
+ */
+const PK_TABLES: { table: string; ids: string[] }[] = [
+  { table: "decks", ids: decks.map((d) => d.id as string) },
+  { table: "deck_folders", ids: folders.map((f) => f.id as string) },
+  { table: "deck_versions", ids: (byDeck.deck_versions ?? []).map((v) => v.id as string) },
+  { table: "deck_games", ids: (byDeck.deck_games ?? []).map((g) => g.id as string) },
+];
+const idConflicts: { table: string; ids: string[] }[] = [];
+for (const { table, ids } of PK_TABLES) {
+  if (ids.length === 0) continue;
+  const rows = (await dst.query(`select id from ${table} where id = any($1)`, [ids])) as {
+    id: string;
+  }[];
+  if (rows.length > 0) idConflicts.push({ table, ids: rows.map((r) => r.id) });
+}
+if (idConflicts.length > 0) {
+  console.log(`\nID collision(s) against production (any owner), which no --replace clears:`);
+  for (const { table, ids } of idConflicts) console.log(`  ${table}: ${ids.join(", ")}`);
+} else {
+  console.log(`\nNo copied id collides with an existing production row under any owner.`);
+}
+
+const refused = wouldRefuse || missingOracleIds.length > 0 || idConflicts.length > 0;
 if (DRY) {
   console.log(
-    `\nDry run — nothing written. Target would receive these under ${TARGET_USER} on ${dstId}` +
-      (wouldRefuse ? ", if the write were not refused by the check above." : "."),
+    refused
+      ? `\nDry run — nothing written. The real write WOULD REFUSE, for the reason(s) reported above.`
+      : `\nDry run — nothing written. Target would receive these under ${TARGET_USER} on ${dstId}.`,
   );
   process.exit(0);
+}
+
+if (idConflicts.length > 0) {
+  console.error(
+    "\nRefusing to write: the id(s) above already exist on production under a different " +
+      "user and would fail a primary-key constraint partway through the transaction.",
+  );
+  process.exit(1);
 }
 
 if (wouldRefuse) {
