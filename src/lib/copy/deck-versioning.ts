@@ -217,8 +217,17 @@ export const deckVersioningCopy = {
       + (proxied > 0 ? ` · ${proxied} proxied` : ""),
 
     heldBy: (deck: string) => `in ${deck}`,
+    // 2+ sources that can be chosen (addendum R1, "Pull it picks its source deck") — replaces
+    // `heldBy(deck)` only in that case. The count is the picker's own candidate count, never
+    // `claims.length`, which also counts guarded rows the control cannot act on.
+    heldByMany: (n: number) => `in ${n} decks`,
+    // After the pull, in the same held-by slot — linked to the source deck (`update-diff-row.tsx`).
+    pulledFrom: (deck: string) => `pulled from ${deck}`,
     pull: "Pull it",
     pulling: "Pulling…",
+    // The visible label stays "Pull it" when 2+ sources exist too — the caret beside it is a
+    // glyph, `aria-hidden`, and this is what a reader tabbing to it hears instead.
+    pullManyA11y: (card: string, n: number) => `Pull ${card}: choose from ${n} decks.`,
     // Never rendered — the button's accessible name, for the same reason the two
     // guards carry one. "Pull it" is two words repeated down a column of changed
     // rows, and a reader tabbing through them cannot tell which card leaves which
@@ -231,6 +240,30 @@ export const deckVersioningCopy = {
     commanderGuardTag: "commander",
     commanderGuardA11y: (deck: string, card: string) =>
       `${card} is ${deck}'s commander. It cannot be pulled.`,
+
+    // The source picker's own list (addendum R1) — the popover at ≥ md, the sheet below it.
+    source: {
+      title: (card: string) => `Pull ${card} from`,
+      order: "In the order they committed it",
+      leaves: (n: number) => `→ ${n} cards`,
+      newDraft: "new draft",
+      joinsDraft: "joins its draft",
+      lockedReason: "locked there, so Pull it passes it by",
+      commanderReason: "its commander",
+      // `count` is null when the figure read failed — the same degrade the visible text makes
+      // (round-2 finding: a prior version filled a missing figure with the card's own `quantity`,
+      // which is not a card count at all, and announced it as one).
+      optionA11y: (deck: string, stamp: string, count: number | null, joins: boolean) =>
+        `${deck}, ${stamp}.` +
+        (count === null ? "" : ` Leaves it ${count} cards${joins ? ", in its draft" : ", in a new draft"}.`),
+      consequenceNew: (deck: string, card: string) =>
+        `${deck} goes into a draft with ${card} going out. Discard that draft and the card goes back.`,
+      consequenceJoins: (deck: string, card: string) =>
+        `${card} goes out in ${deck}'s draft, beside its other changes. Discard that draft and the ` +
+        "card goes back.",
+      confirm: (deck: string) => `Pull from ${deck}`,
+      cancel: "Cancel",
+    },
 
     // #587 cut the old second sentence for two reasons: it explained a per-row
     // toggle that did not exist, and it was long enough to crush the GOING OUT

@@ -217,6 +217,44 @@ describe("ReviewChanges", () => {
     expect(screen.getAllByRole("button", { name: PULL_NAME })).toHaveLength(1);
   });
 
+  // Found by the pre-open review of PR 2: a row that still has something to pull
+  // (2+ sources, one already pulled) must NOT draw "pulled from {deck}" over its
+  // still-live control — that would claim the row is done when it is not.
+  it("keeps naming the holder, not a stale pull, while a claim is still outstanding", () => {
+    render(
+      <ReviewChanges mix={TEST_MIX}
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row({ bucket: "claimed", availability: claimed() })], out: [] }}
+        releaseSources={new Map([["o1", { sourceDeckId: "d9", sourceDeckName: "Prismari Artistry" }]])}
+        {...SHAPE} state={STATE} cardCount={CARD_COUNT}
+      />,
+    );
+    expect(screen.getByText(deckVersioningCopy.review.heldBy("Kykar"))).toBeTruthy();
+    expect(
+      screen.queryByText(deckVersioningCopy.review.pulledFrom("Prismari Artistry")),
+    ).toBeNull();
+    expect(screen.getByRole("button", { name: PULL_NAME })).toBeTruthy();
+  });
+
+  // Once nothing is left to pull (the row has left the `claimed` bucket), the same
+  // release is what the row shows instead — design state 7, "the control goes".
+  it("draws the post-pull label once the row has nothing left to pull", () => {
+    render(
+      <ReviewChanges mix={TEST_MIX}
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row({ bucket: "free" })], out: [] }}
+        releaseSources={new Map([["o1", { sourceDeckId: "d9", sourceDeckName: "Prismari Artistry" }]])}
+        {...SHAPE} state={STATE} cardCount={CARD_COUNT}
+      />,
+    );
+    expect(
+      screen.getByRole("link", { name: deckVersioningCopy.review.pulledFrom("Prismari Artistry") }),
+    ).toBeTruthy();
+    expect(screen.queryByRole("button", { name: PULL_NAME })).toBeNull();
+  });
+
   // A card nobody has sleeved has no holder to pull from, and a free copy needs
   // nothing pulled — in both cases the buy tag or nothing is the whole row.
   it("offers no pull on a row with no sleeved holder", () => {

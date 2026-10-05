@@ -5,7 +5,7 @@
 // its own.
 
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DeckClaim } from "../../lib/decks/availability";
@@ -18,6 +18,7 @@ vi.mock("../../app/decks/actions", () => ({ pullCardFromDeck: vi.fn() }));
 import { pullCardFromDeck } from "../../app/decks/actions";
 
 const copy = deckVersioningCopy.review;
+const sourceCopy = copy.source;
 const CARD = { oracleId: "o1", name: "Sol Ring" };
 const FREE_TO_PULL: DeckClaim = {
   id: "d2",
@@ -28,7 +29,46 @@ const FREE_TO_PULL: DeckClaim = {
   commander: false,
   senior: true,
 };
+const OTHER_SOURCE: DeckClaim = {
+  id: "d3",
+  name: "Prismari Artistry",
+  quantity: 1,
+  mature: true,
+  pending: true,
+  commander: false,
+  senior: true,
+};
+const LOCKED_SOURCE: DeckClaim = {
+  id: "d4",
+  name: "Atraxa Counters",
+  quantity: 1,
+  mature: true,
+  pending: false,
+  commander: false,
+  senior: true,
+  locked: true,
+};
 const noop = () => {};
+
+// jsdom ships no matchMedia, and `useIsDesktop()` decides which of the popover /
+// sheet is mounted — so a multi-source test has to declare a breakpoint, the
+// same pattern `filter-panel.test.tsx` uses for its own popover/sheet split.
+function setViewport(desktop: boolean) {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    configurable: true,
+    value: (query: string) => ({
+      matches: desktop,
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }),
+  });
+}
 
 /** The control's accessible name, which is not its visible words: `Pull it`
  *  repeats down the column and says nothing about which card leaves which deck. */
@@ -43,7 +83,7 @@ function Row({ pullable = true, onPulled = noop }: { pullable?: boolean; onPulle
         {CARD.name}
       </button>
       {pullable && (
-        <PullControl deckId="d" card={CARD} claim={FREE_TO_PULL} onPulled={onPulled} />
+        <PullControl deckId="d" card={CARD} claims={[FREE_TO_PULL]} defaultId={FREE_TO_PULL.id} onPulled={onPulled} />
       )}
     </div>
   );
@@ -61,7 +101,7 @@ describe("PullControl", () => {
   it("offers the pull, and re-prints the arithmetic on success", async () => {
     vi.mocked(pullCardFromDeck).mockResolvedValue({ ok: true, buy: 7, total: "$241.00" });
     const onPulled = vi.fn();
-    render(<PullControl deckId="d" card={CARD} claim={FREE_TO_PULL} onPulled={onPulled} />);
+    render(<PullControl deckId="d" card={CARD} claims={[FREE_TO_PULL]} defaultId={FREE_TO_PULL.id} onPulled={onPulled} />);
     await act(async () => {
       screen.getByRole("button", { name: PULL_NAME }).click();
     });
@@ -80,7 +120,7 @@ describe("PullControl", () => {
   // speak to, and 0 there would call it finished.
   it("announces the pull and says nothing about buying when the count came back null", async () => {
     vi.mocked(pullCardFromDeck).mockResolvedValue({ ok: true, buy: null, total: null });
-    render(<PullControl deckId="d" card={CARD} claim={FREE_TO_PULL} onPulled={noop} />);
+    render(<PullControl deckId="d" card={CARD} claims={[FREE_TO_PULL]} defaultId={FREE_TO_PULL.id} onPulled={noop} />);
     await act(async () => {
       screen.getByRole("button", { name: PULL_NAME }).click();
     });
@@ -117,7 +157,7 @@ describe("PullControl", () => {
   // silently and the click the reader is waiting on answers nothing.
   it("prints the deck mutation fallback when the action rejects", async () => {
     vi.mocked(pullCardFromDeck).mockRejectedValue(new Error("network"));
-    render(<PullControl deckId="d" card={CARD} claim={FREE_TO_PULL} onPulled={noop} />);
+    render(<PullControl deckId="d" card={CARD} claims={[FREE_TO_PULL]} defaultId={FREE_TO_PULL.id} onPulled={noop} />);
     await act(async () => {
       screen.getByRole("button", { name: PULL_NAME }).click();
     });
@@ -128,7 +168,7 @@ describe("PullControl", () => {
   // Two words on screen, a sentence to a screen reader: a column of identical
   // `Pull it` names says nothing about which card leaves which deck.
   it("names the control for its card and its holder while printing the two words", () => {
-    render(<PullControl deckId="d" card={CARD} claim={FREE_TO_PULL} onPulled={noop} />);
+    render(<PullControl deckId="d" card={CARD} claims={[FREE_TO_PULL]} defaultId={FREE_TO_PULL.id} onPulled={noop} />);
     const button = screen.getByRole("button", { name: PULL_NAME });
     expect(button.textContent).toBe(copy.pull);
     expect(PULL_NAME).not.toBe(copy.pull);
@@ -141,7 +181,7 @@ describe("PullControl", () => {
       <PullControl
         deckId="d"
         card={CARD}
-        claim={{ ...FREE_TO_PULL, pending: true }}
+        claims={[{ ...FREE_TO_PULL, pending: true }]} defaultId={FREE_TO_PULL.id}
         onPulled={noop}
       />,
     );
@@ -153,7 +193,7 @@ describe("PullControl", () => {
       <PullControl
         deckId="d"
         card={CARD}
-        claim={{ ...FREE_TO_PULL, commander: true }}
+        claims={[{ ...FREE_TO_PULL, commander: true }]} defaultId={FREE_TO_PULL.id}
         onPulled={noop}
       />,
     );
@@ -170,7 +210,7 @@ describe("PullControl", () => {
       <PullControl
         deckId="d"
         card={CARD}
-        claim={{ ...FREE_TO_PULL, commander: true }}
+        claims={[{ ...FREE_TO_PULL, commander: true }]} defaultId={FREE_TO_PULL.id}
         onPulled={noop}
       />,
     );
@@ -186,7 +226,7 @@ describe("PullControl", () => {
       <PullControl
         deckId="d"
         card={CARD}
-        claim={{ ...FREE_TO_PULL, commander: true, locked: true }}
+        claims={[{ ...FREE_TO_PULL, commander: true, locked: true }]} defaultId={FREE_TO_PULL.id}
         onPulled={noop}
       />,
     );
@@ -201,7 +241,7 @@ describe("PullControl", () => {
       <PullControl
         deckId="d"
         card={CARD}
-        claim={{ ...FREE_TO_PULL, locked: true, pending: true }}
+        claims={[{ ...FREE_TO_PULL, locked: true, pending: true }]} defaultId={FREE_TO_PULL.id}
         onPulled={noop}
       />,
     );
@@ -213,14 +253,14 @@ describe("PullControl", () => {
   it("announces once, not once per re-render", async () => {
     vi.mocked(pullCardFromDeck).mockResolvedValue({ ok: true, buy: 7, total: "$241.00" });
     const view = render(
-      <PullControl deckId="d" card={CARD} claim={FREE_TO_PULL} onPulled={noop} />,
+      <PullControl deckId="d" card={CARD} claims={[FREE_TO_PULL]} defaultId={FREE_TO_PULL.id} onPulled={noop} />,
     );
     await act(async () => {
       screen.getByRole("button", { name: PULL_NAME }).click();
     });
     // A re-render with the same props must not re-run the write or re-derive the
     // sentence — it is held in state for exactly that reason.
-    view.rerender(<PullControl deckId="d" card={CARD} claim={FREE_TO_PULL} onPulled={noop} />);
+    view.rerender(<PullControl deckId="d" card={CARD} claims={[FREE_TO_PULL]} defaultId={FREE_TO_PULL.id} onPulled={noop} />);
     expect(pullCardFromDeck).toHaveBeenCalledTimes(1);
     expect(
       screen.getAllByText(
@@ -236,7 +276,7 @@ describe("PullControl", () => {
       ok: false,
       message: "That deck has pending changes. Release the card there.",
     });
-    render(<PullControl deckId="d" card={CARD} claim={FREE_TO_PULL} onPulled={noop} />);
+    render(<PullControl deckId="d" card={CARD} claims={[FREE_TO_PULL]} defaultId={FREE_TO_PULL.id} onPulled={noop} />);
     await act(async () => {
       screen.getByRole("button", { name: PULL_NAME }).click();
     });
@@ -254,7 +294,7 @@ describe("PullControl", () => {
   // that belongs to the one control on this page that writes. Sans, never the
   // mono this page sets its meta in — this is a control, not a figure.
   it("gives the pull a phone-sized target in the writing accent", () => {
-    render(<PullControl deckId="d" card={CARD} claim={FREE_TO_PULL} onPulled={noop} />);
+    render(<PullControl deckId="d" card={CARD} claims={[FREE_TO_PULL]} defaultId={FREE_TO_PULL.id} onPulled={noop} />);
     const pull = screen.getByRole("button", { name: PULL_NAME }).className;
     for (const geometry of ["min-h-[44px]", "md:min-h-[34px]", "px-[16px]", "md:px-[11px]"]) {
       expect(pull).toContain(geometry);
@@ -270,12 +310,419 @@ describe("PullControl", () => {
       <PullControl
         deckId="d"
         card={CARD}
-        claim={{ ...FREE_TO_PULL, commander: true }}
+        claims={[{ ...FREE_TO_PULL, commander: true }]} defaultId={FREE_TO_PULL.id}
         onPulled={noop}
       />,
     );
     const tag = screen.getByText(copy.commanderGuardTag);
     expect(tag.className).toContain("[border:1px_solid_var(--accent-shadow)]");
     expect(tag.className).toContain("tracking-[0.1em]");
+  });
+});
+
+// Addendum R1: a card held by two or more decks that can give it up opens a
+// short list, rather than `pullCandidate()` picking silently.
+describe("PullControl — 2+ choosable sources", () => {
+  const MANY_NAME = copy.pullManyA11y(CARD.name, 2);
+
+  it("offers the single-tap button, not the list, when only ONE source can be chosen", () => {
+    // Design call 5: "one free source plus one locked is one" — a guard row
+    // in the list does not turn this into a two-or-more case.
+    render(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claims={[FREE_TO_PULL, { ...OTHER_SOURCE, locked: true }]}
+        defaultId={FREE_TO_PULL.id}
+        onPulled={noop}
+      />,
+    );
+    expect(screen.getByRole("button", { name: PULL_NAME })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: MANY_NAME })).toBeNull();
+    // The one-tap row behaves exactly as it did before this addendum existed:
+    // the locked source is not drawn here at all, same as `pullCandidate`'s own
+    // shipped behaviour (its releasable-claim check runs first and never sees it).
+    expect(screen.queryByText(lockedCardsCopy.pull.tag)).toBeNull();
+  });
+
+  it("opens a dialog with a radiogroup, the default pick checked, when 2+ can be chosen", () => {
+    setViewport(true);
+    render(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claims={[FREE_TO_PULL, OTHER_SOURCE]}
+        defaultId={FREE_TO_PULL.id}
+        onPulled={noop}
+      />,
+    );
+    act(() => {
+      screen.getByRole("button", { name: MANY_NAME }).click();
+    });
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    const radios = screen.getAllByRole("radio");
+    expect(radios).toHaveLength(2);
+    expect(radios.find((r) => r.getAttribute("aria-checked") === "true")?.id).toContain(
+      FREE_TO_PULL.id,
+    );
+  });
+
+  it("confirms the CHOSEN source, not the default one", async () => {
+    setViewport(true);
+    vi.mocked(pullCardFromDeck).mockResolvedValue({ ok: true, buy: 1, total: "$1.00" });
+    render(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claims={[FREE_TO_PULL, OTHER_SOURCE]}
+        defaultId={FREE_TO_PULL.id}
+        onPulled={noop}
+      />,
+    );
+    act(() => {
+      screen.getByRole("button", { name: MANY_NAME }).click();
+    });
+    act(() => {
+      screen.getByRole("radio", { name: new RegExp(OTHER_SOURCE.name) }).click();
+    });
+    await act(async () => {
+      screen.getByRole("button", { name: sourceCopy.confirm(OTHER_SOURCE.name) }).click();
+    });
+    expect(pullCardFromDeck).toHaveBeenCalledWith(OTHER_SOURCE.id, CARD.oracleId, "d");
+  });
+
+  it("draws a locked or commander claim in the list as disabled, with its reason, never focusable", () => {
+    setViewport(true);
+    render(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claims={[FREE_TO_PULL, OTHER_SOURCE, LOCKED_SOURCE]}
+        defaultId={FREE_TO_PULL.id}
+        onPulled={noop}
+      />,
+    );
+    act(() => {
+      screen.getByRole("button", { name: MANY_NAME }).click();
+    });
+    const lockedRow = screen.getByRole("radio", { name: new RegExp(LOCKED_SOURCE.name) });
+    expect(lockedRow.getAttribute("aria-disabled")).toBe("true");
+    expect(lockedRow.getAttribute("tabindex")).toBe("-1");
+    expect(screen.getByText(sourceCopy.lockedReason)).toBeTruthy();
+  });
+
+  it("stays open on a refusal, with the pick kept", async () => {
+    setViewport(true);
+    vi.mocked(pullCardFromDeck).mockResolvedValue({
+      ok: false,
+      message: "That deck has pending changes. Release the card there.",
+    });
+    render(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claims={[FREE_TO_PULL, OTHER_SOURCE]}
+        defaultId={FREE_TO_PULL.id}
+        onPulled={noop}
+      />,
+    );
+    act(() => {
+      screen.getByRole("button", { name: MANY_NAME }).click();
+    });
+    await act(async () => {
+      screen.getByRole("button", { name: sourceCopy.confirm(FREE_TO_PULL.name) }).click();
+    });
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect(screen.getByRole("alert").textContent).toContain("Release the card there");
+  });
+
+  // Design state 8: "Esc and scrim do nothing" while pulling. Found by Copilot's round-1
+  // review: the outside-press listener closed over a stale `close` that still believed
+  // nothing was pending, so a press landing during the write dismissed the list anyway.
+  it("ignores an outside press while a pull is in flight", async () => {
+    setViewport(true);
+    let resolvePull: (r: Awaited<ReturnType<typeof pullCardFromDeck>>) => void;
+    vi.mocked(pullCardFromDeck).mockReturnValue(
+      new Promise((resolve) => {
+        resolvePull = resolve;
+      }),
+    );
+    render(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claims={[FREE_TO_PULL, OTHER_SOURCE]}
+        defaultId={FREE_TO_PULL.id}
+        onPulled={noop}
+      />,
+    );
+    act(() => {
+      screen.getByRole("button", { name: MANY_NAME }).click();
+    });
+    act(() => {
+      screen.getByRole("button", { name: sourceCopy.confirm(FREE_TO_PULL.name) }).click();
+    });
+    // Still pending — the write has not resolved yet.
+    fireEvent.pointerDown(document.body);
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    await act(async () => {
+      resolvePull({ ok: true, buy: 1, total: "$1.00" });
+    });
+  });
+
+  it("disables the trigger itself while pulling, so it cannot be pressed to dismiss the list", async () => {
+    setViewport(true);
+    let resolvePull: (r: Awaited<ReturnType<typeof pullCardFromDeck>>) => void;
+    vi.mocked(pullCardFromDeck).mockReturnValue(
+      new Promise((resolve) => {
+        resolvePull = resolve;
+      }),
+    );
+    render(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claims={[FREE_TO_PULL, OTHER_SOURCE]}
+        defaultId={FREE_TO_PULL.id}
+        onPulled={noop}
+      />,
+    );
+    act(() => {
+      screen.getByRole("button", { name: MANY_NAME }).click();
+    });
+    act(() => {
+      screen.getByRole("button", { name: sourceCopy.confirm(FREE_TO_PULL.name) }).click();
+    });
+    expect(screen.getByRole("button", { name: MANY_NAME })).toBeDisabled();
+    await act(async () => {
+      resolvePull({ ok: true, buy: 1, total: "$1.00" });
+    });
+  });
+
+  it("names the chronological order under the title", () => {
+    setViewport(true);
+    render(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claims={[FREE_TO_PULL, OTHER_SOURCE]}
+        defaultId={FREE_TO_PULL.id}
+        onPulled={noop}
+      />,
+    );
+    act(() => {
+      screen.getByRole("button", { name: MANY_NAME }).click();
+    });
+    expect(screen.getByText(sourceCopy.order)).toBeTruthy();
+  });
+
+  // Design state 9: a refusal caused by the source going locked/commander in the meantime moves
+  // the pick off a now-stale claim once fresher `claims` arrive (a parent refresh after the
+  // refusal — `onPulled` is called on a refusal too, see `review-changes.test.tsx`).
+  it("moves the pick off a claim that stops being choosable once fresher claims arrive", () => {
+    setViewport(true);
+    // A THIRD choosable claim, so choosableCount stays at 2 once FREE_TO_PULL locks — otherwise
+    // the row would drop to the single-tap arm (design call 5) and the list would not be the
+    // thing being asserted here.
+    const THIRD: DeckClaim = { ...OTHER_SOURCE, id: "d5", name: "Third Source", pending: false };
+    const view = render(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claims={[FREE_TO_PULL, OTHER_SOURCE, THIRD]}
+        defaultId={FREE_TO_PULL.id}
+        onPulled={noop}
+      />,
+    );
+    act(() => {
+      screen.getByRole("button", { name: copy.pullManyA11y(CARD.name, 3) }).click();
+    });
+    expect(
+      screen.getByRole("radio", { name: new RegExp(FREE_TO_PULL.name) }).getAttribute("aria-checked"),
+    ).toBe("true");
+    // The server's fresh read: FREE_TO_PULL has gone locked.
+    view.rerender(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claims={[{ ...FREE_TO_PULL, locked: true }, OTHER_SOURCE, THIRD]}
+        defaultId={FREE_TO_PULL.id}
+        onPulled={noop}
+      />,
+    );
+    expect(
+      screen.getByRole("radio", { name: new RegExp(OTHER_SOURCE.name) }).getAttribute("aria-checked"),
+    ).toBe("true");
+    expect(
+      screen.getByRole("radio", { name: new RegExp(FREE_TO_PULL.name) }).getAttribute("aria-checked"),
+    ).toBe("false");
+  });
+
+  // Found missing by Copilot's round-2 review: `Sheet` owns no focus trap or Escape handling of
+  // its own — every caller wires `useDialogA11y` itself, and the mobile branch here did not.
+  it("wires Escape to dismiss at phone width too", () => {
+    setViewport(false);
+    render(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claims={[FREE_TO_PULL, OTHER_SOURCE]}
+        defaultId={FREE_TO_PULL.id}
+        onPulled={noop}
+      />,
+    );
+    act(() => {
+      screen.getByRole("button", { name: MANY_NAME }).click();
+    });
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    act(() => {
+      fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    });
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  // Found by Copilot's round-2 review: `useDialogA11y`'s own default returns focus to the
+  // POPOVER trigger on unmount, undoing a manual focus call made just before closing it.
+  it("leaves focus on the row's card trigger after a successful pull from the list", async () => {
+    setViewport(true);
+    vi.mocked(pullCardFromDeck).mockResolvedValue({ ok: true, buy: 1, total: "$1.00" });
+    render(
+      <div>
+        <button type="button" aria-label={cardDetailCopy.triggerAria(CARD.name)}>
+          {CARD.name}
+        </button>
+        <PullControl
+          deckId="d"
+          card={CARD}
+          claims={[FREE_TO_PULL, OTHER_SOURCE]}
+          defaultId={FREE_TO_PULL.id}
+          onPulled={noop}
+        />
+      </div>,
+    );
+    act(() => {
+      screen.getByRole("button", { name: MANY_NAME }).click();
+    });
+    await act(async () => {
+      screen.getByRole("button", { name: sourceCopy.confirm(FREE_TO_PULL.name) }).click();
+    });
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: cardDetailCopy.triggerAria(CARD.name) }),
+    );
+  });
+
+  // Found by Copilot's round-3 review: starting at exactly 2 choosable sources, a refusal
+  // caused by the CHOSEN one going locked/commander drops choosableCount to 1 on the next read —
+  // recomputing the single-tap/list gate fresh on that render used to switch the whole subtree
+  // to the one-tap arm, unmounting the open list and discarding the refusal with it.
+  it("keeps the list open across a 2-to-1 choosable drop mid-session, rather than switching to the single-tap arm", () => {
+    setViewport(true);
+    const view = render(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claims={[FREE_TO_PULL, OTHER_SOURCE]}
+        defaultId={FREE_TO_PULL.id}
+        onPulled={noop}
+      />,
+    );
+    act(() => {
+      screen.getByRole("button", { name: MANY_NAME }).click();
+    });
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    // The server's fresh read: FREE_TO_PULL (the one claim) has gone locked, leaving only
+    // OTHER_SOURCE choosable — `claims.filter(choosable).length` is now 1.
+    view.rerender(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claims={[{ ...FREE_TO_PULL, locked: true }, OTHER_SOURCE]}
+        defaultId={FREE_TO_PULL.id}
+        onPulled={noop}
+      />,
+    );
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect(
+      screen.getByRole("radio", { name: new RegExp(OTHER_SOURCE.name) }).getAttribute("aria-checked"),
+    ).toBe("true");
+  });
+
+  // Found by Copilot's round-3 review: a successful pull's return-focus target survived in the
+  // ref after the row (still 2+ sources) kept this same component instance mounted, so the NEXT
+  // session's own cancel reused the stale card-trigger target instead of this session's trigger.
+  it("does not reuse a prior pull's focus target on a later session's cancel", async () => {
+    setViewport(true);
+    vi.mocked(pullCardFromDeck).mockResolvedValue({ ok: true, buy: 1, total: "$1.00" });
+    render(
+      <div>
+        <button type="button" aria-label={cardDetailCopy.triggerAria(CARD.name)}>
+          {CARD.name}
+        </button>
+        <PullControl
+          deckId="d"
+          card={CARD}
+          claims={[FREE_TO_PULL, OTHER_SOURCE, { ...OTHER_SOURCE, id: "d5", name: "Third Source" }]}
+          defaultId={FREE_TO_PULL.id}
+          onPulled={noop}
+        />
+      </div>,
+    );
+    const manyName3 = copy.pullManyA11y(CARD.name, 3);
+    act(() => {
+      screen.getByRole("button", { name: manyName3 }).click();
+    });
+    await act(async () => {
+      screen.getByRole("button", { name: sourceCopy.confirm(FREE_TO_PULL.name) }).click();
+    });
+    // Re-open the same control for a second pull, then cancel it. The `claims` prop is static in
+    // this test (no parent re-render), so the trigger's own label is unchanged. Focused
+    // explicitly first: a bare `.click()` does not reliably move jsdom's own focus the way a
+    // real click does, and the dialog's own pre-open capture needs it to be deterministic here.
+    const trigger = screen.getByRole("button", { name: manyName3 });
+    act(() => {
+      trigger.focus();
+      trigger.click();
+    });
+    act(() => {
+      screen.getByRole("button", { name: sourceCopy.cancel }).click();
+    });
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: manyName3 }));
+  });
+
+  // Found by Copilot's round-4 review: the round-3 fix for the refusal case was too sticky — it
+  // also survived a SUCCESSFUL pull that left exactly one source behind, which should return to
+  // the one-tap path rather than opening a dialog whose own label says "choose from 1 deck."
+  it("returns to the single-tap path after a successful pull leaves exactly one source", async () => {
+    setViewport(true);
+    vi.mocked(pullCardFromDeck).mockResolvedValue({ ok: true, buy: 1, total: "$1.00" });
+    const view = render(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claims={[FREE_TO_PULL, OTHER_SOURCE]}
+        defaultId={FREE_TO_PULL.id}
+        onPulled={noop}
+      />,
+    );
+    act(() => {
+      screen.getByRole("button", { name: MANY_NAME }).click();
+    });
+    await act(async () => {
+      screen.getByRole("button", { name: sourceCopy.confirm(FREE_TO_PULL.name) }).click();
+    });
+    // The server's fresh read after the pull: only OTHER_SOURCE is left.
+    view.rerender(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claims={[OTHER_SOURCE]}
+        defaultId={OTHER_SOURCE.id}
+        onPulled={noop}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: deckVersioningCopy.review.pullA11y(CARD.name, OTHER_SOURCE.name) }),
+    ).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
