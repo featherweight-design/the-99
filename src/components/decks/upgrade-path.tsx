@@ -295,7 +295,7 @@ function Candidate({
       oracleId={card.oracleId}
       name={card.name}
       className={
-        "border-b border-dotted border-[color:var(--accent)] text-[color:var(--fg)] "
+        "border-b border-b-[color:var(--accent)] border-dotted border-[color:var(--accent)] text-[color:var(--fg)] "
         + (inSentence ? "font-semibold" : "text-[12.5px] font-normal")
       }
     >

@@ -302,7 +302,7 @@ export function SweepReceipt({ removed, stayed = 0, onUndo }: SweepReceiptProps)
         type="button"
         onClick={onUndo}
         aria-label={recommendationsCopy.auto.sweptUndoAria(String(removed))}
-        className="flex-none flex items-center bg-transparent border-0 border-b border-accent-shadow p-0
+        className="flex-none flex items-center bg-transparent border-0 border-b border-b-accent-shadow border-accent-shadow p-0
           text-[12.5px] font-semibold leading-[1.4]
           text-accent cursor-pointer"
       >

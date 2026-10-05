@@ -138,7 +138,7 @@ export function FitsRows({
   return (
     <section className="flex flex-col" aria-label={copy.groupJoin}>
       {/* Addendum §1c: the order note at the heading's right. A staple's list stays by name, so it has none. */}
-      <div className="flex items-baseline justify-between gap-[10px] pb-[6px] border-b border-[color:var(--border)]">
+      <div className="flex items-baseline justify-between gap-[10px] pb-[6px] border-b border-b-[color:var(--border)] border-[color:var(--border)]">
         <h3 className="m-0 font-mono text-[9.5px] font-normal tracking-[0.12em] uppercase" style={{ color: "var(--fg-faint)" }}>
           {copy.groupJoin}
         </h3>
@@ -149,7 +149,7 @@ export function FitsRows({
       {rows.map((deck) => {
         const note = noteFor(deck.id);
         return (
-          <div key={deck.id} data-testid="fits-row" className="flex flex-col gap-[5px] py-[10px] border-b border-[color:var(--border)]">
+          <div key={deck.id} data-testid="fits-row" className="flex flex-col gap-[5px] py-[10px] border-b border-b-[color:var(--border)] border-[color:var(--border)]">
             <div className="flex items-center gap-[10px] min-w-0">
               <Link href={`/decks/${deck.id}`} aria-label={copy.deckLinkAria(deck.name)} className={`${deckLink} text-[13.5px] text-[color:var(--fg-body)]`}>
                 {deck.name}
@@ -202,11 +202,11 @@ export function FitsRows({
 export function FitsHolds({ holds }: { holds: FitsRead["holds"] }) {
   return (
     <section className="flex flex-col" aria-label={copy.groupHolds}>
-      <h3 className="m-0 pb-[6px] border-b border-[color:var(--border)] font-mono text-[9.5px] font-normal tracking-[0.12em] uppercase" style={{ color: "var(--fg-faint)" }}>
+      <h3 className="m-0 pb-[6px] border-b border-b-[color:var(--border)] border-[color:var(--border)] font-mono text-[9.5px] font-normal tracking-[0.12em] uppercase" style={{ color: "var(--fg-faint)" }}>
         {copy.groupHolds}
       </h3>
       {holds.map((h) => (
-        <div key={h.id} data-testid="fits-holds-row" className="flex items-center gap-[10px] min-h-[44px] md:min-h-[34px] border-b border-[color:var(--border)]">
+        <div key={h.id} data-testid="fits-holds-row" className="flex items-center gap-[10px] min-h-[44px] md:min-h-[34px] border-b border-b-[color:var(--border)] border-[color:var(--border)]">
           <Link href={`/decks/${h.id}`} aria-label={copy.deckLinkAria(h.name)} className={`${deckLink} text-[13px] text-[color:var(--fg-body)]`}>
             {h.name}
           </Link>

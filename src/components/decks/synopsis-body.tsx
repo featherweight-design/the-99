@@ -125,7 +125,7 @@ export function VersionSynopsisModal({
     >
       <div className="flex flex-col gap-[18px] px-[16px] pt-[16px] pb-[28px] md:gap-[20px] md:px-[22px] md:pt-[20px] md:pb-[26px]">
         <span className="md:hidden font-mono text-[11px] text-[var(--fg-faint)]" data-testid="synopsis-aside">{aside}</span>
-        <p data-testid="synopsis-version-record" className="m-0 border-b border-[var(--border)] pb-[14px] text-[12.5px] leading-[1.55] text-[var(--fg-muted)]">
+        <p data-testid="synopsis-version-record" className="m-0 border-b border-b-[color:var(--border)] border-[var(--border)] pb-[14px] text-[12.5px] leading-[1.55] text-[var(--fg-muted)]">
           {synopsisCopy.version.record(versionNumber)}
         </p>
         <SynopsisSections content={content} art={art} onRetry={null} busy={false} />
@@ -230,7 +230,7 @@ export function SynopsisSections({
               return (
                 <div
                   key={i}
-                  className="flex flex-col gap-[3px] border-b border-[var(--border)] px-[13px] py-[10px] last:border-b-0 md:grid md:grid-cols-[210px_1fr] md:items-baseline md:gap-[16px] md:px-[14px]"
+                  className="flex flex-col gap-[3px] border-b border-b-[color:var(--border)] border-[var(--border)] px-[13px] py-[10px] last:border-b-0 md:grid md:grid-cols-[210px_1fr] md:items-baseline md:gap-[16px] md:px-[14px]"
                 >
                   <span className="text-[13px]">
                     {card

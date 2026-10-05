@@ -51,7 +51,7 @@ export function allowance(rule: Rule, bracket: Bracket): number | null {
 function Figure({ n }: { n: number | null }) {
   if (n === null) {
     return (
-      <span className="whitespace-nowrap border-b border-dashed border-[color:var(--border-dashed)] font-mono text-[10px] text-[color:var(--fg-faint)] md:text-[10.5px]">
+      <span className="whitespace-nowrap border-b border-b-[color:var(--border-dashed)] border-dashed border-[color:var(--border-dashed)] font-mono text-[10px] text-[color:var(--fg-faint)] md:text-[10.5px]">
         {climbCopy.noCap}
       </span>
     );
@@ -168,7 +168,7 @@ function SourceLink({ href, children }: { href: string; children: ReactNode }) {
   return (
     <a href={href} target="_blank" rel="noreferrer"
       className="inline-flex min-h-[44px] items-center font-mono text-[10.5px] text-[color:var(--accent)] md:min-h-0">
-      <span className="border-b border-[color:var(--accent)]">{children}</span>
+      <span className="border-b border-b-[color:var(--accent)] border-[color:var(--accent)]">{children}</span>
     </a>
   );
 }

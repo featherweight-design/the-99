@@ -438,7 +438,7 @@ export function FillFailedBanner({
           onClick={onRetry}
           disabled={pending}
           aria-label={copy.failedRetryAria}
-          className="flex-none flex items-center mt-[10px] bg-transparent border-0 border-b border-accent-shadow p-0
+          className="flex-none flex items-center mt-[10px] bg-transparent border-0 border-b border-b-accent-shadow border-accent-shadow p-0
             text-[12.5px] font-semibold leading-[1.4]
             text-accent cursor-pointer disabled:opacity-50 disabled:cursor-default"
         >

@@ -280,7 +280,7 @@ function RailLock({ pathname }: { pathname: string }) {
                 <span
                   aria-hidden="true"
                   data-lock-caret
-                  className="absolute top-[28px] left-[-6px] h-[10px] w-[10px] rotate-45 border-b border-l border-[color:var(--border-strong)] bg-[color:var(--surface-raised)]"
+                  className="absolute top-[28px] left-[-6px] h-[10px] w-[10px] rotate-45 border-b border-b-[color:var(--border-strong)] border-l border-[color:var(--border-strong)] bg-[color:var(--surface-raised)]"
                 />
               )}
               {isOpen && (
@@ -392,7 +392,7 @@ function TabLockSlots({ pathname, liveHome }: { pathname: string; liveHome: Reac
                 <span
                   aria-hidden="true"
                   data-lock-caret
-                  className="absolute bottom-[-6px] h-[10px] w-[10px] rotate-45 border-r border-b border-[color:var(--border-strong)] bg-[color:var(--surface-raised)]"
+                  className="absolute bottom-[-6px] h-[10px] w-[10px] rotate-45 border-r border-r-[color:var(--border-strong)] border-b border-b-[color:var(--border-strong)] border-[color:var(--border-strong)] bg-[color:var(--surface-raised)]"
                   style={{ left: open.x }}
                 />
               )}

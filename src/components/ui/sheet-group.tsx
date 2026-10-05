@@ -8,7 +8,7 @@ import { twMerge } from "tailwind-merge";
  */
 export function SheetGroupHeading({ label, note, as: Tag = "h4" }: { label: string; note: string; as?: "h3" | "h4" }) {
   return (
-    <div className="flex items-baseline justify-between gap-[10px] pb-[6px] border-b border-[color:var(--border)]">
+    <div className="flex items-baseline justify-between gap-[10px] pb-[6px] border-b border-b-[color:var(--border)] border-[color:var(--border)]">
       <Tag className="m-0 font-mono font-normal text-[9.5px] tracking-[0.12em] uppercase" style={{ color: "var(--fg-faint)" }}>
         {label}
       </Tag>
@@ -38,10 +38,17 @@ export function SheetGroupToggle({ all, onToggle, label, fewer, className, busy 
       aria-busy={busy || undefined}
       disabled={busy}
       onClick={onToggle}
-      className={twMerge(
-        "flex items-center gap-[8px] w-full min-h-[44px] md:min-h-[34px] pl-[43px] pr-0 py-0 bg-transparent border-0 border-b border-[color:var(--border)] text-left text-[12.5px] font-medium text-[color:var(--accent)] hover:text-[color:var(--accent-hover)] cursor-pointer",
-        className,
-      )}
+      className={
+        twMerge(
+          "flex items-center gap-[8px] w-full min-h-[44px] md:min-h-[34px] pl-[43px] pr-0 py-0 bg-transparent text-left text-[12.5px] font-medium text-[color:var(--accent)] hover:text-[color:var(--accent-hover)] cursor-pointer",
+          className,
+        )
+        // twMerge's conflict resolution drops `border-b-[color:...]` when it sits alongside a bare
+        // `border-b` — a false conflict, since in real Tailwind those are two different utilities
+        // (width vs. this app's mana-token color collision), not one twMerge can override. Appended
+        // outside the merge, untouched, since no caller's `className` here ever sets a border.
+        + " border-0 border-b border-b-[color:var(--border)] border-[color:var(--border)]"
+      }
     >
       <span>{all ? fewer : label}</span>
       <span aria-hidden="true" className="text-[10px]" style={{ color: "var(--fg-faint)" }}>{all ? "▴" : "▾"}</span>

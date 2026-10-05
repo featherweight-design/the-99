@@ -111,7 +111,7 @@ export function ReadAsBar({
                 <span
                   key={phrase}
                   data-testid="not-used-phrase"
-                  className="text-[13px] text-[color:var(--fg-muted)] border-0 border-b border-dotted border-[color:var(--border-dashed)]"
+                  className="text-[13px] text-[color:var(--fg-muted)] border-0 border-b border-b-[color:var(--border-dashed)] border-dotted border-[color:var(--border-dashed)]"
                 >
                   {`“${phrase}”`}
                 </span>

@@ -139,7 +139,7 @@ export function BrowseFigureBody() {
           mounted, because `CollectionPlaceHead` reads the reader's real stats off the current
           route; its three names are the route's copy, so a rename reaches here. */}
       <div className="flex items-center gap-[8px]">
-        <span className="flex h-[30px] items-stretch gap-[2px] border-b border-solid border-[color:var(--border)]">
+        <span className="flex h-[30px] items-stretch gap-[2px] border-b border-b-[color:var(--border)] border-solid border-[color:var(--border)]">
           {[
             { label: collectionTabsCopy.cards, on: true },
             { label: collectionTabsCopy.sets, on: false },

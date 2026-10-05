@@ -1031,7 +1031,7 @@ export function SetGridView(props: SetGridViewProps) {
             <div
               data-set-head-prefix
               className="flex min-w-[120px] shrink items-center gap-[8px] self-stretch
-                         border-r border-[color:var(--border)] pr-[8px]"
+                         border-r border-r-[color:var(--border)] border-[color:var(--border)] pr-[8px]"
             >
               <SetIcon
                 uri={iconSvgUri}

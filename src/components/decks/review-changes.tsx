@@ -905,7 +905,7 @@ export function ReviewChanges({
         {/* Its own block on the phone, ruled off and full-bleed, because the back
             link and the heading are what the reader lands on before the list
             starts. Desktop has no such division: the heading opens the page. */}
-        <header className="px-[14px] pt-[38px] pb-[12px] border-b border-solid border-[color:var(--border)] md:px-[26px] md:pt-[24px] md:pb-0 md:border-b-0">
+        <header className="px-[14px] pt-[38px] pb-[12px] border-b border-b-[color:var(--border)] border-solid border-[color:var(--border)] md:px-[26px] md:pt-[24px] md:pb-0 md:border-b-0">
           <Link
             href={`/decks/${deckId}`}
             className="font-mono text-[10px] md:text-[11px] text-[color:var(--fg-faint)]"

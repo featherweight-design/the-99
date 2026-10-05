@@ -102,7 +102,7 @@ export function StandInDoor({
     return (
       <div
         data-testid="stand-in-door"
-        className="flex items-center gap-[10px] min-h-[44px] pl-[16px] pr-[6px] border-b border-[color:var(--border)]"
+        className="flex items-center gap-[10px] min-h-[44px] pl-[16px] pr-[6px] border-b border-b-[color:var(--border)] border-[color:var(--border)]"
         style={{ background: "var(--bg)" }}
       >
         <span className="flex-1 min-w-0 whitespace-nowrap font-mono text-[10.5px]" style={{ color: ink }}>{line}</span>

@@ -159,7 +159,7 @@ function Loading({ pair }: { pair: boolean }) {
       <Lede pair={pair} />
       <p
         // Its rule sits where the group heading's will, so it takes that rule: 6px and `--border`.
-        className="mt-[16px] pb-[6px] font-mono text-[10.5px] border-b border-[color:var(--border)]"
+        className="mt-[16px] pb-[6px] font-mono text-[10.5px] border-b border-b-[color:var(--border)] border-[color:var(--border)]"
         style={{ color: "var(--fg-faint)" }}
       >
         {copy.sheet.loading}

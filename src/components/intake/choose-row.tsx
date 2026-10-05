@@ -132,7 +132,7 @@ export function ChooseRow({
       >
         <div
           aria-hidden
-          className="relative shrink-0 w-[88px] md:w-full md:h-[132px] border-0 border-r md:border-r-0 md:border-b border-solid border-[color:var(--border)] bg-[color:var(--elevated)] bg-cover bg-center"
+          className="relative shrink-0 w-[88px] md:w-full md:h-[132px] border-0 border-r border-r-[color:var(--border)] md:border-r-0 md:border-b md:border-b-[color:var(--border)] border-solid border-[color:var(--border)] bg-[color:var(--elevated)] bg-cover bg-center"
           // The crop, or the card's own image where the catalog has no crop, as the row's thumb does:
           // a best fit is never a blank block.
           style={row.artCropUri ?? row.imageUri ? { backgroundImage: `url(${row.artCropUri ?? row.imageUri})` } : undefined}

@@ -106,7 +106,7 @@ export function StandInLimit({ shoppingCount, overCount }: { shoppingCount: numb
                 setDraft(String(tools.limitCents / 100));
                 setEditing(true);
               }}
-              className="inline-flex items-center min-h-[44px] md:min-h-0 leading-[44px] md:leading-[1.4] font-mono text-[13.5px] font-semibold bg-transparent border-0 p-0 cursor-pointer text-[color:var(--fg)] underline decoration-dotted decoration-[color:var(--accent)] underline-offset-[3px] md:no-underline md:border-b md:border-dotted md:border-[color:var(--accent)]"
+              className="inline-flex items-center min-h-[44px] md:min-h-0 leading-[44px] md:leading-[1.4] font-mono text-[13.5px] font-semibold bg-transparent border-0 p-0 cursor-pointer text-[color:var(--fg)] underline decoration-dotted decoration-[color:var(--accent)] underline-offset-[3px] md:no-underline md:border-b md:border-b-[color:var(--accent)] md:border-dotted md:border-[color:var(--accent)]"
             >
               {figure}
             </button>

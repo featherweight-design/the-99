@@ -194,7 +194,7 @@ export function ContentsList({ chapters }: { chapters: readonly RailChapter[] })
               aria-current={chapter.id === current ? "true" : undefined}
               // 44px at every width: a contents row is one of four things a
               // thumb aims at here, and the others are links inside prose.
-              className="flex min-h-[44px] items-center justify-between gap-[12px] border-b border-solid border-[color:var(--border)] text-[14px] text-[color:var(--accent)]"
+              className="flex min-h-[44px] items-center justify-between gap-[12px] border-b border-b-[color:var(--border)] border-solid border-[color:var(--border)] text-[14px] text-[color:var(--accent)]"
             >
               <span>
                 <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">

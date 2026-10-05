@@ -22,7 +22,7 @@ export function PageHeader({ lane }: { lane: Lane }) {
     <div
       className={[
         "flex flex-col px-4 pt-3",
-        "sm:flex-row sm:items-center sm:gap-3 sm:border-b sm:border-[color:var(--border)]",
+        "sm:flex-row sm:items-center sm:gap-3 sm:border-b sm:border-b-[color:var(--border)] sm:border-[color:var(--border)]",
         "sm:px-[22px] sm:py-4",
       ].join(" ")}
     >
