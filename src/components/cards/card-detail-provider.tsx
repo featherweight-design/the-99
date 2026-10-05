@@ -650,13 +650,17 @@ export function CardDetailProvider({
     // A partner landing puts the card it was asked from on the trail; anything else landing drops
     // the ask.
     const partner = pendingPartner.current;
-    if (partner && next) {
-      pendingPartner.current = null;
-      if (next.oracleId === partner.to) {
-        const trailNext = [...trailRef.current, partner.from];
-        trailRef.current = trailNext;
-        setTrail(trailNext);
-      }
+    if (partner && next) pendingPartner.current = null;
+    if (partner && next && next.oracleId === partner.to) {
+      const trailNext = [...trailRef.current, partner.from];
+      trailRef.current = trailNext;
+      setTrail(trailNext);
+    } else if (next && trailRef.current.at(-1)?.card.oracleId === next.oracleId) {
+      // Reached the origin some other way, by paging a list that holds both (#1271): the step back
+      // is spent, or the card would name itself as its own way back.
+      const trailNext = trailRef.current.slice(0, -1);
+      trailRef.current = trailNext;
+      setTrail(trailNext);
     }
     const pending = pendingAt.current;
     if (pending && pending.oracleId === next?.oracleId) {

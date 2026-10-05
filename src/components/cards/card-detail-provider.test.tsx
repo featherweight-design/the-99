@@ -188,6 +188,20 @@ describe("CardDetailProvider", () => {
       expect(screen.queryByTestId("card-modal-back-mobile")).toBeNull();
     });
 
+    // #1271: a partner in the same list pages back to its origin, which must not name itself.
+    it("spends the way back when paging lands on the origin", async () => {
+      renderTriggers(vi.fn(async (id: string) => (id === "o-sol" ? SOL : withPartner)), ["o-signet", "o-sol"]);
+      await click(screen.getByText("Arcane Signet"));
+      await act(async () => { screen.getByRole("button", { name: /Two-card combos/ }).click(); });
+      await act(async () => { screen.getByRole("button", { name: "Sol Ring" }).click(); });
+      expect(screen.getByTestId("card-modal-back-mobile")).toHaveAccessibleName(cardSheetCopy.back.a11y("Arcane Signet"));
+      await act(async () => { screen.getAllByRole("button", { name: "Previous card" })[0].click(); });
+      expect(title()).toHaveTextContent("Arcane Signet");
+      expect(screen.queryByTestId("card-modal-back-mobile")).toBeNull();
+      await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+      expect(title()).toBeNull();
+    });
+
     it("drops the ask when a different card lands first (a page pressed while the partner reads)", async () => {
       renderTriggers(
         vi.fn((id: string) => (id === "o-sol" ? new Promise<BrowseCard>(() => {}) : Promise.resolve(id === "o-signet" ? withPartner : SOL))),
