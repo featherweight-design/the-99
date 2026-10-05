@@ -357,6 +357,19 @@ describe("runTuning's `anyway`", () => {
     }
     expect(calls.started).toBe(0);
   });
+
+  // "Additional notes" (H35, PR 4b, review round 2): the same bypass `anyway` gives — notes are
+  // new input the model has never seen, so "unchanged" is not true of this request.
+  it("passes the unchanged gate on non-blank notes alone, with no anyway", async () => {
+    await runTuning(DECK, { notes: "more removal" });
+    expect(calls.started).toBe(1);
+  });
+
+  it("does not bypass the unchanged gate on blank or whitespace-only notes", async () => {
+    const result = await runTuning(DECK, { notes: "   " });
+    expect(result.ok).toBe(false);
+    expect(calls.started).toBe(0);
+  });
 });
 
 describe("ids off the wire", () => {

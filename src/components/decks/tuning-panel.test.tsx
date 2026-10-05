@@ -227,6 +227,18 @@ describe("TuningPanel", () => {
     expect(d.run).toHaveBeenCalledWith("d1", { anyway: true, runId: expect.any(String), notes: "" });
   });
 
+  // "Additional notes" (H35, PR 4b, review round 2): notes are new input the model has never
+  // seen, so an otherwise-unchanged deck still has something new to read — the player should
+  // never see "Nothing has changed" just because they typed a note.
+  it("skips the unchanged state and runs directly when the player has typed a note", async () => {
+    const d = deps([results]);
+    await draw(d);
+    fireEvent.change(screen.getByLabelText("Additional notes"), { target: { value: "more removal" } });
+    await press(copy.again);
+    expect(screen.queryByTestId("tuning-unchanged")).toBeNull();
+    expect(d.run).toHaveBeenCalledWith("d1", { runId: expect.any(String), notes: "more removal" });
+  });
+
   // Pre-open review round 4 (previously missed): the re-entry guard set at the start of a press
   // stayed held until `pressRun` itself settled — up to the model's own timeout — even after
   // Stop had already cancelled that run and reset the visible state. A second Suggest press

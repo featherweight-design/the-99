@@ -210,7 +210,10 @@ export async function runTuning(
   // `allLocked` is a gate reason, so this refusal lands BEFORE `startRun` reserves a credit: the
   // panel's "No credit is used." is true of the server, not only of a disabled button.
   const gate = gateReason(await readTuningState(deckId, userId, fingerprint, new Date(), { allLocked }));
-  if (gate && !(gate.kind === "unchanged" && anyway)) return { ok: false, message: gate.message };
+  // "Additional notes" (H35, PR 4b, review round 2): the same bypass `anyway` gives — notes are
+  // new input the model has never seen, so "unchanged" is not true of this request even when
+  // nothing else moved. Never bypasses the other gate reasons.
+  if (gate && !(gate.kind === "unchanged" && (anyway || notes !== null))) return { ok: false, message: gate.message };
 
   const started = await startRun(userId, deckId, fingerprint, readVersion, { runId: requested });
   if (started.kind === "paused") return { ok: false, message: creditsCopy.pausedServer };

@@ -538,7 +538,10 @@ export function TuningPanel({
         setRefused(deckTuningCopy.run.refused);
         return;
       }
-      if (!anyway && gateReason(current)?.kind === "unchanged") {
+      // "Additional notes" (H35, PR 4b, review round 2): notes are new input the model has never
+      // seen, so a deck otherwise unchanged still has something new to read — the same bypass
+      // `anyway` gives, never the OTHER gate reasons (in_flight, allLocked, allowance).
+      if (!anyway && notes.trim() === "" && gateReason(current)?.kind === "unchanged") {
         setUnchangedShown(true);
         setAnnounced(deckTuningCopy.announce.unchanged);
         return;
