@@ -622,6 +622,75 @@ describe("PullControl — 2+ choosable sources", () => {
     expect([...list.querySelectorAll('[role="radio"]')].findIndex((r) => r.getAttribute("aria-checked") === "true")).toBe(picked);
   });
 
+  // #1267 round 1: the phone list's head is a card trigger with the row trigger's own name, and the
+  // review row draws the control in a separate div, so the lookup met the head first.
+  it("returns focus to the row's trigger after a phone pull, never the list head's", async () => {
+    setViewport(false);
+    vi.mocked(pullCardFromDeck).mockResolvedValue({ ok: true, buy: 1, total: "$1.00" });
+    render(
+      <div>
+        <div>
+          <button type="button" aria-label={cardDetailCopy.triggerAria(CARD.name)}>{CARD.name}</button>
+        </div>
+        <div>
+          <PullControl deckId="d" card={CARD} claims={[FREE_TO_PULL, OTHER_SOURCE]} defaultId={FREE_TO_PULL.id} onPulled={noop} />
+        </div>
+      </div>,
+    );
+    act(() => { screen.getByRole("button", { name: MANY_NAME }).click(); });
+    await act(async () => {
+      screen.getByRole("button", { name: sourceCopy.confirm(FREE_TO_PULL.name) }).click();
+    });
+    const row = screen.getAllByRole("button", { name: cardDetailCopy.triggerAria(CARD.name) })[0];
+    expect(row.closest('[role="dialog"]')).toBeNull();
+    expect(document.activeElement).toBe(row);
+  });
+
+  const solRing = {
+    oracleId: "o1", name: "Sol Ring", typeLine: "Artifact", manaCost: "{1}", cmc: 1, oracleText: null, keywords: [],
+    rarity: "uncommon", colorIdentity: [], imageUri: null, printedName: null, quantity: 1, printings: [], setCodes: [],
+    primarySetCode: "", preferredPrinting: null,
+  };
+  const cardUp = () => document.querySelector('[aria-labelledby="card-modal-title"]');
+
+  // #1267 round 1: a card the list's head asked for, still reading when the list goes, must not
+  // arrive afterwards over a page with no list to return to.
+  it("abandons the head's card when the list is dismissed before it arrives", async () => {
+    setViewport(false);
+    let land: (c: typeof solRing) => void = () => {};
+    render(
+      <CardDetailProvider fetchCard={() => new Promise((r) => { land = r; })}>
+        <PullControl deckId="d" card={CARD} claims={[FREE_TO_PULL, OTHER_SOURCE]} defaultId={FREE_TO_PULL.id} onPulled={noop} />
+      </CardDetailProvider>,
+    );
+    act(() => { screen.getByRole("button", { name: MANY_NAME }).click(); });
+    const head = screen.getByRole("dialog").querySelector('p[id$="-title"] button') as HTMLElement;
+    act(() => { fireEvent.click(head); });
+    act(() => { screen.getByRole("button", { name: sourceCopy.cancel }).click(); });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await act(async () => { land(solRing); });
+    expect(cardUp()).toBeNull();
+  });
+
+  // #1267 round 1: a phone turned past 768 swaps the list's sheet for the popover; the card the
+  // sheet opened goes with it rather than staying up with no list under it.
+  it("closes the head's card when the sheet gives way to the popover", async () => {
+    setViewport(false);
+    const ui = (
+      <CardDetailProvider fetchCard={async () => solRing}>
+        <PullControl deckId="d" card={CARD} claims={[FREE_TO_PULL, OTHER_SOURCE]} defaultId={FREE_TO_PULL.id} onPulled={noop} />
+      </CardDetailProvider>
+    );
+    const view = render(ui);
+    act(() => { screen.getByRole("button", { name: MANY_NAME }).click(); });
+    const head = screen.getByRole("dialog").querySelector('p[id$="-title"] button') as HTMLElement;
+    await act(async () => { fireEvent.click(head); });
+    expect(cardUp()).not.toBeNull();
+    setViewport(true);
+    await act(async () => { view.rerender(ui); window.dispatchEvent(new Event("resize")); });
+    expect(cardUp()).toBeNull();
+  });
+
   // Found by Copilot's round-2 review: `useDialogA11y`'s own default returns focus to the
   // POPOVER trigger on unmount, undoing a manual focus call made just before closing it.
   it("leaves focus on the row's card trigger after a successful pull from the list", async () => {

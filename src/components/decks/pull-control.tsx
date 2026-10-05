@@ -63,7 +63,9 @@ function rowTrigger(from: HTMLElement | null, cardName: string): HTMLElement | n
   const label = cardDetailCopy.triggerAria(cardName);
   for (let node = from?.parentElement ?? null; node; node = node.parentElement) {
     for (const candidate of node.querySelectorAll<HTMLElement>("button")) {
-      if (candidate.getAttribute("aria-label") === label) return candidate;
+      // Never the picker's own: the phone sheet's head names the card with the same trigger
+      // (stacked sheets R1, s5), and it goes when the sheet does.
+      if (candidate.getAttribute("aria-label") === label && !from?.contains(candidate)) return candidate;
     }
   }
   return null;
@@ -553,12 +555,27 @@ function MobileSheet({
 function TitleOpeningCard({ card }: { card: { oracleId: string; name: string } }) {
   const MARK = "\u0000";
   const [before, after = ""] = sourceCopy.title(MARK).split(MARK);
+  // A card this head opened belongs to this sheet: when the sheet goes while the card is still
+  // reading or still up (the sheet dismissed before the read landed, or a phone turned past 768,
+  // which swaps the sheet for the popover), the card goes with it rather than arriving, or
+  // staying, over a surface with no way back to it (#1267 round 1).
+  const { close, openOracleId, pendingOracleId } = useCardDetail();
+  const opened = useRef(false);
+  const live = useRef({ close, ours: false });
+  useEffect(() => {
+    live.current = { close, ours: opened.current && (openOracleId === card.oracleId || pendingOracleId === card.oracleId) };
+  });
+  useEffect(() => () => {
+    if (live.current.ours) live.current.close();
+  }, []);
   return (
     <>
       {before}
-      <CardDetailTrigger oracleId={card.oracleId} name={card.name}>
-        {card.name}
-      </CardDetailTrigger>
+      <span onClickCapture={() => { opened.current = true; }}>
+        <CardDetailTrigger oracleId={card.oracleId} name={card.name}>
+          {card.name}
+        </CardDetailTrigger>
+      </span>
       {after}
     </>
   );
