@@ -84,6 +84,15 @@ describe("the stacked carousel", () => {
     expect(document.querySelector('[aria-labelledby="card-modal-title-held"]')).toBe(held);
   });
 
+  it("pages only the top card from the body, never the held card under the sheet", async () => {
+    const { held } = await stack();
+    (document.activeElement as HTMLElement | null)?.blur();
+    fireEvent.keyDown(document.body, { key: "ArrowRight" });
+    await waitFor(() => expect(document.getElementById("card-modal-title")).toHaveTextContent("Card Z"));
+    expect(document.getElementById("card-modal-title-held")).toHaveTextContent("Held Card");
+    expect(document.querySelector('[aria-labelledby="card-modal-title-held"]')).toBe(held);
+  });
+
   it("reads the top card's neighbors ahead, as it does for any paged card", async () => {
     const { fetchCard } = await stack();
     await waitFor(() => {

@@ -1420,16 +1420,25 @@ export function CardModal({
   // input, the printing radiogroup, and the zoom — "a look, not a browser", decision 1. A list
   // of one or two behaves exactly as the buttons do: the missing side is simply absent.
   //
-  // ATTACHED TO THE BACKDROP, not the dialog (pre-open review, round 1). A peek press moves
+  // SCOPED TO THE BACKDROP, not the dialog (pre-open review, round 1). A peek press moves
   // focus to the pressed plate via `initialFocusRef` on the REMOUNTED instance, and a neighbor
   // plate is a sibling of `dialogRef`'s element, outside it — a listener on the dialog alone
   // never sees a key pressed while focus sits on a plate, which stalled paging dead after the
   // first peek. The backdrop is the one ancestor both the dialog and the plates share.
+  //
+  // The listener itself sits ON THE DOCUMENT, taking a key whose target is the backdrop's
+  // subtree OR the body. A click on plain text in the dialog (a rules line, a label) focuses
+  // nothing, so focus falls to <body>, and a listener on the backdrop never heard the key: paging
+  // went dead until the reader clicked something focusable. The body case is ours while this
+  // modal is open; a card held under a sheet (`covered`) attaches no listener at all.
   useEffect(() => {
     const backdrop = backdropRef.current;
-    if (!backdrop || total <= 1) return;
+    if (!backdrop || total <= 1 || covered) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      if (e.defaultPrevented) return;
+      const target = e.target;
+      if (target !== document.body && !(target instanceof Node && backdrop.contains(target))) return;
       // A modified arrow is somebody else's shortcut — Alt+Left/Right is browser history,
       // Cmd/Ctrl+Left/Right is a text-editing jump in some inputs (pre-open review, round 2).
       // Plain Left/Right only, or the carousel silently eats a navigation the reader meant.
@@ -1450,9 +1459,9 @@ export function CardModal({
         if (onNext) onNext(); else onAtEnd?.();
       }
     };
-    backdrop.addEventListener("keydown", handler);
-    return () => backdrop.removeEventListener("keydown", handler);
-  }, [total, onPrev, onNext, onAtStart, onAtEnd, narrow, full]);
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [total, onPrev, onNext, onAtStart, onAtEnd, narrow, full, covered]);
 
   // A back face to turn to, or none (#363). The image is the second condition and
   // not an afterthought: a `transform` row seeded before the back-face column
