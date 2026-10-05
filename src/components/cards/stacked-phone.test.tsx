@@ -344,6 +344,26 @@ describe("the rise and the drop (motion)", () => {
     expect(cardDialog()).toHaveClass("anim-stack-rise");
   });
 
+  it("rises once on arrival, and not again when paged inside the sheet's list", async () => {
+    const cards: Record<string, BrowseCard> = {
+      "o-a": { ...birds, oracleId: "o-a", name: "Card A" },
+      "o-b": { ...birds, oracleId: "o-b", name: "Card B" },
+    };
+    render(
+      <CardDetailProvider fetchCard={async (id) => cards[id] ?? null}>
+        <ModalChrome title="Game changers" closeLabel="Close game changers" onClose={vi.fn()} width={760}>
+          <CardDetailTrigger oracleId="o-a" name="Card A" siblings={["o-a", "o-b"]}>open a</CardDetailTrigger>
+        </ModalChrome>
+      </CardDetailProvider>,
+    );
+    await act(async () => { fireEvent.click(screen.getByText("open a")); });
+    expect(cardDialog()).toHaveClass("anim-stack-rise");
+    await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: "Next card" })[0]); });
+    await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: "Previous card" })[0]); });
+    expect(document.getElementById("card-modal-title")).toHaveTextContent("Card A");
+    expect(cardDialog()).not.toHaveClass("anim-stack-rise");
+  });
+
   it("does not rise when opened from the page", async () => {
     render(
       <CardDetailProvider fetchCard={async () => birds}>
