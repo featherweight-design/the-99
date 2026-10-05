@@ -24,34 +24,87 @@ export const COLLIDING_SIDES = ["r", "b"];
  */
 function scan(text) {
   const spans = [];
-  let i = 0;
   const n = text.length;
-  while (i < n) {
-    const c = text[i];
-    if (c === "/" && text[i + 1] === "/") {
-      while (i < n && text[i] !== "\n") i++;
-      continue;
-    }
-    if (c === "/" && text[i + 1] === "*") {
-      i += 2;
-      while (i < n && !(text[i] === "*" && text[i + 1] === "/")) i++;
-      i += 2;
-      continue;
-    }
-    if (c === '"' || c === "'" || c === "`") {
-      const quote = c;
-      const start = i;
-      i++;
-      while (i < n && text[i] !== quote) {
-        if (text[i] === "\\") i++;
-        i++;
+  let i = 0;
+
+  // Round 2's finding: a template literal closed at the next backtick, ignoring `${...}`
+  // entirely, splits a NESTED template wrong — `` `${on ? `border-b` : ""}` `` has its inner
+  // backtick read as the OUTER template's close, so the real `border-b` never lands inside any
+  // scanned span. Interpolations are now parsed recursively: `scanJs` (normal JS — comments,
+  // strings, templates) is called for the code at top level and, with `inBraces: true`, inside
+  // every `${ ... }`, where it also tracks `{`/`}` depth so it knows which `}` closes the
+  // interpolation rather than some object literal the expression contains.
+  function scanJs(inBraces) {
+    let depth = inBraces ? 1 : 0;
+    while (i < n) {
+      const c = text[i];
+      if (c === "/" && text[i + 1] === "/") {
+        while (i < n && text[i] !== "\n") i++;
+        continue;
       }
-      i++; // past the closing quote (or past end of file on an unterminated string)
-      spans.push({ start, text: text.slice(start, i) });
-      continue;
+      if (c === "/" && text[i + 1] === "*") {
+        i += 2;
+        while (i < n && !(text[i] === "*" && text[i + 1] === "/")) i++;
+        i += 2;
+        continue;
+      }
+      if (c === '"' || c === "'") {
+        scanQuoted(c);
+        continue;
+      }
+      if (c === "`") {
+        scanTemplate();
+        continue;
+      }
+      if (inBraces && c === "{") {
+        depth++;
+        i++;
+        continue;
+      }
+      if (inBraces && c === "}") {
+        depth--;
+        i++;
+        if (depth === 0) return;
+        continue;
+      }
+      i++;
     }
-    i++;
   }
+
+  function scanQuoted(quote) {
+    const start = i;
+    i++;
+    while (i < n && text[i] !== quote) {
+      if (text[i] === "\\") i++;
+      i++;
+    }
+    i++; // past the closing quote (or past end of file on an unterminated string)
+    spans.push({ start, text: text.slice(start, i) });
+  }
+
+  function scanTemplate() {
+    const start = i;
+    i++;
+    while (i < n) {
+      if (text[i] === "\\") {
+        i += 2;
+        continue;
+      }
+      if (text[i] === "`") {
+        i++;
+        break;
+      }
+      if (text[i] === "$" && text[i + 1] === "{") {
+        i += 2;
+        scanJs(true); // consumes up to and including the matching `}`
+        continue;
+      }
+      i++;
+    }
+    spans.push({ start, text: text.slice(start, i) });
+  }
+
+  scanJs(false);
   return spans;
 }
 
@@ -95,11 +148,19 @@ function hasSideOverride(text, side) {
  * className on the same file does not reach this one.
  */
 export function unresolvedCollisions(text) {
+  // A nested template literal's text is covered by two spans — the outer template's full raw
+  // text (which includes the interpolation verbatim) and the inner template's own span — so the
+  // same physical collision can surface twice at the identical offset. Deduped by (side, offset).
+  const seen = new Set();
   const out = [];
   for (const span of scan(text)) {
     for (const { side, index } of bareCollisions(span.text)) {
       if (!hasSideOverride(span.text, side)) {
-        out.push({ side, offsetInFile: span.start + index });
+        const offsetInFile = span.start + index;
+        const key = `${side}:${offsetInFile}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push({ side, offsetInFile });
       }
     }
   }

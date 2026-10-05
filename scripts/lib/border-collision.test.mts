@@ -71,6 +71,21 @@ describe("unresolvedCollisions", () => {
     expect(unresolvedCollisions(text)).toHaveLength(1);
   });
 
+  it("parses a nested template literal's interpolation, not just to the next backtick (PR #1272 round 2)", () => {
+    // Copilot's exact shape: closing a template at the next backtick, with no `${...}`
+    // parsing, reads the INNER template's backtick as the outer one's close — so the real
+    // `border-b` inside the nested template never lands in any scanned span.
+    const text = 'const c = `${on ? `border-b` : ""}`;';
+    const found = unresolvedCollisions(text);
+    expect(found).toHaveLength(1);
+    expect(text.slice(found[0].offsetInFile, found[0].offsetInFile + 8)).toBe("border-b");
+  });
+
+  it("does not double-report a collision that both the outer and inner template span cover", () => {
+    const text = 'const c = `${on ? `border-b border-b-[color:var(--x)]` : ""}`;';
+    expect(unresolvedCollisions(text)).toEqual([]);
+  });
+
   it("a literal `//` inside an earlier string does not desync later string spans (PR #1272 round 1)", () => {
     // The shape that defeated the old two-pass version: `stripComments` ran a standalone `//`
     // regex before string spans were found, so `name.split(" // ")` was read as a comment start,
