@@ -172,9 +172,16 @@ export type CardDoor = (oracleId: string, layout: "art" | "strip") => ReactNode;
 
 /**
  * A sheet's footer for a card stacked over it, or null for a card that is not one of the sheet's
- * own (the stand-ins sheet draws Take on its stand-ins and nothing on anything else).
+ * own (the stand-ins sheet draws Take on its stand-ins and nothing on anything else). Drawn in
+ * pieces the card places itself (stacked sheets R1, call 9):
+ *
+ * - `row`: the desktop nav row, in place of the Mana Pool link.
+ * - `teaserNote`: the phone teaser's one line above its foot row (`in place of …`).
+ * - `teaserAction`: the phone teaser's action, in the foot row beside All details.
+ * - `foot`: the phone's full sheet, pinned at its foot.
  */
-export type SheetFooter = (oracleId: string, layout: "row" | "column") => ReactNode;
+export type SheetFooterLayout = "row" | "teaserNote" | "teaserAction" | "foot";
+export type SheetFooter = (oracleId: string, layout: SheetFooterLayout) => ReactNode;
 
 const CardDetailContext = createContext<CardDetailContextValue | null>(null);
 

@@ -43,7 +43,7 @@ import { FitsDoor } from "./fits-door";
 import { cardLinkOutCopy } from "../../lib/copy/collection-browse";
 import { cardCarouselCopy, cardSheetCopy } from "../../lib/copy/card-carousel";
 import { SHEET, useCardSheetGestures } from "./card-sheet-gesture";
-import type { SiblingCard } from "./card-detail-provider";
+import type { SheetFooterLayout, SiblingCard } from "./card-detail-provider";
 import { useMinWidth } from "../ui/use-min-width";
 import { ProxyControl } from "../decks/proxy-control";
 import { proxyCopy } from "../../lib/copy/proxies";
@@ -660,10 +660,11 @@ export function CardModal({
   backLabel?: string;
   /**
    * The sheet underneath's own footer for this card (swap tools: a stand-in's Take). It replaces the
-   * Mana Pool link, in the desktop nav row beside Prev/Next and pinned at the phone's bottom, so a
-   * card opened to be chosen is chosen from where the reader already is. Drawn per layout.
+   * Mana Pool link in the desktop nav row beside Prev/Next. On the phone (stacked sheets R1, call 9)
+   * it shares the teaser's foot row with All details, its note taking one of the oracle's lines,
+   * and in the full sheet it pins to the foot. Drawn per layout (`SheetFooterLayout`).
    */
-  footer?: ((layout: "row" | "column") => ReactNode) | null;
+  footer?: ((layout: SheetFooterLayout) => ReactNode) | null;
   /**
    * Fits your decks (swap tools, R2): the footer's `Find a deck for it →` door, under the Mana Pool
    * link. Null draws none, which is every card that is not Commander-legal, every reader with no deck,
@@ -816,17 +817,14 @@ export function CardModal({
   const [sheetFull, setSheetFull] = useState(false);
 
   // THE TEASER'S HEIGHT, which places the sheet and sizes the card band above it. A fixed 280
-  // (README R2 "States"), plus the swap tools' two surfaces where a card carries them: the
-  // stand-ins door's strip at the sheet's head, and a stacked stand-in's Take footer at its foot.
-  // Neither is drawn on the R2 canvas; both keep the room they had under the retired art header.
-  // Both are MEASURED: a renderer can draw nothing for a card (the door does for a locked one),
-  // and a figure assumed from the prop would leave a blank gap in the teaser.
+  // (README R2 "States"), plus the stand-ins door's strip at the sheet's head where a card carries
+  // one, MEASURED: a renderer can draw nothing for a card (the door does for a locked one), and a
+  // figure assumed from the prop would leave a blank gap in the teaser. A stacked stand-in's Take
+  // adds nothing: it shares the teaser's own foot row (stacked sheets R1, call 9).
   const doorStrip = door ? door("strip") : null;
   const doorRef = useRef<HTMLDivElement | null>(null);
-  const footerRef = useRef<HTMLDivElement | null>(null);
   const doorHeight = useOwnHeight(doorRef, doorStrip !== null);
-  const footerHeight = useOwnHeight(footerRef, footer !== null);
-  const teaserHeight = SHEET.teaserHeight + doorHeight + footerHeight;
+  const teaserHeight = SHEET.teaserHeight + doorHeight;
 
   // A TEASER THAT WOULD CRUSH THE CARD IS NOT OFFERED. A short screen under a stacked sheet (a
   // stand-in at 140, with its Take footer) can leave the band so little room that the card would
@@ -2253,7 +2251,8 @@ export function CardModal({
                 {card.oracleText && (
                   <div
                     data-testid="teaser-oracle"
-                    className="mt-[12px] max-h-[64px] min-h-0 overflow-hidden text-[13.5px] leading-[1.6]"
+                    // Two lines, not three, when the sheet's footer takes one for its note (call 9).
+                    className={"mt-[12px] min-h-0 overflow-hidden text-[13.5px] leading-[1.6] " + (footer ? "max-h-[44px]" : "max-h-[64px]")}
                     style={{
                       color: "var(--fg-body)",
                       WebkitMaskImage: "linear-gradient(180deg, #000 55%, transparent)",
@@ -2263,14 +2262,34 @@ export function CardModal({
                     <OracleText text={card.oracleText} keywords={card.keywords} />
                   </div>
                 )}
-                <button
-                  type="button"
-                  onClick={() => setSheetFull(true)}
-                  className="-mx-[20px] mt-auto flex min-h-[44px] flex-none cursor-pointer items-center justify-center gap-[8px] border-t border-[color:var(--border)] bg-transparent p-0 text-[13.5px] text-[color:var(--fg-body)] focus-visible:-outline-offset-2"
-                >
-                  {cardSheetCopy.expand}
-                  <span aria-hidden style={{ color: "var(--fg-faint)" }}>▴</span>
-                </button>
+                {footer ? (
+                  // A STACKED STAND-IN (stacked sheets R1, call 9): its note in the oracle's third
+                  // line, then a foot row shared 1 : 1.35 between All details and the sheet's action,
+                  // so the teaser stays 280 and the card keeps its 320.
+                  <>
+                    <div data-testid="teaser-footer-note" className="mt-auto pb-[6px] min-w-0">{footer("teaserNote")}</div>
+                    <div className="-mx-[20px] grid min-h-[44px] flex-none grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] border-t border-[color:var(--border)]">
+                      <button
+                        type="button"
+                        onClick={() => setSheetFull(true)}
+                        className="flex cursor-pointer items-center justify-center gap-[8px] border-0 border-r border-[color:var(--border)] bg-transparent p-0 text-[13.5px] text-[color:var(--fg-body)] focus-visible:-outline-offset-2"
+                      >
+                        {cardSheetCopy.expand}
+                        <span aria-hidden style={{ color: "var(--fg-faint)" }}>▴</span>
+                      </button>
+                      <div data-testid="teaser-footer-action" className="flex items-center justify-center px-[12px]">{footer("teaserAction")}</div>
+                    </div>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setSheetFull(true)}
+                    className="-mx-[20px] mt-auto flex min-h-[44px] flex-none cursor-pointer items-center justify-center gap-[8px] border-t border-[color:var(--border)] bg-transparent p-0 text-[13.5px] text-[color:var(--fg-body)] focus-visible:-outline-offset-2"
+                  >
+                    {cardSheetCopy.expand}
+                    <span aria-hidden style={{ color: "var(--fg-faint)" }}>▴</span>
+                  </button>
+                )}
               </div>
             )}
 
@@ -2454,7 +2473,8 @@ export function CardModal({
               </span>
             ) : null}
           </div>
-          {footer ? <div ref={footerRef} className="md:hidden flex-none">{footer("column")}</div> : null}
+          {/* In the full sheet the sheet's action pins to its foot (call 9); the teaser draws its own. */}
+          {footer && full ? <div data-testid="sheet-footer-foot" className="md:hidden flex-none">{footer("foot")}</div> : null}
         </div>
         {/* The modal's one live region (handoff §Accessibility). Do not add a second.
             A direct child of the dialog rather than of the content column, because the

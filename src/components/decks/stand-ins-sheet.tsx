@@ -540,6 +540,7 @@ export function StandInsSheet({
       void take(row);
     };
     const where = swapToolsCopy.modal.inPlaceOf(name, tools.deckName);
+    const takeLabel = swapToolsCopy.modal.take(row.name);
     if (layout === "row") {
       return (
         <span data-testid="stand-in-footer" className="flex flex-1 min-w-0 items-center gap-[12px]">
@@ -551,23 +552,42 @@ export function StandInsSheet({
         </span>
       );
     }
-    return (
-      <div
-        data-testid="stand-in-footer"
-        className="flex flex-col gap-[8px] px-[16px] pt-[10px] pb-[20px] border-t border-[color:var(--border)]"
-        style={{ background: "var(--surface-sunken)" }}
-      >
-        <span className="flex items-center gap-[8px]">
-          <span className="flex-1 min-w-0 font-mono text-[10.5px]" style={{ color: "var(--fg-muted)" }}>{where}</span>
-          <PricePlate row={row} newestAsOf={listAsOf} />
+    // THE PHONE (stacked sheets R1, call 9). No price plate: the teaser's second line already shows
+    // the card's price, and the footer's own was a second copy of it.
+    if (layout === "teaserNote") {
+      return (
+        <span data-testid="stand-in-footer" className="block truncate font-mono text-[11px]" style={{ color: "var(--fg-muted)" }}>
+          {where}
         </span>
+      );
+    }
+    if (layout === "teaserAction") {
+      return (
         <button
           type="button"
           onClick={press}
           aria-label={copy.takeAria(row.name, name)}
-          className="flex items-center justify-center w-full h-[44px] rounded-[8px] text-[13px] font-semibold bg-transparent cursor-pointer text-[color:var(--accent)] [border:1px_solid_var(--accent)]"
+          className="flex h-[34px] min-w-0 items-center rounded-[8px] px-[14px] text-[13.5px] font-medium whitespace-nowrap bg-transparent cursor-pointer text-[color:var(--accent)] [border:1px_solid_var(--accent)]"
         >
-          {swapToolsCopy.modal.take(row.name)}
+          <span className="truncate">{takeLabel}</span>
+        </button>
+      );
+    }
+    // `foot`: the full sheet, pinned at its foot over the home inset.
+    return (
+      <div
+        data-testid="stand-in-footer"
+        className="flex items-center gap-[12px] px-[20px] pt-[10px] pb-[44px] border-t border-[color:var(--border)]"
+        style={{ background: "var(--surface-sunken)" }}
+      >
+        <span className="flex-1 min-w-0 font-mono text-[11px]" style={{ color: "var(--fg-muted)" }}>{where}</span>
+        <button
+          type="button"
+          onClick={press}
+          aria-label={copy.takeAria(row.name, name)}
+          className="flex h-[44px] flex-none items-center rounded-[8px] px-[16px] text-[13.5px] font-medium whitespace-nowrap bg-transparent cursor-pointer text-[color:var(--accent)] [border:1px_solid_var(--accent)]"
+        >
+          {takeLabel}
         </button>
       </div>
     );
