@@ -34,7 +34,7 @@ import { db } from "../../src/db";
 import { cardLabelBatches, cardLabels, cardLabelsStaging } from "../../src/db/schema";
 import { readReply, withoutRepeats } from "../../src/lib/labels/parse";
 import {
-  CARDS_PER_REQUEST, MEASURED_PER_CARD, budgetFamily, familySpend, meetsFloor, pauseRemediation, planChunks, waveSize,
+  CARDS_PER_REQUEST, MEASURED_PER_CARD, budgetFamily, familySpend, inFlightElsewhere, meetsFloor, pauseRemediation, planChunks, waveSize,
   projectedTotalUsd, withinCap, worstCaseUsd,
   type Chunk, type FamilySpend,
 } from "../../src/lib/labels/plan";
@@ -734,21 +734,6 @@ async function build(opts: BuildOptions): Promise<number> {
         + `${[...new Set(otherModel.map((r) => r.model))].join(", ")}, not ${MODEL}. Their cost is not `
         + `known yet. Finish them under that LABEL_MODEL first.`);
     }
-    // ONE PROMPT VERSION IN FLIGHT. A label stays fresh under the version that wrote it, so a prompt
-    // bump costs nothing by itself, but an intent asked under an older version is still out: its
-    // cards have no published row, so this run would plan and pay for them again, and `reconcile`
-    // only collects the current version's intents. Any run id, any model: the double pay is per card.
-    const otherVersion = await db.select({ promptVersion: cardLabelBatches.promptVersion })
-      .from(cardLabelBatches).where(and(
-        inArray(cardLabelBatches.status, OPEN_STATUSES),
-        // `is distinct from`, not `<>`: a pre-migration intent has a NULL version, which `<>` never matches.
-        sql`${cardLabelBatches.promptVersion} is distinct from ${LABEL_PROMPT_VERSION}`,
-      ));
-    if (otherVersion.length > 0) {
-      return refuse(`${otherVersion.length} open intent(s) were asked under prompt version(s) `
-        + `${[...new Set(otherVersion.map((r) => r.promptVersion ?? "unrecorded"))].join(", ")}, not ${LABEL_PROMPT_VERSION}. `
-        + `Their cards would be paid for twice. Collect them with that version's checkout first.`);
-    }
   }
   if (abandoned.length > 0) {
     console.error(`\n${abandoned.length} intent(s) ABANDONED — submitted, id lost, and no longer`);
@@ -772,6 +757,18 @@ async function build(opts: BuildOptions): Promise<number> {
     return EXIT_MORE_WORK;
   }
 
+  // Open intents of ANOTHER prompt version, read BEFORE the stale snapshot below: an older-version
+  // collector that publishes a card and closes its intent between the two reads is then seen one
+  // way or the other (its open intent here, or its published label in the snapshot), never neither.
+  // Plain `<>`, which leaves out a NULL version: a pre-migration intent can never be collected by any
+  // checkout (`reconcile` selects by version), so it can never publish and never blocks.
+  const otherVersionIntents = opts.dryRun ? [] : await db
+    .select({ promptVersion: cardLabelBatches.promptVersion, asked: cardLabelBatches.asked })
+    .from(cardLabelBatches).where(and(
+      inArray(cardLabelBatches.status, OPEN_STATUSES),
+      sql`${cardLabelBatches.promptVersion} <> ${LABEL_PROMPT_VERSION}`,
+    ));
+
   const all = await cardsNeedingLabels(opts.scope, opts.onlyOracleIds);
 
   // **A CARD WHOSE NAME IS SHARED IS EXCLUDED AND NAMED, never labelled by guess.**
@@ -792,10 +789,9 @@ async function build(opts: BuildOptions): Promise<number> {
 
   // **NOTHING IS ASKED TWICE WHILE IT MAY STILL BE ANSWERED.** A card inside an open intent asked
   // under this model and prompt, by any run, is already paid for or about to be; planning it again
-  // is the double charge. An intent asked under an older prompt does not block: its answer can
-  // never be published (reconcile leaves it alone), so the card has to be asked again. After
-  // reconcile, what is left open here is another run's ambiguous intent, which only that run can
-  // resolve.
+  // is the double charge. An intent asked under ANOTHER prompt version is checked separately below
+  // (`inFlightElsewhere`), against the cards this run actually plans. After reconcile, what is left
+  // open here is another run's ambiguous intent, which only that run can resolve.
   const openRows = await db.select({ runId: cardLabelBatches.runId, asked: cardLabelBatches.asked })
     .from(cardLabelBatches).where(and(
       inArray(cardLabelBatches.status, OPEN_STATUSES),
@@ -805,6 +801,16 @@ async function build(opts: BuildOptions): Promise<number> {
   const inFlight = new Set(openRows.flatMap((r) => r.asked));
   const cards = stale.filter((c) => !inFlight.has(c.name));
   const blocked = stale.length - cards.length;
+
+  // ONE PROMPT VERSION IN FLIGHT PER CARD. Checked against `cards`, the set planned after both
+  // exclusions above, so an old intent naming a card this run would never ask for blocks nothing.
+  const elsewhere = inFlightElsewhere(otherVersionIntents, LABEL_PROMPT_VERSION, new Set(cards.map((c) => c.name)));
+  if (elsewhere.intents > 0) {
+    return refuse(`${elsewhere.intents} open intent(s) asked under prompt version(s) `
+      + `${elsewhere.versions.join(", ")}, not ${LABEL_PROMPT_VERSION}, include ${elsewhere.cards.length} card(s) this `
+      + `run would label (${elsewhere.cards.slice(0, 5).join(", ")}). They would be paid for twice. `
+      + `Collect them with that version's checkout first.`);
+  }
 
   console.log(`${stale.length} card(s) need labels (absent, text moved, unknown prompt version`
     + `${scopeList(opts.scope) !== null ? ", or written under another version or model than this list run's" : ""})`

@@ -376,3 +376,32 @@ export function familySpend(
   const reserveUsd = expiredChunks * reservePerChunkUsd;
   return { measuredUsd, measuredCards, expiredChunks, reserveUsd, totalUsd: measuredUsd + reserveUsd };
 }
+
+/**
+ * Open intents asked under ANOTHER prompt version whose cards this run would plan again. `planned`
+ * is the set the run will actually ask for, after its shared-name and in-flight exclusions. A label
+ * stays fresh under the version that wrote it, so a prompt bump costs nothing by itself, but an
+ * intent of another version may still be out and paid for, and `reconcile` collects only the
+ * current version's: planning one of its cards would pay twice. Only an OVERLAP blocks: an old
+ * intent whose cards have all been labelled since (the never-submitted, pre-migration intents of
+ * 2026-09-28, whose cards the v8 relabel covered) asks for nothing this run plans, and blocking on it
+ * would stop every later run for good.
+ *
+ * A NULL version (an intent from before the version column) never blocks: no checkout can collect
+ * it, since `reconcile` selects by version, so its answer can never be published and nothing waits
+ * on it. Blocking on one would refuse every run with no way to clear it.
+ */
+export function inFlightElsewhere(
+  intents: readonly { promptVersion: string | null; asked: readonly string[] | null }[],
+  currentVersion: string,
+  planned: ReadonlySet<string>,
+): { intents: number; versions: string[]; cards: string[] } {
+  const hits = intents.flatMap((i) => (i.promptVersion === null || i.promptVersion === currentVersion ? []
+    : [{ version: i.promptVersion, cards: (i.asked ?? []).filter((n) => planned.has(n)) }]))
+    .filter((h) => h.cards.length > 0);
+  return {
+    intents: hits.length,
+    versions: [...new Set(hits.map((h) => h.version))],
+    cards: [...new Set(hits.flatMap((h) => h.cards))],
+  };
+}

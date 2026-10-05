@@ -48,18 +48,22 @@ describe("listScopeIds", () => {
   // Version-aware freshness (Hugh, 2026-10-04): the stale set is `needsLabel` over each card's own
   // row (its model, version and hash), and a LIST scope alone is the deliberate redo. `needsLabel`'s
   // rule is unit tested in `prompt.test.ts`; this pins that the build calls it with those inputs.
-  // A prompt bump costs nothing by itself, but an intent asked under an older version is still out
-  // and its cards have no row: planning them would pay twice. The build refuses until it lands.
-  it("refuses to plan while an intent of another prompt version is open", () => {
+  // The version guard (`inFlightElsewhere`, unit tested in plan.test.ts) runs AFTER the stale set is
+  // known, so only an open other-version intent asking for a card this run plans can block it.
+  it("checks other-version intents against the planned cards, null-safe, before any submit", () => {
     const build = readFileSync(join(process.cwd(), "scripts/lib/card-labels-build.ts"), "utf8");
-    const at = build.indexOf("const otherVersion = await db.select");
-    expect(at).toBeGreaterThan(-1);
-    const block = build.slice(at, build.indexOf("return refuse(", at));
-    expect(block).toContain("inArray(cardLabelBatches.status, OPEN_STATUSES)");
-    // `is distinct from`: a pre-migration intent's NULL version must match too.
-    expect(block).toMatch(/sql`\$\{cardLabelBatches\.promptVersion\} is distinct from \$\{LABEL_PROMPT_VERSION\}`/);
-    // Before planning: the refusal sits ahead of the stale-set read.
-    expect(at).toBeLessThan(build.indexOf("const all = await cardsNeedingLabels("));
+    // Read BEFORE the stale snapshot, so a publish between the two reads is seen one way or the other.
+    const read = build.indexOf("const otherVersionIntents = ");
+    expect(read).toBeGreaterThan(-1);
+    expect(read).toBeLessThan(build.indexOf("const all = await cardsNeedingLabels("));
+    const query = build.slice(read, build.indexOf("const all = await cardsNeedingLabels("));
+    expect(query).toContain("inArray(cardLabelBatches.status, OPEN_STATUSES)");
+    // `<>` on purpose: a NULL (pre-migration) version can never be collected, so it never blocks.
+    expect(query).toMatch(/sql`\$\{cardLabelBatches\.promptVersion\} <> \$\{LABEL_PROMPT_VERSION\}`/);
+    // Matched against `cards`, after the shared-name and in-flight exclusions, and before submit.
+    const check = build.indexOf("const elsewhere = inFlightElsewhere(otherVersionIntents, LABEL_PROMPT_VERSION, new Set(cards.map((c) => c.name)));");
+    expect(check).toBeGreaterThan(build.indexOf("const cards = stale.filter("));
+    expect(check).toBeLessThan(build.indexOf("await submit(opts, wave,"));
   });
 
   it("plans the stale set with needsLabel, redoing only on a list scope", () => {
