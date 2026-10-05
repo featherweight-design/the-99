@@ -83,11 +83,8 @@ export default async function CommanderDetailPage({
   // The head of this page is the row's own link target, so it draws what the row drew: a
   // row captioned with the copy the reader owns leading to a page headed with the oracle
   // name and another printing's art is the mismatch, arriving one click later. ONE oracle
-  // id, so the lookup is a single-row read rather than the lane's whole list.
-  //
-  // The page's card ROWS — Role Coverage and the synergy panel — are deliberately not
-  // enriched: they are hundreds of rows per commander, mixed owned and unowned, and were
-  // ruled out of this round's scope.
+  // id, so the lookup is a single-row read rather than the lane's whole list. The page's
+  // card rows take their owned art further down, in one read beside the claims.
   const [commander] = await withOwnedCardArt(userId, [scored]);
 
   // Derive the oracle ids of owned cards that Role Coverage already covers.
