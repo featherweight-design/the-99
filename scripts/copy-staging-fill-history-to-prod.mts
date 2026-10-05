@@ -28,10 +28,17 @@
  *     target — there is no `--replace` here, because a prior fill-history copy onto these decks
  *     is a mistake to surface, not a state to overwrite.
  *   - Every `oracle_id` `fill_pass_cards` references is checked against the target's own `cards`
- *     table before anything is written, exactly as the deck copy does — AND against the
- *     target deck's own `deck_cards`, so a fill pass staging created after `copy:staging-decks`
- *     already ran (newer than the snapshot this history is being attached to) is refused rather
- *     than imported as provenance for a card the target deck never actually held.
+ *     table before anything is written, exactly as the deck copy does.
+ *   - BOUND TO AN ACTUAL SNAPSHOT CUTOFF, `DECK_COPY_SNAPSHOT_AT` — never defaulted, same as
+ *     every other named parameter here. A first version tried to infer a pass's age from
+ *     whether its cards were still in the target deck's `deck_cards`, which was wrong in both
+ *     directions: a card the player CUT before the deck copy even ran is legitimately absent on
+ *     both sides (`summariseFillPasses` already renders that as ordinary history, `removed`,
+ *     whether copied or not — not a sign of anything newer), and a card cut-then-re-added or
+ *     added-then-cut can make a genuinely newer pass look old, or a genuinely old one look new,
+ *     independent of that pass's actual age. `fill_passes.created_at` against an operator-named
+ *     cutoff is the only thing that actually answers "did this pass exist when the deck copy
+ *     ran" — a pass created after it is excluded and reported, never silently dropped.
  *   - Every copied `fill_passes.id` is checked for a collision against the WHOLE target table
  *     (not only these decks) before anything is written — ids are UUIDs so this should never
  *     fire, but the earlier script's review found real value in not assuming that.
@@ -54,6 +61,7 @@
  *   THE_99_NEON_STAGING_DIRECT=<staging> \
  *   DECK_COPY_TARGET_URL=<production> DECK_COPY_TARGET_BRANCH=br-… \
  *   DECK_COPY_SOURCE_USER_ID=<staging user> DECK_COPY_TARGET_USER_ID=<production user> \
+ *   DECK_COPY_SNAPSHOT_AT=<ISO-8601 — the moment copy:staging-decks's real write finished> \
  *   pnpm copy:staging-fill-history --dry-run
  *
  *   …same, plus --confirm-production-write   # only once Hugh's go has been relayed
@@ -74,13 +82,28 @@ const {
   DECK_COPY_TARGET_BRANCH: EXPECTED_BRANCH,
   DECK_COPY_SOURCE_USER_ID: SOURCE_USER,
   DECK_COPY_TARGET_USER_ID: TARGET_USER,
+  // The authoritative bound Copilot round 6 asked for: current deck_cards membership can't
+  // reliably tell a pass's age (a card can be cut-then-readded, or added-then-cut, independent
+  // of any one pass), so a pass is accepted on an actual cutoff rather than inferred from
+  // membership. The operator supplies the wall-clock moment copy:staging-decks's real write
+  // finished — never defaulted, same reasoning as every other named parameter in this family.
+  DECK_COPY_SNAPSHOT_AT: SNAPSHOT_AT_RAW,
 } = requireEnv([
   "THE_99_NEON_STAGING_DIRECT",
   "DECK_COPY_TARGET_URL",
   "DECK_COPY_TARGET_BRANCH",
   "DECK_COPY_SOURCE_USER_ID",
   "DECK_COPY_TARGET_USER_ID",
+  "DECK_COPY_SNAPSHOT_AT",
 ]);
+const SNAPSHOT_AT = new Date(SNAPSHOT_AT_RAW);
+if (Number.isNaN(SNAPSHOT_AT.getTime())) {
+  console.error(
+    `DECK_COPY_SNAPSHOT_AT (${SNAPSHOT_AT_RAW}) is not a valid date. Pass an ISO-8601 timestamp — ` +
+      "the moment copy:staging-decks's real production write finished.",
+  );
+  process.exit(1);
+}
 
 const DRY = process.argv.includes("--dry-run");
 const CONFIRMED = process.argv.includes("--confirm-production-write");
@@ -132,11 +155,19 @@ if (SOURCE_USER === TARGET_USER) {
   process.exit(1);
 }
 
+/** Reads a `timestamp` column (OID 1114, returned as a raw string by the parser override
+ *  above) as the UTC instant it names, without ever constructing a JS `Date` that could be
+ *  mis-parsed as local time. */
+function parseNaiveUtc(raw: string): number {
+  return Date.parse(`${raw.replace(" ", "T")}Z`);
+}
+
 const pool = new Pool({ connectionString: SOURCE });
 const client = await pool.connect();
 let fillPasses: Record<string, unknown>[] = [];
 let fillPassCards: Record<string, unknown>[] = [];
 let deckIds: string[] = [];
+let excludedNewerThanSnapshot = 0;
 
 try {
   await client.query("begin isolation level repeatable read read only");
@@ -150,7 +181,15 @@ try {
   }
   const allDeckIds = decks.map((d) => d.id as string);
 
-  fillPasses = await rows("select * from fill_passes where deck_id = any($1)", [allDeckIds]);
+  const allPasses = await rows("select * from fill_passes where deck_id = any($1)", [allDeckIds]);
+  // ONLY passes that predate the deck-copy snapshot (Copilot round 6): current deck_cards
+  // membership cannot reliably tell a pass's age — the same card can be cut then re-added, or
+  // added then cut, independent of any one pass — so age is decided on `created_at` against
+  // the operator-supplied cutoff instead of inferred from membership. A pass newer than the
+  // snapshot is excluded, reported, never silently dropped.
+  fillPasses = allPasses.filter((p) => parseNaiveUtc(p.created_at as string) <= SNAPSHOT_AT.getTime());
+  excludedNewerThanSnapshot = allPasses.length - fillPasses.length;
+
   // ONLY the decks a copied pass actually names (Copilot round 2) — `allDeckIds` is every deck
   // this user owns on staging, and a deck created after the original deck copy (even one with
   // no fill history at all) would otherwise make this refuse on "missing on production" for a
@@ -170,8 +209,19 @@ try {
 }
 
 if (fillPasses.length === 0) {
-  console.error(`No fill_passes on staging for ${SOURCE_USER}'s decks. Nothing to copy.`);
+  console.error(
+    excludedNewerThanSnapshot > 0
+      ? `Every fill_passes row for ${SOURCE_USER}'s decks is newer than DECK_COPY_SNAPSHOT_AT ` +
+          `(${excludedNewerThanSnapshot} excluded). Nothing to copy.`
+      : `No fill_passes on staging for ${SOURCE_USER}'s decks. Nothing to copy.`,
+  );
   process.exit(1);
+}
+if (excludedNewerThanSnapshot > 0) {
+  console.log(
+    `${excludedNewerThanSnapshot} fill_passes row(s) created after DECK_COPY_SNAPSHOT_AT were ` +
+      "excluded — newer than the snapshot this history is being attached to.",
+  );
 }
 
 // EVERY DECK THIS ATTACHES TO must already exist on the target under TARGET_USER — this script
@@ -220,36 +270,6 @@ if (missingOracleIds.length > 0) {
   console.log("All resolve on production.");
 }
 
-// BOUND TO THE SNAPSHOT `copy:staging-decks` ACTUALLY COPIED (Copilot round 5), not to whatever
-// staging holds right now. This script reads fill_passes live, so a pass created on staging
-// AFTER that earlier copy ran would otherwise be imported as production history for a deck
-// whose deck_cards were frozen at an older moment — if that pass names a card still marked
-// `auto` on the older target snapshot, the ledger would attribute it to a pass the target deck
-// never actually went through. Checked by requiring every (deck_id, oracle_id) a copied pass
-// card names to already be present in the TARGET's own deck_cards for that deck: that is
-// exactly the set `copy:staging-decks` froze, so a pass naming anything outside it is provably
-// newer than the snapshot this history is being attached to.
-const passByCard = new Map(fillPasses.map((p) => [p.id as string, p.deck_id as string]));
-const targetDeckCardRows = (await dst.query(
-  "select deck_id, oracle_id from deck_cards where deck_id = any($1)",
-  [deckIds],
-)) as { deck_id: string; oracle_id: string }[];
-const targetDeckCards = new Set(targetDeckCardRows.map((r) => `${r.deck_id}:${r.oracle_id}`));
-const staleCards = fillPassCards.filter((c) => {
-  const deckId = passByCard.get(c.pass_id as string);
-  return !deckId || !targetDeckCards.has(`${deckId}:${c.oracle_id}`);
-});
-if (staleCards.length > 0) {
-  console.log(
-    `\n${staleCards.length} fill_pass_cards row(s) name a card not in the target deck's own ` +
-      "deck_cards — this pass is newer than the snapshot copy:staging-decks already copied:",
-  );
-  for (const c of staleCards) {
-    console.log(`  pass_id=${c.pass_id} deck_id=${passByCard.get(c.pass_id as string)} oracle_id=${c.oracle_id}`);
-  }
-} else {
-  console.log(`\nEvery fill_pass_cards row names a card already in the target deck's snapshot.`);
-}
 
 // ID COLLISION, whole table — see copy-staging-decks-to-prod.mts's note on why this is checked
 // against every row rather than assumed impossible for a UUID primary key.
@@ -268,7 +288,6 @@ const refused =
   missingDecks.length > 0 ||
   alreadyHasRows.length > 0 ||
   missingOracleIds.length > 0 ||
-  staleCards.length > 0 ||
   idConflictRows.length > 0;
 
 if (DRY) {
@@ -299,15 +318,6 @@ if (missingOracleIds.length > 0) {
   console.error(
     "\nRefusing to write: the oracle_id(s) above do not exist on the target and the insert " +
       "would fail on a foreign key partway through the transaction.",
-  );
-  process.exit(1);
-}
-if (staleCards.length > 0) {
-  console.error(
-    `\nRefusing to write: ${staleCards.length} fill_pass_cards row(s) above name a card the ` +
-      "target deck's own snapshot does not have — that pass is newer than what copy:staging-decks " +
-      "copied, and attaching it now would attribute provenance for a card the target's deck " +
-      "never actually held at that snapshot.",
   );
   process.exit(1);
 }
