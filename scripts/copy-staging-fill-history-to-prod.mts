@@ -145,9 +145,15 @@ try {
     console.error(`No decks on staging for ${SOURCE_USER}. Nothing to copy fill history for.`);
     process.exit(1);
   }
-  deckIds = decks.map((d) => d.id as string);
+  const allDeckIds = decks.map((d) => d.id as string);
 
-  fillPasses = await rows("select * from fill_passes where deck_id = any($1)", [deckIds]);
+  fillPasses = await rows("select * from fill_passes where deck_id = any($1)", [allDeckIds]);
+  // ONLY the decks a copied pass actually names (Copilot round 2) — `allDeckIds` is every deck
+  // this user owns on staging, and a deck created after the original deck copy (even one with
+  // no fill history at all) would otherwise make this refuse on "missing on production" for a
+  // deck this script has no reason to touch, and the report would claim passes span decks that
+  // hold none.
+  deckIds = [...new Set(fillPasses.map((p) => p.deck_id as string))];
   const passIds = fillPasses.map((p) => p.id as string);
   fillPassCards =
     passIds.length === 0
@@ -285,11 +291,15 @@ try {
   // first and then needed the deck row would deadlock against one that already held the deck
   // row and was waiting on `fill_passes`. Locking in the same order every writer does removes
   // the cycle rather than racing it.
+  // `idle_in_transaction_session_timeout` is set BEFORE the lock is taken (Copilot round 2): a
+  // client/network stall between the LOCK TABLE response and a SET statement setting it
+  // afterwards would leave the session idle while already holding every lock, indefinitely —
+  // exactly the failure this backstop exists to bound.
+  await out.query("set local idle_in_transaction_session_timeout = '30s'");
   await out.query("set local lock_timeout = '5s'");
   await out.query("set local statement_timeout = '5s'");
   await out.query("lock table decks, fill_passes, fill_pass_cards in exclusive mode");
   await out.query("set local statement_timeout = '60s'");
-  await out.query("set local idle_in_transaction_session_timeout = '30s'");
 
   const insert = async (table: string, rowsIn: Record<string, unknown>[]) => {
     if (rowsIn.length === 0) return;
