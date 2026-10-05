@@ -1420,17 +1420,17 @@ export function CardModal({
   // input, the printing radiogroup, and the zoom — "a look, not a browser", decision 1. A list
   // of one or two behaves exactly as the buttons do: the missing side is simply absent.
   //
-  // ATTACHED TO THE BACKDROP, not the dialog (pre-open review, round 1). A peek press moves
+  // SCOPED TO THE BACKDROP, not the dialog (pre-open review, round 1). A peek press moves
   // focus to the pressed plate via `initialFocusRef` on the REMOUNTED instance, and a neighbor
   // plate is a sibling of `dialogRef`'s element, outside it — a listener on the dialog alone
   // never sees a key pressed while focus sits on a plate, which stalled paging dead after the
   // first peek. The backdrop is the one ancestor both the dialog and the plates share.
   //
-  // LISTENING ON THE DOCUMENT, and taking a key whose target is the backdrop's subtree OR the
-  // body. A click on plain text in the dialog (a rules line, a label) focuses nothing, so focus
-  // falls to <body>, and a key pressed then never reached the backdrop: paging went dead until
-  // the reader clicked something focusable. The body case is ours while this modal is open, since
-  // it is a dialog the reader is looking at; a card held under a sheet (`covered`) takes none.
+  // The listener itself sits ON THE DOCUMENT, taking a key whose target is the backdrop's
+  // subtree OR the body. A click on plain text in the dialog (a rules line, a label) focuses
+  // nothing, so focus falls to <body>, and a listener on the backdrop never heard the key: paging
+  // went dead until the reader clicked something focusable. The body case is ours while this
+  // modal is open; a card held under a sheet (`covered`) attaches no listener at all.
   useEffect(() => {
     const backdrop = backdropRef.current;
     if (!backdrop || total <= 1 || covered) return;
