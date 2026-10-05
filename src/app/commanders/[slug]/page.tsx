@@ -4,7 +4,7 @@ import { scoreOneCommander } from "../../../lib/recs/recommend";
 import { loadFreePool, rankFree } from "../../../lib/recs/free-ranking";
 import type { PoolCard } from "../../../lib/recs/score";
 import { resolveCommanderSlug } from "../../../lib/discovery/resolve-slug";
-import { withOwnedCardArt } from "../../../lib/collection/owned-printings";
+import { resolveOwnedPrintings, withOwnedCardArt } from "../../../lib/collection/owned-printings";
 import { getRankedList } from "../../../lib/recs/ranked-list";
 import { CommanderDetail } from "../../../components/commanders/detail";
 import { readCommanderProse } from "../../../lib/prose/read";
@@ -130,7 +130,13 @@ export default async function CommanderDetailPage({
   // than a hand-rolled join, because it already encodes foil-only, sold-out and
   // never-stocked, and a second expression of those rules would drift from it
   // one round at a time.
-  const [availability, { prices, newestAsOf }] = await Promise.all([
+  //
+  // THE OWNED CARDS DRAW THE COPY THE READER OWNS (Hugh, 2026-10-05): a synergy row's thumbnail
+  // and hover preview, and every card's neighbor plate, drew the oracle-level printing (or, for
+  // Role Coverage, nothing) while the card details drew the owned one. One read over the owned
+  // synergy rows and the role cards (all owned: Role Coverage is built from the owned pool), beside
+  // the other two. Fail-soft through `resolveOwnedPrintings`: a failed read keeps what was there.
+  const [availability, { prices, newestAsOf }, ownedArt] = await Promise.all([
     loadAvailability(userId, {
       oracleIds: [...new Set([...coveredOracleIds, ...synergyCards.map((c) => c.oracleId)])],
     }).catch(() => new Map<string, Availability>()),
@@ -138,10 +144,13 @@ export default async function CommanderDetailPage({
       prices: new Map(),
       newestAsOf: null,
     })),
+    resolveOwnedPrintings(userId, [...new Set([...coveredOracleIds, ...synergyCards.filter((c) => c.owned).map((c) => c.oracleId)])]),
   ]);
 
   const synergyWithClaims = withAvailability(synergyCards, availability).map((c) => ({
     ...c,
+    // Only where the row draws art at all: a row read without images keeps its null.
+    imageUri: c.imageUri !== null ? ownedArt.get(c.oracleId)?.imageUri ?? c.imageUri : null,
     price: prices.get(c.oracleId) ?? null,
   }));
 
@@ -150,7 +159,7 @@ export default async function CommanderDetailPage({
     roleCards: Object.fromEntries(
       Object.entries(commander.roleCards).map(([role, cards]) => [
         role,
-        withAvailability(cards, availability),
+        withAvailability(cards, availability).map((c) => ({ ...c, imageUri: ownedArt.get(c.oracleId)?.imageUri ?? null })),
       ]),
     ) as Record<RoleName, RoleCard[]>,
   };

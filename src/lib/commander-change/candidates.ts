@@ -11,6 +11,7 @@
 // its copy. Grouping reads the collection directly, so a failed claim read loses the marks and
 // never the groups (state 24).
 
+import { resolveOwnedPrintings } from "../collection/owned-printings";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, commanderPairSupportCards, commanderSupportCards, deckCards, decks } from "../../db/schema";
@@ -226,9 +227,17 @@ export async function loadChangeCandidates(deckId: string, userId: string): Prom
 
   // Claims and prices for the halves outside the 99 only: a half in the 99 keeps its own copy.
   const asked = [...new Set(legal.flatMap((k) => k.ids))].filter((id) => !inDeck.has(id));
-  const availability = asked.length > 0
-    ? await loadAvailability(userId, { oracleIds: asked, excludeDeckId: deckId }).catch(() => null)
-    : new Map<string, Availability>();
+  // The art a reader OWNS for each owned half and for the commander(s) now leading, read beside the
+  // claims: a candidate's thumbnail, its hover preview and its card's neighbor plate drew the
+  // oracle-level printing while the card details drew the owned one (Hugh, 2026-10-05: Shirei,
+  // Shizo's Caretaker jumped from an older frame to the CMM borderless on opening). Fail-soft
+  // through `resolveOwnedPrintings`: a failed read keeps the oracle-level art.
+  const [availability, ownedArt] = await Promise.all([
+    asked.length > 0
+      ? loadAvailability(userId, { oracleIds: asked, excludeDeckId: deckId }).catch(() => null)
+      : Promise.resolve(new Map<string, Availability>()),
+    resolveOwnedPrintings(userId, [...new Set([...halfIds.filter((id) => owned.has(id)), ...currentIds])]),
+  ]);
   const toBuyIds = asked.filter((id) => !owned.has(id));
   const prices = toBuyIds.length > 0
     ? await loadPrices(toBuyIds).catch(() => null)
@@ -248,8 +257,9 @@ export async function loadChangeCandidates(deckId: string, userId: string): Prom
         const f = factBy.get(id)!;
         const here = inDeck.has(id);
         return {
-          oracleId: id, name: f.name, manaCost: f.manaCost, cmc: f.cmc, artCropUri: f.artCropUri,
-          imageUri: f.imageUri,
+          oracleId: id, name: f.name, manaCost: f.manaCost, cmc: f.cmc,
+          artCropUri: ownedArt.get(id)?.artCropUri ?? f.artCropUri,
+          imageUri: ownedArt.get(id)?.imageUri ?? f.imageUri,
           inDeck: here,
           owned: owned.has(id),
           availability: here ? null : availability?.get(id) ?? null,
@@ -264,7 +274,7 @@ export async function loadChangeCandidates(deckId: string, userId: string): Prom
       const f = currentCards.find((c) => c.oracleId === id);
       return {
         oracleId: id, name: f?.name ?? "", cmc: f?.cmc ?? 0,
-        manaCost: f?.manaCost ?? null, imageUri: f?.imageUri ?? null,
+        manaCost: f?.manaCost ?? null, imageUri: ownedArt.get(id)?.imageUri ?? f?.imageUri ?? null,
       };
     }),
     identity,

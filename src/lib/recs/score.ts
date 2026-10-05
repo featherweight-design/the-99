@@ -23,6 +23,11 @@ export type RoleCard = {
   /** The deck this card already sits in, or null. Scoring leaves it null: the
       ranked list has no card rows to mark, and the mark costs a query. The
       commander page fills it in through `withCommitted`. */
+  /**
+   * The art of the copy the reader owns, the one its card details draw. Absent from the scorer, which
+   * draws nothing; the commander page stamps it for Role Coverage's neighbor plates.
+   */
+  imageUri?: string | null;
   committedTo: string | null;
   /**
    * This card's claim picture, or null.
