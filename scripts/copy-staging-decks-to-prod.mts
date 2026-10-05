@@ -383,12 +383,21 @@ try {
   // this transaction is open; a bounded `lock_timeout`, not an unbounded wait, so a busy
   // production database aborts this run cleanly instead of this script holding a growing queue
   // of the app's own writes hostage.
+  // `lock_timeout` bounds each table's wait SEPARATELY — eleven tables in one `lock table`
+  // statement can wait roughly 5s each, up to ~55s total, while holding every lock already
+  // acquired and therefore already blocking writers to those tables (Copilot round 4).
+  // `statement_timeout` bounds the WHOLE statement instead; `lock_timeout` stays set too, so a
+  // single slow table still fails fast rather than consuming the whole budget on one wait.
   await out.query("set local lock_timeout = '5s'");
+  await out.query("set local statement_timeout = '5s'");
   await out.query(
     "lock table decks, deck_cards, deck_proxies, deck_locks, deck_versions, " +
       "deck_version_cards, deck_games, deck_game_axes, deck_folders, card_assignments, " +
       "pull_releases in exclusive mode",
   );
+  // Cleared once the locks are held: the inserts below can run long on ~6,400 rows of staging
+  // deck data, and a 5s cap meant for a LOCK WAIT must not also cap the write it is protecting.
+  await out.query("set local statement_timeout = 0");
 
   const insert = async (table: string, rowsIn: Record<string, unknown>[]) => {
     if (rowsIn.length === 0) return;
