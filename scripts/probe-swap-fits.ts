@@ -5,7 +5,7 @@
  * `Find a deck for it →` opens the picker OVER the card, and Add puts the card in another deck's
  * draft. What it proves is what jsdom cannot:
  *   - the door has layout at each width, 44px tall on the phone;
- *   - the picker is 560 wide on desktop and starts at 96px on the phone;
+ *   - the picker is 560 wide on desktop (its phone depth, 52 since stacked sheets R1, is not asserted here);
  *   - the card stays the same node under it, covered;
  *   - a universal staple's chip reads `staple · any commander` in italics with no percentage, and
  *     the staple note is drawn once;

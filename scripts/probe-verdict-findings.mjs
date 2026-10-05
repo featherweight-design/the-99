@@ -10,9 +10,9 @@
 //   · The receipt is a 760px modal on desktop, four tiles across, and a sheet from 52px down on
 //     the phone (Analysis tab handoff §3, 3a).
 //   · A card opened from the receipt STACKS (verdict addendum, ruling 1): the receipt stays, steps
-//     down to `--surface-sunken`, and on the phone the card sheet starts at 96px so the receipt's
-//     header row is visible above it. What proves that is the header's rect against the card
-//     sheet's top, not a class on either.
+//     down to `--surface-sunken` on desktop. On the phone the card REPLACES the receipt (stacked
+//     sheets R1), and this probe asserts no phone geometry for it (see the note at the stacked
+//     check below); `stacked-phone.test.tsx` and the stacked-sheets walk hold that.
 //   · Two dismissals land in the order the sheets were opened: Escape closes the card and leaves
 //     the receipt, and a second Escape closes the receipt. `useDialogA11y` answers a key pressed
 //     inside another dialog by ignoring it, and only a real focus model can say it did.
