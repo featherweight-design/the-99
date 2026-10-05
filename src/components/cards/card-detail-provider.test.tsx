@@ -1,3 +1,4 @@
+import * as React from "react";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
@@ -161,6 +162,59 @@ describe("CardDetailProvider", () => {
       await openPartner();
       await act(async () => { fireEvent.click(screen.getByTestId("card-modal-back-mobile")); });
       expect(title()).toHaveTextContent("Arcane Signet");
+    });
+
+    // Pre-open review: the origin joins the trail when the partner LANDS.
+    it("names no way back when the partner's read fails, so the card never points at itself", async () => {
+      renderTriggers(vi.fn(async (id: string) => (id === "o-sol" ? null : withPartner)));
+      await click(screen.getByText("Arcane Signet"));
+      await act(async () => { screen.getByRole("button", { name: /Two-card combos/ }).click(); });
+      await act(async () => { screen.getByRole("button", { name: "Sol Ring" }).click(); });
+      expect(title()).toHaveTextContent("Arcane Signet");
+      expect(screen.queryByTestId("card-modal-back-mobile")).toBeNull();
+    });
+
+    it("steps back once after two presses before the partner arrives", async () => {
+      let land: (c: BrowseCard) => void = () => {};
+      renderTriggers(vi.fn((id: string) => (id === "o-sol" ? new Promise<BrowseCard>((r) => { land = r; }) : Promise.resolve(withPartner))));
+      await click(screen.getByText("Arcane Signet"));
+      await act(async () => { screen.getByRole("button", { name: /Two-card combos/ }).click(); });
+      await act(async () => { screen.getByRole("button", { name: "Sol Ring" }).click(); });
+      await act(async () => { screen.getByRole("button", { name: "Sol Ring" }).click(); });
+      await act(async () => { land(SOL); });
+      expect(title()).toHaveTextContent("Sol Ring");
+      await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+      expect(title()).toHaveTextContent("Arcane Signet");
+      expect(screen.queryByTestId("card-modal-back-mobile")).toBeNull();
+    });
+
+    // A sheet opened over the partner lifts it with its trail; a card opened from the sheet starts
+    // clean, and the partner comes back still naming its origin.
+    it("keeps a partner's way back across a sheet opened over it", async () => {
+      function SheetOver() {
+        const { registerSheet } = useCardDetail();
+        const [up, setUp] = React.useState(false);
+        React.useEffect(() => (up ? registerSheet("Cheaper stand-ins", undefined, true) : undefined), [up, registerSheet]);
+        return <button type="button" onClick={() => setUp((v) => !v)}>toggle sheet</button>;
+      }
+      render(
+        <CardDetailProvider fetchCard={vi.fn(async (id: string) => (id === "o-sol" ? SOL : withPartner))}>
+          <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">Arcane Signet</CardDetailTrigger>
+          <CardDetailTrigger oracleId="o-sol" name="Sol Ring">open sol from the sheet</CardDetailTrigger>
+          <SheetOver />
+        </CardDetailProvider>,
+      );
+      await click(screen.getByText("Arcane Signet"));
+      await act(async () => { screen.getByRole("button", { name: /Two-card combos/ }).click(); });
+      await act(async () => { screen.getByRole("button", { name: "Sol Ring" }).click(); });
+      await act(async () => { fireEvent.click(screen.getByText("toggle sheet")); });
+      await act(async () => { fireEvent.click(screen.getByText("open sol from the sheet")); });
+      expect(screen.getByTestId("card-modal-back-mobile")).toHaveAccessibleName(cardSheetCopy.back.a11y("Cheaper stand-ins"));
+      await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+      await act(async () => { await new Promise((r) => setTimeout(r, 250)); });
+      await act(async () => { fireEvent.click(screen.getByText("toggle sheet")); });
+      expect(title()).toHaveTextContent("Sol Ring");
+      expect(screen.getByTestId("card-modal-back-mobile")).toHaveAccessibleName(cardSheetCopy.back.a11y("Arcane Signet"));
     });
 
     it("forgets the way back once the card is closed and another opened", async () => {

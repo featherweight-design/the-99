@@ -383,9 +383,10 @@ type OpenAt = {
 } | null;
 /** A card lifted out of the live slot by a sheet opened over it, with what it needs to come back. */
 /** `opener`: the control the held card was opened from, handed back when the sheet over it goes. */
-type Held = { card: BrowseCard; siblings: SiblingCard[]; openAt: OpenAt; door: boolean; opener: HTMLElement | null };
 /** A card a combo partner was opened FROM, put back when the partner closes. */
-type TrailEntry = Omit<Held, "opener">;
+type TrailEntry = { card: BrowseCard; siblings: SiblingCard[]; openAt: OpenAt; door: boolean };
+/** A card lifted under a sheet, with its own partner trail for when it comes back. */
+type Held = TrailEntry & { opener: HTMLElement | null; trail: TrailEntry[] };
 
 export function CardDetailProvider({
   children,
@@ -471,8 +472,12 @@ export function CardDetailProvider({
   // beside the state, because `dismiss` must read it in the press that pops it.
   const [trail, setTrail] = useState<TrailEntry[]>([]);
   const trailRef = useRef<TrailEntry[]>([]);
-  // The card the live one is a partner of, which its way back names. Only for the live slot: a card
-  // over a held one names the sheet between them instead.
+  // A partner asked for and not yet arrived. Its origin joins the trail only when the partner lands
+  // (`show`): a read that fails leaves the original on screen, which must not then name itself as
+  // its own way back, and two presses before the first read lands push the original once.
+  const pendingPartner = useRef<{ from: TrailEntry; to: string } | null>(null);
+  // The card the live one is a partner of, which its way back names. The trail is the LIVE slot's:
+  // a card lifted under a sheet takes its own into `Held`, so a card over that sheet starts clean.
   const partnerOf = trail.at(-1)?.card ?? null;
   // The printing the caller asked to open at, carrying the oracle id it belongs to.
   //
@@ -642,6 +647,17 @@ export function CardDetailProvider({
     // The card that just arrived is the one a pending open was for: its printing commits
     // now, which is the first moment it has a card to describe. Read and cleared here
     // rather than inside the updater, which must stay pure.
+    // A partner landing puts the card it was asked from on the trail; anything else landing drops
+    // the ask.
+    const partner = pendingPartner.current;
+    if (partner && next) {
+      pendingPartner.current = null;
+      if (next.oracleId === partner.to) {
+        const trailNext = [...trailRef.current, partner.from];
+        trailRef.current = trailNext;
+        setTrail(trailNext);
+      }
+    }
     const pending = pendingAt.current;
     if (pending && pending.oracleId === next?.oracleId) {
       pendingAt.current = null;
@@ -840,6 +856,7 @@ export function CardDetailProvider({
       // A fresh open is a new card, not a step from one: no way back to an earlier partner chain.
       trailRef.current = [];
       setTrail([]);
+      pendingPartner.current = null;
       // An open landing while a card drops replaces it rather than waiting for it to leave.
       if (leavingTimer.current !== null) {
         window.clearTimeout(leavingTimer.current);
@@ -889,19 +906,19 @@ export function CardDetailProvider({
     // The picker sits over a HELD card, and a card opened from the picker stacks over both. Closing
     // that top card is a step back to the picker, the stand-ins sheet's rule, so only a close with
     // nothing held (the picker's own card going) takes the picker with it.
-    if (heldRef.current === null) {
-      setFitsFor(null);
-      trailRef.current = [];
-      setTrail([]);
-    }
+    if (heldRef.current === null) setFitsFor(null);
+    // The live slot's trail goes with its card. A held card's own is in `Held`.
+    trailRef.current = [];
+    setTrail([]);
+    pendingPartner.current = null;
   }, [show, setFitsFor]);
 
-  // One step back along the partner trail: the card the partner was opened from, exactly as it was.
-  // False when there is nowhere to step back to. A card held under a sheet keeps its trail for when
-  // it comes back; the card over the sheet is not on it.
+  // One step back along the live slot's partner trail: the card the partner was opened from, exactly
+  // as it was. False when there is nowhere to step back to.
   const stepBack = useCallback(() => {
-    const back = heldRef.current === null ? trailRef.current.at(-1) : undefined;
+    const back = trailRef.current.at(-1);
     if (!back) return false;
+    pendingPartner.current = null;
     const next = trailRef.current.slice(0, -1);
     trailRef.current = next;
     setTrail(next);
@@ -953,11 +970,9 @@ export function CardDetailProvider({
   // block, not a Shopping row.
   const selectPartner = useCallback((oracleId: string) => {
     const from = live.current;
-    if (from.card && from.card.oracleId !== oracleId) {
-      const next = [...trailRef.current, { card: from.card, siblings: from.siblings, openAt: from.openAt, door: from.door }];
-      trailRef.current = next;
-      setTrail(next);
-    }
+    pendingPartner.current = from.card && from.card.oracleId !== oracleId
+      ? { from: { card: from.card, siblings: from.siblings, openAt: from.openAt, door: from.door }, to: oracleId }
+      : null;
     void load(oracleId, undefined, undefined, { door: false });
   }, [load]);
   useEffect(() => {
@@ -970,7 +985,11 @@ export function CardDetailProvider({
     if (lifting?.card) {
       const held: Held = {
         card: lifting.card, siblings: lifting.siblings, openAt: lifting.openAt, door: lifting.door, opener: openerRef.current,
+        trail: trailRef.current,
       };
+      trailRef.current = [];
+      setTrail([]);
+      pendingPartner.current = null;
       heldRef.current = held;
       setHeld(held);
       latest.current++;
@@ -999,8 +1018,12 @@ export function CardDetailProvider({
       setSiblingList(back.siblings);
       setOpenAt(back.openAt);
       setDoor(back.door);
-      // A card opened from the sheet took the opener slot; the card coming back takes its own.
+      // A card opened from the sheet took the opener slot; the card coming back takes its own, and
+      // its own way back along the partners it came through.
       openerRef.current = back.opener;
+      trailRef.current = back.trail;
+      setTrail(back.trail);
+      pendingPartner.current = null;
     };
   }, []);
 
@@ -1301,8 +1324,8 @@ export function CardDetailProvider({
           footer={sheetFooter && sheetFooter(card.oracleId, "row") !== null
             ? (layout, priced) => sheetFooter(card.oracleId, layout, priced)
             : null}
-          backLabel={backLabel}
-          phoneBackLabel={phoneBackLabel}
+          backLabel={partnerOf ? partnerOf.name : backLabel}
+          phoneBackLabel={partnerOf ? undefined : phoneBackLabel}
           // The combo block's partner name, through the same `load` that pages Prev/Next —
           // so a partner replaces the open card exactly as a sibling does, and the back
           // gesture returns to the card the reader started from. It arrives without the
