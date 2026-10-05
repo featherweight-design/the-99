@@ -6,6 +6,7 @@
  * disagree about. This is `db:copy:prose`'s shape for `db:copy:labels`'s reason.
  */
 
+import { labelIsFresh, PROMPT_SYSTEM_SHA256, type CardForPrompt } from "./prompt";
 import type { Job } from "./types";
 
 /** One row as the source holds it. */
@@ -17,18 +18,25 @@ export type SourceLabel = {
   inputHash: string;
 };
 
-/** What the TARGET's own inputs hash to, per card. */
-export type TargetHash = { oracleId: string; inputHash: string };
+/** A card as the TARGET's own catalog holds it: what a source row is judged fresh against. */
+export type TargetCard = CardForPrompt & { oracleId: string };
 
 export type CopyPlan = {
-  /** Rows to install: the source's hash equals the target's own. */
+  /** Rows to install: fresh against the target's own card under the row's own version and model. */
   install: SourceLabel[];
   /**
-   * Cards the source has labelled whose hash does NOT match the target's inputs — so the label
+   * Cards the source has labelled whose row is NOT fresh against the target's card — so the label
    * describes text the target no longer holds, and installing it would store a label for a card
    * as it used to be.
    */
   mismatched: string[];
+  /**
+   * Cards whose source row names a prompt version this checkout's `PROMPT_SYSTEM_SHA256` does not
+   * hold. Its hash cannot be checked here at all, so it is neither installed nor called a catalog
+   * difference: re-running a catalog refresh cannot fix it, and checking out the code that knows
+   * the version can.
+   */
+  unknownVersion: string[];
   /** Cards the target holds and the source has not labelled. Left alone; never deleted. */
   absentFromSource: string[];
   /**
@@ -45,10 +53,15 @@ export type CopyPlan = {
 /**
  * Decides what to install.
  *
- * **A row is installed only when the source's stored hash equals the hash the TARGET'S OWN inputs
- * produce.** Not the source's inputs: the two databases can hold different catalog states, and a
- * label describing an oracle text the target does not have is worse than no label, because nothing
- * downstream can tell it apart from a current one.
+ * **A row is installed only when it is fresh against the TARGET'S OWN card** (`labelIsFresh`), under
+ * the row's own prompt version and model. Not the source's inputs: the two databases can hold
+ * different catalog states, and a label describing an oracle text the target does not have is worse
+ * than no label, because nothing downstream can tell it apart from a current one.
+ *
+ * Under the row's OWN version and model (Hugh, 2026-10-04), not the checkout's: the target judges
+ * freshness the same way, so an older-version row that is fresh on the source and describes the
+ * target's text is fresh on the target too, and its next build leaves it alone. Copying it is free;
+ * refusing it would leave the target unlabelled, or paying to relabel, for a label that exists.
  *
  * **Mismatched rows are REPORTED, not queued for a paid rebuild.** The plan's Task 4b originally
  * said they "are picked up by the next `db:build:labels` against that target", which would run the
@@ -61,22 +74,25 @@ export type CopyPlan = {
  */
 export function planCopy(
   source: readonly SourceLabel[],
-  targetHashes: readonly TargetHash[],
+  targetCards: readonly TargetCard[],
   targetHasLabel: ReadonlySet<string>,
+  registry: Readonly<Record<string, string>> = PROMPT_SYSTEM_SHA256,
 ): CopyPlan {
-  const wantByCard = new Map(targetHashes.map((t) => [t.oracleId, t.inputHash]));
+  const cardById = new Map(targetCards.map((c) => [c.oracleId, c]));
   const install: SourceLabel[] = [];
   const mismatched: string[] = [];
+  const unknownVersion: string[] = [];
   const notInTargetCatalog: string[] = [];
 
   for (const row of source) {
-    const want = wantByCard.get(row.oracleId);
+    const card = cardById.get(row.oracleId);
     // A card the target's catalog does not hold at all is not a mismatch — there is nothing to
     // describe. Recorded rather than skipped silently: a source labelled against a newer catalog
     // always carries some of these, and the count is what tells a reader the difference between
     // that and the target's catalog refresh having stopped.
-    if (want === undefined) { notInTargetCatalog.push(row.oracleId); continue; }
-    if (want === row.inputHash) install.push(row);
+    if (card === undefined) { notInTargetCatalog.push(row.oracleId); continue; }
+    if (!Object.hasOwn(registry, row.promptVersion)) { unknownVersion.push(row.oracleId); continue; }
+    if (labelIsFresh(row, card, registry)) install.push(row);
     else mismatched.push(row.oracleId);
   }
 
@@ -84,6 +100,7 @@ export function planCopy(
   return {
     install,
     mismatched,
+    unknownVersion,
     notInTargetCatalog,
     absentFromSource: [...targetHasLabel].filter((id) => !labelled.has(id)),
   };

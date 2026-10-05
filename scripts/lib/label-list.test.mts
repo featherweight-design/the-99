@@ -44,4 +44,14 @@ describe("listScopeIds", () => {
     expect(build).toMatch(/const trial = deckId !== null \? await labelTrialPool\(deckId\) : listScopeIds\(scope\);/);
     expect(build).toMatch(/where \$\{trial === null \? sql`c\.commander_legal = true \$\{scopeCondition\(scope\)\}` : sql`c\.oracle_id = any\(\$\{sql\.param\(trial\)\}::uuid\[\]\)`\}/);
   });
+
+  // Version-aware freshness (Hugh, 2026-10-04): the stale set is `needsLabel` over each card's own
+  // row (its model, version and hash), and a LIST scope alone is the deliberate redo. `needsLabel`'s
+  // rule is unit tested in `prompt.test.ts`; this pins that the build calls it with those inputs.
+  it("plans the stale set with needsLabel, redoing only on a list scope", () => {
+    const build = readFileSync(join(process.cwd(), "scripts/lib/card-labels-build.ts"), "utf8");
+    expect(build).toMatch(/model: cardLabels\.model, promptVersion: cardLabels\.promptVersion, inputHash: cardLabels\.inputHash,/);
+    expect(build).toMatch(/const redo = scopeList\(scope\) !== null;/);
+    expect(build).toMatch(/return all\.filter\(\(c\) => needsLabel\(c, stored\.get\(c\.oracleId\), \{ redo, model: MODEL \}\)\);/);
+  });
 });

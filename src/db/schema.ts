@@ -2217,13 +2217,14 @@ export const cardLabelBatches = pgTable("card_label_batches", {
  * so a refresh cannot cascade labels away.
  *
  * `input_hash` is `labelInputHash` in `src/lib/labels/prompt.ts`: sha256 over the oracle id,
- * the card AS RENDERED FOR THE MODEL, the prompt version, the model and a hash of the SYSTEM
- * prompt (so a reworded definition stales every row too). Derived from
+ * the card AS RENDERED FOR THE MODEL, the prompt version, the model and the SYSTEM prompt's
+ * hash for that version (`PROMPT_SYSTEM_SHA256`). Derived from
  * `renderCard` rather than listed beside it, so no field the model is sent can be left out
  * of the freshness check. The name and type line are in it because a
  * card errata'd under its existing oracle id leaves a stored label describing something
- * else; the model is in it so switching models relabels rather than silently mixing two
- * models' output in one table. A row whose hash still matches its inputs is skipped, so
+ * else. A row is judged under its OWN `prompt_version` and `model` (`labelIsFresh`, Hugh
+ * 2026-10-04), so a prompt bump or a model switch stales nothing by itself; only a `list:`
+ * build redoes such rows deliberately. A row whose hash still matches its inputs is skipped, so
  * a re-run costs nothing for a card nothing has moved.
  */
 export const cardLabels = pgTable("card_labels", {

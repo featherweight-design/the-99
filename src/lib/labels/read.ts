@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { searchesOnlyLands } from "../bracket/tutor-targets";
-import { labelInputHash } from "./prompt";
+import { labelIsFresh, PROMPT_SYSTEM_SHA256 } from "./prompt";
 import { isJob } from "./schema";
 import type { Job } from "./types";
 
@@ -31,16 +31,18 @@ export function labelSurfacesEnabled(env: NodeJS.ProcessEnv = process.env): bool
 }
 
 type Row = {
-  oracle_id: string; labels: unknown; model: string; input_hash: string;
+  oracle_id: string; labels: unknown; model: string; prompt_version: string; input_hash: string;
   name: string; mana_cost: string | null; type_line: string; oracle_text: string | null; layout: string;
 };
 
 /**
  * The FRESH labels of `oracleIds`, one query. A card is absent from the map when:
  * - it has no `card_labels` row;
- * - its row is STALE: `input_hash` no longer equals what the card's current inputs produce under the
- *   row's own model (`labelInputHash`), so the label describes text the card no longer has, or a
- *   prompt (its version or its SYSTEM instruction) the row predates;
+ * - its row is STALE (`labelIsFresh`): `input_hash` no longer equals what the card's current inputs
+ *   produce under the row's OWN prompt version and model, so the label describes text the card no
+ *   longer has. A newer prompt version or another current model does not stale it (Hugh,
+ *   2026-10-04): a row stays fresh under the prompt that wrote it until it is deliberately redone.
+ *   A row of a version the registry does not hold is stale;
  * - any of its jobs fails `validateJob`, so a malformed row is never half-read;
  * - it holds NO job: a stored `[]` is UNLABELLED, never "a fresh label with no jobs". Measured on
  *   staging's 3,237 `[]` rows (2026-10-03): 96% are the model answering no job, some rightly (a
@@ -60,7 +62,7 @@ export async function readLabels(oracleIds: readonly string[]): Promise<Map<stri
   const ids = [...new Set(oracleIds)];
   if (ids.length === 0) return new Map();
   const rows = await db.execute<Row>(sql`
-    select l.oracle_id, l.labels, l.model, l.input_hash,
+    select l.oracle_id, l.labels, l.model, l.prompt_version, l.input_hash,
            c.name, c.mana_cost, c.type_line, c.oracle_text, c.layout
       from card_labels l join cards c on c.oracle_id = l.oracle_id
      where l.oracle_id = any(${sql.param(ids)}::uuid[])
@@ -68,12 +70,15 @@ export async function readLabels(oracleIds: readonly string[]): Promise<Map<stri
   return freshLabels(rows.rows);
 }
 
-/** The pure half of `readLabels`, so staleness and validity are testable without a database. */
-export function freshLabels(rows: readonly Row[]): Map<string, Job[]> {
+/**
+ * The pure half of `readLabels`, so staleness and validity are testable without a database.
+ * `registry` is `PROMPT_SYSTEM_SHA256` in the app; a test passes one holding a later version.
+ */
+export function freshLabels(rows: readonly Row[], registry: Readonly<Record<string, string>> = PROMPT_SYSTEM_SHA256): Map<string, Job[]> {
   const out = new Map<string, Job[]>();
   for (const r of rows) {
     const card = { oracleId: r.oracle_id, name: r.name, mana_cost: r.mana_cost, type_line: r.type_line, oracle_text: r.oracle_text, layout: r.layout };
-    if (labelInputHash(card, r.model) !== r.input_hash) continue;
+    if (!labelIsFresh({ model: r.model, promptVersion: r.prompt_version, inputHash: r.input_hash }, card, registry)) continue;
     if (!Array.isArray(r.labels) || !r.labels.every(isJob)) continue;
     // A land search the model called a tutor (Hugh, 2026-10-03): the job is dropped here, free,
     // rather than paid for again under a new prompt. Land-only by the 2026-09-22 ruling.

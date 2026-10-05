@@ -322,7 +322,7 @@ a card that does either is never []. No prose, no markdown fence.`;
  */
 export const SYSTEM_TOKENS_BOUND = SYSTEM.length;
 
-type CardForPrompt = {
+export type CardForPrompt = {
   name: string; mana_cost: string | null; type_line: string;
   oracle_text: string | null; layout?: string;
 };
@@ -464,17 +464,17 @@ export const buildRequest = (customId: string, model: string, cards: CardForProm
  * The prompt's version, bumped whenever a change would make a stored label mean something
  * different from what a fresh call would produce.
  *
- * It is in `labelInputHash` below, so a bump marks every row stale and the next build
- * relabels — which costs a full run, and is therefore a deliberate act rather than a
- * side effect of editing a comment.
+ * VERSION-AWARE FRESHNESS (Hugh, 2026-10-04). Each row records the version that wrote it, and
+ * is judged under THAT version (`labelIsFresh`): its stored hash is recomputed with the row's own
+ * version and the SYSTEM hash `PROMPT_SYSTEM_SHA256` records for it. So a bump, or any SYSTEM
+ * edit, stales NOTHING by itself: a row stays fresh under the prompt that wrote it until it is
+ * deliberately redone (a `list:<name>` build relabels its listed cards written under another
+ * version or model; see `needsLabel`). What still stales a row is the CARD: its rendered text,
+ * name, type line or cost moving under the same oracle id.
  *
- * Since the vocabulary plan's Task 3 the SYSTEM prompt is hashed too, so this constant is
- * no longer the only thing standing between a widened vocabulary and labels that predate it:
- * ANY edit to `SYSTEM`, a reworded definition included, marks every row stale. That is the
- * point (a label written against an older instruction is not the label a fresh call makes),
- * and it means a SYSTEM edit is a full run's spend, decided rather than incidental. The
- * version still moves with every SYSTEM edit (pinned in `prompt.test.ts`): it is the human-readable
- * reason a run was owed, and what the label copy reads to tell a prompt change from a catalog one.
+ * Every SYSTEM edit still moves the version, and adds a registry entry for it (pinned in
+ * `prompt.test.ts`): new labels are always written under the current version, and a row's version
+ * has to name the instruction it was written against for its hash to be checkable at all.
  */
 // "8": the empty-label fix (2026-10-04): damage that can hit a creature or permanent is removal, any-target
 // damage is removal AND drain, and "jobs": [] only when no ability maps to a job. v7 left 11.7% of
@@ -487,13 +487,28 @@ export const buildRequest = (customId: string, model: string, cards: CardForProm
 // "5": the re-sample's prompt fixes (2026-10-02): triggers defined, deathTrigger and tribal labelled beside
 // the job they come with, symmetric effects are each.
 // "4": deathTrigger is another creature dying; a card's own death is the job's `dies` trigger (Task 4 review).
-// "3": the vocabulary plan's Task 3 vocabulary and definitions. SYSTEM's hash alone already stales
-// every row; the version moves with it because `copy-card-labels.ts` reads a version mismatch as "a
-// different prompt" and a hash mismatch under an EQUAL version as a catalog difference. A SYSTEM edit
-// with no bump would be misreported as the latter, so `prompt.test.ts` pins SYSTEM's hash to this version.
+// "3": the vocabulary plan's Task 3 vocabulary and definitions, and the first version whose SYSTEM was
+// hashed. `prompt.test.ts` pins SYSTEM's hash to this version's registry entry.
 // "2": every job now carries `affects`, `to` and `method` (the vocabulary plan's Task 2), so a row
 // labelled under "1" has none of them and must read stale rather than current.
 export const LABEL_PROMPT_VERSION = "8";
+
+/**
+ * The sha256 of the SYSTEM prompt each prompt version was written under, by version.
+ *
+ * **APPEND-ONLY.** A row written under a version is checked against that version's entry
+ * (`labelInputHash`, `labelIsFresh`), so removing or editing an entry turns every row written under
+ * it stale (an unknown version is stale), and the next build pays to relabel them. A SYSTEM edit
+ * bumps `LABEL_PROMPT_VERSION` and ADDS an entry for the new version; the old entries stay. Nothing
+ * can check that statically: the pin in `prompt.test.ts` checks only the current entry against the
+ * shipped SYSTEM.
+ *
+ * Versions before "8" are absent on purpose. No row of theirs was meant to outlive its prompt, and
+ * their SYSTEM text is not kept, so their hash cannot be reconstructed here; such a row reads stale.
+ */
+export const PROMPT_SYSTEM_SHA256: Readonly<Record<string, string>> = Object.freeze({
+  "8": "826775f8b8851f3ed337225304f9fb0baeb31baf2505ece20a5ea5d47f90f43d",
+});
 
 /**
  * Whether a stored label still describes its card, mirroring `proseInputHash`.
@@ -516,25 +531,76 @@ export const LABEL_PROMPT_VERSION = "8";
  * - the CAST-FACE text rather than the raw column, for the same reason from the other
  *   direction: hashing both faces would mark a row stale whenever a back face changed
  *   without changing anything the label was derived from;
- * - the PROMPT VERSION and the MODEL, so switching either relabels rather than silently
- *   mixing two models' output in one table;
- * - the SYSTEM prompt itself (the vocabulary plan's Task 3), because the vocabulary reached
- *   the hash only through the hand-kept version: widening it without a bump left
- *   old-vocabulary labels reading fresh, and `cardsNeedingLabels` would have skipped them.
+ * - the PROMPT VERSION and the MODEL, so a stored hash names what wrote it and cannot be
+ *   checked as fresh under any other version or model;
+ * - the SYSTEM prompt's hash for that version (the vocabulary plan's Task 3), read from
+ *   `PROMPT_SYSTEM_SHA256` rather than from the shipped `SYSTEM`, so a row is checked against
+ *   the instruction it was written under. Since 2026-10-04 a SYSTEM edit with its bump leaves
+ *   older rows fresh (`labelIsFresh`); the payload shape is unchanged, so every stored v8 hash
+ *   still matches.
+ *
+ * `version` defaults to the current one, which is what every WRITE uses: a new label is always
+ * written under the current version and model. Throws for a version the registry does not hold.
  *
  * **The payload is derived from `renderCard`, not assembled beside it.** Anything
  * `renderCard` sends and this omits is a field a card can change under a fixed oracle id
  * while the row is still called fresh — so the two are pinned together by a test that
  * renders a card, mutates each sent field in turn, and requires the hash to move.
  */
-export function labelInputHash(card: CardForPrompt & { oracleId: string }, model: string, system: string = SYSTEM): string {
+export function labelInputHash(
+  card: CardForPrompt & { oracleId: string },
+  model: string,
+  version: string = LABEL_PROMPT_VERSION,
+  registry: Readonly<Record<string, string>> = PROMPT_SYSTEM_SHA256,
+): string {
+  if (!Object.hasOwn(registry, version)) throw new Error(`no SYSTEM hash is registered for label prompt version ${JSON.stringify(version)}`);
   const payload = JSON.stringify([
     card.oracleId,
     // EXACTLY the string the model is sent, so no sent field can be forgotten here.
     renderCard(card),
-    LABEL_PROMPT_VERSION,
+    version,
     model,
-    createHash("sha256").update(system).digest("hex"),
+    registry[version],
   ]);
   return createHash("sha256").update(payload).digest("hex");
+}
+
+/** What `labelIsFresh` reads of a stored `card_labels` row. */
+export type StoredLabelStamp = { model: string; promptVersion: string; inputHash: string };
+
+/**
+ * Whether a stored label still describes its card, judged under the prompt version and model THAT
+ * WROTE IT. True iff the row's version is registered and its hash equals what the card's current
+ * inputs produce under that version and model.
+ *
+ * So neither a prompt bump nor a model switch stales a row by itself; a change to the card's own
+ * rendered text does. A row of an unregistered version is stale, never fresh by default.
+ */
+export function labelIsFresh(
+  row: StoredLabelStamp,
+  card: CardForPrompt & { oracleId: string },
+  registry: Readonly<Record<string, string>> = PROMPT_SYSTEM_SHA256,
+): boolean {
+  if (!Object.hasOwn(registry, row.promptVersion)) return false;
+  return row.inputHash === labelInputHash(card, row.model, row.promptVersion, registry);
+}
+
+/**
+ * Whether a build owes this card a label: it has no row, or its row is not fresh (`labelIsFresh`).
+ *
+ * `redo` is the one DELIBERATE path back: a `list:<name>` build (a hand-picked prompt trial) also
+ * relabels a listed card whose fresh row was written under another version or model than the
+ * current ones, because relabelling those cards under the current prompt is what such a list is
+ * for. Every other scope (`all`, `in-use`, `deck:<id>`) passes `redo: false` and buys a label only
+ * when the card has none or its text moved.
+ */
+export function needsLabel(
+  card: CardForPrompt & { oracleId: string },
+  row: StoredLabelStamp | undefined,
+  opts: { redo: boolean; model: string; version?: string; registry?: Readonly<Record<string, string>> },
+): boolean {
+  if (row === undefined) return true;
+  const registry = opts.registry ?? PROMPT_SYSTEM_SHA256;
+  if (!labelIsFresh(row, card, registry)) return true;
+  return opts.redo && (row.promptVersion !== (opts.version ?? LABEL_PROMPT_VERSION) || row.model !== opts.model);
 }
