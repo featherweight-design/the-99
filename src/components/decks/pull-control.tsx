@@ -546,8 +546,6 @@ function MobileSheet({
   );
 }
 
-/** The list, the consequence sentence and the confirm/cancel row — shared by
- *  the popover and the sheet, so the two shells can never draw different rows. */
 /**
  * `Pull {card} from` with the card's name as the trigger that opens it. Split around the name the
  * copy key places, so the sentence stays the key's own wording rather than a second copy of it.
@@ -566,6 +564,8 @@ function TitleOpeningCard({ card }: { card: { oracleId: string; name: string } }
   );
 }
 
+/** The list, the consequence sentence and the confirm/cancel row — shared by
+ *  the popover and the sheet, so the two shells can never draw different rows. */
 function SourcePickerBody({
   nameOpens,
   titleId,
