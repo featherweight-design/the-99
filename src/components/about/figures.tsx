@@ -63,6 +63,7 @@ import {
   PostImportFigureBody,
   DeckAnalysisFigureBody,
   CardMarksFigureBody,
+  SuggestedChangesFigureBody,
 } from "./ch01-figures";
 import { statusBarStyle } from "../../lib/decks/status-style";
 import type { StatusPill } from "../../lib/decks/status";
@@ -741,6 +742,15 @@ function CardMarksFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+/** "Kept for this deck" and Additional notes, never run — Suggested changes' own limits box. */
+function SuggestedChangesFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="suggested-changes" width={width}>
+      <SuggestedChangesFigureBody />
+    </Specimen>
+  );
+}
+
 function AutoFillFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="auto-fill" width={width}>
@@ -1002,4 +1012,5 @@ export const FIGURES: Partial<
   folders: FoldersFigure,
   resume: ResumeFigure,
   proxies: ProxiesFigure,
+  "suggested-changes": SuggestedChangesFigure,
 };

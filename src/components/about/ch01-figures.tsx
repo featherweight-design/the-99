@@ -57,6 +57,7 @@ import {
   READY_SLICE,
   CARD_MARK_ROWS,
   DECK_ANALYSIS,
+  SUGGESTED_CHANGES,
 } from "../../lib/about/fixtures";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { collectionChassisCopy } from "../../lib/copy/collection";
@@ -117,6 +118,10 @@ import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { creditsCopy } from "../../lib/copy/credits";
+import { TuningLimitsBox } from "../decks/tuning-limits-box";
+import { TuningNotesField } from "../decks/tuning-notes-field";
+import { DeckDescriptionField } from "../decks/deck-description-field";
 import { gameLogCopy } from "../../lib/copy/game-log";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { ReadyToBuild } from "../home/ready-to-build";
@@ -822,6 +827,70 @@ export function CardMarksFigureBody() {
         </div>
       </AnchoredNumerals>
     </CardDetailProvider>
+  );
+}
+
+/**
+ * `suggested-changes` — the description, "Kept for this deck" and Additional notes, never run
+ * (H35, ruling 7).
+ *
+ * THREE REAL COMPONENTS, cropped rather than adapted: `DeckDescriptionField`, `TuningLimitsBox`
+ * and `TuningNotesField` are all controlled and take no deck of their own, so they mount here
+ * exactly as the deck page mounts them (the pre-Analyze description field lives outside
+ * `TuningPanel`, on the empty analysis state — key 1 is about that field, not the panel). The
+ * checklist preview and the results list — the handoff's own "manifest is not drawn" — stay
+ * out, rather than forced into a frame built for seven other states too.
+ *
+ * The action row's button and credit line are NOT a mounted component (`TuningPanel` draws
+ * them inline, with no exported piece to reuse), so they are rebuilt here from the real copy
+ * (`deckTuningCopy.panel.suggest`, `creditsCopy.first`) rather than retyped text — the same
+ * trade `DeckPageFigureBody` makes for the part of a band that cannot be mounted whole.
+ */
+export function SuggestedChangesFigureBody() {
+  const { sets, capDollars, selectedSets, ownedOnly, request, credit, description } = SUGGESTED_CHANGES;
+  const copy = deckTuningCopy.panel;
+  return (
+    <AnchoredNumerals
+      gutter
+      marks={[
+        // 1: the description field, asked beside Analyze before a deck's first reading.
+        { n: 1, find: first("#deck-description-field"), side: "gutter" },
+        // 2: Additional notes, typed and unpressed.
+        { n: 2, find: first("#tuning-notes-field"), side: "gutter" },
+        // 3: the limits box's own heading — the commander, a locked card and the limits
+        // always win over what the notes ask for.
+        { n: 3, find: first("h3"), side: "gutter" },
+      ]}
+    >
+      <div className="flex flex-col gap-[16px] md:gap-[18px]">
+        <DeckDescriptionField value={description} onChange={() => {}} onBlur={() => {}} saving={false} refused={null} />
+        <TuningLimitsBox
+          sets={sets}
+          capDollars={capDollars}
+          onCapChange={() => {}}
+          onCapDraftInvalid={() => {}}
+          selectedSets={selectedSets}
+          onSetsChange={() => {}}
+          ownedOnly={ownedOnly}
+          onOwnedOnlyChange={() => {}}
+        />
+        <TuningNotesField value={request} onChange={() => {}} />
+        <div
+          className="mt-[2px] flex flex-col gap-[9px] pt-[15px] md:flex-row md:flex-wrap md:items-center md:gap-[16px] md:pt-[16px]"
+          style={{ borderTop: "1px solid var(--border)" }}
+        >
+          <span
+            className="flex h-[44px] w-full items-center justify-center rounded-[8px] text-[13.5px] font-semibold md:h-auto md:w-auto md:px-[20px] md:py-[11px] md:text-[14px]"
+            style={{ color: "var(--accent)", border: "1px solid var(--accent)" }}
+          >
+            {copy.suggest}
+          </span>
+          <span className="text-center font-mono text-[9.5px] leading-[1.55] md:text-left md:text-[11px]" style={{ color: "var(--fg-faint)" }}>
+            {creditsCopy.first(credit.left, credit.limit, credit.nextAt)}
+          </span>
+        </div>
+      </div>
+    </AnchoredNumerals>
   );
 }
 

@@ -70,8 +70,10 @@ back, in the shape `probe:review` uses for its collection edits.
 
 ## Everything is built
 
-**45 entries, 45 figures.** (Was 46: `reservations` was retired 2026-10-04 — see about.ts — a
-removal, not a drift, so it is noted here rather than silently folded into the count.) The ledger
+**46 entries, 46 figures.** (Was 45: `suggested-changes` was added 2026-10-05, H35 ruling 7 — see
+about.ts — a feature launch, not a drift. Before that it was 46: `reservations` was retired
+2026-10-04 — a removal, not a drift, so each is noted here rather than silently folded into the
+count.) The ledger
 in `about.test.ts` is empty and fails on any entry arriving
 without one — and those three totals are pinned to the source by that same file, because this
 paragraph has now gone stale twice: once by being written without counting, and once by a figure
@@ -83,8 +85,9 @@ described as its four hardest plates. The number was not checked before it was w
 artifact here would have contradicted it — the inventory photographed the figures that existed, so
 the sheet confirmed the scope back to its author.
 
-**Forty-five are `Specimen`-rooted and zero are `Legend`-rooted.** (Was forty-six: `reservations`,
-itself `Specimen`-rooted, was retired 2026-10-04 — see about.ts.) This record said "four mount
+**Forty-six are `Specimen`-rooted and zero are `Legend`-rooted.** (`suggested-changes` is also
+`Specimen`-rooted, added 2026-10-05 — see about.ts. Before that it was forty-five, and before
+`reservations`, itself `Specimen`-rooted, was retired 2026-10-04, forty-six.) This record said "four mount
 and the rest are legends" — wrong when written, and wrong in the paragraph correcting a previous
 wrong count, which was the second time a figure here was written down without being counted. It is
 now every figure: chapter 04 converted the last four, and `Legend`, `Line` and `LegendBox` went

@@ -1177,6 +1177,28 @@ export const DECK_ANALYSIS = {
 };
 
 /**
+ * `suggested-changes` — "Kept for this deck" and Additional notes, never run (H35, ruling 7).
+ *
+ * The handoff's own fixture, verbatim: a $10 cap, two real Scryfall set codes, owned-only off,
+ * and a request typed but unpressed. `credit` is the real `creditsCopy.first` the action row
+ * draws in this state — a representative allowance rather than a live read, since the specimen
+ * has no player to read one for.
+ */
+export const SUGGESTED_CHANGES = {
+  sets: [
+    { code: "tla", name: "The Lord of the Rings: Tales of Middle-earth" },
+    { code: "tle", name: "Tales of Middle-earth Holiday Release" },
+  ] as const,
+  capDollars: 10,
+  selectedSets: ["tla", "tle"] as const,
+  ownedOnly: false,
+  request: "more removal, and swap out Aang",
+  description:
+    "A deck built to flip the commander into his transformed state, by utilizing fire, water, earth, and air bending.",
+  credit: { left: 5, limit: 5, nextAt: new Date("2026-10-06T00:00:00.000Z") },
+};
+
+/**
  * `roles` — one card per role, quantity-weighted so the strip's five cells
  * read the counts this entry wants to explain.
  *
