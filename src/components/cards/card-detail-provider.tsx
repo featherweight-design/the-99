@@ -27,7 +27,7 @@ import {
 } from "react";
 import { twMerge } from "tailwind-merge";
 import type { BrowseCard, CardArt, PreferredPrinting } from "../../lib/collection/browse";
-import { resolvedPrinting } from "../../lib/collection/browse";
+import { printedNameOf, resolvedPrinting } from "../../lib/collection/browse";
 import { getCardDetail } from "../../app/card-detail-action";
 import { fetchCardDetail } from "../../lib/cards/fetch-card-detail";
 import { FitsPicker } from "./fits-picker";
@@ -603,11 +603,19 @@ export function CardDetailProvider({
   // draws none either, whatever its opener passed. An absent entry is a card not read yet, and only
   // that falls back to the opener. Evicting a card drops its entry with the cache's, so a pick in
   // flight never leaves the plate on the printing it replaced.
-  const [readArt, setReadArt] = useState<ReadonlyMap<string, string | null>>(() => new Map());
+  //
+  // The NAME travels with the art: a renamed owned printing (a Secret Lair card) is titled in the
+  // modal with the name printed on it, so its plate's caption and label read that too, even where
+  // the opener already passed the same picture under the oracle name.
+  const [readArt, setReadArt] = useState<ReadonlyMap<string, { art: string | null; name: string }>>(() => new Map());
   const file = useCallback((oracleId: string, next: BrowseCard) => {
     cache.current.set(oracleId, next);
     const art = resolvedPrinting(next)?.imageUri ?? null;
-    setReadArt((m) => (m.has(oracleId) && m.get(oracleId) === art ? m : new Map(m).set(oracleId, art)));
+    const name = printedNameOf(next);
+    setReadArt((m) => {
+      const was = m.get(oracleId);
+      return was && was.art === art && was.name === name ? m : new Map(m).set(oracleId, { art, name });
+    });
   }, []);
   // How many times each card has been evicted. A read that started before an eviction
   // answers with what the write it raced has not replaced yet, so the count taken when
@@ -1195,9 +1203,9 @@ export function CardDetailProvider({
   // same positions to prefetch them.
   const plate = (s: SiblingCard | undefined): SiblingCard | null => {
     if (!s) return null;
-    if (!readArt.has(s.oracleId)) return s;
-    const art = readArt.get(s.oracleId) ?? null;
-    return art !== (s.imageUri ?? null) ? { ...s, imageUri: art } : s;
+    const read = readArt.get(s.oracleId);
+    if (!read) return s;
+    return read.art !== (s.imageUri ?? null) || read.name !== s.name ? { ...s, imageUri: read.art, name: read.name } : s;
   };
   const prevSibling = paging && index > 0 ? plate(siblings[index - 1]) : null;
   const nextSibling = paging && index < siblings.length - 1 ? plate(siblings[index + 1]) : null;

@@ -295,6 +295,25 @@ describe("CardDetailProvider", () => {
       await waitFor(() => expect(peek().outerHTML).toContain("owned-sol.jpg"));
     });
 
+    // The modal titles a renamed owned printing with its printed name, so the plate pointing at it
+    // is captioned the same, even when the opener already passed that very picture.
+    it("names the plate with the read's printed name when the art already matches", async () => {
+      const sol = { ...owned("o-sol", "Sol Ring", "https://cards.scryfall.io/owned-sol.jpg"), printedName: "Ring of Renown" };
+      render(
+        <CardDetailProvider fetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)} prefetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)}>
+          <CardDetailTrigger
+            oracleId="o-signet"
+            name="Arcane Signet"
+            siblings={[{ oracleId: "o-signet" }, { oracleId: "o-sol", name: "Sol Ring", imageUri: "https://cards.scryfall.io/owned-sol.jpg" }]}
+          >
+            Arcane Signet
+          </CardDetailTrigger>
+        </CardDetailProvider>,
+      );
+      await click(screen.getByText("Arcane Signet"));
+      expect(await screen.findAllByRole("button", { name: /Next card: Ring of Renown/ })).not.toHaveLength(0);
+    });
+
     // The modal draws its gradient for a printing with no image, so the plate pointing at that
     // card draws none either, rather than keeping the opener's oracle-level art.
     it("draws no art over the opener's when the card read has no image", async () => {
