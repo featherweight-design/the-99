@@ -118,11 +118,30 @@ const {
 // for a trailing "Z"/offset let a locale-ambiguous string like "10/05/2026 09:00:00 +00:00"
 // through, which `Date`'s fallback parser accepts and reads as October 5th even though an
 // operator writing day-first could mean May 10th. This value gates a production write.
-if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/.test(SNAPSHOT_AT_RAW)) {
+const SNAPSHOT_AT_MATCH = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|[+-]\d{2}:\d{2})$/
+  .exec(SNAPSHOT_AT_RAW);
+// AND THE CALENDAR FIELDS ARE RANGE-CHECKED, not left to `Date`'s silent normalization (Copilot
+// round 10) — the shape regex alone accepts "2026-09-31", which `Date` rolls forward to October
+// 1st rather than rejecting, which would widen the cutoff rather than refuse an operator typo.
+const DAYS_IN_MONTH = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]; // Feb checked below
+function isValidCalendarTimestamp(m: RegExpExecArray): boolean {
+  const [, yearS, monthS, dayS, hourS, minuteS, secondS] = m;
+  const year = Number(yearS);
+  const month = Number(monthS);
+  const day = Number(dayS);
+  const isLeap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+  const maxDay = month === 2 && !isLeap ? 28 : DAYS_IN_MONTH[month - 1];
+  return (
+    month >= 1 && month <= 12 &&
+    day >= 1 && day <= (maxDay ?? 0) &&
+    Number(hourS) <= 23 && Number(minuteS) <= 59 && Number(secondS) <= 59
+  );
+}
+if (!SNAPSHOT_AT_MATCH || !isValidCalendarTimestamp(SNAPSHOT_AT_MATCH)) {
   console.error(
-    `DECK_COPY_SNAPSHOT_AT (${SNAPSHOT_AT_RAW}) is not an ISO-8601 timestamp. Use the shape ` +
-      '"YYYY-MM-DDTHH:MM:SSZ" (or an explicit "+HH:MM"/"-HH:MM" offset) — never a locale-' +
-      "ambiguous or bare local-looking string.",
+    `DECK_COPY_SNAPSHOT_AT (${SNAPSHOT_AT_RAW}) is not a valid ISO-8601 timestamp. Use the ` +
+      'shape "YYYY-MM-DDTHH:MM:SSZ" (or an explicit "+HH:MM"/"-HH:MM" offset) with a real ' +
+      "calendar date and time — never a locale-ambiguous or bare local-looking string.",
   );
   process.exit(1);
 }
