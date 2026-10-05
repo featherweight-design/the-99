@@ -66,10 +66,22 @@ two (Pull it → choose from 2 decks → the list head's name).
 | s5 card | 320 x 447 at y 64, focus on the pill | measured; focus on the pill | ✅ |
 | s5 way back | Escape, the pill and Back each pop one layer, focus back on the opener | all three measured; focus returned to `View details for Silence` | ✅ |
 
-## Later PRs
+## Motion, the ledger and About (PR D)
 
-| Row | PR |
-|---|---|
-| Open rise 240ms, pop drop 200ms, reduced-motion swap; pill contrast on six themes | D |
+Sampled every 40ms at 390x844 in Chromium (touch) and WebKit, on `cafe` (Game changers → a card).
 
-VERDICT (PR A, B and C rows): 0 visual gaps, 0 state gaps.
+| Property | Design | Built | |
+|---|---|---|---|
+| Open | the card rises 812 → 0 over 240ms `cubic-bezier(.2,.7,.2,1)` | `.anim-stack-rise`: `translateY(100%)` → none, 0.24s, that curve; phone only (`max-width: 47.999rem`); measured y 635, 199, 79, 28 at 40ms steps (WebKit 482, 179, 68, 22) | ✅ |
+| Sheet on open | fades to 0 onto its scrim | `motion-safe:transition-opacity` 240ms on the hidden sheet (`ModalChrome`, the Pull it wrapper); measured 0.99, 0.70, 0.30, 0.11 | ✅ |
+| Rise only on arrival | paging inside the card is sideways and does not re-rise | the provider marks the rise when a card arrives over a sheet from nothing; a page or a held card coming back does not | ✅ |
+| Back | the card drops in 200ms, the sheet fades back | `dismiss`: `.anim-stack-drop` 0.2s and `openOracleId` reads null at once, then the card closes after `STACK_DROP_MS`; measured y 0, 84, 238, 441, 683 with the sheet at 0, 0.24, 0.72, 0.92, 0.99 | ✅ |
+| Every way back drops | Escape, the pill, hardware Back, the backdrop | all route through `dismiss` | ✅ |
+| Never sideways | | rise and drop are vertical only | ✅ |
+| Reduced motion | a swap | both animations `none`; `dismiss` closes at once; the sheet's fade is `motion-safe` only; measured: no intermediate frame in either direction | ✅ |
+| Desktop | unchanged | the keyframes apply below 768 only, and `dismiss` closes at once at desktop width | ✅ |
+| Focus | back on the opener | measured on `View details for Jeska's Will` after the drop, both engines | ✅ |
+| Pill contrast | measure across six themes (the counter plate's ledger) | label against the pixels under it, three cards per theme: worst 6.66:1 (Kaldheim, WebKit), best 14.50:1; every theme ≥ 4.5 | ✅ |
+| About | an ordinary edit, no bump | one sentence on the `card-detail` caption; `ABOUT_VERSION` stays 10, hash re-pinned | ✅ |
+
+VERDICT (PR A, B, C and D rows): 0 visual gaps, 0 state gaps.
