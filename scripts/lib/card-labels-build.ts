@@ -741,11 +741,12 @@ async function build(opts: BuildOptions): Promise<number> {
     const otherVersion = await db.select({ promptVersion: cardLabelBatches.promptVersion })
       .from(cardLabelBatches).where(and(
         inArray(cardLabelBatches.status, OPEN_STATUSES),
-        sql`${cardLabelBatches.promptVersion} <> ${LABEL_PROMPT_VERSION}`,
+        // `is distinct from`, not `<>`: a pre-migration intent has a NULL version, which `<>` never matches.
+        sql`${cardLabelBatches.promptVersion} is distinct from ${LABEL_PROMPT_VERSION}`,
       ));
     if (otherVersion.length > 0) {
       return refuse(`${otherVersion.length} open intent(s) were asked under prompt version(s) `
-        + `${[...new Set(otherVersion.map((r) => r.promptVersion))].join(", ")}, not ${LABEL_PROMPT_VERSION}. `
+        + `${[...new Set(otherVersion.map((r) => r.promptVersion ?? "unrecorded"))].join(", ")}, not ${LABEL_PROMPT_VERSION}. `
         + `Their cards would be paid for twice. Collect them with that version's checkout first.`);
     }
   }

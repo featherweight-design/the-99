@@ -56,7 +56,8 @@ describe("listScopeIds", () => {
     expect(at).toBeGreaterThan(-1);
     const block = build.slice(at, build.indexOf("return refuse(", at));
     expect(block).toContain("inArray(cardLabelBatches.status, OPEN_STATUSES)");
-    expect(block).toMatch(/sql`\$\{cardLabelBatches\.promptVersion\} <> \$\{LABEL_PROMPT_VERSION\}`/);
+    // `is distinct from`: a pre-migration intent's NULL version must match too.
+    expect(block).toMatch(/sql`\$\{cardLabelBatches\.promptVersion\} is distinct from \$\{LABEL_PROMPT_VERSION\}`/);
     // Before planning: the refusal sits ahead of the stale-set read.
     expect(at).toBeLessThan(build.indexOf("const all = await cardsNeedingLabels("));
   });
