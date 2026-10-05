@@ -787,6 +787,9 @@ export function CardModal({
   // covered one takes its own title id: shared, the top dialog would be named by the held card's
   // heading. The top card keeps the canonical id every other reader of the modal looks for.
   const titleId = covered ? "card-modal-title-held" : "card-modal-title";
+  // A card dropping off a sheet is leaving (#1268): nothing in it answers a key, a swipe or a press,
+  // or Escape-then-ArrowRight could page a new card in while the timer closes it.
+  const locked = covered || dropping;
   // One trigger per breakpoint tree; only one has layout at a time, and focus() on the
   // display:none one is a no-op, so Escape hands focus to whichever is actually on screen.
   const mobileTriggerRef = useRef<HTMLButtonElement>(null);
@@ -1235,7 +1238,7 @@ export function CardModal({
   // the Set field), then the dialog. The region's shipped two-stage shape with rungs added
   // on top rather than a new shape to learn (§3.11).
   const onEscape = useCallback(() => {
-    if (covered) return;
+    if (locked) return;
     if (zoomed) {
       closeZoom();
       return;
@@ -1262,7 +1265,7 @@ export function CardModal({
         return;
       }
     }
-  }, [closeZoom, covered, expanded, narrow, onClose, sheetOpen, zoomed]);
+  }, [closeZoom, locked, expanded, narrow, onClose, sheetOpen, zoomed]);
 
   // Focus trap + Escape + focus-return — shared hook, shared with the export dialog.
   useDialogA11y(dialogRef, onEscape, { initialFocusRef, returnFocusRef });
@@ -1442,7 +1445,7 @@ export function CardModal({
   // modal is open; a card held under a sheet (`covered`) attaches no listener at all.
   useEffect(() => {
     const backdrop = backdropRef.current;
-    if (!backdrop || total <= 1 || covered) return;
+    if (!backdrop || total <= 1 || locked) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
       if (e.defaultPrevented) return;
@@ -1470,7 +1473,7 @@ export function CardModal({
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [total, onPrev, onNext, onAtStart, onAtEnd, narrow, full, covered]);
+  }, [total, onPrev, onNext, onAtStart, onAtEnd, narrow, full, locked]);
 
   // A back face to turn to, or none (#363). The image is the second condition and
   // not an afterthought: a `transform` row seeded before the back-face column
@@ -1815,9 +1818,9 @@ export function CardModal({
         "fixed inset-0 flex items-center justify-center"
         + (covered ? " z-[49]" : " z-50")
       }
-      inert={covered}
+      inert={locked}
       role="presentation"
-      onClick={covered ? undefined : onClose}
+      onClick={locked ? undefined : onClose}
       style={{
         // A stand-in over a sheet over its original draws its own lighter scrim (addendum §3), so the
         // two layers under it read as two steps down; any other stacked card leaves the sheet's.

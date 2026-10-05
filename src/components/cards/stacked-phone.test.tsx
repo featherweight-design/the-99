@@ -364,6 +364,28 @@ describe("the rise and the drop (motion)", () => {
     }
   });
 
+  it("answers nothing while it drops: Escape then ArrowRight pages no card in", async () => {
+    const cards: Record<string, BrowseCard> = {
+      "o-a": { ...birds, oracleId: "o-a", name: "Card A" },
+      "o-b": { ...birds, oracleId: "o-b", name: "Card B" },
+    };
+    const fetchCard = vi.fn(async (id: string) => cards[id] ?? null);
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <ModalChrome title="Game changers" closeLabel="Close game changers" onClose={vi.fn()} width={760}>
+          <CardDetailTrigger oracleId="o-a" name="Card A" siblings={["o-a", "o-b"]}>open a</CardDetailTrigger>
+        </ModalChrome>
+      </CardDetailProvider>,
+    );
+    await act(async () => { fireEvent.click(screen.getByText("open a")); });
+    await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+    expect(cardDialog().closest("[data-stack-dropping]")).toHaveAttribute("inert");
+    await act(async () => { fireEvent.keyDown(document, { key: "ArrowRight" }); });
+    expect(document.getElementById("card-modal-title")).toHaveTextContent("Card A");
+    await landed();
+    expect(cardDialog()).toBeNull();
+  });
+
   it("rises over the sheet on arrival", async () => {
     draw();
     await openFromSheet();
