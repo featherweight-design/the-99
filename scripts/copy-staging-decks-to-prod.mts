@@ -300,11 +300,46 @@ if (missingOracleIds.length > 0) {
   console.log("All resolve on production.");
 }
 
+// THE TARGET'S OWN STATE, checked here too — not only inside the write transaction below.
+// Without this, a dry run that never looks at the target can report "would receive" for an
+// invocation that would actually refuse (or hit an id conflict) the moment it is run for real,
+// which is exactly backwards for the one report this script's caller is meant to act on. The
+// in-transaction check stays as well, to cover a target that changes between this read and the
+// real write.
+const existingDecksRows = (await dst.query(`select count(*)::int as n from decks where user_id = $1`, [
+  TARGET_USER,
+])) as { n: number }[];
+const existingFoldersRows = (
+  await dst.query(`select count(*)::int as n from deck_folders where user_id = $1`, [TARGET_USER])
+) as { n: number }[];
+const targetDeckCount = existingDecksRows[0].n;
+const targetFolderCount = existingFoldersRows[0].n;
+console.log(
+  `\nOn production, ${TARGET_USER} already holds ${targetDeckCount} deck(s) and ` +
+    `${targetFolderCount} folder(s).`,
+);
+const wouldRefuse = (targetDeckCount > 0 || targetFolderCount > 0) && !REPLACE;
+if (wouldRefuse) {
+  console.log("The real write would REFUSE as invoked — pass --replace to proceed.");
+} else if (targetDeckCount > 0 || targetFolderCount > 0) {
+  console.log(`--replace is set — the real write would delete those first.`);
+}
+
 if (DRY) {
   console.log(
-    `\nDry run — nothing written. Target would receive these under ${TARGET_USER} on ${dstId}.`,
+    `\nDry run — nothing written. Target would receive these under ${TARGET_USER} on ${dstId}` +
+      (wouldRefuse ? ", if the write were not refused by the check above." : "."),
   );
   process.exit(0);
+}
+
+if (wouldRefuse) {
+  console.error(
+    `\n${TARGET_USER} already holds ${targetDeckCount} deck(s) and ${targetFolderCount} ` +
+      "folder(s) on production.\nRefusing — pass --replace to delete them and write this " +
+      "snapshot in their place.",
+  );
+  process.exit(1);
 }
 
 if (missingOracleIds.length > 0) {
