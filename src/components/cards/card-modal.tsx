@@ -623,6 +623,7 @@ export function CardModal({
   door = null,
   covered = false,
   dropped = false,
+  motion,
   returnFocusRef,
 }: {
   card: BrowseCard;
@@ -640,6 +641,11 @@ export function CardModal({
   covered?: boolean;
   /** Drawn 80px lower on desktop: a stand-in over a sheet over its original, so the original's head shows. */
   dropped?: boolean;
+  /**
+   * The phone's motion over a sheet (stacked sheets R1): `rise` as a card a sheet opened arrives,
+   * `drop` while it leaves. Desktop and reduced motion draw neither (`globals.css`).
+   */
+  motion?: "rise" | "drop";
   /** Where focus goes when this card closes: the control that opened it, when the provider knows it. */
   returnFocusRef?: React.RefObject<HTMLElement | null>;
   /**
@@ -1837,6 +1843,7 @@ export function CardModal({
         className={""
           // 80px down, or as far as the room under a centred card allows on a short window.
           + (dropped ? "md:translate-y-[min(80px,calc((100vh-min(620px,85vh))/2-8px))] " : "")
+          + (motion === "rise" ? "anim-stack-rise " : motion === "drop" ? "anim-stack-drop " : "")
           + "relative flex flex-col overflow-hidden w-full h-full md:h-[620px] md:max-h-[85vh] md:w-[820px] md:flex-row md:rounded-2xl bg-[color:var(--surface-sunken)] md:bg-[color:var(--surface-rail)] md:[border:1px_solid_var(--border-strong)]"}
         style={{
           boxShadow: "var(--modal-shadow)",

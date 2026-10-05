@@ -539,6 +539,8 @@ function MobileSheet({
     <div
       aria-hidden={covered || undefined}
       data-hidden-under-card={covered || undefined}
+      // Fading under the card's rise and back under its drop, as the other sheets do.
+      className={"motion-safe:transition-opacity " + (covered ? "motion-safe:duration-[240ms]" : "motion-safe:duration-200")}
       style={covered ? { opacity: 0, pointerEvents: "none" } : undefined}
     >
       <Sheet open onDismiss={onDismiss} ariaLabel={ariaLabel} panelRef={panelRef}>

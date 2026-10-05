@@ -17,7 +17,7 @@ vi.mock("next/link", () => ({
   default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => <a href={href} {...rest}>{children}</a>,
 }));
 
-const { CardDetailProvider, CardDetailTrigger, useCardDetail } = await import("./card-detail-provider");
+const { CardDetailProvider, CardDetailTrigger, useCardDetail, STACK_DROP_MS } = await import("./card-detail-provider");
 const { ModalChrome } = await import("../decks/receipt-modal");
 
 const birds: BrowseCard = {
@@ -41,6 +41,9 @@ async function openFromSheet() {
     fireEvent.click(screen.getByText("open birds"));
   });
 }
+
+// A card over a sheet drops for STACK_DROP_MS on the phone before it goes.
+const landed = () => act(() => new Promise<void>((r) => { setTimeout(r, STACK_DROP_MS); }));
 
 const cardDialog = () => document.querySelector('[aria-labelledby="card-modal-title"]') as HTMLElement;
 const pill = () => screen.getByTestId("card-modal-back-mobile");
@@ -81,6 +84,7 @@ describe("a card opened from a sheet, on the phone", () => {
     await act(async () => {
       fireEvent.click(pill());
     });
+    await landed();
     expect(cardDialog()).toBeNull();
     expect(screen.getByTestId("receipt-modal")).toBeInTheDocument();
   });
@@ -92,6 +96,7 @@ describe("a card opened from a sheet, on the phone", () => {
     act(() => { fireEvent.keyDown(document, { key: "Escape" }); });
     expect(screen.getByTestId("card-sheet")).toHaveAttribute("data-sheet", "teaser");
     await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+    await landed();
     expect(cardDialog()).toBeNull();
     expect(screen.getByTestId("receipt-modal")).toBeInTheDocument();
   });
@@ -102,6 +107,7 @@ describe("a card opened from a sheet, on the phone", () => {
     await openFromSheet();
     expect(document.activeElement).toBe(pill());
     await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+    await landed();
     expect(cardDialog()).toBeNull();
     expect(document.activeElement).toBe(screen.getByText("open birds"));
   });
@@ -112,6 +118,7 @@ describe("a card opened from a sheet, on the phone", () => {
     (document.activeElement as HTMLElement | null)?.blur();
     await openFromSheet();
     await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+    await landed();
     expect(cardDialog()).toBeNull();
     expect(document.activeElement).toBe(screen.getByText("open birds"));
   });
@@ -180,6 +187,7 @@ describe("the way back through three layers (page · card · sheet · card)", ()
     await act(async () => rerender(view(true)));
     await act(async () => { fireEvent.click(screen.getByText("sheet trigger")); });
     await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+    await landed();
     await act(async () => rerender(view(false)));
     await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
     expect(document.querySelector('[aria-labelledby^="card-modal-title"]')).toBeNull();
@@ -316,5 +324,67 @@ describe("a sheet with its own phone name (s2)", () => {
     expect(pill()).toHaveTextContent("What would have to go");
     expect(pill()).toHaveAccessibleName(cardSheetCopy.back.a11y("What would have to go"));
     expect(screen.getByTestId("card-modal-back")).toHaveTextContent("Core");
+  });
+});
+
+describe("the rise and the drop (motion)", () => {
+  const stubMedia = (matching: string) => {
+    const saved = window.matchMedia;
+    window.matchMedia = ((query: string) => ({
+      matches: query === matching, media: query, onchange: null,
+      addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {},
+      dispatchEvent: () => false,
+    })) as typeof window.matchMedia;
+    return () => { window.matchMedia = saved; };
+  };
+
+  it("rises over the sheet on arrival", async () => {
+    draw();
+    await openFromSheet();
+    expect(cardDialog()).toHaveClass("anim-stack-rise");
+  });
+
+  it("does not rise when opened from the page", async () => {
+    render(
+      <CardDetailProvider fetchCard={async () => birds}>
+        <CardDetailTrigger oracleId="o-birds" name="Birds of Paradise">page trigger</CardDetailTrigger>
+      </CardDetailProvider>,
+    );
+    await act(async () => { fireEvent.click(screen.getByText("page trigger")); });
+    expect(cardDialog()).not.toHaveClass("anim-stack-rise");
+  });
+
+  it("drops for STACK_DROP_MS with the sheet already back under it, then goes", async () => {
+    draw();
+    await openFromSheet();
+    await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+    expect(cardDialog()).toHaveClass("anim-stack-drop");
+    expect(screen.getByTestId("receipt-modal").closest("[data-hidden-under-card]")).toBeNull();
+    await landed();
+    expect(cardDialog()).toBeNull();
+  });
+
+  it("swaps out at once under reduced motion", async () => {
+    const restore = stubMedia("(prefers-reduced-motion: reduce)");
+    try {
+      draw();
+      await openFromSheet();
+      await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+      expect(cardDialog()).toBeNull();
+    } finally {
+      restore();
+    }
+  });
+
+  it("closes at once on desktop, where nothing drops", async () => {
+    const restore = stubMedia("(min-width: 768px)");
+    try {
+      draw();
+      await openFromSheet();
+      await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+      expect(cardDialog()).toBeNull();
+    } finally {
+      restore();
+    }
   });
 });

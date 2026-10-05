@@ -183,6 +183,8 @@ export function ModalChrome({
         "fixed inset-0 z-50 flex items-end justify-center "
         // Over a card, the sheet's top sits 40px under the card's, which is centred at its own height.
         + (onCard ? "md:items-start md:pt-[calc((100vh-min(620px,85vh))/2+40px)]" : "md:items-center")
+        // Fading under the card's rise, and back under its drop (stacked sheets R1, motion).
+        + (hidden ? " motion-safe:transition-opacity motion-safe:duration-[240ms]" : " motion-safe:transition-opacity motion-safe:duration-200")
       }
       role="presentation"
       onClick={onClose}

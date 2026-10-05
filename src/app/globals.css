@@ -726,6 +726,21 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 .anim-sheet-in { animation: filter-sheet-in 0.18s ease-out both; }
 .anim-menu-in { animation: menu-in 0.12s ease-out both; }
 .anim-sheet-up { animation: sheet-up 0.18s cubic-bezier(0.22, 1, 0.36, 1) both; }
+/* A card opened from a sheet, on the phone (stacked sheets R1, motion): it rises the whole height
+   over 240ms while the sheet fades beneath, and drops in 200ms on the way back. Never sideways,
+   which is paging's direction. Phone only: desktop stacks a dialog over a dialog and moves neither. */
+@keyframes stack-rise {
+  0% { transform: translateY(100%); }
+  100% { transform: none; }
+}
+@keyframes stack-drop {
+  0% { transform: none; }
+  100% { transform: translateY(100%); }
+}
+@media (max-width: 47.999rem) {
+  .anim-stack-rise { animation: stack-rise 0.24s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  .anim-stack-drop { animation: stack-drop 0.2s cubic-bezier(0.4, 0, 1, 1) both; }
+}
 .anim-backdrop-in { animation: backdrop-in 0.18s ease-out both; }
 .anim-quickadd-in { animation: quickadd-in 0.14s ease-out both; }
 /* A new overview replacing the held one in place (addendum_overview_loading, 1c): 150ms, and
@@ -871,6 +886,9 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   .anim-carousel-prev,
   .anim-carousel-next,
   .anim-phone-card-enter,
+  /* A card over a sheet swaps in and out in place (stacked sheets R1). */
+  .anim-stack-rise,
+  .anim-stack-drop,
   .anim-sheet-up {
     animation: none;
     /* Nothing moves, so drop the compositing hint rather than holding a layer
