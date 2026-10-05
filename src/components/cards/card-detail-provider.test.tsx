@@ -324,14 +324,9 @@ describe("CardDetailProvider", () => {
     // which the list updates through `onArtChange`.
     it("stops drawing a card's read art once that card is evicted", async () => {
       const sol = owned("o-sol", "Sol Ring", "https://cards.scryfall.io/owned-sol.jpg");
-      let evictCard!: (id: string) => void;
-      function Grab() {
-        evictCard = useCardDetail().evict;
-        return null;
-      }
       render(
         <CardDetailProvider fetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)} prefetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)}>
-          <Grab />
+          <Evicter oracleId="o-sol" />
           <CardDetailTrigger
             oracleId="o-signet"
             name="Arcane Signet"
@@ -343,7 +338,7 @@ describe("CardDetailProvider", () => {
       );
       await click(screen.getByText("Arcane Signet"));
       await waitFor(() => expect(peek().outerHTML).toContain("owned-sol.jpg"));
-      await act(async () => evictCard("o-sol"));
+      await act(async () => { fireEvent.click(screen.getByText("evict")); });
       expect(peek().outerHTML).toContain("picked-sol.jpg");
       expect(peek().outerHTML).not.toContain("owned-sol.jpg");
     });
