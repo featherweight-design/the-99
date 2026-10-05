@@ -50,7 +50,12 @@
  *   - EVERY SOURCE READ is one `repeatable read, read only` transaction. The target WRITE, when
  *     one is asked for, is one transaction: no `on conflict do nothing` — a conflict means the
  *     target already holds that id, most likely under a different user, and skipping it would
- *     attach this snapshot's rows to a stranger's deck.
+ *     attach this snapshot's rows to a stranger's deck. It also opens by taking an EXCLUSIVE
+ *     lock on every table it touches (bounded by a 5s `lock_timeout`, so a busy production
+ *     database aborts the run rather than queuing behind it) — without that, the existing-decks
+ *     read and the delete that follows it are two separate statements, and a deck the app writes
+ *     in between would survive the delete and turn the write into a merge rather than the
+ *     snapshot it claims to be.
  *   - `--dry-run` reads everything, including the live target, and writes nothing. `--replace`
  *     is required if the target account already holds decks — the expected case here is zero,
  *     and the refusal is the safety net for the case where that has changed since this was
@@ -230,12 +235,22 @@ function oracleIdsOf(rows: Record<string, unknown>[], ...cols: string[]): string
     for (const col of cols) {
       const v = row[col];
       if (typeof v === "string") out.push(v);
+      // `decks.notices_legal_seen` is `uuid[]` — the not-legal cards the player last saw in the
+      // deck notices (src/db/schema.ts) — and node-postgres returns a uuid[] column as a JS
+      // array of strings rather than a single string.
+      else if (Array.isArray(v)) for (const item of v) if (typeof item === "string") out.push(item);
     }
   }
   return out;
 }
 const referencedOracleIds = new Set([
-  ...oracleIdsOf(decks, "commander_oracle_id", "partner_oracle_id", "answer_card_oracle_id"),
+  ...oracleIdsOf(
+    decks,
+    "commander_oracle_id",
+    "partner_oracle_id",
+    "answer_card_oracle_id",
+    "notices_legal_seen",
+  ),
   // A version's own commander/partner, not just the deck's live one — a commander swap is a
   // version boundary like any other (src/db/schema.ts's note on deck_versions), so an older
   // version can name a commander the deck no longer does.
@@ -359,6 +374,21 @@ const pool2 = new Pool({ connectionString: TARGET });
 const out = await pool2.connect();
 try {
   await out.query("begin");
+
+  // CLOSES THE RACE Copilot's round 2 named: the existing-decks read below and the delete after
+  // it are two statements, and without a lock a deck the app writes between them (or a second
+  // invocation of this script) is invisible to the read, survives the delete, and this commits a
+  // MERGE rather than the snapshot it claims to be — exactly the failure `--replace` exists to
+  // prevent. `EXCLUSIVE` blocks every other writer to these tables (not readers) for as long as
+  // this transaction is open; a bounded `lock_timeout`, not an unbounded wait, so a busy
+  // production database aborts this run cleanly instead of this script holding a growing queue
+  // of the app's own writes hostage.
+  await out.query("set local lock_timeout = '5s'");
+  await out.query(
+    "lock table decks, deck_cards, deck_proxies, deck_locks, deck_versions, " +
+      "deck_version_cards, deck_games, deck_game_axes, deck_folders, card_assignments, " +
+      "pull_releases in exclusive mode",
+  );
 
   const insert = async (table: string, rowsIn: Record<string, unknown>[]) => {
     if (rowsIn.length === 0) return;
