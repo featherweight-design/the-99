@@ -676,7 +676,9 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   card's name row keeps clear of it by a MEASURED reserve: with the reserve pinned back to 46px,
   the name row's ink reads 981px against a pill starting at 900. How we make these decisions opens
   as a 560px sheet. What would have to go opens from the climb's lower rung as a 700px sheet: the
-  target's mark in the header, no chips, and a candidate whose way back names the target bracket.
+  target's mark in the header, no chips, and a candidate whose way back names the sheet itself
+  (`What would have to go`, one wording at both widths since 2026-10-05 — the bracket name alone
+  read as a place in the climb, not a way back here).
   On the phone that header is 43px, and its 14px sentence must be WHOLE. An ellipsized title
   reads `scrollWidth` only 1px over `clientWidth`, so the width test carries no tolerance. With
   a pixel of tolerance it passed a truncated build.

@@ -1,8 +1,10 @@
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { slotDeck } from "../../lib/bracket/slot";
+import type { BrowseCard } from "../../lib/collection/browse";
 import type { ComboRef } from "../../lib/profile/types";
+import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { upgradePathCopy } from "../../lib/copy/upgrade-path";
 import { CardDetailProvider } from "../cards/card-detail-provider";
@@ -355,3 +357,30 @@ describe("locked candidates", () => {
 function cleanupSheet() {
   cleanup();
 }
+
+// One wording at both widths (Hugh, 2026-10-05): the bracket name alone read as a place in the
+// climb rather than a way back to this sheet, so a card opened from here names the sheet itself
+// no matter which pill a width draws — proof against #1270 round 4's "reverts silently" finding.
+describe("the card opened from here", () => {
+  const CARD: BrowseCard = {
+    oracleId: "A", name: "A", typeLine: "Creature", manaCost: "{1}", cmc: 1, oracleText: null,
+    keywords: [], rarity: "common", colorIdentity: [], imageUri: null, printedName: null, quantity: 1,
+    printings: [], setCodes: [], primarySetCode: "", preferredPrinting: null, commanderLegal: false, hasDecks: false,
+  };
+
+  it("names the sheet on its way back, at both widths", async () => {
+    const profile = deckProfile({ cards: [COMMANDER, ...gcs(["A", "B"])], gameChangerIds: new Set(["A", "B"]) });
+    const verdict = slotDeck(profile);
+    render(
+      <CardDetailProvider fetchCard={async () => CARD}>
+        <BracketClimb verdict={verdict} profile={profile} locked={NONE} />
+      </CardDetailProvider>,
+    );
+    fireEvent.click(trigger());
+    await act(async () => {
+      fireEvent.click(within(panel()).getByRole("button", { name: /\bA$/ }));
+    });
+    expect(screen.getByTestId("card-modal-back").textContent).toContain(deckAnalysisCopy.sheets.upgradePath);
+    expect(screen.getByTestId("card-modal-back-mobile").textContent).toContain(deckAnalysisCopy.sheets.upgradePath);
+  });
+});

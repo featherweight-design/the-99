@@ -58,8 +58,8 @@ two (Pull it → choose from 2 decks → the list head's name).
 
 | Property | Design | Built | |
 |---|---|---|---|
-| s2 pill (phone) | `← What would have to go` | `phoneBackLabel={deckAnalysisCopy.sheets.upgradePath}`; measured `←What would have to go`, 178 wide | ✅ |
-| s2 pill (desktop) | `← {target}`, unchanged | `backLabel` unchanged; the phone reads `phoneBackLabel ?? backLabel` | ✅ |
+| s2 pill (phone) | `← What would have to go` | `backLabel={deckAnalysisCopy.sheets.upgradePath}`; measured `←What would have to go`, 178 wide | ✅ |
+| s2 pill (desktop) | `← What would have to go` (one wording, both widths; `← {target}` retired 2026-10-05 — the bracket alone read as a place in the climb rather than a way back to this sheet) | `backLabel` unified; `phoneBackLabel` dropped (`phoneBackLabel ?? backLabel` fallback now reads the same value either way) | ✅ |
 | s5 opener | the list head's card name | the title's name is a `CardDetailTrigger` (`TitleOpeningCard`); one per sheet | ✅ |
 | s5 pill | `← Which deck to pull from` | `review.source.backLabel`; measured, named `Back to Which deck to pull from` | ✅ |
 | s5 sheet under the card | hidden, kept mounted with the reader's pick | wrapper `aria-hidden`, opacity 0, `pointer-events: none` while the card is up | ✅ |

@@ -444,8 +444,9 @@ async function walkUpgradePath(page, label, width) {
   report(`${label}px · a candidate stacks on the sheet`, (await sheet.count()) === 1, "sheet stays");
   if (!phone) {
     const back = await card.locator('[data-testid="card-modal-back"]').getAttribute("aria-label").catch(() => null);
-    const target = head.title.split(",")[0];
-    report(`${label}px · the card's way back names the target bracket`, back === `Back to ${target}`, `${back ?? "no pill"}`);
+    // One wording at both widths since 2026-10-05 (`deckAnalysisCopy.sheets.upgradePath`): the
+    // bracket name alone read as a place in the climb, not a way back to this sheet.
+    report(`${label}px · the card's way back names the sheet`, back === "Back to What would have to go", `${back ?? "no pill"}`);
   }
   await page.keyboard.press("Escape");
   await card.waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});

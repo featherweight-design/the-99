@@ -510,8 +510,10 @@ export function CardDetailProvider({
   >([]);
   const sheetsBelow = sheets.length;
   const backLabel = sheets.at(-1)?.label;
-  // The phone's own name for the sheet, where it differs (stacked sheets R1, s2): the pill reads
-  // `← What would have to go` where desktop keeps `← {target}`.
+  // No production caller currently supplies a `phoneLabel` distinct from `backLabel` — what
+  // would have to go retired its split (Hugh, 2026-10-05), the only sheet that ever used one.
+  // The plumbing stays for a future sheet whose phone name genuinely differs; until one exists,
+  // this always reads undefined and falls back to `backLabel`.
   const phoneBackLabel = sheets.at(-1)?.phoneLabel;
   const sheetFooter = sheets.at(-1)?.footer;
   // THE RISE AND THE DROP (stacked sheets R1, motion). A card a sheet opens rises over it once, on

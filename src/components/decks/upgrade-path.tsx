@@ -79,10 +79,10 @@ export function UpgradePathSheet({
       closeLabel={deckAnalysisCopy.sheets.closeUpgradePath}
       onClose={onClose}
       width={700}
-      backLabel={BRACKET_NAMES[target]}
-      // The phone names the sheet (stacked sheets R1, s2): the bracket alone reads as a place in the
-      // climb there. Desktop keeps `← {target}`, as the Analysis tab draws it.
-      phoneBackLabel={deckAnalysisCopy.sheets.upgradePath}
+      // One wording at both widths (Hugh, 2026-10-05): the bracket name alone read as a place in
+      // the climb rather than a way back to this sheet, so both now say the sheet's own name —
+      // the same phrase the climb's own link uses to open it.
+      backLabel={deckAnalysisCopy.sheets.upgradePath}
     >
       <div
         data-testid="upgrade-path"
