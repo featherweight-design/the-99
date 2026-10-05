@@ -18,6 +18,18 @@ export function standInLabelsEnabled(env: NodeJS.ProcessEnv = process.env): bool
   return env.STAND_IN_LABELS_ENABLED === "true";
 }
 
+/**
+ * Whether the deck page reads card labels for its Consider panel (card labels item 7). OFF for anything
+ * but the exact string `'true'`, server-side and read per request.
+ *
+ * Its own switch rather than `STAND_IN_LABELS_ENABLED`, so these surfaces release on their own walk,
+ * not the stand-ins sheet's (every feature behind its own switch, the 2026-09-24 release ruling). Off,
+ * no label and no lens is read, and the page is exactly as it was before labels reached it.
+ */
+export function labelSurfacesEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.LABEL_SURFACES_ENABLED === "true";
+}
+
 type Row = {
   oracle_id: string; labels: unknown; model: string; input_hash: string;
   name: string; mana_cost: string | null; type_line: string; oracle_text: string | null; layout: string;

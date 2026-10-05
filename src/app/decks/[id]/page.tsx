@@ -13,6 +13,7 @@ import { cacheForUser } from "../../../lib/cache/user-lists";
 import { readDeckSynergy } from "../../../lib/decks/deck-synergy";
 import { indexGeneration } from "../../../lib/cache/index-generation";
 import { loadDeckSuggestions } from "../../../lib/decks/suggestions-read";
+import { applyConsiderLabels, considerLabels } from "../../../lib/decks/consider-labels";
 import { BuilderShell } from "../../../components/decks/builder-shell";
 import { readStoredPermits } from "../../../lib/profile/stored";
 import {
@@ -300,7 +301,7 @@ export default async function DeckBuilderPage({
   // Swallowed like its neighbours. A failed facts read degrades to rows with no
   // note, which is the state the round draws for a card that has no facts
   // anyway — never the builder going down.
-  const [priced, availability, candidateFacts, completions] = await Promise.all([
+  const [priced, availability, candidateFacts, completions, considerRead] = await Promise.all([
     perf.timed("prices", () => loadPrices([
       ...new Set([
         ...detail.cards.map((c) => c.oracleId),
@@ -343,6 +344,13 @@ export default async function DeckBuilderPage({
       // twice for an overlapping set of ids.
       candidateOracleIds: comboLookupIds(candidateCards, suggestions),
     })).catch(() => null),
+    // THE CONSIDER FILTER's labels (card labels item 7), for the suggestion ids alone, in one read.
+    // Here, AFTER the cached payload resolved and outside its entry, because a label publish moves
+    // nothing that entry's key carries. Off (`LABEL_SURFACES_ENABLED`), it reads nothing and answers
+    // null. Swallowed like its neighbours: a failed read filters nothing.
+    perf.timed("considerLabels", () => considerLabels({
+      suggestionIds: suggestions.map((s) => s.oracleId),
+    })).catch(() => null),
   ]);
 
   // Attached here, server-side, on lists that are being built anyway — so no
@@ -359,7 +367,11 @@ export default async function DeckBuilderPage({
   const partner = detail.partner ? withPrice(detail.partner) : null;
   // Owned tiles only, for the reason the read above is scoped that way: an
   // unowned oracle id can never come back from the collection.
-  const pricedSuggestions = suggestions.map((s) => ({
+  //
+  // A role-gap pick whose fresh label names no job of the role it fills is left out here
+  // (`filterConsider`). Never an EDHREC pick, and never a card with no fresh label. The ids it
+  // drops were priced above with the rest, which costs a row in a read already made.
+  const pricedSuggestions = applyConsiderLabels(suggestions, considerRead).map((s) => ({
     ...withPrice(s),
     availability: s.owned ? (availability?.get(s.oracleId) ?? null) : null,
     // The card note's facts, on the tile rather than in a map beside it — same reason the

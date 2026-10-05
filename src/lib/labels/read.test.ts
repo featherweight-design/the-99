@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { labelInputHash } from "./prompt";
-import { freshLabels, standInLabelsEnabled } from "./read";
+import { freshLabels, labelSurfacesEnabled, standInLabelsEnabled } from "./read";
 import type { Job } from "./types";
 
 const CARD = {
@@ -102,5 +102,19 @@ describe("standInLabelsEnabled", () => {
     expect(standInLabelsEnabled({ STAND_IN_LABELS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).toBe(true);
     expect(standInLabelsEnabled({ STAND_IN_LABELS_ENABLED: "TRUE" } as unknown as NodeJS.ProcessEnv)).toBe(false);
     expect(standInLabelsEnabled({} as unknown as NodeJS.ProcessEnv)).toBe(false);
+  });
+});
+
+describe("labelSurfacesEnabled", () => {
+  const env = (v: Record<string, string>) => v as unknown as NodeJS.ProcessEnv;
+  it("is on for the exact string 'true' alone", () => {
+    expect(labelSurfacesEnabled(env({ LABEL_SURFACES_ENABLED: "true" }))).toBe(true);
+    expect(labelSurfacesEnabled(env({ LABEL_SURFACES_ENABLED: "TRUE" }))).toBe(false);
+    expect(labelSurfacesEnabled(env({ LABEL_SURFACES_ENABLED: "1" }))).toBe(false);
+    expect(labelSurfacesEnabled(env({}))).toBe(false);
+  });
+
+  it("is its own switch: the stand-ins sheet's does not turn it on", () => {
+    expect(labelSurfacesEnabled(env({ STAND_IN_LABELS_ENABLED: "true" }))).toBe(false);
   });
 });
