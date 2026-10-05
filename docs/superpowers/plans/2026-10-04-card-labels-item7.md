@@ -79,9 +79,12 @@ suggestion ids), and a page boundary test (outside the cache, in the wave, filte
 - **How it works and About:** an ordinary edit to an existing entry if one is owed; no new entry and no
   `ABOUT_VERSION` bump.
 
-## PR D (optional, awaiting Hugh's decision): version-aware freshness
+## PR D: version-aware freshness (APPROVED, Hugh 2026-10-04)
 
-**Not approved and not built.** Listed here because the 2026-10-04 relabel showed the cost: any
+**Approved; engineering only, zero model calls, no relabel.** Each label records the prompt version
+that wrote it and stays fresh under that version until it is deliberately redone; a prompt edit no longer
+stales every row, and a change in the card's own TEXT still does. Any targeted relabel afterwards is a
+separate spend Hugh approves with its exact scope, card count and dollars. Background: the 2026-10-04 relabel showed the cost: any
 edit to `SYSTEM` restales every `card_labels` row (`labelInputHash` hashes the prompt), so a one-line
 prompt fix becomes a 32,000-card, ~$60 run. A version-aware rule would keep a row fresh across a
 prompt version unless that version names the row's card or one of its job kinds as changed, so a
