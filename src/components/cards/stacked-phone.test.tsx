@@ -339,6 +339,31 @@ describe("the rise and the drop (motion)", () => {
     return () => { window.matchMedia = saved; };
   };
 
+  it("starts the drop from the card's current transform, so a dismissal mid-rise reverses", async () => {
+    const calls: { from: unknown; to: unknown }[] = [];
+    const saved = (HTMLElement.prototype as unknown as { animate?: unknown }).animate;
+    const savedStyle = window.getComputedStyle;
+    (HTMLElement.prototype as unknown as { animate: unknown }).animate = function (frames: Keyframe[]) {
+      calls.push({ from: frames[0].transform, to: frames[1].transform });
+      return { cancel: () => {} };
+    };
+    window.getComputedStyle = ((el: Element) => {
+      const real = savedStyle(el);
+      return el.getAttribute("aria-labelledby") === "card-modal-title"
+        ? ({ ...real, transform: "matrix(1, 0, 0, 1, 0, 300)" } as CSSStyleDeclaration) : real;
+    }) as typeof window.getComputedStyle;
+    try {
+      draw();
+      await openFromSheet();
+      await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+      expect(calls).toEqual([{ from: "matrix(1, 0, 0, 1, 0, 300)", to: "translateY(100%)" }]);
+      await landed();
+    } finally {
+      (HTMLElement.prototype as unknown as { animate?: unknown }).animate = saved;
+      window.getComputedStyle = savedStyle;
+    }
+  });
+
   it("rises over the sheet on arrival", async () => {
     draw();
     await openFromSheet();
@@ -379,7 +404,10 @@ describe("the rise and the drop (motion)", () => {
     draw();
     await openFromSheet();
     await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
-    expect(cardDialog()).toHaveClass("anim-stack-drop");
+    // The drop runs on the Web Animations API from the card's current transform (jsdom has none,
+    // so this asserts the state that starts it); the rise class stays on underneath (#1268).
+    expect(cardDialog().closest("[data-stack-dropping]")).not.toBeNull();
+    expect(cardDialog()).toHaveClass("anim-stack-rise");
     // Drawn again while the card drops, but still out of the accessibility tree and unpressable:
     // the card is still the modal dialog until it really closes (#1268).
     const cover = screen.getByTestId("receipt-modal").closest("[data-hidden-under-card]") as HTMLElement;

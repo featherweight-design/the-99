@@ -460,6 +460,8 @@ export function artWidthReservePx(underCardHeight: number): number {
 // between it and a plate, from which `NEIGHBOR_MIN_WIDTH` computes the plates' threshold. The
 // half-width is exported for `card-modal-geometry.test.ts`, which pins the dialog's class to it.
 export const DIALOG_HALF_WIDTH = 410;
+/** The phone's drop off a sheet (stacked sheets R1, motion), and how long the provider waits on it. */
+export const STACK_DROP_MS = 200;
 const PLATE_GAP = 24;
 const PLATE_WIDTH = 168;
 /**
@@ -623,7 +625,8 @@ export function CardModal({
   door = null,
   covered = false,
   dropped = false,
-  motion,
+  rise = false,
+  dropping = false,
   returnFocusRef,
 }: {
   card: BrowseCard;
@@ -642,10 +645,12 @@ export function CardModal({
   /** Drawn 80px lower on desktop: a stand-in over a sheet over its original, so the original's head shows. */
   dropped?: boolean;
   /**
-   * The phone's motion over a sheet (stacked sheets R1): `rise` as a card a sheet opened arrives,
-   * `drop` while it leaves. Desktop and reduced motion draw neither (`globals.css`).
+   * The phone's motion over a sheet (stacked sheets R1): `rise` as a card a sheet opened arrives
+   * (`.anim-stack-rise`; desktop and reduced motion draw none), and `dropping` while it leaves (the
+   * provider only sets it on the phone with motion allowed).
    */
-  motion?: "rise" | "drop";
+  rise?: boolean;
+  dropping?: boolean;
   /** Where focus goes when this card closes: the control that opened it, when the provider knows it. */
   returnFocusRef?: React.RefObject<HTMLElement | null>;
   /**
@@ -848,6 +853,19 @@ export function CardModal({
   // must not leave the desktop's keys answering to a sheet nobody can see. And a cramped sheet
   // has no teaser to step down to, so its Escape closes.
   const sheetOpen = narrow && sheetFull && !cramped;
+  // THE DROP (stacked sheets R1, motion): from wherever the card is, so a dismissal during the
+  // 240ms rise reverses it rather than snapping the card to the top first (#1268). The rise class
+  // stays on, still running, and this animation, being script-made, composites over it.
+  useLayoutEffect(() => {
+    const el = dialogRef.current;
+    if (!dropping || !el || typeof el.animate !== "function") return;
+    const from = getComputedStyle(el).transform;
+    const drop = el.animate(
+      [{ transform: from === "none" ? "translateY(0)" : from }, { transform: "translateY(100%)" }],
+      { duration: STACK_DROP_MS, easing: "cubic-bezier(0.4, 0, 1, 1)", fill: "forwards" },
+    );
+    return () => drop.cancel();
+  }, [dropping]);
   const bandRef = useRef<HTMLDivElement | null>(null);
   const sheetRef = useRef<HTMLDivElement | null>(null);
   // The sheet's scrolling body: a pull down from its top returns the full sheet to the teaser.
@@ -1808,6 +1826,7 @@ export function CardModal({
           : stacked ? "transparent" : "color-mix(in oklab, var(--bg) 72%, transparent)",
       }}
       data-stacked={stacked || undefined}
+      data-stack-dropping={dropping || undefined}
     >
       {/* Positioned OFF the centering flex row, not beside it (pre-open review, round 1): a
           plate sized as a flex sibling shifts the centered dialog by its own width-plus-gap
@@ -1843,7 +1862,7 @@ export function CardModal({
         className={""
           // 80px down, or as far as the room under a centred card allows on a short window.
           + (dropped ? "md:translate-y-[min(80px,calc((100vh-min(620px,85vh))/2-8px))] " : "")
-          + (motion === "rise" ? "anim-stack-rise " : motion === "drop" ? "anim-stack-drop " : "")
+          + (rise ? "anim-stack-rise " : "")
           + "relative flex flex-col overflow-hidden w-full h-full md:h-[620px] md:max-h-[85vh] md:w-[820px] md:flex-row md:rounded-2xl bg-[color:var(--surface-sunken)] md:bg-[color:var(--surface-rail)] md:[border:1px_solid_var(--border-strong)]"}
         style={{
           boxShadow: "var(--modal-shadow)",

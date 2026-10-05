@@ -374,8 +374,8 @@ export function CardDetailTrigger({
 /** Stable, so the context value's identity does not change every render. */
 const EMPTY_IDS: ReadonlySet<string> = new Set();
 const NOOP = () => {};
-/** The phone's drop off a sheet (stacked sheets R1, motion): `.anim-stack-drop`'s duration. */
-export const STACK_DROP_MS = 200;
+import { STACK_DROP_MS } from "./card-modal";
+export { STACK_DROP_MS };
 
 type OpenAt = {
   oracleId: string;
@@ -1166,7 +1166,8 @@ export function CardDetailProvider({
           onClose={dismiss}
           returnFocusRef={returnFocusRef}
           stacked={sheetsBelow > 0}
-          motion={leaving ? "drop" : arrival.rise ? "rise" : undefined}
+          rise={arrival.rise}
+          dropping={leaving}
           // Only a card the sheet has a footer FOR swaps its Mana Pool link out: the original, or any
           // card after a take, keeps the link rather than drawing nothing in its place.
           footer={sheetFooter && sheetFooter(card.oracleId, "row") !== null
@@ -1237,7 +1238,8 @@ export function CardDetailProvider({
           returnFocusRef={returnFocusRef}
           stacked
           dropped
-          motion={leaving ? "drop" : arrival.rise ? "rise" : undefined}
+          rise={arrival.rise}
+          dropping={leaving}
           // Only a card the sheet has a footer FOR swaps its Mana Pool link out: the original, or any
           // card after a take, keeps the link rather than drawing nothing in its place.
           footer={sheetFooter && sheetFooter(card.oracleId, "row") !== null
