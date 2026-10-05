@@ -38,7 +38,12 @@
  *     added-then-cut can make a genuinely newer pass look old, or a genuinely old one look new,
  *     independent of that pass's actual age. `fill_passes.created_at` against an operator-named
  *     cutoff is the only thing that actually answers "did this pass exist when the deck copy
- *     ran" — a pass created after it is excluded and reported, never silently dropped.
+ *     ran" — a pass created after it is excluded and reported, never silently dropped. The
+ *     cutoff must be AT OR BEFORE the deck copy's source read began (Copilot round 7) — not
+ *     when its write finished, which is a later moment a pass could sneak in before. The safe
+ *     value is when the OPERATOR LAUNCHED `copy:staging-decks`, necessarily at or before its
+ *     own source transaction opened; an explicit UTC offset is required, since a bare
+ *     local-looking string parses ambiguously and this value gates a production write.
  *   - Every copied `fill_passes.id` is checked for a collision against the WHOLE target table
  *     (not only these decks) before anything is written — ids are UUIDs so this should never
  *     fire, but the earlier script's review found real value in not assuming that.
@@ -61,7 +66,7 @@
  *   THE_99_NEON_STAGING_DIRECT=<staging> \
  *   DECK_COPY_TARGET_URL=<production> DECK_COPY_TARGET_BRANCH=br-… \
  *   DECK_COPY_SOURCE_USER_ID=<staging user> DECK_COPY_TARGET_USER_ID=<production user> \
- *   DECK_COPY_SNAPSHOT_AT=<ISO-8601 — the moment copy:staging-decks's real write finished> \
+ *   DECK_COPY_SNAPSHOT_AT=<ISO-8601 with a "Z"/offset — when you LAUNCHED copy:staging-decks> \
  *   pnpm copy:staging-fill-history --dry-run
  *
  *   …same, plus --confirm-production-write   # only once Hugh's go has been relayed
@@ -85,8 +90,15 @@ const {
   // The authoritative bound Copilot round 6 asked for: current deck_cards membership can't
   // reliably tell a pass's age (a card can be cut-then-readded, or added-then-cut, independent
   // of any one pass), so a pass is accepted on an actual cutoff rather than inferred from
-  // membership. The operator supplies the wall-clock moment copy:staging-decks's real write
-  // finished — never defaulted, same reasoning as every other named parameter in this family.
+  // membership. NEVER defaulted, same as every other named parameter here.
+  //
+  // THIS MUST BE AT OR BEFORE copy-staging-decks-to-prod.mts's SOURCE READ BEGAN, not when that
+  // script's write finished (Copilot round 7) — those are different moments, and a fill pass
+  // committed on staging in between the two would pass a "when the write finished" cutoff while
+  // describing cards the copied snapshot never actually held. That script does not log its own
+  // snapshot instant, so the safe, always-correct value is the moment the OPERATOR LAUNCHED
+  // copy:staging-decks — necessarily at or before its source transaction opened. Earlier is
+  // always safe here; later than the true snapshot moment is the only mistake that matters.
   DECK_COPY_SNAPSHOT_AT: SNAPSHOT_AT_RAW,
 } = requireEnv([
   "THE_99_NEON_STAGING_DIRECT",
@@ -96,12 +108,20 @@ const {
   "DECK_COPY_TARGET_USER_ID",
   "DECK_COPY_SNAPSHOT_AT",
 ]);
+// An explicit offset is required (Copilot round 7) — a bare "2026-10-05 09:00:00" is ambiguous
+// between engines (some read it as local time, some as UTC), and this value gates a production
+// write. "Z" or "+HH:MM"/"-HH:MM" only.
+if (!/Z$|[+-]\d{2}:\d{2}$/.test(SNAPSHOT_AT_RAW)) {
+  console.error(
+    `DECK_COPY_SNAPSHOT_AT (${SNAPSHOT_AT_RAW}) has no explicit UTC offset. Use an ISO-8601 ` +
+      'timestamp ending in "Z" (or an explicit "+HH:MM"/"-HH:MM") — never a bare local-looking ' +
+      "string, which parses ambiguously.",
+  );
+  process.exit(1);
+}
 const SNAPSHOT_AT = new Date(SNAPSHOT_AT_RAW);
 if (Number.isNaN(SNAPSHOT_AT.getTime())) {
-  console.error(
-    `DECK_COPY_SNAPSHOT_AT (${SNAPSHOT_AT_RAW}) is not a valid date. Pass an ISO-8601 timestamp — ` +
-      "the moment copy:staging-decks's real production write finished.",
-  );
+  console.error(`DECK_COPY_SNAPSHOT_AT (${SNAPSHOT_AT_RAW}) is not a valid date.`);
   process.exit(1);
 }
 
