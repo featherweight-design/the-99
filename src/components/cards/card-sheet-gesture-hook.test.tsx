@@ -14,11 +14,18 @@ type HarnessProps = {
   onPage?: (dir: "prev" | "next", offset: number) => void;
   onPeek?: () => void;
   onTurn?: () => void;
+  /** Where the full sheet's body is scrolled to. */
+  bodyScrollTop?: number;
+  canCollapse?: boolean;
 };
 
-function Harness({ canPrev = true, canNext = true, startFull = false, onPage = () => {}, onPeek = () => {}, onTurn = () => {} }: HarnessProps) {
+function Harness({
+  canPrev = true, canNext = true, startFull = false, onPage = () => {}, onPeek = () => {}, onTurn = () => {},
+  bodyScrollTop = 0, canCollapse = true,
+}: HarnessProps) {
   const bandRef = useRef<HTMLDivElement | null>(null);
   const sheetRef = useRef<HTMLDivElement | null>(null);
+  const bodyRef = useRef<HTMLDivElement | null>(null);
   const [full, setFull] = useState(startFull);
   const g = useCardSheetGestures({
     bandRef,
@@ -29,6 +36,8 @@ function Harness({ canPrev = true, canNext = true, startFull = false, onPage = (
     canNext,
     onPage,
     onSnap: (to) => setFull(to === "full"),
+    bodyRef,
+    canCollapse,
   });
   return (
     <div onClickCapture={g.onClickCapture}>
@@ -38,7 +47,14 @@ function Harness({ canPrev = true, canNext = true, startFull = false, onPage = (
       </div>
       <div ref={sheetRef} data-testid="sheet" data-sheet={full ? "full" : "teaser"} onPointerDown={g.onSheetPointerDown}>
         <button type="button" data-sheet-grip="">grip</button>
-        <p>body</p>
+        <div
+          ref={(el) => {
+            bodyRef.current = el;
+            if (el) Object.defineProperty(el, "scrollTop", { configurable: true, value: bodyScrollTop });
+          }}
+        >
+          <p>body</p>
+        </div>
       </div>
     </div>
   );
@@ -169,12 +185,61 @@ describe("useCardSheetGestures", () => {
     expect(s.dataset.dragging).toBeUndefined();
   });
 
-  it("drags the full sheet only by its grip, so its body can scroll", () => {
-    render(<Harness startFull />);
+  it("leaves a full sheet's body to scroll when it is scrolled down, and drags by the grip", () => {
+    render(<Harness startFull bodyScrollTop={120} />);
     drag(screen.getByText("body"), [200, 200], [200, 700]);
     expect(sheet()).toHaveAttribute("data-sheet", "full");
     drag(screen.getByText("grip"), [200, 70], [200, 700]);
     expect(sheet()).toHaveAttribute("data-sheet", "teaser");
+  });
+
+  it("returns the full sheet to the teaser on a pull down its body from the top", () => {
+    render(<Harness startFull />);
+    drag(screen.getByText("body"), [200, 200], [200, 700]);
+    expect(sheet()).toHaveAttribute("data-sheet", "teaser");
+  });
+
+  it("keeps the full sheet on a short pull from the top, by the grip's own snap", () => {
+    // The same rule as the grip: a slow release snaps to the nearer state, so a 100px pull stays.
+    render(<Harness startFull />);
+    const body = screen.getByText("body");
+    fireEvent.pointerDown(body, { pointerId: 1, clientX: 200, clientY: 200, button: 0, pointerType: "touch", timeStamp: 0 });
+    fireEvent.pointerMove(window, { pointerId: 1, clientX: 200, clientY: 300, pointerType: "touch", timeStamp: 400 });
+    fireEvent.pointerUp(window, { pointerId: 1, clientX: 200, clientY: 300, pointerType: "touch", timeStamp: 800 });
+    expect(sheet()).toHaveAttribute("data-sheet", "full");
+  });
+
+  it("leaves an upward drag from the top to the body's scroll", () => {
+    render(<Harness startFull />);
+    drag(screen.getByText("body"), [200, 600], [200, 100]);
+    expect(sheet()).toHaveAttribute("data-sheet", "full");
+  });
+
+  it("holds the body's scroll back during a pull, and not during an upward drag", () => {
+    render(<Harness startFull />);
+    const body = screen.getByText("body");
+    const touchMove = (y: number) => {
+      const ev = new Event("touchmove", { bubbles: true, cancelable: true }) as TouchEvent;
+      Object.defineProperty(ev, "touches", { value: [{ clientX: 200, clientY: y }] });
+      window.dispatchEvent(ev);
+      return ev.defaultPrevented;
+    };
+    fireEvent.pointerDown(body, { pointerId: 1, clientX: 200, clientY: 200, button: 0, pointerType: "touch" });
+    expect(touchMove(206)).toBe(true);
+    fireEvent.pointerUp(window, { pointerId: 1, clientX: 200, clientY: 206, pointerType: "touch" });
+
+    fireEvent.pointerDown(body, { pointerId: 2, clientX: 200, clientY: 200, button: 0, pointerType: "touch" });
+    expect(touchMove(194)).toBe(false);
+    // Handed to the scroll for the rest of the gesture, even if the finger turns back down.
+    expect(touchMove(230)).toBe(false);
+    fireEvent.pointerUp(window, { pointerId: 2, clientX: 200, clientY: 230, pointerType: "touch" });
+    expect(sheet()).toHaveAttribute("data-sheet", "full");
+  });
+
+  it("does not pull a sheet that has no teaser to return to", () => {
+    render(<Harness startFull canCollapse={false} />);
+    drag(screen.getByText("body"), [200, 200], [200, 700]);
+    expect(sheet()).toHaveAttribute("data-sheet", "full");
   });
 
   it("returns to the teaser from a tap on the band in the full state", () => {

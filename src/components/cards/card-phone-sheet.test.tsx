@@ -314,6 +314,15 @@ describe("gestures", () => {
     expect(sheet()).toHaveAttribute("data-sheet", "full");
   });
 
+  it("returns the full sheet to the teaser on a pull down its details from the top", () => {
+    mount();
+    fireEvent.click(grip());
+    // The oracle text sits inside the sheet's scrolling body, which jsdom reports at its top.
+    const text = within(sheet()).getAllByText(/Whenever an opponent draws a card/)[0];
+    drag(text, [200, 200], [200, 700]);
+    expect(sheet()).toHaveAttribute("data-sheet", "teaser");
+  });
+
   it("raises the sheet on a vertical drag that starts on the band", () => {
     mount();
     drag(screen.getByTestId("card-band"), [200, 450], [200, 150]);
