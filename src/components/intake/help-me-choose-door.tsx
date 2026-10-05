@@ -48,7 +48,7 @@ export function DiscoverChooseLink({ colors, exactly, wide }: { colors: readonly
       <Link
         href={qs ? `${CHOOSE_PATH}?${qs}` : CHOOSE_PATH}
         className={[
-          "border-0 border-b border-solid border-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] text-[color:var(--accent)] no-underline",
+          "border-0 border-b border-b-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] border-solid border-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] text-[color:var(--accent)] no-underline",
           // The words are 12.5px; the press is the whole 44px line they sit on, the lead included:
           // the link's own box is not positioned, so its overlay spans the line rather than the link.
           "after:absolute after:left-0 after:right-0 after:top-1/2 after:h-[44px] after:-translate-y-1/2 after:content-['']",

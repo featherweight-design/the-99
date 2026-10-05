@@ -12,7 +12,9 @@ describe("SheetGroupHeading", () => {
     expect(h.className).toBe("m-0 font-mono font-normal text-[9.5px] tracking-[0.12em] uppercase");
     expect(h.getAttribute("style")).toContain("var(--fg-faint)");
     const row = h.parentElement!;
-    expect(row.className).toBe("flex items-baseline justify-between gap-[10px] pb-[6px] border-b border-[color:var(--border)]");
+    expect(row.className).toBe(
+      "flex items-baseline justify-between gap-[10px] pb-[6px] border-b border-b-[color:var(--border)] border-[color:var(--border)]",
+    );
     const note = screen.getByText("by fit");
     expect(note.className).toBe("font-mono text-[10px] whitespace-nowrap");
     expect(note.getAttribute("style")).toContain("var(--fg-locked)");

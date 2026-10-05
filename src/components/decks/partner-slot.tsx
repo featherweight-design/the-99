@@ -129,14 +129,14 @@ export function PartnerSlot({
             <button
               type="button"
               onClick={onChange}
-              className="font-mono text-[11px] text-[color:var(--fg-body)] border-b border-[color:var(--border-strong)]"
+              className="font-mono text-[11px] text-[color:var(--fg-body)] border-b border-b-[color:var(--border-strong)] border-[color:var(--border-strong)]"
             >
               {copy.change}
             </button>
             <button
               type="button"
               onClick={onRemove}
-              className="font-mono text-[11px] text-[color:var(--fg-faint)] border-b border-[color:var(--border)]"
+              className="font-mono text-[11px] text-[color:var(--fg-faint)] border-b border-b-[color:var(--border)] border-[color:var(--border)]"
             >
               {copy.remove}
             </button>

@@ -85,11 +85,11 @@ function FindingItem({
       data-testid={`finding-${finding.id}`}
       data-state={finding.state}
       className={
-        "flex flex-col border-b border-[color:var(--border)] last:border-b-0 "
-        + "md:rounded-[9px] md:border md:last:border-b md:bg-[color:var(--surface)] md:gap-[7px] md:px-[14px] md:py-[12px] "
+        "flex flex-col border-b border-b-[color:var(--border)] last:border-b-0 "
+        + "md:rounded-[9px] md:border md:last:border-b md:last:border-b-[color:var(--border)] md:bg-[color:var(--surface)] md:gap-[7px] md:px-[14px] md:py-[12px] "
         + (empty
           ? "px-[13px] py-[11px] max-md:opacity-50 "
-          : "px-[13px] pt-[11px] md:border-[color:var(--border-strong)] ")
+          : "px-[13px] pt-[11px] md:border-[color:var(--border-strong)] md:last:border-b-[color:var(--border-strong)] ")
       }
     >
       <div className="flex flex-wrap items-center gap-x-[10px] gap-y-[7px] md:gap-x-[7px]">
@@ -144,7 +144,7 @@ function FindingItem({
               aria-haspopup="dialog"
               className="inline-flex min-h-[44px] md:min-h-0 items-center bg-transparent border-0 p-0 font-mono text-[10px] md:text-[9.5px] cursor-pointer text-[color:var(--accent)]"
             >
-              <span className="border-b border-dotted border-[color:var(--accent)]">
+              <span className="border-b border-b-[color:var(--accent)] border-dotted border-[color:var(--accent)]">
                 {finding.combos ? copy.openCombo(finding.count) : copy.open(finding.count)}
                 <span aria-hidden className="md:hidden"> →</span>
               </span>

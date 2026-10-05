@@ -164,7 +164,7 @@ function ReplacingLine({ imageUri, children }: { imageUri: string | null; childr
 export function StandInRow({ row, newestAsOf, take, siblings }: { row: SheetRow; newestAsOf: Date | null; take: RowTake; siblings: readonly Sibling[] }) {
   const preview = usePreviewRow(row.imageUri);
   return (
-    <li className="border-b border-[color:var(--border)]">
+    <li className="border-b border-b-[color:var(--border)] border-[color:var(--border)]">
       <div
         data-testid="stand-in-row"
         {...preview}
@@ -332,7 +332,7 @@ export function PricePlate({ row, newestAsOf }: { row: Pick<SheetRow, "free" | "
 /** The pressed row once its take has landed (suggestion-card's applied row, stamped `taken`). */
 function TakenRow({ cut, add, busy, error, onUndo }: { cut: string; add: string; busy: boolean; error: string | null; onUndo: () => void }) {
   return (
-    <li className="border-b border-[color:var(--border)]">
+    <li className="border-b border-b-[color:var(--border)] border-[color:var(--border)]">
       <div
         data-testid="stand-in-taken"
         className="flex flex-wrap items-center gap-[9px] my-[8px] px-[12px] py-[10px] rounded-[9px] border border-[color:var(--success)]"

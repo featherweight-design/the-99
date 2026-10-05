@@ -100,7 +100,7 @@ export function CreatePreFilled({
       {/* Mobile: flex center gap-[10px] p-[20px_18px_14px] border-bottom */}
       {/* Desktop: block p-[34px_40px] no border-bottom */}
       <div
-        className="flex items-center gap-[10px] p-[20px_18px_14px] md:block md:p-[34px_40px] border-b border-[color:var(--border)] md:border-b-0"
+        className="flex items-center gap-[10px] p-[20px_18px_14px] md:block md:p-[34px_40px] border-b border-b-[color:var(--border)] border-[color:var(--border)] md:border-b-0"
       >
         {/* Mobile back chevron */}
         <Link

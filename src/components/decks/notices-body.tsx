@@ -114,7 +114,7 @@ function CardName({ oracleId, name, siblings }: { oracleId: string; name: string
       oracleId={oracleId}
       name={name}
       siblings={siblings}
-      className="inline border-b border-dotted border-[color:var(--accent)] font-semibold text-[color:var(--fg)]"
+      className="inline border-b border-b-[color:var(--accent)] border-dotted border-[color:var(--accent)] font-semibold text-[color:var(--fg)]"
     >
       {name}
     </CardDetailTrigger>
@@ -241,7 +241,7 @@ function Foot({ foot }: { foot: Exclude<NoticesFoot, { kind: "none" }> }) {
           onClick={foot.onPress}
           className="inline-flex min-h-[44px] flex-none items-center gap-[8px] font-mono text-[11px] text-[color:var(--accent)] hover:text-[color:var(--accent-hover)]"
         >
-          <span className="border-b border-dotted border-[color:var(--accent)]">{copy.sheet.foot.toTab}</span>
+          <span className="border-b border-b-[color:var(--accent)] border-dotted border-[color:var(--accent)]">{copy.sheet.foot.toTab}</span>
           <span aria-hidden="true">→</span>
         </button>
       )}

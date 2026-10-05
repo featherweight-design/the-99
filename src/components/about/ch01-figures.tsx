@@ -1777,7 +1777,7 @@ export function LockedCardsFigureBody() {
           <LockedRows />
         </LockCardsProvider>
         <div className="flex flex-col">
-          <div className="flex flex-wrap items-center justify-between gap-[8px] border-b border-solid border-[color:var(--border)] pb-[8px]">
+          <div className="flex flex-wrap items-center justify-between gap-[8px] border-b border-b-[color:var(--border)] border-solid border-[color:var(--border)] pb-[8px]">
             <LockModeLine count={LOCKED_COUNT} />
             <LockModeButton lockMode onToggle={() => {}} />
           </div>

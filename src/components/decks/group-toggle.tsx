@@ -166,7 +166,7 @@ export function GroupToggle({
        free: `items-center` and both gaps belong to the pill row, not to the
        column — left on the outer element they would centre the pills and turn
        the 7/10px pill gap into the gap above the strip. */
-    <div className="flex flex-col px-[16px] py-[9px] md:px-[26px] md:pt-[14px] md:pb-[10px] border-b border-[color:var(--border)] md:border-b-0">
+    <div className="flex flex-col px-[16px] py-[9px] md:px-[26px] md:pt-[14px] md:pb-[10px] border-b border-b-[color:var(--border)] border-[color:var(--border)] md:border-b-0">
       {/* `flex-wrap`: at 390px the row carries two filter pills, two bulk auto
           controls and two grouping pills, and without it the last of them is
           pushed off the edge. The auto cluster is one flex child, so it wraps

@@ -853,7 +853,7 @@ function UndoRow({
             onClick={handleUndo}
             disabled={isPending}
             className="flex-none flex items-center h-[44px] px-[12px] md:h-auto md:px-0
-              bg-transparent border-0 md:border-b md:border-accent-shadow
+              bg-transparent border-0 md:border-b md:border-b-accent-shadow md:border-accent-shadow
               text-[13px] md:text-[12.5px] font-semibold md:leading-[1.4]
               text-accent md:hover:text-accent-hover cursor-pointer disabled:opacity-50 disabled:cursor-default"
             aria-label={addPanelCopy.undo.actionAria(printedFaceName(card))}

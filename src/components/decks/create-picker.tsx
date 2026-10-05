@@ -502,7 +502,7 @@ export function CreatePicker(props: CreatePickerProps) {
               <button
                 type="button"
                 onClick={() => setPairingMode(false)}
-                className="font-mono text-[11px] text-[color:var(--fg-faint)] border-b border-[color:var(--border)]"
+                className="font-mono text-[11px] text-[color:var(--fg-faint)] border-b border-b-[color:var(--border)] border-[color:var(--border)]"
               >
                 {copy.pairingCancel}
               </button>

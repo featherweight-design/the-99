@@ -204,7 +204,7 @@ function Entry({
             data-entry-link=""
             className="inline-flex min-h-[44px] items-center gap-[8px] font-mono text-[10.5px] text-[color:var(--fg-faint)] md:min-h-0"
           >
-            <span className="border-b border-dotted border-[color:var(--border-dashed)]">
+            <span className="border-b border-b-[color:var(--border-dashed)] border-dotted border-[color:var(--border-dashed)]">
               {howItWorksLinksCopy.entryLink}
             </span>
             <span aria-hidden="true">↓</span>

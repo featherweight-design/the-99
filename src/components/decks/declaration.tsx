@@ -73,7 +73,7 @@ export function DeclarationSection({
       <button
         type="button"
         onClick={onChange}
-        className="cursor-pointer border-b border-dotted border-[color:var(--accent)] font-mono text-[10.5px] text-[color:var(--accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
+        className="cursor-pointer border-b border-b-[color:var(--accent)] border-dotted border-[color:var(--accent)] font-mono text-[10.5px] text-[color:var(--accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
       >
         {declarationCopy.declared.change}
       </button>

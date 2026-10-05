@@ -295,7 +295,7 @@ export function GameLogForm({
 
   return (
     <div className="rounded-[12px] p-[16px] md:p-[20px] bg-surface border border-border-strong">
-      <div className="flex items-baseline justify-between gap-[12px] pb-[14px] md:pb-[18px] border-b border-border md:border-b-0">
+      <div className="flex items-baseline justify-between gap-[12px] pb-[14px] md:pb-[18px] border-b border-b-border border-border md:border-b-0">
         <h3 className="font-display font-bold md:font-semibold text-[17px] md:text-[19px] text-fg">
           {gameLogCopy.form.heading}
         </h3>
@@ -319,7 +319,7 @@ export function GameLogForm({
             type="button"
             disabled={busy}
             onClick={() => setDateOpen(true)}
-            className="font-mono text-[10px] md:text-[11px] text-fg-faint border-b border-dashed border-border-dashed cursor-pointer"
+            className="font-mono text-[10px] md:text-[11px] text-fg-faint border-b border-b-border-dashed border-dashed border-border-dashed cursor-pointer"
           >
             {/* The prefix is a bare text node: wrapping it too would strip the
                 space between the two from the accessible name. */}

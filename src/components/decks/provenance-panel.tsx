@@ -62,7 +62,7 @@ export function ProvenanceOpener({
         }
       >
         <span
-          className={"border-b border-dotted " + (accent ? "border-[color:var(--accent)]" : "border-[color:var(--border-dashed)]")}
+          className={`border-b border-dotted ${accent ? "border-b-[color:var(--accent)] border-[color:var(--accent)]" : "border-b-[color:var(--border-dashed)] border-[color:var(--border-dashed)]"}`}
         >
           {copy.provenance.toggle}
         </span>
@@ -130,7 +130,7 @@ function ProvenanceSheet({ onClose }: { onClose: () => void }) {
                       href={row.link.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="font-mono text-[10.5px] no-underline border-b border-[color:var(--accent)] text-[color:var(--accent)]"
+                      className="font-mono text-[10.5px] no-underline border-b border-b-[color:var(--accent)] border-[color:var(--accent)] text-[color:var(--accent)]"
                     >
                       {copy.provenance.source(row.link.name)}
                     </a>

@@ -80,7 +80,7 @@ export function StripRationale({ mix }: { mix: RecommendedMix }) {
           className={
             open
               ? "font-mono text-[11px] text-accent cursor-pointer"
-              : "font-mono text-[11px] text-accent border-b border-accent-shadow pb-[1px] cursor-pointer"
+              : "font-mono text-[11px] text-accent border-b border-b-accent-shadow border-accent-shadow pb-[1px] cursor-pointer"
           }
         >
           {addPanelCopy.strip.rationaleToggle}

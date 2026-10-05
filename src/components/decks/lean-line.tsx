@@ -72,7 +72,7 @@ export function LeanLine({
               oracleId={(i === 1 ? a : b).oracleId}
               name={part}
               siblings={siblings}
-              className="inline border-b border-dotted border-[color:var(--accent)] text-[color:var(--fg)] text-[length:inherit] leading-[inherit]"
+              className="inline border-b border-b-[color:var(--accent)] border-dotted border-[color:var(--accent)] text-[color:var(--fg)] text-[length:inherit] leading-[inherit]"
             >
               {part}
             </CardDetailTrigger>
@@ -88,7 +88,7 @@ export function LeanLine({
         className="self-start mt-[2px] inline-flex min-h-[44px] md:min-h-0 items-center gap-[6px] bg-transparent border-0 p-0 font-mono text-[10px] cursor-pointer text-[color:var(--accent)]"
       >
         {/* The arrow because it opens a sheet: every opener on the tab carries one (§2). */}
-        <span className="border-b border-dotted border-[color:var(--accent)]">{copy.lean.open}</span>
+        <span className="border-b border-b-[color:var(--accent)] border-dotted border-[color:var(--accent)]">{copy.lean.open}</span>
         <span aria-hidden>→</span>
       </button>
       {open ? (
@@ -266,7 +266,7 @@ function ReasoningModal({
                             oracleId={t.oracleId}
                             name={art.get(t.oracleId)?.name ?? t.name}
                             siblings={siblings}
-                            className="text-left text-[11.5px] border-b border-dotted border-[color:var(--accent)] text-[color:var(--fg-body)]"
+                            className="text-left text-[11.5px] border-b border-b-[color:var(--accent)] border-dotted border-[color:var(--accent)] text-[color:var(--fg-body)]"
                           >
                             {art.get(t.oracleId)?.name ?? t.name}
                           </CardDetailTrigger>
@@ -293,7 +293,7 @@ function ReasoningModal({
               rel="noreferrer"
               className="inline-flex min-h-[44px] md:min-h-0 items-center font-mono text-[10.5px] no-underline text-[color:var(--accent)]"
             >
-              <span className="border-b border-[color:var(--accent)]">{copy.provenance.source(copy.receipt.spellbook)}</span>
+              <span className="border-b border-b-[color:var(--accent)] border-[color:var(--accent)]">{copy.provenance.source(copy.receipt.spellbook)}</span>
             </a>
           </span>
         </div>

@@ -411,7 +411,7 @@ export function ContentsListR6({
                   ? aboutCopy.newInChapter(chapter.newCount)
                   : String(chapter.count);
               return (
-                <li key={chapter.id} className="border-b border-solid border-[color:var(--border)]">
+                <li key={chapter.id} className="border-b border-b-[color:var(--border)] border-solid border-[color:var(--border)]">
                   <div className="flex items-stretch">
                     <a
                       href={`#chapter-${chapter.id}`}

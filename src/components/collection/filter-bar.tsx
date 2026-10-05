@@ -462,7 +462,7 @@ export function FilterBar({
         className={[
           "sticky top-0 z-[2] flex flex-col gap-[6px]",
           "min-[900px]:flex-row min-[900px]:items-center min-[900px]:gap-[8px]",
-          "border-0 border-b border-solid border-[color:var(--border)]",
+          "border-0 border-b border-b-[color:var(--border)] border-solid border-[color:var(--border)]",
           "px-[16px] pt-[8px] pb-[7px]",
         ].join(" ")}
         style={{ background: "var(--bg)" }}

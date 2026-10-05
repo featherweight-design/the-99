@@ -226,7 +226,7 @@ export function ModalChrome({
         }}
       >
         <div
-          className="flex flex-none items-center gap-[9px] md:gap-[10px] h-[43px] px-[16px] md:h-auto md:px-[18px] md:py-[14px] border-b border-[color:var(--border)]"
+          className="flex flex-none items-center gap-[9px] md:gap-[10px] h-[43px] px-[16px] md:h-auto md:px-[18px] md:py-[14px] border-b border-b-[color:var(--border)] border-[color:var(--border)]"
           style={{ opacity: behind ? 0.55 : undefined }}
         >
           {mark}
@@ -336,7 +336,7 @@ function ComboBody({ combo, art }: { combo: ComboModal; art: FindingArt }) {
   const names = combo.cards.map((c) => art.get(c.oracleId)?.name ?? c.name);
   const siblings = combo.cards.map((c) => ({ oracleId: c.oracleId, name: art.get(c.oracleId)?.name ?? c.name, imageUri: art.get(c.oracleId)?.imageUri ?? null }));
   return (
-    <section className="border-b border-[color:var(--border)] last:border-b-0" data-testid="receipt-combo">
+    <section className="border-b border-b-[color:var(--border)] border-[color:var(--border)] last:border-b-0" data-testid="receipt-combo">
       <div className="flex flex-col md:flex-row gap-[14px] md:gap-[16px] px-[16px] py-[14px] md:px-[18px] md:py-[16px]">
         <div className="flex flex-none gap-[7px]">
           {combo.cards.map((card) => (
@@ -404,7 +404,7 @@ function ComboBody({ combo, art }: { combo: ComboModal; art: FindingArt }) {
           rel="noreferrer"
           className="ml-auto inline-flex min-h-[44px] items-center font-mono text-[10.5px] no-underline text-[color:var(--accent)]"
         >
-          <span className="border-b border-[color:var(--accent)]">{copy.provenance.source(copy.receipt.spellbook)}</span>
+          <span className="border-b border-b-[color:var(--accent)] border-[color:var(--accent)]">{copy.provenance.source(copy.receipt.spellbook)}</span>
         </a>
       </div>
     </section>

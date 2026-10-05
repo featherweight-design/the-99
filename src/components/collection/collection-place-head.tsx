@@ -225,7 +225,7 @@ export function CollectionPlaceHead({
           the path, carries no query, and Back is a route change. */}
       <nav
         aria-label={collectionTabsCopy.regionAria}
-        className="flex h-[48px] items-stretch gap-[2px] pl-[8px] pr-[4px] border-b border-[color:var(--border)] md:mt-[14px] md:h-[40px] md:gap-[4px] md:px-[24px]"
+        className="flex h-[48px] items-stretch gap-[2px] pl-[8px] pr-[4px] border-b border-b-[color:var(--border)] border-[color:var(--border)] md:mt-[14px] md:h-[40px] md:gap-[4px] md:px-[24px]"
       >
         {visibleTabs(current, hasCollection).map((tab) => {
           const on = tab.place === effective;

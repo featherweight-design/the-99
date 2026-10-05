@@ -58,7 +58,7 @@ export function DecklistGroupHeader({
   const labelColor = gapClause ? "var(--accent)" : "var(--fg)";
 
   return (
-    <div className="flex items-baseline justify-between mb-[6px] md:mb-[8px] md:pb-[7px] md:border-b md:border-[color:var(--border)]">
+    <div className="flex items-baseline justify-between mb-[6px] md:mb-[8px] md:pb-[7px] md:border-b md:border-b-[color:var(--border)] md:border-[color:var(--border)]">
       <div className="flex items-baseline gap-[6px] md:gap-[10px]">
         {headingId ? (
           // Labelled rather than left to its text content, so the count is part

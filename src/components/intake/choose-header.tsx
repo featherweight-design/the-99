@@ -29,7 +29,7 @@ export function ChooseHeader({
   return (
     <header
       className={[
-        "flex flex-col gap-[3px] md:gap-[6px] p-[20px_18px_14px] border-0 border-b border-solid border-[color:var(--border)] md:border-b-0",
+        "flex flex-col gap-[3px] md:gap-[6px] p-[20px_18px_14px] border-0 border-b border-b-[color:var(--border)] border-solid border-[color:var(--border)] md:border-b-0",
         centered
           ? "md:w-[680px] md:max-w-full md:mx-auto md:p-[34px_0_26px]"
           : // The results header shares `RESULTS_COLUMN`'s box, so it centers with the results.

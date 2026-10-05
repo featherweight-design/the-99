@@ -250,7 +250,7 @@ export function FilterChassis({
       // `lg:` padding would give 1000-1023px a third geometry: the wide form
       // with the compact frame's padding.
       className={[
-        "flex flex-col gap-[10px] border-0 border-b border-solid",
+        "flex flex-col gap-[10px] border-0 border-b border-b-[color:var(--border)] border-solid",
         "border-[color:var(--border)] bg-[color:var(--surface-sunken)]",
         "pt-[12px] pb-[10px]",
         form === "wide" ? "px-[22px]" : "px-[16px]",
