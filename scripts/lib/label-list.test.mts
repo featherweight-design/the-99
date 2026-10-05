@@ -52,13 +52,17 @@ describe("listScopeIds", () => {
   // known, so only an open other-version intent asking for a card this run plans can block it.
   it("checks other-version intents against the planned cards, null-safe, before any submit", () => {
     const build = readFileSync(join(process.cwd(), "scripts/lib/card-labels-build.ts"), "utf8");
-    const at = build.indexOf("const elsewhere = inFlightElsewhere(");
-    expect(at).toBeGreaterThan(build.indexOf("const all = await cardsNeedingLabels("));
-    const block = build.slice(at, build.indexOf("return refuse(", at));
-    expect(block).toContain("inArray(cardLabelBatches.status, OPEN_STATUSES)");
-    expect(block).toMatch(/sql`\$\{cardLabelBatches\.promptVersion\} is distinct from \$\{LABEL_PROMPT_VERSION\}`/);
-    expect(block).toContain("new Set(all.map((c) => c.name))");
-    expect(at).toBeLessThan(build.indexOf("await submit(opts, wave,"));
+    // Read BEFORE the stale snapshot, so a publish between the two reads is seen one way or the other.
+    const read = build.indexOf("const otherVersionIntents = ");
+    expect(read).toBeGreaterThan(-1);
+    expect(read).toBeLessThan(build.indexOf("const all = await cardsNeedingLabels("));
+    const query = build.slice(read, build.indexOf("const all = await cardsNeedingLabels("));
+    expect(query).toContain("inArray(cardLabelBatches.status, OPEN_STATUSES)");
+    expect(query).toMatch(/sql`\$\{cardLabelBatches\.promptVersion\} is distinct from \$\{LABEL_PROMPT_VERSION\}`/);
+    // Matched against `cards`, after the shared-name and in-flight exclusions, and before submit.
+    const check = build.indexOf("const elsewhere = inFlightElsewhere(otherVersionIntents, LABEL_PROMPT_VERSION, new Set(cards.map((c) => c.name)));");
+    expect(check).toBeGreaterThan(build.indexOf("const cards = stale.filter("));
+    expect(check).toBeLessThan(build.indexOf("await submit(opts, wave,"));
   });
 
   it("plans the stale set with needsLabel, redoing only on a list scope", () => {

@@ -757,27 +757,18 @@ async function build(opts: BuildOptions): Promise<number> {
     return EXIT_MORE_WORK;
   }
 
-  const all = await cardsNeedingLabels(opts.scope, opts.onlyOracleIds);
+  // Open intents of ANOTHER prompt version, read BEFORE the stale snapshot below: an older-version
+  // collector that publishes a card and closes its intent between the two reads is then seen one
+  // way or the other (its open intent here, or its published label in the snapshot), never neither.
+  // `is distinct from`, not `<>`: a pre-migration intent has a NULL version, which `<>` never matches.
+  const otherVersionIntents = opts.dryRun ? [] : await db
+    .select({ promptVersion: cardLabelBatches.promptVersion, asked: cardLabelBatches.asked })
+    .from(cardLabelBatches).where(and(
+      inArray(cardLabelBatches.status, OPEN_STATUSES),
+      sql`${cardLabelBatches.promptVersion} is distinct from ${LABEL_PROMPT_VERSION}`,
+    ));
 
-  // ONE PROMPT VERSION IN FLIGHT PER CARD (`inFlightElsewhere`). `is distinct from`, not `<>`: a
-  // pre-migration intent has a NULL version, which `<>` never matches.
-  if (!opts.dryRun) {
-    const elsewhere = inFlightElsewhere(
-      await db.select({ promptVersion: cardLabelBatches.promptVersion, asked: cardLabelBatches.asked })
-        .from(cardLabelBatches).where(and(
-          inArray(cardLabelBatches.status, OPEN_STATUSES),
-          sql`${cardLabelBatches.promptVersion} is distinct from ${LABEL_PROMPT_VERSION}`,
-        )),
-      LABEL_PROMPT_VERSION,
-      new Set(all.map((c) => c.name)),
-    );
-    if (elsewhere.intents > 0) {
-      return refuse(`${elsewhere.intents} open intent(s) asked under prompt version(s) `
-        + `${elsewhere.versions.join(", ")}, not ${LABEL_PROMPT_VERSION}, include ${elsewhere.cards.length} card(s) this `
-        + `run would label (${elsewhere.cards.slice(0, 5).join(", ")}). They would be paid for twice. `
-        + `Collect them with that version's checkout first.`);
-    }
-  }
+  const all = await cardsNeedingLabels(opts.scope, opts.onlyOracleIds);
 
   // **A CARD WHOSE NAME IS SHARED IS EXCLUDED AND NAMED, never labelled by guess.**
   //
@@ -797,10 +788,9 @@ async function build(opts: BuildOptions): Promise<number> {
 
   // **NOTHING IS ASKED TWICE WHILE IT MAY STILL BE ANSWERED.** A card inside an open intent asked
   // under this model and prompt, by any run, is already paid for or about to be; planning it again
-  // is the double charge. An intent asked under an older prompt does not block: its answer can
-  // never be published (reconcile leaves it alone), so the card has to be asked again. After
-  // reconcile, what is left open here is another run's ambiguous intent, which only that run can
-  // resolve.
+  // is the double charge. An intent asked under ANOTHER prompt version is checked separately below
+  // (`inFlightElsewhere`), against the cards this run actually plans. After reconcile, what is left
+  // open here is another run's ambiguous intent, which only that run can resolve.
   const openRows = await db.select({ runId: cardLabelBatches.runId, asked: cardLabelBatches.asked })
     .from(cardLabelBatches).where(and(
       inArray(cardLabelBatches.status, OPEN_STATUSES),
@@ -810,6 +800,16 @@ async function build(opts: BuildOptions): Promise<number> {
   const inFlight = new Set(openRows.flatMap((r) => r.asked));
   const cards = stale.filter((c) => !inFlight.has(c.name));
   const blocked = stale.length - cards.length;
+
+  // ONE PROMPT VERSION IN FLIGHT PER CARD. Checked against `cards`, the set planned after both
+  // exclusions above, so an old intent naming a card this run would never ask for blocks nothing.
+  const elsewhere = inFlightElsewhere(otherVersionIntents, LABEL_PROMPT_VERSION, new Set(cards.map((c) => c.name)));
+  if (elsewhere.intents > 0) {
+    return refuse(`${elsewhere.intents} open intent(s) asked under prompt version(s) `
+      + `${elsewhere.versions.join(", ")}, not ${LABEL_PROMPT_VERSION}, include ${elsewhere.cards.length} card(s) this `
+      + `run would label (${elsewhere.cards.slice(0, 5).join(", ")}). They would be paid for twice. `
+      + `Collect them with that version's checkout first.`);
+  }
 
   console.log(`${stale.length} card(s) need labels (absent, text moved, unknown prompt version`
     + `${scopeList(opts.scope) !== null ? ", or written under another version or model than this list run's" : ""})`

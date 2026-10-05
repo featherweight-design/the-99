@@ -378,7 +378,8 @@ export function familySpend(
 }
 
 /**
- * Open intents asked under ANOTHER prompt version whose cards this run would plan again. A label
+ * Open intents asked under ANOTHER prompt version whose cards this run would plan again. `planned`
+ * is the set the run will actually ask for, after its shared-name and in-flight exclusions. A label
  * stays fresh under the version that wrote it, so a prompt bump costs nothing by itself, but an
  * intent of another version may still be out and paid for, and `reconcile` collects only the
  * current version's: planning one of its cards would pay twice. Only an OVERLAP blocks: an old
