@@ -295,3 +295,26 @@ describe("a stacked stand-in's Take on the phone (call 9)", () => {
     expect(screen.queryByTestId("teaser-footer-action")).toBeNull();
   });
 });
+
+describe("a sheet with its own phone name (s2)", () => {
+  it("draws the phone pill with the phone name and keeps the desktop pill's", async () => {
+    render(
+      <CardDetailProvider fetchCard={async () => birds}>
+        <ModalChrome
+          title="Core, two things would have to go"
+          closeLabel="Close"
+          onClose={vi.fn()}
+          width={700}
+          backLabel="Core"
+          phoneBackLabel="What would have to go"
+        >
+          <CardDetailTrigger oracleId="o-birds" name="Birds of Paradise">open birds</CardDetailTrigger>
+        </ModalChrome>
+      </CardDetailProvider>,
+    );
+    await openFromSheet();
+    expect(pill()).toHaveTextContent("What would have to go");
+    expect(pill()).toHaveAccessibleName(cardSheetCopy.back.a11y("What would have to go"));
+    expect(screen.getByTestId("card-modal-back")).toHaveTextContent("Core");
+  });
+});

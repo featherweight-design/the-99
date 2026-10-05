@@ -244,6 +244,9 @@ export const deckVersioningCopy = {
     // The source picker's own list (addendum R1) — the popover at ≥ md, the sheet below it.
     source: {
       title: (card: string) => `Pull ${card} from`,
+      // What a card opened from this list calls it on the phone (stacked sheets R1, s5): the title
+      // reads unfinished on a pill, and "Pull it" reads as an action.
+      backLabel: "Which deck to pull from",
       order: "In the order they committed it",
       leaves: (n: number) => `→ ${n} cards`,
       newDraft: "new draft",

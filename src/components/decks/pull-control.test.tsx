@@ -5,16 +5,27 @@
 // its own.
 
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render as rtlRender, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DeckClaim } from "../../lib/decks/availability";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
-import { cardDetailCopy } from "../cards/card-detail-provider";
+import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
 import { DRAFT_ANNOUNCER_ID } from "./draft-announcer";
 import { PullControl } from "./pull-control";
 
 vi.mock("../../app/decks/actions", () => ({ pullCardFromDeck: vi.fn() }));
+vi.mock("../../app/collection/actions", () => ({
+  setCardArtPreference: vi.fn(async () => true),
+  clearCardArtPreference: vi.fn(async () => {}),
+}));
+
+// The source picker's phone sheet names itself to the card modal (stacked sheets R1, s5), so it is
+// drawn, as in production on `/decks/[id]/changes`, inside a card-detail provider.
+function Wrapper({ children }: { children: React.ReactNode }) {
+  return <CardDetailProvider>{children}</CardDetailProvider>;
+}
+const render = (ui: React.ReactElement) => rtlRender(ui, { wrapper: Wrapper });
 import { pullCardFromDeck } from "../../app/decks/actions";
 
 const copy = deckVersioningCopy.review;
@@ -579,6 +590,36 @@ describe("PullControl — 2+ choosable sources", () => {
       fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
     });
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  // Stacked sheets R1, s5: the phone list's head opens the card, which names the list as the way
+  // back and covers it; the list stays mounted with the reader's pick.
+  it("opens the card from the phone list's head, named for the list, with the pick kept", async () => {
+    setViewport(false);
+    render(
+      <CardDetailProvider fetchCard={async () => ({
+        oracleId: "o1", name: "Sol Ring", typeLine: "Artifact", manaCost: "{1}", cmc: 1, oracleText: null, keywords: [],
+        rarity: "uncommon", colorIdentity: [], imageUri: null, printedName: null, quantity: 1, printings: [], setCodes: [],
+        primarySetCode: "", preferredPrinting: null,
+      })}>
+        <PullControl deckId="d" card={CARD} claims={[FREE_TO_PULL, OTHER_SOURCE]} defaultId={FREE_TO_PULL.id} onPulled={noop} />
+      </CardDetailProvider>,
+    );
+    act(() => { screen.getByRole("button", { name: MANY_NAME }).click(); });
+    const list = screen.getByRole("dialog");
+    const radios = list.querySelectorAll('[role="radio"]');
+    act(() => { fireEvent.click(radios[radios.length - 1]); });
+    const picked = [...list.querySelectorAll('[role="radio"]')].findIndex((r) => r.getAttribute("aria-checked") === "true");
+    const head = list.querySelector('p[id$="-title"] button') as HTMLElement;
+    expect(head).toHaveTextContent("Sol Ring");
+    await act(async () => { fireEvent.click(head); });
+    const pill = screen.getByTestId("card-modal-back-mobile");
+    expect(pill).toHaveTextContent(copy.source.backLabel);
+    const cover = list.closest("[data-hidden-under-card]");
+    expect(cover).toHaveAttribute("aria-hidden", "true");
+    await act(async () => { fireEvent.click(pill); });
+    expect(list.closest("[data-hidden-under-card]")).toBeNull();
+    expect([...list.querySelectorAll('[role="radio"]')].findIndex((r) => r.getAttribute("aria-checked") === "true")).toBe(picked);
   });
 
   // Found by Copilot's round-2 review: `useDialogA11y`'s own default returns focus to the

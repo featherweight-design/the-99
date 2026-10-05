@@ -24,7 +24,7 @@ import type { SourceDeckFigure } from "../../lib/decks/read";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { useDialogA11y } from "../../lib/a11y/dialog";
-import { cardDetailCopy } from "../cards/card-detail-provider";
+import { CardDetailTrigger, cardDetailCopy, useCardDetail } from "../cards/card-detail-provider";
 import { ANCHORED_PANEL_CLASS, useAnchoredPanel } from "../ui/anchored-panel";
 import { Sheet } from "../ui/sheet";
 import { useIsDesktop } from "../ui/use-is-desktop";
@@ -405,8 +405,9 @@ function SourcePicker({
     });
   }
 
-  const body = (
+  const body = (nameOpens: boolean) => (
     <SourcePickerBody
+      nameOpens={nameOpens}
       titleId={titleId}
       card={card}
       claims={claims}
@@ -452,7 +453,7 @@ function SourcePicker({
       </button>
       {open && isDesktop && (
         <Popover ref={panelRef} at={at} titleId={titleId} onDismiss={close} returnFocusRef={returnFocusAfterPull}>
-          {body}
+          {body(false)}
         </Popover>
       )}
       {open && !isDesktop && (
@@ -462,7 +463,7 @@ function SourcePicker({
           returnFocusRef={returnFocusAfterPull}
           ariaLabel={sourceCopy.title(card.name)}
         >
-          {body}
+          {body(true)}
         </MobileSheet>
       )}
     </div>
@@ -526,16 +527,47 @@ function MobileSheet({
   children: React.ReactNode;
 }) {
   useDialogA11y(panelRef, onDismiss, { returnFocusRef });
+  // A card opened from this list (its head's name, stacked sheets R1 s5) stacks over it, names it as
+  // the way back, and REPLACES it on screen: the list stays mounted with the reader's pick, hidden
+  // and out of the accessibility tree while the card is up, as every sheet under a card is.
+  const { registerSheet, openOracleId } = useCardDetail();
+  useEffect(() => registerSheet(sourceCopy.backLabel), [registerSheet]);
+  const covered = openOracleId !== null;
   return (
-    <Sheet open onDismiss={onDismiss} ariaLabel={ariaLabel} panelRef={panelRef}>
-      {children}
-    </Sheet>
+    <div
+      aria-hidden={covered || undefined}
+      data-hidden-under-card={covered || undefined}
+      style={covered ? { opacity: 0, pointerEvents: "none" } : undefined}
+    >
+      <Sheet open onDismiss={onDismiss} ariaLabel={ariaLabel} panelRef={panelRef}>
+        {children}
+      </Sheet>
+    </div>
   );
 }
 
 /** The list, the consequence sentence and the confirm/cancel row — shared by
  *  the popover and the sheet, so the two shells can never draw different rows. */
+/**
+ * `Pull {card} from` with the card's name as the trigger that opens it. Split around the name the
+ * copy key places, so the sentence stays the key's own wording rather than a second copy of it.
+ */
+function TitleOpeningCard({ card }: { card: { oracleId: string; name: string } }) {
+  const MARK = "\u0000";
+  const [before, after = ""] = sourceCopy.title(MARK).split(MARK);
+  return (
+    <>
+      {before}
+      <CardDetailTrigger oracleId={card.oracleId} name={card.name}>
+        {card.name}
+      </CardDetailTrigger>
+      {after}
+    </>
+  );
+}
+
 function SourcePickerBody({
+  nameOpens,
   titleId,
   card,
   claims,
@@ -549,6 +581,8 @@ function SourcePickerBody({
   onCancel,
   onConfirm,
 }: {
+  /** The phone sheet's head names the card as a way into it (stacked sheets R1, s5). */
+  nameOpens: boolean;
   titleId: string;
   card: { oracleId: string; name: string };
   claims: DeckClaim[];
@@ -580,7 +614,7 @@ function SourcePickerBody({
   return (
     <div className="flex flex-col gap-[12px]">
       <p id={`${titleId}-title`} className="m-0 font-sans text-[13px] font-semibold text-[color:var(--fg)]">
-        {sourceCopy.title(card.name)}
+        {nameOpens ? <TitleOpeningCard card={card} /> : sourceCopy.title(card.name)}
       </p>
       {/* Found missing by Copilot's round-2 review: `sourceCopy.order` was defined for exactly
           this line (the handoff draws it under the title in both shells) and never rendered. */}
