@@ -10,7 +10,7 @@ Each PR ships on its own and none stacks on another's branch. Order: A, B, C, D.
 - On the phone, a **card** layer drops `STACKED_SHEET` (96) and `PHONE_TOP` 96 / 140, so a stacked card draws as unstacked: card 320 × 447 at y 64, teaser top 532 at 390×812. `PHONE_TOP[52]` no longer moves a card that a list sheet opens over (call 7). Desktop keeps every offset.
 - **The pill.** `← {backLabel}` draws at both widths in the ✕'s slot (y 22–54, hit target 44). Its accessible name is `Back to {label}`. It ellipsizes at a 266 cap with the counter and 354 without. The phone ✕ goes from a stacked card. States b1–b7: rest, pressed, focus ring, disabled while a Take is pending. Focus moves to it on open. Inline `Back to ${back}` strings move to `cardSheetCopy.back`.
 - **List sheets over a card** (stand-ins, the Find a deck picker): `ModalChrome`'s `overCard` phone × becomes a `← {card}` pill in the sheet head.
-- **The sheet underneath** a card on the phone: opacity 0 after the open, plus `inert` and `aria-hidden`. It stays mounted with its scroll kept.
+- **The sheet underneath** a card on the phone: opacity 0 after the open, plus `aria-hidden` and `pointer-events: none`, **not `inert`** (audit A10). It stays mounted with its scroll kept. The trigger names itself to `open`, so focus returns to the opener in Safari too (audit A6b).
 - **No further layer from a stacked card** (call 8, audit A4): Find a deck is withheld when a sheet is under the card.
 - Tests: geometry per path, the pill's name and states, Escape full → teaser → pop, the pill skipping the teaser, and focus on open and pop.
 
