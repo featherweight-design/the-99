@@ -6,7 +6,7 @@
  * disagree about. This is `db:copy:prose`'s shape for `db:copy:labels`'s reason.
  */
 
-import { labelIsFresh, PROMPT_SYSTEM_SHA256, type CardForPrompt } from "./prompt";
+import { labelIsFresh, PROMPT_SYSTEM_SHA256, type CardForPrompt, type StoredLabelStamp } from "./prompt";
 import type { Job } from "./types";
 
 /** One row as the source holds it. */
@@ -20,6 +20,9 @@ export type SourceLabel = {
 
 /** A card as the TARGET's own catalog holds it: what a source row is judged fresh against. */
 export type TargetCard = CardForPrompt & { oracleId: string };
+
+/** A row the TARGET already holds, as stamped. */
+export type TargetLabel = StoredLabelStamp & { oracleId: string };
 
 export type CopyPlan = {
   /** Rows to install: fresh against the target's own card under the row's own version and model. */
@@ -37,6 +40,12 @@ export type CopyPlan = {
    * the version can.
    */
   unknownVersion: string[];
+  /**
+   * Cards whose source row is fresh but was written under an OLDER prompt version than the target's
+   * own row, which is itself fresh against the target's card. Skipped: installing it would replace a
+   * newer label with an older one. Versions compare numerically.
+   */
+  targetNewer: string[];
   /** Cards the target holds and the source has not labelled. Left alone; never deleted. */
   absentFromSource: string[];
   /**
@@ -70,18 +79,24 @@ export type CopyPlan = {
  * say how many differ and let a human decide; the cheap fix is almost always to re-run the catalog
  * refresh so the two agree, not to buy the labels twice.
  *
+ * **A fresh target row is never replaced by an OLDER-version source row** (`targetNewer`). A source
+ * row of an equal or newer version installs as before, and so does any source row over a target row
+ * that is stale or of an unregistered version.
+ *
  * **Nothing is ever deleted.** A card the source has not labelled keeps whatever the target holds.
  */
 export function planCopy(
   source: readonly SourceLabel[],
   targetCards: readonly TargetCard[],
-  targetHasLabel: ReadonlySet<string>,
+  targetRows: readonly TargetLabel[],
   registry: Readonly<Record<string, string>> = PROMPT_SYSTEM_SHA256,
 ): CopyPlan {
   const cardById = new Map(targetCards.map((c) => [c.oracleId, c]));
+  const heldById = new Map(targetRows.map((r) => [r.oracleId, r]));
   const install: SourceLabel[] = [];
   const mismatched: string[] = [];
   const unknownVersion: string[] = [];
+  const targetNewer: string[] = [];
   const notInTargetCatalog: string[] = [];
 
   for (const row of source) {
@@ -92,8 +107,13 @@ export function planCopy(
     // that and the target's catalog refresh having stopped.
     if (card === undefined) { notInTargetCatalog.push(row.oracleId); continue; }
     if (!Object.hasOwn(registry, row.promptVersion)) { unknownVersion.push(row.oracleId); continue; }
-    if (labelIsFresh(row, card, registry)) install.push(row);
-    else mismatched.push(row.oracleId);
+    if (!labelIsFresh(row, card, registry)) { mismatched.push(row.oracleId); continue; }
+    const held = heldById.get(row.oracleId);
+    if (held !== undefined && olderVersion(row.promptVersion, held.promptVersion) && labelIsFresh(held, card, registry)) {
+      targetNewer.push(row.oracleId);
+      continue;
+    }
+    install.push(row);
   }
 
   const labelled = new Set(source.map((r) => r.oracleId));
@@ -101,7 +121,13 @@ export function planCopy(
     install,
     mismatched,
     unknownVersion,
+    targetNewer,
     notInTargetCatalog,
-    absentFromSource: [...targetHasLabel].filter((id) => !labelled.has(id)),
+    absentFromSource: [...heldById.keys()].filter((id) => !labelled.has(id)),
   };
+}
+
+/** Whether prompt version `a` is older than `b`, compared as numbers ("9" < "10"). */
+function olderVersion(a: string, b: string): boolean {
+  return Number(a) < Number(b);
 }

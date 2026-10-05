@@ -12,7 +12,7 @@ import "./lib/env.mjs";
 import { sql } from "drizzle-orm";
 
 import { cardLabels } from "../src/db/schema";
-import { planCopy, type SourceLabel, type TargetCard } from "../src/lib/labels/copy";
+import { planCopy, type SourceLabel, type TargetCard, type TargetLabel } from "../src/lib/labels/copy";
 import { LABEL_PROMPT_VERSION } from "../src/lib/labels/prompt";
 import {
   publishOnTarget, readSourceSnapshot, runCopyMain, withCopyPair, type CopyDb, type CopyPair, type CopyTx,
@@ -73,7 +73,10 @@ async function main({ source, sourceUrl, target, sourceBranch, targetBranch, dry
     const labelledBySource = new Set(src.map((r) => r.oracleId));
     const targetCards: TargetCard[] = catalog.filter((c) => labelledBySource.has(c.oracleId));
 
-    const held = new Set((await db.select({ id: cardLabels.oracleId }).from(cardLabels)).map((r) => r.id));
+    // Stamped, so a fresh target row is never replaced by an older-version source row (`targetNewer`).
+    const held: TargetLabel[] = await db.select({
+      oracleId: cardLabels.oracleId, model: cardLabels.model, promptVersion: cardLabels.promptVersion, inputHash: cardLabels.inputHash,
+    }).from(cardLabels);
     return planCopy(src, targetCards, held);
   };
 
@@ -86,6 +89,10 @@ async function main({ source, sourceUrl, target, sourceBranch, targetBranch, dry
     console.log(`  ${plan.unknownVersion.length} source row(s) name a prompt version this checkout's `
       + `registry does not hold — not copied, and NOT a catalog difference. Check out the code that `
       + `knows that version.`);
+  }
+  if (plan.targetNewer.length > 0) {
+    console.log(`  ${plan.targetNewer.length} skipped: the target holds a fresh label of a NEWER prompt `
+      + `version than the source's — never replaced by an older one`);
   }
   console.log(`  ${plan.notInTargetCatalog.length} skipped: not in the target catalog — normal for a `
     + `source generated against a newer catalog; a large figure means the target's catalog `

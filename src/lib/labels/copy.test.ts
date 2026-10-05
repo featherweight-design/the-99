@@ -22,7 +22,7 @@ const row = (c: TargetCard, over: Partial<SourceLabel> = {}, registry = PROMPT_S
 describe("planCopy", () => {
   it("installs a row that is fresh against the target's own card", () => {
     const a = card("a");
-    const p = planCopy([row(a)], [a], new Set());
+    const p = planCopy([row(a)], [a], []);
     expect(p.install.map((r) => r.oracleId)).toEqual(["a"]);
     expect(p.mismatched).toEqual([]);
   });
@@ -32,7 +32,7 @@ describe("planCopy", () => {
   // no label, because nothing downstream can tell it from a current one.
   it("refuses a row written for text the TARGET does not hold", () => {
     const a = card("a");
-    const p = planCopy([row(a)], [card("a", { oracle_text: "{T}: Add {G}{G}." })], new Set());
+    const p = planCopy([row(a)], [card("a", { oracle_text: "{T}: Add {G}{G}." })], []);
     expect(p.install).toEqual([]);
     expect(p.mismatched).toEqual(["a"]);
   });
@@ -43,23 +43,49 @@ describe("planCopy", () => {
     const V9 = { ...PROMPT_SYSTEM_SHA256, "9": "9".repeat(64) };
     const a = card("a");
     const b = card("b");
-    const p = planCopy([row(a, { promptVersion: "8" }, V9), row(b, { promptVersion: "9" }, V9)], [a, b], new Set(), V9);
+    const p = planCopy([row(a, { promptVersion: "8" }, V9), row(b, { promptVersion: "9" }, V9)], [a, b], [], V9);
     expect(p.install.map((r) => [r.oracleId, r.promptVersion])).toEqual([["a", "8"], ["b", "9"]]);
   });
 
   it("installs a fresh row written by another model than the target builds with", () => {
     const a = card("a");
-    const p = planCopy([row(a, { model: "claude-haiku-4-5" })], [a], new Set());
+    const p = planCopy([row(a, { model: "claude-haiku-4-5" })], [a], []);
     expect(p.install[0]).toMatchObject({ oracleId: "a", model: "claude-haiku-4-5" });
   });
 
   // An unknown version cannot be checked here; it is neither installed nor a catalog difference.
   it("reports a row of a version the registry does not hold, apart from mismatches", () => {
     const a = card("a");
-    const p = planCopy([{ ...row(a), promptVersion: "7" }], [a], new Set());
+    const p = planCopy([{ ...row(a), promptVersion: "7" }], [a], []);
     expect(p.install).toEqual([]);
     expect(p.mismatched).toEqual([]);
     expect(p.unknownVersion).toEqual(["a"]);
+  });
+
+  // Never a downgrade: a fresh target row of a newer version keeps its place, compared numerically.
+  describe("a fresh target row of a newer prompt version", () => {
+    const V = { ...PROMPT_SYSTEM_SHA256, "9": "9".repeat(64), "10": "a".repeat(64) };
+    const a = card("a");
+    const held = (version: string, c: TargetCard = a) => ({ ...row(c, { promptVersion: version }, V), oracleId: "a" });
+
+    it("is not replaced by an older-version source row, and is reported", () => {
+      const p = planCopy([row(a, { promptVersion: "9" }, V)], [a], [held("10")], V);
+      expect(p.install).toEqual([]);
+      expect(p.targetNewer).toEqual(["a"]);
+      expect(p.mismatched).toEqual([]);
+    });
+
+    it("is replaced by an equal or newer source row", () => {
+      expect(planCopy([row(a, { promptVersion: "10" }, V)], [a], [held("10")], V).install).toHaveLength(1);
+      expect(planCopy([row(a, { promptVersion: "10" }, V)], [a], [held("9")], V).install).toHaveLength(1);
+    });
+
+    it("is replaced when it is itself stale against the target's card", () => {
+      const stale = held("10", card("a", { oracle_text: "old text" }));
+      const p = planCopy([row(a, { promptVersion: "9" }, V)], [a], [stale], V);
+      expect(p.install.map((r) => r.oracleId)).toEqual(["a"]);
+      expect(p.targetNewer).toEqual([]);
+    });
   });
 
   // Task 4b as ruled: mismatches are REPORTED. The plan originally said they are "picked up by the
@@ -69,7 +95,7 @@ describe("planCopy", () => {
     const p = planCopy(
       [{ ...row(card("a")), inputHash: "x" }, { ...row(card("b")), inputHash: "y" }],
       [card("a"), card("b")],
-      new Set(),
+      [],
     );
     expect(p.mismatched.sort()).toEqual(["a", "b"]);
     expect(p.install).toEqual([]);
@@ -77,33 +103,33 @@ describe("planCopy", () => {
     // bucket that would feed a paid rebuild. Asserting the exact key set means reintroducing a
     // `rebuild`/`queue` field fails here, which is the thing Task 4b's edit exists to prevent.
     expect(Object.keys(p).sort())
-      .toEqual(["absentFromSource", "install", "mismatched", "notInTargetCatalog", "unknownVersion"]);
+      .toEqual(["absentFromSource", "install", "mismatched", "notInTargetCatalog", "targetNewer", "unknownVersion"]);
   });
 
   // Counted, not silent. A source generated against a newer catalog always carries some of these,
   // and the count is what distinguishes that from the target's catalog refresh having stopped.
   it("counts a card the target's catalog does not hold, and does not call it a mismatch", () => {
-    const p = planCopy([row(card("ghost"))], [], new Set());
+    const p = planCopy([row(card("ghost"))], [], []);
     expect(p.install).toEqual([]);
     expect(p.mismatched).toEqual([]);
     expect(p.notInTargetCatalog).toEqual(["ghost"]);
   });
 
   it("never deletes: a card the source has not labelled is reported and left alone", () => {
-    const p = planCopy([], [card("a")], new Set(["a"]));
+    const p = planCopy([], [card("a")], [{ oracleId: "a", model: "m", promptVersion: "8", inputHash: "h" }]);
     expect(p.install).toEqual([]);
     expect(p.absentFromSource).toEqual(["a"]);
   });
 
   it("carries the model and prompt version across, so a copied row says what produced it", () => {
     const a = card("a");
-    const p = planCopy([row(a)], [a], new Set());
+    const p = planCopy([row(a)], [a], []);
     expect(p.install[0]).toMatchObject({ model: "m", promptVersion: "8" });
   });
 
   it("plans nothing from an empty source", () => {
-    const p = planCopy([], [card("a")], new Set());
-    expect(p).toEqual({ install: [], mismatched: [], unknownVersion: [], notInTargetCatalog: [], absentFromSource: [] });
+    const p = planCopy([], [card("a")], []);
+    expect(p).toEqual({ install: [], mismatched: [], unknownVersion: [], targetNewer: [], notInTargetCatalog: [], absentFromSource: [] });
   });
 });
 
@@ -126,14 +152,14 @@ describe("the script's composition installs a matching row", () => {
 
   it("installs a source row that is fresh against the target's own card", () => {
     const src = [row(llanowar, { model: "claude-sonnet-4-5" })];
-    const plan = planCopy(src, targetCardsFor([llanowar, notInSource], src), new Set());
+    const plan = planCopy(src, targetCardsFor([llanowar, notInSource], src), []);
     expect(plan.install.map((r) => r.oracleId)).toEqual(["aaa"]);
     expect(plan.notInTargetCatalog).toEqual([]);
   });
 
   it("still reports a source row the target's catalog does not hold", () => {
     const src = [row(card("ghost"))];
-    const plan = planCopy(src, targetCardsFor([llanowar], src), new Set());
+    const plan = planCopy(src, targetCardsFor([llanowar], src), []);
     expect(plan.install).toEqual([]);
     expect(plan.notInTargetCatalog).toEqual(["ghost"]);
   });
