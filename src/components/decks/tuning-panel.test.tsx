@@ -22,6 +22,7 @@ const at = new Date("2026-09-23T12:00:00Z");
 const fresh: TuningState = {
   run: null,
   items: [],
+  itemsValidationReport: null,
   lastOkFingerprint: null,
   lastOkAt: null,
   stale: true,
@@ -117,7 +118,7 @@ describe("TuningPanel", () => {
       const d = deps([fresh, results], { run });
       await draw(d);
       await press(copy.suggest);
-      expect(d.run).toHaveBeenCalledWith("d1", { runId: expect.stringMatching(/^[0-9a-f-]{36}$/) });
+      expect(d.run).toHaveBeenCalledWith("d1", { runId: expect.stringMatching(/^[0-9a-f-]{36}$/), notes: "" });
       const total = runSteps(facts, "go wide").length;
       // Nothing ticked yet, and the model has not been asked to resolve.
       expect(screen.getAllByTestId("manifest-row").filter((r) => r.dataset.done === "true")).toHaveLength(0);
@@ -223,7 +224,19 @@ describe("TuningPanel", () => {
     expect(screen.getByTestId("tuning-unchanged")).toBeInTheDocument();
     expect(d.run).not.toHaveBeenCalled();
     await press(copy.unchangedCta);
-    expect(d.run).toHaveBeenCalledWith("d1", { anyway: true, runId: expect.any(String) });
+    expect(d.run).toHaveBeenCalledWith("d1", { anyway: true, runId: expect.any(String), notes: "" });
+  });
+
+  // "Additional notes" (H35, PR 4b, review round 2): notes are new input the model has never
+  // seen, so an otherwise-unchanged deck still has something new to read — the player should
+  // never see "Nothing has changed" just because they typed a note.
+  it("skips the unchanged state and runs directly when the player has typed a note", async () => {
+    const d = deps([results]);
+    await draw(d);
+    fireEvent.change(screen.getByLabelText("Additional notes"), { target: { value: "more removal" } });
+    await press(copy.again);
+    expect(screen.queryByTestId("tuning-unchanged")).toBeNull();
+    expect(d.run).toHaveBeenCalledWith("d1", { runId: expect.any(String), notes: "more removal" });
   });
 
   // Pre-open review round 4 (previously missed): the re-entry guard set at the start of a press
@@ -453,6 +466,46 @@ describe("TuningPanel", () => {
     expect(screen.queryByText((text) => text.includes(deckDescriptionCopy.manifest.readLimits))).toBeNull();
   });
 
+  // "Additional notes" (H35, PR 4b): the same staleness rule as limits, since `facts.intent` is
+  // the LIVE deck value and a stale result predates the player's latest edit to it.
+  it("reads your description only for a fresh result, never a stale one with the same live value", async () => {
+    await draw(deps([results]));
+    expect(screen.getByText((text) => text.includes(deckDescriptionCopy.manifest.readDescription))).toBeInTheDocument();
+    cleanup();
+    await draw(deps([{ ...results, stale: true }]));
+    expect(screen.queryByText((text) => text.includes(deckDescriptionCopy.manifest.readDescription))).toBeNull();
+  });
+
+  it("reads no description when the deck has none", async () => {
+    await draw(deps([results]), { ...facts, intent: null });
+    expect(screen.queryByText((text) => text.includes(deckDescriptionCopy.manifest.readDescription))).toBeNull();
+  });
+
+  // "Additional notes" (H35, PR 4b): the field is never saved, so only the report belonging to
+  // the run that produced the shown items (`itemsValidationReport`) can say whether it carried
+  // text — never `state.run`'s own, which describes the NEWEST run of any status and can be a
+  // failed retry that produced none of what is shown (review round 1).
+  it("reads your notes only when the report for the shown items says it carried any", async () => {
+    const withNotes = { ...results, itemsValidationReport: { askedCount: 8, survivedCount: 8, keptCount: 5, hadNotes: true } };
+    await draw(deps([withNotes]));
+    expect(screen.getByText((text) => text.includes(deckDescriptionCopy.manifest.readNotes))).toBeInTheDocument();
+    cleanup();
+    await draw(deps([results]));
+    expect(screen.queryByText((text) => text.includes(deckDescriptionCopy.manifest.readNotes))).toBeNull();
+  });
+
+  // The defect review flagged: a failed retry must not borrow its own (possibly notes-bearing)
+  // report for items that came from an earlier, different successful run.
+  it("never reads your notes off a failed retry's own report, only the shown items' run", async () => {
+    const failedRetry = {
+      ...results,
+      run: { ...okRun, id: "r2", status: "failed" as const, errorClass: "timeout", validationReport: { askedCount: 8, survivedCount: 0, keptCount: 0, hadNotes: true } },
+      itemsValidationReport: { askedCount: 8, survivedCount: 8, keptCount: 5, hadNotes: false },
+    };
+    await draw(deps([failedRetry]));
+    expect(screen.queryByText((text) => text.includes(deckDescriptionCopy.manifest.readNotes))).toBeNull();
+  });
+
   it("disables the press when every credit is out even on an unchanged deck", async () => {
     const next = new Date("2026-09-24T14:20:00Z");
     const d = deps([{ ...results, allowance: { used: 5, limit: 5, reopensAt: next, nextAt: next } }]);
@@ -577,7 +630,7 @@ describe("TuningPanel", () => {
     await draw(d);
     await press(deckTuningCopy.failure.retry);
     expect(screen.queryByTestId("tuning-unchanged")).not.toBeInTheDocument();
-    expect(d.run).toHaveBeenCalledWith("d1", { anyway: true, runId: expect.any(String) });
+    expect(d.run).toHaveBeenCalledWith("d1", { anyway: true, runId: expect.any(String), notes: "" });
   });
 
   it("leaves the reading state with a refusal when the run itself rejects", async () => {
@@ -882,6 +935,32 @@ describe("TuningPanel: Locked (never cut)", () => {
     }
   });
 
+  // Review round 3: `press` awaits a pending limit save (and a possible re-read) before it
+  // reads the typed note, and the field stays editable through that whole wait — a plain
+  // closure over `notes`, captured when the press STARTED, would send what was typed before
+  // the wait rather than what is on screen when the wait ends.
+  it("sends the note as it reads when the press finishes, not as it read when the press started", async () => {
+    vi.useFakeTimers();
+    try {
+      (saveDeckLimits as ReturnType<typeof vi.fn>).mockClear();
+      const d = deps([fresh, { ...results, stale: true }]);
+      await act(async () => {
+        render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
+      });
+      fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" }));
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: copy.suggest }));
+        // Typed WHILE the limit save's 500ms debounce is still pending — before press() has
+        // read anything.
+        fireEvent.change(screen.getByLabelText("Additional notes"), { target: { value: "typed during the wait" } });
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      expect(d.run).toHaveBeenCalledWith("d1", { runId: expect.any(String), notes: "typed during the wait" });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   // pre-open review round 1: the sync-while-unedited check used to compare the whole `limits`
   // object by reference, so ANY revalidation (even one that hands back the same, still-unsaved
   // content under a new object) overwrote every field — including one mid-edit.
@@ -1169,6 +1248,15 @@ describe("TuningPanel: Additional notes (H35, PR 3)", () => {
   it("mounts the field above the action row, hidden while reading", async () => {
     await draw(deps([fresh]));
     expect(screen.getByLabelText("Additional notes")).toBeInTheDocument();
+  });
+
+  // "Additional notes" (H35, PR 4b): the typed text rides into the run it starts.
+  it("sends the typed note to deps.run", async () => {
+    const d = deps([fresh, results]);
+    await draw(d);
+    fireEvent.change(screen.getByLabelText("Additional notes"), { target: { value: "more removal" } });
+    await press(copy.suggest);
+    expect(d.run).toHaveBeenCalledWith("d1", { runId: expect.any(String), notes: "more removal" });
   });
 
   it("clears the note once a successful run lands", async () => {

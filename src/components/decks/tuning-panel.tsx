@@ -55,7 +55,7 @@ import { TuningNotesField } from "./tuning-notes-field";
  */
 export type TuningDeps = {
   read: (deckId: string) => Promise<TuningState | null>;
-  run: (deckId: string, opts?: { anyway?: boolean; runId?: string }) => Promise<DeckMutationResult>;
+  run: (deckId: string, opts?: { anyway?: boolean; runId?: string; notes?: string }) => Promise<DeckMutationResult>;
   cancel: (deckId: string, runId: string) => Promise<DeckMutationResult>;
   card: CardActions;
 };
@@ -154,6 +154,15 @@ export function TuningPanel({
   const longWaitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // "Additional notes" (H35, PR 3): one note per press, never saved — held here and nowhere else.
   const [notes, setNotes] = useState("");
+  // Kept in step with `notes` synchronously, never by an effect (review round 3): `press` awaits
+  // the limits flush and a possible re-read before it reads this, and the field stays editable
+  // the whole time, so a plain closure over `notes` would send whatever was typed when the press
+  // STARTED rather than what is on screen when it finishes.
+  const notesRef = useRef(notes);
+  function changeNotes(next: string) {
+    notesRef.current = next;
+    setNotes(next);
+  }
   // The absent description row's own "Describing in place" editor (STATES §3 state 2).
   const [describing, setDescribing] = useState(false);
   const [descDraft, setDescDraft] = useState("");
@@ -538,19 +547,29 @@ export function TuningPanel({
         setRefused(deckTuningCopy.run.refused);
         return;
       }
-      if (!anyway && gateReason(current)?.kind === "unchanged") {
+      // Snapshotted HERE, after every await above, never read from the outer closure further
+      // down (review round 3): the field stays editable through the whole wait, so the ref's
+      // value at this instant is what the player actually sees when the press is about to run.
+      const typedNotes = notesRef.current;
+      // "Additional notes" (H35, PR 4b, review round 2): notes are new input the model has never
+      // seen, so a deck otherwise unchanged still has something new to read — the same bypass
+      // `anyway` gives, never the OTHER gate reasons (in_flight, allLocked, allowance).
+      if (!anyway && typedNotes.trim() === "" && gateReason(current)?.kind === "unchanged") {
         setUnchangedShown(true);
         setAnnounced(deckTuningCopy.announce.unchanged);
         return;
       }
       setUnchangedShown(false);
-      await pressRun(mine, anyway);
+      await pressRun(mine, anyway, typedNotes);
     } finally {
       if (preparingRun.current === mine) preparingRun.current = null;
     }
   }
 
-  async function pressRun(mine: number, anyway: boolean) {
+  // `notes` is `press`'s own post-await snapshot, passed explicitly (review round 3) rather than
+  // read from the outer closure, which could still hold what the field showed before a limits
+  // flush or re-read, not what it shows now.
+  async function pressRun(mine: number, anyway: boolean, notes: string) {
     if (token.current !== mine) return;
     const runId = crypto.randomUUID();
     ownRun.current = runId;
@@ -559,7 +578,7 @@ export function TuningPanel({
     setLongWait(false);
     setAnnounced(deckTuningCopy.announce.started);
     // Settled to a result whatever happens, so an unexpected throw is a refusal like any other.
-    const running = deps.run(deckId, anyway ? { anyway: true, runId } : { runId }).catch(
+    const running = deps.run(deckId, { ...(anyway ? { anyway: true } : {}), runId, notes }).catch(
       (): DeckMutationResult => ({ ok: false, message: deckTuningCopy.run.refused }),
     );
     // The checklist ticks on a pure client-side stagger (H35, PR 3), never on a real read
@@ -643,7 +662,7 @@ export function TuningPanel({
     // failed or returned a run in some OTHER non-`ok` status is also not a success, and must
     // not be read as one just because it also isn't the `failed` branch. Only an explicit `ok`
     // clears the note.
-    if (next?.run?.status === "ok") setNotes("");
+    if (next?.run?.status === "ok") changeNotes("");
     setAnnounced(failure ? failure.heading : deckTuningCopy.announce.ready(next?.items.length ?? 0));
     headingRef.current?.focus();
   }
@@ -948,7 +967,7 @@ export function TuningPanel({
           the limits box, since its text becomes a checklist row instead. */}
       {reading ? null : (
         <div className="mt-[16px] md:mt-[18px]">
-          <TuningNotesField value={notes} onChange={setNotes} />
+          <TuningNotesField value={notes} onChange={changeNotes} />
         </div>
       )}
 
@@ -1105,16 +1124,28 @@ function ReadFrom({ state, facts }: { state: TuningState; facts: TuningFacts }) 
   // exactly the signal that the live setting still describes the shown run.
   const { capCents, sets, ownedOnly } = facts.limits;
   const limitsRead = !state.stale && (capCents !== null || sets.length > 0 || ownedOnly) ? [descriptionManifest.readLimits] : [];
+  // "your description" (H35, PR 4b): the same staleness rule as limits — `facts.intent` is the
+  // LIVE deck value, and a stale result was generated before the player's latest edit to it.
+  const descriptionRead = !state.stale && facts.intent !== null ? [descriptionManifest.readDescription] : [];
+  // "your notes" (H35, PR 4b): the Additional notes field is never saved, so only the run's own
+  // record (`validationReport.hadNotes`) can say whether it carried text — there is no LIVE
+  // value to compare against. Read off `itemsValidationReport`, the report belonging to the
+  // SAME run `items` came from, never `state.run`'s own: those differ after a failed retry
+  // (review round 1), and `state.run`'s report would then describe an attempt that produced
+  // none of what is shown.
+  const notesRead = state.itemsValidationReport?.hadNotes ? [descriptionManifest.readNotes] : [];
   const parts =
     state.gameCount === 0
-      ? [manifest.readCards(facts.cards), manifest.readMix, manifest.readCollection, ...limitsRead]
+      ? [manifest.readCards(facts.cards), manifest.readMix, manifest.readCollection, ...descriptionRead, ...limitsRead, ...notesRead]
       : [
           manifest.readGames(state.gameCount),
           ...(facts.noteCount > 0 ? [manifest.readNotes(facts.noteCount)] : []),
           manifest.readCards(facts.cards),
           manifest.readMix,
           manifest.readCollection,
+          ...descriptionRead,
           ...limitsRead,
+          ...notesRead,
         ];
   return (
     <p className="mt-[8px] font-mono text-[9.5px] leading-[1.5] md:mt-[9px] md:text-[10.5px]" style={{ color: "var(--fg-faint)" }}>
@@ -1238,13 +1269,9 @@ export function readSteps(facts: TuningFacts, _intent: string | null): ManifestS
  *  notes become rows"). `intent` kept as a parameter for symmetry with `readSteps`, unused here
  *  since limits/notes carry no presence check of their own.
  *
- *  Pre-open review (round 0): this PR does not yet SEND the limits or the typed note to the
- *  model — `TuningDeps.run` takes neither, and `pressRun` passes nothing beyond the run id. The
- *  limits/notes rows here disclose what the checklist will read, not what this run already has;
- *  the wiring (both rows genuinely true) is PR 4a (limits) and PR 4b (notes), named in the plan.
- *  `TuningNotesField`'s own comment says the same. Flagging this rather than hiding the rows: per
- *  PR 2's Settled precedent, shipping the disclosure ahead of the wiring is the deliberate split,
- *  not an oversight to quietly fix by holding the UI back. */
+ *  Both rows are now genuinely true: `TuningDeps.run`/`pressRun` sends the typed note alongside
+ *  the limits (H35, PR 4a for limits, PR 4b for notes). The disclosure shipped ahead of the
+ *  wiring (PR 2's Settled precedent), and this comment used to flag that gap; it is closed. */
 export function runSteps(facts: TuningFacts, intent: string | null): ManifestStep[] {
   const preview = readSteps(facts, intent);
   const i = preview.indexOf("description");

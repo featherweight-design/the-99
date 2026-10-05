@@ -14,7 +14,7 @@ const spent: Allowance = { used: MODEL_FRIEND_DAILY_ALLOWANCE, limit: MODEL_FRIE
 
 // A deck that has never generated, and has no games: neither is a reason to refuse.
 const fresh: TuningState = {
-  run: null, items: [], lastOkFingerprint: null, lastOkAt: null,
+  run: null, items: [], itemsValidationReport: null, lastOkFingerprint: null, lastOkAt: null,
   stale: true, modelVersionMoved: false, retired: null, allowance: open, gameCount: 0, newestPriceAsOf: null,
 };
 const settled: TuningState = { ...fresh, run: run("ok"), lastOkFingerprint: "fp", lastOkAt: at, stale: false };

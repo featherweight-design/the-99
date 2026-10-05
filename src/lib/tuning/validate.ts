@@ -84,6 +84,11 @@ export type ValidationReport = {
   survivedCount: number;
   keptCount: number;
   refusal?: RefusalDetail;
+  /** "Additional notes" (H35, PR 4b): whether THIS run carried any, for `ReadFrom`'s "your
+   *  notes" line — the field itself is never saved, so only the run record remembers it.
+   *  Absent for a run persisted before this column's meaning existed, same as every other
+   *  optional field here. */
+  hadNotes?: boolean;
 };
 
 export type RefusalDetail =
@@ -135,6 +140,7 @@ export function validateSuggestions(args: {
   const quotable: Quotable[] = [
     ...pack.play.games.flatMap((g) => (g.note === null ? [] : [{ text: playerTextBody(g.note), date: noteDate(g.playedAt, year) }])),
     ...(pack.intent === null ? [] : [{ text: playerTextBody(pack.intent), date: null }]),
+    ...(pack.notes === null ? [] : [{ text: playerTextBody(pack.notes), date: null }]),
   ];
   const [primary, partner] = pack.commanders;
   const deck = {
@@ -191,10 +197,11 @@ export function validateSuggestions(args: {
     if (cutRow.locked) return { rule: "neverCut", name: s.cut };
     if (keyCards.has(cut.oracleId)) return { rule: "keyCard" };
     // "Just to fix a role count": a universal staple may still go for a reason the PLAYER gave, a
-    // game, a note or their stated intent, each checked against what they wrote below. A role
-    // count is not that, and neither is a decklist citation, which `citationHolds` cannot check
-    // and which would otherwise let a count-only cut through by adding one.
-    if (universal.has(cut.oracleId) && !s.evidence.some((c) => c.kind === "games" || c.kind === "note" || c.kind === "intent")) return { rule: "universalStaple" };
+    // game, a note, their stated intent or what they asked this run (H35, PR 4b), each checked
+    // against what they wrote below. A role count is not that, and neither is a decklist
+    // citation, which `citationHolds` cannot check and which would otherwise let a count-only cut
+    // through by adding one.
+    if (universal.has(cut.oracleId) && !s.evidence.some((c) => c.kind === "games" || c.kind === "note" || c.kind === "intent" || c.kind === "notes")) return { rule: "universalStaple" };
 
     const rejection = validateCardForDeck(add, deck);
     if (rejection === "off-color-identity") return { rule: "colourIdentity" };
@@ -286,18 +293,12 @@ export function validateSuggestions(args: {
           return own.some((t) => t.includes(`"${note}"`) || t.includes(`\u201c${note}\u201d`));
         });
       }
-      case "intent": {
-        // The player's own words, whole or a part of them (Design cites `win late` out of a
-        // longer line). A part is whole words of the line, at word boundaries, and at least one
-        // of them a real word: `ate` out of `late` is not a citation. A citation naming some
-        // other purpose is not evidence of this one.
-        if (pack.intent === null) return false;
-        const intent = playerTextBody(pack.intent);
-        const part = c.value.trim().replace(/^["\u201c]|["\u201d]$/g, "").trim();
-        if (c.value.includes(intent)) return true;
-        if (!/[A-Za-z]{2,}/.test(part)) return false;
-        return new RegExp(`(?<![\\w'])${escapeRegExp(part)}(?![\\w'])`).test(intent);
-      }
+      case "intent":
+        return quotesPlayerText(pack.intent, c.value);
+      // "Additional notes" (H35, PR 4b): the same whole-or-part rule as `intent`, against the
+      // run's own notes text rather than the deck's standing description.
+      case "notes":
+        return quotesPlayerText(pack.notes, c.value);
       case "mix": {
         // A target and its figure, as the targets list writes it: `draw 4 of 10`. The cell the
         // citation names must carry exactly that have and target.
@@ -317,4 +318,19 @@ const WORKED = /\bwork|\bfor you\b/;
 
 function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Whether a citation's value quotes `source` (the player's own words), whole or a part of them
+ * (Design cites `win late` out of a longer line). A part is whole words of the source, at word
+ * boundaries, and at least one of them a real word: `ate` out of `late` is not a citation. Shared
+ * by the `intent` and `notes` citation kinds, which differ only in which field they quote.
+ */
+function quotesPlayerText(source: string | null, value: string): boolean {
+  if (source === null) return false;
+  const text = playerTextBody(source);
+  const part = value.trim().replace(/^["“]|["”]$/g, "").trim();
+  if (value.includes(text)) return true;
+  if (!/[A-Za-z]{2,}/.test(part)) return false;
+  return new RegExp(`(?<![\\w'])${escapeRegExp(part)}(?![\\w'])`).test(text);
 }

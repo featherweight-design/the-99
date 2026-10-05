@@ -120,6 +120,13 @@ describe("buildEvidencePack", () => {
     expect(pack.intent).toBe("grind it out");
   });
 
+  // "Additional notes" (H35, PR 4b): the same pass-through as `intent`, and null for every
+  // caller that omits it (the eval harness, older tests) rather than undefined.
+  it("passes additional notes through, and defaults to null when the caller carries none", () => {
+    expect(buildEvidencePack({ ...input(), notes: "swap out Sol Ring" }).notes).toBe("swap out Sol Ring");
+    expect(buildEvidencePack(input()).notes).toBeNull();
+  });
+
   // The prompt and the validator both read this one figure, so a call crossing a New Year cannot
   // format a note's date one way and check it another.
   it("takes the note year once, from the clock it is given", () => {

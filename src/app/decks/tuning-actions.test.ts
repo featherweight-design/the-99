@@ -106,7 +106,7 @@ vi.mock("../../lib/tuning/evidence", () => ({
     calls.packInput = input;
     // Mirrors the real flow: `runTuning` passes the SAME `limits` it read from `tuningInputs` on
     // to `buildEvidencePack`, so the mocked pack never risks disagreeing with it.
-    return { ...(calls.evidencePack as object ?? { cards: [] }), limits: input.limits };
+    return { notes: null, ...(calls.evidencePack as object ?? { cards: [] }), limits: input.limits };
   },
 }));
 vi.mock("../../lib/tuning/prompt", () => ({ buildPrompt: () => ({ system: "s", user: "u" }) }));
@@ -189,6 +189,25 @@ describe("runTuning's model call (v2)", () => {
     expect(calls.packInput).toMatchObject({ overview: { strategy: ["Attack."], keyCards: ["Oxen"] }, universal: [{ oracleId: "ring", name: "Sol Ring" }] });
   });
 
+  // "Additional notes" (H35, PR 4b): never saved, so the request itself carries it — trimmed,
+  // and blank after trimming reads the same as none.
+  it("hands the request's own notes to the pack, trimmed, and null when blank", async () => {
+    calls.startKind = "started";
+    calls.reachModel = true;
+    await runTuning(DECK, { anyway: true, notes: "  swap out Sol Ring  " }).catch(() => undefined);
+    expect(calls.packInput).toMatchObject({ notes: "swap out Sol Ring" });
+    await runTuning(DECK, { anyway: true, notes: "   " }).catch(() => undefined);
+    expect(calls.packInput).toMatchObject({ notes: null });
+  });
+
+  it("refuses a notes string over its own character cap", async () => {
+    calls.startKind = "started";
+    const over = "a".repeat(501);
+    const result = await runTuning(DECK, { anyway: true, notes: over });
+    expect(result).toEqual({ ok: false, message: deckTuningCopy.run.refused });
+    expect(calls.started).toBe(0);
+  });
+
   // The floor itself is `client.test.ts`'s; what the action owes is that a failed outcome, whatever
   // refused it, settles as failed with its usage, which `finishRun` refunds.
   it("settles a failed call as failed with the usage it burned, never as spent", async () => {
@@ -244,7 +263,16 @@ describe("runTuning's 8-asked/5-kept slice", () => {
     expect(flagged).toHaveLength(5);
     expect(flagged.map((f) => f.addOracleId)).toEqual(["add0", "add1", "add2", "add3", "add4"]);
     expect(droppedCount).toBe(0);
-    expect(report).toEqual({ askedCount: 8, survivedCount: 8, keptCount: 5 });
+    expect(report).toEqual({ askedCount: 8, survivedCount: 8, keptCount: 5, hadNotes: false });
+  });
+
+  // "Additional notes" (H35, PR 4b): the persisted report says whether THIS run carried any,
+  // since the field itself is never saved and `ReadFrom`'s "your notes" line has nothing else
+  // to read.
+  it("records hadNotes true on a run whose request carried notes", async () => {
+    await runTuning(DECK, { anyway: true, notes: "swap out Sol Ring" });
+    const [, , , , report] = calls.persisted[0] as [unknown, unknown, unknown, unknown, { hadNotes: boolean }];
+    expect(report.hadNotes).toBe(true);
   });
 
   // Review round 4: proves the mocked `loadPrices`/`readOwnedOracleIds` results actually reach
@@ -258,7 +286,7 @@ describe("runTuning's 8-asked/5-kept slice", () => {
     expect(flagged.map((f) => f.addOracleId)).not.toContain("add0");
     expect(flagged).toHaveLength(5);
     expect(droppedCount).toBe(1);
-    expect(report).toEqual({ askedCount: 8, survivedCount: 7, keptCount: 5 });
+    expect(report).toEqual({ askedCount: 8, survivedCount: 7, keptCount: 5, hadNotes: false });
   });
 
   it("drops an unowned candidate when owned-only is active, from the ownership read's own result", async () => {
@@ -269,7 +297,7 @@ describe("runTuning's 8-asked/5-kept slice", () => {
     expect(flagged.map((f) => f.addOracleId)).not.toContain("add0");
     expect(flagged).toHaveLength(5);
     expect(droppedCount).toBe(1);
-    expect(report).toEqual({ askedCount: 8, survivedCount: 7, keptCount: 5 });
+    expect(report).toEqual({ askedCount: 8, survivedCount: 7, keptCount: 5, hadNotes: false });
   });
 
   // Review round 6: "owned" alone is not "sleeveable" — a collection row with every copy
@@ -284,7 +312,7 @@ describe("runTuning's 8-asked/5-kept slice", () => {
     expect(flagged.map((f) => f.addOracleId)).not.toContain("add0");
     expect(flagged).toHaveLength(5);
     expect(droppedCount).toBe(1);
-    expect(report).toEqual({ askedCount: 8, survivedCount: 7, keptCount: 5 });
+    expect(report).toEqual({ askedCount: 8, survivedCount: 7, keptCount: 5, hadNotes: false });
   });
 
   // Review round 6 (Low): the Set limit's own wiring was untested at the action level — the
@@ -299,7 +327,7 @@ describe("runTuning's 8-asked/5-kept slice", () => {
     expect(flagged.map((f) => f.addOracleId)).not.toContain("add0");
     expect(flagged).toHaveLength(5);
     expect(droppedCount).toBe(1);
-    expect(report).toEqual({ askedCount: 8, survivedCount: 7, keptCount: 5 });
+    expect(report).toEqual({ askedCount: 8, survivedCount: 7, keptCount: 5, hadNotes: false });
   });
 });
 
@@ -327,6 +355,19 @@ describe("runTuning's `anyway`", () => {
       const result = await runTuning(DECK, { anyway } as unknown as { anyway: boolean });
       expect(result.ok).toBe(false);
     }
+    expect(calls.started).toBe(0);
+  });
+
+  // "Additional notes" (H35, PR 4b, review round 2): the same bypass `anyway` gives — notes are
+  // new input the model has never seen, so "unchanged" is not true of this request.
+  it("passes the unchanged gate on non-blank notes alone, with no anyway", async () => {
+    await runTuning(DECK, { notes: "more removal" });
+    expect(calls.started).toBe(1);
+  });
+
+  it("does not bypass the unchanged gate on blank or whitespace-only notes", async () => {
+    const result = await runTuning(DECK, { notes: "   " });
+    expect(result.ok).toBe(false);
     expect(calls.started).toBe(0);
   });
 });

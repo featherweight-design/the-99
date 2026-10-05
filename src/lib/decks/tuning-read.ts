@@ -244,6 +244,7 @@ export async function readTuningState(
       createdAt: deckSuggestionRuns.createdAt,
       promptVersion: deckSuggestionRuns.promptVersion,
       profileVersion: deckSuggestionRuns.profileVersion,
+      validationReport: deckSuggestionRuns.validationReport,
     }).from(deckSuggestionRuns).where(and(runOf, mine, eq(deckSuggestionRuns.status, "ok")))
       .orderBy(desc(deckSuggestionRuns.createdAt)).limit(1),
     db.select({ count: sql<number>`count(*)::int` }).from(deckGames)
@@ -262,6 +263,7 @@ export async function readTuningState(
   return {
     run,
     items,
+    itemsValidationReport: lastOk?.validationReport ?? null,
     lastOkFingerprint: lastOk?.fingerprint ?? null,
     lastOkAt: lastOk?.createdAt ?? null,
     stale: lastOk ? lastOk.fingerprint !== fingerprint : false,
