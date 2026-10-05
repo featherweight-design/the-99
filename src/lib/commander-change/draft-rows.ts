@@ -3,6 +3,7 @@
 //
 // Read by `readDraft` only when the commander moved, so a draft without a swap pays nothing.
 
+import { resolveOwnedPrintings } from "../collection/owned-printings";
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems } from "../../db/schema";
@@ -33,12 +34,16 @@ export async function loadCommanderRows(
   const fromIds = members(from);
   const toIds = members(to);
   const ids = [...new Set([...fromIds, ...toIds])];
-  const [facts, owned] = await Promise.all([
+  const [rawFacts, owned, ownedArt] = await Promise.all([
     db.select({ oracleId: cards.oracleId, name: cards.name, artCropUri: cards.artCropUri })
       .from(cards).where(inArray(cards.oracleId, ids)),
     db.selectDistinct({ oracleId: collectionItems.oracleId }).from(collectionItems)
       .where(and(eq(collectionItems.userId, userId), inArray(collectionItems.oracleId, toIds))),
+    // The crop of the copy the reader owns, the one the card details draw (Hugh, 2026-10-05).
+    // Fail-soft through `resolveOwnedPrintings`: a failed read keeps the oracle-level crop.
+    resolveOwnedPrintings(userId, ids),
   ]);
+  const facts = rawFacts.map((f) => ({ ...f, artCropUri: ownedArt.get(f.oracleId)?.artCropUri ?? f.artCropUri }));
   // A half traded out of the 99 keeps its own copy, as the sheet's candidates treat it (`inDeck`):
   // the trade buys nothing, whether or not the collection holds it.
   const ownedIds = heldIds(owned.map((o) => o.oracleId), toIds, versionBody);
