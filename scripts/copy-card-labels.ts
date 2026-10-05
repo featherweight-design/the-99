@@ -12,17 +12,17 @@ import "./lib/env.mjs";
 import { sql } from "drizzle-orm";
 
 import { cardLabels } from "../src/db/schema";
-import { planCopy, type SourceLabel, type TargetHash } from "../src/lib/labels/copy";
-import { LABEL_PROMPT_VERSION, labelInputHash } from "../src/lib/labels/prompt";
+import { planCopy, type SourceLabel, type TargetCard, type TargetLabel } from "../src/lib/labels/copy";
+import { LABEL_PROMPT_VERSION } from "../src/lib/labels/prompt";
 import {
   publishOnTarget, readSourceSnapshot, runCopyMain, withCopyPair, type CopyDb, type CopyPair, type CopyTx,
 } from "./lib/catalog-copy";
 
 /**
- * The model the TARGET would label with, which is what its hashes must be computed against.
- * Same default as `build-card-labels.ts`, so the two agree unless someone overrides both.
+ * The model the target's builds label with: reported against, never a filter (a row is judged
+ * under its own model). Same default as `build-card-labels.ts`.
  */
-const TARGET_MODEL = process.env.LABEL_MODEL ?? "claude-sonnet-4-5";
+const LABEL_MODEL = process.env.LABEL_MODEL ?? "claude-sonnet-4-5";
 
 type CardRow = {
   oracleId: string; name: string; mana_cost: string | null; type_line: string;
@@ -41,66 +41,43 @@ async function main({ source, sourceUrl, target, sourceBranch, targetBranch, dry
   }));
   console.log(`source holds ${src.length} label(s)`);
 
-  // A row generated under a DIFFERENT prompt version can never match, because the version is in
-  // the hash and `labelInputHash` uses the running checkout's. That is correct — the label was
-  // produced by a different prompt — but it is not a catalog difference, and reporting it as one
-  // would send somebody to re-run a catalog refresh that cannot fix it. Counted separately.
-  const staleVersion = src.filter((r) => r.promptVersion !== LABEL_PROMPT_VERSION);
-  const comparable = src.filter((r) => r.promptVersion === LABEL_PROMPT_VERSION);
-  if (staleVersion.length > 0) {
-    console.log(`  ${staleVersion.length} source row(s) were generated under prompt version `
-      + `${[...new Set(staleVersion.map((r) => r.promptVersion))].join(", ")} against this `
-      + `checkout's ${LABEL_PROMPT_VERSION} — not copied, and NOT a catalog difference. `
-      + `Re-generate on the source, or check out the version that produced them.`);
-  }
-
-  // THE TARGET'S OWN MODEL, not the source row's, and that distinction is pay-once itself.
-  //
-  // The hash includes the model. Computing it with each source row's model made the comparison
-  // self-consistent and answered the wrong question: a Sonnet row would install onto a target
-  // configured for a different model and look fresh, and then the target's next `db:build:labels`
-  // would see the model-inclusive mismatch and PAY to regenerate a label it had just been given.
-  // The copy exists to stop exactly that, so the comparison has to be against the model the
-  // target would use.
-  //
-  // I reasoned about this earlier and concluded the source's model was right, having checked that
-  // the comparison agreed with itself rather than that it served the guarantee.
-  const differentModel = comparable.filter((r) => r.model !== TARGET_MODEL);
-  const usable = comparable.filter((r) => r.model === TARGET_MODEL);
-  if (differentModel.length > 0) {
-    console.log(`  ${differentModel.length} source row(s) were produced by `
-      + `${[...new Set(differentModel.map((r) => r.model))].join(", ")} and the target builds with `
-      + `${TARGET_MODEL} — NOT copied. Installing them would look fresh and then be regenerated at `
-      + `full price by the target's next build. Set LABEL_MODEL to match, or re-generate.`);
+  // Every source row is judged under ITS OWN prompt version and model (`labelIsFresh`, Hugh
+  // 2026-10-04), against the target's own card text. The target's builds judge freshness the same
+  // way, so a row written under an older version, or by another model than `LABEL_MODEL`, that
+  // describes the target's text is fresh there too and its next build leaves it alone: copying it is
+  // free. That replaced two refusals, one per prompt version and one per model, each of which
+  // existed because the hash was once checked against the checkout's current version and model.
+  // What differs from the current pair is still REPORTED, as information rather than a refusal.
+  const current = (r: SourceLabel) => r.promptVersion === LABEL_PROMPT_VERSION && r.model === LABEL_MODEL;
+  const older = src.filter((r) => !current(r));
+  if (older.length > 0) {
+    const pairs = new Map<string, number>();
+    for (const r of older) pairs.set(`v${r.promptVersion} / ${r.model}`, (pairs.get(`v${r.promptVersion} / ${r.model}`) ?? 0) + 1);
+    console.log(`  ${older.length} source row(s) were written under another prompt version or model than `
+      + `this checkout's v${LABEL_PROMPT_VERSION} / ${LABEL_MODEL}: `
+      + `${[...pairs].map(([k, n]) => `${k} ${n}`).join(", ")}. Copied when fresh; they stay fresh `
+      + `on the target until a list: build redoes them.`);
   }
 
   // Every read of the TARGET happens in `planFor`, against whatever handle it is given: once
   // unlocked, to decide whether there is anything to do, and again INSIDE the locked target
   // transaction before writing, so a catalog refresh landing between the two can never make
-  // this install labels hashed against a catalog the target no longer holds.
+  // this install labels judged against a catalog the target no longer holds.
   const planFor = async (db: CopyDb | CopyTx) => {
-    // The TARGET's own hashes, computed from the target's catalog — which is the whole point. A
-    // label is installed only when it describes the card as THIS database holds it.
+    // The TARGET's own cards, from the target's catalog — which is the whole point. A label is
+    // installed only when it describes the card as THIS database holds it.
     const rows = await db.execute<CardRow>(sql`
       select oracle_id as "oracleId", name, mana_cost, type_line, oracle_text, layout
         from cards where commander_legal = true`);
     const catalog = (rows as { rows?: CardRow[] }).rows ?? (rows as unknown as CardRow[]);
-    const labelledByTarget = new Set(usable.map((r) => r.oracleId));
-    const targetHashes: TargetHash[] = [];
-    for (const c of catalog) {
-      if (!labelledByTarget.has(c.oracleId)) continue; // nothing comparable from the source
-      targetHashes.push({ oracleId: c.oracleId, inputHash: labelInputHash(c, TARGET_MODEL) });
-    }
+    const labelledBySource = new Set(src.map((r) => r.oracleId));
+    const targetCards: TargetCard[] = catalog.filter((c) => labelledBySource.has(c.oracleId));
 
-    // What the target holds, MINUS anything the source has under a stale prompt version or another
-    // model. Those are reported in their own buckets; leaving them here made the summary claim the
-    // target had a row "absent from the source" when the source has it and simply cannot be
-    // compared — one fact in two buckets, and the wrong one.
-    const otherwiseKnown = new Set([...staleVersion, ...differentModel].map((r) => r.oracleId));
-    const held = new Set((await db.select({ id: cardLabels.oracleId }).from(cardLabels))
-      .map((r) => r.id).filter((id) => !otherwiseKnown.has(id)));
-    const plan = planCopy(usable, targetHashes, held);
-    return plan;
+    // Stamped, so a fresh target row is never replaced by an older-version source row (`targetNewer`).
+    const held: TargetLabel[] = await db.select({
+      oracleId: cardLabels.oracleId, model: cardLabels.model, promptVersion: cardLabels.promptVersion, inputHash: cardLabels.inputHash,
+    }).from(cardLabels);
+    return planCopy(src, targetCards, held);
   };
 
   const plan = await planFor(target);
@@ -108,6 +85,15 @@ async function main({ source, sourceUrl, target, sourceBranch, targetBranch, dry
   console.log(`  install ${plan.install.length}`);
   console.log(`  mismatched ${plan.mismatched.length} — the source's label describes a different `
     + `catalog state, so it is NOT installed and NOT rebuilt`);
+  if (plan.unknownVersion.length > 0) {
+    console.log(`  ${plan.unknownVersion.length} source row(s) name a prompt version this checkout's `
+      + `registry does not hold — not copied, and NOT a catalog difference. Check out the code that `
+      + `knows that version.`);
+  }
+  if (plan.targetNewer.length > 0) {
+    console.log(`  ${plan.targetNewer.length} skipped: the target holds a fresh label of a NEWER prompt `
+      + `version than the source's — never replaced by an older one`);
+  }
   console.log(`  ${plan.notInTargetCatalog.length} skipped: not in the target catalog — normal for a `
     + `source generated against a newer catalog; a large figure means the target's catalog `
     + `refresh has stopped running`);

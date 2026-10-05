@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { labelInputHash } from "./prompt";
+import { labelInputHash, PROMPT_SYSTEM_SHA256 } from "./prompt";
 import { freshLabels, labelSurfacesEnabled, standInLabelsEnabled } from "./read";
 import type { Job } from "./types";
 
@@ -8,15 +8,15 @@ const CARD = {
   oracle_id: "00000000-0000-4000-8000-000000000009", name: "Murder", mana_cost: "{1}{B}{B}",
   type_line: "Instant", oracle_text: "Destroy target creature.", layout: "normal",
 };
-const hash = (over: Partial<typeof CARD> = {}, model = "m") => {
+const hash = (over: Partial<typeof CARD> = {}, model = "m", version = "8", registry = PROMPT_SYSTEM_SHA256) => {
   const c = { ...CARD, ...over };
-  return labelInputHash({ oracleId: c.oracle_id, name: c.name, mana_cost: c.mana_cost, type_line: c.type_line, oracle_text: c.oracle_text, layout: c.layout }, model);
+  return labelInputHash({ oracleId: c.oracle_id, name: c.name, mana_cost: c.mana_cost, type_line: c.type_line, oracle_text: c.oracle_text, layout: c.layout }, model, version, registry);
 };
 const JOB: Job = {
   space: "role", kind: "removal", restrictedTo: null, affects: null, to: null, method: "destroy",
   trigger: "none", recurrence: "oneShot", threshold: null, modal: false,
 };
-const row = (over: Record<string, unknown> = {}) => ({ ...CARD, labels: [JOB], model: "m", input_hash: hash(), ...over });
+const row = (over: Record<string, unknown> = {}) => ({ ...CARD, labels: [JOB], model: "m", prompt_version: "8", input_hash: hash(), ...over });
 
 describe("freshLabels", () => {
   it("reads a row whose hash still matches the card's text", () => {
@@ -29,6 +29,22 @@ describe("freshLabels", () => {
 
   it("leaves out a row labelled under another model than its hash names", () => {
     expect(freshLabels([row({ model: "other" })]).size).toBe(0);
+  });
+
+  // Version-aware freshness (Hugh, 2026-10-04): a row is read under the version that wrote it.
+  it("still reads a v8 row once a v9 prompt is registered beside it", () => {
+    const V9 = { ...PROMPT_SYSTEM_SHA256, "9": "9".repeat(64) };
+    expect(freshLabels([row()], V9).get(CARD.oracle_id)).toEqual([JOB]);
+    expect(freshLabels([row({ prompt_version: "9", input_hash: hash({}, "m", "9", V9) })], V9).get(CARD.oracle_id)).toEqual([JOB]);
+  });
+
+  it("leaves out a row of a prompt version the registry does not hold", () => {
+    expect(freshLabels([row({ prompt_version: "7" })]).size).toBe(0);
+  });
+
+  it("leaves out a row whose stored version is not the one its hash was written under", () => {
+    const V9 = { ...PROMPT_SYSTEM_SHA256, "9": "9".repeat(64) };
+    expect(freshLabels([row({ prompt_version: "9" })], V9).size).toBe(0);
   });
 
   it("leaves out a malformed row whole, never half-read", () => {
@@ -46,7 +62,7 @@ const TUTOR = (restrictedTo: string): Job => ({
 const WIPE: Job = { ...JOB, kind: "wipes", affects: "opponents", modal: true, restrictedTo: "creature" };
 const labelled = (card: Partial<typeof CARD>, labels: Job[]) => {
   const c = { ...CARD, ...card };
-  return { ...c, labels, model: "m", input_hash: hash(c) };
+  return { ...c, labels, model: "m", prompt_version: "8", input_hash: hash(c) };
 };
 
 describe("freshLabels — a land search is never a tutor", () => {

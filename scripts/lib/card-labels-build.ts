@@ -39,7 +39,7 @@ import {
   type Chunk, type FamilySpend,
 } from "../../src/lib/labels/plan";
 import {
-  buildRequest, labelInputHash, LABEL_PROMPT_VERSION, MAX_TOKENS_CEILING, MAX_TOKENS_PER_BATCH, renderBody,
+  buildRequest, labelInputHash, LABEL_PROMPT_VERSION, MAX_TOKENS_CEILING, MAX_TOKENS_PER_BATCH, needsLabel, renderBody,
   SENDS_CACHE_BREAKPOINT, SYSTEM_TOKENS_BOUND,
 } from "../../src/lib/labels/prompt";
 // `CardRow` comes from the same module as the read that returns it — two structurally identical
@@ -47,7 +47,7 @@ import {
 // satisfying this script.
 import type { CardRow } from "../../src/lib/labels/publish";
 import { publishWave, readCardsByName, stampWave } from "../../src/lib/labels/publish";
-import { type LabelScope, scopeCondition, scopeDeck } from "../../src/lib/labels/scope";
+import { type LabelScope, scopeCondition, scopeDeck, scopeList } from "../../src/lib/labels/scope";
 import { labelTrialPool } from "../../src/lib/swaps/gather";
 import { listScopeIds } from "./label-list";
 import type { Job } from "../../src/lib/labels/types";
@@ -191,8 +191,15 @@ class Refusal extends Error {}
 const refuse = (why: string): never => { throw new Refusal(why); };
 
 /**
- * Cards that need labelling: Commander-legal, and whose stored hash does not match what
- * their current inputs produce.
+ * Cards that need labelling (`needsLabel`): in scope, and with no row or a row that is not fresh
+ * under its OWN prompt version and model (`labelIsFresh`). Since 2026-10-04 (Hugh) neither a prompt
+ * bump nor a `LABEL_MODEL` switch restales a row by itself; a change to the card's own text does.
+ *
+ * THE DELIBERATE REDO is a `list:<name>` scope: it also relabels each listed card whose row was
+ * written under another prompt version or model than this run's, because a hand-picked list is how
+ * a prompt is tried on chosen cards. `all`, `in-use` and `deck:<id>` relabel only what is stale, so a
+ * bump costs nothing until someone names the cards to redo. New rows are always written under the
+ * CURRENT version and model (the intent, collect and submit paths below).
  *
  * ORDERED, so an unchanged stale set chunks the same way on every invocation and an unfinished
  * chunk reproduces its own content-addressed key.
@@ -221,10 +228,12 @@ async function cardsNeedingLabels(scope: LabelScope, only: readonly string[] | u
   `);
   const all = rows.rows ?? (rows as unknown as StaleCard[]);
   const stored = new Map(
-    (await db.select({ id: cardLabels.oracleId, hash: cardLabels.inputHash }).from(cardLabels))
-      .map((r) => [r.id, r.hash]),
+    (await db.select({
+      id: cardLabels.oracleId, model: cardLabels.model, promptVersion: cardLabels.promptVersion, inputHash: cardLabels.inputHash,
+    }).from(cardLabels)).map((r) => [r.id, r]),
   );
-  return all.filter((c) => stored.get(c.oracleId) !== labelInputHash(c, MODEL));
+  const redo = scopeList(scope) !== null;
+  return all.filter((c) => needsLabel(c, stored.get(c.oracleId), { redo, model: MODEL }));
 }
 
 /** A reply's text blocks, joined: what `readReply` reads. */
@@ -725,6 +734,21 @@ async function build(opts: BuildOptions): Promise<number> {
         + `${[...new Set(otherModel.map((r) => r.model))].join(", ")}, not ${MODEL}. Their cost is not `
         + `known yet. Finish them under that LABEL_MODEL first.`);
     }
+    // ONE PROMPT VERSION IN FLIGHT. A label stays fresh under the version that wrote it, so a prompt
+    // bump costs nothing by itself, but an intent asked under an older version is still out: its
+    // cards have no published row, so this run would plan and pay for them again, and `reconcile`
+    // only collects the current version's intents. Any run id, any model: the double pay is per card.
+    const otherVersion = await db.select({ promptVersion: cardLabelBatches.promptVersion })
+      .from(cardLabelBatches).where(and(
+        inArray(cardLabelBatches.status, OPEN_STATUSES),
+        // `is distinct from`, not `<>`: a pre-migration intent has a NULL version, which `<>` never matches.
+        sql`${cardLabelBatches.promptVersion} is distinct from ${LABEL_PROMPT_VERSION}`,
+      ));
+    if (otherVersion.length > 0) {
+      return refuse(`${otherVersion.length} open intent(s) were asked under prompt version(s) `
+        + `${[...new Set(otherVersion.map((r) => r.promptVersion ?? "unrecorded"))].join(", ")}, not ${LABEL_PROMPT_VERSION}. `
+        + `Their cards would be paid for twice. Collect them with that version's checkout first.`);
+    }
   }
   if (abandoned.length > 0) {
     console.error(`\n${abandoned.length} intent(s) ABANDONED — submitted, id lost, and no longer`);
@@ -782,7 +806,8 @@ async function build(opts: BuildOptions): Promise<number> {
   const cards = stale.filter((c) => !inFlight.has(c.name));
   const blocked = stale.length - cards.length;
 
-  console.log(`${stale.length} card(s) need labels (stored hash differs or absent)`
+  console.log(`${stale.length} card(s) need labels (absent, text moved, unknown prompt version`
+    + `${scopeList(opts.scope) !== null ? ", or written under another version or model than this list run's" : ""})`
     + (blocked > 0 ? `; ${blocked} of them are inside an open intent and are not planned` : ""));
 
   // Every intent this run already recorded for this model, whatever became of it, so a chunk that

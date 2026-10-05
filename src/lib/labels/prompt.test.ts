@@ -6,7 +6,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
-  buildRequest, labelInputHash, LABEL_PROMPT_VERSION, renderCard, SENDS_CACHE_BREAKPOINT, SYSTEM, SYSTEM_TOKENS_BOUND,
+  buildRequest, labelInputHash, labelIsFresh, LABEL_PROMPT_VERSION, needsLabel, PROMPT_SYSTEM_SHA256, renderCard,
+  SENDS_CACHE_BREAKPOINT, SYSTEM, SYSTEM_TOKENS_BOUND,
 } from "./prompt";
 
 const card = {
@@ -88,15 +89,55 @@ describe("labelInputHash", () => {
     });
   }
 
-  // The vocabulary plan's Task 3: the SYSTEM prompt is in the payload, so a widened vocabulary or a
-  // reworded definition marks every stored label stale rather than leaving it reading fresh.
-  it("changes when the SYSTEM prompt changes, and defaults to the shipped one", () => {
-    expect(labelInputHash(card, "m", `${SYSTEM}\n`)).not.toBe(labelInputHash(card, "m"));
-    expect(labelInputHash(card, "m", SYSTEM)).toBe(labelInputHash(card, "m"));
+  // The vocabulary plan's Task 3: the SYSTEM prompt's hash is in the payload, read from the registry
+  // entry of the version asked for, so a hash names the instruction it was written under.
+  it("changes with the version and its registered SYSTEM hash, and defaults to the current version", () => {
+    const reg = { ...PROMPT_SYSTEM_SHA256, "9": "f".repeat(64) };
+    expect(labelInputHash(card, "m", "9", reg)).not.toBe(labelInputHash(card, "m", LABEL_PROMPT_VERSION, reg));
+    expect(labelInputHash(card, "m", "8", { "8": "0".repeat(64) })).not.toBe(labelInputHash(card, "m", "8"));
+    expect(labelInputHash(card, "m", LABEL_PROMPT_VERSION)).toBe(labelInputHash(card, "m"));
   });
 
-  // The model is in the payload so switching models relabels rather than silently mixing
-  // two models' output in one table.
+  // The version itself is in the payload, not only its SYSTEM hash: a bump whose SYSTEM is unchanged
+  // (a rule moved into the parser, say) still writes a hash that names the new version.
+  it("changes with the version even when two versions share one SYSTEM hash", () => {
+    const same = { "8": PROMPT_SYSTEM_SHA256["8"], "9": PROMPT_SYSTEM_SHA256["8"] };
+    expect(labelInputHash(card, "m", "9", same)).not.toBe(labelInputHash(card, "m", "8", same));
+  });
+
+  it("throws for a version the registry does not hold", () => {
+    expect(() => labelInputHash(card, "m", "7")).toThrow(/no SYSTEM hash is registered/);
+    // Not a prototype key either: `constructor` is on every object and is no version.
+    expect(() => labelInputHash(card, "m", "constructor")).toThrow(/no SYSTEM hash is registered/);
+  });
+
+  // THE STORED v8 HASHES MUST STILL MATCH (2026-10-04). Staging and production hold rows hashed by the
+  // previous `labelInputHash(card, model, system = SYSTEM)`; the registry version must reproduce it
+  // exactly, or every stored row reads stale and the next build pays for all of them. Two checks: the
+  // old formula, copied verbatim, and a digest the OLD function returned for this card before the
+  // change (captured on the pre-change tree), which does not depend on SYSTEM at all.
+  it("returns exactly what the pre-registry function did for version 8", () => {
+    // The old formula hashed the CURRENT SYSTEM, so it only reproduces v8 while SYSTEM is still v8's
+    // text. After a v9 bump, compare against the frozen v8 hash: the literal pin below is the one
+    // that guards the stored v8 hashes independently of SYSTEM.
+    const V8_SYSTEM_SHA256 = PROMPT_SYSTEM_SHA256["8"];
+    const oldLabelInputHash = (c: typeof card, model: string) => createHash("sha256")
+      .update(JSON.stringify([c.oracleId, renderCard(c), "8", model, V8_SYSTEM_SHA256]))
+      .digest("hex");
+    for (const model of ["m", "claude-sonnet-4-5"]) {
+      expect(labelInputHash(card, model, "8")).toBe(oldLabelInputHash(card, model));
+    }
+    const elves = {
+      oracleId: "11111111-1111-4111-8111-111111111111", name: "Llanowar Elves", mana_cost: "{G}",
+      type_line: "Creature — Elf Druid", oracle_text: "{T}: Add {G}.", layout: "normal",
+    };
+    expect(labelInputHash(elves, "claude-sonnet-4-5", "8"))
+      .toBe("d7a54b0705b3f3a960cce838f5a295d822221b6448584435b8f08c5e083d437a");
+  });
+
+  // The model is in the payload so a row records which model wrote it: the hash a row is checked
+  // against is built under the row's OWN model. A model switch therefore relabels nothing by itself;
+  // a `list:` run is how rows of another model are deliberately redone.
   it("changes when the model changes", () => {
     expect(labelInputHash(card, "haiku")).not.toBe(labelInputHash(card, "sonnet"));
   });
@@ -138,14 +179,18 @@ describe("labelInputHash", () => {
     expect(labelInputHash(card, "m")).not.toBe(underV7);
   });
 
-  // A SYSTEM edit must move the version with it. `copy-card-labels.ts` tells a prompt change from a
-  // catalog change by the stored version alone, so an edit that left the version where it was would
-  // install nothing and report every label as a catalog difference. When this fails: bump
-  // LABEL_PROMPT_VERSION, then re-pin both literals here together.
-  it("pins SYSTEM to the version it was written under", () => {
-    const pinned = { version: "8", system: "826775f8b8851f3ed337225304f9fb0baeb31baf2505ece20a5ea5d47f90f43d" };
-    expect({ version: LABEL_PROMPT_VERSION, system: createHash("sha256").update(SYSTEM).digest("hex") })
-      .toEqual(pinned);
+  // A SYSTEM edit must move the version with it. A row is checked against its OWN version's registry
+  // entry, so an edit under an unchanged version would write new labels whose hashes name an
+  // instruction the registry says was something else. When this fails: bump LABEL_PROMPT_VERSION and
+  // ADD a `PROMPT_SYSTEM_SHA256` entry for it. Never edit or remove an old entry (append-only): the
+  // rows written under it would all read stale and be paid for again.
+  it("pins SYSTEM to the current version's registry entry", () => {
+    expect(PROMPT_SYSTEM_SHA256[LABEL_PROMPT_VERSION]).toBe(createHash("sha256").update(SYSTEM).digest("hex"));
+  });
+
+  // The v8 entry is a literal, so a v9 bump that rewrote it instead of adding one is caught here.
+  it("keeps version 8's entry", () => {
+    expect(PROMPT_SYSTEM_SHA256["8"]).toBe("826775f8b8851f3ed337225304f9fb0baeb31baf2505ece20a5ea5d47f90f43d");
   });
 
   // The version has to be READ, not merely exported. A hash computed over a payload with
@@ -186,6 +231,81 @@ describe("labelInputHash", () => {
       expect(renderCard(sameRender)).toBe(renderCard(card));
       expect(labelInputHash(sameRender, "m")).toBe(labelInputHash(card, "m"));
     });
+  });
+});
+
+// Version-aware freshness (Hugh, 2026-10-04): a row is judged under the version and model that wrote
+// it. A "v9" is simulated through an injected registry, which is exactly what a bump would add.
+describe("labelIsFresh", () => {
+  const V9 = { ...PROMPT_SYSTEM_SHA256, "9": "9".repeat(64) };
+  const v8row = (over: Partial<{ model: string; promptVersion: string; inputHash: string }> = {}) =>
+    ({ model: "m", promptVersion: "8", inputHash: labelInputHash(card, "m", "8"), ...over });
+
+  it("is fresh for a row whose hash matches its card under its own version and model", () => {
+    expect(labelIsFresh(v8row(), card)).toBe(true);
+  });
+
+  it("keeps a v8 row fresh after a v9 entry is registered and v9 is current", () => {
+    expect(labelIsFresh(v8row(), card, V9)).toBe(true);
+    // ...and a v9 row is fresh under v9 beside it.
+    expect(labelIsFresh({ model: "m", promptVersion: "9", inputHash: labelInputHash(card, "m", "9", V9) }, card, V9)).toBe(true);
+  });
+
+  it("keeps a row fresh under its own model, whatever model the build now uses", () => {
+    expect(labelIsFresh(v8row({ model: "haiku", inputHash: labelInputHash(card, "haiku", "8") }), card)).toBe(true);
+  });
+
+  it("stales a row whose card text moved", () => {
+    expect(labelIsFresh(v8row(), { ...card, oracle_text: "Whenever this creature attacks, draw a card." })).toBe(false);
+    expect(labelIsFresh(v8row(), { ...card, mana_cost: "{4}{R}" })).toBe(false);
+  });
+
+  it("stales a row of a version the registry does not hold, without throwing", () => {
+    expect(labelIsFresh(v8row({ promptVersion: "7" }), card)).toBe(false);
+    // A v8 hash relabelled "9" on a registry without 9 is unknown, not fresh.
+    expect(labelIsFresh(v8row({ promptVersion: "9" }), card)).toBe(false);
+  });
+
+  it("stales a row whose stored version or model is not the one its hash was written under", () => {
+    expect(labelIsFresh(v8row({ promptVersion: "9" }), card, V9)).toBe(false);
+    expect(labelIsFresh(v8row({ model: "other" }), card)).toBe(false);
+  });
+});
+
+describe("needsLabel", () => {
+  const V9 = { ...PROMPT_SYSTEM_SHA256, "9": "9".repeat(64) };
+  const v8row = { model: "m", promptVersion: "8", inputHash: labelInputHash(card, "m", "8") };
+  const asV9 = { model: "m", version: "9", registry: V9 };
+
+  it("labels a card with no row", () => {
+    expect(needsLabel(card, undefined, { redo: false, model: "m" })).toBe(true);
+  });
+
+  it("does not relabel a fresh older-version row on a plain scope after a bump", () => {
+    expect(needsLabel(card, v8row, { redo: false, ...asV9 })).toBe(false);
+  });
+
+  it("does not relabel a fresh row on a plain scope after a model switch", () => {
+    expect(needsLabel(card, v8row, { redo: false, model: "other" })).toBe(false);
+  });
+
+  it("relabels a row whose text moved, on any scope", () => {
+    const moved = { ...card, oracle_text: "Whenever this creature attacks, draw a card." };
+    expect(needsLabel(moved, v8row, { redo: false, model: "m" })).toBe(true);
+  });
+
+  it("relabels an unknown-version row on any scope", () => {
+    expect(needsLabel(card, { ...v8row, promptVersion: "7" }, { redo: false, model: "m" })).toBe(true);
+  });
+
+  // The deliberate redo: a `list:<name>` scope relabels its listed cards under the current prompt.
+  it("redoes an older-version or other-model row when asked to", () => {
+    expect(needsLabel(card, v8row, { redo: true, ...asV9 })).toBe(true);
+    expect(needsLabel(card, v8row, { redo: true, model: "other" })).toBe(true);
+  });
+
+  it("does not redo a row already written under the current version and model", () => {
+    expect(needsLabel(card, v8row, { redo: true, model: "m" })).toBe(false);
   });
 });
 

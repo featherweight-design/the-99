@@ -184,8 +184,10 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 
 - `pnpm db:copy:labels [--dry-run]` installs staging's card labels on production through the same
   harness and the same three variables. PAY ONCE: it never calls a model. A label is installed only
-  when its input hash equals the hash production's own card text and model produce (`planCopy`),
-  and it never deletes. `Card labels` runs it as a `copy` job in `catalog-production` after every
+  when it is fresh against production's own card text under the row's OWN prompt version and model
+  (`planCopy`, `labelIsFresh`), and it never deletes. Since 2026-10-04 a label stays fresh under the
+  version that wrote it (`PROMPT_SYSTEM_SHA256`, append-only); only a card's text moving, or a
+  `list:<name>` build redoing it, replaces it. `Card labels` runs it as a `copy` job in `catalog-production` after every
   successful `label` job.
 
 - `pnpm db:index-due` prints whether the commander index is due today, read from the database
