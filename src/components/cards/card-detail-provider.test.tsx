@@ -254,6 +254,115 @@ describe("CardDetailProvider", () => {
     });
   });
 
+  // PREVIEW ART IS THE MODAL'S ART (Hugh: a neighbor plate drew an older frame than the card it
+  // opened, and Commander Details' plates drew nothing). A plate draws what the provider READ for
+  // that card, through the same `resolvedPrinting` the modal draws from, over the opener's art.
+  describe("a neighbor plate's art", () => {
+    const owned = (id: string, name: string, art: string): BrowseCard => ({
+      ...card(id, name),
+      printings: [{ setCode: "CMM", collectorNumber: "676", imageUri: art, quantity: 1 }] as unknown as BrowseCard["printings"],
+    });
+    const peek = () => screen.getAllByTestId("phone-peek-next")[0];
+
+    it("draws the printing the modal will show, over the oracle-level art the opener passed", async () => {
+      const sol = owned("o-sol", "Sol Ring", "https://cards.scryfall.io/owned-sol.jpg");
+      render(
+        <CardDetailProvider fetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)} prefetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)}>
+          <CardDetailTrigger
+            oracleId="o-signet"
+            name="Arcane Signet"
+            siblings={[{ oracleId: "o-signet" }, { oracleId: "o-sol", name: "Sol Ring", imageUri: "https://cards.scryfall.io/oracle-sol.jpg" }]}
+          >
+            Arcane Signet
+          </CardDetailTrigger>
+        </CardDetailProvider>,
+      );
+      await click(screen.getByText("Arcane Signet"));
+      await waitFor(() => expect(peek().outerHTML).toContain("owned-sol.jpg"));
+      expect(peek().outerHTML).not.toContain("oracle-sol.jpg");
+    });
+
+    it("fills a plate the opener passed no art for", async () => {
+      const sol = owned("o-sol", "Sol Ring", "https://cards.scryfall.io/owned-sol.jpg");
+      render(
+        <CardDetailProvider fetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)} prefetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)}>
+          <CardDetailTrigger oracleId="o-signet" name="Arcane Signet" siblings={["o-signet", "o-sol"]}>
+            Arcane Signet
+          </CardDetailTrigger>
+        </CardDetailProvider>,
+      );
+      await click(screen.getByText("Arcane Signet"));
+      await waitFor(() => expect(peek().outerHTML).toContain("owned-sol.jpg"));
+    });
+
+    // The modal titles a renamed owned printing with its printed name, so the plate pointing at it
+    // is captioned the same, even when the opener already passed that very picture.
+    it("names the plate with the read's printed name when the art already matches", async () => {
+      const sol = { ...owned("o-sol", "Sol Ring", "https://cards.scryfall.io/owned-sol.jpg"), printedName: "Ring of Renown" };
+      render(
+        <CardDetailProvider fetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)} prefetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)}>
+          <CardDetailTrigger
+            oracleId="o-signet"
+            name="Arcane Signet"
+            siblings={[{ oracleId: "o-signet" }, { oracleId: "o-sol", name: "Sol Ring", imageUri: "https://cards.scryfall.io/owned-sol.jpg" }]}
+          >
+            Arcane Signet
+          </CardDetailTrigger>
+        </CardDetailProvider>,
+      );
+      await click(screen.getByText("Arcane Signet"));
+      expect(await screen.findAllByRole("button", { name: /Next card: Ring of Renown/ })).not.toHaveLength(0);
+    });
+
+    // The modal draws its gradient for a printing with no image, so the plate pointing at that
+    // card draws none either, rather than keeping the opener's oracle-level art.
+    it("draws no art over the opener's when the card read has no image", async () => {
+      const bare = card("o-sol", "Sol Ring");
+      let read = false;
+      const fetchCard = async (id: string) => (id === "o-sol" ? bare : SIGNET);
+      const prefetchCard = async (id: string) => { if (id === "o-sol") read = true; return fetchCard(id); };
+      render(
+        <CardDetailProvider fetchCard={fetchCard} prefetchCard={prefetchCard}>
+          <CardDetailTrigger
+            oracleId="o-signet"
+            name="Arcane Signet"
+            siblings={[{ oracleId: "o-signet" }, { oracleId: "o-sol", name: "Sol Ring", imageUri: "https://cards.scryfall.io/oracle-sol.jpg" }]}
+          >
+            Arcane Signet
+          </CardDetailTrigger>
+        </CardDetailProvider>,
+      );
+      await click(screen.getByText("Arcane Signet"));
+      await waitFor(() => expect(read).toBe(true));
+      await waitFor(() => expect(peek().outerHTML).not.toContain("oracle-sol.jpg"));
+    });
+
+    // An art pick evicts the card it changed, and the reader can page away before the write
+    // settles, after which nothing re-reads it. The plate must not stay on the printing the
+    // pick replaced: eviction drops what it read, and the plate falls back to its opener's art,
+    // which the list updates through `onArtChange`.
+    it("stops drawing a card's read art once that card is evicted", async () => {
+      const sol = owned("o-sol", "Sol Ring", "https://cards.scryfall.io/owned-sol.jpg");
+      render(
+        <CardDetailProvider fetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)} prefetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)}>
+          <Evicter oracleId="o-sol" />
+          <CardDetailTrigger
+            oracleId="o-signet"
+            name="Arcane Signet"
+            siblings={[{ oracleId: "o-signet" }, { oracleId: "o-sol", name: "Sol Ring", imageUri: "https://cards.scryfall.io/picked-sol.jpg" }]}
+          >
+            Arcane Signet
+          </CardDetailTrigger>
+        </CardDetailProvider>,
+      );
+      await click(screen.getByText("Arcane Signet"));
+      await waitFor(() => expect(peek().outerHTML).toContain("owned-sol.jpg"));
+      await act(async () => { fireEvent.click(screen.getByText("evict")); });
+      expect(peek().outerHTML).toContain("picked-sol.jpg");
+      expect(peek().outerHTML).not.toContain("owned-sol.jpg");
+    });
+  });
+
   // THE COMBO SCOPE REACHES THE READ. It is what makes `in this deck` sayable and the scope
   // line renderable, and it is the deck page's alone — every other route sends nothing.
   //

@@ -10,6 +10,8 @@ import type { DraftState } from "../../lib/decks/draft-shape";
 import { BuyTag } from "./buy-tag";
 
 const short = (name: string) => name.split(" // ")[0].split(",")[0].trim();
+/** The name printed on the copy the row pictures, where it has its own. */
+const shown = (r: Pick<CommanderRow, "name" | "printedName">) => r.printedName ?? r.name;
 
 function Row({ label, rows, now, newestAsOf }: { label: string; rows: CommanderRow[]; now: boolean; newestAsOf: Date | null }) {
   return (
@@ -33,7 +35,7 @@ function Row({ label, rows, now, newestAsOf }: { label: string; rows: CommanderR
         ))}
       </span>
       <span className="min-w-0 flex-1 text-[13.5px] leading-[1.35]" style={{ color: now ? "var(--fg)" : "var(--fg-muted)" }}>
-        {rows.map((r) => r.name).join(" + ")}
+        {rows.map((r) => r.printedName ?? r.name).join(" + ")}
       </span>
       {now ? rows.filter((r) => r.buy).map((r) => (
         <BuyTag key={r.oracleId} variant="row" price={r.price} newestAsOf={newestAsOf} />
@@ -60,15 +62,15 @@ export function CommanderSection({ state }: { state: DraftState }) {
   const halfTrade = pair && arrived !== undefined && stayed !== undefined && released !== undefined;
   // One inline block per clause, so a narrow note breaks at the middot rather than inside a clause.
   const halfNote = halfTrade
-    ? copy.review.noteHalfTrade(short(stayed.name), short(arrived.name), short(released.name)).split(" · ")
+    ? copy.review.noteHalfTrade(short(shown(stayed)), short(shown(arrived)), short(shown(released))).split(" · ")
     : null;
   const note = halfNote
     ? <><span className="inline-block">{halfNote[0]} ·</span> <span className="inline-block">{halfNote[1]}</span></>
     : trade
     ? copy.review.noteTrade
     : leaving.length > 1
-      ? copy.review.notePoolPair(short(leaving[0].name), short(leaving[1].name))
-      : copy.review.notePool(short(leaving[0]?.name ?? ""));
+      ? copy.review.notePoolPair(short(shown(leaving[0])), short(shown(leaving[1])))
+      : copy.review.notePool(short(leaving[0] ? shown(leaving[0]) : ""));
   return (
     <section data-testid="review-commander" data-commander-change="true" className="mb-[16px] flex flex-col md:mb-[20px]">
       <div className="mb-[10px] flex items-baseline justify-between gap-[10px] pb-[10px] [border-bottom:1px_solid_var(--elevated)]">

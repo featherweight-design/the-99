@@ -4,7 +4,7 @@ import { scoreOneCommander } from "../../../lib/recs/recommend";
 import { loadFreePool, rankFree } from "../../../lib/recs/free-ranking";
 import type { PoolCard } from "../../../lib/recs/score";
 import { resolveCommanderSlug } from "../../../lib/discovery/resolve-slug";
-import { withOwnedCardArt } from "../../../lib/collection/owned-printings";
+import { resolveOwnedPrintings, withOwnedCardArt } from "../../../lib/collection/owned-printings";
 import { getRankedList } from "../../../lib/recs/ranked-list";
 import { CommanderDetail } from "../../../components/commanders/detail";
 import { readCommanderProse } from "../../../lib/prose/read";
@@ -83,11 +83,8 @@ export default async function CommanderDetailPage({
   // The head of this page is the row's own link target, so it draws what the row drew: a
   // row captioned with the copy the reader owns leading to a page headed with the oracle
   // name and another printing's art is the mismatch, arriving one click later. ONE oracle
-  // id, so the lookup is a single-row read rather than the lane's whole list.
-  //
-  // The page's card ROWS — Role Coverage and the synergy panel — are deliberately not
-  // enriched: they are hundreds of rows per commander, mixed owned and unowned, and were
-  // ruled out of this round's scope.
+  // id, so the lookup is a single-row read rather than the lane's whole list. The page's
+  // card rows take their owned art further down, in one read beside the claims.
   const [commander] = await withOwnedCardArt(userId, [scored]);
 
   // Derive the oracle ids of owned cards that Role Coverage already covers.
@@ -130,7 +127,13 @@ export default async function CommanderDetailPage({
   // than a hand-rolled join, because it already encodes foil-only, sold-out and
   // never-stocked, and a second expression of those rules would drift from it
   // one round at a time.
-  const [availability, { prices, newestAsOf }] = await Promise.all([
+  //
+  // ROLE COVERAGE DRAWS THE COPY THE READER OWNS (Hugh, 2026-10-05): its cards' neighbor plates drew
+  // nothing while the card details drew the owned printing. One read over the role cards (all owned:
+  // Role Coverage is built from the owned pool), beside the other two, carrying the art and the name
+  // printed on it together. The synergy panel is read without images, so it asks for none.
+  // Fail-soft through `resolveOwnedPrintings`: a failed read keeps what was there.
+  const [availability, { prices, newestAsOf }, ownedArt] = await Promise.all([
     loadAvailability(userId, {
       oracleIds: [...new Set([...coveredOracleIds, ...synergyCards.map((c) => c.oracleId)])],
     }).catch(() => new Map<string, Availability>()),
@@ -138,6 +141,7 @@ export default async function CommanderDetailPage({
       prices: new Map(),
       newestAsOf: null,
     })),
+    resolveOwnedPrintings(userId, [...new Set(coveredOracleIds)]),
   ]);
 
   const synergyWithClaims = withAvailability(synergyCards, availability).map((c) => ({
@@ -150,7 +154,11 @@ export default async function CommanderDetailPage({
     roleCards: Object.fromEntries(
       Object.entries(commander.roleCards).map(([role, cards]) => [
         role,
-        withAvailability(cards, availability),
+        withAvailability(cards, availability).map((c) => ({
+          ...c,
+          imageUri: ownedArt.get(c.oracleId)?.imageUri ?? null,
+          printedName: ownedArt.get(c.oracleId)?.printedName ?? null,
+        })),
       ]),
     ) as Record<RoleName, RoleCard[]>,
   };

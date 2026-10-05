@@ -25,6 +25,13 @@ export type RoleCard = {
       commander page fills it in through `withCommitted`. */
   committedTo: string | null;
   /**
+   * The art of the copy the reader owns, the one its card details draw. Absent from the scorer, which
+   * draws nothing; the commander page stamps it for Role Coverage's neighbor plates.
+   */
+  imageUri?: string | null;
+  /** The name printed on that copy, where it has its own: the plate's caption reads it. */
+  printedName?: string | null;
+  /**
    * This card's claim picture, or null.
    *
    * **Null means NO ROW, never "unowned."** `loadAvailability`'s outer select is

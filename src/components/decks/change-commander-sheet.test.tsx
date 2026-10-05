@@ -44,6 +44,14 @@ describe("ChangeCommanderSheet", () => {
     expect(shortName("Korvold, Fae-Cursed King")).toBe("Korvold");
   });
 
+  // A half pictures the owned copy, so a renamed printing's caption reads the name printed on it.
+  it("captions an owned renamed printing with its printed name", async () => {
+    readChangeCandidates.mockResolvedValue(data({ yours: [cand(half("Prosper", { printedName: "Ghostly Prosper" }), 41)] }));
+    mount();
+    expect(await screen.findAllByText("Ghostly Prosper")).not.toHaveLength(0);
+    expect(screen.queryByText("Prosper", { exact: true })).toBeNull();
+  });
+
   it("draws each group's first 5, then Show all and Show fewer on the swap sheet's toggle", async () => {
     const yours = Array.from({ length: 7 }, (_, i) => cand(half(`Own ${i}`), 40 - i));
     readChangeCandidates.mockResolvedValue(data({ yours }));

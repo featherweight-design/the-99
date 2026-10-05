@@ -8,6 +8,7 @@
 // loader for the per-card detail only the review page draws, so the two never
 // repeat a read between them.
 
+import { resolveOwnedPrintings } from "../collection/owned-printings";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, deckCards, decks, deckVersionCards } from "../../db/schema";
@@ -582,10 +583,9 @@ export async function loadDraftRows(deckId: string, userId: string): Promise<Dra
       price: read.prices?.prices.get(change.oracleId) ?? null,
       manaCost: name.manaCost,
       imageUri: detail.imageUri,
-      // Null, all three, and deliberately: a changed-card row names the card
-      // the deck is gaining or losing, and there is no owned printing to resolve
-      // for a card being bought. The shipped `printedNameOf` reads null as "use
-      // the oracle name", which is the right rendering here.
+      // Null here, all three: a card being bought has no owned printing. A card the
+      // reader OWNS takes its owned printing's art and name below, after the loop,
+      // so the row draws what its card details will (Hugh, 2026-10-05).
       printedName: null,
       printedSetCode: null,
       printedCollectorNumber: null,
@@ -598,11 +598,27 @@ export async function loadDraftRows(deckId: string, userId: string): Promise<Dra
     });
   }
 
+  // The owned rows draw the copy the reader owns, art and printed name together. Fail-soft through
+  // `resolveOwnedPrintings`: a failed read keeps the oracle-level art and the oracle name.
+  const ownedArt = await resolveOwnedPrintings(userId, built.filter((r) => r.owned).map((r) => r.oracleId));
+  const drawn = built.map((r) => {
+    const own = ownedArt.get(r.oracleId);
+    return own
+      ? {
+          ...r,
+          imageUri: own.imageUri ?? r.imageUri,
+          printedName: own.printedName,
+          printedSetCode: own.setCode,
+          printedCollectorNumber: own.collectorNumber,
+        }
+      : r;
+  });
+
   return {
     state,
     rows: {
-      in: built.filter((r) => r.direction === "in"),
-      out: built.filter((r) => r.direction === "out"),
+      in: drawn.filter((r) => r.direction === "in"),
+      out: drawn.filter((r) => r.direction === "out"),
     },
   };
 }

@@ -260,7 +260,7 @@ function ShelfSection({
   // The modal pages the whole shelf, not just the tiles currently drawn — a
   // collapsed shelf is a display choice, not a shorter role group.
   const siblings = useMemo(
-    () => shelf.suggestions.map((s) => ({ oracleId: s.oracleId, name: s.name, imageUri: s.imageUri })),
+    () => shelf.suggestions.map((s) => ({ oracleId: s.oracleId, name: s.printedName ?? s.name, imageUri: s.imageUri })),
     [shelf.suggestions],
   );
 

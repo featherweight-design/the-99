@@ -8,6 +8,7 @@
 // export: the builder page is the only caller, and it has the reader already.
 // `requireDeck` below is the authorization, and it is the same guard the action
 // wrapper this replaced went through.
+import { resolveOwnedPrintings } from "../collection/owned-printings";
 import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, deckCards } from "../../db/schema";
@@ -234,18 +235,21 @@ export async function loadDeckSuggestions(deckId: string, userId: string): Promi
 
   const raw = suggestDeck({ commander, ownedPool: available, edhrecTopCards: topCards, hasPartner, mix });
 
-  // Enrich owned suggestions
+  // Enrich owned suggestions. Each draws the copy the reader owns, the one its card details will
+  // (Hugh, 2026-10-05); fail-soft through `resolveOwnedPrintings`, which keeps the oracle-level art.
+  const ownedArt = await resolveOwnedPrintings(userId, raw.map((s) => s.oracleId));
   const ownedSuggestions: DeckSuggestion[] = raw.map((s) => {
     const c = byId.get(s.oracleId)!;
     return buildSuggestionPayload(
       {
         ...s,
         name: c.name,
+        printedName: ownedArt.get(s.oracleId)?.printedName ?? null,
         owned: true,
         typeLine: c.typeLine,
         cardTypeGroup: cardTypeGroup(c.typeLine),
         role: primaryRole(c),
-        imageUri: c.imageUri,
+        imageUri: ownedArt.get(s.oracleId)?.imageUri ?? c.imageUri,
         manaCost: c.manaCost,
         manaValue: c.manaValue,
       },

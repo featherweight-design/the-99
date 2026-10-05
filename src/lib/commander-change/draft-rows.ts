@@ -3,6 +3,7 @@
 //
 // Read by `readDraft` only when the commander moved, so a draft without a swap pays nothing.
 
+import { resolveOwnedPrintings } from "../collection/owned-printings";
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems } from "../../db/schema";
@@ -13,6 +14,8 @@ import type { CommanderPair } from "./pending";
 export type CommanderRow = {
   oracleId: string;
   name: string;
+  /** The name printed on the owned copy whose crop the row draws, where it has its own; else null. */
+  printedName?: string | null;
   artCropUri: string | null;
   side: "from" | "to";
   /** A new commander the collection does not hold: the banner's price tile and the "now" row's
@@ -33,12 +36,20 @@ export async function loadCommanderRows(
   const fromIds = members(from);
   const toIds = members(to);
   const ids = [...new Set([...fromIds, ...toIds])];
-  const [facts, owned] = await Promise.all([
+  const [rawFacts, owned, ownedArt] = await Promise.all([
     db.select({ oracleId: cards.oracleId, name: cards.name, artCropUri: cards.artCropUri })
       .from(cards).where(inArray(cards.oracleId, ids)),
     db.selectDistinct({ oracleId: collectionItems.oracleId }).from(collectionItems)
       .where(and(eq(collectionItems.userId, userId), inArray(collectionItems.oracleId, toIds))),
+    // The crop of the copy the reader owns, the one the card details draw (Hugh, 2026-10-05).
+    // Fail-soft through `resolveOwnedPrintings`: a failed read keeps the oracle-level crop.
+    resolveOwnedPrintings(userId, ids),
   ]);
+  const facts = rawFacts.map((f) => ({
+    ...f,
+    artCropUri: ownedArt.get(f.oracleId)?.artCropUri ?? f.artCropUri,
+    printedName: ownedArt.get(f.oracleId)?.printedName ?? null,
+  }));
   // A half traded out of the 99 keeps its own copy, as the sheet's candidates treat it (`inDeck`):
   // the trade buys nothing, whether or not the collection holds it.
   const ownedIds = heldIds(owned.map((o) => o.oracleId), toIds, versionBody);
@@ -63,7 +74,7 @@ export function buyIds(fromIds: readonly string[], toIds: readonly string[], own
 /** The `was` rows, then the `now` rows, each marked to buy by `buyIds`. */
 export function commanderRows(
   fromIds: readonly string[], toIds: readonly string[], owned: ReadonlySet<string>,
-  facts: readonly { oracleId: string; name: string; artCropUri: string | null }[],
+  facts: readonly { oracleId: string; name: string; printedName?: string | null; artCropUri: string | null }[],
   prices: ReadonlyMap<string, PriceFact> | null,
 ): CommanderRow[] {
   const buying = new Set(buyIds(fromIds, toIds, owned));
@@ -73,6 +84,7 @@ export function commanderRows(
     return {
       oracleId: id,
       name: byId.get(id)?.name ?? "",
+      printedName: byId.get(id)?.printedName ?? null,
       artCropUri: byId.get(id)?.artCropUri ?? null,
       side,
       buy,

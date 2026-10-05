@@ -11,6 +11,7 @@
 // its copy. Grouping reads the collection directly, so a failed claim read loses the marks and
 // never the groups (state 24).
 
+import { resolveOwnedPrintings } from "../collection/owned-printings";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, commanderPairSupportCards, commanderSupportCards, deckCards, decks } from "../../db/schema";
@@ -26,7 +27,14 @@ import { offerable } from "./pending";
 
 export type CandidateHalf = {
   oracleId: string;
+  /** The oracle name, for anything that matches or looks a card up. */
   name: string;
+  /**
+   * The name printed on the owned copy whose art `artCropUri` and `imageUri` draw, where it has
+   * its own (a renamed Secret Lair printing); null otherwise. A caption draws this over `name`, so
+   * the words beside a picture are the ones printed on it.
+   */
+  printedName?: string | null;
   manaCost: string | null;
   cmc: number;
   artCropUri: string | null;
@@ -55,7 +63,7 @@ export type Candidate = {
 export type ChangeCandidates = {
   /** The deck's current commander, or its pair: the confirm's "leaves" side and the mana-value
    *  comparison. */
-  current: { oracleId: string; name: string; cmc: number; manaCost: string | null; imageUri: string | null }[];
+  current: { oracleId: string; name: string; printedName?: string | null; cmc: number; manaCost: string | null; imageUri: string | null }[];
   /** The deck's color identity, sorted: the none state names it. */
   identity: string[];
   /** M: the body the figure counts over (`copy.counted(n)`). */
@@ -226,9 +234,17 @@ export async function loadChangeCandidates(deckId: string, userId: string): Prom
 
   // Claims and prices for the halves outside the 99 only: a half in the 99 keeps its own copy.
   const asked = [...new Set(legal.flatMap((k) => k.ids))].filter((id) => !inDeck.has(id));
-  const availability = asked.length > 0
-    ? await loadAvailability(userId, { oracleIds: asked, excludeDeckId: deckId }).catch(() => null)
-    : new Map<string, Availability>();
+  // The art a reader OWNS for each owned half and for the commander(s) now leading, read beside the
+  // claims: a candidate's thumbnail, its hover preview and its card's neighbor plate drew the
+  // oracle-level printing while the card details drew the owned one (Hugh, 2026-10-05: Shirei,
+  // Shizo's Caretaker jumped from an older frame to the CMM borderless on opening). Fail-soft
+  // through `resolveOwnedPrintings`: a failed read keeps the oracle-level art.
+  const [availability, ownedArt] = await Promise.all([
+    asked.length > 0
+      ? loadAvailability(userId, { oracleIds: asked, excludeDeckId: deckId }).catch(() => null)
+      : Promise.resolve(new Map<string, Availability>()),
+    resolveOwnedPrintings(userId, [...new Set([...halfIds.filter((id) => owned.has(id)), ...currentIds])]),
+  ]);
   const toBuyIds = asked.filter((id) => !owned.has(id));
   const prices = toBuyIds.length > 0
     ? await loadPrices(toBuyIds).catch(() => null)
@@ -248,8 +264,9 @@ export async function loadChangeCandidates(deckId: string, userId: string): Prom
         const f = factBy.get(id)!;
         const here = inDeck.has(id);
         return {
-          oracleId: id, name: f.name, manaCost: f.manaCost, cmc: f.cmc, artCropUri: f.artCropUri,
-          imageUri: f.imageUri,
+          oracleId: id, name: f.name, printedName: ownedArt.get(id)?.printedName ?? null, manaCost: f.manaCost, cmc: f.cmc,
+          artCropUri: ownedArt.get(id)?.artCropUri ?? f.artCropUri,
+          imageUri: ownedArt.get(id)?.imageUri ?? f.imageUri,
           inDeck: here,
           owned: owned.has(id),
           availability: here ? null : availability?.get(id) ?? null,
@@ -263,8 +280,8 @@ export async function loadChangeCandidates(deckId: string, userId: string): Prom
     current: currentIds.map((id) => {
       const f = currentCards.find((c) => c.oracleId === id);
       return {
-        oracleId: id, name: f?.name ?? "", cmc: f?.cmc ?? 0,
-        manaCost: f?.manaCost ?? null, imageUri: f?.imageUri ?? null,
+        oracleId: id, name: f?.name ?? "", printedName: ownedArt.get(id)?.printedName ?? null, cmc: f?.cmc ?? 0,
+        manaCost: f?.manaCost ?? null, imageUri: ownedArt.get(id)?.imageUri ?? f?.imageUri ?? null,
       };
     }),
     identity,
