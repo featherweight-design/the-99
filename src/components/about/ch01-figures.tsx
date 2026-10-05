@@ -862,21 +862,27 @@ export function SuggestedChangesFigureBody() {
         { n: 3, find: first("h3"), side: "gutter" },
       ]}
     >
-      <div className="flex flex-col gap-[16px] md:gap-[18px]">
+      <div>
         <DeckDescriptionField value={description} onChange={() => {}} onBlur={() => {}} saving={false} refused={null} />
-        <TuningLimitsBox
-          sets={sets}
-          capDollars={capDollars}
-          onCapChange={() => {}}
-          onCapDraftInvalid={() => {}}
-          selectedSets={selectedSets}
-          onSetsChange={() => {}}
-          ownedOnly={ownedOnly}
-          onOwnedOnlyChange={() => {}}
-        />
-        <TuningNotesField value={request} onChange={() => {}} />
+        {/* Each wrapper's margin is the panel's own (`tuning-panel.tsx`'s `mt-[16px] md:mt-[18px]`
+            divs around these same two components) — a flex gap here would stack on top of it. */}
+        <div className="mt-[16px] md:mt-[18px]">
+          <TuningLimitsBox
+            sets={sets}
+            capDollars={capDollars}
+            onCapChange={() => {}}
+            onCapDraftInvalid={() => {}}
+            selectedSets={selectedSets}
+            onSetsChange={() => {}}
+            ownedOnly={ownedOnly}
+            onOwnedOnlyChange={() => {}}
+          />
+        </div>
+        <div className="mt-[16px] md:mt-[18px]">
+          <TuningNotesField value={request} onChange={() => {}} />
+        </div>
         <div
-          className="mt-[2px] flex flex-col gap-[9px] pt-[15px] md:flex-row md:flex-wrap md:items-center md:gap-[16px] md:pt-[16px]"
+          className="mt-[16px] flex flex-col gap-[9px] pt-[15px] md:mt-[18px] md:flex-row md:flex-wrap md:items-center md:gap-[16px] md:pt-[16px]"
           style={{ borderTop: "1px solid var(--border)" }}
         >
           <span
