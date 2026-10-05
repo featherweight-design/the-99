@@ -32,10 +32,13 @@
  *   - Every copied `fill_passes.id` is checked for a collision against the WHOLE target table
  *     (not only these decks) before anything is written — ids are UUIDs so this should never
  *     fire, but the earlier script's review found real value in not assuming that.
- *   - ONE TARGET TRANSACTION: an EXCLUSIVE lock on both tables, bounded by `lock_timeout` AND
- *     `statement_timeout` (the first script's two rounds of fixing this, applied here from the
- *     start rather than re-discovered), then a generous-but-bounded timeout for the write itself
- *     plus an `idle_in_transaction_session_timeout` backstop for a stalled client. No
+ *   - ONE TARGET TRANSACTION: an EXCLUSIVE lock on `decks` and both fill-history tables, parent
+ *     before children (a fill-pass write takes the deck row lock first, then a key-share lock
+ *     on it for the FK — locking the children first here would deadlock against that), bounded
+ *     by `lock_timeout` AND `statement_timeout` (the first script's two rounds of fixing this,
+ *     applied here from the start rather than re-discovered), then a generous-but-bounded
+ *     timeout for the write itself plus an `idle_in_transaction_session_timeout` backstop for a
+ *     stalled client. No
  *     `on conflict do nothing` — a conflict means a row already exists and skipping it would
  *     silently fail to say so.
  *   - `timestamp` columns (`fill_passes.created_at`) are read and written as raw strings, never
@@ -273,11 +276,18 @@ try {
   await out.query("begin");
 
   // Same bounded-lock shape copy-staging-decks-to-prod.mts needed two review rounds to reach —
-  // applied here from the start. EXCLUSIVE blocks other writers to these two tables only, for
-  // as long as this transaction is open.
+  // applied here from the start. EXCLUSIVE blocks other writers to these tables only, for as
+  // long as this transaction is open.
+  //
+  // `decks` locked FIRST, parent before children (Copilot round 1): `recordFillPass` is called
+  // under its caller's deck row lock and then inserts into `fill_passes` — which takes a
+  // key-share lock on that deck row for the FK — so a transaction that locked the child tables
+  // first and then needed the deck row would deadlock against one that already held the deck
+  // row and was waiting on `fill_passes`. Locking in the same order every writer does removes
+  // the cycle rather than racing it.
   await out.query("set local lock_timeout = '5s'");
   await out.query("set local statement_timeout = '5s'");
-  await out.query("lock table fill_passes, fill_pass_cards in exclusive mode");
+  await out.query("lock table decks, fill_passes, fill_pass_cards in exclusive mode");
   await out.query("set local statement_timeout = '60s'");
   await out.query("set local idle_in_transaction_session_timeout = '30s'");
 
