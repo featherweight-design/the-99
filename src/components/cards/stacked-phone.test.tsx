@@ -240,3 +240,58 @@ describe("a list sheet over a card, on the phone (call 7)", () => {
     expect(onClose).toHaveBeenCalled();
   });
 });
+
+describe("a stacked stand-in's Take on the phone (call 9)", () => {
+  const take = vi.fn();
+  function FooterSheet() {
+    const { registerSheet } = useCardDetail();
+    useEffect(
+      () => registerSheet("Cheaper stand-ins", (oracleId, layout) => {
+        if (oracleId !== "o-birds") return null;
+        if (layout === "teaserNote") return <span>in place of Ad Nauseam</span>;
+        if (layout === "teaserAction" || layout === "foot") {
+          return <button type="button" onClick={take}>{`Take Birds (${layout})`}</button>;
+        }
+        return <button type="button">Take (row)</button>;
+      }),
+      [registerSheet],
+    );
+    return <CardDetailTrigger oracleId="o-birds" name="Birds of Paradise">open birds</CardDetailTrigger>;
+  }
+  const mountTake = async () => {
+    render(
+      <CardDetailProvider fetchCard={async () => ({ ...birds, oracleText: "{T}: Add one mana of any color." })}>
+        <FooterSheet />
+      </CardDetailProvider>,
+    );
+    await openFromSheet();
+  };
+
+  it("shares the teaser's foot row with All details, its note in the oracle's third line", async () => {
+    await mountTake();
+    expect(screen.getByTestId("teaser-footer-note")).toHaveTextContent("in place of Ad Nauseam");
+    const action = screen.getByTestId("teaser-footer-action");
+    expect(action).toHaveTextContent("Take Birds (teaserAction)");
+    expect(action.parentElement).toHaveClass("grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]");
+    expect(screen.getByTestId("teaser-oracle")).toHaveClass("max-h-[44px]");
+    expect(screen.queryByTestId("sheet-footer-foot")).toBeNull();
+  });
+
+  it("pins the action to the full sheet's foot, and only there", async () => {
+    await mountTake();
+    fireEvent.click(screen.getByRole("button", { name: /Show all details/ }));
+    expect(screen.getByTestId("sheet-footer-foot")).toHaveTextContent("Take Birds (foot)");
+    expect(screen.queryByTestId("teaser-footer-action")).toBeNull();
+  });
+
+  it("keeps an unstacked card's three oracle lines and plain All details", async () => {
+    render(
+      <CardDetailProvider fetchCard={async () => ({ ...birds, oracleText: "{T}: Add one mana of any color." })}>
+        <CardDetailTrigger oracleId="o-birds" name="Birds of Paradise">open birds</CardDetailTrigger>
+      </CardDetailProvider>,
+    );
+    await openFromSheet();
+    expect(screen.getByTestId("teaser-oracle")).toHaveClass("max-h-[64px]");
+    expect(screen.queryByTestId("teaser-footer-action")).toBeNull();
+  });
+});

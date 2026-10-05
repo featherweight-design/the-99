@@ -532,7 +532,7 @@ export function StandInsSheet({
 
   // A stand-in's card, stacked over the sheet, takes it from where the reader is (§7.3). Nothing for
   // a card that is not one of the list's, and nothing once a take has landed.
-  const stackFooter: SheetFooter = (oracleId, layout) => {
+  const stackFooter: SheetFooter = (oracleId, layout, priced) => {
     const row = rows.find((r) => r.oracleId === oracleId);
     if (!row || taken) return null;
     const press = () => {
@@ -540,6 +540,7 @@ export function StandInsSheet({
       void take(row);
     };
     const where = swapToolsCopy.modal.inPlaceOf(name, tools.deckName);
+    const takeLabel = swapToolsCopy.modal.take(row.name);
     if (layout === "row") {
       return (
         <span data-testid="stand-in-footer" className="flex flex-1 min-w-0 items-center gap-[12px]">
@@ -551,23 +552,50 @@ export function StandInsSheet({
         </span>
       );
     }
-    return (
-      <div
-        data-testid="stand-in-footer"
-        className="flex flex-col gap-[8px] px-[16px] pt-[10px] pb-[20px] border-t border-[color:var(--border)]"
-        style={{ background: "var(--surface-sunken)" }}
-      >
-        <span className="flex items-center gap-[8px]">
-          <span className="flex-1 min-w-0 font-mono text-[10.5px]" style={{ color: "var(--fg-muted)" }}>{where}</span>
-          <PricePlate row={row} newestAsOf={listAsOf} />
+    // THE PHONE (stacked sheets R1, call 9). A buy price plate would repeat the teaser's second line,
+    // so it goes, with two exceptions: a FREE row keeps its chip, because that line shows a buy price
+    // and nothing else on the phone says the reader already owns a spare copy (pre-open review); and
+    // a card whose price line names no figure (a failed read, or `no stock`) keeps the stand-in's
+    // (rounds 1 and 2).
+    const plate = row.free || priced === false ? <PricePlate row={row} newestAsOf={listAsOf} /> : null;
+    if (layout === "teaserNote") {
+      return (
+        <span data-testid="stand-in-footer" className="flex min-w-0 items-center gap-[8px] font-mono text-[11px]" style={{ color: "var(--fg-muted)" }}>
+          <span className="min-w-0 truncate">{where}</span>
+          {plate}
         </span>
+      );
+    }
+    if (layout === "teaserAction") {
+      return (
         <button
           type="button"
           onClick={press}
           aria-label={copy.takeAria(row.name, name)}
-          className="flex items-center justify-center w-full h-[44px] rounded-[8px] text-[13px] font-semibold bg-transparent cursor-pointer text-[color:var(--accent)] [border:1px_solid_var(--accent)]"
+          className="flex h-[34px] min-w-0 items-center rounded-[8px] px-[14px] text-[13.5px] font-medium whitespace-nowrap bg-transparent cursor-pointer text-[color:var(--accent)] [border:1px_solid_var(--accent)]"
         >
-          {swapToolsCopy.modal.take(row.name)}
+          <span className="truncate">{takeLabel}</span>
+        </button>
+      );
+    }
+    // `foot`: the full sheet, pinned at its foot over the home inset.
+    return (
+      <div
+        data-testid="stand-in-footer"
+        className="flex items-center gap-[12px] px-[20px] pt-[10px] pb-[44px] border-t border-[color:var(--border)]"
+        style={{ background: "var(--surface-sunken)" }}
+      >
+        <span className="flex-1 min-w-0 font-mono text-[11px]" style={{ color: "var(--fg-muted)" }}>{where}</span>
+        {plate}
+        <button
+          type="button"
+          onClick={press}
+          aria-label={copy.takeAria(row.name, name)}
+          // Bounded and truncated as the teaser's is: a long name (a `Front // Back` card) must not
+          // push the note out or run past the sheet's edge (round 1).
+          className="flex h-[44px] min-w-0 max-w-[62%] flex-none items-center rounded-[8px] px-[16px] text-[13.5px] font-medium whitespace-nowrap bg-transparent cursor-pointer text-[color:var(--accent)] [border:1px_solid_var(--accent)]"
+        >
+          <span className="truncate">{takeLabel}</span>
         </button>
       </div>
     );

@@ -172,9 +172,20 @@ export type CardDoor = (oracleId: string, layout: "art" | "strip") => ReactNode;
 
 /**
  * A sheet's footer for a card stacked over it, or null for a card that is not one of the sheet's
- * own (the stand-ins sheet draws Take on its stand-ins and nothing on anything else).
+ * own (the stand-ins sheet draws Take on its stand-ins and nothing on anything else). Drawn in
+ * pieces the card places itself (stacked sheets R1, call 9):
+ *
+ * - `row`: the desktop nav row, in place of the Mana Pool link.
+ * - `teaserNote`: the phone teaser's one line above its foot row (`in place of …`).
+ * - `teaserAction`: the phone teaser's action, in the foot row beside All details.
+ * - `foot`: the phone's full sheet, pinned at its foot.
  */
-export type SheetFooter = (oracleId: string, layout: "row" | "column") => ReactNode;
+export type SheetFooterLayout = "row" | "teaserNote" | "teaserAction" | "foot";
+/**
+ * `priced`: whether the card on screen draws a price FIGURE, so a phone footer that leaves its plate
+ * to the teaser's price line can keep it when that line has none (a failed read, or `no stock`).
+ */
+export type SheetFooter = (oracleId: string, layout: SheetFooterLayout, priced?: boolean) => ReactNode;
 
 const CardDetailContext = createContext<CardDetailContextValue | null>(null);
 
@@ -1104,7 +1115,7 @@ export function CardDetailProvider({
           // Only a card the sheet has a footer FOR swaps its Mana Pool link out: the original, or any
           // card after a take, keeps the link rather than drawing nothing in its place.
           footer={sheetFooter && sheetFooter(card.oracleId, "row") !== null
-            ? (layout) => sheetFooter(card.oracleId, layout)
+            ? (layout, priced) => sheetFooter(card.oracleId, layout, priced)
             : null}
           backLabel={backLabel}
           // Fits your decks' door, on a card with no sheet under it (stacked sheets R1, call 8): nothing
@@ -1173,7 +1184,7 @@ export function CardDetailProvider({
           // Only a card the sheet has a footer FOR swaps its Mana Pool link out: the original, or any
           // card after a take, keeps the link rather than drawing nothing in its place.
           footer={sheetFooter && sheetFooter(card.oracleId, "row") !== null
-            ? (layout) => sheetFooter(card.oracleId, layout)
+            ? (layout, priced) => sheetFooter(card.oracleId, layout, priced)
             : null}
           backLabel={backLabel}
           // The combo block's partner name, through the same `load` that pages Prev/Next —
