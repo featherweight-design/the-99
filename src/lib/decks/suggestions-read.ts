@@ -244,6 +244,7 @@ export async function loadDeckSuggestions(deckId: string, userId: string): Promi
       {
         ...s,
         name: c.name,
+        printedName: ownedArt.get(s.oracleId)?.printedName ?? null,
         owned: true,
         typeLine: c.typeLine,
         cardTypeGroup: cardTypeGroup(c.typeLine),

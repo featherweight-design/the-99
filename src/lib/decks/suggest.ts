@@ -11,7 +11,13 @@ export type ReasonType = "edhrec" | "role";
 
 export type DeckSuggestion = {
   oracleId: string;
+  /** The oracle name: EDHREC's figures are looked up by it, and the add sends the id. */
   name: string;
+  /**
+   * The name printed on the owned copy whose art `imageUri` draws, where it has its own (a renamed
+   * Secret Lair printing). The tile's caption reads it over `name`. Absent on an unowned suggestion.
+   */
+  printedName?: string | null;
   reason: "edhrec" | "ramp" | "draw" | "removal" | "wipes" | "land";
   reasonType: ReasonType;
   reasonLabel: string;
@@ -104,6 +110,7 @@ export function humanRole(reason: Suggestion["reason"]): string {
 export function buildSuggestionPayload(
   s: Suggestion & {
     name: string;
+    printedName?: string | null;
     owned: boolean;
     typeLine: string;
     cardTypeGroup: DeckDetailCard["cardTypeGroup"];
@@ -158,6 +165,7 @@ export function buildSuggestionPayload(
   return {
     oracleId: s.oracleId,
     name: s.name,
+    ...(s.printedName ? { printedName: s.printedName } : {}),
     reason: s.reason,
     reasonType,
     reasonLabel,

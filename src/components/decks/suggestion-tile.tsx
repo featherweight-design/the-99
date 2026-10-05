@@ -185,6 +185,9 @@ export function SuggestionTile({
   // `selfClaimed`, not `applied`: these figures came back from a query that
   // excluded this deck's stored claim, which an add made seconds ago is not yet
   // part of.
+  // The name printed on the owned copy the tile pictures, where it has its own; the oracle name
+  // otherwise. Captions and labels only: the add and the EDHREC lookups stay on the oracle name.
+  const shown = suggestion.printedName ?? suggestion.name;
   const availState = suggestion.availability
     ? availabilityState(suggestion.availability, { selfExcluded: selfClaimed })
     : "free";
@@ -248,7 +251,7 @@ export function SuggestionTile({
           the 1px inset edge survives of the two shadows the art used to carry. */}
       <CardDetailTrigger
         oracleId={suggestion.oracleId}
-        name={suggestion.name}
+        name={shown}
         siblings={siblings}
         className="relative block w-full overflow-hidden rounded-[7px] p-0 border-none"
         style={{
@@ -362,7 +365,7 @@ export function SuggestionTile({
           // its own `truncate` rather than depending on the wrapper's.
           <CardDetailTrigger
             oracleId={suggestion.oracleId}
-            name={suggestion.name}
+            name={shown}
             siblings={siblings}
             className="block min-w-0 max-w-full truncate text-left text-[12px] md:text-[13px] font-semibold p-0"
             style={{
@@ -371,7 +374,7 @@ export function SuggestionTile({
               border: "none",
             }}
           >
-            {suggestion.name}
+            {shown}
           </CardDetailTrigger>
         }
       />
@@ -478,7 +481,7 @@ export function SuggestionTile({
       {applied ? (
         <span
           aria-disabled="true"
-          aria-label={addPanelCopy.tile.inDeckAria(suggestion.name)}
+          aria-label={addPanelCopy.tile.inDeckAria(shown)}
           className="mt-auto block text-center text-[12px] font-semibold rounded-[7px] py-[7px]"
           style={{ color: "var(--success)", border: "1px solid var(--border)" }}
         >
@@ -500,8 +503,8 @@ export function SuggestionTile({
           disabled={isPending}
           aria-label={
             suggestion.owned
-              ? addPanelCopy.tile.addAria(suggestion.name)
-              : addPanelCopy.tile.addUnownedAria(suggestion.name)
+              ? addPanelCopy.tile.addAria(shown)
+              : addPanelCopy.tile.addUnownedAria(shown)
           }
           className="mt-auto w-full text-center rounded-[10px] md:rounded-[8px] h-[44px] md:h-[32px] px-[16px] md:px-[14px] text-[14px] md:text-[12.5px] font-medium disabled:opacity-50"
         >

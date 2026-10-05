@@ -36,6 +36,22 @@ function joinShort(names: readonly string[]): string {
   return names.map(shortName).join(" and ");
 }
 
+/**
+ * The sheet's names are captions and sentences only: it chooses and commits by oracle id. So the
+ * name printed on the owned copy a half pictures (a renamed Secret Lair printing) replaces the
+ * oracle name once, where the read lands, and every caption beside a picture reads what is on it.
+ */
+export function withShownNames(data: ChangeCandidates): ChangeCandidates {
+  const half = (h: CandidateHalf): CandidateHalf => (h.printedName ? { ...h, name: h.printedName } : h);
+  const candidate = (c: Candidate): Candidate => ({ ...c, halves: c.halves.map(half) });
+  return {
+    ...data,
+    yours: data.yours.map(candidate),
+    toBuy: data.toBuy.map(candidate),
+    current: data.current.map((c) => (c.printedName ? { ...c, name: c.printedName } : c)),
+  };
+}
+
 /** How choosing this candidate moves cards between the 99 and the command zone. */
 export function shapeOf(c: Candidate, current: readonly { oracleId: string }[]): TradeShape | null {
   return tradeShape(
@@ -85,7 +101,7 @@ export function ChangeCommanderSheet({
   useEffect(() => {
     let live = true;
     readChangeCandidates(deckId)
-      .then((data) => { if (live) setPhase(data ? { kind: "ready", data } : { kind: "failed" }); })
+      .then((data) => { if (live) setPhase(data ? { kind: "ready", data: withShownNames(data) } : { kind: "failed" }); })
       .catch(() => { if (live) setPhase({ kind: "failed" }); });
     return () => { live = false; };
   }, [deckId, attempt]);

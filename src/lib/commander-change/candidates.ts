@@ -27,7 +27,14 @@ import { offerable } from "./pending";
 
 export type CandidateHalf = {
   oracleId: string;
+  /** The oracle name, for anything that matches or looks a card up. */
   name: string;
+  /**
+   * The name printed on the owned copy whose art `artCropUri` and `imageUri` draw, where it has
+   * its own (a renamed Secret Lair printing); null otherwise. A caption draws this over `name`, so
+   * the words beside a picture are the ones printed on it.
+   */
+  printedName?: string | null;
   manaCost: string | null;
   cmc: number;
   artCropUri: string | null;
@@ -56,7 +63,7 @@ export type Candidate = {
 export type ChangeCandidates = {
   /** The deck's current commander, or its pair: the confirm's "leaves" side and the mana-value
    *  comparison. */
-  current: { oracleId: string; name: string; cmc: number; manaCost: string | null; imageUri: string | null }[];
+  current: { oracleId: string; name: string; printedName?: string | null; cmc: number; manaCost: string | null; imageUri: string | null }[];
   /** The deck's color identity, sorted: the none state names it. */
   identity: string[];
   /** M: the body the figure counts over (`copy.counted(n)`). */
@@ -257,7 +264,7 @@ export async function loadChangeCandidates(deckId: string, userId: string): Prom
         const f = factBy.get(id)!;
         const here = inDeck.has(id);
         return {
-          oracleId: id, name: f.name, manaCost: f.manaCost, cmc: f.cmc,
+          oracleId: id, name: f.name, printedName: ownedArt.get(id)?.printedName ?? null, manaCost: f.manaCost, cmc: f.cmc,
           artCropUri: ownedArt.get(id)?.artCropUri ?? f.artCropUri,
           imageUri: ownedArt.get(id)?.imageUri ?? f.imageUri,
           inDeck: here,
@@ -273,7 +280,7 @@ export async function loadChangeCandidates(deckId: string, userId: string): Prom
     current: currentIds.map((id) => {
       const f = currentCards.find((c) => c.oracleId === id);
       return {
-        oracleId: id, name: f?.name ?? "", cmc: f?.cmc ?? 0,
+        oracleId: id, name: f?.name ?? "", printedName: ownedArt.get(id)?.printedName ?? null, cmc: f?.cmc ?? 0,
         manaCost: f?.manaCost ?? null, imageUri: ownedArt.get(id)?.imageUri ?? f?.imageUri ?? null,
       };
     }),

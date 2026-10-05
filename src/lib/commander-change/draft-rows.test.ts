@@ -14,6 +14,12 @@ describe("the commander rows' buy rule", () => {
     expect(now.map((r) => [r.oracleId, r.buy])).toEqual([["tymna", false], ["kraum", true]]);
   });
 
+  it("carries the owned copy's printed name beside the oracle name", () => {
+    const named = facts.map((f) => (f.oracleId === "kraum" ? { ...f, printedName: "Kraum, Renamed" } : f));
+    const rows = commanderRows(["tymna"], ["kraum"], new Set(["kraum"]), named, null);
+    expect(rows.map((r) => [r.name, r.printedName])).toEqual([["tymna", null], ["kraum", "Kraum, Renamed"]]);
+  });
+
   it("marks an arriving unowned half, and not an owned one", () => {
     expect(buyIds(["tymna"], ["kraum"], new Set(["kraum"]))).toEqual([]);
     expect(buyIds(["tymna"], ["kraum"], new Set())).toEqual(["kraum"]);
