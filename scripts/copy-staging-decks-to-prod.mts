@@ -73,11 +73,20 @@
  *   …same, plus --confirm-production-write   # only once Hugh's go has been relayed
  *   …same, plus --replace                    # only if the target account already holds decks
  */
-import { neon, neonConfig, Pool } from "@neondatabase/serverless";
+import { neon, neonConfig, Pool, types } from "@neondatabase/serverless";
 import ws from "ws";
 import { requireEnv } from "./lib/env.mjs";
 
 neonConfig.webSocketConstructor = ws;
+
+// Every copied table's timestamp column is `timestamp without time zone` (OID 1114; none of the
+// copied tables use `withTimezone`). node-postgres's default parser reads that naive string as a
+// LOCAL-time `Date`, and the driver then serializes a `Date` parameter back out in UTC — so
+// running this somewhere other than UTC would shift every committed/game/edit timestamp by the
+// operator's offset (Copilot round 5). Returning the raw string instead means it is never
+// interpreted as any timezone at all: the exact bytes staging stored are the exact bytes
+// production gets.
+types.setTypeParser(1114, (v: string) => v);
 
 const {
   THE_99_NEON_STAGING_DIRECT: SOURCE,
@@ -395,9 +404,16 @@ try {
       "deck_version_cards, deck_games, deck_game_axes, deck_folders, card_assignments, " +
       "pull_releases in exclusive mode",
   );
-  // Cleared once the locks are held: the inserts below can run long on ~6,400 rows of staging
-  // deck data, and a 5s cap meant for a LOCK WAIT must not also cap the write it is protecting.
-  await out.query("set local statement_timeout = 0");
+  // RAISED, not cleared, once the locks are held (Copilot round 5: an unbounded statement
+  // timeout here means any slow query, stalled client or commit delay blocks every user's deck
+  // writes indefinitely, for as long as this transaction holds its EXCLUSIVE locks). 180s is
+  // generous for ~6,400 rows of staging deck data batched 500 to a statement; a per-statement
+  // idle gap this large would itself be the thing to investigate, not wait out. A session
+  // timeout backs it up in case the CLIENT, not a query, stalls — a dropped connection or a
+  // debugger pause would otherwise hold the locks with no query running for `lock_timeout` or
+  // `statement_timeout` to catch.
+  await out.query("set local statement_timeout = '180s'");
+  await out.query("set local idle_in_transaction_session_timeout = '30s'");
 
   const insert = async (table: string, rowsIn: Record<string, unknown>[]) => {
     if (rowsIn.length === 0) return;
