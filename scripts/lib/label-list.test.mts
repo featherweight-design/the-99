@@ -48,18 +48,17 @@ describe("listScopeIds", () => {
   // Version-aware freshness (Hugh, 2026-10-04): the stale set is `needsLabel` over each card's own
   // row (its model, version and hash), and a LIST scope alone is the deliberate redo. `needsLabel`'s
   // rule is unit tested in `prompt.test.ts`; this pins that the build calls it with those inputs.
-  // A prompt bump costs nothing by itself, but an intent asked under an older version is still out
-  // and its cards have no row: planning them would pay twice. The build refuses until it lands.
-  it("refuses to plan while an intent of another prompt version is open", () => {
+  // The version guard (`inFlightElsewhere`, unit tested in plan.test.ts) runs AFTER the stale set is
+  // known, so only an open other-version intent asking for a card this run plans can block it.
+  it("checks other-version intents against the planned cards, null-safe, before any submit", () => {
     const build = readFileSync(join(process.cwd(), "scripts/lib/card-labels-build.ts"), "utf8");
-    const at = build.indexOf("const otherVersion = await db.select");
-    expect(at).toBeGreaterThan(-1);
+    const at = build.indexOf("const elsewhere = inFlightElsewhere(");
+    expect(at).toBeGreaterThan(build.indexOf("const all = await cardsNeedingLabels("));
     const block = build.slice(at, build.indexOf("return refuse(", at));
     expect(block).toContain("inArray(cardLabelBatches.status, OPEN_STATUSES)");
-    // `is distinct from`: a pre-migration intent's NULL version must match too.
     expect(block).toMatch(/sql`\$\{cardLabelBatches\.promptVersion\} is distinct from \$\{LABEL_PROMPT_VERSION\}`/);
-    // Before planning: the refusal sits ahead of the stale-set read.
-    expect(at).toBeLessThan(build.indexOf("const all = await cardsNeedingLabels("));
+    expect(block).toContain("new Set(all.map((c) => c.name))");
+    expect(at).toBeLessThan(build.indexOf("await submit(opts, wave,"));
   });
 
   it("plans the stale set with needsLabel, redoing only on a list scope", () => {

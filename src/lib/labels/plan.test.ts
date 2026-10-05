@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   boundedNumber, budgetFamily, CARDS_PER_REQUEST, chunkHash, familySpend, MEASURED_PER_CARD, meetsFloor,
   modelToken, pauseRemediation, planChunks, projectedTotalUsd, runToken, waveSize,
-  withinCap,
+  inFlightElsewhere, withinCap,
   worstCaseUsd,
   type SpendRow,
 } from "./plan";
@@ -467,5 +467,27 @@ describe("the projection's measured rate", () => {
     expect(MEASURED_PER_CARD.usd).toBe(cost.perModel.sonnet.usdPerCard);
     expect(MEASURED_PER_CARD.runId).toBe(JSON.parse(readFileSync(`${at}-run.json`, "utf8")).runId);
     expect(MEASURED_PER_CARD.source).toBe(`${at}-cost.json`);
+  });
+});
+
+describe("inFlightElsewhere", () => {
+  const planned = new Set(["Lightning Bolt", "Rampant Growth"]);
+
+  it("blocks on an open other-version intent that asks for a card this run plans", () => {
+    const r = inFlightElsewhere([{ promptVersion: "7", asked: ["Lightning Bolt", "Shock"] }], "8", planned);
+    expect(r).toEqual({ intents: 1, versions: ["7"], cards: ["Lightning Bolt"] });
+  });
+
+  // The 127 never-submitted, pre-migration intents of 2026-09-28: their cards were all labelled since.
+  it("ignores an old intent whose cards this run does not plan, NULL version included", () => {
+    expect(inFlightElsewhere([{ promptVersion: null, asked: ["Shock"] }], "8", planned).intents).toBe(0);
+  });
+
+  it("names a NULL version as unrecorded, and never counts the current version", () => {
+    const r = inFlightElsewhere([
+      { promptVersion: null, asked: ["Rampant Growth"] },
+      { promptVersion: "8", asked: ["Lightning Bolt"] },
+    ], "8", planned);
+    expect(r).toEqual({ intents: 1, versions: ["unrecorded"], cards: ["Rampant Growth"] });
   });
 });

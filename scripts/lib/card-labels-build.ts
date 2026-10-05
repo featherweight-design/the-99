@@ -34,7 +34,7 @@ import { db } from "../../src/db";
 import { cardLabelBatches, cardLabels, cardLabelsStaging } from "../../src/db/schema";
 import { readReply, withoutRepeats } from "../../src/lib/labels/parse";
 import {
-  CARDS_PER_REQUEST, MEASURED_PER_CARD, budgetFamily, familySpend, meetsFloor, pauseRemediation, planChunks, waveSize,
+  CARDS_PER_REQUEST, MEASURED_PER_CARD, budgetFamily, familySpend, inFlightElsewhere, meetsFloor, pauseRemediation, planChunks, waveSize,
   projectedTotalUsd, withinCap, worstCaseUsd,
   type Chunk, type FamilySpend,
 } from "../../src/lib/labels/plan";
@@ -734,21 +734,6 @@ async function build(opts: BuildOptions): Promise<number> {
         + `${[...new Set(otherModel.map((r) => r.model))].join(", ")}, not ${MODEL}. Their cost is not `
         + `known yet. Finish them under that LABEL_MODEL first.`);
     }
-    // ONE PROMPT VERSION IN FLIGHT. A label stays fresh under the version that wrote it, so a prompt
-    // bump costs nothing by itself, but an intent asked under an older version is still out: its
-    // cards have no published row, so this run would plan and pay for them again, and `reconcile`
-    // only collects the current version's intents. Any run id, any model: the double pay is per card.
-    const otherVersion = await db.select({ promptVersion: cardLabelBatches.promptVersion })
-      .from(cardLabelBatches).where(and(
-        inArray(cardLabelBatches.status, OPEN_STATUSES),
-        // `is distinct from`, not `<>`: a pre-migration intent has a NULL version, which `<>` never matches.
-        sql`${cardLabelBatches.promptVersion} is distinct from ${LABEL_PROMPT_VERSION}`,
-      ));
-    if (otherVersion.length > 0) {
-      return refuse(`${otherVersion.length} open intent(s) were asked under prompt version(s) `
-        + `${[...new Set(otherVersion.map((r) => r.promptVersion ?? "unrecorded"))].join(", ")}, not ${LABEL_PROMPT_VERSION}. `
-        + `Their cards would be paid for twice. Collect them with that version's checkout first.`);
-    }
   }
   if (abandoned.length > 0) {
     console.error(`\n${abandoned.length} intent(s) ABANDONED — submitted, id lost, and no longer`);
@@ -773,6 +758,26 @@ async function build(opts: BuildOptions): Promise<number> {
   }
 
   const all = await cardsNeedingLabels(opts.scope, opts.onlyOracleIds);
+
+  // ONE PROMPT VERSION IN FLIGHT PER CARD (`inFlightElsewhere`). `is distinct from`, not `<>`: a
+  // pre-migration intent has a NULL version, which `<>` never matches.
+  if (!opts.dryRun) {
+    const elsewhere = inFlightElsewhere(
+      await db.select({ promptVersion: cardLabelBatches.promptVersion, asked: cardLabelBatches.asked })
+        .from(cardLabelBatches).where(and(
+          inArray(cardLabelBatches.status, OPEN_STATUSES),
+          sql`${cardLabelBatches.promptVersion} is distinct from ${LABEL_PROMPT_VERSION}`,
+        )),
+      LABEL_PROMPT_VERSION,
+      new Set(all.map((c) => c.name)),
+    );
+    if (elsewhere.intents > 0) {
+      return refuse(`${elsewhere.intents} open intent(s) asked under prompt version(s) `
+        + `${elsewhere.versions.join(", ")}, not ${LABEL_PROMPT_VERSION}, include ${elsewhere.cards.length} card(s) this `
+        + `run would label (${elsewhere.cards.slice(0, 5).join(", ")}). They would be paid for twice. `
+        + `Collect them with that version's checkout first.`);
+    }
+  }
 
   // **A CARD WHOSE NAME IS SHARED IS EXCLUDED AND NAMED, never labelled by guess.**
   //
