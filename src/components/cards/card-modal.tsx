@@ -866,6 +866,8 @@ export function CardModal({
   const sheetOpen = narrow && sheetFull && !cramped;
   const bandRef = useRef<HTMLDivElement | null>(null);
   const sheetRef = useRef<HTMLDivElement | null>(null);
+  // The sheet's scrolling body: a pull down from its top returns the full sheet to the teaser.
+  const sheetBodyRef = useRef<HTMLDivElement | null>(null);
   const gripRef = useRef<HTMLButtonElement | null>(null);
   const prevPhonePeekRef = useRef<HTMLButtonElement | null>(null);
   const nextPhonePeekRef = useRef<HTMLButtonElement | null>(null);
@@ -1272,6 +1274,10 @@ export function CardModal({
     canNext: onNext !== null,
     onPage: (dir, offset) => (dir === "next" ? onNext?.(offset) : onPrev?.(offset)),
     onSnap: (to) => setSheetFull(to === "full"),
+    bodyRef: sheetBodyRef,
+    // Not on a stacked card: its sheets are being redrawn (a second sheet squeezes the card), and
+    // until then it keeps the grip-only drag it shipped with.
+    canCollapse: !cramped && !stacked,
   });
 
   // Focus follows the sheet when the control that moved it is gone: `All details` unmounts as the
@@ -2079,7 +2085,8 @@ export function CardModal({
             + " max-md:shadow-[0_-14px_34px_rgba(0,0,0,0.45)]"
             + " sheet-snap"
             // The teaser does not scroll, so a vertical drag anywhere on it is the sheet's; it fills
-            // to the 34px home inset. The full sheet's body scrolls and only its grip drags it.
+            // to the 34px home inset. The full sheet's body scrolls; its grip drags it, and so does
+            // a pull down from the body's top, where a scroll has nowhere to go.
             + (full ? "" : " max-md:touch-none max-md:pb-[34px]")
           }
           style={{ "--sheet-top": full ? `${SHEET.fullTop}px` : `calc(100% - ${teaserHeight}px)` } as React.CSSProperties}
@@ -2135,6 +2142,7 @@ export function CardModal({
           {/* `overscroll-contain` (Hugh, 2026-10-03): stops a scroll of this body at either
               end from chaining into the page behind the modal. */}
           <div
+            ref={sheetBodyRef}
             className={
               "flex-1 overflow-auto overscroll-contain p-[20px] md:p-[30px_32px] max-md:pt-0"
               + (full ? "" : " max-md:flex max-md:flex-col max-md:overflow-hidden max-md:pb-0")

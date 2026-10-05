@@ -122,6 +122,8 @@ type Drag = {
   teaserTop: number;
   bandX: number;
   sheetTop: number;
+  /** A pull down the full sheet's body from its top, which the body's own scroll would take. */
+  pull: boolean;
 };
 
 export type CardSheetGestureOptions = {
@@ -136,6 +138,10 @@ export type CardSheetGestureOptions = {
   /** A committed page, with the band's offset at release so the next card can enter from it. */
   onPage: (dir: "prev" | "next", offset: number) => void;
   onSnap: (to: "full" | "teaser") => void;
+  /** The full sheet's scrolling body: a downward drag from its top returns to the teaser. */
+  bodyRef?: RefObject<HTMLElement | null>;
+  /** False where there is no teaser to return to (a screen too short for one). */
+  canCollapse?: boolean;
 };
 
 const SPRING = "transform 180ms cubic-bezier(0.2, 0.7, 0.2, 1)";
@@ -251,6 +257,15 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
     if (d.axis === null) {
       d.axis = lockAxis(dx, dy);
       if (d.axis === null) return;
+      // A pull is a drag DOWN. Anything else from the body's top is the body's own: a scroll up
+      // its content, or a sideways drag that pages nothing in the full state. Dropped whole, so the
+      // `touchmove` guard stops holding the scroller back for the rest of the gesture.
+      if (d.pull && (d.axis === "x" || dy < 0)) {
+        drag.current = null;
+        detach.current?.();
+        detach.current = null;
+        return;
+      }
       // Horizontal pages only from the band, only in the teaser, and only with a neighbor to page
       // to (STATES h3, h6): every other horizontal drag does nothing at all.
       if (d.axis === "x" && (d.source !== "band" || full || (!canPrev && !canNext))) d.dead = true;
@@ -283,9 +298,19 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
       if (drag.current) return;
       if (e.pointerType === "mouse" && e.button !== 0) return;
       if (startsAtSystemEdge(e.clientX, window.innerWidth)) return;
-      const { sheetRef, full, teaserHeight } = opts.current;
-      // In the full state the sheet's body scrolls natively; only its grip moves the sheet.
-      if (source === "sheet" && full && !(e.target instanceof Element && e.target.closest("[data-sheet-grip]"))) return;
+      const { sheetRef, bodyRef, full, teaserHeight, canCollapse = true } = opts.current;
+      // In the full state the sheet's body scrolls natively, and the grip moves the sheet. The one
+      // exception is a drag DOWN from the body's top, where a scroll has nowhere to go: that pulls
+      // the sheet back to the teaser, as the grip does (Hugh, 2026-10-04). Armed here only when the
+      // body is at its top; `touchmove` below decides, by direction, whether it is a pull or a scroll.
+      let pull = false;
+      if (source === "sheet" && full && !(e.target instanceof Element && e.target.closest("[data-sheet-grip]"))) {
+        const body = bodyRef?.current;
+        // The body's own presses only: the door strip above it is a sibling with no scroll at all.
+        if (!canCollapse || !body || body.scrollTop > 0) return;
+        if (!(e.target instanceof Node && body.contains(e.target))) return;
+        pull = true;
+      }
       const sheet = sheetRef.current;
       // `||`, not `??`: an element with no layout reports 0, which is no height to snap within.
       const height = sheet?.parentElement?.clientHeight || window.innerHeight;
@@ -304,17 +329,50 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
         teaserTop,
         bandX: 0,
         sheetTop: startTop,
+        pull,
       };
       const onMove = (ev: PointerEvent) => move(ev);
       const onUp = (ev: PointerEvent) => end(ev, false);
       const onCancel = (ev: PointerEvent) => end(ev, true);
+      // A pull has to keep the browser's own scroll out of it: a body that scrolls natively takes
+      // a touch the moment it moves and cancels the pointer stream. So a downward move is held back
+      // from the scroller (non-passive, the only way `preventDefault` reaches it), and the first
+      // upward one hands the gesture to the scroll and drops the pull.
+      const onTouchMove = (ev: TouchEvent) => {
+        const d = drag.current;
+        const touch = ev.touches[0];
+        if (!d || !d.pull || !touch) return;
+        // A second finger is a pinch, and zoom is never held back (the dialog's scroll lock exempts
+        // multi-touch for the same reason, `lib/a11y/dialog.ts`): the pull is dropped whole, and
+        // the sheet returns to its snap.
+        if (ev.touches.length > 1) {
+          drag.current = null;
+          detach.current?.();
+          detach.current = null;
+          const sheet = opts.current.sheetRef.current;
+          if (sheet) {
+            sheet.style.removeProperty("--sheet-drag-top");
+            delete sheet.dataset.dragging;
+          }
+          return;
+        }
+        if (touch.clientY - d.start.y < 0 && d.axis === null) {
+          drag.current = null;
+          detach.current?.();
+          detach.current = null;
+          return;
+        }
+        if (ev.cancelable) ev.preventDefault();
+      };
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);
       window.addEventListener("pointercancel", onCancel);
+      if (pull) window.addEventListener("touchmove", onTouchMove, { passive: false });
       detach.current = () => {
         window.removeEventListener("pointermove", onMove);
         window.removeEventListener("pointerup", onUp);
         window.removeEventListener("pointercancel", onCancel);
+        if (pull) window.removeEventListener("touchmove", onTouchMove);
       };
     },
     [end, move],
