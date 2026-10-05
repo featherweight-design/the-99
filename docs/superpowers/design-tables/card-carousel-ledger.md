@@ -11,9 +11,14 @@ differently from the README; both numbers are given.
 | Top layer | a card opened from a sheet over a held card pages its own list, with its own counter and neighbors | the top `CardModal` takes the live list's `onPrev`/`onNext`, peeks and plates | ✅ `card-carousel-stacked.test.tsx` |
 | Top layer read-ahead | the same both-ways read-ahead as any paged card | `nextId`/`prevId` read the live list, which under a sheet is the top card's; the `!held` gate that stopped this is gone | ✅ fails with the gate restored |
 | Held card | draws nothing to page with | `onPrev`/`onNext` null, no peeks, no plates; it keeps the counter it wore live, so the sheet going hands it back unchanged | ✅ |
-| Geometry | R2's, not superseded frame P7's | the same `CardModal` at `phoneTop` 96 / 140 | ✅ see below |
+| Geometry | R2's, not superseded frame P7's | **Superseded by stacked sheets R1** (`design-tables/stacked-sheets-phone.md`): a card over a sheet draws at the unstacked geometry, and `phoneTop` is gone | ✅ see the stacked-sheets table |
 
-## Stacked phone sheets at 96 and 140 (README ledger, plan item 4)
+## Stacked phone sheets at 96 and 140 (README ledger, plan item 4): SUPERSEDED
+
+**Erratum (stacked sheets R1, 2026-10-05):** the stepped 52 / 96 / 140 geometry this section checked
+is retired. Every card layer on the phone now starts at 0 with the full dialog height, so only the
+first row below's arithmetic (an unstacked card) still applies. The section is kept as the record
+of what was checked before.
 
 The card band runs the same sizing as the full-height sheet, against a shorter dialog:
 `card width = min(320, (dialog height - teaser - 85) x 0.7159)`, where the teaser is 280 plus

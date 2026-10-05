@@ -1948,7 +1948,9 @@ export function CardModal({
               + " before:absolute before:inset-x-0 before:-inset-y-[6px] before:content-['']"
               + " transition-transform active:scale-[.97] active:bg-[color-mix(in_oklab,var(--fg)_16%,color-mix(in_oklab,var(--bg)_55%,transparent))]"
               + " focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] focus-visible:[outline-style:solid]"
-              + (total > 1 ? " max-w-[266px]" : " max-w-[354px]")
+              // 266 and 354 are the 390 frame's; on a narrower phone the cap also keeps clear of the
+              // counter's plate (its right edge near 88 at 360 with two digits) and an 18px gutter.
+              + (total > 1 ? " max-w-[min(266px,calc(100%-114px))]" : " max-w-[min(354px,calc(100%-36px))]")
             }
             style={{ top: 22, right: 18 }}
           >

@@ -249,7 +249,6 @@ try {
     // Marked so its return can be told from a remount: the same node keeps its scroll.
     await card.evaluate((el) => { el.dataset.probeHeld = "1"; });
     const cardTop = await topOf(card);
-    if (phone) report(`${tag} depths: a Shopping card starts at 52`, cardTop === 52, `${cardTop}`);
 
     // Card → sheet: the sheet opens OVER the card, and the card stays under it.
     await link.click();
@@ -271,19 +270,15 @@ try {
       report(`${tag} the sheet over the card ends above the fold`, box && box.y + box.height <= w.viewport.height,
         `bottom ${Math.round((box?.y ?? 0) + (box?.height ?? 0))} of ${w.viewport.height}`);
     }
-    if (phone) {
-      const heldTop = await topOf(page.locator('[data-probe-held="1"]'));
-      const sheetTop = await topOf(sheet);
-      report(`${tag} depths: card 52, sheet 96`, heldTop === 52 && sheetTop === 96, `card ${heldTop}, sheet ${sheetTop}`);
-    }
 
     // Sheet → stand-in: a third layer.
     const standInName = (await sheet.locator("li button").first().textContent())?.trim();
     await sheet.locator("li button").first().click();
     await page.waitForFunction(() => document.querySelectorAll('[role="dialog"][aria-labelledby^="card-modal-title"]').length === 2, null, { timeout: 15_000 });
     const topY = await topOf(cardDialogs(page).nth(1));
-    if (phone) report(`${tag} depths: the stand-in at 140`, topY === 140, `${topY}`);
-    else {
+    // The phone's stepped depths (52 / 96 / 140) were retired by stacked sheets R1; the
+    // stacked-sheets plan's walk measures that geometry, and no layout probe re-asserts it.
+    if (!phone) {
       const box = await cardDialogs(page).nth(1).boundingBox();
       const room = Math.min(80, Math.floor((w.viewport.height - (box?.height ?? 0)) / 2 - 8));
       report(`${tag} the stand-in sits 80px below its original, or as far as the window allows`,

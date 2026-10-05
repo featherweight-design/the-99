@@ -180,8 +180,9 @@ void (async () => {
       await sheet.waitFor({ timeout: 15_000 });
       await sheet.getByTestId("fits-row").first().waitFor({ timeout: 20_000 });
       const box = await sheet.boundingBox();
+      // The phone's 96 top was retired by stacked sheets R1 (an over-card sheet now sits at 52); no
+      // layout probe re-asserts it.
       if (w.label === 1300) report("1300 picker width", Math.round(box?.width ?? 0) === 560, `${Math.round(box?.width ?? 0)}px`);
-      else report("390 picker top", Math.round(box?.y ?? 0) === 96, `${Math.round(box?.y ?? 0)}px`);
       const sameNode = await cardNode!.evaluate((el) => el.isConnected && el.closest("[inert]") !== null);
       report(`${w.label} card stays, covered`, sameNode, sameNode ? "same node, inert" : "replaced or live");
 

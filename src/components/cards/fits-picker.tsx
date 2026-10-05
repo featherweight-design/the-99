@@ -1,7 +1,7 @@
 "use client";
 
 // FITS YOUR DECKS' PICKER (swap tools PR 5b, R2–R4 and the addendum): which of the reader's decks a
-// card would fit, stacked over the card it was opened from. 560 on desktop, from 96px on the phone,
+// card would fit, stacked over the card it was opened from. 560 on desktop, from 52px on the phone,
 // through the same chrome as every other sheet over a card.
 //
 // Read when it opens, never shipped with the card (`loadFitsAction`). After an Add the read is taken

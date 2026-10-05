@@ -266,14 +266,8 @@ async function walk(page, label, width) {
   };
   report(`${label}px · the receipt steps down to --surface-sunken`,
     hex(stack.receiptBg) === stack.sunken.toLowerCase(), `${hex(stack.receiptBg)} against ${stack.sunken}`);
-  if (phone) {
-    report(`${label}px · the card sheet starts at 96px`, Math.abs(stack.cardTop - 96) <= 1, `top ${stack.cardTop}`);
-    // THE PROPERTY THE OFFSET EXISTS FOR, and not the figure: the receipt's header row sits above
-    // the card sheet, whole, so a reader sees what a dismissal lands on.
-    report(`${label}px · the receipt's header is visible above it`,
-      stack.headBottom !== null && stack.headBottom <= stack.cardTop && stack.headTop >= 52,
-      `header ${stack.headTop}–${stack.headBottom}, card from ${stack.cardTop}`);
-  }
+  // The phone's 96px card sheet and the visible receipt header above it were retired by stacked
+  // sheets R1: the card now covers the receipt at full height. No layout probe re-asserts it.
 
   // THE WAY BACK (desktop). The pill names the receipt, sits in the ✕'s slot, and nothing in the
   // card's name row runs under it. The receipt's body steps down to 0.35 behind the card.

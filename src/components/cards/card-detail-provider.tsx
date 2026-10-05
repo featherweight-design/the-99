@@ -125,16 +125,17 @@ type CardDetailContextValue = {
    * Declare a sheet that stays open UNDER the card modal, and get back the call that
    * withdraws it.
    *
-   * The Analysis tab's receipt is the one caller: the verdict addendum rules that a card opened
-   * from a receipt STACKS on it rather than replacing it, and that on a phone the card sheet
-   * sits lower so the receipt's header stays visible above it. The provider owns the modal and
-   * the receipt owns nothing of it, so the receipt says it is there and the modal reads that.
+   * Every `ModalChrome` sheet registers: the verdict addendum rules that a card opened from a
+   * receipt STACKS on it rather than replacing it. On a phone the card covers the sheet at full
+   * height, with the sheet kept mounted and hidden under it (stacked sheets R1, call 1). The
+   * provider owns the modal and the sheet owns nothing of it, so the sheet says it is there and
+   * the modal reads that.
    *
    * Counted rather than a flag, for the reason the scroll lock is counted: a flag set by one
    * mount and cleared by another's unmount is a race whenever two overlap.
    *
-   * `backLabel` names the sheet, and the stacked card's desktop close becomes `← {backLabel}`
-   * (Analysis tab handoff §3). The newest registration's label is the one drawn, because that
+   * `backLabel` names the sheet, and the stacked card's close becomes `← {backLabel}` at both
+   * widths (Analysis tab handoff §3; stacked sheets R1, call 2). The newest registration's label is the one drawn, because that
    * is the sheet a dismissal lands on.
    */
   registerSheet: (backLabel?: string, footer?: SheetFooter, overCard?: boolean) => () => void;
@@ -362,7 +363,8 @@ type OpenAt = {
   printing: PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null };
 } | null;
 /** A card lifted out of the live slot by a sheet opened over it, with what it needs to come back. */
-type Held = { card: BrowseCard; siblings: SiblingCard[]; openAt: OpenAt; door: boolean };
+/** `opener`: the control the held card was opened from, handed back when the sheet over it goes. */
+type Held = { card: BrowseCard; siblings: SiblingCard[]; openAt: OpenAt; door: boolean; opener: HTMLElement | null };
 
 export function CardDetailProvider({
   children,
@@ -836,7 +838,9 @@ export function CardDetailProvider({
     setSheets((list) => [...list, { token, label, footer }]);
     const lifting = overCard ? live.current : null;
     if (lifting?.card) {
-      const held: Held = { card: lifting.card, siblings: lifting.siblings, openAt: lifting.openAt, door: lifting.door };
+      const held: Held = {
+        card: lifting.card, siblings: lifting.siblings, openAt: lifting.openAt, door: lifting.door, opener: openerRef.current,
+      };
       heldRef.current = held;
       setHeld(held);
       latest.current++;
@@ -865,6 +869,8 @@ export function CardDetailProvider({
       setSiblingList(back.siblings);
       setOpenAt(back.openAt);
       setDoor(back.door);
+      // A card opened from the sheet took the opener slot; the card coming back takes its own.
+      openerRef.current = back.opener;
     };
   }, []);
 

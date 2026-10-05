@@ -2,6 +2,7 @@
 // down beneath it, and the ✕ becomes the `← {sheet}` pill. jsdom matches no media query, so every
 // component here takes its phone branch.
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import { useEffect } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { BrowseCard } from "../../lib/collection/browse";
@@ -16,7 +17,7 @@ vi.mock("next/link", () => ({
   default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => <a href={href} {...rest}>{children}</a>,
 }));
 
-const { CardDetailProvider, CardDetailTrigger } = await import("./card-detail-provider");
+const { CardDetailProvider, CardDetailTrigger, useCardDetail } = await import("./card-detail-provider");
 const { ModalChrome } = await import("../decks/receipt-modal");
 
 const birds: BrowseCard = {
@@ -63,7 +64,7 @@ describe("a card opened from a sheet, on the phone", () => {
   it("caps the pill at 354 with no counter beside it", async () => {
     draw();
     await openFromSheet();
-    expect(pill()).toHaveClass("max-w-[354px]");
+    expect(pill()).toHaveClass("max-w-[min(354px,calc(100%-36px))]");
   });
 
   it("hands focus to the pill on open", async () => {
@@ -149,5 +150,39 @@ describe("a card opened from the page", () => {
     expect(screen.getAllByRole("button", { name: "Close card details" }).length).toBeGreaterThan(0);
     expect(screen.queryByTestId("card-modal-back-mobile")).toBeNull();
     expect(screen.getAllByTestId("fits-door").length).toBeGreaterThan(0);
+  });
+});
+
+/** A sheet opened OVER the open card, as the stand-ins sheet is from its door. */
+function OverCard() {
+  const { registerSheet } = useCardDetail();
+  useEffect(() => registerSheet("Cheaper stand-ins", undefined, true), [registerSheet]);
+  return null;
+}
+
+describe("the way back through three layers (page · card · sheet · card)", () => {
+  it("gives each card its own opener, so the first card still hands focus to its trigger", async () => {
+    const view = (sheet: boolean) => (
+      <CardDetailProvider fetchCard={async () => birds}>
+        <CardDetailTrigger oracleId="o-birds" name="Birds of Paradise">page trigger</CardDetailTrigger>
+        {sheet ? (
+          <>
+            <OverCard />
+            <CardDetailTrigger oracleId="o-birds" name="Birds of Paradise">sheet trigger</CardDetailTrigger>
+          </>
+        ) : null}
+      </CardDetailProvider>
+    );
+    const { rerender } = render(view(false));
+    // Nothing focused on a press, as in Safari, so only the provider's opener can find the way back.
+    (document.activeElement as HTMLElement | null)?.blur();
+    await act(async () => { fireEvent.click(screen.getByText("page trigger")); });
+    await act(async () => rerender(view(true)));
+    await act(async () => { fireEvent.click(screen.getByText("sheet trigger")); });
+    await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+    await act(async () => rerender(view(false)));
+    await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+    expect(document.querySelector('[aria-labelledby^="card-modal-title"]')).toBeNull();
+    expect(document.activeElement).toBe(screen.getByText("page trigger"));
   });
 });
