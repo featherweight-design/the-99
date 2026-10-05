@@ -900,4 +900,31 @@ describe("the list it hands the card", () => {
     fireEvent.click(trigger);
     await waitFor(() => expect(screen.getAllByTestId("phone-peek-next")[0].outerHTML).toContain("owned-2.jpg"));
   });
+
+  // The plate pictures the owned copy, so its caption reads the name printed on that copy.
+  it("names a renamed printing's plate with its printed name", async () => {
+    const renamed: RoleCard = { ...makeCard(2), imageUri: "https://cards.scryfall.io/owned-2.jpg", printedName: "Renamed Two" };
+    const opened = (id: string) => ({
+      oracleId: id, name: id, typeLine: "Artifact", manaCost: "{2}", cmc: 2, oracleText: null, keywords: [], rarity: "uncommon",
+      colorIdentity: [], imageUri: null, printedName: null, quantity: 1, printings: [], setCodes: [], primarySetCode: "",
+      preferredPrinting: null,
+    }) as unknown as BrowseCard;
+    render(
+      <CardDetailProvider fetchCard={async (id) => opened(id)}>
+        <CoverageSection
+          width="desktop"
+          slug="commander-slug"
+          roleCards={{ ...EMPTY_ROLE_CARDS, ramp: [makeCard(1), renamed] }}
+          roleCounts={{ ...BASE_ROLE_COUNTS, ramp: 2 }}
+          roleTargets={FLAT_TARGETS}
+          synergyState="ok"
+          avail="all"
+          retryCoverageFigures={vi.fn().mockResolvedValue(null)}
+          markerElsewhere={false}
+        />
+      </CardDetailProvider>,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: /View details for Card 1/ })[0]);
+    expect(await screen.findAllByRole("button", { name: /Next card: Renamed Two/ })).not.toHaveLength(0);
+  });
 });

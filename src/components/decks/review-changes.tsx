@@ -298,7 +298,8 @@ export function Column({
           const wordId = `${descriptionId}-${row.oracleId}`;
           const card = {
             oracleId: row.oracleId,
-            name: row.name,
+            // The caption beside the row's art: the name printed on the owned copy it draws.
+            name: row.printedName ?? row.name,
             typeLine: row.typeLine,
             auto: row.auto,
             owned: row.owned,

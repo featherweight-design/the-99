@@ -29,6 +29,8 @@ export type RoleCard = {
    * draws nothing; the commander page stamps it for Role Coverage's neighbor plates.
    */
   imageUri?: string | null;
+  /** The name printed on that copy, where it has its own: the plate's caption reads it. */
+  printedName?: string | null;
   /**
    * This card's claim picture, or null.
    *

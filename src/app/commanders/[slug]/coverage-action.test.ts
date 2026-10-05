@@ -86,10 +86,11 @@ describe("retryCoverageFigures", () => {
       ramp: [{ oracleId: "sol", name: "Sol Ring", inclusionPct: 82, committedTo: null, availability: null }],
     };
     scoreOneCommander.mockResolvedValue({ synergyState: "ok", roleCards: cards });
-    resolveOwnedPrintings.mockResolvedValue(new Map([["sol", { imageUri: "https://img/owned-sol.jpg" }]]));
+    resolveOwnedPrintings.mockResolvedValue(new Map([["sol", { imageUri: "https://img/owned-sol.jpg", printedName: "Renamed Ring" }]]));
 
     const out = await retryCoverageFigures("korvold", "all");
     expect(out!.ramp[0].imageUri).toBe("https://img/owned-sol.jpg");
+    expect(out!.ramp[0].printedName).toBe("Renamed Ring");
     expect(resolveOwnedPrintings).toHaveBeenCalledWith("user_1", ["sol"]);
   });
 

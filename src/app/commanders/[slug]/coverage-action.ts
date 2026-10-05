@@ -123,7 +123,11 @@ export async function retryCoverageFigures(
   return Object.fromEntries(
     Object.entries(scored.roleCards).map(([role, cards]) => [
       role,
-      withAvailability(cards, availability).map((c) => ({ ...c, imageUri: ownedArt.get(c.oracleId)?.imageUri ?? null })),
+      withAvailability(cards, availability).map((c) => ({
+        ...c,
+        imageUri: ownedArt.get(c.oracleId)?.imageUri ?? null,
+        printedName: ownedArt.get(c.oracleId)?.printedName ?? null,
+      })),
     ]),
   ) as Record<RoleName, RoleCard[]>;
 }

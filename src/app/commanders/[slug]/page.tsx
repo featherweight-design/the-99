@@ -128,11 +128,11 @@ export default async function CommanderDetailPage({
   // never-stocked, and a second expression of those rules would drift from it
   // one round at a time.
   //
-  // THE OWNED CARDS DRAW THE COPY THE READER OWNS (Hugh, 2026-10-05): a synergy row's thumbnail
-  // and hover preview, and every card's neighbor plate, drew the oracle-level printing (or, for
-  // Role Coverage, nothing) while the card details drew the owned one. One read over the owned
-  // synergy rows and the role cards (all owned: Role Coverage is built from the owned pool), beside
-  // the other two. Fail-soft through `resolveOwnedPrintings`: a failed read keeps what was there.
+  // ROLE COVERAGE DRAWS THE COPY THE READER OWNS (Hugh, 2026-10-05): its cards' neighbor plates drew
+  // nothing while the card details drew the owned printing. One read over the role cards (all owned:
+  // Role Coverage is built from the owned pool), beside the other two, carrying the art and the name
+  // printed on it together. The synergy panel is read without images, so it asks for none.
+  // Fail-soft through `resolveOwnedPrintings`: a failed read keeps what was there.
   const [availability, { prices, newestAsOf }, ownedArt] = await Promise.all([
     loadAvailability(userId, {
       oracleIds: [...new Set([...coveredOracleIds, ...synergyCards.map((c) => c.oracleId)])],
@@ -141,13 +141,11 @@ export default async function CommanderDetailPage({
       prices: new Map(),
       newestAsOf: null,
     })),
-    resolveOwnedPrintings(userId, [...new Set([...coveredOracleIds, ...synergyCards.filter((c) => c.owned).map((c) => c.oracleId)])]),
+    resolveOwnedPrintings(userId, [...new Set(coveredOracleIds)]),
   ]);
 
   const synergyWithClaims = withAvailability(synergyCards, availability).map((c) => ({
     ...c,
-    // Only where the row draws art at all: a row read without images keeps its null.
-    imageUri: c.imageUri !== null ? ownedArt.get(c.oracleId)?.imageUri ?? c.imageUri : null,
     price: prices.get(c.oracleId) ?? null,
   }));
 
@@ -156,7 +154,11 @@ export default async function CommanderDetailPage({
     roleCards: Object.fromEntries(
       Object.entries(commander.roleCards).map(([role, cards]) => [
         role,
-        withAvailability(cards, availability).map((c) => ({ ...c, imageUri: ownedArt.get(c.oracleId)?.imageUri ?? null })),
+        withAvailability(cards, availability).map((c) => ({
+          ...c,
+          imageUri: ownedArt.get(c.oracleId)?.imageUri ?? null,
+          printedName: ownedArt.get(c.oracleId)?.printedName ?? null,
+        })),
       ]),
     ) as Record<RoleName, RoleCard[]>,
   };

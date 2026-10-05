@@ -200,7 +200,7 @@ function RolePanelDesktop({
 }): JSX.Element {
   const cap = COVERAGE_CAP.desktop;
   const siblingIds = cards.map((c) => c.oracleId);
-  const siblings = cards.map((c) => ({ oracleId: c.oracleId, name: c.name, imageUri: c.imageUri ?? null }));
+  const siblings = cards.map((c) => ({ oracleId: c.oracleId, name: c.printedName ?? c.name, imageUri: c.imageUri ?? null }));
   // The open list is a 320px scroll box, and closing it writes nothing to
   // `scrollTop` — so a role scrolled to its foot and closed reopened at its foot,
   // measured at offset 1752 either side of a close.
@@ -313,7 +313,7 @@ function RolePanelPhone({
 }): JSX.Element {
   const cap = COVERAGE_CAP.phone;
   const siblingIds = cards.map((c) => c.oracleId);
-  const siblings = cards.map((c) => ({ oracleId: c.oracleId, name: c.name, imageUri: c.imageUri ?? null }));
+  const siblings = cards.map((c) => ({ oracleId: c.oracleId, name: c.printedName ?? c.name, imageUri: c.imageUri ?? null }));
   // The open list is a 320px scroll box, and closing it writes nothing to
   // `scrollTop` — so a role scrolled to its foot and closed reopened at its foot,
   // measured at offset 1752 either side of a close.
