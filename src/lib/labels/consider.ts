@@ -28,7 +28,11 @@ const FILLS: Record<Exclude<Suggestion["reason"], "edhrec">, readonly string[]> 
   land: ["land"],
 };
 
-/** True only when the card HAS a fresh label and none of its jobs is a kind that fills `role`. */
+/**
+ * True only when the card HAS a fresh label and none of its ROLE jobs is a kind that fills `role`. A
+ * theme job never fills a role: theme `draw` is a card that cares about drawing (Psychosis Crawler),
+ * which the text classifier offers as draw and the prompt defines as not drawing.
+ */
 export function labelDisagrees(
   jobs: readonly Job[] | undefined,
   card: { typeLine: string },
@@ -37,7 +41,7 @@ export function labelDisagrees(
   if (role === "edhrec") return false;
   if (jobs === undefined || jobs.length === 0) return false;
   if (isLandFace(card.typeLine)) return false;
-  return !jobs.some((j) => FILLS[role].includes(j.kind));
+  return !jobs.some((j) => j.space === "role" && FILLS[role].includes(j.kind));
 }
 
 /**

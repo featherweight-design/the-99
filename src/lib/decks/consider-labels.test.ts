@@ -53,6 +53,13 @@ describe("considerLabels", () => {
     expect(applyConsiderLabels(SUGGESTIONS, read).map((s) => s.oracleId)).toEqual(["staple"]);
   });
 
+  // An empty list would draw "every card that fits is already in this deck", which a label drop makes false.
+  it("leaves the list alone when the filter would empty it", async () => {
+    const onlyRole = [SUGGESTIONS[0]];
+    const read = await considerLabels({ suggestionIds: ["lantern"] }, deps(true));
+    expect(applyConsiderLabels(onlyRole, read)).toBe(onlyRole);
+  });
+
   it("on with no suggestions: reads nothing", async () => {
     const d = deps(true);
     expect(await considerLabels({ suggestionIds: [] }, d)).toBeNull();

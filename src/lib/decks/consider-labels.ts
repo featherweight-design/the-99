@@ -38,10 +38,16 @@ export async function considerLabels(
   return { labels: await deps.readLabels(args.suggestionIds) };
 }
 
-/** The suggestions the page renders: unchanged when the read is off or failed (null). */
+/**
+ * The suggestions the page renders: unchanged when the read is off or failed (null), and unchanged when
+ * the filter would leave none. An empty list draws the panel's empty state, which tells the reader every
+ * fitting card in their collection is already in the deck; that is false for cards dropped by a label,
+ * and this filter adds no copy of its own to say otherwise.
+ */
 export function applyConsiderLabels<
   T extends { oracleId: string; reason: Suggestion["reason"]; typeLine: string },
 >(suggestions: T[], read: ConsiderLabels | null): T[] {
   if (read === null) return suggestions;
-  return filterConsider(suggestions, read.labels);
+  const kept = filterConsider(suggestions, read.labels);
+  return kept.length === 0 ? suggestions : kept;
 }

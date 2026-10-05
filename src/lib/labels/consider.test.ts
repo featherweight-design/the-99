@@ -23,6 +23,12 @@ describe("labelDisagrees", () => {
     expect(labelDisagrees([job("removal")], SPELL, "draw")).toBe(true);
   });
 
+  // Psychosis Crawler: theme draw is a card that cares about drawing, not one that draws.
+  it("counts only ROLE jobs: a theme job of the same kind does not fill the role", () => {
+    expect(labelDisagrees([job("draw", "theme"), job("drain", "theme")], SPELL, "draw")).toBe(true);
+    expect(labelDisagrees([job("draw", "theme"), job("draw")], SPELL, "draw")).toBe(false);
+  });
+
   it("agrees when any job is that role, and a counterspell fills removal", () => {
     expect(labelDisagrees([job("graveyardHate", "theme"), job("removal")], SPELL, "removal")).toBe(false);
     expect(labelDisagrees([job("counterspell")], SPELL, "removal")).toBe(false);
