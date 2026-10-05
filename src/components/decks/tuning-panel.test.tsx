@@ -935,6 +935,32 @@ describe("TuningPanel: Locked (never cut)", () => {
     }
   });
 
+  // Review round 3: `press` awaits a pending limit save (and a possible re-read) before it
+  // reads the typed note, and the field stays editable through that whole wait — a plain
+  // closure over `notes`, captured when the press STARTED, would send what was typed before
+  // the wait rather than what is on screen when the wait ends.
+  it("sends the note as it reads when the press finishes, not as it read when the press started", async () => {
+    vi.useFakeTimers();
+    try {
+      (saveDeckLimits as ReturnType<typeof vi.fn>).mockClear();
+      const d = deps([fresh, { ...results, stale: true }]);
+      await act(async () => {
+        render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
+      });
+      fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" }));
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: copy.suggest }));
+        // Typed WHILE the limit save's 500ms debounce is still pending — before press() has
+        // read anything.
+        fireEvent.change(screen.getByLabelText("Additional notes"), { target: { value: "typed during the wait" } });
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      expect(d.run).toHaveBeenCalledWith("d1", { runId: expect.any(String), notes: "typed during the wait" });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   // pre-open review round 1: the sync-while-unedited check used to compare the whole `limits`
   // object by reference, so ANY revalidation (even one that hands back the same, still-unsaved
   // content under a new object) overwrote every field — including one mid-edit.
