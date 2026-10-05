@@ -188,6 +188,20 @@ describe("CardDetailProvider", () => {
       expect(screen.queryByTestId("card-modal-back-mobile")).toBeNull();
     });
 
+    it("drops the ask when a different card lands first (a page pressed while the partner reads)", async () => {
+      renderTriggers(
+        vi.fn((id: string) => (id === "o-sol" ? new Promise<BrowseCard>(() => {}) : Promise.resolve(id === "o-signet" ? withPartner : SOL))),
+        ["o-signet", "o-sol"],
+      );
+      await click(screen.getByText("Arcane Signet"));
+      await act(async () => { screen.getByRole("button", { name: /Two-card combos/ }).click(); });
+      await act(async () => { screen.getByRole("button", { name: "Sol Ring" }).click(); });
+      await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+      // Closed while the partner read: nothing lands, and reopening starts with no way back.
+      await click(screen.getByText("Arcane Signet"));
+      expect(screen.queryByTestId("card-modal-back-mobile")).toBeNull();
+    });
+
     // A sheet opened over the partner lifts it with its trail; a card opened from the sheet starts
     // clean, and the partner comes back still naming its origin.
     it("keeps a partner's way back across a sheet opened over it", async () => {

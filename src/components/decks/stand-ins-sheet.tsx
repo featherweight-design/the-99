@@ -453,13 +453,25 @@ export function StandInsSheet({
   // the sheet's heading where no row stands.
   const takenRowRef = useRef<HTMLDivElement | null>(null);
   const sheetBodyRef = useRef<HTMLDivElement | null>(null);
+  // Undo is the same move backwards: the taken row, and its focused Undo, give way to the row's own
+  // Take again, so focus lands there (pre-open review).
+  const lastTaken = useRef<{ add: string } | null>(null);
   useEffect(() => {
-    if (!taken) return;
+    const undone = !taken ? lastTaken.current : null;
+    lastTaken.current = taken ? { add: taken.add } : null;
     const active = document.activeElement;
     if (active && active !== document.body && active.isConnected) return;
     const heading = sheetBodyRef.current?.closest('[role="dialog"]')?.querySelector<HTMLElement>("h2");
-    (takenRowRef.current ?? heading)?.focus();
-  }, [taken]);
+    if (taken) {
+      (takenRowRef.current ?? heading)?.focus();
+      return;
+    }
+    if (!undone) return;
+    const label = copy.takeAria(undone.add, printedFaceName(card));
+    const back = [...(sheetBodyRef.current?.querySelectorAll<HTMLElement>("button[aria-label]") ?? [])]
+      .find((b) => b.getAttribute("aria-label") === label);
+    (back ?? heading)?.focus();
+  }, [taken, card]);
   useEffect(() => () => {
     mounted.current = false;
     if (takenSwap.current) landOnReceipt(takenSwap.current);

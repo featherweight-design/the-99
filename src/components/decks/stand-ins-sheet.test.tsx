@@ -236,6 +236,18 @@ describe("StandInsSheet", () => {
       expect(document.activeElement).toBe(screen.getByTestId("stand-in-taken"));
     });
 
+    it("moves focus back to the row's Take once Undo gives the taken row back", async () => {
+      loadStandInsAction.mockReset().mockResolvedValue(READ);
+      takeStandInAction.mockResolvedValue({ ok: true, swapId: "s1", addWasFree: false, cutLeft: 0 });
+      undoSwapAction.mockResolvedValue({ ok: true });
+      await open();
+      await act(async () => takeButton("Chaos Warp").click());
+      const undo = screen.getByRole("button", { name: swapToolsCopy.row.undoSwapAria("Anguished Unmaking", "Chaos Warp") });
+      undo.focus();
+      await act(async () => undo.click());
+      expect(document.activeElement).toBe(takeButton("Chaos Warp"));
+    });
+
     it("leaves focus where it is when the take did not take it away", async () => {
       loadStandInsAction.mockReset().mockResolvedValue(READ);
       takeStandInAction.mockResolvedValue({ ok: true, swapId: "s1", addWasFree: false, cutLeft: 0 });
