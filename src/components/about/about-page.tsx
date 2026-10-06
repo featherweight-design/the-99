@@ -362,10 +362,14 @@ export function AboutPage({
       <h1 className="font-display text-[23px] leading-[1.2] font-bold text-[color:var(--fg)] min-[1000px]:text-[29px]">
         {aboutCopy.pageTitle}
       </h1>
-      <p className="mt-[10px] text-[13.5px] leading-[1.55] text-[color:var(--fg-muted)]">
-        {howItWorks ? introWithAppendix(aboutCopy.pageIntro) : aboutCopy.pageIntro}
-        {sheetMode && ` ${aboutCopy.pageIntroSheet}`}
-      </p>
+      <EntryCaption
+        tone="muted"
+        className="mt-[10px]"
+        caption={
+          (howItWorks ? introWithAppendix(aboutCopy.pageIntro) : aboutCopy.pageIntro) +
+          (sheetMode ? `\n\n${aboutCopy.pageIntroSheet}` : "")
+        }
+      />
 
       {sheetMode && newEntries.length > 0 && <WhatsNewIndex entries={newEntries} />}
       {/* The appendix is recorded by the same visit, and a reader current on every entry who has

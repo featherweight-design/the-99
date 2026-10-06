@@ -83,8 +83,14 @@ export interface AboutEntry {
 
 export const aboutCopy = {
   pageTitle: 'What The 99 does',
+  // Hugh's own story (option A, 2026-10-06): why the app exists, what it does and who it's for.
+  // Paragraphs split on a blank line, as an entry's caption does (`EntryCaption`).
   pageIntro:
-    'Four chapters, in the order you would use them. Each entry shows the thing it describes and links to where it lives.',
+    'I built The 99 because nothing else checked every box for deck building, least of all around my collection. I have thousands of cards, and most of them were hiding in a box.' +
+    '\n\n' +
+    'So the app starts from what you own. It finds the cards you forgot you had and builds decks from them before it asks you to buy anything.' +
+    '\n\n' +
+    'It’s for me and my friends, with the features we kept asking for and couldn’t find anywhere else. A way to dive deeper into a hobby we all love.',
   // Appended to the intro only while ABOUT_SHEET_ENABLED is on: with it off a
   // new version still redirects here, and there is no note to speak of.
   pageIntroSheet: 'When something new lands, a short note tells you once, and this page opens on what’s new.',

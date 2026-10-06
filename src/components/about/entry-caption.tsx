@@ -26,9 +26,19 @@ export function captionBlocks(caption: string): CaptionBlock[] {
     });
 }
 
-export function EntryCaption({ caption, className = "" }: { caption: string; className?: string }) {
+/** `muted` is the page intro's ink; an entry's caption is `body`. */
+export function EntryCaption({
+  caption,
+  className = "",
+  tone = "body",
+}: {
+  caption: string;
+  className?: string;
+  tone?: "body" | "muted";
+}) {
+  const ink = tone === "muted" ? "text-[color:var(--fg-muted)]" : "text-[color:var(--fg-body)]";
   return (
-    <div className={`flex flex-col gap-[8px] text-[13.5px] leading-[1.55] text-[color:var(--fg-body)] ${className}`}>
+    <div className={`flex flex-col gap-[8px] text-[13.5px] leading-[1.55] ${ink} ${className}`}>
       {captionBlocks(caption).map((block, i) =>
         block.kind === "p" ? (
           <p key={i}>{block.text}</p>

@@ -56,7 +56,7 @@ export type HowRowLabels = {
 };
 
 export const howItWorksRowsCopy = {
-  pageIntroClause: ", then how the app reaches its answers",
+  pageIntroClause: "The last section, How the app reaches its answers, says where each answer comes from.",
   title: "How the app reaches its answers",
   sub:
     "Grouped by what the app decides. Each row says where an answer comes from, how it is " +
@@ -219,13 +219,12 @@ export const howItWorksRowsCopy = {
 } as const;
 
 /**
- * The page intro with the appendix named, placed after its first sentence ("Four chapters, in the
- * order you would use them"). Built from `aboutCopy.pageIntro` rather than restating it, so an edit
- * to the intro reaches both forms. Read only while `HOW_IT_WORKS_ENABLED` is on.
+ * The page intro with the appendix named, as a paragraph of its own after the intro. Built from
+ * `aboutCopy.pageIntro` rather than restating it, so an edit to the intro reaches both forms. Read
+ * only while `HOW_IT_WORKS_ENABLED` is on.
  */
 export function introWithAppendix(intro: string): string {
-  const end = intro.indexOf(".");
-  return end < 0 ? intro : intro.slice(0, end) + howItWorksRowsCopy.pageIntroClause + intro.slice(end);
+  return `${intro}\n\n${howItWorksRowsCopy.pageIntroClause}`;
 }
 
 /**

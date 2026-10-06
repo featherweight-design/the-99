@@ -21,7 +21,7 @@ describe.each([false, true])("About with HOW_IT_WORKS_ENABLED off (sheetMode %s)
     expect(container.querySelector("#how-it-works")).toBeNull();
     expect(container.querySelector("[data-method]")).toBeNull();
     expect(screen.queryByText(howItWorksRowsCopy.title)).toBeNull();
-    expect(screen.getByText(new RegExp("^" + aboutCopy.pageIntro.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))).toBeTruthy();
+    for (const paragraph of aboutCopy.pageIntro.split("\n\n")) expect(screen.getByText(paragraph)).toBeTruthy();
     expect(container.textContent).not.toContain(howItWorksRowsCopy.pageIntroClause);
     // PR C's pieces: no entry links to a row, and no contents link reaches the section or a row.
     expect(container.querySelector("[data-entry-link]")).toBeNull();

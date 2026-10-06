@@ -100,12 +100,11 @@ describe("How the app reaches its answers: the rows", () => {
 });
 
 describe("introWithAppendix", () => {
-  it("names the appendix at the end of the intro's first sentence", async () => {
+  it("names the appendix in a paragraph of its own after the intro", async () => {
     const { aboutCopy } = await import("./about");
-    const { introWithAppendix } = await import("./how-it-works");
+    const { introWithAppendix, howItWorksRowsCopy } = await import("./how-it-works");
     expect(introWithAppendix(aboutCopy.pageIntro)).toBe(
-      "Four chapters, in the order you would use them, then how the app reaches its answers. " +
-        "Each entry shows the thing it describes and links to where it lives.",
+      `${aboutCopy.pageIntro}\n\n${howItWorksRowsCopy.pageIntroClause}`,
     );
   });
 });
