@@ -16,4 +16,9 @@
 // 6 (2026-10-05, H35 PR 4b): "one of six kinds" replaces "one of five kinds", and a new "A notes
 // citation quotes..." line names the sixth — unconditional for every deck, like version 5's
 // swaps-count change above it, never absent the way the limits/notes rules themselves are.
-export const PROMPT_VERSION = 6;
+// 7 (2026-10-06): the `note`/`intent`/`notes` citation lines now say "Quote the player's whole
+// line in quotation marks, or cite a part WITHOUT quotation marks" instead of the ambiguous
+// "whole or a part of them" — the old wording let the model quote a part in quotation marks,
+// which `presentationFailures` (`validate.ts`) now repairs to bare rather than drops, but a
+// clearer instruction up front is cheaper than a repair downstream. Unconditional, like 5 and 6.
+export const PROMPT_VERSION = 7;

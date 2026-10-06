@@ -157,9 +157,13 @@ export function validateSuggestions(args: {
   const drops: Drop[] = [];
   const usedAdds = new Set<string>();
   const usedCuts = new Set<string>();
+  // A genuine part-quote of the intent or this run's notes is repaired to its bare, unquoted
+  // form by `firstFailure`'s presentation check rather than dropped (Design's own format for a
+  // part is unquoted) — kept here, by position, since `firstFailure` only reports pass/fail.
+  const repairs = new Map<number, { rationale: string; rationaleShort: string; evidence: TuningCitation[] }>();
 
   response.suggestions.forEach((s, position) => {
-    const reason = firstFailure(s);
+    const reason = firstFailure(s, position);
     if (reason) {
       drops.push({ position, ...reason });
       return;
@@ -168,12 +172,13 @@ export function validateSuggestions(args: {
     const cut = resolveName(s.cut)!;
     usedAdds.add(add.oracleId);
     usedCuts.add(cut.oracleId);
+    const fixed = repairs.get(position);
     kept.push({
       addOracleId: add.oracleId,
       cutOracleId: cut.oracleId,
-      rationale: s.rationale,
-      rationaleShort: s.rationaleShort,
-      evidence: s.evidence,
+      rationale: fixed?.rationale ?? s.rationale,
+      rationaleShort: fixed?.rationaleShort ?? s.rationaleShort,
+      evidence: fixed?.evidence ?? s.evidence,
       position: kept.length,
       bracketAfter: null,
     });
@@ -184,7 +189,7 @@ export function validateSuggestions(args: {
   // failed suggestion. Still listed in `drops`, so a run whose every drop is one can say so (F10).
   return { kept, droppedCount: drops.filter((d) => d.rule !== "neverCut").length, drops };
 
-  function firstFailure(s: TuningSuggestion): { rule: Drop["rule"]; name?: string } | null {
+  function firstFailure(s: TuningSuggestion, position: number): { rule: Drop["rule"]; name?: string } | null {
     const add = resolveName(s.add);
     const cut = resolveName(s.cut);
     if (!add || !cut) return { rule: "cardExists" };
@@ -223,10 +228,19 @@ export function validateSuggestions(args: {
       if (!citationHolds(c, s)) return { rule: "citation" };
     }
 
-    for (const text of [s.rationale, s.rationaleShort, ...s.evidence.map((c) => c.value)]) {
-      const [broken] = presentationFailures(text, quotable);
-      if (broken) return { rule: broken };
-    }
+    const rationaleCheck = presentationFailures(s.rationale, quotable);
+    if (rationaleCheck.broken[0]) return { rule: rationaleCheck.broken[0] };
+    const shortCheck = presentationFailures(s.rationaleShort, quotable);
+    if (shortCheck.broken[0]) return { rule: shortCheck.broken[0] };
+    const evidenceChecks = s.evidence.map((c) => ({ c, check: presentationFailures(c.value, quotable) }));
+    const failedEvidence = evidenceChecks.find((e) => e.check.broken[0]);
+    if (failedEvidence) return { rule: failedEvidence.check.broken[0] };
+
+    repairs.set(position, {
+      rationale: rationaleCheck.text,
+      rationaleShort: shortCheck.text,
+      evidence: evidenceChecks.map((e) => ({ ...e.c, value: e.check.text })),
+    });
     return null;
   }
 

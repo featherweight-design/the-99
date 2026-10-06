@@ -1,5 +1,6 @@
 import type { deckTuningCopy } from "../copy/deck-tuning";
 import { mentionsDate } from "./note-date";
+import { quotesPlayerText } from "./quote-match";
 
 /**
  * The text checks among the nine `suggestionRules`: the ones a string alone can fail. Pure.
@@ -45,11 +46,21 @@ const RESULT_CLAIM = /\b(?:will|would|should|could)\s+(?:win|lose|beat)\b|\b(?:w
 export type Quotable = { text: string; date: string | null };
 
 /**
- * `quotable` is everything the player wrote: their game notes and their stated intent. A
- * quotation matching none of them byte for byte is a misquote, and a quoted note whose date is
- * not in the same text breaks the rule too.
+ * `quotable` is everything the player wrote: their game notes and their stated intent (and, for
+ * a tuning run, this run's own notes). A quotation naming none of them, whole or in word-boundary
+ * part, is a misquote, and a quoted note whose date is not in the same text breaks the rule too.
+ *
+ * Returns the REPAIRED text alongside the broken rules: a genuine part-quote wrapped in
+ * quotation marks (the prompt allows citing "whole or a part" of the intent or this run's
+ * notes — `tuning/prompt.ts`) is not a misquote, but Design's own format for a part is
+ * UNQUOTED, never in quote marks (`suggestionRules.quotedNote`'s pinned tests). So a genuine
+ * part found in quote marks is stripped to its bare form here rather than dropped; only a quote
+ * that names no source at all — whole or part — is still flagged.
  */
-export function presentationFailures(text: string, quotable: readonly Quotable[]): RuleKey[] {
+export function presentationFailures(
+  text: string,
+  quotable: readonly Quotable[],
+): { broken: RuleKey[]; text: string } {
   const broken: RuleKey[] = [];
 
   // A percentage in any spelling, and the proportion a "win rate" is.
@@ -101,12 +112,28 @@ export function presentationFailures(text: string, quotable: readonly Quotable[]
       const sourced = quotable.some((s) => s.text === q.text && (s.date === null || mentionsDate(text, s.date)));
       if (!sourced) {
         broken.push("quotedNote");
-        return broken;
+        return { broken, text };
       }
       rest = rest.split(quoted).join(" ");
     }
   }
-  if (/["\u201c][^"\u201d]+["\u201d]/.test(rest)) broken.push("quotedNote");
+  // Whatever is still quoted after every WHOLE source is stripped may still be a genuine PART
+  // of one. The content-excludes-quote-marks pattern below cannot segment a source that
+  // contains an embedded quote mark of its own (the nested-note case above) \u2014 that case is
+  // already handled, whole, by the literal search just above, and never reaches here.
+  let repaired = text;
+  const spanPattern = /"([^"\u201c\u201d]+)"|\u201c([^"\u201c\u201d]+)\u201d/g;
+  for (const m of rest.matchAll(spanPattern)) {
+    const span = m[1] ?? m[2];
+    const partOf = quotable.find((q) => quotesPlayerText(q.text, span) && (q.date === null || mentionsDate(text, q.date)));
+    if (!partOf) {
+      broken.push("quotedNote");
+      return { broken, text };
+    }
+    // Repaired to the bare, unquoted form \u2014 Design's own shape for a part-quote \u2014 rather than
+    // dropped: the player's words, just not in quote marks.
+    repaired = repaired.split(m[0]).join(span);
+  }
 
-  return broken;
+  return { broken, text: repaired };
 }

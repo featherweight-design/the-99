@@ -252,27 +252,35 @@ describe("validateSuggestions", () => {
     expect(mix("ramp 4 of 10").drops[0].rule).toBe("citation");
   });
 
-  it("keeps an intent cited in part, as Design cites `win late`", () => {
+  it("keeps an intent cited in part, as Design cites `win late` -- repaired to bare if quoted", () => {
     const withIntent = { ...pack, intent: "grind the table out and win late" };
     const intent = (value: string) => validateSuggestions({
       response: { suggestions: [{ ...good, evidence: [{ kind: "intent", value }] }] }, pack: withIntent, resolveName,
     });
     expect(intent("win late").droppedCount).toBe(0);
-    // In quotation marks it is a QUOTATION, and a quotation is the player's whole line or a
-    // misquote: a part is cited unquoted, as Design cites it.
-    expect(intent("\u201cwin late\u201d").drops[0].rule).toBe("quotedNote");
+    // Design's own format for a part-quote is UNQUOTED: a part wrapped in quotation marks is
+    // repaired to its bare form rather than dropped, so the shown citation is never a part in
+    // quote marks either way.
+    const quoted = intent("\u201cwin late\u201d");
+    expect(quoted.droppedCount).toBe(0);
+    expect(quoted.kept[0].evidence[0].value).toBe("win late");
+    // A quote (or a bare citation) matching no source at all is still a misquote.
     expect(intent("go wide").drops[0].rule).toBe("citation");
+    expect(intent("\u201cgo wide with tokens\u201d").drops[0].rule).toBe("citation");
     expect(intent("a").drops[0].rule).toBe("citation");
   });
 
-  it("keeps a notes citation cited in part, and still catches a misquote as quotedNote", () => {
+  it("keeps a notes citation cited in part, repaired to bare if quoted, and still catches a misquote", () => {
     const withNotes = { ...pack, notes: "swap out Sol Ring for more removal" };
     const notes = (value: string) => validateSuggestions({
       response: { suggestions: [{ ...good, evidence: [{ kind: "notes", value }] }] }, pack: withNotes, resolveName,
     });
     expect(notes("more removal").droppedCount).toBe(0);
-    expect(notes("“more removal”").drops[0].rule).toBe("quotedNote");
+    const quoted = notes("\u201cmore removal\u201d");
+    expect(quoted.droppedCount).toBe(0);
+    expect(quoted.kept[0].evidence[0].value).toBe("more removal");
     expect(notes("fewer lands").drops[0].rule).toBe("citation");
+    expect(notes("\u201cfewer lands\u201d").drops[0].rule).toBe("citation");
   });
 
   it("refuses a citation naming both directions at once", () => {
