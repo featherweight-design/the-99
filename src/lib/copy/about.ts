@@ -226,7 +226,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'One copy can’t sit in two committed decks at once. So each card says in a few words how contested it is, and a card with a spare copy that no draft wants says nothing at all.\n\nSay you own one Sol Ring and three committed decks run it. It reads short 2. The deck that committed it first gets your copy, unless you hand it to another.\n\nSol Ring: the one card every deck wants and every Collection is short of.',
     keys: [
-      'free: you own a spare copy and no draft wants it, so the card stays quiet. Most of your Collection looks like this.',
+      'free: you own a spare copy and no draft wants it, so the card stays quiet.',
       'in a draft: a deck you haven’t committed yet wants a copy, and it wears the Draft badge on Decks. Any committed deck still gets first call on that copy.',
       'none free: your committed decks are holding every copy you own.',
       'short 2: your committed decks want two more copies than you own. The deck that committed it first gets yours, and you can hand it to another. Own none at all and a decklist shows the buy mark instead.',
@@ -683,7 +683,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'A row over the limit is marked, and its swap button opens the stand-ins. Any unlocked card on Shopping reaches them from its details too.',
       // #1046's spell rows: each keeps one of the card's jobs and compares itself as keeps / gains /
       // loses. What a row gives up is its `loses`, so the older "gives up" wording is gone.
-      'Every stand-in for a spell keeps at least one of its jobs, and its row says what it keeps, gains or loses. Five show first, and Show all brings the rest.',
+      'Every stand-in for a spell keeps at least one of its jobs, and its row says what it keeps, gains or loses. Up to five per type group show first, with Show all for longer groups.',
       // r2 said a once-only color "doesn't count as making it"; the shipped ladder (`landRung`) counts it,
       // on the last rung.
       'Lands sort by their mana: untapped first, then ones that cost life or come in untapped only on a condition, then tapped ones, then utility lands that make a color only by paying, for a narrow use, or once.',
