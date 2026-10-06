@@ -16,7 +16,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { ABOUT_VERSION, aboutCopy, aboutEntries, aboutMenuCopy, aboutSheetCopy } from "./about";
 import pin from "./about.version.json";
-import { MODEL_FRIEND_DAILY_ALLOWANCE, MODEL_OWNER_DAILY_ALLOWANCE } from "../model/allowance-rule";
+import { MODEL_FRIEND_DAILY_ALLOWANCE } from "../model/allowance-rule";
 
 const APP_DIR = join(process.cwd(), "src", "app");
 
@@ -320,10 +320,11 @@ const WORDS: Record<number, string> = {
 
 describe("the credits entry", () => {
   // The caption spells the allowances out in words, so nothing else ties them to the rule.
-  it("names the allowances the rule grants", () => {
+  it("names the allowance the rule grants", () => {
     const words: Record<number, string> = { 3: "three", 5: "five", 10: "ten" };
+    const word = words[MODEL_FRIEND_DAILY_ALLOWANCE];
+    expect(word, "the allowance has no word here; add it").toBeDefined();
     const caption = aboutEntries.find((e) => e.id === "credits")?.caption ?? "";
-    expect(caption).toContain(`Every player gets ${words[MODEL_FRIEND_DAILY_ALLOWANCE]},`);
-    expect(caption).toContain(`owner ${words[MODEL_OWNER_DAILY_ALLOWANCE]} for testing`);
+    expect(caption).toContain(`Every player gets ${word},`);
   });
 });

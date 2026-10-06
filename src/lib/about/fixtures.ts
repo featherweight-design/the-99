@@ -1202,11 +1202,10 @@ export const SUGGESTED_CHANGES = {
 };
 
 /**
- * `credits`: the four lines the app draws beside a button that spends a credit: with credits
- * left, with every credit out, while the app-wide monthly limit holds, and once the owner's
- * monthly testing share is used (`ownerShareMonth`). A friend's allowance
+ * `credits`: the three lines the app draws beside a button that spends a credit: with credits
+ * left, with every credit out, and while the app-wide monthly limit holds. A friend's allowance
  * (`MODEL_FRIEND_DAILY_ALLOWANCE`), read rather than retyped. The caption spells the number out,
- * so `about.test.ts` checks its "three" and "ten" against the allowance constants.
+ * so `about.test.ts` checks its "three" against the allowance constant.
  *
  * `nextAt` is a fixed instant. `clockTime` formats it in the reader's own clock, so the server's
  * render and the browser's can differ by time zone; the figure draws the time only after
@@ -1218,7 +1217,6 @@ export const CREDITS = {
   left: 2,
   nextAt: new Date(Date.UTC(2026, 9, 5, 21, 20)),
   pausedUntil: new Date(Date.UTC(2026, 10, 1)),
-  ownerShareMonth: new Date(Date.UTC(2026, 9, 1)),
 };
 
 /**
