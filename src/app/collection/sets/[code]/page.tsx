@@ -16,8 +16,7 @@ import { parseAsOf, provenanceForm } from "../../../../lib/decks/price";
 import { setPageCopy } from "../../../../lib/copy/set-collections";
 import { SetGridClient } from "../../../../components/sets/set-grid-client";
 import { EmptyState, EmptyStateBody, EmptyStateTitle } from "../../../../components/ui/empty-state";
-import { PrimaryButton } from "../../../../components/ui/button";
-import { SET_ACTION } from "../../../../components/sets/action-size";
+import { ACTION_SIZE, PrimaryButton } from "../../../../components/ui/button";
 import { PendingReporter } from "../../../../components/shell/pending-reporter";
 
 function Shell({ code, children }: { code: string; children: React.ReactNode }) {
@@ -54,7 +53,7 @@ export default async function SetGridPage({
           <EmptyStateTitle>{setPageCopy.unknownCode.heading(code)}</EmptyStateTitle>
           <EmptyStateBody>{setPageCopy.unknownCode.body}</EmptyStateBody>
           <div className="mt-[16px]">
-            <PrimaryButton href="/collection/sets" className={SET_ACTION}>
+            <PrimaryButton href="/collection/sets" className={ACTION_SIZE}>
               {setPageCopy.unknownCode.action}
             </PrimaryButton>
           </div>

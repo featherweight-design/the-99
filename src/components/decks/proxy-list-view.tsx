@@ -11,7 +11,7 @@ import Link from "next/link";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { CostPips } from "../ui/cost-pips";
-import { GhostButton, PrimaryButton } from "../ui/button";
+import { ACTION_SIZE, GhostButton, PrimaryButton } from "../ui/button";
 import { formatCents, priceOf, priceState, provenanceForm } from "../../lib/decks/price";
 import { proxyCopy } from "../../lib/copy/proxies";
 import type { ProxyRow } from "../../lib/decks/proxy-list";
@@ -39,9 +39,9 @@ function Empty({ hasDecks }: { hasDecks: boolean }) {
       {/* Ghost where the act lives elsewhere, filled where there genuinely IS
           one next act — a player with no decks has exactly one. */}
       {hasDecks ? (
-        <GhostButton href="/decks">{c.action}</GhostButton>
+        <GhostButton href="/decks" className={ACTION_SIZE}>{c.action}</GhostButton>
       ) : (
-        <PrimaryButton href="/decks">{c.noDecksAction}</PrimaryButton>
+        <PrimaryButton href="/decks" className={ACTION_SIZE}>{c.noDecksAction}</PrimaryButton>
       )}
     </div>
   );

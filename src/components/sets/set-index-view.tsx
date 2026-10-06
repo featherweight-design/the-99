@@ -11,8 +11,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { SearchField } from "../ui/text-field";
 import { EmptyState, EmptyStateBody, EmptyStateTitle } from "../ui/empty-state";
-import { GhostButton, PrimaryButton } from "../ui/button";
-import { SET_ACTION } from "./action-size";
+import { ACTION_SIZE, GhostButton, PrimaryButton } from "../ui/button";
 import { setsIndexCopy } from "../../lib/copy/set-collections";
 import { SetIcon } from "./set-icon";
 import { PendingTrack } from "../shell/pending-track";
@@ -290,7 +289,7 @@ export function SetIndexView({
         <EmptyStateTitle level={2}>{setsIndexCopy.firstRun.heading}</EmptyStateTitle>
         <EmptyStateBody>{setsIndexCopy.firstRun.body}</EmptyStateBody>
         <div className="mt-[18px] flex flex-col items-center gap-[10px]">
-          <PrimaryButton href="/collection/replace" className={SET_ACTION}>
+          <PrimaryButton href="/collection/replace" className={ACTION_SIZE}>
             {setsIndexCopy.firstRun.primary}
           </PrimaryButton>
           <span className="text-[12px]" style={{ color: "var(--fg-muted)" }}>
@@ -348,7 +347,7 @@ export function SetIndexView({
             {/* A failure gets a retry, which is what its copy offers; a genuine no-match
                 gets the clear. Offering "clear the search" against "try again in a moment"
                 left no way to recover from a transient failure except retyping. */}
-            <GhostButton onClick={() => search(failed ? query : "")} className={SET_ACTION}>
+            <GhostButton onClick={() => search(failed ? query : "")} className={ACTION_SIZE}>
               {failed ? setsIndexCopy.searchFailed.action : setsIndexCopy.noMatch.action}
             </GhostButton>
           </div>
