@@ -592,8 +592,8 @@ async function flipWalk(browser, who) {
     await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
     const second = await sheetTitles(page, card);
     report(
-      "F4 a later flip names Locked cards alone",
-      JSON.stringify(second) === JSON.stringify(["Locked cards"]),
+      "F4 a later flip names the locked-cards entry alone",
+      JSON.stringify(second) === JSON.stringify(["Locking a card against suggested cuts"]),
       JSON.stringify(second),
     );
     await visitAbout(page, userId, "locked-cards");
@@ -618,7 +618,7 @@ async function flipWalk(browser, who) {
     const fourth = await sheetTitles(page, card);
     report(
       "F4c one switch names both of its entries, in page order",
-      JSON.stringify(fourth) === JSON.stringify(["Find a deck for it", "Cheaper stand-ins"]),
+      JSON.stringify(fourth) === JSON.stringify(["Which of your decks a card fits", "Cheaper stand-ins"]),
       JSON.stringify(fourth),
     );
     await visitAbout(page, userId, "stand-ins");
@@ -631,7 +631,7 @@ async function flipWalk(browser, who) {
     const fifth = await sheetTitles(page, card);
     report(
       "F4d the Analysis tab names both of its entries, in page order",
-      JSON.stringify(fifth) === JSON.stringify(["Which bracket this deck plays at", "Bracket facts on a card"]),
+      JSON.stringify(fifth) === JSON.stringify(["Which bracket this deck plays at", "Bracket facts that travel with a card"]),
       JSON.stringify(fifth),
     );
     await visitAbout(page, userId, "card-marks");

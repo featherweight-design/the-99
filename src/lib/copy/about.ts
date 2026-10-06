@@ -397,12 +397,12 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'deck-page',
     chapter: '03',
-    title: 'The deck page',
+    title: 'Everything about a deck, on one page',
     route: '/decks',
     opens: 'opens a deck',
     width: 'plate',
     caption:
-      'One page per deck: the commander, the status and how far along it is, then the list itself. Tabs under the header hold the deck, cards worth considering, the games you have played with it and, once you have committed it, its versions. Everything about a deck lives on the deck.',
+      'Everything about a deck lives on its own page. The header carries the commander, the deck’s status and a bar for how far along it is. Under it, the tabs include Your deck, Consider, Games and, once you’ve committed the deck, Versions. Consider is the commander’s wish list: cards it wants that aren’t in the list yet, from your Collection first, then the top picks you’d have to buy.',
     keys: [
       'the badge and the bar are the same pair the library shows, so a deck reads the same from either direction.',
       'Games drops its count rather than printing a zero, so a deck nobody has logged a game against has no number beside Games.',
@@ -433,7 +433,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'auto-fill',
     chapter: '03',
-    title: 'How much we fill in for you',
+    title: 'How much of the 99 we build',
     // The canvas names /decks/new, which is where the fill is ORDERED. The
     // surface drawn below is where the rest of it is offered: the Top off
     // strip, which lives between the ledger and the decklist on a deck’s own
@@ -445,7 +445,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // it into five lines.
     width: 'plate',
     caption:
-      'Pick a commander and we start with the staples most decks in its colors run, then build the rest of the 99 from what you own first. Where your collection runs short, we add the cards that commander’s decks play most. Any slots still open are yours: the last-slots list ranks candidates for them, ticks the ones you can sleeve, and adds nothing until you say so. Anything auto-added can be cleared in one action if you would rather start from your own picks.',
+      'Pick a commander and we build the 99 for you. Up to ten staples go in first, the nonland cards most decks in its colors run, and staple lands get first pick when the lands go in. The rest comes from your Collection, and where your Collection runs short we add the cards that commander’s decks play most, as cards to buy. Call it a precon built from your own binder. Any slots still open are yours. Choose the last 4, on a deck four cards short, opens candidates ranked by synergy for this commander, with the ones you can sleeve already ticked, and nothing goes in until you say so. Every card we added carries the auto tag, and Clear all auto takes out every one you haven’t locked, in one press, if you’d rather start from your own picks.',
     keys: [],
     since: 1,
   },
@@ -479,14 +479,14 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'card-marks',
     chapter: '03',
-    title: 'Bracket facts on a card',
+    title: 'Bracket facts that travel with a card',
     route: '/collection',
     width: 'plate',
     // Tied to the tab's switch though the marks draw without it: key 3 sends the reader to the
     // Analysis tab, and with the switch off there is no tab to send them to.
     switch: 'ANALYSIS_TAB_ENABLED',
     caption:
-      'Four facts a card carries whatever deck it is in: it is on the Game Changer list, it counts as mass land denial, it takes extra turns, or it is a tutor. Each has its own glyph, all four in the same ink, and they sit with the card’s name on your collection, on a decklist and on the cards a deck suggests adding. The key above the cards names them, and a card’s details spell them out under Bracket facts.',
+      'Four facts travel with a card into every deck: it’s on the Game Changer list, it counts as mass land denial, it takes extra turns, or it’s a tutor. Each has its own glyph, all four in the same ink, beside the card’s name in your Collection, on a decklist and on the cards Consider and the search under the tabs offer you. Rhystic Study carries one: it’s a Game Changer. It also starts more power-level arguments than most. A key above the cards names the glyphs, and a card’s details spell them out under Bracket facts.',
     keys: [
       'a tutor is a search that can find something other than a land. A land-only search is ramp, and carries no mark.',
       'no mark means nothing to report, not a card we checked and cleared. Only the Game Changer list is complete; the other three are detected, and detection can miss a card.',
@@ -498,13 +498,13 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'locked-cards',
     chapter: '03',
-    title: 'Locked cards',
+    title: 'Locking a card against suggested cuts',
     route: '/decks',
     opens: 'opens a deck',
     width: 'plate',
     switch: 'NEVER_CUT_ENABLED',
     caption:
-      "Lock a card and no tool will offer to cut it: Suggested changes won't propose it and it gets no cheaper stand-ins. The ✕ still removes it: a lock binds the app's suggestions, not you. Clear all auto and Pull it pass a locked card by, and one you remove comes back locked by Undo, Put back or a discard, until a commit without it ends the lock.",
+      'Lock a card and nothing in the app will offer to cut it. Suggested changes won’t propose it, it gets no cheaper stand-ins, and Clear all auto and Pull it pass it by. Update from a list starts with it kept. The ✕ still removes it: the lock holds our suggestions back, and the deck stays yours to edit. Remove a locked card and Undo, Put back or a discard brings it back locked. A commit without it ends the lock.',
     keys: [
       // Audit L2: the lock sits beside the ✕ on a row, not after the name. Its other half (what
       // else changes) is said once, where it belongs: stand-ins in the caption, Pull it in key 3.
@@ -519,12 +519,12 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'roles',
     chapter: '03',
-    title: 'Why a card is filed under Ramp',
+    title: 'How many cards each role needs',
     route: '/decks',
     opens: 'opens a deck',
     width: 'plate',
     caption:
-      'The strip counts cards by the job they do, because that is usually how a deck comes up short: one board wipe is a problem in a way eleven creatures rarely is. The recommended mix comes from what other decks with your commander actually run, where we have enough of them, and from a common starting point where we do not. The strip says which. Either way it is not a rule: a role over its number is fine and says so by saying nothing.',
+      'Is the deck short on removal? The strip counts cards by the job they do: Ramp, Draw, Removal, Wipes and Land. That’s usually where a deck comes up short. One board wipe is a problem in a way eleven creatures rarely is. Each cell sets your count against a recommendation. The numbers come from EDHREC decks like yours: your pair’s or your commander’s own, or failing that, decks in your colors. When both the role and land numbers are measured, the strip says EDHREC averages. When either falls back to our default, it says A common starting point. A role over its number reads as met, and nothing is capped.',
     keys: [
       // Named on the cell the figure actually draws. The canvas wrote "5
       // wipes against 3", which was an example rather than a reading — and
@@ -538,12 +538,12 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'informed-build',
     chapter: '03',
-    title: 'Building toward decks like yours',
+    title: 'Targets measured from decks like yours',
     route: '/decks',
     opens: 'opens a deck',
     width: 'plate',
     caption:
-      'Fill, the last 31 and the Add panel all build toward what other decks with your commander actually run, rather than one recipe for every deck. A Kinnan deck wants about twice the ramp of an Atraxa deck and no board wipes at all; both used to be told the same ten, ten, eight and three. Where there are not enough decks to measure, the old numbers still stand in, and the strip says which you are looking at.',
+      'How much ramp does your deck want? That depends on who leads it. Fill, the ticks in Choose the last and the shelves in Consider all aim at what EDHREC decks like yours run: your pair’s or your commander’s own first, then decks in your colors. A Kinnan deck asks for about 20 ramp, twice the default, and no board wipes at all. Kinnan players already knew. Where we haven’t measured enough decks, the default stands in: ten ramp, ten draw, eight removal and three wipes, with 37 lands, or 36 with a partner. The strip tells you which you’re looking at.',
     keys: [
       'the land count moves too. Twenty-eight lands is a real answer for a deck that ramps, and thirty-seven was never right for all of them.',
       'a target of 0 is an answer too: the decks this commander leads run no board wipes, so the cell asks for none.',
@@ -553,14 +553,14 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'combo-awareness',
     chapter: '03',
-    title: 'The other half of a combo',
+    title: 'Spotting the other half of a combo',
     route: '/collection',
     opens: 'opens your collection',
     width: 'plate',
     caption:
-      'Some cards only do something remarkable next to one other card, and the app says which: on a collection row when you own both halves and no deck has put them together, and on a card the deck you are building is one away from. The card’s details list every partner it has, with whether that partner is in the deck, in your collection, or neither.',
+      'Some cards do something remarkable next to one other card. Heliod, Sun-Crowned and Walking Ballista are a classic pair. When you own both halves and no deck has put them together, your Collection marks the row and names the partner. While you build, a card the deck is one piece away from carries the mark in Consider, in Choose the last and in the Add search. A card’s details list every partner, from the ones in this deck, through the ones you own, to the ones you’d have to buy. The salt is between you and your table.',
     keys: [
-      'no count of how many combos a card has. Detection leaves out combos that need a third piece, so a total would be the first thing on the surface that is not true.',
+      'no total of how many combos a card has; the details count only the partners they list. Detection leaves out combos that need a third piece, so a total would be the first thing on the surface that is not true.',
       'one partner is named on a row and all of them in the card’s details. Naming one is true whether or not there are others; the list is where the enumerating belongs.',
       'the list runs from what this deck already holds, through what you own, to what you would have to buy.',
       'it comes from Commander Spellbook, and the details say so behind the heading’s marker rather than under every block.',
@@ -570,21 +570,21 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'decklist-order',
     chapter: '03',
-    title: 'Reading the 99 in a different order',
+    title: 'Sorting the 99 within its sections',
     route: '/decks',
     opens: 'opens a deck',
     // 'inset' at the canvas, where the figure was a four-row legend. It draws
     // the decklist’s own bar now, which is a full-width row on the deck page.
     width: 'plate',
     caption:
-      'The 99 is always in sections, by role or by type, and the order you pick applies inside them rather than flattening the list. Name and mana value are always offered; price joins them on the shopping filter, where money is the question being asked.',
+      'The 99 always sits in sections, By type or By role, and the order you pick sorts each section from within. Name and Mana value are always offered. Price joins them on the Shopping filter, where money is the question.',
     keys: [],
     since: 1,
   },
   {
     id: 'add-cards',
     chapter: '03',
-    title: 'Adding cards',
+    title: 'Adding a card by name',
     route: '/decks',
     opens: "opens a deck’s Add panel",
     // 'inset' at the canvas, where the figure was two names and a dot each.
@@ -602,14 +602,14 @@ export const aboutEntries: readonly AboutEntry[] = [
       // copies you have", which is true of `rowOwned` and not of the bare
       // `rowNotOwned` beside it. What both branches actually do is state
       // ownership, with a figure only where there is one to give.
-      'Search what you own or all of Magic, with every result saying whether you own it and how many copies, and add without leaving the list you are looking at. A card another committed deck is holding still adds. It arrives carrying the mark that says so, rather than being refused.',
+      'Know the card you want? Type its name into the search under the deck’s tabs. It searches your commander’s colors, with Owned only on, so results start from your Collection. Turn it off for every card in those colors, or press Search all cards instead when nothing you own matches. Each result reads ×2 owned, not owned or ✓ In deck, and adding a card keeps you on the list you were reading. A card another committed deck is holding still adds, carrying the mark that says so.',
     keys: [],
     since: 1,
   },
   {
     id: 'fits-your-decks',
     chapter: '03',
-    title: 'Find a deck for it',
+    title: 'Which of your decks a card fits',
     route: '/collection',
     opens: 'opens the card detail',
     width: 'plate',
@@ -617,9 +617,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       // r2's "the deck whose commander suits the card best comes first" is stale: the shipped order
       // (`shapeFits`) is a combo, then a theme, then the commander's synergy, then the name.
-      "A card can belong in a deck you haven't thought of. Find a deck for it, in the details of any Commander-legal card, lists the decks that could take it and says why a deck fits when it can. Add puts it in the chosen deck's draft.",
+      'Opened a card and wondered where it belongs? Press Find a deck for it in the details of any Commander-legal card. It lists the decks that could take it, combos first and then themes, with the reason each one fits. Open Ashnod’s Altar and the deck where it completes a combo with cards already in it comes first. Add puts the card in that deck’s draft.',
     keys: [
-      "Only decks whose colors allow the card, and that don't already run it, are offered.",
+      "Only decks whose colors allow the card, and that don't already run it, are offered. Decks that already hold it are listed below them.",
       "Decks where it completes a combo come first, then decks whose theme it joins, the most cards first, then the rest by how much their commander's decks favor it.",
       // Audit R2-A3-1: the row never shows the two shares; with no reason it shows the need alone.
       "Each deck gives its strongest reason: a combo the card completes with that deck's own cards, then the theme it would join. With neither, the row shows only what the deck needs, if anything. A staple every deck runs says staple instead, and its decks are listed by name.",
@@ -632,12 +632,12 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'versions',
     chapter: '03',
-    title: 'Changes, committing, and versions',
+    title: 'Committing a deck and reading its versions',
     route: '/decks',
     opens: "opens a deck’s Versions tab",
     width: 'plate',
     caption:
-      'A deck has a committed list and the changes you are making to it. Every add and cut waits there until you commit, and committing cuts a version you can read back. On a committed deck, cards you add count against your collection for this deck straight away, and no other deck feels them until you commit. An opened version marks which of its new cards you own today, and prices the ones you would buy.',
+      'A deck keeps two lists: the committed one, and the changes you’re making to it. Every add and cut waits as a pending change until you commit, and each commit makes a version you can read back on the Versions tab. On a committed deck, a card you add counts against your Collection for this deck straight away. Other decks feel it once you commit. Open a version to see which of its new cards you own today, with today’s price on the ones you’d buy.',
     keys: [
       'each version carries its date, its card count and its average mana value, and on a wide screen how many games it held; each game in the log names its version, so you can tell whether a change helped.',
       'a version keeps the note you wrote when you committed it, or says it has none.',
@@ -647,7 +647,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'shopping',
     chapter: '03',
-    title: 'What you would need to buy',
+    title: 'What a deck still needs you to buy',
     route: '/decks',
     opens: 'opens a deck’s Shopping filter',
     // 'inset' at the canvas, where the figure was two legend rows. It draws
@@ -655,7 +655,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // names to `Dockside ...` and `R. —`.
     width: 'plate',
     caption:
-      'Every card a deck wants and you cannot supply sits on that deck’s Shopping filter, with its price where ManaPool has one; the deck’s tile carries its count and cost, and Home adds up the cost across your whole library. A card you own can be on this list: if another deck sleeved your only copy first, this one has to buy one. Unpriced copies still count in the tally and add nothing to the total.',
+      'Every card a deck wants and you can’t supply sits on its Shopping filter, priced from ManaPool wherever ManaPool has a price. The deck’s tile carries the count and the cost, and To buy, all decks on Home adds them up across your library. A card you own can still land here. Say your Atraxa deck committed your only Sol Ring first: your Meren deck lists one to buy. Copies with no price count toward the tally and add nothing to the total.',
     keys: [],
     since: 1,
   },
@@ -668,7 +668,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     width: 'plate',
     switch: 'SWAP_TOOLS_ENABLED',
     caption:
-      "Some cards Shopping asks you to buy cost more than the job they do. A limit per card marks those rows, and a marked row's ⇄ opens cheaper cards, or free copies you own, that do the same job. Cards of the same type come first, then other types. A land's stand-ins say what they make and whether they come in untapped, best mana first. Nothing is picked for you, and taking one is an ordinary draft change you can undo.",
+      'Some cards on Shopping cost more than the job they do. Each deck has a limit per card, $10 until you set your own, and every row over it is marked. Its ⇄ opens cheaper cards, or free copies from your Collection, that do the same job. Spells list cards of the same type first, then other types. Say Shopping wants a pricey dual land: each stand-in says what it makes and whether it comes in untapped, best mana first. You pick, and taking one is an ordinary change to the deck that Undo swap reverses.',
     keys: [
       'The line under the price strip is this deck\'s limit per card. Until you set your own, it says it is the default.',
       "A row over the limit is marked, and its ⇄ opens the stand-ins. Any card on Shopping that isn't locked links to its stand-ins from its details too.",
@@ -684,7 +684,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'deck-import',
     chapter: '03',
-    title: 'Bring a deck over, or update one',
+    title: 'Importing a deck, or updating one from a list',
     route: '/decks/import',
     // 'inset' at the canvas, where the figure named three labels. It draws
     // the route’s own entry surface now — a mode toggle over a full-width
@@ -696,7 +696,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // file". Import reads a Moxfield CSV *export*, which is the collection
     // entry’s claim, not this one’s.
     caption:
-      'Paste a list or upload a file. Updating a deck you already have starts from that deck, and neither door takes a link, from Moxfield or anywhere else. A line we cannot put a card to does not stop the import: the deck is still made, the line is flagged inside it, and it counts toward the 99 but not toward what is built.',
+      'Built the deck somewhere else first? Paste a list or upload a file and we make the deck. Moxfield and MTGO text both work: copy the list itself, since a link won’t import. To bring a deck you already have up to date, open it and press Update from a list. Paste the new list, check What this list changes against the deck, and keep any cards the list leaves out. On a committed deck the update arrives as pending changes. A line we can’t put a card to still comes over. It’s flagged in the deck, counts toward the 99 and stays out of what’s built until you fix it.',
     keys: [],
     since: 1,
   },
