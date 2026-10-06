@@ -230,8 +230,18 @@ describe("sectionsOf", () => {
     expect(s.complete).toBe(false);
   });
 
+  it("reads a null column over rows that imply a base run as not indexed: a set mid-ingest", () => {
+    // The ingest commits printings in batches and publishes the denominator at the end. A set
+    // new to the catalog spends that window with booster rows and a null column; counting every
+    // printing there would show a ratio over half a set.
+    const cells = placeCells([p("1"), p("2"), p("3", { booster: false, isVariant: true })], [held({})]);
+    const s = sectionsOf(cells, null);
+    expect(s.indexed).toBe(false);
+    expect(s.percent).toBeNull();
+  });
+
   it("counts unclassified printings too: the denominator is every printing, flags or not", () => {
-    const cells = placeCells([p("1", { booster: null }), p("2", { booster: true })], [held({})]);
+    const cells = placeCells([p("1", { booster: null }), p("2", { booster: false, isVariant: true })], [held({})]);
     const s = sectionsOf(cells, null);
     expect([s.baseOwned, s.baseTotal, s.extrasTotal]).toEqual([1, 2, 0]);
   });
@@ -306,8 +316,8 @@ describe("sectionsOf against the authoritative denominator", () => {
     // is written by one transaction at the end of the ingest, so a half-finished run leaves
     // the previous figure rather than a null. The booster flags are never used to guess one;
     // the set completes against all of its printings instead.
-    const cells = placeCells([p("1"), p("2"), p("3", { booster: false, isVariant: true })], [held({})]);
-    expect(sectionsOf(cells, null).baseTotal).toBe(3);
+    const cells = placeCells([p("1", { booster: false, isVariant: true }), p("2", { booster: null })], [held({})]);
+    expect(sectionsOf(cells, null).baseTotal).toBe(2);
     expect(sectionsOf(cells, null).extrasTotal).toBe(0);
   });
 

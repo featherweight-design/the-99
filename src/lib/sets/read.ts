@@ -257,7 +257,10 @@ export async function loadOwnedSets(userId: string): Promise<SetIndexRow[]> {
   const holdingsByCode = groupBySet(holdings);
   const picksByCode = groupBySet(picks);
 
-  return held.map((s) => {
+  // A held set our catalog carries no card from has no row: its page answers as an unknown
+  // code (`loadSetGrid`), and a row linking to that would read "not indexed yet" for a set no
+  // refresh will index. A holding names a catalog card, so this is a catalog gap, not a set.
+  return held.filter((s) => catalogByCode.has(s.code)).map((s) => {
     const rows = (catalogByCode.get(s.code) ?? []) as unknown as SetPrinting[];
     const mine = (holdingsByCode.get(s.code) ?? []) as unknown as Holding[];
     const picked = (picksByCode.get(s.code) ?? []) as unknown as ArtPick[];
@@ -434,6 +437,12 @@ export async function loadSetGrid(userId: string, code: string): Promise<SetGrid
     loadSetPrices(lower),
     picksFor(userId, lower),
   ]);
+  // A set our catalog holds no card from — a token sheet, a minigame, most memorabilia —
+  // has nothing to grid, and never will: those layouts are routed to `skipped_printings`,
+  // not `printings`. 250 non-digital sets on staging are exactly that (2026-10-05). Answered
+  // as the unknown code it is to this catalog ("the link is wrong or the set is too new for
+  // our checklist"), never as a set "not indexed yet" that no refresh will index.
+  if (catalog.length === 0) return null;
 
   return {
     // The denominator comes from the CATALOG query, not from the metadata read above: the

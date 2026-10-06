@@ -244,7 +244,22 @@ export type SetSections = {
 export function sectionsOf(cells: Cell[], baseSetSize?: number | null): SetSections {
   // No base run: every printing is the denominator. `<= 0` too, because the column carries
   // no constraint and a legacy or hand-written zero is no base run either.
-  if (baseSetSize === null || (baseSetSize !== undefined && baseSetSize <= 0)) {
+  //
+  // But only a STRUCTURAL null, one the rows agree with. The ingest commits printings in
+  // batches and publishes `base_set_size` once the stream finishes, so a set new to the
+  // catalog spends that window with booster rows and a null column: its rows imply a base
+  // run nobody has published yet (`baseSetSizeOf` is the publish rule), and counting every
+  // printing there would show and cache a ratio over half a set. That reads as not indexed,
+  // as it did before; a set whose rows imply no base run (every printing a variant) never
+  // gets one, and completes against all of them.
+  const noBaseRun = baseSetSize === null || (baseSetSize !== undefined && baseSetSize <= 0);
+  if (noBaseRun && baseSetSizeOf(cells) !== null) {
+    return {
+      base: [], extras: [], baseOwned: 0, baseTotal: 0, extrasOwned: 0, extrasTotal: 0,
+      percent: null, complete: false, indexed: false,
+    };
+  }
+  if (noBaseRun) {
     const owned = cells.filter((c) => c.owned).length;
     return {
       base: cells,
