@@ -138,7 +138,7 @@ async function run() {
     // hardcoded, so the probe runs against any fixture.
     await page.goto(`${BASE}/collection/sets`, { waitUntil: "networkidle" });
     const code = await page.evaluate(() => {
-      const row = document.querySelector('a[href^="/collection/sets/"][aria-label*="base run"]')
+      const row = document.querySelector('a[href^="/collection/sets/"][aria-label*="checklist"]')
         ?? document.querySelector('a[href^="/collection/sets/"]');
       return row === null ? null : row.getAttribute("href").split("/").pop();
     });
