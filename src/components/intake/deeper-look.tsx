@@ -123,7 +123,10 @@ export function DeeperLook({
     enter("looking");
     setAnnounced(copy.deeper.pendingTitle);
     const out = await deps
-      .look({ readId, words: params.words, budgetDollars: params.budgetDollars, bracket: params.bracket })
+      .look({
+        readId, words: params.words, budgetDollars: params.budgetDollars, bracket: params.bracket,
+        themes: params.themes, card: params.card,
+      })
       .catch(() => ({ kind: "failed" as const }));
     if (token.current !== mine) return;
     own.current = null;
@@ -172,7 +175,11 @@ export function DeeperLook({
   function deliver(out: Extract<LookDeeperResult, { kind: "read" | "nothing" }>) {
     // Pushed, not replaced: Back returns to the first results, which are still true.
     // The read's own id: a repeated ask answers with the read already stored, under its id.
-    router.push(deeperTarget(params, out.kind === "read" ? out : { chips: [], notUsed: out.notUsed, notUnderstood: out.notUnderstood }, out.readId));
+    //
+    // `chips` carries through even when refunded (round 2, pre-open-review follow-up): a card
+    // that only differs from one the player already has is still a real answer `deeperTarget`
+    // displaces into "Still not used" — forcing an empty list here made it disappear instead.
+    router.push(deeperTarget(params, { chips: out.chips, notUsed: out.notUsed, notUnderstood: out.notUnderstood }, out.readId));
   }
 
   /**

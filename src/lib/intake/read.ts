@@ -23,8 +23,10 @@ import { phraseKey, type Chip, type PhraseIndex } from "./match";
  * CONTROL BEATS WORDS (plan decision 2): a budget or bracket the reply reads that disagrees with a
  * control the player set goes under Not used, never over the control.
  *
- * A READ WITH NOTHING VALID IS REFUNDED (F4): `validateRead` reports whether any chip survived, and
- * the run store settles on that, BEFORE it settles the unit.
+ * A READ THAT ADDS NOTHING NEW IS REFUNDED (F4, extended by Hugh's 2026-10-06 ruling):
+ * `validateRead` reports whether any chip added an answer the player did not already have — a
+ * chip can survive and still leave this false — and the run store settles on that, BEFORE it
+ * settles the unit.
  */
 
 /**
@@ -96,7 +98,8 @@ export type ReadResult = {
   /** Figures the reply read that a set control overrode, as the player would see them. */
   notUsed: string[];
   notUnderstood: string[];
-  /** False when no chip survived: the read is refunded (F4). */
+  /** False when no chip added an answer the player did not already have: the read is refunded
+   *  (F4, extended by Hugh's 2026-10-06 ruling). A chip can survive and still leave this false. */
   useful: boolean;
 };
 
@@ -107,8 +110,17 @@ export function validateRead(args: {
   index: PhraseIndex;
   /** What the player set with the controls, which beats anything read from words. */
   controls: { budgetDollars: number | null; bracket: number | null };
+  /**
+   * The themes and card the player already has, before this read. Chips still resolve and come
+   * back the same regardless — a repeat of an existing answer is harmless to show — but one that
+   * only repeats what `existing` already holds adds nothing, and the empty-state copy promises
+   * exactly that: the credit returns when the read "found nothing to add". Defaults to nothing
+   * known, which is the conservative direction for a caller that has not been updated to pass it
+   * (every chip then counts as new, same as before this field existed).
+   */
+  existing?: { themes: string[]; card: string | null };
 }): ReadResult {
-  const { reply, index, controls, words } = args;
+  const { reply, index, controls, words, existing = { themes: [], card: null } } = args;
   const chips: Chip[] = [];
   const notUsed: string[] = [];
   const has = (c: Chip) => chips.some((x) => JSON.stringify(x) === JSON.stringify(c));
@@ -149,6 +161,20 @@ export function validateRead(args: {
     // that stripped form would otherwise fail `wrote()` against the unstripped original.
     notUnderstood: [...new Set(reply.notUnderstood.map((p) => oneLine(p).trim()).filter((p) =>
       p.length > 0 && wrote(playerTextBody(words), p) && !index.targets.has(phraseKey(p))))],
-    useful: chips.length > 0,
+    // CHARGED ONLY WHEN SOMETHING WAS ADDED (Hugh, 2026-10-06): a budget or bracket chip is only
+    // ever pushed when that control was still null, so one that survived is new by construction;
+    // a theme or card chip resolves and comes back the same either way, so it is checked against
+    // `existing` here instead. A run whose only chip repeats an answer the player already had
+    // adds nothing, and `useful` — which `settleRead` charges on — says so.
+    //
+    // A CARD CHIP COUNTS ONLY WHEN `existing.card` IS NULL (pre-open review): `deeperTarget`
+    // (submit.ts) never adopts a card chip when the player already has one — the existing card
+    // always wins, and any OTHER card the read resolves is displaced into Not used, whatever its
+    // `oracleId`. Charging whenever the chip's id merely differed from `existing.card` billed for
+    // an answer the results screen never actually applies.
+    useful: chips.some((c) =>
+      c.kind === "theme" ? !existing.themes.includes(c.slug)
+        : c.kind === "card" ? existing.card === null
+        : true),
   };
 }

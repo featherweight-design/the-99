@@ -73,6 +73,30 @@ describe("the deeper look", () => {
     expect(to.searchParams.get("d")).toBe("t:tokens");
   });
 
+  it("still surfaces a refunded read's chip as displaced, not dropped (round 2)", async () => {
+    // A card that only differs from one the player already has is refunded (useful: false), but
+    // deeperTarget still has to see the chip to move it into "Still not used" — dropping it here
+    // would make the alternate card vanish with no trace instead.
+    let answer!: (v: unknown) => void;
+    const look = vi.fn(() => new Promise((r) => { answer = r; }));
+    const withCard = { ...params, card: "0000aaaa-0000-4000-8000-000000000011" };
+    render(
+      <DeeperLookScope>
+        <DeeperLook params={withCard} standing={standing()} settled={null} deps={{ look, stop: vi.fn() } as never} />
+        <DimWhileLooking><p>results</p></DimWhileLooking>
+      </DeeperLookScope>,
+    );
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /Look deeper/ })));
+    const readId = (look.mock.calls[0] as unknown as [{ readId: string }])[0].readId;
+    await act(async () => answer({
+      kind: "nothing", readId,
+      chips: [{ kind: "card", oracleId: "0000aaaa-0000-4000-8000-000000000022", name: "Doubling Season" }],
+      notUsed: [], notUnderstood: [],
+    }));
+    const to = new URL(push.mock.calls[0][0], "http://x");
+    expect(to.searchParams.get("n")).toBe("Doubling Season");
+  });
+
   it("sends a repeated ask to the stored read's own id, which is the one the page can verify", async () => {
     const STORED = "0000aaaa-0000-4000-8000-0000000000ff";
     const look = vi.fn(async () => ({ kind: "read", readId: STORED, chips: [], notUsed: [], notUnderstood: [] }));

@@ -13,7 +13,10 @@ import { runDeeperRead, type DeeperReadDeps } from "./deeper-read";
 import { buildPhraseIndex } from "./match";
 import type { ReadResponse } from "./read";
 
-const index = buildPhraseIndex([{ slug: "dinosaurs", label: "Dinosaurs" }], []);
+const index = buildPhraseIndex(
+  [{ slug: "dinosaurs", label: "Dinosaurs" }, { slug: "elves", label: "Elves" }],
+  [{ oracleId: "ds", name: "Doubling Season" }],
+);
 const usage = { inputTokens: 10, outputTokens: 5, cacheReadTokens: 0, cacheWriteTokens: 0 };
 const reply = (over: Partial<ReadResponse>): ModelOutcome<ReadResponse> => ({
   ok: true, usage,
@@ -43,13 +46,52 @@ describe("runDeeperRead", () => {
 
   it("validates BEFORE it settles, so a reply with nothing valid settles as not useful (F4)", async () => {
     const out = await runDeeperRead("u", input, deps(reply({ themes: ["Pirates"], notUnderstood: ["lizards"] })));
-    expect(out).toEqual({ kind: "nothing", readId: "r", notUsed: [], notUnderstood: ["lizards"] });
+    expect(out).toEqual({ kind: "nothing", readId: "r", chips: [], notUsed: [], notUnderstood: ["lizards"] });
+    expect(store.settleRead.mock.calls[0][1]).toMatchObject({ kind: "read", result: { useful: false } });
+  });
+
+  it("refunds a read whose only chip is a theme the player already has (Hugh, 2026-10-06), but keeps the chip so the results screen can still show it as already held", async () => {
+    const out = await runDeeperRead(
+      "u",
+      { ...input, existing: { themes: ["dinosaurs"], card: null } },
+      deps(reply({ themes: ["Dinosaurs"] })),
+    );
+    expect(out).toEqual({
+      kind: "nothing", readId: "r", chips: [{ kind: "theme", slug: "dinosaurs", label: "Dinosaurs" }],
+      notUsed: [], notUnderstood: [],
+    });
+    expect(store.settleRead.mock.calls[0][1]).toMatchObject({ kind: "read", result: { useful: false } });
+  });
+
+  it("still charges when the read also adds a theme the player did not already have", async () => {
+    const out = await runDeeperRead(
+      "u",
+      { ...input, existing: { themes: ["dinosaurs"], card: null } },
+      deps(reply({ themes: ["Dinosaurs", "Elves"] })),
+    );
+    expect(out).toMatchObject({ kind: "read" });
+    expect(store.settleRead.mock.calls[0][1]).toMatchObject({ kind: "read", result: { useful: true } });
+  });
+
+  it("refunds a read whose only chip is a card that differs from one the player already has, but keeps the chip so the alternate still reaches 'Still not used' (round 2)", async () => {
+    // deeperTarget (submit.ts) never adopts a card chip while an existing one stands — the
+    // alternate card is always displaced into "Still not used", never silently dropped. Dropping
+    // `chips` here (as the first version of this fix did) made the alternate vanish instead.
+    const out = await runDeeperRead(
+      "u",
+      { ...input, existing: { themes: [], card: "fi" } },
+      deps(reply({ cards: ["doubling season"] })),
+    );
+    expect(out).toEqual({
+      kind: "nothing", readId: "r", chips: [{ kind: "card", oracleId: "ds", name: "Doubling Season" }],
+      notUsed: [], notUnderstood: [],
+    });
     expect(store.settleRead.mock.calls[0][1]).toMatchObject({ kind: "read", result: { useful: false } });
   });
 
   it("keeps a figure the controls overrode on a read with nothing else in it", async () => {
     const out = await runDeeperRead("u", { ...input, controls: { budgetDollars: 100, bracket: null } }, deps(reply({ budgetDollars: 300 })));
-    expect(out).toEqual({ kind: "nothing", readId: "r", notUsed: ["$300"], notUnderstood: [] });
+    expect(out).toEqual({ kind: "nothing", readId: "r", chips: [], notUsed: ["$300"], notUnderstood: [] });
   });
 
   it("settles a failed call as failed", async () => {
@@ -76,7 +118,7 @@ describe("runDeeperRead", () => {
   it("offers a nothing-to-add read once too: its repeat gets that outcome back and asks nothing", async () => {
     store.startRead.mockResolvedValue({ kind: "stored", read: { chips: [], notUsed: ["$300"], notUnderstood: ["lizards"] }, readId: "first", useful: false });
     const d = deps(reply({}));
-    expect(await runDeeperRead("u", input, d)).toEqual({ kind: "nothing", readId: "first", notUsed: ["$300"], notUnderstood: ["lizards"] });
+    expect(await runDeeperRead("u", input, d)).toEqual({ kind: "nothing", readId: "first", chips: [], notUsed: ["$300"], notUnderstood: ["lizards"] });
     expect(d.model).not.toHaveBeenCalled();
   });
 
