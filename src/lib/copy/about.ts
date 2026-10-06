@@ -411,7 +411,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a deck',
     width: 'plate',
     caption:
-      'Every deck gets a page of its own. The header carries the commander, the deck’s status and a bar for how far along it is.\n\nUnder it sit the tabs: Your deck, Consider, Games and, once you’ve committed the deck, Versions.\n\nConsider is the commander’s wish list: cards it wants that aren’t in the list yet, from your Collection first, then the top picks you’d have to buy. Think of it as your commander dropping hints.',
+      'Every deck gets a page of its own. The header carries the commander, the deck’s status and a bar for how far along it is.\n\nUnder it sit the tabs, among them Your deck, Consider, Games and, once you’ve committed the deck, Versions.\n\nConsider is the commander’s wish list: cards it wants that aren’t in the list yet, from your Collection first, then the top picks you’d have to buy. Think of it as your commander dropping hints.',
     keys: [
       'the badge and the bar are the same pair the library shows, so a deck reads the same from either direction.',
       'Games drops its count rather than printing a zero, so a deck nobody has logged a game against has no number beside Games.',
