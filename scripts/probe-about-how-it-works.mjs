@@ -39,7 +39,8 @@ const WIDTHS = [
   { label: 390, viewport: { width: 390, height: 844 } },
   { label: 1300, viewport: { width: 1300, height: 900 } },
 ];
-const INTRO = "Four chapters, in the order you would use them. Each entry shows the thing it describes and links to where it lives.";
+// The intro's first sentence (`aboutCopy.pageIntro`). The intro is paragraphs in a block after the h1.
+const INTRO = "I built The 99 because nothing else checked every box for deck building, least of all around my collection.";
 
 let failures = 0;
 function report(label, ok, detail = "") {
@@ -207,7 +208,7 @@ async function walkOn(page, w) {
 async function walkOff(page, w) {
   const tag = `${w.label}:`;
   report(`${tag} no appendix`, (await onPage(page, "#how-it-works").count()) === 0);
-  const intro = await onPage(page, "article > p").first().innerText();
+  const intro = await onPage(page, "article > h1 + div").first().innerText();
   report(`${tag} the intro is production's`, intro.trim().startsWith(INTRO), intro.slice(0, 80));
   report(`${tag} no entry links to a row`, (await onPage(page, "[data-entry-link]").count()) === 0);
   report(`${tag} no contents link reaches the appendix`, (await onPage(page, "a[href='#how-it-works'], a[href^='#how-']").count()) === 0);
