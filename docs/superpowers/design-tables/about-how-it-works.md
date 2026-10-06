@@ -44,8 +44,8 @@ Overrides applied throughout (AUDIT:10-13):
 
 | Property | Mobile (390) | Desktop (1300) | Source |
 |---|---|---|---|
-| Clause | `, then how the app reaches its answers` | same | README:63-64 |
-| Position | after "Four chapters, in the order you would use them" | same | README:63-64 |
+| Clause | `The last section, How the app reaches its answers, says where each answer comes from.` | same | README:63-64; reworded 2026-10-06 |
+| Position | its own paragraph after the intro (the intro became Hugh's story on 2026-10-06, so the splice into its first sentence no longer fits) | same | README:63-64; superseded 2026-10-06 |
 
 ## Method key box
 

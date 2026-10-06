@@ -73,7 +73,7 @@ describe("the intro", () => {
     unmount();
     render(<AboutPage seen={ABOUT_VERSION} />);
     expect(screen.queryByText(aboutCopy.pageIntroSheet, { exact: false })).toBeNull();
-    expect(screen.getByText(aboutCopy.pageIntro, { exact: false })).toBeTruthy();
+    expect(screen.getByText(aboutCopy.pageIntro.split("\n\n")[0])).toBeTruthy();
   });
 });
 

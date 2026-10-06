@@ -1619,7 +1619,8 @@ describe("the page's own type, against the design table", () => {
 
   it("separates the intro from the h1 by the drawn 10px", () => {
     const { container } = render(<AboutPage seen={0} />);
-    const intro = container.querySelector("h1 + p");
+    // The intro is paragraphs now, so it is the block after the h1 rather than one <p>.
+    const intro = container.querySelector("h1 + div");
     expect(intro?.className).toContain("mt-[10px]");
   });
 

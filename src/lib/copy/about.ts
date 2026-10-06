@@ -83,8 +83,14 @@ export interface AboutEntry {
 
 export const aboutCopy = {
   pageTitle: 'What The 99 does',
+  // Hugh's own story (option A, 2026-10-06): why the app exists, what it does and who it's for.
+  // Paragraphs split on a blank line, as an entry's caption does (`EntryCaption`).
   pageIntro:
-    'Four chapters, in the order you would use them. Each entry shows the thing it describes and links to where it lives.',
+    'I built The 99 because nothing else checked every box for deck building, least of all around my collection. I have thousands of cards, and most of them were hiding in a box.' +
+    '\n\n' +
+    'So the app starts from what you own. It finds the cards you forgot you had and builds decks from them before it asks you to buy anything.' +
+    '\n\n' +
+    'It’s for me and my friends, with the features we kept asking for and couldn’t find anywhere else. A way to dive deeper into a hobby we all love.',
   // Appended to the intro only while ABOUT_SHEET_ENABLED is on: with it off a
   // new version still redirects here, and there is no note to speak of.
   pageIntroSheet: 'When something new lands, a short note tells you once, and this page opens on what’s new.',
@@ -147,7 +153,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/collection',
     width: 'plate',
     caption:
-      'Looking for a card? Search your Collection by name, then narrow it by color identity, type, set or availability. Each filter you set becomes a chip above the results, and pressing a chip removes it. Clear all filters drops the lot and leaves the sort alone. The count above the results says how many cards you’re looking at, as a grid or as rows.',
+      'Search your Collection by name, then narrow it down by color identity, type, set or availability.\n\nEach filter you set turns into a chip above the results. Press a chip to drop it, or Clear all filters to drop the lot. Your sort stays where you left it.\n\nThe count above the results says how many cards made the cut, and you can read them as a grid or as rows. Handy for settling “do I own another Swords?” before the trade binder comes out.',
     keys: [
       'Cards, Sets and Proxies sit in one strip at the top. Sets lists the sets you hold cards in, newest first, with how much of each you have.',
       'a chip per narrowing, each removable on its own, and one link that clears the lot. Nothing filters invisibly.',
@@ -162,7 +168,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/collection/replace',
     width: 'inset',
     caption:
-      'Replace collection takes a CSV from Moxfield, Archidekt, Deckbox or ManaBox, any plain CSV with Name and Quantity columns, or a list you paste in. We read how many copies you own, plus the set, collector number and finish wherever the file has them. An import replaces your whole Collection. You see the count now and after, and nothing is written until you confirm.',
+      'Replace collection takes any of these:\n\n- a CSV from Moxfield, Archidekt, Deckbox or ManaBox\n- any plain CSV with Name and Quantity columns\n- a list you paste in\n\nWe read how many copies you own, plus the set, collector number and finish wherever the file has them.\n\nAn import replaces your whole Collection. You see the count now and after, and nothing is written until you confirm.',
     keys: [],
     since: 1,
   },
@@ -174,7 +180,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens the import summary',
     width: 'plate',
     caption:
-      'What did that replace do to your decks? It can change which cards they still need to buy. The summary prints your count before and after, then lists the cards your decks were counting on, one row per card and the deck it was for. Your deck lists stay exactly as they were. What moves is whether you own the cards in them.',
+      'A replace can change which cards your decks still need to buy, and the summary is the receipt. It shows your count before and after, then lists the cards your decks were counting on, one row per card and the deck it was for.\n\nYour deck lists stay exactly as they were. What moves is whether you own the cards in them.',
     keys: [
       'before and after, both printed, so the change is checkable rather than asserted.',
       'a row is a card and one deck. Only a contested card gathers its decks under it, oldest claim first.',
@@ -207,7 +213,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // never produces.
     width: 'plate',
     caption:
-      'Every line we couldn’t put a card to, with the reason beside it. Import issues splits them in two: Unmatched, names we couldn’t find, and Parse errors, lines we couldn’t read. Every other row still replaces your Collection, and neither tab is a buy list. A pasted list carries no set or collector number, so a pasted Collection can’t fill in set completion.',
+      'Every line we couldn’t put a card to, with the reason beside it. Import issues sorts them into two tabs:\n\n- Unmatched: names we couldn’t find\n- Parse errors: lines we couldn’t read\n\nEvery other row still replaces your Collection, and neither tab is a buy list.\n\nA pasted list carries no set or collector number, so a pasted Collection can’t fill in set completion.',
     keys: [],
     since: 1,
   },
@@ -218,9 +224,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/collection?avail=inuse,over',
     width: 'plate',
     caption:
-      'One copy can’t sit in two committed decks at once. So a card carries a diamond and a few words saying how contested it is, and a card with a spare copy that no draft wants carries nothing at all. Say you own one Sol Ring and three committed decks run it. It reads short 2, and the deck that committed it first gets your copy unless you hand it to another.',
+      'One copy can’t sit in two committed decks at once. So each card says in a few words how contested it is, and a card with a spare copy that no draft wants says nothing at all.\n\nSay you own one Sol Ring and three committed decks run it. It reads short 2. The deck that committed it first gets your copy, unless you hand it to another.\n\nSol Ring: the one card every deck wants and every Collection is short of.',
     keys: [
-      'free: you own a spare copy and no draft wants it. No diamond at all, which is the commonest state in the app.',
+      'free: you own a spare copy and no draft wants it. No mark at all, which is the commonest state in the app.',
       'in a draft: a deck you have never committed wants it, and that deck wears the same Draft badge on your decks page. The claim is real but not binding.',
       'none free: your committed decks hold every copy you own, and none is spare.',
       'short 2: the committed decks between them ask for two more copies than you own. The deck that committed it first gets it by default, and you can hand it to another. A card you own none of never shows here; on a decklist it takes the buy mark instead.',
@@ -234,7 +240,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/collection/sets',
     width: 'plate',
     caption:
-      'Which cards does this set still need? Open a set from Sets and every card sits in collector order, with the ones you don’t own dashed and dimmed. Each missing card shows its price. The Checklist is the set’s own numbered run, and the showcase, borderless and promo extras are counted below it, so the set reads complete once you own the Checklist. A set with no numbered run, like a promo set, has every printing we’ve indexed on its Checklist.',
+      'Open a set from Sets and every card sits in collector order. The ones you don’t own are dashed and dimmed, with their price beside them.\n\nThe Checklist is the set’s own numbered run, and owning it is what makes the set read complete. Showcase, borderless and promo extras are counted below it. Chasing those is extra credit.\n\nA set with no numbered run, like a promo set, puts every printing we’ve indexed on its Checklist.',
     keys: [
       'missing: dashed edge, dimmed art, and a price an owned cell never carries. Absent, not disabled: it still opens.',
       'the cost covers the cards ManaPool actually stocks. One that has never been stocked is counted and left out rather than priced at zero.',
@@ -251,7 +257,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a deck',
     width: 'inset',
     caption:
-      'What would this card cost you? Prices come from ManaPool and refresh daily. The buy tag says one of four things. A price. A foil-only price, like $2.10 foil. Sold out, when ManaPool has stocked that printing but has none today. Or a bare buy, when the feed has no price for that printing at all. None of the four means free.',
+      'Prices come from ManaPool and refresh daily. A buy tag shows one of four things:\n\n- a price\n- a foil-only price, like $2.10 foil\n- sold out, when ManaPool has stocked that printing but has none today\n- a bare buy, when the feed has no price for that printing at all',
     keys: [],
     since: 1,
   },
@@ -263,7 +269,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens the card detail',
     width: 'inset',
     caption:
-      'Press a card anywhere in the app and its card details open. You get the printings of it you own and its art up close, and a double-faced card turns over to its back. Your pick, the tick, is the printing that stands for the card. Shown now, the hollow diamond, is the one on screen. The cost beside the name uses the real mana symbols, and a card with two costs, like a split card, an adventure or a card with a castable back, shows both. Opened from a list, it pages through that list: the arrow keys or the cards beside it on a computer, a swipe on a phone. Opened from a sheet or a combo partner, the pill at the top names where you came from and takes you back.',
+      'Press a card anywhere in the app and its card details open, with the art up close. A double-faced card turns over to show its back, no unsleeving required.\n\nOwn more than one printing? You can pick one for the card, and it’s shown everywhere in your Collection. Whenever no pick of yours applies, including one whose copy you no longer own, the printing on screen is marked Shown now.\n\nThe cost beside the name uses the real mana symbols. A card with two costs, like a split card, an adventure or a card with a castable back, shows both.\n\nOpened from a list, it pages through that list:\n\n- on a computer, with the arrow keys or the cards beside it\n- on a phone, with a swipe\n\nOpened from a sheet or a combo partner, the pill at the top names where you came from and takes you back.',
     keys: [],
     since: 1,
   },
@@ -276,7 +282,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/',
     width: 'plate',
     caption:
-      'Which commander should you build next? Ready to build, on Home, shows two. We rank every commander in your Collection that leads no deck of yours yet, keep the top 28 by fit, and show you a new pair each day. Each card says how many of your cards fit its colors, and how many of those are in use, every copy held by your committed decks. Either one beats unboxing another precon.',
+      'Ready to build, on Home, deals you two commanders a day. We rank every commander in your Collection that leads no deck of yours yet and keep the top 28 by fit. Each day’s pair comes from those 28.\n\nEach card says how many of your cards fit its colors, and how many of those are in use, every copy held by your committed decks.\n\nEither one beats unboxing another precon.',
     keys: [
       "the top 28 is a ranking, not a passing score. The last one’s score moves as your collection grows; it is never a fixed number to beat.",
       'each card shows how many of your cards fit, then how many of those are already committed. The second figure is left out when it is zero.',
@@ -293,7 +299,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a commander',
     width: 'plate',
     caption:
-      'How well does a commander fit your Collection? We score it out of 100 from three parts added together. Pool, worth 15, counts your cards legal in its colors and fills at 200. Roles, worth 25, checks you own enough ramp, draw, removal and wipes to build at all. Synergy, worth 60, is how much of its most-played list you already have. The bar draws them in that order. It measures your Collection, so it stays out of the power-level argument.',
+      'We score a commander out of 100 against your Collection, in three parts added together:\n\n- Pool, worth 15, counts your cards legal in its colors and fills at 200\n- Roles, worth 25, checks you own enough ramp, draw, removal and wipes to build at all\n- Synergy, worth 60, is how much of its most-played list you already have\n\nThe bar draws them in that order. It measures your Collection, so it stays out of the power-level argument.',
     keys: [
       "the score is out of 40 instead of 100 when we could not read a commander’s most-played list. We never rescale it to look like a 100.",
       'the three parts are printed with their sum, so you can check the score yourself.',
@@ -312,7 +318,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // entry’s caption is about would be inside a sheet no specimen can open.
     width: 'plate',
     caption:
-      'Every commander in your Collection that leads no deck of yours yet, ranked by fit. Build from picks which of your cards the scores count: All my cards, or Free cards only, the ones with at least one copy no committed deck is holding. Free cards only also sets aside a commander when every copy you own is sleeved into a committed deck. Printed in keeps the commanders printed in the sets you pick, by any printing, including ones you don’t own. Where we couldn’t read a commander’s most-played list, the bar has two segments and the score is out of 40.',
+      'Every commander in your Collection that leads no deck of yours yet, ranked by fit.\n\nBuild from picks which of your cards the scores count:\n\n- All my cards\n- Free cards only: the ones with at least one copy no committed deck is holding\n\nFree cards only also sets aside a commander when every copy you own is sleeved into a committed deck.\n\nPrinted in keeps the commanders printed in the sets you pick, by any printing, including ones you don’t own. Where we couldn’t read a commander’s most-played list, the bar has two segments and the score is out of 40.',
     keys: [],
     since: 1,
   },
@@ -323,7 +329,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/discover',
     width: 'plate',
     caption:
-      'Which commander is worth buying? Discover lists the ones outside your Collection and your decks, ranked by how many cards from each one’s most-played list you already own. Each row scores fit the same way the Commanders lane does and adds what the commander costs. The line under it names themes it plays that none of your decks do, or its top three play styles when your decks already play them all. Pick sets under Printed in and only commanders printed in them stay. Popularity puts the most-tracked first, which is a fair map of what your playgroup already has opinions about.',
+      'Discover lists the commanders outside your Collection and your decks, ranked by how many cards from each one’s most-played list you already own.\n\nEach row scores fit the same way the Commanders lane does, and adds what the commander costs. The line under it names themes it plays that none of your decks do, or its top three play styles when your decks already play them all.\n\nPick sets under Printed in and only commanders printed in them stay. Popularity puts the most-tracked first, which is a fair map of what your playgroup already has opinions about.',
     keys: [
       'five orders. Only Something new changes which commanders appear: it drops any whose decks run less than 30% cards you already own.',
       'Best fit, the default, reads your whole collection, because you would own this commander if you bought it.',
@@ -341,7 +347,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       // Audit H3: with no theme and no card the list IS ordered by ownership. H1: the hand-off
       // shipped in #1011, and Create is what fills the deck, not the pick.
-      'No commander yet for the deck you want? Answer as much or as little as you like: colors, themes (all of them, or any one), the sets it was printed in, a budget and a bracket. A sentence in your own words is matched for free, and a card named there becomes the card to build around. Look deeper reads everything you wrote and uses a credit when it comes back with at least one answer. Every answer narrows which commanders show up, owned or not, and your themes and card also set the order. With neither, the results are ordered by how many of their cards you already have. Pick one and your answers carry to a new deck, and Create deck fills the 99 under them, only from your Collection if you ask. When fewer than four fit, the page offers answers to loosen.',
+      'Tell Help me choose about the deck you want and it finds commanders to lead it. Answer as much or as little as you like:\n\n- colors\n- themes, all of them or any one\n- the sets it was printed in\n- a budget\n- a bracket\n\nA sentence in your own words is matched for free, and a card named there becomes the card to build around. Look deeper reads everything you wrote, and uses a credit when it comes back with at least one answer.\n\nEvery answer narrows which commanders show up, owned or not. Your themes and card also set the order. With neither, the results are ordered by how many of their cards you already have.\n\nPick a commander and your answers carry to a new deck, and Create deck fills the 99 under them, only from your Collection if you ask. When fewer than four fit, the page offers answers to loosen.',
     keys: [
       // Audit H4: SETS RANK is drawn only when a row has more than one figure.
       "With a theme or a card, each figure is a share of that commander's decks: the share tagged with your theme, or the share that runs your card. The weakest figure orders the row, and when there is more than one it is marked SETS RANK.",
@@ -361,7 +367,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a commander',
     width: 'inset',
     caption:
-      'Role Coverage sorts the cards you already own that would go in this deck by the job they do: Ramp, Card Draw, Removal and Board Wipes. Each group sets what you have against what this commander’s decks run. Board Wipes reading 1 owned, 2 short of the 3 its decks run tells you what to fix before you start building. Read a group Most played first, or by Availability: free copies first, then the ones a draft wants, then the ones in use, then anything over-committed. Ramp short of its target is where mana screw starts.',
+      'Role Coverage sorts the cards you own that would go in this deck by the job they do: Ramp, Card Draw, Removal and Board Wipes. Each group sets what you have against what this commander’s decks run.\n\nBoard Wipes reading 1 owned, 2 short of the 3 its decks run tells you what to fix before you start building.\n\nRead a group Most played first, or by Availability, in this order:\n\n- free copies\n- copies a draft wants\n- copies in use\n- anything over-committed\n\nRamp short of its target is where mana screw starts.',
     keys: [],
     since: 1,
   },
@@ -373,9 +379,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a commander',
     width: 'plate',
     caption:
-      'Owning a card and being free to use it are two different things. A green dot means the card is in your Collection. The note beside it says what’s holding it: 1 in a draft, none free, or short by however many copies your committed decks want past what you own. A card with a spare copy nothing wants carries no note.',
+      'Owning a card and being free to use it are two different things, as anyone who has raided one deck to build another knows.\n\nThe note beside a card you own says what’s holding it: 1 in a draft, none free, or short by however many copies your committed decks want past what you own. A card with a spare copy nothing wants carries no note.',
     keys: [
-      'the dot means you own the card and nothing else. It stays the same color whether or not a deck is holding it.',
+      'the owned mark means you own the card and nothing else. It stays the same color whether or not a deck is holding it.',
       'the note counts copies and never names a deck. Open the card to see which decks are holding it.',
       'the synergy list prices what you do not own, so a card you would have to buy says so before you plan around it.',
     ],
@@ -385,10 +391,13 @@ export const aboutEntries: readonly AboutEntry[] = [
     id: 'partners',
     chapter: '02',
     title: 'Building with two commanders',
-    route: '/decks/new',
+    // The figure is the import proposal (`PartnerSlot`, state C), which only /decks/import
+    // draws: Proposed is the import picker's label. /decks/new offers Add a partner alone.
+    route: '/decks/import',
+    opens: 'opens the commander picker after a paste',
     width: 'inset',
     caption:
-      'Building around a commander with Partner, Partner with or Friends forever? When you start a deck, Add a partner offers the commanders you own that can pair with it. Bring a deck over from a pasted list and the second legend you pick from it is marked Proposed, with Change and Remove beside it. Two commanders take two of the hundred cards, so a pair’s 99 is 98, and every count and progress bar in the app measures against that. Two commanders also give the rule zero chat twice as much to talk about.',
+      'Partner, Partner with and Friends forever all put a second commander at the head of the deck.\n\nBring a deck over from a pasted list and the second legend you pick from it arrives marked Proposed, with Change and Remove beside it. Start a deck from scratch and Add a partner offers the commanders you own that can pair with the first.\n\nTwo commanders take two of the hundred cards, so a pair’s 99 is 98, and every count and progress bar in the app measures against that. Two commanders also give the rule zero chat twice as much to talk about.',
     keys: [],
     since: 1,
   },
