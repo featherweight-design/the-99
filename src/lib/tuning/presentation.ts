@@ -1,6 +1,6 @@
 import type { deckTuningCopy } from "../copy/deck-tuning";
 import { mentionsDate } from "./note-date";
-import { quotesPlayerText } from "./quote-match";
+import { escapeRegExp } from "./quote-match";
 
 /**
  * The text checks among the nine `suggestionRules`: the ones a string alone can fail. Pure.
@@ -56,6 +56,10 @@ export type Quotable = { text: string; date: string | null };
  * UNQUOTED, never in quote marks (`suggestionRules.quotedNote`'s pinned tests). So a genuine
  * part found in quote marks is stripped to its bare form here rather than dropped; only a quote
  * that names no source at all — whole or part — is still flagged.
+ *
+ * A dated source (a game note) stays on the WHOLE path only — it is never partially matched,
+ * because a game note's own quote must remain verbatim (round-1 review finding). Only an
+ * UNDATED source (the intent, or this run's notes) may be cited in part.
  */
 export function presentationFailures(
   text: string,
@@ -72,12 +76,73 @@ export function presentationFailures(
   // line-leading `-1` are caught, while `two-mana` and a range like `1-2` are not.
   if (/\bnet\b/i.test(text) || /(^|[^\w+\-−/])[+\-−]\d+(?![\d/])/.test(text)) broken.push("noNet");
 
-  // Read with the player's own quoted words taken out: an intent reading "I want to win late",
-  // quoted back, is theirs and no claim of the model's.
-  const ownWords = quotable.reduce(
-    (t, q) => t.split(`"${q.text}"`).join(" ").split(`\u201c${q.text}\u201d`).join(" "),
-    text,
-  );
+  type Range = { start: number; end: number };
+
+  // Every WHOLE-quotation occurrence of a known source, found by literal substring search (so a
+  // source containing an embedded quote mark of its own, `I said "keep lands"`, is found intact
+  // rather than split at its inner quote mark) — tried in all FOUR opener/closer combinations,
+  // since the model may mix straight and curly quotes on the same line (round-1 review finding:
+  // a same-style-only check let a mixed-style fabrication through completely undetected, never
+  // flagged and never repaired). Tracked by RANGE, not by a global text replace: a literal span
+  // repeated elsewhere in the text — once inside a validated whole quotation, once as a
+  // separately quoted fragment — must never be conflated (round-1 review finding: a blind
+  // `.split().join()` corrupted the inner text of an already-verbatim whole quotation when the
+  // same words also appeared quoted again, standalone, later in the same rationale).
+  const wholeRanges: Range[] = [];
+  for (const q of quotable) {
+    const forms = [`"${q.text}"`, `“${q.text}”`, `"${q.text}”`, `“${q.text}"`];
+    for (const quoted of forms) {
+      let from = 0;
+      let idx: number;
+      while ((idx = text.indexOf(quoted, from)) !== -1) {
+        from = idx + quoted.length;
+        const sourced = quotable.some((s) => s.text === q.text && (s.date === null || mentionsDate(text, s.date)));
+        if (!sourced) {
+          broken.push("quotedNote");
+          return { broken, text };
+        }
+        wholeRanges.push({ start: idx, end: idx + quoted.length });
+      }
+    }
+  }
+  const insideWhole = (i: number) => wholeRanges.some((r) => i >= r.start && i < r.end);
+
+  // Every quoted SPAN in `text` not already covered by a whole match above — straight, curly,
+  // or mixed, for the same reason as above.
+  const spanPattern = /"([^"“”]+)"|“([^"“”]+)”|"([^"“”]+)”|“([^"“”]+)"/g;
+  const spans: (Range & { span: string })[] = [];
+  for (const m of text.matchAll(spanPattern)) {
+    const start = m.index;
+    if (insideWhole(start)) continue;
+    const span = (m[1] ?? m[2] ?? m[3] ?? m[4]).trim();
+    if (span.length === 0) continue;
+    spans.push({ start, end: start + m[0].length, span });
+  }
+
+  // A span is a genuine PART of an UNDATED source when it is found, as whole words, INSIDE that
+  // source — never the reverse: a span merely containing a short real fragment plus fabricated
+  // extra words (round-1 review finding: "go wide with dragons" against the intent "go wide"
+  // would otherwise pass, since the span contains the source rather than the source containing
+  // the span). A span naming no source at all, whole or part, is a misquote.
+  const partial: (Range & { span: string })[] = [];
+  for (const span of spans) {
+    const isPart = quotable.some((q) => q.date === null && isGenuinePart(span.span, q.text));
+    if (isPart) partial.push(span);
+    else {
+      broken.push("quotedNote");
+      return { broken, text };
+    }
+  }
+
+  // Read with the player's own quoted words taken out — whole quotations AND verified partial
+  // ones alike, since both belong to the player, not the model's claim, even while still
+  // wrapped in quote marks (round-1 review finding: only whole matches were masked here, so a
+  // verified partial quote containing a claim word like "stronger" still tripped
+  // `noResultClaim`, dropping a suggestion the citation check would have accepted).
+  let ownWords = text;
+  for (const r of [...wholeRanges, ...partial].sort((a, b) => b.start - a.start)) {
+    ownWords = ownWords.slice(0, r.start) + " " + ownWords.slice(r.end);
+  }
   if (BRACKET_WORD.test(ownWords) || BRACKET_NAME.test(ownWords)) broken.push("noBracketClaim");
   if (RESULT_CLAIM.test(ownWords)) broken.push("noResultClaim");
 
@@ -96,44 +161,22 @@ export function presentationFailures(
     }
   }
 
-  // Anything in quotation marks is a quotation of the player (a note, or their stated intent)
-  // and must match one byte for byte. The KNOWN sources are matched first, whole, by their own
-  // text — so a note with a quotation mark inside it (`I said "keep lands"`) is found intact
-  // rather than split at its inner quote — and a quoted note must have its date in the same text.
-  // Whatever is still in quotation marks once they are taken out is a misquote. Straight or
-  // curly outer quotes, since the model may use either.
-  // One text can have several sources — two notes alike, or a note that says what the intent
-  // says — and the quotation stands when ANY of them is satisfied: the intent needs no date, a
-  // note needs its own.
-  let rest = text;
-  for (const q of quotable) {
-    for (const quoted of [`"${q.text}"`, `\u201c${q.text}\u201d`]) {
-      if (!rest.includes(quoted)) continue;
-      const sourced = quotable.some((s) => s.text === q.text && (s.date === null || mentionsDate(text, s.date)));
-      if (!sourced) {
-        broken.push("quotedNote");
-        return { broken, text };
-      }
-      rest = rest.split(quoted).join(" ");
-    }
-  }
-  // Whatever is still quoted after every WHOLE source is stripped may still be a genuine PART
-  // of one. The content-excludes-quote-marks pattern below cannot segment a source that
-  // contains an embedded quote mark of its own (the nested-note case above) \u2014 that case is
-  // already handled, whole, by the literal search just above, and never reaches here.
+  // Every verified partial quote is repaired to its bare, unquoted form — Design's own shape
+  // for a part-quote — by RANGE, working from the LAST match backward so an earlier match's
+  // offsets stay valid as later ones are spliced out, never by a global string replace (the
+  // corruption finding above).
   let repaired = text;
-  const spanPattern = /"([^"\u201c\u201d]+)"|\u201c([^"\u201c\u201d]+)\u201d/g;
-  for (const m of rest.matchAll(spanPattern)) {
-    const span = m[1] ?? m[2];
-    const partOf = quotable.find((q) => quotesPlayerText(q.text, span) && (q.date === null || mentionsDate(text, q.date)));
-    if (!partOf) {
-      broken.push("quotedNote");
-      return { broken, text };
-    }
-    // Repaired to the bare, unquoted form \u2014 Design's own shape for a part-quote \u2014 rather than
-    // dropped: the player's words, just not in quote marks.
-    repaired = repaired.split(m[0]).join(span);
+  for (const r of [...partial].sort((a, b) => b.start - a.start)) {
+    repaired = repaired.slice(0, r.start) + r.span + repaired.slice(r.end);
   }
 
   return { broken, text: repaired };
+}
+
+/** Whether `span` is found, as whole words, inside `source` — the direction a genuine
+ *  part-quote must satisfy; the reverse (a span that merely contains the source, plus
+ *  anything else) is not the same claim and must never pass here. */
+function isGenuinePart(span: string, source: string): boolean {
+  if (!/[A-Za-z]{2,}/.test(span)) return false;
+  return new RegExp(`(?<![\\w'])${escapeRegExp(span)}(?![\\w'])`).test(source);
 }

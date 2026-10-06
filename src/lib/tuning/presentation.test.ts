@@ -149,5 +149,47 @@ describe("presentationFailures", () => {
     // Not repaired — nothing to repair it to — the broken caller never uses `text`.
     expect(out.text).toBe('You said “go wide with tokens”.');
   });
+
+  // Round-1 review findings on the repair logic, each pinned as the exact shape that defeated
+  // an earlier version.
+  describe("repair logic — round-1 review findings", () => {
+    it("catches a fabrication wrapped in MIXED straight/curly quote marks, both ways", () => {
+      const intent = [{ text: "go wide", date: null }];
+      expect(fails('You said “never drew".', intent)).toContain("quotedNote");
+      expect(fails('You said "never drew”.', intent)).toContain("quotedNote");
+    });
+
+    it("masks a verified partial quote from the result/bracket claim checks, not only a whole one", () => {
+      const intent = [{ text: "I want a stronger deck", date: null }];
+      // "stronger" is a genuine part of the intent, quoted — must be repaired and kept, never
+      // flagged noResultClaim just because the claim word still sits inside the quote marks.
+      expect(presentationFailures('You said “stronger”.', intent))
+        .toEqual({ broken: [], text: "You said stronger." });
+    });
+
+    it("rejects a span that merely CONTAINS a real fragment plus fabricated words", () => {
+      const intent = [{ text: "go wide", date: null }];
+      // "go wide" is genuinely part of the intent; "go wide with dragons" is not — the source
+      // must contain the span, never the reverse.
+      expect(fails('You said “go wide with dragons”.', intent)).toContain("quotedNote");
+    });
+
+    it("never partially matches a DATED game note — only the intent/notes may be cited in part", () => {
+      const notes = [{ text: "flooded out on turn six", date: "2026-09-01" }];
+      expect(fails('On 1 Sep: "flooded out".', notes)).toContain("quotedNote");
+    });
+
+    it("repairs a standalone partial quote without corrupting a separate WHOLE quotation of a source containing its own embedded quote marks", () => {
+      const intent = [{ text: 'I said "keep lands"', date: null }];
+      const out = presentationFailures(
+        'You said “I said "keep lands"”, and "keep lands".',
+        intent,
+      );
+      expect(out.broken).toEqual([]);
+      // The whole quotation is untouched, verbatim, embedded quote marks and all; only the
+      // separately quoted fragment after it is repaired to its bare form.
+      expect(out.text).toBe('You said “I said "keep lands"”, and keep lands.');
+    });
+  });
 });
 
