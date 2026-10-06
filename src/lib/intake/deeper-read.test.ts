@@ -13,7 +13,7 @@ import { runDeeperRead, type DeeperReadDeps } from "./deeper-read";
 import { buildPhraseIndex } from "./match";
 import type { ReadResponse } from "./read";
 
-const index = buildPhraseIndex([{ slug: "dinosaurs", label: "Dinosaurs" }], []);
+const index = buildPhraseIndex([{ slug: "dinosaurs", label: "Dinosaurs" }, { slug: "elves", label: "Elves" }], []);
 const usage = { inputTokens: 10, outputTokens: 5, cacheReadTokens: 0, cacheWriteTokens: 0 };
 const reply = (over: Partial<ReadResponse>): ModelOutcome<ReadResponse> => ({
   ok: true, usage,
@@ -45,6 +45,26 @@ describe("runDeeperRead", () => {
     const out = await runDeeperRead("u", input, deps(reply({ themes: ["Pirates"], notUnderstood: ["lizards"] })));
     expect(out).toEqual({ kind: "nothing", readId: "r", notUsed: [], notUnderstood: ["lizards"] });
     expect(store.settleRead.mock.calls[0][1]).toMatchObject({ kind: "read", result: { useful: false } });
+  });
+
+  it("refunds a read whose only chip is a theme the player already has (Hugh, 2026-10-06)", async () => {
+    const out = await runDeeperRead(
+      "u",
+      { ...input, existing: { themes: ["dinosaurs"], card: null } },
+      deps(reply({ themes: ["Dinosaurs"] })),
+    );
+    expect(out).toEqual({ kind: "nothing", readId: "r", notUsed: [], notUnderstood: [] });
+    expect(store.settleRead.mock.calls[0][1]).toMatchObject({ kind: "read", result: { useful: false } });
+  });
+
+  it("still charges when the read also adds a theme the player did not already have", async () => {
+    const out = await runDeeperRead(
+      "u",
+      { ...input, existing: { themes: ["dinosaurs"], card: null } },
+      deps(reply({ themes: ["Dinosaurs", "Elves"] })),
+    );
+    expect(out).toMatchObject({ kind: "read" });
+    expect(store.settleRead.mock.calls[0][1]).toMatchObject({ kind: "read", result: { useful: true } });
   });
 
   it("keeps a figure the controls overrode on a read with nothing else in it", async () => {

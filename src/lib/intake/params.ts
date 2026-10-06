@@ -80,7 +80,9 @@ export const emptyParams = (): ChooseParams => ({
   budgetDollars: null, bracket: null, readId: null, notUsed: [], deeper: [], results: false,
 });
 
-const SLUG = /^[a-z0-9][a-z0-9-]{0,79}$/;
+/** A theme slug, as the catalog stores it. Exported for `actions.ts`'s `checkedExisting`, which
+ *  validates the player's already-held themes against the same shape `t` already is. */
+export const SLUG = /^[a-z0-9][a-z0-9-]{0,79}$/;
 /** A set code as `printings.set_code` stores it: lower-case letters and digits. */
 const SET_CODE = /^[a-z0-9]{2,8}$/;
 

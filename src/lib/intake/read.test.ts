@@ -55,6 +55,49 @@ describe("validateRead", () => {
     expect(read(reply({ themes: ["Dinosaurs"] })).useful).toBe(true);
   });
 
+  it("is useful only when a chip ADDS to what the player already has, not merely survives (Hugh, 2026-10-06)", () => {
+    // The chip still comes back — Dinosaurs is a real, offered theme — but it repeats an
+    // existing answer, so the run added nothing and the credit returns.
+    const r = validateRead({
+      reply: reply({ themes: ["Dinosaurs"] }), words: WORDS, index, controls: none,
+      existing: { themes: ["dinosaurs"], card: null },
+    });
+    expect(r.chips).toEqual([{ kind: "theme", slug: "dinosaurs", label: "Dinosaurs" }]);
+    expect(r.useful).toBe(false);
+  });
+
+  it("is useful when the read adds a theme the player did not already have, alongside one they did", () => {
+    const r = validateRead({
+      reply: reply({ themes: ["Dinosaurs", "Landfall"] }), words: WORDS, index, controls: none,
+      existing: { themes: ["dinosaurs"], card: null },
+    });
+    expect(r.useful).toBe(true);
+  });
+
+  it("never charges for a card chip when the player already has one, even a different one", () => {
+    // deeperTarget (submit.ts) never adopts a card chip while an existing card stands — the
+    // existing one always wins, and any other card the read resolves is displaced into Not
+    // used regardless of its id. The charge has to agree: it is not an addition either way.
+    const already = validateRead({
+      reply: reply({ cards: ["doubling season"] }), words: WORDS, index, controls: none,
+      existing: { themes: [], card: "ds" },
+    });
+    expect(already.useful).toBe(false);
+    const different = validateRead({
+      reply: reply({ cards: ["doubling season"] }), words: WORDS, index, controls: none,
+      existing: { themes: [], card: "fi" },
+    });
+    expect(different.useful).toBe(false);
+  });
+
+  it("charges for a card chip when the player has no card yet", () => {
+    const r = validateRead({
+      reply: reply({ cards: ["doubling season"] }), words: WORDS, index, controls: none,
+      existing: { themes: [], card: null },
+    });
+    expect(r.useful).toBe(true);
+  });
+
   it("keeps a Not understood phrase only when the player wrote it and nothing maps it", () => {
     const r = read(reply({ themes: ["Dinosaurs"], notUnderstood: ["Big Energy", "tiny lizards", "energy and", "Dinosaurs"] }));
     expect(r.notUnderstood).toEqual(["Big Energy", "energy and"]);

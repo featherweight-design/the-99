@@ -88,7 +88,14 @@ export function defaultDeps(): DeeperReadDeps {
 
 export async function runDeeperRead(
   userId: string,
-  input: { readId: string; words: string; controls: { budgetDollars: number | null; bracket: number | null } },
+  input: {
+    readId: string;
+    words: string;
+    controls: { budgetDollars: number | null; bracket: number | null };
+    /** The player's themes and card before this read, so a chip that only repeats one of them
+     *  charges nothing (F4 / Hugh's ruling 2026-10-06) — see `validateRead`'s `existing`. */
+    existing?: { themes: string[]; card: string | null };
+  },
   deps: DeeperReadDeps = defaultDeps(),
 ): Promise<DeeperReadOutcome> {
   // The index is read before the unit is reserved: a failed read of it costs the player nothing.
@@ -111,7 +118,9 @@ export async function runDeeperRead(
     const settled = await settleRead({ ...started, userId }, { kind: "failed", errorClass }, billed);
     return settled ? { kind: "failed", errorClass } : { kind: "stopped" };
   }
-  const result = validateRead({ reply: outcome.value, words: input.words, index, controls: input.controls });
+  const result = validateRead({
+    reply: outcome.value, words: input.words, index, controls: input.controls, existing: input.existing,
+  });
   const settled = await settleRead({ ...started, userId }, { kind: "read", result }, billed);
   if (!settled) return { kind: "stopped" };
   return result.useful

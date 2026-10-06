@@ -13,7 +13,7 @@ vi.mock("../../../../lib/intake/flag", () => ({ helpMeChooseEnabled: () => flag.
 import { lookDeeper, lookStatus } from "./actions";
 
 const ID = "0000aaaa-0000-4000-8000-000000000001";
-const ok = { readId: ID, words: "big lizards", budgetDollars: null, bracket: null };
+const ok = { readId: ID, words: "big lizards", budgetDollars: null, bracket: null, themes: [], card: null };
 
 beforeEach(() => {
   flag.on = true;
@@ -53,6 +53,9 @@ describe("lookDeeper", () => {
       { ...ok, words: "" }, { ...ok, words: "   " }, { ...ok, words: 5 }, { ...ok, words: "x".repeat(801) },
       { ...ok, budgetDollars: 0 }, { ...ok, budgetDollars: 1.5 }, { ...ok, budgetDollars: 100_001 },
       { ...ok, bracket: 0 }, { ...ok, bracket: 6 }, { ...ok, bracket: 2.5 },
+      { ...ok, themes: "dinosaurs" }, { ...ok, themes: [1] }, { ...ok, themes: null },
+      { ...ok, themes: ["Dinosaurs"] }, { ...ok, themes: ["-bad"] },
+      { ...ok, card: "not-a-uuid" }, { ...ok, card: 7 },
     ];
     for (const input of forged) {
       expect(await lookDeeper(input as never)).toEqual({ kind: "refused" });
@@ -60,10 +63,23 @@ describe("lookDeeper", () => {
     expect(stub.run).not.toHaveBeenCalled();
   });
 
-  it("hands a sound press to the read, trimmed, with its controls", async () => {
-    await lookDeeper({ ...ok, words: "  big lizards  ", budgetDollars: 100_000, bracket: 5 });
+  it("accepts more than MAX_THEMES existing themes (pre-open review): resolveWords never caps what a player's params accumulate", async () => {
+    const themes = Array.from({ length: 12 }, (_, i) => `theme-${i}`);
+    await lookDeeper({ ...ok, themes });
+    expect(stub.run).toHaveBeenCalledWith("user_1", {
+      readId: ID, words: "big lizards", controls: { budgetDollars: null, bracket: null },
+      existing: { themes, card: null },
+    });
+  });
+
+  it("hands a sound press to the read, trimmed, with its controls and existing answers", async () => {
+    const card = "0000aaaa-0000-4000-8000-000000000002";
+    await lookDeeper({
+      ...ok, words: "  big lizards  ", budgetDollars: 100_000, bracket: 5, themes: ["dinosaurs"], card,
+    });
     expect(stub.run).toHaveBeenCalledWith("user_1", {
       readId: ID, words: "big lizards", controls: { budgetDollars: 100_000, bracket: 5 },
+      existing: { themes: ["dinosaurs"], card },
     });
   });
 });

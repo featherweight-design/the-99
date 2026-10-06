@@ -5,6 +5,7 @@ import { deeperStatus, runDeeperRead, type DeeperReadOutcome, type DeeperStatus 
 import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
 import { MAX_BUDGET_DOLLARS } from "../../../../lib/intake/answers";
 import { READ_WORDS_MAX_CHARS } from "../../../../lib/intake/limits";
+import { SLUG } from "../../../../lib/intake/params";
 import { isUuid } from "../../../../lib/uuid";
 
 /**
@@ -33,19 +34,41 @@ function checkedAsk(input: unknown): { words: string; controls: { budgetDollars:
   return { words, controls: { budgetDollars: budgetDollars as number | null, bracket: bracket as number | null } };
 }
 
+/** The player's themes and card BEFORE this press, checked; `null` for anything out of shape.
+ *  This decides what the read adds (Hugh, 2026-10-06) — a shape failure here refuses the whole
+ *  press rather than risk treating a malformed "existing" as empty and over-charging.
+ *
+ *  NO COUNT CAP (pre-open review): `resolveWords` never bounds the themes a player's own params
+ *  accumulate — `MAX_THEMES` only trims what the CREATE path writes to the brief
+ *  (`decks/new/page.tsx`) — so a player who matched more than eight theme labels, in one submit
+ *  or across several deeper reads, legitimately carries more than `MAX_THEMES` in `params.themes`
+ *  with nothing that ever shrinks it back down. Refusing on count would permanently lock such a
+ *  player out of Look deeper. Only the per-entry slug shape is checked here.
+ */
+function checkedExisting(input: unknown): { themes: string[]; card: string | null } | null {
+  if (typeof input !== "object" || input === null) return null;
+  const { themes, card } = input as Record<string, unknown>;
+  if (!Array.isArray(themes) || !themes.every((t) => typeof t === "string" && SLUG.test(t))) return null;
+  if (!(card === null || (typeof card === "string" && isUuid(card)))) return null;
+  return { themes, card };
+}
+
 export async function lookDeeper(input: {
   readId: string;
   words: string;
   budgetDollars: number | null;
   bracket: number | null;
+  themes: string[];
+  card: string | null;
 }): Promise<LookDeeperResult> {
   const userId = await requireUserId();
   // An action stays callable when its page is hidden: with the feature off, nothing is reserved.
   if (!helpMeChooseEnabled()) throw new Error("not found");
   // The argument is whatever a caller sent: shape first, before any field is read.
   const ask = checkedAsk(input);
-  if (!ask || typeof input.readId !== "string" || !isUuid(input.readId)) return { kind: "refused" };
-  return runDeeperRead(userId, { readId: input.readId, ...ask });
+  const existing = checkedExisting(input);
+  if (!ask || !existing || typeof input.readId !== "string" || !isUuid(input.readId)) return { kind: "refused" };
+  return runDeeperRead(userId, { readId: input.readId, ...ask, existing });
 }
 
 /**

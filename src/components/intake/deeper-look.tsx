@@ -123,7 +123,10 @@ export function DeeperLook({
     enter("looking");
     setAnnounced(copy.deeper.pendingTitle);
     const out = await deps
-      .look({ readId, words: params.words, budgetDollars: params.budgetDollars, bracket: params.bracket })
+      .look({
+        readId, words: params.words, budgetDollars: params.budgetDollars, bracket: params.bracket,
+        themes: params.themes, card: params.card,
+      })
       .catch(() => ({ kind: "failed" as const }));
     if (token.current !== mine) return;
     own.current = null;
