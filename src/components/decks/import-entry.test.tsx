@@ -180,6 +180,27 @@ describe("state 9 — nothing matched", () => {
   });
 });
 
+describe("a CSV-shaped upload that failed to parse", () => {
+  it("names the problem and leaves the paste alone", async () => {
+    importDeck.mockResolvedValue({
+      ok: false,
+      reason: "csvInvalid",
+      detail: 'Row 3: invalid quantity "abc"',
+      notes: [],
+    });
+    render(<ImportEntry />);
+    fillPaste();
+    submit();
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain('Row 3: invalid quantity "abc"');
+    expect(pasteBox()).toHaveProperty("value", "1 Sol Ring\n1 Cultivate");
+    // Mode-agnostic copy on purpose: this is reachable from a paste as well
+    // as a file, and the action must not promise a file dialog it cannot open.
+    expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
+  });
+});
+
 describe("state 10 — nothing parsed", () => {
   it("reports an empty deck without a retry", async () => {
     importDeck.mockResolvedValue({ ok: false, reason: "noRows", notes: [] });

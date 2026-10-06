@@ -8,7 +8,9 @@ import { requireUserId } from "../../lib/auth";
 import { isUuid } from "../../lib/uuid";
 import { loadMatchInputs } from "../../lib/collection/import";
 import { validateDeckName } from "../../lib/decks/deck-name";
-import { buildDeckImport, type DeckImport, type ImportNote } from "../../lib/decks/import";
+import {
+  buildDeckImport, resolveDeckListInput, type DeckImport, type ImportNote,
+} from "../../lib/decks/import";
 import { isBasicLand } from "../../lib/decks/grouping";
 import { canPair, partnerAbility } from "../../lib/decks/partner";
 import { deckSurfaces } from "../../lib/decks/revalidate";
@@ -77,7 +79,16 @@ export type ImportDeckResult =
   /** State 10: nothing parsed at all. */
   | { ok: false; reason: "noRows"; notes: ImportNote[] }
   /** State 9: lines parsed, none of them matched a card. */
-  | { ok: false; reason: "noneMatched"; lineCount: number; notes: ImportNote[] };
+  | { ok: false; reason: "noneMatched"; lineCount: number; notes: ImportNote[] }
+  /**
+   * The text was CSV-shaped — a multi-cell header carrying a recognized Name
+   * or Quantity column — but failed to parse cleanly. Reachable from a paste
+   * as well as a file: `resolveDeckListInput` reads the header the same way
+   * regardless of source. Nothing was written: a CSV, unlike a paste, carries
+   * no convention for a line the player meant to skip, so any parse error
+   * here is a column problem rather than a benign section header.
+   */
+  | { ok: false; reason: "csvInvalid"; detail: string; notes: ImportNote[] };
 
 /**
  * Marks each candidate as owned or not. A file-scope helper rather than an export:
@@ -122,12 +133,24 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
     throw new Error(deckImportTooLargeMessage(input.source));
   }
 
-  // No rows are passed: the printing indexes are keyed by Scryfall id, and a pasted or
-  // uploaded decklist never carries one — `parsePasteList` sets `scryfallId: null` on every
-  // row it produces. Parsing here to build that id list would re-read up to 2 MB to learn
-  // nothing, and `loadMatchInputs` returns the same empty indexes for an empty row list.
-  const { catalog, indexes } = await loadMatchInputs([], { detailed: true });
-  const result = buildDeckImport({ text: input.text, catalog, indexes });
+  // A CSV-shaped upload carries real Scryfall ids once parsed, which `matchRows`
+  // resolves against before falling back to name — exactly like the collection
+  // upload's own CSV rows, and precision a name-only paste never has. A plain
+  // paste or text file parses to no rows here, and `loadMatchInputs` returns the
+  // same empty indexes for an empty row list that it always has, so this costs
+  // nothing on the path that cannot use it.
+  const resolved = resolveDeckListInput(input.text);
+  if (resolved.kind === "rejected") {
+    return { ok: false, reason: "csvInvalid", detail: resolved.detail, notes: [] };
+  }
+  const { catalog, indexes } = await loadMatchInputs(
+    resolved.kind === "rows" ? resolved.rows : [],
+    { detailed: true },
+  );
+  const result =
+    resolved.kind === "rows"
+      ? buildDeckImport({ rows: resolved.rows, catalog, indexes })
+      : buildDeckImport({ text: resolved.text, catalog, indexes });
 
   // Both counts come from the import's own cleaned line count, never from `rows`.
   // parsePasteList turns any non-blank line into a row, so a `SIDEBOARD:` header

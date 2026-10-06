@@ -322,6 +322,39 @@ describe("importDeck — a declared pair", () => {
   });
 });
 
+describe("importDeck — a CSV-shaped upload", () => {
+  it("parses a clean CSV export by its recognized header and matches real cards", async () => {
+    // A CSV export declares no commander — unlike a paste's `Commander` section or
+    // *CMDR* flag, there is no equivalent column — so a matched legendary always
+    // reaches the picker. This proves the row parsed and matched correctly rather
+    // than being read, wrongly, as a one-line text decklist.
+    const result = await importDeck({
+      text: 'Name,Quantity\n"Atreus, God of War",1\nSol Ring,1\n',
+      source: "file",
+      name: "From a CSV",
+    });
+    if (result.ok || result.reason !== "commanderNeeded") {
+      throw new Error(`expected commanderNeeded, got ${JSON.stringify(result)}`);
+    }
+    expect(result.candidates.map((c) => c.name)).toEqual(["Atreus, God of War"]);
+  });
+
+  it("refuses a CSV-shaped file with a bad row and writes nothing", async () => {
+    const result = await importDeck({
+      text: "Name,Quantity\nSol Ring,1\nForest,abc\n",
+      source: "file",
+      name: "Broken",
+    });
+    expect(result).toEqual({
+      ok: false,
+      reason: "csvInvalid",
+      detail: 'Row 3: invalid quantity "abc"',
+      notes: [],
+    });
+    expect(stub.state.inserts).toEqual([]);
+  });
+});
+
 describe("resolveUnresolvedRow", () => {
   it("adds the card and drops the line", async () => {
     seed();

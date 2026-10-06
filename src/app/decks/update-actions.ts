@@ -8,7 +8,7 @@ import { loadMatchInputs } from "../../lib/collection/import";
 import type { DetailedCatalogCard } from "../../lib/collection/match";
 import type { Availability } from "../../lib/decks/availability";
 import { loadAvailability } from "../../lib/decks/availability-query";
-import { buildDeckImport, type ImportNote } from "../../lib/decks/import";
+import { buildDeckImport, resolveDeckListInput, type ImportNote } from "../../lib/decks/import";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { planDeckUpdate, type DeckUpdatePlan, type DeckUpdateRow } from "../../lib/decks/update";
 import { touchDeck } from "../../lib/decks/touch";
@@ -81,7 +81,11 @@ export type DeckUpdateResult =
   /** State 10, reused verbatim from the import flow. */
   | { ok: false; reason: "noRows"; notes: ImportNote[] }
   /** State 9, likewise. */
-  | { ok: false; reason: "noneMatched"; lineCount: number; notes: ImportNote[] };
+  | { ok: false; reason: "noneMatched"; lineCount: number; notes: ImportNote[] }
+  /** Reused verbatim from the import flow: a CSV-shaped file whose header or
+   *  rows failed to parse cleanly. Nothing about the deck is read for this
+   *  case — it is refused before `loadDeck` runs. */
+  | { ok: false; reason: "csvInvalid"; detail: string; notes: ImportNote[] };
 
 /** The deck row itself, and the ownership check. Throws rather than returning a
  *  reason: a deck the caller does not own is not a state the flow draws, it is a
@@ -146,9 +150,22 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
     throw new Error(deckImportTooLargeMessage(input.source));
   }
 
+  // Checked before any deck read: a CSV that failed to parse names no deck,
+  // so there is nothing here to compare against yet.
+  const resolved = resolveDeckListInput(input.text);
+  if (resolved.kind === "rejected") {
+    return { ok: false, reason: "csvInvalid", detail: resolved.detail, notes: [] };
+  }
+
   const { deck, rows } = await loadDeck(userId, input.deckId);
-  const { catalog, indexes } = await loadMatchInputs([], { detailed: true });
-  const parsed = buildDeckImport({ text: input.text, catalog, indexes });
+  const { catalog, indexes } = await loadMatchInputs(
+    resolved.kind === "rows" ? resolved.rows : [],
+    { detailed: true },
+  );
+  const parsed =
+    resolved.kind === "rows"
+      ? buildDeckImport({ rows: resolved.rows, catalog, indexes })
+      : buildDeckImport({ text: resolved.text, catalog, indexes });
 
   if (parsed.lineCount === 0) return { ok: false, reason: "noRows", notes: parsed.notes };
   // The same guard the import uses, and for the same reason: every line that
@@ -306,9 +323,22 @@ export async function updateDeckFromList(
     throw new Error(deckImportTooLargeMessage(input.source));
   }
 
+  // Re-derived from `text` rather than trusted from the preview — see the doc
+  // comment above — so a CSV that parsed clean for the preview and somehow
+  // does not here (it cannot: the client resends the same bytes) is refused
+  // the same way, rather than silently falling back to the text pipeline.
+  const resolved = resolveDeckListInput(input.text);
+  if (resolved.kind === "rejected") throw new Error(resolved.detail);
+
   const deck = await loadDeckMeta(userId, input.deckId);
-  const { catalog, indexes } = await loadMatchInputs([], { detailed: true });
-  const parsed = buildDeckImport({ text: input.text, catalog, indexes });
+  const { catalog, indexes } = await loadMatchInputs(
+    resolved.kind === "rows" ? resolved.rows : [],
+    { detailed: true },
+  );
+  const parsed =
+    resolved.kind === "rows"
+      ? buildDeckImport({ rows: resolved.rows, catalog, indexes })
+      : buildDeckImport({ text: resolved.text, catalog, indexes });
 
   // The same two guards the preview applies, repeated rather than assumed. A
   // server action is callable directly, so reaching here means nothing about
