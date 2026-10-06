@@ -3,8 +3,9 @@
 // /collection/sets — the sets you hold cards in, and a search that reaches any of them.
 //
 // Five states, all drawn: first run, populated, search active, search with no match, and a
-// set whose base_set_size is still null. That last one renders its own tag and NEVER a
-// percentage — a set nobody has indexed has no denominator, and 0% would be a claim.
+// set the catalog has not indexed (no printings yet, or a published base run its rows do
+// not match mid-refresh). That last one renders its own tag and NEVER a percentage. A set
+// with no base run is not that state: it completes against every printing (`sectionsOf`).
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";

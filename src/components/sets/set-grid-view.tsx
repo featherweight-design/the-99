@@ -57,7 +57,10 @@ export type SetGridViewProps = {
   cells: Cell[];
   prices: PrintingPriceRow[];
   newestAsOf: string | null;
-  /** The authoritative denominator from `sets`. Null means the catalog is not indexed. */
+  /**
+   * The authoritative denominator from `sets`. Null means the set has no base run, and it
+   * completes against every printing (`sectionsOf`).
+   */
   baseSetSize: number | null;
   /** ISO release date, for the head's provenance line. */
   releasedAt: string | null;
@@ -1656,10 +1659,10 @@ export function SetGridView(props: SetGridViewProps) {
       <div aria-hidden="true" data-set-head-reserve ref={spacerRef} />
 
       {!sections.indexed ? (
-        // The state the spec names and this page did not draw: with no printing classified
-        // there is no base run, so every cell fell out of both sections and the page read
-        // "no cards match your filters" — which blames the reader for a catalog that has
-        // not been indexed. The index already says this; so does the grid now.
+        // The catalog has nothing to count yet: no printings of this set, or a published base
+        // run its rows do not match while a refresh lands. Without this the page read "no
+        // cards match your filters", which blames the reader for a catalog that has not been
+        // indexed. A set with no base run never reaches here (`sectionsOf`).
         <EmptyState>
           <EmptyStateTitle>{setPageCopy.notIndexed.heading(name)}</EmptyStateTitle>
           <EmptyStateBody>{setPageCopy.notIndexed.body}</EmptyStateBody>

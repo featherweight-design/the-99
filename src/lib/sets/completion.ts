@@ -290,6 +290,28 @@ export function sectionsOf(cells: Cell[], baseSetSize?: number | null): SetSecti
   };
 }
 
+/** A set's row on "Your sets": the page's own figures, so the list and the page agree. */
+export type IndexFigures = {
+  owned: number;
+  /** The denominator COUNTED: the base run, or every printing when the set has none. */
+  baseSetSize: number | null;
+  extrasOwned: number;
+  extrasTotal: number;
+  percent: number | null;
+};
+
+/** The figures a row on "Your sets" draws, read off the same `sectionsOf` as the set page. */
+export function indexFiguresOf(cells: Cell[], baseSetSize: number | null): IndexFigures {
+  const counted = sectionsOf(cells, baseSetSize);
+  return {
+    owned: counted.baseOwned,
+    baseSetSize: counted.indexed ? counted.baseTotal : null,
+    extrasOwned: counted.extrasOwned,
+    extrasTotal: counted.extrasTotal,
+    percent: counted.percent,
+  };
+}
+
 /**
  * Moves every subset directly after its parent, leaving every other row exactly where the
  * newest-first order already put it.

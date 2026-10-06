@@ -19,7 +19,7 @@ import { and, eq, inArray, notInArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cardArtPreferences, cards, collectionItems, printings, sets } from "../../db/schema";
 import {
-  orderWithSubsetsAfterParent, placeCells, sectionsOf,
+  indexFiguresOf, orderWithSubsetsAfterParent, placeCells,
   type ArtPick, type Holding, type SetPrinting,
 } from "./completion";
 
@@ -276,15 +276,7 @@ export async function loadOwnedSets(userId: string): Promise<SetIndexRow[]> {
       : null;
     // The page's own rule, so the row and the page cannot disagree. The denominator shown is
     // the counted one: the base run where there is one, every printing otherwise.
-    const counted = sectionsOf(placeCells(rows, mine, picked), snapshotSize);
-    return {
-      ...s,
-      owned: counted.baseOwned,
-      baseSetSize: counted.indexed ? counted.baseTotal : null,
-      extrasOwned: counted.extrasOwned,
-      extrasTotal: counted.extrasTotal,
-      percent: counted.percent,
-    };
+    return { ...s, ...indexFiguresOf(placeCells(rows, mine, picked), snapshotSize) };
   });
 }
 
@@ -425,7 +417,11 @@ export async function loadSetGrid(userId: string, code: string): Promise<SetGrid
     .from(sets)
     .where(eq(sets.code, lower))
     .limit(1);
-  if (!meta) return null;
+  // A digital product's printings are never ingested (`seed-printings.ts` skips them), so
+  // there is no set here to show: it is answered as the unknown code it is to this catalog,
+  // as the index and the search already leave it out, rather than as a set "not indexed
+  // yet" that no refresh will ever index.
+  if (!meta || meta.digital) return null;
 
   const [catalog, holdings, priced, picks] = await Promise.all([
     catalogFor(lower),

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  baseSetSizeOf, fingerprintOf, holdingCountOf, orderWithSubsetsAfterParent,
+  baseSetSizeOf, fingerprintOf, holdingCountOf, indexFiguresOf, orderWithSubsetsAfterParent,
   placeCells, sectionsOf, type BoosterFlagged, type Holding, type SetPrinting,
 } from "./completion";
 
@@ -245,6 +245,27 @@ describe("sectionsOf", () => {
     const s = sectionsOf([], null);
     expect(s.indexed).toBe(false);
     expect(s.percent).toBeNull();
+  });
+});
+
+describe("indexFiguresOf", () => {
+  it("gives a set with no base run its row against every printing, as its page reads it", () => {
+    // Edge of Eternities: Stellar Sights: no published base run. Its row once read "17 owned"
+    // with no bar beside a page that sent the reader to Collection (PR #1274); both now read
+    // the one rule.
+    const cells = placeCells([
+      p("1", { booster: false, isVariant: true }),
+      p("2", { booster: false, isVariant: true }),
+      p("3", { booster: false, isVariant: true }),
+    ], [held({ oracleId: "o-1", collectorNumber: "1" })]);
+    expect(indexFiguresOf(cells, null)).toEqual({ owned: 1, baseSetSize: 3, extrasOwned: 0, extrasTotal: 0, percent: 33 });
+    const page = sectionsOf(cells, null);
+    expect([page.baseOwned, page.baseTotal]).toEqual([1, 3]);
+  });
+
+  it("leaves a set with a base run exactly as it was", () => {
+    const cells = placeCells([p("1"), p("2"), p("3", { booster: false, isVariant: true })], [held({})]);
+    expect(indexFiguresOf(cells, 2)).toEqual({ owned: 1, baseSetSize: 2, extrasOwned: 0, extrasTotal: 1, percent: 50 });
   });
 });
 
