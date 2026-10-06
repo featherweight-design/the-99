@@ -13,7 +13,8 @@ export const deckDescriptionCopy = {
   // ── The field (empty state 1b-1c, checklist editor 1h2, pencil editor 1g) ──
   description: {
     label: "Describe your deck",
-    help: "One or two sentences that will help us write the overview and suggest more accurate card swaps.", // HUGH
+    // HUGH, less one clause (2026-10-05): the Overview does not read the description (H35, Q2).
+    help: "One or two sentences that will help us suggest more accurate card swaps.",
     placeholder: "e.g. Grind a four-player table out and win late with big fliers. No infinite combos.",
     placeholderPhone: "e.g. Grind a four-player table out and win late with big fliers.",
     // Always drawn, from '0 / 240', at the help text's end.
