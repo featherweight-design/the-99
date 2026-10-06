@@ -5,6 +5,7 @@ import { playerTextBody } from "../model/player-text";
 import { mentionsDate, noteDate } from "./note-date";
 import { NUMBER_WORDS, presentationFailures, type Quotable, type RuleKey } from "./presentation";
 import { axisLabel } from "./prompt";
+import { escapeRegExp, quotesPlayerText } from "./quote-match";
 import type { TuningResponse, TuningSuggestion } from "./response-schema";
 
 /**
@@ -294,11 +295,11 @@ export function validateSuggestions(args: {
         });
       }
       case "intent":
-        return quotesPlayerText(pack.intent, c.value);
+        return citationQuotesPlayerText(pack.intent, c.value);
       // "Additional notes" (H35, PR 4b): the same whole-or-part rule as `intent`, against the
       // run's own notes text rather than the deck's standing description.
       case "notes":
-        return quotesPlayerText(pack.notes, c.value);
+        return citationQuotesPlayerText(pack.notes, c.value);
       case "mix": {
         // A target and its figure, as the targets list writes it: `draw 4 of 10`. The cell the
         // citation names must carry exactly that have and target.
@@ -316,21 +317,12 @@ export function validateSuggestions(args: {
 const HURT = /\bhurt|\bagainst\b/;
 const WORKED = /\bwork|\bfor you\b/;
 
-function escapeRegExp(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 /**
- * Whether a citation's value quotes `source` (the player's own words), whole or a part of them
- * (Design cites `win late` out of a longer line). A part is whole words of the source, at word
- * boundaries, and at least one of them a real word: `ate` out of `late` is not a citation. Shared
- * by the `intent` and `notes` citation kinds, which differ only in which field they quote.
+ * `quotesPlayerText` (now shared with `presentation.ts` via `quote-match.ts`) takes a bare
+ * source string; a citation's source is player text that must first pass through
+ * `playerTextBody` — the SAME form the model was shown, not the raw field — before the quote
+ * check runs against it.
  */
-function quotesPlayerText(source: string | null, value: string): boolean {
-  if (source === null) return false;
-  const text = playerTextBody(source);
-  const part = value.trim().replace(/^["“]|["”]$/g, "").trim();
-  if (value.includes(text)) return true;
-  if (!/[A-Za-z]{2,}/.test(part)) return false;
-  return new RegExp(`(?<![\\w'])${escapeRegExp(part)}(?![\\w'])`).test(text);
+function citationQuotesPlayerText(source: string | null, value: string): boolean {
+  return quotesPlayerText(source === null ? null : playerTextBody(source), value);
 }
