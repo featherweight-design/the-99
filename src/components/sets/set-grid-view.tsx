@@ -29,7 +29,7 @@ import { SheetChip } from "../ui/set-list-sheet";
 import { chassisCopy } from "../../lib/copy/filter-chassis";
 import { FilterChipPill, type FilterChip } from "../ui/filter-chassis";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
-import { GhostButton } from "../ui/button";
+import { ACTION_SIZE, GhostButton } from "../ui/button";
 import { EmptyState, EmptyStateBody, EmptyStateTitle } from "../ui/empty-state";
 import { manapoolAddDeckUrl } from "../../lib/manapool/links";
 import { parseAsOf, type PriceFact } from "../../lib/decks/price";
@@ -57,7 +57,11 @@ export type SetGridViewProps = {
   cells: Cell[];
   prices: PrintingPriceRow[];
   newestAsOf: string | null;
-  /** The authoritative denominator from `sets`. Null means the catalog is not indexed. */
+  /**
+   * The authoritative denominator from `sets`. Null is no published base run: a set whose rows
+   * imply none completes against every printing, and one whose rows imply a run not yet
+   * published (a new set mid-ingest) reads as not indexed (`sectionsOf`).
+   */
   baseSetSize: number | null;
   /** ISO release date, for the head's provenance line. */
   releasedAt: string | null;
@@ -1497,6 +1501,7 @@ export function SetGridView(props: SetGridViewProps) {
                   without it a screen-reader user has no way to know their search is about
                   to go with their filters. */}
               <GhostButton
+                className={ACTION_SIZE}
                 onClick={() => clearAll(false)}
                 disabled={!anyFilterOn}
                 aria-label={setFilterCopy.clearAllAria}
@@ -1655,15 +1660,15 @@ export function SetGridView(props: SetGridViewProps) {
       <div aria-hidden="true" data-set-head-reserve ref={spacerRef} />
 
       {!sections.indexed ? (
-        // The state the spec names and this page did not draw: with no printing classified
-        // there is no base run, so every cell fell out of both sections and the page read
-        // "no cards match your filters" — which blames the reader for a catalog that has
-        // not been indexed. The index already says this; so does the grid now.
+        // The catalog has nothing to count yet: no printings of this set, or a published base
+        // run its rows do not match while a refresh lands. Without this the page read "no
+        // cards match your filters", which blames the reader for a catalog that has not been
+        // indexed. A set with no base run never reaches here (`sectionsOf`).
         <EmptyState>
           <EmptyStateTitle>{setPageCopy.notIndexed.heading(name)}</EmptyStateTitle>
           <EmptyStateBody>{setPageCopy.notIndexed.body}</EmptyStateBody>
           <div className="mt-[16px]">
-            <GhostButton href="/collection/sets">
+            <GhostButton href="/collection/sets" className={ACTION_SIZE}>
               {setPageCopy.notIndexed.action}
             </GhostButton>
           </div>
@@ -1904,7 +1909,7 @@ function ZeroResults({
           {setPageCopy.zeroResults.bodyOwnsAll(ownedCount, setName)}
         </EmptyStateBody>
         <div className="mt-[16px]">
-          <GhostButton onClick={onShowAll}>
+          <GhostButton onClick={onShowAll} className={ACTION_SIZE}>
             {setPageCopy.zeroResults.showAll(ownedCount)}
           </GhostButton>
         </div>
@@ -1927,7 +1932,7 @@ function ZeroResults({
         <EmptyStateTitle>{setPageCopy.searchZero.heading(setName, query)}</EmptyStateTitle>
         <EmptyStateBody>{setPageCopy.searchZero.body}</EmptyStateBody>
         <div className="mt-[16px]">
-          <GhostButton onClick={onClearSearch}>{setFilterCopy.search.clear}</GhostButton>
+          <GhostButton onClick={onClearSearch} className={ACTION_SIZE}>{setFilterCopy.search.clear}</GhostButton>
         </div>
       </EmptyState>
     );
@@ -1940,11 +1945,11 @@ function ZeroResults({
       <EmptyStateTitle>{setPageCopy.zeroResults.headingNone(what)}</EmptyStateTitle>
       <div className="mt-[16px] flex items-center justify-center gap-[10px]">
         {query !== "" ? (
-          <GhostButton onClick={onClearSearch}>{setFilterCopy.search.clear}</GhostButton>
+          <GhostButton onClick={onClearSearch} className={ACTION_SIZE}>{setFilterCopy.search.clear}</GhostButton>
         ) : null}
         {/* Third of three, and the same rule: this clears the query too, so its name says
             so. The other two are the chip line's and the sheet's. */}
-        <GhostButton onClick={onClearAll} aria-label={setFilterCopy.clearAllAria}>
+        <GhostButton onClick={onClearAll} aria-label={setFilterCopy.clearAllAria} className={ACTION_SIZE}>
           {chassisCopy.chips.clearAll}
         </GhostButton>
       </div>

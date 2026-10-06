@@ -19,7 +19,7 @@ import { and, eq, inArray, notInArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cardArtPreferences, cards, collectionItems, printings, sets } from "../../db/schema";
 import {
-  indexFiguresFor, orderWithSubsetsAfterParent, placeCells,
+  indexFiguresOf, orderWithSubsetsAfterParent, placeCells,
   type ArtPick, type Holding, type SetPrinting,
 } from "./completion";
 
@@ -27,31 +27,11 @@ import {
 const MAX_QUERY = 100;
 
 /**
- * Set types with no base run to EVER publish — not a backlog state `baseSetSizeOf` will
- * fill in once the catalog catches up, a structural fact about the product. A masterpiece
- * bonus sheet (Edge of Eternities: Stellar Sights) is made entirely of variant printings;
- * a token or memorabilia sheet is not a Magic card at all. Gates the GRID alone: a reader
- * who holds one still gets a row on "Your sets" (Hugh's ruling — every held set gets a
- * row), with an owned count and no percent, and the grid page's existing "no set to
- * complete" page, which already handles that correctly.
- *
- * `art_series` is Scryfall's fourth such type; none exist in this catalog today, named
- * defensively rather than waiting for one to ship broken.
- */
-const NO_BASE_RUN_SET_TYPES = ["token", "memorabilia", "art_series", "masterpiece"] as const;
-
-/**
- * Set types a BLIND "Find any set" search should reach. Narrower than the grid gate on
- * purpose: nobody hunting for a set to complete wants 215 token sets or 99 memorabilia
- * products in the results, but a masterpiece bonus sheet is a real, findable product —
- * it lands on the same "no set to complete" page a direct link to one already does.
+ * Set types a BLIND "Find any set" search leaves out: nobody hunting for a set to complete
+ * wants 215 token sets or 99 memorabilia products in the results. A reader who holds one
+ * still gets its row on "Your sets", and a direct link still opens its page like any other.
  */
 const SEARCHABLE_SET_TYPES_EXCLUDED = ["token", "memorabilia", "art_series"] as const;
-
-/** Whether `setType` has a base run worth gridding — see `NO_BASE_RUN_SET_TYPES`. */
-export function hasGridableBaseRun(setType: string): boolean {
-  return !(NO_BASE_RUN_SET_TYPES as readonly string[]).includes(setType);
-}
 
 export type SetIndexRow = {
   code: string;
@@ -101,12 +81,6 @@ export type SetGrid = {
   picks: ArtPick[];
   prices: PrintingPriceRow[];
   newestAsOf: string | null;
-  /**
-   * Copies held from this set, summed over quantity. Only meaningful on the
-   * non-collectible branch, which is the only place it is read; a collectible grid
-   * returns 0 rather than paying for a count it does not show.
-   */
-  heldCopies: number;
 };
 
 /**
@@ -139,20 +113,6 @@ function catalogFor(code: string) {
     .innerJoin(cards, eq(cards.oracleId, printings.oracleId))
     .innerJoin(sets, eq(sets.code, printings.setCode))
     .where(eq(printings.setCode, code));
-}
-
-/** Total copies held from one set — a SUM of quantities, not a count of rows. */
-async function heldCopies(userId: string, code: string): Promise<number> {
-  const [row] = await db
-    .select({ copies: sql<number>`coalesce(sum(${collectionItems.quantity}), 0)::int` })
-    .from(collectionItems)
-    .where(and(
-      eq(collectionItems.userId, userId),
-      // set_code is stored lowercase on both sides since 0008; lower() keeps a row written
-      // by an older build from reading as a card you do not own. browse.ts does the same.
-      eq(sql`lower(${collectionItems.setCode})`, code),
-    ));
-  return row?.copies ?? 0;
 }
 
 /** The reader's chosen printings within one set, which decide where a fill lands. */
@@ -202,10 +162,9 @@ function holdingsFor(userId: string, code: string) {
  * NO set-type filter. Hugh's ruling: every set the reader holds cards in gets a row, full
  * stop — a promo, a token sheet, a masterpiece bonus sheet included. Only `digital` is
  * excluded, because a digital product's printings are never ingested (`seed-printings.ts`
- * skips them), so it has nothing a row here could ever show. What differs by type is
- * whether the row carries a PERCENT: `indexFiguresFor`, gated on `hasGridableBaseRun`,
- * reports an owned count with no ratio for a set with no base run to divide by — and for
- * one the grid page agrees has none, never trusting a stray `base_set_size` alone.
+ * skips them), so it has nothing a row here could ever show. Every row completes by the one
+ * rule its page does, `sectionsOf`: the base run where the set has one, every printing of
+ * it otherwise — so the list and the page always agree.
  */
 export async function loadOwnedSets(userId: string): Promise<SetIndexRow[]> {
   const heldRows = await db
@@ -231,8 +190,7 @@ export async function loadOwnedSets(userId: string): Promise<SetIndexRow[]> {
     .orderBy(sql`${sets.releasedAt} desc nulls last`, sets.code);
 
   if (heldRows.length === 0) return [];
-  const held = orderWithSubsetsAfterParent(heldRows);
-  const codes = held.map((s) => s.code);
+  const codes = heldRows.map((s) => s.code);
 
   // Three queries for the whole index, not three per set: a reader with 34 held sets would
   // otherwise cost a hundred round trips and re-read the same ~13k catalog rows a set at a
@@ -298,6 +256,11 @@ export async function loadOwnedSets(userId: string): Promise<SetIndexRow[]> {
   const holdingsByCode = groupBySet(holdings);
   const picksByCode = groupBySet(picks);
 
+  // A held set our catalog carries no card from has no row: its page answers as an unknown
+  // code (`loadSetGrid`), and a row linking to that would read "not indexed yet" for a set no
+  // refresh will index. Dropped BEFORE subsets are placed, so a subset whose parent is dropped
+  // keeps its own newest-first slot rather than the one it took after that parent.
+  const held = orderWithSubsetsAfterParent(heldRows.filter((s) => catalogByCode.has(s.code)));
   return held.map((s) => {
     const rows = (catalogByCode.get(s.code) ?? []) as unknown as SetPrinting[];
     const mine = (holdingsByCode.get(s.code) ?? []) as unknown as Holding[];
@@ -315,12 +278,9 @@ export async function loadOwnedSets(userId: string): Promise<SetIndexRow[]> {
     const snapshotSize = rows.length > 0
       ? ((rows[0] as unknown as { baseSetSize: number | null }).baseSetSize ?? null)
       : null;
-    // Gated by the SAME predicate the grid page gates on, not by the raw column — see
-    // `indexFiguresFor`.
-    const figures = indexFiguresFor(
-      placeCells(rows, mine, picked), snapshotSize, hasGridableBaseRun(s.setType),
-    );
-    return { ...s, ...figures };
+    // The page's own rule, so the row and the page cannot disagree. The denominator shown is
+    // the counted one: the base run where there is one, every printing otherwise.
+    return { ...s, ...indexFiguresOf(placeCells(rows, mine, picked), snapshotSize) };
   });
 }
 
@@ -329,10 +289,9 @@ export async function loadOwnedSets(userId: string): Promise<SetIndexRow[]> {
  * owned count: the reader is looking for a set, not reading a figure, and costing every
  * result would run the placement rule over the whole catalogue.
  *
- * `SEARCHABLE_SET_TYPES_EXCLUDED`, not `NO_BASE_RUN_SET_TYPES`: a masterpiece bonus sheet
- * is still findable here, landing on the same "no set to complete" page a direct link
- * already does. A token or memorabilia sheet nobody is browsing to complete is excluded
- * from a BLIND search only — a reader who holds one still gets it on "Your sets".
+ * A token or memorabilia sheet nobody is browsing to complete is excluded from a BLIND
+ * search only (`SEARCHABLE_SET_TYPES_EXCLUDED`) — a reader who holds one still gets it on
+ * "Your sets".
  */
 export async function searchSets(query: string): Promise<SetIndexRow[]> {
   const q = query.trim();
@@ -360,6 +319,10 @@ export async function searchSets(query: string): Promise<SetIndexRow[]> {
     .where(and(
       eq(sets.digital, false),
       notInArray(sets.setType, [...SEARCHABLE_SET_TYPES_EXCLUDED]),
+      // Only a set the catalog holds a card from: any other answers as an unknown code
+      // (`loadSetGrid`), and a search result must not lead there. Aliased and qualified, so
+      // the inner `set_code` can never resolve against the outer table.
+      sql`exists (select 1 from ${printings} sp where sp.set_code = ${sets}.code)`,
       sql`(lower(${sets.name}) like ${like} escape '\\' or lower(${sets.code}) like ${like} escape '\\')`,
     ))
     .orderBy(sql`${sets.releasedAt} desc nulls last`, sets.code);
@@ -462,27 +425,12 @@ export async function loadSetGrid(userId: string, code: string): Promise<SetGrid
     .from(sets)
     .where(eq(sets.code, lower))
     .limit(1);
-  if (!meta) return null;
+  // A digital product's printings are never ingested (`seed-printings.ts` skips them), so
+  // there is no set here to show: it is answered as the unknown code it is to this catalog,
+  // as the index and the search already leave it out, rather than as a set "not indexed
+  // yet" that no refresh will ever index.
+  if (!meta || meta.digital) return null;
 
-  // Gridability is decided BEFORE the expensive half. A direct link to a digital product
-  // or a type with no base run to ever publish is answered by the metadata alone; loading
-  // every printing and the price join first only to discard them is work nobody reads.
-  const gridable = !meta.digital && hasGridableBaseRun(meta.setType);
-  if (!gridable) {
-    return {
-      set: meta,
-      printings: [],
-      holdings: [],
-      picks: [],
-      prices: [],
-      newestAsOf: null,
-      heldCopies: await heldCopies(userId, lower),
-    };
-  }
-
-  // No heldCopies here: only the non-collectible branch reads it, and that branch has
-  // already returned above. Running it for every grid scanned the reader's collection a
-  // second time for a number this page never shows.
   const [catalog, holdings, priced, picks] = await Promise.all([
     catalogFor(lower),
     holdingsFor(userId, lower),
@@ -494,6 +442,12 @@ export async function loadSetGrid(userId: string, code: string): Promise<SetGrid
     loadSetPrices(lower),
     picksFor(userId, lower),
   ]);
+  // A set our catalog holds no card from — a token sheet, a minigame, most memorabilia —
+  // has nothing to grid, and never will: those layouts are routed to `skipped_printings`,
+  // not `printings`. 250 non-digital sets on staging are exactly that (2026-10-05). Answered
+  // as the unknown code it is to this catalog ("the link is wrong or the set is too new for
+  // our checklist"), never as a set "not indexed yet" that no refresh will index.
+  if (catalog.length === 0) return null;
 
   return {
     // The denominator comes from the CATALOG query, not from the metadata read above: the
@@ -508,6 +462,5 @@ export async function loadSetGrid(userId: string, code: string): Promise<SetGrid
     picks: picks as ArtPick[],
     prices: priced.prices,
     newestAsOf: priced.newestAsOf,
-    heldCopies: 0,
   };
 }

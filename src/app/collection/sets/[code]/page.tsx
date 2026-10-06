@@ -1,22 +1,22 @@
 // /collection/sets/[code] — the grid.
 //
-// Two failure pages, one layout, and both distinct from "not indexed yet": an unknown code
-// is a wrong link, a non-collectible one is a real product with no numbered run to be
-// missing from, and a set with a null base_set_size is a real page that is merely early.
-// Neither failure is a 404 route — the breadcrumb survives, so the reader is visibly still
-// inside Collection — and neither offers a search field, because the index is one tap away
-// and already has one.
+// EVERY set gets this page — the same grid, filters, sort, cost to complete and completion
+// bar, whatever its type (Hugh, 2026-10-05: Sets is where a set is viewed, never a redirect
+// to Collection). A set with no base run completes against every printing of it
+// (`sectionsOf`). The one failure page is an unknown code, a wrong link: not a 404 route —
+// the breadcrumb survives, so the reader is visibly still inside Collection — and no search
+// field, because the index is one tap away and already has one.
 
 import Link from "next/link";
 import { requireUserId } from "../../../../lib/auth";
 import { cacheForUser } from "../../../../lib/cache/user-lists";
-import { hasGridableBaseRun, loadSetGrid } from "../../../../lib/sets/read";
+import { loadSetGrid } from "../../../../lib/sets/read";
 import { fingerprintOf, placeCells } from "../../../../lib/sets/completion";
 import { parseAsOf, provenanceForm } from "../../../../lib/decks/price";
 import { setPageCopy } from "../../../../lib/copy/set-collections";
 import { SetGridClient } from "../../../../components/sets/set-grid-client";
 import { EmptyState, EmptyStateBody, EmptyStateTitle } from "../../../../components/ui/empty-state";
-import { GhostButton, PrimaryButton } from "../../../../components/ui/button";
+import { ACTION_SIZE, PrimaryButton } from "../../../../components/ui/button";
 import { PendingReporter } from "../../../../components/shell/pending-reporter";
 
 function Shell({ code, children }: { code: string; children: React.ReactNode }) {
@@ -53,42 +53,9 @@ export default async function SetGridPage({
           <EmptyStateTitle>{setPageCopy.unknownCode.heading(code)}</EmptyStateTitle>
           <EmptyStateBody>{setPageCopy.unknownCode.body}</EmptyStateBody>
           <div className="mt-[16px]">
-            <PrimaryButton href="/collection/sets">
+            <PrimaryButton href="/collection/sets" className={ACTION_SIZE}>
               {setPageCopy.unknownCode.action}
             </PrimaryButton>
-          </div>
-        </EmptyState>
-      </Shell>
-    );
-  }
-
-  // Digital products are excluded from search and their printings are dropped at ingest,
-  // so a direct URL for one would otherwise land on a permanently empty grid. A token,
-  // memorabilia or masterpiece-bonus-sheet set has real printings but no base run to grid
-  // — see `hasGridableBaseRun`.
-  const gridable = !grid.set.digital && hasGridableBaseRun(grid.set.setType);
-  if (!gridable) {
-    const held = grid.heldCopies;
-    return (
-      <Shell code={code}>
-        <EmptyState>
-          <EmptyStateTitle>{setPageCopy.nonCollectible.heading(grid.set.name)}</EmptyStateTitle>
-          <EmptyStateBody>{setPageCopy.nonCollectible.body(held)}</EmptyStateBody>
-          <div className="mt-[16px] flex flex-col items-center gap-[10px]">
-            {/* Only when there is something to see. This page is also reached by search,
-                where the reader holds nothing from the set and the CTA would have offered
-                "See those 0 in Collection" against an empty destination.
-
-                `s`, which is the parameter the collection browser reads (browser.tsx:220).
-                `sets` was silently ignored, so this opened an unfiltered collection. */}
-            {held > 0 ? (
-              <PrimaryButton href={`/collection?s=${grid.set.code.toUpperCase()}`}>
-                {setPageCopy.nonCollectible.primary(held)}
-              </PrimaryButton>
-            ) : null}
-            <GhostButton href="/collection/sets">
-              {setPageCopy.nonCollectible.secondary}
-            </GhostButton>
           </div>
         </EmptyState>
       </Shell>

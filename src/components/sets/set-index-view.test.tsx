@@ -105,35 +105,23 @@ describe("SetIndexView — S5 not indexed", () => {
   });
 });
 
-describe("SetIndexView — a set with no base run to ever publish", () => {
-  // Edge of Eternities: Stellar Sights, Secret Lair-shaped: classified rows, a real owned
-  // count, and a denominator that will never arrive. A different fact from "not indexed
-  // yet", which is a backlog state this set will never leave.
-  it("shows the owned count, never the not-indexed tag or a percentage", () => {
+describe("SetIndexView — a set with no base run", () => {
+  // Edge of Eternities: Stellar Sights: no base run, so its row reads against every printing
+  // of it (`sectionsOf`), the ratio and bar of any other set (Hugh, 2026-10-05).
+  it("draws the ratio against every printing, never an owned-only count or the not-indexed tag", () => {
     render(
       <SetIndexView
         sets={[set({
           name: "Edge of Eternities: Stellar Sights", code: "eos",
-          baseSetSize: null, percent: null, owned: 0, extrasOwned: 17, extrasTotal: 180,
+          baseSetSize: 180, percent: 9, owned: 17, extrasOwned: 0, extrasTotal: 0,
         })]}
         cardCount={17}
         onSearch={noSearch}
       />,
     );
-    expect(screen.getByText("17 owned")).toBeInTheDocument();
+    expect(screen.queryByText("17 owned")).toBeNull();
     expect(screen.queryByText("not indexed yet")).toBeNull();
-    expect(screen.queryByText(/%/)).toBeNull();
-  });
-
-  it("says 'you own none of it' rather than claiming the set is unindexed", () => {
-    render(
-      <SetIndexView
-        sets={[set({ baseSetSize: null, percent: null, owned: 0, extrasOwned: 0, extrasTotal: 180 })]}
-        cardCount={0}
-        onSearch={noSearch}
-      />,
-    );
-    expect(screen.getByRole("link")).toHaveAccessibleName(/you own none of it/);
+    expect(screen.getByRole("link")).toHaveAccessibleName(/17 of 180/);
   });
 });
 

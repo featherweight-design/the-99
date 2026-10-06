@@ -55,6 +55,13 @@ const GHOST =
 // share three utilities would cost more than it saves.
 export const HAIRLINE = "sm:h-[32px] sm:px-[14px] sm:text-[12.5px]";
 
+// The size for a standalone action that has no design table of its own to size it, such as an
+// empty state's way out. The primitives leave size to the caller, so a caller that passed none
+// rendered bare text in a border (Hugh, 2026-10-05). 44px holds the phone target floor at both
+// widths; the figures are the set filter sheet's own primary, the action those pages drew.
+export const ACTION_SIZE =
+  "inline-flex items-center justify-center min-h-[44px] rounded-[8px] px-[16px] text-[13px]";
+
 type SharedProps = {
   className?: string;
   children: React.ReactNode;

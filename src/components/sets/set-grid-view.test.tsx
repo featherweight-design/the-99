@@ -59,6 +59,10 @@ function view(
   // A supported catalog state, and the only prop a case here needs to vary beyond the two
   // above — passed rather than duplicating the whole render for one null.
   releasedAt: string | null = "2026-09-01",
+  // The published denominator. Defaults to the booster count, a set that is indexed and
+  // agrees with its rows; a figure the rows disagree with is a set mid-refresh, which is the
+  // one state that still reads "not indexed yet".
+  baseSetSize: number | null = printings.filter((x) => x.booster === true).length || null,
 ) {
   // The address bar holds what the mocked search params say, on this page's own path, as it does
   // in the app: `mirrorUrl` skips a write equal to the live URL or naming another path, so a bar
@@ -82,7 +86,7 @@ function view(
       cells={placeCells(printings, holdings)}
       prices={[]}
       newestAsOf={null}
-      baseSetSize={printings.filter((x) => x.booster === true).length || null}
+      baseSetSize={baseSetSize}
       staleAsOf={null}
     />
   );
@@ -311,7 +315,9 @@ describe("SetGridView — not indexed yet", () => {
       cells={placeCells([p("1", { booster: null }), p("2", { booster: null })], [])}
       prices={[]}
       newestAsOf={null}
-      baseSetSize={null}
+      // A published base run the rows do not carry yet: a refresh mid-way. A null would be
+      // a set with no base run, which completes against every printing instead.
+      baseSetSize={5}
       staleAsOf={null}
     />,
   );
@@ -1091,7 +1097,7 @@ describe("SetGridView — the rarity panel's rows", () => {
 // indexed under a visible sticky head does not grow the head by a line.
 describe("SetGridView — row 3's box is unconditional", () => {
   it("reserves the result row even with no checklist to count", () => {
-    const { container } = view([p("1", { booster: null, isVariant: true })], []);
+    const { container } = view([p("1", { booster: null, isVariant: true })], [], undefined, undefined, 5);
     const row = container.querySelector("[data-set-result]") as HTMLElement;
     expect(row).not.toBeNull();
     // The margin is on the BOX, not on the paragraph inside it — or a wrapped line would
@@ -2083,7 +2089,7 @@ describe("SetGridView — the phone head carries less than the desktop one", () 
   it("keeps the note standing when the set is not indexed", () => {
     stubDesktop(false);
     const { container } = view(
-      [p("1", { name: "Plains", booster: false })], [],
+      [p("1", { name: "Plains", booster: false })], [], undefined, undefined, 5,
     );
     const note = [...container.querySelectorAll("p")]
       .find((el) => /base run only/.test(el.textContent ?? ""));

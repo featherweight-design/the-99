@@ -3,15 +3,16 @@
 // /collection/sets — the sets you hold cards in, and a search that reaches any of them.
 //
 // Five states, all drawn: first run, populated, search active, search with no match, and a
-// set whose base_set_size is still null. That last one renders its own tag and NEVER a
-// percentage — a set nobody has indexed has no denominator, and 0% would be a claim.
+// set the catalog has not indexed (no printings yet, or a published base run its rows do
+// not match mid-refresh). That last one renders its own tag and NEVER a percentage. A set
+// with no base run is not that state: it completes against every printing (`sectionsOf`).
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { SearchField } from "../ui/text-field";
 import { EmptyState, EmptyStateBody, EmptyStateTitle } from "../ui/empty-state";
-import { GhostButton, PrimaryButton } from "../ui/button";
+import { ACTION_SIZE, GhostButton, PrimaryButton } from "../ui/button";
 import { setsIndexCopy } from "../../lib/copy/set-collections";
 import { SetIcon } from "./set-icon";
 import { PendingTrack } from "../shell/pending-track";
@@ -36,18 +37,13 @@ function CompletionBar({ percent, complete }: { percent: number; complete: boole
 }
 
 function Row({ set }: { set: SetIndexRow }) {
-  // Four states now, not three. A search result carries no figure because none was
-  // computed; a set with classified rows and no denominator — one that will NEVER get
-  // one, a masterpiece bonus sheet or a Secret Lair-style insert — carries a real owned
-  // count with no ratio; a set with nothing classified at all is genuinely not indexed
-  // yet. Every state names the set so a screen-reader user can tell one row from the next.
+  // Three states, not two. A search result carries no figure because none was computed;
+  // a set with a null denominator carries none because its catalog is not indexed. Only
+  // the second gets the not-indexed tag, and both name the set so a screen-reader user
+  // can tell one row from the next. Every set with printings has a denominator — its base
+  // run, or every printing of it (`sectionsOf`) — so the tag is a backlog state only.
   const counted = !set.uncounted;
   const indexed = set.baseSetSize !== null && set.percent !== null;
-  // `extrasTotal > 0` is what tells the two null-percent cases apart: `sectionsOf` only
-  // populates extras with no denominator when the rows ARE classified and genuinely have
-  // no base run to publish — an ordinary not-yet-indexed set has nothing classified, so
-  // its extras stay empty too.
-  const ownedOnly = counted && !indexed && set.extrasTotal > 0;
   // The exact counts, not the rounded percentage: 275/276 displays as 100% and is not
   // complete, and the success treatment is a claim rather than a rounding.
   // `indexed` too: a zero denominator satisfies `owned === baseSetSize` while the row is
@@ -61,11 +57,9 @@ function Row({ set }: { set: SetIndexRow }) {
     ? set.owned === 0
       ? setsIndexCopy.row.zeroAria(set.baseSetSize as number, set.name)
       : setsIndexCopy.row.ratioAria(set.owned, set.baseSetSize as number, set.name)
-    : ownedOnly
-      ? setsIndexCopy.row.ownedOnlyAria(set.extrasOwned, set.name)
-      : counted
-        ? `${set.name}: ${setsIndexCopy.notIndexed.aria}`
-        : set.name;
+    : counted
+      ? `${set.name}: ${setsIndexCopy.notIndexed.aria}`
+      : set.name;
   // The label is explicit, so it replaces every descendant: a visible figure missing from
   // it is announced to nobody. Same defect `set-cell.tsx` already fixed for its price tag.
   const ratioAria = showExtras
@@ -135,13 +129,6 @@ function Row({ set }: { set: SetIndexRow }) {
                 </span>
               ) : null}
             </>
-          ) : ownedOnly ? (
-            // A real count, never a percentage: there is no denominator to divide by, and
-            // for this set there never will be — unlike the not-indexed tag below, which is
-            // a backlog state, not a permanent one.
-            <span style={{ color: "var(--fg-body)" }}>
-              {setsIndexCopy.row.ownedOnly(set.extrasOwned)}
-            </span>
           ) : counted ? (
             // Never a percentage. There is no denominator to divide by yet.
             <span style={{ color: "var(--fg-locked)" }}>{setsIndexCopy.notIndexed.tag}</span>
@@ -303,7 +290,7 @@ export function SetIndexView({
         <EmptyStateTitle level={2}>{setsIndexCopy.firstRun.heading}</EmptyStateTitle>
         <EmptyStateBody>{setsIndexCopy.firstRun.body}</EmptyStateBody>
         <div className="mt-[18px] flex flex-col items-center gap-[10px]">
-          <PrimaryButton href="/collection/replace">
+          <PrimaryButton href="/collection/replace" className={ACTION_SIZE}>
             {setsIndexCopy.firstRun.primary}
           </PrimaryButton>
           <span className="text-[12px]" style={{ color: "var(--fg-muted)" }}>
@@ -361,7 +348,7 @@ export function SetIndexView({
             {/* A failure gets a retry, which is what its copy offers; a genuine no-match
                 gets the clear. Offering "clear the search" against "try again in a moment"
                 left no way to recover from a transient failure except retyping. */}
-            <GhostButton onClick={() => search(failed ? query : "")}>
+            <GhostButton onClick={() => search(failed ? query : "")} className={ACTION_SIZE}>
               {failed ? setsIndexCopy.searchFailed.action : setsIndexCopy.noMatch.action}
             </GhostButton>
           </div>

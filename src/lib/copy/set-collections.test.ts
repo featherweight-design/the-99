@@ -86,10 +86,8 @@ describe("setPageCopy states", () => {
     expect(setPageCopy.staleAfterUpload.line(17)).toContain("17 more cards from this set");
   });
 
-  it("distinguishes an unknown code from a set with nothing to complete", () => {
+  it("names the code a wrong link asked for", () => {
     expect(setPageCopy.unknownCode.heading("zzz")).toBe("No set with the code ZZZ");
-    expect(setPageCopy.nonCollectible.heading("Secret Lair Drop"))
-      .toBe("Secret Lair Drop has no set to complete");
   });
 });
 
