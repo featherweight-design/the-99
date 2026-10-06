@@ -186,9 +186,22 @@ describe("looksLikeCsv", () => {
     expect(looksLikeCsv("Commander\n1 Atraxa, Praetors' Voice\n\nDeck\n1 Sol Ring")).toBe(false);
   });
 
-  it("requires both Name and Quantity — a header with only one is not CSV", () => {
+  it("is not CSV when the only cell is Name or Quantity alone — a single cell, no comma", () => {
     expect(looksLikeCsv("Name\nSol Ring\n")).toBe(false);
     expect(looksLikeCsv("Quantity\n1\n")).toBe(false);
+  });
+
+  it("is CSV for a multi-column header carrying only ONE of the two required columns", () => {
+    // Reaching parseCollectionCsv even here matters: its own "header missing
+    // Quantity column" error is the whole point — a header this test's
+    // sibling above treats as plain text would instead fall through to the
+    // paste parser and report "none of these lines matched a card".
+    expect(looksLikeCsv("Name,Amount\nSol Ring,1\n")).toBe(true);
+    expect(looksLikeCsv("Foo,Quantity\nSol Ring,1\n")).toBe(true);
+  });
+
+  it("is not CSV for a multi-column header with neither required column", () => {
+    expect(looksLikeCsv("Set,Foil\nc21,foil\n")).toBe(false);
   });
 
   it("reads line 0 literally, exactly as parseCollectionCsv does — a leading blank line is not CSV", () => {

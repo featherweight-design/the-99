@@ -604,9 +604,27 @@ describe("resolveDeckListInput", () => {
     });
   });
 
-  it("is text, not CSV, when the header is missing a required column — looksLikeCsv gates it", () => {
-    // A header with only one of Name/Quantity never reaches parseCollectionCsv's own
-    // "header missing ___ column" error from this path; it is read as a decklist instead.
+  it("rejects a header carrying Name but not Quantity, naming the missing column", () => {
+    // The gap the pre-open pass caught: this header is CSV-shaped (comma-split,
+    // a recognized Name column) but was previously read as plain text and gave
+    // a generic "none matched" instead of this specific message.
+    expect(resolveDeckListInput("Name,Amount\nSol Ring,1\n")).toEqual({
+      kind: "rejected",
+      detail: "Header missing Quantity column",
+    });
+  });
+
+  it("rejects a header carrying Quantity but not Name, naming the missing column", () => {
+    expect(resolveDeckListInput("Foo,Quantity\nSol Ring,1\n")).toEqual({
+      kind: "rejected",
+      detail: "Header missing Name column",
+    });
+  });
+
+  it("is text, not CSV, when neither required column nor a comma is present", () => {
+    // A single-cell header ("Quantity" alone) has no comma — the shape every
+    // plain decklist line has — and a multi-column header naming neither
+    // column is not CSV at all; both are read as a decklist instead.
     expect(resolveDeckListInput("Quantity\n1\n")).toEqual({ kind: "text", text: "Quantity\n1\n" });
     expect(resolveDeckListInput("Set,Foil\nc21,foil\n")).toEqual({
       kind: "text",

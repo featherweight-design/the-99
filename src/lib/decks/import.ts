@@ -124,15 +124,18 @@ export type ResolvedDeckListInput =
  * failed — specific enough that "fix it and try again" is an instruction the
  * player can act on rather than a dead end.
  *
- * Always a ROW: `parseCollectionCsv` is only ever called here once
- * `looksLikeCsv` has already confirmed the header carries both required
- * columns, so its two header-level errors ("header missing Name/Quantity
- * column") and its empty-file error can never reach this function — `errors`
- * holds at least one entry, every one of them naming a line past the header.
+ * `looksLikeCsv` requires only ONE of the two columns, so a header missing
+ * the other one still reaches `parseCollectionCsv`, whose own
+ * "header missing Name/Quantity column" error is a single entry on line 1
+ * rather than a row — named on its own rather than as "Row 1: …", which
+ * would read as a line of data when it is the header itself.
  */
 function describeCsvErrors(errors: ParseError[]): string {
   const [first, ...rest] = errors;
-  const named = `Row ${first.line}: ${first.reason}`;
+  const named =
+    first.line === 1 && first.reason.startsWith("header")
+      ? `${first.reason[0].toUpperCase()}${first.reason.slice(1)}`
+      : `Row ${first.line}: ${first.reason}`;
   if (rest.length === 0) return named;
   return `${named} (and ${rest.length} more ${rest.length === 1 ? "row" : "rows"})`;
 }

@@ -131,11 +131,12 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
     throw new Error(deckImportTooLargeMessage(input.source));
   }
 
-  // A CSV-shaped upload carries real Scryfall ids / set codes / collector numbers once
-  // parsed, which the printing indexes can resolve against for an exact-printing match —
-  // precision a name-only paste never has. A plain paste or text file parses to no rows
-  // here, and `loadMatchInputs` returns the same empty indexes for an empty row list that
-  // it always has, so this costs nothing on the path that cannot use it.
+  // A CSV-shaped upload carries real Scryfall ids once parsed, which `matchRows`
+  // resolves against before falling back to name — exactly like the collection
+  // upload's own CSV rows, and precision a name-only paste never has. A plain
+  // paste or text file parses to no rows here, and `loadMatchInputs` returns the
+  // same empty indexes for an empty row list that it always has, so this costs
+  // nothing on the path that cannot use it.
   const resolved = resolveDeckListInput(input.text);
   if (resolved.kind === "rejected") {
     return { ok: false, reason: "csvInvalid", detail: resolved.detail, notes: [] };
