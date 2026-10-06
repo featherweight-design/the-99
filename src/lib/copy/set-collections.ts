@@ -156,10 +156,14 @@ export const setFilterCopy = {
 
 export const setsIndexCopy = {
   title: "Your sets",
+  // "Checklist" (2026-10-05, true on a set with no base run too): a set with a published
+  // numbered run completes against it; a set with none — a masterpiece sheet, most promos
+  // — completes against every printing instead (`sectionsOf`). "The base numbered run"
+  // named only the first case.
   subtitle: (n: number) =>
     n === 1
-      ? "1 set you hold cards in. Completion counts the base numbered run."
-      : `${n} sets you hold cards in, newest first. Completion counts the base numbered run.`,
+      ? "1 set you hold cards in. Completion counts the checklist."
+      : `${n} sets you hold cards in, newest first. Completion counts the checklist.`,
 
   search: {
     placeholder: "Find any set",
@@ -190,9 +194,9 @@ export const setsIndexCopy = {
 
   row: {
     ratioAria: (have: number, total: number, name: string) =>
-      `${name}: you have ${have} of ${total} in the base run`,
+      `${name}: you have ${have} of ${total} in the checklist`,
     zeroAria: (total: number, name: string) =>
-      `${name}: you have none of ${total} in the base run`,
+      `${name}: you have none of ${total} in the checklist`,
     // Visible, under the base ratio, one type step down. Lowercase, so it reads as a unit
     // on a figure rather than as a heading.
     //
@@ -257,19 +261,22 @@ export const setPageCopy = {
     // with one accessible name on this page, and the field is one scroll away — so this
     // returns the reader to it rather than duplicating it.
     backToSearch: "Show the search and the full header",
+    // "Checklist" (2026-10-05, true on a set with no base run too — #1275 made every
+    // printing the denominator there): "base run" named only the published-numbered-run
+    // case, and the figures were right on a masterpiece sheet while the noun was not.
     meta: (code: string, released: string, base: number, extras: number) =>
-      `${code.toUpperCase()} · released ${released} · ${base} in the base run`
+      `${code.toUpperCase()} · released ${released} · ${base} in the checklist`
       + ` · ${extras} ${extras === 1 ? "extra" : "extras"}`,
-    ratioNote: "base run only · extras counted apart",
+    ratioNote: "checklist only · extras counted apart",
     // R3 finding 6, move 1. The scope note is a whole line saying what the denominator
     // counts, so on a phone the word goes INTO the figure and the line goes away. Desktop
     // keeps both, and the unindexed state keeps the standalone note — there is no ratio
-    // there for `base` to ride on.
+    // there for `checklist` to ride on.
     // `percent` is nullable on the section summary even though an indexed set always has
     // one; the desktop form has always interpolated it raw. Taken as nullable here so the
     // phone form cannot be the place that prints "null%".
     ratioScoped: (have: number, total: number, percent: number | null) =>
-      percent === null ? `${have} / ${total} base` : `${have} / ${total} base · ${percent}%`,
+      percent === null ? `${have} / ${total} checklist` : `${have} / ${total} checklist · ${percent}%`,
     // The extras ratio, trailing the scoped figure. It is what the absorbed note promised
     // was counted apart, so dropping the note without it would lose the fact.
     // The noun agrees with the denominator, as `head.meta` and the set index both do:
@@ -286,7 +293,7 @@ export const setPageCopy = {
     metaShort: (code: string, released: string | null) =>
       released ? `${code.toUpperCase()} · ${released.slice(0, 4)}` : code.toUpperCase(),
     ratioAria: (have: number, total: number) =>
-      `You have ${have} of ${total} ${total === 1 ? "card" : "cards"} in the base run`,
+      `You have ${have} of ${total} ${total === 1 ? "card" : "cards"} in the checklist`,
   },
 
   cost: {
@@ -365,7 +372,9 @@ export const setPageCopy = {
   },
 
   sections: {
-    base: "Base run",
+    // "Checklist" (2026-10-05): true whether this section is a published numbered run or,
+    // on a set with none, every printing we have indexed. "Base run" named only the first.
+    base: "Checklist",
     baseNote: (first: string, last: string) => `${first}–${last} · this is the run the figure counts`,
     extras: "Extras",
     extrasNote: (first: string, last: string) =>
@@ -447,7 +456,7 @@ export const setPageCopy = {
 
   complete: {
     heading: (set: string) => `${set}, complete`,
-    line: (total: number) => `all ${total} of the base run`,
+    line: (total: number) => `all ${total} of the checklist`,
     // R3: `nothing left to buy` and `nothing missing to show` are deleted as
     // superfluous, and Missing-only is REMOVED at 100% rather than greyed —
     // so there is no inert-toggle gloss to write.

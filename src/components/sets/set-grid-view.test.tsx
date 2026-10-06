@@ -143,7 +143,7 @@ describe("SetGridView — the two sections", () => {
 
   it("says the figure counts the base run only", () => {
     view([p("1")], []);
-    expect(screen.getByText("base run only · extras counted apart")).toBeInTheDocument();
+    expect(screen.getByText("checklist only · extras counted apart")).toBeInTheDocument();
   });
 
   it("offers the extras jump only when there are extras to jump to", () => {
@@ -164,7 +164,7 @@ describe("SetGridView — 0% and 100%", () => {
   it("reads a complete set as sealed rather than as a ratio", () => {
     view([p("1"), p("2")], ["1", "2"]);
     expect(screen.getByText("Duskmourn, complete")).toBeInTheDocument();
-    expect(screen.getByText("all 2 of the base run")).toBeInTheDocument();
+    expect(screen.getByText("all 2 of the checklist")).toBeInTheDocument();
   });
 
   it("removes Missing at 100 percent rather than greying it, and keeps Owned", () => {
@@ -2068,9 +2068,9 @@ describe("SetGridView — the phone head carries less than the desktop one", () 
   it("puts the scope word in the figure and drops the note", () => {
     stubDesktop(false);
     const { container } = view(indexed(), ["1"]);
-    expect(container.textContent).toMatch(/1 \/ 2 base/);
+    expect(container.textContent).toMatch(/1 \/ 2 checklist/);
     const note = [...container.querySelectorAll("p")]
-      .find((el) => /base run only/.test(el.textContent ?? ""));
+      .find((el) => /checklist only/.test(el.textContent ?? ""));
     expect(note).toBeDefined();
     // The BARE token. `/hidden/` also matches `md:hidden`, so the substring passes on a
     // note that was swapped to the wrong breakpoint — which is the whole thing this
@@ -2092,7 +2092,7 @@ describe("SetGridView — the phone head carries less than the desktop one", () 
       [p("1", { name: "Plains", booster: false })], [], undefined, undefined, 5,
     );
     const note = [...container.querySelectorAll("p")]
-      .find((el) => /base run only/.test(el.textContent ?? ""));
+      .find((el) => /checklist only/.test(el.textContent ?? ""));
     expect(note).toBeDefined();
     expect(note?.className).not.toMatch(/hidden/);
   });
@@ -2181,8 +2181,8 @@ describe("SetGridView — the desktop head is untouched by finding 6", () => {
     const { container } = view(indexed(), ["1"]);
     const visible = textOf(container, "p, span", desktopOnlyHidden);
     expect(visible).toMatch(/1 \/ 2 · 50%/);
-    expect(visible).toMatch(/DSK · released 2026-09-01 · 2 in the base run · 1 extra/);
-    expect(visible).toMatch(/base run only · extras counted apart/);
+    expect(visible).toMatch(/DSK · released 2026-09-01 · 2 in the checklist · 1 extra/);
+    expect(visible).toMatch(/checklist only · extras counted apart/);
   });
 
   it("keeps the result line's full form", () => {

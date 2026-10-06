@@ -71,14 +71,14 @@ describe("SetIndexView — S2 populated", () => {
     expect(screen.getByRole("link", {
       // The extras clause is appended in addendum R2 §30: the label is explicit, so it
       // replaces every descendant and a visible figure absent from it reaches nobody.
-      name: "Edge of Eternities: you have 62 of 276 in the base run, and 4 of 123 extras",
+      name: "Edge of Eternities: you have 62 of 276 in the checklist, and 4 of 123 extras",
     })).toBeInTheDocument();
   });
 
   it("says you have none rather than reading 0 of 276 aloud", () => {
     render(<SetIndexView sets={[set({ owned: 0, percent: 0 })]} cardCount={1} onSearch={noSearch} />);
     expect(screen.getByRole("link", {
-      name: "Edge of Eternities: you have none of 276 in the base run, and 4 of 123 extras",
+      name: "Edge of Eternities: you have none of 276 in the checklist, and 4 of 123 extras",
     })).toBeInTheDocument();
   });
 
@@ -401,7 +401,7 @@ describe("SetIndexView — the extras figure", () => {
   it("appends the figure to the row's accessible name", () => {
     render(<SetIndexView sets={[set({})]} cardCount={1200} onSearch={noSearch} />);
     expect(row()).toHaveAccessibleName(
-      "Edge of Eternities: you have 62 of 276 in the base run, and 4 of 123 extras",
+      "Edge of Eternities: you have 62 of 276 in the checklist, and 4 of 123 extras",
     );
   });
 
@@ -409,7 +409,7 @@ describe("SetIndexView — the extras figure", () => {
     render(<SetIndexView sets={[set({ owned: 0, percent: 0 })]} cardCount={1200}
       onSearch={noSearch} />);
     expect(row()).toHaveAccessibleName(
-      "Edge of Eternities: you have none of 276 in the base run, and 4 of 123 extras",
+      "Edge of Eternities: you have none of 276 in the checklist, and 4 of 123 extras",
     );
   });
 
@@ -417,7 +417,7 @@ describe("SetIndexView — the extras figure", () => {
     render(<SetIndexView sets={[set({ extrasTotal: 0, extrasOwned: 0 })]} cardCount={1200}
       onSearch={noSearch} />);
     expect(row()).toHaveAccessibleName(
-      "Edge of Eternities: you have 62 of 276 in the base run",
+      "Edge of Eternities: you have 62 of 276 in the checklist",
     );
   });
 });

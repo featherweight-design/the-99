@@ -840,7 +840,7 @@ export function SetGridView(props: SetGridViewProps) {
                   {/* R3 finding 6, move 1. Two forms of one figure, not two figures: the
                       phone carries the scope word the note below used to carry. The
                       accessible name is the same string at both widths — it already said
-                      "in the base run". */}
+                      "in the checklist". */}
                   <span className="md:hidden">
                     {setPageCopy.head.ratioScoped(
                       sections.baseOwned, sections.baseTotal, sections.percent,

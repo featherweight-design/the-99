@@ -147,9 +147,9 @@ describe("set-collections copy — counts of one", () => {
     expect(setPageCopy.head.meta("eoe", "2026", 276, 4)).toContain("4 extras");
   });
 
-  it("names a one-card base run in the ratio's accessible text", () => {
-    expect(setPageCopy.head.ratioAria(0, 1)).toBe("You have 0 of 1 card in the base run");
-    expect(setPageCopy.head.ratioAria(1, 2)).toBe("You have 1 of 2 cards in the base run");
+  it("names a one-card checklist in the ratio's accessible text", () => {
+    expect(setPageCopy.head.ratioAria(0, 1)).toBe("You have 0 of 1 card in the checklist");
+    expect(setPageCopy.head.ratioAria(1, 2)).toBe("You have 1 of 2 cards in the checklist");
   });
 
   it("counts one cell as a cell", () => {

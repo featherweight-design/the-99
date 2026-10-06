@@ -215,20 +215,20 @@ async function run() {
     const code = SET ?? await page.evaluate(() => {
       const rows = [...document.querySelectorAll('a[href^="/collection/sets/"]')];
       // Read the RATIO out of the row's accessible name — `setsIndexCopy.row.ratioAria`
-      // renders "you have 62 of 276 in the base run", and `zeroAria` renders "none of 276".
+      // renders "you have 62 of 276 in the checklist", and `zeroAria` renders "none of 276".
       // Neither ever says "complete", so a word match was true for every row and picked the
       // first one regardless — the bug this selection was added to fix.
       const incomplete = rows.find((a) => {
         const label = a.getAttribute("aria-label") ?? "";
         if (/you have none of \d+/.test(label)) return true;
-        const m = label.match(/you have (\d+) of (\d+) in the base run/);
+        const m = label.match(/you have (\d+) of (\d+) in the checklist/);
         return m !== null && Number(m[1]) < Number(m[2]);
       });
       // The fallback must still be INDEXED: an unindexed row's label carries no ratio at
       // all, and that page draws no cells — `waitForCells` would time out on a fixture the
       // probe chose for itself while a usable set sat further down the list.
       const indexed = rows.find((a) =>
-        /you have (none of \d+|\d+ of \d+) in the base run/.test(a.getAttribute("aria-label") ?? ""));
+        /you have (none of \d+|\d+ of \d+) in the checklist/.test(a.getAttribute("aria-label") ?? ""));
       // No `?? rows[0]`: an unindexed page draws no cells, so falling back to one makes
       // `waitForCells` time out instead of saying the index had no usable fixture.
       const link = incomplete ?? indexed ?? null;
@@ -466,8 +466,8 @@ async function run() {
     const sections = await page.evaluate(READ_SECTIONS);
     const heads = sections.map((s) => s.text);
     failures += !report(
-      "the base run is a titled section",
-      heads.some((h) => /^Base run/.test(h)),
+      "the checklist is a titled section",
+      heads.some((h) => /^Checklist/.test(h)),
       `section heads: ${heads.join(" | ") || "(none)"}`,
     );
 
