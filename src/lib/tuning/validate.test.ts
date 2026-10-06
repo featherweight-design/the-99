@@ -252,27 +252,35 @@ describe("validateSuggestions", () => {
     expect(mix("ramp 4 of 10").drops[0].rule).toBe("citation");
   });
 
-  it("keeps an intent cited in part, as Design cites `win late`", () => {
+  it("keeps an intent cited in part, as Design cites `win late` -- repaired to bare if quoted", () => {
     const withIntent = { ...pack, intent: "grind the table out and win late" };
     const intent = (value: string) => validateSuggestions({
       response: { suggestions: [{ ...good, evidence: [{ kind: "intent", value }] }] }, pack: withIntent, resolveName,
     });
     expect(intent("win late").droppedCount).toBe(0);
-    // In quotation marks it is a QUOTATION, and a quotation is the player's whole line or a
-    // misquote: a part is cited unquoted, as Design cites it.
-    expect(intent("\u201cwin late\u201d").drops[0].rule).toBe("quotedNote");
+    // Design's own format for a part-quote is UNQUOTED: a part wrapped in quotation marks is
+    // repaired to its bare form rather than dropped, so the shown citation is never a part in
+    // quote marks either way.
+    const quoted = intent("\u201cwin late\u201d");
+    expect(quoted.droppedCount).toBe(0);
+    expect(quoted.kept[0].evidence[0].value).toBe("win late");
+    // A quote (or a bare citation) matching no source at all is still a misquote.
     expect(intent("go wide").drops[0].rule).toBe("citation");
+    expect(intent("\u201cgo wide with tokens\u201d").drops[0].rule).toBe("citation");
     expect(intent("a").drops[0].rule).toBe("citation");
   });
 
-  it("keeps a notes citation cited in part, and still catches a misquote as quotedNote", () => {
+  it("keeps a notes citation cited in part, repaired to bare if quoted, and still catches a misquote", () => {
     const withNotes = { ...pack, notes: "swap out Sol Ring for more removal" };
     const notes = (value: string) => validateSuggestions({
       response: { suggestions: [{ ...good, evidence: [{ kind: "notes", value }] }] }, pack: withNotes, resolveName,
     });
     expect(notes("more removal").droppedCount).toBe(0);
-    expect(notes("“more removal”").drops[0].rule).toBe("quotedNote");
+    const quoted = notes("\u201cmore removal\u201d");
+    expect(quoted.droppedCount).toBe(0);
+    expect(quoted.kept[0].evidence[0].value).toBe("more removal");
     expect(notes("fewer lands").drops[0].rule).toBe("citation");
+    expect(notes("\u201cfewer lands\u201d").drops[0].rule).toBe("citation");
   });
 
   it("refuses a citation naming both directions at once", () => {
@@ -306,6 +314,54 @@ describe("validateSuggestions", () => {
       { kind: "note", value: "1 Sep" },
       { kind: "decklist", value: '"flooded out on turn six" 1 Sep' },
     ] }).drops[0].rule).toBe("citation");
+  });
+
+  // Round-5 review finding: a quote repair can invalidate a citation that held against the
+  // still-quoted text. Both are checked against the REPAIRED suggestion as well as the original.
+  describe("repair logic — round-5 review finding (citation rechecked against the repair)", () => {
+    it("drops a games citation that passes before repair but reads two figures after it", () => {
+      const withNotes = { ...pack, notes: "swap four lands for removal" };
+      const out = validateSuggestions({
+        response: { suggestions: [{
+          ...good,
+          evidence: [{ kind: "games", value: 'Mana hurt in 3 of 5 games; lost "four" of 5 games' }],
+        }] },
+        pack: withNotes,
+        resolveName,
+      });
+      // Before repair, the quote marks break the second figure's own "N of M" adjacency, so only
+      // one figure is read and the citation passes its first check; repair unquotes "four" (a
+      // genuine part of the notes) and exposes a second figure, which `oneFigure` must then
+      // reject as ambiguous.
+      expect(out.drops[0].rule).toBe("citation");
+    });
+
+    it("drops a note citation whose required quotation the repair removes", () => {
+      const withWinLate = {
+        ...pack,
+        intent: "grind the table out and win late",
+        play: buildPlayGroup([
+          game("g1", { hurt: ["mana"], note: "win late" }),
+          game("g2", { hurt: ["mana"] }),
+          game("g3", { hurt: ["mana"] }),
+          game("g4"), game("g5"),
+        ]),
+      };
+      const out = validateSuggestions({
+        response: { suggestions: [{
+          ...good,
+          rationale: 'You said "win late".',
+          evidence: [{ kind: "note", value: "1 Sep" }],
+        }] },
+        pack: withWinLate,
+        resolveName,
+      });
+      // Before repair, the rationale's quoted "win late" literally matches the note's own text,
+      // so the note citation passes. The note's text is also a genuine part of the undated
+      // intent, so repair strips the quote marks the "note" citation requires — the repaired
+      // rationale no longer carries them, and the citation must then fail.
+      expect(out.drops[0].rule).toBe("citation");
+    });
   });
 });
 

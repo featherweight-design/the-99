@@ -5,6 +5,7 @@ import { playerTextBody } from "../model/player-text";
 import { mentionsDate, noteDate } from "./note-date";
 import { NUMBER_WORDS, presentationFailures, type Quotable, type RuleKey } from "./presentation";
 import { axisLabel } from "./prompt";
+import { escapeRegExp, quotesPlayerText } from "./quote-match";
 import type { TuningResponse, TuningSuggestion } from "./response-schema";
 
 /**
@@ -156,9 +157,13 @@ export function validateSuggestions(args: {
   const drops: Drop[] = [];
   const usedAdds = new Set<string>();
   const usedCuts = new Set<string>();
+  // A genuine part-quote of the intent or this run's notes is repaired to its bare, unquoted
+  // form by `firstFailure`'s presentation check rather than dropped (Design's own format for a
+  // part is unquoted) — kept here, by position, since `firstFailure` only reports pass/fail.
+  const repairs = new Map<number, { rationale: string; rationaleShort: string; evidence: TuningCitation[] }>();
 
   response.suggestions.forEach((s, position) => {
-    const reason = firstFailure(s);
+    const reason = firstFailure(s, position);
     if (reason) {
       drops.push({ position, ...reason });
       return;
@@ -167,12 +172,13 @@ export function validateSuggestions(args: {
     const cut = resolveName(s.cut)!;
     usedAdds.add(add.oracleId);
     usedCuts.add(cut.oracleId);
+    const fixed = repairs.get(position);
     kept.push({
       addOracleId: add.oracleId,
       cutOracleId: cut.oracleId,
-      rationale: s.rationale,
-      rationaleShort: s.rationaleShort,
-      evidence: s.evidence,
+      rationale: fixed?.rationale ?? s.rationale,
+      rationaleShort: fixed?.rationaleShort ?? s.rationaleShort,
+      evidence: fixed?.evidence ?? s.evidence,
       position: kept.length,
       bracketAfter: null,
     });
@@ -183,7 +189,7 @@ export function validateSuggestions(args: {
   // failed suggestion. Still listed in `drops`, so a run whose every drop is one can say so (F10).
   return { kept, droppedCount: drops.filter((d) => d.rule !== "neverCut").length, drops };
 
-  function firstFailure(s: TuningSuggestion): { rule: Drop["rule"]; name?: string } | null {
+  function firstFailure(s: TuningSuggestion, position: number): { rule: Drop["rule"]; name?: string } | null {
     const add = resolveName(s.add);
     const cut = resolveName(s.cut);
     if (!add || !cut) return { rule: "cardExists" };
@@ -222,10 +228,30 @@ export function validateSuggestions(args: {
       if (!citationHolds(c, s)) return { rule: "citation" };
     }
 
-    for (const text of [s.rationale, s.rationaleShort, ...s.evidence.map((c) => c.value)]) {
-      const [broken] = presentationFailures(text, quotable);
-      if (broken) return { rule: broken };
+    const rationaleCheck = presentationFailures(s.rationale, quotable);
+    if (rationaleCheck.broken[0]) return { rule: rationaleCheck.broken[0] };
+    const shortCheck = presentationFailures(s.rationaleShort, quotable);
+    if (shortCheck.broken[0]) return { rule: shortCheck.broken[0] };
+    const evidenceChecks = s.evidence.map((c) => ({ c, check: presentationFailures(c.value, quotable) }));
+    const failedEvidence = evidenceChecks.find((e) => e.check.broken[0]);
+    if (failedEvidence) return { rule: failedEvidence.check.broken[0] };
+
+    // Citations are RECHECKED against the REPAIRED suggestion, on top of the check above against
+    // the original — a quote repair can invalidate a citation that held against the still-quoted
+    // text: stripping the quote marks a "note" citation requires, or unmasking a second games
+    // figure `oneFigure` must then reject as ambiguous. A citation valid against what the model
+    // wrote is not automatically valid against what the player actually sees once repaired.
+    const repairedEvidence = evidenceChecks.map((e) => ({ ...e.c, value: e.check.text }));
+    const repaired: TuningSuggestion = { ...s, rationale: rationaleCheck.text, rationaleShort: shortCheck.text, evidence: repairedEvidence };
+    for (const c of repairedEvidence) {
+      if (!citationHolds(c, repaired)) return { rule: "citation" };
     }
+
+    repairs.set(position, {
+      rationale: rationaleCheck.text,
+      rationaleShort: shortCheck.text,
+      evidence: repairedEvidence,
+    });
     return null;
   }
 
@@ -294,11 +320,11 @@ export function validateSuggestions(args: {
         });
       }
       case "intent":
-        return quotesPlayerText(pack.intent, c.value);
+        return citationQuotesPlayerText(pack.intent, c.value);
       // "Additional notes" (H35, PR 4b): the same whole-or-part rule as `intent`, against the
       // run's own notes text rather than the deck's standing description.
       case "notes":
-        return quotesPlayerText(pack.notes, c.value);
+        return citationQuotesPlayerText(pack.notes, c.value);
       case "mix": {
         // A target and its figure, as the targets list writes it: `draw 4 of 10`. The cell the
         // citation names must carry exactly that have and target.
@@ -316,21 +342,12 @@ export function validateSuggestions(args: {
 const HURT = /\bhurt|\bagainst\b/;
 const WORKED = /\bwork|\bfor you\b/;
 
-function escapeRegExp(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 /**
- * Whether a citation's value quotes `source` (the player's own words), whole or a part of them
- * (Design cites `win late` out of a longer line). A part is whole words of the source, at word
- * boundaries, and at least one of them a real word: `ate` out of `late` is not a citation. Shared
- * by the `intent` and `notes` citation kinds, which differ only in which field they quote.
+ * `quotesPlayerText` (now shared with `presentation.ts` via `quote-match.ts`) takes a bare
+ * source string; a citation's source is player text that must first pass through
+ * `playerTextBody` — the SAME form the model was shown, not the raw field — before the quote
+ * check runs against it.
  */
-function quotesPlayerText(source: string | null, value: string): boolean {
-  if (source === null) return false;
-  const text = playerTextBody(source);
-  const part = value.trim().replace(/^["“]|["”]$/g, "").trim();
-  if (value.includes(text)) return true;
-  if (!/[A-Za-z]{2,}/.test(part)) return false;
-  return new RegExp(`(?<![\\w'])${escapeRegExp(part)}(?![\\w'])`).test(text);
+function citationQuotesPlayerText(source: string | null, value: string): boolean {
+  return quotesPlayerText(source === null ? null : playerTextBody(source), value);
 }

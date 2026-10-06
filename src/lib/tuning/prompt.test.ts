@@ -100,7 +100,7 @@ describe("buildPrompt", () => {
   it("cites with one of six kinds, naming notes beside intent, in the system message", () => {
     const { system } = buildPrompt(pack);
     expect(system).toContain("Cite with one of six kinds: games, note, decklist, intent, mix, notes.");
-    expect(system).toContain("A notes citation quotes the player's own words from what they asked for this run, whole or a part of them.");
+    expect(system).toContain("A notes citation uses the player's own words from what they asked for this run. Quote their whole line in quotation marks, or cite a part of it WITHOUT quotation marks.");
   });
 
   it("says no games are logged, rather than rendering an empty summary", () => {
@@ -235,6 +235,17 @@ describe("the prompt Hugh rated (eval round 4, 2026-09-24)", () => {
       "An intent citation quotes the player's own words, whole or a part of them.\n",
       "An intent citation quotes the player's own words, whole or a part of them.\n"
         + "A notes citation quotes the player's own words from what they asked for this run, whole or a part of them.\n",
+    )
+    // PROMPT_VERSION 7 (2026-10-06): the ambiguous "whole or a part of them" let the model quote
+    // a part in quotation marks, which the rules now repair rather than drop — a clearer
+    // instruction up front is cheaper than a repair downstream.
+    .replace(
+      "An intent citation quotes the player's own words, whole or a part of them.",
+      "An intent citation uses the player's own words. Quote their whole line in quotation marks, or cite a part of it WITHOUT quotation marks.",
+    )
+    .replace(
+      "A notes citation quotes the player's own words from what they asked for this run, whole or a part of them.",
+      "A notes citation uses the player's own words from what they asked for this run. Quote their whole line in quotation marks, or cite a part of it WITHOUT quotation marks.",
     );
 
   it("reproduces round 4's system and user messages byte for byte, plus the known player-text delta since", () => {
