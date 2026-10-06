@@ -312,7 +312,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // entry’s caption is about would be inside a sheet no specimen can open.
     width: 'plate',
     caption:
-      'Every commander in your Collection that no deck of yours leads yet, ranked by fit. Build from picks which of your cards the scores count: All my cards, or Free cards only, the ones no committed deck is holding. Free cards only also sets aside commanders already sleeved into a committed deck. Printed in keeps the commanders printed in the sets you pick, by any printing, including ones you don’t own. Where we couldn’t read a commander’s most-played list, the bar has two segments and the score is out of 40.',
+      'Every commander in your Collection that no deck of yours leads yet, ranked by fit. Build from picks which of your cards the scores count: All my cards, or Free cards only, the ones with at least one copy no committed deck is holding. Free cards only also sets aside a commander when every copy you own is sleeved into a committed deck. Printed in keeps the commanders printed in the sets you pick, by any printing, including ones you don’t own. Where we couldn’t read a commander’s most-played list, the bar has two segments and the score is out of 40.',
     keys: [],
     since: 1,
   },
@@ -341,7 +341,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       // Audit H3: with no theme and no card the list IS ordered by ownership. H1: the hand-off
       // shipped in #1011, and Create is what fills the deck, not the pick.
-      'No commander yet for the deck you want? Answer as much or as little as you like: colors, themes (all of them, or any one), the sets it was printed in, a budget, a bracket, and whether the 99 comes only from your Collection. A sentence in your own words is matched for free, and a card named there becomes the card to build around. Look deeper reads everything you wrote, and each run that comes back uses a credit. Every answer narrows which commanders show up, owned or not, and your themes and card also set the order. With neither, the results are ordered by how many of their cards you already have. Pick one and your answers carry to a new deck, and Create deck fills the 99 under them. When fewer than four fit, the page offers answers to loosen.',
+      'No commander yet for the deck you want? Answer as much or as little as you like: colors, themes (all of them, or any one), the sets it was printed in, a budget and a bracket. A sentence in your own words is matched for free, and a card named there becomes the card to build around. Look deeper reads everything you wrote and uses a credit when it adds something to your results. Every answer narrows which commanders show up, owned or not, and your themes and card also set the order. With neither, the results are ordered by how many of their cards you already have. Pick one and your answers carry to a new deck, and Create deck fills the 99 under them, only from your Collection if you ask. When fewer than four fit, the page offers answers to loosen.',
     keys: [
       // Audit H4: SETS RANK is drawn only when a row has more than one figure.
       "With a theme or a card, each figure is a share of that commander's decks: the share tagged with your theme, or the share that runs your card. The weakest figure orders the row, and when there is more than one it is marked SETS RANK.",
