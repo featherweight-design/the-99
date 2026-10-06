@@ -39,12 +39,13 @@ const MODES: { id: UpdateMode; label: string; shortLabel: string }[] = [
 
 const ACCEPTED_EXTENSIONS = [".csv", ".txt"];
 
-type FailureKind = "fileRejected" | "noneMatched" | "empty" | "unexpected";
+type FailureKind = "fileRejected" | "noneMatched" | "empty" | "badCsv" | "unexpected";
 
 type Failure =
   | { kind: "fileRejected"; ext: string; size: string }
   | { kind: "noneMatched"; lineCount: number }
   | { kind: "empty" }
+  | { kind: "badCsv"; detail: string }
   | { kind: "unexpected"; detail: string | null };
 
 /** What the flow is showing. The list step is the absence of all of these. */
@@ -119,6 +120,8 @@ export function UpdateEntry({ deckId, deckName }: { deckId: string; deckName: st
           if (result.reason === "noRows") setFailure({ kind: "empty" });
           else if (result.reason === "noneMatched")
             setFailure({ kind: "noneMatched", lineCount: result.lineCount });
+          else if (result.reason === "csvInvalid")
+            setFailure({ kind: "badCsv", detail: result.detail });
           else
             setStep({
               kind: "conflict",
@@ -360,7 +363,7 @@ export function UpdateEntry({ deckId, deckName }: { deckId: string; deckName: st
             const kind = failure.kind;
             setFailure(null);
             if (kind === "fileRejected") fileInputRef.current?.click();
-            if (kind === "noneMatched" || kind === "empty") {
+            if (kind === "noneMatched" || kind === "empty" || kind === "badCsv") {
               setPasteText("");
               setFile(null);
             }
@@ -475,6 +478,7 @@ const FAILURE_ACTION: Record<FailureKind, string> = {
   fileRejected: copy.failures.fileRejected.action,
   noneMatched: copy.failures.noneMatched.action,
   empty: copy.failures.empty.action,
+  badCsv: copy.failures.badCsv.action,
   unexpected: copy.failures.unexpected.action,
 };
 
@@ -497,6 +501,12 @@ function failureText(failure: Failure): { heading: string; bodyMobile: string; b
         heading: copy.failures.empty.heading,
         bodyMobile: copy.failures.empty.bodyMobile,
         body: copy.failures.empty.body,
+      };
+    case "badCsv":
+      return {
+        heading: copy.failures.badCsv.heading,
+        bodyMobile: copy.failures.badCsv.bodyMobile(failure.detail),
+        body: copy.failures.badCsv.body(failure.detail),
       };
     case "unexpected":
       return {

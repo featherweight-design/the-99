@@ -1,7 +1,11 @@
 import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import type { CollectionRow } from "../manabox/parse";
-import { buildDeckImport, type DeckImport, type ImportCatalogCard } from "./import";
+import {
+  buildDeckImport, resolveDeckListInput, type DeckImport, type ImportCatalogCard,
+} from "./import";
 import { buildDecklistText } from "./export-helpers";
 
 /** Drops the source line. These cases are about which card a line *shape*
@@ -555,5 +559,65 @@ describe("buildDeckImport — a line naming cardboard that is not a card", () =>
     const result = build("1 Experience", [...CATALOG, EXPERIENCE]);
     expect(result.cards).toEqual([]);
     expect(result.unresolved.map((u) => u.rawName)).toEqual(["Experience"]);
+  });
+});
+
+// import-actions.ts and update-actions.ts both resolve a paste or a file
+// through this before deciding which DeckImportInput branch to build.
+describe("resolveDeckListInput", () => {
+  const fixturesDir = join(dirname(fileURLToPath(import.meta.url)), "..", "manabox", "__fixtures__");
+  const moxfield = readFileSync(join(fixturesDir, "moxfield.csv"), "utf8");
+  const sample = readFileSync(join(fixturesDir, "sample.csv"), "utf8"); // carries one bad-quantity row
+
+  it("leaves a plain decklist as text, byte for byte", () => {
+    const text = "1 Sol Ring\n1 Atraxa, Praetors' Voice";
+    expect(resolveDeckListInput(text)).toEqual({ kind: "text", text });
+  });
+
+  it("leaves a Commander-section paste as text — it has no header row", () => {
+    const text = "Commander\n1 Atraxa, Praetors' Voice\n\nDeck\n1 Sol Ring";
+    expect(resolveDeckListInput(text)).toEqual({ kind: "text", text });
+  });
+
+  it("parses a clean CSV export into rows", () => {
+    const resolved = resolveDeckListInput(moxfield);
+    expect(resolved.kind).toBe("rows");
+    if (resolved.kind === "rows") {
+      expect(resolved.rows).toHaveLength(3);
+      expect(resolved.rows[0]).toMatchObject({ name: "Sol Ring", quantity: 2 });
+    }
+  });
+
+  it("rejects a CSV-shaped file with a bad row rather than importing the rows that did parse", () => {
+    // sample.csv has three clean rows and one bad quantity on line 5.
+    expect(resolveDeckListInput(sample)).toEqual({
+      kind: "rejected",
+      detail: 'Row 5: invalid quantity "abc"',
+    });
+  });
+
+  it("names every bad row and a count of the rest, not just the first", () => {
+    const text = "Name,Quantity\nSol Ring,0\nForest,abc\n";
+    expect(resolveDeckListInput(text)).toEqual({
+      kind: "rejected",
+      detail: 'Row 2: invalid quantity "0" (and 1 more row)',
+    });
+  });
+
+  it("is text, not CSV, when the header is missing a required column — looksLikeCsv gates it", () => {
+    // A header with only one of Name/Quantity never reaches parseCollectionCsv's own
+    // "header missing ___ column" error from this path; it is read as a decklist instead.
+    expect(resolveDeckListInput("Quantity\n1\n")).toEqual({ kind: "text", text: "Quantity\n1\n" });
+    expect(resolveDeckListInput("Set,Foil\nc21,foil\n")).toEqual({
+      kind: "text",
+      text: "Set,Foil\nc21,foil\n",
+    });
+  });
+
+  it("feeds clean CSV rows straight into buildDeckImport's existing rows branch", () => {
+    const resolved = resolveDeckListInput(moxfield);
+    if (resolved.kind !== "rows") throw new Error("expected rows");
+    const result = buildDeckImport({ rows: resolved.rows, catalog: [...CATALOG, SOL_RING] });
+    expect(shape(result.cards)).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
   });
 });

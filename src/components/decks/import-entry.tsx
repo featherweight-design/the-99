@@ -33,12 +33,13 @@ const MODES: { id: ImportMode; label: string; shortLabel: string }[] = [
   { id: "file", label: copy.entry.modeFile, shortLabel: copy.entry.modeFileShort },
 ];
 
-type FailureKind = "fileRejected" | "noneMatched" | "empty" | "unexpected";
+type FailureKind = "fileRejected" | "noneMatched" | "empty" | "badCsv" | "unexpected";
 
 type Failure =
   | { kind: "fileRejected"; ext: string; size: string }
   | { kind: "noneMatched"; lineCount: number }
   | { kind: "empty" }
+  | { kind: "badCsv"; detail: string }
   | { kind: "unexpected"; detail: string | null };
 
 /**
@@ -179,6 +180,10 @@ export function ImportEntry({ compact = false }: { compact?: boolean } = {}) {
         }
         if (result.reason === "noneMatched") {
           fail({ kind: "noneMatched", lineCount: result.lineCount });
+          return;
+        }
+        if (result.reason === "csvInvalid") {
+          fail({ kind: "badCsv", detail: result.detail });
           return;
         }
         // States 11–12. Nothing was written; the list is still in `pasteText` /
@@ -370,10 +375,10 @@ export function ImportEntry({ compact = false }: { compact?: boolean } = {}) {
           onAction={() => {
             setFailure(null);
             if (failure.kind === "fileRejected") fileInputRef.current?.click();
-            // Both actions offer a fresh start, so both clear whichever input
+            // All three offer a fresh start, so all three clear whichever input
             // this mode is actually using — clearing only one leaves the other
             // holding the list the player was just told did not work.
-            if (failure.kind === "noneMatched" || failure.kind === "empty") {
+            if (failure.kind === "noneMatched" || failure.kind === "empty" || failure.kind === "badCsv") {
               setPasteText("");
               setFile(null);
             }
@@ -453,6 +458,7 @@ const FAILURE_ACTION: Record<FailureKind, string> = {
   fileRejected: copy.failures.fileRejected.action,
   noneMatched: copy.failures.noneMatched.action,
   empty: copy.failures.empty.action,
+  badCsv: copy.failures.badCsv.action,
   unexpected: copy.failures.unexpected.action,
 };
 
@@ -475,6 +481,12 @@ function failureText(failure: Failure): { heading: string; bodyMobile: string; b
         heading: copy.failures.empty.heading,
         bodyMobile: copy.failures.empty.bodyMobile,
         body: copy.failures.empty.body,
+      };
+    case "badCsv":
+      return {
+        heading: copy.failures.badCsv.heading,
+        bodyMobile: copy.failures.badCsv.bodyMobile(failure.detail),
+        body: copy.failures.badCsv.body(failure.detail),
       };
     case "unexpected":
       return {

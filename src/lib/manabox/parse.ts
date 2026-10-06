@@ -82,6 +82,23 @@ function findHeaderIndex(header: string[], candidates: string[]): number {
   return -1;
 }
 
+/**
+ * True when `csvText`'s first line is a header carrying both a recognized
+ * Name and Quantity column — the same two columns `parseCollectionCsv`
+ * itself requires, read the same way: literally line 0, never the first
+ * non-blank line, so a text this accepts is a text `parseCollectionCsv` will
+ * read the header off correctly too. Deck import uses this to decide whether
+ * a paste or an uploaded file is CSV-shaped at all, before spending a parse
+ * on it: a plain decklist line such as "1 Sol Ring" has no comma-split cell
+ * equal to any header candidate, so it is never mistaken for one.
+ */
+export function looksLikeCsv(csvText: string): boolean {
+  const lines = csvText.split(/\r?\n/);
+  if (lines.every((l) => l.trim() === "")) return false;
+  const header = splitCsvLine(lines[0]);
+  return findHeaderIndex(header, NAME_HEADERS) !== -1 && findHeaderIndex(header, QUANTITY_HEADERS) !== -1;
+}
+
 export function parseCollectionCsv(csvText: string): { rows: CollectionRow[]; errors: ParseError[] } {
   const lines = csvText.split(/\r?\n/);
   if (lines.every((l) => l.trim() === "")) {

@@ -142,6 +142,20 @@ describe("updateDeckFromList input guards", () => {
     expect(stub.state.transactions).toBe(0);
   });
 
+  // A CSV-shaped file with a bad row is refused before any deck read, exactly
+  // like the two guards above — never silently applied with the rows that did parse.
+  it("refuses a CSV-shaped file with a bad row, before opening a transaction", async () => {
+    await expect(
+      updateDeckFromList({
+        deckId: "deck-1",
+        text: "Name,Quantity\nSol Ring,1\nIsland,abc\n",
+        source: "file",
+        keep: [],
+      }),
+    ).rejects.toThrow('Row 3: invalid quantity "abc"');
+    expect(stub.state.transactions).toBe(0);
+  });
+
   // A section header resolved to the theme front of that name and was applied as a card.
   // It is not one, so a list of headers alone matches nothing and changes nothing.
   it("does not match a 'Lands' header to the theme front of that name", async () => {

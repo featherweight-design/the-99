@@ -126,6 +126,22 @@ export const deckImportCopy = {
       retry: false,
     },
     /**
+     * Eng-authored, not from the handoff — the handoff predates CSV-column
+     * parsing. `detail` is the parser's own account of the first problem
+     * (`resolveDeckListInput`'s `describeCsvErrors`), which is specific enough
+     * to act on and carries no internal-invariant risk: it only ever names a
+     * missing header or a malformed row, never anything else the server
+     * might throw. Same standing as `unexpected` below — ratification owed.
+     */
+    badCsv: {
+      heading: "We can't read that file",
+      bodyMobile: (detail: string) => `${detail}. Fix it and upload it again.`,
+      body: (detail: string) =>
+        `${detail}. Fix the column and upload it again — nothing was changed.`,
+      action: "Choose another file",
+      retry: false,
+    },
+    /**
      * Eng-authored, not from the handoff. `importDeck` throws on the size cap and
      * on an illegal commander, and a throw inside a transition surfaces as an error
      * boundary rather than something the player can act on. The handoff draws seven

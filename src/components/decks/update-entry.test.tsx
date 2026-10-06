@@ -237,6 +237,19 @@ describe("failures on the list step", () => {
     );
   });
 
+  it("names the problem when the file was CSV-shaped but failed to parse", async () => {
+    previewDeckUpdate.mockResolvedValue({
+      ok: false,
+      reason: "csvInvalid",
+      detail: 'Row 3: invalid quantity "abc"',
+      notes: [],
+    });
+    renderEntry();
+    paste();
+    compare();
+    expect(await screen.findByRole("alert")).toHaveTextContent('Row 3: invalid quantity "abc"');
+  });
+
   // A throw inside a transition reaches the error boundary and takes the
   // player's list with it, so the flow catches and stays put.
   it("keeps the paste when the compare throws", async () => {

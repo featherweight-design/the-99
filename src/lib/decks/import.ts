@@ -7,7 +7,9 @@
 // persistence.
 
 import { matchRows, type DetailedCatalogCard, type MatchIndexes } from "../collection/match";
-import type { CollectionRow } from "../manabox/parse";
+import {
+  looksLikeCsv, parseCollectionCsv, type CollectionRow, type ParseError,
+} from "../manabox/parse";
 import { parsePasteList } from "../manabox/paste";
 import { isCommanderCandidate } from "../recs/score";
 import { isBasicLand } from "./grouping";
@@ -99,6 +101,56 @@ export type DeckImportInput = { catalog: ImportCatalogCard[]; indexes?: MatchInd
   // section markers, so none are looked for.
   | { rows: CollectionRow[]; text?: never }
 );
+
+/**
+ * What a paste or an uploaded file turned out to be, decided once so both call
+ * sites (a fresh import and a deck update) make the same call from the same
+ * text.
+ *
+ * `rejected` exists because a CSV's errors must never become a partial
+ * import: `parseCollectionCsv` itself skips a malformed ROW and keeps going
+ * — the right call for the collection upload's own preview-then-confirm
+ * flow, where the player sees every row before anything is written — but
+ * deck import commits on one round trip with no review step, so any error at
+ * all here means the *whole* file is refused rather than silently thinned.
+ */
+export type ResolvedDeckListInput =
+  | { kind: "text"; text: string }
+  | { kind: "rows"; rows: CollectionRow[] }
+  | { kind: "rejected"; detail: string };
+
+/**
+ * One line naming the first problem, plus a count of anything else that
+ * failed — specific enough that "fix it and try again" is an instruction the
+ * player can act on rather than a dead end.
+ *
+ * Always a ROW: `parseCollectionCsv` is only ever called here once
+ * `looksLikeCsv` has already confirmed the header carries both required
+ * columns, so its two header-level errors ("header missing Name/Quantity
+ * column") and its empty-file error can never reach this function — `errors`
+ * holds at least one entry, every one of them naming a line past the header.
+ */
+function describeCsvErrors(errors: ParseError[]): string {
+  const [first, ...rest] = errors;
+  const named = `Row ${first.line}: ${first.reason}`;
+  if (rest.length === 0) return named;
+  return `${named} (and ${rest.length} more ${rest.length === 1 ? "row" : "rows"})`;
+}
+
+/**
+ * Sniffs `text` for a CSV header before anything else looks at it. Plain
+ * decklist text — a paste or a `.txt` export — comes back unchanged for the
+ * existing section-marker/annotation pipeline. Text whose first line carries
+ * a recognized Name and Quantity header is parsed with the same flexible CSV
+ * parser the collection upload uses (`parseCollectionCsv`), and any parse
+ * error at all rejects the whole file rather than importing what parsed.
+ */
+export function resolveDeckListInput(text: string): ResolvedDeckListInput {
+  if (!looksLikeCsv(text)) return { kind: "text", text };
+  const { rows, errors } = parseCollectionCsv(text);
+  if (errors.length > 0) return { kind: "rejected", detail: describeCsvErrors(errors) };
+  return { kind: "rows", rows };
+}
 
 // Section markers the exporters emit, on a line of their own. Moxfield writes
 // "SIDEBOARD:", Archidekt "Sideboard:", and both bare-word forms occur.

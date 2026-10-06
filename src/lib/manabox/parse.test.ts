@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { parseCollectionCsv } from "./parse";
+import { looksLikeCsv, parseCollectionCsv } from "./parse";
 
 // import.meta.url, not __dirname: Vitest runs tests as ESM.
 const fixturesDir = join(dirname(fileURLToPath(import.meta.url)), "__fixtures__");
@@ -165,5 +165,37 @@ describe("parseCollectionCsv", () => {
     expect(rows).toHaveLength(0);
     expect(errors[0].line).toBe(1);
     expect(errors[0].reason).toMatch(/empty/i);
+  });
+});
+
+describe("looksLikeCsv", () => {
+  it("recognizes every fixture's own header row", () => {
+    expect(looksLikeCsv(manabox)).toBe(true);
+    expect(looksLikeCsv(moxfield)).toBe(true);
+    expect(looksLikeCsv(archidekt)).toBe(true);
+    expect(looksLikeCsv(plain)).toBe(true);
+  });
+
+  it("recognizes alternative header spellings, case-insensitively", () => {
+    expect(looksLikeCsv("card name,count\nSol Ring,1\n")).toBe(true);
+    expect(looksLikeCsv("NAME,QTY\nSol Ring,1\n")).toBe(true);
+  });
+
+  it("does not mistake a plain decklist for a CSV header", () => {
+    expect(looksLikeCsv("1 Sol Ring\n1 Cultivate\n")).toBe(false);
+    expect(looksLikeCsv("Commander\n1 Atraxa, Praetors' Voice\n\nDeck\n1 Sol Ring")).toBe(false);
+  });
+
+  it("requires both Name and Quantity — a header with only one is not CSV", () => {
+    expect(looksLikeCsv("Name\nSol Ring\n")).toBe(false);
+    expect(looksLikeCsv("Quantity\n1\n")).toBe(false);
+  });
+
+  it("reads line 0 literally, exactly as parseCollectionCsv does — a leading blank line is not CSV", () => {
+    expect(looksLikeCsv("\n\nName,Quantity\nSol Ring,1\n")).toBe(false);
+  });
+
+  it("is false for an empty string", () => {
+    expect(looksLikeCsv("")).toBe(false);
   });
 });
