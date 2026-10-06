@@ -53,8 +53,11 @@ describe("the what's-new index (§O)", () => {
   it("retires the eyebrow into the index heading", () => {
     render(<AboutPage seen={ABOUT_VERSION - 1} sheetMode />);
     // Once, in the index, rather than an eyebrow above the title as well.
-    expect(screen.getAllByText(aboutCopy.newSinceEyebrow(1))).toHaveLength(1);
-    expect(screen.getAllByText(aboutCopy.newSinceEyebrow(1))[0].closest("nav")).not.toBeNull();
+    // Counted rather than written as 1: two entries are `since` the current version
+    // (`suggested-changes` and `credits`), and the eyebrow names however many there are.
+    const n = newSince(ABOUT_VERSION - 1).length;
+    expect(screen.getAllByText(aboutCopy.newSinceEyebrow(n))).toHaveLength(1);
+    expect(screen.getAllByText(aboutCopy.newSinceEyebrow(n))[0].closest("nav")).not.toBeNull();
   });
 
   it("offers no dismiss, even when a next is on the URL", () => {

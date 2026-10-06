@@ -58,6 +58,7 @@ import {
   CARD_MARK_ROWS,
   DECK_ANALYSIS,
   SUGGESTED_CHANGES,
+  CREDITS,
 } from "../../lib/about/fixtures";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { collectionChassisCopy } from "../../lib/copy/collection";
@@ -897,6 +898,40 @@ export function SuggestedChangesFigureBody() {
         </div>
       </div>
     </AnchoredNumerals>
+  );
+}
+
+/**
+ * `credits`: the shared credit line in its three states, each from `creditsCopy` itself: with
+ * credits left (`first`), with every credit out (`spent`), and under the app-wide monthly limit
+ * (`paused`). The line has no component of its own (each panel draws it inline), so it is set
+ * here in the type `SuggestedChangesFigureBody` gives it, from the real copy and never retyped.
+ * One numeral per state, as the availability figure numbers its rows.
+ */
+export function CreditsFigureBody() {
+  const { limit, left, nextAt, pausedUntil } = CREDITS;
+  const lines = [
+    creditsCopy.first(left, limit, nextAt),
+    creditsCopy.spent(limit, nextAt),
+    creditsCopy.paused(pausedUntil),
+  ];
+  return (
+    <div className="flex flex-col gap-[11px]">
+      {lines.map((line, i) => (
+        <div key={i} className="flex items-start gap-[10px]">
+          <KeyNumeral n={i + 1} className="mt-[1px]" />
+          {/* The time is the reader's clock (`clockTime`), so a server render in another zone
+              differs from the browser's by that text alone. */}
+          <span
+            suppressHydrationWarning
+            className="font-mono text-[9.5px] leading-[1.55] md:text-[11px]"
+            style={{ color: "var(--fg-faint)" }}
+          >
+            {line}
+          </span>
+        </div>
+      ))}
+    </div>
   );
 }
 

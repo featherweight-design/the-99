@@ -569,8 +569,8 @@ async function flipWalk(browser, who) {
     const first = await sheetTitles(page, card);
     report(`F2 flipped on: a reader at version ${VERSION} is announced it, through the cookie from before`, first !== null);
     report(
-      "F2 the sheet names Change commander alone",
-      JSON.stringify(first) === JSON.stringify(["Change commander"]),
+      "F2 the sheet names the Change commander entry alone",
+      JSON.stringify(first) === JSON.stringify(["A new commander for the same 99"]),
       JSON.stringify(first),
     );
 
@@ -713,7 +713,7 @@ async function flipWalk(browser, who) {
     const rides = await sheetTitles(page, card);
     report(
       "F7b the line rides the sheet a flip draws, once, after its entry",
-      rides?.[0] === "Change commander" && rides.length === 2 && (await line.count()) === 1,
+      rides?.[0] === "A new commander for the same 99" && rides.length === 2 && (await line.count()) === 1,
       JSON.stringify(rides),
     );
 
@@ -726,7 +726,7 @@ async function flipWalk(browser, who) {
     const after = await sheetTitles(page, card);
     report(
       "F7d once seen, the next sheet names its entry without the line",
-      JSON.stringify(after) === JSON.stringify(["Change commander"]) && (await line.count()) === 0,
+      JSON.stringify(after) === JSON.stringify(["A new commander for the same 99"]) && (await line.count()) === 0,
       JSON.stringify(after),
     );
     await context.close();

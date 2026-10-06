@@ -127,7 +127,9 @@ describe("the rail (§Q1–Q3, E4 fallback)", () => {
     render(<AboutPage seen={ABOUT_VERSION - 1} sheetMode />);
     const fresh = aboutEntries.find((e) => e.since === ABOUT_VERSION)!;
     const row = within(rail()).getByRole("link", { name: new RegExp(`^${fresh.chapter} `) });
-    expect(row.textContent).toContain(aboutCopy.newInChapter(1));
+    // Counted, not written as 1: the chapter holds every entry `since` the current version.
+    const n = aboutEntries.filter((e) => e.since === ABOUT_VERSION && e.chapter === fresh.chapter).length;
+    expect(row.textContent).toContain(aboutCopy.newInChapter(n));
     const quiet = ["01", "02", "03", "04"].find((n) => n !== fresh.chapter)!;
     const quietRow = within(rail()).getByRole("link", { name: new RegExp(`^${quiet} `) });
     expect(quietRow.textContent).not.toMatch(/entries|new/);

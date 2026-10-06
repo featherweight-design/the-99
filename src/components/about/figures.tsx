@@ -64,6 +64,7 @@ import {
   DeckAnalysisFigureBody,
   CardMarksFigureBody,
   SuggestedChangesFigureBody,
+  CreditsFigureBody,
 } from "./ch01-figures";
 import { statusBarStyle } from "../../lib/decks/status-style";
 import type { StatusPill } from "../../lib/decks/status";
@@ -751,6 +752,15 @@ function SuggestedChangesFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+/** The shared credit line in its three states: credits left, every credit out, the monthly limit. */
+function CreditsFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="credits" width={width}>
+      <CreditsFigureBody />
+    </Specimen>
+  );
+}
+
 function AutoFillFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="auto-fill" width={width}>
@@ -1013,4 +1023,5 @@ export const FIGURES: Partial<
   resume: ResumeFigure,
   proxies: ProxiesFigure,
   "suggested-changes": SuggestedChangesFigure,
+  credits: CreditsFigure,
 };
