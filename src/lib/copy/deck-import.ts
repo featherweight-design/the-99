@@ -131,14 +131,17 @@ export const deckImportCopy = {
      * (`resolveDeckListInput`'s `describeCsvErrors`), which is specific enough
      * to act on and carries no internal-invariant risk: it only ever names a
      * missing header or a malformed row, never anything else the server
-     * might throw. Same standing as `unexpected` below — ratification owed.
+     * might throw. Mode-agnostic deliberately: `resolveDeckListInput` reads a
+     * CSV header out of pasted text exactly as it does out of a file, so a
+     * player who pastes spreadsheet rows meets this too, and "upload it
+     * again" / "Choose another file" would promise a dialog that never opens
+     * for them. Same standing as `unexpected` below — ratification owed.
      */
     badCsv: {
-      heading: "We can't read that file",
-      bodyMobile: (detail: string) => `${detail}. Fix it and upload it again.`,
-      body: (detail: string) =>
-        `${detail}. Fix the column and upload it again — nothing was changed.`,
-      action: "Choose another file",
+      heading: "We can't read that",
+      bodyMobile: (detail: string) => `${detail}. Fix it and try again.`,
+      body: (detail: string) => `${detail}. Fix it and try again — nothing was changed.`,
+      action: "Try again",
       retry: false,
     },
     /**

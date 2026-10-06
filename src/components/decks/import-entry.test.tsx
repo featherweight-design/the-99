@@ -195,7 +195,9 @@ describe("a CSV-shaped upload that failed to parse", () => {
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toContain('Row 3: invalid quantity "abc"');
     expect(pasteBox()).toHaveProperty("value", "1 Sol Ring\n1 Cultivate");
-    expect(screen.getByRole("button", { name: "Choose another file" })).toBeTruthy();
+    // Mode-agnostic copy on purpose: this is reachable from a paste as well
+    // as a file, and the action must not promise a file dialog it cannot open.
+    expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
   });
 });
 
