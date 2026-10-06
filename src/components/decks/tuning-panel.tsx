@@ -655,15 +655,27 @@ export function TuningPanel({
       setAnnounced(result.message);
       return;
     }
-    const failure = next?.run?.status === "failed" ? failureCopy(next.run.errorClass) : null;
+    // The run itself landed (`result.ok`), but the closing read that would show it failed or
+    // came back empty. Without this, the panel fell through below with `next` null, computed no
+    // failure (there was nothing to read it off), and announced "ready" with 0 items while
+    // `state` stayed whatever it was BEFORE this press — the empty form, on a deck's first run.
+    // A reader who waited through "taking longer than expected" then saw the press silently
+    // undone. Surfaced as a refusal instead: the same message a stale tab's replayed request
+    // gets (`deckTuningCopy.run.refused`), since both are "we cannot show you this read".
+    if (!next) {
+      setRefused(deckTuningCopy.run.refused);
+      setAnnounced(deckTuningCopy.run.refused);
+      return;
+    }
+    const failure = next.run?.status === "failed" ? failureCopy(next.run.errorClass) : null;
     // `result.ok` alone does not mean a set of suggestions landed — `runTuning` answers ok after
     // persisting a run that itself failed (e.g. `upstream_busy`, `locked_only`, `ungrounded`),
     // review round 1. Round 2: `!failure` alone is not enough either — a closing read that
     // failed or returned a run in some OTHER non-`ok` status is also not a success, and must
     // not be read as one just because it also isn't the `failed` branch. Only an explicit `ok`
     // clears the note.
-    if (next?.run?.status === "ok") changeNotes("");
-    setAnnounced(failure ? failure.heading : deckTuningCopy.announce.ready(next?.items.length ?? 0));
+    if (next.run?.status === "ok") changeNotes("");
+    setAnnounced(failure ? failure.heading : deckTuningCopy.announce.ready(next.items.length));
     headingRef.current?.focus();
   }
 
