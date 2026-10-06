@@ -413,13 +413,13 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'deck-analysis',
     chapter: '03',
-    title: 'What bracket this deck is, and why',
+    title: 'Which bracket this deck plays at',
     route: '/decks',
     opens: 'opens a deck',
     width: 'plate',
     switch: 'ANALYSIS_TAB_ENABLED',
     caption:
-      'Once a deck is full, press Analyze on its Analysis tab, second in the deck page’s row of tabs, and we read the whole list against the Commander Format Panel’s bracket rules. The answer is the bracket your cards permit, and sometimes two, when the difference is how you play; then it is yours to say which. Every count opens to the cards behind it, and the lowest rung says what would have to go to come down one. The bracket then rides the deck’s header, its tile on your decks page and its row on Home, and the chip in the header opens the tab. A committed version that reads differently from the one before it names both readings. The same tab also holds an overview of the deck and Suggested changes.',
+      'Which bracket does this deck belong in? Once the deck is full, press Analyze on its Analysis tab, second in the deck’s row of tabs. We read the whole list against the Commander Format Panel’s bracket rules and name the bracket your cards permit. At either end of the scale, the brackets turn on intent, so your cards can permit two. Say you built a Squirrel deck with every Squirrel you love and no Game Changers, mass land denial, extra turns or two-card combos. Its cards pass at Exhibition and at Core. If the theme came first, it’s Exhibition. If you brought it to hold its own against precons, it’s Core. The top end works the same way: a list past Upgraded’s limits is Optimized, or cEDH if you tuned it for the competitive metagame. Only you know which, so you pick. Arguing about it at the table stays optional. Every count opens to the cards behind it. The lowest rung of the climb names what would have to go to drop one bracket. The bracket then shows on the deck’s header, its tile on Decks and its row on Home, and the header’s chip opens the tab. A committed version that reads differently from the last one names both readings. The tab also holds the Overview and Suggested changes.',
     keys: [
       'a range is two brackets the cards allow; the chips under it are the only question on the page.',
       'the climb states, the findings open: every figure with cards behind it is a button, a zero is not.',
@@ -452,12 +452,12 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'decklist-marks',
     chapter: '03',
-    title: 'The marks on a decklist row',
+    title: 'Reading a decklist row',
     route: '/decks',
     opens: 'opens a deck',
     width: 'plate',
     caption:
-      'A decklist is rows, and each row answers four questions from left to right: do you own it, what is it, how many does the deck want, and is anything standing in the way. Marks after the name flag what a bracket counts: a Game Changer, mass land denial, extra turns or a tutor. A row with nothing in its way carries no obstacle mark, so the ones you do see are all things to deal with. The separate auto tag says we picked the card for you, which is a fact about where it came from rather than a problem.',
+      'Each row answers four questions, left to right: is it in your Collection, what is it, how many copies does the deck want, and is anything in the way? Marks after the name show what a bracket counts: a Game Changer, mass land denial, extra turns or a tutor. Demonic Tutor carries two marks: it’s a tutor, and it’s on WotC’s Game Changer list. Exhibition and Core allow no Game Changers and Upgraded allows three, so the Game Changer marks are the cards to count before you sit down. Better to count them now than during the rule zero chat. An obstacle mark appears only when something stands in the way. The auto tag means we picked the card for you.',
     keys: [
       'a filled green dot is a card you own; a dashed hollow one is a card you do not. Same shape, same place, every list in the app.',
       // The canvas says "the circled figure ... is there whether that is one
@@ -840,7 +840,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'suggested-changes',
     chapter: '04',
-    title: 'Suggested changes, told what you want',
+    title: 'Telling Suggested changes what the deck is for',
     route: '/decks',
     opens: "opens a deck’s Analysis tab",
     width: 'plate',
@@ -848,7 +848,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // staging and off for production, so a switch here would hide this entry on production
     // forever rather than announcing it — the opposite of ruling 7's bump.
     caption:
-      'Describe a deck in a sentence or two and it sits under the deck’s name; the pencil beside the name edits both. The Overview and Suggested changes read it the next time each runs, and saving it rewrites nothing already written. Suggested changes, at the foot of the Analysis tab, offers up to five swaps, each a card out and a card in. Three limits are kept for the deck: the most a card may cost, the sets an added card is printed in, and whether adds come only from cards you own. Additional notes take one run’s instructions in your words and are cleared once read.',
+      'Describe the deck in a sentence or two and it sits under the deck’s name. The pencil beside the name edits both. Suggested changes reads it the next time it runs. Suggested changes, at the foot of the Analysis tab, offers up to five swaps, each a card out and a card in. We ask for eight and keep the first five that pass our checks. Three limits hold for the deck: the most a card may cost, the sets an added card comes from, and whether adds come only from your Collection. Say you describe your Meren deck as slow graveyard value for casual tables, cap cards at $5, keep adds to your Collection, and add a note asking for more removal this run. The swaps come back as cheap removal you already own, in place of cards that don’t fit the plan. Additional notes carry one run’s instructions in your words. Each run that comes back uses a credit.',
     keys: [
       'the description is optional, and asked beside Analyze before a deck’s first reading. After that it is the pencil’s.',
       'additional notes last one press and are never saved. What should hold every time belongs in the description or the limits.',

@@ -58,8 +58,8 @@ function revalidateDeck(deckId: string): void {
 }
 
 /**
- * The deck's description (H35): one or two sentences, quoted verbatim by the overview and
- * Suggested changes. Every save clears `intent_seeded` too, which no longer matters for a new
+ * The deck's description (H35): one or two sentences, quoted verbatim by Suggested changes. The
+ * overview does not read it (H35, Q2: Hugh kept the overview as it was). Every save clears `intent_seeded` too, which no longer matters for a new
  * write (nothing seeds any more) but still holds for a deck that had an old seeded line.
  */
 export async function saveDeckDescription(deckId: string, formData: FormData): Promise<DeckMutationResult> {
