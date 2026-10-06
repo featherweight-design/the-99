@@ -269,7 +269,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens the card detail',
     width: 'inset',
     caption:
-      'Press a card anywhere in the app and its card details open, with the art up close. A double-faced card turns over to show its back, no unsleeving required.\n\nOwn more than one printing? You can pick one for the card, and it’s shown everywhere in your Collection. Until you pick, the one on screen is marked Shown now.\n\nThe cost beside the name uses the real mana symbols. A card with two costs, like a split card, an adventure or a card with a castable back, shows both.\n\nOpened from a list, it pages through that list:\n\n- on a computer, with the arrow keys or the cards beside it\n- on a phone, with a swipe\n\nOpened from a sheet or a combo partner, the pill at the top names where you came from and takes you back.',
+      'Press a card anywhere in the app and its card details open, with the art up close. A double-faced card turns over to show its back, no unsleeving required.\n\nOwn more than one printing? You can pick one for the card, and it’s shown everywhere in your Collection. Whenever no pick of yours applies, including one whose copy you no longer own, the printing on screen is marked Shown now.\n\nThe cost beside the name uses the real mana symbols. A card with two costs, like a split card, an adventure or a card with a castable back, shows both.\n\nOpened from a list, it pages through that list:\n\n- on a computer, with the arrow keys or the cards beside it\n- on a phone, with a swipe\n\nOpened from a sheet or a combo partner, the pill at the top names where you came from and takes you back.',
     keys: [],
     since: 1,
   },
