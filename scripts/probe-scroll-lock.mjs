@@ -138,7 +138,10 @@ async function run() {
     // hardcoded, so the probe runs against any fixture.
     await page.goto(`${BASE}/collection/sets`, { waitUntil: "networkidle" });
     const code = await page.evaluate(() => {
-      const row = document.querySelector('a[href^="/collection/sets/"][aria-label*="checklist"]')
+      // "in the checklist" is the ratio phrase an INDEXED row's label carries
+      // (setsIndexCopy.row.ratioAria/zeroAria); the unindexed label ("...has not been
+      // indexed yet") also contains "checklist" alone and would otherwise match first.
+      const row = document.querySelector('a[href^="/collection/sets/"][aria-label*="in the checklist"]')
         ?? document.querySelector('a[href^="/collection/sets/"]');
       return row === null ? null : row.getAttribute("href").split("/").pop();
     });
