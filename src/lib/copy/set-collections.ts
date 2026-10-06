@@ -498,7 +498,7 @@ export const setPageCopy = {
     // Ownership-neutral: search reaches sets the reader holds nothing from, so this page
     // is opened at 0% as often as it is opened over a collection.
     body:
-      "The checklist for this set is written when the catalog refreshes, which happens weekly. Anything you own from it is already in your collection.",
+      "The checklist for this set is written when the catalog refreshes, which happens daily. Anything you own from it is already in your collection.",
     action: "Back to your sets",
   },
 
