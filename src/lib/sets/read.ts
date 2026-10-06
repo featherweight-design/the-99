@@ -15,24 +15,43 @@
 // `lower(set_code)` as a filter over that one reader's rows. An index on the expression was
 // written, measured, and removed unused.
 
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, notInArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cardArtPreferences, cards, collectionItems, printings, sets } from "../../db/schema";
 import {
-  placeCells, sectionsOf, type ArtPick, type Holding, type SetPrinting,
+  indexFiguresFor, orderWithSubsetsAfterParent, placeCells,
+  type ArtPick, type Holding, type SetPrinting,
 } from "./completion";
 
-/**
- * Set types worth trying to complete. Token, memorabilia, promo and the rest are real
- * rows in `sets` that nobody collects as a set, and `digital` products cannot be owned
- * in paper at all.
- */
 /** The longest query worth scanning for. Matches the card search's own guard. */
 const MAX_QUERY = 100;
 
-export const COLLECTIBLE_SET_TYPES = [
-  "expansion", "core", "commander", "draft_innovation", "masters",
-] as const;
+/**
+ * Set types with no base run to EVER publish — not a backlog state `baseSetSizeOf` will
+ * fill in once the catalog catches up, a structural fact about the product. A masterpiece
+ * bonus sheet (Edge of Eternities: Stellar Sights) is made entirely of variant printings;
+ * a token or memorabilia sheet is not a Magic card at all. Gates the GRID alone: a reader
+ * who holds one still gets a row on "Your sets" (Hugh's ruling — every held set gets a
+ * row), with an owned count and no percent, and the grid page's existing "no set to
+ * complete" page, which already handles that correctly.
+ *
+ * `art_series` is Scryfall's fourth such type; none exist in this catalog today, named
+ * defensively rather than waiting for one to ship broken.
+ */
+const NO_BASE_RUN_SET_TYPES = ["token", "memorabilia", "art_series", "masterpiece"] as const;
+
+/**
+ * Set types a BLIND "Find any set" search should reach. Narrower than the grid gate on
+ * purpose: nobody hunting for a set to complete wants 215 token sets or 99 memorabilia
+ * products in the results, but a masterpiece bonus sheet is a real, findable product —
+ * it lands on the same "no set to complete" page a direct link to one already does.
+ */
+const SEARCHABLE_SET_TYPES_EXCLUDED = ["token", "memorabilia", "art_series"] as const;
+
+/** Whether `setType` has a base run worth gridding — see `NO_BASE_RUN_SET_TYPES`. */
+export function hasGridableBaseRun(setType: string): boolean {
+  return !(NO_BASE_RUN_SET_TYPES as readonly string[]).includes(setType);
+}
 
 export type SetIndexRow = {
   code: string;
@@ -40,6 +59,8 @@ export type SetIndexRow = {
   releasedAt: string | null;
   iconSvgUri: string | null;
   setType: string;
+  /** Scryfall's own parent — see `orderWithSubsetsAfterParent`. Null for a standalone product. */
+  parentSetCode: string | null;
   owned: number;
   baseSetSize: number | null;
   /** Extras owned and in total, counted apart from the headline exactly as the grid does. */
@@ -174,32 +195,43 @@ function holdingsFor(userId: string, code: string) {
  *
  * Ordered newest first with **nulls last**: `released_at` is nullable and Postgres sorts
  * nulls first under `desc`, which would put undated sets at the head of the list.
- * `set-filter.ts` already orders this way.
+ * `set-filter.ts` already orders this way. Then a subset is moved to sit directly after its
+ * held parent (Hugh's ruling, the friend-reported gap: Edge of Eternities: Stellar Sights
+ * was missing entirely, not merely out of order) — see `orderWithSubsetsAfterParent`.
+ *
+ * NO set-type filter. Hugh's ruling: every set the reader holds cards in gets a row, full
+ * stop — a promo, a token sheet, a masterpiece bonus sheet included. Only `digital` is
+ * excluded, because a digital product's printings are never ingested (`seed-printings.ts`
+ * skips them), so it has nothing a row here could ever show. What differs by type is
+ * whether the row carries a PERCENT: `indexFiguresFor`, gated on `hasGridableBaseRun`,
+ * reports an owned count with no ratio for a set with no base run to divide by — and for
+ * one the grid page agrees has none, never trusting a stray `base_set_size` alone.
  */
 export async function loadOwnedSets(userId: string): Promise<SetIndexRow[]> {
-  const held = await db
+  const heldRows = await db
     .select({
       code: sets.code,
       name: sets.name,
       releasedAt: sets.releasedAt,
       iconSvgUri: sets.iconSvgUri,
       setType: sets.setType,
+      parentSetCode: sets.parentSetCode,
       baseSetSize: sets.baseSetSize,
     })
     .from(collectionItems)
     .innerJoin(sets, eq(sets.code, sql`lower(${collectionItems.setCode})`))
-    // The same contract the search applies, for the same reason: a promo, token or
-    // digital product is not a set to complete, and listing one here only to have the
-    // grid say so is a row that exists to disappoint.
     .where(and(
       eq(collectionItems.userId, userId),
       eq(sets.digital, false),
-      inArray(sets.setType, [...COLLECTIBLE_SET_TYPES]),
     ))
-    .groupBy(sets.code, sets.name, sets.releasedAt, sets.iconSvgUri, sets.setType, sets.baseSetSize)
+    .groupBy(
+      sets.code, sets.name, sets.releasedAt, sets.iconSvgUri, sets.setType,
+      sets.parentSetCode, sets.baseSetSize,
+    )
     .orderBy(sql`${sets.releasedAt} desc nulls last`, sets.code);
 
-  if (held.length === 0) return [];
+  if (heldRows.length === 0) return [];
+  const held = orderWithSubsetsAfterParent(heldRows);
   const codes = held.map((s) => s.code);
 
   // Three queries for the whole index, not three per set: a reader with 34 held sets would
@@ -283,22 +315,24 @@ export async function loadOwnedSets(userId: string): Promise<SetIndexRow[]> {
     const snapshotSize = rows.length > 0
       ? ((rows[0] as unknown as { baseSetSize: number | null }).baseSetSize ?? null)
       : null;
-    const counted = sectionsOf(placeCells(rows, mine, picked), snapshotSize);
-    return {
-      ...s,
-      owned: counted.baseOwned,
-      extrasOwned: counted.extrasOwned,
-      extrasTotal: counted.extrasTotal,
-      baseSetSize: snapshotSize,
-      percent: snapshotSize === null ? null : counted.percent,
-    };
+    // Gated by the SAME predicate the grid page gates on, not by the raw column — see
+    // `indexFiguresFor`.
+    const figures = indexFiguresFor(
+      placeCells(rows, mine, picked), snapshotSize, hasGridableBaseRun(s.setType),
+    );
+    return { ...s, ...figures };
   });
 }
 
 /**
- * Any collectible set whose name or code matches, held or not, so a set can be opened at
- * 0%. Carries no owned count: the reader is looking for a set, not reading a figure, and
- * costing every result would run the placement rule over the whole catalogue.
+ * Any set browsable by name or code, held or not, so a set can be opened at 0%. Carries no
+ * owned count: the reader is looking for a set, not reading a figure, and costing every
+ * result would run the placement rule over the whole catalogue.
+ *
+ * `SEARCHABLE_SET_TYPES_EXCLUDED`, not `NO_BASE_RUN_SET_TYPES`: a masterpiece bonus sheet
+ * is still findable here, landing on the same "no set to complete" page a direct link
+ * already does. A token or memorabilia sheet nobody is browsing to complete is excluded
+ * from a BLIND search only — a reader who holds one still gets it on "Your sets".
  */
 export async function searchSets(query: string): Promise<SetIndexRow[]> {
   const q = query.trim();
@@ -319,19 +353,20 @@ export async function searchSets(query: string): Promise<SetIndexRow[]> {
       releasedAt: sets.releasedAt,
       iconSvgUri: sets.iconSvgUri,
       setType: sets.setType,
+      parentSetCode: sets.parentSetCode,
       baseSetSize: sets.baseSetSize,
     })
     .from(sets)
     .where(and(
       eq(sets.digital, false),
-      inArray(sets.setType, [...COLLECTIBLE_SET_TYPES]),
+      notInArray(sets.setType, [...SEARCHABLE_SET_TYPES_EXCLUDED]),
       sql`(lower(${sets.name}) like ${like} escape '\\' or lower(${sets.code}) like ${like} escape '\\')`,
     ))
     .orderBy(sql`${sets.releasedAt} desc nulls last`, sets.code);
-    // Uncapped. The contract is that search reaches ANY collectible set, and a silent
+    // Uncapped. The contract is that search reaches any browsable set, and a silent
     // ceiling contradicted it: a one-letter query could match more than the cap and the
-    // result line would report the truncation as the answer. The collectible predicates
-    // above already bound this to a few hundred rows of name and code.
+    // result line would report the truncation as the answer. The predicates above already
+    // bound this to a few hundred rows of name and code.
 
   return rows.map((s) => ({
     ...s, owned: 0, extrasOwned: 0, extrasTotal: 0, percent: null, uncounted: true,
@@ -429,12 +464,11 @@ export async function loadSetGrid(userId: string, code: string): Promise<SetGrid
     .limit(1);
   if (!meta) return null;
 
-  // Collectibility is decided BEFORE the expensive half. A direct link to a promo, token
-  // or digital product is answered by the metadata alone; loading every printing and the
-  // price join first only to discard them is work nobody reads.
-  const collectible = !meta.digital
-    && (COLLECTIBLE_SET_TYPES as readonly string[]).includes(meta.setType);
-  if (!collectible) {
+  // Gridability is decided BEFORE the expensive half. A direct link to a digital product
+  // or a type with no base run to ever publish is answered by the metadata alone; loading
+  // every printing and the price join first only to discard them is work nobody reads.
+  const gridable = !meta.digital && hasGridableBaseRun(meta.setType);
+  if (!gridable) {
     return {
       set: meta,
       printings: [],

@@ -18,6 +18,7 @@ beforeEach(() => {
 const set = (over: Partial<SetIndexRow>): SetIndexRow => ({
   code: "eoe", name: "Edge of Eternities", releasedAt: "2026-08-01",
   iconSvgUri: "https://svgs.scryfall.io/sets/eoe.svg", setType: "expansion",
+  parentSetCode: null,
   owned: 62, baseSetSize: 276, extrasOwned: 4, extrasTotal: 123, percent: 22, ...over,
 });
 
@@ -88,10 +89,12 @@ describe("SetIndexView — S2 populated", () => {
 });
 
 describe("SetIndexView — S5 not indexed", () => {
-  it("tags a set with no denominator instead of printing a percentage", () => {
+  it("tags a set with nothing classified instead of printing a percentage", () => {
     render(
       <SetIndexView
-        sets={[set({ baseSetSize: null, percent: null, owned: 0 })]}
+        sets={[set({
+          baseSetSize: null, percent: null, owned: 0, extrasOwned: 0, extrasTotal: 0,
+        })]}
         cardCount={4}
         onSearch={noSearch}
       />,
@@ -99,6 +102,38 @@ describe("SetIndexView — S5 not indexed", () => {
     expect(screen.getByText("not indexed yet")).toBeInTheDocument();
     expect(screen.queryByText(/%/)).toBeNull();
     expect(screen.queryByText(/0 \/ 0/)).toBeNull();
+  });
+});
+
+describe("SetIndexView — a set with no base run to ever publish", () => {
+  // Edge of Eternities: Stellar Sights, Secret Lair-shaped: classified rows, a real owned
+  // count, and a denominator that will never arrive. A different fact from "not indexed
+  // yet", which is a backlog state this set will never leave.
+  it("shows the owned count, never the not-indexed tag or a percentage", () => {
+    render(
+      <SetIndexView
+        sets={[set({
+          name: "Edge of Eternities: Stellar Sights", code: "eos",
+          baseSetSize: null, percent: null, owned: 0, extrasOwned: 17, extrasTotal: 180,
+        })]}
+        cardCount={17}
+        onSearch={noSearch}
+      />,
+    );
+    expect(screen.getByText("17 owned")).toBeInTheDocument();
+    expect(screen.queryByText("not indexed yet")).toBeNull();
+    expect(screen.queryByText(/%/)).toBeNull();
+  });
+
+  it("says 'you own none of it' rather than claiming the set is unindexed", () => {
+    render(
+      <SetIndexView
+        sets={[set({ baseSetSize: null, percent: null, owned: 0, extrasOwned: 0, extrasTotal: 180 })]}
+        cardCount={0}
+        onSearch={noSearch}
+      />,
+    );
+    expect(screen.getByRole("link")).toHaveAccessibleName(/you own none of it/);
   });
 });
 
@@ -363,8 +398,11 @@ describe("SetIndexView — the extras figure", () => {
 
   it("gives an unindexed row no second line at all", () => {
     render(
-      <SetIndexView sets={[set({ baseSetSize: null, percent: null })]} cardCount={1200}
-        onSearch={noSearch} />,
+      <SetIndexView
+        sets={[set({ baseSetSize: null, percent: null, extrasOwned: 0, extrasTotal: 0 })]}
+        cardCount={1200}
+        onSearch={noSearch}
+      />,
     );
     expect(screen.getByText("not indexed yet")).toBeInTheDocument();
     expect(screen.queryByText(/extras/)).toBeNull();

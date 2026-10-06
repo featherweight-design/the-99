@@ -259,8 +259,29 @@ export function sectionsOf(cells: Cell[], baseSetSize?: number | null): SetSecti
     : baseSetSize !== null && baseSetSize > 0
       && classified.length > 0 && rowsMatchDenominator(inBase);
 
+  // A set whose classified rows carry no booster-true and no non-variant printing — every
+  // Secret Lair-style insert, a masterpiece bonus sheet like Edge of Eternities: Stellar
+  // Sights — has `baseSetSize` null not because nobody has indexed it yet, but because it
+  // has no base run to publish one for: `baseSetSizeOf` returns null by DESIGN there, and
+  // always will. That is a different fact than "mid-refresh" and carries no mismatch risk
+  // to guard against: there is no denominator to compare the rows to, so showing what the
+  // rows themselves say (every classified one is an extra, by the same `inBase` rule) is
+  // always safe. Without this, a reader who owns 17 of Stellar Sights' 180 cards reads
+  // "not indexed yet" — a backlog claim about a set that will never get a base run.
+  //
+  // `classified.every((c) => !inBase(c))`, not merely `classified.length > 0` — caught by
+  // review (PR #1274 round 1): a NORMAL set mid-refresh, with `baseSetSize` still null but
+  // SOME rows already classified, can have both base and variant rows among them. Without
+  // this check, `extrasOnly` would fire too, populate `extras` with only the variant rows,
+  // and report `extrasOwned` as the owned count — silently dropping every owned BASE card
+  // from the figure instead of showing "not indexed yet" for a set that still deserves it.
+  const extrasOnly = !indexed && baseSetSize === null && classified.length > 0
+    && classified.every((c) => !inBase(c));
+
   const base = indexed ? classified.filter(inBase) : [];
-  const extras = indexed ? classified.filter((c) => !inBase(c)) : [];
+  const extras = indexed
+    ? classified.filter((c) => !inBase(c))
+    : extrasOnly ? classified.filter((c) => !inBase(c)) : [];
 
   const baseOwned = base.filter((c) => c.owned).length;
   return {
@@ -274,6 +295,101 @@ export function sectionsOf(cells: Cell[], baseSetSize?: number | null): SetSecti
     complete: indexed && base.length > 0 && baseOwned === base.length,
     indexed,
   };
+}
+
+/** The index row's figures: owned, extras, and whether a percent is shown at all. */
+export type IndexFigures = {
+  owned: number;
+  extrasOwned: number;
+  extrasTotal: number;
+  baseSetSize: number | null;
+  percent: number | null;
+};
+
+/**
+ * The index row's figures, gated by `gridable` rather than by trusting `base_set_size`
+ * unconditionally — caught in review (PR #1274 round 3). `seed-printings.ts`'s denominator
+ * SQL is type-agnostic: it classifies every printing's `booster`/`is_variant` the same way
+ * regardless of the set's `set_type`, so a token, memorabilia or art_series set CAN end up
+ * with a real, positive `base_set_size` — six Wilds of Eldraine Role tokens are kept as
+ * ordinary printings rather than skipped (`transform-printings.ts`), and a reader who owned
+ * one would otherwise see a completion ratio on the index for a set whose own grid page says
+ * there is nothing to complete. `gridable` is the SAME predicate the grid page gates on
+ * (`hasGridableBaseRun`), so the two surfaces can never disagree: not gridable means never a
+ * percent here either, whatever the column says — just the plain count of owned cells.
+ */
+export function indexFiguresFor(
+  cells: Cell[],
+  baseSetSize: number | null,
+  gridable: boolean,
+): IndexFigures {
+  if (!gridable) {
+    return {
+      owned: 0,
+      extrasOwned: cells.filter((c) => c.owned).length,
+      extrasTotal: cells.length,
+      baseSetSize: null,
+      percent: null,
+    };
+  }
+  const counted = sectionsOf(cells, baseSetSize);
+  return {
+    owned: counted.baseOwned,
+    extrasOwned: counted.extrasOwned,
+    extrasTotal: counted.extrasTotal,
+    baseSetSize,
+    percent: baseSetSize === null ? null : counted.percent,
+  };
+}
+
+/**
+ * Moves every subset directly after its parent, leaving every other row exactly where the
+ * newest-first order already put it.
+ *
+ * A subset is a row whose `parentSetCode` names ANOTHER row in the same list — Edge of
+ * Eternities: Stellar Sights sits after Edge of Eternities only because the reader also
+ * holds cards from Edge of Eternities itself. A subset whose parent is not held (its parent
+ * never shows up here to sit after) stays exactly where release-date order already placed
+ * it, rather than floating to the top or bottom of the list.
+ *
+ * Recursive, not because a second level of nesting is known to exist in Scryfall's data,
+ * but because "emit this row, then its children" costs nothing extra to make general, and
+ * a future nested subset is then already handled rather than silently dropped to its
+ * newest-first slot.
+ */
+export function orderWithSubsetsAfterParent<T extends { code: string; parentSetCode: string | null }>(
+  rows: readonly T[],
+): T[] {
+  const byCode = new Map(rows.map((r) => [r.code, r]));
+  const childrenOf = new Map<string, T[]>();
+  for (const r of rows) {
+    if (r.parentSetCode === null || !byCode.has(r.parentSetCode)) continue;
+    const siblings = childrenOf.get(r.parentSetCode);
+    if (siblings) siblings.push(r); else childrenOf.set(r.parentSetCode, [r]);
+  }
+
+  const emitted = new Set<string>();
+  const out: T[] = [];
+  const emit = (r: T) => {
+    if (emitted.has(r.code)) return; // guards a cycle; none exist in practice
+    emitted.add(r.code);
+    out.push(r);
+    for (const child of childrenOf.get(r.code) ?? []) emit(child);
+  };
+
+  for (const r of rows) {
+    // A subset whose parent IS held is emitted only from `emit(parent)`, immediately after
+    // it — skipping it here is what keeps it from ALSO appearing at its own newest-first
+    // position.
+    if (r.parentSetCode !== null && byCode.has(r.parentSetCode)) continue;
+    emit(r);
+  }
+  // A cycle (A's parent is B, B's parent is A) skips BOTH rows in the loop above — each
+  // looks like a held subset to the other — so neither is ever reached from `emit`. Not a
+  // shape Scryfall's data produces, but a row silently going missing is worse than one
+  // falling back to its newest-first position, so anything still unemitted gets exactly that.
+  for (const r of rows) emit(r);
+  return out;
 }
 
 /**

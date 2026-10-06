@@ -207,6 +207,13 @@ export const setsIndexCopy = {
     // rendered on its own.
     extrasAria: (have: number, total: number) =>
       `, and ${have} of ${total} ${total === 1 ? "extra" : "extras"}`,
+    // A set with no base run to divide by — a masterpiece bonus sheet, a Secret Lair-style
+    // insert — but a real owned count: not a backlog state like `notIndexed`, so it never
+    // shares that tag. Never a percentage, because there is no denominator and never will
+    // be one.
+    ownedOnly: (n: number) => (n === 1 ? "1 owned" : `${n} owned`),
+    ownedOnlyAria: (n: number, name: string) =>
+      n === 0 ? `${name}: you own none of it` : `${name}: you own ${n} of it`,
   },
 
   firstRun: {

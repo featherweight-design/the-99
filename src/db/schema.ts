@@ -31,6 +31,13 @@ export const sets = pgTable("sets", {
   baseSetSize: integer("base_set_size"),
   digital: boolean("digital").notNull().default(false),
   iconSvgUri: text("icon_svg_uri"),
+  /**
+   * Scryfall's own `parent_set_code`, lowercase — present on a subset (a bonus sheet, a
+   * promo insert tied to one release) and null on a standalone product. No foreign key: the
+   * sets ingest upserts in one batch with no ordering guarantee between a subset and its
+   * parent, and Postgres would refuse a row that named a parent not yet written.
+   */
+  parentSetCode: text("parent_set_code"),
 });
 
 export const cards = pgTable("cards", {

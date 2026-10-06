@@ -24,8 +24,14 @@ describe("toSetRows", () => {
         cardCount: 291,
         digital: false,
         iconSvgUri: "https://svgs.scryfall.io/sets/ecl.svg",
+        parentSetCode: null,
       },
     ]);
+  });
+
+  it("lowercases parent_set_code so it joins sets.code, and keeps it null for a standalone product", () => {
+    expect(toSetRows(payload([{ ...ecl, parent_set_code: "EOE" }]))[0].parentSetCode).toBe("eoe");
+    expect(toSetRows(payload([ecl]))[0].parentSetCode).toBeNull();
   });
 
   it("lowercases the set code so it joins printings.set_code", () => {
