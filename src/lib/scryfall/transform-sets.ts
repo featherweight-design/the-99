@@ -9,6 +9,8 @@ export type SetRow = {
   cardCount: number;
   digital: boolean;
   iconSvgUri: string | null;
+  /** Scryfall's own field, lowercase to match `code`. Null for a standalone product. */
+  parentSetCode: string | null;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- raw Scryfall JSON is untyped by design; toSetRows narrows it.
@@ -46,5 +48,6 @@ export function toSetRows(payload: Raw): SetRow[] {
     cardCount: typeof raw.card_count === "number" ? raw.card_count : 0,
     digital: raw.digital === true,
     iconSvgUri: typeof raw.icon_svg_uri === "string" ? raw.icon_svg_uri : null,
+    parentSetCode: typeof raw.parent_set_code === "string" ? raw.parent_set_code.toLowerCase() : null,
   }));
 }

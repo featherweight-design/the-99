@@ -35,6 +35,7 @@ export async function seedSets(): Promise<{ upserted: number }> {
         cardCount: sql`excluded.card_count`,
         digital: sql`excluded.digital`,
         iconSvgUri: sql`excluded.icon_svg_uri`,
+        parentSetCode: sql`excluded.parent_set_code`,
       },
     });
   }

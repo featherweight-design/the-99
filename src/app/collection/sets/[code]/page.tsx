@@ -10,7 +10,7 @@
 import Link from "next/link";
 import { requireUserId } from "../../../../lib/auth";
 import { cacheForUser } from "../../../../lib/cache/user-lists";
-import { COLLECTIBLE_SET_TYPES, loadSetGrid } from "../../../../lib/sets/read";
+import { hasGridableBaseRun, loadSetGrid } from "../../../../lib/sets/read";
 import { fingerprintOf, placeCells } from "../../../../lib/sets/completion";
 import { parseAsOf, provenanceForm } from "../../../../lib/decks/price";
 import { setPageCopy } from "../../../../lib/copy/set-collections";
@@ -63,10 +63,11 @@ export default async function SetGridPage({
   }
 
   // Digital products are excluded from search and their printings are dropped at ingest,
-  // so a direct URL for one would otherwise land on a permanently empty grid.
-  const collectible = !grid.set.digital
-    && (COLLECTIBLE_SET_TYPES as readonly string[]).includes(grid.set.setType);
-  if (!collectible) {
+  // so a direct URL for one would otherwise land on a permanently empty grid. A token,
+  // memorabilia or masterpiece-bonus-sheet set has real printings but no base run to grid
+  // — see `hasGridableBaseRun`.
+  const gridable = !grid.set.digital && hasGridableBaseRun(grid.set.setType);
+  if (!gridable) {
     const held = grid.heldCopies;
     return (
       <Shell code={code}>

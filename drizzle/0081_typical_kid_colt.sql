@@ -1,0 +1,1 @@
+ALTER TABLE "sets" ADD COLUMN "parent_set_code" text;

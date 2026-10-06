@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  baseSetSizeOf, fingerprintOf, holdingCountOf, placeCells, sectionsOf,
-  type BoosterFlagged, type Holding, type SetPrinting,
+  baseSetSizeOf, fingerprintOf, holdingCountOf, orderWithSubsetsAfterParent, placeCells,
+  sectionsOf, type BoosterFlagged, type Holding, type SetPrinting,
 } from "./completion";
 
 const row = (over: Partial<BoosterFlagged>): BoosterFlagged => ({
@@ -209,6 +209,65 @@ describe("sectionsOf", () => {
     expect(s.baseTotal).toBe(2);
     expect(s.extrasTotal).toBe(1);
     expect(s.percent).toBe(0);
+  });
+
+  it("shows the owned count for a set with no base run at all, not `not indexed`", () => {
+    // Every printing in a masterpiece bonus sheet (Edge of Eternities: Stellar Sights) is a
+    // variant, so `baseSetSizeOf` has published null for it — not a backlog, a permanent
+    // fact about the product — and `baseSetSize` arrives here null. The rows are still
+    // classified (`booster` is not null), so the owned count is safe to show.
+    const cells = placeCells([
+      p("1", { booster: false, isVariant: true }),
+      p("2", { booster: false, isVariant: true }),
+      p("3", { booster: false, isVariant: true }),
+    ], [held({ oracleId: "o-1", collectorNumber: "1" })]);
+    const s = sectionsOf(cells, null);
+    expect(s.indexed).toBe(false);
+    expect(s.percent).toBeNull();
+    expect(s.baseTotal).toBe(0);
+    expect(s.extrasTotal).toBe(3);
+    expect(s.extrasOwned).toBe(1);
+  });
+
+  it("still reports nothing extra for a genuinely unclassified set — that stays not-indexed", () => {
+    // The booster-eligible default means every row here is "in base" once classified, so
+    // there is nothing for the new branch to surface — this is the ordinary not-yet-indexed
+    // case, unchanged.
+    const cells = placeCells([p("1"), p("2")], [held({})]);
+    const s = sectionsOf(cells, null);
+    expect(s.indexed).toBe(false);
+    expect(s.extrasTotal).toBe(0);
+  });
+});
+
+describe("orderWithSubsetsAfterParent", () => {
+  const row = (code: string, parentSetCode: string | null = null) => ({ code, parentSetCode });
+
+  it("moves a subset to sit directly after its held parent", () => {
+    const rows = [row("eoe"), row("woe"), row("eos", "eoe")];
+    expect(orderWithSubsetsAfterParent(rows).map((r) => r.code)).toEqual(["eoe", "eos", "woe"]);
+  });
+
+  it("leaves a subset in its newest-first slot when its parent is not held", () => {
+    const rows = [row("ptkdf", "dtk"), row("woe")];
+    expect(orderWithSubsetsAfterParent(rows).map((r) => r.code)).toEqual(["ptkdf", "woe"]);
+  });
+
+  it("keeps every other row exactly where newest-first order put it", () => {
+    const rows = [row("a"), row("b"), row("c")];
+    expect(orderWithSubsetsAfterParent(rows).map((r) => r.code)).toEqual(["a", "b", "c"]);
+  });
+
+  it("groups more than one subset under the same parent, each right after it", () => {
+    const rows = [row("eoe"), row("woe"), row("eos", "eoe"), row("otp", "eoe")];
+    expect(orderWithSubsetsAfterParent(rows).map((r) => r.code))
+      .toEqual(["eoe", "eos", "otp", "woe"]);
+  });
+
+  it("never drops or duplicates a row, even with a cycle", () => {
+    const rows = [row("a", "b"), row("b", "a")];
+    const out = orderWithSubsetsAfterParent(rows);
+    expect(out.map((r) => r.code).sort()).toEqual(["a", "b"]);
   });
 });
 
