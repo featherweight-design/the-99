@@ -413,9 +413,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'Every deck gets a page of its own. The header carries the commander, the deck’s status and a bar for how far along it is.\n\nUnder it sit the tabs, among them Your deck, Consider, Games and, once you’ve committed the deck, Versions.\n\nConsider is the commander’s wish list: cards it wants that aren’t in the list yet, from your Collection first, then the top picks you’d have to buy. Think of it as your commander dropping hints.',
     keys: [
-      'the badge and the bar are the same pair the library shows, so a deck reads the same from either direction.',
-      'Games drops its count rather than printing a zero, so a deck nobody has logged a game against has no number beside Games.',
-      'Consider is the other half of the recommendation: cards this commander wants that are not in the list yet.',
+      'The status badge and the progress bar match the deck’s tile on Decks, so a deck looks the same from either side.',
+      'Games picks up a count with the first game you log against the deck.',
+      'Consider holds the cards your commander wants that the list doesn’t run yet.',
     ],
     since: 1,
   },
@@ -430,10 +430,10 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'Press Analyze on a full deck’s Analysis tab, second in the deck’s row of tabs, and we name the bracket your cards permit. We read the whole list against the Commander Format Panel’s bracket rules.\n\nAt either end of the scale, the brackets turn on intent, so your cards can permit two. Say you built a Squirrel deck with every Squirrel you love and no Game Changers, mass land denial, extra turns or two-card combos. Its cards pass at Exhibition and at Core.\n\n- If the theme came first, it’s Exhibition.\n- If you brought it to hold its own against precons, it’s Core.\n\nThe top end works the same way: a list past Upgraded’s limits is Optimized, or cEDH if you tuned it for the competitive metagame. Only you know which, so you pick. Arguing about it at the table stays optional.\n\nEvery count opens to the cards behind it, and the lowest rung of the climb names what would have to go to drop one bracket.\n\nThe bracket then shows on the deck’s header, its tile on Decks and its row on Home, and the header’s chip opens the tab. A committed version that reads differently from the last one names both readings. The tab also holds the Overview and Suggested changes.',
     keys: [
-      'a range is two brackets the cards allow; the chips under it are the only question on the page.',
-      'the climb states, the findings open: every figure with cards behind it is a button, a zero is not.',
-      'the date line names the analysis shown. After an edit it adds `before your changes`, the header and the tile keep the last bracket, and the tab offers Re-analyze. It never guesses whether the edit mattered.',
-      'the line under the face says what separates the two. A single bracket carries a lean there instead: the two-card combo that decided it, and whether the deck can find both halves or has to draw them. `see the reasoning` shows what finds each half.',
+      'A range means your cards fit two brackets. The chips under it ask which one you meant, and they’re the only question on the page.',
+      'The climb reads straight down. In the findings, every count with cards behind it opens to show them.',
+      'The date line says which reading you’re looking at. Edit the deck and it adds “before your changes”, the header and the tile keep the last bracket, and the tab offers Re-analyze. Whether the edit moved anything is Re-analyze’s call.',
+      'The line under the bracket says what separates the two. When a two-card combo settled a single bracket, a second line names it and how the deck gets both halves, and “see the reasoning” shows what finds each one.',
     ],
     // The version current when it was written: an entry tied to a switch is announced by the
     // switch, and nothing bumps the version for it.
@@ -468,20 +468,20 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'Each row answers four questions, left to right:\n\n- Is it in your Collection?\n- What is it?\n- How many copies does the deck want?\n- Is anything in the way?\n\nMarks after the name show what a bracket counts: a Game Changer, mass land denial, extra turns or a tutor. Demonic Tutor carries two, since it’s a tutor and it’s on WotC’s Game Changer list.\n\nExhibition and Core allow no Game Changers and Upgraded allows three, so those are the cards to count before you sit down. Better to count them now than during the rule zero chat.\n\nAn obstacle mark appears only when something stands in the way. The auto tag means we picked the card for you.',
     keys: [
-      'a filled green dot is a card you own; a dashed hollow one is a card you do not. Same shape, same place, every list in the app.',
+      'Filled and green means it’s in your Collection. Hollow and dashed means it isn’t. Every list in the app marks it the same way.',
       // The canvas says "the circled figure ... is there whether that is one
       // or four". The row draws neither half: the count is `×2` in mono beside
       // the name, and `decklist-row.tsx` renders it on `quantity > 1` only.
       // A single copy is the ordinary case and says so by saying nothing.
-      'a count appears beside the name only when the deck wants more than one copy, as `×2`. A row with no count wants one.',
+      'A count shows only when the deck wants more than one copy, like ×2.',
       // The red edge rides WITH `short N` rather than in the edge line below.
       // It is the same answer drawn twice — the collection saying you are a
       // copy short — where the accent edge answers a different question, and
       // the two used to share one sentence as though they were one axis. The
       // page caps an entry at four keys, so this is the split that fits: by
       // WHAT IS BEING ANSWERED, which is the distinction that was missing.
-      'a mark only when there is something to say: `1 in a draft`, `none free`, `short N`, which also turns the row’s edge red, `$` for a card you would have to buy, or `P` for one you are printing. On Shopping, a card another deck holds carries its buy tag beside the mark.',
-      'a bright accent edge answers a different question: you have changed this row and not committed it yet, and the edge goes when you do.',
+      'Something in the way gets a mark: “1 in a draft”, “none free”, or “short” when you need more copies than you have, which also rings the row in red. A card to buy shows its price, or $ with no price yet, and P is a card you’re printing. On Shopping, a card another deck holds carries its buy tag too.',
+      'A bright edge means you’ve changed the row since your last commit. Commit, and it goes.',
     ],
     since: 1,
   },
@@ -497,9 +497,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'A card carries its bracket facts into every deck: whether it’s on the Game Changer list, counts as mass land denial, takes extra turns or is a tutor.\n\nEach fact has its own mark beside the card’s name, in your Collection, on a decklist, and on the cards Consider and the search under the tabs offer you.\n\nRhystic Study carries one: it’s a Game Changer. It also starts more power-level arguments than most.\n\nA key above the cards names the marks, and a card’s details spell them out under Bracket facts.',
     keys: [
-      'a tutor is a search that can find something other than a land. A land-only search is ramp, and carries no mark.',
-      'no mark means nothing to report, not a card we checked and cleared. Only the Game Changer list is complete; the other three are detected, and detection can miss a card.',
-      'a mark is about the card and never counts anything. How many a deck holds, and what that does to its bracket, is the Analysis tab’s answer.',
+      'A tutor is a search that can find more than a land. Fetching a land is ramp, so it gets no mark.',
+      'No mark means we found nothing to report. The Game Changer list is complete; the other three we detect, and detection can miss a card.',
+      'A mark is about the card alone. How many a deck runs, and what that does to its bracket, is the Analysis tab’s job.',
     ],
     // The version current when it was written, as `deck-analysis` above.
     since: 9,
@@ -517,9 +517,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       // Audit L2: the lock sits beside the ✕ on a row, not after the name. Its other half (what
       // else changes) is said once, where it belongs: stand-ins in the caption, Pull it in key 3.
-      "A locked card shows a closed lock beside its remove button in the list.",
-      "Lock cards, in the deck's toolbar, turns each remove button into a lock until you press Done. It is how you lock a card from a phone or a keyboard.",
-      'while Lock cards is on, the line counts the cards locked so far, one per card however many copies.',
+      'A locked card keeps its lock beside the remove button in the list.',
+      'Lock cards, in the list’s toolbar, turns every remove button into a lock until you press Done. It’s how you lock or unlock a card on any device.',
+      'While Lock cards is on, this line counts what you’ve locked, once per card however many copies.',
     ],
     // The version current when it was written: an entry tied to a switch is announced by the
     // switch, and nothing bumps the version for it.
@@ -539,8 +539,8 @@ export const aboutEntries: readonly AboutEntry[] = [
       // wipes against 3", which was an example rather than a reading — and
       // the strip below draws Wipes SHORT, because the caption’s own example
       // of a problem is the deck with one board wipe.
-      'the second figure is the recommendation, so 12 ramp against 10 is a surplus rather than an error. Nothing is capped.',
-      'a short role is the one thing here that names what to do next, and `consider` goes straight to cards that would fill it.',
+      'The second number is the target, so 12 ramp against 10 counts as met, with two to spare.',
+      'A short role tells you what to do next: when Consider has cards for it, “consider →” takes you straight there.',
     ],
     since: 1,
   },
@@ -554,8 +554,8 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'How much ramp a deck wants depends on who leads it.\n\nFill, the ticks in Choose the last and the shelves in Consider all aim at what EDHREC decks like yours run: your pair’s or your commander’s own first, then decks in your colors.\n\nA Kinnan deck asks for about 20 ramp, twice the default, and no board wipes at all. Kinnan players already knew.\n\nWhere we haven’t measured enough decks, the default stands in:\n\n- 10 ramp\n- 10 draw\n- 8 removal\n- 3 wipes\n- 37 lands, or 36 with a partner\n\nThe strip tells you which you’re looking at.',
     keys: [
-      'the land count moves too. Twenty-eight lands is a real answer for a deck that ramps, and thirty-seven was never right for all of them.',
-      'a target of 0 is an answer too: the decks this commander leads run no board wipes, so the cell asks for none.',
+      'Lands move too. Twenty-eight is a real answer for a deck that ramps hard, and thirty-seven never fit them all.',
+      'A target of 0 is an answer too: this commander’s decks run no board wipes, so the cell asks for none.',
     ],
     since: 8,
   },
@@ -569,10 +569,10 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'Some cards do something remarkable next to one other card. Heliod, Sun-Crowned and Walking Ballista are a classic pair.\n\nWhen you own both halves and no deck has put them together, your Collection marks the row and names the partner. While you build, a card the deck is one piece away from carries the mark in Consider, in Choose the last and in the Add search.\n\nA card’s details list every partner: the ones in this deck first, then the ones you own, then the ones you’d have to buy. The salt is between you and your table.',
     keys: [
-      'no total of how many combos a card has; the details count only the partners they list. Detection leaves out combos that need a third piece, so a total would be the first thing on the surface that is not true.',
-      'one partner is named on a row and all of them in the card’s details. Naming one is true whether or not there are others; the list is where the enumerating belongs.',
-      'the list runs from what this deck already holds, through what you own, to what you would have to buy.',
-      'it comes from Commander Spellbook, and the details say so behind the heading’s marker rather than under every block.',
+      'The count covers the partners listed here and stops. Combos that need a third piece aren’t detected, so a grand total would be wrong.',
+      'A row names one partner, and the card’s details name them all.',
+      'The list runs from what this deck already holds, through what you own, to what you’d have to buy.',
+      'The combos come from Commander Spellbook, credited once behind the heading’s marker.',
     ],
     since: 9,
   },
@@ -628,11 +628,11 @@ export const aboutEntries: readonly AboutEntry[] = [
       // (`shapeFits`) is a combo, then a theme, then the commander's synergy, then the name.
       'Press Find a deck for it in the details of any Commander-legal card, and we list the decks that could take it, with the reason each one fits. Combos come first, then themes.\n\nOpen Ashnod’s Altar and the deck where it completes a combo with cards already in it tops the list. Add puts the card in that deck’s draft.\n\nThat binder of loose rares finally has somewhere to go.',
     keys: [
-      "Only decks whose colors allow the card, and that don't already run it, are offered. Decks that already hold it are listed below them.",
-      "Decks where it completes a combo come first, then decks whose theme it joins, the most cards first, then the rest by how much their commander's decks favor it.",
+      'You’re offered decks whose colors allow the card and that don’t run it yet. Decks already running it sit underneath.',
+      'Decks where it completes a combo come first, then decks whose theme it joins, most cards first. Ties go to the deck whose commander’s decks favor the card most.',
       // Audit R2-A3-1: the row never shows the two shares; with no reason it shows the need alone.
-      "Each deck gives its strongest reason: a combo the card completes with that deck's own cards, then the theme it would join. With neither, the row shows only what the deck needs, if anything. A staple every deck runs says staple instead, and its decks are listed by name.",
-      "The need is this deck's count for the card's role against its target, left out when the card has no role or the target isn't measured. Add uses a free copy if you have one. Otherwise the card joins as one to buy.",
+      'Each deck shows its best reason: a combo the card completes with that deck’s own cards, or else the theme it joins. With neither, the row shows only what the deck needs, if anything. A staple every deck runs says “staple · any commander”, and its decks go by name.',
+      'The need is this deck’s count for the card’s role against its target, left off when the card has no role or the target isn’t measured. Add uses a free copy if you have one, or brings the card in as one to buy.',
     ],
     // The version current when it was written: an entry tied to a switch is announced by the
     // switch, and nothing bumps the version for it.
@@ -648,8 +648,8 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'A deck keeps two lists: the committed one, and the changes you’re making to it.\n\nEvery add and cut waits as a pending change until you commit. Each commit makes a version you can read back on the Versions tab, which is handy for settling whether last month’s list was better.\n\nOn a committed deck, a card you add counts against your Collection for this deck straight away. Other decks feel it once you commit.\n\nOpen a version to see which of its new cards you own today, with today’s price on the ones you’d buy.',
     keys: [
-      'each version carries its date, its card count and its average mana value, and on a wide screen how many games it held; each game in the log names its version, so you can tell whether a change helped.',
-      'a version keeps the note you wrote when you committed it, or says it has none.',
+      'Each version shows its date, card count and average mana value, and on a wide screen how many games it held. Every game in the log names its version, so you can see whether a change helped.',
+      'A version keeps the note you wrote when you committed it, or says there wasn’t one.',
     ],
     since: 1,
   },
@@ -679,14 +679,14 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'Some cards on Shopping cost more than the job they do. Each deck has a limit per card, $10 until you set your own, and every row over it is marked.\n\nA marked row’s swap button opens cheaper cards, or free copies from your Collection, that do the same job. Spells list cards of the same type first, then other types.\n\nSay Shopping wants a pricey dual land: each stand-in says what it makes and whether it comes in untapped, best mana first.\n\nYou pick, and taking one is an ordinary change to the deck that Undo swap reverses.',
     keys: [
-      'The line under the price strip is this deck\'s limit per card. Until you set your own, it says it is the default.',
-      "A row over the limit is marked, and its swap button opens the stand-ins. Any card on Shopping that isn't locked links to its stand-ins from its details too.",
+      'Under the price strip sits this deck’s limit per card, marked as the default until you set your own.',
+      'A row over the limit is marked, and its swap button opens the stand-ins. Any unlocked card on Shopping reaches them from its details too.',
       // #1046's spell rows: each keeps one of the card's jobs and compares itself as keeps / gains /
       // loses. What a row gives up is its `loses`, so the older "gives up" wording is gone.
-      "A spell's stand-ins each keep at least one of its jobs, and every row says what it keeps, gains and loses against it. A few show until you ask for all.",
+      'Every stand-in for a spell keeps at least one of its jobs, and its row says what it keeps, gains or loses. Five show first, and Show all brings the rest.',
       // r2 said a once-only color "doesn't count as making it"; the shipped ladder (`landRung`) counts it,
       // on the last rung.
-      "Lands are ordered by their mana: untapped first, then ones that cost life or come in untapped only on a condition, then tapped ones, then utility lands that make a color only by paying for it, for a narrow use, or once.",
+      'Lands sort by their mana: untapped first, then ones that cost life or come in untapped only on a condition, then tapped ones, then utility lands that make a color only by paying, for a narrow use, or once.',
     ],
     since: 9,
   },
@@ -723,9 +723,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'Review changes is the last stop before a commit. It shows what locking in your edits asks of the rest of your Collection, with the cards coming in split into free, sleeved and to buy.\n\nSay your Kinnan draft adds Arcane Signet, and your only copy is sleeved in Atraxa. Its row offers Pull it: the Signet moves to Kinnan, and Atraxa gets a draft with it under Going out. She has lifelink. She’ll be fine.\n\nDiscard that draft and the Signet goes back where it was. A copy another deck holds as its commander stays put.',
     keys: [
-      '`Coming in` is broken down by where each card comes from, free, sleeved or to buy, so the page says what the commit costs before a single row is read.',
-      '`Pull it` takes a copy out of another deck and leaves that deck a draft, the card under Going out. Nothing is committed for it, which is why the deck it raids is named on the row: that is where to look if you change your mind.',
-      'a copy another deck holds as its commander never moves, so the row says `commander` and offers no control.',
+      'Coming in splits by where each card comes from: free, sleeved, to buy, and proxied when there are any. You know what the commit costs before reading a row.',
+      'Pull it takes a copy out of another deck and leaves that deck a draft with the card under Going out. Nothing there is committed, so the row names the deck it raided: that’s where to look if you change your mind.',
+      'A copy another deck holds as its commander stays put, so its row says “commander” and has nothing to press.',
     ],
     since: 7,
   },
@@ -739,9 +739,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'New deck lists every commander in your Collection you could legally build, each with its pool: how many of your cards are legal in its colors. Pick one and name the deck. That’s all it needs.\n\nA commander with partner gets a second slot that offers only legal pairs, so Tymna the Weaver offers partners like Thrasios. Your pod has been warned.\n\nComing from a commander’s own page skips the list. The commander and any synergy picks you made there come with you, and all that’s left is the name.',
     keys: [
-      'only commanders you own and could legally build are listed. The picker is your collection, not a catalog.',
-      'the figure beside each one is how many of your cards are legal in its colors, which is the Pool part of a fit score seen from the other side.',
-      'a name is required and everything else has a default: the deck arrives already filled: the staples most decks in its colors run, then your collection, then the cards that commander’s decks play most. Every card of it is yours to change.',
+      'Only commanders in your Collection that you could legally build make the list.',
+      'The number beside each is how many of your cards are legal in its colors: the Pool part of a fit score, seen from the commander’s side.',
+      'Only the name is required. The deck arrives filled: staples first, then cards from your Collection, then what that commander’s decks play most. Every card is yours to change.',
     ],
     since: 7,
   },
@@ -758,13 +758,13 @@ export const aboutEntries: readonly AboutEntry[] = [
       // nothing to discard back to).
       'Like the 99 but not the leader? Change commander, on the commander’s art, lists commanders in exactly this deck’s colors with enough decks to measure, or pairs for a pair deck. The ones in your Collection or already in the 99 come first.\n\nEach carries one figure: how many of this deck’s cards its decks run. On a Korvold deck, “41 of 72 are in its decks” beside Prossh means Prossh players already run most of your list.\n\nYour choice waits in pending changes. On a committed deck, Discard puts the old commander back.',
     keys: [
-      "Only commanders in exactly this deck's colors are offered, and only pairs for a pair deck, so not one card of the 99 changes.",
-      "The figure counts this deck's cards that the candidate's decks run, leaving out basic lands and the staples every deck runs. Press it to see which cards.",
+      'Every candidate shares this deck’s exact colors, and a pair deck gets pairs, so nothing in the 99 has to change.',
+      'The figure counts this deck’s cards that the candidate’s decks run, leaving out basic lands and the staples every deck runs. Press it to see which cards.',
       // Audit C2: an owned candidate is free or held, and a buy tag may carry no price.
-      'Candidates you own come first, marked free or held, and the rest carry a buy tag. Mana value is shown beside each but never sets the order.',
+      'Candidates you own come first, marked free or with the deck that holds them, and the rest carry a buy tag. Mana value sits beside each and has no say in the order.',
       // Audit C3, rewritten once the half-trade shipped (#1008). It names the pair case that works
       // and claims no more: two rarer partner cases are held (Hugh).
-      'When a candidate is already in the 99, it moves to the command zone and the commander it replaces takes its slot, so the deck stays whole. A pair can bring in one half this way, and you choose which of the old pair stays.',
+      'Pick one that’s already in the 99 and it moves to the command zone while the old commander takes its slot, so the deck stays whole. A pair can bring in one half this way, and you choose which of the old pair stays.',
     ],
     // The version current when it was written: an entry tied to a switch is announced by the
     // switch, and nothing bumps the version for it.
@@ -807,9 +807,9 @@ export const aboutEntries: readonly AboutEntry[] = [
       // the app draws none: `export-dialog.tsx` renders `exportTabCopy.shopping`
       // and nothing beside it. The figure below is that tab, so the claim had
       // nowhere to hide.
-      'the Shopping list tab is the cards this deck has to buy, which includes one you own whose every copy another deck is already holding.',
-      "the link opens in a new tab and carries the list, nothing else.",
-      'Copy to clipboard reads Copied ✓ for a second and a half, then returns. It and Download .txt carry the same plain text, which Moxfield and Archidekt both read, and nothing here changes the deck.',
+      'The Shopping list tab holds what this deck has to buy, including cards you own when older decks already hold the copies.',
+      'The link opens Mana Pool in a new tab and carries the list, nothing else.',
+      'Download .txt saves the same plain text Copy to clipboard copies, and the button reads Copied ✓ for a second and a half after a copy.',
     ],
     since: 1,
   },
@@ -825,9 +825,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'Log a game takes about fifteen seconds: the result, the pod size, and the two or three things that decided it.\n\nThe same eight things can go under What worked or What let me down. Mark Mana as what let you down, and the mana screw is on the record.\n\nA result on its own still counts as a game. Suggested changes reads your games the next time it runs.',
     keys: [
-      'pod size is on the form because a win into three opponents and a win into one are not the same evidence.',
-      'the note is quoted back verbatim in the history and never summarized, which is why it asks for one line rather than a paragraph.',
-      'the eight axes are the same eight on both sides, so a deck’s record can say a thing cut both ways.',
+      'Pod size sits beside each game in your history, because beating three opponents is a different day from beating one.',
+      'Your note comes back word for word in the history, never summarized, so one line beats a paragraph.',
+      'Both sides offer the same eight, so a deck’s record can show something cutting both ways.',
     ],
     since: 1,
   },
@@ -841,8 +841,8 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'The Games tab has more to say with every game you log.\n\n- After one, it tells that game back to you.\n- From the second, it sorts your marks into Fix and Keep.\n- From the third, the heading makes a finding, like “Mana is letting this deck down.”\n\nSomething marked for you as often as against you gets one line under Mixed. Every figure is a count of games.',
     keys: [
-      'under three games the heading describes instead: one game is a note, two is a leaning, three is a finding.',
-      'an axis marked for you as often as against you is stated rather than filed: one line, never a third column.',
+      'Until the third game, the heading holds back: one game is a note, two a leaning, three a finding.',
+      'Anything marked for you as often as against you joins one line under Mixed, never a third column.',
     ],
     since: 1,
   },
@@ -859,9 +859,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'Suggested changes, at the foot of the Analysis tab, offers up to five swaps, each a card out and a card in. We ask for eight and keep the first five that pass our checks.\n\nDescribe the deck in a sentence or two and it sits under the deck’s name. The pencil beside the name edits both, and Suggested changes reads the description the next time it runs.\n\nThree limits hold for the deck:\n\n- the most a card may cost\n- the sets an added card comes from\n- whether adds come only from your Collection\n\nAdditional notes carry one run’s instructions in your words.\n\nSay you describe your Meren deck as slow graveyard value for casual tables, cap cards at $5, keep adds to your Collection, and ask for more removal this run. The swaps come back as cheap removal you already own, in place of cards that don’t fit the plan.\n\nEach run uses a credit.',
     keys: [
-      'the description is optional, and asked beside Analyze before a deck’s first reading. After that it is the pencil’s.',
-      'additional notes last one press and are never saved. What should hold every time belongs in the description or the limits.',
-      'the commander, a locked card and the limits always win. When the notes ask past one, the reply says in one line what it did not do, and the rest still lands.',
+      'The description is optional. Before the first reading it’s asked beside Analyze, and after that you edit it with the pencil or Describe your deck in Suggested changes.',
+      'Additional notes last one press and are never saved. Anything that should hold every time belongs in the description or the limits.',
+      'The commander, locked cards and the limits always win. When no swap survives them, one line says what stood in the way, and the credit comes back.',
     ],
     since: 10,
   },
@@ -885,9 +885,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'Credits pay for the parts of the app that write something for you. Every player gets three, and each one comes back 24 hours after the run that used it.\n\nThese use a credit:\n\n- writing a deck’s Overview, whether Analyze writes it for a list that has none yet or you press Try again\n- each Suggested changes run\n- each Look deeper in Help me choose\n\nReading the bracket is free.\n\nA run uses its credit only when it gives you something: an Overview with all four sections, Suggested changes with at least one swap, a Look deeper that comes back with at least one answer. Anything less hands the credit back, and so does stopping a run.\n\nWhen the app reaches its monthly limit, all of these pause until the 1st.',
     keys: [
-      'with credits left, the line says how many, and once one is out, the time the next comes back.',
-      'with every credit used, the button waits and the line names when the next one returns.',
-      'the monthly limit is the app’s own, so it pauses every player at once, until the 1st of next month.',
+      'With credits left, the line says how many, and once one is spent, when the next comes back.',
+      'With every credit used, the button waits and the line names when the next one returns.',
+      'The monthly limit is the app’s own, so it pauses every player at once, until the 1st of next month.',
     ],
     since: 11,
   },
@@ -900,10 +900,10 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'Every deck wears one of seven statuses, and each one points at a next step.\n\nOnly Complete means sleeve it up and play. How hard it hits is still for the pregame chat.\n\nTo buy is the one to watch. A card you own still needs buying when an older deck holds your copy, so one Sol Ring in four sleeved decks is three to buy.',
     keys: [
-      'New and Draft belong to a deck you have never committed: New has nothing in it, Draft is that deck with cards in it. Building is a committed deck now short of its body size.',
-      'Over is past the body size and Unresolved is at it, each with something to settle: too many cards, or lines we could not put a card to.',
-      'To buy is the one that catches people: a full deck you cannot sleeve, because some of it is not on your shelf.',
-      'Complete is the only status that means you can put the deck on a table.',
+      'New and Draft are decks you’ve never committed: New is empty, Draft has cards in it. Building is a committed deck short of a full list.',
+      'Over has too many cards. Unresolved is full, with lines we couldn’t match to a card.',
+      'To buy catches people out: a full deck you can’t sleeve yet, because some of it still has to be bought.',
+      'Complete means sleeve up and play.',
     ],
     since: 1,
   },
@@ -976,9 +976,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'Six themes live in the account menu under Theme, each named for how it looks, from Low Sun to First Frost.\n\nA theme changes the palette and keeps every meaning: owned is green and over-committed is red in all six. Pick the one that matches your playmat.',
     keys: [
-      'the plane is the subtitle, not the name: you pick Neon Rain, not Kamigawa.',
-      'each theme brings its own accent color as well.',
-      'the choice is remembered in this browser, so a different device starts on the default until you pick there too.',
+      'The name is the theme’s own, and the plane sits under it: you pick Neon Rain, and Kamigawa is the subtitle.',
+      'Each theme brings its own accent color too.',
+      'Your pick is remembered in this browser, so another device starts on the default until you pick there too.',
     ],
     since: 1,
   },
