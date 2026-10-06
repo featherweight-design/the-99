@@ -631,7 +631,7 @@ async function flipWalk(browser, who) {
     const fifth = await sheetTitles(page, card);
     report(
       "F4d the Analysis tab names both of its entries, in page order",
-      JSON.stringify(fifth) === JSON.stringify(["What bracket this deck is, and why", "Bracket facts on a card"]),
+      JSON.stringify(fifth) === JSON.stringify(["Which bracket this deck plays at", "Bracket facts on a card"]),
       JSON.stringify(fifth),
     );
     await visitAbout(page, userId, "card-marks");
