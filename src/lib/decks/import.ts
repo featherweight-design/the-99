@@ -141,12 +141,15 @@ function describeCsvErrors(errors: ParseError[]): string {
 }
 
 /**
- * Sniffs `text` for a CSV header before anything else looks at it. Plain
- * decklist text — a paste or a `.txt` export — comes back unchanged for the
- * existing section-marker/annotation pipeline. Text whose first line carries
- * a recognized Name and Quantity header is parsed with the same flexible CSV
- * parser the collection upload uses (`parseCollectionCsv`), and any parse
- * error at all rejects the whole file rather than importing what parsed.
+ * Sniffs `text` for a CSV header before anything else looks at it, from a
+ * paste or a file alike — there is nothing in `text` itself that says which.
+ * Plain decklist text comes back unchanged for the existing
+ * section-marker/annotation pipeline. Text whose first line is a multi-cell
+ * header carrying a recognized Name OR Quantity column (`looksLikeCsv`) is
+ * parsed with the same flexible CSV parser the collection upload uses
+ * (`parseCollectionCsv`), and any parse error at all — including the header
+ * missing whichever of the two columns it does not carry — rejects the
+ * whole text rather than importing what parsed.
  */
 export function resolveDeckListInput(text: string): ResolvedDeckListInput {
   if (!looksLikeCsv(text)) return { kind: "text", text };

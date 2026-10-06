@@ -81,10 +81,12 @@ export type ImportDeckResult =
   /** State 9: lines parsed, none of them matched a card. */
   | { ok: false; reason: "noneMatched"; lineCount: number; notes: ImportNote[] }
   /**
-   * The file was CSV-shaped (a recognized Name + Quantity header) but failed
-   * to parse cleanly. Nothing was written: a CSV, unlike a paste, carries no
-   * convention for a line the player meant to skip, so any parse error here
-   * is a column problem rather than a benign section header.
+   * The text was CSV-shaped — a multi-cell header carrying a recognized Name
+   * or Quantity column — but failed to parse cleanly. Reachable from a paste
+   * as well as a file: `resolveDeckListInput` reads the header the same way
+   * regardless of source. Nothing was written: a CSV, unlike a paste, carries
+   * no convention for a line the player meant to skip, so any parse error
+   * here is a column problem rather than a benign section header.
    */
   | { ok: false; reason: "csvInvalid"; detail: string; notes: ImportNote[] };
 
