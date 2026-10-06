@@ -24,6 +24,7 @@ import type { CommanderListItem } from "../recs/recommend";
 import type { ReadySlice } from "../recs/ready-to-build";
 import type { ReceiptCounts } from "../commanders/in-use";
 import { identityGradient } from "../collection/gradients";
+import { MODEL_FRIEND_DAILY_ALLOWANCE } from "../model/allowance-rule";
 // The props every /about specimen is fed.
 //
 // One module, because the handoff's rule for a new entry is "add a fixture
@@ -1198,6 +1199,26 @@ export const SUGGESTED_CHANGES = {
   // `nextAt` is the next reset once a unit has been spent (tuning-panel.tsx:898) — with
   // `left` at `limit`, nothing has been spent yet, and the real panel's own `nextAt` is null.
   credit: { left: 5, limit: 5, nextAt: null },
+};
+
+/**
+ * `credits`: the four lines the app draws beside a button that spends a credit: with credits
+ * left, with every credit out, while the app-wide monthly limit holds, and once the owner's
+ * monthly testing share is used (`ownerShareMonth`). A friend's allowance
+ * (`MODEL_FRIEND_DAILY_ALLOWANCE`), read rather than retyped. The caption spells the number out,
+ * so `about.test.ts` checks its "three" and "ten" against the allowance constants.
+ *
+ * `nextAt` is a fixed instant. `clockTime` formats it in the reader's own clock, so the server's
+ * render and the browser's can differ by time zone; the figure draws the time only after
+ * hydration, so the server's markup carries none. `pausedUntil` is the 1st of a UTC month, which
+ * `monthName` reads in UTC and so renders the same everywhere.
+ */
+export const CREDITS = {
+  limit: MODEL_FRIEND_DAILY_ALLOWANCE,
+  left: 2,
+  nextAt: new Date(Date.UTC(2026, 9, 5, 21, 20)),
+  pausedUntil: new Date(Date.UTC(2026, 10, 1)),
+  ownerShareMonth: new Date(Date.UTC(2026, 9, 1)),
 };
 
 /**

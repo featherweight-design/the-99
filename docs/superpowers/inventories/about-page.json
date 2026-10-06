@@ -444,6 +444,19 @@
       ]
     },
     {
+      "id": "fig-credits",
+      "label": "/about, the credits figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='credits']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='credits']"
+        }
+      ]
+    },
+    {
       "id": "fig-proxies",
       "label": "/about \u2014 the proxies figure",
       "view": "src/components/about/figures.tsx",

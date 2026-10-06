@@ -70,7 +70,7 @@ back, in the shape `probe:review` uses for its collection edits.
 
 ## Everything is built
 
-**46 entries, 46 figures.** (Was 45: `suggested-changes` was added 2026-10-05, H35 ruling 7 — see
+**47 entries, 47 figures.** (Was 46: `credits` was added 2026-10-05, Hugh's ruling that credits get one entry of their own, with no version bump. Before that it was 45: `suggested-changes` was added 2026-10-05, H35 ruling 7 — see
 about.ts — a feature launch, not a drift. Before that it was 46: `reservations` was retired
 2026-10-04 — a removal, not a drift, so each is noted here rather than silently folded into the
 count.) The ledger
@@ -85,7 +85,7 @@ described as its four hardest plates. The number was not checked before it was w
 artifact here would have contradicted it — the inventory photographed the figures that existed, so
 the sheet confirmed the scope back to its author.
 
-**Forty-six are `Specimen`-rooted and zero are `Legend`-rooted.** (`suggested-changes` is also
+**Forty-seven are `Specimen`-rooted and zero are `Legend`-rooted.** (`credits`, added 2026-10-05, is `Specimen`-rooted too, and before it this read forty-six. `suggested-changes` is also
 `Specimen`-rooted, added 2026-10-05 — see about.ts. Before that it was forty-five, and before
 `reservations`, itself `Specimen`-rooted, was retired 2026-10-04, it was forty-six.) This record said "four mount
 and the rest are legends" — wrong when written, and wrong in the paragraph correcting a previous
