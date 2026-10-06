@@ -47,7 +47,7 @@
 // changes. about.test.ts pins a content hash, so a change forces either a
 // deliberate bump or a deliberate re-pin.
 
-export const ABOUT_VERSION = 10;
+export const ABOUT_VERSION = 11;
 
 export type AboutChapter = '01' | '02' | '03' | '04';
 export type AboutWidth = 'inset' | 'plate';
@@ -877,9 +877,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     // an action "uses a credit". Every spender is a `ModelFeature` (`allowance-rule.ts`): the
     // Overview (`synopsis`), Suggested changes (`tuning`) and Look deeper (`intake`). Each refund
     // rule is its own: `chargeFor` (all four sections), `tuning-actions.ts` (zero swaps kept
-    // fails the run), `run-store.ts` for intake (`useful`: at least one valid answer). NO switch, and `since: 10`
-    // rather than a bump (Hugh: no version bump): `suggested-changes` set the precedent, and a
-    // switch would announce it by id on staging as if it were a feature launch.
+    // fails the run), `run-store.ts` for intake (`useful`: at least one valid answer). NO switch. It shipped at
+    // `since: 10` with no bump; Hugh then ruled (2026-10-06) that it is announced, so it moved to
+    // `since: 11` with the ABOUT_VERSION bump that ends the second prose pass.
     caption:
       'Credits pay for the parts of the app that write something for you. Every player gets three, and each one comes back 24 hours after the run that used it.\n\nThese use a credit:\n\n- writing a deck’s Overview, whether Analyze writes it for a list that has none yet or you press Try again\n- each Suggested changes run\n- each Look deeper in Help me choose\n\nReading the bracket is free.\n\nA run uses its credit only when it gives you something: an Overview with all four sections, Suggested changes with at least one swap, a Look deeper that comes back with at least one answer. Anything less hands the credit back, and so does stopping a run.\n\nWhen the app reaches its monthly limit, all of these pause until the 1st.',
     keys: [
@@ -887,7 +887,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'with every credit used, the button waits and the line names when the next one returns.',
       'the monthly limit is the app’s own, so it pauses every player at once, until the 1st of next month.',
     ],
-    since: 10,
+    since: 11,
   },
   {
     id: 'statuses',
