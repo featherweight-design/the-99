@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  baseSetSizeOf, fingerprintOf, holdingCountOf, orderWithSubsetsAfterParent, placeCells,
-  sectionsOf, type BoosterFlagged, type Holding, type SetPrinting,
+  baseSetSizeOf, fingerprintOf, holdingCountOf, indexFiguresFor, orderWithSubsetsAfterParent,
+  placeCells, sectionsOf, type BoosterFlagged, type Holding, type SetPrinting,
 } from "./completion";
 
 const row = (over: Partial<BoosterFlagged>): BoosterFlagged => ({
@@ -254,6 +254,43 @@ describe("sectionsOf", () => {
     expect(s.baseTotal).toBe(0);
     expect(s.extrasTotal).toBe(0);
     expect(s.extrasOwned).toBe(0);
+  });
+});
+
+describe("indexFiguresFor", () => {
+  it("never reports a percent for a non-gridable type, even with a real positive denominator", () => {
+    // The six Wilds of Eldraine Role tokens, kept as ordinary printings rather than skipped
+    // (transform-printings.ts), can give a token-type set a real base_set_size through the
+    // type-agnostic denominator SQL. The index must not show a ratio for it anyway — caught
+    // in review (PR #1274 round 3).
+    const cells = placeCells([
+      p("1", { booster: false }),
+      p("2", { booster: false }),
+    ], [held({ oracleId: "o-1", collectorNumber: "1" })]);
+    const figures = indexFiguresFor(cells, 2, false);
+    expect(figures.percent).toBeNull();
+    expect(figures.baseSetSize).toBeNull();
+    expect(figures.owned).toBe(0);
+    expect(figures.extrasOwned).toBe(1);
+    expect(figures.extrasTotal).toBe(2);
+  });
+
+  it("reports the real ratio for a gridable type", () => {
+    const cells = placeCells([p("1"), p("2")], [held({})]);
+    const figures = indexFiguresFor(cells, 2, true);
+    expect(figures.percent).toBe(50);
+    expect(figures.baseSetSize).toBe(2);
+    expect(figures.owned).toBe(1);
+  });
+
+  it("shows the owned count with no percent for a gridable type with no denominator yet", () => {
+    const cells = placeCells([
+      p("1", { booster: false, isVariant: true }),
+      p("2", { booster: false, isVariant: true }),
+    ], [held({ oracleId: "o-1", collectorNumber: "1" })]);
+    const figures = indexFiguresFor(cells, null, true);
+    expect(figures.percent).toBeNull();
+    expect(figures.extrasOwned).toBe(1);
   });
 });
 

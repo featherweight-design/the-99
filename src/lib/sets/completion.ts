@@ -297,6 +297,51 @@ export function sectionsOf(cells: Cell[], baseSetSize?: number | null): SetSecti
   };
 }
 
+/** The index row's figures: owned, extras, and whether a percent is shown at all. */
+export type IndexFigures = {
+  owned: number;
+  extrasOwned: number;
+  extrasTotal: number;
+  baseSetSize: number | null;
+  percent: number | null;
+};
+
+/**
+ * The index row's figures, gated by `gridable` rather than by trusting `base_set_size`
+ * unconditionally — caught in review (PR #1274 round 3). `seed-printings.ts`'s denominator
+ * SQL is type-agnostic: it classifies every printing's `booster`/`is_variant` the same way
+ * regardless of the set's `set_type`, so a token, memorabilia or art_series set CAN end up
+ * with a real, positive `base_set_size` — six Wilds of Eldraine Role tokens are kept as
+ * ordinary printings rather than skipped (`transform-printings.ts`), and a reader who owned
+ * one would otherwise see a completion ratio on the index for a set whose own grid page says
+ * there is nothing to complete. `gridable` is the SAME predicate the grid page gates on
+ * (`hasGridableBaseRun`), so the two surfaces can never disagree: not gridable means never a
+ * percent here either, whatever the column says — just the plain count of owned cells.
+ */
+export function indexFiguresFor(
+  cells: Cell[],
+  baseSetSize: number | null,
+  gridable: boolean,
+): IndexFigures {
+  if (!gridable) {
+    return {
+      owned: 0,
+      extrasOwned: cells.filter((c) => c.owned).length,
+      extrasTotal: cells.length,
+      baseSetSize: null,
+      percent: null,
+    };
+  }
+  const counted = sectionsOf(cells, baseSetSize);
+  return {
+    owned: counted.baseOwned,
+    extrasOwned: counted.extrasOwned,
+    extrasTotal: counted.extrasTotal,
+    baseSetSize,
+    percent: baseSetSize === null ? null : counted.percent,
+  };
+}
+
 /**
  * Moves every subset directly after its parent, leaving every other row exactly where the
  * newest-first order already put it.

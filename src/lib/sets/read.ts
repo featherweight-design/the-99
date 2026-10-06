@@ -19,7 +19,7 @@ import { and, eq, inArray, notInArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cardArtPreferences, cards, collectionItems, printings, sets } from "../../db/schema";
 import {
-  orderWithSubsetsAfterParent, placeCells, sectionsOf,
+  indexFiguresFor, orderWithSubsetsAfterParent, placeCells,
   type ArtPick, type Holding, type SetPrinting,
 } from "./completion";
 
@@ -203,8 +203,9 @@ function holdingsFor(userId: string, code: string) {
  * stop — a promo, a token sheet, a masterpiece bonus sheet included. Only `digital` is
  * excluded, because a digital product's printings are never ingested (`seed-printings.ts`
  * skips them), so it has nothing a row here could ever show. What differs by type is
- * whether the row carries a PERCENT: `sectionsOf`'s `baseSetSize === null` branch already
- * reports an owned count with no ratio for a set with no base run to divide by.
+ * whether the row carries a PERCENT: `indexFiguresFor`, gated on `hasGridableBaseRun`,
+ * reports an owned count with no ratio for a set with no base run to divide by — and for
+ * one the grid page agrees has none, never trusting a stray `base_set_size` alone.
  */
 export async function loadOwnedSets(userId: string): Promise<SetIndexRow[]> {
   const heldRows = await db
@@ -314,15 +315,12 @@ export async function loadOwnedSets(userId: string): Promise<SetIndexRow[]> {
     const snapshotSize = rows.length > 0
       ? ((rows[0] as unknown as { baseSetSize: number | null }).baseSetSize ?? null)
       : null;
-    const counted = sectionsOf(placeCells(rows, mine, picked), snapshotSize);
-    return {
-      ...s,
-      owned: counted.baseOwned,
-      extrasOwned: counted.extrasOwned,
-      extrasTotal: counted.extrasTotal,
-      baseSetSize: snapshotSize,
-      percent: snapshotSize === null ? null : counted.percent,
-    };
+    // Gated by the SAME predicate the grid page gates on, not by the raw column — see
+    // `indexFiguresFor`.
+    const figures = indexFiguresFor(
+      placeCells(rows, mine, picked), snapshotSize, hasGridableBaseRun(s.setType),
+    );
+    return { ...s, ...figures };
   });
 }
 
