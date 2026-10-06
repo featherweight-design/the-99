@@ -191,5 +191,42 @@ describe("presentationFailures", () => {
       expect(out.text).toBe('You said “I said "keep lands"”, and keep lands.');
     });
   });
+
+  // Round-2 review findings, each pinned as the exact shape that defeated the round-1 version.
+  describe("repair logic — round-2 review findings", () => {
+    it("still catches a fabricated quote sitting right after a whole quotation, and repairs a genuine one too", () => {
+      const notes = [{ text: 'I said "keep lands"', date: null }];
+      expect(fails('You said "I said "keep lands"", and "never drew".', notes)).toContain("quotedNote");
+      const out = presentationFailures('You said "I said "keep lands"", and "keep lands".', notes);
+      expect(out.broken).toEqual([]);
+      expect(out.text).toBe('You said "I said "keep lands"", and keep lands.');
+    });
+
+    it("never rejects a valid whole quotation for omitting a DIFFERENT note's date, just because that note's words happen to sit inside it", () => {
+      const notes = [
+        { text: 'I said "keep lands"', date: "1 Sep" },
+        { text: "keep lands", date: "2 Sep" },
+      ];
+      expect(fails('On 1 Sep: "I said "keep lands"".', notes)).toEqual([]);
+      // Same check, sources in the other order.
+      const reordered = [notes[1], notes[0]];
+      expect(fails('On 1 Sep: "I said "keep lands"".', reordered)).toEqual([]);
+    });
+
+    it("keeps a model claim outside two IDENTICAL sources' shared quote, instead of corrupting it via stale offsets", () => {
+      const both = [{ text: "keep lands", date: null }, { text: "keep lands", date: null }];
+      expect(fails('You said "keep lands"; stronger.', both)).toContain("noResultClaim");
+    });
+
+    it("still catches a result claim the model built AROUND a single verified word, not only one wholly inside player text", () => {
+      const intent = [{ text: "grind the table out and win late", date: null }];
+      const out = presentationFailures('This will "win" more.', intent);
+      expect(out.broken).toContain("noResultClaim");
+      expect(out.text).toBe("This will win more.");
+      // The exemption still holds for a claim wholly inside the player's own words.
+      const wholeIntent = [{ text: "I want to win more games", date: null }];
+      expect(presentationFailures('You said "win more" games.', wholeIntent).broken).not.toContain("noResultClaim");
+    });
+  });
 });
 

@@ -45,6 +45,8 @@ const RESULT_CLAIM = /\b(?:will|would|should|could)\s+(?:win|lose|beat)\b|\b(?:w
  */
 export type Quotable = { text: string; date: string | null };
 
+type Range = { start: number; end: number };
+
 /**
  * `quotable` is everything the player wrote: their game notes and their stated intent (and, for
  * a tuning run, this run's own notes). A quotation naming none of them, whole or in word-boundary
@@ -58,8 +60,7 @@ export type Quotable = { text: string; date: string | null };
  * that names no source at all — whole or part — is still flagged.
  *
  * A dated source (a game note) stays on the WHOLE path only — it is never partially matched,
- * because a game note's own quote must remain verbatim (round-1 review finding). Only an
- * UNDATED source (the intent, or this run's notes) may be cited in part.
+ * because a game note's own quote must remain verbatim.
  */
 export function presentationFailures(
   text: string,
@@ -76,19 +77,18 @@ export function presentationFailures(
   // line-leading `-1` are caught, while `two-mana` and a range like `1-2` are not.
   if (/\bnet\b/i.test(text) || /(^|[^\w+\-−/])[+\-−]\d+(?![\d/])/.test(text)) broken.push("noNet");
 
-  type Range = { start: number; end: number };
-
-  // Every WHOLE-quotation occurrence of a known source, found by literal substring search (so a
-  // source containing an embedded quote mark of its own, `I said "keep lands"`, is found intact
-  // rather than split at its inner quote mark) — tried in all FOUR opener/closer combinations,
-  // since the model may mix straight and curly quotes on the same line (round-1 review finding:
-  // a same-style-only check let a mixed-style fabrication through completely undetected, never
-  // flagged and never repaired). Tracked by RANGE, not by a global text replace: a literal span
-  // repeated elsewhere in the text — once inside a validated whole quotation, once as a
-  // separately quoted fragment — must never be conflated (round-1 review finding: a blind
-  // `.split().join()` corrupted the inner text of an already-verbatim whole quotation when the
-  // same words also appeared quoted again, standalone, later in the same rationale).
-  const wholeRanges: Range[] = [];
+  // Every literal occurrence of every quotable's own full text, wrapped in any of the FOUR
+  // opener/closer combinations (straight/curly, mixed either way — a same-style-only check let
+  // a mixed-style fabrication through completely undetected). A candidate FULLY CONTAINED
+  // inside another candidate's range is never checked on its own: one quotable's text can
+  // coincidentally sit inside another's (`"keep lands"` inside `"I said \"keep lands\""`), and
+  // that inner occurrence is not a quotation in its own right — only the MAXIMAL (outermost)
+  // candidates are real whole quotations, each of which must still be sourced (a dated note's
+  // date must be in the same text). Occurrences IDENTICAL in range (two undated sources sharing
+  // the same words) are deduplicated, so the ownWords/repair passes below never touch the same
+  // range twice with now-stale offsets.
+  type Candidate = Range & { sourced: boolean };
+  const candidates: Candidate[] = [];
   for (const q of quotable) {
     const forms = [`"${q.text}"`, `“${q.text}”`, `"${q.text}”`, `“${q.text}"`];
     for (const quoted of forms) {
@@ -97,33 +97,58 @@ export function presentationFailures(
       while ((idx = text.indexOf(quoted, from)) !== -1) {
         from = idx + quoted.length;
         const sourced = quotable.some((s) => s.text === q.text && (s.date === null || mentionsDate(text, s.date)));
-        if (!sourced) {
-          broken.push("quotedNote");
-          return { broken, text };
-        }
-        wholeRanges.push({ start: idx, end: idx + quoted.length });
+        candidates.push({ start: idx, end: idx + quoted.length, sourced });
       }
     }
   }
-  const insideWhole = (i: number) => wholeRanges.some((r) => i >= r.start && i < r.end);
+  const maximal = candidates.filter((c) => !candidates.some((o) =>
+    o.start <= c.start && o.end >= c.end && (o.start < c.start || o.end > c.end)));
+  const wholeRanges: Range[] = [];
+  const seenWhole = new Set<string>();
+  for (const c of maximal) {
+    if (!c.sourced) {
+      broken.push("quotedNote");
+      return { broken, text };
+    }
+    const key = `${c.start}:${c.end}`;
+    if (seenWhole.has(key)) continue;
+    seenWhole.add(key);
+    wholeRanges.push({ start: c.start, end: c.end });
+  }
+  wholeRanges.sort((a, b) => a.start - b.start);
 
-  // Every quoted SPAN in `text` not already covered by a whole match above — straight, curly,
-  // or mixed, for the same reason as above.
+  // Every quoted SPAN, scanned only in the GAPS between whole ranges — never across or through
+  // one. A span-pairing regex run over the raw text can mis-pair a delimiter that belongs to a
+  // whole quotation with one from separate, later text (e.g. a fabricated quote sitting right
+  // after a whole one gets swallowed into a spurious cross-boundary pairing and is never
+  // flagged); confining each scan to the text strictly between whole ranges makes that
+  // impossible; by construction, a gap contains no whole-range characters at all.
   const spanPattern = /"([^"“”]+)"|“([^"“”]+)”|"([^"“”]+)”|“([^"“”]+)"/g;
+  const gaps: Range[] = [];
+  let cursor = 0;
+  for (const r of wholeRanges) {
+    gaps.push({ start: cursor, end: r.start });
+    cursor = r.end;
+  }
+  gaps.push({ start: cursor, end: text.length });
+
   const spans: (Range & { span: string })[] = [];
-  for (const m of text.matchAll(spanPattern)) {
-    const start = m.index;
-    if (insideWhole(start)) continue;
-    const span = (m[1] ?? m[2] ?? m[3] ?? m[4]).trim();
-    if (span.length === 0) continue;
-    spans.push({ start, end: start + m[0].length, span });
+  for (const gap of gaps) {
+    const segment = text.slice(gap.start, gap.end);
+    for (const m of segment.matchAll(spanPattern)) {
+      const start = gap.start + m.index!;
+      const span = (m[1] ?? m[2] ?? m[3] ?? m[4]).trim();
+      if (span.length === 0) continue;
+      spans.push({ start, end: start + m[0].length, span });
+    }
   }
 
   // A span is a genuine PART of an UNDATED source when it is found, as whole words, INSIDE that
   // source — never the reverse: a span merely containing a short real fragment plus fabricated
-  // extra words (round-1 review finding: "go wide with dragons" against the intent "go wide"
-  // would otherwise pass, since the span contains the source rather than the source containing
-  // the span). A span naming no source at all, whole or part, is a misquote.
+  // extra words ("go wide with dragons" against the intent "go wide" must not pass just because
+  // the span contains the source). A dated source is never eligible here — a game note's own
+  // quote must stay verbatim, whole or not at all. A span naming no source, whole or part, is a
+  // misquote.
   const partial: (Range & { span: string })[] = [];
   for (const span of spans) {
     const isPart = quotable.some((q) => q.date === null && isGenuinePart(span.span, q.text));
@@ -134,17 +159,39 @@ export function presentationFailures(
     }
   }
 
-  // Read with the player's own quoted words taken out — whole quotations AND verified partial
-  // ones alike, since both belong to the player, not the model's claim, even while still
-  // wrapped in quote marks (round-1 review finding: only whole matches were masked here, so a
-  // verified partial quote containing a claim word like "stronger" still tripped
-  // `noResultClaim`, dropping a suggestion the citation check would have accepted).
-  let ownWords = text;
-  for (const r of [...wholeRanges, ...partial].sort((a, b) => b.start - a.start)) {
-    ownWords = ownWords.slice(0, r.start) + " " + ownWords.slice(r.end);
+  // Build the REPAIRED text and, alongside it, every masked range IN THE REPAIRED TEXT'S OWN
+  // coordinates: a whole quotation is copied through unchanged (still quoted); a verified
+  // partial quote is replaced by its bare span (quote marks gone). Both lists are built in one
+  // left-to-right pass so a partial repair earlier in the line correctly shifts the positions
+  // of everything after it.
+  const masks = [
+    ...wholeRanges.map((r) => ({ ...r, replacement: null as string | null })),
+    ...partial.map((r) => ({ ...r, replacement: r.span as string | null })),
+  ].sort((a, b) => a.start - b.start);
+  let repaired = "";
+  const maskedNew: Range[] = [];
+  let pos = 0;
+  for (const m of masks) {
+    repaired += text.slice(pos, m.start);
+    const replacementText = m.replacement ?? text.slice(m.start, m.end);
+    const newStart = repaired.length;
+    repaired += replacementText;
+    maskedNew.push({ start: newStart, end: repaired.length });
+    pos = m.end;
   }
-  if (BRACKET_WORD.test(ownWords) || BRACKET_NAME.test(ownWords)) broken.push("noBracketClaim");
-  if (RESULT_CLAIM.test(ownWords)) broken.push("noResultClaim");
+  repaired += text.slice(pos);
+
+  // A bracket/result claim is exempted only when the ENTIRE matched span is the player's own
+  // words — fully inside a masked range — never when a claim merely OVERLAPS one: masking just
+  // the single verified word "win" let the surrounding model words "will ... more" still form
+  // the banned comparative claim undetected, because the word that made the regex match was
+  // gone from the text being tested. Checked on the REPAIRED text (quote marks stripped from a
+  // partial, present on a whole), since that is what the player will actually see.
+  const fullyMasked = (start: number, end: number) => maskedNew.some((r) => r.start <= start && r.end >= end);
+  if (hasUnmaskedMatch(repaired, BRACKET_WORD, fullyMasked) || hasUnmaskedMatch(repaired, BRACKET_NAME, fullyMasked)) {
+    broken.push("noBracketClaim");
+  }
+  if (hasUnmaskedMatch(repaired, RESULT_CLAIM, fullyMasked)) broken.push("noResultClaim");
 
   // A counted noun must be preceded by `N of M`. `3 of 5 games` passes; `3 games` does not.
   // The numerator may be a word (`none of the 9 games`, `one of 11 cards`) and the denominator
@@ -161,15 +208,6 @@ export function presentationFailures(
     }
   }
 
-  // Every verified partial quote is repaired to its bare, unquoted form — Design's own shape
-  // for a part-quote — by RANGE, working from the LAST match backward so an earlier match's
-  // offsets stay valid as later ones are spliced out, never by a global string replace (the
-  // corruption finding above).
-  let repaired = text;
-  for (const r of [...partial].sort((a, b) => b.start - a.start)) {
-    repaired = repaired.slice(0, r.start) + r.span + repaired.slice(r.end);
-  }
-
   return { broken, text: repaired };
 }
 
@@ -179,4 +217,16 @@ export function presentationFailures(
 function isGenuinePart(span: string, source: string): boolean {
   if (!/[A-Za-z]{2,}/.test(span)) return false;
   return new RegExp(`(?<![\\w'])${escapeRegExp(span)}(?![\\w'])`).test(source);
+}
+
+/** Whether `pattern` matches anywhere in `text` whose match span is NOT fully covered by
+ *  `fullyMasked` — a claim entirely inside the player's own (quoted or repaired-partial) words
+ *  is exempt; one that only partly overlaps is not. */
+function hasUnmaskedMatch(text: string, pattern: RegExp, fullyMasked: (start: number, end: number) => boolean): boolean {
+  const re = new RegExp(pattern.source, pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`);
+  for (const m of text.matchAll(re)) {
+    const start = m.index!;
+    if (!fullyMasked(start, start + m[0].length)) return true;
+  }
+  return false;
 }
