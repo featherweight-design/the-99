@@ -99,7 +99,7 @@ export const aboutCopy = {
   newBadge: 'NEW',
   newBadgeSr: 'New in this version',
   newSinceEyebrow: (n: number) =>
-    n === 1 ? '1 new since you were last here' : `${n} new since you were last here`,
+    n === 1 ? '1 new since your last visit' : `${n} new since your last visit`,
   newInChapter: (n: number) => `${n} new`,
   // The contents row’s figure when nothing in that chapter is new, which is
   // every chapter for every reader at launch. A row that carried a count only
@@ -112,7 +112,7 @@ export const aboutCopy = {
     searchLabel: 'Find an entry by title',
     count: (m: number, n: number) => `${m} of ${n}`,
     none: (q: string) => `Nothing titled “${q}”.`,
-    noneNote: 'The search reads entry titles only. The page is unchanged.',
+    noneNote: 'Search reads entry titles only.',
     clear: 'Clear search',
     newRow: 'new',
     // The disclosure's name on a phone chapter row; the visible figure beside it
@@ -126,20 +126,20 @@ export const aboutCopy = {
 
   chapters: {
     '01': {
-      title: 'Your collection',
-      sub: 'Everything downstream is scored against what you own, so this is where the app starts.',
+      title: 'Your Collection',
+      sub: 'Every score in the app starts from the cards you own, so this is where we start too.',
     },
     '02': {
       title: 'Finding a commander',
-      sub: 'Two lanes: what your collection already supports, and what it would support if you bought one card.',
+      sub: 'The commanders your Collection already supports, and the ones it would the moment you bought the commander.',
     },
     '03': {
       title: 'Building the 99',
-      sub: 'The longest chapter, in the order a deck actually gets built.',
+      sub: 'The longest chapter, in the order a deck gets built.',
     },
     '04': {
       title: 'Playing and tuning',
-      sub: 'Home is the end of the loop rather than the start of it, so it is described here.',
+      sub: 'What happens once a deck hits the table, from logging a game to tuning the list. Home picks up where you left off.',
     },
   },
 } as const;
@@ -155,9 +155,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'Search your Collection by name, then narrow it down by color identity, type, set or availability.\n\nEach filter you set turns into a chip above the results. Press a chip to drop it, or Clear all filters to drop the lot. Your sort stays where you left it.\n\nThe count above the results says how many cards made the cut, and you can read them as a grid or as rows. Handy for settling “do I own another Swords?” before the trade binder comes out.',
     keys: [
-      'Cards, Sets and Proxies sit in one strip at the top. Sets lists the sets you hold cards in, newest first, with how much of each you have.',
-      'a chip per narrowing, each removable on its own, and one link that clears the lot. Nothing filters invisibly.',
-      'grid or rows is a reading choice and it is remembered. The filters are not: they live on the URL, so a link carries them and a fresh visit starts clean.',
+      'Cards, Sets and Proxies share the strip at the top. Sets shows every set you hold cards from, newest first, with how much of each you own.',
+      'Every filter you set shows up as a chip. Drop them one at a time, or clear the lot with the link at the end.',
+      'Grid or rows is your call, and we remember it. Filters live in the page’s address instead, so a shared link carries them and a fresh visit starts clean.',
     ],
     since: 1,
   },
@@ -182,10 +182,10 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'A replace can change which cards your decks still need to buy, and the summary is the receipt. It shows your count before and after, then lists the cards your decks were counting on, one row per card and the deck it was for.\n\nYour deck lists stay exactly as they were. What moves is whether you own the cards in them.',
     keys: [
-      'before and after, both printed, so the change is checkable rather than asserted.',
-      'a row is a card and one deck. Only a contested card gathers its decks under it, oldest claim first.',
-      'three sections, and each is a different answer: no longer to buy, still to buy, still short.',
-      'and one choice: when two committed decks want the copy that arrived, the deck that committed it first gets it unless you say otherwise.',
+      'Your count after the replace, then the count before it with what arrived and what left, so you can check the sums yourself.',
+      'Each row is one card and the deck that wanted it. A card two decks are fighting over gets one row, with its decks under it, oldest claim first.',
+      'Three sections sort the rows: No longer to buy, Still to buy and Still short.',
+      'The one choice on the page. When two committed decks want the copy that arrived, the deck that committed it first gets it, unless you pick the other.',
     ],
     // ⚠ R4: strings inside this figure are FIXTURES, not read from source.
     // #639/#643 landed after the last read of main; the structure is the
@@ -226,10 +226,10 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'One copy can’t sit in two committed decks at once. So each card says in a few words how contested it is, and a card with a spare copy that no draft wants says nothing at all.\n\nSay you own one Sol Ring and three committed decks run it. It reads short 2. The deck that committed it first gets your copy, unless you hand it to another.\n\nSol Ring: the one card every deck wants and every Collection is short of.',
     keys: [
-      'free: you own a spare copy and no draft wants it. No mark at all, which is the commonest state in the app.',
-      'in a draft: a deck you have never committed wants it, and that deck wears the same Draft badge on your decks page. The claim is real but not binding.',
-      'none free: your committed decks hold every copy you own, and none is spare.',
-      'short 2: the committed decks between them ask for two more copies than you own. The deck that committed it first gets it by default, and you can hand it to another. A card you own none of never shows here; on a decklist it takes the buy mark instead.',
+      'free: you own a spare copy and no draft wants it, so the card stays quiet. Most of your Collection looks like this.',
+      'in a draft: a deck you haven’t committed yet wants a copy, and it wears the Draft badge on Decks. Any committed deck still gets first call on that copy.',
+      'none free: your committed decks are holding every copy you own.',
+      'short 2: your committed decks want two more copies than you own. The deck that committed it first gets yours, and you can hand it to another. Own none at all and a decklist shows the buy mark instead.',
     ],
     since: 1,
   },
@@ -242,10 +242,10 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'Open a set from Sets and every card sits in collector order. The ones you don’t own are dashed and dimmed, with their price beside them.\n\nThe Checklist is the set’s own numbered run, and owning it is what makes the set read complete. Showcase, borderless and promo extras are counted below it. Chasing those is extra credit.\n\nA set with no numbered run, like a promo set, puts every printing we’ve indexed on its Checklist.',
     keys: [
-      'missing: dashed edge, dimmed art, and a price an owned cell never carries. Absent, not disabled: it still opens.',
-      'the cost covers the cards ManaPool actually stocks. One that has never been stocked is counted and left out rather than priced at zero.',
-      'Checklist is what the figure counts: a set’s own numbered run where it has one, or every printing we have indexed where it does not. Extras are counted apart and sit below, which is why the completion figure and the number of cells on screen do not always match.',
-      'Missing and Owned are the same toggle in reverse, mutually exclusive. Sort orders by collector number, the default, or by price, dearest first, with unpriced cells last either way.',
+      'Only a card you’re missing carries a price, and it opens like any other card.',
+      'The cost to finish adds up what ManaPool has in stock. Cards it’s sold out of, or has never stocked, get a count of their own under it and stay out of the total.',
+      'The completion figure counts the Checklist: the set’s own numbered run, or every printing we’ve indexed when it has no run. Extras sit below and count apart, which is why the figure and the cells on screen can disagree.',
+      'Missing and Owned each show half the set, one at a time. Sort runs by collector number, the default, or by price, dearest first. Flip the price order and cards with no price still sit at the end.',
     ],
     since: 1,
   },
@@ -284,10 +284,10 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'Ready to build, on Home, deals you two commanders a day. We rank every commander in your Collection that leads no deck of yours yet and keep the top 28 by fit. Each day’s pair comes from those 28.\n\nEach card says how many of your cards fit its colors, and how many of those are in use, every copy held by your committed decks.\n\nEither one beats unboxing another precon.',
     keys: [
-      "the top 28 is a ranking, not a passing score. The last one’s score moves as your collection grows; it is never a fixed number to beat.",
-      'each card shows how many of your cards fit, then how many of those are already committed. The second figure is left out when it is zero.',
-      'the pair changes at midnight UTC and never repeats a commander from the day before, so you see all 28 within two weeks. Each pair takes one from the half whose themes your decks play least.',
-      "the `N more scored X or better` line uses the 28th commander’s own score, so you can check it against the lane.",
+      'The 28 are the top of your ranking. As your Collection grows, the score it takes to make the cut moves with it.',
+      'Each card shows how many of your cards fit, then how many of those your committed decks already hold. When that second figure is zero, it’s left off.',
+      'A new pair arrives at midnight UTC, never repeating yesterday’s, so all 28 come around within two weeks. One of each pair comes from the half whose themes your decks play least.',
+      'The line under the pair quotes the 28th commander’s own score, so you can check it against the Commanders lane.',
     ],
     since: 1,
   },
@@ -301,9 +301,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'We score a commander out of 100 against your Collection, in three parts added together:\n\n- Pool, worth 15, counts your cards legal in its colors and fills at 200\n- Roles, worth 25, checks you own enough ramp, draw, removal and wipes to build at all\n- Synergy, worth 60, is how much of its most-played list you already have\n\nThe bar draws them in that order. It measures your Collection, so it stays out of the power-level argument.',
     keys: [
-      "the score is out of 40 instead of 100 when we could not read a commander’s most-played list. We never rescale it to look like a 100.",
-      'the three parts are printed with their sum, so you can check the score yourself.',
-      "a score only means something against your own collection. Comparing it to someone else’s tells you nothing.",
+      'Where we couldn’t read a commander’s most-played list, the score is out of 40, and we never stretch it to look like a 100.',
+      'The three parts sit beside their sum, so you can check our math.',
+      'A score is about your Collection. A friend’s score for the same commander is about theirs.',
     ],
     since: 1,
   },
@@ -331,9 +331,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'Discover lists the commanders outside your Collection and your decks, ranked by how many cards from each one’s most-played list you already own.\n\nEach row scores fit the same way the Commanders lane does, and adds what the commander costs. The line under it names themes it plays that none of your decks do, or its top three play styles when your decks already play them all.\n\nPick sets under Printed in and only commanders printed in them stay. Popularity puts the most-tracked first, which is a fair map of what your playgroup already has opinions about.',
     keys: [
-      'five orders. Only Something new changes which commanders appear: it drops any whose decks run less than 30% cards you already own.',
-      'Best fit, the default, reads your whole collection, because you would own this commander if you bought it.',
-      'every order says what it ranks by, so Popularity is most decks tracked first rather than a score of its own.',
+      'Five orders, and Something new is the one that changes who shows up: it leaves out any commander with less than 30% of its most-played list in your Collection.',
+      'Best fit, the default, counts your whole Collection. Buy the commander and every card you own is fair game.',
+      'Each order names what it sorts on, right in the menu. For Popularity, that’s most decks tracked first.',
     ],
     since: 1,
   },
@@ -350,10 +350,10 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Tell Help me choose about the deck you want and it finds commanders to lead it. Answer as much or as little as you like:\n\n- colors\n- themes, all of them or any one\n- the sets it was printed in\n- a budget\n- a bracket\n\nA sentence in your own words is matched for free, and a card named there becomes the card to build around. Look deeper reads everything you wrote, and uses a credit when it comes back with at least one answer.\n\nEvery answer narrows which commanders show up, owned or not. Your themes and card also set the order. With neither, the results are ordered by how many of their cards you already have.\n\nPick a commander and your answers carry to a new deck, and Create deck fills the 99 under them, only from your Collection if you ask. When fewer than four fit, the page offers answers to loosen.',
     keys: [
       // Audit H4: SETS RANK is drawn only when a row has more than one figure.
-      "With a theme or a card, each figure is a share of that commander's decks: the share tagged with your theme, or the share that runs your card. The weakest figure orders the row, and when there is more than one it is marked SETS RANK.",
+      'With a theme or a card, each figure is the share of that commander’s decks tagged with your theme or running your card. Its weakest figure sets its place, marked SETS RANK when there’s more than one. Ask for any one of several themes and only its best theme counts.',
       // Audit H5. The owned-order exception is said once, in the caption, so this line drops the
       // "never orders it" that the exception made false.
-      "Every row shows what you own beside the fit: the commander's own mark, how much of its 99 you own, and roughly what the rest would cost.",
+      'Beside the fit, every row shows what you own: the commander itself, how much of its 99, and roughly what the rest would cost.',
     ],
     // The version current when it was written: an entry tied to a switch is announced by the
     // switch, and nothing bumps the version for it.
@@ -381,9 +381,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'Owning a card and being free to use it are two different things, as anyone who has raided one deck to build another knows.\n\nThe note beside a card you own says what’s holding it: 1 in a draft, none free, or short by however many copies your committed decks want past what you own. A card with a spare copy nothing wants carries no note.',
     keys: [
-      'the owned mark means you own the card and nothing else. It stays the same color whether or not a deck is holding it.',
-      'the note counts copies and never names a deck. Open the card to see which decks are holding it.',
-      'the synergy list prices what you do not own, so a card you would have to buy says so before you plan around it.',
+      'The owned mark says you own the card, and that’s all it says. It looks the same whether or not a deck is holding your copy.',
+      'The note counts copies. Open the card to see which decks are holding them.',
+      'Cards you’d have to buy show their price right in the list, before you plan a deck around them.',
     ],
     since: 3,
   },
@@ -1036,7 +1036,7 @@ export const aboutSheetCopy = {
   // line break can never leave "99" on its own (copy review, 2026-09-25).
   firstRunHeading: 'What The\u00a099 does',
   firstRunLine:
-    'One page that explains the marks, figures and statuses you’ll meet, and where each one lives.',
+    'What every mark and figure in the app means, and where to find it, on one page.',
   show: 'Show me',
   later: 'Later',
   where: 'Always in your account menu, under About The\u00a099.',

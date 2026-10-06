@@ -12,7 +12,7 @@ const { AboutPage } = await import("./about-page");
 const { ABOUT_VERSION, aboutEntries } = await import("../../lib/copy/about");
 const switched = aboutEntries.find((e) => e.id === "locked-cards")!;
 
-const index = () => screen.queryByRole("navigation", { name: /new since you were last here/ });
+const index = () => screen.queryByRole("navigation", { name: /new since your last visit/ });
 const drawn = () => document.getElementById(switched.id);
 
 afterEach(() => {

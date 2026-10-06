@@ -15,7 +15,7 @@ const { ABOUT_VERSION, aboutCopy, aboutEntries: catalog } = await import("../../
 const aboutEntries = catalog.filter((e) => !e.switch);
 
 const newSince = (seen: number) => aboutEntries.filter((e) => seen > 0 && e.since > seen);
-const index = () => screen.queryByRole("navigation", { name: /new since you were last here/ });
+const index = () => screen.queryByRole("navigation", { name: /new since your last visit/ });
 
 beforeEach(() => {
   recordAboutVisit.mockClear();
