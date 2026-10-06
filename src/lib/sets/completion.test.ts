@@ -238,6 +238,23 @@ describe("sectionsOf", () => {
     expect(s.indexed).toBe(false);
     expect(s.extrasTotal).toBe(0);
   });
+
+  it("does not drop owned base cards for a normal set mid-refresh with a null denominator", () => {
+    // Caught in review (PR #1274 round 1): a set still being classified can have BOTH base
+    // and variant rows among what has landed so far, with `base_set_size` not yet written.
+    // `extrasOnly` must not fire here — it would populate `extras` from the variant row
+    // alone and report that as the owned count, silently dropping the two owned base cards.
+    const cells = placeCells([
+      p("1"),
+      p("2"),
+      p("277", { booster: false, isVariant: true }),
+    ], [held({ oracleId: "o-1", collectorNumber: "1" }), held({ oracleId: "o-2", collectorNumber: "2" })]);
+    const s = sectionsOf(cells, null);
+    expect(s.indexed).toBe(false);
+    expect(s.baseTotal).toBe(0);
+    expect(s.extrasTotal).toBe(0);
+    expect(s.extrasOwned).toBe(0);
+  });
 });
 
 describe("orderWithSubsetsAfterParent", () => {

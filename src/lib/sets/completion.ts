@@ -268,7 +268,15 @@ export function sectionsOf(cells: Cell[], baseSetSize?: number | null): SetSecti
   // rows themselves say (every classified one is an extra, by the same `inBase` rule) is
   // always safe. Without this, a reader who owns 17 of Stellar Sights' 180 cards reads
   // "not indexed yet" — a backlog claim about a set that will never get a base run.
-  const extrasOnly = !indexed && baseSetSize === null && classified.length > 0;
+  //
+  // `classified.every((c) => !inBase(c))`, not merely `classified.length > 0` — caught by
+  // review (PR #1274 round 1): a NORMAL set mid-refresh, with `baseSetSize` still null but
+  // SOME rows already classified, can have both base and variant rows among them. Without
+  // this check, `extrasOnly` would fire too, populate `extras` with only the variant rows,
+  // and report `extrasOwned` as the owned count — silently dropping every owned BASE card
+  // from the figure instead of showing "not indexed yet" for a set that still deserves it.
+  const extrasOnly = !indexed && baseSetSize === null && classified.length > 0
+    && classified.every((c) => !inBase(c));
 
   const base = indexed ? classified.filter(inBase) : [];
   const extras = indexed
