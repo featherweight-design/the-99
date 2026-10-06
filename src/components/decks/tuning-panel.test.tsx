@@ -643,6 +643,20 @@ describe("TuningPanel", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(deckTuningCopy.run.refused);
   });
 
+  // A run the server persisted and a closing read that then fails are two different things: the
+  // run itself is `ok`, but without this, `next` lands null, no failure is computed from it, and
+  // the panel falls back to whatever `state` was BEFORE the press — the bare form, on a deck's
+  // first run — with no chrome explaining why. The reader who waited through "taking longer than
+  // expected" then sees the press silently undone.
+  it("shows a refusal rather than silently reverting to the form when the closing read fails", async () => {
+    const reads = [async () => fresh, () => Promise.reject(new Error("network"))];
+    let n = 0;
+    const d = deps([fresh], { read: vi.fn(() => reads[Math.min(n++, reads.length - 1)]()) });
+    await draw(d);
+    await press(copy.suggest);
+    expect(screen.getByRole("alert")).toHaveTextContent(deckTuningCopy.run.refused);
+  });
+
   it("shows the refusal and keeps the panel when the server refuses the run", async () => {
     const d = deps([fresh, fresh], { run: vi.fn(async () => ({ ok: false as const, message: "no" })) });
     await draw(d);
