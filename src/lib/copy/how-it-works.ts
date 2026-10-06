@@ -178,7 +178,7 @@ export const howItWorksRowsCopy = {
       from: "ManaPool’s singles feed.",
       how:
         "We price one printing per card: one in stock first, then non-foil over foil, then the " +
-        "cheapest. No figure means ManaPool has never stocked the card. Foil-only means every " +
+        "cheapest. No figure means we have no usable price for it. Foil-only means every " +
         "copy for sale is foil or etched. Sold out means the newest price we have is from an " +
         "earlier refresh.",
       refresh: "Daily.",
@@ -219,7 +219,8 @@ export const howItWorksRowsCopy = {
       refresh:
         `The commander sentence updates ${INDEX_CADENCE}. The Overview and Suggested changes are ` +
         "written when you press for them, and the Overview stays until the list changes. Look " +
-        "deeper keeps its answer for the same words and asks again when you write something new.",
+        "deeper keeps its answer while your words, budget and bracket stay the same, and asks again when " +
+        "any of them changes.",
       exact: "Neither. It’s written, not measured.",
     },
   ] as const satisfies readonly HowRowCopy[],

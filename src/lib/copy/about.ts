@@ -286,7 +286,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'The 28 are the top of your ranking. As your Collection grows, the score it takes to make the cut moves with it.',
       'Each card shows how many of your cards fit, then how many of those your committed decks already hold. When that second figure is zero, it’s left off.',
-      'A new pair arrives at midnight UTC, never repeating yesterday’s, so all 28 come around within two weeks. One of each pair comes from the half whose themes your decks play least.',
+      'A new pair arrives at midnight UTC. With four or more to choose from, it never repeats yesterday’s, so all 28 come around within two weeks. One of each pair comes from the half whose themes your decks play least.',
       'The line under the pair quotes the 28th commander’s own score, so you can check it against the Commanders lane.',
     ],
     since: 1,
