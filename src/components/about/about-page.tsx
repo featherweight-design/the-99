@@ -34,6 +34,7 @@ import {
   type AboutEntry,
 } from "../../lib/copy/about";
 import { PendingReporter } from "../shell/pending-reporter";
+import { EntryCaption } from "./entry-caption";
 
 const CHAPTERS: AboutChapter[] = ["01", "02", "03", "04"];
 
@@ -161,18 +162,14 @@ function Entry({
       {inset ? (
         <div className="mt-[6px] flex flex-col gap-[10px] min-[1000px]:flex-row min-[1000px]:items-start min-[1000px]:gap-[20px]">
           <div className="order-2 min-w-0 flex-1 min-[1000px]:order-2">
-            <p className="text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">
-              {entry.caption}
-            </p>
+            <EntryCaption caption={entry.caption} />
           </div>
           <div className="order-1 min-[1000px]:order-1 min-[1000px]:w-[300px] min-[1000px]:flex-none">
             <Figure width={entry.width} />
           </div>
         </div>
       ) : (
-        <p className="mt-[6px] text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">
-          {entry.caption}
-        </p>
+        <EntryCaption caption={entry.caption} className="mt-[6px]" />
       )}
 
       {Figure && !inset && <Figure width={entry.width} />}
