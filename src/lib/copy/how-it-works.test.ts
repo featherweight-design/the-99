@@ -81,7 +81,7 @@ describe("How the app reaches its answers: the rows", () => {
     // Stand-ins read two catalog inputs on their own cadences; Look deeper reuses a stored answer.
     expect(row("how-stand-ins").refresh).not.toBe("Live.");
     expect(row("how-stand-ins").refresh).toMatch(/combos behind it refresh weekly/);
-    expect(row("how-written").refresh).toMatch(/Look deeper keeps its answer for the same words/);
+    expect(row("how-written").refresh).toMatch(/Look deeper keeps its answer while your words, budget and bracket stay the same/);
   });
 
   it("carries no em-dash in anything it renders", () => {
