@@ -39,8 +39,14 @@ const WIDTHS = [
   { label: 390, viewport: { width: 390, height: 844 } },
   { label: 1300, viewport: { width: 1300, height: 900 } },
 ];
-// The intro's first sentence (`aboutCopy.pageIntro`). The intro is paragraphs in a block after the h1.
-const INTRO = "I built The 99 because nothing else checked every box for deck building, least of all around my collection.";
+// The whole intro (`aboutCopy.pageIntro`), all three paragraphs. On the page it is a block of
+// paragraphs after the h1, so both sides are compared with their whitespace collapsed.
+const INTRO = [
+  "I built The 99 because nothing else checked every box for deck building, least of all around my collection. I have thousands of cards, and most of them were hiding in a box.",
+  "So the app starts from what you own. It finds the cards you forgot you had and builds decks from them before it asks you to buy anything.",
+  "It’s for me and my friends, with the features we kept asking for and couldn’t find anywhere else. A way to dive deeper into a hobby we all love.",
+].join(" ");
+const squash = (text) => text.replace(/\s+/g, " ").trim();
 
 let failures = 0;
 function report(label, ok, detail = "") {
@@ -209,7 +215,7 @@ async function walkOff(page, w) {
   const tag = `${w.label}:`;
   report(`${tag} no appendix`, (await onPage(page, "#how-it-works").count()) === 0);
   const intro = await onPage(page, "article > h1 + div").first().innerText();
-  report(`${tag} the intro is production's`, intro.trim().startsWith(INTRO), intro.slice(0, 80));
+  report(`${tag} the intro is production's`, squash(intro).startsWith(INTRO), intro.slice(0, 80));
   report(`${tag} no entry links to a row`, (await onPage(page, "[data-entry-link]").count()) === 0);
   report(`${tag} no contents link reaches the appendix`, (await onPage(page, "a[href='#how-it-works'], a[href^='#how-']").count()) === 0);
 }
