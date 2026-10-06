@@ -445,7 +445,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // it into five lines.
     width: 'plate',
     caption:
-      'Pick a commander and we build the 99 for you. Up to ten staples go in first, the cards most decks in its colors run. The rest comes from your Collection, and where your Collection runs short we add the cards that commander’s decks play most, as cards to buy. Call it a precon built from your own binder. Any slots still open are yours. Choose the last 4, on a deck four cards short, opens candidates ranked by synergy for this commander, with the ones you can sleeve already ticked, and nothing goes in until you say so. Every card we added carries the auto tag, and Clear all auto takes out every one you haven’t locked, in one press, if you’d rather start from your own picks.',
+      'Pick a commander and we build the 99 for you. Up to ten staples go in first, the nonland cards most decks in its colors run, and staple lands get first pick when the lands go in. The rest comes from your Collection, and where your Collection runs short we add the cards that commander’s decks play most, as cards to buy. Call it a precon built from your own binder. Any slots still open are yours. Choose the last 4, on a deck four cards short, opens candidates ranked by synergy for this commander, with the ones you can sleeve already ticked, and nothing goes in until you say so. Every card we added carries the auto tag, and Clear all auto takes out every one you haven’t locked, in one press, if you’d rather start from your own picks.',
     keys: [],
     since: 1,
   },
@@ -662,7 +662,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'stand-ins',
     chapter: '03',
-    title: 'Cheaper cards that do the same job',
+    title: 'Cheaper stand-ins',
     route: '/decks',
     opens: 'opens a deck’s Shopping filter',
     width: 'plate',
