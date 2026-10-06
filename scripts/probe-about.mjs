@@ -606,7 +606,7 @@ async function flipWalk(browser, who) {
     const third = await sheetTitles(page, card);
     report(
       "F4b a third flip names Help me choose alone",
-      JSON.stringify(third) === JSON.stringify(["Help me choose"]),
+      JSON.stringify(third) === JSON.stringify(["Finding a commander with Help me choose"]),
       JSON.stringify(third),
     );
     await visitAbout(page, userId, "help-me-choose");
