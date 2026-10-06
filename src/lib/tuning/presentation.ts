@@ -64,6 +64,17 @@ type Range = { start: number; end: number };
  * denominator, bracket, result — runs on the REPAIRED text, since that is what the player
  * actually sees; a check against the original, still-quoted text could pass or fail on
  * characters a reader never sees at all.
+ *
+ * The repair is intentionally narrow: it only ever resolves ONE unambiguous partial quote per
+ * gap between whole quotations, with no quote marks of its own inside it. Review found three
+ * straight rounds of genuine bugs in a more general version that tried to disambiguate several
+ * interacting or nested quotations at once (an undated partial also matching a dated note's
+ * text, two adjacent partials merging into one unsupported span, an inner whole match splitting
+ * a genuine outer partial into dangling halves) — correctly resolving every such interaction
+ * needs something closer to a real parse than a regex can give. Rather than a fourth attempt at
+ * that generality, anything more tangled than the single simple case fails CLOSED to the
+ * original behavior (`quotedNote`, suggestion dropped): never corrupted, never silently
+ * fabricated, just occasionally more conservative than it has to be.
  */
 export function presentationFailures(
   text: string,
@@ -84,6 +95,12 @@ export function presentationFailures(
   // — pathological, but possible if a source itself contains a quote character) are rejected
   // outright rather than merged or resolved: a merged span would claim support no single source
   // actually supplied, and rejecting is the only answer that never persists corrupted text.
+  //
+  // A candidate that fails its date check is NOT rejected here — it may still be a genuine PART
+  // of some other, undated source (the same words can be both a dated note's full text and a
+  // fragment of the intent), and is left for the generic gap check below to decide on its own
+  // merits as plain leftover text, rather than being promoted to a trusted whole range or
+  // rejected outright on the spot.
   type Candidate = Range & { sourced: boolean };
   const candidates: Candidate[] = [];
   for (const q of quotable) {
@@ -116,10 +133,7 @@ export function presentationFailures(
   const wholeRanges: Range[] = [];
   const seenWhole = new Set<string>();
   for (const c of maximal) {
-    if (!c.sourced) {
-      broken.push("quotedNote");
-      return { broken, text };
-    }
+    if (!c.sourced) continue;
     const key = `${c.start}:${c.end}`;
     if (seenWhole.has(key)) continue;
     seenWhole.add(key);
@@ -127,14 +141,14 @@ export function presentationFailures(
   }
   wholeRanges.sort((a, b) => a.start - b.start);
 
-  // Every quoted SPAN, scanned only in the GAPS between whole ranges — never across or through
-  // one, so a span-pairing scan can never mis-pair a delimiter that belongs to a whole
-  // quotation with one from separate, later text. Within a gap, a span is the OUTERMOST pair of
-  // matching delimiters: its content excludes only the SPECIFIC closing mark this pairing needs
-  // (never both quote styles at once), so a genuinely nested, opposite-style quote inside it —
-  // `“cut "Sol Ring"”` — is captured whole, as literal content, rather than fragmenting into
-  // several smaller spans that each lose the surrounding structure.
-  const spanPattern = /"([^"]+)"|“([^”]+)”|"([^”]+)”|“([^"]+)"/g;
+  // Every quote CHARACTER left over, scanned only in the GAPS between trusted whole ranges —
+  // never across or through one, so a gap can never see a delimiter that belongs to a whole
+  // quotation. A gap with no leftover quote marks is left untouched. A gap with leftover quote
+  // marks is accepted as ONE repairable partial only when it holds EXACTLY two of them — an
+  // opener immediately followed, later in the SAME gap, by a closer — with nothing else in
+  // between. Any other shape (a lone unpaired mark, more than one pair, an embedded quote
+  // character inside what would be the span) is too tangled to disambiguate safely and fails
+  // closed to `quotedNote`, by design — see the function doc.
   const gaps: Range[] = [];
   let cursor = 0;
   for (const r of wholeRanges) {
@@ -143,55 +157,36 @@ export function presentationFailures(
   }
   gaps.push({ start: cursor, end: text.length });
 
-  const spans: (Range & { span: string })[] = [];
+  const isOpener = (ch: string) => ch === "\"" || ch === "“";
+  const isCloser = (ch: string) => ch === "\"" || ch === "”";
+
+  const partial: (Range & { span: string })[] = [];
   for (const gap of gaps) {
     const segment = text.slice(gap.start, gap.end);
-    const matchedHere: Range[] = [];
-    for (const m of segment.matchAll(spanPattern)) {
-      const localStart = m.index!;
-      const localEnd = localStart + m[0].length;
-      matchedHere.push({ start: localStart, end: localEnd });
-      const span = (m[1] ?? m[2] ?? m[3] ?? m[4]).trim();
-      if (span.length === 0) continue;
-      spans.push({ start: gap.start + localStart, end: gap.start + localEnd, span });
-    }
-    // A quote character left over in this gap, outside every matched span, is a DANGLING
-    // delimiter: a fabricated wrapper whose own partner sits on the far side of a legitimate
-    // whole quotation that just split this gap in two — e.g. a real "go wide" sitting inside a
-    // fake "please … with dragons" wrapper. A well-formed citation never leaves one unpaired,
-    // so its presence is a misquote rather than something to silently ignore.
+    const marks: number[] = [];
     for (let i = 0; i < segment.length; i += 1) {
       const ch = segment[i];
-      if (ch !== "\"" && ch !== "“" && ch !== "”") continue;
-      if (!matchedHere.some((r) => i >= r.start && i < r.end)) {
-        broken.push("quotedNote");
-        return { broken, text };
-      }
+      if (ch === "\"" || ch === "“" || ch === "”") marks.push(i);
     }
-  }
-
-  // A span is a genuine PART of an UNDATED source when it is found, as whole words, INSIDE that
-  // source — never the reverse: a span merely containing a short real fragment plus fabricated
-  // extra words ("go wide with dragons" against the intent "go wide" must not pass just because
-  // the span contains the source). A dated source is never eligible here — a game note's own
-  // quote must stay verbatim, whole or not at all. A span naming no source, whole or part, is a
-  // misquote.
-  const partial: (Range & { span: string })[] = [];
-  for (const span of spans) {
-    const isPart = quotable.some((q) => q.date === null && isGenuinePart(span.span, q.text));
-    if (isPart) partial.push(span);
-    else {
+    if (marks.length === 0) continue;
+    if (marks.length !== 2 || !isOpener(segment[marks[0]]) || !isCloser(segment[marks[1]]) || marks[0] >= marks[1]) {
       broken.push("quotedNote");
       return { broken, text };
     }
+    const span = segment.slice(marks[0] + 1, marks[1]).trim();
+    const isPart = span.length > 0 && quotable.some((q) => q.date === null && isGenuinePart(span, q.text));
+    if (!isPart) {
+      broken.push("quotedNote");
+      return { broken, text };
+    }
+    partial.push({ start: gap.start + marks[0], end: gap.start + marks[1] + 1, span });
   }
 
   // Build the REPAIRED text and, alongside it, every masked range IN THE REPAIRED TEXT'S OWN
   // coordinates: a whole quotation is copied through unchanged (still quoted, embedded quote
   // marks and all); a verified partial quote is replaced by its own span text — its OUTER marks
-  // only are gone, any embedded quote marks the span itself contained stay exactly as written.
-  // Both lists are built in one left-to-right pass so a partial repair earlier in the line
-  // correctly shifts the positions of everything after it.
+  // only are gone. Both lists are built in one left-to-right pass so a partial repair earlier in
+  // the line correctly shifts the positions of everything after it.
   const masks = [
     ...wholeRanges.map((r) => ({ ...r, replacement: null as string | null })),
     ...partial.map((r) => ({ ...r, replacement: r.span as string | null })),

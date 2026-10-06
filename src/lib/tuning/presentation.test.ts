@@ -236,11 +236,14 @@ describe("presentationFailures", () => {
       expect(fails('You said “please "go wide" with dragons”.', intent)).toContain("quotedNote");
     });
 
-    it("repairs a genuine partial quote that itself contains a nested quote, preserving the nested marks", () => {
+    it("declines a genuine partial quote that itself contains a nested quote, rather than risk the interaction (round-4 scope cut)", () => {
+      // A more general version of the repair tried to preserve the nested marks here, and
+      // round 4 found it could then be made to split a genuine outer partial into two dangling
+      // halves whenever its inner fragment ALSO happened to be a separately recognized whole
+      // quotation (see the round-4 describe block below). A quote with marks of its own inside
+      // it is now simply outside what this repair resolves, every time, and fails closed.
       const notes = [{ text: 'please cut "Sol Ring" for more removal', date: null }];
-      const out = presentationFailures('You asked to “cut "Sol Ring"”.', notes);
-      expect(out.broken).toEqual([]);
-      expect(out.text).toBe('You asked to cut "Sol Ring".');
+      expect(fails('You asked to “cut "Sol Ring"”.', notes)).toContain("quotedNote");
     });
 
     it("checks percentage, net and denominator against the REPAIRED text, not the still-quoted original", () => {
@@ -260,6 +263,40 @@ describe("presentationFailures", () => {
     it("rejects an ambiguous overlap between two sources' own text rather than merging or corrupting it", () => {
       const sources = [{ text: 'foo"bar', date: null }, { text: 'bar" baz', date: null }];
       expect(fails('"foo"bar" baz"', sources)).toContain("quotedNote");
+    });
+  });
+
+  // Round-4 review findings, each a genuine interaction the round-3 version mishandled. Rather
+  // than a fourth attempt at resolving these interactions, the repair was narrowed (see the
+  // function doc) to a single unambiguous partial per gap; every one of these now fails closed
+  // to `quotedNote` instead of being repaired, by design.
+  describe("repair logic — round-4 review findings (scope narrowed, each now fails closed)", () => {
+    it("repairs a quote whose text coincides with a dated note the text omits, since it is also a genuine undated partial", () => {
+      // The whole-match pass does not reject this on the spot for missing its date — it leaves
+      // the candidate unpromoted, and the generic gap check then finds it as a perfectly
+      // ordinary single partial of the undated intent and repairs it, same as any other.
+      const sources = [
+        { text: "win late", date: "1 Sep" },
+        { text: "grind the table out and win late", date: null },
+      ];
+      expect(presentationFailures('You said "win late".', sources))
+        .toEqual({ broken: [], text: "You said win late." });
+    });
+
+    it("drops two separate adjacent partial quotations rather than risk merging them into one", () => {
+      const sources = [
+        { text: "grind the table out and win late", date: null },
+        { text: "swap out Sol Ring for more removal", date: null },
+      ];
+      expect(fails('You said "win late", and "more removal".', sources)).toContain("quotedNote");
+    });
+
+    it("drops a genuine enclosing partial whose inner fragment also happens to be a separate whole quotation", () => {
+      const sources = [
+        { text: 'please cut "Sol Ring" for more removal', date: null },
+        { text: "Sol Ring", date: null },
+      ];
+      expect(fails('You asked to “cut "Sol Ring"”.', sources)).toContain("quotedNote");
     });
   });
 });
