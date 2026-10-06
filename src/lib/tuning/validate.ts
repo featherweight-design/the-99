@@ -236,10 +236,21 @@ export function validateSuggestions(args: {
     const failedEvidence = evidenceChecks.find((e) => e.check.broken[0]);
     if (failedEvidence) return { rule: failedEvidence.check.broken[0] };
 
+    // Citations are RECHECKED against the REPAIRED suggestion, on top of the check above against
+    // the original — a quote repair can invalidate a citation that held against the still-quoted
+    // text: stripping the quote marks a "note" citation requires, or unmasking a second games
+    // figure `oneFigure` must then reject as ambiguous. A citation valid against what the model
+    // wrote is not automatically valid against what the player actually sees once repaired.
+    const repairedEvidence = evidenceChecks.map((e) => ({ ...e.c, value: e.check.text }));
+    const repaired: TuningSuggestion = { ...s, rationale: rationaleCheck.text, rationaleShort: shortCheck.text, evidence: repairedEvidence };
+    for (const c of repairedEvidence) {
+      if (!citationHolds(c, repaired)) return { rule: "citation" };
+    }
+
     repairs.set(position, {
       rationale: rationaleCheck.text,
       rationaleShort: shortCheck.text,
-      evidence: evidenceChecks.map((e) => ({ ...e.c, value: e.check.text })),
+      evidence: repairedEvidence,
     });
     return null;
   }

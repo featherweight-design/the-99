@@ -315,6 +315,54 @@ describe("validateSuggestions", () => {
       { kind: "decklist", value: '"flooded out on turn six" 1 Sep' },
     ] }).drops[0].rule).toBe("citation");
   });
+
+  // Round-5 review finding: a quote repair can invalidate a citation that held against the
+  // still-quoted text. Both are checked against the REPAIRED suggestion as well as the original.
+  describe("repair logic — round-5 review finding (citation rechecked against the repair)", () => {
+    it("drops a games citation that passes before repair but reads two figures after it", () => {
+      const withNotes = { ...pack, notes: "swap four lands for removal" };
+      const out = validateSuggestions({
+        response: { suggestions: [{
+          ...good,
+          evidence: [{ kind: "games", value: 'Mana hurt in 3 of 5 games; lost "four" of 5 games' }],
+        }] },
+        pack: withNotes,
+        resolveName,
+      });
+      // Before repair, the quote marks break the second figure's own "N of M" adjacency, so only
+      // one figure is read and the citation passes its first check; repair unquotes "four" (a
+      // genuine part of the notes) and exposes a second figure, which `oneFigure` must then
+      // reject as ambiguous.
+      expect(out.drops[0].rule).toBe("citation");
+    });
+
+    it("drops a note citation whose required quotation the repair removes", () => {
+      const withWinLate = {
+        ...pack,
+        intent: "grind the table out and win late",
+        play: buildPlayGroup([
+          game("g1", { hurt: ["mana"], note: "win late" }),
+          game("g2", { hurt: ["mana"] }),
+          game("g3", { hurt: ["mana"] }),
+          game("g4"), game("g5"),
+        ]),
+      };
+      const out = validateSuggestions({
+        response: { suggestions: [{
+          ...good,
+          rationale: 'You said "win late".',
+          evidence: [{ kind: "note", value: "1 Sep" }],
+        }] },
+        pack: withWinLate,
+        resolveName,
+      });
+      // Before repair, the rationale's quoted "win late" literally matches the note's own text,
+      // so the note citation passes. The note's text is also a genuine part of the undated
+      // intent, so repair strips the quote marks the "note" citation requires — the repaired
+      // rationale no longer carries them, and the citation must then fail.
+      expect(out.drops[0].rule).toBe("citation");
+    });
+  });
 });
 
 describe("v2's cut rules: what the deck depends on", () => {
