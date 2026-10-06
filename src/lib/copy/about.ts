@@ -245,7 +245,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Only a card you’re missing carries a price, and it opens like any other card.',
       'The cost to finish adds up what ManaPool has in stock. Cards it’s sold out of, or has never stocked, get a count of their own under it and stay out of the total.',
       'The completion figure counts the Checklist: the set’s own numbered run, or every printing we’ve indexed when it has no run. Extras sit below and count apart, which is why the figure and the cells on screen can disagree.',
-      'Missing and Owned each show half the set, one at a time. Sort runs by collector number, the default, or by price, dearest first. Flip the price order and cards with no price still sit at the end.',
+      'Missing and Owned split the set by what you own, one view at a time. Sort runs by collector number, the default, or by price, dearest first. Flip the price order and cards with no price still sit at the end.',
     ],
     since: 1,
   },
@@ -859,9 +859,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'Suggested changes, at the foot of the Analysis tab, offers up to five swaps, each a card out and a card in. We ask for eight and keep the first five that pass our checks.\n\nDescribe the deck in a sentence or two and it sits under the deck’s name. The pencil beside the name edits both, and Suggested changes reads the description the next time it runs.\n\nThree limits hold for the deck:\n\n- the most a card may cost\n- the sets an added card comes from\n- whether adds come only from your Collection\n\nAdditional notes carry one run’s instructions in your words.\n\nSay you describe your Meren deck as slow graveyard value for casual tables, cap cards at $5, keep adds to your Collection, and ask for more removal this run. The swaps come back as cheap removal you already own, in place of cards that don’t fit the plan.\n\nEach run uses a credit.',
     keys: [
-      'The description is optional. Before the first reading it’s asked beside Analyze, and after that you edit it with the pencil or Describe your deck in Suggested changes.',
+      'The description is optional. Before the first reading it’s asked beside Analyze, and after that you edit it with the pencil.',
       'Additional notes last one press and are never saved. Anything that should hold every time belongs in the description or the limits.',
-      'The commander, locked cards and the limits always win. When no swap survives them, one line says what stood in the way, and the credit comes back.',
+      'The commander, locked cards and the limits always win. When your notes ask past one of them, a line says so and the rest of your notes still get answered. If no swap survives at all, the credit comes back.',
     ],
     since: 10,
   },
