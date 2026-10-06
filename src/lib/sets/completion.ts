@@ -220,68 +220,61 @@ export type SetSections = {
 };
 
 /**
- * Splits placed cells into the base run and the extras, and counts each apart.
+ * Splits placed cells into the base run and the extras, and counts each apart. THE ONE
+ * DENOMINATOR RULE for a set, shared by its page and its row on "Your sets", so the two can
+ * never disagree (Hugh, 2026-10-05):
  *
- * The split mirrors baseSetSizeOf, fallback included: a set with no booster printing at all
- * — every Commander product — splits on `isVariant` instead, so its base run is the deck
- * and its extras are the alternate treatments.
+ * - **A set with a base run** (`baseSetSize > 0`) completes against that run, unchanged. The
+ *   split mirrors baseSetSizeOf, fallback included: a set with no booster printing at all —
+ *   every Commander product — splits on `isVariant` instead, so its base run is the deck and
+ *   its extras are the alternate treatments.
+ * - **A set with none** (`baseSetSize` null: a masterpiece bonus sheet like Edge of
+ *   Eternities: Stellar Sights, a Special Guests or Spellbook run, a promo set) completes
+ *   against EVERY printing of it in the catalog, with no extras split: every printing is a
+ *   cell to fill, so "35 / 45" is a real completion with the missing cards in the grid.
  *
  * `baseSetSize` is the AUTHORITATIVE denominator from `sets`, and passing it is what makes
  * a partial refresh legible. The column is written by one transaction at the END of the
  * ingest (#704), so a run that dies halfway leaves rows partly reclassified beside the
  * PREVIOUS denominator — stale by one refresh, and never a denominator computed from the
- * half of the bulk that landed. Inferring "indexed" from the rows alone would render
- * exactly that: a partial base run, and a percentage from it. A caller with no denominator
- * to hand (the delta poll, which only needs a count) may omit it, and null still means
- * "nobody has stated a base run for this set".
+ * half of the bulk that landed. A base run whose rows disagree with it reads as not indexed
+ * rather than as a ratio of two different runs. A caller with no denominator to hand (the
+ * delta poll, which only needs a count) may omit it.
  */
 export function sectionsOf(cells: Cell[], baseSetSize?: number | null): SetSections {
+  // No base run: every printing is the denominator. `<= 0` too, because the column carries
+  // no constraint and a legacy or hand-written zero is no base run either.
+  if (baseSetSize === null || (baseSetSize !== undefined && baseSetSize <= 0)) {
+    const owned = cells.filter((c) => c.owned).length;
+    return {
+      base: cells,
+      extras: [],
+      baseOwned: owned,
+      baseTotal: cells.length,
+      extrasOwned: 0,
+      extrasTotal: 0,
+      percent: cells.length > 0 ? Math.round((owned / cells.length) * 100) : null,
+      complete: cells.length > 0 && owned === cells.length,
+      indexed: cells.length > 0,
+    };
+  }
+
   const classified = cells.filter((c) => c.booster !== null);
-  // The denominator is not just a flag — it has to AGREE with the rows. Metadata and
-  // printings are read in separate statements, so a catalog rebuild can hand back the old
-  // base_set_size beside a partially rewritten set of booster flags; a ratio computed from
-  // that pairs a numerator and a denominator describing different runs. The disagreement
-  // is itself the signal that the set is mid-index.
+  // The denominator is not just a flag — it has to AGREE with the rows. A catalog rebuild
+  // can hand back the old base_set_size beside a partially rewritten set of booster flags;
+  // a ratio computed from that pairs a numerator and a denominator describing different
+  // runs. The disagreement is itself the signal that the set is mid-index.
   const rowsMatchDenominator = (booster: (c: Cell) => boolean) =>
-    baseSetSize === null || baseSetSize === undefined
-      ? true
-      : classified.filter(booster).length === baseSetSize;
+    baseSetSize === undefined ? true : classified.filter(booster).length === baseSetSize;
   const hasBooster = cells.some((c) => c.booster === true);
 
   const inBase = (c: Cell) =>
     c.booster !== null && (hasBooster ? c.booster === true : !c.isVariant);
 
-  // `> 0`, not merely non-null: the writer stores null for a set with no base run, but the
-  // column carries no constraint and a legacy or hand-written zero would otherwise satisfy
-  // `rowsMatchDenominator` against an empty base and render an indexed 0 / 0.
-  const indexed = baseSetSize === undefined
-    ? classified.length > 0
-    : baseSetSize !== null && baseSetSize > 0
-      && classified.length > 0 && rowsMatchDenominator(inBase);
-
-  // A set whose classified rows carry no booster-true and no non-variant printing — every
-  // Secret Lair-style insert, a masterpiece bonus sheet like Edge of Eternities: Stellar
-  // Sights — has `baseSetSize` null not because nobody has indexed it yet, but because it
-  // has no base run to publish one for: `baseSetSizeOf` returns null by DESIGN there, and
-  // always will. That is a different fact than "mid-refresh" and carries no mismatch risk
-  // to guard against: there is no denominator to compare the rows to, so showing what the
-  // rows themselves say (every classified one is an extra, by the same `inBase` rule) is
-  // always safe. Without this, a reader who owns 17 of Stellar Sights' 180 cards reads
-  // "not indexed yet" — a backlog claim about a set that will never get a base run.
-  //
-  // `classified.every((c) => !inBase(c))`, not merely `classified.length > 0` — caught by
-  // review (PR #1274 round 1): a NORMAL set mid-refresh, with `baseSetSize` still null but
-  // SOME rows already classified, can have both base and variant rows among them. Without
-  // this check, `extrasOnly` would fire too, populate `extras` with only the variant rows,
-  // and report `extrasOwned` as the owned count — silently dropping every owned BASE card
-  // from the figure instead of showing "not indexed yet" for a set that still deserves it.
-  const extrasOnly = !indexed && baseSetSize === null && classified.length > 0
-    && classified.every((c) => !inBase(c));
+  const indexed = classified.length > 0 && rowsMatchDenominator(inBase);
 
   const base = indexed ? classified.filter(inBase) : [];
-  const extras = indexed
-    ? classified.filter((c) => !inBase(c))
-    : extrasOnly ? classified.filter((c) => !inBase(c)) : [];
+  const extras = indexed ? classified.filter((c) => !inBase(c)) : [];
 
   const baseOwned = base.filter((c) => c.owned).length;
   return {
@@ -294,51 +287,6 @@ export function sectionsOf(cells: Cell[], baseSetSize?: number | null): SetSecti
     percent: indexed && base.length > 0 ? Math.round((baseOwned / base.length) * 100) : null,
     complete: indexed && base.length > 0 && baseOwned === base.length,
     indexed,
-  };
-}
-
-/** The index row's figures: owned, extras, and whether a percent is shown at all. */
-export type IndexFigures = {
-  owned: number;
-  extrasOwned: number;
-  extrasTotal: number;
-  baseSetSize: number | null;
-  percent: number | null;
-};
-
-/**
- * The index row's figures, gated by `gridable` rather than by trusting `base_set_size`
- * unconditionally — caught in review (PR #1274 round 3). `seed-printings.ts`'s denominator
- * SQL is type-agnostic: it classifies every printing's `booster`/`is_variant` the same way
- * regardless of the set's `set_type`, so a token, memorabilia or art_series set CAN end up
- * with a real, positive `base_set_size` — six Wilds of Eldraine Role tokens are kept as
- * ordinary printings rather than skipped (`transform-printings.ts`), and a reader who owned
- * one would otherwise see a completion ratio on the index for a set whose own grid page says
- * there is nothing to complete. `gridable` is the SAME predicate the grid page gates on
- * (`hasGridableBaseRun`), so the two surfaces can never disagree: not gridable means never a
- * percent here either, whatever the column says — just the plain count of owned cells.
- */
-export function indexFiguresFor(
-  cells: Cell[],
-  baseSetSize: number | null,
-  gridable: boolean,
-): IndexFigures {
-  if (!gridable) {
-    return {
-      owned: 0,
-      extrasOwned: cells.filter((c) => c.owned).length,
-      extrasTotal: cells.length,
-      baseSetSize: null,
-      percent: null,
-    };
-  }
-  const counted = sectionsOf(cells, baseSetSize);
-  return {
-    owned: counted.baseOwned,
-    extrasOwned: counted.extrasOwned,
-    extrasTotal: counted.extrasTotal,
-    baseSetSize,
-    percent: baseSetSize === null ? null : counted.percent,
   };
 }
 

@@ -207,13 +207,6 @@ export const setsIndexCopy = {
     // rendered on its own.
     extrasAria: (have: number, total: number) =>
       `, and ${have} of ${total} ${total === 1 ? "extra" : "extras"}`,
-    // A set with no base run to divide by — a masterpiece bonus sheet, a Secret Lair-style
-    // insert — but a real owned count: not a backlog state like `notIndexed`, so it never
-    // shares that tag. Never a percentage, because there is no denominator and never will
-    // be one.
-    ownedOnly: (n: number) => (n === 1 ? "1 owned" : `${n} owned`),
-    ownedOnlyAria: (n: number, name: string) =>
-      n === 0 ? `${name}: you own none of it` : `${name}: you own ${n} of it`,
   },
 
   firstRun: {
@@ -504,20 +497,5 @@ export const setPageCopy = {
     heading: (code: string) => `No set with the code ${code.toUpperCase()}`,
     body: "Either the link is wrong or the set is too new for our checklist. Your sets are all one tap away.",
     action: "Back to your sets",
-  },
-
-  nonCollectible: {
-    heading: (name: string) => `${name} has no set to complete`,
-    // The ownership clause only prints when there IS ownership: this page is also reached
-    // by searching, where the reader may hold nothing from the set at all.
-    body: (n: number) =>
-      n === 0
-        ? "It has no fixed numbered run, so there is no denominator and nothing to be missing from."
-        : `It has no fixed numbered run, so there is no denominator and nothing to be missing from. Your ${n} ${
-            n === 1 ? "card" : "cards"
-          } from it ${n === 1 ? "is" : "are"} all in your collection.`,
-    primary: (n: number) => `See ${n === 1 ? "it" : `those ${n}`} in Collection`,
-    browse: "Back to your sets",
-    secondary: "Back to your sets",
   },
 } as const;

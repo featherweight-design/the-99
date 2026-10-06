@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  baseSetSizeOf, fingerprintOf, holdingCountOf, indexFiguresFor, orderWithSubsetsAfterParent,
+  baseSetSizeOf, fingerprintOf, holdingCountOf, orderWithSubsetsAfterParent,
   placeCells, sectionsOf, type BoosterFlagged, type Holding, type SetPrinting,
 } from "./completion";
 
@@ -211,86 +211,40 @@ describe("sectionsOf", () => {
     expect(s.percent).toBe(0);
   });
 
-  it("shows the owned count for a set with no base run at all, not `not indexed`", () => {
+  it("completes a set with no base run against every printing of it, with no extras split", () => {
     // Every printing in a masterpiece bonus sheet (Edge of Eternities: Stellar Sights) is a
-    // variant, so `baseSetSizeOf` has published null for it — not a backlog, a permanent
-    // fact about the product — and `baseSetSize` arrives here null. The rows are still
-    // classified (`booster` is not null), so the owned count is safe to show.
+    // variant, so `baseSetSizeOf` has published null for it. Hugh (2026-10-05): every set
+    // gets a real completion, so the denominator is every printing in the catalog and every
+    // missing one is a cell in the grid.
     const cells = placeCells([
       p("1", { booster: false, isVariant: true }),
       p("2", { booster: false, isVariant: true }),
       p("3", { booster: false, isVariant: true }),
     ], [held({ oracleId: "o-1", collectorNumber: "1" })]);
     const s = sectionsOf(cells, null);
+    expect(s.indexed).toBe(true);
+    expect([s.baseOwned, s.baseTotal]).toEqual([1, 3]);
+    expect(s.base.map((c) => c.collectorNumber)).toEqual(["1", "2", "3"]);
+    expect(s.extrasTotal).toBe(0);
+    expect(s.percent).toBe(33);
+    expect(s.complete).toBe(false);
+  });
+
+  it("counts unclassified printings too: the denominator is every printing, flags or not", () => {
+    const cells = placeCells([p("1", { booster: null }), p("2", { booster: true })], [held({})]);
+    const s = sectionsOf(cells, null);
+    expect([s.baseOwned, s.baseTotal, s.extrasTotal]).toEqual([1, 2, 0]);
+  });
+
+  it("is complete when every printing of a set with no base run is owned", () => {
+    const cells = placeCells([p("1", { booster: false, isVariant: true })], [held({ oracleId: "o-1", collectorNumber: "1" })]);
+    expect(sectionsOf(cells, null).complete).toBe(true);
+  });
+
+  it("has nothing to count for a set with no printings in the catalog", () => {
+    const s = sectionsOf([], null);
     expect(s.indexed).toBe(false);
     expect(s.percent).toBeNull();
-    expect(s.baseTotal).toBe(0);
-    expect(s.extrasTotal).toBe(3);
-    expect(s.extrasOwned).toBe(1);
-  });
-
-  it("still reports nothing extra for a genuinely unclassified set — that stays not-indexed", () => {
-    // The booster-eligible default means every row here is "in base" once classified, so
-    // there is nothing for the new branch to surface — this is the ordinary not-yet-indexed
-    // case, unchanged.
-    const cells = placeCells([p("1"), p("2")], [held({})]);
-    const s = sectionsOf(cells, null);
-    expect(s.indexed).toBe(false);
-    expect(s.extrasTotal).toBe(0);
-  });
-
-  it("does not drop owned base cards for a normal set mid-refresh with a null denominator", () => {
-    // Caught in review (PR #1274 round 1): a set still being classified can have BOTH base
-    // and variant rows among what has landed so far, with `base_set_size` not yet written.
-    // `extrasOnly` must not fire here — it would populate `extras` from the variant row
-    // alone and report that as the owned count, silently dropping the two owned base cards.
-    const cells = placeCells([
-      p("1"),
-      p("2"),
-      p("277", { booster: false, isVariant: true }),
-    ], [held({ oracleId: "o-1", collectorNumber: "1" }), held({ oracleId: "o-2", collectorNumber: "2" })]);
-    const s = sectionsOf(cells, null);
-    expect(s.indexed).toBe(false);
-    expect(s.baseTotal).toBe(0);
-    expect(s.extrasTotal).toBe(0);
-    expect(s.extrasOwned).toBe(0);
-  });
-});
-
-describe("indexFiguresFor", () => {
-  it("never reports a percent for a non-gridable type, even with a real positive denominator", () => {
-    // The six Wilds of Eldraine Role tokens, kept as ordinary printings rather than skipped
-    // (transform-printings.ts), can give a token-type set a real base_set_size through the
-    // type-agnostic denominator SQL. The index must not show a ratio for it anyway — caught
-    // in review (PR #1274 round 3).
-    const cells = placeCells([
-      p("1", { booster: false }),
-      p("2", { booster: false }),
-    ], [held({ oracleId: "o-1", collectorNumber: "1" })]);
-    const figures = indexFiguresFor(cells, 2, false);
-    expect(figures.percent).toBeNull();
-    expect(figures.baseSetSize).toBeNull();
-    expect(figures.owned).toBe(0);
-    expect(figures.extrasOwned).toBe(1);
-    expect(figures.extrasTotal).toBe(2);
-  });
-
-  it("reports the real ratio for a gridable type", () => {
-    const cells = placeCells([p("1"), p("2")], [held({})]);
-    const figures = indexFiguresFor(cells, 2, true);
-    expect(figures.percent).toBe(50);
-    expect(figures.baseSetSize).toBe(2);
-    expect(figures.owned).toBe(1);
-  });
-
-  it("shows the owned count with no percent for a gridable type with no denominator yet", () => {
-    const cells = placeCells([
-      p("1", { booster: false, isVariant: true }),
-      p("2", { booster: false, isVariant: true }),
-    ], [held({ oracleId: "o-1", collectorNumber: "1" })]);
-    const figures = indexFiguresFor(cells, null, true);
-    expect(figures.percent).toBeNull();
-    expect(figures.extrasOwned).toBe(1);
   });
 });
 
@@ -326,15 +280,14 @@ describe("orderWithSubsetsAfterParent", () => {
 });
 
 describe("sectionsOf against the authoritative denominator", () => {
-  it("reads a set as not indexed when the column is null, however many rows are classified", () => {
-    // A null denominator beside classified rows is a set no run has ever published a base
-    // run for — since #704 the column is written by one transaction at the end of the
-    // ingest, so a half-finished run leaves the previous figure rather than a null. Either
-    // way, inferring from the rows alone would render a partial base run and a percentage
-    // computed from it.
-    const cells = placeCells([p("1"), p("2")], [held({})]);
-    expect(sectionsOf(cells, null).indexed).toBe(false);
-    expect(sectionsOf(cells, null).percent).toBeNull();
+  it("never infers a base run from the rows when the column is null: every printing counts", () => {
+    // A null denominator is a set no run has published a base run for — since #704 the column
+    // is written by one transaction at the end of the ingest, so a half-finished run leaves
+    // the previous figure rather than a null. The booster flags are never used to guess one;
+    // the set completes against all of its printings instead.
+    const cells = placeCells([p("1"), p("2"), p("3", { booster: false, isVariant: true })], [held({})]);
+    expect(sectionsOf(cells, null).baseTotal).toBe(3);
+    expect(sectionsOf(cells, null).extrasTotal).toBe(0);
   });
 
   it("uses the rows when a denominator is given", () => {
@@ -502,13 +455,13 @@ describe("holdingCountOf", () => {
 });
 
 describe("a zero in the column is still not a denominator", () => {
-  it("does not read baseSetSize 0 as indexed, whatever wrote it", () => {
+  it("reads baseSetSize 0 as no base run, never as an indexed 0 / 0", () => {
     // The writer stores null for a set with no base run, but the column carries no
-    // constraint: a legacy or hand-written zero matched an empty base run and rendered an
-    // indexed 0 / 0.
+    // constraint: a legacy or hand-written zero once matched an empty base run and rendered
+    // an indexed 0 / 0. It is no base run, so every printing is the denominator.
     const cells = placeCells([p("1", { booster: false, isVariant: true })], []);
-    expect(sectionsOf(cells, 0).indexed).toBe(false);
-    expect(sectionsOf(cells, 0).percent).toBeNull();
+    expect(sectionsOf(cells, 0).baseTotal).toBe(1);
+    expect(sectionsOf(cells, 0).percent).toBe(0);
   });
 });
 
