@@ -8,7 +8,10 @@ in-app management, not just a CSV importer. Uploading a CSV stays available alon
 1. **Full in-app collection management.** Upload stays; it is one way in among several.
 2. **Every upload asks a question first**: "Replace my collection" (a warning that any in-app
    edits since the last upload will be overwritten) or "Add these cards" (merge, quantities
-   added to what is already there). Both show a preview before the player confirms.
+   added to what is already there). Both show a preview before the player confirms. **Add mode
+   and art** (Hugh, 2026-10-06): an Add upload never overrides a hand-picked printing. A player's
+   manual art choice stands; the player re-picks if they want the newly-added printing shown
+   instead.
 3. **A hand-added card records the same shape an upload gives**: card, printing, foil, quantity.
 4. **Entry points**, four of them:
    - "Add cards" on Collection — a sheet for entering several cards in a row.
@@ -21,7 +24,9 @@ in-app management, not just a CSV importer. Uploading a CSV stays available alon
    short and buy marks just start showing on it.
 6. **Full history, with revert on any entry.** Revert is a corrective change applied now — it
    reverses that entry's delta — never time travel. An upload is a history entry too. Reverting a
-   Replace restores the collection to what it was immediately before that upload.
+   Replace restores the collection to what it was immediately before that upload. **Retention**
+   (Hugh, 2026-10-06): entries age out after 90 days. A year is an easy switch later if the app
+   grows past the friend group.
 7. **Deck-specific printings.** A deck remembers which printing it means for a card, flowing into
    art, prices, import, export and Shopping. Today a deck stores oracle ids only — no printing
    anywhere in the deck tables (confirmed below).
@@ -104,6 +109,8 @@ before any UI is built on top of it.
   Scryfall bulk image set and measure hash separation (false-match and false-miss rate) over a
   sample of real printings, including near-duplicate art across different sets/treatments. This
   is read-only research and can run anytime, independent of everything else in this epic.
+  **Go/no-go bar** (Hugh, 2026-10-06): proceed to 5b only if at least 95% of test photos match
+  the exact printing — wrong at most 1 in 20.
 - **5b. Single-card scan, then pick.** Detect, crop, perspective-correct, hash, nearest-neighbor
   lookup, then hand off to the existing printing picker for the player to confirm or correct.
   Depends on 2 (the picker needs to be reachable from a scan result, and the write goes through
@@ -175,14 +182,6 @@ Verified against `origin/main` by reading the files named.
 
 ## Open questions for Hugh
 
-1. **History retention.** Does the ledger keep every entry forever, or does it age out? The
-   rulings say "full history" with no stated limit; a `decks`-sized personal collection makes
-   this cheap either way, but it is worth confirming before the schema is fixed.
-2. **Add mode and existing art preferences.** When "Add these cards" merges in a printing the
-   player already owns a different printing of, does the merge touch `card_art_preferences`
-   (`src/db/schema.ts:241-252`) at all, or is that untouched and left to the player to re-pick if
-   they want the new printing shown instead?
-3. **5a's go/no-go bar.** What false-match rate on the illustration-hash index is acceptable
-   before 5b is worth building? Worth a number now so the spike has a clear stop condition
-   rather than a judgment call made after the work is already sunk.
+None open. All three answered 2026-10-06 and folded into the rulings above (history retention
+into ruling 6, add-mode art preference into ruling 2, 5a's go/no-go bar into sub-project 5).
 

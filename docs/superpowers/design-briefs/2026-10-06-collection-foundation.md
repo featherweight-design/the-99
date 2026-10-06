@@ -80,6 +80,11 @@ key, and no change to `csv_uploads` beyond what already exists. `confirmUpload`
 (`src/app/collection/actions.ts:140-228`) keeps writing `csv_uploads` exactly as it does today;
 it additionally writes one `collection_history` row inside `replaceCollection`'s transaction.
 
+**Retention** (Hugh, 2026-10-06): entries age out after 90 days, not kept forever. A year is an
+easy switch later if the app grows past the friend group — worth a column or a constant rather
+than a hardcoded literal, so whoever implements the aging job can move the number without a
+migration.
+
 ### Claims, seniority, availability, caches, and the stamp triggers
 
 None of these read `collection_items` any differently after this change — they read current
@@ -106,6 +111,12 @@ Specifically:
   not. Scoring behind a narrower invalidation (or simply leaving scores to go stale until the
   next natural recompute) is a decision for whoever implements this; either answer is
   compatible with the ledger above, so it is noted here rather than decided.
+- **`card_art_preferences` on an Add merge** (Hugh, 2026-10-06): untouched. An Add upload never
+  overrides a player's hand-picked printing — `card_art_preferences`
+  (`src/db/schema.ts:241-252`) is not written by `applyCollectionDelta` for an Add-shaped
+  change, same as it is not written by `replaceCollection` today. If the merge brings in a
+  printing the player already holds a different preference for, the existing preference keeps
+  showing; the player re-picks explicitly if they want the newly-added printing shown instead.
 
 ### Migration from today's wholesale replace
 
