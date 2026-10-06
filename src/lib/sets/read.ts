@@ -190,8 +190,7 @@ export async function loadOwnedSets(userId: string): Promise<SetIndexRow[]> {
     .orderBy(sql`${sets.releasedAt} desc nulls last`, sets.code);
 
   if (heldRows.length === 0) return [];
-  const held = orderWithSubsetsAfterParent(heldRows);
-  const codes = held.map((s) => s.code);
+  const codes = heldRows.map((s) => s.code);
 
   // Three queries for the whole index, not three per set: a reader with 34 held sets would
   // otherwise cost a hundred round trips and re-read the same ~13k catalog rows a set at a
@@ -259,8 +258,10 @@ export async function loadOwnedSets(userId: string): Promise<SetIndexRow[]> {
 
   // A held set our catalog carries no card from has no row: its page answers as an unknown
   // code (`loadSetGrid`), and a row linking to that would read "not indexed yet" for a set no
-  // refresh will index. A holding names a catalog card, so this is a catalog gap, not a set.
-  return held.filter((s) => catalogByCode.has(s.code)).map((s) => {
+  // refresh will index. Dropped BEFORE subsets are placed, so a subset whose parent is dropped
+  // keeps its own newest-first slot rather than the one it took after that parent.
+  const held = orderWithSubsetsAfterParent(heldRows.filter((s) => catalogByCode.has(s.code)));
+  return held.map((s) => {
     const rows = (catalogByCode.get(s.code) ?? []) as unknown as SetPrinting[];
     const mine = (holdingsByCode.get(s.code) ?? []) as unknown as Holding[];
     const picked = (picksByCode.get(s.code) ?? []) as unknown as ArtPick[];
@@ -318,6 +319,10 @@ export async function searchSets(query: string): Promise<SetIndexRow[]> {
     .where(and(
       eq(sets.digital, false),
       notInArray(sets.setType, [...SEARCHABLE_SET_TYPES_EXCLUDED]),
+      // Only a set the catalog holds a card from: any other answers as an unknown code
+      // (`loadSetGrid`), and a search result must not lead there. Aliased and qualified, so
+      // the inner `set_code` can never resolve against the outer table.
+      sql`exists (select 1 from ${printings} sp where sp.set_code = ${sets}.code)`,
       sql`(lower(${sets.name}) like ${like} escape '\\' or lower(${sets.code}) like ${like} escape '\\')`,
     ))
     .orderBy(sql`${sets.releasedAt} desc nulls last`, sets.code);

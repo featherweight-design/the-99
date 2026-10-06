@@ -58,8 +58,9 @@ export type SetGridViewProps = {
   prices: PrintingPriceRow[];
   newestAsOf: string | null;
   /**
-   * The authoritative denominator from `sets`. Null means the set has no base run, and it
-   * completes against every printing (`sectionsOf`).
+   * The authoritative denominator from `sets`. Null is no published base run: a set whose rows
+   * imply none completes against every printing, and one whose rows imply a run not yet
+   * published (a new set mid-ingest) reads as not indexed (`sectionsOf`).
    */
   baseSetSize: number | null;
   /** ISO release date, for the head's provenance line. */
