@@ -18,8 +18,13 @@ import { loadIntakeCatalog } from "./search";
 export type DeeperReadOutcome =
   /** `readId` names the row holding it: the press's own, or a stored read's when the ask repeats. */
   | ({ kind: "read"; readId: string } & StoredRead)
-  /** The read was valid in shape, but nothing in it added a new answer: refunded. */
-  | { kind: "nothing"; readId: string; notUsed: string[]; notUnderstood: string[] }
+  /**
+   * The read was valid in shape, but nothing in it added a new answer: refunded. `chips` still
+   * carries whatever resolved (round 2, pre-open-review follow-up, Hugh's 2026-10-06 ruling): a
+   * card that only differs from one the player already has is a real answer `deeperTarget`
+   * (submit.ts) displaces into "Still not used" — dropping it here would make it vanish instead.
+   */
+  | { kind: "nothing"; readId: string; chips: StoredRead["chips"]; notUsed: string[]; notUnderstood: string[] }
   /** The call failed: refunded. */
   | { kind: "failed"; errorClass: ReadErrorClass }
   /** Stopped, or reaped, before the answer came back: it wrote nothing. */
@@ -44,7 +49,7 @@ export async function deeperStatus(
   if (status.kind !== "stored") return status;
   return status.useful
     ? { kind: "read", readId: status.readId, ...status.read }
-    : { kind: "nothing", readId: status.readId, notUsed: status.read.notUsed, notUnderstood: status.read.notUnderstood };
+    : { kind: "nothing", readId: status.readId, chips: status.read.chips, notUsed: status.read.notUsed, notUnderstood: status.read.notUnderstood };
 }
 
 export type DeeperReadDeps = {
@@ -107,7 +112,7 @@ export async function runDeeperRead(
   if (started.kind === "stored") {
     return started.useful
       ? { kind: "read", readId: started.readId, ...started.read }
-      : { kind: "nothing", readId: started.readId, notUsed: started.read.notUsed, notUnderstood: started.read.notUnderstood };
+      : { kind: "nothing", readId: started.readId, chips: started.read.chips, notUsed: started.read.notUsed, notUnderstood: started.read.notUnderstood };
   }
   if (started.kind !== "started") return { kind: started.kind };
 
@@ -126,5 +131,5 @@ export async function runDeeperRead(
   if (!settled) return { kind: "stopped" };
   return result.useful
     ? { kind: "read", readId: started.readId, chips: result.chips, notUsed: result.notUsed, notUnderstood: result.notUnderstood }
-    : { kind: "nothing", readId: started.readId, notUsed: result.notUsed, notUnderstood: result.notUnderstood };
+    : { kind: "nothing", readId: started.readId, chips: result.chips, notUsed: result.notUsed, notUnderstood: result.notUnderstood };
 }
