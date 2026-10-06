@@ -4,7 +4,7 @@ Sources: `README.md` (README), `STATES-how-it-works-r1.md` (STATES), `READINESS-
 
 Overrides applied throughout (AUDIT:10-13):
 - A fifth method, `published list` (key `list`), is tagged on the Prices row and on the Game Changers sub-row.
-- The key heading reads "Five ways an answer is reached".
+- The key heading reads "Five ways we reach an answer".
 - The canvas's dashed `no method fits · open 1` placeholder is retired.
 - Cadence copy changes are copy, not properties, so they are omitted here.
 
@@ -34,7 +34,7 @@ Overrides applied throughout (AUDIT:10-13):
 
 | Property | Mobile (390) | Desktop (1300) | Source |
 |---|---|---|---|
-| Text | "Grouped by what the app decides. Each row says where an answer comes from, how it is decided, how often it refreshes, and what it might miss." | same | README:61-62; canvas:274 |
+| Text | "One row for each thing the app decides. Open a row to see where its answer comes from, how we get there, when it refreshes and what it can miss." | same | README:61-62; canvas:274 |
 | Size / line-height | 13px / 1.55 | 13px / 1.55 | README:61; canvas:197, :274 |
 | Color | `--fg-muted` | `--fg-muted` | README:61; canvas:197 |
 | margin-top | 4px under the heading | 4px | README:61; canvas:197, :274 |
@@ -44,7 +44,7 @@ Overrides applied throughout (AUDIT:10-13):
 
 | Property | Mobile (390) | Desktop (1300) | Source |
 |---|---|---|---|
-| Clause | `The last section, How the app reaches its answers, says where each answer comes from.` | same | README:63-64; reworded 2026-10-06 |
+| Clause | `And if you want to see the working, How the app reaches its answers, at the very end, says where every answer comes from.` | same | README:63-64; reworded 2026-10-06 |
 | Position | its own paragraph after the intro (the intro became Hugh's story on 2026-10-06, so the splice into its first sentence no longer fits) | same | README:63-64; superseded 2026-10-06 |
 
 ## Method key box
@@ -61,7 +61,7 @@ Overrides applied throughout (AUDIT:10-13):
 
 | Property | Mobile (390) | Desktop (1300) | Source |
 |---|---|---|---|
-| Text | "Five ways an answer is reached" | same (the canvas and README say "Four", overridden) | AUDIT:10-13; README:69; canvas:199 |
+| Text | "Five ways we reach an answer" | same (the canvas and README say "Four", overridden) | AUDIT:10-13; README:69; canvas:199 |
 | Font | IBM Plex Mono 11px / 500 | IBM Plex Mono 11px / 500 | README:69; canvas:199, :276 |
 | Tracking | 0.08em | 0.08em | README:69; canvas:199 |
 | Color | `--fg-faint` | `--fg-faint` | README:69; canvas:199 |
@@ -272,6 +272,6 @@ The "plus" tags come from AUDIT correction 8. It does not state their order.
 | Exact row (Availability) | verdict `exact` | last field "Exact." | — | — | README:118; canvas:584 |
 | Partial row (Brackets, Roles, Stand-ins) | verdict `partial` | last field names what it misses; Brackets has sub-rows | — | — | README:111-119; canvas:550, :563, :598 |
 | Mixed row (Themes) | verdict `exact and partial` | last field splits the two | — | — | canvas:565-571 |
-| Written row | verdict `written`, tag `model-written` | last field "Neither. It is written, not measured."; no `explained in` | — | — | canvas:600-606 |
+| Written row | verdict `written`, tag `model-written` | last field "Neither. It’s written, not measured."; no `explained in` | — | — | canvas:600-606 |
 | Row with no entries (Written) | as open | no `explained in` pair | — | — | STATES:13; canvas:524 |
 | Prices, open-1 (retired) | tag `published list` | as open | — | — | AUDIT:10-12, superseding STATES:12 |

@@ -165,7 +165,7 @@ export function ContentsRail({
           <PrimaryButton
             type="submit"
             className="min-h-[36px] w-full px-[18px] text-[13px]"
-            aria-label={`${aboutCopy.dismiss} — ${dismiss.clause}`}
+            aria-label={`${aboutCopy.dismiss}, ${dismiss.clause}`}
           >
             {aboutCopy.dismiss}
           </PrimaryButton>

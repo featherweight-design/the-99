@@ -235,7 +235,7 @@ describe("the dismiss control's accessible name", () => {
     render(<AboutPage seen={0} next="/decks" />);
     expect(
       screen.getAllByRole("button", {
-        name: `${aboutCopy.dismiss} — ${aboutCopy.dismissDestination("/decks")}`,
+        name: `${aboutCopy.dismiss}, ${aboutCopy.dismissDestination("/decks")}`,
       }),
     ).toBeTruthy();
   });

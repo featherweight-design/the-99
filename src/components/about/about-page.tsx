@@ -449,7 +449,7 @@ export function AboutPage({
           <PrimaryButton
             type="submit"
             className="min-h-[44px] w-full px-[18px]"
-            aria-label={`${aboutCopy.dismiss} — ${destinationClause}`}
+            aria-label={`${aboutCopy.dismiss}, ${destinationClause}`}
           >
             {aboutCopy.dismiss}
           </PrimaryButton>
