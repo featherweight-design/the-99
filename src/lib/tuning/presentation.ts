@@ -60,22 +60,16 @@ type Range = { start: number; end: number };
  * that names no source at all — whole or part — is still flagged.
  *
  * A dated source (a game note) stays on the WHOLE path only — it is never partially matched,
- * because a game note's own quote must remain verbatim.
+ * because a game note's own quote must remain verbatim. EVERY check below — percentage, net,
+ * denominator, bracket, result — runs on the REPAIRED text, since that is what the player
+ * actually sees; a check against the original, still-quoted text could pass or fail on
+ * characters a reader never sees at all.
  */
 export function presentationFailures(
   text: string,
   quotable: readonly Quotable[],
 ): { broken: RuleKey[]; text: string } {
   const broken: RuleKey[] = [];
-
-  // A percentage in any spelling, and the proportion a "win rate" is.
-  if (/%|\bper ?cent\b|\bwin[ -]?rate\b/i.test(text)) broken.push("noPercentage");
-
-  // The word, or a SIGNED integer: `+2`, `-3`, `−1`. A hyphen between words is not a sign, and
-  // Magic's own counter notation (`+1/+1`, `-1/-1`, `+2/+0`) is a card's words, not a figure.
-  // A sign counts after anything but a word character or another sign — so `=-2`, `(+3` and a
-  // line-leading `-1` are caught, while `two-mana` and a range like `1-2` are not.
-  if (/\bnet\b/i.test(text) || /(^|[^\w+\-−/])[+\-−]\d+(?![\d/])/.test(text)) broken.push("noNet");
 
   // Every literal occurrence of every quotable's own full text, wrapped in any of the FOUR
   // opener/closer combinations (straight/curly, mixed either way — a same-style-only check let
@@ -85,8 +79,11 @@ export function presentationFailures(
   // that inner occurrence is not a quotation in its own right — only the MAXIMAL (outermost)
   // candidates are real whole quotations, each of which must still be sourced (a dated note's
   // date must be in the same text). Occurrences IDENTICAL in range (two undated sources sharing
-  // the same words) are deduplicated, so the ownWords/repair passes below never touch the same
-  // range twice with now-stale offsets.
+  // the same words) are deduplicated. Two maximal candidates that OVERLAP without either
+  // containing the other (both sources' literal text happening to overlap character-for-character
+  // — pathological, but possible if a source itself contains a quote character) are rejected
+  // outright rather than merged or resolved: a merged span would claim support no single source
+  // actually supplied, and rejecting is the only answer that never persists corrupted text.
   type Candidate = Range & { sourced: boolean };
   const candidates: Candidate[] = [];
   for (const q of quotable) {
@@ -101,8 +98,21 @@ export function presentationFailures(
       }
     }
   }
-  const maximal = candidates.filter((c) => !candidates.some((o) =>
-    o.start <= c.start && o.end >= c.end && (o.start < c.start || o.end > c.end)));
+  const strictlyContains = (a: Range, b: Range) => a.start <= b.start && a.end >= b.end && (a.start < b.start || a.end > b.end);
+  const maximal = candidates.filter((c) => !candidates.some((o) => strictlyContains(o, c)));
+  const overlapsAmbiguously = (a: Range, b: Range) =>
+    a !== b && a.start < b.end && b.start < a.end && !strictlyContains(a, b) && !strictlyContains(b, a)
+    && !(a.start === b.start && a.end === b.end);
+  const ambiguous = maximal.filter((c) => maximal.some((o) => overlapsAmbiguously(c, o)));
+  // An ambiguous overlap is rejected outright, immediately — never silently dropped. Dropping it
+  // without a verdict let the generic span scan rediscover fragments of the SAME ambiguous
+  // sources on its own (each individually a coincidental word-boundary match), accept them as
+  // genuine partials, and corrupt the text by unquoting all of it.
+  if (ambiguous.length > 0) {
+    broken.push("quotedNote");
+    return { broken, text };
+  }
+
   const wholeRanges: Range[] = [];
   const seenWhole = new Set<string>();
   for (const c of maximal) {
@@ -118,12 +128,13 @@ export function presentationFailures(
   wholeRanges.sort((a, b) => a.start - b.start);
 
   // Every quoted SPAN, scanned only in the GAPS between whole ranges — never across or through
-  // one. A span-pairing regex run over the raw text can mis-pair a delimiter that belongs to a
-  // whole quotation with one from separate, later text (e.g. a fabricated quote sitting right
-  // after a whole one gets swallowed into a spurious cross-boundary pairing and is never
-  // flagged); confining each scan to the text strictly between whole ranges makes that
-  // impossible; by construction, a gap contains no whole-range characters at all.
-  const spanPattern = /"([^"“”]+)"|“([^"“”]+)”|"([^"“”]+)”|“([^"“”]+)"/g;
+  // one, so a span-pairing scan can never mis-pair a delimiter that belongs to a whole
+  // quotation with one from separate, later text. Within a gap, a span is the OUTERMOST pair of
+  // matching delimiters: its content excludes only the SPECIFIC closing mark this pairing needs
+  // (never both quote styles at once), so a genuinely nested, opposite-style quote inside it —
+  // `“cut "Sol Ring"”` — is captured whole, as literal content, rather than fragmenting into
+  // several smaller spans that each lose the surrounding structure.
+  const spanPattern = /"([^"]+)"|“([^”]+)”|"([^”]+)”|“([^"]+)"/g;
   const gaps: Range[] = [];
   let cursor = 0;
   for (const r of wholeRanges) {
@@ -135,11 +146,27 @@ export function presentationFailures(
   const spans: (Range & { span: string })[] = [];
   for (const gap of gaps) {
     const segment = text.slice(gap.start, gap.end);
+    const matchedHere: Range[] = [];
     for (const m of segment.matchAll(spanPattern)) {
-      const start = gap.start + m.index!;
+      const localStart = m.index!;
+      const localEnd = localStart + m[0].length;
+      matchedHere.push({ start: localStart, end: localEnd });
       const span = (m[1] ?? m[2] ?? m[3] ?? m[4]).trim();
       if (span.length === 0) continue;
-      spans.push({ start, end: start + m[0].length, span });
+      spans.push({ start: gap.start + localStart, end: gap.start + localEnd, span });
+    }
+    // A quote character left over in this gap, outside every matched span, is a DANGLING
+    // delimiter: a fabricated wrapper whose own partner sits on the far side of a legitimate
+    // whole quotation that just split this gap in two — e.g. a real "go wide" sitting inside a
+    // fake "please … with dragons" wrapper. A well-formed citation never leaves one unpaired,
+    // so its presence is a misquote rather than something to silently ignore.
+    for (let i = 0; i < segment.length; i += 1) {
+      const ch = segment[i];
+      if (ch !== "\"" && ch !== "“" && ch !== "”") continue;
+      if (!matchedHere.some((r) => i >= r.start && i < r.end)) {
+        broken.push("quotedNote");
+        return { broken, text };
+      }
     }
   }
 
@@ -160,10 +187,11 @@ export function presentationFailures(
   }
 
   // Build the REPAIRED text and, alongside it, every masked range IN THE REPAIRED TEXT'S OWN
-  // coordinates: a whole quotation is copied through unchanged (still quoted); a verified
-  // partial quote is replaced by its bare span (quote marks gone). Both lists are built in one
-  // left-to-right pass so a partial repair earlier in the line correctly shifts the positions
-  // of everything after it.
+  // coordinates: a whole quotation is copied through unchanged (still quoted, embedded quote
+  // marks and all); a verified partial quote is replaced by its own span text — its OUTER marks
+  // only are gone, any embedded quote marks the span itself contained stay exactly as written.
+  // Both lists are built in one left-to-right pass so a partial repair earlier in the line
+  // correctly shifts the positions of everything after it.
   const masks = [
     ...wholeRanges.map((r) => ({ ...r, replacement: null as string | null })),
     ...partial.map((r) => ({ ...r, replacement: r.span as string | null })),
@@ -181,12 +209,27 @@ export function presentationFailures(
   }
   repaired += text.slice(pos);
 
+  // Everything below runs on the REPAIRED text — what the player actually sees — never the
+  // original, still-quoted one.
+
+  // A percentage in any spelling, and the proportion a "win rate" is.
+  if (/%|\bper ?cent\b|\bwin[ -]?rate\b/i.test(repaired)) broken.push("noPercentage");
+
+  // The word, or a SIGNED integer: `+2`, `-3`, `−1`. A hyphen between words is not a sign, and
+  // Magic's own counter notation (`+1/+1`, `-1/-1`, `+2/+0`) is a card's words, not a figure.
+  // A sign counts after anything but a word character or another sign — so `=-2`, `(+3` and a
+  // line-leading `-1` are caught, while `two-mana` and a range like `1-2` are not.
+  if (/\bnet\b/i.test(repaired) || /(^|[^\w+\-−/])[+\-−]\d+(?![\d/])/.test(repaired)) broken.push("noNet");
+
   // A bracket/result claim is exempted only when the ENTIRE matched span is the player's own
   // words — fully inside a masked range — never when a claim merely OVERLAPS one: masking just
   // the single verified word "win" let the surrounding model words "will ... more" still form
   // the banned comparative claim undetected, because the word that made the regex match was
-  // gone from the text being tested. Checked on the REPAIRED text (quote marks stripped from a
-  // partial, present on a whole), since that is what the player will actually see.
+  // gone from the text being tested. Scanned at EVERY starting position, not only the
+  // non-overlapping matches a single `matchAll` pass would find — two of this rule's own
+  // alternatives can match overlapping spans ("will win" and "win more" over the same "win"),
+  // and a plain global scan only ever sees whichever one starts first, silently hiding the
+  // other.
   const fullyMasked = (start: number, end: number) => maskedNew.some((r) => r.start <= start && r.end >= end);
   if (hasUnmaskedMatch(repaired, BRACKET_WORD, fullyMasked) || hasUnmaskedMatch(repaired, BRACKET_NAME, fullyMasked)) {
     broken.push("noBracketClaim");
@@ -200,8 +243,8 @@ export function presentationFailures(
   // `none` are left out of the counted side only, where they read as "a" and "no" far more often
   // than as counts ("the one card that", "none of it").
   const counted = new RegExp(`\\b(\\d+|${COUNT_WORDS})\\s+${COUNTED}\\b`, "gi");
-  for (const m of text.matchAll(counted)) {
-    const before = text.slice(0, m.index);
+  for (const m of repaired.matchAll(counted)) {
+    const before = repaired.slice(0, m.index);
     if (!new RegExp(`(?:\\d+|${NUMBER_WORDS})\\s+of\\s+(?:your\\s+|the\\s+)?$`, "i").test(before)) {
       broken.push("denominator");
       break;
@@ -221,12 +264,17 @@ function isGenuinePart(span: string, source: string): boolean {
 
 /** Whether `pattern` matches anywhere in `text` whose match span is NOT fully covered by
  *  `fullyMasked` — a claim entirely inside the player's own (quoted or repaired-partial) words
- *  is exempt; one that only partly overlaps is not. */
+ *  is exempt; one that only partly overlaps is not. Checked at EVERY starting position (a
+ *  sticky, position-by-position scan) rather than a single non-overlapping `matchAll` pass,
+ *  since two of this rule's own alternatives can match overlapping spans of the same text and
+ *  a plain scan only ever reports whichever one starts first. */
 function hasUnmaskedMatch(text: string, pattern: RegExp, fullyMasked: (start: number, end: number) => boolean): boolean {
-  const re = new RegExp(pattern.source, pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`);
-  for (const m of text.matchAll(re)) {
-    const start = m.index!;
-    if (!fullyMasked(start, start + m[0].length)) return true;
+  const flags = pattern.flags.replace(/[gy]/g, "");
+  const sticky = new RegExp(pattern.source, `${flags}y`);
+  for (let i = 0; i < text.length; i += 1) {
+    sticky.lastIndex = i;
+    const m = sticky.exec(text);
+    if (m && m[0].length > 0 && !fullyMasked(i, i + m[0].length)) return true;
   }
   return false;
 }

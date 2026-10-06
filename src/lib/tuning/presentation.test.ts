@@ -228,5 +228,39 @@ describe("presentationFailures", () => {
       expect(presentationFailures('You said "win more" games.', wholeIntent).broken).not.toContain("noResultClaim");
     });
   });
+
+  // Round-3 review findings, each pinned as the exact shape that defeated the round-2 version.
+  describe("repair logic — round-3 review findings", () => {
+    it("catches a fabricated outer quote with a genuine inner quote nested inside it", () => {
+      const intent = [{ text: "go wide", date: null }];
+      expect(fails('You said “please "go wide" with dragons”.', intent)).toContain("quotedNote");
+    });
+
+    it("repairs a genuine partial quote that itself contains a nested quote, preserving the nested marks", () => {
+      const notes = [{ text: 'please cut "Sol Ring" for more removal', date: null }];
+      const out = presentationFailures('You asked to “cut "Sol Ring"”.', notes);
+      expect(out.broken).toEqual([]);
+      expect(out.text).toBe('You asked to cut "Sol Ring".');
+    });
+
+    it("checks percentage, net and denominator against the REPAIRED text, not the still-quoted original", () => {
+      const notes = [{ text: "swap two cards for removal", date: null }];
+      expect(fails('Cut "two" cards for this.', notes)).toContain("denominator");
+      const rateNotes = [{ text: "this improves our win a lot this run", date: null }];
+      expect(fails('Better "win" rate.', rateNotes)).toContain("noPercentage");
+    });
+
+    it("catches a claim whose two halves overlap — one masked, one not — that a single non-overlapping scan would miss", () => {
+      const intent = [{ text: "I think I will win eventually", date: null }];
+      const out = presentationFailures('This swap "will win" more games.', intent);
+      expect(out.broken).toContain("noResultClaim");
+      expect(out.text).toBe("This swap will win more games.");
+    });
+
+    it("rejects an ambiguous overlap between two sources' own text rather than merging or corrupting it", () => {
+      const sources = [{ text: 'foo"bar', date: null }, { text: 'bar" baz', date: null }];
+      expect(fails('"foo"bar" baz"', sources)).toContain("quotedNote");
+    });
+  });
 });
 
