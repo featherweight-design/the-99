@@ -47,7 +47,7 @@
 // changes. about.test.ts pins a content hash, so a change forces either a
 // deliberate bump or a deliberate re-pin.
 
-export const ABOUT_VERSION = 10;
+export const ABOUT_VERSION = 11;
 
 export type AboutChapter = '01' | '02' | '03' | '04';
 export type AboutWidth = 'inset' | 'plate';
@@ -721,7 +721,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // the versionless deck rather than the edits, and key line 3 quoted the
     // guard tag as `deck in draft`. Both are copy, so eng resolved them.
     caption:
-      'Ready to lock in your changes? Review changes shows what committing asks of the rest of your Collection. Cards coming in are split into free, sleeved and to buy. Say your Kinnan draft adds Arcane Signet and your only copy is sleeved in Atraxa. Its row offers Pull it: the copy comes to Kinnan, and Atraxa gets a draft with the Signet under Going out. Discard that draft and the card goes back where it was. A copy another deck holds as its commander stays put.',
+      'Review changes is the last stop before a commit. It shows what locking in your edits asks of the rest of your Collection, with the cards coming in split into free, sleeved and to buy.\n\nSay your Kinnan draft adds Arcane Signet, and your only copy is sleeved in Atraxa. Its row offers Pull it: the Signet moves to Kinnan, and Atraxa gets a draft with it under Going out. She has lifelink. She’ll be fine.\n\nDiscard that draft and the Signet goes back where it was. A copy another deck holds as its commander stays put.',
     keys: [
       '`Coming in` is broken down by where each card comes from, free, sleeved or to buy, so the page says what the commit costs before a single row is read.',
       '`Pull it` takes a copy out of another deck and leaves that deck a draft, the card under Going out. Nothing is committed for it, which is why the deck it raids is named on the row: that is where to look if you change your mind.',
@@ -737,7 +737,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens the commander picker',
     width: 'plate',
     caption:
-      'Which commander do you want to build? New deck lists every commander in your Collection you could legally build, each with its pool: how many of your cards are legal in its colors. Pick one, name the deck, and that’s all it needs. A commander with partner gets a second slot offering only legal pairs, so picking Tymna the Weaver offers partners like Thrasios. Coming from a commander’s own page skips the list: the commander and any synergy picks you made there come with you, and the page asks for a name.',
+      'New deck lists every commander in your Collection you could legally build, each with its pool: how many of your cards are legal in its colors. Pick one and name the deck. That’s all it needs.\n\nA commander with partner gets a second slot that offers only legal pairs, so Tymna the Weaver offers partners like Thrasios. Your pod has been warned.\n\nComing from a commander’s own page skips the list. The commander and any synergy picks you made there come with you, and all that’s left is the name.',
     keys: [
       'only commanders you own and could legally build are listed. The picker is your collection, not a catalog.',
       'the figure beside each one is how many of your cards are legal in its colors, which is the Pool part of a fit score seen from the other side.',
@@ -756,7 +756,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       // Audit C1 (candidates also need enough decks to measure) and C4 (a deck with no version has
       // nothing to discard back to).
-      'Like the 99 but not the leader? Change commander, on the commander’s art, lists commanders in exactly this deck’s colors with enough decks to measure, or pairs for a pair deck, with the ones in your Collection or already in the 99 first. Each carries one figure: how many of this deck’s cards its decks run. On a Korvold deck, “41 of 72 are in its decks” beside Prossh means Prossh players already run most of your list. Your choice waits in pending changes, and on a committed deck, Discard puts the old commander back.',
+      'Like the 99 but not the leader? Change commander, on the commander’s art, lists commanders in exactly this deck’s colors with enough decks to measure, or pairs for a pair deck. The ones in your Collection or already in the 99 come first.\n\nEach carries one figure: how many of this deck’s cards its decks run. On a Korvold deck, “41 of 72 are in its decks” beside Prossh means Prossh players already run most of your list.\n\nYour choice waits in pending changes. On a committed deck, Discard puts the old commander back.',
     keys: [
       "Only commanders in exactly this deck's colors are offered, and only pairs for a pair deck, so not one card of the 99 changes.",
       "The figure counts this deck's cards that the candidate's decks run, leaving out basic lands and the staples every deck runs. Press it to see which cards.",
@@ -784,7 +784,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // screen’s `Put back` (deck-versioning.ts:249) is a second door and is
     // named in the caption rather than drawn. R3 drew one wearing the other.
     caption:
-      'Take a card out of your deck and its row becomes an undo that names it: “Rhystic Study removed”, with Undo beside it. Your table may be hoping you leave that one out. Take out several and each keeps its own row, with no limit on how many stand at once. Undo puts the card back in the deck’s count and shopping total, with its claim on your Collection and its lock if it had one. A card you were proxying comes back as one to buy. On the review page, a cut of a single copy offers Put back instead. A whole stack of copies that came out goes back from the deck itself.',
+      'Take a card out of your deck and its row turns into an undo that names it: “Rhystic Study removed”. Your table may be hoping you leave that one out.\n\nUndo puts it all back: the deck’s count, the shopping total, its copy from your Collection, and its lock if it had one. A card you were proxying comes back as one to buy. Take out several and each keeps its own undo, as many as you like.\n\nOn the review page, a cut of a single copy offers Put back instead. A cut of several copies goes back from the deck itself.',
     keys: [],
     since: 1,
   },
@@ -801,7 +801,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // (export-dialog.tsx:561). `Buy these at Mana Pool` was already right
     // (decks-builder.ts:472).
     caption:
-      'The whole 99 as plain text that Moxfield and Archidekt read, or only the cards this deck has to buy. Buy these at Mana Pool opens that list at Mana Pool in a new tab, and you check out there.',
+      'Take the whole 99 anywhere as plain text. Moxfield and Archidekt both read it.\n\nOr take only the cards this deck has to buy: Buy these at Mana Pool opens that list at Mana Pool in a new tab, and you check out there.',
     keys: [
       // The canvas draws a count on the Shopping tab (`Shopping list 8`) and
       // the app draws none: `export-dialog.tsx` renders `exportTabCopy.shopping`
@@ -823,7 +823,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: "opens a deck’s Games tab",
     width: 'plate',
     caption:
-      'Log a game takes about fifteen seconds: the result, the pod size, and the two or three things that decided it. The same eight things can go under What worked or What let me down. Mark Mana as what let you down, and the mana screw is on the record. A result on its own is a game. Suggested changes reads your games the next time it runs.',
+      'Log a game takes about fifteen seconds: the result, the pod size, and the two or three things that decided it.\n\nThe same eight things can go under What worked or What let me down. Mark Mana as what let you down, and the mana screw is on the record.\n\nA result on its own still counts as a game. Suggested changes reads your games the next time it runs.',
     keys: [
       'pod size is on the form because a win into three opponents and a win into one are not the same evidence.',
       'the note is quoted back verbatim in the history and never summarized, which is why it asks for one line rather than a paragraph.',
@@ -839,7 +839,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: "opens a deck’s Games tab",
     width: 'plate',
     caption:
-      'After one game, the Games tab tells that game back to you. From the second it sorts your marks into Fix and Keep, and from the third the heading makes a finding, like “Mana is letting this deck down.” Something marked for you as often as against you gets one line under Mixed. Every figure is a count of games.',
+      'The Games tab has more to say with every game you log.\n\n- After one, it tells that game back to you.\n- From the second, it sorts your marks into Fix and Keep.\n- From the third, the heading makes a finding, like “Mana is letting this deck down.”\n\nSomething marked for you as often as against you gets one line under Mixed. Every figure is a count of games.',
     keys: [
       'under three games the heading describes instead: one game is a note, two is a leaning, three is a finding.',
       'an axis marked for you as often as against you is stated rather than filed: one line, never a third column.',
@@ -857,7 +857,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // staging and off for production, so a switch here would hide this entry on production
     // forever rather than announcing it — the opposite of ruling 7's bump.
     caption:
-      'Describe the deck in a sentence or two and it sits under the deck’s name. The pencil beside the name edits both. Suggested changes reads it the next time it runs. Suggested changes, at the foot of the Analysis tab, offers up to five swaps, each a card out and a card in. We ask for eight and keep the first five that pass our checks. Three limits hold for the deck: the most a card may cost, the sets an added card comes from, and whether adds come only from your Collection. Say you describe your Meren deck as slow graveyard value for casual tables, cap cards at $5, keep adds to your Collection, and add a note asking for more removal this run. The swaps come back as cheap removal you already own, in place of cards that don’t fit the plan. Additional notes carry one run’s instructions in your words. Each run that comes back uses a credit.',
+      'Suggested changes, at the foot of the Analysis tab, offers up to five swaps, each a card out and a card in. We ask for eight and keep the first five that pass our checks.\n\nDescribe the deck in a sentence or two and it sits under the deck’s name. The pencil beside the name edits both, and Suggested changes reads the description the next time it runs.\n\nThree limits hold for the deck:\n\n- the most a card may cost\n- the sets an added card comes from\n- whether adds come only from your Collection\n\nAdditional notes carry one run’s instructions in your words.\n\nSay you describe your Meren deck as slow graveyard value for casual tables, cap cards at $5, keep adds to your Collection, and ask for more removal this run. The swaps come back as cheap removal you already own, in place of cards that don’t fit the plan.\n\nEach run uses a credit.',
     keys: [
       'the description is optional, and asked beside Analyze before a deck’s first reading. After that it is the pencil’s.',
       'additional notes last one press and are never saved. What should hold every time belongs in the description or the limits.',
@@ -871,24 +871,25 @@ export const aboutEntries: readonly AboutEntry[] = [
     title: 'What credits pay for',
     route: '/decks',
     opens: "opens a deck’s Analysis tab",
-    // 'inset': the figure is four lines of the credit line, narrow enough to sit beside its text.
+    // 'inset': the figure is three lines of the credit line, narrow enough to sit beside its text.
     width: 'inset',
     // Hugh, 2026-10-05: credits get ONE entry of their own, and every other entry says only that
     // an action "uses a credit". Every spender is a `ModelFeature` (`allowance-rule.ts`): the
     // Overview (`synopsis`), Suggested changes (`tuning`) and Look deeper (`intake`). Each refund
     // rule is its own: `chargeFor` (all four sections), `tuning-actions.ts` (zero swaps kept
-    // fails the run), `run-store.ts` for intake (`useful`: at least one valid answer). NO switch, and `since: 10`
-    // rather than a bump (Hugh: no version bump): `suggested-changes` set the precedent, and a
-    // switch would announce it by id on staging as if it were a feature launch.
+    // fails the run), `run-store.ts` for intake (`useful`: at least one valid answer). NO switch. It shipped at
+    // `since: 10` with no bump; Hugh then ruled (2026-10-06) that it is announced, so it moved to
+    // `since: 11` with the ABOUT_VERSION bump that ends the second prose pass.
+    // "Every player gets three" is the FRIEND allowance (`MODEL_FRIEND_DAILY_ALLOWANCE`). The owner's
+    // ten and monthly testing share exist and are left out on purpose: Hugh, 2026-10-06, "three only".
     caption:
-      'Credits pay for the parts of the app that write something for you. Writing a deck’s Overview uses one, whether Analyze writes it for a list that has none yet or you press Try again. Reading the bracket is free. Each Suggested changes run uses one, and so does each Look deeper in Help me choose. Every player gets three, and the app’s owner ten for testing. Each credit comes back 24 hours after the run that used it. A run uses its credit only when it gives you something: an Overview with all four sections, Suggested changes with at least one swap, a Look deeper that comes back with at least one answer. Anything less hands the credit back, and so does stopping a run. When the app reaches its monthly limit, all of these pause until the 1st.',
+      'Credits pay for the parts of the app that write something for you. Every player gets three, and each one comes back 24 hours after the run that used it.\n\nThese use a credit:\n\n- writing a deck’s Overview, whether Analyze writes it for a list that has none yet or you press Try again\n- each Suggested changes run\n- each Look deeper in Help me choose\n\nReading the bracket is free.\n\nA run uses its credit only when it gives you something: an Overview with all four sections, Suggested changes with at least one swap, a Look deeper that comes back with at least one answer. Anything less hands the credit back, and so does stopping a run.\n\nWhen the app reaches its monthly limit, all of these pause until the 1st.',
     keys: [
       'with credits left, the line says how many, and once one is out, the time the next comes back.',
       'with every credit used, the button waits and the line names when the next one returns.',
       'the monthly limit is the app’s own, so it pauses every player at once, until the 1st of next month.',
-      'the owner’s testing also draws on a monthly share; once it’s used, the owner waits for next month and friends carry on.',
     ],
-    since: 10,
+    since: 11,
   },
   {
     id: 'statuses',
@@ -897,7 +898,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/decks',
     width: 'plate',
     caption:
-      'Seven statuses, each with one next step. Only Complete means sleeve it and play, and how hard it hits is still for the pregame chat. To buy is the one to watch: a card you own still needs buying when an older deck holds your copy, so one Sol Ring in four sleeved decks is three to buy.',
+      'Every deck wears one of seven statuses, and each one points at a next step.\n\nOnly Complete means sleeve it up and play. How hard it hits is still for the pregame chat.\n\nTo buy is the one to watch. A card you own still needs buying when an older deck holds your copy, so one Sol Ring in four sleeved decks is three to buy.',
     keys: [
       'New and Draft belong to a deck you have never committed: New has nothing in it, Draft is that deck with cards in it. Building is a committed deck now short of its body size.',
       'Over is past the body size and Unresolved is at it, each with something to settle: too many cards, or lines we could not put a card to.',
@@ -915,7 +916,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // the shelf line is a full-width row of segments, and a ~300px column wraps it to three.
     width: 'plate',
     caption:
-      'A deck lives in one folder or in none, filed with Move in its ⋯ menu. On a wide screen every folder and its count sit above the filters, and on a phone they’re one tap away under Shelves. Picking one narrows Decks with no filter chip, and Clear all filters leaves it alone. Unfiled appears once you make your first folder. Just precons makes a fine name for the decks everyone swears are just precons.',
+      'Give your decks some shelves. A deck lives in one folder or in none, and you file it with Move in the deck’s menu.\n\nOn a wide screen every folder and its count sit above the filters. On a phone they’re one tap away under Shelves.\n\nPicking a folder narrows Decks with no filter chip, and Clear all filters leaves it alone. Unfiled appears once you make your first folder.\n\nJust precons makes a fine name for the decks everyone swears are just precons.',
     keys: [],
     since: 1,
   },
@@ -928,7 +929,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // Home’s resume block is a list of full-width rows, each with a portrait, a status keyline and a count.
     width: 'plate',
     caption:
-      'Home opens on the four decks you touched last, newest first, and each row says what put it there: edited, committed or played. Its art and status badge match its tile on Decks, so you know it at a glance.',
+      'Home opens on the four decks you touched last, newest first, ready to pick back up. Each row says what put it there: edited, committed or played.\n\nIts art and status badge match its tile on Decks, so you’ll know it at a glance.',
     keys: [],
     since: 1,
   },
@@ -939,7 +940,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/',
     width: 'inset',
     caption:
-      'Three figures on Home. Cards in use is how much of your Collection is sleeved into committed decks, out of everything you own. Spoken for twice counts the cards your committed decks want more copies of than you own: one Sol Ring in three decks is 1 card. It stays red at zero. To buy, all decks is what every deck is still short, and its price.',
+      'Three figures on Home show how much of your Collection your decks lean on:\n\n- Cards in use is how much of your Collection is sleeved into committed decks, out of everything you own.\n- Spoken for twice counts the cards your committed decks want more copies of than you own: one Sol Ring in three decks is 1 card. It stays red at zero.\n- To buy, all decks is what every deck is still short, and its price.',
     keys: [],
     since: 1,
   },
@@ -961,7 +962,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // imposed. The proxy control is a tick and two lines; it fits.
     width: 'inset',
     caption:
-      'Gaea’s Cradle too pricey for this deck? Choose Run a proxy on its card there. P marks the row, the card leaves the buy list, and the deck’s shopping total drops by its price. Your Collection and set completion stay as they are. Proxies, beside Cards and Sets, lists everything you’re printing.',
+      'Not every deck needs a real Gaea’s Cradle. Choose Run a proxy on its card in the deck: it leaves the buy list, and the deck’s shopping total drops by its price.\n\nYour Collection and set completion stay as they are. Proxies, beside Cards and Sets, lists everything you’re printing.',
     keys: [],
     since: 1,
   },
@@ -973,10 +974,10 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'in the account menu',
     width: 'plate',
     caption:
-      'Six themes in the account menu under Theme, each named for how it looks, from Low Sun to First Frost. A theme changes the palette and keeps every meaning: owned is green and over-committed is red in all six.',
+      'Six themes live in the account menu under Theme, each named for how it looks, from Low Sun to First Frost.\n\nA theme changes the palette and keeps every meaning: owned is green and over-committed is red in all six. Pick the one that matches your playmat.',
     keys: [
       'the plane is the subtitle, not the name: you pick Neon Rain, not Kamigawa.',
-      'each theme brings its own accent, which is the bar across its miniature.',
+      'each theme brings its own accent color as well.',
       'the choice is remembered in this browser, so a different device starts on the default until you pick there too.',
     ],
     since: 1,
