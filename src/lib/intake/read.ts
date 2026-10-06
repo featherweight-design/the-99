@@ -23,8 +23,10 @@ import { phraseKey, type Chip, type PhraseIndex } from "./match";
  * CONTROL BEATS WORDS (plan decision 2): a budget or bracket the reply reads that disagrees with a
  * control the player set goes under Not used, never over the control.
  *
- * A READ WITH NOTHING VALID IS REFUNDED (F4): `validateRead` reports whether any chip survived, and
- * the run store settles on that, BEFORE it settles the unit.
+ * A READ THAT ADDS NOTHING NEW IS REFUNDED (F4, extended by Hugh's 2026-10-06 ruling):
+ * `validateRead` reports whether any chip added an answer the player did not already have — a
+ * chip can survive and still leave this false — and the run store settles on that, BEFORE it
+ * settles the unit.
  */
 
 /**
@@ -96,7 +98,8 @@ export type ReadResult = {
   /** Figures the reply read that a set control overrode, as the player would see them. */
   notUsed: string[];
   notUnderstood: string[];
-  /** False when no chip survived: the read is refunded (F4). */
+  /** False when no chip added an answer the player did not already have: the read is refunded
+   *  (F4, extended by Hugh's 2026-10-06 ruling). A chip can survive and still leave this false. */
   useful: boolean;
 };
 

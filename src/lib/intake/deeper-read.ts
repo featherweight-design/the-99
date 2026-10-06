@@ -11,13 +11,14 @@ import { loadIntakeCatalog } from "./search";
  * Action authenticates and checks its input, then calls this; `probe:help-me-choose-read` calls it
  * directly with the model injected, which is how a probe reaches the late answer.
  *
- * VALIDATION RUNS BEFORE THE SETTLE (F4): the unit is spent only when a chip survived it.
+ * VALIDATION RUNS BEFORE THE SETTLE (F4, extended by Hugh's 2026-10-06 ruling): the unit is spent
+ * only when a chip added an answer the player did not already have.
  */
 
 export type DeeperReadOutcome =
   /** `readId` names the row holding it: the press's own, or a stored read's when the ask repeats. */
   | ({ kind: "read"; readId: string } & StoredRead)
-  /** The read was valid in shape but nothing in it held up: refunded. */
+  /** The read was valid in shape, but nothing in it added a new answer: refunded. */
   | { kind: "nothing"; readId: string; notUsed: string[]; notUnderstood: string[] }
   /** The call failed: refunded. */
   | { kind: "failed"; errorClass: ReadErrorClass }
