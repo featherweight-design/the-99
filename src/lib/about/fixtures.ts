@@ -1202,8 +1202,9 @@ export const SUGGESTED_CHANGES = {
 };
 
 /**
- * `credits`: the three lines the app draws beside a button that spends a credit: with credits
- * left, with every credit out, and while the app-wide monthly limit holds. A friend's allowance
+ * `credits`: three of the lines the app draws beside a button that spends a credit: with credits
+ * left, with every credit out, and while the app-wide monthly limit holds. The owner's fourth
+ * (`creditsCopy.ownerShare`) is left out on purpose: the entry speaks to friends (Hugh, 2026-10-06). A friend's allowance
  * (`MODEL_FRIEND_DAILY_ALLOWANCE`), read rather than retyped. The caption spells the number out,
  * so `about.test.ts` checks its "three" against the allowance constant.
  *

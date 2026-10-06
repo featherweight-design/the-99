@@ -752,7 +752,7 @@ function SuggestedChangesFigure({ width }: { width: AboutWidth }) {
   );
 }
 
-/** The shared credit line in its four states: credits left, every credit out, the monthly limit, the owner's share used. */
+/** The shared credit line in the three states a friend sees: credits left, every credit out, the monthly limit. */
 function CreditsFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="credits" width={width}>

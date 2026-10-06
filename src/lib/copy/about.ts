@@ -880,6 +880,8 @@ export const aboutEntries: readonly AboutEntry[] = [
     // fails the run), `run-store.ts` for intake (`useful`: at least one valid answer). NO switch. It shipped at
     // `since: 10` with no bump; Hugh then ruled (2026-10-06) that it is announced, so it moved to
     // `since: 11` with the ABOUT_VERSION bump that ends the second prose pass.
+    // "Every player gets three" is the FRIEND allowance (`MODEL_FRIEND_DAILY_ALLOWANCE`). The owner's
+    // ten and monthly testing share exist and are left out on purpose: Hugh, 2026-10-06, "three only".
     caption:
       'Credits pay for the parts of the app that write something for you. Every player gets three, and each one comes back 24 hours after the run that used it.\n\nThese use a credit:\n\n- writing a deck’s Overview, whether Analyze writes it for a list that has none yet or you press Try again\n- each Suggested changes run\n- each Look deeper in Help me choose\n\nReading the bracket is free.\n\nA run uses its credit only when it gives you something: an Overview with all four sections, Suggested changes with at least one swap, a Look deeper that comes back with at least one answer. Anything less hands the credit back, and so does stopping a run.\n\nWhen the app reaches its monthly limit, all of these pause until the 1st.',
     keys: [

@@ -902,7 +902,7 @@ export function SuggestedChangesFigureBody() {
 }
 
 /**
- * `credits`: the shared credit line in its three states, each from `creditsCopy` itself: with
+ * `credits`: the shared credit line in the three states a friend sees, each from `creditsCopy` itself: with
  * credits left (`first`), with every credit out (`spent`), and under the app-wide monthly limit
  * (`paused`). The line has no component of its own (each panel draws it inline), so it is set
  * here in the type `SuggestedChangesFigureBody` gives it, from the real copy and never retyped.
