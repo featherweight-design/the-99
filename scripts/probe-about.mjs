@@ -618,7 +618,7 @@ async function flipWalk(browser, who) {
     const fourth = await sheetTitles(page, card);
     report(
       "F4c one switch names both of its entries, in page order",
-      JSON.stringify(fourth) === JSON.stringify(["Which of your decks a card fits", "Cheaper stand-ins"]),
+      JSON.stringify(fourth) === JSON.stringify(["Find a deck for it", "Cheaper stand-ins"]),
       JSON.stringify(fourth),
     );
     await visitAbout(page, userId, "stand-ins");
