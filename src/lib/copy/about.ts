@@ -341,7 +341,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       // Audit H3: with no theme and no card the list IS ordered by ownership. H1: the hand-off
       // shipped in #1011, and Create is what fills the deck, not the pick.
-      'No commander yet for the deck you want? Answer as much or as little as you like: colors, themes (all of them, or any one), the sets it was printed in, a budget and a bracket. A sentence in your own words is matched for free, and a card named there becomes the card to build around. Look deeper reads everything you wrote and uses a credit when it adds something to your results. Every answer narrows which commanders show up, owned or not, and your themes and card also set the order. With neither, the results are ordered by how many of their cards you already have. Pick one and your answers carry to a new deck, and Create deck fills the 99 under them, only from your Collection if you ask. When fewer than four fit, the page offers answers to loosen.',
+      'No commander yet for the deck you want? Answer as much or as little as you like: colors, themes (all of them, or any one), the sets it was printed in, a budget and a bracket. A sentence in your own words is matched for free, and a card named there becomes the card to build around. Look deeper reads everything you wrote and uses a credit when it comes back with at least one answer. Every answer narrows which commanders show up, owned or not, and your themes and card also set the order. With neither, the results are ordered by how many of their cards you already have. Pick one and your answers carry to a new deck, and Create deck fills the 99 under them, only from your Collection if you ask. When fewer than four fit, the page offers answers to loosen.',
     keys: [
       // Audit H4: SETS RANK is drawn only when a row has more than one figure.
       "With a theme or a card, each figure is a share of that commander's decks: the share tagged with your theme, or the share that runs your card. The weakest figure orders the row, and when there is more than one it is marked SETS RANK.",
@@ -747,7 +747,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       // Audit C1 (candidates also need enough decks to measure) and C4 (a deck with no version has
       // nothing to discard back to).
-      'Like the 99 but not the leader? Change commander, on the commander’s art, lists commanders in exactly this deck’s colors with enough decks to measure, or pairs for a pair deck, with the ones in your Collection first. Each carries one figure: how many of this deck’s cards its decks run. On a Korvold deck, “41 of 72 are in its decks” beside Prossh means Prossh players already run most of your list. Your choice waits in pending changes, and on a committed deck, Discard puts the old commander back.',
+      'Like the 99 but not the leader? Change commander, on the commander’s art, lists commanders in exactly this deck’s colors with enough decks to measure, or pairs for a pair deck, with the ones in your Collection or already in the 99 first. Each carries one figure: how many of this deck’s cards its decks run. On a Korvold deck, “41 of 72 are in its decks” beside Prossh means Prossh players already run most of your list. Your choice waits in pending changes, and on a committed deck, Discard puts the old commander back.',
     keys: [
       "Only commanders in exactly this deck's colors are offered, and only pairs for a pair deck, so not one card of the 99 changes.",
       "The figure counts this deck's cards that the candidate's decks run, leaving out basic lands and the staples every deck runs. Press it to see which cards.",
@@ -872,11 +872,12 @@ export const aboutEntries: readonly AboutEntry[] = [
     // rather than a bump (Hugh: no version bump): `suggested-changes` set the precedent, and a
     // switch would announce it by id on staging as if it were a feature launch.
     caption:
-      'Credits pay for the parts of the app that write something for you. Writing a deck’s Overview uses one, whether Analyze writes it for a list that has none yet or you press Try again. Reading the bracket is free. Each Suggested changes run uses one, and so does each Look deeper in Help me choose. Every player gets three, and the app’s owner ten for testing. Each credit comes back 24 hours after the run that used it. A run uses its credit only when it gives you something: an Overview with all four sections, Suggested changes with at least one swap, a Look deeper that adds to your results. Anything less hands the credit back, and so does stopping a run. When the app reaches its monthly limit, all of these pause until the 1st.',
+      'Credits pay for the parts of the app that write something for you. Writing a deck’s Overview uses one, whether Analyze writes it for a list that has none yet or you press Try again. Reading the bracket is free. Each Suggested changes run uses one, and so does each Look deeper in Help me choose. Every player gets three, and the app’s owner ten for testing. Each credit comes back 24 hours after the run that used it. A run uses its credit only when it gives you something: an Overview with all four sections, Suggested changes with at least one swap, a Look deeper that comes back with at least one answer. Anything less hands the credit back, and so does stopping a run. When the app reaches its monthly limit, all of these pause until the 1st.',
     keys: [
       'with credits left, the line says how many, and once one is out, the time the next comes back.',
       'with every credit used, the button waits and the line names when the next one returns.',
       'the monthly limit is the app’s own, so it pauses every player at once, until the 1st of next month.',
+      'the owner’s testing also draws on a monthly share; once it’s used, the owner waits for next month and friends carry on.',
     ],
     since: 10,
   },

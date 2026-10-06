@@ -902,28 +902,35 @@ export function SuggestedChangesFigureBody() {
 }
 
 /**
- * `credits`: the shared credit line in its three states, each from `creditsCopy` itself: with
- * credits left (`first`), with every credit out (`spent`), and under the app-wide monthly limit
- * (`paused`). The line has no component of its own (each panel draws it inline), so it is set
+ * `credits`: the shared credit line in its four states, each from `creditsCopy` itself: with
+ * credits left (`first`), with every credit out (`spent`), under the app-wide monthly limit
+ * (`paused`), and with the owner's testing share used (`ownerShare`). The line has no component of its own (each panel draws it inline), so it is set
  * here in the type `SuggestedChangesFigureBody` gives it, from the real copy and never retyped.
  * One numeral per state, as the availability figure numbers its rows.
  */
 export function CreditsFigureBody() {
-  const { limit, left, nextAt, pausedUntil } = CREDITS;
+  const { limit, left, pausedUntil, ownerShareMonth } = CREDITS;
+  // The reset time is the reader's clock (`clockTime`), which the server cannot know, and React
+  // never patches mismatched text. So the server snapshot draws the lines with no time, and the
+  // time arrives with the client's own render, the pattern `ThemesFigureBody` uses.
+  const hydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+  const nextAt = hydrated ? CREDITS.nextAt : null;
   const lines = [
     creditsCopy.first(left, limit, nextAt),
     creditsCopy.spent(limit, nextAt),
     creditsCopy.paused(pausedUntil),
+    creditsCopy.ownerShare(ownerShareMonth),
   ];
   return (
     <div className="flex flex-col gap-[11px]">
       {lines.map((line, i) => (
         <div key={i} className="flex items-start gap-[10px]">
           <KeyNumeral n={i + 1} className="mt-[1px]" />
-          {/* The time is the reader's clock (`clockTime`), so a server render in another zone
-              differs from the browser's by that text alone. */}
           <span
-            suppressHydrationWarning
             className="font-mono text-[9.5px] leading-[1.55] md:text-[11px]"
             style={{ color: "var(--fg-faint)" }}
           >

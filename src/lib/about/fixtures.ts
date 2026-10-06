@@ -1217,6 +1217,7 @@ export const CREDITS = {
   left: 2,
   nextAt: new Date(Date.UTC(2026, 9, 5, 21, 20)),
   pausedUntil: new Date(Date.UTC(2026, 10, 1)),
+  ownerShareMonth: new Date(Date.UTC(2026, 9, 1)),
 };
 
 /**
