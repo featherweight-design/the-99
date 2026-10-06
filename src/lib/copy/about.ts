@@ -862,13 +862,13 @@ export const aboutEntries: readonly AboutEntry[] = [
     title: 'What credits pay for',
     route: '/decks',
     opens: "opens a deck’s Analysis tab",
-    // 'inset': the figure is three lines of the credit line, narrow enough to sit beside its text.
+    // 'inset': the figure is four lines of the credit line, narrow enough to sit beside its text.
     width: 'inset',
     // Hugh, 2026-10-05: credits get ONE entry of their own, and every other entry says only that
     // an action "uses a credit". Every spender is a `ModelFeature` (`allowance-rule.ts`): the
     // Overview (`synopsis`), Suggested changes (`tuning`) and Look deeper (`intake`). Each refund
     // rule is its own: `chargeFor` (all four sections), `tuning-actions.ts` (zero swaps kept
-    // fails the run), `run-store.ts` for intake (`useful`, chips added). NO switch, and `since: 10`
+    // fails the run), `run-store.ts` for intake (`useful`: at least one valid answer). NO switch, and `since: 10`
     // rather than a bump (Hugh: no version bump): `suggested-changes` set the precedent, and a
     // switch would announce it by id on staging as if it were a feature launch.
     caption:
