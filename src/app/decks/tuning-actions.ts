@@ -320,7 +320,7 @@ export async function runTuning(
     // 8-asked/5-kept (H35, PR 4a): the first survivors in whatever order the validator already
     // gives — no new ranking pass, no retry, no second model call. Fewer than 5 is shown as-is.
     const sized = kept.slice(0, MAX_SUGGESTIONS);
-    const report: ValidationReport = { askedCount, survivedCount: kept.length, keptCount: sized.length, hadNotes: notes !== null };
+    const report: ValidationReport = { askedCount, survivedCount: kept.length, keptCount: sized.length, hadNotes: notes !== null, drops };
     // F10: every suggestion cut a card the player locked. Its own class, so the empty result says
     // that rather than `ungrounded`'s three causes. Refunded like every failure.
     if (sized.length === 0 && drops.length > 0 && drops.every((d) => d.rule === "neverCut")) {

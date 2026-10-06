@@ -90,6 +90,12 @@ export type ValidationReport = {
    *  Absent for a run persisted before this column's meaning existed, same as every other
    *  optional field here. */
   hadNotes?: boolean;
+  /** Every drop `validateSuggestions` produced, per candidate — the same list `chooseRefusal`
+   *  reads to pick the one-line `refusal`, kept here in full rather than discarded once that
+   *  choice is made. No cost to persist (already computed, pure data); lets an "every candidate
+   *  dropped" run be read back without re-running the model to see WHY. Absent for a run
+   *  persisted before this field existed. */
+  drops?: Drop[];
 };
 
 export type RefusalDetail =

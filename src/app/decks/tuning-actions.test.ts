@@ -263,7 +263,7 @@ describe("runTuning's 8-asked/5-kept slice", () => {
     expect(flagged).toHaveLength(5);
     expect(flagged.map((f) => f.addOracleId)).toEqual(["add0", "add1", "add2", "add3", "add4"]);
     expect(droppedCount).toBe(0);
-    expect(report).toEqual({ askedCount: 8, survivedCount: 8, keptCount: 5, hadNotes: false });
+    expect(report).toEqual({ askedCount: 8, survivedCount: 8, keptCount: 5, hadNotes: false, drops: [] });
   });
 
   // "Additional notes" (H35, PR 4b): the persisted report says whether THIS run carried any,
@@ -286,7 +286,10 @@ describe("runTuning's 8-asked/5-kept slice", () => {
     expect(flagged.map((f) => f.addOracleId)).not.toContain("add0");
     expect(flagged).toHaveLength(5);
     expect(droppedCount).toBe(1);
-    expect(report).toEqual({ askedCount: 8, survivedCount: 7, keptCount: 5, hadNotes: false });
+    expect(report).toEqual({
+      askedCount: 8, survivedCount: 7, keptCount: 5, hadNotes: false,
+      drops: [{ position: 0, rule: "overCap", name: "Add 0" }],
+    });
   });
 
   it("drops an unowned candidate when owned-only is active, from the ownership read's own result", async () => {
@@ -297,7 +300,10 @@ describe("runTuning's 8-asked/5-kept slice", () => {
     expect(flagged.map((f) => f.addOracleId)).not.toContain("add0");
     expect(flagged).toHaveLength(5);
     expect(droppedCount).toBe(1);
-    expect(report).toEqual({ askedCount: 8, survivedCount: 7, keptCount: 5, hadNotes: false });
+    expect(report).toEqual({
+      askedCount: 8, survivedCount: 7, keptCount: 5, hadNotes: false,
+      drops: [{ position: 0, rule: "notOwned" }],
+    });
   });
 
   // Review round 6: "owned" alone is not "sleeveable" — a collection row with every copy
@@ -312,7 +318,10 @@ describe("runTuning's 8-asked/5-kept slice", () => {
     expect(flagged.map((f) => f.addOracleId)).not.toContain("add0");
     expect(flagged).toHaveLength(5);
     expect(droppedCount).toBe(1);
-    expect(report).toEqual({ askedCount: 8, survivedCount: 7, keptCount: 5, hadNotes: false });
+    expect(report).toEqual({
+      askedCount: 8, survivedCount: 7, keptCount: 5, hadNotes: false,
+      drops: [{ position: 0, rule: "notOwned" }],
+    });
   });
 
   // Review round 6 (Low): the Set limit's own wiring was untested at the action level — the
@@ -327,7 +336,30 @@ describe("runTuning's 8-asked/5-kept slice", () => {
     expect(flagged.map((f) => f.addOracleId)).not.toContain("add0");
     expect(flagged).toHaveLength(5);
     expect(droppedCount).toBe(1);
-    expect(report).toEqual({ askedCount: 8, survivedCount: 7, keptCount: 5, hadNotes: false });
+    expect(report).toEqual({
+      askedCount: 8, survivedCount: 7, keptCount: 5, hadNotes: false,
+      drops: [{ position: 0, rule: "offSet" }],
+    });
+  });
+
+  // An all-dropped run is persisted as "ungrounded" with only a one-line `refusal` the player
+  // sees — but the full per-candidate `drops` list is what lets anyone read back WHY every
+  // candidate failed without re-running the model (no cost: already computed, pure data).
+  it("persists every candidate's own drop reason on an all-dropped (ungrounded) run", async () => {
+    calls.limits = { capCents: 300, sets: [], ownedOnly: false };
+    calls.priceRows = new Map(Array.from({ length: 8 }, (_, i) => [`add${i}`, 1000] as const));
+    await runTuning(DECK, { anyway: true });
+    expect(calls.persisted).toHaveLength(0);
+    const [, patch] = calls.finished[calls.finished.length - 1] as [
+      unknown,
+      { status: string; errorClass: string; droppedCount: number; validationReport: { drops: { position: number; rule: string; name?: string }[] } },
+    ];
+    expect(patch.status).toBe("failed");
+    expect(patch.errorClass).toBe("ungrounded");
+    expect(patch.droppedCount).toBe(8);
+    expect(patch.validationReport.drops).toHaveLength(8);
+    expect(patch.validationReport.drops.every((d) => d.rule === "overCap")).toBe(true);
+    expect(patch.validationReport.drops.map((d) => d.name)).toEqual(Array.from({ length: 8 }, (_, i) => `Add ${i}`));
   });
 });
 
