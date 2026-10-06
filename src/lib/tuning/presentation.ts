@@ -101,7 +101,7 @@ export function presentationFailures(
   // fragment of the intent), and is left for the generic gap check below to decide on its own
   // merits as plain leftover text, rather than being promoted to a trusted whole range or
   // rejected outright on the spot.
-  type Candidate = Range & { sourced: boolean };
+  type Candidate = Range & { sourced: boolean; qText: string };
   const candidates: Candidate[] = [];
   for (const q of quotable) {
     const forms = [`"${q.text}"`, `“${q.text}”`, `"${q.text}”`, `“${q.text}"`];
@@ -111,7 +111,7 @@ export function presentationFailures(
       while ((idx = text.indexOf(quoted, from)) !== -1) {
         from = idx + quoted.length;
         const sourced = quotable.some((s) => s.text === q.text && (s.date === null || mentionsDate(text, s.date)));
-        candidates.push({ start: idx, end: idx + quoted.length, sourced });
+        candidates.push({ start: idx, end: idx + quoted.length, sourced, qText: q.text });
       }
     }
   }
@@ -130,14 +130,14 @@ export function presentationFailures(
     return { broken, text };
   }
 
-  const wholeRanges: Range[] = [];
+  const wholeRanges: (Range & { qText: string })[] = [];
   const seenWhole = new Set<string>();
   for (const c of maximal) {
     if (!c.sourced) continue;
     const key = `${c.start}:${c.end}`;
     if (seenWhole.has(key)) continue;
     seenWhole.add(key);
-    wholeRanges.push({ start: c.start, end: c.end });
+    wholeRanges.push({ start: c.start, end: c.end, qText: c.qText });
   }
   wholeRanges.sort((a, b) => a.start - b.start);
 
@@ -203,6 +203,21 @@ export function presentationFailures(
     pos = m.end;
   }
   repaired += text.slice(pos);
+
+  // A whole quotation's own sourcing can be invalidated by a repair ELSEWHERE in the line: a
+  // dated note is sourced by its date appearing somewhere in the surrounding text, and stripping
+  // a nearby partial's quote marks can change what sits next to that date (e.g. a quoted date
+  // immediately followed by a year, `"6 Sep" 2025`, reads differently once unquoted,
+  // `6 Sep 2025`). Every whole range is RECHECKED against the repaired text; one that no longer
+  // sources is rejected rather than kept on the strength of a check the player's own text no
+  // longer passes.
+  for (const r of wholeRanges) {
+    const stillSourced = quotable.some((s) => s.text === r.qText && (s.date === null || mentionsDate(repaired, s.date)));
+    if (!stillSourced) {
+      broken.push("quotedNote");
+      return { broken, text };
+    }
+  }
 
   // Everything below runs on the REPAIRED text — what the player actually sees — never the
   // original, still-quoted one.

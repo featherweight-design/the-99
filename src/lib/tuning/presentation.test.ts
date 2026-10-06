@@ -299,5 +299,23 @@ describe("presentationFailures", () => {
       expect(fails('You asked to “cut "Sol Ring"”.', sources)).toContain("quotedNote");
     });
   });
+
+  // Round-6 review finding: repairing a nearby partial can change what sits next to a whole
+  // quotation's date mention, so a trusted whole range's sourcing is rechecked against the
+  // repaired text, not trusted forever once granted.
+  describe("repair logic — round-6 review finding (a whole quotation's date is rechecked after repair)", () => {
+    it("drops a note whose quoted date reads differently once a neighboring partial is unquoted", () => {
+      const sources = [
+        { text: "stuck on lands", date: "6 Sep" },
+        { text: "I started this deck on 6 Sep", date: null },
+      ];
+      // Before repair, the quoted "6 Sep" sits between its own quote marks and the literal
+      // "2025" that follows, so mentionsDate's year lookahead does not fire and the dated note
+      // reads as sourced. "6 Sep" is also a genuine undated partial of the intent, so it is
+      // repaired to its bare form — which puts "2025" directly after "Sep" and changes what
+      // mentionsDate reads as the SAME date, now with an explicit different year attached.
+      expect(fails('Your note from "6 Sep" 2025 says "stuck on lands".', sources)).toContain("quotedNote");
+    });
+  });
 });
 
