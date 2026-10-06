@@ -402,7 +402,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a deck',
     width: 'plate',
     caption:
-      'Everything about a deck lives on its own page. The header carries the commander, the deck’s status and a bar for how far along it is. Under it, tabs hold Your deck, Analysis, Consider, Games and, once you’ve committed the deck, Versions. Consider is the commander’s wish list: cards it wants that aren’t in the list yet, from your Collection first, then the top picks you’d have to buy.',
+      'Everything about a deck lives on its own page. The header carries the commander, the deck’s status and a bar for how far along it is. Under it, the tabs include Your deck, Consider, Games and, once you’ve committed the deck, Versions. Consider is the commander’s wish list: cards it wants that aren’t in the list yet, from your Collection first, then the top picks you’d have to buy.',
     keys: [
       'the badge and the bar are the same pair the library shows, so a deck reads the same from either direction.',
       'Games drops its count rather than printing a zero, so a deck nobody has logged a game against has no number beside Games.',
@@ -445,7 +445,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // it into five lines.
     width: 'plate',
     caption:
-      'Pick a commander and we build the 99 for you. Up to ten staples go in first, the cards most decks in its colors run. The rest comes from your Collection, and where your Collection runs short we add the cards that commander’s decks play most, as cards to buy. Call it a precon built from your own binder. Any slots still open are yours. Choose the last 4, on a deck four cards short, opens candidates ranked by synergy for this commander, with the ones you can sleeve already ticked, and nothing goes in until you say so. Every card we added carries the auto tag, and Clear all auto takes them out in one press if you’d rather start from your own picks.',
+      'Pick a commander and we build the 99 for you. Up to ten staples go in first, the cards most decks in its colors run. The rest comes from your Collection, and where your Collection runs short we add the cards that commander’s decks play most, as cards to buy. Call it a precon built from your own binder. Any slots still open are yours. Choose the last 4, on a deck four cards short, opens candidates ranked by synergy for this commander, with the ones you can sleeve already ticked, and nothing goes in until you say so. Every card we added carries the auto tag, and Clear all auto takes out every one you haven’t locked, in one press, if you’d rather start from your own picks.',
     keys: [],
     since: 1,
   },
@@ -524,7 +524,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a deck',
     width: 'plate',
     caption:
-      'Is the deck short on removal? The strip counts cards by the job they do: Ramp, Draw, Removal, Wipes and Land. That’s usually where a deck comes up short. One board wipe is a problem in a way eleven creatures rarely is. Each cell sets your count against a recommendation. When enough decks with your commander exist to measure, the strip says EDHREC averages. When they don’t, it says A common starting point. A role over its number reads as met, and nothing is capped.',
+      'Is the deck short on removal? The strip counts cards by the job they do: Ramp, Draw, Removal, Wipes and Land. That’s usually where a deck comes up short. One board wipe is a problem in a way eleven creatures rarely is. Each cell sets your count against a recommendation. The numbers come from EDHREC decks like yours: your pair’s or your commander’s own, or failing that, decks in your colors. When both the role and land numbers are measured, the strip says EDHREC averages. When either falls back to our default, it says A common starting point. A role over its number reads as met, and nothing is capped.',
     keys: [
       // Named on the cell the figure actually draws. The canvas wrote "5
       // wipes against 3", which was an example rather than a reading — and
@@ -543,7 +543,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a deck',
     width: 'plate',
     caption:
-      'How much ramp does your deck want? That depends on who leads it. Fill, the ticks in Choose the last and the shelves in Consider all aim at what other decks with your commander run. A Kinnan deck asks for about 20 ramp, twice the default, and no board wipes at all. Kinnan players already knew. Where we haven’t measured enough decks, the default stands in: ten ramp, ten draw, eight removal and three wipes, with 37 lands, or 36 with a partner. The strip tells you which you’re looking at.',
+      'How much ramp does your deck want? That depends on who leads it. Fill, the ticks in Choose the last and the shelves in Consider all aim at what EDHREC decks like yours run: your pair’s or your commander’s own first, then decks in your colors. A Kinnan deck asks for about 20 ramp, twice the default, and no board wipes at all. Kinnan players already knew. Where we haven’t measured enough decks, the default stands in: ten ramp, ten draw, eight removal and three wipes, with 37 lands, or 36 with a partner. The strip tells you which you’re looking at.',
     keys: [
       'the land count moves too. Twenty-eight lands is a real answer for a deck that ramps, and thirty-seven was never right for all of them.',
       'a target of 0 is an answer too: the decks this commander leads run no board wipes, so the cell asks for none.',
