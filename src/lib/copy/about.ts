@@ -861,7 +861,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'The description is optional. Before the first reading it’s asked beside Analyze, and after that you edit it with the pencil.',
       'Additional notes last one press and are never saved. Anything that should hold every time belongs in the description or the limits.',
-      'The commander, locked cards and the limits always win. When your notes ask past one of them, a line says so and the rest of your notes still get answered. If no swap survives at all, the credit comes back.',
+      'The commander, locked cards and the limits always win: a swap that breaks one is left out, and up to five of the rest are shown. If no swap survives at all, the credit comes back.',
     ],
     since: 10,
   },

@@ -91,7 +91,7 @@ export const howItWorksRowsCopy = {
       how:
         "The lowest bracket your cards fit. Brackets 1 and 2 can come back as a range, and so can " +
         "4 and 5, because those turn on what you meant the deck to be. You pick. Between 3 and 4, " +
-        "it comes down to whether your tutors can find every piece of a two-card combo. A piece " +
+        "it comes down to whether the deck’s searches can find every piece of a two-card combo. A piece " +
         "in the command zone already counts as found.",
       refresh:
         "Worked out when you press Analyze, then kept. It goes stale when you edit the deck, and " +
