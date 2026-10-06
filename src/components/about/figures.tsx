@@ -495,7 +495,7 @@ function SetsFigure({ width }: { width: AboutWidth }) {
       </div>
 
       <div className="mb-[9px] flex items-baseline gap-[9px]">
-        <span className="font-display text-[13px] font-bold text-[color:var(--fg)]">Base run</span>
+        <span className="font-display text-[13px] font-bold text-[color:var(--fg)]">{setPageCopy.sections.base}</span>
         <span className="font-mono text-[10.5px] text-[color:var(--fg-muted)]">
           {h.have} / {h.base}
         </span>
