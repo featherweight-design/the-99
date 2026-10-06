@@ -276,7 +276,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/',
     width: 'plate',
     caption:
-      'Which commander should you build next? Ready to build, on Home, shows two. We rank every commander in your Collection that no deck of yours leads yet, keep the top 28 by fit, and show you a new pair each day. Each card says how many of your cards fit its colors, and how many of those are in use, every copy held by your committed decks. Either one beats unboxing another precon.',
+      'Which commander should you build next? Ready to build, on Home, shows two. We rank every commander in your Collection that leads no deck of yours yet, keep the top 28 by fit, and show you a new pair each day. Each card says how many of your cards fit its colors, and how many of those are in use, every copy held by your committed decks. Either one beats unboxing another precon.',
     keys: [
       "the top 28 is a ranking, not a passing score. The last one’s score moves as your collection grows; it is never a fixed number to beat.",
       'each card shows how many of your cards fit, then how many of those are already committed. The second figure is left out when it is zero.',
@@ -312,7 +312,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // entry’s caption is about would be inside a sheet no specimen can open.
     width: 'plate',
     caption:
-      'Every commander in your Collection that no deck of yours leads yet, ranked by fit. Build from picks which of your cards the scores count: All my cards, or Free cards only, the ones with at least one copy no committed deck is holding. Free cards only also sets aside a commander when every copy you own is sleeved into a committed deck. Printed in keeps the commanders printed in the sets you pick, by any printing, including ones you don’t own. Where we couldn’t read a commander’s most-played list, the bar has two segments and the score is out of 40.',
+      'Every commander in your Collection that leads no deck of yours yet, ranked by fit. Build from picks which of your cards the scores count: All my cards, or Free cards only, the ones with at least one copy no committed deck is holding. Free cards only also sets aside a commander when every copy you own is sleeved into a committed deck. Printed in keeps the commanders printed in the sets you pick, by any printing, including ones you don’t own. Where we couldn’t read a commander’s most-played list, the bar has two segments and the score is out of 40.',
     keys: [],
     since: 1,
   },
