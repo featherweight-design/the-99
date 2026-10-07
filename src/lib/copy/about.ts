@@ -597,32 +597,34 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'combo-awareness',
     chapter: '03',
-    title: 'Spotting the other half of a combo',
+    title: 'Spotting combos you already own',
     route: '/collection',
     opens: 'opens your collection',
     width: 'plate',
     caption:
-      'Some cards do something remarkable next to one other card. Heliod, Sun-Crowned and Walking Ballista are a classic pair.\n\nWhen you own both halves and no deck has put them together, your Collection marks the row and names the partner. While you build, a card the deck is one piece away from carries the mark in Consider, in Choose the last and in the Add search.\n\nA card’s details list every partner: the ones in this deck first, then the ones you own, then the ones you’d have to buy. The salt is between you and your table.',
+      'Some cards do something remarkable next to one other card. Heliod, Sun-Crowned and Walking Ballista are a classic pair.\n\nOwn both halves of a combo no deck is using yet? Your Collection flags it and names the partner. While you build, cards that would complete a combo in your deck get flagged in “Consider”, “Choose the last” and search.\n\nThe salt is between you and your table.',
     keys: [
-      'The count covers the partners listed here and stops. Combos that need a third piece aren’t detected, so a grand total would be wrong.',
-      'A row names one partner, and the card’s details name them all.',
-      'The list runs from what this deck already holds, through what you own, to what you’d have to buy.',
-      'The combos come from Commander Spellbook, credited once behind the heading’s marker.',
+      'A card’s details list every partner: this deck’s first, then ones you own, then ones to buy.',
+      'Only two-card combos are flagged.',
+      'Combos come from Commander Spellbook.',
     ],
     since: 9,
   },
   {
     id: 'decklist-order',
     chapter: '03',
-    title: 'Sorting the 99 within its sections',
+    title: 'Sorting your decklist',
     route: '/decks',
     opens: 'opens a deck',
     // 'inset' at the canvas, where the figure was a four-row legend. It draws
     // the decklist’s own bar now, which is a full-width row on the deck page.
     width: 'plate',
     caption:
-      'The 99 always sits in sections, By type or By role, and the order you pick sorts each section from within.\n\nName and Mana value are always offered. Price joins them on the Shopping filter, where money is the question.',
-    keys: [],
+      'Your decklist sits in sections, grouped “By type” or “By role”. Pick an order and each section sorts within itself.',
+    keys: [
+      'Sort by “Name” or “Mana value”.',
+      'On the “Shopping” filter, you can sort by “Price” too.',
+    ],
     since: 1,
   },
   {
@@ -636,18 +638,13 @@ export const aboutEntries: readonly AboutEntry[] = [
     // availability slot, which a ~300px column cannot hold.
     width: 'plate',
     caption:
-      // The canvas said "with the ownership dot on every result". The Add
-      // panel draws NO dot: `card-search-row.tsx` gives each result a card
-      // crop and states ownership in words — `×2 owned` or `not owned`. The
-      // figure this replaced drew dots because this sentence claimed them,
-      // which is the loop the rebuild exists to break.
-      // Two corrections deep now. The canvas said "the ownership dot on every
-      // result" and the panel draws no dot; the first fix said "how many
-      // copies you have", which is true of `rowOwned` and not of the bare
-      // `rowNotOwned` beside it. What both branches actually do is state
-      // ownership, with a figure only where there is one to give.
-      'Type a card’s name into the search under the deck’s tabs. It searches your commander’s colors with Owned only on, so results start from your Collection.\n\nTurn Owned only off for every card in those colors, or press Search all cards instead when nothing you own matches.\n\nEach result says how many you own, that you don’t own it, or that it’s already in the deck. Adding a card keeps you on the list you were reading. A card another committed deck is holding still adds, carrying the mark that says so.',
-    keys: [],
+      'Know exactly what you want? Type its name in the search under the deck’s tabs. Results start from your Collection, in your commander’s colors.',
+    keys: [
+      'Turn off “Owned only” to search every card in your commander’s colors.',
+      'Nothing you own matches? Press “Search all cards”.',
+      'Each result says how many you own, or if it’s already in the deck.',
+      'A card another committed deck is holding still adds, with its Availability note.',
+    ],
     since: 1,
   },
   {
@@ -659,15 +656,12 @@ export const aboutEntries: readonly AboutEntry[] = [
     width: 'plate',
     switch: 'SWAP_TOOLS_ENABLED',
     caption:
-      // r2's "the deck whose commander suits the card best comes first" is stale: the shipped order
-      // (`shapeFits`) is a combo, then a theme, then the commander's synergy, then the name.
-      'Press Find a deck for it in the details of any Commander-legal card, and we list the decks that could take it, with the reason each one fits. Combos come first, then themes.\n\nOpen Ashnod’s Altar and the deck where it completes a combo with cards already in it tops the list. Add puts the card in that deck’s draft.\n\nThat binder of loose rares finally has somewhere to go.',
+      'Pulled something great and not sure where it goes? Press “Find a deck for it” in any card’s details, and The 99 lists the decks that could use it, and why.\n\nThat binder of loose rares finally has somewhere to go.',
     keys: [
-      'You’re offered decks whose colors allow the card and that don’t run it yet. Decks already running it sit underneath.',
-      'Decks where it completes a combo come first, then decks whose theme it joins, most cards first. Ties go to the deck whose commander’s decks favor the card most.',
-      // Audit R2-A3-1: the row never shows the two shares; with no reason it shows the need alone.
-      'Each deck shows its best reason: a combo the card completes with that deck’s own cards, or else the theme it joins. With neither, the row shows only what the deck needs, if anything. A staple every deck runs says “staple · any commander”, and its decks go by name.',
-      'The need is this deck’s count for the card’s role against its target, left off when the card has no role or the target isn’t measured. Add uses a free copy if you have one, or brings the card in as one to buy.',
+      'Decks where it completes a combo come first, then decks whose theme it fits.',
+      'Each deck shows its best reason, like a combo or a theme.',
+      '“Add” puts the card in that deck’s draft.',
+      'Decks already running it sit at the bottom.',
     ],
     // The version current when it was written: an entry tied to a switch is announced by the
     // switch, and nothing bumps the version for it.
