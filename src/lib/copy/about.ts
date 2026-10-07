@@ -1014,11 +1014,11 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'in the account menu',
     width: 'plate',
     caption:
-      'Six themes live in the account menu under Theme, each named for how it looks, from Low Sun to First Frost.\n\nA theme changes the palette and keeps every meaning: owned is green and over-committed is red in all six. Pick the one that matches your playmat.',
+      'Six themes live in the account menu under “Theme”, from Low Sun to First Frost. Pick the one that matches your playmat.',
     keys: [
-      'The name is the theme’s own, and the plane sits under it: you pick Neon Rain, and Kamigawa is the subtitle.',
-      'Each theme brings its own accent color too.',
-      'Your pick is remembered in this browser, so another device starts on the default until you pick there too.',
+      'Each is named for how it looks, with the plane that inspired it underneath, like Neon Rain and Kamigawa.',
+      'Green always means owned, and red always means over-committed, in every theme.',
+      'Your pick is saved in this browser, so pick again on another device.',
     ],
     since: 1,
   },
