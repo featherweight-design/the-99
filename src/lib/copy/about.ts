@@ -862,15 +862,16 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'log-findings',
     chapter: '04',
-    title: 'What your logged games add up to',
+    title: 'What your games are telling you',
     route: '/decks',
     opens: "opens a deck’s Games tab",
     width: 'plate',
     caption:
-      'The Games tab has more to say with every game you log.\n\n- After one, it tells that game back to you.\n- From the second, it sorts your marks into Fix and Keep.\n- From the third, the heading makes a finding, like “Mana is letting this deck down.”\n\nSomething marked for you as often as against you gets one line under Mixed. Every figure is a count of games.',
+      'The more games you log, the more the “Games” tab has to say. After a few, it starts spotting patterns, like “Mana is letting this deck down.”',
     keys: [
-      'Until the third game, the heading holds back: one game is a note, two a leaning, three a finding.',
-      'Anything marked for you as often as against you joins one line under Mixed, never a third column.',
+      'One game is a note, two a leaning, three a finding.',
+      'Your marks sort into “Fix” and “Keep”.',
+      'Anything marked both ways equally goes under “Mixed”.',
     ],
     since: 1,
   },
