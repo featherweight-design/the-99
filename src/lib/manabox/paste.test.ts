@@ -66,4 +66,35 @@ describe("parsePasteList", () => {
     const { rows } = parsePasteList("1 Sol Ring\n");
     expect(rows[0].scryfallId).toBeNull();
   });
+
+  it("reads the ManaBox/Moxfield text export's set code and collector number", () => {
+    const { rows, errors } = parsePasteList("1 Boggart Cursecrafter (ECL) 331\nDragonfly Swarm (TLA) 215\n");
+    expect(errors).toEqual([]);
+    expect(rows.map((r) => [r.name, r.setCode, r.collectorNumber, r.quantity])).toEqual([
+      ["Boggart Cursecrafter", "ecl", "331", 1],
+      ["Dragonfly Swarm", "tla", "215", 1],
+    ]);
+  });
+
+  it("reads *F* and *E* as foil and etched, and keeps a comma in the name", () => {
+    const { rows } = parsePasteList("2 Kiki-Jiki, Mirror Breaker (CHK) 175 *F*\n1 Sol Ring (CMM) 410 *E*\n");
+    expect(rows.map((r) => [r.name, r.setCode, r.finish, r.quantity])).toEqual([
+      ["Kiki-Jiki, Mirror Breaker", "chk", "foil", 2],
+      ["Sol Ring", "cmm", "etched", 1],
+    ]);
+  });
+
+  it("reports a line that is only a printing as a missing name", () => {
+    const { rows, errors } = parsePasteList("1 (ECL) 331\n");
+    expect(rows).toEqual([]);
+    expect(errors).toEqual([{ line: 1, raw: "1 (ECL) 331", reason: "missing card name" }]);
+  });
+
+  it("leaves a bare name and a parenthetical that is not a set code alone", () => {
+    const { rows } = parsePasteList("1 Sol Ring\n1 Erase (Not the Urza's Legacy One)\n");
+    expect(rows.map((r) => [r.name, r.setCode, r.collectorNumber, r.finish])).toEqual([
+      ["Sol Ring", "", "", "nonfoil"],
+      ["Erase (Not the Urza's Legacy One)", "", "", "nonfoil"],
+    ]);
+  });
 });

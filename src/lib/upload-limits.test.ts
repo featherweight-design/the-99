@@ -15,11 +15,10 @@ import {
 
 describe("upload limits", () => {
   it("gives deck import its own 2 MB cap, not the collection's", () => {
-    // The handoff's drawn file-too-large state is a 4.1 MB .xlsx. Standardising on
-    // the collection's 5 MB would let that file pass and never reach the state it
-    // is drawn to demonstrate.
+    // A decklist is far smaller than a collection, so deck import keeps its own,
+    // tighter cap. The collection's is 4 MB, under Vercel's 4.5 MB request limit.
     expect(DECK_IMPORT_FILE_MAX_BYTES).toBe(2 * 1024 * 1024);
-    expect(COLLECTION_FILE_MAX_BYTES).toBe(5 * 1024 * 1024);
+    expect(COLLECTION_FILE_MAX_BYTES).toBe(4 * 1024 * 1024);
     expect(DECK_IMPORT_FILE_MAX_BYTES).toBeLessThan(COLLECTION_FILE_MAX_BYTES);
   });
 
@@ -39,7 +38,7 @@ describe("upload limits", () => {
   it("pairs every cap with the label its message renders", () => {
     // Copilot caught the collection messages still hardcoding "5 MB" / "100 KB" while
     // the checks read constants — the drift this module exists to prevent.
-    expect(COLLECTION_FILE_MAX_LABEL).toBe("5 MB");
+    expect(COLLECTION_FILE_MAX_LABEL).toBe("4 MB");
     expect(PASTE_MAX_LABEL).toBe("100 KB");
     expect(COLLECTION_FILE_MAX_BYTES).toBe(
       Number(COLLECTION_FILE_MAX_LABEL.replace(" MB", "")) * 1024 * 1024,

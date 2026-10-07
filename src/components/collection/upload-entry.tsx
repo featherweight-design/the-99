@@ -8,7 +8,7 @@ import { useMemo, useRef, useState, useTransition } from "react";
 import { previewUpload, previewPaste, type UploadPreview } from "../../app/collection/actions";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { parsePasteList } from "../../lib/manabox/paste";
-import { PASTE_MAX_BYTES } from "../../lib/upload-limits";
+import { COLLECTION_FILE_MAX_BYTES, COLLECTION_FILE_MAX_LABEL, PASTE_MAX_BYTES } from "../../lib/upload-limits";
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { replaceCopy } from "../../lib/copy/replace";
 
@@ -43,6 +43,12 @@ export function UploadEntry({
   function handleFile(file: File) {
     if (pending) return;
     setError(null);
+    // Checked here as well as on the server: an oversized body never reaches the
+    // action's own check, and the reader would see a minified React error instead.
+    if (file.size > COLLECTION_FILE_MAX_BYTES) {
+      setError(`File too large (max ${COLLECTION_FILE_MAX_LABEL})`);
+      return;
+    }
     const fd = new FormData();
     fd.set("file", file);
     startTransition(async () => {
