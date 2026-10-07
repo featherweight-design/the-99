@@ -970,12 +970,16 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'commitments',
     chapter: '04',
-    title: 'How much of your Collection is spoken for',
+    title: 'How much of your Collection is in use',
     route: '/',
     width: 'inset',
     caption:
-      'Three figures on Home show how much of your Collection your decks lean on:\n\n- Cards in use is how much of your Collection is sleeved into committed decks, out of everything you own.\n- Spoken for twice counts the cards your committed decks want more copies of than you own: one Sol Ring in three decks is 1 card. It stays red at zero.\n- To buy, all decks is what every deck is still short, and its price.',
-    keys: [],
+      'Three numbers on the Home page show how hard your decks are leaning on your Collection.',
+    keys: [
+      '“Cards in use”: how much of your Collection is sleeved into committed decks.',
+      '“Spoken for twice”: cards your decks want more copies of than you own.',
+      '“To buy, all decks”: what every deck still needs, and what it costs.',
+    ],
     since: 1,
   },
   // 'reservations' (chapter 04, 'Which deck gets a shared copy') was retired 2026-10-04 (Hugh,
