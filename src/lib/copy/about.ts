@@ -82,18 +82,28 @@ export interface AboutEntry {
 }
 
 export const aboutCopy = {
-  pageTitle: 'What The 99 does',
+  pageTitle: 'Welcome to The 99',
   // Hugh's own story (option A, 2026-10-06): why the app exists, what it does and who it's for.
   // Paragraphs split on a blank line, as an entry's caption does (`EntryCaption`).
   pageIntro:
-    'I built The 99 because nothing else checked every box for deck building, least of all around my collection. I have thousands of cards, and most of them were hiding in a box.' +
+    "There are a lot of Magic: The Gathering apps out there and a lot of them do really great things: Manabox is the main place I store my collection, Moxfield was my first deck builder, and Deckcheck helped me really understand tuning." +
     '\n\n' +
-    'So the app starts from what you own. It finds the cards you forgot you had and builds decks from them before it asks you to buy anything.' +
+    "But, no single app really scratched that itch for me. Somewhere I could really see and manage everything. At least not everything I needed. So, I built The 99. Specifically, around the idea that, maybe I would know what commander I want, but it was always arduous to round out the rest of the deck." +
     '\n\n' +
-    'It’s for me and my friends, with the features we kept asking for and couldn’t find anywhere else. A way to dive deeper into a hobby we all love.',
+    "How many lands should I have? Is this too many creatures? Do I have any Sol Rings left? Didn’t I crack a pack last week with something I needed? Does this deck even make sense?" +
+    '\n\n' +
+    'And, like most players, I have hundreds of cards neatly catalogued, tucked away in a big box, conveniently hidden away so I have no idea what I even own. The number of times I’ve bought a single only to realize I owned one is too many to count. Or, worse, realizing I don’t have what I need right before a game.' +
+    '\n\n' +
+    'The 99 aims to solve this by focusing on your collection first. What do you already own, where is it today, and what do you need more of? From there, it grew to answer more niche questions like "How many Game Changers do I own?", "What bracket does this deck land me in?", "Is there a cheaper alternative for this $300 land?", "Would a different commander run this deck better?"' +
+    '\n\n' +
+    'And, I hope it keeps growing into something me and my friends can use to build cooler decks, have better game nights, and enjoy this nerdy-ass hobby even more. Because at the end of the day, The 99 is for me and my friends. Something for nerds, by nerds, to do more nerd shit.' +
+    '\n\n' +
+    'Cheers nerds,' +
+    '\n\n' +
+    'Hugh',
   // Appended to the intro only while ABOUT_SHEET_ENABLED is on: with it off a
   // new version still redirects here, and there is no note to speak of.
-  pageIntroSheet: 'When something new lands, a short note tells you once, and this page opens on what’s new.',
+  pageIntroSheet: 'When a new feature drops, a note here will tell you on your next visit.',
 
   contentsLabel: 'Contents',
   newBadge: 'NEW',
@@ -127,19 +137,19 @@ export const aboutCopy = {
   chapters: {
     '01': {
       title: 'Your Collection',
-      sub: 'Every score in the app starts from the cards you own, so this is where we start too.',
+      sub: 'The Foundation: figure out how The 99 helps you manage your Collection.',
     },
     '02': {
       title: 'Finding a commander',
-      sub: 'The commanders your Collection already supports, and the ones it would the moment you bought the commander.',
+      sub: 'Something you already own, something new, something borrowed, something mono-blue.',
     },
     '03': {
       title: 'Building the 99',
-      sub: 'The longest chapter, in the order a deck gets built.',
+      sub: 'The meat and potatoes of the app helping you build your deck before you show it off.',
     },
     '04': {
       title: 'Playing and tuning',
-      sub: 'What happens once a deck hits the table, from logging a game to tuning the list. Home picks up where you left off.',
+      sub: 'Bells and whistles to enhance your play and fine-tune your decks.',
     },
   },
 } as const;
@@ -153,11 +163,12 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/collection',
     width: 'plate',
     caption:
-      'Search your Collection by name, then narrow it down by color identity, type, set or availability.\n\nEach filter you set turns into a chip above the results. Press a chip to drop it, or Clear all filters to drop the lot. Your sort stays where you left it.\n\nThe count above the results says how many cards made the cut, and you can read them as a grid or as rows. Handy for settling “do I own another Swords?” before the trade binder comes out.',
+      "Your Collection has the standard search, filter and sort options you'd expect to find anywhere else: search by name, filter by color, type or set, sort by name, quantity and more. But The 99 does you one better: Availability. We'll go over it in more detail later, but this is what tells you what you own, what's in use and what you need to buy.",
     keys: [
-      'Cards, Sets and Proxies share the strip at the top. Sets shows every set you hold cards from, newest first, with how much of each you own.',
-      'Every filter you set shows up as a chip. Drop them one at a time, or clear the lot with the link at the end.',
-      'Grid or rows is your call, and we remember it. Filters live in the page’s address instead, so a shared link carries them and a fresh visit starts clean.',
+      'Cards, Sets and Proxies sit in the strip at the top.',
+      'Sets lists every set you own cards from, newest first.',
+      'Each filter becomes a chip. Press one to drop it.',
+      'Grid or rows is your call, and we remember it.',
     ],
     since: 1,
   },
@@ -168,24 +179,29 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/collection/replace',
     width: 'inset',
     caption:
-      'Replace collection takes any of these:\n\n- a CSV from Moxfield, Archidekt, Deckbox or ManaBox\n- any plain CSV with Name and Quantity columns\n- a list you paste in\n\nWe read how many copies you own, plus the set, collector number and finish wherever the file has them.\n\nAn import replaces your whole Collection. You see the count now and after, and nothing is written until you confirm.',
-    keys: [],
+      "Your collection probably already lives somewhere else. Mine's in ManaBox. Export it, drop the file in, and The 99 picks up every copy, set and foil.\n\nHeads up: an import replaces your whole Collection, it doesn't add to it.",
+    keys: [
+      'Takes ManaBox, Moxfield, Archidekt or Deckbox CSVs, or a pasted list.',
+      'Any CSV with Name and Quantity columns works too.',
+      'Reads quantity, set, collector number and finish.',
+      'Nothing changes until you confirm.',
+    ],
     since: 1,
   },
   {
     id: 'post-import',
     chapter: '01',
-    title: 'What a replace changed for your decks',
+    title: 'How replacing your Collection affects your decks',
     route: '/collection/replace',
     opens: 'opens the import summary',
     width: 'plate',
     caption:
-      'A replace can change which cards your decks still need to buy, and the summary is the receipt. It shows your count before and after, then lists the cards your decks were counting on, one row per card and the deck it was for.\n\nYour deck lists stay exactly as they were. What moves is whether you own the cards in them.',
+      "Cracked a few packs and re-imported? The summary shows what that did for your decks: what you no longer need to buy, what you still do, and where you're still short.\n\nYour decklists don't change, just whether you own what's in them.",
     keys: [
-      'Your count after the replace, then the count before it with what arrived and what left, so you can check the sums yourself.',
-      'Each row is one card and the deck that wanted it. A card two decks are fighting over gets one row, with its decks under it, oldest claim first.',
-      'Three sections sort the rows: No longer to buy, Still to buy and Still short.',
-      'The one choice on the page. When two committed decks want the copy that arrived, the deck that committed it first gets it, unless you pick the other.',
+      'Shows your card count before and after.',
+      'Rows sort into No longer to buy, Still to buy and Still short.',
+      'A card two decks want gets one row, oldest claim first.',
+      'A new copy goes to the deck that committed first, unless you pick another.',
     ],
     // ⚠ R4: strings inside this figure are FIXTURES, not read from source.
     // #639/#643 landed after the last read of main; the structure is the
@@ -203,7 +219,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'import-issues',
     chapter: '01',
-    title: 'Rows an import couldn’t place',
+    title: 'When an import can’t find a card',
     route: '/collection/replace',
     opens: 'opens the issue inspector',
     // A ROW figure, so it takes the full plate. The route’s own issue rows carry
@@ -213,64 +229,78 @@ export const aboutEntries: readonly AboutEntry[] = [
     // never produces.
     width: 'plate',
     caption:
-      'Every line we couldn’t put a card to, with the reason beside it. Import issues sorts them into two tabs:\n\n- Unmatched: names we couldn’t find\n- Parse errors: lines we couldn’t read\n\nEvery other row still replaces your Collection, and neither tab is a buy list.\n\nA pasted list carries no set or collector number, so a pasted Collection can’t fill in set completion.',
-    keys: [],
+      'Sometimes a line just won’t match: a typo, or an export that does something odd. Those land in Import issues with the reason beside each one, and everything else imports as normal.',
+    keys: [
+      'Unmatched: names we couldn’t find.',
+      'Parse errors: lines we couldn’t read.',
+      'A pasted list can’t fill in set completion.',
+    ],
     since: 1,
   },
   {
     id: 'availability',
     chapter: '01',
-    title: 'Which copies your decks are holding',
+    title: 'Availability: what’s free, what’s taken, what to buy',
     route: '/collection?avail=inuse,over',
     width: 'plate',
     caption:
-      'One copy can’t sit in two committed decks at once. So each card says in a few words how contested it is, and a card with a spare copy that no draft wants says nothing at all.\n\nSay you own one Sol Ring and three committed decks run it. It reads short 2. The deck that committed it first gets your copy, unless you hand it to another.\n\nSol Ring: the one card every deck wants and every Collection is short of.',
+      'This is the one I mentioned earlier and is one of my favorite features, even if it’s a small one. A copy you own can only live in one committed deck at a time, so The 99 keeps track of which decks own which cards.\n\nOwn one Sol Ring and run it in three decks? It reads short 2. Sol Ring: always short because you never think you’ll build another deck until you do.',
     keys: [
-      'free: you own a spare copy and no draft wants it, so the card stays quiet.',
-      'in a draft: a deck you haven’t committed yet wants a copy, and it wears the Draft badge on Decks. Any committed deck still gets first call on that copy.',
-      'none free: your committed decks are holding every copy you own.',
-      'short 2: your committed decks want two more copies than you own. The deck that committed it first gets yours, and you can hand it to another. Own none at all and a decklist shows the buy mark instead.',
+      'free: a spare copy nothing wants. No mark.',
+      'in a draft: an uncommitted deck wants it. Committed decks come first.',
+      'none free: committed decks hold every copy.',
+      'short 2: committed decks want two more than you own.',
+      'The deck that committed first gets your copy, unless you pick another.',
     ],
     since: 1,
   },
   {
     id: 'sets',
     chapter: '01',
-    title: 'What a set still needs',
+    title: 'Completing a set',
     route: '/collection/sets',
     width: 'plate',
     caption:
-      'Open a set from Sets and every card sits in collector order. The ones you don’t own are dashed and dimmed, with their price beside them.\n\nThe Checklist is the set’s own numbered run, and owning it is what makes the set read complete. Showcase, borderless and promo extras are counted below it. Chasing those is extra credit.\n\nA set with no numbered run, like a promo set, puts every printing we’ve indexed on its Checklist.',
+      'For the collectors, and the completionists who swear they aren’t. Open any set to see which cards you’re missing and what it would cost to finish it.\n\nA set counts as complete once you own its Checklist, the set’s own numbered run. Showcase, borderless and promo extras are extra credit.',
     keys: [
-      'Only a card you’re missing carries a price, and it opens like any other card.',
-      'The cost to finish adds up what ManaPool has in stock. Cards it’s sold out of, or has never stocked, get a count of their own under it and stay out of the total.',
-      'The completion figure counts the Checklist: the set’s own numbered run, or every printing we’ve indexed when it has no run. Extras sit below and count apart, which is why the figure and the cells on screen can disagree.',
-      'Missing and Owned split the set by what you own, one view at a time. Sort runs by collector number, the default, or by price, dearest first. Flip the price order and cards with no price still sit at the end.',
+      'Missing cards are dashed and dimmed, with a price.',
+      'Cost to finish counts only what ManaPool has in stock.',
+      'Promo sets with no numbered run count every printing.',
+      'Toggle Missing or Owned. Sort by number or price.',
     ],
     since: 1,
   },
   {
     id: 'buy-tag',
     chapter: '01',
-    title: 'What a card costs to buy',
+    title: 'What the cards you’re missing cost',
     route: '/decks',
     opens: 'opens a deck',
     width: 'inset',
     caption:
-      'Prices come from ManaPool and refresh daily. A buy tag shows one of four things:\n\n- a price\n- a foil-only price, like $2.10 foil\n- sold out, when ManaPool has stocked that printing but has none today\n- a bare buy, when the feed has no price for that printing at all',
-    keys: [],
+      'When a deck needs a card you don’t own, it tells you what it’ll cost. Prices come from ManaPool and refresh daily, so you can see the damage before you check out.',
+    keys: [
+      'A price: what ManaPool is asking today.',
+      'A foil-only price, like $2.10 foil: they only have it in foil.',
+      'sold out: ManaPool has carried that printing but has none right now.',
+      'A bare buy: the feed has no price for that printing at all.',
+    ],
     since: 1,
   },
   {
     id: 'card-detail',
     chapter: '01',
-    title: 'Opening a card’s details',
+    title: 'A closer look at any card',
     route: '/collection',
     opens: 'opens the card detail',
     width: 'inset',
     caption:
-      'Press a card anywhere in the app and its card details open, with the art up close. A double-faced card turns over to show its back, no unsleeving required.\n\nOwn more than one printing? You can pick one for the card, and it’s shown everywhere in your Collection. Whenever no pick of yours applies, including one whose copy you no longer own, the printing on screen is marked Shown now.\n\nThe cost beside the name uses the real mana symbols. A card with two costs, like a split card, an adventure or a card with a castable back, shows both.\n\nOpened from a list, it pages through that list:\n\n- on a computer, with the arrow keys or the cards beside it\n- on a phone, with a swipe\n\nOpened from a sheet or a combo partner, the pill at the top names where you came from and takes you back.',
-    keys: [],
+      'Press any card, anywhere, for a closer look at the art. Double-faced cards flip over, no unsleeving required.\n\nOwn a few printings? Pick your favorite, and that’s the art your Collection shows.',
+    keys: [
+      'Split cards, adventures and other cards with two costs show both.',
+      'Swipe, or use the arrow keys, to page through the list you came from.',
+      'Opened from a sheet or a combo partner? The pill at the top takes you back.',
+    ],
     since: 1,
   },
 
@@ -278,32 +308,32 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'ready-to-build',
     chapter: '02',
-    title: 'Two commanders to build, every day',
+    title: 'Your two daily commanders',
     route: '/',
     width: 'plate',
     caption:
-      'Ready to build, on Home, deals you two commanders a day. We rank every commander in your Collection that leads no deck of yours yet and keep the top 28 by fit. Each day’s pair comes from those 28.\n\nEach card says how many of your cards fit its colors, and how many of those are in use, every copy held by your committed decks.\n\nEither one beats unboxing another precon.',
+      'Every day, the Home page deals you two commanders you could build right now, picked from the best fits in your Collection that aren’t leading a deck of their own.',
     keys: [
-      'The 28 are the top of your ranking. As your Collection grows, the score it takes to make the cut moves with it.',
-      'Each card shows how many of your cards fit, then how many of those your committed decks already hold. When that second figure is zero, it’s left off.',
-      'A new pair arrives at midnight UTC. With four or more to choose from, it never repeats yesterday’s, so all 28 come around within two weeks. One of each pair comes from the half whose themes your decks play least.',
-      'The line under the pair quotes the 28th commander’s own score, so you can check it against the Commanders lane.',
+      'Picks come from your top 28 commanders by fit.',
+      'Each shows how many of your cards fit, and how many are in use.',
+      'A new pair arrives at midnight UTC, never the same as yesterday’s.',
+      'One of the two leans toward themes your decks play least.',
     ],
     since: 1,
   },
   {
     id: 'fit-score',
     chapter: '02',
-    title: 'How a fit score adds up',
+    title: 'How fit scores work',
     route: '/commanders',
     opens: 'opens a commander',
     width: 'plate',
     caption:
-      'We score a commander out of 100 against your Collection, in three parts added together:\n\n- Pool, worth 15, counts your cards legal in its colors and fills at 200\n- Roles, worth 25, checks you own enough ramp, draw, removal and wipes to build at all\n- Synergy, worth 60, is how much of its most-played list you already have\n\nThe bar draws them in that order. It measures your Collection, so it stays out of the power-level argument.',
+      'Every commander gets a score out of 100 for how well your Collection could build a deck around it. Most of it is how many of the commander’s most-played cards you already own. The rest checks that you have enough cards in its colors, and enough ramp, draw and removal to hold a deck together.\n\nMost-played cards come from EDHREC decklists. A brand-new or very niche commander may not have any decks yet, so it omits a Synergy score and is scored out of 40 instead of 100. A 32 there is a strong score, not a weak one.',
     keys: [
-      'Where we couldn’t read a commander’s most-played list, the score is out of 40, and we never stretch it to look like a 100.',
-      'The three parts sit beside their sum, so you can check our math.',
-      'A score is about your Collection. A friend’s score for the same commander is about theirs.',
+      'Synergy, 60: how many of its most-played cards you own.',
+      'Roles, 25: enough ramp, draw, removal and wipes.',
+      'Pool, 15: your cards in its colors, full at 200.',
     ],
     since: 1,
   },
@@ -318,42 +348,45 @@ export const aboutEntries: readonly AboutEntry[] = [
     // entry’s caption is about would be inside a sheet no specimen can open.
     width: 'plate',
     caption:
-      'Every commander in your Collection that leads no deck of yours yet, ranked by fit.\n\nBuild from picks which of your cards the scores count:\n\n- All my cards\n- Free cards only: the ones with at least one copy no committed deck is holding\n\nFree cards only also sets aside a commander when every copy you own is sleeved into a committed deck.\n\nPrinted in keeps the commanders printed in the sets you pick, by any printing, including ones you don’t own. Where we couldn’t read a commander’s most-played list, the bar has two segments and the score is out of 40.',
-    keys: [],
+      'Every commander you own that isn’t leading a deck yet, ranked by how well your Collection fits it.\n\nDon’t want to raid your other decks? Switch the “Build from” filter from “All my cards” to “Free cards only”.',
+    keys: [
+      '“All my cards”: scores count everything you own.',
+      '“Free cards only”: counts only copies no committed deck is holding, including any possible commanders tucked into another deck.',
+      '“Printed in”: only commanders printed in the sets you pick.',
+    ],
     since: 1,
   },
   {
     id: 'discover',
     chapter: '02',
-    title: 'Commanders worth buying, on Discover',
+    title: 'Commanders worth buying',
     route: '/discover',
     width: 'plate',
     caption:
-      'Discover lists the commanders outside your Collection and your decks, ranked by how many cards from each one’s most-played list you already own.\n\nEach row scores fit the same way the Commanders lane does, and adds what the commander costs. The line under it names themes it plays that none of your decks do, or its top three play styles when your decks already play them all.\n\nPick sets under Printed in and only commanders printed in them stay. Popularity puts the most-tracked first, which is a fair map of what your playgroup already has opinions about.',
+      'Discover is for the commanders you don’t own yet. It ranks them by how much of each one’s deck is already sitting in your Collection, and shows what the commander costs.\n\nEach one lists the themes it plays, starting with any your decks haven’t touched yet. Good for finding your next build and trying a mechanic you’ve never played before.',
     keys: [
-      'Five orders, and Something new is the one that changes who shows up: it leaves out any commander with less than 30% of its most-played list in your Collection.',
-      'Best fit, the default, counts your whole Collection. Buy the commander and every card you own is fair game.',
-      'Each order names what it sorts on, right in the menu. For Popularity, that’s most decks tracked first.',
+      '“Best fit”, the default: ranked by how much of its deck you own.',
+      '“Something new”: commanders that play themes you haven’t played yet, where you already own at least 30% of the deck.',
+      '“Popularity”: the most-played commanders first.',
+      '“Printed in”: only commanders printed in the sets you pick.',
     ],
     since: 1,
   },
   {
     id: 'help-me-choose',
     chapter: '02',
-    title: 'Finding a commander with Help me choose',
+    title: 'Help me choose a commander',
     route: '/decks/new/choose',
     width: 'plate',
     switch: 'HELP_ME_CHOOSE_ENABLED',
     caption:
-      // Audit H3: with no theme and no card the list IS ordered by ownership. H1: the hand-off
-      // shipped in #1011, and Create is what fills the deck, not the pick.
-      'Tell Help me choose about the deck you want and it finds commanders to lead it. Answer as much or as little as you like:\n\n- colors\n- themes, all of them or any one\n- the sets it was printed in\n- a budget\n- a bracket\n\nA sentence in your own words is matched for free, and a card named there becomes the card to build around. Look deeper reads everything you wrote, and uses a credit when it comes back with at least one answer.\n\nEvery answer narrows which commanders show up, owned or not. Your themes and card also set the order. With neither, the results are ordered by how many of their cards you already have.\n\nPick a commander and your answers carry to a new deck, and Create deck fills the 99 under them, only from your Collection if you ask. When fewer than four fit, the page offers answers to loosen.',
+      'Know the deck you want, but not who should lead it? Tell “Help me choose” what you’re after, and it finds commanders that fit, whether you own them or not.\n\nAnswer as much or as little as you like. Name a card in your own words and it becomes the card to build around.\n\nPick a commander and your answers carry over to a new deck, ready to fill from your Collection.',
     keys: [
-      // Audit H4: SETS RANK is drawn only when a row has more than one figure.
-      'With a theme or a card, each figure is the share of that commander’s decks tagged with your theme or running your card. Its weakest figure sets its place, marked SETS RANK when there’s more than one. Ask for any one of several themes and only its best theme counts.',
-      // Audit H5. The owned-order exception is said once, in the caption, so this line drops the
-      // "never orders it" that the exception made false.
-      'Beside the fit, every row shows what you own: the commander itself, how much of its 99, and roughly what the rest would cost.',
+      'Narrow by colors, themes, sets, budget or bracket.',
+      'Your themes and named card set the order. Without them, it ranks by the cards you own.',
+      'Each row shows whether you own the commander, how much of its 99 you own, and roughly what the rest costs.',
+      '“Look deeper” reads everything you wrote, and uses a credit to give you a more informed result.',
+      'Fewer than four fits? It suggests how to adjust your requirements.',
     ],
     // The version current when it was written: an entry tied to a switch is announced by the
     // switch, and nothing bumps the version for it.
@@ -362,28 +395,32 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'role-coverage',
     chapter: '02',
-    title: 'Which roles your cards already fill',
+    title: 'What your cards already cover',
     route: '/commanders',
     opens: 'opens a commander',
     width: 'inset',
     caption:
-      'Role Coverage sorts the cards you own that would go in this deck by the job they do: Ramp, Card Draw, Removal and Board Wipes. Each group sets what you have against what this commander’s decks run.\n\nBoard Wipes reading 1 owned, 2 short of the 3 its decks run tells you what to fix before you start building.\n\nRead a group Most played first, or by Availability, in this order:\n\n- free copies\n- copies a draft wants\n- copies in use\n- anything over-committed\n\nRamp short of its target is where mana screw starts.',
-    keys: [],
+      'Before you build, see what you’ve got to work with. Role Coverage sorts the cards you own for this commander by the job they do, and shows how far each role is from what its decks usually run.\n\nShort on ramp? That’s where mana screw starts.',
+    keys: [
+      'Roles: Ramp, Card Draw, Removal and Board Wipes.',
+      '“1 owned, 2 short” means its decks usually run 3.',
+      'Sort a role by “Most played”, or by “Availability” with free copies first.',
+    ],
     since: 1,
   },
   {
     id: 'commander-availability',
     chapter: '02',
-    title: 'When a card you own isn’t free',
+    title: 'Owned isn’t the same as free',
     route: '/commanders',
     opens: 'opens a commander',
     width: 'plate',
     caption:
-      'Owning a card and being free to use it are two different things, as anyone who has raided one deck to build another knows.\n\nThe note beside a card you own says what’s holding it: 1 in a draft, none free, or short by however many copies your committed decks want past what you own. A card with a spare copy nothing wants carries no note.',
+      'Owning a card and being free to use it are two different things, as anyone who’s raided one deck to build another knows.\n\nOn a commander’s page, every card you own carries the same Availability note as your Collection, so you know what’s actually up for grabs.',
     keys: [
-      'The owned mark says you own the card, and that’s all it says. It looks the same whether or not a deck is holding your copy.',
-      'The note counts copies. Open the card to see which decks are holding them.',
-      'Cards you’d have to buy show their price right in the list, before you plan a deck around them.',
+      'The owned mark only means you own it.',
+      'Open a card to see which decks hold your copies.',
+      'Cards you’d need to buy show their price right in the list.',
     ],
     since: 3,
   },
@@ -397,8 +434,11 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens the commander picker after a paste',
     width: 'inset',
     caption:
-      'Partner, Partner with and Friends forever all put a second commander at the head of the deck.\n\nBring a deck over from a pasted list and the second legend you pick from it arrives marked Proposed, with Change and Remove beside it. Start a deck from scratch and Add a partner offers the commanders you own that can pair with the first.\n\nTwo commanders take two of the hundred cards, so a pair’s 99 is 98, and every count and progress bar in the app measures against that. Two commanders also give the rule zero chat twice as much to talk about.',
-    keys: [],
+      '“Partner”, “Partner with” and “Friends forever” all let two commanders share the top of the deck. Pick your first, then “Add a partner” offers the ones you own that can pair with it.\n\nTwo commanders also give the rule zero chat twice as much to talk about.',
+    keys: [
+      'A pair takes two of the hundred cards, so The 99 becomes The 98.',
+      'Importing a pasted list? The second legend you pick arrives marked “Proposed”.',
+    ],
     since: 1,
   },
 
@@ -411,29 +451,30 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a deck',
     width: 'plate',
     caption:
-      'Every deck gets a page of its own. The header carries the commander, the deck’s status and a bar for how far along it is.\n\nUnder it sit the tabs, among them Your deck, Consider, Games and, once you’ve committed the deck, Versions.\n\nConsider is the commander’s wish list: cards it wants that aren’t in the list yet, from your Collection first, then the top picks you’d have to buy. Think of it as your commander dropping hints.',
+      'Every deck gets a page of its own: the commander up top, how far along it is, and tabs for everything else.\n\n“Consider” is where your commander drops hints: cards it wants that aren’t in the list yet, from your Collection first, then the ones you’d have to buy.',
+    // When ANALYSIS_TAB ships on production, add “Analysis” to the tab list below (Hugh, 2026-10-06).
     keys: [
-      'The status badge and the progress bar match the deck’s tile on Decks, so a deck looks the same from either side.',
-      'Games picks up a count with the first game you log against the deck.',
-      'Consider holds the cards your commander wants that the list doesn’t run yet.',
+      'Tabs include “Your deck”, “Consider”, “Games”, and “Versions” once the deck is committed.',
+      'The “Games” tab shows how many games you’ve logged with the deck.',
     ],
     since: 1,
   },
   {
     id: 'deck-analysis',
     chapter: '03',
-    title: 'Which bracket this deck plays at',
+    title: 'Finding your deck’s bracket',
     route: '/decks',
     opens: 'opens a deck',
     width: 'plate',
     switch: 'ANALYSIS_TAB_ENABLED',
     caption:
-      'Press Analyze on a full deck’s Analysis tab, second in the deck’s row of tabs, and we name the bracket your cards permit. We read the whole list against the Commander Format Panel’s bracket rules.\n\nAt either end of the scale, the brackets turn on intent, so your cards can permit two. Say you built a Squirrel deck with every Squirrel you love and no Game Changers, mass land denial, extra turns or two-card combos. Its cards pass at Exhibition and at Core.\n\n- If the theme came first, it’s Exhibition.\n- If you brought it to hold its own against precons, it’s Core.\n\nThe top end works the same way: a list past Upgraded’s limits is Optimized, or cEDH if you tuned it for the competitive metagame. Only you know which, so you pick. Arguing about it at the table stays optional.\n\nEvery count opens to the cards behind it, and the lowest rung of the climb names what would have to go to drop one bracket.\n\nThe bracket then shows on the deck’s header, its tile on Decks and its row on Home, and the header’s chip opens the tab. A committed version that reads differently from the last one names both readings. The tab also holds the Overview and Suggested changes.',
+      'Not sure where your deck lands? Press “Analyze” on a full deck’s “Analysis” tab, and The 99 reads your list against the Commander Format Panel’s bracket rules.\n\nAt either end of the scale, brackets come down to intent, so your cards might fit two brackets. A Squirrel deck with no Game Changers passes at both Exhibition and Core:\n\n- If the theme came first, it’s Exhibition.\n- If it’s built to hold its own against precons, it’s Core.\n\nThe top end works the same way: Optimized, or cEDH if you tuned it for the competitive scene. Only you know which, so you pick. Arguing about it at the table stays optional.',
     keys: [
-      'A range means your cards fit two brackets. The chips under it ask which one you meant, and they’re the only question on the page.',
-      'The climb reads straight down. In the findings, every count with cards behind it opens to show them.',
-      'The date line says which reading you’re looking at. Edit the deck and it adds “before your changes”, the header and the tile keep the last bracket, and the tab offers Re-analyze. Whether the edit moved anything is Re-analyze’s call.',
-      'The line under the bracket says what separates the two. When a two-card combo settled a single bracket, a second line names it and how the deck gets both halves, and “see the reasoning” shows what finds each one.',
+      'A range means your cards fit two brackets. Pick the one that fits best.',
+      'In the findings, every count with cards behind it opens to show them.',
+      'The bottom of the climb shows what to cut to drop a bracket.',
+      'The bracket also shows on the deck’s header, its tile on Decks and on Home.',
+      'Edit the deck and you’ll be asked if you want to “Re-analyze”.',
     ],
     // The version current when it was written: an entry tied to a switch is announced by the
     // switch, and nothing bumps the version for it.
@@ -442,7 +483,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'auto-fill',
     chapter: '03',
-    title: 'How much of the 99 we build',
+    title: 'Building the 99 for you',
     // The canvas names /decks/new, which is where the fill is ORDERED. The
     // surface drawn below is where the rest of it is offered: the Top off
     // strip, which lives between the ledger and the decklist on a deck’s own
@@ -454,8 +495,14 @@ export const aboutEntries: readonly AboutEntry[] = [
     // it into five lines.
     width: 'plate',
     caption:
-      'Pick a commander and we build the 99 for you.\n\n- Up to ten staples go in first, the nonland cards most decks in its colors run, and staple lands get first pick when the lands go in.\n- The rest comes from your Collection.\n- Where your Collection runs short, we add the cards that commander’s decks play most, as cards to buy.\n\nCall it a precon built from your own binder.\n\nAny slots still open are yours. On a deck four cards short, Choose the last 4 opens candidates ranked by synergy for this commander, with the ones you can sleeve already ticked. Nothing goes in until you say so.\n\nEvery card we added carries the auto tag. Rather start from your own picks? Clear all auto takes out every one you haven’t locked, in one press.',
-    keys: [],
+      'Pick a commander and The 99 builds the deck for you, like a precon built from your own binder.\n\nIt starts with staples, fills from your Collection, and only reaches for cards to buy where you run short.',
+    keys: [
+      'Up to ten staples go in first, plus staple lands.',
+      'Cards you’d need to buy are the ones the commander’s decks play most.',
+      'Slots still open? “Choose the last” lets you pick them, with cards you own pre-ticked.',
+      'The “auto” tag marks cards The 99 added for you, so you can tell them from your own picks.',
+      '“Clear all auto” removes all auto-added cards, except any you’ve locked.',
+    ],
     since: 1,
   },
   {
@@ -466,40 +513,31 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a deck',
     width: 'plate',
     caption:
-      'Each row answers four questions, left to right:\n\n- Is it in your Collection?\n- What is it?\n- How many copies does the deck want?\n- Is anything in the way?\n\nMarks after the name show what a bracket counts: a Game Changer, mass land denial, extra turns or a tutor. Demonic Tutor carries two, since it’s a tutor and it’s on WotC’s Game Changer list.\n\nExhibition and Core allow no Game Changers and Upgraded allows three, so those are the cards to count before you sit down. Better to count them now than during the rule zero chat.\n\nAn obstacle mark appears only when something stands in the way. The auto tag means we picked the card for you.',
+      'Each row tells you, left to right:\n\n- whether you own it\n- what it is\n- how many copies the deck wants\n- whether anything’s in the way\n\nMarks after the name flag what would matter for your bracket placement: Game Changers, mass land denial, extra turns and tutors. Demonic Tutor gets two, since it’s a tutor and a Game Changer. Exhibition and Core allow no Game Changers and Upgraded allows three, so count them before the rule zero chat.',
     keys: [
-      'Filled and green means it’s in your Collection. Hollow and dashed means it isn’t. Every list in the app marks it the same way.',
-      // The canvas says "the circled figure ... is there whether that is one
-      // or four". The row draws neither half: the count is `×2` in mono beside
-      // the name, and `decklist-row.tsx` renders it on `quantity > 1` only.
-      // A single copy is the ordinary case and says so by saying nothing.
-      'A count shows only when the deck wants more than one copy, like ×2.',
-      // The red edge rides WITH `short N` rather than in the edge line below.
-      // It is the same answer drawn twice — the collection saying you are a
-      // copy short — where the accent edge answers a different question, and
-      // the two used to share one sentence as though they were one axis. The
-      // page caps an entry at four keys, so this is the split that fits: by
-      // WHAT IS BEING ANSWERED, which is the distinction that was missing.
-      'Something in the way gets a mark: “1 in a draft”, “none free”, or “short” when you need more copies than you have, which also rings the row in red. A card to buy shows its price, or $ with no price yet, and P is a card you’re printing. On Shopping, a card another deck holds carries its buy tag too.',
-      'A bright edge means you’ve changed the row since your last commit. Commit, and it goes.',
+      'Filled green: in your Collection. Hollow and dashed: not.',
+      'A count like ×2 shows only when the deck wants more than one.',
+      '“1 in a draft”, “none free” or “short” means something’s in the way. “short” also rings the row in red.',
+      'A card to buy shows its price. “P” marks a card you’re printing as a proxy.',
+      'A bright edge marks rows you’ve changed since your last commit.',
     ],
     since: 1,
   },
   {
     id: 'card-marks',
     chapter: '03',
-    title: 'Bracket facts that travel with a card',
+    title: 'Bracket marks on every card',
     route: '/collection',
     width: 'plate',
     // Tied to the tab's switch though the marks draw without it: key 3 sends the reader to the
     // Analysis tab, and with the switch off there is no tab to send them to.
     switch: 'ANALYSIS_TAB_ENABLED',
     caption:
-      'A card carries its bracket facts into every deck: whether it’s on the Game Changer list, counts as mass land denial, takes extra turns or is a tutor.\n\nEach fact has its own mark beside the card’s name, in your Collection, on a decklist, and on the cards Consider and the search under the tabs offer you.\n\nRhystic Study carries one: it’s a Game Changer. It also starts more power-level arguments than most.\n\nA key above the cards names the marks, and a card’s details spell them out under Bracket facts.',
+      'A card’s bracket marks follow it everywhere: your Collection, your decklists, “Consider” and search. Game Changers, mass land denial, extra turns and tutors each get their own.\n\nRhystic Study is a Game Changer, and it starts more power-level debates than most.',
     keys: [
-      'A tutor is a search that can find more than a land. Fetching a land is ramp, so it gets no mark.',
-      'No mark means we found nothing to report. The Game Changer list is complete; the other three we detect, and detection can miss a card.',
-      'A mark is about the card alone. How many a deck runs, and what that does to its bracket, is the Analysis tab’s job.',
+      'A tutor searches for more than a land. Fetching a land counts as ramp.',
+      'Game Changers come from WotC’s official list. The other three we attempt to detect from card text.',
+      'A card’s details spell out its marks under “Bracket facts”.',
     ],
     // The version current when it was written, as `deck-analysis` above.
     since: 9,
@@ -507,19 +545,17 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'locked-cards',
     chapter: '03',
-    title: 'Locking a card against suggested cuts',
+    title: 'Locking your favorite cards',
     route: '/decks',
     opens: 'opens a deck',
     width: 'plate',
     switch: 'NEVER_CUT_ENABLED',
     caption:
-      'Lock a card and nothing in the app will offer to cut it. Your pet cards are safe with us.\n\n- Suggested changes won’t propose it.\n- It gets no cheaper stand-ins.\n- Clear all auto and Pull it pass it by.\n- Update from a list starts with it kept.\n\nYou can still remove it yourself: the lock holds our suggestions back, and the deck stays yours to edit. Remove a locked card and Undo, Put back or a discard brings it back locked.\n\nA commit without it ends the lock.',
+      'Lock a card and nothing in the app will offer to cut it. Your pet cards are safe with us.\n\n- “Suggested changes” won’t propose cutting it.\n- “Clear all auto” and “Pull it” skip it.\n- It gets no cheaper stand-ins.\n- “Update from a list” keeps it.\n\nIf you ever want to stop protecting it, unlock it and Swords to Plowshares it.',
     keys: [
-      // Audit L2: the lock sits beside the ✕ on a row, not after the name. Its other half (what
-      // else changes) is said once, where it belongs: stand-ins in the caption, Pull it in key 3.
-      'A locked card keeps its lock beside the remove button in the list.',
-      'Lock cards, in the list’s toolbar, turns every remove button into a lock until you press Done. It’s how you lock or unlock a card on any device.',
-      'While Lock cards is on, this line counts what you’ve locked, once per card however many copies.',
+      'Press “Lock cards” in the list’s toolbar to lock or unlock cards, then “Done”.',
+      'A locked card shows a lock beside its remove button.',
+      'Committing a version without the card ends its lock.',
     ],
     // The version current when it was written: an entry tied to a switch is announced by the
     // switch, and nothing bumps the version for it.
@@ -528,34 +564,33 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'roles',
     chapter: '03',
-    title: 'How many cards each role needs',
+    title: 'How much ramp, draw and removal you need',
     route: '/decks',
     opens: 'opens a deck',
     width: 'plate',
     caption:
-      'The strip counts cards by the job they do: Ramp, Draw, Removal, Wipes and Land. That’s usually where a deck comes up short. One board wipe is a problem in a way eleven creatures rarely is.\n\nEach cell sets your count against a recommendation. The numbers come from EDHREC decks like yours: your pair’s or your commander’s own, or failing that, decks in your colors.\n\n- When both the role and land numbers are measured, the strip says EDHREC averages.\n- When either falls back to our default, it says A common starting point.\n\nA role over its number reads as met, and nothing is capped. Ramp to your heart’s content.',
+      'Most decks come up short in the same places: ramp, draw, removal, board wipes and lands. The role strip counts each one against what EDHREC decks like yours usually run.\n\nOne board wipe is a problem in a way eleven creatures rarely is. And ramp to your heart’s content: going over never counts against you.',
     keys: [
-      // Named on the cell the figure actually draws. The canvas wrote "5
-      // wipes against 3", which was an example rather than a reading — and
-      // the strip below draws Wipes SHORT, because the caption’s own example
-      // of a problem is the deck with one board wipe.
-      'The second number is the target, so 12 ramp against 10 counts as met, with two to spare.',
-      'A short role tells you what to do next: when Consider has cards for it, “consider →” takes you straight there.',
+      '“12 / 10” means 12 in the deck against a target of 10.',
+      'Targets come from decks with your commander, or failing that, decks in your colors.',
+      '“EDHREC averages” means measured. “A common starting point” means our default.',
+      'Short on a role? “consider →” jumps to cards that fill it.',
     ],
     since: 1,
   },
   {
     id: 'informed-build',
     chapter: '03',
-    title: 'Targets measured from decks like yours',
+    title: 'Targets that fit your commander',
     route: '/decks',
     opens: 'opens a deck',
     width: 'plate',
     caption:
-      'How much ramp a deck wants depends on who leads it.\n\nFill, the ticks in Choose the last and the shelves in Consider all aim at what EDHREC decks like yours run: your pair’s or your commander’s own first, then decks in your colors.\n\nA Kinnan deck asks for about 20 ramp, twice the default, and no board wipes at all. Kinnan players already knew.\n\nWhere we haven’t measured enough decks, the default stands in:\n\n- 10 ramp\n- 10 draw\n- 8 removal\n- 3 wipes\n- 37 lands, or 36 with a partner\n\nThe strip tells you which you’re looking at.',
+      'How much ramp a deck wants depends on who leads it. A Kinnan deck runs about 20 ramp, twice the usual, and no board wipes at all. Kinnan players already knew.\n\nSo auto-fill, “Choose the last” and “Consider” all aim at what decks with your commander actually run.',
     keys: [
-      'Lands move too. Twenty-eight is a real answer for a deck that ramps hard, and thirty-seven never fit them all.',
-      'A target of 0 is an answer too: this commander’s decks run no board wipes, so the cell asks for none.',
+      'Not enough decks to measure? We fall back to 10 ramp, 10 draw, 8 removal, 3 wipes and 37 lands (36 with a partner).',
+      'Lands move too: a deck that ramps hard might want 28.',
+      'A target of 0 means its decks don’t run that role at all.',
     ],
     since: 8,
   },
