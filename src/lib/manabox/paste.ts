@@ -6,11 +6,35 @@ import type { CollectionRow, ParseError } from "./parse";
  *   "3 Sol Ring"
  *   "3x Sol Ring"
  *   "Sol Ring"          → quantity 1
+ *   "1 Sol Ring (LTC) 284 *F*" → set LTC, collector number 284, foil
+ * The trailing printing identity is the text export ManaBox and Moxfield write:
+ * a set code in round brackets, an optional collector number, and optional
+ * `*F*` / `*E*` (foil / etched) flags. Without reading it, the whole tail stays
+ * glued to the name and every such line comes back unmatched.
  * A leading integer <= 0, a quantity above MAX_QUANTITY, or an empty name
  * after quantity strip → ParseError. Row.line is the 1-based input line
  * (blank lines still count toward the index so the number matches the paste).
  */
 const MAX_QUANTITY = 10_000;
+
+// Same shapes the deck import strips (src/lib/decks/import.ts), read here rather
+// than discarded because a collection row keeps its printing.
+const ANNOTATION_RE = /\s+\*([A-Za-z]+)\*$/;
+const SET_CODE_RE = /\s+\(([A-Za-z0-9]{2,6})\)(?:\s+([A-Za-z0-9★†-]+))?$/;
+
+function splitPrinting(text: string): Pick<CollectionRow, "name" | "setCode" | "collectorNumber" | "finish"> {
+  let rest = text;
+  let finish: CollectionRow["finish"] = "nonfoil";
+  for (let m = ANNOTATION_RE.exec(rest); m; m = ANNOTATION_RE.exec(rest)) {
+    const flag = m[1].toUpperCase();
+    if (flag === "F") finish = "foil";
+    else if (flag === "E") finish = "etched";
+    rest = rest.slice(0, m.index);
+  }
+  const set = SET_CODE_RE.exec(rest);
+  if (!set) return { name: text.trim(), setCode: "", collectorNumber: "", finish: "nonfoil" };
+  return { name: rest.slice(0, set.index).trim(), setCode: set[1].toLowerCase(), collectorNumber: set[2] ?? "", finish };
+}
 
 export function parsePasteList(text: string): { rows: CollectionRow[]; errors: ParseError[] } {
   const lines = text.split(/\r?\n/);
@@ -45,15 +69,14 @@ export function parsePasteList(text: string): { rows: CollectionRow[]; errors: P
       continue;
     }
 
+    const printing = splitPrinting(name);
     rows.push({
-      name,
-      setCode: "",
-      // A paste list carries no printing identity at all, so both fall back to the
-      // collection_items column defaults and a pasted holding keys as it always has.
-      collectorNumber: "",
+      // A bare line carries no printing identity, so set, collector number and
+      // finish fall back to the collection_items column defaults and it keys as
+      // it always has.
+      ...printing,
       quantity,
       scryfallId: null,
-      finish: "nonfoil",
       condition: null,
       line: i + 1,
     });

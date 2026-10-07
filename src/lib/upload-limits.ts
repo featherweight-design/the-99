@@ -9,8 +9,11 @@
 // Every cap is a byte count paired with the label describing it, because a check and
 // its message drifting apart is the exact failure this module exists to prevent.
 
-export const COLLECTION_FILE_MAX_BYTES = 5 * 1024 * 1024;
-export const COLLECTION_FILE_MAX_LABEL = "5 MB";
+// 4 MB, not 5: Vercel refuses any request body over 4.5 MB before the app sees it,
+// so a 5 MB cap was never reachable. next.config.ts raises the Server Action body
+// limit to match (Next's default is 1 MB, which is what broke large ManaBox exports).
+export const COLLECTION_FILE_MAX_BYTES = 4 * 1024 * 1024;
+export const COLLECTION_FILE_MAX_LABEL = "4 MB";
 
 export const DECK_IMPORT_FILE_MAX_BYTES = 2 * 1024 * 1024;
 export const DECK_IMPORT_FILE_MAX_LABEL = "2 MB";
