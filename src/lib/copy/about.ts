@@ -475,6 +475,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'The bottom of the climb shows what to cut to drop a bracket.',
       'The bracket also shows on the deck’s header, its tile on Decks and on Home.',
       'Edit the deck and you’ll be asked if you want to “Re-analyze”.',
+      'Describe the deck with the pencil beside its name. “Suggested changes” uses that description to understand what the deck is for.',
     ],
     // The version current when it was written: an entry tied to a switch is announced by the
     // switch, and nothing bumps the version for it.
@@ -878,7 +879,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'suggested-changes',
     chapter: '04',
-    title: 'Telling Suggested changes what the deck is for',
+    title: 'Tuning a deck with Suggested changes',
     route: '/decks',
     opens: "opens a deck’s Analysis tab",
     width: 'plate',
@@ -886,11 +887,10 @@ export const aboutEntries: readonly AboutEntry[] = [
     // staging and off for production, so a switch here would hide this entry on production
     // forever rather than announcing it — the opposite of ruling 7's bump.
     caption:
-      'Suggested changes, at the foot of the Analysis tab, offers up to five swaps, each a card out and a card in. We ask for eight and keep the first five that pass our checks.\n\nDescribe the deck in a sentence or two and it sits under the deck’s name. The pencil beside the name edits both, and Suggested changes reads the description the next time it runs.\n\nThree limits hold for the deck:\n\n- the most a card may cost\n- the sets an added card comes from\n- whether adds come only from your Collection\n\nAdditional notes carry one run’s instructions in your words.\n\nSay you describe your Meren deck as slow graveyard value for casual tables, cap cards at $5, keep adds to your Collection, and ask for more removal this run. The swaps come back as cheap removal you already own, in place of cards that don’t fit the plan.\n\nEach run uses a credit.',
+      'Want a second opinion? “Suggested changes”, at the bottom of the “Analysis” tab, offers up to five swaps: a card out, a card in, and why.\n\nTell it what the deck is for: describe your Meren deck as slow graveyard value for casual tables, cap cards at $5, ask for more removal, and the swaps come back as cheap removal you already own.',
     keys: [
-      'The description is optional. Before the first reading it’s asked beside Analyze, and after that you edit it with the pencil.',
-      'Additional notes last one press and are never saved. Anything that should hold every time belongs in the description or the limits.',
-      'The commander, locked cards and the limits always win: a swap that breaks one is left out, and up to five of the rest are shown. If no swap survives at all, the credit comes back.',
+      'Limits set the most a card can cost, which sets adds come from, and whether they come only from your Collection.',
+      'Each run uses a credit.',
     ],
     since: 10,
   },
