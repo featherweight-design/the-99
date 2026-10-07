@@ -938,14 +938,18 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'folders',
     chapter: '04',
-    title: 'Filing your decks into folders',
+    title: 'Organizing decks into folders',
     route: '/decks',
     // 'inset' at the canvas, where the figure was a legend. Mounted,
     // the shelf line is a full-width row of segments, and a ~300px column wraps it to three.
     width: 'plate',
     caption:
-      'Give your decks some shelves. A deck lives in one folder or in none, and you file it with Move in the deck’s menu.\n\nOn a wide screen every folder and its count sit above the filters. On a phone they’re one tap away under Shelves.\n\nPicking a folder narrows Decks with no filter chip, and Clear all filters leaves it alone. Unfiled appears once you make your first folder.\n\nJust precons makes a fine name for the decks everyone swears are just precons.',
-    keys: [],
+      'Give your decks some shelves. File a deck with “Move” in its menu.\n\n“Just precons” makes a fine name for the decks everyone swears are just precons.',
+    keys: [
+      'A deck lives in one folder, or none.',
+      'Folders sit above the filters on a computer, and under “Shelves” on a phone.',
+      '“Unfiled” appears once you make your first folder.',
+    ],
     since: 1,
   },
   {
