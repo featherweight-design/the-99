@@ -922,16 +922,16 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'statuses',
     chapter: '04',
-    title: 'Reading a deck’s status badge',
+    title: 'What a deck’s status means',
     route: '/decks',
     width: 'plate',
     caption:
-      'Every deck wears one of seven statuses, and each one points at a next step.\n\nOnly Complete means sleeve it up and play. How hard it hits is still for the pregame chat.\n\nTo buy is the one to watch. A card you own still needs buying when an older deck holds your copy, so one Sol Ring in four sleeved decks is three to buy.',
+      'Every deck wears one of seven statuses, each pointing at what to do next. “Complete” means sleeve it up and play.\n\n“To buy” is the one to watch: a full deck you can’t sleeve yet. Own two Command Towers across five decks, and three of them still need one.',
     keys: [
-      'New and Draft are decks you’ve never committed: New is empty, Draft has cards in it. Building is a committed deck short of a full list.',
-      'Over has too many cards. Unresolved is full, with lines we couldn’t match to a card.',
-      'To buy catches people out: a full deck you can’t sleeve yet, because some of it still has to be bought.',
-      'Complete means sleeve up and play.',
+      '“New”: empty. “Draft”: has cards, but never committed.',
+      '“Building”: committed, but short of a full list.',
+      '“Over”: too many cards.',
+      '“Unresolved”: has lines we couldn’t match to a card.',
     ],
     since: 1,
   },
