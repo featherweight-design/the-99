@@ -851,11 +851,11 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: "opens a deck’s Games tab",
     width: 'plate',
     caption:
-      'Log a game takes about fifteen seconds: the result, the pod size, and the two or three things that decided it.\n\nThe same eight things can go under What worked or What let me down. Mark Mana as what let you down, and the mana screw is on the record.\n\nA result on its own still counts as a game. Suggested changes reads your games the next time it runs.',
+      'Logging a game takes about fifteen seconds: the result, the pod size, and the two or three things that decided it.\n\nGot mana screwed? Mark “Mana” under “What let me down”, and it’s on the record. “Suggested changes” reads your games the next time it runs.',
     keys: [
-      'Pod size sits beside each game in your history, because beating three opponents is a different day from beating one.',
-      'Your note comes back word for word in the history, never summarized, so one line beats a paragraph.',
-      'Both sides offer the same eight, so a deck’s record can show something cutting both ways.',
+      '“What worked” and “What let me down” offer the same eight options.',
+      'Your history shows the pod size beside each game.',
+      'Add a note with what happened. The more detail you give, the better “Suggested changes” can tune the deck.',
     ],
     since: 1,
   },
