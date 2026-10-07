@@ -22,7 +22,6 @@ describe.each([false, true])("About with HOW_IT_WORKS_ENABLED off (sheetMode %s)
     expect(container.querySelector("[data-method]")).toBeNull();
     expect(screen.queryByText(howItWorksRowsCopy.title)).toBeNull();
     for (const paragraph of aboutCopy.pageIntro.split("\n\n")) expect(screen.getByText(paragraph)).toBeTruthy();
-    expect(container.textContent).not.toContain(howItWorksRowsCopy.pageIntroClause);
     // PR C's pieces: no entry links to a row, and no contents link reaches the section or a row.
     expect(container.querySelector("[data-entry-link]")).toBeNull();
     expect(container.querySelector("a[href='#how-it-works'], a[href^='#how-']")).toBeNull();
@@ -30,7 +29,7 @@ describe.each([false, true])("About with HOW_IT_WORKS_ENABLED off (sheetMode %s)
 });
 
 describe("About with HOW_IT_WORKS_ENABLED on", () => {
-  it("draws the appendix after the chapters, and names it in the intro", () => {
+  it("draws the appendix after the chapters", () => {
     process.env.HOW_IT_WORKS_ENABLED = "true";
     const { container } = render(<AboutPage seen={0} />);
     const section = container.querySelector("#how-it-works");
@@ -39,7 +38,6 @@ describe("About with HOW_IT_WORKS_ENABLED on", () => {
     expect(chapters.length).toBeGreaterThan(0);
     // After the last chapter in document order.
     expect(chapters.at(-1)!.compareDocumentPosition(section!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(container.textContent).toContain(howItWorksRowsCopy.pageIntroClause);
     expect(section!.querySelectorAll("li[id^='how-']")).toHaveLength(8);
   });
 

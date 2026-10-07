@@ -99,12 +99,3 @@ describe("How the app reaches its answers: the rows", () => {
   });
 });
 
-describe("introWithAppendix", () => {
-  it("names the appendix in a paragraph of its own after the intro", async () => {
-    const { aboutCopy } = await import("./about");
-    const { introWithAppendix, howItWorksRowsCopy } = await import("./how-it-works");
-    expect(introWithAppendix(aboutCopy.pageIntro)).toBe(
-      `${aboutCopy.pageIntro}\n\n${howItWorksRowsCopy.pageIntroClause}`,
-    );
-  });
-});

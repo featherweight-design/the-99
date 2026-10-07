@@ -23,7 +23,7 @@ import { ContentsListR6, ContentsRailR6 } from "./contents-r6";
 import { JumpMark } from "./jump-mark";
 import { HowItWorks } from "./how-it-works";
 import { howItWorksEnabled } from "../../lib/about/how-it-works-flag";
-import { howItWorksRowsCopy, introWithAppendix } from "../../lib/copy/how-it-works";
+import { howItWorksRowsCopy } from "../../lib/copy/how-it-works";
 import { entryRow, HOW_IT_WORKS_ID, howItWorksLinksCopy } from "../../lib/copy/how-it-works-links";
 import { RecordVisit } from "./record-visit";
 import { unseenEntries, visibleEntries, type SeenState } from "../../lib/about/visible";
@@ -374,10 +374,7 @@ export function AboutPage({
       <EntryCaption
         tone="muted"
         className="mt-[10px]"
-        caption={
-          (howItWorks ? introWithAppendix(aboutCopy.pageIntro) : aboutCopy.pageIntro) +
-          (sheetMode ? `\n\n${aboutCopy.pageIntroSheet}` : "")
-        }
+        caption={aboutCopy.pageIntro}
       />
 
       {sheetMode && newEntries.length > 0 && <WhatsNewIndex entries={newEntries} />}

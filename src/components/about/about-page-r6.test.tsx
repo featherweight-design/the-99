@@ -67,12 +67,11 @@ describe("the what's-new index (§O)", () => {
 });
 
 describe("the intro", () => {
-  it("tells the reader about the note only while the sheet is what brings them", () => {
+  it("reads the same whether or not the sheet is what brings them", () => {
     const { unmount } = render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
-    expect(screen.getByText(aboutCopy.pageIntroSheet, { exact: false })).toBeTruthy();
+    expect(screen.getByText(aboutCopy.pageIntro.split("\n\n")[0])).toBeTruthy();
     unmount();
     render(<AboutPage seen={ABOUT_VERSION} />);
-    expect(screen.queryByText(aboutCopy.pageIntroSheet, { exact: false })).toBeNull();
     expect(screen.getByText(aboutCopy.pageIntro.split("\n\n")[0])).toBeTruthy();
   });
 });
