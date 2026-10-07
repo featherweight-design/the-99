@@ -670,22 +670,24 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'versions',
     chapter: '03',
-    title: 'Committing a deck and reading its versions',
+    title: 'Committing a deck and its versions',
     route: '/decks',
     opens: "opens a deck’s Versions tab",
     width: 'plate',
     caption:
-      'A deck keeps two lists: the committed one, and the changes you’re making to it.\n\nEvery add and cut waits as a pending change until you commit. Each commit makes a version you can read back on the Versions tab, which is handy for settling whether last month’s list was better.\n\nOn a committed deck, a card you add counts against your Collection for this deck straight away. Other decks feel it once you commit.\n\nOpen a version to see which of its new cards you own today, with today’s price on the ones you’d buy.',
+      'Your adds and cuts wait as changes until you commit. Each commit saves a version you can look back on, handy for settling whether last month’s list was better.',
     keys: [
-      'Each version shows its date, card count and average mana value, and on a wide screen how many games it held. Every game in the log names its version, so you can see whether a change helped.',
-      'A version keeps the note you wrote when you committed it, or says there wasn’t one.',
+      'A card added to a committed deck claims your copy right away. Other decks see it once you commit.',
+      'Each version shows its date, card count and average mana value.',
+      'Games you log name their version, so you can see if a change helped.',
+      'Open a version to see which of its new cards you own today.',
     ],
     since: 1,
   },
   {
     id: 'shopping',
     chapter: '03',
-    title: 'What a deck still needs you to buy',
+    title: 'Your shopping list',
     route: '/decks',
     opens: 'opens a deck’s Shopping filter',
     // 'inset' at the canvas, where the figure was two legend rows. It draws
@@ -693,8 +695,11 @@ export const aboutEntries: readonly AboutEntry[] = [
     // names to `Dockside ...` and `R. —`.
     width: 'plate',
     caption:
-      'Every card a deck wants and you can’t supply sits on its Shopping filter, priced from ManaPool wherever ManaPool has a price.\n\nThe deck’s tile carries the count and the cost, and To buy, all decks on Home adds them up across your library.\n\nA card you own can still land here. Say your Atraxa deck committed your only Sol Ring first: your Meren deck lists one to buy.\n\nCopies with no price count toward the tally and add nothing to the total.',
-    keys: [],
+      'Every card a deck wants that you can’t supply lands on its “Shopping” filter, priced from ManaPool.\n\nA card you own can still show up here. If your Atraxa deck already has your only Sol Ring, your Meren deck needs another.',
+    keys: [
+      'Each deck’s tile shows how many cards it needs and what they cost.',
+      '“To buy, all decks” on Home adds it up across every deck.',
+    ],
     since: 1,
   },
   {
@@ -706,23 +711,19 @@ export const aboutEntries: readonly AboutEntry[] = [
     width: 'plate',
     switch: 'SWAP_TOOLS_ENABLED',
     caption:
-      'Some cards on Shopping cost more than the job they do. Each deck has a limit per card, $10 until you set your own, and every row over it is marked.\n\nA marked row’s swap button opens cheaper cards, or free copies from your Collection, that do the same job. Spells list cards of the same type first, then other types.\n\nSay Shopping wants a pricey dual land: each stand-in says what it makes and whether it comes in untapped, best mana first.\n\nYou pick, and taking one is an ordinary change to the deck that Undo swap reverses.',
+      'Some cards cost more than the job they do. Each deck has a price limit per card, $10 until you set your own, and anything over it gets flagged on “Shopping”.\n\nPress a flagged card’s swap button for cheaper cards, or free copies from your Collection, that do the same job. That $300 dual land has cousins that still come in untapped.',
     keys: [
-      'Under the price strip sits this deck’s limit per card, marked as the default until you set your own.',
-      'A row over the limit is marked, and its swap button opens the stand-ins. Any unlocked card on Shopping reaches them from its details too.',
-      // #1046's spell rows: each keeps one of the card's jobs and compares itself as keeps / gains /
-      // loses. What a row gives up is its `loses`, so the older "gives up" wording is gone.
-      'Every stand-in for a spell keeps at least one of its jobs, and its row says what it keeps, gains or loses. Up to five per type group show first, with Show all for longer groups.',
-      // r2 said a once-only color "doesn't count as making it"; the shipped ladder (`landRung`) counts it,
-      // on the last rung.
-      'Lands sort by their mana: untapped first, then ones that cost life or come in untapped only on a condition, then tapped ones, then utility lands that make a color only by paying, for a narrow use, or once.',
+      'A spell’s stand-ins keep at least one of its jobs, and say what they keep or lose.',
+      'Land stand-ins sort by their mana, untapped first.',
+      'Changed your mind? “Undo swap” puts the original card back.',
+      'Want options for a card that isn’t flagged? Open it from “Shopping” and find its stand-ins in its details.',
     ],
     since: 9,
   },
   {
     id: 'deck-import',
     chapter: '03',
-    title: 'Importing a deck, or updating one from a list',
+    title: 'Importing a deck, or updating one',
     route: '/decks/import',
     // 'inset' at the canvas, where the figure named three labels. It draws
     // the route’s own entry surface now — a mode toggle over a full-width
@@ -734,14 +735,18 @@ export const aboutEntries: readonly AboutEntry[] = [
     // file". Import reads a Moxfield CSV *export*, which is the collection
     // entry’s claim, not this one’s.
     caption:
-      'Decks built elsewhere are welcome here. Paste a list or upload a file and we make the deck. Moxfield and MTGO text both work: copy the list itself, since a link won’t import.\n\nTo bring a deck you already have up to date, open it and press Update from a list:\n\n- Paste the new list.\n- Check What this list changes against the deck.\n- Keep any cards the list leaves out.\n\nOn a committed deck the update arrives as pending changes.\n\nA line we can’t put a card to still comes over. It’s flagged in the deck, counts toward the 99 and stays out of what’s built until you fix it.',
-    keys: [],
+      'Built a deck somewhere else? Bring it over. Paste a list or upload a file, and The 99 makes the deck.\n\nAlready have it here? Press “Update from a list” on the deck to bring it up to date.',
+    keys: [
+      'Paste Moxfield or MTGO text, or upload a CSV from ManaBox, Moxfield or Archidekt.',
+      'Updating shows what the new list changes, and lets you keep cards it leaves out.',
+      'A line we can’t match still comes over, flagged for you to fix.',
+    ],
     since: 1,
   },
   {
     id: 'review-and-commit',
     chapter: '03',
-    title: 'What a commit asks of your Collection',
+    title: 'Reviewing changes before you commit',
     route: '/decks',
     opens: 'opens the review page',
     width: 'plate',
@@ -750,11 +755,10 @@ export const aboutEntries: readonly AboutEntry[] = [
     // the versionless deck rather than the edits, and key line 3 quoted the
     // guard tag as `deck in draft`. Both are copy, so eng resolved them.
     caption:
-      'Review changes is the last stop before a commit. It shows what locking in your edits asks of the rest of your Collection, with the cards coming in split into free, sleeved and to buy.\n\nSay your Kinnan draft adds Arcane Signet, and your only copy is sleeved in Atraxa. Its row offers Pull it: the Signet moves to Kinnan, and Atraxa gets a draft with it under Going out. She has lifelink. She’ll be fine.\n\nDiscard that draft and the Signet goes back where it was. A copy another deck holds as its commander stays put.',
+      '“Review changes” is the last stop before a commit. It shows what your edits ask of the rest of your Collection: which cards are free, which are sleeved in another deck, and which you’d need to buy.\n\nNeed a card that’s sleeved elsewhere? “Pull it” moves your copy over and leaves the other deck a draft to sort out. Say your Kinnan deck takes Atraxa’s only Arcane Signet. She has lifelink. She’ll be fine.',
     keys: [
-      'Coming in splits by where each card comes from: free, sleeved, to buy, and proxied when there are any. You know what the commit costs before reading a row.',
-      'Pull it takes a copy out of another deck and leaves that deck a draft with the card under Going out. Nothing there is committed, so the row names the deck it raided: that’s where to look if you change your mind.',
-      'A copy another deck holds as its commander stays put, so its row says “commander” and has nothing to press.',
+      'Changed your mind after “Pull it”? Open the deck you pulled from and discard its draft, and the card goes back.',
+      'A card leading another deck as its commander stays with that deck.',
     ],
     since: 7,
   },
