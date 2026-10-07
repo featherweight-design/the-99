@@ -84,6 +84,12 @@ describe("parsePasteList", () => {
     ]);
   });
 
+  it("reports a line that is only a printing as a missing name", () => {
+    const { rows, errors } = parsePasteList("1 (ECL) 331\n");
+    expect(rows).toEqual([]);
+    expect(errors).toEqual([{ line: 1, raw: "1 (ECL) 331", reason: "missing card name" }]);
+  });
+
   it("leaves a bare name and a parenthetical that is not a set code alone", () => {
     const { rows } = parsePasteList("1 Sol Ring\n1 Erase (Not the Urza's Legacy One)\n");
     expect(rows.map((r) => [r.name, r.setCode, r.collectorNumber, r.finish])).toEqual([

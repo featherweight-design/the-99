@@ -31,9 +31,9 @@ function splitPrinting(text: string): Pick<CollectionRow, "name" | "setCode" | "
     else if (flag === "E") finish = "etched";
     rest = rest.slice(0, m.index);
   }
-  const set = SET_CODE_RE.exec(rest);
+  const set = SET_CODE_RE.exec(` ${rest}`);
   if (!set) return { name: text.trim(), setCode: "", collectorNumber: "", finish: "nonfoil" };
-  return { name: rest.slice(0, set.index).trim(), setCode: set[1].toLowerCase(), collectorNumber: set[2] ?? "", finish };
+  return { name: rest.slice(0, Math.max(0, set.index - 1)).trim(), setCode: set[1].toLowerCase(), collectorNumber: set[2] ?? "", finish };
 }
 
 export function parsePasteList(text: string): { rows: CollectionRow[]; errors: ParseError[] } {
@@ -64,12 +64,13 @@ export function parsePasteList(text: string): { rows: CollectionRow[]; errors: P
       name = trimmed;
     }
 
-    if (name === "") {
+    // Checked after the printing comes off, so a line that is only a printing
+    // ("1 (ECL) 331") is a missing name, not a row with an empty one.
+    const printing = splitPrinting(name);
+    if (printing.name === "") {
       errors.push({ line: i + 1, raw, reason: "missing card name" });
       continue;
     }
-
-    const printing = splitPrinting(name);
     rows.push({
       // A bare line carries no printing identity, so set, collector number and
       // finish fall back to the collection_items column defaults and it keys as
