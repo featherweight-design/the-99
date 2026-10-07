@@ -121,6 +121,9 @@ function Entry({
       // and left an 80px gap above every anchor navigation.
       id={entry.id}
       className={rule}
+      // While the figure's marks await re-pinning (`marksPending`), they are hidden so none points
+      // at the wrong thing, and the key below renders unnumbered.
+      data-marks-pending={entry.marksPending ? "" : undefined}
     >
       {/* Title and route on ONE line, which is where the handoff puts them: the
           route is part of the entry's name — "Browse what you own /collection"
@@ -184,7 +187,13 @@ function Entry({
         <ol className="mt-[8px] list-none space-y-[5px] p-0">
           {entry.keys.map((key, i) => (
             <li key={key} className="flex items-start gap-[8px]">
-              <KeyNumeral n={i + 1} className="mt-[1px]" onFigure={false} />
+              {entry.marksPending ? (
+                <span aria-hidden className="mt-[1px] flex h-[14px] w-[14px] flex-none items-center justify-center font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+                  ·
+                </span>
+              ) : (
+                <KeyNumeral n={i + 1} className="mt-[1px]" onFigure={false} />
+              )}
               <span className="font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">
                 {key}
               </span>

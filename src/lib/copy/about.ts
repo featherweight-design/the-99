@@ -78,6 +78,13 @@ export interface AboutEntry {
   caption: string;
   /** 0–4 lines, in numeral order. Read in sequence by a screen reader. */
   keys: string[];
+  /**
+   * The key lines were rewritten (Hugh's voice pass, 2026-10-07) and the figure's numbered
+   * marks have not been re-placed yet. While true, the key renders as a plain list and the
+   * figure's marks are hidden, so no number points at the wrong thing. Remove the flag as each
+   * figure's marks are re-pinned; the numeral test then holds that entry to the full contract.
+   */
+  marksPending?: true;
   since: number;
 }
 
@@ -170,6 +177,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Each filter becomes a chip. Press one to drop it.',
       'Grid or rows is your call, and we remember it.',
     ],
+    marksPending: true,
     since: 1,
   },
   {
@@ -186,6 +194,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Reads quantity, set, collector number and finish.',
       'Nothing changes until you confirm.',
     ],
+    marksPending: true,
     since: 1,
   },
   {
@@ -235,6 +244,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Parse errors: lines we couldn’t read.',
       'A pasted list can’t fill in set completion.',
     ],
+    marksPending: true,
     since: 1,
   },
   {
@@ -249,9 +259,9 @@ export const aboutEntries: readonly AboutEntry[] = [
       'free: a spare copy nothing wants. No mark.',
       'in a draft: an uncommitted deck wants it. Committed decks come first.',
       'none free: committed decks hold every copy.',
-      'short 2: committed decks want two more than you own.',
-      'The deck that committed first gets your copy, unless you pick another.',
+      'short 2: committed decks want two more than you own. The first to commit gets your copy.',
     ],
+    marksPending: true,
     since: 1,
   },
   {
@@ -285,6 +295,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'sold out: ManaPool has carried that printing but has none right now.',
       'A bare buy: the feed has no price for that printing at all.',
     ],
+    marksPending: true,
     since: 1,
   },
   {
@@ -301,6 +312,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Swipe, or use the arrow keys, to page through the list you came from.',
       'Opened from a sheet or a combo partner? The pill at the top takes you back.',
     ],
+    marksPending: true,
     since: 1,
   },
 
@@ -354,6 +366,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       '“Free cards only”: counts only copies no committed deck is holding, including any possible commanders tucked into another deck.',
       '“Printed in”: only commanders printed in the sets you pick.',
     ],
+    marksPending: true,
     since: 1,
   },
   {
@@ -370,6 +383,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       '“Popularity”: the most-played commanders first.',
       '“Printed in”: only commanders printed in the sets you pick.',
     ],
+    marksPending: true,
     since: 1,
   },
   {
@@ -382,14 +396,14 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'Know the deck you want, but not who should lead it? Tell “Help me choose” what you’re after, and it finds commanders that fit, whether you own them or not.\n\nAnswer as much or as little as you like. Name a card in your own words and it becomes the card to build around.\n\nPick a commander and your answers carry over to a new deck, ready to fill from your Collection.',
     keys: [
-      'Narrow by colors, themes, sets, budget or bracket.',
-      'Your themes and named card set the order. Without them, it ranks by the cards you own.',
+      'Narrow by colors, themes, sets, budget or bracket. Themes and a named card set the order.',
       'Each row shows whether you own the commander, how much of its 99 you own, and roughly what the rest costs.',
       '“Look deeper” reads everything you wrote, and uses a credit to give you a more informed result.',
       'Fewer than four fits? It suggests how to adjust your requirements.',
     ],
     // The version current when it was written: an entry tied to a switch is announced by the
     // switch, and nothing bumps the version for it.
+    marksPending: true,
     since: 9,
   },
   {
@@ -406,6 +420,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       '“1 owned, 2 short” means its decks usually run 3.',
       'Sort a role by “Most played”, or by “Availability” with free copies first.',
     ],
+    marksPending: true,
     since: 1,
   },
   {
@@ -439,6 +454,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'A pair takes two of the hundred cards, so The 99 becomes The 98.',
       'Importing a pasted list? The second legend you pick arrives marked “Proposed”.',
     ],
+    marksPending: true,
     since: 1,
   },
 
@@ -457,6 +473,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Tabs include “Your deck”, “Consider”, “Games”, and “Versions” once the deck is committed.',
       'The “Games” tab shows how many games you’ve logged with the deck.',
     ],
+    marksPending: true,
     since: 1,
   },
   {
@@ -472,13 +489,12 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'A range means your cards fit two brackets. Pick the one that fits best.',
       'In the findings, every count with cards behind it opens to show them.',
-      'The bottom of the climb shows what to cut to drop a bracket.',
-      'The bracket also shows on the deck’s header, its tile on Decks and on Home.',
       'Edit the deck and you’ll be asked if you want to “Re-analyze”.',
       'Describe the deck with the pencil beside its name. “Suggested changes” uses that description to understand what the deck is for.',
     ],
     // The version current when it was written: an entry tied to a switch is announced by the
     // switch, and nothing bumps the version for it.
+    marksPending: true,
     since: 9,
   },
   {
@@ -498,12 +514,12 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'Pick a commander and The 99 builds the deck for you, like a precon built from your own binder.\n\nIt starts with staples, fills from your Collection, and only reaches for cards to buy where you run short.',
     keys: [
-      'Up to ten staples go in first, plus staple lands.',
-      'Cards you’d need to buy are the ones the commander’s decks play most.',
+      'Up to ten staples go in first. Cards you’d need to buy are the ones the commander’s decks play most.',
       'Slots still open? “Choose the last” lets you pick them, with cards you own pre-ticked.',
       'The “auto” tag marks cards The 99 added for you, so you can tell them from your own picks.',
       '“Clear all auto” removes all auto-added cards, except any you’ve locked.',
     ],
+    marksPending: true,
     since: 1,
   },
   {
@@ -517,11 +533,11 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Each row tells you, left to right:\n\n- whether you own it\n- what it is\n- how many copies the deck wants\n- whether anything’s in the way\n\nMarks after the name flag what would matter for your bracket placement: Game Changers, mass land denial, extra turns and tutors. Demonic Tutor gets two, since it’s a tutor and a Game Changer. Exhibition and Core allow no Game Changers and Upgraded allows three, so count them before the rule zero chat.',
     keys: [
       'Filled green: in your Collection. Hollow and dashed: not.',
-      'A count like ×2 shows only when the deck wants more than one.',
       '“1 in a draft”, “none free” or “short” means something’s in the way. “short” also rings the row in red.',
-      'A card to buy shows its price. “P” marks a card you’re printing as a proxy.',
+      'A card to buy shows its price, and “P” marks one you’re printing as a proxy.',
       'A bright edge marks rows you’ve changed since your last commit.',
     ],
+    marksPending: true,
     since: 1,
   },
   {
@@ -577,6 +593,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       '“EDHREC averages” means measured. “A common starting point” means our default.',
       'Short on a role? “consider →” jumps to cards that fill it.',
     ],
+    marksPending: true,
     since: 1,
   },
   {
@@ -593,6 +610,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Lands move too: a deck that ramps hard might want 28.',
       'A target of 0 means its decks don’t run that role at all.',
     ],
+    marksPending: true,
     since: 8,
   },
   {
@@ -609,6 +627,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Only two-card combos are flagged.',
       'Combos come from Commander Spellbook.',
     ],
+    marksPending: true,
     since: 9,
   },
   {
@@ -626,6 +645,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Sort by “Name” or “Mana value”.',
       'On the “Shopping” filter, you can sort by “Price” too.',
     ],
+    marksPending: true,
     since: 1,
   },
   {
@@ -646,6 +666,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Each result says how many you own, or if it’s already in the deck.',
       'A card another committed deck is holding still adds, with its Availability note.',
     ],
+    marksPending: true,
     since: 1,
   },
   {
@@ -683,6 +704,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Games you log name their version, so you can see if a change helped.',
       'Open a version to see which of its new cards you own today.',
     ],
+    marksPending: true,
     since: 1,
   },
   {
@@ -701,6 +723,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Each deck’s tile shows how many cards it needs and what they cost.',
       '“To buy, all decks” on Home adds it up across every deck.',
     ],
+    marksPending: true,
     since: 1,
   },
   {
@@ -742,6 +765,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Updating shows what the new list changes, and lets you keep cards it leaves out.',
       'A line we can’t match still comes over, flagged for you to fix.',
     ],
+    marksPending: true,
     since: 1,
   },
   {
@@ -761,6 +785,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Changed your mind after “Pull it”? Open the deck you pulled from and discard its draft, and the card goes back.',
       'A card leading another deck as its commander stays with that deck.',
     ],
+    marksPending: true,
     since: 7,
   },
   {
@@ -791,13 +816,13 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Love the 99 but not the leader? “Change commander”, on the commander’s art, suggests commanders in the same colors that already play most of your list.\n\nOn a Korvold deck, “41 of 72 are in its decks” beside Prossh means Prossh players already run most of your cards.',
     keys: [
       'Every option shares your deck’s exact colors, so nothing in the 99 has to change.',
-      'Commanders you own, or already in the 99, come first.',
       'Press the “41 of 72” count to see which of your cards that commander’s decks run.',
       'Pick one that’s already in the 99 and it swaps places with your old commander.',
       'Changed your mind? “Discard” puts the old commander back.',
     ],
     // The version current when it was written: an entry tied to a switch is announced by the
     // switch, and nothing bumps the version for it.
+    marksPending: true,
     since: 9,
   },
   {
@@ -819,6 +844,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Cut several and each keeps its own “Undo”.',
       '“Undo” disappears once you leave the page. Until you commit, “Put back” on “Review changes” still brings the card back.',
     ],
+    marksPending: true,
     since: 1,
   },
   {
@@ -874,6 +900,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Your marks sort into “Fix” and “Keep”.',
       'Anything marked both ways equally goes under “Mixed”.',
     ],
+    marksPending: true,
     since: 1,
   },
   {
@@ -892,6 +919,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Limits set the most a card can cost, which sets adds come from, and whether they come only from your Collection.',
       'Each run uses a credit.',
     ],
+    marksPending: true,
     since: 10,
   },
   {
@@ -917,6 +945,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'A run that comes back empty-handed, or that you stop, gives the credit back.',
       'Next to each button that uses a credit, you’ll see how many you have left and when the next one comes back.',
     ],
+    marksPending: true,
     since: 11,
   },
   {
@@ -950,6 +979,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Folders sit above the filters on a computer, and under “Shelves” on a phone.',
       '“Unfiled” appears once you make your first folder.',
     ],
+    marksPending: true,
     since: 1,
   },
   {
@@ -965,6 +995,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'Each row says why it’s there: edited, committed or played.',
     ],
+    marksPending: true,
     since: 1,
   },
   {
@@ -980,6 +1011,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       '“Spoken for twice”: cards your decks want more copies of than you own.',
       '“To buy, all decks”: what every deck still needs, and what it costs.',
     ],
+    marksPending: true,
     since: 1,
   },
   // 'reservations' (chapter 04, 'Which deck gets a shared copy') was retired 2026-10-04 (Hugh,
@@ -1004,6 +1036,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'In your Collection, the “Proxies” tab beside “Cards” and “Sets” lists everything you’re printing.',
     ],
+    marksPending: true,
     since: 1,
   },
   {

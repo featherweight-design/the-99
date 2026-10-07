@@ -986,3 +986,10 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 [data-collection-search-row]:has([data-search-field]:focus-within) [data-collection-view-well] {
   display: none;
 }
+
+/* About: an entry whose key lines were rewritten before its figure's marks were re-pinned
+   (`marksPending` in src/lib/copy/about.ts) hides those marks, so no number points at the
+   wrong part of the figure. Removed per entry as each figure is re-pinned. */
+[data-marks-pending] [data-key-numeral] {
+  display: none;
+}
