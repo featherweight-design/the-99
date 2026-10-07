@@ -787,17 +787,13 @@ export const aboutEntries: readonly AboutEntry[] = [
     width: 'plate',
     switch: 'CHANGE_COMMANDER_ENABLED',
     caption:
-      // Audit C1 (candidates also need enough decks to measure) and C4 (a deck with no version has
-      // nothing to discard back to).
-      'Like the 99 but not the leader? Change commander, on the commander’s art, lists commanders in exactly this deck’s colors with enough decks to measure, or pairs for a pair deck. The ones in your Collection or already in the 99 come first.\n\nEach carries one figure: how many of this deck’s cards its decks run. On a Korvold deck, “41 of 72 are in its decks” beside Prossh means Prossh players already run most of your list.\n\nYour choice waits in pending changes. On a committed deck, Discard puts the old commander back.',
+      'Love the 99 but not the leader? “Change commander”, on the commander’s art, suggests commanders in the same colors that already play most of your list.\n\nOn a Korvold deck, “41 of 72 are in its decks” beside Prossh means Prossh players already run most of your cards.',
     keys: [
-      'Every candidate shares this deck’s exact colors, and a pair deck gets pairs, so nothing in the 99 has to change.',
-      'The figure counts this deck’s cards that the candidate’s decks run, leaving out basic lands and the staples every deck runs. Press it to see which cards.',
-      // Audit C2: an owned candidate is free or held, and a buy tag may carry no price.
-      'Candidates you own come first, marked free or with the deck that holds them, and the rest carry a buy tag. Mana value sits beside each and has no say in the order.',
-      // Audit C3, rewritten once the half-trade shipped (#1008). It names the pair case that works
-      // and claims no more: two rarer partner cases are held (Hugh).
-      'Pick one that’s already in the 99 and it moves to the command zone while the old commander takes its slot, so the deck stays whole. A pair can bring in one half this way, and you choose which of the old pair stays.',
+      'Every option shares your deck’s exact colors, so nothing in the 99 has to change.',
+      'Commanders you own, or already in the 99, come first.',
+      'Press the “41 of 72” count to see which of your cards that commander’s decks run.',
+      'Pick one that’s already in the 99 and it swaps places with your old commander.',
+      'Changed your mind? “Discard” puts the old commander back.',
     ],
     // The version current when it was written: an entry tied to a switch is announced by the
     // switch, and nothing bumps the version for it.
