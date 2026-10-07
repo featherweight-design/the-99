@@ -802,7 +802,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'undo-removal',
     chapter: '03',
-    title: 'Putting back a card you took out',
+    title: 'Putting a card back',
     route: '/decks',
     opens: 'opens a deck',
     // 'inset' at the canvas, where the figure was three legend rows. It draws
@@ -813,14 +813,17 @@ export const aboutEntries: readonly AboutEntry[] = [
     // screen’s `Put back` (deck-versioning.ts:249) is a second door and is
     // named in the caption rather than drawn. R3 drew one wearing the other.
     caption:
-      'Take a card out of your deck and its row turns into an undo that names it: “Rhystic Study removed”. Your table may be hoping you leave that one out.\n\nUndo puts it all back: the deck’s count, the shopping total, its copy from your Collection, and its lock if it had one. A card you were proxying comes back as one to buy. Take out several and each keeps its own undo, as many as you like.\n\nOn the review page, a cut of a single copy offers Put back instead. A cut of several copies goes back from the deck itself.',
-    keys: [],
+      'Cut a card by mistake? Its row turns into an “Undo” that names it: “Rhystic Study removed”. Your table may be hoping you leave that one out.\n\n“Undo” puts everything back the way it was.',
+    keys: [
+      'Cut several and each keeps its own “Undo”.',
+      '“Undo” disappears once you leave the page. Until you commit, “Put back” on “Review changes” still brings the card back.',
+    ],
     since: 1,
   },
   {
     id: 'export',
     chapter: '03',
-    title: 'Exporting the list, or buying what’s missing',
+    title: 'Exporting your deck, or buying what’s missing',
     route: '/decks',
     opens: 'opens the export dialog',
     width: 'plate',
@@ -830,15 +833,11 @@ export const aboutEntries: readonly AboutEntry[] = [
     // (export-dialog.tsx:561). `Buy these at Mana Pool` was already right
     // (decks-builder.ts:472).
     caption:
-      'Take the whole 99 anywhere as plain text. Moxfield and Archidekt both read it.\n\nOr take only the cards this deck has to buy: Buy these at Mana Pool opens that list at Mana Pool in a new tab, and you check out there.',
+      'Take your list anywhere as plain text. Moxfield and Archidekt both read it.\n\nOr send just the cards you need to buy straight to Mana Pool, and check out there.',
     keys: [
-      // The canvas draws a count on the Shopping tab (`Shopping list 8`) and
-      // the app draws none: `export-dialog.tsx` renders `exportTabCopy.shopping`
-      // and nothing beside it. The figure below is that tab, so the claim had
-      // nowhere to hide.
-      'The Shopping list tab holds what this deck has to buy, including cards you own when older decks already hold the copies.',
-      'The link opens Mana Pool in a new tab and carries the list, nothing else.',
-      'Download .txt saves the same plain text Copy to clipboard copies, and the button reads Copied ✓ for a second and a half after a copy.',
+      '“Copy to clipboard” or “Download .txt” for the full list.',
+      'The “Shopping list” tab holds only what this deck needs to buy.',
+      '“Buy these at Mana Pool” opens that list in a new tab.',
     ],
     since: 1,
   },
