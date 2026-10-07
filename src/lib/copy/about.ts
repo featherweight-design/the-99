@@ -770,11 +770,11 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens the commander picker',
     width: 'plate',
     caption:
-      'New deck lists every commander in your Collection you could legally build, each with its pool: how many of your cards are legal in its colors. Pick one and name the deck. That’s all it needs.\n\nA commander with partner gets a second slot that offers only legal pairs, so Tymna the Weaver offers partners like Thrasios. Your pod has been warned.\n\nComing from a commander’s own page skips the list. The commander and any synergy picks you made there come with you, and all that’s left is the name.',
+      'Pick a commander you own, give the deck a name, and that’s it. The 99 fills in the rest.\n\nA commander with partner gets a second slot with only legal pairs, like Tymna and Thrasios. Your pod has been warned.',
     keys: [
-      'Only commanders in your Collection that you could legally build make the list.',
-      'The number beside each is how many of your cards are legal in its colors: the Pool part of a fit score, seen from the commander’s side.',
-      'Only the name is required. The deck arrives filled: staples first, then cards from your Collection, then what that commander’s decks play most. Every card is yours to change.',
+      'The list shows every commander you own and can legally build.',
+      'The number beside each is how many of your cards fit its colors.',
+      'Starting from a commander’s page skips the list and brings your synergy picks along.',
     ],
     since: 7,
   },
