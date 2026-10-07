@@ -110,7 +110,6 @@ export const aboutCopy = {
     'Hugh',
   // Appended to the intro only while ABOUT_SHEET_ENABLED is on: with it off a
   // new version still redirects here, and there is no note to speak of.
-  pageIntroSheet: 'When a new feature drops, a note here will tell you on your next visit.',
 
   contentsLabel: 'Contents',
   newBadge: 'NEW',
