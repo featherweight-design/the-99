@@ -897,7 +897,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'credits',
     chapter: '04',
-    title: 'What credits pay for',
+    title: 'How credits work',
     route: '/decks',
     opens: "opens a deck’s Analysis tab",
     // 'inset': the figure is three lines of the credit line, narrow enough to sit beside its text.
@@ -912,11 +912,10 @@ export const aboutEntries: readonly AboutEntry[] = [
     // "Every player gets three" is the FRIEND allowance (`MODEL_FRIEND_DAILY_ALLOWANCE`). The owner's
     // ten and monthly testing share exist and are left out on purpose: Hugh, 2026-10-06, "three only".
     caption:
-      'Credits pay for the parts of the app that write something for you. Every player gets three, and each one comes back 24 hours after the run that used it.\n\nThese use a credit:\n\n- writing a deck’s Overview, whether Analyze writes it for a list that has none yet or you press Try again\n- each Suggested changes run\n- each Look deeper in Help me choose\n\nReading the bracket is free.\n\nA run uses its credit only when it gives you something: an Overview with all four sections, Suggested changes with at least one swap, a Look deeper that comes back with at least one answer. Anything less hands the credit back, and so does stopping a run.\n\nWhen the app reaches its monthly limit, all of these pause until the 1st.',
+      'Some features write something just for you, and those use credits. You get three, and each one comes back 24 hours after you use it.\n\nThe following use a credit:\n\n- Writing a deck’s Overview\n- Each “Suggested changes” run\n- Each “Look deeper” in “Help me choose”\n\nDetermining your deck’s bracket is free.',
     keys: [
-      'With credits left, the line says how many, and once one is spent, when the next comes back.',
-      'With every credit used, the button waits and the line names when the next one returns.',
-      'The monthly limit is the app’s own, so it pauses every player at once, until the 1st of next month.',
+      'A run that comes back empty-handed, or that you stop, gives the credit back.',
+      'Next to each button that uses a credit, you’ll see how many you have left and when the next one comes back.',
     ],
     since: 11,
   },
