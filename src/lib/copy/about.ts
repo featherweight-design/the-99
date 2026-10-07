@@ -992,7 +992,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   {
     id: 'proxies',
     chapter: '04',
-    title: 'Running a proxy instead of buying',
+    title: 'Proxying instead of buying',
     route: '/collection/proxies',
     // 'inset' STAYS. Hugh’s ruling, 2026-09-19: a figure that is genuinely
     // narrow sits beside its text and a full-width surface sits under it, so
@@ -1000,8 +1000,10 @@ export const aboutEntries: readonly AboutEntry[] = [
     // imposed. The proxy control is a tick and two lines; it fits.
     width: 'inset',
     caption:
-      'Not every deck needs a real Gaea’s Cradle. Choose Run a proxy on its card in the deck: it leaves the buy list, and the deck’s shopping total drops by its price.\n\nYour Collection and set completion stay as they are. Proxies, beside Cards and Sets, lists everything you’re printing.',
-    keys: [],
+      'Not every deck needs a real Gaea’s Cradle. Choose “Run a proxy” on a card in your deck, and it comes off your shopping list.',
+    keys: [
+      'In your Collection, the “Proxies” tab beside “Cards” and “Sets” lists everything you’re printing.',
+    ],
     since: 1,
   },
   {
