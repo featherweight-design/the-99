@@ -325,6 +325,6 @@ describe("the credits entry", () => {
     const word = words[MODEL_FRIEND_DAILY_ALLOWANCE];
     expect(word, "the allowance has no word here; add it").toBeDefined();
     const caption = aboutEntries.find((e) => e.id === "credits")?.caption ?? "";
-    expect(caption).toContain(`Every player gets ${word},`);
+    expect(caption).toContain(`You get ${word},`);
   });
 });
