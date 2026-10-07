@@ -961,8 +961,10 @@ export const aboutEntries: readonly AboutEntry[] = [
     // Home’s resume block is a list of full-width rows, each with a portrait, a status keyline and a count.
     width: 'plate',
     caption:
-      'Home opens on the four decks you touched last, newest first, ready to pick back up. Each row says what put it there: edited, committed or played.\n\nIts art and status badge match its tile on Decks, so you’ll know it at a glance.',
-    keys: [],
+      'The Home page opens on the four decks you touched last, so you can jump right back in.',
+    keys: [
+      'Each row says why it’s there: edited, committed or played.',
+    ],
     since: 1,
   },
   {
