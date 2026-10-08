@@ -2,9 +2,10 @@ import { describe, expect, it } from "vitest";
 import { ABOUT_VERSION, aboutEntries, type AboutEntry } from "../copy/about";
 import { sheetCookieValue, sheetDecision } from "./gate";
 import { readSheetState } from "./sheet-state";
-import { isSeen, switchedIds, unseenEntries, visibleEntries, type SeenState } from "./visible";
+import { isSeen, resolveEntry, switchedIds, unseenEntries, visibleEntries, type SeenState } from "./visible";
 
-const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+// TUNING_ENABLED also requires ANALYSIS_TAB_ENABLED (`tuningEnabled()`), already "true" here.
+const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const OFF = {} as unknown as NodeJS.ProcessEnv;
 
 /** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
@@ -39,12 +40,16 @@ describe("with every switch off, nothing changes (the invariance Hugh's ruling r
       ["fits-your-decks", "SWAP_TOOLS_ENABLED"],
       ["stand-ins", "SWAP_TOOLS_ENABLED"],
       ["change-commander", "CHANGE_COMMANDER_ENABLED"],
+      ["suggested-changes", "TUNING_ENABLED"],
     ]);
     expect(Math.max(...unswitched.map((e) => e.since))).toBe(ABOUT_VERSION);
   });
 
   it("draws every unswitched entry with the switches off, and every entry with them on", () => {
-    expect(visibleEntries(OFF)).toEqual(unswitched);
+    // `credits` and `deck-analysis` carry a line gated by `TUNING_ENABLED` alone (2026-10-08),
+    // on top of (or with no) entry-level switch — resolved the same way `visibleEntries` itself
+    // resolves it, rather than hand-duplicating the string surgery here.
+    expect(visibleEntries(OFF)).toEqual(unswitched.map((e) => resolveEntry(e, OFF)));
     expect(visibleEntries(ON)).toEqual(aboutEntries);
   });
 
@@ -75,13 +80,18 @@ describe("an entry tied to a switch", () => {
   });
 
   it("reads unseen for a returning reader at the current version, in the shipped catalog", () => {
-    // The shipped launch entries all carry `since: 9`, the version active when the switch
+    // The ORIGINAL launch entries all carry `since: 9`, the version active when the switch
     // convention was adopted (Hugh, 2026-09-25) — a fixed historical stamp, not a live tracker
-    // of ABOUT_VERSION. `suggested-changes` (2026-10-05, ruling 7) bumped ABOUT_VERSION to 10
-    // without touching these, by design: `isSeen` ignores `since` entirely for a switch-tied
-    // entry, so the bump cannot make one of them unseen again.
+    // of ABOUT_VERSION. `suggested-changes` (2026-10-08, picking up its own TUNING_ENABLED) is
+    // the one exception, since: 10 — `isSeen` ignores `since` entirely for a switch-tied entry,
+    // so neither stamp can make one of them unseen again.
     const launch = aboutEntries.filter((e) => e.switch);
-    expect(launch.map((e) => e.since)).toEqual(launch.map(() => 9));
+    const [suggestedChanges, originalLaunch] = [
+      launch.filter((e) => e.id === "suggested-changes"),
+      launch.filter((e) => e.id !== "suggested-changes"),
+    ];
+    expect(originalLaunch.map((e) => e.since)).toEqual(originalLaunch.map(() => 9));
+    expect(suggestedChanges.map((e) => e.since)).toEqual([10]);
     expect(unseenEntries(visibleEntries(ON), seen(ABOUT_VERSION)).map((e) => e.id)).toEqual([
       "help-me-choose",
       "deck-analysis",
@@ -90,6 +100,7 @@ describe("an entry tied to a switch", () => {
       "fits-your-decks",
       "stand-ins",
       "change-commander",
+      "suggested-changes",
     ]);
   });
 
@@ -134,5 +145,49 @@ describe("HOW_IT_WORKS_ENABLED", () => {
     expect(visibleEntries(env("true"), [how])).toEqual([how]);
     expect(visibleEntries(env("1"), [how])).toEqual([]);
     expect(visibleEntries(env(), [how])).toEqual([]);
+  });
+});
+
+describe("TUNING_ENABLED, and the two lines it gates without an entry switch of their own", () => {
+  const anEntry: AboutEntry = {
+    ...aboutEntries[0],
+    id: "entry",
+    since: 3,
+    caption: "Before.\n\n- Keep\n- Drop this\n\nAfter.",
+    captionLineSwitches: { "- Drop this": "TUNING_ENABLED" },
+    keys: ["Keep this key", "Drop this key"],
+    keySwitches: { "Drop this key": "TUNING_ENABLED" },
+  };
+
+  it("drops the gated line and key with the switch off, keeping the rest of the entry", () => {
+    const [resolved] = visibleEntries({} as unknown as NodeJS.ProcessEnv, [anEntry]);
+    expect(resolved.caption).toBe("Before.\n\n- Keep\n\nAfter.");
+    expect(resolved.keys).toEqual(["Keep this key"]);
+  });
+
+  it("keeps every line with the switch on", () => {
+    const [resolved] = visibleEntries({ TUNING_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, [anEntry]);
+    expect(resolved).toEqual(anEntry);
+  });
+
+  it("draws the real deck-analysis and credits entries with Tuning off, Analysis on", () => {
+    const env = { ANALYSIS_TAB_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    const visible = visibleEntries(env);
+    const deckAnalysis = visible.find((e) => e.id === "deck-analysis")!;
+    expect(deckAnalysis.keys).toHaveLength(3);
+    expect(deckAnalysis.keys.join(" ")).not.toContain("Suggested changes");
+    const credits = visible.find((e) => e.id === "credits")!;
+    expect(credits.caption).not.toContain("Suggested changes");
+    expect(credits.caption).toContain("Writing a deck’s Overview");
+    // The entry itself is still gone: `TUNING_ENABLED` is off.
+    expect(visible.find((e) => e.id === "suggested-changes")).toBeUndefined();
+  });
+
+  it("draws every line with both Analysis and Tuning on", () => {
+    const env = { ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    const visible = visibleEntries(env);
+    expect(visible.find((e) => e.id === "deck-analysis")!.keys).toHaveLength(4);
+    expect(visible.find((e) => e.id === "credits")!.caption).toContain("Suggested changes");
+    expect(visible.find((e) => e.id === "suggested-changes")).toBeDefined();
   });
 });

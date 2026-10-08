@@ -37,6 +37,7 @@ import { hasChanges, loadDraftState, loadVersionShape } from "../../../lib/decks
 import { listVersions } from "../../../lib/decks/versions";
 import { computeRoleCounts } from "../../../lib/decks/mix";
 import { analysisTabEnabled } from "../../../lib/decks/analysis-flag";
+import { tuningEnabled } from "../../../lib/tuning/flag";
 import { noticesEnabled } from "../../../lib/notices/flag";
 import { loadDeckNotices } from "../../../lib/notices/read";
 import { NOTICES_PARAM, readNoticesArrival } from "../../../lib/notices/arrival";
@@ -411,6 +412,7 @@ export default async function DeckBuilderPage({
   // Read once per request rather than at each use, so the tab, the strip's home and the
   // arrival view cannot disagree about which layout this deployment is drawing.
   const analysisEnabled = analysisTabEnabled();
+  const tuned = tuningEnabled();
   const storedBracket = await storedPermits;
   const notices = await initialNotices;
   // Started in stage A; see `swapTools` there.
@@ -464,6 +466,7 @@ export default async function DeckBuilderPage({
       // Nothing in the app produces such a URL now that `/decks/[id]/versions`
       // is retired; see the note in `lib/decks/builder-view.ts`.
       analysisEnabled={analysisEnabled}
+      tuningEnabled={tuned}
       noticesEnabled={noticesEnabled()}
       initialNotices={notices}
       // The tile's `!` asks for the sheet (`noticesHref`). The shell opens it on arrival and strips

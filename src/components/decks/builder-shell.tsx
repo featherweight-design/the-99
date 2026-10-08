@@ -215,6 +215,11 @@ interface BuilderShellProps {
   /** `HELP_ME_CHOOSE_ENABLED` (`src/lib/intake/flag.ts`): whether the credit lines name Help me
    *  choose's deeper looks among what shares the credits. Off, they read as before the looks. */
   deeperLooks?: boolean;
+  /** `tuningEnabled()` (`src/lib/tuning/flag.ts`): whether this deployment draws "Suggested
+   *  changes". Off, the Analysis tab still draws the bracket and the Overview — the tab mounts
+   *  no `TuningPanel`, the empty state's description field (asked only to feed a run) and the
+   *  credit lines' mention of it are withheld, same as `analysisEnabled` withholds the whole tab. */
+  tuningEnabled?: boolean;
 }
 
 // The Games tab's default: a deck nobody has logged against. Hoisted so the
@@ -259,6 +264,7 @@ export function BuilderShell({
   storedPermits = null,
   neverCut = false,
   deeperLooks = false,
+  tuningEnabled = false,
 }: BuilderShellProps) {
   // UI state
   const [filter, setFilter] = useState<"all" | "shopping">("all");
@@ -436,8 +442,8 @@ export function BuilderShell({
   });
   const opening = useOpeningGate(useOpenOnce(holding, visitKey, view === "analysis"), deck.id);
   // The credit note beside each press that also writes, and whether it does (`synopsis-note.ts`).
-  const analyzeNote = analysisEnabled ? pressNote(synopsis.view, "analyze", deeperLooks) : null;
-  const reanalyzeNote = analysisEnabled ? pressNote(synopsis.view, "reanalyze", deeperLooks) : null;
+  const analyzeNote = analysisEnabled ? pressNote(synopsis.view, "analyze", deeperLooks, tuningEnabled) : null;
+  const reanalyzeNote = analysisEnabled ? pressNote(synopsis.view, "reanalyze", deeperLooks, tuningEnabled) : null;
   // A PRESS WRITES ONLY WHAT ITS NOTE SAID IT WOULD. Recorded when the press is made, so a note
   // that was not drawn (the state not yet read, the list already written, no credit left) is a
   // press that spends nothing, whatever the state says by the time the reading lands.
@@ -1534,6 +1540,7 @@ export function BuilderShell({
                   pressSee={analyzeNote?.see ? { label: deckNoticesCopy.check.seeWhich, onPress: openNoticesSheet } : null}
                   description={deck.intent ?? null}
                   onSaveDescription={saveDescription}
+                  tuningEnabled={tuningEnabled}
                   legality={{ built, size: bodySize }}
                   declaration={{
                     declared: declaration.declared,
@@ -1575,6 +1582,7 @@ export function BuilderShell({
                         onRetry={(id) => { setQuietReady(false); return synopsis.retry(id); }}
                         onSeeWhich={openNoticesSheet}
                         deeperLooks={deeperLooks}
+                        tuning={tuningEnabled}
                         reanalyze={{
                           onPress: requestAnalysis,
                           disabled: profile.state.kind === "loading" || built !== bodySize,
@@ -1583,7 +1591,7 @@ export function BuilderShell({
                       />
                     ) : null
                   }
-                  tuning={(permits) => (
+                  tuning={!tuningEnabled ? undefined : (permits) => (
                     <TuningPanel
                       deckId={deck.id}
                       permits={permits}

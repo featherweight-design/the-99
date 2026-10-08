@@ -54,9 +54,11 @@ function received(deeperLooks: boolean | undefined) {
   seen.panel = null;
   seen.notes = [];
   render(
+    // tuningEnabled: this test is about deeperLooks threading, not the tuning switch itself —
+    // on, so `panel.tuning` still mounts and the Suggested-changes credit line can be read.
     <BuilderShell mix={recommendedMix(null, false)} deck={DECK} suggestions={[]} degraded={false} firstRun={false}
       commanderIdentity={["B", "R", "G"]} arrivedFromImport={false} newestAsOf={null}
-      analysisEnabled initialView="analysis" {...(deeperLooks === undefined ? {} : { deeperLooks })} />,
+      analysisEnabled tuningEnabled initialView="analysis" {...(deeperLooks === undefined ? {} : { deeperLooks })} />,
   );
   const panel = seen.panel as unknown as { overview: { props: { deeperLooks?: boolean } } | null; tuning: (permits: number[]) => { props: { deeperLooks?: boolean } } };
   return {

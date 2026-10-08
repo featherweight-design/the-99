@@ -22,13 +22,21 @@
 // the deck page draws four tabs, so the fifth is named in `deck-analysis` instead.
 //
 // `suggested-changes`, 2026-10-05 (`design_handoff_the99_deck_description/ABOUT-entry.md`,
-// ruling 7): the one entry that overrides the rule directly above it. Hugh ruled the bump
-// (9 -> 10) regardless of the tab's switch, on the condition engineering confirm
-// ANALYSIS_TAB_ENABLED is on everywhere this ships, "or drop switch" (the handoff's own
-// words). Confirmed via `vercel env pull`: `"true"` on staging, `"false"` on production — not
-// everywhere — so this entry carries NO `switch` field. It is the one entry in this file drawn
-// unconditionally for a capability a production reader without the tab cannot yet reach; that
-// is the handoff's own authorized fallback, not an oversight.
+// ruling 7): shipped with NO `switch` field, since ANALYSIS_TAB_ENABLED was confirmed `"true"`
+// on staging and `"false"` on production and a switch naming it would hide the entry on
+// production forever rather than announce it.
+//
+// 2026-10-08 (Tuning decoupled from the Analysis tab, `src/lib/tuning/flag.ts`): that condition
+// no longer holds — a deployment can now run the tab with Suggested changes off. The entry now
+// carries `switch: 'TUNING_ENABLED'`, its own flag, rather than ANALYSIS_TAB_ENABLED: Tuning
+// already requires the tab (`tuningEnabled()` reads both), so naming the narrower switch is
+// never looser than naming the tab's. No bump: this is the SAME entry catching up to a flag
+// that split under it, not a new capability.
+//
+// Two OTHER entries name Suggested changes without being its own: `credits`' bullet list and
+// `deck-analysis`'s fourth key line (the one about the description it reads). Neither carries
+// the whole-entry `switch` — the Overview and the bracket exist with Tuning off — so each
+// gates just its own line, via `captionLineSwitches`/`keySwitches`, resolved in `visible.ts`.
 //
 // Voice: Kitchen Table. An entry explains a thing the app already does, to a
 // player who has met it and wants to know what it meant.
@@ -63,7 +71,8 @@ export type AboutSwitch =
   | 'HELP_ME_CHOOSE_ENABLED'
   | 'CHANGE_COMMANDER_ENABLED'
   | 'ANALYSIS_TAB_ENABLED'
-  | 'HOW_IT_WORKS_ENABLED';
+  | 'HOW_IT_WORKS_ENABLED'
+  | 'TUNING_ENABLED';
 
 export interface AboutEntry {
   id: string;
@@ -76,8 +85,19 @@ export interface AboutEntry {
   opens?: string;
   width: AboutWidth;
   caption: string;
+  /**
+   * A caption LINE (as it appears literally, including its leading `- `) gated by an ADDITIONAL
+   * switch, on top of the entry's own: `visibleEntries` strips it when that switch is off, even
+   * though the entry itself draws. For an entry with no `switch` at all (`credits`), this is the
+   * only way one line of it can depend on a feature — the entry's content otherwise never varies
+   * by switch state (2026-10-08, Suggested changes' own `TUNING_ENABLED`).
+   */
+  captionLineSwitches?: Partial<Record<string, AboutSwitch>>;
   /** 0–4 lines, in numeral order. Read in sequence by a screen reader. */
   keys: string[];
+  /** A key line (matched by its own exact text) gated the same way `captionLineSwitches` gates
+   *  a caption line — dropped from the resolved entry when its switch is off. */
+  keySwitches?: Partial<Record<string, AboutSwitch>>;
   /**
    * The key lines were rewritten (Hugh's voice pass, 2026-10-07) and the figure's numbered
    * marks have not been re-placed yet. While true, the key renders as a plain list and the
@@ -491,6 +511,12 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Edit the deck and you’ll be asked if you want to “Re-analyze”.',
       'Describe the deck with the pencil beside its name. “Suggested changes” uses that description to understand what the deck is for.',
     ],
+    // The fourth key names Suggested changes, not this entry's own feature (the bracket): with
+    // Tuning off, nothing reads the description for that reason, so the line is dropped while
+    // the rest of the entry (and the entry's own switch, the tab) draws exactly as before.
+    keySwitches: {
+      'Describe the deck with the pencil beside its name. “Suggested changes” uses that description to understand what the deck is for.': 'TUNING_ENABLED',
+    },
     // The version current when it was written: an entry tied to a switch is announced by the
     // switch, and nothing bumps the version for it.
     marksPending: true,
@@ -909,9 +935,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/decks',
     opens: "opens a deck’s Analysis tab",
     width: 'plate',
-    // NO switch (see the header comment above): ANALYSIS_TAB_ENABLED is confirmed on for
-    // staging and off for production, so a switch here would hide this entry on production
-    // forever rather than announcing it — the opposite of ruling 7's bump.
+    // 2026-10-08 (see the header comment above): Tuning decoupled from the Analysis tab, so this
+    // draws only while ITS OWN flag is on, never only the tab's.
+    switch: 'TUNING_ENABLED',
     caption:
       'Want a second opinion? “Suggested changes”, at the bottom of the “Analysis” tab, offers up to five swaps: a card out, a card in, and why.\n\nTell it what the deck is for: describe your Meren deck as slow graveyard value for casual tables, cap cards at $5, ask for more removal, and the swaps come back as cheap removal you already own.',
     keys: [
@@ -940,6 +966,12 @@ export const aboutEntries: readonly AboutEntry[] = [
     // ten and monthly testing share exist and are left out on purpose: Hugh, 2026-10-06, "three only".
     caption:
       'Some features write something just for you, and those use credits. You get three, and each one comes back 24 hours after you use it.\n\nThe following use a credit:\n\n- Writing a deck’s Overview\n- Each “Suggested changes” run\n- Each “Look deeper” in “Help me choose”\n\nDetermining your deck’s bracket is free.',
+    // 2026-10-08: the second bullet names Suggested changes, which Tuning can now withhold while
+    // the Overview and Look deeper still spend credits — so, unlike the rest of this entry
+    // (which carries no switch), that one line does.
+    captionLineSwitches: {
+      '- Each “Suggested changes” run': 'TUNING_ENABLED',
+    },
     keys: [
       'A run that comes back empty-handed, or that you stop, gives the credit back.',
       'Next to each button that uses a credit, you’ll see how many you have left and when the next one comes back.',
