@@ -191,3 +191,16 @@ describe("TUNING_ENABLED, and the two lines it gates without an entry switch of 
     expect(visible.find((e) => e.id === "suggested-changes")).toBeDefined();
   });
 });
+
+// The switched lines are matched by their exact text, so an edit to the copy that changes one of
+// them would leave the line showing with its switch off and nothing failing. Every switched line
+// has to name text the entry actually carries.
+describe("every switched line names text its entry carries", () => {
+  it.each(aboutEntries.filter((e) => e.captionLineSwitches || e.keySwitches).map((e) => [e.id, e] as const))(
+    "%s",
+    (_id, entry) => {
+      for (const line of Object.keys(entry.captionLineSwitches ?? {})) expect(entry.caption).toContain(line);
+      for (const key of Object.keys(entry.keySwitches ?? {})) expect(entry.keys).toContain(key);
+    },
+  );
+});
