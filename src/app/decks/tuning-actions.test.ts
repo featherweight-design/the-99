@@ -26,9 +26,14 @@ const calls = vi.hoisted(() => ({ inputs: 0, started: 0, applied: 0, saved: 0, s
   headerUpdates: [] as { set: unknown }[], headerUpdateRows: [{ id: "deck_1" }] as { id: string }[],
   // The WHERE condition passed to `saveDeckHeader`'s update, one per call — rendered to SQL
   // in the test itself, the same way `combo-map-action.test.ts` proves its own scoping.
-  headerWhere: [] as unknown[] }));
+  headerWhere: [] as unknown[],
+  // Every action in this file but `saveDeckDescription`/`saveDeckHeader` is Suggested-changes-
+  // specific and re-checks this gate; defaults to on so every test below it keeps proving what
+  // it always proved, the same shape `swaps/actions.test.ts` uses for its own flag.
+  tuningEnabled: true }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
+vi.mock("../../lib/tuning/flag", () => ({ tuningEnabled: () => calls.tuningEnabled }));
 // `updateTag` too: `saveDeckHeader`'s name path reaches `revalidateClaims` → `revalidateUserLists`.
 vi.mock("next/cache", () => ({ revalidatePath: () => undefined, updateTag: () => undefined }));
 vi.mock("../../db", () => ({
@@ -131,7 +136,15 @@ vi.mock("../../lib/tuning/verdicts", () => ({
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { creditsCopy } from "../../lib/copy/credits";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
-import { applySuggestion, runTuning, saveDeckDescription, saveDeckHeader, saveDeckLimits } from "./tuning-actions";
+import {
+  applySuggestion,
+  cancelTuningRun,
+  readTuningPanel,
+  runTuning,
+  saveDeckDescription,
+  saveDeckHeader,
+  saveDeckLimits,
+} from "./tuning-actions";
 
 const DECK = "11111111-1111-4111-8111-111111111111";
 
@@ -158,6 +171,7 @@ beforeEach(() => {
   calls.ownedIds = new Set();
   calls.freeCopies = new Map();
   calls.limits = { capCents: null, sets: [], ownedOnly: false };
+  calls.tuningEnabled = true;
 });
 
 describe("runTuning after the call returned", () => {
@@ -623,5 +637,39 @@ describe("runTuning with every card locked", () => {
       ok: false, message: lockedCardsCopy.tuning.allLocked("Kykar, Wind's Fury"),
     });
     expect(calls.started).toBe(1);
+  });
+});
+
+// Every action here is Suggested-changes-specific (`saveDeckDescription`/`saveDeckHeader` are
+// not — the description doubles as the deck's tagline, so they stay open) and re-checks
+// `tuningEnabled()` itself, the same shape the swap actions re-check their own flag: a stale
+// tab or a replayed request meets the same rule the panel's own mount does.
+describe("with TUNING_ENABLED off", () => {
+  beforeEach(() => {
+    calls.tuningEnabled = false;
+  });
+
+  it("refuses runTuning before any credit is reserved", async () => {
+    expect(await runTuning(DECK)).toEqual({ ok: false, message: deckTuningCopy.run.refused });
+    expect(calls.started).toBe(0);
+  });
+
+  it("refuses saveDeckLimits, writing nothing", async () => {
+    expect(await saveDeckLimits(DECK, { capDollars: 5 })).toEqual({
+      ok: false,
+      message: expect.any(String),
+    });
+    expect(calls.headerUpdates).toHaveLength(0);
+  });
+
+  it("answers cancelTuningRun and readTuningPanel as every other refusal does", async () => {
+    expect(await cancelTuningRun(DECK, "11111111-1111-4111-8111-111111111112")).toEqual({ ok: true });
+    expect(await readTuningPanel(DECK)).toBeNull();
+  });
+
+  it("refuses applySuggestion, applying nothing", async () => {
+    const itemId = "11111111-1111-4111-8111-111111111113";
+    expect(await applySuggestion(itemId)).toEqual({ ok: false, message: expect.any(String) });
+    expect(calls.applied).toBe(0);
   });
 });

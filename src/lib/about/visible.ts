@@ -11,6 +11,7 @@ import { howItWorksEnabled } from "./how-it-works-flag";
 import { neverCutEnabled } from "../decks/never-cut-flag";
 import { helpMeChooseEnabled } from "../intake/flag";
 import { swapToolsEnabled } from "../swaps/flag";
+import { tuningEnabled } from "../tuning/flag";
 import { aboutEntries, type AboutEntry, type AboutSwitch } from "../copy/about";
 
 /**
@@ -25,14 +26,41 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   CHANGE_COMMANDER_ENABLED: changeCommanderEnabled,
   ANALYSIS_TAB_ENABLED: analysisTabEnabled,
   HOW_IT_WORKS_ENABLED: howItWorksEnabled,
+  TUNING_ENABLED: tuningEnabled,
 };
+
+/**
+ * A caption or key line gated by its OWN switch, on top of the entry's (2026-10-08): `credits`'
+ * bullet naming Suggested changes, and `deck-analysis`'s key about the description it reads.
+ * Dropped when that switch is off, even though the entry itself draws. A line removed from the
+ * caption takes one adjoining newline with it, so no blank line is left where it stood.
+ */
+function resolveLine(text: string, line: string): string {
+  return text.includes(`\n${line}`) ? text.replace(`\n${line}`, "") : text.replace(line, "");
+}
+
+/** Exported for `visible.test.ts` alone, to build an expectation from the same resolution
+ *  `visibleEntries` applies, rather than hand-duplicating its string surgery. */
+export function resolveEntry(entry: AboutEntry, env: NodeJS.ProcessEnv): AboutEntry {
+  if (!entry.captionLineSwitches && !entry.keySwitches) return entry;
+  let caption = entry.caption;
+  for (const [line, sw] of Object.entries(entry.captionLineSwitches ?? {})) {
+    if (sw && !SWITCHES[sw](env)) caption = resolveLine(caption, line);
+  }
+  const keys = entry.keySwitches
+    ? entry.keys.filter((k) => !(k in (entry.keySwitches ?? {})) || SWITCHES[entry.keySwitches![k]!](env))
+    : entry.keys;
+  return { ...entry, caption, keys };
+}
 
 /** The entries this deployment draws, in page order. An entry with no switch always draws. */
 export function visibleEntries(
   env: NodeJS.ProcessEnv = process.env,
   entries: readonly AboutEntry[] = aboutEntries,
 ): AboutEntry[] {
-  return entries.filter((e) => !e.switch || SWITCHES[e.switch](env));
+  return entries
+    .filter((e) => !e.switch || SWITCHES[e.switch](env))
+    .map((e) => resolveEntry(e, env));
 }
 
 /**

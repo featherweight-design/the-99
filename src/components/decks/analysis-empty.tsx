@@ -40,6 +40,7 @@ export function AnalysisEmpty({
   see = null,
   description = null,
   onSaveDescription,
+  tuningEnabled = true,
 }: {
   phase: "idle" | "loading" | "failed";
   /**
@@ -67,6 +68,10 @@ export function AnalysisEmpty({
   /** Saves the description. The press (below) awaits this before it reads (engineering note 1):
    *  a description typed seconds before Analyze must not be lost to a race. */
   onSaveDescription?: (value: string) => Promise<DeckMutationResult>;
+  /** `tuningEnabled()`: the field is asked only to feed a Suggested changes run ("will help us
+   *  suggest more accurate card swaps"), so it draws nothing while that is off — the description
+   *  itself stays editable from the header pencil, where it doubles as the deck's tagline. */
+  tuningEnabled?: boolean;
 }) {
   const noteId = useId();
   const [draft, setDraft] = useState(description ?? "");
@@ -164,8 +169,10 @@ export function AnalysisEmpty({
             </p>
           ) : null}
           {/* The description field, between the second paragraph and Analyze (H35, STATES §1).
-              Not drawn during loading — the shipped loading state is unchanged. */}
-          {phase === "idle" ? (
+              Not drawn during loading — the shipped loading state is unchanged. Withheld
+              entirely with Tuning off (`tuningEnabled`): its own help text promises it will
+              help "suggest more accurate card swaps", a promise this deployment does not keep. */}
+          {phase === "idle" && tuningEnabled ? (
             <div className="w-full max-w-[540px]">
               <DeckDescriptionField
                 value={draft}

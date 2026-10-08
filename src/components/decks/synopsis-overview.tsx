@@ -56,6 +56,7 @@ export function SynopsisOverview({
   onSeeWhich,
   reanalyze,
   deeperLooks = false,
+  tuning = true,
 }: {
   state: SynopsisState;
   busy: boolean;
@@ -80,6 +81,11 @@ export function SynopsisOverview({
   /** `HELP_ME_CHOOSE_ENABLED`: the credit lines name its deeper looks as sharing the credits. Off,
       they read exactly as before the looks existed. */
   deeperLooks?: boolean;
+  /** `tuningEnabled()`: whether the credit lines still name Suggested changes as sharing the
+   *  credits (2026-10-08). Defaults true, the wording from before this flag existed — the
+   *  Overview itself is unaffected by Tuning, so a caller that never set this still spends
+   *  credits on the Overview and Suggested changes together, exactly as before. */
+  tuning?: boolean;
   /** The banner's Re-analyze, for the modal over a reading that is itself stale (6d), held
    *  exactly as the tab's banner holds it: a short deck or a read in flight cannot press it. */
   reanalyze: { onPress: () => void; disabled: boolean; note: string | null };
@@ -127,10 +133,10 @@ export function SynopsisOverview({
   // Spent, the credit comes back at `reopensAt`, which can be later than the earliest expiry
   // when more units count than the limit (a reservation beside spent units): as the tuning panel.
   const spentNote = allowance.paused
-    ? creditsCopy.paused(allowance.paused.until, deeperLooks)
+    ? creditsCopy.paused(allowance.paused.until, deeperLooks, tuning)
     : allowance.ownerShare
       ? creditsCopy.ownerShare(new Date())
-      : creditsCopy.spent(allowance.limit, allowance.reopensAt ?? allowance.nextAt, deeperLooks);
+      : creditsCopy.spent(allowance.limit, allowance.reopensAt ?? allowance.nextAt, deeperLooks, tuning);
   const spendNote = creditsCopy.first(left, allowance.limit, allowance.nextAt);
   const note = spent ? spentNote : state.wouldSpend ? spendNote : null;
   const retryNote = spent ? spentNote : spendNote;

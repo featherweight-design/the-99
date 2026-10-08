@@ -35,11 +35,23 @@ export function monthName(at: Date): string {
  * name the looks as well, but only where the deployment draws them (`HELP_ME_CHOOSE_ENABLED`):
  * production shows nothing of a feature until its switch flips (orchestrator, 2026-09-25). A caller
  * passes the flag it was handed on the server; the default is the wording from before the looks.
+ *
+ * `tuning` names Suggested changes the same way (`TUNING_ENABLED`, decoupled from the Analysis
+ * tab, 2026-10-08) and DEFAULTS TO TRUE: every caller written before this flag existed spent
+ * credits on the Overview and Suggested changes together, and leaving the argument out still
+ * means exactly that. Only the Overview's own surfaces (`synopsis-note.ts`,
+ * `synopsis-overview.tsx`) pass the live flag, since Suggested changes can be off while the
+ * Overview still spends. An explicit table, not a generic join, because every combination here
+ * is a sentence someone reads, not a rule to derive.
  */
-const pausedReason = (deeperLooks = false) =>
-  deeperLooks
-    ? "The app has reached its monthly limit for suggestions, overviews and deeper looks. Nothing you did caused this."
-    : "The app has reached its monthly limit for suggestions and overviews. Nothing you did caused this.";
+const pausedReason = (deeperLooks = false, tuning = true) =>
+  tuning
+    ? deeperLooks
+      ? "The app has reached its monthly limit for suggestions, overviews and deeper looks. Nothing you did caused this."
+      : "The app has reached its monthly limit for suggestions and overviews. Nothing you did caused this."
+    : deeperLooks
+      ? "The app has reached its monthly limit for overviews and deeper looks. Nothing you did caused this."
+      : "The app has reached its monthly limit for overviews. Nothing you did caused this.";
 
 /** The count and, when one is out, when the next comes back. "reset at", not "next one at"
  *  (H35, engineering note 11). */
@@ -59,14 +71,20 @@ export const creditsCopy = {
   /** Beside a press that would replace what is on screen. */
   again: (left: number, total: number, next: Date | null) =>
     `Replaces these suggestions and uses a credit. ${standing(left, total, next)}.`,
-  /** Every credit is out: the press is disabled and this says when it comes back. */
-  spent: (total: number, next: Date | null, deeperLooks = false) =>
-    `${standing(0, total, next)}. ${deeperLooks ? "Suggestions, overviews and deeper looks share" : "Your overview and suggestions share"} these credits.`,
+  /** Every credit is out: the press is disabled and this says when it comes back. `tuning`
+   *  defaults true, same as `pausedReason`. */
+  spent: (total: number, next: Date | null, deeperLooks = false, tuning = true) =>
+    `${standing(0, total, next)}. ${
+      tuning
+        ? deeperLooks ? "Suggestions, overviews and deeper looks share" : "Your overview and suggestions share"
+        : deeperLooks ? "Your overview and deeper looks share" : "Your overview shares"
+    } these credits.`,
   /**
    * The app-wide spend cap has been reached (`src/lib/model/spend-rule.ts`): every press is
    * disabled until `until`, the 1st of next month. DECIDED wording (orchestrator, 2026-09-24).
    */
-  paused: (until: Date, deeperLooks = false) => `Paused until ${monthName(until)} 1. ${pausedReason(deeperLooks)}`,
+  paused: (until: Date, deeperLooks = false, tuning = true) =>
+    `Paused until ${monthName(until)} 1. ${pausedReason(deeperLooks, tuning)}`,
   /** `paused`'s reason alone, for a surface that names the pause in its own lead (the overview's
    *  press note), so the reason is said in exactly these words and nowhere restated. */
   pausedReason,

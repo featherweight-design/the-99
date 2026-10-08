@@ -9,6 +9,7 @@ import { comboFor, comboLookupIds } from "../../../lib/combos/attach";
 import { requireUserId } from "../../../lib/auth";
 import { getDeckDetail, listDecksWithStats } from "../../../lib/decks/read";
 import { loadCommanderPrintings } from "../../../lib/sets/printed-in-read";
+import type { PrintedInSet } from "../../../lib/sets/printed-in";
 import { cacheForUser } from "../../../lib/cache/user-lists";
 import { readDeckSynergy } from "../../../lib/decks/deck-synergy";
 import { indexGeneration } from "../../../lib/cache/index-generation";
@@ -37,6 +38,7 @@ import { hasChanges, loadDraftState, loadVersionShape } from "../../../lib/decks
 import { listVersions } from "../../../lib/decks/versions";
 import { computeRoleCounts } from "../../../lib/decks/mix";
 import { analysisTabEnabled } from "../../../lib/decks/analysis-flag";
+import { tuningEnabled } from "../../../lib/tuning/flag";
 import { noticesEnabled } from "../../../lib/notices/flag";
 import { loadDeckNotices } from "../../../lib/notices/read";
 import { NOTICES_PARAM, readNoticesArrival } from "../../../lib/notices/arrival";
@@ -102,6 +104,9 @@ export default async function DeckBuilderPage({
   const userId = await requireUserId();
   // `measure:load`'s spans (PERF_TIMING=1 only; a pass-through otherwise).
   const perf = perfRoute("/decks/[id]");
+  // Read up front, beside the other switches below, because it gates a Stage A read
+  // (`printedInSetsRead`) that must not start at all when Tuning is off.
+  const tuned = tuningEnabled();
 
   // STAGE A: every read the next wave waits on starts NOW, beside the ownership guard rather than
   // after it. Each is owner-scoped in its own SQL — `getDeckDetail`, the draft's snapshot, the fill
@@ -138,9 +143,11 @@ export default async function DeckBuilderPage({
   const versionsRead = early(perf.timed("versions", () => listVersions(id, userId)));
   // "Kept for this deck"'s Set picker (H35, PR 2) — the same cached, unscoped list
   // help-me-choose's intake form reads. Degrades to an empty picker rather than failing the page.
-  const printedInSetsRead = early(
-    perf.timed("printedInSets", () => loadCommanderPrintings().then((x) => x.sets).catch(() => [])),
-  );
+  // Tuning-only: the Set picker lives inside the tuning panel alone (`builder-shell.tsx`), so
+  // with Tuning off this read is never started and the page pays none of its catalog queries.
+  const printedInSetsRead = tuned
+    ? early(perf.timed("printedInSets", () => loadCommanderPrintings().then((x) => x.sets).catch(() => [])))
+    : Promise.resolve([] as PrintedInSet[]);
   const detail = await detailRead;
   if (!detail) notFound();
   // The commander's art, asked for NOW. The header draws it as a CSS background, which the browser
@@ -464,6 +471,7 @@ export default async function DeckBuilderPage({
       // Nothing in the app produces such a URL now that `/decks/[id]/versions`
       // is retired; see the note in `lib/decks/builder-view.ts`.
       analysisEnabled={analysisEnabled}
+      tuningEnabled={tuned}
       noticesEnabled={noticesEnabled()}
       initialNotices={notices}
       // The tile's `!` asks for the sheet (`noticesHref`). The shell opens it on arrival and strips

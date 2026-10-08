@@ -27,6 +27,7 @@ import {
 import { callModel } from "../../lib/model/client";
 import { buildPlayGroup } from "../../lib/profile/play";
 import { buildEvidencePack } from "../../lib/tuning/evidence";
+import { tuningEnabled } from "../../lib/tuning/flag";
 import { gateReason } from "../../lib/tuning/gate";
 import { intentTooLong, MAX_SUGGESTIONS, MODEL_TIMEOUT_MS, TUNING_EFFORT, TUNING_MAX_TOKENS, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "../../lib/tuning/limits";
 import { MAX_BUDGET_DOLLARS, MAX_SETS } from "../../lib/intake/answers";
@@ -135,7 +136,7 @@ export async function saveDeckLimits(
   fields: { capDollars?: number | null; sets?: readonly string[]; ownedOnly?: boolean },
 ): Promise<DeckMutationResult> {
   const userId = await requireUserId();
-  if (!isUuid(deckId)) return { ok: false, message: deckDescriptionCopy.limits.refused };
+  if (!tuningEnabled() || !isUuid(deckId)) return { ok: false, message: deckDescriptionCopy.limits.refused };
   if (typeof fields !== "object" || fields === null) return { ok: false, message: deckDescriptionCopy.limits.refused };
   const { capDollars, sets, ownedOnly } = fields;
   if (
@@ -181,7 +182,7 @@ export async function runTuning(
   opts: { anyway?: boolean; runId?: string; notes?: string } = {},
 ): Promise<DeckMutationResult> {
   const userId = await requireUserId();
-  if (!isUuid(deckId)) return { ok: false, message: deckTuningCopy.run.refused };
+  if (!tuningEnabled() || !isUuid(deckId)) return { ok: false, message: deckTuningCopy.run.refused };
   const anyway = typeof opts === "object" && opts !== null && opts.anyway === true;
   // The panel names its run so its Stop can cancel that run and no other. Anything but a uuid is
   // refused rather than dropped: a Stop keyed on an id the row does not carry could never land.
@@ -343,7 +344,7 @@ export async function runTuning(
 /** Stop: the run the panel was watching, by id, so a late press cannot cancel the next one. */
 export async function cancelTuningRun(deckId: string, runId: string): Promise<DeckMutationResult> {
   const userId = await requireUserId();
-  if (!isUuid(deckId) || !isUuid(runId)) return { ok: true };
+  if (!tuningEnabled() || !isUuid(deckId) || !isUuid(runId)) return { ok: true };
   if (await cancelRun(runId, deckId, userId)) revalidateDeck(deckId);
   return { ok: true };
 }
@@ -355,7 +356,7 @@ export async function cancelTuningRun(deckId: string, runId: string): Promise<De
  */
 export async function readTuningPanel(deckId: string): Promise<TuningState | null> {
   const userId = await requireUserId();
-  if (!isUuid(deckId)) return null;
+  if (!tuningEnabled() || !isUuid(deckId)) return null;
   const inputs = await tuningInputs(deckId, userId);
   if (!inputs) return null;
   return readTuningState(deckId, userId, inputs.fingerprint, new Date(), { allLocked: inputs.allLocked });
@@ -368,7 +369,7 @@ async function verdict(
   claims: boolean,
 ): Promise<DeckMutationResult> {
   const userId = await requireUserId();
-  if (!isUuid(itemId)) return { ok: false, message: refused };
+  if (!tuningEnabled() || !isUuid(itemId)) return { ok: false, message: refused };
   const deckId = await write(userId);
   if (!deckId) return { ok: false, message: refused };
   if (claims) revalidateClaims(deckId, userId);
