@@ -39,9 +39,10 @@ worktree under `.worktrees/`, the pre-open subagent pass, and the normal pr-revi
 PR runs `feature-acceptance` (contact sheet of its rows, `check:shared`), and the line runs it
 again at close.
 
-**Who builds what** (Hugh, 2026-10-09): this lane builds PR 1 (the server and write path) and
-closes. PRs 2 to 8 go to a fresh Sonnet session. At PR 1's merge, a "For the screens session" note
-is added to `boards/lane-collection-build.md`.
+**Who builds what** (Hugh, 2026-10-09, as revised overnight): this lane builds PR 1 (the server
+and write path) on Opus, then continues into PRs 2 to 8 in the same session on Sonnet. At PR 1's
+merge, a "For the screens session" note is added to `boards/lane-collection-build.md`, so a fresh
+session can pick the line up if this one's context grows large.
 
 ### PR 1 · Server pieces the screens need (no UI)
 
@@ -57,18 +58,30 @@ is added to `boards/lane-collection-build.md`.
    `history-actions.ts` (`signedInEditor`, refuse when the switch is off, `isUuid` on every id):
    - `addToCollection(actionId, items)`: `kind: "add"`. It never lowers, so it never warns (B7
      Must-not: "Run a deck check").
+   - **The client never supplies a `scryfallId`.** `collection_items.scryfall_id` has no foreign
+     key, so a forged id would persist art from another card. Both write actions resolve each
+     line's printing from `printings` by `(oracle_id, set_code, collector_number)` and take its
+     `scryfall_id` from there. An add line must name a catalog printing whose `finishes` include
+     its finish, or the action refuses it. An edit row that names no catalog printing keeps a
+     null id: a holding imported from a bare `Name,Qty` export has none to name, and an existing
+     row keeps its own columns anyway. The client may send `condition`, capped and validated, only
+     to carry a holding's condition across a printing fix.
    - `editCollection(actionId, rows, confirmShort?)`: `kind: "edit"`, rows with `expected`.
      It answers `applied | stale(current) | wouldShort(decks) | missingCard(names)`. Removal is an
      edit with every line at zero, and `Undo` reuses `revertCollectionEntry`.
    - `searchCatalogCards(query)`: the sheet's catalog search over every game card, not only owned
-     ones (B2 Must-not). It reuses the name match `src/app/decks/[id]/search-action.ts` already
-     runs (`isGameCardWhere`, printed and flavor names) with no deck or identity filter, and is
-     extracted into `src/lib` rather than copied.
-   - The required printing step reads the card's catalog printings plus `you own ×N`. If
-     `getCardDetail` already returns both, the step reuses it and no action is added. The PR
-     confirms this by reading the code.
+     ones (B2 Must-not). Only the name and flavor-name match and `isGameCardWhere` are extracted
+     from `src/app/decks/[id]/search-action.ts` into `src/lib`. That query also applies
+     `commanderLegal`, an identity filter and an owned filter, and none of those three applies
+     here: a player owns banned cards too.
+   - `loadPrintingChoices(oracleId)`: the required printing step needs every catalog printing with
+     its finishes, plus `you own ×N` per printing and finish. `getCardDetail` doesn't do this: it
+     returns only the owned printings for a card the player owns, and only the catalog ones for a
+     card they don't.
    Every write calls `invalidateCollectionReaders` on `applied` and `alreadyApplied`, exactly as
-   revert does.
+   revert does. Action tests, shaped like `history-actions.test.ts`, cover the switch and input
+   guards, every refusal and success branch, invalidating again on a retry, and scheduling the
+   warm.
 3. **One score warm for every write.** The upload confirm already warms the new collection's
    scores in `after()` (`src/app/collection/actions.ts`). That body becomes one helper,
    `warmCommanderScores(userId)`, called after the upload, add, edit and revert actions. Revert
@@ -97,7 +110,7 @@ is added to `boards/lane-collection-build.md`.
    preset), §C (editing in the sheet, no Move) and §D (removal in the sheet, rows unchanged),
    citing Hugh's 2026-10-09 rulings. It is doc-only within this PR.
 
-About 10 files. Probe: `probe:collection-write` grows an edit-with-new-printing case, run on
+About 15 files. Probe: `probe:collection-write` grows an edit-with-new-printing case, run on
 local-dev or a scratch branch only.
 
 ### PR 2 · §B Add cards (add mode) and the place head entry
@@ -155,7 +168,11 @@ local-dev or a scratch branch only.
 - `HistoryEntry` uses PR 1's tags in a fixed 150px mono column. Short entries expand in place; long
   ones are paged, never rendered whole (F3). The aged-out link is absent, and a foot always names
   the date history reaches back to. The empty state is dated from the ship date (F0, never
-  hard-coded).
+  hard-coded). That date's source is the time the `collection_history` migration was applied, per
+  database, read from Drizzle's migration ledger. It's persistent, the same for every account, and
+  exists before any entry does. The foot reads the later of that date and the 90-day edge. One
+  caveat: the date is when the ledger could first record a change, not when the switch went on.
+  Turning the switch on in the same deploy that migrates keeps the two the same.
 - `RevertConfirm` (matches, and differs with Then/Now columns, a reason per row and
   `Revert what's left`) runs §E through `ShortDeckWarning`, with a named catalog failure that writes
   nothing (F4 to F7). The full-revert dry run measured ~2.1s, so its pending state is drawn.
@@ -211,7 +228,9 @@ steps in `collection-edit.json`, because a URL sweep can't see them.
 | Card modal from `/decks/[id]`: receipt read-only (negative row) | ☐ | ☐ | 7 | — |
 | Edit copies sheet: at rest, printing fix, add another printing, remove, §E, toast Undo | ☐ | ☐ | 7 | `AddCardsSheet`, `ShortDeckWarning` |
 | `/about`: five entries, `import` caption both ways | ☐ | ☐ | 8 | — |
-| Switch off: `/collection`, `/collection/replace`, card modal | ☐ | ☐ | every | — |
+| Switch off: `/collection` (no `+ Add`, no History tab, one door), `/collection/replace`, card modal | ☐ | ☐ | every | — |
+| Switch off: `/collection/history` is not found | ☐ | ☐ | 6 | — |
+| Switch off: `/` Home step one has no `Add cards by hand` | ☐ | ☐ | 3 | — |
 
 `check:shared` holds `ShortDeckWarning` across the upload confirm, the revert confirm and the edit
 sheet, and `AddCardsSheet` across both modes. Its rows name the file that imports each.
