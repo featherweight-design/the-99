@@ -21,7 +21,8 @@ From the roadmap's owner rulings:
 
 - Every upload asks "Replace my collection" (warns that in-app edits since the last upload will
   be overwritten) or "Add these cards" (merge, quantities added). Both show a preview before
-  confirming.
+  confirming. The one exception is the first upload into an empty collection, which asks nothing,
+  since both choices write the same thing (Hugh, 2026-10-09; see §A).
 - A hand-added card records card, printing, foil and quantity — the same shape an upload gives.
 - Removing or lowering a card a committed deck relies on warns first, naming the decks that will
   now read short, and saves on confirm. Nothing about a deck changes on its own.
@@ -237,7 +238,8 @@ Add cards beside the upload, as equals:
 
 - **`/collection`'s empty state** (`src/app/collection/(list)/page.tsx:97-115`). Today it offers
   one action, "Upload your CSV". The place head's `Replace` control does not render for an empty
-  collection (`collection-place-head.tsx:213`), so the control beside it is not there either, and
+  collection at either width (the desktop button at `collection-place-head.tsx:213`, the phone
+link at `:252`), so the control beside it is not there either, and
   the empty state is where Add cards has to appear.
 - **Home's first-run step one** (`src/components/home/first-run-step-one.tsx:75`), which embeds
   the upload's file and paste buttons. It offers Add cards beside them.
