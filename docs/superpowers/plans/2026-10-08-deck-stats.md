@@ -229,6 +229,20 @@ one-pip seven-drop counts 0.14 against a one-drop's 1.0, and on this deck it mov
 69.6%, no more than the proposal does, while making expensive color-critical bombs read as noise
 on decks where they carry the plan. It also reads a mana value of 0 as a special case.
 
+**Second deck: "HD - Gishath" on staging** (`904fdc61…`, 2026-10-09, read-only, 85 `deck_cards` rows
+plus the commander, 64 non-land cards with a mana cost, same rules and the same single-color
+filter as above):
+
+| color | raw pips | weighted | raw share | weighted share |
+|---|---|---|---|---|
+| G | 56 | 22.2 | 56.0% | 56.9% |
+| R | 26 | 10.3 | 26.0% | 26.3% |
+| W | 18 | 6.6 | 18.0% | 16.8% |
+
+The weighting moves a share by at most 1.2 points (white down, green up 0.9), and the order of the
+colors is unchanged. On a three-color deck it is as quiet as on Yuriko's two, so the proposal
+changes bar lengths by about a point on both decks measured and flips no reading.
+
 ## Settled by Hugh
 
 - **Ruling 9 (Hugh, 2026-10-08): card (b), colors, ships as drawn in PR 4 (lands by color).** The
