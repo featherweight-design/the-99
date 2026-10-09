@@ -1,8 +1,9 @@
 "use server";
 
-import { and, eq, ilike, isNotNull, or, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "../../../db";
-import { cardBracketFlags, cards, collectionItems, printings } from "../../../db/schema";
+import { cardBracketFlags, cards, collectionItems } from "../../../db/schema";
+import { nameSearch } from "../../../lib/cards/name-search";
 import { requireUserId } from "../../../lib/auth";
 import type { CardNoteFacts } from "../../../lib/bracket/card-note";
 import { isTutor } from "../../../lib/bracket/tutor-targets";
@@ -78,11 +79,9 @@ export async function searchCards(
   query: string, colorIdentity: string[] | null, ownedOnly: boolean, deckId?: string,
 ): Promise<SearchResult[]> {
   const userId = await requireUserId();
-  const q = query.trim();
-  if (q.length < 2 || q.length > 100) return [];
-  // The query string is parameterized (no SQL injection risk); escaping stops
-  // user-typed %/_/\ from acting as LIKE wildcards and changing match behavior.
-  const escaped = q.replace(/[\\%_]/g, (m) => `\\${m}`);
+  const match = nameSearch(query);
+  if (!match) return [];
+  const { flavorHits } = match;
   // The user's collection, summed per card once and joined in — rather than a
   // correlated subquery, which the select list and the owned-only filter would
   // each evaluate per candidate row. One aggregate drives both the figure and
@@ -100,22 +99,6 @@ export async function searchCards(
   const ownedQtySql = sql<number>`coalesce(${ownedTotals.qty}, 0)`;
   // All constraints live in SQL so LIMIT can't starve results when early
   // name matches are off-color or unowned.
-  // The Secret Lair names this query caught (#467), one row per card rather than per printing:
-  // a card can have several renamed printings and one row each would multiply the result list.
-  //
-  // Resolved once, ahead of the scan, rather than as a correlated subquery — the select list and
-  // the WHERE clause both need it, and correlated it would be evaluated per candidate card, twice
-  // over. Only a few hundred printings have a flavor name at all, and the partial index means
-  // this reads those and nothing else.
-  const flavorHits = db
-    .select({
-      oracleId: printings.oracleId,
-      flavorName: sql<string>`min(${printings.flavorName})`.as("flavor_name"),
-    })
-    .from(printings)
-    .where(ilike(printings.flavorName, `%${escaped}%`))
-    .groupBy(printings.oracleId)
-    .as("flavor_hits");
   const rows = await db
     .select({
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
@@ -134,9 +117,7 @@ export async function searchCards(
     .leftJoin(cardBracketFlags, eq(cardBracketFlags.oracleId, cards.oracleId))
     .leftJoin(flavorHits, eq(flavorHits.oracleId, cards.oracleId))
     .where(and(
-      // A player typing the name off the front of a Secret Lair card is typing the only
-      // name that card shows them, so the flavor name is a first-class way in.
-      or(ilike(cards.name, `%${escaped}%`), isNotNull(flavorHits.flavorName)),
+      match.where,
       colorIdentity === null ? undefined : withinColorIdentity(colorIdentity),
       eq(cards.commanderLegal, true),
       // Sticker sheets are commander-legal on Scryfall and are never one of the 99 (isGameCard).
@@ -163,9 +144,7 @@ export async function searchCards(
           () => null,
         )
       : null;
-  // Substring (not prefix) match is intentional: "gravetide" must find
-  // "Muldrotha, the Gravetide". A scan over the ~35k-row cards table is cheap.
-  const lowerQuery = q.toLowerCase();
+  // A scan over the ~35k-row cards table is cheap.
   return rows.map(({ oracleText, keywords, gameChanger, massLandDenial, extraTurn, ...row }) => ({
     ...row,
     facts: noteFacts({
@@ -174,9 +153,7 @@ export async function searchCards(
       extraTurn: extraTurn ?? false,
       tutor: isTutor(oracleText),
     }),
-    // Dropped when the title itself matched: the flavor name is there to explain a row
-    // whose name does not contain what the player typed, and nothing else.
-    flavorName: row.name.toLowerCase().includes(lowerQuery) ? null : row.flavorName,
+    flavorName: match.shownFlavor(row.name, row.flavorName),
     owned: row.ownedQty > 0,
     cardTypeGroup: cardTypeGroup(row.typeLine),
     role: primaryRole({ typeLine: row.typeLine, oracleText, keywords }),

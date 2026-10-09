@@ -252,9 +252,12 @@ state, as a first upload does. The first upload still skips the Replace/Add ques
 them. Each card records the same four things an upload row does (ruling 3):
 
 - **Card:** found by name search over the catalog, not only over what the player owns.
-- **Printing:** preset to the card's default printing, changeable through the existing printing
-  picker (`PrintingRegion`, `src/components/cards/printing-region.tsx`) rather than a second
-  picker.
+- **Printing:** a required step with no default (Hugh, 2026-10-09, superseding "preset to the
+  card's default printing"). Picking a result opens that card's printing picker with nothing
+  selected, and a card with a single printing skips the step. The picker is the existing
+  `PrintingRegion` (`src/components/cards/printing-region.tsx`) in a `choose` role, not a
+  second picker. A guessed printing saved in a hurry would have to be corrected later in
+  history, so it is cheaper to ask when the card is added.
 - **Foil or not.**
 - **Quantity:** preset to 1.
 
@@ -273,6 +276,15 @@ they are adding); closing with unsaved cards (ask before discarding); saving; sa
 see the entry in history; a failed save (nothing written).
 
 ### C. Editing from a card's details (sub-project 2)
+
+> **Superseded in part by Hugh's 2026-10-09 review rulings** (handoff R2,
+> `design/design_handoff_the99_collection_edit/`). Copies are edited in the Add cards sheet, scoped
+> to one card (`AddCardsSheet mode="edit"`), opened from an `Edit copies` link on the card's "In
+> your collection" receipt. The link is drawn only when the modal was opened from `/collection`.
+> There is no Move. A wrong printing is fixed by re-picking the line's printing, and a partial fix
+> is a lowering plus `Add another printing`. Both are one entry. The owned line and its marker are
+> untouched. The requirement below, that owning and showing are unmistakable, is met by keeping
+> them on two different surfaces.
 
 **Where:** the card modal (desktop) and the card phone sheet. Today the owned line,
 `data-testid="owned-line"` (`src/components/cards/card-modal.tsx:278-287`), displays `×N` and,
@@ -298,6 +310,12 @@ printing; raising a quantity (saves directly); lowering one that leaves a commit
 that was the last copy); saving; a failed save.
 
 ### D. Removing from a Collection row (sub-project 2)
+
+> **Superseded by Hugh's 2026-10-09 review rulings** (handoff R2). Rows and tiles stay as shipped.
+> Removal is `Remove from collection` in the Edit copies sheet's footer. It stages every line at
+> zero, runs E first if a committed deck relies on the card, and ends with a toast whose Undo is a
+> revert. There is no desktop row `Edit` fallback either (Hugh, 2026-10-09): Edit copies is reached
+> only through the card's details.
 
 **Where:** each card on `/collection`, in both the rows view (`RowsView`) and the grid view.
 A Collection card aggregates every printing and finish the player holds of that card.
