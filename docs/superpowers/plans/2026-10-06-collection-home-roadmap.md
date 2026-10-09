@@ -37,6 +37,28 @@ in-app management, not just a CSV importer. Uploading a CSV stays available alon
 9. **Each sub-project ships behind its own `*_ENABLED` switch.** About entries are written once,
    at the end of the whole launch — the batching rule already in `AGENTS.md`. No paid model calls
    anywhere in this epic. Building waits for Hugh's go, after his testing week.
+10. **Scanning's pass bar is the card and its artwork, not the printing** (Hugh, 2026-10-08).
+    5a passes when at least 95% of test photos find the right CARD and the right ARTWORK (the
+    illustration). Choosing among printings that share that artwork is the player's job, in the
+    printing picker that already exists. This replaces the 2026-10-06 bar of "the exact
+    printing", which asked the hash to tell apart printings that share an illustration by design.
+11. **"I got it" is decoupled from deck printings** (Hugh, 2026-10-08). Sub-project 4 does not
+    wait for 3. Its printing defaults to the printing behind the Shopping price the row already
+    shows, and it ships right after 2. When 3 lands, a deck's chosen printing becomes the better
+    default; that is an improvement to 4, not a prerequisite for it.
+12. **One Design handoff covers sub-projects 1 and 2** (Hugh, 2026-10-08): the Replace / Add
+    choice screen, its preview, and all of the in-app editing (the Add cards sheet, the
+    card-details edit, remove-with-warning, history and revert). Sub-projects 3 and 4 each get
+    their own Design round later.
+
+## Order
+
+1, then 2, then 4, with 3 running in parallel. 5a can start any time, since it is read-only.
+5b to 5d wait for 2 to ship and for 5a to pass its bar.
+
+- **Sequencing against Deck stats:** Deck stats' money PR (S2) lands before sub-project 3's
+  `deck_cards` migration, so the money card's price join is written against the deck tables as
+  they are today and is not caught mid-flight by the schema change.
 
 ## Sub-projects
 
@@ -47,8 +69,9 @@ preview, and revert. The prerequisite for everything else: 2, 3 and 4 all write 
 this project establishes as the one path for changing a quantity.
 
 - **Depends on:** nothing. Ships first.
-- **Design:** yes, but narrowly — only the upload choice screen (Replace vs Add) and its preview
-  are new UI. The rest is data model and plumbing. See the brief, doc 2.
+- **Design:** yes, in the one handoff shared with 2 (ruling 12). Sub-project 1's own new UI is
+  the upload choice screen (Replace vs Add) and its preview; the rest is data model and
+  plumbing. See the brief, doc 2.
 - **Switch:** `COLLECTION_EDIT_ENABLED` (name fixed for all of 2, 3, 4 — one switch for the
   write path, since a history entry from project 2 is meaningless without project 1's ledger).
 - **Risks:** the write path is the one piece every other sub-project depends on, so a schema
@@ -63,7 +86,8 @@ The UI for project 1: the "Add cards" sheet, the card-details edit (quantity, pr
 remove-with-warning, and a history view with revert.
 
 - **Depends on:** 1.
-- **Design:** yes — this is almost entirely new UI. Runs in parallel with 3.
+- **Design:** yes — almost entirely new UI, drawn in the same handoff as 1 (ruling 12). Runs in
+  parallel with 3.
 - **Switch:** `COLLECTION_EDIT_ENABLED` (shared with 1; see above).
 - **Risks:** the removal warning (ruling 5) needs the same claim read `loadDeckBuyRows` already
   does for Shopping, run against the proposed new quantity before it is saved — this is a
@@ -78,9 +102,10 @@ Shopping.
 
 - **Depends on:** nothing from 1 or 2 directly, but touches the same `deck_cards` /
   `deck_version_cards` surface that claims and seniority read, so it should not land concurrently
-  with any other schema change to those tables. Runs in parallel with 2.
-- **Design:** yes — a printing picker already exists (`src/components/cards/printing-region.tsx`)
-  and is the model to reuse for picking a deck's printing; whether and how it is exposed from the
+  with any other schema change to those tables. Runs in parallel with 2. Its migration lands
+  after Deck stats' money PR (S2); see Order.
+- **Design:** yes, its own round, after the 1+2 handoff (ruling 12). A printing picker already
+  exists (`src/components/cards/printing-region.tsx`) and is the model to reuse for picking a deck's printing; whether and how it is exposed from the
   decklist row is a design question.
 - **Switch:** `DECK_PRINTINGS_ENABLED`.
 - **Risks:** this is a migration on `deck_cards` and `deck_version_cards`, both of which are read
@@ -93,9 +118,10 @@ Shopping.
 Marking a Shopping row bought asks printing, foil and quantity, preset to the price already
 shown, and writes through project 1's path.
 
-- **Depends on:** 2 (the write path and its UI conventions) and 3 (so the purchase can default
-  to the printing the deck already wants, if one is set).
-- **Design:** yes, but small — one new control on an existing row
+- **Depends on:** 2 only (the write path and its UI conventions). Not on 3 (ruling 11): the
+  printing defaults to the one behind the Shopping price the row shows. Ships right after 2.
+  Once 3 lands, the deck's chosen printing replaces that default where one is set.
+- **Design:** yes, its own round after the 1+2 handoff (ruling 12), and small — one new control on an existing row
   (`src/components/decks/decklist.tsx`'s Shopping branch) plus a small confirm step.
 - **Switch:** `SHOPPING_MARK_BOUGHT_ENABLED`.
 - **Risks:** low on its own; mostly inherits whatever 2 and 3 settled.
@@ -109,12 +135,14 @@ before any UI is built on top of it.
   Scryfall bulk image set and measure hash separation (false-match and false-miss rate) over a
   sample of real printings, including near-duplicate art across different sets/treatments. This
   is read-only research and can run anytime, independent of everything else in this epic.
-  **Go/no-go bar** (Hugh, 2026-10-06): proceed to 5b only if at least 95% of test photos match
-  the exact printing — wrong at most 1 in 20.
+  **Go/no-go bar** (Hugh, 2026-10-08, ruling 10): proceed to 5b only if at least 95% of test
+  photos find the right card AND the right artwork (illustration) — wrong at most 1 in 20. The
+  printing is not part of the bar: the player picks it from the existing picker. Measure the
+  card and the artwork separately, so a miss says which one failed.
 - **5b. Single-card scan, then pick.** Detect, crop, perspective-correct, hash, nearest-neighbor
   lookup, then hand off to the existing printing picker for the player to confirm or correct.
   Depends on 2 (the picker needs to be reachable from a scan result, and the write goes through
-  project 1's path) and on 5a clearing a usable separation bar.
+  project 1's path) and on 5a passing its bar.
 - **5c. Optional exact printing via OCR**, reading the set code and collector number off the
   card to skip the pick-from-candidates step when the hash alone is ambiguous. Optional,
   depends on 5b shipping first.
@@ -124,7 +152,8 @@ before any UI is built on top of it.
 - **Risks:** 5a is the whole bet. Illustration art repeats across printings that share art
   (reprints, some promos) by design, which is a feature (fewer index entries to search) and a
   trap (two different printings can legitimately hash identical if they share the same
-  illustration — the picker is what resolves that ambiguity, not the hash). Camera-side
+  illustration — the picker is what resolves that ambiguity, not the hash, which is why ruling
+  10 sets the bar at the artwork). Camera-side
   perspective correction on a phone with no backend model is the other open risk; 5a's sample
   should include some rotated/skewed captures, not just clean flat scans.
 
@@ -184,4 +213,5 @@ Verified against `origin/main` by reading the files named.
 
 None open. All three answered 2026-10-06 and folded into the rulings above (history retention
 into ruling 6, add-mode art preference into ruling 2, 5a's go/no-go bar into sub-project 5).
+The 2026-10-08 re-review added rulings 10 to 12 and the Order section.
 
