@@ -67,6 +67,7 @@ function CurveCard({ data }: { data: DeckStatsSlice }) {
           return (
             <div key={b.cmc} className="flex flex-col items-center justify-end gap-[6px]" data-curve-column={b.cmc}>
               <span
+                aria-hidden="true"
                 className={`font-mono text-[11px] tabular-nums ${b.copies === 0 ? "text-[color:var(--fg-locked)]" : "text-[color:var(--fg-body)]"}`}
               >
                 {b.copies}
@@ -75,7 +76,7 @@ function CurveCard({ data }: { data: DeckStatsSlice }) {
                 {copy.column(
                   BUCKET_LABELS[i],
                   b.copies,
-                  CARD_TYPES.filter((t) => per[t] > 0).map((t) => `${per[t]} ${copy.types[t]}`),
+                  CARD_TYPES.filter((t) => per[t] > 0).map((t) => `${per[t]} ${per[t] === 1 ? copy.types[t] : copy.typesPlural[t]}`),
                 )}
               </span>
               <div aria-hidden="true" className="flex min-h-[10px] flex-col-reverse gap-[2px]">

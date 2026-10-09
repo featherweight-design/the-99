@@ -37,5 +37,15 @@ export const deckStatsCopy = {
       battle: "Battle",
       land: "Land",
     },
+    typesPlural: {
+      creature: "Creatures",
+      instant: "Instants",
+      sorcery: "Sorceries",
+      artifact: "Artifacts",
+      enchantment: "Enchantments",
+      planeswalker: "Planeswalkers",
+      battle: "Battles",
+      land: "Lands",
+    },
   },
 } as const;
