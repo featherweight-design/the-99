@@ -159,7 +159,10 @@ export async function replaceCollection(
       await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${userId}, 0))`);
       if (opts.confirmUploadId) {
         const claimed = await tx.update(csvUploads)
-          .set({ confirmedAt: new Date() })
+          // The database's clock, read after the per-user lock, as the ledger's write stamps
+          // its own: `editsSinceUpload` compares this against ledger entries' `created_at`, and
+          // two clocks that disagree would count an edit on the wrong side of the upload.
+          .set({ confirmedAt: sql`clock_timestamp()` })
           .where(and(eq(csvUploads.id, opts.confirmUploadId), isNull(csvUploads.confirmedAt)))
           .returning({ id: csvUploads.id });
         if (claimed.length === 0) {

@@ -28,6 +28,7 @@ import { applyCollectionChange, type ChangeResult } from "../src/lib/collection/
 import { collectionGeneration } from "../src/lib/recs/store";
 import { commitVersion } from "../src/lib/decks/versions";
 import { editsSinceUpload } from "../src/lib/collection/history";
+import { replaceCollection } from "../src/lib/collection/import";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -230,6 +231,17 @@ async function main() {
     check("its owned counts, read under the lock, differ by exactly the Add",
       added.status === "applied" && added.owned?.before[C] === 2 && added.owned?.after[C] === 3,
       added.status === "applied" ? JSON.stringify(added.owned && { before: added.owned.before[C], after: added.owned.after[C] }) : "");
+
+    // A switch-off upload writes no entry, so "since" falls back to its confirm time against the
+    // entries' times: both read off the database clock after the lock.
+    const u3 = await upload(replaceItems);
+    await applyCollectionChange(USER, { kind: "edit", rows: [{ ...at(C), quantity: 5 }] }, { id: randomUUID() });
+    await replaceCollection(USER, replaceItems, { confirmUploadId: u3 });
+    const legacyAfter = await editsSinceUpload(USER);
+    await applyCollectionChange(USER, { kind: "edit", rows: [{ ...at(C), quantity: 4 }] }, { id: randomUUID() });
+    const legacyLater = await editsSinceUpload(USER);
+    check("after a switch-off upload, edits count from its confirm time, on one clock",
+      legacyAfter === 0 && legacyLater === 1, `${legacyAfter} then ${legacyLater}`);
   } finally {
     // One statement for the ledger: its two self-references are checked at the statement's end.
     await pool.query("delete from collection_history where user_id = $1", [USER]);
