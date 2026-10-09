@@ -21,6 +21,7 @@
 // Run: `pnpm probe:collection-write`
 import { requireEnv } from "./lib/env.mjs";
 import { randomUUID } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
 import { applyCollectionChange, type ChangeResult } from "../src/lib/collection/write";
@@ -78,7 +79,11 @@ async function main() {
     check("a double-submitted add applies once", statuses(both) === "alreadyApplied,applied" && await count(A) === 2,
       `${statuses(both)}; count ${await count(A)}`);
     const again = await applyCollectionChange(USER, add, { id: addId });
-    check("a late retry of the same id is still alreadyApplied", again.status === "alreadyApplied", again.status);
+    const first = both.find((r) => r.status === "applied");
+    check("a late retry of the same id is still alreadyApplied, carrying the committed entry",
+      again.status === "alreadyApplied" && first?.status === "applied"
+        && isDeepStrictEqual(again.entry, first.entry),
+      again.status === "alreadyApplied" ? JSON.stringify(again.entry) : again.status);
 
     // ---- 2. Two tabs, one row ------------------------------------------------------------
     const tabs = await Promise.all([

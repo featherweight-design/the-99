@@ -88,8 +88,11 @@ export type ChangeResult =
   | { status: "applied"; entry: AppliedEntry }
   /** Nothing would change. No entry is written. */
   | { status: "unchanged" }
-  /** This action's id already committed: the earlier write stands. */
-  | { status: "alreadyApplied"; entryId: string }
+  /**
+   * This action's id already committed: the earlier write stands, and `entry` is it, so a retry
+   * follows the same success path as the first submit. `rows` is empty once the entry is pruned.
+   */
+  | { status: "alreadyApplied"; entry: AppliedEntry }
   /** Another request already confirmed this upload. */
   | { status: "alreadyConfirmed" }
   /** `onlyIfEmpty` found a collection of `owned` copies. */
@@ -361,9 +364,16 @@ export async function applyCollectionChange(
         .onConflictDoNothing({ target: collectionHistory.id })
         .returning({ seq: collectionHistory.seq });
       if (!claimed) {
-        const [twin] = await tx.select({ userId: collectionHistory.userId })
-          .from(collectionHistory).where(eq(collectionHistory.id, opts.id));
-        if (twin?.userId === userId) throw new Refused({ status: "alreadyApplied", entryId: opts.id });
+        const [twin] = await tx.select().from(collectionHistory).where(eq(collectionHistory.id, opts.id));
+        if (twin?.userId === userId) {
+          throw new Refused({
+            status: "alreadyApplied",
+            entry: {
+              id: twin.id, seq: Number(twin.seq), kind: twin.kind, rows: twin.rows ?? [],
+              raised: twin.raised, lowered: twin.lowered,
+            },
+          });
+        }
         // Another player's id: never reported back, since that would confirm it exists.
         throw new Error("collection change id is already in use");
       }

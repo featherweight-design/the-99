@@ -155,7 +155,12 @@ describe("rowToListItem", () => {
  * Fake transaction exposing only what persistScores touches. `confirmedAt` is what
  * the in-transaction generation re-read observes.
  */
-function fakeDb(confirmedAt: Date | null, indexAt: Date | null = null) {
+function fakeDb(
+  confirmedAt: Date | null,
+  indexAt: Date | null = null,
+  /** The ledger's `max(seq)` now, or `absent` for a database without `collection_history`. */
+  ledger: number | null | "absent" = null,
+) {
   const inserted: unknown[][] = [];
   let deleted = false;
   let conflictSet: Record<string, unknown> | null = null;
@@ -174,10 +179,14 @@ function fakeDb(confirmedAt: Date | null, indexAt: Date | null = null) {
       executed.push(text);
       // The collection fingerprint: whether the ledger exists, then one read over both writers.
       // The first is part of the same read and adds nothing to the ordering trace.
-      if (text.includes("to_regclass")) return { rows: [{ present: true }] };
-      if (text.includes("collection_history")) {
+      if (text.includes("to_regclass")) return { rows: [{ present: ledger !== "absent" }] };
+      if (text.includes("csv_uploads")) {
         trace.push("read:collection");
-        return { rows: [{ seq: null, at: confirmedAt ? confirmedAt.getTime() : null }] };
+        // A query naming the ledger on a database without it fails, as Postgres would.
+        if (ledger === "absent" && text.includes("collection_history")) {
+          throw Object.assign(new Error("relation does not exist"), { code: "42P01" });
+        }
+        return { rows: [{ seq: ledger === "absent" ? null : ledger, at: confirmedAt ? confirmedAt.getTime() : null }] };
       }
       trace.push(
         text.includes("pg_advisory_xact_lock_shared")
@@ -484,6 +493,40 @@ describe("persistScores generation guard", () => {
   // literal 4, so the next bump does not have to edit this case to keep it true.
   it("announces a writer version above the last unguarded one", () => {
     expect(SCORE_WRITER_CURRENT).toBeGreaterThan(LAST_UNGUARDED_WRITER);
+  });
+
+  // THE LEDGER HALF. A hand edit moves the ledger's seq and never the upload timestamp, so a
+  // compute captured before one has to be dropped on the seq alone.
+  it("drops the write when a ledger write landed mid-compute, timestamp unchanged", async () => {
+    const at = new Date("2026-07-24T12:00:00Z");
+    const fake = fakeDb(at, null, 8);
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], generationToken(7, at.getTime()));
+
+    expect(fake.wrote()).toEqual({ deleted: false, insertedRows: 0 });
+  });
+
+  it("writes when the ledger's seq and the timestamp both match", async () => {
+    const at = new Date("2026-07-24T12:00:00Z");
+    const fake = fakeDb(at, null, 8);
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], generationToken(8, at.getTime()));
+
+    expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
+  });
+
+  // A preview deploy runs no migrations. The read must not name the missing table, or the
+  // statement aborts persistScores' transaction and no score is ever stored there.
+  it("writes on a database without the ledger, never naming the missing table", async () => {
+    const at = new Date("2026-07-24T12:00:00Z");
+    const fake = fakeDb(at, null, "absent");
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], gen(at));
+
+    expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
   });
 
   it("drops the write when the first-ever confirm lands mid-compute", async () => {
