@@ -1934,7 +1934,7 @@ export function CardModal({
               }}
             >
               {turningArt("rounded-[14px]")}
-              {/* The turn plate, centred on the card's bottom edge (Hugh, 2026-10-09): the
+              {/* The turn plate, centred along the card's bottom and 10px up (Hugh, 2026-10-09): the
                   bottom-right corner it sat in covered the power/toughness box. OUTSIDE the box
                   that turns, for the reason the desktop's is. */}
               {twoFaced && (
