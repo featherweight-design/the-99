@@ -1,11 +1,6 @@
 # Readiness — collection edit R1
 
-**Approved (LGTM, 2026-10-09). Self-assessed: Amber until the three items below are ruled.** Every surface and state the brief lists is drawn. Three calls need Hugh before the build, and one depends on an unmerged PR.
-
-**Post-audit status (see `READINESS-audit.md` for the live verdict): item 1 is resolved — PR
-#1304 merged 2026-10-09T16:32:53Z; item 2 is resolved — Hugh ruled 2026-10-09, the History tab;
-item 3 is not a design blocker — it's a copy-review call per the handoff itself. This section is
-kept as Design's original self-assessment and is a historical snapshot, not the current status.**
+**Approved to ship (Hugh, 2026-10-09).** Every surface and state the brief lists is drawn and reviewed. The open items in the README remain build-time rulings, not design blockers. Ruled in review: the Add cards side sheet, the required printing step, editing in the Add cards sheet (not the modal), removal in the sheet (rows unchanged), and edit access from /collection only.
 
 ## Blocking
 1. **PR #1304 is unmerged.** This handoff was built on `docs/collection-empty-add`. If #1304 changes before it merges, B0 is the section exposed to that.

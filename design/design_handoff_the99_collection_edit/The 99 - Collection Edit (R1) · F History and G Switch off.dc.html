@@ -51,7 +51,7 @@
               <div style="margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:18px;color:var(--fg-faint);">4,500 cards &middot; 2,929 unique &middot; last updated today</div>
             </div>
             <div style="display:flex;gap:10px;">
-              <span style="height:38px;display:inline-flex;align-items:center;gap:6px;padding:0 16px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;color:var(--fg-body);">&#8635; Upload a file</span>
+              <span style="height:38px;display:inline-flex;align-items:center;gap:6px;padding:0 16px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;color:var(--fg-body);"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true" style="display:block;flex:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;"><path d="M13.5 8a5.5 5.5 0 1 1-1.9-4.16"></path><path d="M13.5 1.5v3.2h-3.2"></path></svg>Upload a file</span>
               <span style="height:38px;display:inline-flex;align-items:center;gap:6px;padding:0 16px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;color:var(--fg-body);">+ Add cards</span>
             </div>
           </div>
@@ -180,7 +180,7 @@
           <div style="padding:16px 18px 30px;">
             <h1 style="margin:0;font-family:'Cinzel',serif;font-size:22px;font-weight:400;">Changes to your collection</h1>
             <div style="margin-top:28px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;">
-              <span style="width:44px;height:44px;border-radius:50%;border:1.5px dashed var(--border-dashed);display:flex;align-items:center;justify-content:center;color:var(--fg-faint);">&#8635;</span>
+              <span style="width:44px;height:44px;border-radius:50%;border:1.5px dashed var(--border-dashed);display:flex;align-items:center;justify-content:center;color:var(--fg-faint);"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true" style="display:block;flex:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;"><path d="M13.5 8a5.5 5.5 0 1 1-1.9-4.16"></path><path d="M13.5 1.5v3.2h-3.2"></path></svg></span>
               <span style="font-family:'Cinzel',serif;font-size:18px;font-weight:600;">Nothing's changed yet</span>
               <span style="font-size:13.5px;line-height:1.6;color:var(--fg-body);max-width:300px;">Uploads and edits from 9 October on show up here, ready to undo. Your collection from before that has no history to show.</span>
             </div>
@@ -199,7 +199,7 @@
         <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">F4 &middot; desktop &middot; today matches the entry</div>
         <div style="width:480px;border-radius:14px;background:var(--surface);border:1px solid var(--border-strong);box-shadow:0 24px 60px rgba(0,0,0,0.55);padding:24px 24px 20px;display:flex;flex-direction:column;gap:14px;">
           <h3 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:20px;">Revert &ldquo;Added in the app&rdquo;?</h3>
-          <p style="margin:0;font-size:13.5px;line-height:1.55;color:var(--fg-body);">From 8 Oct, 21:10. Reverting this changes 8 copies.</p>
+          <p style="margin:0;font-size:13.5px;line-height:1.55;color:var(--fg-body);">From 8 Oct, 21:10. This takes out the 8 copies it added.</p>
           <div style="border-radius:10px;background:var(--bg);border:1px solid var(--border);padding:4px 14px;">
             <sc-for list="{{ revertSame }}" as="c" hint-placeholder-count="4">
               <div style="display:flex;align-items:center;gap:12px;min-height:36px;border-bottom:1px solid var(--border);"><span style="flex:1;font-size:13.5px;">{{ c.name }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);">{{ c.now }}</span></div>
@@ -272,10 +272,10 @@
       <div style="display:flex;flex-direction:column;gap:8px;">
         <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--warning);">head &middot; 1300 and 390</div>
         <div style="width:640px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);">
-          <div style="display:flex;align-items:flex-end;justify-content:space-between;padding:28px 34px 0;"><div><div style="font-family:'Cinzel',serif;font-size:30px;font-weight:700;line-height:45px;">Collection</div><div style="margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">4,492 cards &middot; 2,926 unique</div></div><span style="height:38px;display:inline-flex;align-items:center;gap:6px;padding:0 16px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;color:var(--fg-body);">&#8635; Replace collection</span></div>
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;padding:28px 34px 0;"><div><div style="font-family:'Cinzel',serif;font-size:30px;font-weight:700;line-height:45px;">Collection</div><div style="margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">4,492 cards &middot; 2,926 unique</div></div><span style="height:38px;display:inline-flex;align-items:center;gap:6px;padding:0 16px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;color:var(--fg-body);"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true" style="display:block;flex:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;"><path d="M13.5 8a5.5 5.5 0 1 1-1.9-4.16"></path><path d="M13.5 1.5v3.2h-3.2"></path></svg>Replace collection</span></div>
           <div style="margin-top:14px;height:40px;display:flex;gap:4px;padding:0 24px;border-bottom:1px solid var(--border);"><span style="display:flex;align-items:center;padding:0 10px;font-size:14px;font-weight:600;box-shadow:inset 0 -2px 0 var(--accent);">Cards</span><span style="display:flex;align-items:center;padding:0 10px;font-size:14px;color:var(--fg-muted);">Sets</span><span style="display:flex;align-items:center;padding:0 10px;font-size:14px;color:var(--fg-muted);">Proxies</span></div>
           <div style="margin:16px;width:390px;height:48px;display:flex;align-items:stretch;gap:2px;padding:0 4px 0 8px;border:1px solid var(--border-strong);border-radius:10px;">
-            <span style="display:flex;align-items:center;padding:0 11px;font-size:14px;font-weight:600;box-shadow:inset 0 -2px 0 var(--accent);">Cards</span><span style="display:flex;align-items:center;padding:0 11px;font-size:14px;color:var(--fg-muted);">Sets</span><span style="display:flex;align-items:center;padding:0 11px;font-size:14px;color:var(--fg-muted);">Proxies</span><span style="margin-left:auto;display:flex;align-items:center;padding:0 10px;font-size:13px;color:var(--accent);">&#8635; Replace</span>
+            <span style="display:flex;align-items:center;padding:0 11px;font-size:14px;font-weight:600;box-shadow:inset 0 -2px 0 var(--accent);">Cards</span><span style="display:flex;align-items:center;padding:0 11px;font-size:14px;color:var(--fg-muted);">Sets</span><span style="display:flex;align-items:center;padding:0 11px;font-size:14px;color:var(--fg-muted);">Proxies</span><span style="margin-left:auto;display:flex;align-items:center;padding:0 10px;gap:6px;font-size:13px;color:var(--accent);"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true" style="display:block;flex:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;"><path d="M13.5 8a5.5 5.5 0 1 1-1.9-4.16"></path><path d="M13.5 1.5v3.2h-3.2"></path></svg>Replace</span>
           </div>
         </div>
       </div>
@@ -307,7 +307,7 @@ class Component extends DCLogic {
         { label: "Today · 9 Oct", entries: [
           { ...base, time: "14:02", kind: "Revert", ...tag("var(--fg-muted)"), title: "Undid “Removed”", up: "+1", down: "", sep: "", across: "copy of 1 card", hasLink: true, linkPre: "Undid", link: "Removed Rhystic Study, 13:40" },
           { ...base, time: "13:40", kind: "Removed", ...tag("var(--danger)"), title: "Rhystic Study", up: "", down: "−1", sep: "", across: "copy of 1 card", titleInk: "var(--fg-muted)", hasLink: true, linkPre: "Reverted by", link: "the revert at 14:02", act: "Reverted", actInk: "var(--fg-faint)", actBox: "" },
-          { ...base, time: "11:26", kind: "Edited in details", ...tag("var(--accent)"), title: "Sol Ring · moved 1, added 1 foil", up: "+2", down: "−1", across: "copies across 1 card" },
+          { ...base, time: "11:26", kind: "Edited in details", ...tag("var(--accent)"), title: "Sol Ring · 1 printing changed, 1 foil added", up: "+2", down: "−1", across: "copies across 1 card" },
           { ...base, time: "09:14", kind: "Replace upload", ...tag("var(--warning)"), title: "manabox-oct.csv", up: "+64", down: "−150", across: "copies across 412 cards", op: 0.55, act: "Reverting…", actInk: "var(--fg-muted)", actBox: "" },
         ]},
         { label: "Yesterday · 8 Oct", entries: [
@@ -323,7 +323,7 @@ class Component extends DCLogic {
       phoneEntries: [
         { time: "14:02", kind: "Revert", tagInk: "var(--fg-muted)", title: "Undid “Removed”", fig: "+1 copy of 1 card", titleInk: "var(--fg)", hasLink: true, link: "Undid: Removed Rhystic Study", ...revertBtn },
         { time: "13:40", kind: "Removed", tagInk: "var(--danger)", title: "Rhystic Study", fig: "−1 copy of 1 card", titleInk: "var(--fg-muted)", hasLink: true, link: "Reverted at 14:02", act: "Reverted", actInk: "var(--fg-faint)", actBox: "" },
-        { time: "11:26", kind: "Edited in details", tagInk: "var(--accent)", title: "Sol Ring · moved 1, added 1 foil", fig: "+2 · −1 copies", titleInk: "var(--fg)", hasLink: false, link: "", ...revertBtn },
+        { time: "11:26", kind: "Edited in details", tagInk: "var(--accent)", title: "Sol Ring · 1 printing changed, 1 foil added", fig: "+2 · −1 copies", titleInk: "var(--fg)", hasLink: false, link: "", ...revertBtn },
         { time: "09:14", kind: "Replace upload", tagInk: "var(--warning)", title: "manabox-oct.csv", fig: "+64 · −150 across 412 cards", titleInk: "var(--fg)", hasLink: false, link: "", ...revertBtn },
       ],
       groupChips: [

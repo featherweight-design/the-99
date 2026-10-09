@@ -23,14 +23,33 @@ Every state is drawn at 390 and at desktop width unless noted. In the canvas col
 | B1 | Empty sheet | B1 · both | Scrim the collection on desktop |
 | B2 | Typing, with results | B2 · 390 | Search owned cards only |
 | B3 | No results | B3 · 390 | Offer a non-catalog card |
-| B4 | Several lines, two printings of one card, owned, picker open | B4 · 480 | Merge different printings or finishes |
+| B4a | Picked a card: printing required, nothing chosen, search and Save disabled | B4a, B4m | Preselect or default a printing |
+| B4 | Several lines, two printings of one card, owned, a chosen printing reopened | B4 · 480 | Merge different printings or finishes |
 | B5 | Exact duplicate combined | B5 · 390 | Write two lines for one holding |
 | B6 | Close with unsaved | B6 | Ask when the list is empty |
 | B7 | Saving | B7 | Run a deck check |
 | B8 | Saved, with History link | B8 · 390 | Write more than one entry |
 | B9 | Failed save | B7 | Drop the list |
 
-## §C Card details
+## §C Edit copies (R2 canvas)
+| # | State | Canvas | Must not |
+|---|---|---|---|
+| C1 | Entry: desktop You own cell, phone full sheet; teaser unchanged | C1 | Add anything to the teaser |
+| C2 | Desktop sheet, one lowered, one raised | C2 | Leave the card modal open beneath the sheet |
+| C3a | Phone sheet at rest | C3 | Enable Save with no change |
+| C3b | Wrong printing fixed by re-picking | C3 | Split it into two entries |
+| C4 | Add another printing, in the required step | C4 | Offer printings already held |
+| C4b | Not owned → Add to collection | C1 note | Set an art preference |
+| C5 | Raise / lower into §E / remove / saving / failed | C5 | Show a staged figure in the modal's owned line |
+
+## §D Removal (R2 canvas)
+| # | State | Canvas | Must not |
+|---|---|---|---|
+| D1 | Rows as shipped | D | Add a control to the row |
+| D2 | Remove from collection staged | D | Use the accent primary for Remove |
+| D3 | Removed → toast with Undo | D | Skip §E on Undo |
+
+## (R1 §C/§D, superseded)
 | # | State | Canvas | Must not |
 |---|---|---|---|
 | C1 | Owned, several printings, at rest | C1 | Move or wrap the marker |
