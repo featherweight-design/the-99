@@ -219,6 +219,17 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   behind subtracts nothing until the source commits the card AGAIN, and then hands the asker a
   copy nobody gave up.
 
+- `pnpm probe:collection-write` proves the collection ledger's concurrency claims
+  (`applyCollectionChange`, plan `2026-10-09-collection-write-path.md`) against a real Postgres:
+  a double-submitted add applies once, two tabs editing one row with `expected` produce one
+  `stale`, two concurrent reverts of one entry produce one revert, and a lowering that shorts a
+  committed deck returns `wouldShort` and writes nothing until it is resent with `confirmShort`.
+  It also checks that a zero deletes the row, a write clears the player's scores and moves the
+  generation token, an entry past 90 days is pruned and kept, and an oracle id the catalog lacks
+  is refused by name. It WRITES: every run mints its own `user_id` and deletes every row it made in
+  a `finally`, and it refuses production and staging by `neon.branch_id`. With the `expected`
+  check and the deck check both disabled, five of its checks fail.
+
 - `pnpm probe:arrivals` proves the collection confirm's own lock and its receipt against a real
   Postgres by calling the real `replaceCollection`. Two things live there that no unit test here
   can reach. THE LOCK: `confirmed_at` is stamped by a conditional update inside the replace

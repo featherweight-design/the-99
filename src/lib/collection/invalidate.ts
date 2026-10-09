@@ -1,3 +1,6 @@
+import { revalidatePath } from "next/cache";
+import { revalidateUserLists } from "../cache/user-lists";
+
 /**
  * Every route that renders a figure read out of `collection_items`.
  *
@@ -57,3 +60,19 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   { path: "/decks/new/choose", dynamic: false },
   { path: "/discover", dynamic: false },
 ];
+
+/**
+ * Retires every cached reading of `userId`'s collection: the per-user list payloads and every
+ * route above. One definition, because every collection write calls it after it commits — the
+ * upload's confirm and each ledger action — and a copy per caller drifts a route at a time.
+ *
+ * The second argument is load-bearing for a `[param]` route: without it `revalidatePath`
+ * silently does nothing, which is how a missing invalidation hides.
+ */
+export function invalidateCollectionReaders(userId: string): void {
+  revalidateUserLists(userId);
+  for (const route of COLLECTION_ROUTES) {
+    if (route.dynamic) revalidatePath(route.path, "page");
+    else revalidatePath(route.path);
+  }
+}

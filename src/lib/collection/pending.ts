@@ -43,9 +43,7 @@ export function aggregatePendingItems(matched: MatchResult["matched"]): PendingI
     const key = collectionItemKey(identity);
     const existing = agg.get(key);
     if (existing) {
-      existing.quantity += row.quantity;
-      if (existing.condition !== row.condition) existing.condition = null;
-      if (existing.scryfallId !== row.scryfallId) existing.scryfallId = null;
+      mergeHolding(existing, row);
     } else {
       agg.set(key, {
         ...identity,
@@ -56,6 +54,21 @@ export function aggregatePendingItems(matched: MatchResult["matched"]): PendingI
     }
   }
   return [...agg.values()];
+}
+
+/**
+ * Folds `incoming` into `into`, in place: quantities add, and `condition` and `scryfallId` keep
+ * a value only while every member of the group agrees on it. The one statement of that rule,
+ * read by the upload's aggregation above and by the ledger's Add (`write.ts`), which treats
+ * the stored row as one more member of the group.
+ */
+export function mergeHolding(
+  into: { quantity: number; condition: string | null; scryfallId?: string | null },
+  incoming: { quantity: number; condition: string | null; scryfallId?: string | null },
+): void {
+  into.quantity += incoming.quantity;
+  if (into.condition !== incoming.condition) into.condition = null;
+  if ((into.scryfallId ?? null) !== (incoming.scryfallId ?? null)) into.scryfallId = null;
 }
 
 /** Total card count across holdings — the number the review screen calls "cards matched". */

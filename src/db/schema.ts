@@ -239,6 +239,63 @@ export const collectionItems = pgTable("collection_items", {
 ]);
 
 /**
+ * One collection row's state on one side of a ledger entry: what `collection_items` held for
+ * that key, or `null` when the row did not exist.
+ */
+export type HistoryRowState = { quantity: number; scryfallId: string | null; condition: string | null };
+
+/**
+ * One row a ledger entry changed. `name` is the card's name AT WRITE TIME, so an entry still
+ * names its card after the catalog drops it (a revert of that card then fails by name).
+ */
+export type HistoryRow = {
+  oracleId: string;
+  setCode: string;
+  collectorNumber: string;
+  finish: string;
+  name: string;
+  before: HistoryRowState | null;
+  after: HistoryRowState | null;
+};
+
+/**
+ * The collection ledger (collection foundation, sub-project 1; plan
+ * `2026-10-09-collection-write-path.md`). One entry per collection write made through
+ * `applyCollectionChange`, holding the before and after of every row it changed.
+ *
+ * `id` is the CALLER's idempotency id, minted once per action and reused on retry, so a second
+ * submit of the same action finds its own committed entry instead of applying again. `seq` is
+ * the collection half of the score generation (`recs/store.ts`); it only ever grows, because
+ * retention PRUNES an entry's `rows` and never deletes the entry.
+ *
+ * It carries the `user_data_touch` trigger (migration 0083): Home's score compute reads the
+ * generation off it, and `check:list-cache` requires every per-user table Home reads to move the
+ * reader's stamp.
+ */
+export const collectionHistory = pgTable("collection_history", {
+  id: uuid("id").primaryKey(),
+  seq: bigserial("seq", { mode: "number" }).notNull().unique(),
+  userId: text("user_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  kind: text("kind", { enum: ["upload_replace", "upload_add", "add", "edit", "revert"] }).notNull(),
+  // 'csv_uploads:<id>' | 'shopping:<deck id>' | null
+  source: text("source"),
+  // Null while the entry is being written inside its own transaction, and once pruned.
+  rows: jsonb("rows").$type<HistoryRow[]>(),
+  prunedAt: timestamp("pruned_at"),
+  raised: integer("raised").notNull(),
+  lowered: integer("lowered").notNull(),
+  revertsId: uuid("reverts_id").unique().references((): AnyPgColumn => collectionHistory.id),
+  revertedBy: uuid("reverted_by").references((): AnyPgColumn => collectionHistory.id),
+}, (t) => [
+  index("collection_history_user_created_idx").on(t.userId, t.createdAt.desc()),
+  check(
+    "collection_history_kind_check",
+    sql`${t.kind} in ('upload_replace', 'upload_add', 'add', 'edit', 'revert')`,
+  ),
+]);
+
+/**
  * Which printing of a card the user chose to represent it (#105). One row per card per user,
  * so re-picking is an upsert on the primary key and (set_code, collector_number) is the value.
  *
@@ -805,8 +862,14 @@ export const RANK_SCORE_UNWRITTEN = -1;
  * the same shape — the blindness this mechanism exists for — so a version-6 set is refused and
  * recomputed on its next read. A warm cached payload built from one needs no bump of its own:
  * the deployment rides in every cache key (`cache/deployment.ts`).
+ *
+ * Version 8 is the collection ledger (plan 2026-10-09, Decision 4). What makes a score current
+ * moved: the collection generation is now a token over `max(collection_history.seq)` AND
+ * `max(csv_uploads.confirmed_at)`, because a hand edit moves only the first. A previous
+ * deployment compares the timestamp alone and could put back scores a ledger write just
+ * cleared, so its rows are refused.
  */
-export const SCORE_WRITER_CURRENT = 7;
+export const SCORE_WRITER_CURRENT = 8;
 
 export const commanderScores = pgTable("commander_scores", {
   userId: text("user_id").notNull(),

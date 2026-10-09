@@ -10,7 +10,7 @@
 // Disabling the triggers while cached code is live leaves the stamp frozen, so every cached page
 // goes on being served after the writes that should have retired it: stale pages for every reader
 // until the hour ceiling. And never drop `user_data_stamps` while the triggers exist: every write
-// to the sixteen tables would then fail on the missing table. Permanent removal is a migration.
+// to the seventeen tables would then fail on the missing table. Permanent removal is a migration.
 //
 //   STAMP_TARGET_URL=<database> STAMP_TARGET_BRANCH=br-… pnpm list-stamp:triggers disable
 //   STAMP_TARGET_URL=<database> STAMP_TARGET_BRANCH=br-… pnpm list-stamp:triggers enable
@@ -51,9 +51,9 @@ async function main() {
     if (rows.length === 0) throw new Error("No user_data_touch triggers on this database. Nothing was changed.");
     await client.query("begin");
     // Each ALTER needs a SHARE ROW EXCLUSIVE lock, which writes to that table queue behind while it
-    // waits and while it is held, and every lock is held to the commit. So all sixteen are taken
+    // waits and while it is held, and every lock is held to the commit. So all of them are taken
     // UP FRONT in one statement under ONE budget: `statement_timeout` caps the whole acquisition
-    // (a `lock_timeout` would cap each table separately, up to sixteen times over). A busy
+    // (a `lock_timeout` would cap each table separately, so the waits add up across tables). A busy
     // database fails the run and rolls back every table; the app's writes wait at most ~5s, once.
     // With the locks held, the ALTERs below wait on nothing.
     await client.query("set local statement_timeout = '5s'");

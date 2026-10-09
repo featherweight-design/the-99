@@ -541,16 +541,16 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
     THEN run `pnpm list-stamp:triggers disable` against that database. Never the other way
     round: disabling the triggers while cached code is live freezes every reader's stamp, and
     every cached page is served stale after the writes that should have retired it.
-  - **Never drop `user_data_stamps` while the triggers exist.** Every write to the sixteen tables
+  - **Never drop `user_data_stamps` while the triggers exist.** Every write to the seventeen tables
     would then fail on the missing table.
-  - **Permanent removal is a follow-up migration**: drop the sixteen triggers, then the function,
+  - **Permanent removal is a follow-up migration**: drop the seventeen triggers, then the function,
     then the table. `list-stamp:triggers` is the emergency lever, not the way out.
   - **Coming back:** `list-stamp:triggers enable`, then a deploy with the switch on. A stamp that
     sat still while writes landed says nothing about them, and a new deployment starts every
     reader on a fresh miss (the deployment is in the key).
 
 - `pnpm list-stamp:triggers disable|enable` takes every `user_data_touch` trigger out of the
-  write path, or puts it back, in ONE transaction. It takes all sixteen table locks up front in
+  write path, or puts it back, in ONE transaction. It takes every table lock up front in
   one `lock table` statement under a 5s `statement_timeout`, so the app's writes wait at most ~5s
   once, and a busy database rolls the whole run back. A per-table `lock_timeout` would not do
   that: each table could wait its own 5s while the tables already locked stayed blocked. It reads the triggers the database actually

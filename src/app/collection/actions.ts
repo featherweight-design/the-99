@@ -14,7 +14,7 @@ import { parsePasteList } from "../../lib/manabox/paste";
 import { matchRows } from "../../lib/collection/match";
 import { loadMatchInputs, replaceCollection } from "../../lib/collection/import";
 import { ownedByOracle, writeArrivalsReceipt } from "../../lib/collection/arrivals-write";
-import { COLLECTION_ROUTES } from "../../lib/collection/invalidate";
+import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
 import { loadDeckBuyRows } from "../../lib/decks/availability-query";
 
 import { aggregatePendingItems, totalQuantity, type PendingItem } from "../../lib/collection/pending";
@@ -196,13 +196,7 @@ export async function confirmUpload(
   // was hand-assembled and wrong three review rounds running, each round naming a route the
   // last had missed. `pnpm check:collection-routes` walks every page and fails when one reads
   // the collection without being named there.
-  revalidateUserLists(userId);
-  for (const route of COLLECTION_ROUTES) {
-    // The second argument is load-bearing for a `[param]` route: without it revalidatePath
-    // silently does nothing, which is how a missing invalidation hides.
-    if (route.dynamic) revalidatePath(route.path, "page");
-    else revalidatePath(route.path);
-  }
+  invalidateCollectionReaders(userId);
 
   // THE RECEIPT. Assembled and stored by a helper the probe can call directly, because
   // everything above this line needs a request to exist and the receipt does not.
