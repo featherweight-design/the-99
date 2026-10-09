@@ -38,9 +38,6 @@ export type EditRow = CollectionItemIdentity & {
   expected?: number;
 };
 
-/** An item to add. `name` names the card if the catalog no longer holds it. */
-export type AddItem = PendingItem & { name?: string };
-
 export type CollectionChange =
   /**
    * The full new collection: an upload in Replace mode. With `uploadId`, that upload is stamped
@@ -48,7 +45,7 @@ export type CollectionChange =
    */
   | { kind: "replace"; items: PendingItem[]; uploadId?: string }
   /** Quantities added: an upload in Add mode (`uploadId`, stamped as above), or the Add cards sheet. */
-  | { kind: "add"; items: AddItem[]; uploadId?: string }
+  | { kind: "add"; items: PendingItem[]; uploadId?: string }
   /** Per-row new counts: card details, a row removed. */
   | { kind: "edit"; rows: EditRow[] }
   /**
@@ -165,7 +162,7 @@ export function normalizeItems<T extends PendingItem>(items: T[]): (Held & { nam
     const row: Held & { name?: string } = {
       oracleId: v.oracleId, setCode: v.setCode, collectorNumber: v.collectorNumber, finish: v.finish,
       quantity: v.quantity, scryfallId: v.scryfallId, condition: v.condition,
-      name: (items[i] as { name?: string }).name,
+      name: items[i].name,
     };
     const existing = byKey.get(keyOf(row));
     if (existing) mergeHolding(existing, row);
@@ -368,6 +365,10 @@ export async function applyCollectionChange(
           source: uploadId ? `csv_uploads:${uploadId}` : opts.source ?? null,
           raised: 0,
           lowered: 0,
+          // The clock at the insert, AFTER the per-user lock, so entries' times order as their
+          // writes did. `now()`, the column default, is frozen before the lock wait, and an entry
+          // queued behind a switch-off upload would read as older than it (`editsSinceUpload`).
+          createdAt: sql`clock_timestamp()`,
         })
         .onConflictDoNothing({ target: collectionHistory.id })
         .returning({ seq: collectionHistory.seq });

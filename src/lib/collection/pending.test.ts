@@ -19,6 +19,10 @@ describe("aggregatePendingItems", () => {
     expect(items[0].quantity).toBe(5);
   });
 
+  it("carries the upload's name for the card, so a write can name it if the catalog drops it", () => {
+    expect(aggregatePendingItems([matchRow()])[0].name).toBe("Sol Ring");
+  });
+
   it("keeps two finishes of one printing apart (they are two primary keys)", () => {
     const items = aggregatePendingItems([matchRow(), matchRow({ finish: "foil" })]);
     expect(items.map((i) => i.finish).sort()).toEqual(["foil", "nonfoil"]);

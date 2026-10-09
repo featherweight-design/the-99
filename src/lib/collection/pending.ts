@@ -18,6 +18,12 @@ export type PendingItem = {
   scryfallId?: string | null;
   condition: string | null;
   quantity: number;
+  /**
+   * The card's name as the upload spelled it, so a write that finds the card gone from the
+   * catalog since the preview can still name it (`missingCard`). Absent on a preview stored
+   * before it was carried; never inserted.
+   */
+  name?: string;
 };
 
 /**
@@ -50,6 +56,7 @@ export function aggregatePendingItems(matched: MatchResult["matched"]): PendingI
         scryfallId: row.scryfallId,
         condition: row.condition,
         quantity: row.quantity,
+        name: row.name,
       });
     }
   }

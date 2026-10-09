@@ -37,6 +37,11 @@ describe("normalizeItems", () => {
     }]);
   });
 
+  it("keeps the name an item carries, the one a missing card is refused by", () => {
+    expect(normalizeItems([{ oracleId: A, setCode: "lea", condition: null, quantity: 1, name: "Gone" }])[0].name)
+      .toBe("Gone");
+  });
+
   it("refuses a quantity that is not a positive integer", () => {
     expect(() => normalizeItems([{ oracleId: A, setCode: "lea", condition: null, quantity: 0 }])).toThrow();
     expect(() => normalizeItems([{ oracleId: A, setCode: "lea", condition: null, quantity: 1.5 }])).toThrow();
