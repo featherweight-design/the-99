@@ -71,7 +71,14 @@ function CurveCard({ data }: { data: DeckStatsSlice }) {
               >
                 {b.copies}
               </span>
-              <div className="flex min-h-[10px] flex-col-reverse gap-[2px]">
+              <span className="sr-only" data-curve-summary>
+                {copy.column(
+                  BUCKET_LABELS[i],
+                  b.copies,
+                  CARD_TYPES.filter((t) => per[t] > 0).map((t) => `${per[t]} ${copy.types[t]}`),
+                )}
+              </span>
+              <div aria-hidden="true" className="flex min-h-[10px] flex-col-reverse gap-[2px]">
                 {CARD_TYPES.flatMap((t) =>
                   Array.from({ length: per[t] }, (_, k) => (
                     <span

@@ -39,6 +39,16 @@ describe("DeckStatsView curve card", () => {
     columns.forEach((c) => expect(c).toHaveClass("justify-end"));
   });
 
+  it("hides the squares and names each bucket's types in text", () => {
+    const { container } = render(<DeckStatsView data={slice} />);
+    container.querySelectorAll("[data-curve-square]").forEach((q) => expect(q.parentElement).toHaveAttribute("aria-hidden", "true"));
+    const sums = Array.from(container.querySelectorAll("[data-curve-summary]")).map((e) => e.textContent);
+    expect(sums).toHaveLength(8);
+    expect(sums[2]).toBe("Mana value 2: 3 cards, 3 Creature");
+    expect(sums[3]).toBe("Mana value 3: 1 card, 1 Instant");
+    expect(sums[0]).toBe("Mana value 0: no cards");
+  });
+
   it("lights one type on tap and clears on a second tap", () => {
     const { container } = render(<DeckStatsView data={slice} />);
     const chip = container.querySelector("[data-type-chip=creature]") as HTMLElement;

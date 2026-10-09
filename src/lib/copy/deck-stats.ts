@@ -19,6 +19,8 @@ export const deckStatsCopy = {
     title: "The curve, by card type",
     denom: (cast: number) => `${cast} cast`,
     ceiling: "7+",
+  column: (label: string, n: number, parts: string[]) =>
+    n === 0 ? `Mana value ${label}: no cards` : `Mana value ${label}: ${n} ${n === 1 ? "card" : "cards"}, ${parts.join(", ")}`,
     // No average to name at zero cast: a deck of nothing but lands has none, and 0.0 would read as one.
     noAverage: "none",
     caption: (avg: string, lands: number) =>
