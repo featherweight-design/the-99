@@ -37,12 +37,16 @@ const MAX_CONDITION = 32;
 const isCount = (v: unknown, min: number): v is number =>
   typeof v === "number" && Number.isInteger(v) && v >= min && v <= MAX_QUANTITY;
 
-/** The holding a line names, or null for anything that is not one. Set codes are stored lowercase. */
+/**
+ * The holding a line names, or null for anything that is not one. Set codes are stored lowercase.
+ * An empty set code is a holding, not a malformed one: a bare `Name,Qty` import stores `""` for
+ * both the set and the collector number, and that holding must still be editable and removable.
+ */
 function identityOf(v: unknown): CollectionItemIdentity | null {
   if (typeof v !== "object" || v === null) return null;
   const { oracleId, setCode, collectorNumber, finish } = v as Record<string, unknown>;
   if (!isUuid(oracleId)) return null;
-  if (typeof setCode !== "string" || setCode.length === 0 || setCode.length > 12) return null;
+  if (typeof setCode !== "string" || setCode.length > 12) return null;
   if (typeof collectorNumber !== "string" || collectorNumber.length > 16) return null;
   if (typeof finish !== "string" || !isFinish(finish)) return null;
   return { oracleId: oracleId as string, setCode: setCode.toLowerCase(), collectorNumber, finish };

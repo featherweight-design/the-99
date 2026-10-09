@@ -120,10 +120,19 @@ describe("editCollection", () => {
     expect(stub.warm).toHaveBeenCalledWith("user_1");
   });
 
-  it("keeps a null printing for a row the catalog cannot name, and a null condition when none is sent", async () => {
+  it("edits a bare import's holding, which names no set and no printing, with a null id", async () => {
+    // A `Name,Qty` export stores "" for both; the catalog holds some other printing of the card.
+    catalogHolds();
     stub.apply.mockResolvedValue({ status: "applied", entry: { id: ACTION } });
-    await editCollection(ACTION, [{ ...line, collectorNumber: "" }]);
-    expect(stub.apply.mock.calls[0][1].rows[0]).toMatchObject({ collectorNumber: "", scryfallId: null, condition: null });
+    const bare = { ...line, setCode: "", collectorNumber: "", quantity: 0, expected: 2 };
+    expect(await editCollection(ACTION, [bare])).toEqual({ applied: { id: ACTION } });
+    expect(stub.resolve.mock.calls[0][0]).toEqual([expect.objectContaining({ setCode: "", collectorNumber: "" })]);
+    expect(stub.apply.mock.calls[0][1].rows[0]).toMatchObject({ setCode: "", collectorNumber: "", scryfallId: null, condition: null });
+  });
+
+  it("refuses a bare holding in an add, which only ever names a catalog printing", async () => {
+    catalogHolds();
+    await expect(addToCollection(ACTION, [{ ...line, setCode: "", collectorNumber: "" }])).rejects.toThrow("not a catalog printing");
   });
 
   it("passes stale, a deck warning, unchanged and a missing card back, writing nothing", async () => {

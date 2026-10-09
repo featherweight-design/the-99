@@ -98,7 +98,7 @@ export async function searchCards(
     .as("owned_totals");
   const ownedQtySql = sql<number>`coalesce(${ownedTotals.qty}, 0)`;
   // All constraints live in SQL so LIMIT can't starve results when early
-  // name matches are off-color or unowned.
+  // name matches are off-color or unowned. A scan over the ~35k-row cards table is cheap.
   const rows = await db
     .select({
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
@@ -144,7 +144,6 @@ export async function searchCards(
           () => null,
         )
       : null;
-  // A scan over the ~35k-row cards table is cheap.
   return rows.map(({ oracleText, keywords, gameChanger, massLandDenial, extraTurn, ...row }) => ({
     ...row,
     facts: noteFacts({
