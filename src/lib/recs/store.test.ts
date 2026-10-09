@@ -35,8 +35,12 @@ import {
   rowToListItem,
   toScoreRow,
 } from "./store";
+import { generationToken } from "./store";
 import type { RankedCommander } from "./recommend";
 import { RANK_SCORE_UNWRITTEN, SCORE_WRITER_CURRENT } from "../../db/schema";
+
+/** The generation token a compute captured, for a collection last confirmed at `at`. */
+const gen = (at: Date | null) => generationToken(null, at ? at.getTime() : null);
 
 // The last writer that took no `SCORE_INDEX_LOCK` and compared no index
 // generation — #681's, which is live and calls `persistScores` with three
@@ -168,6 +172,11 @@ function fakeDb(confirmedAt: Date | null, indexAt: Date | null = null) {
     execute: async (q: unknown) => {
       const text = JSON.stringify(q);
       executed.push(text);
+      // The collection fingerprint is one raw read over both of its writers.
+      if (text.includes("collection_history")) {
+        trace.push("read:collection");
+        return { rows: [{ seq: null, at: confirmedAt ? confirmedAt.getTime() : null }] };
+      }
       trace.push(
         text.includes("pg_advisory_xact_lock_shared")
           ? "lock:index-shared"
@@ -187,8 +196,7 @@ function fakeDb(confirmedAt: Date | null, indexAt: Date | null = null) {
           resolve([{ at: indexAt }]);
         },
         where: async () => {
-          trace.push("read:collection");
-          return [{ at: confirmedAt }];
+          throw new Error("the collection fingerprint is read through execute");
         },
       }),
     }),
@@ -217,7 +225,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(at);
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], at.getTime());
+    await persistScores("user_1", [ranked()], gen(at));
 
     expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
   });
@@ -227,7 +235,7 @@ describe("persistScores generation guard", () => {
     stub.db.transaction = fake.db.transaction;
 
     // Captured before the newer confirm landed.
-    await persistScores("user_1", [ranked()], new Date("2026-07-24T12:00:00Z").getTime());
+    await persistScores("user_1", [ranked()], gen(new Date("2026-07-24T12:00:00Z")));
 
     expect(fake.wrote()).toEqual({ deleted: false, insertedRows: 0 });
   });
@@ -236,7 +244,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(null);
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], null);
+    await persistScores("user_1", [ranked()], gen(null));
 
     expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
   });
@@ -255,7 +263,7 @@ describe("persistScores generation guard", () => {
     await persistScores(
       "user_1",
       [ranked()],
-      collection.getTime(),
+      gen(collection),
       String(new Date("2026-08-03T04:10:00Z").getTime()),
     );
 
@@ -268,7 +276,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(collection, index);
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], collection.getTime(), String(index.getTime()));
+    await persistScores("user_1", [ranked()], gen(collection), String(index.getTime()));
 
     expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
   });
@@ -282,7 +290,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(collection, new Date("2026-09-03T04:10:00Z"));
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], collection.getTime());
+    await persistScores("user_1", [ranked()], gen(collection));
 
     expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
   });
@@ -295,7 +303,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(collection, null);
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], collection.getTime(), "0");
+    await persistScores("user_1", [ranked()], gen(collection), "0");
 
     expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
   });
@@ -308,7 +316,7 @@ describe("persistScores generation guard", () => {
     stub.db.transaction = fake.db.transaction;
     indexRead.fails = true;
     try {
-      await expect(persistScores("user_1", [ranked()], collection.getTime(), "0"))
+      await expect(persistScores("user_1", [ranked()], gen(collection), "0"))
         .rejects.toThrow("relation does not exist");
     } finally {
       indexRead.fails = false;
@@ -332,7 +340,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(collection, null);
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], collection.getTime(), INDEX_UNREADABLE);
+    await persistScores("user_1", [ranked()], gen(collection), INDEX_UNREADABLE);
 
     expect(fake.wrote()).toEqual({ deleted: false, insertedRows: 0 });
     expect(fake.trace()).toEqual([]);
@@ -345,7 +353,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(collection, new Date("2026-09-03T04:10:00Z"));
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], collection.getTime(), "0");
+    await persistScores("user_1", [ranked()], gen(collection), "0");
 
     expect(fake.wrote()).toEqual({ deleted: false, insertedRows: 0 });
   });
@@ -364,7 +372,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(at, at);
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], at.getTime(), String(at.getTime()));
+    await persistScores("user_1", [ranked()], gen(at), String(at.getTime()));
 
     // Asserted as the whole sequence rather than as two `indexOf` comparisons,
     // because what makes this write safe is that NOTHING is read before the
@@ -389,7 +397,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(at, at);
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], at.getTime(), String(at.getTime()));
+    await persistScores("user_1", [ranked()], gen(at), String(at.getTime()));
 
     const t = fake.trace();
     // Membership first, and not as belt-and-braces: `indexOf` returns -1 for an
@@ -407,7 +415,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(at, at);
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], at.getTime(), String(at.getTime()));
+    await persistScores("user_1", [ranked()], gen(at), String(at.getTime()));
 
     // Shared on the index key: score writes have no reason to serialise
     // against each other, and the one exclusive taker is the rebuild. Read
@@ -424,7 +432,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(at, at);
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], at.getTime());
+    await persistScores("user_1", [ranked()], gen(at));
 
     // The per-user lock is unconditional — the collection guard always runs —
     // so what an omitted index generation must skip is the INDEX key and its
@@ -441,7 +449,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(at);
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], at.getTime());
+    await persistScores("user_1", [ranked()], gen(at));
 
     expect(Object.keys(fake.conflictSet() ?? {})).toContain("writerVersion");
   });
@@ -455,7 +463,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(at);
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], at.getTime());
+    await persistScores("user_1", [ranked()], gen(at));
 
     const announced = fake.executed().join(" ");
     expect(announced).toContain("set_config");
@@ -480,7 +488,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(new Date("2026-07-24T12:05:00Z"));
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], null);
+    await persistScores("user_1", [ranked()], gen(null));
 
     expect(fake.wrote()).toEqual({ deleted: false, insertedRows: 0 });
   });

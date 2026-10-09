@@ -124,6 +124,7 @@
     "probe:build-from": "node scripts/probe-build-from.mjs",
     "probe:commanders-mode": "node scripts/probe-commanders-mode.mjs",
     "probe:arrivals": "tsx scripts/probe-arrivals.ts",
+    "probe:collection-write": "tsx scripts/probe-collection-write.ts",
     "probe:list-stamp": "tsx scripts/probe-list-stamp.ts",
     "list-stamp:triggers": "tsx scripts/list-stamp-triggers.ts",
     "probe:about": "node scripts/probe-about.mjs",

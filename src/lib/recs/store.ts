@@ -1,7 +1,7 @@
 import { and, desc, eq, notInArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
-  cards, commanderScores, csvUploads, SCORE_WRITER_CURRENT, type RoleCounts,
+  cards, commanderScores, SCORE_WRITER_CURRENT, type RoleCounts,
 } from "../../db/schema";
 import { receiptsPreview } from "./format";
 import { measurableTotalFor } from "./score";
@@ -92,18 +92,65 @@ export function rowToListItem(row: ScoreRowWithCard): CommanderListItem {
   };
 }
 
+type Executor = Pick<typeof db, "execute">;
+
 /**
- * Fingerprint of the collection a score compute is about to read. confirmUpload is
- * the only writer of collection_items, and it stamps confirmedAt in the same
- * transaction, so the latest confirm time identifies the collection generation.
+ * Fingerprint of the collection a score compute is about to read: a token over BOTH of the
+ * collection's writers (plan 2026-10-09, Decision 4).
+ *
+ * - `max(collection_history.seq)` moves on every ledger write, which is every collection
+ *   write once `COLLECTION_EDIT_ENABLED` is on, a hand edit included.
+ * - `max(csv_uploads.confirmed_at)` moves on every confirmed upload, which is the only
+ *   collection write while the switch is off.
+ *
+ * Either alone misses a transition. Seq alone stands still when the switch is turned off
+ * after a player has history, since a legacy upload writes no entry. The timestamp alone is
+ * what a previous deployment compares, and a hand edit never moves it. The two are compared
+ * WHOLE, so either moving moves the token; neither moves backwards, because `seq` is a
+ * bigserial and retention prunes an entry's rows without deleting it.
+ *
  * Callers capture this *before* reading the pool and hand it to persistScores.
  */
-export async function collectionGeneration(userId: string): Promise<number | null> {
-  const [row] = await db
-    .select({ at: sql<Date | null>`max(${csvUploads.confirmedAt})` })
-    .from(csvUploads)
-    .where(eq(csvUploads.userId, userId));
-  return row?.at ? new Date(row.at).getTime() : null;
+export async function collectionGeneration(userId: string): Promise<string> {
+  try {
+    return await readCollectionGeneration(db, userId);
+  } catch (error) {
+    // A database the ledger's migration has not reached (a preview deploy runs none). The
+    // timestamp half alone is then the whole truth, since nothing can write a ledger entry.
+    if (!isSchemaLagError(error)) throw error;
+    recordSoftFailure();
+    return readCollectionGeneration(db, userId, { ledger: false });
+  }
+}
+
+/**
+ * Reads the generation token through `executor`, a transaction or the pool.
+ *
+ * The timestamp half is read as epoch millis IN SQL. The column is `timestamp` without time
+ * zone, so the driver's own rendering parses as local time, and a token compared across two
+ * paths that parsed it differently would never match.
+ */
+export async function readCollectionGeneration(
+  executor: Executor,
+  userId: string,
+  opts: { ledger?: boolean } = {},
+): Promise<string> {
+  const seq = opts.ledger === false
+    ? sql`null::bigint`
+    : sql`(select max(h.seq) from collection_history h where h.user_id = ${userId})`;
+  const rows = await executor.execute<{ seq: string | number | null; at: string | number | null }>(sql`
+    select
+      ${seq} as seq,
+      (select (extract(epoch from max(u.confirmed_at)) * 1000)::bigint
+         from csv_uploads u where u.user_id = ${userId}) as at
+  `);
+  const row = rows.rows[0];
+  return generationToken(row?.seq ?? null, row?.at ?? null);
+}
+
+/** The token: both halves, `-` for an absent one, compared whole. */
+export function generationToken(seq: string | number | null, at: string | number | null): string {
+  return `${seq === null ? "-" : String(seq)}|${at === null ? "-" : String(at)}`;
 }
 
 /**
@@ -172,13 +219,12 @@ export const INDEX_UNREADABLE = "unreadable";
  * rows after the upload wiped the table, and loadScores' fast path would serve them
  * indefinitely — nothing marks them stale.
  *
- * The generation is `max(csvUploads.confirmedAt)`, so it only moves on a *confirmed*
- * import — and `replaceCollection`, the sole writer of `collectionItems`, takes
- * `confirmUploadId` as optional. `pnpm db:seed:collection` writes without it, so a
- * collection can change while the generation stands still. What keeps that safe is
- * not the generation but the unconditional `delete(commanderScores)` that
- * `replaceCollection` itself runs, in its own transaction alongside the rewrite:
- * there is nothing stale left to serve.
+ * The generation is `collectionGeneration`'s token, so it moves on a confirmed import and
+ * on every ledger write. `pnpm db:seed:collection` writes through `replaceCollection` with
+ * neither, so a collection can still change while the generation stands still. What keeps
+ * that safe is not the generation but the unconditional `delete(commanderScores)` that every
+ * collection writer runs in its own transaction alongside the rewrite (`replaceCollection`
+ * and `applyCollectionChange` both): there is nothing stale left to serve.
  *
  * So the invariant to preserve is that one, not this function's. A future writer
  * that changes a collection without dropping `commanderScores` leaves every cached
@@ -187,7 +233,7 @@ export const INDEX_UNREADABLE = "unreadable";
 export async function persistScores(
   userId: string,
   ranked: RankedCommander[],
-  generation: number | null,
+  generation: string,
   /**
    * The commander-index generation the caller read its support data at. A write
    * whose index has moved since is dropped, which closes the rebuild race — see
@@ -241,12 +287,7 @@ export async function persistScores(
       );
     }
 
-    const [gen] = await tx
-      .select({ at: sql<Date | null>`max(${csvUploads.confirmedAt})` })
-      .from(csvUploads)
-      .where(eq(csvUploads.userId, userId));
-    const current = gen?.at ? new Date(gen.at).getTime() : null;
-    if (current !== generation) return;
+    if ((await readCollectionGeneration(tx, userId)) !== generation) return;
 
     // The same guard for the index, in the same transaction and for the same
     // reason: the compute that produced these rows read support some seconds
