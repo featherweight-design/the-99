@@ -198,6 +198,8 @@ interface BuilderShellProps {
   /** `ANALYSIS_TAB_ENABLED` — whether this deployment draws the Analysis tab. Off is
    *  today's layout, exactly. */
   analysisEnabled?: boolean;
+  /** `DECK_STATS_ENABLED`, read on the server. Off: the list control draws no Stats segment. */
+  statsEnabled?: boolean;
   /** `NOTICES_ENABLED` (`src/lib/notices/flag.ts`): whether the header draws the notice tag and the
    *  Notices sheet can open. Off, nothing of the notices is read or drawn. */
   noticesEnabled?: boolean;
@@ -258,6 +260,7 @@ export function BuilderShell({
   versions = [],
   initialView = "deck",
   analysisEnabled = false,
+  statsEnabled = false,
   noticesEnabled = false,
   initialNotices = null,
   openNoticesOnArrival = false,
@@ -1788,6 +1791,7 @@ export function BuilderShell({
               <PendingChangeProvider value={pendingChange}>
               <LockCardsProvider value={lockCards}>
               <Decklist
+              statsEnabled={statsEnabled}
               mix={mix}
                 deckId={deck.id}
                 cards={cards}

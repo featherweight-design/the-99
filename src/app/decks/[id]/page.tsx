@@ -38,6 +38,7 @@ import { hasChanges, loadDraftState, loadVersionShape } from "../../../lib/decks
 import { listVersions } from "../../../lib/decks/versions";
 import { computeRoleCounts } from "../../../lib/decks/mix";
 import { analysisTabEnabled } from "../../../lib/decks/analysis-flag";
+import { deckStatsEnabled } from "../../../lib/decks/stats-flag";
 import { tuningEnabled } from "../../../lib/tuning/flag";
 import { noticesEnabled } from "../../../lib/notices/flag";
 import { loadDeckNotices } from "../../../lib/notices/read";
@@ -471,6 +472,7 @@ export default async function DeckBuilderPage({
       // Nothing in the app produces such a URL now that `/decks/[id]/versions`
       // is retired; see the note in `lib/decks/builder-view.ts`.
       analysisEnabled={analysisEnabled}
+      statsEnabled={deckStatsEnabled()}
       tuningEnabled={tuned}
       noticesEnabled={noticesEnabled()}
       initialNotices={notices}

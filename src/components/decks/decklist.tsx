@@ -20,7 +20,8 @@ import type { DeckCommander } from "../../lib/decks/read";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
-import { DECK_VIEW_KEY, GroupToggle, isDeckView, type AutoControls } from "./group-toggle";
+import { DeckStatsView } from "./deck-stats-view";
+import { DECK_PANEL_KEY, DECK_VIEW_KEY, GroupToggle, isDeckPanel, isDeckView, type AutoControls } from "./group-toggle";
 import { deckCardComparator } from "../../lib/decks/sort-cards";
 import {
   DECK_SORT_STORAGE_KEY,
@@ -131,6 +132,8 @@ type DecklistProps = {
    * everything in it must not be congratulated on a fill that never ran.
    */
   filled?: boolean;
+  /** `DECK_STATS_ENABLED`. Off: no Stats segment is drawn and nothing else changes. */
+  statsEnabled?: boolean;
   filter: "all" | "shopping";
   grouping: "type" | "role";
   onFilterChange: (f: "all" | "shopping") => void;
@@ -292,9 +295,10 @@ export function Decklist({
   bodySize,
   spentSlots = EMPTY_SPENT_SLOTS,
   filled = false,
+  statsEnabled = false,
   filter,
   grouping,
-  onFilterChange,
+  onFilterChange: onFilterChangeProp,
   onGroupingChange,
   onUnresolvedExpandedChange,
   autoCount = 0,
@@ -326,6 +330,17 @@ export function Decklist({
   // List until this browser says otherwise, which is also what the server
   // renders: the stored choice arrives on the pass after hydration.
   const [storedView, chooseView] = useStoredView(DECK_VIEW_KEY, isDeckView);
+  // The panel's body, remembered per device beside the list view. Stats is a third
+  // segment of the All / Shopping control, so choosing either list segment returns here.
+  const [storedPanel, choosePanel] = useStoredView(DECK_PANEL_KEY, isDeckPanel);
+  const statsOpen = statsEnabled && storedPanel === "stats";
+  const onFilterChange = (f: "all" | "shopping") => {
+    choosePanel("list");
+    onFilterChangeProp(f);
+  };
+  const stats = statsEnabled
+    ? { open: statsOpen, onChange: (open: boolean) => choosePanel(open ? "stats" : "list") }
+    : undefined;
   const view = storedView ?? "list";
 
   // The marks this view actually contains, which is what the key decodes. Only
@@ -570,6 +585,29 @@ export function Decklist({
     .filter((c) => !spentOracleIds.has(c.oracleId))
     .map((c) => ({ oracleId: c.oracleId, name: printedNameOf(c), imageUri: c.imageUri }));
 
+  if (statsOpen) {
+    return (
+      <div className="flex flex-col">
+        <GroupToggle
+          allCount={built}
+          shoppingCount={shoppingCount}
+          filter={filter}
+          grouping={grouping}
+          onFilterChange={onFilterChange}
+          onGroupingChange={onGroupingChange}
+          view={view}
+          onViewChange={chooseView}
+          shoppingCards={shoppingList}
+          sort={sort}
+          onSortChange={setSort}
+          stats={stats}
+          {...lockProps}
+        />
+        <DeckStatsView />
+      </div>
+    );
+  }
+
   // Shopping view: role-grouped with gap clauses, intro, and footer.
   if (filter === "shopping") {
     // Owned cards only. The design draws "3 · closes 7→10", where from + n = to,
@@ -773,6 +811,7 @@ export function Decklist({
             onSortChange={setSort}
             onSortAnnounce={onAnnounce}
             draftNote={draftNote}
+            stats={stats}
             {...lockProps}
           />
           <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
@@ -862,7 +901,8 @@ export function Decklist({
           onSortChange={setSort}
           onSortAnnounce={onAnnounce}
           draftNote={draftNote}
-          {...lockProps}
+          stats={stats}
+            {...lockProps}
         />
 
         <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
@@ -994,7 +1034,8 @@ export function Decklist({
         onSortChange={setSort}
         onSortAnnounce={onAnnounce}
         draftNote={draftNote}
-        {...lockProps}
+        stats={stats}
+            {...lockProps}
       />
 
       {/* The decoder, on the PRIMARY view. It was in the Shopping branch alone,
