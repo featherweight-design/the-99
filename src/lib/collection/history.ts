@@ -56,6 +56,13 @@ export type HistoryListEntry = {
   /** How many rows it changed; a Replace can touch hundreds. */
   rowCount: number;
   /**
+   * Copies it added and copies it took away, summed over its rows. What the list draws
+   * (`+12 · −3`): `raised` and `lowered` count ROWS, and a row raised from 1 to 4 is one row and
+   * three copies.
+   */
+  copiesUp: number;
+  copiesDown: number;
+  /**
    * Every row it changed ends at no copies: an edit the list labels as a removal (plan
    * Decision 2 folds removal into `edit`). Computed from the rows so the list needs no detail read.
    */
@@ -78,6 +85,7 @@ export type HistoryEntry = HistoryListEntry & { rows: HistoryRow[] };
 type ListRow = {
   id: string; seq: string | number; created_at: Date | string; kind: HistoryListEntry["kind"];
   source: string | null; raised: number; lowered: number; row_count: number; removes_only: boolean;
+  copies_up: number; copies_down: number;
   reverts_id: string | null; reverted_by: string | null;
   reverts_visible: boolean; reverted_by_visible: boolean;
   rows?: HistoryRow[];
@@ -98,6 +106,18 @@ const listColumns = sql`
       select 1 from jsonb_array_elements(h.rows) e where jsonb_typeof(e -> 'after') <> 'null'
     )
   ) as removes_only,
+  (
+    select coalesce(sum(greatest(
+      coalesce((e -> 'after' ->> 'quantity')::int, 0) - coalesce((e -> 'before' ->> 'quantity')::int, 0), 0
+    )), 0)::int
+    from jsonb_array_elements(h.rows) e
+  ) as copies_up,
+  (
+    select coalesce(sum(greatest(
+      coalesce((e -> 'before' ->> 'quantity')::int, 0) - coalesce((e -> 'after' ->> 'quantity')::int, 0), 0
+    )), 0)::int
+    from jsonb_array_elements(h.rows) e
+  ) as copies_down,
   exists (
     select 1 from collection_history t
     where t.id = h.reverts_id and t.rows is not null
@@ -119,6 +139,7 @@ function toListEntry(r: ListRow): HistoryListEntry {
   return {
     id: r.id, seq: Number(r.seq), createdAt: new Date(r.created_at), kind: r.kind, source: r.source,
     raised: r.raised, lowered: r.lowered, rowCount: r.row_count, removesOnly: r.removes_only,
+    copiesUp: r.copies_up, copiesDown: r.copies_down,
     revertsId: r.reverts_id, revertedBy: r.reverted_by,
     revertsVisible: r.reverts_visible, revertedByVisible: r.reverted_by_visible,
   };

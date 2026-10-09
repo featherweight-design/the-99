@@ -286,6 +286,36 @@ async function main() {
     check("one entry reads whole for its owner and not at all for anyone else",
       own !== null && own.rows.length === own.rowCount && await getHistoryEntry(`${USER}-other`, page.entries[0].id) === null,
       `${own?.rows.length} rows`);
+
+    // ---- 8. The copies figure, and a row an edit creates -----------------------------------
+    // The list's copies figure is SQL over the stored rows; each entry's rows, read straight off
+    // the table, are the answer it must reproduce. Not through `getHistoryEntry`: section 7 aged
+    // one of these entries out of the window, and pruned another, since `page` was read.
+    const figured = await Promise.all(page.entries.map(async (e) => {
+      type Side = { quantity: number } | null;
+      const { rows } = await one<{ rows: { before: Side; after: Side }[] | null }>(
+        "select rows from collection_history where id = $1", [e.id],
+      );
+      // Pruned by section 7 since `page` was read: nothing left to sum, and nothing to check.
+      if (rows === null) return { ok: true, id: e.id, list: [e.copiesUp, e.copiesDown], rows: [] };
+      const q = (s: { quantity: number } | null) => s?.quantity ?? 0;
+      const up = rows.reduce((n, r) => n + Math.max(q(r.after) - q(r.before), 0), 0);
+      const down = rows.reduce((n, r) => n + Math.max(q(r.before) - q(r.after), 0), 0);
+      return { ok: e.copiesUp === up && e.copiesDown === down, id: e.id, list: [e.copiesUp, e.copiesDown], rows: [up, down] };
+    }));
+    const wrong = figured.filter((f) => !f.ok);
+    check("every listed entry's copies figure is the sum of its own rows",
+      wrong.length === 0 && figured.some((f) => f.list[0] > 1 || f.list[1] > 1),
+      wrong.length === 0 ? `${figured.length} entries` : JSON.stringify(wrong.slice(0, 3)));
+    const printing = randomUUID();
+    const fixed = { ...at(C), collectorNumber: "2" };
+    await applyCollectionChange(USER, { kind: "edit", rows: [{ ...fixed, quantity: 2, scryfallId: printing, condition: "LP" }] }, { id: randomUUID() });
+    const created = await one<{ scryfall_id: string | null; condition: string | null } | undefined>(
+      "select scryfall_id, condition from collection_items where user_id = $1 and oracle_id = $2 and collector_number = '2'",
+      [USER, C],
+    );
+    check("a row an edit creates stores the printing and condition the edit named",
+      created?.scryfall_id === printing && created?.condition === "LP", JSON.stringify(created));
   } finally {
     // One statement for the ledger: its two self-references are checked at the statement's end.
     await pool.query("delete from collection_history where user_id = $1", [USER]);
