@@ -108,8 +108,12 @@ printing's price too, so the two agree. A card with no choice keeps the sub-proj
 - **No deck reads as edited.** Shipping must not make any deck look changed, add any history
   line, or put a deck into a "differs from its last version" state. Older committed versions
   show the same art they show today.
-- **Versions.** A committed version remembers the printings it had when committed. Looking back
-  at an older version shows them. How a choice made after a commit relates to "the draft differs
+- **Versions, before and after the line.** A version committed after this ships remembers the
+  printing each card showed at that moment, whether the player chose it or it was the default, so
+  a later purchase, art pick or deck choice never rewrites it. A version committed before this
+  ships has no recorded printing and is never given a guessed one: it keeps resolving as it does
+  today, and nothing is backfilled. Whether the player can tell the two kinds of version apart
+  is Design's call (Open item 9). How a choice made after a commit relates to "the draft differs
   from the last version" is a ruling Hugh owes, listed below.
 - **Timing.** The change lands only after Deck stats' money PR (PR 6 of
   `docs/superpowers/plans/2026-10-08-deck-stats.md`), so the money card is built against the deck
@@ -190,3 +194,4 @@ With `DECK_PRINTINGS_ENABLED` off, nothing renders and decks read as `main`'s. R
 7. How import reports the printings it took and the ones it could not match, and how export
    shows what it will name.
 8. How the commander's choice appears, if ruled in scope.
+9. Whether an older version, which records no printing, reads differently from a newer one.
