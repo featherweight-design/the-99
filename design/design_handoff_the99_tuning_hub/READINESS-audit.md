@@ -9,6 +9,8 @@ READINESS.md, the copy strings file and the new design table, and against the sh
 
 ## Verdict: YELLOW
 
+_Update, 2026-10-09: Hugh ruled on the findings below; see "Rulings applied". Verdict stays YELLOW._
+
 Every closed ruling the task asked me to check holds, except one real mismatch between the
 roadmap and what the canvases now draw (Proposed cuts' Look deeper). That mismatch is a
 roadmap/sequencing question for Hugh, not a defect in the drawing itself, and nothing in the
@@ -42,7 +44,7 @@ engineering-resolvable or already answered by a ruling the handoff hadn't caught
 - No About entry this round — confirmed (README header line, brief §8 cited directly; no new
   About-entry canvas).
 
-## Finding: Proposed cuts tier 2 — roadmap/handoff mismatch (Hugh)
+## Finding: Proposed cuts tier 2 — roadmap/handoff mismatch (Hugh) — CLOSED by ruling (a)
 
 The brief and roadmap both say Proposed cuts ships tier 1 only this round, with tier 2
 "eval-contingent" (roadmap sub-projects 4 and 6: tier 2 "is added only if the golden-deck eval...
@@ -54,7 +56,7 @@ Nothing in the roadmap has been updated to match. This is a genuine engine misma
 as committed. Needs Hugh to confirm the roadmap's eval-gate is superseded (and have the roadmap
 doc amended) before sub-project 6 scopes Proposed cuts tier 2 as guaranteed work.
 
-## Finding: curve weighting — already answered, handoff's "open" item is stale (eng-resolvable)
+## Finding: curve weighting — already answered, handoff's "open" item is stale (eng-resolvable) — CLOSED by ruling (c)
 
 `README.md` "Open — for Hugh" item 1 still asks whether Mana Balance's pip demand is
 curve-weighted (the brief's original text) or plain (Deck Stats' shipped choice). This is no
@@ -69,7 +71,7 @@ it just predates the handoff catching up to it.
 
 ## Other open items — engineering-resolvable, not blocking
 
-- **Suggested changes as two lists** changes its model contract (one rationale per card, not per
+- **Suggested changes as two lists** (CLOSED by ruling (b): sub-project 8) changes its model contract (one rationale per card, not per
   swap) — real work, but a plan/engineering task to add to the roadmap, not a design gap.
 - **Stop on a deeper look** (open 6) — handoff explicitly leaves this to engineering's judgement.
 - **Free runs recorded once per list version** (open 3) — a data-model question (History's
@@ -86,6 +88,25 @@ it just predates the handoff catching up to it.
 - **"A third door" from Deck Stats' Mana colors card** (open 2) and **Staple adds going over**
   (open 4) are both design calls Design already made and documented (left unlinked; drawn
   honestly) — nothing further needed.
+
+## Rulings applied (Hugh, 2026-10-09)
+
+Recorded in `docs/superpowers/plans/2026-10-08-tuning-roadmap.md` (Rulings 2026-10-09).
+
+- **(a) Proposed cuts tier 2 is not built this round.** It waits for the golden-deck eval of the
+  free tier (lane b4) and ships only if the eval shows the free tier missing cuts. C2/C8/C9 stay on
+  file as reference. Closes the tier 2 finding; the roadmap's eval gate stands.
+- **(b) Suggested changes adopts the two lists, Additions and Cuts, one rationale per card.** A
+  model-contract change (prompt plus validator), then an eval re-run, which needs Hugh's OK on
+  cost. It also applies to the SHIPPED panel (`src/components/decks/tuning-panel.tsx` and its
+  manifest), so it is its own roadmap task (sub-project 8), independent of the hub UI and able to
+  ship before it; the hub inherits it. The UI change follows this #1312 drawing, so it needs no
+  new Design round. Closes the "two lists" item.
+- **(c) Curve weighting is dropped** (Deck stats plan, Ruling 10). Mana Balance demand is plain pip
+  counts. Closes the curve-weighting finding and README "Open" item 1.
+- Tab names (open 5): the brief's "Your deck, Your games" is stale; roadmap note added.
+
+Verdict stays YELLOW.
 
 ## Mechanical checks
 

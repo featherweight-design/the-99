@@ -22,6 +22,7 @@ UI sub-project additionally needs a GREEN readiness audit on its handoff before 
                                  shows gaps) — depends on 5 shipping, and on the golden-deck eval
                                  existing (part of 3/4's own scope, reused here)
 7. About entry + ABOUT_VERSION bump (last, once 5 and the tier-2 passes that ship are done)
+8. Suggested changes, two lists  (no new Design round; independent of 5, ships before it if ready)
 ```
 
 Sub-projects 1 and 2 have no dependency on anything else in this line and should start first —
@@ -137,7 +138,8 @@ Behind a switch (name TBD at implementation, following the `*_ENABLED` pattern �
 **Scope**: a pure function (or a small module, matching `src/lib/tuning/`'s own shape) that:
 - Reads the deck's cards, resolves each to its mana-producing text (basics, duals/utility lands,
   rocks, dorks, land search) against the catalog, never guessing from a card's name.
-- Computes pip demand per color, curve-weighted, from the deck's spell costs.
+- Computes pip demand per color as plain pip counts from the deck's spell costs (Hugh, 2026-10-09,
+  ruling (c) below: curve weighting is dropped, per the Deck stats plan's Ruling 10).
 - Produces the counted-fact output the brief describes (short colors, by how much; rebalance,
   trade-for-ramp, and missing-staple suggestions, each with its own counted fact).
 - The missing-staple check reads `format_staples` and the commander's own most-played ramp from
@@ -218,8 +220,9 @@ real result; if sub-project 5 already drew the full tier-2 result frame, this is
 (per the accuracy-and-humility principle: tier 1's facts are what the model is told, not what it
 re-derives), through the shared model client (`src/lib/model/client.ts`), spending a credit
 through the existing allowance (`src/lib/model/allowance.ts`), citing its claims the way Suggested
-changes' `presentation.ts` already does. Proposed cuts' tier 2 ships here too, ONLY if sub-project
-4's eval showed gaps.
+changes' `presentation.ts` already does. Proposed cuts' tier 2 is NOT built in this round (Hugh,
+2026-10-09, ruling (a) below): it waits for the golden-deck eval of the free tier and ships only if
+that eval shows the free tier missing cuts. Design's C2/C8/C9 screens stay on file as reference.
 
 **Resolves the open free-first/deep-by-default question** (below) as part of its implementation,
 following whatever Hugh decides.
@@ -240,6 +243,23 @@ artboard (`design/design_handoff_the99_about/`), bumping `ABOUT_VERSION` once th
 done (whichever of sub-projects 5/6 are the actual last to ship — if Proposed cuts' tier 2 never
 starts per sub-project 4's eval, this sub-project does not wait for a tier that was never built).
 
+## Sub-project 8: Suggested changes, two lists
+
+**No new Design round.** The change follows Design's tuning-hub drawing (PR #1312, `Additions` and
+`Cuts` lists, one rationale per card). Independent of sub-project 5: it applies to the SHIPPED
+Suggested changes panel (`src/components/decks/tuning-panel.tsx` and its manifest) and can ship
+before the hub exists; the hub then inherits it. Hugh's clarification, 2026-10-09.
+
+**Scope**:
+- Model contract: the prompt and the validator move from one rationale per swap to two lists,
+  Additions and Cuts, each card carrying its own rationale.
+- Rendering: the panel draws the two lists as the handoff does.
+- **Eval re-run**: the golden-deck eval is re-run against the new contract. It is a paid run and
+  needs Hugh's OK on cost before it starts.
+
+**Cost implications**: the eval re-run is the only new spend; per-run cost of the feature itself
+is expected to be unchanged, to be confirmed by that eval.
+
 ## Rulings (Hugh, 2026-10-08)
 
 No questions remain open. The numbers are Hugh's.
@@ -256,3 +276,19 @@ No questions remain open. The numbers are Hugh's.
    commander prose.
 6. **Thin EDHREC data: run anyway and say what is missing.** Mana Balance needs no EDHREC data;
    Proposed cuts uses roles and curve and names the missing signal. Neither engine refuses.
+
+## Rulings (Hugh, 2026-10-09)
+
+Made on the Tuning hub R1 readiness audit (PR #1312).
+
+(a) **Proposed cuts' paid "Look deeper" (tier 2) is not built this round.** It waits for the
+    golden-deck eval of the free tier (lane b4) and ships only if the eval shows the free tier
+    missing cuts. Design's C2/C8/C9 screens stay on file as reference.
+(b) **Suggested changes adopts Design's two lists, Additions and Cuts, with one rationale per
+    card.** A model-contract change (prompt plus validator), then an eval re-run, which needs
+    Hugh's OK on cost. It applies to the shipped panel as well as the hub: sub-project 8.
+(c) **Curve weighting is dropped** (Deck stats plan, Ruling 10). Mana Balance's demand is plain
+    pip counts (sub-project 3).
+
+Note: the brief's tab names "Your deck, Your games" are stale. The shipped tabs are
+`Your deck · Analysis · Consider`, and the handoff correctly draws against them.
