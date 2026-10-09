@@ -253,3 +253,12 @@ finding 2 (`EditRow`/`planEdit` cannot carry `scryfallId`/`condition`). Nothing 
 Finding 6 (stale G annotations, `applyCollectionDelta` name, "centred") is a Design re-sync item
 and is untouched here.
 
+
+## Copilot round 1 — build-PR finding
+
+- **[Design call, build-time] The finish default.** README §B says choosing a printing completes
+  the line at `nonfoil`, but `printings.finishes` (`src/db/schema.ts`) can be foil-only or etched-only,
+  and the `card-detail` payload does not expose a printing's supported finishes. A foil-only
+  printing would be saved as a nonfoil holding the catalog has no such card for. The build needs the
+  payload to carry `finishes` and the sheet to default to a finish the printing has (and offer only
+  those). Recorded here rather than redrawn; whether the picker shows a finish choice is Design's call.
