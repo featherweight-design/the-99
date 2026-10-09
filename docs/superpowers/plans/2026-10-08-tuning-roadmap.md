@@ -200,7 +200,7 @@ here, now that both destinations exist.
 **Cost implications**: none directly (no new model calls); this sub-project is where the UI for
 tier 2's eventual model calls gets built, so it should leave an obvious seam for sub-project 6 to
 wire into (a "Look deeper" button that is present but calls nothing yet, versus one added later —
-Design's call per the brief's open question).
+ruling 1 settles it: the press is present from the start).
 
 **Switch**: reuses or extends `ANALYSIS_TAB_ENABLED` (confirmed read in `builder-shell.tsx`,
 `about/visible.ts`, `swaps/flag.ts`, and others per the existing pattern) — whether Tuning gets
@@ -240,32 +240,19 @@ artboard (`design/design_handoff_the99_about/`), bumping `ABOUT_VERSION` once th
 done (whichever of sub-projects 5/6 are the actual last to ship — if Proposed cuts' tier 2 never
 starts per sub-project 4's eval, this sub-project does not wait for a tier that was never built).
 
-## Open questions for Hugh
+## Rulings (Hugh, 2026-10-08)
 
-1. **Free-first vs. deep-by-default.** The orchestrator's lean is free-first with "Look deeper"
-   offered at the top of the free result (one press, not a second trip), with a possible
-   per-player "always look deeper" preference later. Does this stand as the ruling, or does Hugh
-   want deep-by-default for either tool, or the per-player preference built now rather than later?
-2. **Does Tuning replace the Analysis tab, rename it, or sit inside it?** The brief leaves this to
-   Design, but Hugh may already have a lean (the tool is called "Tuning," not "Analysis," which
-   argues for a rename or a new tab rather than a sub-area of an identically-named one).
-3. **Is `deckSuggestionRuns` extended into a tool-generic run ledger, or does each tool (Mana
-   Balance, Proposed cuts) get its own table?** A shared shape makes History's "every past run of
-   every tool" a single query; three tables makes each tool's own module simpler and more
-   independent, at the cost of a union read for History. This is answerable without Hugh, but
-   affects sub-project 5's scope enough that naming a lean now is worth it.
-4. **Proposed cuts' "over 100 cards" threshold** — exactly 100, or does the decklist's existing
-   unresolved/coverage language already have a notion of "over" that this should match exactly
-   (it currently measures the body against a 99-card target, commander excluded, per
-   `src/lib/decks/deck-size.ts`)? Worth confirming the boundary matches player expectation (100
-   including the commander, or 99 in the body) before Design draws "over by N."
-5. **Card-labels' and commander-prose's new `model_calls` rows** (sub-project 1): each run is a
-   BATCH of many model calls (thousands for labels, dozens for prose), not one. Does Hugh want
-   one `model_calls` row per batch (cheap, loses per-card granularity the scripts' own ledgers
-   already keep) or is per-batch-with-a-ledger-pointer enough, given the ledgers already exist?
-   The roadmap assumes per-batch is enough since the detailed ledgers are not being replaced.
-6. **Mana Balance's missing-staple suggestion and Proposed cuts' never-cut list both read
-   `commander_support_cards`/`format_staples`.** Should either tool refuse to run (rather than run
-   with a degraded result) for a commander whose index entry does not exist yet or is stale,
-   the way other staples-dependent surfaces already refuse degraded? This affects both engines'
-   error-state design in sub-project 5 and is worth settling before that round starts.
+No questions remain open. The numbers are Hugh's.
+
+1. **Free first.** The free result shows instantly, with "Look deeper" (1 credit) at the top. No
+   always-deeper setting for now.
+2. **Tuning sits inside Analysis**, where Suggested changes is today.
+3. **History is one shared run record for every tool.** Sub-project 5 extends
+   `deckSuggestionRuns` (or its successor) into a tool-generic ledger; three per-tool tables are out.
+4. **Proposed cuts is offered when the total passes 100, commander(s) included**, matching the
+   deck's "Over" status.
+5. **Cost report: system batch jobs write ONE summary line per batch** (`origin: 'system'`); the
+   per-card ledgers stay. Sub-project 1 writes one `model_calls` row per batch for card labels and
+   commander prose.
+6. **Thin EDHREC data: run anyway and say what is missing.** Mana Balance needs no EDHREC data;
+   Proposed cuts uses roles and curve and names the missing signal. Neither engine refuses.
