@@ -1,6 +1,6 @@
 // Dollars by origin and feature from `model_calls`, over a window. READ-ONLY.
 //
-//   pnpm tsx scripts/report-model-spend.mts [--days N | --month]
+//   pnpm report:model-spend [--days N | --month]
 //
 // Default window: the current UTC month. Point DATABASE_URL at staging to measure real use.
 import "./lib/env.mjs";

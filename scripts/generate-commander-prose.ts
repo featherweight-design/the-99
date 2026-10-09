@@ -83,6 +83,14 @@ if (maxCommanders !== undefined && !(Number.isInteger(maxCommanders) && maxComma
   process.exit(1);
 }
 
+// Billed calls are recorded once, on the success path or when a later step throws, never twice.
+let spendRecorded = false;
+async function recordSpend() {
+  if (dryRun || calls === 0 || spendRecorded) return;
+  spendRecorded = true;
+  await recordSystemSpend({ feature: "prose", model: MODEL, usd: spentUsd });
+}
+
 generateCommanderProse({
   complete, dryRun, maxCommanders, attempts: ATTEMPTS,
   shouldStop: () => spentUsd + worstCommanderUsd > maxUsd,
@@ -102,7 +110,7 @@ generateCommanderProse({
     const asked = r.written + r.rejected + r.failed;
     console.log(`Spent $${spentUsd.toFixed(2)} of the $${maxUsd.toFixed(2)} cap, measured from each reply's usage: ` +
       `${calls} calls for ${asked} commanders (${asked > 0 ? (calls / asked).toFixed(2) : "0"} per commander).`);
-    if (calls > 0) await recordSystemSpend({ feature: "prose", model: MODEL, usd: spentUsd });
+    await recordSpend();
     // Per attempt, not per commander, and broken out by rule. The run that prompted this
     // rejected nearly everything it generated, and working out which of the four rules did
     // it meant counting characters by hand off a wall of warnings.
@@ -116,7 +124,8 @@ generateCommanderProse({
       process.exit(1);
     }
   })
-  .catch((err) => {
+  .catch(async (err) => {
     console.error(err);
+    await recordSpend();
     process.exit(1);
   });
