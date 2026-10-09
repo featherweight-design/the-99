@@ -183,7 +183,7 @@ check and save in which another collection write can change the answer, and it c
 round trip on every lowering. Inside, under the per-user lock, no other COLLECTION write can
 move the answer.
 
-**One window stays open, and the plan accepts it unless Hugh rules otherwise.** A deck commit
+**One window stays open, and Hugh accepted it as an edge case (2026-10-09, see Rulings).** A deck commit
 does not take the per-user lock. `commitDeckVersion` locks only the deck and its draft rows
 (`src/app/decks/actions.ts:1689-1702`). So a commit landing between the second claim read and
 this transaction's commit can make a deck newly reliant on a card the lowering takes, with no
@@ -193,8 +193,7 @@ claims takes the per-user lock first, before its own row locks, which is the sam
 write uses and so cannot deadlock. The commit is one such path; the claim model also reads card
 assignments, deck locks, proxies and pull releases, and every writer of those would need the
 same rule, inventoried by import rather than by reading. That is a change across the claim
-model's write paths, for a race between one player's own two tabs. It is listed under Open for
-Hugh.
+model's write paths, for a race between one player's own two tabs, and it is not done.
 
 This needs the claim read to take a transaction handle. Today `loadAvailability` and
 `loadDeckBuyRows` call the module's `db` directly. The change is a parameter defaulting to
@@ -305,10 +304,12 @@ ruling 9). The 1+2 handoff draws them.
 - **Lock contention.** Every edit now takes the per-user lock an upload takes, so an edit waits
   while a 3,400-row Replace commits. At this app's scale that is a short wait, and correct.
 
-## Open for Hugh
+## Rulings
 
-One. **The commit window in Decision 5:** accept it (the plan's default: a missed warning, after
-which the deck shows its short marks as ruling 5 describes), or close it by putting every writer
-of committed claims under the per-user lock. Every other decision has one defensible answer
-given the code, and the plan names it. The one number left open, the recompute cost in Decision
-4, is measured before any UI ships on it.
+- **The commit window in Decision 5 is accepted** (Hugh, 2026-10-09). A deck commit landing
+  between the deck check and the collection write's commit can skip the warning; the deck then
+  shows its short and buy marks, as ruling 5 describes. It is treated as an edge case, and no
+  writer of committed claims takes the per-user lock.
+
+No questions remain open. The one number left, the recompute cost in Decision 4, is measured
+before any UI ships on it.
