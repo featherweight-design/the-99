@@ -20,19 +20,14 @@ import { VerdictBlock } from "./verdict-block";
 /**
  * The Analysis tab's body (Analysis tab handoff §2): before a first reading, one empty state; with
  * a reading, the bracket box and the climb side by side at 1300 (2fr / 1fr, the climb leading the
- * left column), the findings full width under them, and the mix last, in every state.
+ * left column), and the findings full width under them.
  *
  * PRESENTATIONAL ON PURPOSE. The decision about when to fetch belongs to `useDeckProfile` in the
  * shell — a panel that unmounts on every tab switch cannot own a cache — so this component takes
  * the state and renders it, which is also what makes every reading testable without a request.
  *
- * NOTHING HERE REPLACES THE MIX, BUT ONE STATE WITHHOLDS IT. It is counted from the list rather
- * than from a profile, so it is true in every state below, and `children` is where the shell hands
- * it in. A reader whose profile failed still has a true mix, which is the difference between a
- * delay and an outage. The exception is OPENING (§8, 8a): while the stored reading is fetched the
- * tab draws only its loader, because anything else would be a guess at a shape the answer may not
- * take, and the mix appearing first and then being joined by a reading reads as the flash 8a
- * exists to remove.
+ * OPENING (§8, 8a): while the stored reading is fetched the tab draws only its loader, because
+ * anything else would be a guess at a shape the answer may not take.
  *
  * THE OVERVIEW is handed in by the shell, which holds its state, and drawn only over a reading: it
  * leads the tab on the phone, and at 1300 it heads the left column above the climb while the box

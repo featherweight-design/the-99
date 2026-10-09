@@ -15,10 +15,6 @@
  * production is unaffected until the variable is set deliberately, rather than by a deploy
  * that happened to carry this code. The `'true'` spelling matches the repository variables
  * the workflows already use (`PRICE_REFRESH_ENABLED`, `COMBO_REFRESH_ENABLED`).
- *
- * IT GATES MORE THAN THE TAB. The Recommended mix strip moves into Analysis, which is how
- * Round 0 pays for the tab's vertical — so with the flag off the strip has to stay in the
- * header, or production loses it with no tab to receive it. One flag, two whole layouts.
  */
 export function analysisTabEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
   return env.ANALYSIS_TAB_ENABLED === "true";
