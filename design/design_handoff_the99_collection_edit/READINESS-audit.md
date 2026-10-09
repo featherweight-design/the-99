@@ -230,3 +230,26 @@ open item needs a new design round. The build can start on A, E, F and the plain
 Edit mode waits on the `EditRow` change (finding 2). Finding 1 needs a Design call before F's
 History list is built, and finding 4 needs a re-sync pass so the repo does not carry text main
 had already corrected.
+
+## R2 re-sync fixes applied (2026-10-09)
+
+Findings 4 and 5 fixed in the handoff files, taking the R2 changes only and restoring text main
+had already corrected in #1308:
+
+- **Revert lede** (`collection-edit · copy strings.ts`): back to the direction-neutral
+  "From {when}. Reverting this changes {copies}." with main's explanatory comment.
+- **README source-of-truth line:** PR #1304 reads "merged 2026-10-09".
+- **README Open 1:** Hugh's "Ruled by Hugh 2026-10-09: the History tab" note restored.
+- **READINESS.md:** "Blocking 1, PR #1304 unmerged" replaced by the post-audit status (#1304 merged;
+  item 2 ruled; item 3 a copy-review call); title reads R1 + R2; item 8 now describes the toast
+  Undo in the Add cards sheet rather than "Undo on C and D".
+- **About addendum README:** the `captionLineSwitches` caveat restored (it only removes a line, it
+  never inserts one, so the shipped `import` caption must carry both lines).
+- **About key** (`about · collection edit entries.ts`): `doesn't` is straight again, matching
+  `src/lib/copy/about.ts`, in a double-quoted key as on main.
+
+Left as build-PR findings, unchanged: finding 1 (history `kinds` lookup and the up/down figure) and
+finding 2 (`EditRow`/`planEdit` cannot carry `scryfallId`/`condition`). Nothing under `src/` changed.
+Finding 6 (stale G annotations, `applyCollectionDelta` name, "centred") is a Design re-sync item
+and is untouched here.
+

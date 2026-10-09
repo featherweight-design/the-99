@@ -1,10 +1,11 @@
-# Readiness — collection edit R1
+# Readiness — collection edit R1 + R2
 
 **Approved to ship (Hugh, 2026-10-09).** Every surface and state the brief lists is drawn and reviewed. The open items in the README remain build-time rulings, not design blockers. Ruled in review: the Add cards side sheet, the required printing step, editing in the Add cards sheet (not the modal), removal in the sheet (rows unchanged), and edit access from /collection only.
 
 ## Blocking
-1. **PR #1304 is unmerged.** This handoff was built on `docs/collection-empty-add`. If #1304 changes before it merges, B0 is the section exposed to that.
-2. **Phone strip trade (README open 1).** Taking History as a tab moves the phone's upload into the Add sheet.
+None. Post-audit status (see `READINESS-audit.md` for the live verdict):
+1. **PR #1304 is merged** (2026-10-09T16:32:53Z). Resolved. This handoff was built on `docs/collection-empty-add`, which `origin/main` now carries.
+2. **Phone strip trade (README open 1).** Resolved: Hugh ruled 2026-10-09, the History tab. Taking History as a tab moves the phone's upload into the Add sheet.
 3. **Rename `Replace collection` → `Upload a file`** under the switch (README open 2).
 
 ## Not blocking, flagged
@@ -12,7 +13,7 @@
 5. **`edited` tag in the Replace preview** needs `collection_items` rows joined to manual entries since the last upload. That's derivable from the ledger, but it's a new read.
 6. **The 80% overlap threshold** for Add's note is a judgement, not a measurement. Revisit it after real uploads.
 7. **The `From Shopping` tag** is reserved and ghosted only. Sub-project 4 owns its copy.
-8. **Undo on C and D** is a revert, so it can warn. That's honest, but it's one more dialog than a pure undo would be.
+8. **Undo after a removal (the toast in the Add cards sheet)** is a revert, so it can warn. That's honest, but it's one more dialog than a pure undo would be.
 
 ## Not read
 - `src/lib/collection/import.ts` and `actions.ts` (data path). The brief covers what the UI needs from them.

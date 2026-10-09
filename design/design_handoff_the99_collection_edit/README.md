@@ -4,7 +4,7 @@
 
 **Status: approved to ship (Hugh, 2026-10-09).** A+E, B, R2 C+D, F+G and the About addendum were each reviewed. R1 C+D is superseded and kept only for the record. Fidelity is high. Geometry, tokens and component reuse are final. Card names, deck names and figures are illustrative.
 
-Source of truth: `docs/superpowers/design-briefs/2026-10-06-collection-foundation.md`, read **on branch `docs/collection-empty-add` (PR #1304, not yet merged)**. That's main's file plus the Hugh 2026-10-09 rulings: the first import asks nothing, and an empty collection offers Add cards beside the upload. Read alongside: `collection/{collection-place-head,review-screen}.tsx`, `cards/{card-detail-provider,card-modal,printing-region}.tsx`, `app/collection/(list)/page.tsx`, `home/first-run-step-one.tsx`, `lib/copy/{about,collection,refresh}.ts`, and the `card_detail`, `deck_import`, `collection_surfaces` and `about` handoffs.
+Source of truth: `docs/superpowers/design-briefs/2026-10-06-collection-foundation.md`, read **on branch `docs/collection-empty-add` (PR #1304, merged 2026-10-09)**. That's main's file plus the Hugh 2026-10-09 rulings: the first import asks nothing, and an empty collection offers Add cards beside the upload. Read alongside: `collection/{collection-place-head,review-screen}.tsx`, `cards/{card-detail-provider,card-modal,printing-region}.tsx`, `app/collection/(list)/page.tsx`, `home/first-run-step-one.tsx`, `lib/copy/{about,collection,refresh}.ts`, and the `card_detail`, `deck_import`, `collection_surfaces` and `about` handoffs.
 
 **About these files.** The canvases are design references built in HTML. Open them with `support.js` beside them, then rebuild in the app's stack. Every value is an existing token. The canvases pin the Kaldheim values that `collection_surfaces` uses. **No new tokens and no new dependencies.**
 
@@ -60,6 +60,7 @@ It joins the `(list)` group, so the strip persists. `placeFromPathname` gains `"
 ## Open — for Hugh
 
 1. **Phone upload is now two taps.** At 360, four tabs and `↻ Replace` (92px) don't fit, but `+ Add` (70px) does. The upload moves inside the Add sheet's first line, and also stays in the empty state and History. *Alternative:* keep History off the phone strip (reached from the Cards tab), which keeps `↻ Replace` and puts `+ Add` in the pinned head's row 2. Design prefers the tab.
+   Ruled by Hugh 2026-10-09: the History tab.
 2. **`Replace collection` renamed to `Upload a file`** while the switch is on, because the route no longer only replaces. That's a copy-review call, and the slot and icon are unchanged.
 3. **The `import` About entry's "replaces, doesn't add" line** needs a negated switch to hide. See the About addendum.
 4. **Add cards is the app's first side sheet.** Every other overlay is a centred modal or a bottom sheet. Hugh confirmed it's acceptable, pending confirmation of the reasoning in §B. If it's declined, B1–B9 work unchanged as a 560px centred modal, but the collection behind is covered.
