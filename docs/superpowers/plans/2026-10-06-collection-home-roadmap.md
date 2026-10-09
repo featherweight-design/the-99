@@ -56,6 +56,10 @@ in-app management, not just a CSV importer. Uploading a CSV stays available alon
 1, then 2, then 4, with 3 running in parallel. 5a can start any time, since it is read-only.
 5b to 5d wait for 2 to ship and for 5a to pass its bar.
 
+- **About, batched:** the epic's About entries and its one `ABOUT_VERSION` bump are a named task
+  in the PR that closes whichever sub-project ships last (sub-project 4 on the current order, or
+  5b to 5d if scanning ships later), drawn by each sub-project's Design handoff along the way.
+  The line's close-out does not pass without them.
 - **Sequencing against Deck stats:** Deck stats' money PR (S2) lands before sub-project 3's
   `deck_cards` migration, so the money card's price join is written against the deck tables as
   they are today and is not caught mid-flight by the schema change.

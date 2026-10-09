@@ -1,12 +1,19 @@
-# Collection foundation, sub-project 1
+# Collection foundation and in-app editing, sub-projects 1 and 2
 
 Design brief, 2026-10-06, for the collection home epic
 (`docs/superpowers/plans/2026-10-06-collection-home-roadmap.md`). Engineering and Design.
+Extended 2026-10-09 to cover sub-project 2 as well: Hugh ruled on 2026-10-08 (roadmap ruling 12)
+that **one Design handoff covers sub-projects 1 and 2**. Sub-projects 3 (deck-specific
+printings) and 4 ("I got it" on Shopping) each get their own round later and are out of scope
+here.
 
-The only new UI in this sub-project is the upload choice screen (Replace vs Add) and its
-preview. Everything else here is data model: row-level edits, a history ledger, and revert.
-Sub-project 2 builds the player-facing add/edit/remove/history surfaces on top of what this
-project establishes.
+Sub-project 1's only new UI is the upload choice screen (Replace vs Add) and its preview; the
+rest of it is data model: row-level edits, a history ledger, and revert. Sub-project 2 is the
+player-facing UI on top of that: the Add cards sheet, editing from a card's details, removing
+from a Collection row, the warning before a deck reads short, and the history view with
+revert. The surfaces Design draws for both are listed in "The surfaces" below. The data model
+sections are a sketch for context; the schema and write path are designed separately and may
+refine them without changing what a player sees.
 
 ## The rulings this project covers
 
@@ -105,12 +112,13 @@ Specifically:
   with no change needed there. `confirmUpload`'s explicit `COLLECTION_ROUTES` revalidation
   (`src/app/collection/actions.ts:195-203`) stays as the backstop for routes outside that cache.
 - **`commander_scores`.** `replaceCollection` clears it wholesale on every write today
-  (`src/lib/collection/import.ts:189`), because every score derives from the whole collection.
-  A single-card edit through `applyCollectionDelta` should NOT clear every score — that was
-  sized for "the collection might have changed completely," which a one-card quantity bump is
-  not. Scoring behind a narrower invalidation (or simply leaving scores to go stale until the
-  next natural recompute) is a decision for whoever implements this; either answer is
-  compatible with the ledger above, so it is noted here rather than decided.
+  (`src/lib/collection/import.ts:189`), and every collection write must keep doing so, a
+  one-card edit included. `persistScores` (`src/lib/recs/store.ts`) states the invariant: a
+  writer that changes a collection without dropping `commanderScores` leaves every cached score
+  served as current. Its race guard reads `max(csv_uploads.confirmed_at)`, which a hand edit never
+  moves, so the generation has to move on every collection write as well. The write-path plan
+  (`docs/superpowers/plans/2026-10-09-collection-write-path.md`, in #1300) settles both; nothing here is
+  visible to a player beyond the next Commanders visit recomputing.
 - **`card_art_preferences` on an Add merge** (Hugh, 2026-10-06): untouched. An Add upload never
   overrides a player's hand-picked printing — `card_art_preferences`
   (`src/db/schema.ts:241-252`) is not written by `applyCollectionDelta` for an Add-shaped
@@ -175,6 +183,192 @@ nothing prevents reverting it the same way.
   hand-edit removal, and goes through the same warn-first path (ruling 5) before it commits — a
   revert is not exempt from the check just because it is "undoing" something.
 
+## The surfaces
+
+Seven surfaces, all behind `COLLECTION_EDIT_ENABLED`. Each one ships at phone and desktop width
+in the same PR. Copy in this brief describes intent only; the strings themselves go through
+`/copy-review`.
+
+### A. The upload choice: Replace or Add (sub-project 1)
+
+**Where:** the existing upload path, `/collection/replace` (reached from the `Replace` control
+in `CollectionPlaceHead`, `src/components/collection/collection-place-head.tsx:215`), and the
+first-import entry, `UploadEntry`.
+
+**What it does:** after a file is chosen or pasted, and before anything is written, the player
+picks one of two:
+
+- **Replace my collection.** The collection becomes exactly the file. The screen warns that any
+  in-app changes since the last upload will be overwritten. It says how many when history still
+  reaches back to that upload. History keeps 90 days, so when the last upload is older than that
+  the count can be short, and the warning then says only that changes may be overwritten, with no
+  number. Design draws both forms.
+- **Add these cards.** The file's quantities are added to what is already there. Nothing is
+  removed. A printing the player hand-picked as the card's art stays picked (ruling 2).
+
+**Preview, then confirm.** Both choices show a preview before the write. The existing
+`ReviewScreen` (`src/components/collection/review-screen.tsx`) and the arrivals receipt
+(`ArrivalsSummary`) are the model: they already show matched and unmatched rows and what
+changed for each deck. Each mode's preview needs to show something different:
+
+- **Replace:** what goes up, what goes down, and what disappears entirely, plus any committed
+  deck that will read short afterwards (the warning in E, applied to a whole upload).
+- **Add:** what gets added and the totals after. Add never lowers anything, so it never warns
+  about decks.
+
+**States to draw:** the choice itself; each preview; a Replace that will overwrite hand edits;
+a Replace that leaves decks short; an Add where every row is already owned (quantities still
+rise, so this is not "nothing to do"); unmatched rows in either mode; the pending write; a
+failed write (nothing changed).
+
+**The first import asks nothing: a proposed exception to ruling 2, for Hugh to confirm.** Ruling
+2 says every upload asks first. With an empty collection, Replace and Add write the same thing,
+so the question has no answer that changes anything. The brief proposes the first upload keep
+today's flow with no question. If Hugh holds to the ruling as written, Design draws the choice on
+the first import too.
+
+### B. Add cards (sub-project 2)
+
+**Where:** a new "Add cards" control on Collection, beside the existing `Replace` control in
+the place head. It opens a sheet: full height on phone, a side sheet or dialog on desktop
+(Design's call).
+
+**What it does:** the player enters several cards in a row, without leaving the sheet between
+them. Each card records the same four things an upload row does (ruling 3):
+
+- **Card:** found by name search over the catalog, not only over what the player owns.
+- **Printing:** preset to the card's default printing, changeable through the existing printing
+  picker (`PrintingRegion`, `src/components/cards/printing-region.tsx`) rather than a second
+  picker.
+- **Foil or not.**
+- **Quantity:** preset to 1.
+
+After a card is added to the list, focus goes back to the name search for the next one. The list
+shows what has been entered so far, and any line can be changed or dropped before saving.
+**One save writes one history entry** covering every card in the list, so a session of adding
+reads as one event in history and reverts as one.
+
+**States to draw:** empty sheet; the search typing, with results, and with none; a list of
+several cards; the same card in several printings or finishes (a normal state: each is its own
+holding, and they stay separate lines); the exact same card, printing and finish entered twice
+(the sheet combines or flags these, and only these, rather than writing two lines that read as a
+mistake); a card already owned (show what the player holds now beside what
+they are adding); closing with unsaved cards (ask before discarding); saving; saved, with a way to
+see the entry in history; a failed save (nothing written).
+
+### C. Editing from a card's details (sub-project 2)
+
+**Where:** the card modal (desktop) and the card phone sheet. Today the owned line,
+`data-testid="owned-line"` (`src/components/cards/card-modal.tsx:278-287`), displays `×N` and,
+when the card is not free, the availability marker beside it. Nothing on it is editable. The
+edit must not displace or duplicate that marker, which stays visible in every state below.
+
+**What it does:** the player changes how many copies they own of each printing and finish they
+hold, adds a printing they do not yet hold, or moves copies from one printing to another (for
+example, they own the wrong printing on record). A move is one change that lowers one printing
+and raises another, and it is one history entry.
+
+**The design problem to solve here: owning a printing is not the same as showing its art.**
+The printing picker in the card modal today sets which printing's art the card shows
+(`onPick` calls `setCardArtPreference`, `card-modal.tsx:1364-1374`). Editing what is owned
+adds a second, different meaning to the same list of printings. A player must never change their
+owned copies when they meant to change the art, or the other way round. Whether the two live in
+one list with separate controls, or in two places, is Design's call; the brief only requires that
+the two are unmistakable.
+
+**States to draw:** owned and not owned; one printing and several; foil and nonfoil of the same
+printing; raising a quantity (saves directly); lowering one that leaves a committed deck short
+(goes through E); lowering to zero (the printing leaves the collection, and the card leaves it if
+that was the last copy); saving; a failed save.
+
+### D. Removing from a Collection row (sub-project 2)
+
+**Where:** each card on `/collection`, in both the rows view (`RowsView`) and the grid view.
+A Collection card aggregates every printing and finish the player holds of that card.
+
+**What it does:** removes the card from the collection, meaning every copy of every printing. To
+remove some copies, or one printing, the player uses C. If no committed deck relies on the card,
+it is removed straight away. If one does, E comes first.
+
+**States to draw:** the control at both widths and in both views; the pending removal; the row
+gone; a failed removal (row stays). The row must not jump or reflow under the reader's finger
+while the removal is pending.
+
+### E. The warning before a deck reads short (sub-projects 1 and 2)
+
+**Where:** shared by every change that lowers a quantity: C, D, a Replace upload (A), and a
+revert (F). One component, one meaning.
+
+**What it does:** before the change is saved, it names each committed deck that will read short
+of the card afterwards, and by how many. The player confirms or cancels. Nothing about a deck
+changes on its own (ruling 5): after the save, that deck simply shows the short and buy marks it
+already knows how to show.
+
+It only appears when at least one committed deck is affected. A change that leaves every deck
+whole saves without it.
+
+**Latency is new here.** Finding the affected decks is a read the server makes against the
+proposed quantity, inside the save itself, not before it. The save checks the decks and either
+writes or comes back with the warning. A confirm re-checks against the collection as it is at
+that moment, so if another tab changed the answer in between, the warning comes back redrawn
+rather than the save going through on a stale one. Design draws that redrawn warning too. Every lowering pays it, so a pending state is needed between
+the press and either the warning or the save. Design should draw that pending state, not assume
+it is instant.
+
+**States to draw:** one deck; several decks; a long list (decide how many are named before the
+rest are counted); the pending check; the confirm; a confirm that comes back with a changed
+warning; the cancel (nothing changed).
+
+### F. History and revert (sub-projects 1 and 2)
+
+**Where:** a new place in Collection. Whether it is a fourth tab beside Cards, Sets and Proxies
+(`collection-place-head.tsx:72-74`), or reached another way, is Design's call.
+
+**What it does:** lists every change to the collection, newest first, for the last 90 days
+(ruling 6; older entries age out, and the view should say so rather than ending without
+explanation). Each entry shows:
+
+- **When.**
+- **What kind:** a Replace upload, an Add upload, cards added in the app, an edit from a card's
+  details, a removal, or a revert. A later round adds "I got it" from Shopping; leave room for
+  one more kind.
+- **What changed:** a summary (how many cards went up, how many went down), expandable to every
+  card and its change.
+- **Revert,** on every entry not already reverted.
+
+**Revert is a new change applied now, never time travel.** It reverses that entry's own change
+against the collection as it is today. Reverting a Replace puts back every card that upload
+moved, as it was the moment before. A revert is itself an entry and can be reverted. An entry
+that has been reverted stays in the list, marked as reverted and linked to the revert, with no
+revert control of its own. The two age out separately: once one is past 90 days, the other still
+reads as reverted (or as a revert), and the link to the aged-out entry is no longer drawn.
+
+**When a revert cannot fully undo.** Because a revert works against today's collection, it can
+do less than the entry did. For example: an entry added 3 copies, 2 were removed since, so the
+revert can only take away 1 (a quantity never goes below zero). The revert's confirmation shows
+what it will do now, not what the entry did then, and says so when the two differ. A revert that
+lowers a quantity goes through E like any other lowering.
+
+**States to draw:** empty history; a list with every entry kind; an expanded entry, short and
+very long (a Replace can touch hundreds of cards); a reverted entry and its revert; the revert
+confirmation where today matches the entry and where it does not; a revert that warns about
+decks (E); the pending revert; a revert that fails because a card left the catalog since (it
+names the card, and nothing is written); the 90-day edge.
+
+### G. Switch off
+
+With `COLLECTION_EDIT_ENABLED` off, none of A to F render, and upload behaves exactly as it does
+on `main` today. Nothing for Design to draw; listed so the handoff's state list is complete.
+
+### What every surface shares
+
+- **Mobile and desktop parity** in the same PR, per the design pipeline.
+- **One history entry per player action.** A sheet save, a card-details save, a removal, an
+  upload and a revert each read as one line in F.
+- **The collection is the only thing that changes.** No surface here edits a deck, an art
+  preference (except where C keeps them explicitly separate), or a Shopping list.
+- **No paid model calls** anywhere in this round.
+
 ## About and switch notes
 
 - **Switch:** `COLLECTION_EDIT_ENABLED`, read the same way every other flag in this codebase is
@@ -182,7 +376,10 @@ nothing prevents reverting it the same way.
   for the pattern to follow). Off, `applyCollectionDelta` is never called and the upload choice
   screen does not render — upload behaves exactly as it does on `main` today
   (`onlyIfEmpty` first-import skip, otherwise the existing `/collection/replace` flow).
-- **About entry:** none written in this sub-project. Per the launch-wide batching rule
-  (`AGENTS.md`, "About entries batch at launch"), the entry for the whole collection home epic is
-  written once, at the end of sub-project 4 (or whichever sub-project ships last), covering
-  add/edit/remove/history/revert, deck-specific printings, and "I got it" together.
+- **About entries:** none ship in sub-projects 1 or 2. Per the launch-wide batching rule
+  (`AGENTS.md`, "About entries batch at launch"), the epic's entries ship together, with one
+  `ABOUT_VERSION` bump, at the end of whichever sub-project ships last. That changes WHEN, not
+  whether. This handoff still draws the entries for what 1 and 2 add (upload choice, Add cards,
+  editing, removing, history and revert) on the per-entry template artboard in
+  `design/design_handoff_the99_about/`, so they are not written from memory at the end. The roadmap's Order
+  section names the batched entry task.
