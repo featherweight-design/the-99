@@ -1,6 +1,7 @@
 {
   "feature": "Deck stats, PR 1: the switch and the placement shell",
   "note": "Needs DECK_STATS_ENABLED=true on the server and STATS_DECK (any deck with cards). The list row shows the third segment beside Deck and Versions; the stats row presses it and shows six empty shells with the list tools hidden. Shells carry no data until the card PRs, so no row photographs a figure's contents.",
+  "clearAbout": true,
   "rows": [
     {
       "id": "stats-segment",
