@@ -67,12 +67,19 @@ source `shopping:<deck id>`.
   makes it real.
 - **It does not touch the deck,** the player's art preference for the card, or any other deck.
   The collection is the only thing that changes.
-- **Condition is not asked.** The row's condition stays empty, as it does for any hand-added card.
+- **Condition is not asked.** A new holding has no condition, as any hand-added card. A holding
+  the player already had keeps the condition it has: raising its count never erases it.
+- **The write sets the new count, so it says what the player saw.** An `edit` sets a holding's
+  count rather than adding to it (`planEdit` in `src/lib/collection/write.ts`). "I got it"
+  therefore always sends the count on screen as the one it expects (`staleEdits`), and the
+  stale outcome is a required state, not an option. Without it, a second tab that raised the same
+  holding after the confirm opened would be overwritten and a purchased copy lost.
 
 ## The printing it records
 
-- **Preset:** the printing behind the price on the row. A price that exists only for foil presets
-  foil, and one only for etched presets etched. Otherwise non-foil.
+- **Preset:** the printing behind the price on the row. Non-foil when the printing has a non-foil
+  price. Otherwise foil when it has a foil price, otherwise etched, the same order the row's own
+  price figure uses (`priceOf` in `src/lib/decks/price.ts`).
 - **No printing behind the price** (a card never stocked, or a row showing a bare `buy`): the
   preset is the card's default printing, the same one the Add cards sheet presets.
 - **Changeable.** The player may have received a different printing than the cheapest one. The
@@ -147,8 +154,9 @@ whether the phone and desktop share one form.
 
 **States to draw:** the preset state; a changed printing; foil-only card; a card with one printing
 only; quantity above 1; quantity above what is needed; a preset with no printing behind the
-price; a write that comes back **stale** (the collection changed in another tab, so the
-confirm redraws with current figures, if the write path asks for it); a failed write (nothing
+price; a write that comes back **stale** (the holding's count changed in another tab, so the
+confirm redraws with the current count and the quantity re-based on it, and the player confirms
+again); a failed write (nothing
 changes, the row stays); cancel (nothing changes).
 
 ### C. The receipt and undo
@@ -182,6 +190,7 @@ beyond confirming the row is unchanged.
 - Printing choice uses the existing `PrintingRegion`, not a second picker.
 - Undo is a revert and passes through the short-deck warning.
 - The row and the buy marks follow the claim model. The control never sets them.
+- The write always sends the count the player saw, and a stale answer is drawn.
 - Phone and desktop in the same PR. No new tokens, no new dependencies.
 - Copy in this brief describes intent only. Strings go through `/copy-review`.
 
