@@ -34,16 +34,18 @@ const BUCKET_LABELS = Array.from({ length: CURVE_MAX + 1 }, (_, i) =>
   i === CURVE_MAX ? deckStatsCopy.curve.ceiling : String(i),
 );
 
-function Shell({ title, id, label, children }: { title: string; id: string; label?: string; children?: ReactNode }) {
+function Shell({ title, id, label, denom, children }: { title: string; id: string; label?: string; denom?: string; children?: ReactNode }) {
   return (
     <section
       role="figure"
       aria-label={label ?? title}
       data-stats-card={id}
-      className="flex flex-col gap-[16px] rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-sunken)] p-[16px]"
+      className="flex flex-col gap-[16px] rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-sunken)] px-[14px] py-[16px] md:px-[22px] md:py-[20px]"
     >
-      <header className="flex items-baseline border-b border-b-[color:var(--border)] pb-[10px]">
-        <h3 className="font-serif text-[15px] text-[color:var(--fg)]">{title}</h3>
+      <header className="flex items-baseline gap-[10px] border-b border-b-[color:var(--border)] pb-[10px]">
+        <h3 className="font-serif text-[17px] text-[color:var(--fg)] md:text-[19px]">{title}</h3>
+        <span className="flex-1" />
+        {denom ? <span className="text-right font-mono text-[10.5px] text-[color:var(--fg-faint)]">{denom}</span> : null}
       </header>
       {children}
     </section>
@@ -58,14 +60,14 @@ function CurveCard({ data }: { data: DeckStatsSlice }) {
   const avg = curve.average === null ? copy.noAverage : curve.average.toFixed(1);
 
   return (
-    <Shell title={copy.title} id="curve" label={`${copy.title}, ${copy.denom(cast)}`}>
+    <Shell title={copy.title} id="curve" denom={copy.denom(cast)} label={`${copy.title}, ${copy.denom(cast)}`}>
       <div className="grid grid-cols-8 gap-x-[4px]" data-curve-columns>
         {curve.buckets.map((b, i) => {
           const per = types.buckets[i];
           return (
             <div key={b.cmc} className="flex flex-col items-center gap-[6px]" data-curve-column={b.cmc}>
               <span
-                className={`text-[11px] tabular-nums ${b.copies === 0 ? "text-[color:var(--fg-locked)]" : "text-[color:var(--fg-body)]"}`}
+                className={`font-mono text-[11px] tabular-nums ${b.copies === 0 ? "text-[color:var(--fg-locked)]" : "text-[color:var(--fg-body)]"}`}
               >
                 {b.copies}
               </span>
@@ -81,7 +83,7 @@ function CurveCard({ data }: { data: DeckStatsSlice }) {
                   )),
                 )}
               </div>
-              <span className="text-[11px] text-[color:var(--fg-muted)]">{BUCKET_LABELS[i]}</span>
+              <span className="self-stretch border-t border-t-[color:var(--border-strong)] pt-[6px] text-center font-mono text-[11px] text-[color:var(--fg-muted)]">{BUCKET_LABELS[i]}</span>
             </div>
           );
         })}
@@ -97,16 +99,16 @@ function CurveCard({ data }: { data: DeckStatsSlice }) {
                 aria-pressed={on}
                 data-type-chip={t}
                 onClick={() => setLit(on ? null : t)}
-                className={`flex min-h-[44px] items-center gap-[6px] rounded-full border px-[10px] text-[12px] md:min-h-[28px] ${
+                className={`flex min-h-[44px] items-center gap-[6px] rounded-[6px] border px-[9px] text-[12px] md:min-h-[28px] ${
                   on ? "border-[color:var(--fg)]" : "border-[color:var(--border-strong)]"
-                } ${n === 0 ? "text-[color:var(--fg-locked)]" : "text-[color:var(--fg-body)]"}`}
+                } ${n === 0 ? "text-[color:var(--fg-locked)]" : on ? "text-[color:var(--fg)]" : "text-[color:var(--fg-body)]"}`}
               >
                 <span
                   aria-hidden="true"
                   className="size-[8px] rounded-[2px]"
                   style={{ background: n === 0 ? "var(--border-strong)" : TYPE_VAR[t] }}
                 />
-                {copy.types[t]} {n}
+                {copy.types[t]} <span className="font-mono text-[11px]">{n}</span>
               </button>
             </li>
           );
@@ -114,14 +116,14 @@ function CurveCard({ data }: { data: DeckStatsSlice }) {
         <li>
           <span
             data-type-chip="land"
-            className="flex min-h-[44px] items-center gap-[6px] rounded-full border border-dashed border-[color:var(--border-dashed)] px-[10px] text-[12px] text-[color:var(--fg-body)] md:min-h-[28px]"
+            className="flex min-h-[44px] items-center gap-[6px] rounded-[6px] border border-dashed border-[color:var(--border-dashed)] px-[9px] text-[12px] text-[color:var(--fg-body)] md:min-h-[28px]"
           >
             <span aria-hidden="true" className="size-[8px] rounded-[2px]" style={{ background: TYPE_VAR.land }} />
-            {copy.types.land} {curve.lands}
+            {copy.types.land} <span className="font-mono text-[11px]">{curve.lands}</span>
           </span>
         </li>
       </ul>
-      <p aria-live="polite" className="text-[12px] text-[color:var(--fg-muted)]">
+      <p aria-live="polite" className="font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">
         {lit === null ? copy.caption(avg, curve.lands) : copy.lit(copy.types[lit], types.totals[lit], cast)}
       </p>
     </Shell>
