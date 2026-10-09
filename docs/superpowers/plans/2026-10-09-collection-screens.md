@@ -1,6 +1,6 @@
 # Collection screens (collection home epic, sub-projects 1 + 2: the UI)
 
-2026-10-09 · lane: collection screens · status: **plan, awaiting Hugh's approval. No code until approved.**
+2026-10-09 · lane: collection screens · status: **approved by Hugh, 2026-10-09, with four amendments folded in** (budget, PR order, model split, no row Edit fallback).
 
 ## Sources
 
@@ -8,8 +8,8 @@
   #1317 (`design/collection-edit-r2`): the required printing step, the R2 C Edit copies canvas
   (supersedes R1 C+D), and the About addendum in `design/design_handoff_the99_about/addendum-collection-edit/`.
   The R2 re-audit in `READINESS-audit.md` is YELLOW: nothing needs a new Hugh ruling to start, and
-  its two eng findings (1, 2) are PR 1 below. PRs 5 to 8 read the handoff from main and do not
-  start until #1317 merges.
+  its two eng findings (1, 2) are PR 1 below. PRs 2, 3, 7 and 8 read the handoff from main and
+  do not start until #1317 merges.
 - Brief: `docs/superpowers/design-briefs/2026-10-06-collection-foundation.md`.
 - Server, merged: #1309 (`applyCollectionChange`, the ledger), #1311 (uploads through the
   ledger), #1313 (history and revert). Write-path plan: `2026-10-09-collection-write-path.md`.
@@ -22,7 +22,9 @@ same id and `confirmShort`, which the server re-checks; edits send `expected` an
 `stale`; a zero after-state deletes the row; the first import into an empty collection skips the
 Replace/Add question. Hugh's 2026-10-09 rulings on the handoff hold too: the History tab on the
 phone strip, the 480px side sheet, the required printing step, editing copies in the Add cards
-sheet, removal in that sheet, and edit access from /collection only.
+sheet, removal in that sheet, and edit access from /collection only. And README Open 6 (Hugh,
+2026-10-09): there is **no** desktop row `Edit` fallback; Edit copies is reached only through the
+card's details.
 
 ## Switch
 
@@ -36,6 +38,10 @@ Eight PRs, in order, none stacked, each under about 20 files and 800 lines. Each
 worktree under `.worktrees/`, the pre-open subagent pass, and the normal pr-review cycle. Each UI
 PR runs `feature-acceptance` (contact sheet of its rows, `check:shared`), and the line runs it
 again at close.
+
+**Who builds what** (Hugh, 2026-10-09): this lane builds PR 1 (the server and write path) and
+closes. PRs 2 to 8 go to a fresh Sonnet session. At PR 1's merge, a "For the screens session" note
+is added to `boards/lane-collection-build.md`.
 
 ### PR 1 · Server pieces the screens need (no UI)
 
@@ -94,7 +100,29 @@ again at close.
 About 10 files. Probe: `probe:collection-write` grows an edit-with-new-printing case, run on
 local-dev or a scratch branch only.
 
-### PR 2 · §E the short-deck warning, and the upload flow's confirm states
+### PR 2 · §B Add cards (add mode) and the place head entry
+
+- `AddCardsSheet mode="add"` + `AddLine`. Desktop is the 480px right side sheet, no scrim, page
+  `inert`, `role=dialog aria-modal`. The phone sheet is full height, with the upload as its first
+  line (Hugh's History-tab ruling moves it there). The required printing step (B4a/B4m) uses
+  `PrintingRegion role="choose" source="catalog"`, with `layout="row"` on the phone, and withholds
+  the pick and shown-now badges and writes no art preference. Exact duplicates are merged when the
+  printing is chosen (B5, one pulse, honoring reduced motion). Close with unsaved (B6), saving (B7),
+  saved with a History link (B8), and failed keeping the list (B9).
+- `CollectionPlaceHead` gains `+ Add` and the History tab on the phone strip, at the same y (B0).
+  The History tab, and B8's History link, draw only once PR 6 ships the route; until then the
+  strip carries `+ Add` alone and B8 shows no link.
+- `docs/superpowers/inventories/collection-edit.json` is created here, with a `shares` block naming
+  `AddCardsSheet`.
+- Adding never lowers a count, so this PR needs no §E and ships ahead of it (Hugh, 2026-10-09).
+
+### PR 3 · Empty-state doors, and Home step one
+
+- /collection with no collection shows two equal door tiles (B0b). Home's step one gains
+  `Add cards by hand` in the ghost chrome beside Paste (B0c). It is split from PR 2 on size, and
+  because it touches Home, whose cached payload this PR must not move.
+
+### PR 4 · §E the short-deck warning, and the upload flow's confirm states
 
 - `ShortDeckWarning` with `dialog`, `sheet` and `embedded` variants. Three decks are named and the
   rest counted behind `and N more`, which expands inline capped at 320px. Decks are ordered by most
@@ -104,10 +132,9 @@ local-dev or a scratch branch only.
   there before as `new` (E1 to E7).
 - `replace-flow.tsx` replaces today's interim "Confirm failed" for `wouldShort` and `missingCard`
   with §E and a named-card failure.
-- `docs/superpowers/inventories/collection-edit.json` is created here, with a `shares` block naming
-  `ShortDeckWarning`.
+- `ShortDeckWarning` joins the `shares` block in `collection-edit.json`.
 
-### PR 3 · §A the upload choice and the Replace and Add previews
+### PR 5 · §A the upload choice and the Replace and Add previews
 
 - `UploadChoice` (`STEP 2 OF 4`, nothing preselected, an after-figure on each card, Add's ⓘ at
   ≥80% already owned). `ReviewScreen` gains `mode` and the four-figure row. The order follows risk:
@@ -116,11 +143,11 @@ local-dev or a scratch branch only.
   failed (A5) states. The first import stays `STEP 2 OF 3` and asks nothing (A6).
 - The `edited` tag on Replace rows needs `collection_items` joined to manual entries since the last
   upload (READINESS item 5): one read beside `editsSinceUpload`. If it pushes the PR past the size
-  bar, it goes to PR 4 as its own commit, and the plan is amended to say so.
+  bar, it goes to PR 6 as its own commit, and the plan is amended to say so.
 - `Replace collection` becomes `Upload a file` under the switch (copy-review call; the slot and
   icon are unchanged).
 
-### PR 4 · §F History
+### PR 6 · §F History
 
 - `/collection/history` joins the `(list)` group. `placeFromPathname` gains `"history"`, and
   `visibleTabs` hides it on an empty collection with no entries (the Sets rule).
@@ -132,23 +159,6 @@ local-dev or a scratch branch only.
 - `RevertConfirm` (matches, and differs with Then/Now columns, a reason per row and
   `Revert what's left`) runs §E through `ShortDeckWarning`, with a named catalog failure that writes
   nothing (F4 to F7). The full-revert dry run measured ~2.1s, so its pending state is drawn.
-
-### PR 5 · §B Add cards (add mode) and the place head entry
-
-- `AddCardsSheet mode="add"` + `AddLine`. Desktop is the 480px right side sheet, no scrim, page
-  `inert`, `role=dialog aria-modal`. The phone sheet is full height, with the upload as its first
-  line (Hugh's History-tab ruling moves it there). The required printing step (B4a/B4m) uses
-  `PrintingRegion role="choose" source="catalog"`, with `layout="row"` on the phone, and withholds
-  the pick and shown-now badges and writes no art preference. Exact duplicates are merged when the
-  printing is chosen (B5, one pulse, honoring reduced motion). Close with unsaved (B6), saving (B7),
-  saved with a History link (B8), and failed keeping the list (B9).
-- `CollectionPlaceHead` gains `+ Add` and the History tab on the phone strip, at the same y (B0).
-
-### PR 6 · Empty-state doors, and Home step one
-
-- /collection with no collection shows two equal door tiles (B0b). Home's step one gains
-  `Add cards by hand` in the ghost chrome beside Paste (B0c). It is split from PR 5 on size, and
-  because it touches Home, whose cached payload this PR must not move.
 
 ### PR 7 · §C/§D Edit copies and removal
 
@@ -178,7 +188,7 @@ local-dev or a scratch branch only.
 - Then the full close-out: every inventory row walked at both widths in a real browser,
   `design-review` against the whole handoff, and the full contact sheet.
 
-That's eight PRs rather than seven: PR 6 was split out of PR 5 on size. If PR 5 lands well under
+That's eight PRs rather than seven: PR 3 was split out of PR 2 on size. If PR 2 lands well under
 the bar, they merge back into one, and the plan says so.
 
 ## Route × viewport inventory
@@ -188,15 +198,15 @@ steps in `collection-edit.json`, because a URL sweep can't see them.
 
 | Surface | 390 | 1300 | PR | Shares with |
 |---|---|---|---|---|
-| `/collection` head: `+ Add`, History tab, strip at y 109 | ☐ | ☐ | 5 | — |
-| `/collection` empty: two doors | ☐ | ☐ | 6 | — |
-| `/` Home step one: `Add cards by hand` (empty account) | ☐ | ☐ | 6 | — |
-| `/collection/replace`: choice, Replace and Add previews, all-owned, pending, failed | ☐ | ☐ | 3 | — |
-| `/collection/replace`: first import asks nothing | ☐ | ☐ | 3 | — |
-| §E on upload confirm (one, several, long, changed) | ☐ | ☐ | 2 | `ShortDeckWarning` |
-| `/collection/history`: list, expanded short and long, empty, foot | ☐ | ☐ | 4 | — |
-| History revert confirm: matches, differs, §E, catalog failure | ☐ | ☐ | 4 | `ShortDeckWarning` |
-| Add cards sheet (add): empty, results, required printing, duplicate, saving, saved, failed | ☐ | ☐ | 5 | `AddCardsSheet` |
+| `/collection` head: `+ Add`, History tab, strip at y 109 | ☐ | ☐ | 2 | — |
+| `/collection` empty: two doors | ☐ | ☐ | 3 | — |
+| `/` Home step one: `Add cards by hand` (empty account) | ☐ | ☐ | 3 | — |
+| `/collection/replace`: choice, Replace and Add previews, all-owned, pending, failed | ☐ | ☐ | 5 | — |
+| `/collection/replace`: first import asks nothing | ☐ | ☐ | 5 | — |
+| §E on upload confirm (one, several, long, changed) | ☐ | ☐ | 4 | `ShortDeckWarning` |
+| `/collection/history`: list, expanded short and long, empty, foot | ☐ | ☐ | 6 | — |
+| History revert confirm: matches, differs, §E, catalog failure | ☐ | ☐ | 6 | `ShortDeckWarning` |
+| Add cards sheet (add): empty, results, required printing, duplicate, saving, saved, failed | ☐ | ☐ | 2 | `AddCardsSheet` |
 | Card modal from `/collection`: `Edit copies` / `Add to collection` | ☐ | ☐ | 7 | — |
 | Card modal from `/decks/[id]`: receipt read-only (negative row) | ☐ | ☐ | 7 | — |
 | Edit copies sheet: at rest, printing fix, add another printing, remove, §E, toast Undo | ☐ | ☐ | 7 | `AddCardsSheet`, `ShortDeckWarning` |
@@ -229,11 +239,10 @@ Design call, not something this line adds on its own.
 ## Out of scope
 
 - `From Shopping` (sub-project 4): its tag is reserved and drawn ghosted only.
-- The desktop row `Edit` fallback (README Open 6): it's for Hugh, and not built unless he asks.
 - Re-tuning the 80% overlap threshold for Add's note: revisit after real uploads.
 - The stale G annotations in the handoff (re-audit finding 6): a Design re-sync item.
 
 ## Budget and reporting
 
-About 10% of the week. Spend is reported to the orchestrator (the-99-f0) at each PR's merge.
+About 18% of the week for the line (Hugh, 2026-10-09). Spend is reported to the orchestrator (the-99-f0) at each PR's merge.
 Stop and ask at 1.5x. No paid model spend is planned anywhere in this line.
