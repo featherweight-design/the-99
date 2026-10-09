@@ -91,7 +91,7 @@ function CurveCard({ data }: { data: DeckStatsSlice }) {
                   )),
                 )}
               </div>
-              <span className="self-stretch border-t border-t-[color:var(--border-strong)] pt-[6px] text-center font-mono text-[11px] text-[color:var(--fg-muted)]">{BUCKET_LABELS[i]}</span>
+              <span aria-hidden="true" className="self-stretch border-t border-t-[color:var(--border-strong)] pt-[6px] text-center font-mono text-[11px] text-[color:var(--fg-muted)]">{BUCKET_LABELS[i]}</span>
             </div>
           );
         })}

@@ -49,11 +49,13 @@ describe("DeckStatsView curve card", () => {
     expect(sums[0]).toBe("Mana value 0: no cards");
   });
 
-  it("hides each visual bucket count so the summary is the only announcement", () => {
+  it("hides each visual bucket count and axis label so the summary is the only announcement", () => {
     const { container } = render(<DeckStatsView data={slice} />);
     container.querySelectorAll("[data-curve-column]").forEach((c) => {
       const count = c.querySelector(":scope > span:first-child");
       expect(count).toHaveAttribute("aria-hidden", "true");
+      const visible = Array.from(c.querySelectorAll(":scope > span:not([aria-hidden])"));
+      expect(visible.map((e) => e.hasAttribute("data-curve-summary"))).toEqual([true]);
     });
   });
 
