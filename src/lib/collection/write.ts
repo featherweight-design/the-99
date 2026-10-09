@@ -42,9 +42,12 @@ export type EditRow = CollectionItemIdentity & {
 export type AddItem = PendingItem & { name?: string };
 
 export type CollectionChange =
-  /** The full new collection: an upload in Replace mode. */
+  /**
+   * The full new collection: an upload in Replace mode. With `uploadId`, that upload is stamped
+   * confirmed in the same transaction, and a stamp already set returns `alreadyConfirmed`.
+   */
   | { kind: "replace"; items: PendingItem[]; uploadId?: string }
-  /** Quantities added: an upload in Add mode (`uploadId`), or the Add cards sheet. */
+  /** Quantities added: an upload in Add mode (`uploadId`, stamped as above), or the Add cards sheet. */
   | { kind: "add"; items: AddItem[]; uploadId?: string }
   /** Per-row new counts: card details, a row removed. */
   | { kind: "edit"; rows: EditRow[] }
@@ -62,8 +65,6 @@ export type ChangeOptions = {
    * only while that warning covers what the change would do now (`warningCovers`).
    */
   confirmShort?: ShortDeck[];
-  /** Stamp this upload confirmed in the same transaction; a stamp already set wins. */
-  confirmUploadId?: string;
   /** Refuse when the player already owns anything (a first import's promise). */
   onlyIfEmpty?: boolean;
   /** Where the change came from, for history: `shopping:<deck id>`. Uploads set their own. */
@@ -328,7 +329,7 @@ const uploadOf = (change: CollectionChange) =>
  *
  *  1. the per-user lock every collection write takes, uploads included;
  *  2. the ledger entry, keyed on `opts.id`, so a retry of this exact action finds it;
- *  3. the upload stamp and the first-import check, when asked for;
+ *  3. the change's upload stamped confirmed, and the first-import check when asked for;
  *  4. today's rows, read under the lock, and the `expected` checks against them;
  *  5. the deck check when anything goes down, passed only by a confirmed warning that still holds;
  *  6. the rows, the finished entry, the player's scores cleared, and old entries pruned.
@@ -376,12 +377,14 @@ export async function applyCollectionChange(
         throw new Error("collection change id is already in use");
       }
 
-      // ---- 3. The upload stamp is the upload's own lock, as in `replaceCollection`.
-      if (opts.confirmUploadId) {
+      // ---- 3. The upload stamp is the upload's own lock, as in `replaceCollection`. The change's
+      // own `uploadId` is the one id both the stamp and the entry's source read, so a write can
+      // never confirm one upload while recording another.
+      if (uploadId) {
         const stamped = await tx.update(csvUploads)
           .set({ confirmedAt: new Date() })
           .where(and(
-            eq(csvUploads.id, opts.confirmUploadId),
+            eq(csvUploads.id, uploadId),
             eq(csvUploads.userId, userId),
             isNull(csvUploads.confirmedAt),
           ))
