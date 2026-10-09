@@ -108,7 +108,7 @@ Per layout, using the stored `type_line` shape read from staging:
 | `transform` | `Front // Back` | File under front. Back arrives later or never; it is never the cast face. | **Bug** — e.g. `Tales of Master Seshiro // Seshiro's Living Legacy` (`Enchantment — Saga // Enchantment Creature`). |
 | `adventure` | `Front // Back — Adventure` | File under front (the permanent). The Adventure half is a spell mode, not the card's identity. | **Bug** — The Arkenstone is the reference case. |
 | `prepare` | `Creature // Sorcery\|Instant` | File under front. Every `prepare` row in this catalog has a creature front today, so this is currently correct by accident; the fix makes it correct by rule. | Not currently mis-grouped, but only because no counter-example exists yet. |
-| `split` | `Face A // Face B`, both castable | File under the **first-named** face, for consistency with every other layout and with Scryfall's own card order — see open question below. | **Bug**, small: 4 cards where the two halves differ (`Sorcery // Instant`-shaped). |
+| `split` | `Face A // Face B`, both castable | File under the **first-named** face, for consistency with every other layout and with Scryfall's own card order (ruling 7). | **Bug**, small: 4 cards where the two halves differ (`Sorcery // Instant`-shaped). |
 | `flip` | `Unflipped // Flipped` | File under the unflipped (front) state — the card as it is cast and as it sits outside combat/a triggered flip. | **Bug**, 1 card: `Curse of the Fire Penguin` (`Enchantment — Aura // Creature — Penguin`). |
 | `meld` | **Single-face** `type_line` per row — melded pairs are ingested as separate single-face catalog rows (AGENTS.md's meld note) | No change: `cardTypeGroup` never sees a `//` for this layout today. | Confirmed via `cards.layout = 'meld'` sample: no row contains `//`. |
 | `reversible_card` | Single-face `type_line` per row (ingested from one face, AGENTS.md's reversible-card note) | No change: nothing to split. | Confirmed: 0 rows on staging currently carry this layout with a `//` type_line. |
@@ -218,25 +218,19 @@ existing tests are the regression guard that the refactor is inert there.
 
 ## PR boundary
 
-One PR. Four source files plus their test files — well under the ~20-file /
+One PR, decklist and Collection Type filter together (ruling 8). Four source files plus their test files — well under the ~20-file /
 ~800-line split threshold. Doc-only *this* PR is the plan; the fix itself is a
 follow-up implementation PR once this plan is reviewed.
 
-## Open questions for Hugh
+## Rulings (Hugh, 2026-10-08)
 
-1. **Split cards don't have a "front" in the same sense as the others.**
-   Both halves of a split card are equally castable from hand — the player
-   chooses which to cast, unlike `modal_dfc`/`adventure`/`transform`, where
-   one face is cast and the other arrives later or never. Filing by the
-   first-named face is a convention choice (matches Scryfall's own card
-   name and `type_line` order) rather than a fact about which face is
-   "really" the card. Measured impact is tiny (4 catalog cards, 0 deck rows
-   on staging), so this can ship with the rest unless there's a reason to
-   treat split differently.
-2. **The Type ▾ filter fix changes matching behavior, not just display.**
-   The bug report named the decklist "By type" sections; the filter
-   over-inclusion was found by following step 1's instruction to check every
-   type-grouping site. It's the same root cause and a small fix, but it does
-   change what a reader sees when they filter their 63 affected collection
-   rows by type (fewer double-counted matches) — flagging in case that is
-   worth a separate, smaller PR rather than riding in with the decklist fix.
+7. **Split cards file by their first-named half.** Both halves are castable, so
+   "front" is a convention (Scryfall's name and `type_line` order), and the
+   convention is ruled. The `split` row above stands as written. Measured
+   impact is 4 catalog cards and 0 deck rows on staging.
+8. **The Collection Type filter fix ships in the SAME PR as the decklist fix.**
+   Same root cause, same `frontFace` helper. It changes what a reader sees when
+   filtering their 63 affected collection rows by type (fewer double-counted
+   matches); that is the intended outcome, not a risk to split out.
+
+No questions remain open.
