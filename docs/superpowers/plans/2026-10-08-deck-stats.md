@@ -114,7 +114,7 @@ a new route.
 | 1 | Switch + placement shell | `deckStatsEnabled()`; `All · Shopping \| Stats` segmented control replacing the two pills (desktop + phone, `STATES §C/§E`); six card shells (title + rule, empty body); no data wired up yet. Off: no segment, no fetch (`READINESS` check-before-merge item 1). | none | no |
 | 2 | Curve + types (a) | `typeBreakdown()` in `stats.ts` parallel to `manaCurve()`; card UI, type-chip tap-to-light interaction, thin state (`STATES` 1c1-1c3). | 1 | no |
 | 3 | Jobs (e) | `readLabels()` tally by `Job.kind`; unlabeled-card count; card UI with tap-to-expand row (`STATES` 1e1-1e2). | 1 | no |
-| 4 | Colors (b), as drawn | `src/lib/mana/supply.ts` (land-only supply, raw demand); card UI, butterfly, thin/no-lands/one-color states (`STATES` 1d1-1d3). | 1 | no (ships to handoff spec) |
+| 4 | Colors (b), as drawn (ruling 9) | `src/lib/mana/supply.ts` (land-only supply, raw demand); card UI, butterfly, thin/no-lands/one-color states (`STATES` 1d1-1d3). | 1 | no (ships to handoff spec) |
 | 4b | Colors (b), richer + Mana Balance module | Extends `manaSupply()` with non-land color attribution and curve weighting per whatever the addendum settles; updates card (b)'s right-hand side if the addendum calls for colored (not hollow) non-land squares. | 4, the addendum | **yes — blocked** |
 | 5 | Against the average (d) | Lighter read into the basis chain (`loadSkeletonForCommanders`, via the `deck-mix.ts` pattern — not the full `loadDeckProfile`); diverging-bar card; starting-mix fallback draws lands/roles only per the eng resolution (`STATES` 1f1-1f3). | 1 | no |
 | 6 | Money and ownership (c) | Per-card price join against the decklist (new derivation joining `loadPrices()` / `priceOf()` directly, parallel to `loadShoppingRollup`'s aggregate) for deck value and the priciest-five list; reuses the existing `DeckShopping` aggregate for the buy figure; card UI, owned/unpriced/all-owned states (`STATES` 1g1-1g3). | 1 | no |
@@ -191,10 +191,53 @@ floor (the pattern every classifier in this repo with a measured floor already f
   `READINESS`'s check-before-merge explicitly calls out "never a prompt to analyze" as a failure
   mode, not just a cosmetic miss.
 
+## Proposed curve weighting (engineering's proposal, for the Design addendum)
+
+Question 2 above asked what "pips weighted by curve" means as a number. Engineering proposes:
+
+**weight(mv) = min(1, 2 / (mv + 1))**, applied per pip, times copies in the deck.
+
+| mana value | 1 | 2 | 3 | 4 | 5 | 6 | 7+ |
+|---|---|---|---|---|---|---|---|
+| weight | 1.00 | 0.67 | 0.50 | 0.40 | 0.33 | 0.29 | 0.25 (7 = 0.25, 10 = 0.18) |
+
+- **Why this shape.** A pip on a cheap card must be payable early, so it constrains the mana base
+  most; a pip on a six-drop has many turns of land drops to be found. The weight falls steeply
+  at first and flattens, so a late bomb never rounds to zero. Commander is a deck of 99 plus one
+  and casts from the command zone, so the commander counts once at its own mana value.
+- **Rules.** Lands carry no pips. Hybrid pips follow `manaNeeds()`: a pip counts toward each color
+  every half names, and a pip with a non-color half (`{2/W}`, `{W/P}`) demands nothing. X costs use
+  mv with X = 0. A mana value of 0 weighs 1.
+- **What it changes (the number the chart prints).** Raw pip counts stay printed; the bars show
+  each color's SHARE of weighted demand.
+
+**Worked example: "HD - Yuriko" on staging** (`fc97e49c…`, 2026-10-09, read-only, 94 `deck_cards`
+rows, non-land cards with a mana cost, single-color pips only):
+
+| color | raw pips | weighted | raw share | weighted share |
+|---|---|---|---|---|
+| U | 66 | 36.9 | 71.0% | 69.8% |
+| B | 27 | 16.0 | 29.0% | 30.2% |
+
+On this deck the weighting moves each share by about a point, because its blue and black pips sit
+at similar mana values. Expect the weighting to matter on a deck whose second color is all cheap
+interaction or all expensive finishers, and to be nearly invisible elsewhere. Design should not
+draw it as a second chart for that reason; it changes the bars' lengths only.
+
+**The one alternative rejected: weight = 1 / mv.** It is simpler to state but too steep: a
+one-pip seven-drop counts 0.14 against a one-drop's 1.0, and on this deck it moves U from 71.0% to
+69.6%, no more than the proposal does, while making expensive color-critical bombs read as noise
+on decks where they carry the plan. It also reads a mana value of 0 as a special case.
+
+## Settled by Hugh
+
+- **Ruling 9 (Hugh, 2026-10-08): card (b), colors, ships as drawn in PR 4 (lands by color).** The
+  richer mana chart (non-land attribution, curve weighting) goes to Design as a small addendum
+  citing the section above; PR 4b waits for it. The PR 1 to PR 4 sequence does not wait.
+- PR 8 (`finding ⟶` wiring) is decided at PR-review time, once cards (a) to (g) exist to link from.
+  It is a sequencing call, not a design one, and not a blocker for any earlier PR.
+
 ## Open items for Hugh
 
-1. **The Design addendum for PR 4b** — non-land color attribution's effect on the butterfly's
-   drawing, and what "pips weighted by curve" means as a number. Both need Design/Hugh input
-   before PR 4b can be scoped, let alone built.
-2. **Whether PR 8 (`finding ⟶` wiring) stands alone or folds into whichever card PR it's cheapest
-   against** — a sequencing call, not a design one; flagged here rather than decided unilaterally.
+None blocking PRs 1 to 4. Pending: the Design addendum for PR 4b (non-land color attribution's
+effect on the butterfly's drawing, and ratifying or replacing the curve weighting above).
