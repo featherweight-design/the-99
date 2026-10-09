@@ -284,6 +284,20 @@ export function warningCovers(acknowledged: ShortDeck[], now: ShortDeck[]): bool
     a.deckId === d.deckId && a.oracleId === d.oracleId && a.short >= d.short));
 }
 
+/**
+ * A deck warning as a client sends it back with `confirmShort`. A Server Action's argument types
+ * are a compile-time claim, so each entry is checked; a malformed one confirms nothing, and the
+ * save then answers with the warning again.
+ */
+export function parseShortDecks(value: unknown): ShortDeck[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((d): d is ShortDeck =>
+    typeof d === "object" && d !== null
+    && typeof d.deckId === "string" && typeof d.oracleId === "string"
+    && typeof d.deckName === "string" && typeof d.cardName === "string"
+    && Number.isInteger(d.short));
+}
+
 /** The decks a change leaves shorter on a card than they were, and by how many. */
 export function newlyShort(
   before: Map<string, Pick<Availability, "owned" | "claims">>,

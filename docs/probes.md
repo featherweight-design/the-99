@@ -229,9 +229,20 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   is refused by name. Its upload cases: a Replace preview (`dryRun`) names the committed deck the
   upload would short and writes nothing, a double-confirmed Replace applies once and records an
   `upload_replace` entry naming its upload, edits since the upload count from that entry, and an
-  Add upload adds to what is held. It WRITES: every run mints its own `user_id` and deletes every row it made in
+  Add upload adds to what is held. Its history cases: the list reads newest first inside the
+  90-day window and never a pruned entry, a cursor page holds only older entries, a reverted
+  entry and its revert link both ways, a revert whose target aged out still reads as one with no
+  link drawn, and one entry reads whole for its owner and not at all for anyone else. It WRITES: every run mints its own `user_id` and deletes every row it made in
   a `finally`, and it refuses production and staging by `neon.branch_id`. With the `expected`
   check and the deck check both disabled, five of its checks fail.
+
+- `pnpm measure:collection-revert` times the ledger's worst deck check and the score recompute a
+  collection write costs, on the busiest account of a scratch branch of staging (it writes, so it
+  refuses production and staging by `neon.branch_id`). Measured 2026-10-09 on 3,393 rows and 23
+  committed versions: reverting a Replace that raised every row lowers 2,926 cards, and its dry run
+  takes about 2.1s, of which each of the check's two claim reads is about 140ms; a one-card edit
+  takes about 0.5s, and the ranked list it leaves to recompute about 2.2s warm (14.1s on the
+  script's first, cold run).
 
 - `pnpm probe:arrivals` proves the collection confirm's own lock and its receipt against a real
   Postgres by calling the real `replaceCollection`. Two things live there that no unit test here

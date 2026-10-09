@@ -17,7 +17,7 @@ import {
   ownedByOracle, pendingItemsToOwnedCounts, writeArrivalsReceipt,
 } from "../../lib/collection/arrivals-write";
 import type { OwnedCounts } from "../../lib/collection/arrivals";
-import { applyCollectionChange, type ShortDeck } from "../../lib/collection/write";
+import { applyCollectionChange, parseShortDecks, type ShortDeck } from "../../lib/collection/write";
 import { collectionEditEnabled } from "../../lib/collection/edit-flag";
 import { editsSinceUpload } from "../../lib/collection/history";
 import { randomUUID } from "node:crypto";
@@ -172,16 +172,6 @@ function parseMode(mode: unknown): UploadMode {
   if (mode === undefined || mode === "replace") return "replace";
   if (mode === "add") return "add";
   throw new Error("unknown upload mode");
-}
-
-/** The warning the client says it showed. Malformed entries confirm nothing. */
-function parseShortDecks(value: unknown): ShortDeck[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter((d): d is ShortDeck =>
-    typeof d === "object" && d !== null
-    && typeof d.deckId === "string" && typeof d.oracleId === "string"
-    && typeof d.deckName === "string" && typeof d.cardName === "string"
-    && Number.isInteger(d.short));
 }
 
 async function loadUpload(userId: string, uploadId: string) {
