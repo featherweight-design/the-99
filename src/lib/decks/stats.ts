@@ -188,6 +188,13 @@ export type ManaCurve = {
  * their own: half a mana is a joke card's property, not a shape a curve draws.
  * The average is computed from the unrounded values, so it stays honest.
  */
+/** The bucket a non-land card's mana value falls in: rounded, floored at 0, and `CURVE_MAX` for
+ *  that value and above. Exported so a reader placing ONE card on the curve uses the rule the
+ *  curve was counted with. */
+export function curveBucket(cmc: number): number {
+  return Math.min(Math.max(Math.round(cmc), 0), CURVE_MAX);
+}
+
 export function manaCurve(cards: readonly CurveCard[]): ManaCurve {
   const buckets: CurveBucket[] = Array.from({ length: CURVE_MAX + 1 }, (_, cmc) => ({
     cmc,
@@ -204,8 +211,7 @@ export function manaCurve(cards: readonly CurveCard[]): ManaCurve {
     }
     copies += card.quantity;
     totalCmc += card.cmc * card.quantity;
-    const bucket = Math.min(Math.max(Math.round(card.cmc), 0), CURVE_MAX);
-    buckets[bucket].copies += card.quantity;
+    buckets[curveBucket(card.cmc)].copies += card.quantity;
   }
 
   return {

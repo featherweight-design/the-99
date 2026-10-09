@@ -1,5 +1,5 @@
 import { isLandFace } from "../cards/facet";
-import { CURVE_MAX } from "../decks/stats";
+import { curveBucket } from "../decks/stats";
 import type {
   CompositionTargets,
   DeckProfile,
@@ -115,7 +115,7 @@ export function foldCurve(raw: Record<string, number>): Map<number, number> {
   for (const [key, value] of Object.entries(raw)) {
     const parsed = Number(key);
     if (!Number.isFinite(parsed)) continue;
-    const bucket = Math.min(Math.max(Math.round(parsed), 0), CURVE_MAX);
+    const bucket = curveBucket(parsed);
     folded.set(bucket, (folded.get(bucket) ?? 0) + value);
   }
   return folded;
