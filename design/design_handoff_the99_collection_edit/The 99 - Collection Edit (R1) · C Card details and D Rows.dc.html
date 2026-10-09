@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0B0E; }
+  a { color: #5C86C9; text-decoration: none; }
+  a:hover { color: #6C95D8; }
+  :root {
+    --bg:#121217; --surface:#1E1F26; --surface-rail:#181920; --surface-sunken:#16171D;
+    --elevated:#2D2E35; --elevated-hover:#34353D; --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-dim:#34507D; --danger:#C6533F; --success:#6FA368; --warning:#E0913C;
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:var(--fg);padding:40px;background:#0B0B0E;min-height:100vh;display:flex;flex-direction:column;gap:64px;">
+
+  <section style="max-width:1320px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0B0B0E;background:#5C86C9;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:var(--fg-faint);">collection edit &middot; canvas 3 of 4 &middot; &sect;C card details + &sect;D rows &middot; 2026-10-09</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:32px;margin:0 0 12px;line-height:1.25;">Art is a grid of tiles you pick from. Copies are a ledger of rows you count. They never share a screen.</h1>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:var(--fg-body);margin:0 0 12px;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Design's call &mdash; two places, and a mode between them.</b> The shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">PrintingRegion</span> stays exactly what it is: a radiogroup of tiles that sets the art, which saves on pick and changes no quantity. Ownership gets a new block, <b style="color:var(--fg);font-weight:600;">Your copies</b>: one row per holding (printing &times; finish), each with a stepper, behind an explicit <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Edit copies</span> on the owned line. While it's open the printing region collapses to its trigger and is inert. Close it with Save or Cancel and the region comes back. So the two meanings differ on four axes at once: <i>shape</i> (tiles vs rows), <i>control</i> (radio vs stepper), <i>commit</i> (on pick vs on Save), and <i>presence</i> (never open together). One list with two controls per tile would put a stepper on a tile that's also a radio, and a mis-tap on the art would cost a copy.</p>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:var(--fg-body);margin:0;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Raising saves directly; lowering goes through &sect;E.</b> Edits are staged in the block and written by one Save, which makes one history entry, so a move (one printing down, another up) is one entry by construction. A save that only raises writes with no check. Any lowering puts <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Checking decks&hellip;</span> on the button first. <b style="color:var(--fg);font-weight:600;">The owned line's marker never moves.</b> The staged total appears <i>beside</i> <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">&times;5</span>, and the marker re-reads only after the save lands.</p>
+  </section>
+
+  <!-- C1 C2 desktop -->
+  <section id="c1" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">C1 &middot; C2 &middot; <span style="color:var(--accent);">desktop modal 820 &times; 620 &middot; at rest, owned in three holdings &middot; editing: foil and nonfoil of one printing, a move staged</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">C1 &middot; at rest</div>
+        <div style="width:820px;height:620px;border-radius:14px;background:var(--surface);border:1px solid var(--border-strong);display:flex;overflow:hidden;position:relative;">
+          <div style="width:320px;flex:none;padding:28px;display:flex;flex-direction:column;align-items:center;gap:10px;background:var(--bg);">
+            <div style="width:264px;aspect-ratio:63/88;border-radius:12px;background:linear-gradient(160deg,#6D6E76,#2F3036);"></div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);border:1px solid var(--accent-dim);border-radius:4px;padding:2px 7px;">$1.40</span>
+          </div>
+          <div style="flex:1;min-width:0;padding:28px 28px 0;display:flex;flex-direction:column;gap:14px;overflow:hidden;">
+            <div style="padding-right:46px;"><div style="font-family:'Cinzel',serif;font-weight:700;font-size:24px;">Sol Ring</div><div style="font-size:13px;color:var(--fg-muted);margin-top:4px;">Artifact</div></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 20px;">
+              <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Set</div><div style="font-size:13.5px;margin-top:3px;">Commander 2021 &middot; C21</div></div>
+              <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Rarity</div><div style="font-size:13.5px;margin-top:3px;">Uncommon</div></div>
+              <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Identity</div><div style="font-size:13.5px;margin-top:3px;">Colorless</div></div>
+              <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">You own</div>
+                <div style="margin-top:3px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                  <span data-testid="owned-line" style="display:inline-flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;"><span style="color:var(--accent);">&times;5</span><span style="color:var(--fg-faint);">&middot;</span><span style="color:var(--danger);">&#9670; short 1</span></span>
+                  <span style="font-size:12.5px;color:var(--accent);text-decoration:underline;text-underline-offset:2px;">Edit copies</span>
+                </div>
+              </div>
+            </div>
+            <div style="border-radius:10px;background:var(--bg);border:1px solid var(--border);padding:16px 18px;font-size:14px;line-height:1.55;color:var(--fg-body);">{T}: Add {C}{C}.</div>
+            <div style="border-radius:10px;background:var(--bg);border:1px solid var(--border);padding:14px 18px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">In your collection &middot; receipt, shipped</div>
+            <div style="border-top:1px solid var(--border);padding-top:16px;display:flex;flex-direction:column;gap:10px;">
+              <span style="font-size:13.5px;color:var(--fg-muted);">Your pick shows wherever this card appears in your collection.</span>
+              <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;">
+                <sc-for list="{{ artTiles }}" as="t" hint-placeholder-count="3">
+                  <div style="display:flex;flex-direction:column;gap:4px;">
+                    <div style="aspect-ratio:63/88;border-radius:10px;background:linear-gradient(160deg,#6D6E76,#2F3036);outline:{{ t.ring }};outline-offset:3px;"></div>
+                    <span style="font-size:13px;font-weight:{{ t.weight }};">{{ t.set }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ t.meta }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <span style="position:absolute;top:18px;right:18px;width:34px;height:34px;border-radius:8px;background:var(--elevated);display:flex;align-items:center;justify-content:center;color:var(--fg-muted);">&#10005;</span>
+        </div>
+        <div style="width:820px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);"><span style="font-family:'IBM Plex Mono',monospace;">Edit copies</span> is a text button that sits after the owned line in the <span style="font-family:'IBM Plex Mono',monospace;">You own</span> cell. The line itself (&times;N, the dot, the marker) isn't touched, and its <span style="font-family:'IBM Plex Mono',monospace;">data-testid</span> still wraps exactly those three things. The printing region below is shipped and still sets the art. Its tiles keep their read-only <span style="font-family:'IBM Plex Mono',monospace;">&times;N</span> meta.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">C2 &middot; editing &middot; +1 foil, a move of 1 staged</div>
+        <div style="width:820px;height:620px;border-radius:14px;background:var(--surface);border:1px solid var(--border-strong);display:flex;overflow:hidden;position:relative;">
+          <div style="width:320px;flex:none;padding:28px;display:flex;flex-direction:column;align-items:center;gap:10px;background:var(--bg);">
+            <div style="width:264px;aspect-ratio:63/88;border-radius:12px;background:linear-gradient(160deg,#6D6E76,#2F3036);"></div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);border:1px solid var(--accent-dim);border-radius:4px;padding:2px 7px;">$1.40</span>
+          </div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+            <div style="flex:1;min-height:0;padding:28px 28px 0;display:flex;flex-direction:column;gap:14px;overflow:hidden;">
+              <div style="padding-right:46px;"><div style="font-family:'Cinzel',serif;font-weight:700;font-size:24px;">Sol Ring</div><div style="font-size:13px;color:var(--fg-muted);margin-top:4px;">Artifact</div></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 20px;">
+                <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Set</div><div style="font-size:13.5px;margin-top:3px;">Commander 2021 &middot; C21</div></div>
+                <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">You own</div>
+                  <div style="margin-top:3px;display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;"><span style="color:var(--accent);">&times;5</span><span style="color:var(--fg-faint);">&middot;</span><span style="color:var(--danger);">&#9670; short 1</span><span style="color:var(--fg-muted);margin-left:4px;">&rarr; &times;6 after saving</span></div>
+                </div>
+              </div>
+              <div style="border-radius:10px;background:var(--bg);border:1px solid var(--accent);padding:14px 16px;display:flex;flex-direction:column;gap:2px;">
+                <div style="display:flex;align-items:baseline;margin-bottom:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Your copies &middot; 3 holdings</span><span style="margin-left:auto;font-size:12px;color:var(--fg-muted);">each printing and finish counts on its own</span></div>
+                <sc-for list="{{ holdings }}" as="h" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;gap:12px;min-height:44px;border-top:1px solid var(--border);">
+                    <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;">
+                      <span style="font-size:13.5px;">{{ h.set }} <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ h.code }}</span></span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:{{ h.metaInk }};">{{ h.meta }}</span>
+                    </span>
+                    <span style="font-size:12.5px;color:var(--accent);">{{ h.move }}</span>
+                    <span style="display:inline-flex;align-items:center;height:30px;border:1px solid var(--border-strong);border-radius:7px;overflow:hidden;">
+                      <span style="width:30px;text-align:center;color:var(--fg-muted);">&minus;</span>
+                      <span style="min-width:34px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:13px;border-left:1px solid var(--border-strong);border-right:1px solid var(--border-strong);line-height:30px;color:{{ h.qtyInk }};">{{ h.qty }}</span>
+                      <span style="width:30px;text-align:center;color:var(--fg-muted);">+</span>
+                    </span>
+                  </div>
+                </sc-for>
+                <div style="display:flex;align-items:center;gap:8px;min-height:40px;border-top:1px solid var(--border);font-size:13px;color:var(--accent);"><span style="font-size:15px;">+</span> Add a printing you don't own yet</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:8px;border:1px dashed var(--border-dashed);font-size:12.5px;color:var(--fg-faint);opacity:0.7;">Art &middot; 3 printings &#9662;<span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;">closed while you edit copies</span></div>
+            </div>
+            <div style="padding:12px 28px;border-top:1px solid var(--border-strong);background:var(--surface-rail);display:flex;align-items:center;gap:10px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);flex:1;">+1 &middot; 1 moved</span>
+              <span style="padding:9px 16px;border-radius:8px;border:1px solid var(--border-strong);font-size:13.5px;">Cancel</span>
+              <span style="padding:9px 18px;border-radius:8px;background:var(--accent);font-size:13.5px;font-weight:600;color:var(--bg);">Save</span>
+            </div>
+          </div>
+          <span style="position:absolute;top:18px;right:18px;width:34px;height:34px;border-radius:8px;background:var(--elevated);display:flex;align-items:center;justify-content:center;color:var(--fg-muted);">&#10005;</span>
+        </div>
+        <div style="width:820px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The block takes the region's place in the column, with an <span style="font-family:'IBM Plex Mono',monospace;">--accent</span> edge while it's open. The save bar takes the pinned row's slot (Prev/Next and the Mana Pool link step aside while editing, and paging is disabled so staged edits can't be lost by an arrow key). A row's meta line carries the change in words: <span style="font-family:'IBM Plex Mono',monospace;">+1</span>, <span style="font-family:'IBM Plex Mono',monospace;">1 moved to SLD #1512</span>, <span style="font-family:'IBM Plex Mono',monospace;">1 moved from C21 #263</span>. The stepper's figure is <span style="font-family:'IBM Plex Mono',monospace;">--accent</span> when it differs from the saved value. The row order is the printing region's own order (release date, then number), nonfoil before foil. Escape asks before discarding staged edits, as B6 does.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- C3 C4 move + add printing + not owned + one printing -->
+  <section id="c3" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">C3 &middot; C4 &middot; C5 &middot; <span style="color:var(--accent);">making a move &middot; adding a printing &middot; not owned &middot; one printing</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">C3 &middot; Move, inline under its row</div>
+        <div style="width:472px;border-radius:10px;background:var(--bg);border:1px solid var(--accent);padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:center;gap:12px;min-height:44px;">
+            <span style="flex:1;font-size:13.5px;">Commander 2021 <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">C21 &middot; #263</span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);">&times;3</span>
+          </div>
+          <div style="border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);padding:12px;display:flex;flex-direction:column;gap:10px;">
+            <span style="font-size:13px;color:var(--fg-body);">Got the printing wrong? Move copies to the right one.</span>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;">
+              <span>Move</span>
+              <span style="display:inline-flex;align-items:center;height:30px;border:1px solid var(--border-strong);border-radius:7px;overflow:hidden;"><span style="width:28px;text-align:center;color:var(--fg-muted);">&minus;</span><span style="min-width:28px;text-align:center;font-family:'IBM Plex Mono',monospace;border-left:1px solid var(--border-strong);border-right:1px solid var(--border-strong);line-height:30px;">1</span><span style="width:28px;text-align:center;color:var(--fg-muted);">+</span></span>
+              <span>to</span>
+              <span style="display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:7px;border:1px solid var(--accent);font-family:'IBM Plex Mono',monospace;font-size:11.5px;">SLD &middot; #1512 &middot; nonfoil &#9662;</span>
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+              <span style="padding:7px 12px;border-radius:7px;border:1px solid var(--border-strong);font-size:12.5px;">Never mind</span>
+              <span style="padding:7px 14px;border-radius:7px;background:var(--elevated);border:1px solid var(--border-strong);font-size:12.5px;font-weight:600;">Stage the move</span>
+            </div>
+          </div>
+        </div>
+        <div style="width:472px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The destination chip lists your other holdings first, then <span style="font-family:'IBM Plex Mono',monospace;">Another printing&hellip;</span>, which opens the catalog <span style="font-family:'IBM Plex Mono',monospace;">PrintingRegion</span> in its choose role (as in B4). Finish is part of the destination, so a move can also correct foil to nonfoil. Staging lowers one row and raises another. The pair is <i>one</i> change in the save, and one history entry, <span style="font-family:'IBM Plex Mono',monospace;">Moved 1 copy</span>. A move can't leave a deck short (the card's total doesn't change), so it never triggers &sect;E on its own.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">C4 &middot; not owned &middot; at rest, then adding</div>
+        <div style="width:420px;display:flex;flex-direction:column;gap:12px;">
+          <div style="border-radius:10px;background:var(--surface);border:1px solid var(--border-strong);padding:16px 18px;display:grid;grid-template-columns:1fr 1fr;gap:12px 20px;">
+            <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Set</div><div style="font-size:13.5px;margin-top:3px;">Fourth Edition &middot; 4ED</div></div>
+            <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">You own</div><div style="margin-top:3px;display:flex;align-items:center;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">none</span><span style="font-size:12.5px;color:var(--accent);text-decoration:underline;text-underline-offset:2px;">Add to collection</span></div></div>
+          </div>
+          <div style="border-radius:10px;background:var(--bg);border:1px solid var(--accent);padding:14px 16px;display:flex;flex-direction:column;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:8px;">Your copies</span>
+            <div style="display:flex;align-items:center;gap:12px;min-height:44px;border-top:1px solid var(--border);">
+              <span style="flex:1;display:flex;flex-direction:column;gap:1px;"><span style="font-size:13.5px;">Fourth Edition <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">4ED &middot; #298</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--success);">new &middot; +1</span></span>
+              <span style="display:inline-flex;align-items:center;height:30px;border:1px solid var(--border-strong);border-radius:7px;overflow:hidden;"><span style="width:30px;text-align:center;color:var(--fg-muted);">&minus;</span><span style="min-width:34px;text-align:center;font-family:'IBM Plex Mono',monospace;border-left:1px solid var(--border-strong);border-right:1px solid var(--border-strong);line-height:30px;color:var(--accent);">1</span><span style="width:30px;text-align:center;color:var(--fg-muted);">+</span></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;min-height:40px;border-top:1px solid var(--border);font-size:13px;color:var(--accent);">Change printing or finish</div>
+          </div>
+        </div>
+        <div style="width:420px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">A card you don't own reads <span style="font-family:'IBM Plex Mono',monospace;">none</span> and offers <span style="font-family:'IBM Plex Mono',monospace;">Add to collection</span>. That opens the block with one staged row: the printing the modal is showing, nonfoil, &times;1. Saving it raises, so it saves directly. The first save of a card also sets nothing on art: the resolver picks the art as it does today.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">C5 &middot; one printing, one holding</div>
+        <div style="width:380px;border-radius:10px;background:var(--bg);border:1px solid var(--accent);padding:14px 16px;display:flex;flex-direction:column;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:8px;">Your copies</span>
+          <div style="display:flex;align-items:center;gap:12px;min-height:44px;border-top:1px solid var(--border);">
+            <span style="flex:1;font-size:13.5px;">Core Set 2021 <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">M21 &middot; #232</span></span>
+            <span style="display:inline-flex;align-items:center;height:30px;border:1px solid var(--border-strong);border-radius:7px;overflow:hidden;"><span style="width:30px;text-align:center;color:var(--fg-muted);">&minus;</span><span style="min-width:34px;text-align:center;font-family:'IBM Plex Mono',monospace;border-left:1px solid var(--border-strong);border-right:1px solid var(--border-strong);line-height:30px;">2</span><span style="width:30px;text-align:center;color:var(--fg-muted);">+</span></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;min-height:40px;border-top:1px solid var(--border);font-size:13px;color:var(--accent);"><span style="font-size:15px;">+</span> Add a printing you don't own yet</div>
+        </div>
+        <div style="width:380px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">There's no Move with one holding, because there's nowhere to move to. Move appears once a second holding exists, or through <span style="font-family:'IBM Plex Mono',monospace;">Add a printing</span>. The shipped picker shows no region for a single printing, so there's no art trigger to collapse here.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- C6-C9 save states -->
+  <section id="c6" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">C6 &middot; C7 &middot; C8 &middot; C9 &middot; <span style="color:var(--accent);">raising saves directly &middot; lowering into &sect;E &middot; lowering to zero &middot; saving and a failed save</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">C6 &middot; raise &rarr; Save &rarr; saved</div>
+        <div style="width:420px;display:flex;flex-direction:column;gap:10px;">
+          <div style="border-radius:10px;background:var(--surface-rail);border:1px solid var(--border-strong);padding:12px 14px;display:flex;align-items:center;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);flex:1;">+1</span><span style="padding:9px 14px;border-radius:8px;border:1px solid var(--border-strong);font-size:13.5px;opacity:0.6;">Cancel</span><span aria-busy="true" style="padding:9px 16px;border-radius:8px;background:var(--accent);opacity:0.6;font-size:13.5px;font-weight:600;color:var(--bg);">Saving&hellip;</span></div>
+          <div style="border-radius:10px;background:var(--surface);border:1px solid var(--border-strong);padding:14px 16px;display:flex;align-items:center;gap:10px;font-family:'IBM Plex Mono',monospace;font-size:12px;"><span style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);font-family:'IBM Plex Mono',monospace;">You own</span><span style="color:var(--accent);">&times;6</span><span style="color:var(--fg-faint);">&middot;</span><span style="color:var(--fg-muted);">free</span><span style="margin-left:auto;font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;color:var(--accent);text-decoration:underline;">Edit copies</span></div>
+          <div role="status" style="font-size:12.5px;color:var(--fg-body);display:flex;gap:8px;align-items:center;"><span style="color:var(--success);">&#10003;</span> Saved. Sol Ring &times;6. <span style="color:var(--accent);">Undo</span></div>
+        </div>
+        <div style="width:420px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The block closes and the region returns. The owned line re-reads: the marker changes only now, and the card stops reading short because the sixth copy covers HD - Kinnan. The status line goes into the modal's own live region and carries <span style="font-family:'IBM Plex Mono',monospace;">Undo</span>, which reverts this entry (a lowering, so it goes through &sect;E like any revert). It lasts until the card is closed or paged.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">C7 &middot; lowering a deck relies on</div>
+        <div style="width:420px;border-radius:10px;background:var(--surface);border:1px solid var(--border-strong);padding:16px;display:flex;flex-direction:column;gap:10px;font-size:13px;color:var(--fg-body);line-height:1.6;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">&minus;2 &rarr; <span style="color:var(--fg);">Save</span> &rarr; <span style="color:var(--fg);">Checking decks&hellip;</span> &rarr; E2 &ldquo;Saving leaves 3 decks short&rdquo; &rarr; Save anyway &rarr; Saving&hellip; &rarr; saved</div>
+          <span>The block stays open and inert behind &sect;E. Cancel there returns to the staged edits, unchanged (E7). After the save, the owned line reads <span style="font-family:'IBM Plex Mono',monospace;color:var(--danger);">&#9670; short 3</span>, and the receipt below re-reads its decks. That's the only change: no deck is edited.</span>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">C8 &middot; lowering to zero, the last copy</div>
+        <div style="width:420px;border-radius:10px;background:var(--bg);border:1px solid var(--accent);padding:14px 16px;display:flex;flex-direction:column;gap:2px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:8px;">Your copies</span>
+          <div style="display:flex;align-items:center;gap:12px;min-height:44px;border-top:1px solid var(--border);">
+            <span style="flex:1;display:flex;flex-direction:column;gap:1px;"><span style="font-size:13.5px;color:var(--fg-muted);text-decoration:line-through;text-decoration-color:var(--fg-locked);">Core Set 2021 <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">M21 &middot; #232</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--warning);">&minus;2 &middot; leaves your collection</span></span>
+            <span style="display:inline-flex;align-items:center;height:30px;border:1px solid var(--border-strong);border-radius:7px;overflow:hidden;"><span style="width:30px;text-align:center;color:var(--fg-locked);">&minus;</span><span style="min-width:34px;text-align:center;font-family:'IBM Plex Mono',monospace;border-left:1px solid var(--border-strong);border-right:1px solid var(--border-strong);line-height:30px;color:var(--accent);">0</span><span style="width:30px;text-align:center;color:var(--fg-muted);">+</span></span>
+          </div>
+          <div style="margin-top:10px;display:flex;gap:8px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border);padding:10px 12px;font-size:12.5px;line-height:1.5;color:var(--fg-body);"><span style="color:var(--fg-faint);">&#9432;</span> That's your last copy. Saving takes Ornithopter out of your collection.</div>
+        </div>
+        <div style="width:420px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">At zero, a row stays in the block, struck through, until Save, so <span style="font-family:'IBM Plex Mono',monospace;">+</span> can bring it back. After saving, that holding is gone. If it was the last one, the modal stays open in the not-owned state (C4) with <span style="font-family:'IBM Plex Mono',monospace;">Add to collection</span>, and the card leaves the list behind it. Prev/Next carries on from its old position. A stored art pick on a printing that leaves becomes the shipped dormant tile.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">C9 &middot; failed save</div>
+        <div style="width:420px;border-radius:10px;background:var(--bg);border:1px solid var(--accent);padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
+          <div role="alert" style="display:flex;gap:10px;border-radius:8px;background:var(--elevated-hover);border:1px solid var(--border-strong);border-left:3px solid var(--warning);padding:10px 12px;"><span style="color:var(--warning);">&#9888;</span><span style="font-size:12.5px;line-height:1.5;color:var(--fg-body);"><b style="color:var(--fg);font-weight:600;">Nothing was saved.</b> Your changes are still here.</span></div>
+          <div style="height:44px;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);display:flex;align-items:center;">staged rows, as they were</div>
+          <div style="display:flex;justify-content:flex-end;gap:8px;"><span style="padding:9px 14px;border-radius:8px;border:1px solid var(--border-strong);font-size:13.5px;">Cancel</span><span style="padding:9px 16px;border-radius:8px;background:var(--accent);font-size:13.5px;font-weight:600;color:var(--bg);">Try again</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- C phone -->
+  <section id="c10" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">C &middot; 390 &middot; <span style="color:var(--accent);">the card phone sheet &middot; teaser at rest &middot; full sheet, editing</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">teaser &middot; the owned line and its door</div>
+        <div style="width:390px;height:780px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--bg);display:flex;flex-direction:column;position:relative;">
+          <div style="flex:1;display:flex;align-items:center;justify-content:center;padding-top:40px;"><div style="width:250px;aspect-ratio:63/88;border-radius:12px;background:linear-gradient(160deg,#6D6E76,#2F3036);"></div></div>
+          <div style="height:280px;border-radius:18px 18px 0 0;background:var(--surface);border-top:1px solid var(--border-strong);padding:10px 20px 16px;display:flex;flex-direction:column;gap:10px;">
+            <span style="align-self:center;width:36px;height:4px;border-radius:2px;background:var(--border-dashed);"></span>
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:21px;">Sol Ring</div>
+            <div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;"><span style="color:var(--accent);">&times;5</span><span style="color:var(--fg-faint);">&middot;</span><span style="color:var(--danger);">&#9670; short 1</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);border:1px solid var(--accent-dim);border-radius:4px;padding:2px 7px;margin-left:auto;">$1.40</span></div>
+            <div style="font-size:13.5px;line-height:1.55;color:var(--fg-body);">{T}: Add {C}{C}.</div>
+            <div style="margin-top:auto;display:flex;gap:10px;">
+              <span style="flex:1;height:44px;border-radius:10px;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-size:14px;">All details</span>
+              <span style="flex:1;height:44px;border-radius:10px;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-size:14px;">Edit copies</span>
+            </div>
+          </div>
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The teaser has no meta grid, so <span style="font-family:'IBM Plex Mono',monospace;">Edit copies</span> takes the foot row beside All details. That's the slot a stacked sheet's action uses (stacked sheets R1, call 9), and it's never drawn when a sheet's footer is there. It raises the sheet to full with the block open.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">full sheet &middot; editing, lowering</div>
+        <div style="width:390px;height:780px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--surface);display:flex;flex-direction:column;">
+          <div style="padding:16px 20px 10px;display:flex;align-items:center;gap:12px;"><span style="width:40px;height:56px;border-radius:5px;background:linear-gradient(160deg,#6D6E76,#2F3036);"></span><span style="flex:1;font-family:'Cinzel',serif;font-weight:700;font-size:20px;">Sol Ring</span><span style="width:44px;height:44px;border-radius:10px;background:var(--elevated);display:flex;align-items:center;justify-content:center;color:var(--fg-muted);">&#10005;</span></div>
+          <div style="padding:0 20px;display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;"><span style="color:var(--accent);">&times;5</span><span style="color:var(--fg-faint);">&middot;</span><span style="color:var(--danger);">&#9670; short 1</span><span style="color:var(--fg-muted);">&rarr; &times;3 after saving</span></div>
+          <div style="flex:1;padding:14px 20px;display:flex;flex-direction:column;gap:2px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:8px;">Your copies &middot; 3 holdings</span>
+            <sc-for list="{{ phoneHoldings }}" as="h" hint-placeholder-count="3">
+              <div style="display:flex;flex-direction:column;gap:8px;padding:10px 0;border-top:1px solid var(--border);">
+                <span style="display:flex;flex-direction:column;gap:1px;"><span style="font-size:14px;">{{ h.set }} <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ h.code }}</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:{{ h.metaInk }};">{{ h.meta }}</span></span>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <span style="display:inline-flex;align-items:center;height:44px;border:1px solid var(--border-strong);border-radius:9px;overflow:hidden;"><span style="width:44px;text-align:center;color:var(--fg-muted);">&minus;</span><span style="min-width:40px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:14px;border-left:1px solid var(--border-strong);border-right:1px solid var(--border-strong);line-height:44px;color:{{ h.qtyInk }};">{{ h.qty }}</span><span style="width:44px;text-align:center;color:var(--fg-muted);">+</span></span>
+                  <span style="height:44px;display:flex;align-items:center;padding:0 12px;font-size:13.5px;color:var(--accent);">Move</span>
+                </div>
+              </div>
+            </sc-for>
+            <div style="display:flex;align-items:center;gap:8px;min-height:48px;border-top:1px solid var(--border);font-size:14px;color:var(--accent);"><span style="font-size:16px;">+</span> Add a printing you don't own yet</div>
+          </div>
+          <div style="padding:12px 20px 14px;border-top:1px solid var(--border-strong);background:var(--surface-rail);display:flex;align-items:center;gap:10px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);flex:1;">&minus;2</span>
+            <span style="height:46px;padding:0 16px;border-radius:10px;border:1px solid var(--border-strong);display:flex;align-items:center;font-size:14px;">Cancel</span>
+            <span aria-busy="true" style="height:46px;padding:0 18px;border-radius:10px;background:var(--accent);opacity:0.6;display:flex;align-items:center;font-size:14px;font-weight:600;color:var(--bg);">Checking decks&hellip;</span>
+          </div>
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The save bar pins to the sheet's foot, in the full-sheet footer slot. The block sits directly under the owned line, and the oracle text, receipt and art region scroll below it (the region collapsed, as on desktop). The pull-to-teaser gesture is off while editing, so a downward scroll can't drop staged edits. Steppers are 44px.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- D -->
+  <section id="d" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">D &middot; <span style="color:var(--accent);">removing from a Collection row &middot; rows and grid, both widths &middot; pending, gone, failed</span></div>
+    <p style="max-width:1080px;font-size:14px;line-height:1.7;color:var(--fg-body);margin:0;text-wrap:pretty;">The control is a <b style="color:var(--fg);font-weight:600;">&#8943; menu</b>, not a bare &#10005;. Removing takes every copy of every printing, and on a list of 2,926 a stray &#10005; is too cheap. The menu holds two items: <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Edit copies&hellip;</span>, which opens C with the block open, and <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Remove from collection</span>, labelled with the copy count when it's over one. If no committed deck relies on the card, it goes straight away. Otherwise E1 comes first. <b style="color:var(--fg);font-weight:600;">A removed row leaves an Undo strip at the same height</b>, so nothing below moves. Undo is a revert of that entry.</p>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">390 &middot; rows view &middot; at rest, menu open, pending, gone, failed</div>
+        <div style="width:390px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--bg);padding:10px 12px;display:flex;flex-direction:column;gap:6px;position:relative;">
+          <sc-for list="{{ rows }}" as="r" hint-placeholder-count="5">
+            <div style="height:56px;border-radius:8px;background:{{ r.bg }};border:1px solid {{ r.edge }};display:flex;align-items:center;gap:10px;padding:0 0 0 12px;opacity:{{ r.op }};">
+              <span style="width:8px;height:8px;border-radius:50%;background:{{ r.dot }};flex:none;"></span>
+              <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+                <span style="font-size:13.5px;color:{{ r.nameInk }};">{{ r.name }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:{{ r.metaInk }};">{{ r.meta }}</span>
+              </span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">{{ r.qty }}</span>
+              <span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:{{ r.trailInk }};font-size:{{ r.trailSize }};font-weight:600;">{{ r.trail }}</span>
+            </div>
+          </sc-for>
+          <div role="menu" style="position:absolute;right:16px;top:70px;width:230px;border-radius:10px;background:var(--elevated);border:1px solid var(--border-strong);box-shadow:0 16px 40px rgba(0,0,0,0.5);padding:4px;">
+            <div role="menuitem" style="height:44px;display:flex;align-items:center;padding:0 12px;font-size:14px;border-radius:7px;">Edit copies&hellip;</div>
+            <div role="menuitem" style="height:44px;display:flex;align-items:center;padding:0 12px;font-size:14px;color:var(--danger);border-radius:7px;background:var(--elevated-hover);">Remove all 5 from collection</div>
+          </div>
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The &#8943; is a 44px sibling of the row's card button, never nested inside it, at the trailing edge where the row has room. <b style="color:var(--fg-body);font-weight:600;">Pending:</b> the row holds its 56px at .55, the meta line reads <span style="font-family:'IBM Plex Mono',monospace;">Removing&hellip;</span> (or <span style="font-family:'IBM Plex Mono',monospace;">Checking your decks&hellip;</span> first), and the row stops taking presses. <b style="color:var(--fg-body);font-weight:600;">Gone:</b> the same box becomes the strip. <b style="color:var(--fg-body);font-weight:600;">Failed:</b> the row returns to rest and its meta line says so in <span style="font-family:'IBM Plex Mono',monospace;">--warning</span> with <span style="font-family:'IBM Plex Mono',monospace;">Try again</span> as the trailing control. The strips stay until the page is left, or until a filter or sort change re-lists the cards, which drops them.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">390 &middot; 3-up grid &middot; at rest, pending, gone</div>
+        <div style="width:390px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--bg);padding:14px 14px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;">
+          <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="3">
+            <div style="position:relative;display:flex;flex-direction:column;opacity:{{ t.op }};">
+              <div style="aspect-ratio:63/88;border-radius:9px;background:{{ t.art }};border:{{ t.border }};display:flex;align-items:center;justify-content:center;text-align:center;padding:8px;font-size:11.5px;line-height:1.35;color:var(--fg-body);">{{ t.over }}</div>
+              <div style="height:70px;padding:6px 7px;display:flex;flex-direction:column;gap:2px;">
+                <span style="font-size:12px;">{{ t.name }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:{{ t.metaInk }};">{{ t.meta }}</span>
+              </div>
+              <sc-if value="{{ t.menu }}" hint-placeholder-val="{{ true }}">
+                <span style="position:absolute;top:4px;right:4px;width:28px;height:28px;border-radius:7px;background:rgba(10,8,6,0.72);display:flex;align-items:center;justify-content:center;color:var(--fg);font-size:14px;">&#8943;</span>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The tile's &#8943; is a 28px plate on the art's top-right corner. It uses the printing picker's badge plate and an <span style="font-family:'IBM Plex Mono',monospace;">after:</span> overlay to make a 44px target, which reaches into the gap but not the neighbouring tile. That corner is free: fact marks live in the caption. A removed tile keeps its 63:88 slot as a dashed plate holding <span style="font-family:'IBM Plex Mono',monospace;">Removed &middot; Undo</span>, so the grid doesn't reflow.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">1300 &middot; rows and grid</div>
+        <div style="width:520px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);padding:16px 20px;display:flex;flex-direction:column;gap:14px;">
+          <div style="height:44px;border-radius:8px;background:var(--surface);border:1px solid var(--accent);display:flex;align-items:center;gap:12px;padding:0 4px 0 14px;">
+            <span style="width:8px;height:8px;border-radius:50%;background:var(--success);"></span>
+            <span style="flex:1;font-size:14px;">Sol Ring <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);margin-left:8px;">C21 &middot; uncommon</span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--danger);">&#9670; short 1</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">&times;5</span>
+            <span style="width:32px;height:32px;border-radius:7px;background:var(--elevated);display:flex;align-items:center;justify-content:center;">&#8943;</span>
+          </div>
+          <div style="height:44px;border-radius:8px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:0 4px 0 14px;">
+            <span style="width:8px;height:8px;border-radius:50%;background:var(--success);"></span>
+            <span style="flex:1;font-size:14px;">Cultivate</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">&times;2</span>
+            <span style="width:32px;height:32px;"></span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,178px);gap:12px;">
+            <div style="position:relative;"><div style="aspect-ratio:63/88;border-radius:10px;background:linear-gradient(160deg,#6D6E76,#2F3036);"></div><span style="position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:7px;background:rgba(10,8,6,0.72);display:flex;align-items:center;justify-content:center;">&#8943;</span></div>
+            <div style="aspect-ratio:63/88;border-radius:10px;background:linear-gradient(160deg,#4B7A46,#2C3B2A);"></div>
+            <div style="aspect-ratio:63/88;border-radius:10px;border:1.5px dashed var(--border-dashed);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:12.5px;color:var(--fg-body);">Rhystic Study removed<span style="color:var(--accent);font-weight:600;">Undo</span></div>
+          </div>
+        </div>
+        <div style="width:520px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">With a pointer, the &#8943; shows on hover and on <span style="font-family:'IBM Plex Mono',monospace;">:focus-within</span>, and stays visible while its menu is open. With <span style="font-family:'IBM Plex Mono',monospace;">pointer: coarse</span> it's always visible. Its slot is reserved at every state, so a row's figures never shift when it appears. The menu is a <span style="font-family:'IBM Plex Mono',monospace;">role=menu</span> popover, anchored to the trigger, that closes on Escape.</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const gray = "linear-gradient(160deg,#6D6E76,#2F3036)", green = "linear-gradient(160deg,#4B7A46,#2C3B2A)", blue = "linear-gradient(160deg,#3A6AA5,#1F2D44)";
+    const rest = { bg: "var(--surface)", edge: "var(--border)", op: 1, dot: "var(--success)", nameInk: "var(--fg)", metaInk: "var(--fg-faint)", trail: "⋯", trailInk: "var(--fg-muted)", trailSize: "16px" };
+    return {
+      artTiles: [
+        { set: "Commander 2021", meta: "#263 · ×3", ring: "2px solid var(--accent)", weight: 600 },
+        { set: "Secret Lair", meta: "#1512 · ×1 · 1 foil", ring: "none", weight: 400 },
+        { set: "Commander Masters", meta: "#410 · ×1", ring: "none", weight: 400 },
+      ],
+      holdings: [
+        { set: "Commander 2021", code: "C21 · #263", meta: "nonfoil · 1 moved to SLD #1512", metaInk: "var(--fg-muted)", qty: "2", qtyInk: "var(--accent)", move: "Move" },
+        { set: "Secret Lair", code: "SLD · #1512", meta: "nonfoil · new · 1 moved from C21", metaInk: "var(--fg-muted)", qty: "1", qtyInk: "var(--accent)", move: "Move" },
+        { set: "Secret Lair", code: "SLD · #1512", meta: "foil · +1", metaInk: "var(--success)", qty: "2", qtyInk: "var(--accent)", move: "Move" },
+      ],
+      phoneHoldings: [
+        { set: "Commander 2021", code: "C21 · #263", meta: "nonfoil · −2", metaInk: "var(--warning)", qty: "1", qtyInk: "var(--accent)" },
+        { set: "Secret Lair", code: "SLD · #1512", meta: "foil", metaInk: "var(--fg-faint)", qty: "1", qtyInk: "var(--fg)" },
+        { set: "Commander Masters", code: "CMM · #410", meta: "nonfoil", metaInk: "var(--fg-faint)", qty: "1", qtyInk: "var(--fg)" },
+      ],
+      rows: [
+        { ...rest, name: "Arcane Signet", meta: "C21 · common", qty: "×4" },
+        { ...rest, name: "Sol Ring", meta: "C21 · uncommon · ◆ short 1", qty: "×5", edge: "var(--accent)" },
+        { ...rest, name: "Cultivate", meta: "Removing…", qty: "×2", op: 0.55, trail: "" },
+        { ...rest, name: "Rhystic Study removed", meta: "×1 · out of your collection", qty: "", bg: "var(--surface-rail)", edge: "var(--border)", dot: "transparent", nameInk: "var(--fg-body)", trail: "Undo", trailInk: "var(--accent)", trailSize: "13.5px" },
+        { ...rest, name: "Ornithopter", meta: "Couldn't remove it. Nothing changed.", metaInk: "var(--warning)", qty: "×2", trail: "Retry", trailInk: "var(--accent)", trailSize: "13px" },
+      ],
+      tiles: [
+        { name: "Sol Ring ×5", meta: "C21 · U", metaInk: "var(--fg-faint)", art: gray, border: "none", over: "", op: 1, menu: true },
+        { name: "Cultivate ×2", meta: "Removing…", metaInk: "var(--fg-faint)", art: green, border: "none", over: "", op: 0.55, menu: false },
+        { name: "", meta: "", metaInk: "var(--fg-faint)", art: "transparent", border: "1.5px dashed var(--border-dashed)", over: "Rhystic Study removed · Undo", op: 1, menu: false },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

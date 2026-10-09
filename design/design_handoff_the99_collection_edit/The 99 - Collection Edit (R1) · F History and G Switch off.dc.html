@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0B0E; }
+  a { color: #5C86C9; text-decoration: none; }
+  a:hover { color: #6C95D8; }
+  :root {
+    --bg:#121217; --surface:#1E1F26; --surface-rail:#181920; --surface-sunken:#16171D;
+    --elevated:#2D2E35; --elevated-hover:#34353D; --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-dim:#34507D; --danger:#C6533F; --success:#6FA368; --warning:#E0913C;
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:var(--fg);padding:40px;background:#0B0B0E;min-height:100vh;display:flex;flex-direction:column;gap:64px;">
+
+  <section style="max-width:1320px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0B0B0E;background:#5C86C9;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:var(--fg-faint);">collection edit &middot; canvas 4 of 4 &middot; &sect;F history and revert + &sect;G switch off &middot; 2026-10-09</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:32px;margin:0 0 12px;line-height:1.25;">History is a fourth tab: one line per thing you did, newest first, each one undoable from today.</h1>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:var(--fg-body);margin:0 0 12px;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Design's call &mdash; a tab, <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Cards &middot; Sets &middot; Proxies &middot; History</span>, at <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">/collection/history</span>.</b> It's a place in the collection, reached and left the way the other three are, and Back is a route change (R1 call 4). It joins the <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">(list)</span> group, so the strip persists, and <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">placeFromPathname</span> gains <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">"history"</span>. A link from the stats line was the alternative. It would put the only way to undo an upload behind a 12px mono phrase, and the phone has no stats line at all. History is <i>absent, not disabled</i> on an empty collection with no entries, the same rule as Sets.</p>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:var(--fg-body);margin:0;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">An entry is one row: when, what kind, what changed, and Revert.</b> Its kind is a fixed-width mono tag (150px desktop), wide enough for the longest kind and for one more later (<span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">From Shopping</span>, sub-project 4, drawn ghosted). The summary is always <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">+N &middot; &minus;N copies across M cards</span>, and it expands to every card. A revert and the entry it undid link to each other. Either side drops its link once the other ages out, but keeps its words.</p>
+  </section>
+
+  <!-- F1 desktop list -->
+  <section id="f1" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">F1 &middot; <span style="color:var(--accent);">1300 &middot; every entry kind &middot; one expanded &middot; a reverted entry and its revert &middot; a revert of an aged-out entry &middot; a revert in flight &middot; the 90-day edge</span></div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="width:1300px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);display:flex;">
+        <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);"></div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding:28px 34px 0;">
+            <div>
+              <p style="margin:0;font-family:'Cinzel',serif;font-size:30px;font-weight:700;line-height:45px;">Collection</p>
+              <div style="margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:18px;color:var(--fg-faint);">4,500 cards &middot; 2,929 unique &middot; last updated today</div>
+            </div>
+            <div style="display:flex;gap:10px;">
+              <span style="height:38px;display:inline-flex;align-items:center;gap:6px;padding:0 16px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;color:var(--fg-body);">&#8635; Upload a file</span>
+              <span style="height:38px;display:inline-flex;align-items:center;gap:6px;padding:0 16px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;color:var(--fg-body);">+ Add cards</span>
+            </div>
+          </div>
+          <div style="margin-top:14px;height:40px;display:flex;align-items:stretch;gap:4px;padding:0 24px;border-bottom:1px solid var(--border);">
+            <span style="display:flex;align-items:center;padding:0 10px;font-size:14px;color:var(--fg-muted);">Cards</span>
+            <span style="display:flex;align-items:center;padding:0 10px;font-size:14px;color:var(--fg-muted);">Sets</span>
+            <span style="display:flex;align-items:center;padding:0 10px;font-size:14px;color:var(--fg-muted);">Proxies</span>
+            <span style="display:flex;align-items:center;padding:0 10px;font-size:14px;font-weight:600;box-shadow:inset 0 -2px 0 var(--accent);">History</span>
+          </div>
+          <div style="max-width:900px;padding:20px 34px 32px;">
+            <h1 style="margin:0;font-family:'Cinzel',serif;font-size:28px;line-height:42px;font-weight:400;">Changes to your collection</h1>
+            <div style="margin-top:4px;margin-bottom:20px;font-size:13px;color:var(--fg-muted);">Every upload and edit from the last 90 days. Revert any of them. It's undone from today.</div>
+            <sc-for list="{{ days }}" as="day" hint-placeholder-count="3">
+              <div style="margin-bottom:18px;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);padding:0 0 8px;border-bottom:1px solid var(--border);">{{ day.label }}</div>
+                <sc-for list="{{ day.entries }}" as="e" hint-placeholder-count="2">
+                  <div style="border-bottom:1px solid var(--border);opacity:{{ e.op }};">
+                    <div style="display:grid;grid-template-columns:56px 150px minmax(0,1fr) auto;align-items:center;gap:16px;min-height:60px;padding:8px 0;">
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">{{ e.time }}</span>
+                      <span style="justify-self:start;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:{{ e.tagInk }};border:1px {{ e.tagLine }} {{ e.tagInk }};border-radius:4px;padding:3px 7px;white-space:nowrap;">{{ e.kind }}</span>
+                      <span style="min-width:0;display:flex;flex-direction:column;gap:3px;">
+                        <span style="font-size:14px;color:{{ e.titleInk }};">{{ e.title }} <span style="font-size:12px;color:var(--fg-faint);">{{ e.chev }}</span></span>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);"><span style="color:var(--success);">{{ e.up }}</span> {{ e.sep }} <span style="color:var(--fg-body);">{{ e.down }}</span> {{ e.across }}</span>
+                        <sc-if value="{{ e.hasLink }}" hint-placeholder-val="{{ false }}"><span style="font-size:12.5px;color:var(--fg-muted);">{{ e.linkPre }} <span style="color:var(--accent);text-decoration:underline;text-underline-offset:2px;">{{ e.link }}</span></span></sc-if>
+                        <sc-if value="{{ e.hasNote }}" hint-placeholder-val="{{ false }}"><span style="font-size:12.5px;color:var(--fg-muted);">{{ e.note }}</span></sc-if>
+                      </span>
+                      <span style="font-size:13px;color:{{ e.actInk }};{{ e.actBox }}">{{ e.act }}</span>
+                    </div>
+                    <sc-if value="{{ e.open }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin:0 0 14px 222px;border-radius:10px;background:var(--surface);border:1px solid var(--border);padding:6px 14px;">
+                        <sc-for list="{{ e.cards }}" as="c" hint-placeholder-count="3">
+                          <div style="display:flex;align-items:center;gap:12px;min-height:36px;border-bottom:1px solid var(--border);">
+                            <span style="flex:1;font-size:13.5px;">{{ c.name }}</span>
+                            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ c.set }}</span>
+                            <span style="width:60px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--success);">{{ c.delta }}</span>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+            <div style="margin-top:6px;display:flex;align-items:center;gap:12px;padding:16px 0;font-size:13px;color:var(--fg-muted);border-top:1px dashed var(--border-dashed);">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">11 JUL</span>
+              History keeps 90 days. Changes from before 11 July have aged out, but your cards haven't. They're all still in your collection.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="max-width:1300px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The page head is Sets' and Proxies' shape (R2 &sect;Q1): an h1 at 28px directly under the strip, in a 900px column anchored at 34. Entries group under a mono day label. The whole row is the disclosure button (<span style="font-family:'IBM Plex Mono',monospace;">aria-expanded</span>). Revert is a separate 32px ghost button at the trailing edge, never inside it. <b style="color:var(--fg-body);font-weight:600;">Reverted</b>: the tag stays, the title goes to <span style="font-family:'IBM Plex Mono',monospace;">--fg-muted</span>, a link line names the revert, and the Revert slot reads <span style="font-family:'IBM Plex Mono',monospace;">Reverted</span> in faint text. It isn't a control. <b style="color:var(--fg-body);font-weight:600;">Revert</b> entries read <span style="font-family:'IBM Plex Mono',monospace;">Undid &hellip;</span> and are revertible themselves. When the entry a revert undid has aged out, the line reads <span style="font-family:'IBM Plex Mono',monospace;">Undid a change from before 11 July</span> with no link. <b style="color:var(--fg-body);font-weight:600;">Pending</b>: the row holds its height at .55, and its trailing slot reads <span style="font-family:'IBM Plex Mono',monospace;">Reverting&hellip;</span>. The foot names the date history reaches back to, so the list never just ends.</div>
+    </div>
+  </section>
+
+  <!-- F2 phone + empty + long -->
+  <section id="f2" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">F2 &middot; F3 &middot; F0 &middot; <span style="color:var(--accent);">390 list &middot; a Replace that touched 412 cards, expanded &middot; empty history</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">F2 &middot; 390</div>
+        <div style="width:390px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--bg);">
+          <div style="height:48px;display:flex;align-items:stretch;gap:2px;padding:0 4px 0 8px;border-bottom:1px solid var(--border);">
+            <span style="display:flex;align-items:center;padding:0 10px;font-size:14px;color:var(--fg-muted);">Cards</span>
+            <span style="display:flex;align-items:center;padding:0 10px;font-size:14px;color:var(--fg-muted);">Sets</span>
+            <span style="display:flex;align-items:center;padding:0 10px;font-size:14px;color:var(--fg-muted);">Proxies</span>
+            <span style="display:flex;align-items:center;padding:0 10px;font-size:14px;font-weight:600;box-shadow:inset 0 -2px 0 var(--accent);">History</span>
+            <span style="margin-left:auto;display:flex;align-items:center;padding:0 10px;font-size:13px;color:var(--accent);">+ Add</span>
+          </div>
+          <div style="padding:16px 18px;">
+            <h1 style="margin:0;font-family:'Cinzel',serif;font-size:22px;font-weight:400;">Changes to your collection</h1>
+            <div style="margin:4px 0 16px;font-size:12.5px;color:var(--fg-muted);">The last 90 days. Revert any of them.</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);padding-bottom:8px;border-bottom:1px solid var(--border);">Today</div>
+            <sc-for list="{{ phoneEntries }}" as="e" hint-placeholder-count="4">
+              <div style="display:flex;gap:10px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border);">
+                <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;">
+                  <span style="display:flex;align-items:center;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:{{ e.tagInk }};border:1px solid {{ e.tagInk }};border-radius:4px;padding:2px 6px;">{{ e.kind }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ e.time }}</span></span>
+                  <span style="font-size:14px;color:{{ e.titleInk }};">{{ e.title }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ e.fig }}</span>
+                  <sc-if value="{{ e.hasLink }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;color:var(--accent);">{{ e.link }}</span></sc-if>
+                </span>
+                <span style="height:44px;display:flex;align-items:center;padding:0 12px;border-radius:9px;font-size:13px;color:{{ e.actInk }};{{ e.actBox }}">{{ e.act }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">On the phone the four-column row stacks: tag and time on one line, then the title and figures, with Revert as a 44px target on the right. Tapping the row expands it to its cards, as on desktop.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">F3 &middot; 760 column &middot; a Replace that touched 412 cards</div>
+        <div style="width:760px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);padding:18px 24px;">
+          <div style="display:grid;grid-template-columns:56px 150px minmax(0,1fr) auto;align-items:center;gap:16px;min-height:60px;border-bottom:1px solid var(--border);">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">09:14</span>
+            <span style="justify-self:start;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--warning);border:1px solid var(--warning);border-radius:4px;padding:3px 7px;">Replace upload</span>
+            <span style="display:flex;flex-direction:column;gap:3px;"><span style="font-size:14px;">manabox-oct.csv <span style="font-size:12px;color:var(--fg-faint);">&#9652;</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);"><span style="color:var(--success);">+64</span> &middot; &minus;150 copies across 412 cards</span></span>
+            <span style="padding:7px 14px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;">Revert</span>
+          </div>
+          <div style="padding:14px 0 0 0;display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <sc-for list="{{ groupChips }}" as="g" hint-placeholder-count="4">
+                <span style="height:30px;display:inline-flex;align-items:center;padding:0 12px;border-radius:999px;border:1px solid var(--border-strong);background:{{ g.bg }};color:{{ g.ink }};font-size:12.5px;">{{ g.label }}</span>
+              </sc-for>
+              <span style="margin-left:auto;width:220px;height:30px;border:1px solid var(--border-strong);border-radius:8px;background:var(--surface-sunken);display:flex;align-items:center;padding:0 10px;font-size:12.5px;color:var(--fg-faint);">&#8981; Find a card in this change</span>
+            </div>
+            <div style="border-radius:10px;background:var(--surface);border:1px solid var(--border);padding:4px 14px;">
+              <sc-for list="{{ longCards }}" as="c" hint-placeholder-count="6">
+                <div style="display:flex;align-items:center;gap:12px;min-height:36px;border-bottom:1px solid var(--border);">
+                  <span style="flex:1;font-size:13.5px;">{{ c.name }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ c.set }}</span>
+                  <span style="width:90px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);">{{ c.delta }}</span>
+                </div>
+              </sc-for>
+              <div style="min-height:40px;display:flex;align-items:center;font-size:13px;color:var(--accent);">Show 30 more of 112</div>
+            </div>
+          </div>
+        </div>
+        <div style="width:760px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">A long entry opens on its first group, with chips for <span style="font-family:'IBM Plex Mono',monospace;">Left &middot; Went down &middot; Went up &middot; New</span>. That's the same four words as A2, so a Replace reads the same before and after. It shows 8 rows, then <span style="font-family:'IBM Plex Mono',monospace;">Show 30 more</span> in steps, never all 412 at once. The find field filters within the entry. Rows read <span style="font-family:'IBM Plex Mono',monospace;">before &rarr; after</span> for uploads and <span style="font-family:'IBM Plex Mono',monospace;">+N / &minus;N</span> for hand edits. A short entry (under 9 cards) skips the chips and lists everything, as in F1.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">F0 &middot; empty history, 390</div>
+        <div style="width:390px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--bg);">
+          <div style="height:48px;display:flex;align-items:stretch;gap:2px;padding:0 4px 0 8px;border-bottom:1px solid var(--border);">
+            <span style="display:flex;align-items:center;padding:0 10px;font-size:14px;color:var(--fg-muted);">Cards</span><span style="display:flex;align-items:center;padding:0 10px;font-size:14px;color:var(--fg-muted);">Sets</span><span style="display:flex;align-items:center;padding:0 10px;font-size:14px;color:var(--fg-muted);">Proxies</span><span style="display:flex;align-items:center;padding:0 10px;font-size:14px;font-weight:600;box-shadow:inset 0 -2px 0 var(--accent);">History</span>
+          </div>
+          <div style="padding:16px 18px 30px;">
+            <h1 style="margin:0;font-family:'Cinzel',serif;font-size:22px;font-weight:400;">Changes to your collection</h1>
+            <div style="margin-top:28px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;">
+              <span style="width:44px;height:44px;border-radius:50%;border:1.5px dashed var(--border-dashed);display:flex;align-items:center;justify-content:center;color:var(--fg-faint);">&#8635;</span>
+              <span style="font-family:'Cinzel',serif;font-size:18px;font-weight:600;">Nothing's changed yet</span>
+              <span style="font-size:13.5px;line-height:1.6;color:var(--fg-body);max-width:300px;">Uploads and edits from 9 October on show up here, ready to undo. Your collection from before that has no history to show.</span>
+            </div>
+          </div>
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">This is the state for a player whose collection predates the ledger. The date is the ship date, read from the earliest possible entry, never typed in. Once the ledger is past 90 days old, the sentence becomes the 90-day foot, because &ldquo;from before that&rdquo; is then aging, not absence.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- F4 revert confirm -->
+  <section id="f4" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">F4 &middot; F5 &middot; F6 &middot; F7 &middot; <span style="color:var(--accent);">revert confirm when today matches &middot; when it doesn't &middot; with decks (E) &middot; pending &middot; a card left the catalog</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">F4 &middot; desktop &middot; today matches the entry</div>
+        <div style="width:480px;border-radius:14px;background:var(--surface);border:1px solid var(--border-strong);box-shadow:0 24px 60px rgba(0,0,0,0.55);padding:24px 24px 20px;display:flex;flex-direction:column;gap:14px;">
+          <h3 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:20px;">Revert &ldquo;Added in the app&rdquo;?</h3>
+          <p style="margin:0;font-size:13.5px;line-height:1.55;color:var(--fg-body);">From 8 Oct, 21:10. Reverting this changes 8 copies.</p>
+          <div style="border-radius:10px;background:var(--bg);border:1px solid var(--border);padding:4px 14px;">
+            <sc-for list="{{ revertSame }}" as="c" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:12px;min-height:36px;border-bottom:1px solid var(--border);"><span style="flex:1;font-size:13.5px;">{{ c.name }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);">{{ c.now }}</span></div>
+            </sc-for>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;">
+            <span style="padding:10px 18px;border:1px solid var(--accent);box-shadow:0 0 0 2px var(--accent);border-radius:8px;font-size:14px;">Cancel</span>
+            <span style="padding:10px 18px;border-radius:8px;background:var(--elevated);border:1px solid var(--border-strong);font-size:14px;font-weight:600;">Revert</span>
+          </div>
+        </div>
+        <div style="width:480px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The list is what the revert will do <i>now</i>, as computed against today's collection, not the entry's own deltas. When the two agree, one column is enough. A revert that adds back (undoing a removal) lists <span style="font-family:'IBM Plex Mono',monospace;">+N</span>.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">F5 &middot; 390 sheet &middot; today differs</div>
+        <div style="width:390px;height:600px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--bg);position:relative;">
+          <div style="position:absolute;inset:0;background:rgba(5,5,8,0.62);"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;border-radius:16px 16px 0 0;background:var(--surface);border-top:1px solid var(--border-strong);padding:10px 18px 18px;display:flex;flex-direction:column;gap:12px;">
+            <span style="align-self:center;width:36px;height:4px;border-radius:2px;background:var(--border-dashed);"></span>
+            <h3 style="margin:4px 0 0;font-family:'Cinzel',serif;font-weight:700;font-size:18px;">Revert &ldquo;Added in the app&rdquo;?</h3>
+            <div style="display:flex;gap:10px;border-radius:8px;background:var(--elevated-hover);border:1px solid var(--border-strong);border-left:3px solid var(--warning);padding:10px 12px;">
+              <span style="color:var(--warning);">&#9888;</span>
+              <span style="font-size:12.5px;line-height:1.5;color:var(--fg-body);"><b style="color:var(--fg);font-weight:600;">This does less than the original.</b> Some of these cards have changed since, and a revert never takes you below zero.</span>
+            </div>
+            <div style="border-radius:10px;background:var(--bg);border:1px solid var(--border);padding:4px 14px;">
+              <div style="display:flex;gap:12px;min-height:28px;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);border-bottom:1px solid var(--border);"><span style="flex:1;">Card</span><span style="width:52px;text-align:right;">Then</span><span style="width:52px;text-align:right;">Now</span></div>
+              <sc-for list="{{ revertDiff }}" as="c" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:12px;min-height:44px;border-bottom:1px solid var(--border);">
+                  <span style="flex:1;display:flex;flex-direction:column;gap:1px;"><span style="font-size:13.5px;">{{ c.name }}</span><span style="font-size:11.5px;color:var(--fg-muted);">{{ c.why }}</span></span>
+                  <span style="width:52px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">{{ c.then }}</span>
+                  <span style="width:52px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12px;color:{{ c.nowInk }};">{{ c.now }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:2px;">
+              <span style="flex:1;height:46px;border:1px solid var(--accent);box-shadow:0 0 0 2px var(--accent);border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;">Cancel</span>
+              <span style="flex:1;height:46px;border-radius:10px;background:var(--elevated);border:1px solid var(--border-strong);display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;">Revert what's left</span>
+            </div>
+          </div>
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">When any card's <i>now</i> differs from its <i>then</i>, the confirm gets a <span style="font-family:'IBM Plex Mono',monospace;">Then / Now</span> pair of columns, a short reason per row, the banner, and the verb <span style="font-family:'IBM Plex Mono',monospace;">Revert what's left</span>. Rows where now is 0 still show, with the reason. If every row is 0, there's nothing left to undo: the dialog says so, and the entry offers no Revert.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">F6 &middot; F7 &middot; decks, pending, and a catalog failure</div>
+        <div style="width:420px;display:flex;flex-direction:column;gap:12px;">
+          <div style="border-radius:10px;background:var(--surface);border:1px solid var(--border-strong);padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.7;color:var(--fg-muted);">Revert &rarr; <span style="color:var(--fg);">Checking decks&hellip;</span> on the dialog's button &rarr; any deck short? &rarr; the dialog becomes E3 (<span style="color:var(--fg);">Reverting leaves 9 decks short</span>, with Revert anyway) &rarr; <span style="color:var(--fg);">Reverting&hellip;</span> &rarr; closes. The new revert entry lands at the top and the original turns <span style="color:var(--fg);">Reverted</span>.</div>
+          <div style="display:grid;grid-template-columns:56px 1fr auto;gap:12px;align-items:center;min-height:60px;border-radius:10px;background:var(--bg);border:1px solid var(--border);padding:0 14px;opacity:0.55;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">21:10</span>
+            <span style="font-size:14px;">Added in the app &middot; 5 cards</span>
+            <span aria-busy="true" style="font-size:13px;color:var(--fg-muted);">Reverting&hellip;</span>
+          </div>
+          <div role="alert" style="border-radius:14px;background:var(--surface);border:1px solid var(--border-strong);padding:20px 22px;display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;gap:10px;border-radius:8px;background:var(--elevated-hover);border:1px solid var(--border-strong);border-left:3px solid var(--warning);padding:12px 14px;">
+              <span style="color:var(--warning);">&#9888;</span>
+              <span style="display:flex;flex-direction:column;gap:6px;"><span style="font-size:14px;font-weight:600;">We couldn't revert this</span><span style="font-size:12.5px;line-height:1.5;color:var(--fg-body);"><b style="color:var(--fg);font-weight:600;">Lotus Bloom</b> (TSP &middot; #1) has been removed from the card catalog since. A revert can't put back a card that no longer exists. Nothing was changed.</span></span>
+            </div>
+            <div style="display:flex;justify-content:flex-end;"><span style="padding:10px 18px;border-radius:8px;border:1px solid var(--border-strong);font-size:14px;">Close</span></div>
+          </div>
+        </div>
+        <div style="width:420px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The failure replaces the confirm's body in the same dialog and names each card that blocks it (at most 3, then <span style="font-family:'IBM Plex Mono',monospace;">and N more</span>). There's no partial revert and no retry, because a retry would fail the same way. The entry keeps its Revert, since a catalog re-ingest could restore the card.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- G -->
+  <section id="g" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--warning);padding-top:18px;max-width:1300px;">G &middot; <span style="color:var(--warning);">COLLECTION_EDIT_ENABLED off &middot; everything is main, drawn so the state list is complete</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--warning);">head &middot; 1300 and 390</div>
+        <div style="width:640px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;padding:28px 34px 0;"><div><div style="font-family:'Cinzel',serif;font-size:30px;font-weight:700;line-height:45px;">Collection</div><div style="margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">4,492 cards &middot; 2,926 unique</div></div><span style="height:38px;display:inline-flex;align-items:center;gap:6px;padding:0 16px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;color:var(--fg-body);">&#8635; Replace collection</span></div>
+          <div style="margin-top:14px;height:40px;display:flex;gap:4px;padding:0 24px;border-bottom:1px solid var(--border);"><span style="display:flex;align-items:center;padding:0 10px;font-size:14px;font-weight:600;box-shadow:inset 0 -2px 0 var(--accent);">Cards</span><span style="display:flex;align-items:center;padding:0 10px;font-size:14px;color:var(--fg-muted);">Sets</span><span style="display:flex;align-items:center;padding:0 10px;font-size:14px;color:var(--fg-muted);">Proxies</span></div>
+          <div style="margin:16px;width:390px;height:48px;display:flex;align-items:stretch;gap:2px;padding:0 4px 0 8px;border:1px solid var(--border-strong);border-radius:10px;">
+            <span style="display:flex;align-items:center;padding:0 11px;font-size:14px;font-weight:600;box-shadow:inset 0 -2px 0 var(--accent);">Cards</span><span style="display:flex;align-items:center;padding:0 11px;font-size:14px;color:var(--fg-muted);">Sets</span><span style="display:flex;align-items:center;padding:0 11px;font-size:14px;color:var(--fg-muted);">Proxies</span><span style="margin-left:auto;display:flex;align-items:center;padding:0 10px;font-size:13px;color:var(--accent);">&#8635; Replace</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--warning);">what is absent</div>
+        <div style="width:520px;border:1px dashed var(--border-dashed);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.6;color:var(--fg-body);">
+          <span><b style="color:var(--fg);font-weight:600;">A</b> &mdash; no step 2. Upload is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">main</span>: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">STEP 2 OF 3</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Review before you replace</span>, and the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">onlyIfEmpty</span> first-import skip.</span>
+          <span><b style="color:var(--fg);font-weight:600;">B</b> &mdash; no Add cards anywhere. The control reads <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Replace collection</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&#8635; Replace</span>. The empty state is the single <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Upload your CSV</span>, and first run has two buttons.</span>
+          <span><b style="color:var(--fg);font-weight:600;">C</b> &mdash; the owned line has no <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Edit copies</span>, there's no Your copies block, and the teaser foot row is as shipped.</span>
+          <span><b style="color:var(--fg);font-weight:600;">D</b> &mdash; no &#8943; on rows or tiles, and no reserved slot either: row widths are <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">main</span>'s.</span>
+          <span><b style="color:var(--fg);font-weight:600;">E</b> &mdash; never mounts, since nothing lowers.</span>
+          <span><b style="color:var(--fg);font-weight:600;">F</b> &mdash; no History tab. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/collection/history</span> 404s. The ledger isn't written, because <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">applyCollectionDelta</span> is never called.</span>
+          <span><b style="color:var(--fg);font-weight:600;">About</b> &mdash; the five entries carry <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">switch: 'COLLECTION_EDIT_ENABLED'</span> and don't render. The <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">import</span> entry keeps its shipped &ldquo;replaces, doesn't add&rdquo; line.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const tag = (ink, dashed) => ({ tagInk: ink, tagLine: dashed ? "dashed" : "solid" });
+    const revertBtn = { act: "Revert", actInk: "var(--fg)", actBox: "padding:7px 14px;border:1px solid var(--border-strong);border-radius:8px;" };
+    const base = { op: 1, titleInk: "var(--fg)", chev: "▾", open: false, cards: [], hasLink: false, hasNote: false, sep: "·", ...revertBtn };
+    return {
+      days: [
+        { label: "Today · 9 Oct", entries: [
+          { ...base, time: "14:02", kind: "Revert", ...tag("var(--fg-muted)"), title: "Undid “Removed”", up: "+1", down: "", sep: "", across: "copy of 1 card", hasLink: true, linkPre: "Undid", link: "Removed Rhystic Study, 13:40" },
+          { ...base, time: "13:40", kind: "Removed", ...tag("var(--danger)"), title: "Rhystic Study", up: "", down: "−1", sep: "", across: "copy of 1 card", titleInk: "var(--fg-muted)", hasLink: true, linkPre: "Reverted by", link: "the revert at 14:02", act: "Reverted", actInk: "var(--fg-faint)", actBox: "" },
+          { ...base, time: "11:26", kind: "Edited in details", ...tag("var(--accent)"), title: "Sol Ring · moved 1, added 1 foil", up: "+2", down: "−1", across: "copies across 1 card" },
+          { ...base, time: "09:14", kind: "Replace upload", ...tag("var(--warning)"), title: "manabox-oct.csv", up: "+64", down: "−150", across: "copies across 412 cards", op: 0.55, act: "Reverting…", actInk: "var(--fg-muted)", actBox: "" },
+        ]},
+        { label: "Yesterday · 8 Oct", entries: [
+          { ...base, time: "21:10", kind: "Added in the app", ...tag("var(--success)"), title: "5 cards", up: "+8", down: "", sep: "", across: "copies across 5 cards", chev: "▴", open: true, cards: [
+            { name: "Sol Ring", set: "C21 · #263", delta: "+2" }, { name: "Sol Ring", set: "SLD · #1512 · foil", delta: "+1" }, { name: "Cultivate", set: "M21 · #177", delta: "+1" }, { name: "Rhystic Study", set: "JMP · #169", delta: "+1" }, { name: "Swords to Plowshares", set: "STA · #10 · foil", delta: "+3" }] },
+          { ...base, time: "18:31", kind: "Add upload", ...tag("var(--success)"), title: "dsk-prerelease.csv", up: "+118", down: "", sep: "", across: "copies across 91 cards" },
+          { ...base, time: "—", kind: "From Shopping", ...tag("var(--fg-locked)", true), title: "reserved for sub-project 4", up: "", down: "", sep: "", across: "", titleInk: "var(--fg-locked)", act: "", actBox: "" },
+        ]},
+        { label: "12 Sep", entries: [
+          { ...base, time: "10:05", kind: "Revert", ...tag("var(--fg-muted)"), title: "Undid a change from before 11 July", up: "+3", down: "", sep: "", across: "copies of 2 cards", hasNote: true, note: "That change has aged out of history." },
+        ]},
+      ],
+      phoneEntries: [
+        { time: "14:02", kind: "Revert", tagInk: "var(--fg-muted)", title: "Undid “Removed”", fig: "+1 copy of 1 card", titleInk: "var(--fg)", hasLink: true, link: "Undid: Removed Rhystic Study", ...revertBtn },
+        { time: "13:40", kind: "Removed", tagInk: "var(--danger)", title: "Rhystic Study", fig: "−1 copy of 1 card", titleInk: "var(--fg-muted)", hasLink: true, link: "Reverted at 14:02", act: "Reverted", actInk: "var(--fg-faint)", actBox: "" },
+        { time: "11:26", kind: "Edited in details", tagInk: "var(--accent)", title: "Sol Ring · moved 1, added 1 foil", fig: "+2 · −1 copies", titleInk: "var(--fg)", hasLink: false, link: "", ...revertBtn },
+        { time: "09:14", kind: "Replace upload", tagInk: "var(--warning)", title: "manabox-oct.csv", fig: "+64 · −150 across 412 cards", titleInk: "var(--fg)", hasLink: false, link: "", ...revertBtn },
+      ],
+      groupChips: [
+        { label: "Left · 112", bg: "var(--accent)", ink: "var(--bg)" },
+        { label: "Went down · 38", bg: "var(--elevated)", ink: "var(--fg)" },
+        { label: "Went up · 22", bg: "var(--elevated)", ink: "var(--fg)" },
+        { label: "New · 240", bg: "var(--elevated)", ink: "var(--fg)" },
+      ],
+      longCards: [
+        { name: "Thrasios, Triton Hero", set: "C16 · #46", delta: "×1 → 0" },
+        { name: "Basalt Monolith", set: "CMM · #368", delta: "×1 → 0" },
+        { name: "Ornithopter", set: "M21 · #232", delta: "×2 → 0" },
+        { name: "Llanowar Elves", set: "DOM · #168", delta: "×4 → 0" },
+        { name: "Mox Amber", set: "DOM · #224", delta: "×1 → 0" },
+        { name: "Elvish Mystic", set: "M14 · #169", delta: "×3 → 0" },
+      ],
+      revertSame: [
+        { name: "Sol Ring · C21 #263", now: "−2" }, { name: "Sol Ring · SLD #1512 foil", now: "−1" }, { name: "Cultivate · M21 #177", now: "−1" }, { name: "Rhystic Study · JMP #169", now: "−1" },
+      ],
+      revertDiff: [
+        { name: "Swords to Plowshares", why: "2 removed since", then: "+3", now: "−1", nowInk: "var(--fg)" },
+        { name: "Rhystic Study", why: "removed since", then: "+1", now: "0", nowInk: "var(--fg-faint)" },
+        { name: "Sol Ring · C21", why: "", then: "+2", now: "−2", nowInk: "var(--fg)" },
+        { name: "Cultivate", why: "", then: "+1", now: "−1", nowInk: "var(--fg)" },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
