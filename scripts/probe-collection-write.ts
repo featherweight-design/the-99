@@ -27,7 +27,7 @@ import ws from "ws";
 import { applyCollectionChange, type ChangeResult } from "../src/lib/collection/write";
 import { collectionGeneration } from "../src/lib/recs/store";
 import { commitVersion } from "../src/lib/decks/versions";
-import { editsSinceUpload } from "../src/lib/collection/history";
+import { editsSinceUpload, getHistoryEntry, listHistory } from "../src/lib/collection/history";
 import { replaceCollection } from "../src/lib/collection/import";
 
 neonConfig.webSocketConstructor = ws;
@@ -242,6 +242,50 @@ async function main() {
     const legacyLater = await editsSinceUpload(USER);
     check("after a switch-off upload, edits count from its confirm time, on one clock",
       legacyAfter === 0 && legacyLater === 1, `${legacyAfter} then ${legacyLater}`);
+
+    // ---- 7. History reads ------------------------------------------------------------------
+    const page = await listHistory(USER);
+    const seqs = page.entries.map((e) => e.seq);
+    check("history lists newest first, inside the window, and never a pruned entry",
+      seqs.every((x, i) => i === 0 || x < seqs[i - 1]) && !page.entries.some((e) => e.id === addId),
+      `${page.entries.length} entries; seqs ${seqs.slice(0, 5).join(",")}…`);
+    const older = await listHistory(USER, { before: seqs[1] });
+    check("a page read from a cursor holds only what is older than it",
+      older.entries.length === page.entries.length - 2 && older.entries.every((e) => e.seq < seqs[1]),
+      `${older.entries.length} of ${page.entries.length}`);
+    const reverted = page.entries.find((e) => e.id === noop);
+    const itsRevert = page.entries.find((e) => e.revertsId === noop);
+    check("a reverted entry and its revert link to each other while both are in the window",
+      reverted?.revertedBy === itsRevert?.id && reverted?.revertedByVisible === true && itsRevert?.revertsVisible === true,
+      JSON.stringify({ reverted: reverted?.revertedByVisible, revert: itsRevert?.revertsVisible }));
+    await pool.query("update collection_history set created_at = now() - interval '91 days' where id = $1", [noop]);
+    const later = (await listHistory(USER)).entries.find((e) => e.revertsId === noop);
+    check("once the reverted entry ages out, its revert still reads as one, with no link drawn",
+      later?.revertsId === noop && later?.revertsVisible === false && await getHistoryEntry(USER, noop) === null,
+      JSON.stringify({ revertsId: later?.revertsId, visible: later?.revertsVisible }));
+    // A pruned entry is never listed or linked, even inside the window: null one directly, since
+    // the prune itself only ever reaches entries the window already hides.
+    const target2 = randomUUID();
+    await applyCollectionChange(USER, { kind: "add", items: [{ ...at(C), condition: null, quantity: 1 }] }, { id: target2 });
+    await applyCollectionChange(USER, { kind: "revert", entryId: target2 }, { id: randomUUID() });
+    await pool.query("update collection_history set rows = null, pruned_at = now() where id = $1", [target2]);
+    const afterPrune = await listHistory(USER);
+    const linkToPruned = afterPrune.entries.find((e) => e.revertsId === target2);
+    check("an entry pruned inside the window is neither listed nor linked to",
+      !afterPrune.entries.some((e) => e.id === target2) && linkToPruned?.revertsVisible === false,
+      JSON.stringify({ listed: afterPrune.entries.some((e) => e.id === target2), visible: linkToPruned?.revertsVisible }));
+    const removal = page.entries.find((e) => e.id === lowerId);
+    check("an edit that ends every row at nothing reads as a removal in the list",
+      removal?.removesOnly === true && page.entries.filter((e) => e.kind === "add").every((e) => !e.removesOnly),
+      JSON.stringify({ removesOnly: removal?.removesOnly }));
+    const reusedId = await applyCollectionChange(USER, { kind: "revert", entryId: target2 }, { id: target2 })
+      .then((r) => r.status, (e: Error) => e.message);
+    check("a revert sent under its own target's id is refused, never answered as already applied",
+      reusedId === "collection change id is already in use", reusedId);
+    const own = await getHistoryEntry(USER, page.entries[0].id);
+    check("one entry reads whole for its owner and not at all for anyone else",
+      own !== null && own.rows.length === own.rowCount && await getHistoryEntry(`${USER}-other`, page.entries[0].id) === null,
+      `${own?.rows.length} rows`);
   } finally {
     // One statement for the ledger: its two self-references are checked at the statement's end.
     await pool.query("delete from collection_history where user_id = $1", [USER]);

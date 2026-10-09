@@ -284,6 +284,20 @@ export function warningCovers(acknowledged: ShortDeck[], now: ShortDeck[]): bool
     a.deckId === d.deckId && a.oracleId === d.oracleId && a.short >= d.short));
 }
 
+/**
+ * A deck warning as a client sends it back with `confirmShort`. A Server Action's argument types
+ * are a compile-time claim, so each entry is checked; a malformed one confirms nothing, and the
+ * save then answers with the warning again.
+ */
+export function parseShortDecks(value: unknown): ShortDeck[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((d): d is ShortDeck =>
+    typeof d === "object" && d !== null
+    && typeof d.deckId === "string" && typeof d.oracleId === "string"
+    && typeof d.deckName === "string" && typeof d.cardName === "string"
+    && Number.isInteger(d.short));
+}
+
 /** The decks a change leaves shorter on a card than they were, and by how many. */
 export function newlyShort(
   before: Map<string, Pick<Availability, "owned" | "claims">>,
@@ -381,7 +395,13 @@ export async function applyCollectionChange(
         .returning({ seq: collectionHistory.seq });
       if (!claimed) {
         const [twin] = await tx.select().from(collectionHistory).where(eq(collectionHistory.id, opts.id));
-        if (twin?.userId === userId) {
+        // A retry only if the committed entry IS this action: same player, same kind, and for a
+        // revert the same target. Any other match is an id reused for a different action (a
+        // client bug, or a revert sent with its target's own id), and reporting the earlier
+        // entry as this one's success would claim a write that never happened.
+        const sameAction = twin?.userId === userId && twin.kind === entryKind(change)
+          && (change.kind !== "revert" || twin.revertsId === change.entryId);
+        if (sameAction) {
           throw new Refused({
             status: "alreadyApplied",
             entry: {
@@ -390,7 +410,7 @@ export async function applyCollectionChange(
             },
           });
         }
-        // Another player's id: never reported back, since that would confirm it exists.
+        // Never reported back as anything more specific: another player's id would confirm it exists.
         throw new Error("collection change id is already in use");
       }
 

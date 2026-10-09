@@ -19,7 +19,10 @@ vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {}, updateTag: () => {} }));
 vi.mock("next/server", () => ({ after: () => {} }));
 vi.mock("../../lib/collection/edit-flag", () => ({ collectionEditEnabled: () => stub.ledger }));
-vi.mock("../../lib/collection/write", () => ({ applyCollectionChange: stub.apply }));
+vi.mock("../../lib/collection/write", async (actual) => ({
+  ...(await actual<typeof import("../../lib/collection/write")>()),
+  applyCollectionChange: stub.apply,
+}));
 vi.mock("../../lib/collection/import", () => ({ replaceCollection: stub.replace, loadMatchInputs: vi.fn() }));
 vi.mock("../../lib/collection/history", () => ({ editsSinceUpload: async () => 4 }));
 vi.mock("../../lib/collection/invalidate", () => ({ invalidateCollectionReaders: stub.invalidate }));
