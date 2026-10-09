@@ -226,7 +226,10 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   committed deck returns `wouldShort` and writes nothing until it is resent with `confirmShort`.
   It also checks that a zero deletes the row, a write clears the player's scores and moves the
   generation token, an entry past 90 days is pruned and kept, and an oracle id the catalog lacks
-  is refused by name. It WRITES: every run mints its own `user_id` and deletes every row it made in
+  is refused by name. Its upload cases: a Replace preview (`dryRun`) names the committed deck the
+  upload would short and writes nothing, a double-confirmed Replace applies once and records an
+  `upload_replace` entry naming its upload, edits since the upload count from that entry, and an
+  Add upload adds to what is held. It WRITES: every run mints its own `user_id` and deletes every row it made in
   a `finally`, and it refuses production and staging by `neon.branch_id`. With the `expected`
   check and the deck check both disabled, five of its checks fail.
 

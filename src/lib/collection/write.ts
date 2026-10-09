@@ -9,6 +9,7 @@ import type { Availability } from "../decks/availability";
 import { allocateClaims } from "../decks/allocate";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import { mergeHolding, toCollectionItemValues, type PendingItem } from "./pending";
+import type { OwnedCounts } from "./arrivals";
 
 /**
  * THE COLLECTION WRITE PATH (collection foundation, plan `2026-10-09-collection-write-path.md`).
@@ -38,9 +39,6 @@ export type EditRow = CollectionItemIdentity & {
   expected?: number;
 };
 
-/** An item to add. `name` names the card if the catalog no longer holds it. */
-export type AddItem = PendingItem & { name?: string };
-
 export type CollectionChange =
   /**
    * The full new collection: an upload in Replace mode. With `uploadId`, that upload is stamped
@@ -48,7 +46,7 @@ export type CollectionChange =
    */
   | { kind: "replace"; items: PendingItem[]; uploadId?: string }
   /** Quantities added: an upload in Add mode (`uploadId`, stamped as above), or the Add cards sheet. */
-  | { kind: "add"; items: AddItem[]; uploadId?: string }
+  | { kind: "add"; items: PendingItem[]; uploadId?: string }
   /** Per-row new counts: card details, a row removed. */
   | { kind: "edit"; rows: EditRow[] }
   /**
@@ -67,6 +65,19 @@ export type ChangeOptions = {
   confirmShort?: ShortDeck[];
   /** Refuse when the player already owns anything (a first import's promise). */
   onlyIfEmpty?: boolean;
+  /**
+   * Run every step and roll it all back, answering `preview` with what the change would do: the
+   * rows it moves and every committed deck it would leave short. The preview a confirmation is
+   * drawn from, computed by the write itself so the two cannot disagree. The upload stamp rolls
+   * back with everything else, so an upload previewed is still unconfirmed.
+   */
+  dryRun?: boolean;
+  /**
+   * Also return the whole collection's copies per oracle id either side of the write, read under
+   * the lock, so they differ by exactly this write. What an upload's arrivals receipt compares;
+   * read outside the lock, another write could land between either read and this one.
+   */
+  ownedCounts?: boolean;
   /** Where the change came from, for history: `shopping:<deck id>`. Uploads set their own. */
   source?: string;
 };
@@ -90,7 +101,7 @@ export type AppliedEntry = {
 };
 
 export type ChangeResult =
-  | { status: "applied"; entry: AppliedEntry }
+  | { status: "applied"; entry: AppliedEntry; owned?: { before: OwnedCounts; after: OwnedCounts } }
   /** Nothing would change. No entry is written. */
   | { status: "unchanged" }
   /**
@@ -111,7 +122,9 @@ export type ChangeResult =
   /** The revert target is not the player's, aged out, or pruned. */
   | { status: "notFound" }
   /** The revert target was already reverted, by `by`. */
-  | { status: "alreadyReverted"; by: string };
+  | { status: "alreadyReverted"; by: string }
+  /** A `dryRun`: nothing was written. */
+  | { status: "preview"; raised: number; lowered: number; rows: HistoryRow[]; decks: ShortDeck[] };
 
 type EntryKind = (typeof collectionHistory.$inferSelect)["kind"];
 
@@ -156,7 +169,7 @@ export function normalizeItems<T extends PendingItem>(items: T[]): (Held & { nam
     const row: Held & { name?: string } = {
       oracleId: v.oracleId, setCode: v.setCode, collectorNumber: v.collectorNumber, finish: v.finish,
       quantity: v.quantity, scryfallId: v.scryfallId, condition: v.condition,
-      name: (items[i] as { name?: string }).name,
+      name: items[i].name,
     };
     const existing = byKey.get(keyOf(row));
     if (existing) mergeHolding(existing, row);
@@ -359,6 +372,10 @@ export async function applyCollectionChange(
           source: uploadId ? `csv_uploads:${uploadId}` : opts.source ?? null,
           raised: 0,
           lowered: 0,
+          // The clock at the insert, AFTER the per-user lock, so entries' times order as their
+          // writes did. `now()`, the column default, is frozen before the lock wait, and an entry
+          // queued behind a switch-off upload would read as older than it (`editsSinceUpload`).
+          createdAt: sql`clock_timestamp()`,
         })
         .onConflictDoNothing({ target: collectionHistory.id })
         .returning({ seq: collectionHistory.seq });
@@ -382,7 +399,11 @@ export async function applyCollectionChange(
       // never confirm one upload while recording another.
       if (uploadId) {
         const stamped = await tx.update(csvUploads)
-          .set({ confirmedAt: new Date() })
+          // The clock at the stamp, AFTER the per-user lock, so uploads' stamps order as their
+          // writes did. `now()` is frozen at the transaction's start, before the lock: two
+          // concurrent confirms would commit in one order and stamp in the other, and every
+          // reader of the newest upload (`editsSinceUpload`) would pick the wrong one.
+          .set({ confirmedAt: sql`clock_timestamp()` })
           .where(and(
             eq(csvUploads.id, uploadId),
             eq(csvUploads.userId, userId),
@@ -475,6 +496,7 @@ export async function applyCollectionChange(
 
       // ---- 5. The deck check brackets the write: claims before, the rows, claims after.
       const lowered = [...new Set(plan.filter((p) => qty(p.after) < qty(p.before)).map((p) => p.oracleId))];
+      const ownedBefore = opts.ownedCounts && !opts.dryRun ? await readOwnedCounts(tx, userId) : null;
       const claimsBefore = lowered.length > 0 ? await loadAvailability(userId, { oracleIds: lowered }, tx) : null;
 
       // ---- 6. The rows.
@@ -488,16 +510,18 @@ export async function applyCollectionChange(
         await writeRows(tx, userId, plan);
       }
 
+      const moves = countMoves(rows);
       if (claimsBefore) {
         const claimsAfter = await loadAvailability(userId, { oracleIds: lowered }, tx);
         const names = new Map(rows.map((r) => [r.oracleId, r.name]));
         const decks = newlyShort(claimsBefore, claimsAfter, lowered, names);
+        if (opts.dryRun) throw new Refused({ status: "preview", ...moves, rows, decks });
         if (decks.length > 0 && !warningCovers(opts.confirmShort ?? [], decks)) {
           throw new Refused({ status: "wouldShort", decks });
         }
       }
+      if (opts.dryRun) throw new Refused({ status: "preview", ...moves, rows, decks: [] });
 
-      const moves = countMoves(rows);
       await tx.update(collectionHistory)
         .set({ rows, ...moves })
         .where(eq(collectionHistory.id, opts.id));
@@ -516,6 +540,7 @@ export async function applyCollectionChange(
       return {
         status: "applied" as const,
         entry: { id: opts.id, seq: Number(claimed.seq), kind: entryKind(change), rows, ...moves },
+        ...(ownedBefore ? { owned: { before: ownedBefore, after: await readOwnedCounts(tx, userId) } } : {}),
       };
     });
   } catch (error) {
@@ -584,6 +609,15 @@ async function readHeld(tx: Tx, userId: string, named: CollectionItemIdentity[] 
       ? and(eq(collectionItems.userId, userId), inArray(collectionItems.oracleId, oracleIds))
       : eq(collectionItems.userId, userId));
   return new Map(rows.map((r) => [keyOf(r), r]));
+}
+
+async function readOwnedCounts(tx: Tx, userId: string): Promise<OwnedCounts> {
+  const rows = await tx
+    .select({ oracleId: collectionItems.oracleId, quantity: sql<number>`sum(${collectionItems.quantity})::int` })
+    .from(collectionItems)
+    .where(eq(collectionItems.userId, userId))
+    .groupBy(collectionItems.oracleId);
+  return Object.fromEntries(rows.map((r) => [r.oracleId, r.quantity]));
 }
 
 function currentOf(current: Map<string, Held>, named: CollectionItemIdentity[]) {

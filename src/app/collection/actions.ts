@@ -13,7 +13,14 @@ import { parseCollectionCsv, type CollectionRow, type ParseError } from "../../l
 import { parsePasteList } from "../../lib/manabox/paste";
 import { matchRows } from "../../lib/collection/match";
 import { loadMatchInputs, replaceCollection } from "../../lib/collection/import";
-import { ownedByOracle, writeArrivalsReceipt } from "../../lib/collection/arrivals-write";
+import {
+  ownedByOracle, pendingItemsToOwnedCounts, writeArrivalsReceipt,
+} from "../../lib/collection/arrivals-write";
+import type { OwnedCounts } from "../../lib/collection/arrivals";
+import { applyCollectionChange, type ShortDeck } from "../../lib/collection/write";
+import { collectionEditEnabled } from "../../lib/collection/edit-flag";
+import { editsSinceUpload } from "../../lib/collection/history";
+import { randomUUID } from "node:crypto";
 import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
 import { loadDeckBuyRows } from "../../lib/decks/availability-query";
 
@@ -135,16 +142,97 @@ export async function previewPaste(text: string): Promise<UploadPreview> {
  * size, counted as the preview counts it, because the preview the caller holds says 0 and the
  * modal reads its variant and its NOW figure off that figure.
  */
-export type ConfirmOutcome = { needsConfirm: true; currentCollectionCount: number } | void;
+export type ConfirmOutcome =
+  | { needsConfirm: true; currentCollectionCount: number }
+  /**
+   * Ledger path only: committed decks this upload would leave short. Nothing was written; the
+   * caller shows the warning and confirms again with these decks as `confirmShort`.
+   */
+  | { wouldShort: ShortDeck[] }
+  /** Ledger path only: cards the catalog dropped since the preview. Nothing was written. */
+  | { missingCard: string[] }
+  | void;
 
-export async function confirmUpload(
-  uploadId: string,
-  opts: { firstImport?: boolean } = {},
-): Promise<ConfirmOutcome> {
-  const userId = await requireUserId();
+/** How an upload meets the collection: replace it whole, or add its counts to it. */
+export type UploadMode = "replace" | "add";
+
+/** What a confirm in `mode` would do, for the Replace/Add screen. Ledger path only. */
+export type UploadChangePreview = {
+  raised: number;
+  lowered: number;
+  /** Committed decks the upload would leave short (a Replace only; an Add lowers nothing). */
+  decks: ShortDeck[];
+  /** Hand changes since the last upload, which a Replace overwrites. */
+  editsSinceUpload: number;
+};
+
+const NO_MATCHED_CARDS = "Upload has no matched cards; refusing to replace collection";
+
+function parseMode(mode: unknown): UploadMode {
+  if (mode === undefined || mode === "replace") return "replace";
+  if (mode === "add") return "add";
+  throw new Error("unknown upload mode");
+}
+
+/** The warning the client says it showed. Malformed entries confirm nothing. */
+function parseShortDecks(value: unknown): ShortDeck[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((d): d is ShortDeck =>
+    typeof d === "object" && d !== null
+    && typeof d.deckId === "string" && typeof d.oracleId === "string"
+    && typeof d.deckName === "string" && typeof d.cardName === "string"
+    && Number.isInteger(d.short));
+}
+
+async function loadUpload(userId: string, uploadId: string) {
   const [upload] = await db.select().from(csvUploads)
     .where(and(eq(csvUploads.id, uploadId), eq(csvUploads.userId, userId)));
   if (!upload) throw new Error("upload not found");
+  return upload;
+}
+
+/**
+ * What confirming `uploadId` in `mode` would do, computed by the write itself in a rolled-back
+ * transaction (`dryRun`), so the screen and the save cannot disagree. Ledger path only.
+ */
+export async function previewUploadChange(
+  uploadId: string,
+  mode?: UploadMode,
+): Promise<UploadChangePreview | { missingCard: string[] } | null> {
+  const userId = await requireUserId();
+  if (!collectionEditEnabled()) throw new Error("collection editing is off");
+  const kind = parseMode(mode);
+  const upload = await loadUpload(userId, uploadId);
+  // Already confirmed: there is nothing left to choose.
+  if (upload.confirmedAt) return null;
+  const { pendingItems } = upload.previewPayload as { pendingItems: PendingItem[] };
+  // The confirm refuses an upload with no matched cards; previewing it would draw an empty
+  // Replace as "removes everything", which the save would never do.
+  if (pendingItems.length === 0) throw new Error(NO_MATCHED_CARDS);
+  const [result, edits] = await Promise.all([
+    applyCollectionChange(userId, { kind, items: pendingItems, uploadId }, { id: randomUUID(), dryRun: true }),
+    editsSinceUpload(userId),
+  ]);
+  switch (result.status) {
+    case "preview": break;
+    // Confirmed by another request since the read above.
+    case "alreadyConfirmed": return null;
+    // The catalog dropped a card since the upload was matched; the confirm refuses it by name.
+    case "missingCard": return { missingCard: result.names };
+    default: throw new Error(`upload preview refused: ${result.status}`);
+  }
+  return { raised: result.raised, lowered: result.lowered, decks: result.decks, editsSinceUpload: edits };
+}
+
+export async function confirmUpload(
+  uploadId: string,
+  opts: { firstImport?: boolean; mode?: UploadMode; confirmShort?: ShortDeck[] } = {},
+): Promise<ConfirmOutcome> {
+  const userId = await requireUserId();
+  const mode = parseMode(opts.mode);
+  const ledger = collectionEditEnabled();
+  if (mode === "add" && !ledger) throw new Error("adding an upload needs collection editing on");
+  const upload = await loadUpload(userId, uploadId);
 
   // Already confirmed: the receipt is stored and there is nothing to replace. Returning
   // rather than throwing is what makes a retried request idempotent — and re-running the
@@ -157,15 +245,16 @@ export async function confirmUpload(
     parseErrors?: { line: number; reason: string }[];
   };
   const pendingItems = preview.pendingItems;
-  if (pendingItems.length === 0) throw new Error("Upload has no matched cards; refusing to replace collection");
+  if (pendingItems.length === 0) throw new Error(NO_MATCHED_CARDS);
 
-  // THE STATE BEFORE, read now because the replace destroys it. Both reads are
+  // THE STATE BEFORE, read now because the replace destroys it. The owned counts are read here
+  // on main's path and under the write's own lock on the ledger's (below). These reads are
   // point-in-time and deliberately not serialized against the write: the only race is
   // the same player editing a deck in another tab during their own import, and its cost
   // is a mis-stated line on a receipt — never a wrong claim figure, since every claim
   // figure in the app is recomputed live and the chooser's write re-validates in its own
   // transaction.
-  const ownedBefore = await ownedByOracle(userId);
+  let ownedBefore: OwnedCounts;
 
   const buyBefore = await loadDeckBuyRows(userId);
 
@@ -180,12 +269,42 @@ export async function confirmUpload(
   // second tab may have imported since. So the replace itself refuses, under the per-user lock,
   // when a collection exists, writes nothing, and the choice goes back to the player. The skip
   // is only as safe as "nothing to lose" is true AT THE WRITE.
-  const { alreadyConfirmed, notEmpty } = await replaceCollection(userId, pendingItems, {
-    confirmUploadId: uploadId,
-    onlyIfEmpty: opts.firstImport,
-  });
-  if (notEmpty !== null) return { needsConfirm: true, currentCollectionCount: notEmpty };
-  if (alreadyConfirmed) return;
+  //
+  // With COLLECTION_EDIT_ENABLED on, the write goes through the ledger (plan Decision 1): one
+  // entry for the upload, a fresh id per confirm because the upload's own stamp is what makes a
+  // double submit apply once, and the deck check a Replace now carries. Off, it is main's replace.
+  let ownedAfter: OwnedCounts;
+  if (ledger) {
+    const result = await applyCollectionChange(
+      userId,
+      { kind: mode, items: pendingItems, uploadId },
+      {
+        id: randomUUID(), onlyIfEmpty: opts.firstImport, confirmShort: parseShortDecks(opts.confirmShort),
+        ownedCounts: true,
+      },
+    );
+    switch (result.status) {
+      case "notEmpty": return { needsConfirm: true, currentCollectionCount: result.owned };
+      case "alreadyConfirmed": return;
+      case "wouldShort": return { wouldShort: result.decks };
+      case "missingCard": return { missingCard: result.names };
+      case "applied": break;
+      default: throw new Error(`upload confirm refused: ${result.status}`);
+    }
+    // Both sides read under the write's own lock, so they differ by exactly this upload: the
+    // snapshot above was read before the lock, and an Add's items are only what it added.
+    ownedBefore = result.owned!.before;
+    ownedAfter = result.owned!.after;
+  } else {
+    ownedBefore = await ownedByOracle(userId);
+    const { alreadyConfirmed, notEmpty } = await replaceCollection(userId, pendingItems, {
+      confirmUploadId: uploadId,
+      onlyIfEmpty: opts.firstImport,
+    });
+    if (notEmpty !== null) return { needsConfirm: true, currentCollectionCount: notEmpty };
+    if (alreadyConfirmed) return;
+    ownedAfter = pendingItemsToOwnedCounts(pendingItems);
+  }
 
   // INVALIDATION FIRST, RECEIPT SECOND. The replace has committed, so every cached figure
   // behind every one of these routes is already wrong; the receipt is a nicety by comparison.
@@ -203,7 +322,7 @@ export async function confirmUpload(
   await writeArrivalsReceipt({
     userId,
     uploadId,
-    pendingItems,
+    ownedAfter,
     ownedBefore,
     buyBefore,
     unmatched: preview.unmatched ?? [],

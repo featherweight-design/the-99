@@ -27,6 +27,8 @@ import ws from "ws";
 import { applyCollectionChange, type ChangeResult } from "../src/lib/collection/write";
 import { collectionGeneration } from "../src/lib/recs/store";
 import { commitVersion } from "../src/lib/decks/versions";
+import { editsSinceUpload } from "../src/lib/collection/history";
+import { replaceCollection } from "../src/lib/collection/import";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -188,9 +190,62 @@ async function main() {
       "select rows from collection_history where user_id = $1 and kind = 'add' order by seq desc limit 1", [USER],
     );
     check("an entry stores the card's name", lastAdd.rows[0]?.name === picked[0].name, JSON.stringify(lastAdd.rows));
+
+    // ---- 6. Uploads through the ledger ----------------------------------------------------
+    const upload = async (items: unknown[]) => (await one<{ id: string }>(
+      `insert into csv_uploads (user_id, filename, row_count, unmatched_count, preview_payload)
+       values ($1, 'probe.csv', 1, 0, $2) returning id`, [USER, JSON.stringify({ pendingItems: items })],
+    )).id;
+    const replaceItems = [{ ...at(C), condition: null, quantity: 1 }];
+    const u1 = await upload(replaceItems);
+    const editsBefore = await editsSinceUpload(USER);
+    check("with no upload yet, every hand change counts", editsBefore > 0, `${editsBefore}`);
+    const previewed = await applyCollectionChange(USER, { kind: "replace", items: replaceItems, uploadId: u1 },
+      { id: randomUUID(), dryRun: true });
+    const stillOpen = await one<{ confirmed_at: Date | null }>("select confirmed_at from csv_uploads where id = $1", [u1]);
+    check("a Replace preview names the committed deck it would short, and writes nothing",
+      previewed.status === "preview" && previewed.decks.some((d) => d.deckId === deck.id)
+        && await count(A) === 1 && stillOpen.confirmed_at === null,
+      `${previewed.status === "preview" ? JSON.stringify(previewed.decks) : previewed.status}; count ${await count(A)}`);
+    const shownDecks = previewed.status === "preview" ? previewed.decks : [];
+    const confirms = await Promise.all([1, 2].map(() => applyCollectionChange(
+      USER, { kind: "replace", items: replaceItems, uploadId: u1 }, { id: randomUUID(), confirmShort: shownDecks },
+    )));
+    const replaceEntry = await one<{ kind: string; source: string }>(
+      "select kind, source from collection_history where user_id = $1 order by seq desc limit 1", [USER],
+    );
+    check("a double-confirmed Replace upload applies once and records itself",
+      statuses(confirms) === "alreadyConfirmed,applied" && await count(A) === 0 && await count(C) === 1
+        && replaceEntry.kind === "upload_replace" && replaceEntry.source === `csv_uploads:${u1}`,
+      `${statuses(confirms)}; A ${await count(A)} C ${await count(C)}; ${JSON.stringify(replaceEntry)}`);
+    const editsAfter = await editsSinceUpload(USER);
+    await applyCollectionChange(USER, { kind: "edit", rows: [{ ...at(C), quantity: 2 }] }, { id: randomUUID() });
+    const editsLater = await editsSinceUpload(USER);
+    check("edits since the upload count from the upload's own entry", editsAfter === 0 && editsLater === 1,
+      `${editsAfter} then ${editsLater}`);
+    const u2 = await upload(replaceItems);
+    const added = await applyCollectionChange(USER, { kind: "add", items: replaceItems, uploadId: u2 },
+      { id: randomUUID(), ownedCounts: true });
+    check("an Add upload adds to what is held", added.status === "applied" && added.entry.kind === "upload_add"
+      && await count(C) === 3, `${added.status}; C ${await count(C)}`);
+    check("its owned counts, read under the lock, differ by exactly the Add",
+      added.status === "applied" && added.owned?.before[C] === 2 && added.owned?.after[C] === 3,
+      added.status === "applied" ? JSON.stringify(added.owned && { before: added.owned.before[C], after: added.owned.after[C] }) : "");
+
+    // A switch-off upload writes no entry, so "since" falls back to its confirm time against the
+    // entries' times: both read off the database clock after the lock.
+    const u3 = await upload(replaceItems);
+    await applyCollectionChange(USER, { kind: "edit", rows: [{ ...at(C), quantity: 5 }] }, { id: randomUUID() });
+    await replaceCollection(USER, replaceItems, { confirmUploadId: u3 });
+    const legacyAfter = await editsSinceUpload(USER);
+    await applyCollectionChange(USER, { kind: "edit", rows: [{ ...at(C), quantity: 4 }] }, { id: randomUUID() });
+    const legacyLater = await editsSinceUpload(USER);
+    check("after a switch-off upload, edits count from its confirm time, on one clock",
+      legacyAfter === 0 && legacyLater === 1, `${legacyAfter} then ${legacyLater}`);
   } finally {
     // One statement for the ledger: its two self-references are checked at the statement's end.
     await pool.query("delete from collection_history where user_id = $1", [USER]);
+    await pool.query("delete from csv_uploads where user_id = $1", [USER]);
     await pool.query("delete from collection_items where user_id = $1", [USER]);
     await pool.query("delete from commander_scores where user_id = $1", [USER]);
     await pool.query("delete from decks where user_id = $1", [USER]);

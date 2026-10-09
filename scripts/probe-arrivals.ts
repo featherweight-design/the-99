@@ -26,7 +26,7 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import ws from "ws";
 import { replaceCollection } from "../src/lib/collection/import";
-import { writeArrivalsReceipt } from "../src/lib/collection/arrivals-write";
+import { pendingItemsToOwnedCounts, writeArrivalsReceipt } from "../src/lib/collection/arrivals-write";
 import type { ArrivalsSummary } from "../src/lib/collection/arrivals";
 
 neonConfig.webSocketConstructor = ws;
@@ -140,7 +140,7 @@ async function main() {
     const written = await writeArrivalsReceipt({
       userId: USER,
       uploadId: receiptUpload,
-      pendingItems: items,
+      ownedAfter: pendingItemsToOwnedCounts(items),
       // The state before this fixture's own replace: one copy of `first`, none of `second`.
       ownedBefore: { [first]: 1 },
       // What the deck owed before the replace: it lists one copy and owned none.
@@ -194,7 +194,7 @@ async function main() {
     const withContention = await writeArrivalsReceipt({
       userId: USER,
       uploadId: contestedUpload,
-      pendingItems: items,
+      ownedAfter: pendingItemsToOwnedCounts(items),
       ownedBefore: { [first]: 1 },
       buyBefore: [{ deckId: deck.id, oracleId: second, quantity: 1 }],
       unmatched: [],

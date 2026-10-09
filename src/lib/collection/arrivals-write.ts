@@ -94,14 +94,14 @@ export async function ownedByOracle(userId: string): Promise<OwnedCounts> {
 export async function writeArrivalsReceipt(args: {
   userId: string;
   uploadId: string;
-  pendingItems: PendingItem[];
+  /** Copies per oracle id after the write: the whole collection, never only what changed. */
+  ownedAfter: OwnedCounts;
   ownedBefore: OwnedCounts;
   buyBefore: { deckId: string; oracleId: string; quantity: number }[];
   unmatched: { name: string; line: number }[];
   parseErrorCount: number;
 }): Promise<ArrivalsSummary> {
-  const { userId, uploadId, pendingItems, ownedBefore, buyBefore } = args;
-  const ownedAfter = pendingItemsToOwnedCounts(pendingItems);
+  const { userId, uploadId, ownedAfter, ownedBefore, buyBefore } = args;
   const buyAfter = await loadDeckBuyRows(userId);
 
   // Only the cards that GAINED copies. Contention is a question about arrivals, so the
