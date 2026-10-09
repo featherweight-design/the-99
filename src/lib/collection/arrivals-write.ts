@@ -59,6 +59,24 @@ export function pendingItemsToOwnedCounts(items: PendingItem[]): OwnedCounts {
 }
 
 /**
+ * The collection after a ledger write, from the collection before it and the rows the write
+ * changed. What an ADD's receipt needs (plan Decision 8): its items are what was added, not the
+ * collection, so reading them as the whole collection would compare one added copy against three
+ * owned and record no arrival. A card no longer owned is left out, as the claim model leaves it.
+ */
+export function ownedAfterEntry(
+  before: OwnedCounts,
+  rows: { oracleId: string; before: { quantity: number } | null; after: { quantity: number } | null }[],
+): OwnedCounts {
+  const out: OwnedCounts = { ...before };
+  for (const r of rows) {
+    out[r.oracleId] = (out[r.oracleId] ?? 0) + (r.after?.quantity ?? 0) - (r.before?.quantity ?? 0);
+    if (out[r.oracleId] <= 0) delete out[r.oracleId];
+  }
+  return out;
+}
+
+/**
  * The collection as the claim model reads it: copies per oracle id.
  *
  * Summed across printings, because every figure in the claim model is oracle-level — a
@@ -94,14 +112,14 @@ export async function ownedByOracle(userId: string): Promise<OwnedCounts> {
 export async function writeArrivalsReceipt(args: {
   userId: string;
   uploadId: string;
-  pendingItems: PendingItem[];
+  /** Copies per oracle id after the write: the whole collection, never only what changed. */
+  ownedAfter: OwnedCounts;
   ownedBefore: OwnedCounts;
   buyBefore: { deckId: string; oracleId: string; quantity: number }[];
   unmatched: { name: string; line: number }[];
   parseErrorCount: number;
 }): Promise<ArrivalsSummary> {
-  const { userId, uploadId, pendingItems, ownedBefore, buyBefore } = args;
-  const ownedAfter = pendingItemsToOwnedCounts(pendingItems);
+  const { userId, uploadId, ownedAfter, ownedBefore, buyBefore } = args;
   const buyAfter = await loadDeckBuyRows(userId);
 
   // Only the cards that GAINED copies. Contention is a question about arrivals, so the

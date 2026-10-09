@@ -70,11 +70,19 @@ export function ReplaceFlow({
       // modal opens, so a confirm from that modal is no longer "first". A retry after a
       // FAILED first import keeps the claim, and with it the server's guard (Copilot, #1097).
       const outcome = await confirmUpload(preview.uploadId, { firstImport });
-      if (outcome?.needsConfirm) {
+      if (outcome && "needsConfirm" in outcome) {
         // The preview was drawn at 0 cards and the modal reads its variant off that figure,
         // so it would ask for IMPORT over a write that replaces a collection. Correct it first.
         setPreview({ ...preview, currentCollectionCount: outcome.currentCollectionCount });
         setKnownCount(outcome.currentCollectionCount);
+        setConfirming(true);
+        return;
+      }
+      // A ledger refusal (a deck it would leave short, a card the catalog dropped) wrote nothing.
+      // Its own screens arrive with the collection-edit handoff; until then it reads as the
+      // failed confirm it is, in the slot a failed confirm has always used.
+      if (outcome) {
+        setConfirmError("Confirm failed");
         setConfirming(true);
         return;
       }

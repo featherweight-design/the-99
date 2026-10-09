@@ -67,6 +67,13 @@ export type ChangeOptions = {
   confirmShort?: ShortDeck[];
   /** Refuse when the player already owns anything (a first import's promise). */
   onlyIfEmpty?: boolean;
+  /**
+   * Run every step and roll it all back, answering `preview` with what the change would do: the
+   * rows it moves and every committed deck it would leave short. The preview a confirmation is
+   * drawn from, computed by the write itself so the two cannot disagree. The upload stamp rolls
+   * back with everything else, so an upload previewed is still unconfirmed.
+   */
+  dryRun?: boolean;
   /** Where the change came from, for history: `shopping:<deck id>`. Uploads set their own. */
   source?: string;
 };
@@ -111,7 +118,9 @@ export type ChangeResult =
   /** The revert target is not the player's, aged out, or pruned. */
   | { status: "notFound" }
   /** The revert target was already reverted, by `by`. */
-  | { status: "alreadyReverted"; by: string };
+  | { status: "alreadyReverted"; by: string }
+  /** A `dryRun`: nothing was written. */
+  | { status: "preview"; raised: number; lowered: number; rows: HistoryRow[]; decks: ShortDeck[] };
 
 type EntryKind = (typeof collectionHistory.$inferSelect)["kind"];
 
@@ -382,7 +391,9 @@ export async function applyCollectionChange(
       // never confirm one upload while recording another.
       if (uploadId) {
         const stamped = await tx.update(csvUploads)
-          .set({ confirmedAt: new Date() })
+          // The transaction's own clock, the one the entry's `created_at` reads, so the two
+          // agree on when this upload landed.
+          .set({ confirmedAt: sql`now()` })
           .where(and(
             eq(csvUploads.id, uploadId),
             eq(csvUploads.userId, userId),
@@ -488,16 +499,18 @@ export async function applyCollectionChange(
         await writeRows(tx, userId, plan);
       }
 
+      const moves = countMoves(rows);
       if (claimsBefore) {
         const claimsAfter = await loadAvailability(userId, { oracleIds: lowered }, tx);
         const names = new Map(rows.map((r) => [r.oracleId, r.name]));
         const decks = newlyShort(claimsBefore, claimsAfter, lowered, names);
+        if (opts.dryRun) throw new Refused({ status: "preview", ...moves, rows, decks });
         if (decks.length > 0 && !warningCovers(opts.confirmShort ?? [], decks)) {
           throw new Refused({ status: "wouldShort", decks });
         }
       }
+      if (opts.dryRun) throw new Refused({ status: "preview", ...moves, rows, decks: [] });
 
-      const moves = countMoves(rows);
       await tx.update(collectionHistory)
         .set({ rows, ...moves })
         .where(eq(collectionHistory.id, opts.id));
