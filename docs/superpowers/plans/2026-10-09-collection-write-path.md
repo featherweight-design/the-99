@@ -54,11 +54,15 @@ order:
 3. Reads the affected rows' current state under the lock.
 4. Checks each row's `expected` quantity, when the caller sent one (Decision 3), and refuses
    with `stale` and the current values on a mismatch.
-5. Computes the rows' after-state, clamping at zero.
+5. Computes the rows' after-state, clamping at zero. A row whose after-state is zero is DELETED
+   from `collection_items`, never stored as `quantity = 0`: readers infer ownership from a row
+   existing (for example `src/app/decks/import-actions.ts:106-113` and
+   `src/lib/home/summary.ts:15-22`), so a zero row would still count as owned. The ledger records
+   that row's after-state as `null`.
 6. When anything is lowered and the caller has not confirmed, runs the deck check
    (Decision 5) and refuses with `wouldShort` and the decks named.
 7. Writes `collection_items`, finishes the ledger entry with the before and after it actually
-   applied, clears `commander_scores` for the user, and deletes the user's entries older than the
+   applied, clears `commander_scores` for the user, and prunes the user's entries older than the
    retention window (Decision 6).
 
 `change` is one of four kinds, matching the entry kinds:
@@ -86,16 +90,19 @@ collection_history
   created_at     timestamp not null default now()
   kind           text not null  check in ('upload_replace','upload_add','add','edit','revert')
   source         text           -- 'csv_uploads:<id>' | 'shopping:<deck id>' | null
-  rows           jsonb not null -- [{ key, before, after }], see below
+  rows           jsonb          -- [{ key, name, before, after }]; null once pruned (Decision 6)
+  pruned_at      timestamp      -- set when retention clears `rows`; the entry itself stays
   raised         int not null   -- rows whose quantity went up, for the list view
   lowered        int not null   -- rows whose quantity went down
-  reverts_id     uuid unique references collection_history(id) on delete set null
-  reverted_by    uuid references collection_history(id) on delete set null
+  reverts_id     uuid unique references collection_history(id)
+  reverted_by    uuid references collection_history(id)
   index (user_id, created_at desc)
 ```
 
 Each element of `rows` is
-`{ oracleId, setCode, collectorNumber, finish, before, after }`, where `before` and `after` are
+`{ oracleId, setCode, collectorNumber, finish, name, before, after }`, where `name` is the card's
+printed name at write time (so an entry still names its card after the catalog drops it, see
+Decision 9), and `before` and `after` are
 `{ quantity, scryfallId, condition }` or `null` when the row did not exist. Before and after,
 not a bare delta, for two reasons. First, `collection_items` carries two columns outside its key
 (`scryfall_id`, `condition`), and a revert that recreates a removed row has to put those back.
@@ -145,13 +152,20 @@ fire its existing trigger exactly as the replace does today.
   as `replaceCollection` does. Correctness first: a one-card edit costs the next Commanders
   visit a recompute.
 - `collectionGeneration` (`src/lib/recs/store.ts:101`, read by `ranked-list.ts:106` and
-  `confirmUpload`'s score warm) changes from `max(csv_uploads.confirmed_at)` to the user's
-  `max(collection_history.seq)`, falling back to the old value when the user has no entries yet.
-  Every write through the new path writes an entry, so the generation moves on every collection
-  change, upload or not. `persistScores` compares with `!==` (`store.ts:249`), so the change of
-  units at a player's first entry also reads as moved, which drops at most one in-flight write.
-  `seq` is a bigserial and the write that runs retention has just inserted the newest entry, so
-  the maximum never moves backwards.
+  `confirmUpload`'s score warm) becomes a token holding BOTH sources: the user's
+  `max(collection_history.seq)` and `max(csv_uploads.confirmed_at)`, compared whole. Either
+  one moving moves the token. One source alone is not enough in two transitions:
+  - **The switch turned off after a player has history.** Legacy uploads then move only
+    `confirmed_at`, so a token of `seq` alone would stand still.
+  - **A previous deployment still in flight.** It compares only the timestamp, and could put
+    back scores a new-path edit just cleared.
+
+  `persistScores` compares with `!==` (`store.ts:249`), so any change reads as moved. `seq` is
+  a bigserial, and retention prunes payloads without deleting entries (Decision 6), so neither
+  half moves backwards.
+- **`SCORE_WRITER_CURRENT` moves from 7 to 8** (`src/db/schema.ts:809`). Rejecting writes from
+  the previous deployment is that constant's existing purpose, and this release changes what
+  makes a score current.
 - **To measure before the UI PR:** the recompute cost after a one-card edit, on a `pull:staging`
   scratch branch with `measure:load`'s `/commanders` row. If it is noticeable, the follow-up is a
   narrower invalidation designed against that number. It is not designed here.
@@ -165,8 +179,22 @@ transaction rolls back and returns `wouldShort` with those decks. The client sho
 (brief §E), and on confirm resends the same action, with the same id, plus `confirmShort`.
 
 Inside the write rather than as a separate dry-run read: a separate read leaves a window between
-check and save in which another tab can change the answer, and it costs one more round trip on
-every lowering. Inside, the decks named are exactly the ones the committed write affects.
+check and save in which another collection write can change the answer, and it costs one more
+round trip on every lowering. Inside, under the per-user lock, no other COLLECTION write can
+move the answer.
+
+**One window stays open, and the plan accepts it unless Hugh rules otherwise.** A deck commit
+does not take the per-user lock. `commitDeckVersion` locks only the deck and its draft rows
+(`src/app/decks/actions.ts:1689-1702`). So a commit landing between the second claim read and
+this transaction's commit can make a deck newly reliant on a card the lowering takes, with no
+warning shown. The cost is the state ruling 5 already describes: the deck shows its short and
+buy marks. Nothing is lost or corrupted. Closing it means every path that changes committed
+claims takes the per-user lock first, before its own row locks, which is the same order this
+write uses and so cannot deadlock. The commit is one such path; the claim model also reads card
+assignments, deck locks, proxies and pull releases, and every writer of those would need the
+same rule, inventoried by import rather than by reading. That is a change across the claim
+model's write paths, for a race between one player's own two tabs. It is listed under Open for
+Hugh.
 
 This needs the claim read to take a transaction handle. Today `loadAvailability` and
 `loadDeckBuyRows` call the module's `db` directly. The change is a parameter defaulting to
@@ -175,20 +203,31 @@ the decks before the confirm (brief §A).
 
 Adds never run it, since nothing goes down.
 
-### 6. Retention: a read filter and a lazy delete
+### 6. Retention: a read filter and a lazy prune
 
 `HISTORY_RETENTION_DAYS = 90`, one constant in `write.ts` (ruling 6: a year later is a one-line
 change). The history view reads only entries newer than that, so what a player sees is exact
-whether or not anything has been deleted. Each write also deletes that user's entries older than
-the window, inside its own transaction. At four uploads in three months, a scheduled job would
-be machinery for nothing. A reverted entry and its revert age out independently; `on delete set
-null` keeps the survivor valid.
+whether or not anything has been pruned. Each write also prunes that user's entries older than
+the window, inside its own transaction: it sets `rows` to null and stamps `pruned_at`. At four
+uploads in three months, a scheduled job would be machinery for nothing.
+
+**Pruned, not deleted**, for three reasons:
+- **Idempotency outlives the window.** The entry id is the only record that an action applied
+  (Decision 3), so deleting it would let a very late retry of that id apply its addition again.
+- **Revert links stay valid.** A revert and its target age out independently, and neither row
+  ever disappears from under the other's reference.
+- **`seq`'s maximum never moves backwards** (Decision 4).
+
+What stays behind is a few dozen bytes per entry, and the player-visible rule, entries age out
+after 90 days, holds exactly. The brief's §F draws a link to an aged-out entry as absent.
 
 ### 7. Add mode
 
 `add` upserts by the primary key, `quantity = collection_items.quantity + excluded.quantity`.
-On a row that already exists, `scryfall_id` and `condition` keep their current values when set
-and take the incoming ones only when null. `card_art_preferences` is never written (ruling 2).
+On a row that already exists, `scryfall_id` and `condition` follow the aggregation contract
+`aggregatePendingItems` already applies inside one upload (`src/lib/collection/pending.ts:30-48`):
+equal values stay, and values that disagree fall to null, because two different printings named
+under one key cannot both be right. The stored row is treated as one more member of the group. `card_art_preferences` is never written (ruling 2).
 `replace`'s aggregation rule, one item per primary key, applies to `add`'s input too, through the
 same `aggregatePendingItems`.
 
@@ -198,13 +237,21 @@ Every successful write calls the same invalidation `confirmUpload` runs
 (`src/app/collection/actions.ts:199-205`: `revalidateUserLists` and every `COLLECTION_ROUTES`
 entry). That call moves into one exported function in `src/lib/collection/invalidate.ts`,
 because four new actions would otherwise each copy it. Uploads keep writing their arrivals
-receipt as today, in both modes.
+receipt in both modes, with one change for Add. `writeArrivalsReceipt` treats `pendingItems` as
+the whole collection after the write (`src/lib/collection/arrivals-write.ts:94-112`). That
+is true of a Replace and false of an Add: adding one copy to a card owned three times would
+compare 1 against 3 and record no arrival. The receipt therefore takes the owned counts after the
+write, read from the ledger entry's after-states, and the Replace path passes the same thing it
+passes today.
 
 ### 9. Failure surfaced by name
 
 A revert or an Add that names an oracle id the catalog no longer holds fails the
 `cards.oracle_id` foreign key. The write catches that error code and returns `missingCard` with
-the card's name taken from the ledger row. The brief's §F state draws it.
+the card's name taken from the `name` the ledger row stored when it was written (Decision 2).
+The foreign-key error carries only the id, and by then the catalog has no name to look up. An
+Add from an upload names the card from the upload's own matched row. The brief's §F state draws
+this failure.
 
 ## What stays exactly as it is
 
@@ -238,8 +285,11 @@ Then the UI PRs from the 1+2 handoff. They are planned from the handoff, not her
 else, since it writes. It proves the four concurrency claims against a real database: a
 double-submitted add applies once; two tabs editing the same row with `expected` produce one
 `stale`; two concurrent reverts of one entry produce one revert; and a lowering that shorts a
-committed deck returns `wouldShort` and writes nothing. `probe:arrivals` must still pass
-unchanged, with the switch off and with it on.
+committed deck returns `wouldShort` and writes nothing. It follows the fixture discipline in
+`docs/probes.md`: every run mints its own `user_id`, and a `finally` deletes every row that id
+created (collection, decks, ledger, scores), so a failed or repeated run leaves nothing for the
+next one to trip on. `probe:arrivals` must still pass unchanged, with the switch off and with it
+on.
 
 **About.** None in these PRs. The epic's entries are batched at the end of the launch (roadmap
 ruling 9). The 1+2 handoff draws them.
@@ -257,5 +307,8 @@ ruling 9). The 1+2 handoff draws them.
 
 ## Open for Hugh
 
-None. Each decision above has one defensible answer given the code, and the plan names it. The
-one number left open, the recompute cost in Decision 4, is measured before any UI ships on it.
+One. **The commit window in Decision 5:** accept it (the plan's default: a missed warning, after
+which the deck shows its short marks as ruling 5 describes), or close it by putting every writer
+of committed claims under the per-user lock. Every other decision has one defensible answer
+given the code, and the plan names it. The one number left open, the recompute cost in Decision
+4, is measured before any UI ships on it.
