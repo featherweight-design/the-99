@@ -12,8 +12,9 @@ import { mergeHolding, toCollectionItemValues, type PendingItem } from "./pendin
 /**
  * THE COLLECTION WRITE PATH (collection foundation, plan `2026-10-09-collection-write-path.md`).
  *
- * `applyCollectionChange` is the only code that writes `collection_items` once
- * `COLLECTION_EDIT_ENABLED` is on. Every write runs in one transaction under the per-user lock
+ * `applyCollectionChange` is the write path every collection write takes once
+ * `COLLECTION_EDIT_ENABLED` is on; its callers (uploads, the edit and revert actions) arrive with
+ * the plan's later PRs, and until then nothing calls it. Every write runs in one transaction under the per-user lock
  * `replaceCollection` takes, records its before and after in `collection_history`, and clears the
  * player's `commander_scores`. Every outcome but `applied` writes nothing.
  *

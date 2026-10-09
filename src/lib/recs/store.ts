@@ -98,8 +98,8 @@ type Executor = Pick<typeof db, "execute">;
  * Fingerprint of the collection a score compute is about to read: a token over BOTH of the
  * collection's writers (plan 2026-10-09, Decision 4).
  *
- * - `max(collection_history.seq)` moves on every ledger write, which is every collection
- *   write once `COLLECTION_EDIT_ENABLED` is on, a hand edit included.
+ * - `max(collection_history.seq)` moves on every ledger write (`applyCollectionChange`), a
+ *   hand edit included.
  * - `max(csv_uploads.confirmed_at)` moves on every confirmed upload, which is the only
  *   collection write while the switch is off.
  *
@@ -112,15 +112,7 @@ type Executor = Pick<typeof db, "execute">;
  * Callers capture this *before* reading the pool and hand it to persistScores.
  */
 export async function collectionGeneration(userId: string): Promise<string> {
-  try {
-    return await readCollectionGeneration(db, userId);
-  } catch (error) {
-    // A database the ledger's migration has not reached (a preview deploy runs none). The
-    // timestamp half alone is then the whole truth, since nothing can write a ledger entry.
-    if (!isSchemaLagError(error)) throw error;
-    recordSoftFailure();
-    return readCollectionGeneration(db, userId, { ledger: false });
-  }
+  return readCollectionGeneration(db, userId);
 }
 
 /**
@@ -129,15 +121,20 @@ export async function collectionGeneration(userId: string): Promise<string> {
  * The timestamp half is read as epoch millis IN SQL. The column is `timestamp` without time
  * zone, so the driver's own rendering parses as local time, and a token compared across two
  * paths that parsed it differently would never match.
+ *
+ * A database the ledger's migration has not reached (a preview deploy runs none) has no
+ * `collection_history`, and the timestamp half is then the whole truth, since nothing can write
+ * a ledger entry. That is asked first, in its own statement, rather than caught: inside
+ * `persistScores`'s transaction a failed statement aborts the transaction, and every score
+ * write on such a database would be dropped.
  */
-export async function readCollectionGeneration(
-  executor: Executor,
-  userId: string,
-  opts: { ledger?: boolean } = {},
-): Promise<string> {
-  const seq = opts.ledger === false
-    ? sql`null::bigint`
-    : sql`(select max(h.seq) from collection_history h where h.user_id = ${userId})`;
+export async function readCollectionGeneration(executor: Executor, userId: string): Promise<string> {
+  const ledger = await executor.execute<{ present: boolean }>(
+    sql`select to_regclass('public.collection_history') is not null as present`,
+  );
+  const seq = ledger.rows[0]?.present
+    ? sql`(select max(h.seq) from collection_history h where h.user_id = ${userId})`
+    : sql`null::bigint`;
   const rows = await executor.execute<{ seq: string | number | null; at: string | number | null }>(sql`
     select
       ${seq} as seq,

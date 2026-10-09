@@ -172,7 +172,9 @@ function fakeDb(confirmedAt: Date | null, indexAt: Date | null = null) {
     execute: async (q: unknown) => {
       const text = JSON.stringify(q);
       executed.push(text);
-      // The collection fingerprint is one raw read over both of its writers.
+      // The collection fingerprint: whether the ledger exists, then one read over both writers.
+      // The first is part of the same read and adds nothing to the ordering trace.
+      if (text.includes("to_regclass")) return { rows: [{ present: true }] };
       if (text.includes("collection_history")) {
         trace.push("read:collection");
         return { rows: [{ seq: null, at: confirmedAt ? confirmedAt.getTime() : null }] };
