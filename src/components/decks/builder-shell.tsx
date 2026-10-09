@@ -195,8 +195,8 @@ interface BuilderShellProps {
   /** The tab this visit lands on, read off the URL by the route. Only the
       arrival: switching tabs stays component state, so nothing writes it back. */
   initialView?: BuilderView;
-  /** `ANALYSIS_TAB_ENABLED` — whether this deployment draws the Analysis tab AND moves the
-   *  Recommended mix strip into it. Off is today's layout, exactly. */
+  /** `ANALYSIS_TAB_ENABLED` — whether this deployment draws the Analysis tab. Off is
+   *  today's layout, exactly. */
   analysisEnabled?: boolean;
   /** `NOTICES_ENABLED` (`src/lib/notices/flag.ts`): whether the header draws the notice tag and the
    *  Notices sheet can open. Off, nothing of the notices is read or drawn. */
@@ -1517,10 +1517,6 @@ export function BuilderShell({
 
             {view === "analysis" ? (
               <div id="panel-analysis" role="tabpanel" aria-labelledby="tab-analysis" aria-busy={opening !== "off" || undefined}>
-                {/* The readings sit ABOVE the strip, so the verdict arrives on top of the mix
-                    rather than replacing it. The strip is counted from the list and is true in
-                    every profile state, which is what makes a failed read a delay rather than an
-                    outage. */}
                 {/* ONE hover preview for the whole tab: the suggestion cards and the overview's
                     card names both borrow it rather than mount a second. */}
                 <HoverPreviewProvider>

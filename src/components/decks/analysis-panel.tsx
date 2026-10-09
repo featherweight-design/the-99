@@ -55,7 +55,6 @@ export function AnalysisPanel({
   description = null,
   onSaveDescription,
   tuningEnabled = true,
-  children,
 }: {
   state: ProfileState;
   /**
@@ -108,7 +107,6 @@ export function AnalysisPanel({
    *  to feed a Suggested changes run, per its own help text) — defaults true, same as `tuning`
    *  itself being left undrawn is what withholds the panel below a reading. */
   tuningEnabled?: boolean;
-  children?: ReactNode;
 }) {
   // SAID ONCE, WHEN A READING LANDS (§E): a press settling, never a stored reading painted on open.
   // Adjusted during render, React's pattern for deriving state from a changed prop.
@@ -199,7 +197,6 @@ export function AnalysisPanel({
       ) : null) : null}
       {/* THE FLAG BEING OFF, OR A DECK THAT CANNOT BE READ, DRAWS NO READING: the tab is hidden by
           the same flag, and the page around it has already answered for a missing deck. */}
-      {children}
       {held && tuning ? (
         <div hidden={behind} className="pt-[18px] md:pt-6" style={{ borderTop: "1px solid var(--border)" }}>
           {tuning(slotDeck(held.profile).permits)}
