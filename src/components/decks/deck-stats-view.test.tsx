@@ -39,8 +39,12 @@ describe("DeckStatsView curve card", () => {
     expect(chip).toHaveAttribute("aria-pressed", "true");
     const card = within(screen.getByRole("figure", { name: /^The curve/ }));
     expect(card.getByText(deckStatsCopy.curve.lit("Creature", 3, 4))).toBeInTheDocument();
+    const bg = (t: string) => (container.querySelector(`[data-curve-square=${t}]`) as HTMLElement).style.background;
+    expect(bg("creature")).toBe("var(--type-creature)");
+    expect(bg("instant")).toBe("var(--border-strong)");
     fireEvent.click(chip);
     expect(chip).toHaveAttribute("aria-pressed", "false");
+    expect(bg("instant")).toBe("var(--type-instant)");
   });
 
   it("names no average for a deck with nothing cast", () => {
