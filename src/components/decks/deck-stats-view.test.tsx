@@ -59,6 +59,12 @@ describe("DeckStatsView curve card", () => {
     });
   });
 
+  it("announces the whole caption when a chip lights", () => {
+    const { container } = render(<DeckStatsView data={slice} />);
+    const live = container.querySelector("[aria-live=polite]");
+    expect(live).toHaveAttribute("aria-atomic", "true");
+  });
+
   it("lights one type on tap and clears on a second tap", () => {
     const { container } = render(<DeckStatsView data={slice} />);
     const chip = container.querySelector("[data-type-chip=creature]") as HTMLElement;

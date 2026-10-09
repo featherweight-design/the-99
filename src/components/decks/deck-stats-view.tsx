@@ -131,7 +131,7 @@ function CurveCard({ data }: { data: DeckStatsSlice }) {
           </span>
         </li>
       </ul>
-      <p aria-live="polite" className="font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">
+      <p aria-live="polite" aria-atomic="true" className="font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">
         {lit === null ? copy.caption(avg, curve.lands) : copy.lit(copy.types[lit], types.totals[lit], cast)}
       </p>
     </Shell>
