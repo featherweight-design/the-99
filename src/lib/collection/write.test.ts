@@ -82,6 +82,21 @@ describe("planEdit", () => {
     expect(row.after).toBeNull();
   });
 
+  it("gives a row it creates the printing and condition it names", () => {
+    const [row] = planEdit(coll(), [{ ...id(A), quantity: 2, scryfallId: "s9", condition: "LP" }]);
+    expect(row.after).toEqual({ quantity: 2, scryfallId: "s9", condition: "LP" });
+  });
+
+  it("keeps an existing row's own printing and condition over the ones named", () => {
+    const [row] = planEdit(coll(held(A, 1, "s1", "NM")), [{ ...id(A), quantity: 3, scryfallId: "s9", condition: "LP" }]);
+    expect(row.after).toEqual({ quantity: 3, scryfallId: "s1", condition: "NM" });
+  });
+
+  it("creates a bare row when none are named", () => {
+    const [row] = planEdit(coll(), [{ ...id(A), quantity: 1 }]);
+    expect(row.after).toEqual({ quantity: 1, scryfallId: null, condition: null });
+  });
+
   it("refuses a negative count and a row named twice", () => {
     expect(() => planEdit(coll(), [{ ...id(A), quantity: -1 }])).toThrow();
     expect(() => planEdit(coll(), [{ ...id(A), quantity: 1 }, { ...id(A), quantity: 2 }])).toThrow();
