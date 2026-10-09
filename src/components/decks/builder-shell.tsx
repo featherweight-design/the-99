@@ -1470,22 +1470,17 @@ export function BuilderShell({
                 the explanation of why the counts do not add up. */}
             <UnresolvedBanner count={unresolvedRows.length} onTakeALook={seeUnresolved} />
 
-            {/* Role Counter Strip — shown when deck has cards (mid-build) or always per design.
-                IT LEAVES THIS SPINE when Analysis is on, and that move is what PAYS for the tab:
-                Round 0 costs the tab at roughly 150px of net vertical above the tabs, all of it
-                the strip's. Gated on the same flag as the tab, because an unconditional move
-                would take the strip off the deck page wherever the tab is off, with nothing to
-                receive it. */}
-            {!analysisEnabled && (
-              <RoleCounterStrip
-                mix={mix}
-                cards={cards}
-                onSeeShelf={seeShelf}
-                rolesWithShelves={shelvedRoles}
-                justFilled={deck.filled && autoCount > 0}
-                wasCounts={wasCounts}
-              />
-            )}
+            {/* Role Counter Strip. One mount, at "Your deck", whether or not Analysis is on:
+                its "consider →" cells switch this shell to Consider, so the strip has to
+                live on the spine that owns the tab switch rather than inside one panel. */}
+            <RoleCounterStrip
+              mix={mix}
+              cards={cards}
+              onSeeShelf={seeShelf}
+              rolesWithShelves={shelvedRoles}
+              justFilled={deck.filled && autoCount > 0}
+              wasCounts={wasCounts}
+            />
 
             {/* No degraded banner here. The old one ("Synergy data offline")
                 fired alongside Consider's own ("EDHREC isn't answering right
@@ -1612,19 +1607,6 @@ export function BuilderShell({
                     />
                   )}
                 >
-                {/* The strip in its new home. It is REAL analysis content rather than a
-                    placeholder — Round 0 moves it here on purpose — which is why this panel
-                    draws something true on the day the tab lands, with the verdict arriving
-                    on top of it rather than replacing it. */}
-                <RoleCounterStrip
-                  mix={mix}
-                  cards={cards}
-                  onSeeShelf={seeShelf}
-                  rolesWithShelves={shelvedRoles}
-                  justFilled={deck.filled && autoCount > 0}
-                  wasCounts={wasCounts}
-                  inset
-                />
                 </AnalysisPanel>
                 </HoverPreviewProvider>
               </div>

@@ -82,7 +82,10 @@ const suggestions: DeckSuggestionWithFacts[] = [
 ];
 
 describe("coverage cell arrival", () => {
-  it("switches to Consider and lands focus on the role's shelf heading", async () => {
+  it.each([
+    ["Analysis off", false],
+    ["Analysis on", true],
+  ])("switches to Consider and lands focus on the role's shelf heading (%s)", async (_label, analysisEnabled) => {
     render(
       <BuilderShell mix={TEST_MIX}
         deck={deck}
@@ -91,18 +94,19 @@ describe("coverage cell arrival", () => {
         firstRun={false}
         commanderIdentity={["B", "R", "G"]}
         arrivedFromImport={false}
+        analysisEnabled={analysisEnabled}
        newestAsOf={null}/>,
     );
 
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: addPanelCopy.strip.cellLinkAria(
-          TEST_MIX.cells.ramp.label,
-          0,
-          TEST_MIX.cells.ramp.target,
-        ),
-      }),
-    );
+    const cells = screen.getAllByRole("button", {
+      name: addPanelCopy.strip.cellLinkAria(
+        TEST_MIX.cells.ramp.label,
+        0,
+        TEST_MIX.cells.ramp.target,
+      ),
+    });
+    expect(cells).toHaveLength(1);
+    fireEvent.click(cells[0]);
 
     await waitFor(() => {
       const heading = document.getElementById("shelf-ramp");

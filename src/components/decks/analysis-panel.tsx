@@ -113,7 +113,7 @@ export function AnalysisPanel({
    *  to feed a Suggested changes run, per its own help text) — defaults true, same as `tuning`
    *  itself being left undrawn is what withholds the panel below a reading. */
   tuningEnabled?: boolean;
-  children: ReactNode;
+  children?: ReactNode;
 }) {
   // SAID ONCE, WHEN A READING LANDS (§E): a press settling, never a stored reading painted on open.
   // Adjusted during render, React's pattern for deriving state from a changed prop.
