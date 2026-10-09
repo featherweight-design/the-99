@@ -10,8 +10,6 @@ const stub = vi.hoisted(() => ({
   replace: vi.fn(),
   receipt: vi.fn(),
   invalidate: vi.fn(),
-  ownedNow: null as Record<string, number> | null,
-  ownedReads: 0,
 }));
 
 vi.mock("../../db", () => ({
@@ -28,11 +26,7 @@ vi.mock("../../lib/collection/invalidate", () => ({ invalidateCollectionReaders:
 vi.mock("../../lib/decks/availability-query", () => ({ loadDeckBuyRows: async () => [] }));
 vi.mock("../../lib/collection/arrivals-write", async (actual) => ({
   ...(await actual<typeof import("../../lib/collection/arrivals-write")>()),
-  // The pre-write snapshot reads 3; a read after the write reads `ownedNow` when a case sets it.
-  ownedByOracle: async () => {
-    stub.ownedReads += 1;
-    return stub.ownedReads > 1 && stub.ownedNow ? stub.ownedNow : { [A]: 3 };
-  },
+  ownedByOracle: async () => ({ [A]: 3 }),
   writeArrivalsReceipt: stub.receipt,
 }));
 
@@ -40,16 +34,17 @@ import { confirmUpload, previewUploadChange } from "./actions";
 
 const items = [{ oracleId: A, setCode: "lea", condition: null, quantity: 1 }];
 const deck = { deckId: "d", deckName: "Deck", oracleId: A, cardName: "Card", short: 1 };
+// The write's own counts, read under its lock: 5 before and 6 after, where the snapshot the
+// action could read before the lock says 3. A receipt built from that snapshot is wrong.
 const applied = (kind: string) => ({
   status: "applied",
-  entry: { id: "e", seq: 1, kind, raised: 1, lowered: 0, rows: [{ oracleId: A, before: { quantity: 5 }, after: { quantity: 6 } }] },
+  entry: { id: "e", seq: 1, kind, raised: 1, lowered: 0, rows: [] },
+  owned: { before: { [A]: 5 }, after: { [A]: 6 } },
 });
 
 beforeEach(() => {
   stub.upload = { id: UPLOAD, userId: "user_1", confirmedAt: null, previewPayload: { pendingItems: items } };
   stub.ledger = false;
-  stub.ownedNow = null;
-  stub.ownedReads = 0;
   for (const f of [stub.apply, stub.replace, stub.receipt, stub.invalidate]) f.mockReset();
   stub.replace.mockResolvedValue({ alreadyConfirmed: false, notEmpty: null });
 });
@@ -80,23 +75,18 @@ describe("confirmUpload", () => {
     const [, change, opts] = stub.apply.mock.calls[0];
     expect(change).toEqual({ kind: "replace", items, uploadId: UPLOAD });
     expect(opts.confirmShort).toEqual([deck]);
+    expect(opts.ownedCounts).toBe(true);
     expect(stub.replace).not.toHaveBeenCalled();
     expect(stub.invalidate).toHaveBeenCalledWith("user_1");
-    // A Replace's items are the collection after it.
-    expect(stub.receipt.mock.calls[0][0].ownedAfter).toEqual({ [A]: 1 });
+    expect(stub.receipt.mock.calls[0][0]).toMatchObject({ ownedBefore: { [A]: 5 }, ownedAfter: { [A]: 6 } });
   });
 
-  it("gives an Add's receipt the whole collection either side, differing by exactly this write", async () => {
+  it("gives an Add's receipt the counts the write read under its lock, not the earlier snapshot", async () => {
     stub.ledger = true;
     stub.apply.mockResolvedValue(applied("upload_add"));
-    // Read after the commit: another write landed 2 copies before this one's lock, so the
-    // snapshot taken before the write (3) is not what this write started from (5).
-    stub.ownedNow = { [A]: 6 };
     await confirmUpload(UPLOAD, { mode: "add" });
     expect(stub.apply.mock.calls[0][1].kind).toBe("add");
-    const receipt = stub.receipt.mock.calls[0][0];
-    expect(receipt.ownedAfter).toEqual({ [A]: 6 });
-    expect(receipt.ownedBefore).toEqual({ [A]: 5 });
+    expect(stub.receipt.mock.calls[0][0]).toMatchObject({ ownedBefore: { [A]: 5 }, ownedAfter: { [A]: 6 } });
   });
 
   it("returns the warning, and writes no receipt and invalidates nothing, when decks would go short", async () => {

@@ -223,9 +223,13 @@ async function main() {
     check("edits since the upload count from the upload's own entry", editsAfter === 0 && editsLater === 1,
       `${editsAfter} then ${editsLater}`);
     const u2 = await upload(replaceItems);
-    const added = await applyCollectionChange(USER, { kind: "add", items: replaceItems, uploadId: u2 }, { id: randomUUID() });
+    const added = await applyCollectionChange(USER, { kind: "add", items: replaceItems, uploadId: u2 },
+      { id: randomUUID(), ownedCounts: true });
     check("an Add upload adds to what is held", added.status === "applied" && added.entry.kind === "upload_add"
       && await count(C) === 3, `${added.status}; C ${await count(C)}`);
+    check("its owned counts, read under the lock, differ by exactly the Add",
+      added.status === "applied" && added.owned?.before[C] === 2 && added.owned?.after[C] === 3,
+      added.status === "applied" ? JSON.stringify(added.owned && { before: added.owned.before[C], after: added.owned.after[C] }) : "");
   } finally {
     // One statement for the ledger: its two self-references are checked at the statement's end.
     await pool.query("delete from collection_history where user_id = $1", [USER]);

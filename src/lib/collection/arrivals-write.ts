@@ -58,24 +58,6 @@ export function pendingItemsToOwnedCounts(items: PendingItem[]): OwnedCounts {
   return out;
 }
 
-/** One row a ledger write changed, as far as owned counts care. */
-type EntryRow = { oracleId: string; before: { quantity: number } | null; after: { quantity: number } | null };
-
-/**
- * The collection BEFORE a ledger write, from the collection after it and the rows the write
- * changed: each row's change backed out, a card no longer owned left out as the claim model
- * leaves it. What an Add's receipt needs (plan Decision 8): read after the commit, the two
- * counts then differ by exactly this write, whatever else landed before its lock.
- */
-export function ownedBeforeEntry(after: OwnedCounts, rows: EntryRow[]): OwnedCounts {
-  const out: OwnedCounts = { ...after };
-  for (const r of rows) {
-    out[r.oracleId] = (out[r.oracleId] ?? 0) - (r.after?.quantity ?? 0) + (r.before?.quantity ?? 0);
-    if (out[r.oracleId] <= 0) delete out[r.oracleId];
-  }
-  return out;
-}
-
 /**
  * The collection as the claim model reads it: copies per oracle id.
  *

@@ -9,6 +9,7 @@ import type { Availability } from "../decks/availability";
 import { allocateClaims } from "../decks/allocate";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import { mergeHolding, toCollectionItemValues, type PendingItem } from "./pending";
+import type { OwnedCounts } from "./arrivals";
 
 /**
  * THE COLLECTION WRITE PATH (collection foundation, plan `2026-10-09-collection-write-path.md`).
@@ -71,6 +72,12 @@ export type ChangeOptions = {
    * back with everything else, so an upload previewed is still unconfirmed.
    */
   dryRun?: boolean;
+  /**
+   * Also return the whole collection's copies per oracle id either side of the write, read under
+   * the lock, so they differ by exactly this write. What an upload's arrivals receipt compares;
+   * read outside the lock, another write could land between either read and this one.
+   */
+  ownedCounts?: boolean;
   /** Where the change came from, for history: `shopping:<deck id>`. Uploads set their own. */
   source?: string;
 };
@@ -94,7 +101,7 @@ export type AppliedEntry = {
 };
 
 export type ChangeResult =
-  | { status: "applied"; entry: AppliedEntry }
+  | { status: "applied"; entry: AppliedEntry; owned?: { before: OwnedCounts; after: OwnedCounts } }
   /** Nothing would change. No entry is written. */
   | { status: "unchanged" }
   /**
@@ -489,6 +496,7 @@ export async function applyCollectionChange(
 
       // ---- 5. The deck check brackets the write: claims before, the rows, claims after.
       const lowered = [...new Set(plan.filter((p) => qty(p.after) < qty(p.before)).map((p) => p.oracleId))];
+      const ownedBefore = opts.ownedCounts && !opts.dryRun ? await readOwnedCounts(tx, userId) : null;
       const claimsBefore = lowered.length > 0 ? await loadAvailability(userId, { oracleIds: lowered }, tx) : null;
 
       // ---- 6. The rows.
@@ -532,6 +540,7 @@ export async function applyCollectionChange(
       return {
         status: "applied" as const,
         entry: { id: opts.id, seq: Number(claimed.seq), kind: entryKind(change), rows, ...moves },
+        ...(ownedBefore ? { owned: { before: ownedBefore, after: await readOwnedCounts(tx, userId) } } : {}),
       };
     });
   } catch (error) {
@@ -600,6 +609,15 @@ async function readHeld(tx: Tx, userId: string, named: CollectionItemIdentity[] 
       ? and(eq(collectionItems.userId, userId), inArray(collectionItems.oracleId, oracleIds))
       : eq(collectionItems.userId, userId));
   return new Map(rows.map((r) => [keyOf(r), r]));
+}
+
+async function readOwnedCounts(tx: Tx, userId: string): Promise<OwnedCounts> {
+  const rows = await tx
+    .select({ oracleId: collectionItems.oracleId, quantity: sql<number>`sum(${collectionItems.quantity})::int` })
+    .from(collectionItems)
+    .where(eq(collectionItems.userId, userId))
+    .groupBy(collectionItems.oracleId);
+  return Object.fromEntries(rows.map((r) => [r.oracleId, r.quantity]));
 }
 
 function currentOf(current: Map<string, Held>, named: CollectionItemIdentity[]) {

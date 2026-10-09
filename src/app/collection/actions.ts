@@ -14,7 +14,7 @@ import { parsePasteList } from "../../lib/manabox/paste";
 import { matchRows } from "../../lib/collection/match";
 import { loadMatchInputs, replaceCollection } from "../../lib/collection/import";
 import {
-  ownedBeforeEntry, ownedByOracle, pendingItemsToOwnedCounts, writeArrivalsReceipt,
+  ownedByOracle, pendingItemsToOwnedCounts, writeArrivalsReceipt,
 } from "../../lib/collection/arrivals-write";
 import type { OwnedCounts } from "../../lib/collection/arrivals";
 import { applyCollectionChange, type ShortDeck } from "../../lib/collection/write";
@@ -247,13 +247,14 @@ export async function confirmUpload(
   const pendingItems = preview.pendingItems;
   if (pendingItems.length === 0) throw new Error(NO_MATCHED_CARDS);
 
-  // THE STATE BEFORE, read now because the replace destroys it. Both reads are
+  // THE STATE BEFORE, read now because the replace destroys it. The owned counts are read here
+  // on main's path and under the write's own lock on the ledger's (below). These reads are
   // point-in-time and deliberately not serialized against the write: the only race is
   // the same player editing a deck in another tab during their own import, and its cost
   // is a mis-stated line on a receipt — never a wrong claim figure, since every claim
   // figure in the app is recomputed live and the chooser's write re-validates in its own
   // transaction.
-  let ownedBefore = await ownedByOracle(userId);
+  let ownedBefore: OwnedCounts;
 
   const buyBefore = await loadDeckBuyRows(userId);
 
@@ -277,7 +278,10 @@ export async function confirmUpload(
     const result = await applyCollectionChange(
       userId,
       { kind: mode, items: pendingItems, uploadId },
-      { id: randomUUID(), onlyIfEmpty: opts.firstImport, confirmShort: parseShortDecks(opts.confirmShort) },
+      {
+        id: randomUUID(), onlyIfEmpty: opts.firstImport, confirmShort: parseShortDecks(opts.confirmShort),
+        ownedCounts: true,
+      },
     );
     switch (result.status) {
       case "notEmpty": return { needsConfirm: true, currentCollectionCount: result.owned };
@@ -287,20 +291,12 @@ export async function confirmUpload(
       case "applied": break;
       default: throw new Error(`upload confirm refused: ${result.status}`);
     }
-    // A Replace's items ARE the collection after it; an Add's are only what it added, so its
-    // receipt counts the collection from the rows the entry changed (plan Decision 8).
-    if (mode === "replace") {
-      ownedAfter = pendingItemsToOwnedCounts(pendingItems);
-    } else {
-      // An Add's items are only what it added, so its receipt needs the whole collection either
-      // side of the write (plan Decision 8). Read after the commit and backed out by this
-      // entry's own rows, so the two differ by exactly what this write did: the snapshot taken
-      // above was read before the lock, and another write landing in between would otherwise
-      // read as this upload's arrivals.
-      ownedAfter = await ownedByOracle(userId);
-      ownedBefore = ownedBeforeEntry(ownedAfter, result.entry.rows);
-    }
+    // Both sides read under the write's own lock, so they differ by exactly this upload: the
+    // snapshot above was read before the lock, and an Add's items are only what it added.
+    ownedBefore = result.owned!.before;
+    ownedAfter = result.owned!.after;
   } else {
+    ownedBefore = await ownedByOracle(userId);
     const { alreadyConfirmed, notEmpty } = await replaceCollection(userId, pendingItems, {
       confirmUploadId: uploadId,
       onlyIfEmpty: opts.firstImport,
