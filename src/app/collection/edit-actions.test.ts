@@ -5,6 +5,7 @@ const ORACLE = "11111111-1111-1111-1111-111111111111";
 const PRINTING = "22222222-2222-2222-2222-222222222222";
 const FORGED = "99999999-9999-9999-9999-999999999999";
 const line = { oracleId: ORACLE, setCode: "LEA", collectorNumber: "1", finish: "nonfoil", quantity: 2 };
+const edited = { ...line, expected: 2 };
 const deck = { deckId: "d", deckName: "Deck", oracleId: ORACLE, cardName: "Card", short: 1 };
 
 const stub = vi.hoisted(() => ({
@@ -64,7 +65,9 @@ describe("the edit actions", () => {
     await expect(addToCollection(ACTION, [{ ...line, finish: "shiny" }])).rejects.toThrow();
     await expect(editCollection(ACTION, [{ ...line, quantity: -1 }])).rejects.toThrow();
     await expect(editCollection(ACTION, [{ ...line, expected: 1.5 }])).rejects.toThrow();
-    await expect(editCollection(ACTION, [{ ...line, condition: "x".repeat(33) }])).rejects.toThrow();
+    await expect(editCollection(ACTION, [{ ...edited, condition: "x".repeat(33) }])).rejects.toThrow();
+    // No `expected` means no stale check: a sheet drawn before another tab's save would win.
+    await expect(editCollection(ACTION, [line])).rejects.toThrow("bad collection row");
     expect(stub.apply).not.toHaveBeenCalled();
   });
 });
@@ -135,16 +138,23 @@ describe("editCollection", () => {
     await expect(addToCollection(ACTION, [{ ...line, setCode: "", collectorNumber: "" }])).rejects.toThrow("not a catalog printing");
   });
 
+  it("takes a holding of any size an import could have built, not only what one add may bring", async () => {
+    stub.apply.mockResolvedValue({ status: "applied", entry: { id: ACTION } });
+    await editCollection(ACTION, [{ ...line, quantity: 0, expected: 12_000 }]);
+    expect(stub.apply.mock.calls[0][1].rows[0]).toMatchObject({ quantity: 0, expected: 12_000 });
+    await expect(addToCollection(ACTION, [{ ...line, quantity: 12_000 }])).rejects.toThrow();
+  });
+
   it("passes stale, a deck warning, unchanged and a missing card back, writing nothing", async () => {
     const current = [{ ...line, setCode: "lea", quantity: 4 }];
     stub.apply.mockResolvedValueOnce({ status: "stale", current });
-    expect(await editCollection(ACTION, [line])).toEqual({ stale: current });
+    expect(await editCollection(ACTION, [edited])).toEqual({ stale: current });
     stub.apply.mockResolvedValueOnce({ status: "wouldShort", decks: [deck] });
-    expect(await editCollection(ACTION, [line])).toEqual({ wouldShort: [deck] });
+    expect(await editCollection(ACTION, [edited])).toEqual({ wouldShort: [deck] });
     stub.apply.mockResolvedValueOnce({ status: "unchanged" });
-    expect(await editCollection(ACTION, [line])).toEqual({ unchanged: true });
+    expect(await editCollection(ACTION, [edited])).toEqual({ unchanged: true });
     stub.apply.mockResolvedValueOnce({ status: "missingCard", names: ["Gone"] });
-    expect(await editCollection(ACTION, [line])).toEqual({ missingCard: ["Gone"] });
+    expect(await editCollection(ACTION, [edited])).toEqual({ missingCard: ["Gone"] });
     expect(stub.invalidate).not.toHaveBeenCalled();
     expect(stub.warm).not.toHaveBeenCalled();
   });

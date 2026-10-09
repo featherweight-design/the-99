@@ -30,12 +30,15 @@ async function signedInEditor(): Promise<string> {
 
 /** A sheet session is ten to forty cards; this is a bound on a request, not on a session. */
 const MAX_LINES = 500;
-const MAX_QUANTITY = 9999;
+/** What one add line may bring in. A typo bound, not a holding bound: holdings can grow past it. */
+const MAX_ADDED = 9999;
+/** `collection_items.quantity` is a Postgres integer. An edit names a holding of any size. */
+const MAX_HELD = 2_147_483_647;
 /** Conditions are short codes (`NM`, `LP`, `near_mint`); anything longer is not one. */
 const MAX_CONDITION = 32;
 
-const isCount = (v: unknown, min: number): v is number =>
-  typeof v === "number" && Number.isInteger(v) && v >= min && v <= MAX_QUANTITY;
+const isCount = (v: unknown, min: number, max: number): v is number =>
+  typeof v === "number" && Number.isInteger(v) && v >= min && v <= max;
 
 /**
  * The holding a line names, or null for anything that is not one. Set codes are stored lowercase.
@@ -81,7 +84,7 @@ export async function addToCollection(actionId: string, lines: unknown): Promise
   const parsed = linesOf(lines).map((l) => {
     const identity = identityOf(l);
     const quantity = (l as { quantity?: unknown }).quantity;
-    if (!identity || !isCount(quantity, 1)) throw new Error("bad collection line");
+    if (!identity || !isCount(quantity, 1, MAX_ADDED)) throw new Error("bad collection line");
     return { ...identity, quantity };
   });
   const catalog = await resolvePrintings(parsed);
@@ -107,8 +110,8 @@ export type EditOutcome =
 /**
  * Sets each named holding to a new count, as one `edit` entry: an edit-mode save, a printing
  * fixed by re-picking (the old holding to zero, the new one up), another printing added, or a
- * removal (every holding to zero). Each row carries `expected`, the count the sheet showed, and a
- * collection that moved since answers `stale` with today's counts.
+ * removal (every holding to zero). Each row MUST carry `expected`, the count the sheet showed (0 for
+ * a holding it adds), and a collection that moved since answers `stale` with today's counts.
  *
  * A lowering that leaves a committed deck short answers `wouldShort`; the client resends the SAME
  * action id with those decks as `confirmShort`, which the server re-checks.
@@ -123,13 +126,16 @@ export async function editCollection(actionId: string, rows: unknown, confirmSho
   const parsed = linesOf(rows).map((r) => {
     const identity = identityOf(r);
     const { quantity, expected, condition } = r as { quantity?: unknown; expected?: unknown; condition?: unknown };
-    if (!identity || !isCount(quantity, 0)) throw new Error("bad collection row");
-    if (expected !== undefined && !isCount(expected, 0)) throw new Error("bad collection row");
+    // `expected` is REQUIRED: without it `staleEdits` has nothing to compare, and a sheet drawn
+    // before another tab's save would overwrite the newer count.
+    if (!identity || !isCount(quantity, 0, MAX_HELD) || !isCount(expected, 0, MAX_HELD)) {
+      throw new Error("bad collection row");
+    }
     if (condition !== undefined && condition !== null
       && (typeof condition !== "string" || condition.length === 0 || condition.length > MAX_CONDITION)) {
       throw new Error("bad collection row");
     }
-    return { ...identity, quantity, expected: expected as number | undefined, condition: condition as string | null | undefined };
+    return { ...identity, quantity, expected, condition: condition as string | null | undefined };
   });
   const catalog = await resolvePrintings(parsed);
   const editRows: EditRow[] = parsed.map((r) => ({
