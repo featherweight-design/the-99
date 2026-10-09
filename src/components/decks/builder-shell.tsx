@@ -201,7 +201,8 @@ interface BuilderShellProps {
   analysisEnabled?: boolean;
   /** `DECK_STATS_ENABLED`, read on the server. Off: the list control draws no Stats segment. */
   statsEnabled?: boolean;
-  /** The Stats panel's figures; null when the switch is off or the read failed. */
+  /** What the Stats panel needs beyond the card list: the commander row(s), which count toward the
+   *  curve. The figures themselves are derived on the client from the optimistic list. Null when off. */
   statsData?: DeckStatsInput | null;
   /** `NOTICES_ENABLED` (`src/lib/notices/flag.ts`): whether the header draws the notice tag and the
    *  Notices sheet can open. Off, nothing of the notices is read or drawn. */

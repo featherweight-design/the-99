@@ -93,4 +93,11 @@ describe("DeckStatsView caption", () => {
     render(<DeckStatsView data={{ curve: manaCurve(one), types: typeCurve(one) }} />);
     expect(screen.getByText(/· 1 land, not on the curve/)).toBeInTheDocument();
   });
+
+  it("says 0 lands for a castable deck with none", () => {
+    const zero = [{ cmc: 2, quantity: 1, typeLine: "Creature — Elf" }];
+    render(<DeckStatsView data={{ curve: manaCurve(zero), types: typeCurve(zero) }} />);
+    expect(screen.getByText(/· 0 lands, not on the curve/)).toBeInTheDocument();
+    expect(document.querySelector('[data-type-chip="land"]')).toHaveTextContent("0");
+  });
 });
