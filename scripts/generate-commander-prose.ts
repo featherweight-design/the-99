@@ -1,6 +1,7 @@
 import "./lib/env.mjs";
 import { generateCommanderProse } from "../src/lib/prose/generate";
 import { costUsd, rates, type Usage } from "./eval/lib/pricing.mjs";
+import { recordSystemSpend } from "./lib/system-spend";
 
 const MODEL = "claude-sonnet-4-6";
 const API_URL = "https://api.anthropic.com/v1/messages";
@@ -86,7 +87,7 @@ generateCommanderProse({
   complete, dryRun, maxCommanders, attempts: ATTEMPTS,
   shouldStop: () => spentUsd + worstCommanderUsd > maxUsd,
 })
-  .then((r) => {
+  .then(async (r) => {
     if (dryRun) {
       console.log(`Dry run: ${r.deferred} commanders need a sentence (${r.fresh} already current, ` +
         `${r.restamped} would be re-stamped, ${r.suppressed} suppressed); at most ${r.deferred * 3} calls. Nothing was called.`);
@@ -101,6 +102,7 @@ generateCommanderProse({
     const asked = r.written + r.rejected + r.failed;
     console.log(`Spent $${spentUsd.toFixed(2)} of the $${maxUsd.toFixed(2)} cap, measured from each reply's usage: ` +
       `${calls} calls for ${asked} commanders (${asked > 0 ? (calls / asked).toFixed(2) : "0"} per commander).`);
+    if (calls > 0) await recordSystemSpend({ feature: "prose", model: MODEL, usd: spentUsd });
     // Per attempt, not per commander, and broken out by rule. The run that prompted this
     // rejected nearly everything it generated, and working out which of the four rules did
     // it meant counting characters by hand off a wall of warnings.

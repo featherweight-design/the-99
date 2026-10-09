@@ -8,7 +8,8 @@ import "./lib/env.mjs";
 import Anthropic from "@anthropic-ai/sdk";
 
 import { writeMeasured } from "./lib/card-labels-ledger.mjs";
-import { costOf, type ModelKey } from "./lib/card-labels-pricing.mjs";
+import { ALL_MODELS, costOf, type ModelKey } from "./lib/card-labels-pricing.mjs";
+import { recordSystemSpend } from "./lib/system-spend";
 import { publishArtifacts } from "./lib/card-labels-publish.mjs";
 import type { Job } from "../src/lib/labels/types.js";
 import { faceResolver, parseReply, screenJobs, withoutRepeats } from "../src/lib/labels/parse.js";
@@ -199,6 +200,13 @@ if (grandTotal) {
     // into $2.5637 on a second collect over the same batches.
     const total = writeMeasured(runId, grandTotal);
     console.log(`ledger: this run measured $${grandTotal.toFixed(4)}; total committed $${total.toFixed(4)}`);
+    // One model_calls row per model, keyed on the run so a repeat collect replaces rather than adds.
+    for (const [key, m] of Object.entries(measured)) {
+      await recordSystemSpend({
+        feature: "labels", model: ALL_MODELS[key as ModelKey] ?? key, usd: m.usd, key: `labels:${runId}:${key}`,
+        tokens: { input: m.tokens.in, output: m.tokens.out, cacheRead: m.tokens.cacheRead, cacheWrite: m.tokens.cacheWrite },
+      });
+    }
   } else {
     console.log(`ledger left at the worst case: ${collected} of ${Object.keys(submitted).length} batches ended`);
   }

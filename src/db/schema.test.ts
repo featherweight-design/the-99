@@ -50,6 +50,14 @@ describe("deck tuning schema", () => {
     const idx = getTableConfig(modelCalls).indexes.map((i) => i.config.name);
     expect(idx).toContain("model_calls_user_created_idx");
   });
+
+  it("records who started each call, and admits the two batch features", () => {
+    const cfg = getTableConfig(modelCalls);
+    expect(cfg.columns.find((c) => c.name === "origin")?.notNull).toBe(true);
+    const checks = cfg.checks.map((c) => new PgDialect().sqlToQuery(c.value).sql);
+    expect(checks.some((c) => c.includes("'player'") && c.includes("'system'"))).toBe(true);
+    expect(checks.some((c) => c.includes("'labels'") && c.includes("'prose'"))).toBe(true);
+  });
 });
 
 describe("deck synopsis schema", () => {

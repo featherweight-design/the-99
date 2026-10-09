@@ -1792,6 +1792,11 @@ export const modelCalls = pgTable("model_calls", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull(),
   feature: text("feature").notNull(),
+  // WHO STARTED THE CALL (migration 0082). `player` is a press in the app and the only origin
+  // the allowance and the spend cap read; `system` is a batch job (card labels, commander prose)
+  // writing ONE summary row per batch so dollars by origin and feature come from one table.
+  // Every writer states it; the default only covers a build still serving during a deploy.
+  origin: text("origin").notNull().default("player"),
   status: text("status").notNull().default("reserved"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   // THE SPEND CAP'S METERS (migration 0057). `model` is written at reserve, so a reservation in
@@ -1807,7 +1812,8 @@ export const modelCalls = pgTable("model_calls", {
   model: text("model"),
   costMicroUsd: bigint("cost_micro_usd", { mode: "number" }),
 }, (t) => [
-  check("model_calls_feature_check", sql`${t.feature} in ('tuning', 'synopsis', 'intake')`),
+  check("model_calls_feature_check", sql`${t.feature} in ('tuning', 'synopsis', 'intake', 'labels', 'prose')`),
+  check("model_calls_origin_check", sql`${t.origin} in ('player', 'system')`),
   check("model_calls_status_check", sql`${t.status} in ('reserved', 'spent', 'refunded')`),
   // The allowance's only query: this player's calls inside the window.
   index("model_calls_user_created_idx").on(t.userId, t.createdAt),
