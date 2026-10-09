@@ -60,13 +60,14 @@ locked its layout. But its computation is narrower than what Hugh is now asking 
 2. What "pips weighted by curve" means as a number — e.g., does every pip count once per copy in
    the deck (today's behavior) regardless of when it's cast, or does a pip's weight fall as its
    card's mana value rises? Hugh's phrasing implies the latter; nobody has specified a formula.
+   **Dropped (Ruling 10, 2026-10-09): demand stays the raw pip count.**
 3. Whether Mana Balance's prescriptive read (what to add/cut) needs anything from this module
    that the descriptive chart doesn't — if so, name it now so the shared module's shape doesn't
    get redesigned when Mana Balance's own brief lands.
 
 Until that addendum exists, this plan ships card (b) in round 1 at the **handoff's own
 spec** (land-side real counting per Q1, non-land as a hollow count, no curve weighting) in PR 4
-below. The richer, Deckcheck-style, curve-weighted, fully-attributed version — and the module
+below. The richer, Deckcheck-style, fully-attributed version — and the module
 shared with Mana Balance — is a separate PR (PR 4b), blocked on that addendum, sequenced after
 round 1's other six cards so it never blocks the rest of the line.
 
@@ -88,8 +89,9 @@ function manaSupply(cards: ManaSupplyCardRow[]): {
   `demand` is the raw per-color pip count (`manaNeeds()` summed), unweighted.
 - **PR 4b (blocked on the addendum):** extends the same function — never a second one — to
   resolve `supply[color].nonland` from oracle text (extending `classifyRoles`'s `ramp` pattern
-  with a color-producing-text parse) and to apply whatever curve-weighting the addendum
-  specifies to `demand`. Mana Balance (a later, separate feature) is this function's second
+  with a color-producing-text parse), counting non-land mana sources (rocks, dorks, land search)
+  with unweighted counts. `demand` stays the raw pip count; curve weighting was dropped (Ruling
+  10). Mana Balance (a later, separate feature) is this function's second
   caller; this plan does not design Mana Balance's own UI, only names where its shared
   computation will live and which PR introduces each half.
 
@@ -115,7 +117,7 @@ a new route.
 | 2 | Curve + types (a) | `typeBreakdown()` in `stats.ts` parallel to `manaCurve()`; card UI, type-chip tap-to-light interaction, thin state (`STATES` 1c1-1c3). | 1 | no |
 | 3 | Jobs (e) | `readLabels()` tally by `Job.kind`; unlabeled-card count; card UI with tap-to-expand row (`STATES` 1e1-1e2). | 1 | no |
 | 4 | Colors (b), as drawn (ruling 9) | `src/lib/mana/supply.ts` (land-only supply, raw demand); card UI, butterfly, thin/no-lands/one-color states (`STATES` 1d1-1d3). | 1 | no (ships to handoff spec) |
-| 4b | Colors (b), richer + Mana Balance module | Extends `manaSupply()` with non-land color attribution and curve weighting per whatever the addendum settles; updates card (b)'s right-hand side if the addendum calls for colored (not hollow) non-land squares. | 4, the addendum | **yes — blocked** |
+| 4b | Colors (b), richer + Mana Balance module | Extends `manaSupply()` with non-land color attribution (rocks, dorks, land search), unweighted counts, no curve weighting (Ruling 10); updates card (b)'s right-hand side if the addendum calls for colored (not hollow) non-land squares. | 4, the addendum | **yes — blocked** |
 | 5 | Against the average (d) | Lighter read into the basis chain (`loadSkeletonForCommanders`, via the `deck-mix.ts` pattern — not the full `loadDeckProfile`); diverging-bar card; starting-mix fallback draws lands/roles only per the eng resolution (`STATES` 1f1-1f3). | 1 | no |
 | 6 | Money and ownership (c) | Per-card price join against the decklist (new derivation joining `loadPrices()` / `priceOf()` directly, parallel to `loadShoppingRollup`'s aggregate) for deck value and the priciest-five list; reuses the existing `DeckShopping` aggregate for the buy figure; card UI, owned/unpriced/all-owned states (`STATES` 1g1-1g3). | 1 | no |
 | 7 | Results (f + g) | Trend from `listDeckGames()`'s ordered read (new pure function, no new query); new `group by (versionId, result)` query for by-version; "Version not recorded" bucket last, never dropped (`STATES` 1h1-1h3). | 1 | no |
@@ -191,7 +193,11 @@ floor (the pattern every classifier in this repo with a measured floor already f
   `READINESS`'s check-before-merge explicitly calls out "never a prompt to analyze" as a failure
   mode, not just a cosmetic miss.
 
-## Proposed curve weighting (engineering's proposal, for the Design addendum)
+## Proposed curve weighting (DROPPED, Ruling 10, 2026-10-09)
+
+**Superseded.** Hugh ruled to drop curve weighting after both measured decks moved about a point
+(Yuriko, and HD - Gishath below). The proposal and its measurements stay as the record of what was
+tried; nothing in PR 4 or PR 4b builds it.
 
 Question 2 above asked what "pips weighted by curve" means as a number. Engineering proposes:
 
@@ -229,15 +235,33 @@ one-pip seven-drop counts 0.14 against a one-drop's 1.0, and on this deck it mov
 69.6%, no more than the proposal does, while making expensive color-critical bombs read as noise
 on decks where they carry the plan. It also reads a mana value of 0 as a special case.
 
+**Second deck: "HD - Gishath" on staging** (`904fdc61…`, 2026-10-09, read-only, 85 `deck_cards` rows
+plus the commander, 64 non-land cards with a mana cost, same rules and the same single-color
+filter as above):
+
+| color | raw pips | weighted | raw share | weighted share |
+|---|---|---|---|---|
+| G | 56 | 22.2 | 56.0% | 56.9% |
+| R | 26 | 10.3 | 26.0% | 26.3% |
+| W | 18 | 6.6 | 18.0% | 16.8% |
+
+The weighting moves a share by at most 1.2 points (white down, green up 0.9), and the order of the
+colors is unchanged. On a three-color deck it is as quiet as on Yuriko's two, so the proposal
+changes bar lengths by about a point on both decks measured and flips no reading.
+
 ## Settled by Hugh
 
 - **Ruling 9 (Hugh, 2026-10-08): card (b), colors, ships as drawn in PR 4 (lands by color).** The
-  richer mana chart (non-land attribution, curve weighting) goes to Design as a small addendum
+  richer mana chart (non-land attribution) goes to Design as a small addendum
   citing the section above; PR 4b waits for it. The PR 1 to PR 4 sequence does not wait.
+- **Ruling 10 (Hugh, 2026-10-09): curve weighting is dropped.** Both measured decks (Yuriko and
+  HD - Gishath) moved about a point under the proposed formula, which does not justify the added
+  rule. PR 4b is rescoped to adding non-land mana sources (rocks, dorks, land search) to
+  `supply[color].nonland`, with unweighted counts; `demand` stays the raw pip count everywhere.
 - PR 8 (`finding ⟶` wiring) is decided at PR-review time, once cards (a) to (g) exist to link from.
   It is a sequencing call, not a design one, and not a blocker for any earlier PR.
 
 ## Open items for Hugh
 
 None blocking PRs 1 to 4. Pending: the Design addendum for PR 4b (non-land color attribution's
-effect on the butterfly's drawing, and ratifying or replacing the curve weighting above).
+effect on the butterfly's drawing). Curve weighting is no longer open (Ruling 10).
