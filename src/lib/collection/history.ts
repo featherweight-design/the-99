@@ -55,6 +55,11 @@ export type HistoryListEntry = {
   lowered: number;
   /** How many rows it changed; a Replace can touch hundreds. */
   rowCount: number;
+  /**
+   * Every row it changed ends at no copies: an edit the list labels as a removal (plan
+   * Decision 2 folds removal into `edit`). Computed from the rows so the list needs no detail read.
+   */
+  removesOnly: boolean;
   /** Set on a revert: the entry it reverted. */
   revertsId: string | null;
   /** Set on a reverted entry: the revert that reverted it. Hides the entry's revert control. */
@@ -72,7 +77,7 @@ export type HistoryEntry = HistoryListEntry & { rows: HistoryRow[] };
 
 type ListRow = {
   id: string; seq: string | number; created_at: Date | string; kind: HistoryListEntry["kind"];
-  source: string | null; raised: number; lowered: number; row_count: number;
+  source: string | null; raised: number; lowered: number; row_count: number; removes_only: boolean;
   reverts_id: string | null; reverted_by: string | null;
   reverts_visible: boolean; reverted_by_visible: boolean;
   rows?: HistoryRow[];
@@ -87,6 +92,12 @@ type ListRow = {
 const listColumns = sql`
   h.id, h.seq, h.created_at, h.kind, h.source, h.raised, h.lowered,
   jsonb_array_length(h.rows) as row_count, h.reverts_id, h.reverted_by,
+  (
+    jsonb_array_length(h.rows) > 0
+    and not exists (
+      select 1 from jsonb_array_elements(h.rows) e where jsonb_typeof(e -> 'after') <> 'null'
+    )
+  ) as removes_only,
   exists (
     select 1 from collection_history t
     where t.id = h.reverts_id and t.rows is not null
@@ -107,7 +118,7 @@ const inWindow = (userId: string) => sql`
 function toListEntry(r: ListRow): HistoryListEntry {
   return {
     id: r.id, seq: Number(r.seq), createdAt: new Date(r.created_at), kind: r.kind, source: r.source,
-    raised: r.raised, lowered: r.lowered, rowCount: r.row_count,
+    raised: r.raised, lowered: r.lowered, rowCount: r.row_count, removesOnly: r.removes_only,
     revertsId: r.reverts_id, revertedBy: r.reverted_by,
     revertsVisible: r.reverts_visible, revertedByVisible: r.reverted_by_visible,
   };

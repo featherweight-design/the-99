@@ -395,7 +395,13 @@ export async function applyCollectionChange(
         .returning({ seq: collectionHistory.seq });
       if (!claimed) {
         const [twin] = await tx.select().from(collectionHistory).where(eq(collectionHistory.id, opts.id));
-        if (twin?.userId === userId) {
+        // A retry only if the committed entry IS this action: same player, same kind, and for a
+        // revert the same target. Any other match is an id reused for a different action (a
+        // client bug, or a revert sent with its target's own id), and reporting the earlier
+        // entry as this one's success would claim a write that never happened.
+        const sameAction = twin?.userId === userId && twin.kind === entryKind(change)
+          && (change.kind !== "revert" || twin.revertsId === change.entryId);
+        if (sameAction) {
           throw new Refused({
             status: "alreadyApplied",
             entry: {
@@ -404,7 +410,7 @@ export async function applyCollectionChange(
             },
           });
         }
-        // Another player's id: never reported back, since that would confirm it exists.
+        // Never reported back as anything more specific: another player's id would confirm it exists.
         throw new Error("collection change id is already in use");
       }
 

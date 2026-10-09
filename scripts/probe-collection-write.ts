@@ -274,6 +274,14 @@ async function main() {
     check("an entry pruned inside the window is neither listed nor linked to",
       !afterPrune.entries.some((e) => e.id === target2) && linkToPruned?.revertsVisible === false,
       JSON.stringify({ listed: afterPrune.entries.some((e) => e.id === target2), visible: linkToPruned?.revertsVisible }));
+    const removal = page.entries.find((e) => e.id === lowerId);
+    check("an edit that ends every row at nothing reads as a removal in the list",
+      removal?.removesOnly === true && page.entries.filter((e) => e.kind === "add").every((e) => !e.removesOnly),
+      JSON.stringify({ removesOnly: removal?.removesOnly }));
+    const reusedId = await applyCollectionChange(USER, { kind: "revert", entryId: target2 }, { id: target2 })
+      .then((r) => r.status, (e: Error) => e.message);
+    check("a revert sent under its own target's id is refused, never answered as already applied",
+      reusedId === "collection change id is already in use", reusedId);
     const own = await getHistoryEntry(USER, page.entries[0].id);
     check("one entry reads whole for its owner and not at all for anyone else",
       own !== null && own.rows.length === own.rowCount && await getHistoryEntry(`${USER}-other`, page.entries[0].id) === null,

@@ -122,12 +122,12 @@ export async function revertCollectionEntry(
     { id: actionId, confirmShort: parseShortDecks(confirmShort) },
   );
   switch (result.status) {
+    // A retry of a revert that already committed is the same success, and invalidates again: the
+    // request that wrote it may have died between its commit and its own invalidation.
     case "applied":
+    case "alreadyApplied":
       invalidateCollectionReaders(userId);
       return { reverted: { id: result.entry.id } };
-    // A retry of a revert that already committed: the same success, and the caches were retired
-    // by the request that wrote it.
-    case "alreadyApplied": return { reverted: { id: result.entry.id } };
     case "notFound": return { notFound: true };
     case "alreadyReverted": return { alreadyReverted: true };
     case "missingCard": return { missingCard: result.names };

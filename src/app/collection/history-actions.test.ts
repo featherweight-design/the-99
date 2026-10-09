@@ -83,10 +83,11 @@ describe("revertCollectionEntry", () => {
     expect(stub.invalidate).toHaveBeenCalledWith("user_1");
   });
 
-  it("answers a retry of a committed revert as the same success, without invalidating again", async () => {
+  it("answers a retry of a committed revert as the same success, and invalidates again", async () => {
+    // The request that committed it may have died before its own invalidation.
     stub.apply.mockResolvedValue({ status: "alreadyApplied", entry: { id: ACTION } });
     expect(await revertCollectionEntry(ENTRY, ACTION, {})).toEqual({ reverted: { id: ACTION } });
-    expect(stub.invalidate).not.toHaveBeenCalled();
+    expect(stub.invalidate).toHaveBeenCalledWith("user_1");
   });
 
   it("passes a stale view and a deck warning back to be redrawn, writing nothing", async () => {
