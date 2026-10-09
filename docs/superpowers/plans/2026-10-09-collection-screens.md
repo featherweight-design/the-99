@@ -220,9 +220,9 @@ ranking. A player who edits and then goes to `/commanders` more than a couple of
 finds the scores already persisted. One who goes there immediately meets the read path's own
 recompute, which is today's behavior after an upload. This is compute only, with no model spend.
 
-**What PR 1 measures before any UI ships:** on the staging scratch branch
-(`br-cold-meadow-a6wn38qj`), `/commanders` TTFB after a one-card edit at 0s, 3s and 10s, warm and
-cold, with and without the warm. If an immediate visit still reads several seconds on a cold
+**What PR 1 measures before any UI ships:** on a fresh scratch branch of staging
+(deleted afterward, with Hugh's OK), `/commanders` TTFB after a one-card edit at 0s, 3s and 10s,
+warm and cold, with and without the warm. If an immediate visit still reads several seconds on a cold
 compute, that goes to Hugh as a finding with numbers. A loading boundary on `/commanders` is a
 Design call, not something this line adds on its own.
 
