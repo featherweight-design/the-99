@@ -20,6 +20,7 @@ import {
 } from "../../lib/copy/deck-sort";
 import { PriceStrip } from "./price-strip";
 import { StandInLimit } from "./stand-in-limit";
+import { deckStatsCopy } from "@/lib/copy/deck-stats";
 import type { PriceSummary, ProvenanceForm } from "../../lib/decks/price";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
 import { ViewToggle, type ViewToggleOption } from "../ui/view-toggle";
@@ -32,6 +33,15 @@ export const DECK_VIEW_KEY = "the99:deck-view";
 
 export function isDeckView(value: string): value is DeckView {
   return value === "list" || value === "card";
+}
+
+export type DeckPanel = "list" | "stats";
+
+/** Which body the All / Shopping / Stats control last showed, per device. */
+export const DECK_PANEL_KEY = "the99:deck-panel";
+
+export function isDeckPanel(value: string): value is DeckPanel {
+  return value === "list" || value === "stats";
 }
 
 const DECK_VIEWS: readonly [ViewToggleOption<DeckView>, ViewToggleOption<DeckView>] = [
@@ -99,6 +109,12 @@ type GroupToggleProps = {
   onLockModeChange?: (on: boolean) => void;
   /** Auto COPIES whose card is locked (T3): Clear's label counts `autoCount` less these. */
   lockedAutoCount?: number;
+  /**
+   * `DECK_STATS_ENABLED`: present means the control is `All · Shopping | Stats`. Absent is today's
+   * toolbar, exactly. While `open`, the segment is the selected one and every list tool steps
+   * aside, because the panel below is not a list.
+   */
+  stats?: { open: boolean; onChange: (open: boolean) => void };
 };
 
 /**
@@ -145,7 +161,12 @@ export function GroupToggle({
   lockMode = false,
   onLockModeChange,
   lockedAutoCount = 0,
+  stats,
 }: GroupToggleProps) {
+  const statsOpen = stats?.open ?? false;
+  // The segment owns the selection while Stats is open, so neither list pill reads as chosen.
+  const shown = statsOpen ? null : filter;
+  const segmentSize = stats ? "min-h-[44px] md:min-h-0" : "";
   // `md:` is the only breakpoint this row has ever used, and the panel's form
   // follows it: a labelled 44px pill at phone, the desktop popover above.
   const wide = useIsDesktop();
@@ -183,7 +204,8 @@ export function GroupToggle({
           onClick={() => onFilterChange("all")}
           className={[
             "font-sans font-semibold transition-[filter] hover:brightness-125 text-[12px] md:text-[13px] rounded-full px-[11px] py-[4px] md:px-[14px] md:py-[5px]",
-            filter === "all"
+            segmentSize,
+            shown === "all"
               ? "text-[color:var(--fg)] bg-[color:var(--elevated)] border border-solid border-[color:var(--border-strong)]"
               : "text-[color:var(--fg-faint)] bg-transparent border border-solid border-[color:var(--border-strong)]",
           ].join(" ")}
@@ -197,13 +219,43 @@ export function GroupToggle({
           onClick={() => onFilterChange("shopping")}
           className={[
             "font-sans transition-[filter] hover:brightness-125 text-[12px] md:text-[13px] rounded-full px-[11px] py-[4px] md:px-[14px] md:py-[5px]",
-            filter === "shopping"
+            segmentSize,
+            shown === "shopping"
               ? "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)] border border-solid border-[color:var(--border-strong)]"
               : "font-medium text-[color:var(--warning)] bg-transparent border border-solid border-[color:color-mix(in_srgb,var(--accent)_30%,var(--bg))]",
           ].join(" ")}
         >
           Shopping {shoppingCount}
         </button>
+
+        {stats && (
+          <>
+            <span aria-hidden className="h-[16px] w-px bg-[color:var(--border-strong)]" />
+            <button
+              type="button"
+              aria-pressed={statsOpen}
+              aria-label={deckStatsCopy.segment.aria}
+              onClick={() => stats.onChange(true)}
+              className={[
+                "font-sans transition-[filter] hover:brightness-125 text-[12px] md:text-[13px] rounded-full px-[11px] py-[4px] md:px-[14px] md:py-[5px] border border-solid border-[color:var(--border-strong)]",
+                segmentSize,
+                statsOpen
+                  ? "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)]"
+                  : "font-medium text-[color:var(--fg-faint)] bg-transparent",
+              ].join(" ")}
+            >
+              {deckStatsCopy.segment.stats}
+            </button>
+          </>
+        )}
+
+        {statsOpen && (
+          <span className="basis-full font-mono text-[10.5px] text-[color:var(--fg-faint)] md:basis-auto md:ml-auto">
+            {deckStatsCopy.segment.provenance}
+          </span>
+        )}
+        {!statsOpen && (
+        <>
 
         {/* Spacer: pushes the group pills right — from `md:` only. Below it the
             CLUSTER grows instead (see its own note), and two growing children
@@ -406,6 +458,8 @@ export function GroupToggle({
           </>
         )}
         </div>
+        </>
+        )}
       </div>
 
       {/* Scoped to the filter it sits under: the sum of what Shopping is
@@ -414,12 +468,12 @@ export function GroupToggle({
           unreadable table, and a wrapper carrying the 10px gap would leave that
           gap under the pills with nothing in it. The strip owns its own top
           margin so the decision and the space it occupies stay together. */}
-      {filter === "shopping" && priceSummary && (
+      {!statsOpen && filter === "shopping" && priceSummary && (
         <PriceStrip summary={priceSummary} provenance={provenance} shoppingCards={shoppingCards} />
       )}
       {/* A sibling of the strip, not a child: the strip returns null without provenance, and the
           limit still shows then (it reads `none over`). */}
-      {filter === "shopping" && <StandInLimit shoppingCount={shoppingCount} overCount={shoppingOverCount} />}
+      {!statsOpen && filter === "shopping" && <StandInLimit shoppingCount={shoppingCount} overCount={shoppingOverCount} />}
     </div>
   );
 }

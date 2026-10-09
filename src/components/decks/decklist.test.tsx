@@ -16,7 +16,8 @@ import { PendingChangeProvider } from "./pending-change";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { cardTileCopy, viewToggleCopy } from "../../lib/copy/card-surfaces";
 import { proxyCopy } from "../../lib/copy/proxies";
-import { DECK_VIEW_KEY } from "./group-toggle";
+import { DECK_PANEL_KEY, DECK_VIEW_KEY } from "./group-toggle";
+import { deckStatsCopy } from "../../lib/copy/deck-stats";
 import { recommendedMix } from "../../lib/decks/mix";
 
 /** The asserted baseline, through the real function rather than restated — a hand-built
@@ -99,6 +100,7 @@ function renderDecklist(
     /** Swap receipts seeded into a `SwapToolsProvider` around the list. */
     receipts?: SwapReceipt[];
     lockMode?: boolean;
+    statsEnabled?: boolean;
     commander?: DeckCommander;
     partner?: DeckCommander | null;
   } = {},
@@ -158,6 +160,7 @@ function renderDecklist(
           newestAsOf={opts.newestAsOf ?? null}
           onAnnounce={opts.onAnnounce}
           lockMode={opts.lockMode}
+          statsEnabled={opts.statsEnabled}
         />
       ))}</AddOptimisticCardProvider>
     </CardDetailProvider>,
@@ -1389,5 +1392,36 @@ describe("an unowned commander heads the Shopping list", () => {
     ).not.toBeInTheDocument();
     // The pill under All still counts what Shopping would show.
     expect(screen.getByRole("button", { name: "Shopping 2" })).toBeInTheDocument();
+  });
+});
+
+describe("the Stats panel", () => {
+  afterEach(() => window.localStorage.removeItem(DECK_PANEL_KEY));
+
+  it("draws no Stats segment and no stats view with the switch off, even when Stats is stored", () => {
+    window.localStorage.setItem(DECK_PANEL_KEY, "stats");
+    renderDecklist([rampOwned], { filter: "all" });
+
+    expect(screen.queryByRole("button", { name: deckStatsCopy.segment.aria })).toBeNull();
+    expect(document.querySelector("[data-deck-stats]")).toBeNull();
+  });
+
+  it("draws the segment with the switch on, and the six shells once Stats is chosen", () => {
+    renderDecklist([rampOwned], { filter: "all", statsEnabled: true });
+
+    expect(document.querySelector("[data-deck-stats]")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+
+    expect(document.querySelector("[data-deck-stats]")).not.toBeNull();
+    expect(screen.getAllByRole("figure")).toHaveLength(6);
+    expect(screen.queryByText("Sol Ring")).toBeNull();
+  });
+
+  it("returns to the list when All is pressed from Stats", () => {
+    renderDecklist([rampOwned], { filter: "all", statsEnabled: true });
+    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    fireEvent.click(screen.getByRole("button", { name: /^All\b/ }));
+
+    expect(document.querySelector("[data-deck-stats]")).toBeNull();
   });
 });

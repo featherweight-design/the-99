@@ -1,0 +1,21 @@
+{
+  "feature": "Deck stats, PR 1: the switch and the placement shell",
+  "note": "Needs DECK_STATS_ENABLED=true on the server and STATS_DECK (any deck with cards). The list row shows the third segment beside Deck and Versions; the stats row presses it and shows six empty shells with the list tools hidden. Shells carry no data until the card PRs, so no row photographs a figure's contents.",
+  "rows": [
+    {
+      "id": "stats-segment",
+      "label": "/decks/[id] decklist: the Stats segment beside the grouping toggle",
+      "view": "src/components/decks/group-toggle.tsx",
+      "steps": [{ "goto": "/decks/${STATS_DECK}", "wait": "[role=tablist]", "settle": 1500 }]
+    },
+    {
+      "id": "stats-open",
+      "label": "/decks/[id] Stats open: six shells, list tools hidden, provenance line",
+      "view": "src/components/decks/deck-stats-view.tsx",
+      "steps": [
+        { "goto": "/decks/${STATS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "button", "name": "^Show the deck as stats", "wait": "[data-deck-stats]", "settle": 800 }
+      ]
+    }
+  ]
+}

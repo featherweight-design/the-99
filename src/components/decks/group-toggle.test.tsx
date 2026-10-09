@@ -1,11 +1,12 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { GroupToggle, LockModeButton } from "./group-toggle";
 import { priceCopy } from "../../lib/copy/price";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
 import type { PriceSummary, ProvenanceForm } from "../../lib/decks/price";
 import { summarisePrices } from "../../lib/decks/price";
+import { deckStatsCopy } from "../../lib/copy/deck-stats";
 import { cardCopies } from "../../lib/decks/grouping";
 
 const provenance: ProvenanceForm = { behind: false, when: "Monday" };
@@ -213,5 +214,29 @@ describe("LockModeButton", () => {
     unmount();
     const alone = render(<LockModeButton lockMode={lockMode} onToggle={() => {}} />);
     expect(alone.container.innerHTML).toBe(html);
+  });
+});
+
+describe("GroupToggle's Stats segment", () => {
+  it("is absent without the stats prop", () => {
+    render(<GroupToggle {...props} filter="all" />);
+    expect(screen.queryByRole("button", { name: deckStatsCopy.segment.aria })).toBeNull();
+  });
+
+  it("is drawn with it, reports a press, and shows the provenance line only when open", () => {
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <GroupToggle {...props} filter="all" stats={{ open: false, onChange }} />,
+    );
+    expect(screen.queryByText(deckStatsCopy.segment.provenance)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    expect(onChange).toHaveBeenCalledWith(true);
+
+    rerender(<GroupToggle {...props} filter="all" stats={{ open: true, onChange }} />);
+    expect(screen.getByText(deckStatsCopy.segment.provenance)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: deckStatsCopy.segment.aria })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 });
