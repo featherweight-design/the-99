@@ -4,6 +4,7 @@
 // of the cards that survive the *other* active filters, and the counting is
 // what wants unit tests, so it lives away from the component.
 
+import { frontFace } from "../cards/facet";
 import { AVAILABLE_TYPES, filterCards, type BrowseListCard, type BrowseFilters } from "./browse";
 
 /** One option row in the Type ▾ panel. `code` is the type word itself. */
@@ -45,7 +46,7 @@ export function buildTypeOptions(cards: BrowseListCard[], filters: BrowseFilters
     const needle = label.toLowerCase();
     let count = 0;
     for (const c of surviving) {
-      if (c.typeLine.toLowerCase().includes(needle)) count += c.quantity;
+      if (frontFace(c.typeLine).toLowerCase().includes(needle)) count += c.quantity;
     }
     return { code: label, label, count, disabled: count === 0 };
   });

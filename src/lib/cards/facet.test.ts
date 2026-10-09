@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { cardFacet, castFaceText, FACET_TYPE_LABEL, isLandFace, playableAsLand, typeWord } from "./facet";
+import { cardFacet, castFaceText, FACET_TYPE_LABEL, isLandFace, playableAsLand, typeWord, frontFace } from "./facet";
 
 describe("cardFacet", () => {
   it("buckets the six plain cases", () => {
@@ -152,4 +152,11 @@ describe("typeWord", () => {
     expect(typeWord("Artifact")).toBe("Artifact");
     expect(typeWord("Land")).toBe("Land");
   });
+});
+
+describe("frontFace", () => {
+  it("returns the text before the first separator", () =>
+    expect(frontFace("Sorcery // Land")).toBe("Sorcery"));
+  it("returns a single-face line whole", () =>
+    expect(frontFace("Legendary Creature — Angel Horror")).toBe("Legendary Creature — Angel Horror"));
 });

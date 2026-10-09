@@ -5,6 +5,7 @@ import type { OwnedSetMeta } from "./set-filter";
 import { matchesColors, type JoinMode } from "../commanders/filter";
 import { availabilityState, type Availability, type AvailabilityState, type AvailabilitySummary } from "../decks/availability";
 import { faceNames, isTwoFaced } from "../cards/faces";
+import { frontFace } from "../cards/facet";
 
 /** Rarity ordering for the "rarity" sort key. */
 const RARITY_ORDER: Record<string, number> = { common: 0, uncommon: 1, rare: 2, mythic: 3 };
@@ -873,7 +874,7 @@ export function filterCards(list: BrowseListCard[], f: BrowseFilters): BrowseLis
     if (search && !matchesName(c, search)) return false;
     if (!matchesColors(c.colorIdentity, f.colors, f.match ?? "contains")) return false;
     if (types.length > 0) {
-      const line = c.typeLine.toLowerCase();
+      const line = frontFace(c.typeLine).toLowerCase();
       if (!types.some((t) => line.includes(t))) return false;
     }
     if (

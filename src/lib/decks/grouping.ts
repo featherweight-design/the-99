@@ -1,3 +1,4 @@
+import { frontFace } from "../cards/facet";
 import type { CardFact } from "../copy/card-mark";
 // Pure grouping helpers + card shapes shared by client components.
 // Must stay free of db/server imports — client components import these as values.
@@ -118,10 +119,11 @@ export type DeckDetailCard = {
  * init in the browser bundle.
  *
  * Order matters: a card is filed under the first word that matches, so a
- * "Land Creature" is a land.
+ * "Land Creature" is a land. Only the front face counts (the first-named half
+ * of a split card): a Sorcery // Land modal DFC is a Sorcery.
  */
 export function cardTypeGroup(typeLine: string): CardTypeGroup {
-  const t = typeLine.toLowerCase();
+  const t = frontFace(typeLine).toLowerCase();
   if (t.includes("land")) return "Lands";
   if (t.includes("creature")) return "Creatures";
   if (t.includes("planeswalker")) return "Planeswalkers";
