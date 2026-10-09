@@ -253,9 +253,14 @@ describe("the card band", () => {
     expect(screen.getByTestId("modal-art-mobile")).not.toHaveClass("anim-phone-card-enter");
   });
 
-  it("keeps the turn plate on a two-faced card's corner", () => {
+  it("centres the turn plate along a two-faced card's bottom", () => {
     mount({ card: { ...card, layout: "transform", backImageUri: "https://img/back.jpg", name: "Delver of Secrets // Insectile Aberration" } });
-    expect(within(screen.getByTestId("modal-art-mobile")).getByRole("button", { name: /Insectile Aberration/ })).toBeInTheDocument();
+    const button = within(screen.getByTestId("modal-art-mobile")).getByRole("button", { name: /Insectile Aberration/ });
+    expect(button).toBeInTheDocument();
+    // The corner placement covered the power/toughness box; the wrapper centres on the card.
+    const wrapper = button.parentElement as HTMLElement;
+    expect(wrapper).toHaveClass("left-1/2", "-translate-x-1/2");
+    expect(wrapper.style.right).toBe("");
   });
 });
 
