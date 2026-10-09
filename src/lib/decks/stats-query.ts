@@ -27,10 +27,12 @@ import {
   colourSpread,
   manaCurve,
   recordFromCounts,
+  typeCurve,
   type ColourSpread,
   type GameResult,
   type ManaCurve,
   type PlayRecord,
+  type TypeCurve,
 } from "./stats";
 import { loadShoppingRollup, type DeckShopping } from "./shopping-rollup";
 
@@ -39,6 +41,8 @@ export type DeckStats = {
   record: PlayRecord;
   colours: ColourSpread;
   curve: ManaCurve;
+  /** The curve's type mix, bucketed as `curve` is. */
+  types: TypeCurve;
   /**
    * What the cards this deck still has to buy cost. Null when the deck buys
    * nothing — distinct from a zero total, which is what a deck with copies to
@@ -176,6 +180,7 @@ export async function loadDeckStats(input: DeckIds): Promise<Map<string, DeckSta
       record: recordFromCounts(counts),
       colours: colourSpread(list),
       curve: manaCurve(list),
+      types: typeCurve(list),
       cost: rollup.byDeck.get(deckId) ?? null,
     });
   }

@@ -214,3 +214,83 @@ export function manaCurve(cards: readonly CurveCard[]): ManaCurve {
     lands,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Card types on the curve
+// ---------------------------------------------------------------------------
+
+/** The seven non-land types the curve card draws, in the order a column stacks
+ *  them (first at the bottom). Land is not here: it is not on the curve. */
+export const CARD_TYPES = [
+  "creature",
+  "instant",
+  "sorcery",
+  "artifact",
+  "enchantment",
+  "planeswalker",
+  "battle",
+] as const;
+export type CardType = (typeof CARD_TYPES)[number];
+
+/** Precedence for a multi-type card: the first match wins, so an artifact
+ *  creature is a creature and a kindred instant is an instant. Read off the
+ *  front face only, as `isLandFace` is, so a double-faced card is the type it
+ *  is when cast. */
+const TYPE_PRECEDENCE: readonly [CardType, RegExp][] = [
+  ["creature", /\bcreature\b/i],
+  ["planeswalker", /\bplaneswalker\b/i],
+  ["battle", /\bbattle\b/i],
+  ["instant", /\binstant\b/i],
+  ["sorcery", /\bsorcery\b/i],
+  ["artifact", /\bartifact\b/i],
+  ["enchantment", /\benchantment\b/i],
+];
+
+/** The type a non-land card is drawn as, or null for a type line none of the
+ *  seven match (a conspiracy, a scheme). */
+export function cardTypeOf(typeLine: string): CardType | null {
+  const front = typeLine.split(" // ")[0];
+  for (const [type, pattern] of TYPE_PRECEDENCE) if (pattern.test(front)) return type;
+  return null;
+}
+
+/** What the Stats panel receives: plain data, safe across the server boundary. */
+export type DeckStatsSlice = { curve: ManaCurve; types: TypeCurve };
+
+export type TypeCurve = {
+  /** One entry per curve bucket, 0 through CURVE_MAX, each the copies of every
+   *  type in it. Bucketing is `manaCurve`'s, so the two cannot disagree. */
+  buckets: Record<CardType, number>[];
+  /** Copies of each type across the whole curve. */
+  totals: Record<CardType, number>;
+};
+
+const emptyTypes = (): Record<CardType, number> => ({
+  creature: 0,
+  instant: 0,
+  sorcery: 0,
+  artifact: 0,
+  enchantment: 0,
+  planeswalker: 0,
+  battle: 0,
+});
+
+/**
+ * The curve's type mix. Lands are skipped exactly as `manaCurve` skips them
+ * (the chip for Land reads `ManaCurve.lands`). A non-land card of no drawn type
+ * is left out of the squares, so the squares can total fewer than
+ * `ManaCurve.copies`; none exists in a Commander-legal list today.
+ */
+export function typeCurve(cards: readonly CurveCard[]): TypeCurve {
+  const buckets = Array.from({ length: CURVE_MAX + 1 }, emptyTypes);
+  const totals = emptyTypes();
+  for (const card of cards) {
+    if (isLandFace(card.typeLine)) continue;
+    const type = cardTypeOf(card.typeLine);
+    if (!type) continue;
+    const bucket = Math.min(Math.max(Math.round(card.cmc), 0), CURVE_MAX);
+    buckets[bucket][type] += card.quantity;
+    totals[type] += card.quantity;
+  }
+  return { buckets, totals };
+}

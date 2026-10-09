@@ -4,8 +4,11 @@ import {
   colourSpread,
   emptyRecord,
   recordFromCounts,
+  cardTypeOf,
+  CARD_TYPES,
   manaCurve,
   playRecord,
+  typeCurve,
   sumColourSpreads,
   sumPlayRecords,
 } from "./stats";
@@ -207,5 +210,68 @@ describe("manaCurve", () => {
     const curve = manaCurve([curveCard(1, "Creature — Bird", 3), curveCard(5)]);
     expect(curve.copies).toBe(4);
     expect(curve.average).toBe(2);
+  });
+});
+
+describe("cardTypeOf", () => {
+  it.each([
+    ["Legendary Creature — Elf Druid", "creature"],
+    ["Instant", "instant"],
+    ["Sorcery", "sorcery"],
+    ["Artifact — Equipment", "artifact"],
+    ["Enchantment — Aura", "enchantment"],
+    ["Legendary Planeswalker — Jace", "planeswalker"],
+    ["Battle — Siege", "battle"],
+  ])("reads %s as %s", (line, type) => {
+    expect(cardTypeOf(line)).toBe(type);
+  });
+
+  it("gives a multi-type card its first type by precedence", () => {
+    expect(cardTypeOf("Artifact Creature — Golem")).toBe("creature");
+    expect(cardTypeOf("Enchantment Creature — Nymph")).toBe("creature");
+    expect(cardTypeOf("Kindred Instant — Elf")).toBe("instant");
+    expect(cardTypeOf("Enchantment Artifact")).toBe("artifact");
+  });
+
+  it("reads the front face of a double-faced card", () => {
+    expect(cardTypeOf("Sorcery // Land")).toBe("sorcery");
+    expect(cardTypeOf("Creature — Human // Enchantment")).toBe("creature");
+  });
+
+  it("is null for a type line none of the seven match", () => {
+    expect(cardTypeOf("Conspiracy")).toBeNull();
+  });
+});
+
+describe("typeCurve", () => {
+  it("returns eight buckets and a total for every type, even when empty", () => {
+    const t = typeCurve([]);
+    expect(t.buckets).toHaveLength(8);
+    expect(Object.keys(t.totals)).toEqual([...CARD_TYPES]);
+    expect(Object.values(t.totals).every((n) => n === 0)).toBe(true);
+  });
+
+  it("buckets by mana value and weights by quantity", () => {
+    const t = typeCurve([curveCard(2), curveCard(2, "Instant", 3), curveCard(5, "Sorcery")]);
+    expect(t.buckets[2].creature).toBe(1);
+    expect(t.buckets[2].instant).toBe(3);
+    expect(t.buckets[5].sorcery).toBe(1);
+    expect(t.totals.instant).toBe(3);
+  });
+
+  it("piles everything at or above CURVE_MAX into the last bucket", () => {
+    const t = typeCurve([curveCard(7), curveCard(9, "Artifact"), curveCard(15, "Sorcery")]);
+    expect(t.buckets[7].creature + t.buckets[7].artifact + t.buckets[7].sorcery).toBe(3);
+  });
+
+  it("agrees with manaCurve on every bucket", () => {
+    const cards = [curveCard(1), curveCard(3, "Artifact", 2), curveCard(8, "Sorcery"), curveCard(2.5, "Instant")];
+    const sum = (b: Record<string, number>) => Object.values(b).reduce((a, n) => a + n, 0);
+    expect(typeCurve(cards).buckets.map(sum)).toEqual(manaCurve(cards).buckets.map((b) => b.copies));
+  });
+
+  it("skips lands, including a land creature, as manaCurve does", () => {
+    const t = typeCurve([curveCard(0, "Basic Land — Forest", 30), curveCard(0, "Land Creature — Forest Dryad"), curveCard(2)]);
+    expect(t.totals.creature).toBe(1);
   });
 });

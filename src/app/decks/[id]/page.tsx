@@ -39,6 +39,7 @@ import { listVersions } from "../../../lib/decks/versions";
 import { computeRoleCounts } from "../../../lib/decks/mix";
 import { analysisTabEnabled } from "../../../lib/decks/analysis-flag";
 import { deckStatsEnabled } from "../../../lib/decks/stats-flag";
+import { loadOneDeckStats } from "../../../lib/decks/stats-query";
 import { tuningEnabled } from "../../../lib/tuning/flag";
 import { noticesEnabled } from "../../../lib/notices/flag";
 import { loadDeckNotices } from "../../../lib/notices/read";
@@ -309,7 +310,7 @@ export default async function DeckBuilderPage({
   // Swallowed like its neighbours. A failed facts read degrades to rows with no
   // note, which is the state the round draws for a card that has no facts
   // anyway — never the builder going down.
-  const [priced, availability, candidateFacts, completions, considerRead] = await Promise.all([
+  const [priced, availability, candidateFacts, completions, considerRead, deckStats] = await Promise.all([
     perf.timed("prices", () => loadPrices([
       ...new Set([
         ...detail.cards.map((c) => c.oracleId),
@@ -359,6 +360,11 @@ export default async function DeckBuilderPage({
     perf.timed("considerLabels", () => considerLabels({
       suggestionIds: suggestions.map((s) => s.oracleId),
     })).catch(() => null),
+    // The Stats panel's figures. Read only behind the switch, and swallowed: a failed read draws
+    // the panel's shell with no figures, never the builder going down.
+    deckStatsEnabled()
+      ? perf.timed("deckStats", () => loadOneDeckStats(id, userId)).catch(() => null)
+      : null,
   ]);
 
   // Attached here, server-side, on lists that are being built anyway — so no
@@ -473,6 +479,7 @@ export default async function DeckBuilderPage({
       // is retired; see the note in `lib/decks/builder-view.ts`.
       analysisEnabled={analysisEnabled}
       statsEnabled={deckStatsEnabled()}
+      statsData={deckStats ? { curve: deckStats.curve, types: deckStats.types } : null}
       tuningEnabled={tuned}
       noticesEnabled={noticesEnabled()}
       initialNotices={notices}

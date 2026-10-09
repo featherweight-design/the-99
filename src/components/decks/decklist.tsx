@@ -10,6 +10,7 @@ import { StandInDoorRegistration } from "./stand-in-door";
 import { SwapReceiptRow } from "./swap-receipt";
 import { placeReceipts } from "../../lib/swaps/place-receipts";
 import { isOverLimit } from "../../lib/swaps/limit";
+import type { DeckStatsSlice } from "../../lib/decks/stats";
 import type { RecommendedMix } from "../../lib/decks/mix";
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
 import { cardCopies, groupByCardType, groupByRole } from "../../lib/decks/grouping";
@@ -134,6 +135,7 @@ type DecklistProps = {
   filled?: boolean;
   /** `DECK_STATS_ENABLED`. Off: no Stats segment is drawn and nothing else changes. */
   statsEnabled?: boolean;
+  statsData?: DeckStatsSlice | null;
   filter: "all" | "shopping";
   grouping: "type" | "role";
   onFilterChange: (f: "all" | "shopping") => void;
@@ -296,6 +298,7 @@ export function Decklist({
   spentSlots = EMPTY_SPENT_SLOTS,
   filled = false,
   statsEnabled = false,
+  statsData = null,
   filter,
   grouping,
   onFilterChange: onFilterChangeProp,
@@ -603,7 +606,7 @@ export function Decklist({
           stats={stats}
           {...lockProps}
         />
-        <DeckStatsView />
+        <DeckStatsView data={statsData} />
       </div>
     );
   }

@@ -15,4 +15,25 @@ export const deckStatsCopy = {
     money: "Money and ownership",
     results: "Results",
   },
+  curve: {
+    title: "The curve, by card type",
+    denom: (cast: number) => `${cast} cast`,
+    ceiling: "7+",
+    // No average to name at zero cast: a deck of nothing but lands has none, and 0.0 would read as one.
+    noAverage: "none",
+    caption: (avg: string, lands: number) =>
+      `Average mana value ${avg}, commander included · ${lands} lands, not on the curve · tap a type to light its cards`,
+    lit: (type: string, n: number, cast: number) =>
+      `${type} lit: ${n} of ${cast} cast. Tap it again to clear.`,
+    types: {
+      creature: "Creature",
+      instant: "Instant",
+      sorcery: "Sorcery",
+      artifact: "Artifact",
+      enchantment: "Enchantment",
+      planeswalker: "Planeswalker",
+      battle: "Battle",
+      land: "Land",
+    },
+  },
 } as const;
