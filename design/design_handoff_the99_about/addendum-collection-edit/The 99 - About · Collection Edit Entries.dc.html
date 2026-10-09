@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0B0E; }
+  a { color: #5C86C9; text-decoration: none; }
+  a:hover { color: #6C95D8; }
+  :root {
+    --bg:#121217; --surface:#1E1F26; --surface-rail:#181920; --surface-sunken:#16171D;
+    --elevated:#2D2E35; --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --danger:#C6533F; --success:#6FA368; --warning:#E0913C;
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:var(--fg);padding:40px;background:#0B0B0E;min-height:100vh;display:flex;flex-direction:column;gap:56px;">
+
+  <section style="max-width:1320px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0B0B0E;background:#5C86C9;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:var(--fg-faint);">about &middot; collection edit entries &middot; &sect;G template artboard &middot; ship at the end of the launch &middot; 2026-10-09</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:31px;margin:0 0 14px;line-height:1.26;max-width:1240px;">Five entries for chapter 01, each a filled &sect;G template, written now so they aren't written from memory at launch.</h1>
+    <p style="max-width:1240px;font-size:15px;line-height:1.72;color:var(--fg-body);margin:0 0 12px;text-wrap:pretty;">Every entry is <b style="color:var(--fg);font-weight:600;">since: 12</b>, which is the one <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">ABOUT_VERSION</span> bump (11 &rarr; 12) the batching rule puts at the end of the epic's last sub-project. Each also carries <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">switch: 'COLLECTION_EDIT_ENABLED'</span>, so a deployment with the switch off draws none of them. The union gains that member. Nothing on the R6 page changes. These are filled templates plus fixtures (R3 &sect;G3), not canvas edits.</p>
+    <p style="max-width:1240px;font-size:15px;line-height:1.72;color:var(--fg-body);margin:0;text-wrap:pretty;"><b style="color:var(--warning);font-weight:600;">One shipped entry goes false with the switch on.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">import</span>'s caption ends &ldquo;Heads up: an import replaces your whole Collection, it doesn't add to it.&rdquo; <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">captionLineSwitches</span> can only <i>add</i> a line while a switch is on, and here the line has to go. The ask is a negated key (<span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">'!COLLECTION_EDIT_ENABLED'</span>) in <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">visible.ts</span>, with the line rewritten to point at <a href="#u2">U2</a>. See the README, open item 1.</p>
+  </section>
+
+  <section style="max-width:1320px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;margin-bottom:14px;">&sect;0 &middot; <span style="color:var(--accent);">where they go in chapter 01 &middot; the bump as a returning reader meets it</span></div>
+    <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;">
+      <div style="width:560px;border-radius:12px;border:1px solid var(--border-strong);background:var(--surface);padding:14px 18px;display:flex;flex-direction:column;">
+        <sc-for list="{{ order }}" as="o" hint-placeholder-count="13">
+          <div style="display:flex;align-items:center;gap:12px;min-height:30px;border-bottom:1px solid var(--border);">
+            <span style="width:26px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ o.n }}</span>
+            <span style="flex:1;font-size:13.5px;color:{{ o.ink }};font-weight:{{ o.weight }};">{{ o.title }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;color:var(--accent);">{{ o.tag }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="width:420px;border-radius:12px;border:1px solid var(--border-strong);background:var(--surface);padding:16px 18px;">
+        <h2 style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:0.08em;color:var(--accent);">5 new in About</h2>
+        <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px;font-size:14px;">
+          <span>Adding cards by hand</span><span>Replacing or adding from a file</span><span>Changing how many you own</span><span style="color:var(--fg-muted);font-size:13px;">and 2 more</span>
+        </div>
+        <div style="margin-top:12px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">This is sheet N2, unchanged. Five is more than four, so the sheet lists the first three titles in page order and counts the rest. In the index (O1) all five carry <span style="font-family:'IBM Plex Mono',monospace;">new</span>, and chapter 01's contents row reads <span style="font-family:'IBM Plex Mono',monospace;">5 new</span>.</div>
+      </div>
+    </div>
+  </section>
+
+  <sc-for list="{{ entries }}" as="e" hint-placeholder-count="5">
+    <section id="{{ e.anchor }}" style="max-width:1320px;display:flex;flex-direction:column;gap:14px;">
+      <div style="display:flex;align-items:center;gap:12px;border-top:1px solid var(--accent);padding-top:18px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0B0B0E;background:#5C86C9;border-radius:6px;padding:3px 9px;">{{ e.anchorLabel }}</span>
+        <h2 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:23px;">{{ e.title }}</h2>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">id {{ e.id }} &middot; {{ e.after }}</span>
+      </div>
+      <p style="margin:0;max-width:1100px;font-size:13.5px;line-height:1.65;color:var(--fg-muted);">{{ e.why }}</p>
+      <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+        <div style="width:700px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:12.5px;line-height:1.55;color:var(--fg-body);">
+          <sc-for list="{{ e.slots }}" as="s" hint-placeholder-count="11">
+            <div style="{{ s.cell }}border:1px dashed var(--border-dashed);border-radius:8px;padding:10px 12px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">{{ s.label }}</div>
+              <div style="white-space:pre-line;color:{{ s.ink }};font-weight:{{ s.weight }};font-family:{{ s.font }};">{{ s.text }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="width:520px;border:1px solid var(--border-strong);border-radius:12px;background:var(--bg);padding:22px 24px 24px;display:flex;flex-direction:column;gap:8px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">the entry, as the page draws it</div>
+          <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;"><span style="font-family:'Cinzel',serif;font-size:19px;font-weight:700;">{{ e.title }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;color:var(--bg);background:var(--accent);border-radius:4px;padding:1px 6px;">NEW</span></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ e.route }} {{ e.opensTail }}</div>
+          <p style="margin:6px 0 0;font-size:13.5px;line-height:1.6;color:var(--fg-body);white-space:pre-line;">{{ e.caption }}</p>
+          <div style="margin-top:8px;height:140px;border-radius:8px;border:1px solid var(--border);background:var(--surface-sunken);display:flex;align-items:center;justify-content:center;text-align:center;padding:0 24px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.6;color:var(--fg-locked);">specimen &middot; {{ e.specimenShort }}</div>
+          <ol style="margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:13px;line-height:1.55;color:var(--fg-body);">
+            <sc-for list="{{ e.keys }}" as="k" hint-placeholder-count="4"><li>{{ k }}</li></sc-for>
+          </ol>
+        </div>
+      </div>
+    </section>
+  </sc-for>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const E = [
+      { anchor: "u1", id: "collection-add", title: "Adding cards by hand", route: "/collection", opens: "opens Add cards", after: "after “Finding a card in your Collection”",
+        why: "Chapter 01, second. It's a way in, not only a top-up (Hugh, 2026-10-09). A player with no collection can start here instead of with a file, so it sits before Importing.",
+        caption: "Opened a pack and don't feel like exporting? Press “Add cards” and search by name, for any card, not just ones you own. Pick the printing, mark it foil, set how many, and keep going. One Save adds the lot.\n\nNo collection yet? You can start here instead of with a file.",
+        specimen: "AddCardsSheet's list region: three AddLines (Sol Ring C21 ×2, Sol Ring SLD foil ×1, Cultivate M21 ×1), no search open, save bar showing “3 lines · 4 copies”. Needs E4: export AddLine unchanged. The sheet itself loads catalog search on open and isn't mounted.",
+        specimenShort: "three AddLines + save bar",
+        fixture: "fixtures.addCards · lines: [{Sol Ring, C21 #263, nonfoil, 2, owned 5}, {Sol Ring, SLD #1512, foil, 1, owned 0 here}, {Cultivate, M21 #177, nonfoil, 1, owned 2}] · saving false",
+        keys: ["Each line is one printing and finish, so a foil and a nonfoil are two lines.", "Add the same printing twice and the line just counts up.", "A card you already own shows how many you'll have after.", "Nothing is saved until you press Save, and the save shows in History as one change."],
+        phone: "The sheet is full height. Each line stacks the name, the printing chip, then the foil chip and stepper at 44px. The save bar pins to the foot.",
+        strings: "copy/collection-edit.ts (add.*)" },
+      { anchor: "u2", id: "upload-choice", title: "Replacing or adding from a file", route: "/collection/replace", opens: "opens the upload", after: "after “Importing your Collection”",
+        why: "Chapter 01, straight after Importing, which teaches the file formats. This one teaches the question an upload now asks. Importing's last line has to go (open item 1).",
+        caption: "Got a new export? When you upload a file, The 99 asks what it's for. “Replace” makes your Collection exactly the file. “Add” puts its cards on top of what you have, which is right for a booster haul or a trade binder.\n\nBefore anything changes, you see every card that moves. Replace also warns you if it'll overwrite changes you made in the app, and names any decks that will read short.",
+        specimen: "UploadChoice (step 2) with Replace picked, the count-form warning inside its card, and Add showing its after-figure. Mounts as shipped with fixture props.",
+        specimenShort: "the two option cards, Replace picked",
+        fixture: "fixtures.uploadChoice · file manabox-oct.csv · rows 4,388 · current 4,492 · replaceAfter 4,380 · addAfter 8,880 · handEdits {count 12, since '12 Sep'} · overlap 0.97 · picked 'replace'",
+        keys: ["Replace: anything not in the file leaves your Collection.", "Add: quantities go up, nothing leaves, and your art picks stay.", "Adding a full export doubles your copies, and the screen tells you when that's about to happen.", "Your very first upload skips the question, since there's nothing to replace."],
+        phone: "The two cards stack, and the warning stays inside the Replace card. Continue pins to the foot and stays disabled until one card is picked.",
+        strings: "copy/collection-edit.ts (upload.*)" },
+      { anchor: "u3", id: "edit-copies", title: "Changing how many you own", route: "/collection", opens: "opens the card detail", after: "after “A closer look at any card”",
+        why: "Chapter 01, right after the card-detail entry, because that's where the edit lives. The caption separates it from the art pick that entry already teaches, which is the whole design problem in §C.",
+        caption: "Sold a copy, or logged the wrong printing? Open the card and press “Edit copies”. Each printing and finish you own gets its own count, and “Move” fixes a copy logged under the wrong one.\n\nIt's separate from picking the art. The printings grid still only chooses which art your Collection shows.",
+        specimen: "OwnedLine beside the YourCopies block: three holdings (C21 nonfoil ×2, SLD nonfoil ×1 moved in, SLD foil ×2 +1) and the save bar. Mounts as shipped inside CardDetailProvider with fetchCard → null.",
+        specimenShort: "owned line + Your copies, one move staged",
+        fixture: "fixtures.editCopies · card Sol Ring · availability {owned 5, short 1 · HD - Kinnan} · holdings [C21 #263 nonfoil 3, SLD #1512 foil 1, CMM #410 nonfoil 1] · staged {move 1 C21→SLD nonfoil, +1 SLD foil}",
+        keys: ["Adding copies saves right away.", "Taking copies away checks your decks first, and names any that would come up short.", "Moving copies between printings doesn't change your total, so it never leaves a deck short.", "Take away the last copy and the card leaves your Collection."],
+        phone: "“Edit copies” sits in the teaser's foot row and opens the full sheet. Rows stack the name over a 44px stepper and Move.",
+        strings: "copy/collection-edit.ts (copies.*)" },
+      { anchor: "u4", id: "remove-card", title: "Removing a card from your Collection", route: "/collection", opens: "", after: "after “Changing how many you own”",
+        why: "Chapter 01. It carries §E, the short-deck warning, because removing is the clearest place a reader meets it. The other three entries that lower a count each name the warning in one key line and don't draw it again.",
+        caption: "Traded it away? The ⋯ on any card in your Collection removes it: every copy, every printing.\n\nIf a committed deck runs it, you'll see which decks will come up short before anything changes. The deck is left alone. It just shows the card as short and puts it on its shopping list.",
+        specimen: "Two RowsView rows: Sol Ring at rest with its ⋯ menu open, and Rhystic Study's Undo strip. Beside them, ShortDeckWarning with one deck. Mounts as shipped; the menu takes open as a fixture prop.",
+        specimenShort: "row + menu, an Undo strip, and the warning",
+        fixture: "fixtures.removeCard · rows [{Sol Ring ×5, menuOpen true}, {Rhystic Study, removed, undo}] · warning {action 'remove', card 'Sol Ring', decks [{HD - Kinnan, short 1}]}",
+        keys: ["To take away some copies, or one printing, use “Edit copies” in the card's details.", "A removed card leaves an “Undo” where it was.", "Nothing about a deck changes on its own."],
+        phone: "The ⋯ is 44px at the row's trailing edge, and on a grid tile it sits on the art's corner. The warning is a bottom sheet with Cancel and Remove anyway side by side.",
+        strings: "copy/collection-edit.ts (remove.*, shortWarning.*)" },
+      { anchor: "u5", id: "collection-history", title: "Undoing a change to your Collection", route: "/collection/history", opens: "", after: "last in chapter 01",
+        why: "Chapter 01, last. It's the one place every other entry here ends up, and the History tab is the newest place in the chapter.",
+        caption: "Every upload, add, edit and removal from the last 90 days is in History, newest first. Press “Revert” on any of them to undo it.\n\nA revert works on your Collection as it is today. If you've sold two of the three copies an add brought in, reverting it takes away the one that's left. A revert is a change of its own, so you can revert that too, in case you change your mind about changing your mind.",
+        specimen: "Three HistoryEntry rows: a Revert (linked), the Removed it reverted (marked Reverted), and an Added in the app entry, expanded to its five cards. Mounts as shipped with fixture props.",
+        specimenShort: "three HistoryEntry rows, one expanded",
+        fixture: "fixtures.history · entries [{revert of e2, 14:02}, {remove Rhystic Study, revertedBy e1, 13:40}, {manual_add 5 cards +8, 21:10 yesterday, open}] · retentionDays 90",
+        keys: ["Open a change to see every card it moved.", "Reverting a Replace puts back every card that upload moved.", "A reverted change stays in the list, marked and linked to its revert.", "Changes older than 90 days age out. Your cards don't."],
+        phone: "Rows stack the tag and time over the title and figures, with Revert as a 44px target on the right.",
+        strings: "copy/collection-edit.ts (history.*, revert.*)" },
+    ];
+    const full = "grid-column:1 / -1;";
+    const slot = (label, text, cell = "", ink = "var(--fg-body)", weight = 400, font = "'IBM Plex Sans',sans-serif") => ({ label, text, cell, ink, weight, font });
+    const mono = "'IBM Plex Mono',monospace";
+    const entries = E.map((e, i) => ({
+      ...e, anchorLabel: `U${i + 1}`, opensTail: e.opens ? `· ${e.opens}` : "",
+      slots: [
+        slot("Title", e.title, "", "var(--fg)", 600),
+        slot("Route", `${e.route}${e.opens ? " · " + e.opens : ""}`, "", "var(--fg-body)", 400, mono),
+        slot("Chapter", `01 · Your Collection, ${e.after}`),
+        slot("Width", "plate: the specimen is a row or a block at full column width"),
+        slot("Caption", e.caption, full),
+        slot("Specimen", e.specimen, full),
+        slot("Fixture props", e.fixture, full, "var(--fg-body)", 400, mono),
+        slot(`Key lines · ${e.keys.length} of 4`, e.keys.map((k, j) => `${j + 1}. ${k}`).join("\n"), full),
+        slot("Phone reduction", e.phone, full),
+        slot("since · switch", "12 (the launch bump, 11 → 12) · COLLECTION_EDIT_ENABLED"),
+        slot("Strings from", e.strings, "", "var(--fg-body)", 400, mono),
+      ],
+    }));
+    const row = (n, title, tag) => ({ n, title, tag, ink: tag ? "var(--fg)" : "var(--fg-muted)", weight: tag ? 600 : 400 });
+    return {
+      entries,
+      order: [
+        row("01", "Finding a card in your Collection", ""), row("02", "Adding cards by hand", "U1 · new"), row("03", "Importing your Collection", "line edited"),
+        row("04", "Replacing or adding from a file", "U2 · new"), row("05", "How replacing your Collection affects your decks", ""), row("06", "When an import can’t find a card", ""),
+        row("07", "Availability: what’s free, what’s taken, what to buy", ""), row("08", "Completing a set", ""), row("09", "What the cards you’re missing cost", ""),
+        row("10", "A closer look at any card", ""), row("11", "Changing how many you own", "U3 · new"), row("12", "Removing a card from your Collection", "U4 · new"), row("13", "Undoing a change to your Collection", "U5 · new"),
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
