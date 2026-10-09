@@ -17,7 +17,7 @@
 
 ## Gap report
 
-1. **Rulings touched:** R2 ruling 3's "non-land sources are counted and drawn hollow" is superseded for PR 4b, and hollow squares leave the card. R1 ruling 3 (raw pip-share butterfly) holds. The title changes from `Colors, asked for and made` to `Mana colors`.
+1. **Rulings touched:** R1 ruling 3's "non-land sources are counted and drawn hollow" is superseded for PR 4b, and hollow squares leave the card. R1 ruling 3 (raw pip-share butterfly) holds. The title changes from `Colors, asked for and made` to `Mana colors`.
 2. **About:** the `deck-stats` key line on non-land colors needs an edit when 4b ships.
 3. **Theme coverage:** Low Sun only.
 
