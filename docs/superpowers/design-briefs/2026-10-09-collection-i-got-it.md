@@ -71,8 +71,8 @@ source `shopping:<deck id>`.
 
 ## The printing it records
 
-- **Preset:** the printing behind the price on the row. A foil-only price presets foil. Otherwise
-  non-foil.
+- **Preset:** the printing behind the price on the row. A price that exists only for foil presets
+  foil, and one only for etched presets etched. Otherwise non-foil.
 - **No printing behind the price** (a card never stocked, or a row showing a bare `buy`): the
   preset is the card's default printing, the same one the Add cards sheet presets.
 - **Changeable.** The player may have received a different printing than the cheapest one. The
