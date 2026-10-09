@@ -415,7 +415,7 @@ export default async function DeckBuilderPage({
     comboPartner: comboFor(c.oracleId, completions),
   }));
 
-  // Read once per request rather than at each use, so the tab, the strip's home and the
+  // Read once per request rather than at each use, so the tab and the
   // arrival view cannot disagree about which layout this deployment is drawing.
   const analysisEnabled = analysisTabEnabled();
   const storedBracket = await storedPermits;
