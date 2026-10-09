@@ -221,17 +221,30 @@ a Replace that leaves decks short; an Add where every row is already owned (quan
 rise, so this is not "nothing to do"); unmatched rows in either mode; the pending write; a
 failed write (nothing changed).
 
-**The first import asks nothing: a proposed exception to ruling 2, for Hugh to confirm.** Ruling
-2 says every upload asks first. With an empty collection, Replace and Add write the same thing,
-so the question has no answer that changes anything. The brief proposes the first upload keep
-today's flow with no question. If Hugh holds to the ruling as written, Design draws the choice on
-the first import too.
+**The first import asks nothing** (Hugh, 2026-10-09, an exception to ruling 2). With an empty
+collection, Replace and Add write the same thing, so the question has no answer that changes
+anything, and the first upload keeps today's flow with no question.
 
 ### B. Add cards (sub-project 2)
 
 **Where:** a new "Add cards" control on Collection, beside the existing `Replace` control in
 the place head. It opens a sheet: full height on phone, a side sheet or dialog on desktop
 (Design's call).
+
+**A player with no collection starts here too** (Hugh, 2026-10-09). Adding cards by hand is a
+way in, not only a way to top up, so the two places a player with no collection lands offer
+Add cards beside the upload, as equals:
+
+- **`/collection`'s empty state** (`src/app/collection/(list)/page.tsx:97-115`). Today it offers
+  one action, "Upload your CSV". The place head's `Replace` control does not render for an empty
+  collection (`collection-place-head.tsx:213`), so the control beside it is not there either, and
+  the empty state is where Add cards has to appear.
+- **Home's first-run step one** (`src/components/home/first-run-step-one.tsx:75`), which embeds
+  the upload's file and paste buttons. It offers Add cards beside them.
+
+Both open the same sheet as below. Saving the first cards takes the player out of the empty
+state, as a first upload does. The first upload still skips the Replace/Add question (Hugh,
+2026-10-09), so a player with no collection meets that question only once they hold cards.
 
 **What it does:** the player enters several cards in a row, without leaving the sheet between
 them. Each card records the same four things an upload row does (ruling 3):
@@ -248,7 +261,8 @@ shows what has been entered so far, and any line can be changed or dropped befor
 **One save writes one history entry** covering every card in the list, so a session of adding
 reads as one event in history and reverts as one.
 
-**States to draw:** empty sheet; the search typing, with results, and with none; a list of
+**States to draw:** both empty-collection entries offering Add cards beside the upload, at both
+widths; empty sheet; the search typing, with results, and with none; a list of
 several cards; the same card in several printings or finishes (a normal state: each is its own
 holding, and they stay separate lines); the exact same card, printing and finish entered twice
 (the sheet combines or flags these, and only these, rather than writing two lines that read as a
