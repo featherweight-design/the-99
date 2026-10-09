@@ -179,6 +179,12 @@ export function GroupToggle({
   const lockAvailable = onLockModeChange !== undefined && filter === "all";
   // Cluster 2 and the hairline share this gate (addendum F3, delta 1). Lock cards alone is reason
   // enough for both; with the switch off it reduces to the gate they had before.
+  // With the Stats switch on, the phone toolbar is three explicit rows (All/Shopping/Stats; Lock
+  // cards + view well; grouping + sort), built with `order` and full-width breaks instead of
+  // relying on incidental wrapping. Cluster 3 turns into `contents` so its parts can be ordered
+  // against the other clusters; from `md:` every `order` resets and the row reads as before.
+  const phoneRows = Boolean(stats);
+  const phoneRow2 = autoCount > 0 || lockAvailable || filter === "all";
   const actCluster = lockAvailable || Boolean(draftNote) || autoCount > 0 || keptCount > 0;
   return (
     /* Toggle bar container: mobile p=9px 16px | desktop p=14px 26px 10px.
@@ -268,6 +274,7 @@ export function GroupToggle({
             of it — a 14px hole between the pills and the cluster, and one more
             item for the wrap to reason about. */}
         <span className="hidden md:block md:flex-1" aria-hidden />
+        {phoneRows && <span className="order-1 h-0 basis-full md:hidden" aria-hidden />}
 
         {/* The auto-lifecycle cluster — the kept note, Keep all, Clear all auto.
             Absent at zero, disabled only while one of its own writes runs. Not
@@ -296,6 +303,8 @@ export function GroupToggle({
                nobody can see. `empty:hidden` covers the remaining case — a
                wrapper whose children all declined to render at this width. */
             className={`flex-none flex-wrap items-center gap-[8px] empty:hidden ${
+              phoneRows ? "order-2 md:order-none " : ""
+            }${
               // `flex` whenever Lock cards renders: it is a phone control too.
               autoCount > 0 || lockAvailable ? "flex" : "hidden md:flex"
             }`}
@@ -368,16 +377,24 @@ export function GroupToggle({
 
             `flex-none` is `md:` only for the same reason it has to be: it
             compiles to `flex: none`, which zeroes the grow this needs. */}
+        {phoneRows && phoneRow2 && <span className="order-4 h-0 basis-full md:hidden" aria-hidden />}
         <div
           className={[
-            "flex items-center gap-[7px] md:gap-[10px] md:grow-0 md:flex-none",
+            phoneRows
+              ? "contents md:flex md:items-center md:gap-[10px] md:grow-0 md:flex-none"
+              : "flex items-center gap-[7px] md:gap-[10px] md:grow-0 md:flex-none",
             // Growing is the phone's push of the view well to the right edge,
             // and NOTHING else — so it happens only when the well is drawn.
             // Under Shopping the well is absent and a growing cluster would
             // stretch past its own last control, leaving space inside it that
             // holds nothing.
-            filter === "all" ? "grow" : "",
+            filter === "all" && !phoneRows ? "grow" : "",
           ].join(" ")}
+        >
+        <div
+          className={`flex items-center gap-[7px] md:gap-[10px] ${
+            phoneRows ? "order-5 md:order-none" : ""
+          }`}
         >
         {/* By type — active: dark pill with border | idle: plain muted text */}
         {/* Mobile active: px-10 py-4; Desktop active: px-13 py-5              */}
@@ -440,11 +457,16 @@ export function GroupToggle({
           onClear={() => {}}
           onAnnounce={(message) => onSortAnnounce?.(message)}
         />
+        </div>
 
         {/* Absent under Shopping, not disabled: a shopping list is a list of
             things to buy, and there is no second way to read it. */}
         {filter === "all" && (
-          <>
+          <div
+            className={`flex items-center gap-[7px] ${
+              phoneRows ? "order-3 grow md:order-none md:grow-0" : "grow md:grow-0"
+            }`}
+          >
             {/* Pushes the well to the right edge on the phone, and collapses
                 above `md:` where the cluster is `flex-none` and the row reads as
                 one statement left to right.
@@ -455,7 +477,7 @@ export function GroupToggle({
                 cluster off the right edge. */}
             <span className="grow md:hidden" aria-hidden />
             <ViewToggle options={DECK_VIEWS} value={view} onChange={onViewChange} />
-          </>
+          </div>
         )}
         </div>
         </>
