@@ -104,6 +104,6 @@ export const collectionHistory: AboutEntry = {
 // Requires a negated switch key in visible.ts.
 export const importCaptionLineSwitches = {
   // Matched as the caption line appears literally (no paragraph breaks), as the existing keys are.
-  'Heads up: an import replaces your whole Collection, it doesn’t add to it.': '!COLLECTION_EDIT_ENABLED',
+  "Heads up: an import replaces your whole Collection, it doesn't add to it.": '!COLLECTION_EDIT_ENABLED',
   'Already have a Collection here? The 99 asks whether the file replaces it or adds to it.': 'COLLECTION_EDIT_ENABLED',
 } as const;

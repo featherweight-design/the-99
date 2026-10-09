@@ -56,6 +56,7 @@ It joins the `(list)` group, so the strip persists. `placeFromPathname` gains `"
 ## Open — for Hugh
 
 1. **Phone upload is now two taps.** At 360, four tabs and `↻ Replace` (92px) don't fit, but `+ Add` (70px) does. The upload moves inside the Add sheet's first line, and also stays in the empty state and History. *Alternative:* keep History off the phone strip (reached from the Cards tab), which keeps `↻ Replace` and puts `+ Add` in the pinned head's row 2. Design prefers the tab.
+   Ruled by Hugh 2026-10-09: the History tab.
 2. **`Replace collection` renamed to `Upload a file`** while the switch is on, because the route no longer only replaces. That's a copy-review call, and the slot and icon are unchanged.
 3. **The `import` About entry's "replaces, doesn't add" line** needs a negated switch to hide. See the About addendum.
 

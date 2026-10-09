@@ -1,7 +1,7 @@
 # Readiness audit — collection edit R1 (sub-projects 1+2)
 
-Eng audit, 2026-10-09. Verdict: **ORANGE** — one substantive design call is still open and
-must go back to Hugh before build; everything else is engineering-resolvable or already settled.
+Eng audit, 2026-10-09. Verdict: **YELLOW** — Hugh has ruled on the one open design call; only
+engineering-resolvable items remain.
 
 ## Verified against source of truth
 
@@ -44,13 +44,12 @@ must go back to Hugh before build; everything else is engineering-resolvable or 
 
 ## Findings
 
-1. **[Design, open] The phone-strip trade (README "Open 1" / READINESS "Blocking 2") is
-   unresolved.** Taking History as a fourth tab moves the phone's Upload control into the Add
-   sheet's first line; the alternative keeps History off the phone strip (reached from Cards) and
-   keeps a standalone `↻ Replace` control. Design states a preference (the tab) but has not had
-   Hugh's ruling. This is the one item that is "drawn, not decided" rather than "engineering can
-   just build it" — it changes what's in the phone tab strip across A, B and F. **Needs Hugh's
-   call before build.**
+1. **[Resolved] The phone-strip trade (README "Open 1" / READINESS "Blocking 2") is ruled.**
+   Taking History as a fourth tab moves the phone's Upload control into the Add sheet's first
+   line; the alternative kept History off the phone strip (reached from Cards) with a standalone
+   `↻ Replace` control. **Hugh ruled 2026-10-09: History is a fourth tab on the phone strip
+   (Design's preference). Upload moves into the Add sheet's first line on phone, and also stays
+   in the empty state and History.** Nothing left open here; build against the tab.
 
 2. **[eng-resolvable] `importCaptionLineSwitches` quotes the wrong apostrophe.** The existing
    `import` entry's caption line in `src/lib/copy/about.ts` reads `…it doesn't add to it.` with a
