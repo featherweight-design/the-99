@@ -16,7 +16,7 @@ export const collectionAdd: AboutEntry = {
     "Opened a pack and don't feel like exporting? Press “Add cards” and search by name, for any card, not just ones you own. Pick the printing, mark it foil, set how many, and keep going. One Save adds the lot.\n\nNo collection yet? You can start here instead of with a file.",
   keys: [
     'Each line is one printing and finish, so a foil and a nonfoil are two lines.',
-    'Add the same printing twice and the line just counts up.',
+    'You choose the printing before a card goes on the list.',
     'A card you already own shows how many you’ll have after.',
     'Nothing is saved until you press Save, and the save shows in History as one change.',
   ],
@@ -53,12 +53,12 @@ export const editCopies: AboutEntry = {
   opens: 'opens the card detail',
   width: 'plate',
   caption:
-    'Sold a copy, or logged the wrong printing? Open the card and press “Edit copies”. Each printing and finish you own gets its own count, and “Move” fixes a copy logged under the wrong one.\n\nIt’s separate from picking the art. The printings grid still only chooses which art your Collection shows.',
+    'Sold a copy, or logged the wrong printing? Open the card and press “Edit copies”. Each printing and finish you own is a line with its own count. If one’s under the wrong printing, tap it and pick the right one.\n\nIt’s separate from picking the art. The printings grid still only chooses which art your Collection shows.',
   keys: [
     'Adding copies saves right away.',
     'Taking copies away checks your decks first, and names any that would come up short.',
-    'Moving copies between printings doesn’t change your total, so it never leaves a deck short.',
-    'Take away the last copy and the card leaves your Collection.',
+    'Changing a line’s printing doesn’t change your total, so it never leaves a deck short.',
+    '“Add another printing” asks which printing before it adds anything.',
   ],
   since: 12,
 };
@@ -72,10 +72,10 @@ export const removeCard: AboutEntry = {
   route: '/collection',
   width: 'plate',
   caption:
-    'Traded it away? The ⋯ on any card in your Collection removes it: every copy, every printing.\n\nIf a committed deck runs it, you’ll see which decks will come up short before anything changes. The deck is left alone. It just shows the card as short and puts it on its shopping list.',
+    'Traded it away? Open the card, press “Edit copies”, then “Remove from collection”. That takes every copy of every printing.\n\nIf a committed deck runs it, you’ll see which decks will come up short before anything changes. The deck is left alone. It just shows the card as short and puts it on its shopping list.',
   keys: [
-    'To take away some copies, or one printing, use “Edit copies” in the card’s details.',
-    'A removed card leaves an “Undo” where it was.',
+    'To take away only some copies, lower their line instead.',
+    'Right after, “Undo” puts it all back. So does History, later.',
     'Nothing about a deck changes on its own.',
   ],
   since: 12,
@@ -101,11 +101,7 @@ export const collectionHistory: AboutEntry = {
 };
 
 // The shipped 'import' entry: its last caption line goes false with the switch on (README open 1).
-// Requires a negated switch key in visible.ts. `resolveLine` (src/lib/about/visible.ts) only
-// REMOVES a line it finds in the caption — it never inserts one — so this also requires the
-// shipped 'import' caption in src/lib/copy/about.ts to be edited to carry BOTH lines below,
-// appended as their own line, before either key can do anything. That caption edit is not made
-// here; it belongs to the build that wires the negation.
+// Requires a negated switch key in visible.ts.
 export const importCaptionLineSwitches = {
   // Matched as the caption line appears literally (no paragraph breaks), as the existing keys are.
   "Heads up: an import replaces your whole Collection, it doesn't add to it.": '!COLLECTION_EDIT_ENABLED',
