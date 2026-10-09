@@ -117,7 +117,7 @@ Specifically:
   writer that changes a collection without dropping `commanderScores` leaves every cached score
   served as current. Its race guard reads `max(csv_uploads.confirmed_at)`, which a hand edit never
   moves, so the generation has to move on every collection write as well. The write-path plan
-  (`docs/superpowers/plans/2026-10-09-collection-write-path.md`) settles both; nothing here is
+  (`docs/superpowers/plans/2026-10-09-collection-write-path.md`, in #1300) settles both; nothing here is
   visible to a player beyond the next Commanders visit recomputing.
 - **`card_art_preferences` on an Add merge** (Hugh, 2026-10-06): untouched. An Add upload never
   overrides a player's hand-picked printing — `card_art_preferences`
@@ -199,8 +199,10 @@ first-import entry, `UploadEntry`.
 picks one of two:
 
 - **Replace my collection.** The collection becomes exactly the file. The screen warns that any
-  in-app changes since the last upload will be overwritten, and should say how many there are
-  when there are any (the ledger knows: every hand edit since the last upload entry).
+  in-app changes since the last upload will be overwritten. It says how many when history still
+  reaches back to that upload. History keeps 90 days, so when the last upload is older than that
+  the count can be short, and the warning then says only that changes may be overwritten, with no
+  number. Design draws both forms.
 - **Add these cards.** The file's quantities are added to what is already there. Nothing is
   removed. A printing the player hand-picked as the card's art stays picked (ruling 2).
 
@@ -219,8 +221,11 @@ a Replace that leaves decks short; an Add where every row is already owned (quan
 rise, so this is not "nothing to do"); unmatched rows in either mode; the pending write; a
 failed write (nothing changed).
 
-**The first import asks nothing.** With an empty collection, Replace and Add do the same thing,
-so the first upload keeps today's flow with no question.
+**The first import asks nothing: a proposed exception to ruling 2, for Hugh to confirm.** Ruling
+2 says every upload asks first. With an empty collection, Replace and Add write the same thing,
+so the question has no answer that changes anything. The brief proposes the first upload keep
+today's flow with no question. If Hugh holds to the ruling as written, Design draws the choice on
+the first import too.
 
 ### B. Add cards (sub-project 2)
 
@@ -244,15 +249,19 @@ shows what has been entered so far, and any line can be changed or dropped befor
 reads as one event in history and reverts as one.
 
 **States to draw:** empty sheet; the search typing, with results, and with none; a list of
-several cards; the same card entered twice (the sheet should combine or flag them, not write two
-lines that read as a mistake); a card already owned (show what the player holds now beside what
+several cards; the same card in several printings or finishes (a normal state: each is its own
+holding, and they stay separate lines); the exact same card, printing and finish entered twice
+(the sheet combines or flags these, and only these, rather than writing two lines that read as a
+mistake); a card already owned (show what the player holds now beside what
 they are adding); closing with unsaved cards (ask before discarding); saving; saved, with a way to
 see the entry in history; a failed save (nothing written).
 
 ### C. Editing from a card's details (sub-project 2)
 
 **Where:** the card modal (desktop) and the card phone sheet. Today the owned line,
-`data-testid="owned-line"` (`src/components/cards/card-modal.tsx:278`), only displays `×N`.
+`data-testid="owned-line"` (`src/components/cards/card-modal.tsx:278-287`), displays `×N` and,
+when the card is not free, the availability marker beside it. Nothing on it is editable. The
+edit must not displace or duplicate that marker, which stays visible in every state below.
 
 **What it does:** the player changes how many copies they own of each printing and finish they
 hold, adds a printing they do not yet hold, or moves copies from one printing to another (for
@@ -299,12 +308,16 @@ It only appears when at least one committed deck is affected. A change that leav
 whole saves without it.
 
 **Latency is new here.** Finding the affected decks is a read the server makes against the
-proposed quantity before saving. Every lowering pays it, so a pending state is needed between
+proposed quantity, inside the save itself, not before it. The save checks the decks and either
+writes or comes back with the warning. A confirm re-checks against the collection as it is at
+that moment, so if another tab changed the answer in between, the warning comes back redrawn
+rather than the save going through on a stale one. Design draws that redrawn warning too. Every lowering pays it, so a pending state is needed between
 the press and either the warning or the save. Design should draw that pending state, not assume
 it is instant.
 
 **States to draw:** one deck; several decks; a long list (decide how many are named before the
-rest are counted); the pending check; the confirm; the cancel (nothing changed).
+rest are counted); the pending check; the confirm; a confirm that comes back with a changed
+warning; the cancel (nothing changed).
 
 ### F. History and revert (sub-projects 1 and 2)
 
@@ -327,7 +340,8 @@ explanation). Each entry shows:
 against the collection as it is today. Reverting a Replace puts back every card that upload
 moved, as it was the moment before. A revert is itself an entry and can be reverted. An entry
 that has been reverted stays in the list, marked as reverted and linked to the revert, with no
-revert control of its own.
+revert control of its own. The two age out separately: once one is past 90 days, the other still
+reads as reverted (or as a revert), and the link to the aged-out entry is no longer drawn.
 
 **When a revert cannot fully undo.** Because a revert works against today's collection, it can
 do less than the entry did. For example: an entry added 3 copies, 2 were removed since, so the
@@ -367,5 +381,5 @@ on `main` today. Nothing for Design to draw; listed so the handoff's state list 
   `ABOUT_VERSION` bump, at the end of whichever sub-project ships last. That changes WHEN, not
   whether. This handoff still draws the entries for what 1 and 2 add (upload choice, Add cards,
   editing, removing, history and revert) on the per-entry template artboard in
-  `design/design_handoff_the99_about/`, so they are not written from memory at the end. The plan
-  names the batched entry task.
+  `design/design_handoff_the99_about/`, so they are not written from memory at the end. The roadmap's Order
+  section names the batched entry task.
