@@ -132,10 +132,11 @@ Verdict stays YELLOW.
   "Checked"/"Unchecked"/"Suggestion" claim never reads as the same kind of statement by color
   alone — confirmed in `KindTag`'s table and `claim.*` copy (hedge wording explicitly uses "may"
   and names its uncertainty per the design table's note).
-- **Design tables placement**: `design-tables/tuning-hub.md` is new and sits beside
-  `deck-tuning.md`, `deck-tuning-addendum.md`, `deck-tuning-d2.md`, `never-cut-tuning.md` in
-  `docs/superpowers/design-tables/`, per the brief's "Where it lives" section — confirmed by
-  listing that directory; nothing from the existing tables is duplicated or restated.
+- **Design tables placement (corrected after Copilot round 1)**: `design-tables/tuning-hub.md` is
+  new and currently sits inside the handoff folder, NOT in `docs/superpowers/design-tables/` beside
+  `deck-tuning.md` and the others, so `check:copy-drift` (whose `TABLE_DIR` is that directory) does
+  not scan it. The build PR must move it there, per the brief's "Where it lives". An earlier
+  version of this line said it was already there; that was wrong.
 - **Design's three calls** (README) are each made and recorded: (1) the landing's four
   fixed-order tiles with Proposed cuts present-but-inert under 100; (2) the two shortcuts, one
   action per cell, no dead link added before Mana Balance's engine exists; (3) a running tool
@@ -146,3 +147,17 @@ Verdict stays YELLOW.
 `builder-shell.tsx` in full (only its mount-point lines, cross-checked against the brief's line
 refs — confirmed accurate against the current tree), `src/lib/intake/deeper-read.ts` internals,
 and `AnalysisBanner`'s exact geometry. None of these affect the verdict above.
+
+## Copilot round 1 — design errata for Design's next round (not edited here)
+
+These land on Design's drawing package, so they are recorded rather than patched in the handoff:
+
+- `design-tables/tuning-hub.md` rows ~121, ~126 and ~256 still specify the separate `1 credit` /
+  `0 left` tags, the failed-band retry tag and the `failed` danger pill, which the later
+  credit-in-button decision and the Failure mark rule (13px icon, segmented retry button) removed.
+  The superseding paragraph governs; the rows need re-syncing.
+- `README.md` ~74 says the over-100 tally turns `--warning`; the later Hugh feedback and the
+  property table say ordinary ink, "never `--warning`". The property table governs.
+- `TuningToolMark.dc.html` ~88: the metadata `variant: geo` default is always passed by the
+  standalone runtime, so `tool=cuts` previews the unapproved geometric mark. Remove the metadata
+  default so the tool-specific fallback can run.
