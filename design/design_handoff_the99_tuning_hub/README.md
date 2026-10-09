@@ -1,0 +1,120 @@
+# The 99 — Tuning hub (design handoff, R1)
+
+`design/design_handoff_the99_tuning_hub/` · 2026-10-09 · mirrors `design_handoff_the99_deck_tuning/`
+
+**Status: R1, approved (LGTM, Hugh, 2026-10-09)** after four feedback rounds (tool marks, landing, Mana Balance, Proposed cuts + History), recorded below. Geometry, tokens and component reuse are final. Card names, deck names and figures are illustrative but arithmetically consistent across the three canvases: HD Gishath, one commander, 105 cards (six over), four locked, 31 green pips against 14 green sources.
+
+Source of truth: `docs/superpowers/design-briefs/2026-10-08-tuning.md` (main), §"What this brief asks Design to draw" items 1–7. Read alongside: `src/components/decks/{tuning-panel,manifest-rows,suggestion-card,role-counter-strip,role-counter-cell,builder-spine}.tsx`, `src/lib/copy/{deck-tuning,decks-builder,help-me-choose,credits}.ts`, and the `deck_tuning`, `over_99`, `deck_stats_mana` and `help_me_choose` handoffs.
+
+**About these files.** The canvases are design references built in HTML. Open them with `support.js` beside them, then rebuild in the app's stack. They pin the Kaldheim values the latest canvases use. **No new tokens, no new motion, no new dependencies.**
+
+| File | Holds |
+|---|---|
+| `… (R1) · A Landing, shortcuts and the strip.dc.html` | A0 the calls. A1 landing (offered), A2 Proposed cuts not offered, A3 a run in flight on the landing, A4 a tool open (Suggested changes inside the hub), A5 Your deck: trim-line link, land-cell caption, the strip in one place, A6 what resets the view. |
+| `… (R1) · B Mana Balance.dc.html` | B1 free result with Look deeper on top, B2 deeper running, B3 deeper result above the count, B4 deeper refused, B5 deeper failed, B6 credits used up + an applied suggestion, B7 thin EDHREC data, B8 the count failed, B9 counted fact vs hedged claim. |
+| `… (R1) · C Proposed cuts and History.dc.html` | C1 ranking, C2 shortlist, C3 part answered, C4 back to 99, C5 thin data, C6 refused (all locked), C7 failed. H1 History with a run in flight, H2 filtered and empty, H3 a past run opened, H4 couldn't load. |
+| `TuningToolMark.dc.html` | The four tool marks, as one component (`tool`, `size`, `ink`). Imported by all three canvases. |
+| `STATES-tuning-hub.md` | Every state per tool, with its Must-nots. |
+| `READINESS.md` | Self-assessed readiness and the open items. |
+| `tuning-hub · copy strings.ts` | Proposed additions to `src/lib/copy/`. Placeholders; `/copy-review` resolves wording. |
+| `design-tables/tuning-hub.md` | New property tables. **Commit to `docs/superpowers/design-tables/tuning-hub.md`**, beside `deck-tuning.md`, not inside it. |
+| `brand/` | Locked brand sheet + README, copied for self-containment. `support.js` is the canvas runtime. |
+
+Every frame is drawn at desktop 900 and phone 390. No About entry this round (brief §8).
+
+---
+
+## Design's three calls
+
+### 1 · The landing: four tiles, fixed order, each says its cost
+The last section of the Analysis tab, under its own rule, where Suggested changes is now (ruling 2). Mounted with the reading, absent before one, exactly as the panel is today. Heading `Tuning` (display 19 / 17). Four tiles in a fixed order: Suggested changes, Mana Balance, Proposed cuts, History. Desktop 2 × 2, phone stacked. Each tile has a name, one purpose line, a cost tag (`1 credit a run`, `free · look deeper 1 credit`, `free`), and one status fact (last run and what came of it, a running run, or `this deck is 6 over`).
+
+**Proposed cuts at 100 or under is present and inert**, not absent: dashed `--border-dashed`, no fill, `--fg-faint`, no chevron, not focusable, its purpose line says why (`Offered once the deck passes 100 cards. This one is at 100.`). The grid never reflows when a deck crosses 100.
+
+**Opening a tool** replaces the tiles in the same area, with no route change. Desktop gets an underline tab row (`All tools · Suggested changes · Mana Balance · Proposed cuts · History`), deliberately unlike the deck tabs' filled pills. The phone narrows to the tool with a 44px `‹ Tuning`; there the landing is the switcher.
+
+### 2 · Shortcuts: two, both on Your deck, each on the fact that explains it
+- **The trim line gains `Proposed cuts →`.** "Six over the ninety-nine. Cut six and it is legal." is the shipped over-99 line, from the same figure as the Over pill (ruling 4). Mono 11.5 `--accent` after the sentence on desktop; its own 44px line on the phone. It stays above the rollup bands and the unresolved line, where those already sit. This closes over-99's gap 2.
+- **The land cell gains `balance mana →`** (`balance →` at 390) whenever Mana Balance's free count finds a color short, met or not. The cell is the control, so a cell takes one action: never both links. Land's Consider shelf stays on the Consider tab.
+- Both switch to Analysis, open the tool, scroll the Tuning heading to the top and focus the tool heading. Same tool, same History.
+- **Not added:** Deck Stats' Mana colors card and Analysis findings don't link in. See open 2.
+
+### 3 · A running tool shows on the landing (§7)
+On its own tile only: a 1px `--accent` border, the manifest's writing dot, the tool's own status words and elapsed time (`reading your deck · 0:14`, `looking deeper · 0:09`). History counts it (`14 runs · 1 running`), and on desktop the tool's tab carries the dot. No banner and no disabled tiles. Pressing the tile opens the running state, with Stop. Why: a credit is being spent and the run outlives the view, so silence would read as loss.
+
+### Feedback 1 (Hugh) · each tool has its own mark
+`TuningToolMark.dc.html` (canvas A, section A0b). There are four one-ink marks, each built from the brand's own primitives (the crown's diamond, the upright card, the pip disc). No icon set is added.
+- **Suggested changes:** a swap. Outlined card, diamond, filled card.
+- **Mana Balance:** a balance. Two pips on a beam over a diamond fulcrum.
+- **Proposed cuts:** a solid card split by one diagonal gap (the glyph direction, M-B, ruled by Hugh in feedback 3; the other three stay geometric, M-A). The organic direction (M-C) was set aside as too obtuse. All three directions stay in A0c as history.
+- **History:** a ledger. Three ruled lines, each led by a diamond, the newest filled.
+
+**Sizes:** 20 on landing tiles; 14 in the tab row, the phone header, History rows and filter chips; 16 in a 28px accent plate when a mark stands alone.
+
+**Ink:** the text's color (`--fg-body` at rest, `--fg-locked` when inert, `--accent` while running or active).
+
+**Usage:** always beside the name, `aria-hidden`. In History the mark plus a short name (Suggested / Mana / Cuts) replaces the mono tag. Marks don't appear inside a tool's own panel heading. Rebuild each as a 24-unit inline SVG component.
+
+### Feedback · Proposed cuts + History (Hugh)
+- **Going over is fine.** Mana Balance's tally stays in its ordinary ink; past 100 it offers `Proposed cuts →`.
+- **Always overage + 2 candidates:** six over means eight. The count is set when the list is ranked, and it doesn't shrink as cards are cut.
+- **Look deeper on Proposed cuts:**
+  - **Offer:** the band at the top of the shortlist (C2), same button-with-segment as Mana Balance.
+  - **Running (C8):** the shortlist stays live under it.
+  - **Done (C9):** above the shortlist, which stays unchanged. Each line names one candidate (cut it first / keep it), with a Suggestion, Checked or Unchecked tag and citations.
+  - **Refused and failed:** B4/B5's shapes.
+- **History:**
+  - **Scroll:** the list scrolls in its own container (420 desktop / 460 phone), with sticky month headings and a fade at the foot.
+  - **Deeper looks:** each is its own row with a filled accent `◆ deeper look` pill. Paid Suggested changes runs read `◆ 1 credit`, free runs read `free`, and `free + 1` is retired.
+- **Failure icon** sits beside the heading on the phone (C7b, H4b) and no longer wraps above it.
+- **Copy cut:** "this run is in History" and "This shortlist stays in History". C4 has no action row.
+
+### Feedback · Mana Balance (Hugh)
+- **Credit cost lives inside the button.** `Look deeper │ ◆ 1 credit` is one control with a segment after a rule. The standing line under it reads `2 of 3 credits left · next one at …`. When spent, the segment drops, the button disables and the line says `0 of 3 credits left`. The separate `1 credit` / `0 left` tags are gone. `Try again` after a failure carries the same segment.
+- **Mix and match: superseded.** Suggestions are now **two lists, Additions and Cuts** (Hugh, feedback). Each line has its own counted reason and its own `Add`/`Cut` · `Reject`, and `Apply all` takes every open line. A tally in the section head (`+4 in · −4 out · stays at 105`) recounts on every answer and turns `--warning` when the total would move. The rebalance / for-ramp / staple kinds are retired: a staple is an Addition with a dashed thumbnail and dot, plus the buy tag. **Suggested changes takes the same shape** (B10): one reason and its citations per line (open 8). The per-half picker drawn earlier is withdrawn.
+- **Legend** is now Deck Stats mana's own (dashed rule, solid and striped swatches with counts), plus the tick (`Covers the cost`). `1 not counted ⓘ` holds the card name in a tooltip. The dork caveat is one short line.
+- **Columns:** Color · Cost · Sources · Status.
+- **Failure tags are an icon everywhere:** a 16-grid filled disc with the `!` cut out, in `--danger`, with the old tag text as its `aria-label` (`Didn't finish`, `Couldn't count`, `Couldn't rank`, `Couldn't load`). History's `failed` outcome carries the same disc at 13px.
+- **Stop:** open for engineering (open 6).
+
+## Other decisions
+
+1. **Navigate away = leave the Analysis tab, leave the page, or reload.** Each resets to the landing. Switching tools, opening History and Re-analyze don't. Runs survive all of it (A6).
+2. **Suggested changes is unchanged inside.** Same manifest, cards, states, action row and credit line. Its own Metamorphous heading stays, so the landmark is unchanged.
+3. **Mana Balance tier 1 is its own ready state.** Opening it counts, with no button, no manifest and no running frame. Look deeper is the first thing in the panel: `Want a closer read?`, a lead, a `1 credit` tag, a brass-outline `Look deeper`, and the shared credit line under it (Help me choose's pattern).
+4. **The source table counts every kind.** Lands are solid in the color's ink; rocks, dorks and land search are striped after them (Deck Stats mana's vocabulary). A tick marks what covers the pips. Figures read `have of covers`. Dorks get a counted caveat line, and unreadable cards get a dashed "not counted" line.
+5. **Three suggestion kinds, three shapes.** Rebalance and For ramp are swaps (struck cut → add). A **Staple has no cut side**: a `+` glyph, a dashed thumbnail and a dashed dot (not in the deck), plus the buy tag if unowned. Its kind line says `not in your deck, no cut named` and its after line says the deck grows. Each suggestion carries a **counted strip** (current, target, after).
+6. **Deeper result sits above the count, never over it.** The count stays below under `The count, unchanged`. One deeper look per version of the list.
+7. **Counted vs hedged** (B9). Three carriers, so color is never the only one:
+   - **Tag:** `Checked` is a solid pill in `--fg-body`, `Unchecked` a dashed pill in `--fg-faint`. Both are 86px in the same slot.
+   - **Ink:** body vs muted.
+   - **Words:** a hedge says *may* and names its uncertainty.
+
+   A deeper suggestion is tagged `Suggestion` in accent. Figures a hedge leans on go in chips, never in its claim. A `CARD TEXT · checked` chip marks an oracle-verified rules claim.
+8. **Proposed cuts: one reason a card, as one chip.** There are four new chip sources: `EDHREC` / `ROLE` / `CURVE` / `BRACKET`. Each value carries a denominator or a comparison. **Cut commits immediately** (an edit, like Apply), Keep collapses, and nothing reorders. `Rank again` appears once something's answered. The never-cut guarantee is one foot line naming the commander and counting the locked cards. At 99 the tool finishes in place and its tile goes inert.
+9. **Proposed cuts gets a loading frame behind a 400ms delay.** It ticks the manifest rows, with no fan and no Stop (nothing to refund).
+10. **History is flat, newest first, under month headings, with a single-select tool filter.** It loads 20 a page. Each row has fixed slots: date, tool tag (`SUGGESTED` / `MANA` / `CUTS`), tier (`free` / `1 credit` / `free + 1`), summary, and outcome (`ok` quiet, `refused` / `stopped` neutral, `failed` `--danger`, `running` `--accent`). A row opens read-only inside History, with a dashed note counting how far the list has moved since.
+
+## Open — for Hugh
+1. **Curve weighting.** The brief has Mana Balance weight pips by curve. Deck Stats' Mana colors dropped it (Hugh, 2026-10-09). If both ship as drawn, the same deck shows two different pip figures for green. Design drew the `asked for` column without saying "weighted". Pick one, or label the difference.
+2. **A third door.** Deck Stats' Mana colors card is the other place a short color shows. Design left it unlinked to keep "one home" tight, but it's the most natural `Balance mana →` after the land cell.
+3. **Free runs in History.** Recording every open of a free tool floods History. The rule drawn: one row per tool per version of the list (list fingerprint). Confirm, or record free runs not at all.
+4. **Staple adds go over.** A Staple names no cut, so on a 99-card deck it takes the deck to 100, which offers Proposed cuts. Drawn honestly (`adds without a cut · the deck goes to 106`). The alternative is for tier 1 to pair every staple with a cut, but that's a tier-2 judgement.
+5. **Tab names.** The brief says "Your deck, Your games". The shipped tabs are `Your deck · Analysis · Consider` (`addPanelCopy.tabs`). The reset rule is drawn against the shipped three.
+
+6. **Stop on a deeper look.** Hugh questions whether Stop belongs at all. As drawn, it refunds (Help me choose's pattern). Without it, the running band is just the running line and the credit is spent on press. Engineering's call: compare with how often a stop would beat the response.
+7. **Answered lines in History and the eval.** History records lines (`3 added, 2 cut, 1 rejected`). The golden-deck eval should score suggestions as returned, not as applied.
+8. **Suggested changes as two lists** changes the model contract. Today it gives one rationale per swap; this would need one rationale per card, each with its own countable citation. The validator's rules carry over line by line.
+
+## Notes for engineering
+- **New:**
+  - `TuningHub` (landing + switch + phone back) and `ToolTile` (ready / running / inert).
+  - `DeeperBand` (offer / running / note / spent), `DeeperResult`, `KindTag` (Checked / Unchecked / Suggestion), `CountedStrip`, `ManaSourceTable`, `BalanceSuggestion` (rebalance / ramp / staple).
+  - `CutRow` + answered rows (reuse `AnsweredRow` tones), `HistoryList`, `HistoryRow`, `PastRun`.
+- **Changed:**
+  - `TuningPanel` mounts inside `TuningHub`, unchanged.
+  - `RoleCounterStrip` loses `inset` and its Analysis mount (`builder-shell.tsx:1611`). `RoleCounterCell` gains a land-only `onBalanceMana` that takes the cell's one action and caption.
+  - `BuilderSpine`'s trim line gains `onProposedCuts`.
+- **View state** (`openTool`) lives in the hub and resets on the Analysis tabpanel's unmount. Runs are read from the ledger on mount, so a running run reappears on its tile.
+- **Credits:** Look deeper uses `creditsCopy.first` / `spent` / `paused` with the deeper-looks flag. Stop and failure refund, as Help me choose does.
+- **Live region:** the existing one, one message per settle per tool. The landing announces nothing.

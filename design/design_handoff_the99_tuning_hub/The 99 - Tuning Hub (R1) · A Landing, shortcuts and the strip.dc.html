@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0B0E; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: #6C95D8; }
+  :root {
+    --bg:#121217; --surface:#1E1F26; --surface-rail:#181920; --surface-sunken:#16171D; --surface-raised:#212229;
+    --elevated:#2D2E35; --elevated-hover:#34353D; --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-dim:#34507D; --danger:#C6533F; --success:#6FA368; --warning:#E0913C;
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:var(--fg);background:#0B0B0E;padding:48px 56px 96px;display:flex;flex-direction:column;gap:64px;width:max-content;min-width:1800px;">
+
+  <header style="display:flex;flex-direction:column;gap:14px;max-width:1180px;">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0B0B0E;background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.28em;text-transform:uppercase;color:var(--fg-faint);">tuning hub · canvas A of 3 · 2026-10-09</span>
+    </div>
+    <h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:34px;line-height:1.25;color:var(--fg);">Tuning sits where Suggested changes sits now: four tools at the foot of Analysis, and two doors into it from Your deck.</h1>
+    <p style="margin:0;max-width:1000px;font-size:14.5px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">Brief: docs/superpowers/design-briefs/2026-10-08-tuning.md (main), §1, §2, §6 and the landing half of §7. Rulings 1–6 (Hugh, 2026-10-08) are taken as closed. Canvas B is Mana Balance; canvas C is Proposed cuts and History. Every string is a placeholder for /copy-review. Deck: HD Gishath, one commander, so the body is 99 and “over” is the spine’s own figure.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px;">
+      <a href="#A0" style="font-family:'IBM Plex Mono',monospace;font-size:12px;border:1px solid var(--accent);border-radius:6px;padding:5px 10px;">A0 · the three calls</a>
+      <a href="#A0c" style="font-family:'IBM Plex Mono',monospace;font-size:12px;border:1px solid var(--accent);border-radius:6px;padding:5px 10px;">A0c · three mark directions (new)</a>
+      <a href="#A0b" style="font-family:'IBM Plex Mono',monospace;font-size:12px;border:1px solid var(--accent);border-radius:6px;padding:5px 10px;">A0b · tool marks (new)</a>
+      <a href="#A1" style="font-family:'IBM Plex Mono',monospace;font-size:12px;border:1px solid var(--border-strong);border-radius:6px;padding:5px 10px;">A1–A3 · landing</a>
+      <a href="#A4" style="font-family:'IBM Plex Mono',monospace;font-size:12px;border:1px solid var(--border-strong);border-radius:6px;padding:5px 10px;">A4 · a tool open</a>
+      <a href="#A5" style="font-family:'IBM Plex Mono',monospace;font-size:12px;border:1px solid var(--border-strong);border-radius:6px;padding:5px 10px;">A5 · shortcuts and the strip</a>
+      <a href="#A6" style="font-family:'IBM Plex Mono',monospace;font-size:12px;border:1px solid var(--border-strong);border-radius:6px;padding:5px 10px;">A6 · what resets the view</a>
+    </div>
+  </header>
+
+  <section id="A0" style="display:flex;flex-direction:column;gap:16px;max-width:1180px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--accent);border:1px solid var(--accent-dim);border-radius:4px;padding:2px 7px;">A0</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);">Design's calls</span>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,240px) minmax(0,1fr);border:1px solid var(--border-strong);border-radius:10px;overflow:hidden;font-size:13px;line-height:1.6;">
+      <sc-for list="{{ calls }}" as="c" hint-placeholder-count="6">
+        <div style="padding:11px 14px;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);background:var(--surface-sunken);">{{ c.q }}</div>
+        <div style="padding:11px 14px;border-top:1px solid var(--border);color:var(--fg-body);text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">{{ c.a }}</b> {{ c.why }}</div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="A0c" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:16px;">A0c · <span style="color:var(--accent);">tool marks, three directions (history: Hugh picked M-A, with M-B’s card cut for Proposed cuts)</span></div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <div style="width:1100px;flex:none;display:flex;flex-direction:column;gap:12px;">
+        <div style="display:grid;grid-template-columns:150px repeat(3,minmax(0,1fr));gap:12px;">
+          <span></span>
+          <sc-for list="{{ dirs }}" as="d" hint-placeholder-count="3">
+            <div id="{{ d.id }}" style="display:flex;flex-direction:column;gap:4px;padding:0 4px;">
+              <div style="display:flex;align-items:center;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--accent);border:1px solid var(--accent-dim);border-radius:4px;padding:2px 7px;">{{ d.id }}</span><span style="font-size:14px;font-weight:600;color:var(--fg);">{{ d.name }}</span></div>
+              <span style="font-size:12px;line-height:1.5;color:var(--fg-muted);text-wrap:pretty;">{{ d.line }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <sc-for list="{{ markRows }}" as="r" hint-placeholder-count="4">
+          <div style="display:grid;grid-template-columns:150px repeat(3,minmax(0,1fr));gap:12px;">
+            <div style="display:flex;flex-direction:column;justify-content:center;gap:3px;padding:0 4px;">
+              <span style="font-size:13.5px;font-weight:600;color:var(--fg);">{{ r.name }}</span>
+            </div>
+            <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="3">
+              <div style="background:var(--surface-sunken);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+                <div style="display:flex;align-items:flex-end;gap:16px;min-height:48px;">
+                  <dc-import name="TuningToolMark" tool="{{ r.key }}" variant="{{ c.v }}" size="48" ink="var(--fg)" hint-size="48px,48px"></dc-import>
+                  <dc-import name="TuningToolMark" tool="{{ r.key }}" variant="{{ c.v }}" size="20" ink="var(--fg-body)" hint-size="20px,20px"></dc-import>
+                  <dc-import name="TuningToolMark" tool="{{ r.key }}" variant="{{ c.v }}" size="16" ink="var(--fg-body)" hint-size="16px,16px"></dc-import>
+                  <dc-import name="TuningToolMark" tool="{{ r.key }}" variant="{{ c.v }}" size="14" ink="var(--fg-body)" hint-size="14px,14px"></dc-import>
+                  <span style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:7px;background:rgba(92,134,201,0.14);"><dc-import name="TuningToolMark" tool="{{ r.key }}" variant="{{ c.v }}" size="16" ink="var(--accent)" hint-size="16px,16px"></dc-import></span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:3px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">{{ c.reads }}</span>
+                  <span style="font-size:12px;line-height:1.5;color:var(--fg-body);text-wrap:pretty;">{{ c.build }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-for>
+        <div style="display:grid;grid-template-columns:150px repeat(3,minmax(0,1fr));gap:12px;">
+          <div style="display:flex;align-items:center;padding:0 4px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">in a History list</span></div>
+          <sc-for list="{{ dirs }}" as="d" hint-placeholder-count="3">
+            <div style="background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px;">
+              <sc-for list="{{ sampleRows }}" as="s" hint-placeholder-count="4">
+                <div style="background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:8px 10px;display:flex;align-items:center;gap:9px;">
+                  <dc-import name="TuningToolMark" tool="{{ s.key }}" variant="{{ d.v }}" size="14" ink="var(--fg-body)" hint-size="14px,14px"></dc-import>
+                  <span style="width:62px;font-size:12px;font-weight:500;color:var(--fg-body);">{{ s.tool }}</span>
+                  <span style="flex:1;min-width:0;font-size:11.5px;color:var(--fg-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ s.sum }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:150px repeat(3,minmax(0,1fr));gap:12px;">
+          <div style="display:flex;align-items:center;padding:0 4px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">beside the card marks</span></div>
+          <sc-for list="{{ dirs }}" as="d" hint-placeholder-count="3">
+            <div style="background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;padding:14px 12px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+              <sc-for list="{{ toolKeys }}" as="k" hint-placeholder-count="4"><dc-import name="TuningToolMark" tool="{{ k }}" variant="{{ d.v }}" size="16" ink="var(--fg-body)" hint-size="16px,16px"></dc-import></sc-for>
+              <span style="width:1px;height:16px;background:var(--border-strong);"></span>
+              <span style="display:flex;align-items:center;gap:14px;color:var(--fg-body);" title="Shipped CardFactMark glyphs, paths from card-fact-mark.tsx">
+                <svg viewBox="0 0 16 16" width="16" height="16" style="display:block;"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"></path></svg>
+                <svg viewBox="0 0 16 16" width="16" height="16" style="display:block;"><path d="M1.4 13.4 L6.2 5.2 L9.4 10.6 L11.2 7.8 L14.6 13.4 Z" fill="currentColor"></path><path d="M4.4 2.6 L5.6 2.6 M8.0 1.6 L8.0 3.0 M11.0 2.8 L12.2 2.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"></path></svg>
+                <svg viewBox="0 0 16 16" width="16" height="16" style="display:block;"><path d="M10.98 3.74 A 5.2 5.2 0 1 1 6.65 2.98" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path><path d="M9.0 2.4 L7.1 4.6 L6.2 1.3 Z" fill="currentColor"></path></svg>
+                <svg viewBox="0 0 16 16" width="16" height="16" style="display:block;"><path d="M1.8 12.2 H14.2 V14.4 H1.8 Z" fill="currentColor"></path><path d="M8 1.3 L11.7 5.7 H9.2 V10.3 H6.8 V5.7 H4.3 Z" fill="currentColor"></path></svg>
+              </span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">← shipped card marks</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="width:360px;flex:none;display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.65;color:var(--fg-muted);">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">How to choose</span>
+        <sc-for list="{{ dirNotes }}" as="n" hint-placeholder-count="5">
+          <p style="margin:0;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">{{ n.b }}</b> {{ n.t }}</p>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section id="A0b" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:16px;">A0b · <span style="color:var(--accent);">tool marks, ruled set: M-A for three tools, M-B for Proposed cuts (Hugh, R1 feedback 3)</span></div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <div style="width:900px;flex:none;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;">
+        <sc-for list="{{ marks }}" as="m" hint-placeholder-count="4">
+          <div style="background:var(--surface-sunken);border:1px solid var(--border);border-radius:12px;padding:18px 16px;display:flex;flex-direction:column;gap:14px;">
+            <div style="display:flex;align-items:flex-end;gap:16px;min-height:48px;">
+              <dc-import name="TuningToolMark" tool="{{ m.key }}" size="48" ink="var(--fg)" hint-size="48px,48px"></dc-import>
+              <dc-import name="TuningToolMark" tool="{{ m.key }}" size="20" ink="var(--fg-body)" hint-size="20px,20px"></dc-import>
+              <dc-import name="TuningToolMark" tool="{{ m.key }}" size="14" ink="var(--fg-body)" hint-size="14px,14px"></dc-import>
+              <span style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:7px;background:rgba(92,134,201,0.14);"><dc-import name="TuningToolMark" tool="{{ m.key }}" size="16" ink="var(--accent)" hint-size="16px,16px"></dc-import></span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <span style="font-size:14px;font-weight:600;color:var(--fg);">{{ m.name }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">{{ m.reads }}</span>
+            </div>
+            <span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ m.build }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="width:380px;flex:none;display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.65;color:var(--fg-muted);">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">Built from the brand’s own primitives</span>
+        <sc-for list="{{ markNotes }}" as="n" hint-placeholder-count="5">
+          <p style="margin:0;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">{{ n.b }}</b> {{ n.t }}</p>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <sc-for list="{{ landing }}" as="s" hint-placeholder-count="3">
+    <section id="{{ s.id }}" style="display:flex;flex-direction:column;gap:18px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:16px;">{{ s.id }} · <span style="color:var(--accent);">{{ s.title }}</span></div>
+      <div style="display:flex;align-items:flex-start;gap:40px;">
+        <sc-for list="{{ s.frames }}" as="f" hint-placeholder-count="2">
+          <div style="display:flex;flex-direction:column;gap:8px;flex:none;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;align-self:flex-start;">{{ f.tag }}</span>
+            <div data-screen-label="{{ f.tag }}" style="width:{{ f.w }}px;background:var(--bg);border:1px solid var(--border-strong);border-radius:{{ f.r }}px;padding:{{ f.pad }};display:flex;flex-direction:column;gap:14px;">
+              <div style="display:flex;gap:8px;">
+                <span style="font-size:12.5px;font-weight:500;color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:999px;padding:5px 13px;">Your deck</span>
+                <span style="font-size:12.5px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:999px;padding:5px 13px;">Analysis</span>
+                <span style="font-size:12.5px;font-weight:500;color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:999px;padding:5px 13px;">Consider</span>
+              </div>
+              <div style="border:1px dashed var(--border-dashed);border-radius:10px;padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.6;color:var(--fg-locked);">{{ f.ghost }}</div>
+              <div style="border-top:1px solid var(--border);padding-top:16px;display:flex;flex-direction:column;gap:12px;">
+                <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+                  <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:{{ f.h }}px;color:var(--fg);">Tuning</h2>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ f.sub }}</span>
+                </div>
+                <div style="display:grid;grid-template-columns:{{ f.cols }};gap:{{ f.gap }}px;">
+                  <sc-for list="{{ f.tiles }}" as="t" hint-placeholder-count="4">
+                    <div style="background:{{ t.bg }};border:1px {{ t.bs }} {{ t.bc }};border-radius:10px;padding:{{ f.tilePad }};display:flex;flex-direction:column;gap:6px;min-height:{{ f.tileH }}px;">
+                      <div style="display:flex;align-items:center;gap:10px;">
+                        <dc-import name="TuningToolMark" tool="{{ t.key }}" size="20" ink="{{ t.markInk }}" hint-size="20px,20px"></dc-import>
+                        <span style="font-size:14px;font-weight:600;color:{{ t.ink }};">{{ t.name }}</span>
+                        <span style="flex:1;"></span>
+                        <sc-if value="{{ t.go }}" hint-placeholder-val="{{ true }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">›</span></sc-if>
+                      </div>
+                      <span style="font-size:12.5px;line-height:1.5;color:{{ t.bodyInk }};text-wrap:pretty;">{{ t.purpose }}</span>
+                      <span style="flex:1;"></span>
+                      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;">
+                        <sc-if value="{{ t.cost }}" hint-placeholder-val="{{ true }}"><span style="color:var(--fg-faint);border:1px solid var(--border-strong);border-radius:999px;padding:1px 8px;">{{ t.cost }}</span></sc-if>
+                        <sc-if value="{{ t.running }}" hint-placeholder-val="{{ false }}"><span style="width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(92,134,201,0.22);"></span></sc-if>
+                        <span style="color:{{ t.statusInk }};">{{ t.status }}</span>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+        <div style="width:380px;flex:none;display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.65;color:var(--fg-muted);">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">{{ s.noteHead }}</span>
+          <sc-for list="{{ s.notes }}" as="n" hint-placeholder-count="3">
+            <p style="margin:0;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">{{ n.b }}</b> {{ n.t }}</p>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+  </sc-for>
+
+  <section id="A4" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:16px;">A4 · <span style="color:var(--accent);">a tool open: Suggested changes inside the hub, its insides unchanged (brief §2)</span></div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+
+      <div style="display:flex;flex-direction:column;gap:8px;flex:none;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;align-self:flex-start;">A4 · tool open · desktop 900</span>
+        <div data-screen-label="A4 tool open desktop" style="width:900px;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;padding:20px 24px;display:flex;flex-direction:column;gap:14px;">
+          <div style="border-top:1px solid var(--border);padding-top:16px;display:flex;flex-direction:column;gap:14px;">
+            <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:19px;color:var(--fg);">Tuning</h2>
+            <div role="tablist" style="display:flex;gap:22px;border-bottom:1px solid var(--border);">
+              <sc-for list="{{ switchTabs }}" as="t" hint-placeholder-count="5">
+                <span style="font-size:13px;font-weight:{{ t.weight }};color:{{ t.ink }};padding:4px 0 10px;border-bottom:2px solid {{ t.rule }};margin-bottom:-1px;display:flex;align-items:center;gap:7px;"><sc-if value="{{ t.key }}" hint-placeholder-val="{{ false }}"><dc-import name="TuningToolMark" tool="{{ t.key }}" size="14" ink="{{ t.ink }}" hint-size="14px,14px"></dc-import></sc-if>{{ t.label }}<sc-if value="{{ t.dot }}" hint-placeholder-val="{{ false }}"><span style="width:6px;height:6px;border-radius:50%;background:var(--accent);"></span></sc-if></span>
+              </sc-for>
+            </div>
+            <div style="background:var(--surface-sunken);border:1px solid var(--border);border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;">
+              <h3 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:19px;color:var(--fg);">Suggested changes</h3>
+              <span style="margin-top:9px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">read from 9 games · 2 game notes · 99 cards · your collection</span>
+              <p style="margin:11px 0 0;font-size:13.5px;line-height:1.65;color:var(--fg-body);max-width:640px;">Five swaps, aimed at the turns you said you stalled.</p>
+              <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">
+                <sc-for list="{{ swaps }}" as="s" hint-placeholder-count="2">
+                  <div style="background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;">
+                    <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
+                      <div style="width:22px;height:31px;flex:none;border-radius:3px;background:repeating-linear-gradient(135deg,var(--border),var(--border) 3px,var(--surface-raised) 3px,var(--surface-raised) 6px);border:1px solid var(--border-strong);"></div>
+                      <span style="font-size:13px;color:var(--fg-body);text-decoration:line-through;text-decoration-color:var(--fg-locked);border-bottom:1px dotted var(--accent);">{{ s.cut }}</span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">→</span>
+                      <div style="width:22px;height:31px;flex:none;border-radius:3px;background:repeating-linear-gradient(135deg,var(--elevated),var(--elevated) 3px,var(--border) 3px,var(--border) 6px);border:1px solid var(--border-dashed);"></div>
+                      <span style="width:7px;height:7px;flex:none;border-radius:50%;background:var(--success);"></span>
+                      <span style="font-size:13px;font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent);">{{ s.add }}</span>
+                    </div>
+                    <div style="font-size:12.5px;color:var(--fg-body);line-height:1.5;">{{ s.why }}</div>
+                    <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+                      <span style="font-weight:600;font-size:12.5px;color:var(--accent);border:1px solid var(--accent);border-radius:7px;padding:7px 13px;">Apply</span>
+                      <span style="font-weight:500;font-size:12.5px;color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:7px;padding:7px 12px;">Reject</span>
+                      <span style="display:flex;gap:5px;flex-wrap:wrap;margin-left:auto;">
+                        <sc-for list="{{ s.cites }}" as="c" hint-placeholder-count="2">
+                          <span style="display:flex;align-items:baseline;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:5px;padding:3px 7px;"><span style="letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">{{ c.src }}</span><span style="color:var(--fg-muted);">{{ c.text }}</span></span>
+                        </sc-for>
+                      </span>
+                    </div>
+                  </div>
+                </sc-for>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">… three more cards, as shipped</span>
+              </div>
+              <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:16px;flex-wrap:wrap;min-height:56px;">
+                <span style="font-weight:600;font-size:14px;color:var(--accent);border:1px solid var(--accent);border-radius:8px;padding:11px 20px;">Suggest again</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">Replaces these suggestions and uses a credit. 2 of 3 left · next one at 4:10 PM.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;flex:none;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;align-self:flex-start;">A4b · tool open · phone 390</span>
+        <div data-screen-label="A4b tool open phone" style="width:390px;background:var(--bg);border:1px solid var(--border-strong);border-radius:22px;padding:16px 16px 20px;display:flex;flex-direction:column;gap:12px;">
+          <div style="border-top:1px solid var(--border);padding-top:6px;display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <span style="height:44px;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--fg-muted);">‹ Tuning</span>
+              <span style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);"><dc-import name="TuningToolMark" tool="suggested" size="14" ink="var(--fg-body)" hint-size="14px,14px"></dc-import>1 of 4 tools</span>
+            </div>
+            <div style="background:var(--surface-sunken);border:1px solid var(--border);border-radius:11px;padding:16px 14px;display:flex;flex-direction:column;">
+              <h3 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:17px;color:var(--fg);">Suggested changes</h3>
+              <span style="margin-top:7px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.5;color:var(--fg-faint);">read from 9 games · 2 game notes · 99 cards · your collection</span>
+              <div style="margin-top:12px;display:flex;flex-direction:column;gap:12px;">
+                <sc-for list="{{ swapsOne }}" as="s" hint-placeholder-count="1">
+                  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 12px;display:flex;flex-direction:column;gap:11px;">
+                    <div style="display:flex;flex-direction:column;gap:7px;">
+                      <div style="display:flex;align-items:center;gap:9px;"><div style="width:22px;height:31px;flex:none;border-radius:3px;background:repeating-linear-gradient(135deg,var(--border),var(--border) 3px,var(--surface-raised) 3px,var(--surface-raised) 6px);border:1px solid var(--border-strong);"></div><span style="font-size:13px;color:var(--fg-body);text-decoration:line-through;text-decoration-color:var(--fg-locked);border-bottom:1px dotted var(--accent);">{{ s.cut }}</span></div>
+                      <div style="display:flex;align-items:center;gap:9px;"><div style="width:22px;height:31px;flex:none;border-radius:3px;background:repeating-linear-gradient(135deg,var(--elevated),var(--elevated) 3px,var(--border) 3px,var(--border) 6px);border:1px solid var(--border-dashed);"></div><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">→</span><span style="width:7px;height:7px;flex:none;border-radius:50%;background:var(--success);"></span><span style="font-size:13px;font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent);">{{ s.add }}</span></div>
+                    </div>
+                    <div style="font-size:12.5px;color:var(--fg-body);line-height:1.55;">{{ s.why }}</div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                      <sc-for list="{{ s.cites }}" as="c" hint-placeholder-count="2">
+                        <span style="display:flex;align-items:baseline;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:5px;padding:3px 7px;"><span style="letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">{{ c.src }}</span><span style="color:var(--fg-muted);">{{ c.text }}</span></span>
+                      </sc-for>
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                      <span style="flex:1;height:44px;font-weight:600;font-size:13px;color:var(--accent);border:1px solid var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;">Apply</span>
+                      <span style="flex:1;height:44px;font-weight:500;font-size:13px;color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:8px;display:flex;align-items:center;justify-content:center;">Reject</span>
+                    </div>
+                  </div>
+                </sc-for>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">… four more cards, as shipped</span>
+              </div>
+              <div style="margin-top:15px;padding-top:14px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;">
+                <span style="height:44px;font-weight:600;font-size:13.5px;color:var(--accent);border:1px solid var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;">Suggest again</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.5;color:var(--fg-faint);text-align:center;">Replaces these and uses a credit. 2 of 3 left · next one at 4:10 PM.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:380px;flex:none;display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.65;color:var(--fg-muted);">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">Open: the hub narrows on the phone, switches on desktop</span>
+        <sc-for list="{{ openNotes }}" as="n" hint-placeholder-count="4">
+          <p style="margin:0;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">{{ n.b }}</b> {{ n.t }}</p>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section id="A5" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:16px;">A5 · <span style="color:var(--accent);">Your deck: the trim line opens Proposed cuts, the land cell opens Mana Balance, and the strip lives here only</span></div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+
+      <div style="display:flex;flex-direction:column;gap:8px;flex:none;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;align-self:flex-start;">A5 · Your deck · desktop 900</span>
+        <div data-screen-label="A5 Your deck desktop" style="width:900px;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;">
+          <div style="padding:20px 30px 16px;display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:baseline;gap:10px;">
+              <span style="font-family:'Metamorphous',serif;font-size:22px;color:var(--fg);">HD - Gishath</span>
+              <span style="flex:1;"></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--warning);border:1px solid var(--warning);border-radius:999px;padding:1px 9px;">Over</span>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:8px;font-family:'IBM Plex Mono',monospace;">
+              <span style="font-size:20px;font-weight:600;color:var(--warning);">105</span><span style="font-size:13px;color:var(--fg-faint);">/ 99</span><span style="font-size:12px;color:var(--warning);">+6</span>
+              <span style="font-size:11px;color:var(--fg-faint);margin-left:12px;">96 owned · 9 to buy</span>
+            </div>
+            <div style="height:6px;border-radius:999px;background:var(--elevated);overflow:hidden;display:flex;"><span style="flex:99;background:var(--success);"></span><span style="flex:6;background:var(--warning);"></span></div>
+            <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:4px;max-width:620px;">
+              <span style="font-size:12.5px;line-height:1.5;color:var(--fg-body);"><b style="color:var(--warning);font-weight:600;">Six over the ninety-nine.</b> Cut six and it is legal.</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);border-bottom:1px solid var(--accent-dim);">Proposed cuts →</span>
+            </div>
+          </div>
+          <div style="padding:14px 30px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+            <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-body);">Recommended mix</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">from Gishath decks on EDHREC</span>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <sc-for list="{{ cells }}" as="c" hint-placeholder-count="5">
+                <div style="flex:1;min-width:0;min-height:72px;border-radius:9px;padding:11px 14px;background:{{ c.bg }};border:1px solid {{ c.border }};">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">{{ c.label }}</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;margin-top:3px;color:{{ c.figInk }};">{{ c.have }}<span style="font-weight:400;font-size:11px;color:var(--fg-faint);"> / {{ c.target }}</span></div>
+                  <div style="height:5px;border-radius:999px;background:var(--elevated);margin-top:8px;overflow:hidden;"><div style="height:100%;width:{{ c.pct }}%;background:{{ c.bar }};border-radius:999px;"></div></div>
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-top:6px;">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">{{ c.rec }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:{{ c.linkInk }};">{{ c.link }}</span>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);">Why these numbers?</div>
+          </div>
+          <div style="padding:14px 30px 20px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">the decklist, unchanged ↓</div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;flex:none;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;align-self:flex-start;">A5b · Your deck · phone 390</span>
+        <div data-screen-label="A5b Your deck phone" style="width:390px;background:var(--bg);border:1px solid var(--border-strong);border-radius:22px;overflow:hidden;display:flex;flex-direction:column;">
+          <div style="padding:18px 16px 14px;display:flex;flex-direction:column;gap:8px;align-items:center;text-align:center;">
+            <span style="font-family:'Metamorphous',serif;font-size:17px;color:var(--fg);">HD - Gishath</span>
+            <div style="display:flex;align-items:baseline;gap:7px;font-family:'IBM Plex Mono',monospace;"><span style="font-size:17px;font-weight:600;color:var(--warning);">105</span><span style="font-size:12px;color:var(--fg-faint);">/ 99</span><span style="font-size:11px;color:var(--warning);">+6</span><span style="font-size:10px;color:var(--warning);border:1px solid var(--warning);border-radius:999px;padding:0 7px;margin-left:6px;">Over</span></div>
+            <div style="width:100%;height:5px;border-radius:999px;background:var(--elevated);overflow:hidden;display:flex;"><span style="flex:99;background:var(--success);"></span><span style="flex:6;background:var(--warning);"></span></div>
+            <span style="font-size:12px;line-height:1.5;color:var(--fg-body);"><b style="color:var(--warning);font-weight:600;">Six over the ninety-nine.</b> Cut six and it is legal.</span>
+            <span style="min-height:44px;display:flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">Proposed cuts →</span>
+          </div>
+          <div style="padding:10px 16px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Recommended mix</span>
+            </div>
+            <div style="display:flex;gap:4px;">
+              <sc-for list="{{ cells }}" as="c" hint-placeholder-count="5">
+                <div style="flex:1;min-width:0;min-height:62px;border-radius:7px;padding:7px 2px 6px;text-align:center;background:{{ c.bg }};border:1px solid {{ c.border }};">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--fg-faint);">{{ c.label }}</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;margin-top:2px;color:{{ c.figInk }};">{{ c.have }}</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--fg-locked);">{{ c.rec }}</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;margin-top:3px;color:{{ c.linkInk }};">{{ c.linkShort }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="padding:12px 16px 18px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">the decklist, unchanged ↓</div>
+        </div>
+      </div>
+
+      <div style="width:380px;flex:none;display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.65;color:var(--fg-muted);">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">Two doors, one strip</span>
+        <sc-for list="{{ doorNotes }}" as="n" hint-placeholder-count="5">
+          <p style="margin:0;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">{{ n.b }}</b> {{ n.t }}</p>
+        </sc-for>
+        <div style="display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);border:1px solid var(--border-strong);border-radius:8px;overflow:hidden;font-size:12px;line-height:1.5;margin-top:4px;">
+          <sc-for list="{{ cellRules }}" as="r" hint-placeholder-count="4">
+            <div style="padding:8px 10px;border-top:1px solid var(--border);color:var(--fg-body);">{{ r.when }}</div>
+            <div style="padding:8px 10px;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;color:{{ r.ink }};">{{ r.then }}</div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="A6" style="display:flex;flex-direction:column;gap:16px;max-width:1180px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:16px;">A6 · <span style="color:var(--accent);">what resets the view, and what a run survives (ruling: navigate away resets to the landing)</span></div>
+    <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,0.9fr) minmax(0,1fr);border:1px solid var(--border-strong);border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55;">
+      <div style="padding:9px 14px;background:var(--surface-sunken);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">The player…</div>
+      <div style="padding:9px 14px;background:var(--surface-sunken);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">The hub shows</div>
+      <div style="padding:9px 14px;background:var(--surface-sunken);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">A run in flight</div>
+      <sc-for list="{{ resets }}" as="r" hint-placeholder-count="7">
+        <div style="padding:10px 14px;border-top:1px solid var(--border);color:var(--fg);">{{ r.act }}</div>
+        <div style="padding:10px 14px;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:{{ r.ink }};">{{ r.shows }}</div>
+        <div style="padding:10px 14px;border-top:1px solid var(--border);color:var(--fg-body);">{{ r.run }}</div>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const desk = { w: 900, r: 12, pad: '20px 24px', h: 19, cols: 'repeat(2,minmax(0,1fr))', gap: 10, tilePad: '14px 16px', tileH: 112 };
+    const phone = { w: 390, r: 22, pad: '16px 16px 20px', h: 17, cols: 'minmax(0,1fr)', gap: 8, tilePad: '12px 14px', tileH: 0 };
+    const ghostD = 'the reading, unchanged: banner · Overview · bracket box · climb · findings. The recommended mix no longer sits here (A5).';
+    const ghostP = 'the reading, unchanged. The mix moved to Your deck.';
+    const keyOf = { 'Suggested changes': 'suggested', 'Mana Balance': 'mana', 'Proposed cuts': 'cuts', 'History': 'history' };
+    const tile = (name, purpose, cost, status, o = {}) => ({
+      name, purpose, cost, status, go: o.go ?? true, running: !!o.running, key: keyOf[name],
+      markInk: o.running ? 'var(--accent)' : o.inert ? 'var(--fg-locked)' : 'var(--fg-body)',
+      bg: o.inert ? 'transparent' : 'var(--surface)', bs: o.inert ? 'dashed' : 'solid',
+      bc: o.running ? 'var(--accent)' : o.inert ? 'var(--border-dashed)' : 'var(--border)',
+      ink: o.inert ? 'var(--fg-faint)' : 'var(--fg)', bodyInk: o.inert ? 'var(--fg-faint)' : 'var(--fg-body)',
+      statusInk: o.statusInk || 'var(--fg-faint)',
+    });
+    const sc = (status, o) => tile('Suggested changes', 'Up to five swaps, read from your games, your notes and the list.', '1 credit a run', status, o);
+    const mb = (status, o) => tile('Mana Balance', 'Counts every source of each color against what your spells ask for.', 'free · look deeper 1 credit', status, o);
+    const pcOn = tile('Proposed cuts', 'A shortlist of what to cut, each with the reason it was picked.', 'free · look deeper 1 credit', 'this deck is 6 over', { statusInk: 'var(--warning)' });
+    const pcOff = tile('Proposed cuts', 'Offered once the deck passes 100 cards. This one is at 100.', '', '', { inert: true, go: false });
+    const hi = (n) => tile('History', 'Every run of every tool on this deck, newest first.', '', n);
+    const set = (tiles, d) => ({ ...d, tiles });
+    const landing = [
+      {
+        id: 'A1', title: 'landing, deck over 100: all four tools offered',
+        frames: [
+          set([sc('last run Oct 3 · 2 of 5 applied'), mb('last run Oct 7'), pcOn, hi('14 runs')], { ...desk, tag: 'A1 · landing · desktop 900', ghost: ghostD, sub: 'four tools · each says what it costs' }),
+          set([sc('last run Oct 3'), mb('last run Oct 7'), pcOn, hi('14 runs')], { ...phone, tag: 'A1b · landing · phone 390', ghost: ghostP, sub: '' }),
+        ],
+        noteHead: 'Four tiles, a fixed order, one press each',
+        notes: [
+          { b: 'Where:', t: 'the last section of the Analysis tab, where Suggested changes is today, under its own rule (ruling 2). Mounted with the reading, as the panel is now. Before a first reading the tab is its empty state and Tuning is absent, as the panel is absent today.' },
+          { b: 'Tiles, not a list of buttons.' , t: 'Each says what it does and what it costs before the press: 1 credit a run, free, or free with a paid second look. Desktop is a 2 × 2 grid so the four sit above the fold of the tab; phone stacks them as 44px-plus rows with a chevron.' },
+          { b: 'The status line is a fact, never a nudge.', t: 'Last run and what came of it, a running run, or the one figure that explains an offer (this deck is 6 over). No badges, no counts of unread anything.' },
+          { b: 'Order:', t: 'Suggested changes first (it exists, players know it), Mana Balance, Proposed cuts, History last. The order never changes with state, so a tile is always in the same place.' },
+        ],
+      },
+      {
+        id: 'A2', title: 'landing, deck at 100 or under: Proposed cuts present but not offered',
+        frames: [
+          set([sc('last run Oct 3 · 2 of 5 applied'), mb('last run Oct 7'), pcOff, hi('14 runs')], { ...desk, tag: 'A2 · not offered · desktop 900', ghost: ghostD, sub: 'four tools · each says what it costs' }),
+          set([sc('last run Oct 3'), mb('last run Oct 7'), pcOff, hi('14 runs')], { ...phone, tag: 'A2b · not offered · phone 390', ghost: ghostP, sub: '' }),
+        ],
+        noteHead: 'Present and inert, not absent',
+        notes: [
+          { b: 'Why keep the slot:', t: 'the grid never reflows when a deck crosses 100, so Suggested changes and History do not move under the player, and a player who has cut back to 100 is not left wondering where the tool went.' },
+          { b: 'The explanation is the purpose line.', t: 'Offered once the deck passes 100 cards. This one is at 100. The figure is the spine’s, commanders included (ruling 4); a Partner deck reads the same sentence at its own total.' },
+          { b: 'Inert:', t: 'dashed --border-dashed, no fill, --fg-faint ink, no chevron, no cost tag. Not a button and not focusable; read as text. Its past runs stay in History.' },
+        ],
+      },
+      {
+        id: 'A3', title: 'landing with a run in flight: the tile says so (§7, Design’s call)',
+        frames: [
+          set([sc('reading your deck · 0:14', { running: true, statusInk: 'var(--accent)' }), mb('last run Oct 7'), pcOn, hi('14 runs · 1 running')], { ...desk, tag: 'A3 · run in flight · desktop 900', ghost: ghostD, sub: 'four tools · each says what it costs' }),
+          set([sc('last run Oct 3'), mb('looking deeper · 0:09', { running: true, statusInk: 'var(--accent)' }), pcOn, hi('14 runs · 1 running')], { ...phone, tag: 'A3b · deeper look in flight · phone 390', ghost: ghostP, sub: '' }),
+        ],
+        noteHead: 'Visible, because it is spending a credit',
+        notes: [
+          { b: 'The call: show it.', t: 'A run that is spending a credit and outlives the view should not be silent. The running tile takes the generating panel’s own signal: a 1px --accent border and an accent dot (the manifest’s writing pulse, anim-dots, reduced motion still). Status reads what the tool’s own live region says, plus elapsed time.' },
+          { b: 'One tile, not the whole hub.', t: 'No banner, no toast, no disabled tiles. The other tools stay pressable; a second tool can run beside it. Pressing the running tile opens the tool in its running state, Stop included.' },
+          { b: 'It settles in place.', t: 'When the run lands the tile’s status becomes the ordinary last-run line. Nothing is announced from the landing; the tool’s own live region announced it when the run settled. History counts it as running until then.' },
+        ],
+      },
+    ];
+    const tabs = ['All tools', 'Suggested changes', 'Mana Balance', 'Proposed cuts', 'History'];
+    const switchTabs = tabs.map((label, i) => ({ label, key: keyOf[label] || '', weight: i === 1 ? 600 : 500, ink: i === 1 ? 'var(--fg)' : 'var(--fg-muted)', rule: i === 1 ? 'var(--accent)' : 'transparent', dot: false }));
+    const swaps = [
+      { cut: 'Rampant Growth', add: 'Nature’s Lore', why: 'Five of your nine games stalled on turn three, and Nature’s Lore finds a Forest untapped where Rampant Growth finds a basic tapped.', cites: [{ src: 'games', text: 'mana · 5 of 9' }, { src: 'list', text: '6 dual forests' }] },
+      { cut: 'Kodama’s Reach', add: 'Three Visits', why: 'You marked mana against the deck in 5 of 9 games; Three Visits costs one less and fetches the same land.', cites: [{ src: 'games', text: 'mana · 5 of 9' }, { src: 'you said', text: '“go wide and fast”' }] },
+    ];
+    const openNotes = [
+      { b: 'Same area, no new route.', t: 'A tool opens where the tiles were. The Tuning heading stays put, so the tab does not jump. Focus moves to the tool’s heading.' },
+      { b: 'Desktop keeps all four in reach.', t: 'An underline tab row under the heading: All tools · the three tools · History. Deliberately not the deck tabs’ filled pills, so the two levels never read as one row. All tools returns to the landing.' },
+      { b: 'Phone narrows to the tool, with a 44px ‹ Tuning back.', t: 'Five underline tabs do not fit 358px without a scroller, and the landing already is the switcher. Switching tools on a phone is two presses.' },
+      { b: 'Suggested changes is unchanged inside.', t: 'Manifest, read line, up to five cards, Apply / Reject, the action row, its credit line and all of its states (ready, reading with the fan, results, part and all answered, retired, nothing changed, the five failures, credits spent). Only its frame moved. Its own heading stays: a screen reader still lands on the same landmark.' },
+      { b: 'A running tool marks its tab.', t: 'The same accent dot as its landing tile, on its tab, while you are in another tool.' },
+    ];
+    const cells = [
+      { label: 'Ramp', have: 9, target: 10, rec: 'rec 10', pct: 90, short: true, link: 'consider →', linkShort: 'consider →' },
+      { label: 'Draw', have: 11, target: 10, rec: 'rec 10', pct: 100, link: '—', linkShort: '—' },
+      { label: 'Removal', have: 8, target: 8, rec: 'rec 8', pct: 100, link: '—', linkShort: '—' },
+      { label: 'Wipes', have: 2, target: 3, rec: 'rec 3', pct: 67, short: true, link: 'consider →', linkShort: 'consider →' },
+      { label: 'Land', have: 36, target: 36, rec: 'rec ~36', pct: 100, mana: true, link: 'balance mana →', linkShort: 'balance →' },
+    ].map(c => ({ ...c,
+      bg: 'var(--surface-sunken)', border: c.mana ? 'var(--border-strong)' : 'var(--border)',
+      figInk: c.short ? 'var(--warning)' : 'var(--fg)', bar: c.short ? 'var(--warning)' : 'var(--success)',
+      linkInk: c.link === '—' ? 'var(--border-dashed)' : 'var(--accent)',
+    }));
+    const doorNotes = [
+      { b: 'Over by N is the trim line that already ships.', t: '“Six over the ninety-nine. Cut six and it is legal.” is the over-99 amendment’s line, from the same figure as the Over pill and +6 (ruling 4). It gains one mono link, Proposed cuts →, after its last sentence. It stays above the rollup bands and the unresolved line, in the order those already sit; nothing else on the spine moves. On the phone the link takes its own 44px line under the sentence.' },
+      { b: 'This closes over-99’s gap 2', t: '(“nothing walks the player to the cards to cut”) with a ranked list instead of the last five added, which is the reason that amendment gave for not drawing one.' },
+      { b: 'The land cell is the other door.', t: 'When Mana Balance’s free count finds a color short, the land cell becomes a control captioned balance mana → (balance → at 390, where consider → already fits). The whole cell is the control, so one cell takes one action: never both links. Land’s Consider shelf stays reachable from the Consider tab.' },
+      { b: 'Both doors land on the same tool.', t: 'Each switches the deck to Analysis, opens the tool in the hub (A4), scrolls the Tuning heading to the top of the view and focuses the tool’s heading. Same tool, same History, as the tile.' },
+      { b: 'The strip lives on Your deck, once.', t: 'Drawn exactly as it ships there today (the spine’s own gutters, rule below). The Analysis copy and its inset variant are removed. The consider → fix is non-visual: the link, its label and its no-shelf dash are unchanged.' },
+    ];
+    const cellRules = [
+      { when: 'Short, Consider has a shelf for it', then: 'consider →', ink: 'var(--accent)' },
+      { when: 'Short, no shelf', then: '— (a figure, not a control)', ink: 'var(--fg-faint)' },
+      { when: 'Met', then: '—', ink: 'var(--fg-faint)' },
+      { when: 'Land, Mana Balance finds a color short (met or short)', then: 'balance mana →', ink: 'var(--accent)' },
+      { when: 'Land, short, colors covered', then: 'consider → (as today)', ink: 'var(--accent)' },
+    ];
+    const resets = [
+      { act: 'Opens a tool, switches tools, opens History', shows: 'that tool, in place', ink: 'var(--fg-body)', run: 'Keeps going. Its tab carries the dot.' },
+      { act: 'Presses Re-analyze, or edits nothing and scrolls', shows: 'no change', ink: 'var(--fg-body)', run: 'Keeps going.' },
+      { act: 'Switches to Your deck or Consider, then back', shows: 'the landing', ink: 'var(--accent)', run: 'Keeps going. Its tile says so (A3). Pressing it opens the running state.' },
+      { act: 'Leaves the deck page, then returns', shows: 'the landing', ink: 'var(--accent)', run: 'Keeps going on the server. Shown on its tile if still running, in History once settled.' },
+      { act: 'Reloads the page', shows: 'the landing', ink: 'var(--accent)', run: 'Same as leaving: the run is a ledger row, not panel state.' },
+      { act: 'Arrives through a shortcut (A5)', shows: 'that tool, opened', ink: 'var(--fg-body)', run: 'If that tool is running, its running state.' },
+      { act: 'Opens a History row, then leaves Analysis', shows: 'the landing', ink: 'var(--accent)', run: 'A past result is only ever reached through History (ruling).' },
+    ];
+    const calls = [
+      { q: 'The landing’s layout', a: 'Four tiles in a fixed order, 2 × 2 on desktop, stacked rows on the phone.', why: 'Each tile says what the tool does and what it costs before the press. Proposed cuts keeps its slot when not offered, inert, with the reason as its purpose line (A2).' },
+      { q: 'Opening a tool', a: 'Desktop switches in place with an underline tab row; the phone narrows to the tool with ‹ Tuning.', why: 'The other tools stay one press away on desktop; on the phone the landing is the switcher (A4).' },
+      { q: 'Shortcuts from the deck page', a: 'Two, both on Your deck: Proposed cuts → on the shipped trim line, and balance mana → as the land cell’s caption.', why: 'Each sits on the fact that explains it. No third door: Deck Stats’ Mana colors card and the Analysis findings do not link in this round (README, open item 2).' },
+      { q: 'A running tool on the landing (§7)', a: 'Shown, on its own tile only.', why: 'A credit is being spent and the run outlives the view. Accent border, accent dot, the tool’s own status words and elapsed time (A3).' },
+      { q: 'What counts as navigating away', a: 'Leaving the Analysis tab, leaving the page, or reloading.', why: 'Switching tools, opening History and Re-analyze do not reset. Runs survive all of it (A6).' },
+      { q: 'The roles strip', a: 'Your deck only, unchanged.', why: 'The Analysis copy is removed; the land cell gains its Mana Balance caption under one rule (A5).' },
+    ];
+    const marks = [
+      { key: 'suggested', name: 'Suggested changes', reads: 'a swap', build: 'Two cards, the one going out drawn in outline, the one coming in filled, a diamond between. One card out, one card in.' },
+      { key: 'mana', name: 'Mana Balance', reads: 'a balance', build: 'Two pips level on a beam, over a diamond fulcrum. Sources weighed against what the spells ask for.' },
+      { key: 'cuts', name: 'Proposed cuts', reads: 'a card cut', build: 'From the glyph set (M-B): a solid card split by one clean diagonal gap. Ruled by Hugh, so the one tool that removes cards reads as the only solid mass in the set.' },
+      { key: 'history', name: 'History', reads: 'a ledger', build: 'Three ruled lines, each led by a diamond; the newest is filled. Every run, newest first.' },
+    ];
+    const markNotes = [
+      { b: 'No icon set ships in the app,', t: 'and none is added. Each mark is built from the shapes the brand already uses: the crown’s diamonds, the card fan’s upright card, the pip disc. Rebuild each as a 24-unit inline SVG component, one path set per tool.' },
+      { b: 'One ink, no fill colors.', t: 'A mark takes its text’s color: --fg-body at rest, --fg-locked when its tool is inert, --accent while it runs or is the active tab. It never carries a tool color of its own, so it never competes with a status color.' },
+      { b: 'Three sizes:', t: '20 on a landing tile, 14 in a tab, a History row and a filter chip, 16 inside a 28px accent plate where a mark stands alone (the phone header, a running notice). Strokes step 1.5 / 2 px with the size.' },
+      { b: 'Always beside the name, never instead of it.', t: 'The mark is aria-hidden; the tool name carries the meaning. In History the mark replaces the mono SUGGESTED / MANA / CUTS tag, which it was standing in for.' },
+      { b: 'Where it appears:', t: 'landing tiles, the desktop tab row, the phone header beside the step count, History rows, History filter chips, and a past run’s heading. Not inside a tool’s own panel heading, which keeps the landmark Suggested changes ships with.' },
+    ];
+    const dirs = [
+      { id: 'M-A', v: 'geo', name: 'Geometric', line: 'The drawn R1 set. Outline and fill, diamonds from the crown. Quiet, closest to the shell’s nav marks.' },
+      { id: 'M-B', v: 'glyph', name: 'Glyph', line: 'Solid mass on a 16 grid, no hairlines: the card marks’ own rules (bolt, peak, tutor). Reads hardest at 14.' },
+      { id: 'M-C', v: 'organic', name: 'Organic', line: 'Curves, drops and leaves, a 1.6 stroke where a fill can’t say it. Warmest; the most hand-made.' },
+    ];
+    const cell = (v, reads, build) => ({ v, reads, build });
+    const markRows = [
+      { key: 'suggested', name: 'Suggested changes', cells: [
+        cell('geo', 'a swap', 'Outlined card out, filled card in, a diamond between.'),
+        cell('glyph', 'trade arrows', 'Two solid arrows passing, one out and one back. One card for another.'),
+        cell('organic', 'one card in for another', 'A faded card leaving, a solid card arriving lower and to the right, a short curl carrying it in.'),
+      ] },
+      { key: 'mana', name: 'Mana Balance', cells: [
+        cell('geo', 'a balance', 'Two pips on a beam over a diamond fulcrum.'),
+        cell('glyph', 'scales', 'Beam, post and base, two solid pans hanging level.'),
+        cell('organic', 'two drops, balanced', 'Two mana drops level on a gently swaying beam, over a small fulcrum.'),
+      ] },
+      { key: 'cuts', name: 'Proposed cuts', cells: [
+        cell('geo', 'a card struck', 'An outlined card with a stroke through it.'),
+        cell('glyph', 'a card cut', 'A solid card split by one clean diagonal gap.'),
+        cell('organic', 'a pruned sprig', 'A stem, one leaf kept, one leaf falling away. Trimming to make it stronger.'),
+      ] },
+      { key: 'history', name: 'History', cells: [
+        cell('geo', 'a ledger', 'Three ruled lines, each led by a diamond, the newest filled.'),
+        cell('glyph', 'a page', 'A solid sheet with three lines cut out of it.'),
+        cell('organic', 'tree rings', 'Rings from the heart outward: runs laid down over time.'),
+      ] },
+    ];
+    const sampleRows = [
+      { key: 'suggested', tool: 'Suggested', sum: '5 swaps · 2 applied' },
+      { key: 'mana', tool: 'Mana', sum: 'green short by 3' },
+      { key: 'cuts', tool: 'Cuts', sum: '8 candidates · 2 cut' },
+      { key: 'mana', tool: 'Mana', sum: 'deeper look · 1 swap' },
+    ];
+    const dirNotes = [
+      { b: 'M-B sits closest to the shipped card marks', t: '(bolt, peak, tutor): filled, 16 grid, no hairlines. That is a reason for and a reason against: tool marks would read as the same family as bracket facts. If B wins, they must not take --fact or its glow; they stay in the text’s ink so a tool is never mistaken for a fact about a card.' },
+      { b: 'M-C is the organic ask.', t: 'It breaks the no-hairline rule on purpose (1.6 strokes on the swap arrow, the cradle, the stem, the rings), the same exception the card marks allow for turn again. History’s rings are round, like turn again; they stay distinct by being concentric and open-centered, but it is the one pairing to watch.' },
+      { b: 'M-A stays the quietest.', t: 'Built from CSS primitives, so it carries least risk at 14, and least character.' },
+      { b: 'Mixing is allowed per tool only if the silhouettes still separate.', t: 'One family is cleaner; the History row sample is where a mixed set would show.' },
+      { b: 'Whichever wins ships as SVG at 24 units;', t: 'these are drawn at 16 like the card marks, and the 48s are only there to judge the drawing.' },
+    ];
+    return { landing, switchTabs, marks, markNotes, dirs, markRows, sampleRows, dirNotes, toolKeys: ['suggested', 'mana', 'cuts', 'history'], swaps, swapsOne: swaps.slice(0, 1), openNotes, cells, doorNotes, cellRules, resets, calls };
+  }
+}
+</script>
+</body>
+</html>
