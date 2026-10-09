@@ -8,7 +8,7 @@
   #1317 (`design/collection-edit-r2`): the required printing step, the R2 C Edit copies canvas
   (supersedes R1 C+D), and the About addendum in `design/design_handoff_the99_about/addendum-collection-edit/`.
   The R2 re-audit in `READINESS-audit.md` is YELLOW: nothing needs a new Hugh ruling to start, and
-  its two eng findings (1, 2) are PR 1 below. PRs 4 and 5 read the handoff from main and do not
+  its two eng findings (1, 2) are PR 1 below. PRs 5 to 8 read the handoff from main and do not
   start until #1317 merges.
 - Brief: `docs/superpowers/design-briefs/2026-10-06-collection-foundation.md`.
 - Server, merged: #1309 (`applyCollectionChange`, the ledger), #1311 (uploads through the
