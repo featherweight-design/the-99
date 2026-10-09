@@ -1,6 +1,6 @@
 {
-  "feature": "Deck stats, PR 1: the switch and the placement shell",
-  "note": "Needs DECK_STATS_ENABLED=true on the server and STATS_DECK (any deck with cards). The list toolbar shows the Stats segment beside All and Shopping; the stats row presses it and shows six empty shells with the list tools hidden. Shells carry no data until the card PRs, so no row photographs a figure's contents.",
+  "feature": "Deck stats, PRs 1-2: the switch, the placement shell and the curve card",
+  "note": "Needs DECK_STATS_ENABLED=true on the server and STATS_DECK (a deck with at least one creature and one other non-land card, so pressing Creature shows both lit and dimmed squares). The list toolbar shows the Stats segment beside All and Shopping; the stats row presses it and shows six empty shells with the list tools hidden. The curve card draws data; the other five figures stay empty shells until their PRs.",
   "clearAbout": true,
   "rows": [
     {

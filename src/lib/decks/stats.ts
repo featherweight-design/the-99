@@ -257,6 +257,10 @@ export function cardTypeOf(typeLine: string): CardType | null {
 /** What the Stats panel receives: plain data, safe across the server boundary. */
 export type DeckStatsSlice = { curve: ManaCurve; types: TypeCurve };
 
+/** What the page ships for the Stats view: the commanders alone. The 99 are drawn from the
+ *  optimistic card list in the browser, so an edit moves the curve in the same frame as the deck. */
+export type DeckStatsInput = { commanders: readonly CurveCard[] };
+
 export type TypeCurve = {
   /** One entry per curve bucket, 0 through CURVE_MAX, each the copies of every
    *  type in it. Bucketing is `manaCurve`'s, so the two cannot disagree. */

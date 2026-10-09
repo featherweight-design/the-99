@@ -22,7 +22,7 @@ export const deckStatsCopy = {
     // No average to name at zero cast: a deck of nothing but lands has none, and 0.0 would read as one.
     noAverage: "none",
     caption: (avg: string, lands: number) =>
-      `Average mana value ${avg}, commander included · ${lands} lands, not on the curve · tap a type to light its cards`,
+      `Average mana value ${avg}, commander included · ${lands} ${lands === 1 ? "land" : "lands"}, not on the curve · tap a type to light its cards`,
     lit: (type: string, n: number, cast: number) =>
       `${type} lit: ${n} of ${cast} cast. Tap it again to clear.`,
     types: {

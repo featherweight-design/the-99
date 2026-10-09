@@ -479,7 +479,7 @@ export default async function DeckBuilderPage({
       // is retired; see the note in `lib/decks/builder-view.ts`.
       analysisEnabled={analysisEnabled}
       statsEnabled={deckStatsEnabled()}
-      statsData={deckStats ? { curve: deckStats.curve, types: deckStats.types } : null}
+      statsData={deckStats ? { commanders: deckStats.commanders } : null}
       tuningEnabled={tuned}
       noticesEnabled={noticesEnabled()}
       initialNotices={notices}

@@ -4,7 +4,7 @@
 // coverage strip stays above both and the quick-add bar is pinned under both.
 "use client";
 
-import type { DeckStatsSlice } from "../../lib/decks/stats";
+import type { DeckStatsInput } from "../../lib/decks/stats";
 import { printedFaceName } from "../../lib/collection/browse";
 import { useState, useMemo, useCallback, useEffect, useRef, useTransition } from "react";
 import { printedNameOf } from "../../lib/collection/browse";
@@ -202,7 +202,7 @@ interface BuilderShellProps {
   /** `DECK_STATS_ENABLED`, read on the server. Off: the list control draws no Stats segment. */
   statsEnabled?: boolean;
   /** The Stats panel's figures; null when the switch is off or the read failed. */
-  statsData?: DeckStatsSlice | null;
+  statsData?: DeckStatsInput | null;
   /** `NOTICES_ENABLED` (`src/lib/notices/flag.ts`): whether the header draws the notice tag and the
    *  Notices sheet can open. Off, nothing of the notices is read or drawn. */
   noticesEnabled?: boolean;

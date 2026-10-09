@@ -10,7 +10,7 @@ import { StandInDoorRegistration } from "./stand-in-door";
 import { SwapReceiptRow } from "./swap-receipt";
 import { placeReceipts } from "../../lib/swaps/place-receipts";
 import { isOverLimit } from "../../lib/swaps/limit";
-import type { DeckStatsSlice } from "../../lib/decks/stats";
+import { manaCurve, typeCurve, type DeckStatsInput } from "../../lib/decks/stats";
 import type { RecommendedMix } from "../../lib/decks/mix";
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
 import { cardCopies, groupByCardType, groupByRole } from "../../lib/decks/grouping";
@@ -135,7 +135,7 @@ type DecklistProps = {
   filled?: boolean;
   /** `DECK_STATS_ENABLED`. Off: no Stats segment is drawn and nothing else changes. */
   statsEnabled?: boolean;
-  statsData?: DeckStatsSlice | null;
+  statsData?: DeckStatsInput | null;
   filter: "all" | "shopping";
   grouping: "type" | "role";
   onFilterChange: (f: "all" | "shopping") => void;
@@ -392,6 +392,14 @@ export function Decklist({
   // that is stored.
   const inCardView = filter === "all" && view === "card";
 
+  // The curve is drawn from the list the page draws (the optimistic one) plus the commanders the
+  // server sent, so an add or a sweep moves it in the same frame as the rows.
+  const statsSlice = useMemo(() => {
+    if (!statsData) return null;
+    const list = [...cards, ...statsData.commanders];
+    return { curve: manaCurve(list), types: typeCurve(list) };
+  }, [cards, statsData]);
+
   // The commanders the Shopping list bills (H28), through the list's own predicate. Every Shopping
   // figure below counts them; only the Shopping branch draws them, in a group of their own.
   const commanderShopping = useMemo(
@@ -606,7 +614,7 @@ export function Decklist({
           stats={stats}
           {...lockProps}
         />
-        <DeckStatsView data={statsData} />
+        <DeckStatsView data={statsSlice} />
       </div>
     );
   }

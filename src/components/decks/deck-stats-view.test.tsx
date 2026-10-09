@@ -53,3 +53,11 @@ describe("DeckStatsView curve card", () => {
     expect(screen.getByText(/Average mana value none/)).toBeInTheDocument();
   });
 });
+
+describe("DeckStatsView caption", () => {
+  it("says one land in the singular", () => {
+    const one = [{ cmc: 2, quantity: 1, typeLine: "Creature — Elf" }, { cmc: 0, quantity: 1, typeLine: "Basic Land — Forest" }];
+    render(<DeckStatsView data={{ curve: manaCurve(one), types: typeCurve(one) }} />);
+    expect(screen.getByText(/· 1 land, not on the curve/)).toBeInTheDocument();
+  });
+});
