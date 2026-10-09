@@ -13,14 +13,12 @@ import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import type { ProfileState } from "./use-deck-profile";
 
 const copy = deckAnalysisCopy.panel;
-const MIX = "the mix strip";
 const AT = new Date().toISOString();
 const onRequest = vi.fn();
 type Extra = Partial<Pick<React.ComponentProps<typeof AnalysisPanel>, "pressNote" | "hold" | "overviewReady" | "overview" | "declaration">>;
 const panel = (state: ProfileState, extra: Extra = {}) => (
   <CardDetailProvider fetchCard={async () => null}>
     <AnalysisPanel state={state} onRequest={onRequest} {...extra}>
-      <div>{MIX}</div>
     </AnalysisPanel>
   </CardDetailProvider>
 );
@@ -33,20 +31,6 @@ const ready = (over: Partial<{ fresh: boolean; versionNumber: number | null }> =
 beforeEach(() => onRequest.mockClear());
 
 describe("AnalysisPanel", () => {
-  // THE MIX SURVIVES EVERY STATE. It is counted from the list rather than from a profile, so it
-  // is true whatever happened to the read — the difference between a delay and an outage.
-  it.each<ProfileState>([
-    { kind: "idle" },
-    { kind: "loading", held: null },
-    ready(),
-    { kind: "disabled" },
-    { kind: "missing" },
-    { kind: "failed", held: null },
-  ])("keeps the tab's own content in the %s state", (state) => {
-    draw(state);
-    expect(screen.getByText(MIX)).toBeInTheDocument();
-  });
-
   // 2a: the one empty state, with the ring, both paragraphs, Analyze and the provenance opener.
   it("invites the reader to analyze when nothing has been asked", () => {
     draw({ kind: "idle" });
@@ -227,7 +211,6 @@ describe("AnalysisPanel", () => {
     render(
       <CardDetailProvider fetchCard={async () => null}>
         <AnalysisPanel state={{ kind: "idle" }} onRequest={onRequest} legality={{ built: 87, size: 99 }}>
-          <div>{MIX}</div>
         </AnalysisPanel>
       </CardDetailProvider>,
     );
@@ -244,7 +227,6 @@ describe("AnalysisPanel", () => {
     render(
       <CardDetailProvider fetchCard={async () => null}>
         <AnalysisPanel state={ready({ fresh: false })} onRequest={onRequest} legality={{ built: 100, size: 99 }}>
-          <div>{MIX}</div>
         </AnalysisPanel>
       </CardDetailProvider>,
     );
@@ -274,7 +256,6 @@ describe("AnalysisPanel", () => {
     render(
       <CardDetailProvider fetchCard={async () => null}>
         <AnalysisPanel state={{ kind: "illegal", built: 98, size: 99, held: null }} onRequest={onRequest} legality={{ built: 99, size: 99 }}>
-          <div>{MIX}</div>
         </AnalysisPanel>
       </CardDetailProvider>,
     );
@@ -283,7 +264,7 @@ describe("AnalysisPanel", () => {
     expect(onRequest).toHaveBeenCalledTimes(1);
   });
 
-  // Suggested changes follows the analysis: drawn last, after the mix, and only over a reading,
+  // Suggested changes follows the analysis: drawn last, and only over a reading,
   // current or held, handed the permits that reading slots to.
   describe("the tuning slot", () => {
     const withTuning = (state: ProfileState) => {
@@ -291,18 +272,15 @@ describe("AnalysisPanel", () => {
       render(
         <CardDetailProvider fetchCard={async () => null}>
           <AnalysisPanel state={state} onRequest={onRequest} tuning={tuning}>
-            <div>{MIX}</div>
           </AnalysisPanel>
         </CardDetailProvider>,
       );
       return tuning;
     };
 
-    it("draws after the mix over a current reading", () => {
+    it("draws over a current reading", () => {
       withTuning(ready());
-      const mix = screen.getByText(MIX);
-      const tuning = screen.getByText(/^tuning for/);
-      expect(mix.compareDocumentPosition(tuning) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(screen.getByText(/^tuning for/)).toBeInTheDocument();
     });
 
     it("stays over a held reading while the deck has changed", () => {
@@ -317,14 +295,13 @@ describe("AnalysisPanel", () => {
     });
   });
 
-  // OPENING THE TAB (§8, 8a): the one state that withholds the mix. It draws nothing it cannot
+  // OPENING THE TAB (§8, 8a): the tab draws only its loader. It draws nothing it cannot
   // yet know, because the fetch may resolve to the empty state or to any analyzed shape.
   describe("opening the tab", () => {
     const opening = (phase: "wait" | "loader", state: ProfileState = { kind: "idle" }) =>
       render(
         <CardDetailProvider fetchCard={async () => null}>
           <AnalysisPanel state={state} onRequest={onRequest} opening={phase} tuning={() => <p>tuning</p>}>
-            <div>{MIX}</div>
           </AnalysisPanel>
         </CardDetailProvider>,
       );
@@ -336,7 +313,6 @@ describe("AnalysisPanel", () => {
       expect(loader.textContent).toBe("");
       // Mounted behind the loader so its reads can run, and drawn nowhere.
       expect(screen.getByTestId("analysis-empty")).not.toBeVisible();
-      expect(screen.getByText(MIX)).not.toBeVisible();
     });
 
     it("draws the five marks and the word, and nothing else", () => {
@@ -347,7 +323,6 @@ describe("AnalysisPanel", () => {
       expect(loader).toHaveTextContent(copy.opening);
       expect(screen.getByTestId("analysis-empty")).not.toBeVisible();
       expect(screen.getByTestId("analysis-ring")).not.toBeVisible();
-      expect(screen.getByText(MIX)).not.toBeVisible();
     });
 
     // Held for the hold even once the reading landed: the reading waits behind the loader.
@@ -356,14 +331,12 @@ describe("AnalysisPanel", () => {
     // only once the loader lets go.
     it("withholds a reading that landed while the loader is held, with Suggested changes mounted behind it", () => {
       opening("loader", ready());
-      expect(screen.getByText(MIX)).not.toBeVisible();
       expect(screen.getByText("tuning")).not.toBeVisible();
       expect(screen.getByText(copy.opening)).toBeVisible();
     });
 
-    it("draws the mix again once the tab has its answer", () => {
+    it("draws the tab again once it has its answer", () => {
       draw({ kind: "idle" });
-      expect(screen.getByText(MIX)).toBeInTheDocument();
       expect(screen.getByTestId("analysis-empty")).toBeInTheDocument();
     });
   });
@@ -376,7 +349,6 @@ describe("AnalysisPanel", () => {
       render(
         <CardDetailProvider fetchCard={async () => null}>
           <AnalysisPanel state={state} onRequest={onRequest} overview={<div>the overview</div>}>
-            <div>{MIX}</div>
           </AnalysisPanel>
         </CardDetailProvider>,
       );
@@ -406,7 +378,6 @@ describe("AnalysisPanel", () => {
       render(
         <CardDetailProvider fetchCard={async () => null}>
           <AnalysisPanel state={ready()} onRequest={onRequest}>
-            <div>{MIX}</div>
           </AnalysisPanel>
         </CardDetailProvider>,
       );
@@ -426,7 +397,6 @@ describe("AnalysisPanel", () => {
       render(
         <CardDetailProvider fetchCard={async () => null}>
           <AnalysisPanel state={state} onRequest={onRequest} pressNote={NOTES} legality={legality}>
-            <div>{MIX}</div>
           </AnalysisPanel>
         </CardDetailProvider>,
       );

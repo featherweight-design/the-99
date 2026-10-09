@@ -82,7 +82,10 @@ const suggestions: DeckSuggestionWithFacts[] = [
 ];
 
 describe("coverage cell arrival", () => {
-  it("switches to Consider and lands focus on the role's shelf heading", async () => {
+  it.each([
+    ["Analysis off", false],
+    ["Analysis on", true],
+  ])("switches to Consider and lands focus on the role's shelf heading (%s)", async (_label, analysisEnabled) => {
     render(
       <BuilderShell mix={TEST_MIX}
         deck={deck}
@@ -91,9 +94,43 @@ describe("coverage cell arrival", () => {
         firstRun={false}
         commanderIdentity={["B", "R", "G"]}
         arrivedFromImport={false}
+        analysisEnabled={analysisEnabled}
        newestAsOf={null}/>,
     );
 
+    const cells = screen.getAllByRole("button", {
+      name: addPanelCopy.strip.cellLinkAria(
+        TEST_MIX.cells.ramp.label,
+        0,
+        TEST_MIX.cells.ramp.target,
+      ),
+    });
+    expect(cells).toHaveLength(1);
+    fireEvent.click(cells[0]);
+
+    await waitFor(() => {
+      const heading = document.getElementById("shelf-ramp");
+      expect(heading).not.toBeNull();
+      expect(heading).toHaveFocus();
+    });
+  });
+
+  it("keeps one strip, and its cell still works, while the Analysis tab is open", async () => {
+    render(
+      <BuilderShell mix={TEST_MIX}
+        deck={deck}
+        suggestions={suggestions}
+        degraded={false}
+        firstRun={false}
+        commanderIdentity={["B", "R", "G"]}
+        arrivedFromImport={false}
+        analysisEnabled
+        initialView="analysis"
+       newestAsOf={null}/>,
+    );
+
+    expect(document.getElementById("panel-analysis")).not.toBeNull();
+    expect(screen.getAllByLabelText("Recommended mix")).toHaveLength(1);
     fireEvent.click(
       screen.getByRole("button", {
         name: addPanelCopy.strip.cellLinkAria(
@@ -105,9 +142,8 @@ describe("coverage cell arrival", () => {
     );
 
     await waitFor(() => {
-      const heading = document.getElementById("shelf-ramp");
-      expect(heading).not.toBeNull();
-      expect(heading).toHaveFocus();
+      expect(document.getElementById("panel-analysis")).toBeNull();
+      expect(document.getElementById("shelf-ramp")).toHaveFocus();
     });
   });
 });

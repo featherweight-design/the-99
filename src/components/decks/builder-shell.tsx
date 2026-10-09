@@ -195,8 +195,8 @@ interface BuilderShellProps {
   /** The tab this visit lands on, read off the URL by the route. Only the
       arrival: switching tabs stays component state, so nothing writes it back. */
   initialView?: BuilderView;
-  /** `ANALYSIS_TAB_ENABLED` — whether this deployment draws the Analysis tab AND moves the
-   *  Recommended mix strip into it. Off is today's layout, exactly. */
+  /** `ANALYSIS_TAB_ENABLED` — whether this deployment draws the Analysis tab. Off is
+   *  today's layout, exactly. */
   analysisEnabled?: boolean;
   /** `NOTICES_ENABLED` (`src/lib/notices/flag.ts`): whether the header draws the notice tag and the
    *  Notices sheet can open. Off, nothing of the notices is read or drawn. */
@@ -1470,22 +1470,17 @@ export function BuilderShell({
                 the explanation of why the counts do not add up. */}
             <UnresolvedBanner count={unresolvedRows.length} onTakeALook={seeUnresolved} />
 
-            {/* Role Counter Strip — shown when deck has cards (mid-build) or always per design.
-                IT LEAVES THIS SPINE when Analysis is on, and that move is what PAYS for the tab:
-                Round 0 costs the tab at roughly 150px of net vertical above the tabs, all of it
-                the strip's. Gated on the same flag as the tab, because an unconditional move
-                would take the strip off the deck page wherever the tab is off, with nothing to
-                receive it. */}
-            {!analysisEnabled && (
-              <RoleCounterStrip
-                mix={mix}
-                cards={cards}
-                onSeeShelf={seeShelf}
-                rolesWithShelves={shelvedRoles}
-                justFilled={deck.filled && autoCount > 0}
-                wasCounts={wasCounts}
-              />
-            )}
+            {/* Role Counter Strip. One mount, at "Your deck", whether or not Analysis is on:
+                its "consider →" cells switch this shell to Consider, so the strip has to
+                live on the spine that owns the tab switch rather than inside one panel. */}
+            <RoleCounterStrip
+              mix={mix}
+              cards={cards}
+              onSeeShelf={seeShelf}
+              rolesWithShelves={shelvedRoles}
+              justFilled={deck.filled && autoCount > 0}
+              wasCounts={wasCounts}
+            />
 
             {/* No degraded banner here. The old one ("Synergy data offline")
                 fired alongside Consider's own ("EDHREC isn't answering right
@@ -1522,10 +1517,6 @@ export function BuilderShell({
 
             {view === "analysis" ? (
               <div id="panel-analysis" role="tabpanel" aria-labelledby="tab-analysis" aria-busy={opening !== "off" || undefined}>
-                {/* The readings sit ABOVE the strip, so the verdict arrives on top of the mix
-                    rather than replacing it. The strip is counted from the list and is true in
-                    every profile state, which is what makes a failed read a delay rather than an
-                    outage. */}
                 {/* ONE hover preview for the whole tab: the suggestion cards and the overview's
                     card names both borrow it rather than mount a second. */}
                 <HoverPreviewProvider>
@@ -1612,19 +1603,6 @@ export function BuilderShell({
                     />
                   )}
                 >
-                {/* The strip in its new home. It is REAL analysis content rather than a
-                    placeholder — Round 0 moves it here on purpose — which is why this panel
-                    draws something true on the day the tab lands, with the verdict arriving
-                    on top of it rather than replacing it. */}
-                <RoleCounterStrip
-                  mix={mix}
-                  cards={cards}
-                  onSeeShelf={seeShelf}
-                  rolesWithShelves={shelvedRoles}
-                  justFilled={deck.filled && autoCount > 0}
-                  wasCounts={wasCounts}
-                  inset
-                />
                 </AnalysisPanel>
                 </HoverPreviewProvider>
               </div>

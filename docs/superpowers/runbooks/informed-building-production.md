@@ -22,11 +22,11 @@ measured against 200 decks of its exact pair, or against every three-colour comm
 profile reports which through `roleTargets.of`. The index fills the first two rungs;
 `db:build:staples` (a step in the same leg) fills the other two. Read the operator's question as
 *"is this deck compared to real decklists at all"*, never *"does this commander have a row"*.
-| **`ANALYSIS_TAB_ENABLED`** | whether the Analysis tab exists, and whether the Recommended mix strip lives in it or in the deck header | a Vercel environment variable on the `the-99` project |
+| **`ANALYSIS_TAB_ENABLED`** | whether the Analysis tab exists; the Recommended mix strip stays in the deck header either way | a Vercel environment variable on the `the-99` project |
 
 **Neither gates the other.** The fill, the Add panel ordering and the bulk control all work with
-the flag off; the tab can be switched on before the index has ever run, and the strip will draw
-its asserted figures inside it.
+the flag off; the tab can be switched on before the index has ever run, and the strip (in the deck header)
+will draw its asserted figures.
 
 ---
 
@@ -136,10 +136,10 @@ Verify `meta.githubCommitSha` on the returned deployment matches `$SHA`.
 
 ### What this switch moves
 
-**One flag, two whole layouts.** The Recommended mix strip *leaves the deck header* and lives
-in the Analysis tab — that move is what pays for the tab's vertical space. With the flag off the
-strip stays in the header. So this is not "a tab appears"; it is a relayout of the deck page, and
-it wants a look at both widths after the redeploy.
+**In the builder, the flag adds the Analysis tab and does not move the layout.** The Recommended mix
+strip stays in the deck header whether the flag is on or off, so the builder needs no layout check
+beyond the tab itself. The flag also gates the profile and synopsis actions, bracket data on Home
+and `/decks`, and the flag-tied About entries, so check those surfaces after a switch too.
 
 ---
 
