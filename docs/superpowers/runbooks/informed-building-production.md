@@ -136,8 +136,10 @@ Verify `meta.githubCommitSha` on the returned deployment matches `$SHA`.
 
 ### What this switch moves
 
-**The flag adds a tab and nothing else.** The Recommended mix strip stays in the deck header
-whether the flag is on or off, so a switch needs no layout check beyond the tab itself.
+**In the builder, the flag adds the Analysis tab and does not move the layout.** The Recommended mix
+strip stays in the deck header whether the flag is on or off, so the builder needs no layout check
+beyond the tab itself. The flag also gates the profile and synopsis actions, bracket data on Home
+and `/decks`, and the flag-tied About entries, so check those surfaces after a switch too.
 
 ---
 
