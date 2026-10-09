@@ -65,7 +65,7 @@ function CurveCard({ data }: { data: DeckStatsSlice }) {
         {curve.buckets.map((b, i) => {
           const per = types.buckets[i];
           return (
-            <div key={b.cmc} className="flex flex-col items-center gap-[6px]" data-curve-column={b.cmc}>
+            <div key={b.cmc} className="flex flex-col items-center justify-end gap-[6px]" data-curve-column={b.cmc}>
               <span
                 className={`font-mono text-[11px] tabular-nums ${b.copies === 0 ? "text-[color:var(--fg-locked)]" : "text-[color:var(--fg-body)]"}`}
               >

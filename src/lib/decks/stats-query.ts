@@ -27,13 +27,10 @@ import {
   colourSpread,
   manaCurve,
   recordFromCounts,
-  typeCurve,
   type ColourSpread,
-  type CurveCard,
   type GameResult,
   type ManaCurve,
   type PlayRecord,
-  type TypeCurve,
 } from "./stats";
 import { loadShoppingRollup, type DeckShopping } from "./shopping-rollup";
 
@@ -42,10 +39,6 @@ export type DeckStats = {
   record: PlayRecord;
   colours: ColourSpread;
   curve: ManaCurve;
-  /** The curve's type mix, bucketed as `curve` is. */
-  types: TypeCurve;
-  /** The commander (and partner) as curve cards, for a caller that draws the 99 itself. */
-  commanders: CurveCard[];
   /**
    * What the cards this deck still has to buy cost. Null when the deck buys
    * nothing — distinct from a zero total, which is what a deck with copies to
@@ -148,22 +141,15 @@ export async function loadDeckStats(input: DeckIds): Promise<Map<string, DeckSta
   };
 
   for (const row of listRows) push(row.deckId, row);
-  const commandersByDeck = new Map<string, CurveCard[]>();
   for (const row of commanderRows) {
-    const pushCommander = (card: StatCard) => {
-      push(row.deckId, card);
-      const list = commandersByDeck.get(row.deckId) ?? [];
-      list.push({ quantity: card.quantity, cmc: card.cmc, typeLine: card.typeLine });
-      commandersByDeck.set(row.deckId, list);
-    };
-    pushCommander({
+    push(row.deckId, {
       quantity: 1,
       cmc: row.cmc,
       typeLine: row.typeLine,
       colorIdentity: row.colorIdentity,
     });
     if (row.partnerTypeLine !== null && row.partnerColorIdentity !== null) {
-      pushCommander({
+      push(row.deckId, {
         quantity: 1,
         cmc: row.partnerCmc ?? 0,
         typeLine: row.partnerTypeLine,
@@ -190,8 +176,6 @@ export async function loadDeckStats(input: DeckIds): Promise<Map<string, DeckSta
       record: recordFromCounts(counts),
       colours: colourSpread(list),
       curve: manaCurve(list),
-      types: typeCurve(list),
-      commanders: commandersByDeck.get(deckId) ?? [],
       cost: rollup.byDeck.get(deckId) ?? null,
     });
   }

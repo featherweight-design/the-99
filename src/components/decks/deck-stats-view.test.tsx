@@ -32,6 +32,13 @@ describe("DeckStatsView curve card", () => {
     expect(container.querySelector("[data-type-chip=land]")).toHaveTextContent("Land 36");
   });
 
+  it("bottom-aligns every column so the bucket rules share one baseline", () => {
+    const { container } = render(<DeckStatsView data={slice} />);
+    const columns = container.querySelectorAll("[data-curve-column]");
+    expect(columns).toHaveLength(8);
+    columns.forEach((c) => expect(c).toHaveClass("justify-end"));
+  });
+
   it("lights one type on tap and clears on a second tap", () => {
     const { container } = render(<DeckStatsView data={slice} />);
     const chip = container.querySelector("[data-type-chip=creature]") as HTMLElement;
