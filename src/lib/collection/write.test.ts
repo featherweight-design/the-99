@@ -4,7 +4,7 @@ import type { HistoryRow } from "../../db/schema";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import {
   committedShortfalls, countMoves, newlyShort, normalizeItems, planAdd, planEdit, planReplace,
-  planRevert, staleEdits, staleRevert,
+  planRevert, staleEdits, staleRevert, warningCovers, type ShortDeck,
 } from "./write";
 import { collectionEditEnabled } from "./edit-flag";
 
@@ -197,5 +197,21 @@ describe("newlyShort", () => {
     expect(newlyShort(before, new Map(), [A], names)).toEqual([
       { deckId: "old", deckName: "deck old", oracleId: A, cardName: "Sol Ring", short: 1 },
     ]);
+  });
+});
+
+describe("warningCovers", () => {
+  const d = (deckId: string, short: number, oracleId = A): ShortDeck =>
+    ({ deckId, deckName: deckId, oracleId, cardName: "", short });
+
+  it("passes a confirm only while the warning shown still covers the change", () => {
+    expect(warningCovers([d("x", 1)], [d("x", 1)])).toBe(true);
+    expect(warningCovers([d("x", 2)], [d("x", 1)])).toBe(true);
+    // Another tab moved the answer in between: a deck named now that the player never saw,
+    // a deck now shorter than shown, or the same deck short of a different card.
+    expect(warningCovers([d("x", 1)], [d("x", 1), d("y", 1)])).toBe(false);
+    expect(warningCovers([d("x", 1)], [d("x", 2)])).toBe(false);
+    expect(warningCovers([d("x", 1)], [d("x", 1, B)])).toBe(false);
+    expect(warningCovers([], [d("x", 1)])).toBe(false);
   });
 });

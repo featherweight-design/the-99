@@ -6,6 +6,7 @@ import {
 } from "../../db/schema";
 import { loadAvailability } from "../decks/availability-query";
 import type { Availability } from "../decks/availability";
+import { allocateClaims } from "../decks/allocate";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import { mergeHolding, toCollectionItemValues, type PendingItem } from "./pending";
 
@@ -56,8 +57,11 @@ export type CollectionChange =
 export type ChangeOptions = {
   /** The caller's idempotency id, minted once per action and reused on every retry. */
   id: string;
-  /** The player has seen the deck warning and saves anyway. */
-  confirmShort?: boolean;
+  /**
+   * The deck warning the player saw and confirmed. The check still runs: the save goes through
+   * only while that warning covers what the change would do now (`warningCovers`).
+   */
+  confirmShort?: ShortDeck[];
   /** Stamp this upload confirmed in the same transaction; a stamp already set wins. */
   confirmUploadId?: string;
   /** Refuse when the player already owns anything (a first import's promise). */
@@ -99,7 +103,7 @@ export type ChangeResult =
   | { status: "notEmpty"; owned: number }
   /** The collection moved since the player looked. `current` is each named row now. */
   | { status: "stale"; current: (CollectionItemIdentity & { quantity: number })[] }
-  /** Committed decks the change would leave short. Resend with `confirmShort` to save anyway. */
+  /** Committed decks the change would leave short. Resend with these as `confirmShort` to save anyway. */
   | { status: "wouldShort"; decks: ShortDeck[] }
   /** Cards the catalog no longer holds, by the name stored when they were written. */
   | { status: "missingCard"; names: string[] }
@@ -248,28 +252,22 @@ export function countMoves(rows: { before: HistoryRowState | null; after: Histor
 
 /**
  * Per committed deck, how many copies of one card it is short, read off the claim model's own
- * figures (plan Decision 5: COMMITTED claims, never the draft-shaped buy rows).
- *
- * Reservations are granted first, as the model granted them (`granted`); what is left goes to
- * the sleeved decks in seniority order, longest held first and the deck id breaking a tie,
- * which is `senior_hard`'s own order. A brew claims nothing here: it was never covered.
+ * allocation (`allocateClaims`: reservations first, then seniority) rather than a second copy of
+ * it. COMMITTED claims only (plan Decision 5), never the draft-shaped buy rows; a brew was never
+ * covered, so it is never named.
  */
 export function committedShortfalls(a: Pick<Availability, "owned" | "claims">): Map<string, { name: string; short: number }> {
-  const sleeved = a.claims.filter((c) => c.mature);
-  let supply = a.owned - sleeved.reduce((n, c) => n + (c.granted ?? 0), 0);
-  const queue = [...sleeved].sort((x, y) => {
-    const sx = x.since ?? Number.POSITIVE_INFINITY;
-    const sy = y.since ?? Number.POSITIVE_INFINITY;
-    return sx !== sy ? sx - sy : x.id < y.id ? -1 : x.id > y.id ? 1 : 0;
-  });
-  const out = new Map<string, { name: string; short: number }>();
-  for (const c of queue) {
-    const want = Math.max(c.quantity - (c.granted ?? 0), 0);
-    const take = Math.min(want, Math.max(supply, 0));
-    supply -= want;
-    out.set(c.id, { name: c.name, short: want - take });
-  }
-  return out;
+  return new Map(allocateClaims(a).map((c) => [c.deckId, { name: c.deckName, short: Math.max(c.quantity - c.allocated, 0) }]));
+}
+
+/**
+ * Whether the warning the player confirmed still covers what the change would do now: every deck
+ * named now was named then, on the same card, short by no more. Anything else comes back as a
+ * redrawn warning (brief §E: "a confirm re-checks against the collection as it is at that moment").
+ */
+export function warningCovers(acknowledged: ShortDeck[], now: ShortDeck[]): boolean {
+  return now.every((d) => acknowledged.some((a) =>
+    a.deckId === d.deckId && a.oracleId === d.oracleId && a.short >= d.short));
 }
 
 /** The decks a change leaves shorter on a card than they were, and by how many. */
@@ -332,7 +330,7 @@ const uploadOf = (change: CollectionChange) =>
  *  2. the ledger entry, keyed on `opts.id`, so a retry of this exact action finds it;
  *  3. the upload stamp and the first-import check, when asked for;
  *  4. today's rows, read under the lock, and the `expected` checks against them;
- *  5. the deck check when anything goes down, unless `confirmShort`;
+ *  5. the deck check when anything goes down, passed only by a confirmed warning that still holds;
  *  6. the rows, the finished entry, the player's scores cleared, and old entries pruned.
  *
  * Callers invalidate (`invalidateCollectionReaders`) after an `applied`, outside this function,
@@ -450,8 +448,9 @@ export async function applyCollectionChange(
           break;
         }
       }
-      // A replace keeps its entry when nothing moved: it is still the record of that upload.
-      if (plan.length === 0 && !uploadId) throw new Refused({ status: "unchanged" });
+      // A replace keeps its entry when nothing moved: it is still the record of that upload. So
+      // does a revert, because the entry it reverts has to be marked reverted either way.
+      if (plan.length === 0 && !uploadId && change.kind !== "revert") throw new Refused({ status: "unchanged" });
 
       // ---- Names, and the catalog check a revert or an add can fail.
       const ids = [...new Set(plan.map((p) => p.oracleId))];
@@ -473,8 +472,7 @@ export async function applyCollectionChange(
 
       // ---- 5. The deck check brackets the write: claims before, the rows, claims after.
       const lowered = [...new Set(plan.filter((p) => qty(p.after) < qty(p.before)).map((p) => p.oracleId))];
-      const checkDecks = lowered.length > 0 && !opts.confirmShort;
-      const claimsBefore = checkDecks ? await loadAvailability(userId, { oracleIds: lowered }, tx) : null;
+      const claimsBefore = lowered.length > 0 ? await loadAvailability(userId, { oracleIds: lowered }, tx) : null;
 
       // ---- 6. The rows.
       if (change.kind === "replace") {
@@ -491,7 +489,9 @@ export async function applyCollectionChange(
         const claimsAfter = await loadAvailability(userId, { oracleIds: lowered }, tx);
         const names = new Map(rows.map((r) => [r.oracleId, r.name]));
         const decks = newlyShort(claimsBefore, claimsAfter, lowered, names);
-        if (decks.length > 0) throw new Refused({ status: "wouldShort", decks });
+        if (decks.length > 0 && !warningCovers(opts.confirmShort ?? [], decks)) {
+          throw new Refused({ status: "wouldShort", decks });
+        }
       }
 
       const moves = countMoves(rows);

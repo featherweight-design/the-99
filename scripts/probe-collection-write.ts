@@ -55,10 +55,10 @@ async function main() {
     throw new Error(`refusing branch ${branch ?? "(unknown)"}; point DATABASE_URL at local-dev or a scratch branch`);
   }
   const picked = (await pool.query(
-    "select oracle_id, name from cards where type_line not like '%Basic%' order by oracle_id limit 2",
+    "select oracle_id, name from cards where type_line not like '%Basic%' order by oracle_id limit 3",
   )).rows as { oracle_id: string; name: string }[];
-  if (picked.length < 2) throw new Error("the catalog holds fewer than two cards");
-  const [A, B] = picked.map((p) => p.oracle_id);
+  if (picked.length < 3) throw new Error("the catalog holds fewer than three cards");
+  const [A, B, C] = picked.map((p) => p.oracle_id);
   const at = (oracleId: string) => ({ oracleId, setCode: "prb", collectorNumber: "1", finish: "nonfoil" as const });
   const count = async (oracleId: string) => Number((await one<{ q: number } | undefined>(
     "select quantity as q from collection_items where user_id = $1 and oracle_id = $2", [USER, oracleId],
@@ -131,9 +131,29 @@ async function main() {
       JSON.stringify(warned));
     check("…and writes nothing", await count(A) === 1 && await entries() === entriesBefore,
       `count ${await count(A)}; entries ${await entries()} (was ${entriesBefore})`);
-    const confirmed = await applyCollectionChange(USER, lower, { id: lowerId, confirmShort: true });
+    const shown = warned.status === "wouldShort" ? warned.decks : [];
+    const understated = await applyCollectionChange(USER, lower, {
+      id: lowerId, confirmShort: shown.map((d) => ({ ...d, short: d.short - 1 })),
+    });
+    check("a confirm whose warning no longer covers the change comes back redrawn",
+      understated.status === "wouldShort" && await count(A) === 1, `${understated.status}; count ${await count(A)}`);
+    const confirmed = await applyCollectionChange(USER, lower, { id: lowerId, confirmShort: shown });
     check("the same action confirmed applies", confirmed.status === "applied" && await count(A) === 0,
       `${confirmed.status}; count ${await count(A)}`);
+
+    // A revert whose inverse is a no-op today still records itself and marks its target: add one
+    // card, take it off again by hand, then revert the add, which has nothing left to take.
+    const noop = randomUUID();
+    // C, because B is the probe deck's commander and lowering it would warn.
+    await applyCollectionChange(USER, { kind: "add", items: [{ ...at(C), condition: null, quantity: 1 }] }, { id: noop });
+    await applyCollectionChange(USER, { kind: "edit", rows: [{ ...at(C), quantity: 0 }] }, { id: randomUUID() });
+    const noopRevert = await applyCollectionChange(USER, { kind: "revert", entryId: noop }, { id: randomUUID() });
+    const marked = await one<{ reverted_by: string | null }>(
+      "select reverted_by from collection_history where id = $1", [noop],
+    );
+    check("a revert with nothing left to undo still records itself and marks its target",
+      noopRevert.status === "applied" && noopRevert.entry.rows.length === 0 && marked.reverted_by === noopRevert.entry.id,
+      `${noopRevert.status}; reverted_by ${marked.reverted_by}`);
 
     // ---- 5. Scores, the generation, retention, a missing card -------------------------------
     await pool.query(
