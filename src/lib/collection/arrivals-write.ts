@@ -58,19 +58,19 @@ export function pendingItemsToOwnedCounts(items: PendingItem[]): OwnedCounts {
   return out;
 }
 
+/** One row a ledger write changed, as far as owned counts care. */
+type EntryRow = { oracleId: string; before: { quantity: number } | null; after: { quantity: number } | null };
+
 /**
- * The collection after a ledger write, from the collection before it and the rows the write
- * changed. What an ADD's receipt needs (plan Decision 8): its items are what was added, not the
- * collection, so reading them as the whole collection would compare one added copy against three
- * owned and record no arrival. A card no longer owned is left out, as the claim model leaves it.
+ * The collection BEFORE a ledger write, from the collection after it and the rows the write
+ * changed: each row's change backed out, a card no longer owned left out as the claim model
+ * leaves it. What an Add's receipt needs (plan Decision 8): read after the commit, the two
+ * counts then differ by exactly this write, whatever else landed before its lock.
  */
-export function ownedAfterEntry(
-  before: OwnedCounts,
-  rows: { oracleId: string; before: { quantity: number } | null; after: { quantity: number } | null }[],
-): OwnedCounts {
-  const out: OwnedCounts = { ...before };
+export function ownedBeforeEntry(after: OwnedCounts, rows: EntryRow[]): OwnedCounts {
+  const out: OwnedCounts = { ...after };
   for (const r of rows) {
-    out[r.oracleId] = (out[r.oracleId] ?? 0) + (r.after?.quantity ?? 0) - (r.before?.quantity ?? 0);
+    out[r.oracleId] = (out[r.oracleId] ?? 0) - (r.after?.quantity ?? 0) + (r.before?.quantity ?? 0);
     if (out[r.oracleId] <= 0) delete out[r.oracleId];
   }
   return out;

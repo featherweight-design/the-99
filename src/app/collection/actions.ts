@@ -14,7 +14,7 @@ import { parsePasteList } from "../../lib/manabox/paste";
 import { matchRows } from "../../lib/collection/match";
 import { loadMatchInputs, replaceCollection } from "../../lib/collection/import";
 import {
-  ownedAfterEntry, ownedByOracle, pendingItemsToOwnedCounts, writeArrivalsReceipt,
+  ownedBeforeEntry, ownedByOracle, pendingItemsToOwnedCounts, writeArrivalsReceipt,
 } from "../../lib/collection/arrivals-write";
 import type { OwnedCounts } from "../../lib/collection/arrivals";
 import { applyCollectionChange, type ShortDeck } from "../../lib/collection/write";
@@ -253,7 +253,7 @@ export async function confirmUpload(
   // is a mis-stated line on a receipt — never a wrong claim figure, since every claim
   // figure in the app is recomputed live and the chooser's write re-validates in its own
   // transaction.
-  const ownedBefore = await ownedByOracle(userId);
+  let ownedBefore = await ownedByOracle(userId);
 
   const buyBefore = await loadDeckBuyRows(userId);
 
@@ -289,9 +289,17 @@ export async function confirmUpload(
     }
     // A Replace's items ARE the collection after it; an Add's are only what it added, so its
     // receipt counts the collection from the rows the entry changed (plan Decision 8).
-    ownedAfter = mode === "replace"
-      ? pendingItemsToOwnedCounts(pendingItems)
-      : ownedAfterEntry(ownedBefore, result.entry.rows);
+    if (mode === "replace") {
+      ownedAfter = pendingItemsToOwnedCounts(pendingItems);
+    } else {
+      // An Add's items are only what it added, so its receipt needs the whole collection either
+      // side of the write (plan Decision 8). Read after the commit and backed out by this
+      // entry's own rows, so the two differ by exactly what this write did: the snapshot taken
+      // above was read before the lock, and another write landing in between would otherwise
+      // read as this upload's arrivals.
+      ownedAfter = await ownedByOracle(userId);
+      ownedBefore = ownedBeforeEntry(ownedAfter, result.entry.rows);
+    }
   } else {
     const { alreadyConfirmed, notEmpty } = await replaceCollection(userId, pendingItems, {
       confirmUploadId: uploadId,
