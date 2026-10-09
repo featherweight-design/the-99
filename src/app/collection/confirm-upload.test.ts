@@ -55,13 +55,14 @@ describe("confirmUpload", () => {
   });
 
   it("refuses an Add with the switch off, before reading anything", async () => {
-    await expect(confirmUpload(UPLOAD, { mode: "add" })).rejects.toThrow();
+    await expect(confirmUpload(UPLOAD, { mode: "add" })).rejects.toThrow("collection editing on");
     expect(stub.replace).not.toHaveBeenCalled();
   });
 
   it("refuses a mode it does not know", async () => {
     stub.ledger = true;
-    await expect(confirmUpload(UPLOAD, { mode: "merge" as never })).rejects.toThrow();
+    await expect(confirmUpload(UPLOAD, { mode: "merge" as never })).rejects.toThrow("unknown upload mode");
+    expect(stub.apply).not.toHaveBeenCalled();
   });
 
   it("with the switch on, writes a Replace through the ledger with the warning it was shown", async () => {
@@ -103,7 +104,8 @@ describe("confirmUpload", () => {
 
 describe("previewUploadChange", () => {
   it("is refused with the switch off", async () => {
-    await expect(previewUploadChange(UPLOAD)).rejects.toThrow();
+    await expect(previewUploadChange(UPLOAD)).rejects.toThrow("collection editing is off");
+    expect(stub.apply).not.toHaveBeenCalled();
   });
 
   it("answers from a dry run, with the hand edits a Replace would overwrite", async () => {
