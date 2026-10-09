@@ -1,7 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { DeckStatsView } from "./deck-stats-view";
 import { deckStatsCopy } from "../../lib/copy/deck-stats";
+import { manaCurve, typeCurve } from "../../lib/decks/stats";
 
 describe("DeckStatsView shells", () => {
   it("draws six titled figures and nothing else", () => {
@@ -13,5 +14,38 @@ describe("DeckStatsView shells", () => {
       expect(screen.getByRole("heading", { name: title })).toBeInTheDocument();
     }
     expect(screen.queryByRole("progressbar")).toBeNull();
+  });
+});
+
+const list = [
+  { cmc: 2, quantity: 3, typeLine: "Creature — Elf" },
+  { cmc: 3, quantity: 1, typeLine: "Instant" },
+  { cmc: 0, quantity: 36, typeLine: "Basic Land — Forest" },
+];
+const slice = { curve: manaCurve(list), types: typeCurve(list) };
+
+describe("DeckStatsView curve card", () => {
+  it("draws one square per cast copy and keeps zero-count chips", () => {
+    const { container } = render(<DeckStatsView data={slice} />);
+    expect(container.querySelectorAll("[data-curve-square]")).toHaveLength(4);
+    expect(container.querySelector("[data-type-chip=battle]")).not.toBeNull();
+    expect(container.querySelector("[data-type-chip=land]")).toHaveTextContent("Land 36");
+  });
+
+  it("lights one type on tap and clears on a second tap", () => {
+    const { container } = render(<DeckStatsView data={slice} />);
+    const chip = container.querySelector("[data-type-chip=creature]") as HTMLElement;
+    fireEvent.click(chip);
+    expect(chip).toHaveAttribute("aria-pressed", "true");
+    const card = within(screen.getByRole("figure", { name: /^The curve/ }));
+    expect(card.getByText(deckStatsCopy.curve.lit("Creature", 3, 4))).toBeInTheDocument();
+    fireEvent.click(chip);
+    expect(chip).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("names no average for a deck with nothing cast", () => {
+    const none = [{ cmc: 0, quantity: 99, typeLine: "Basic Land — Forest" }];
+    render(<DeckStatsView data={{ curve: manaCurve(none), types: typeCurve(none) }} />);
+    expect(screen.getByText(/Average mana value none/)).toBeInTheDocument();
   });
 });

@@ -17,6 +17,16 @@
         { "goto": "/decks/${STATS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
         { "clickRole": "button", "name": "^Show the deck as stats", "wait": "[data-deck-stats]", "settle": 800 }
       ]
+    },
+    {
+      "id": "stats-curve-lit",
+      "label": "/decks/[id] Stats: the curve card with a type chip pressed",
+      "view": "src/components/decks/deck-stats-view.tsx",
+      "steps": [
+        { "goto": "/decks/${STATS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "button", "name": "^Show the deck as stats", "wait": "[data-deck-stats]", "settle": 800 },
+        { "clickRole": "button", "name": "^Creature", "settle": 400 }
+      ]
     }
   ]
 }
