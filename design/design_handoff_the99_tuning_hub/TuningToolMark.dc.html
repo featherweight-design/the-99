@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<span aria-hidden="true" style="position:relative;display:inline-block;flex:none;width:{{ px }};height:{{ px }};color:{{ ink }};">
+  <sc-if value="{{ geo }}" hint-placeholder-val="{{ false }}">
+    <sc-if value="{{ swap }}" hint-placeholder-val="{{ false }}">
+      <span style="position:absolute;left:4%;top:14%;width:34%;height:72%;box-sizing:border-box;border:{{ sw }} solid currentColor;border-radius:2px;"></span>
+      <span style="position:absolute;left:44%;top:50%;width:13%;height:13%;background:currentColor;transform:translate(0,-50%) rotate(45deg);"></span>
+      <span style="position:absolute;left:62%;top:14%;width:34%;height:72%;background:currentColor;border-radius:2px;"></span>
+    </sc-if>
+    <sc-if value="{{ mana }}" hint-placeholder-val="{{ false }}">
+      <span style="position:absolute;left:6%;top:18%;width:28%;height:28%;border-radius:50%;background:currentColor;"></span>
+      <span style="position:absolute;right:6%;top:18%;width:28%;height:28%;border-radius:50%;background:currentColor;"></span>
+      <span style="position:absolute;left:4%;right:4%;top:52%;height:{{ sw }};background:currentColor;"></span>
+      <span style="position:absolute;left:50%;top:72%;width:22%;height:22%;background:currentColor;transform:translate(-50%,-50%) rotate(45deg);"></span>
+    </sc-if>
+    <sc-if value="{{ cuts }}" hint-placeholder-val="{{ false }}">
+      <span style="position:absolute;left:28%;top:8%;width:44%;height:84%;box-sizing:border-box;border:{{ sw }} solid currentColor;border-radius:2px;"></span>
+      <span style="position:absolute;left:6%;right:6%;top:50%;height:{{ sw }};background:currentColor;transform:translateY(-50%) rotate(-24deg);"></span>
+    </sc-if>
+    <sc-if value="{{ history }}" hint-placeholder-val="{{ false }}">
+      <span style="position:absolute;left:8%;top:20%;width:15%;height:15%;background:currentColor;transform:translateY(-50%) rotate(45deg);"></span>
+      <span style="position:absolute;left:36%;right:4%;top:20%;height:{{ sw }};background:currentColor;transform:translateY(-50%);"></span>
+      <span style="position:absolute;left:8%;top:50%;width:15%;height:15%;box-sizing:border-box;border:{{ swThin }} solid currentColor;transform:translateY(-50%) rotate(45deg);"></span>
+      <span style="position:absolute;left:36%;right:4%;top:50%;height:{{ sw }};background:currentColor;transform:translateY(-50%);"></span>
+      <span style="position:absolute;left:8%;top:80%;width:15%;height:15%;box-sizing:border-box;border:{{ swThin }} solid currentColor;transform:translateY(-50%) rotate(45deg);"></span>
+      <span style="position:absolute;left:36%;right:24%;top:80%;height:{{ sw }};background:currentColor;transform:translateY(-50%);"></span>
+    </sc-if>
+  </sc-if>
+
+  <sc-if value="{{ glyph }}" hint-placeholder-val="{{ false }}">
+    <svg viewBox="0 0 16 16" width="100%" height="100%" style="display:block;">
+      <sc-if value="{{ swap }}" hint-placeholder-val="{{ false }}">
+        <path d="M1.5 3.4 H10 V1.5 L14.5 4.5 L10 7.5 V5.6 H1.5 Z" fill="currentColor"></path>
+        <path d="M14.5 10.4 H6 V8.5 L1.5 11.5 L6 14.5 V12.6 H14.5 Z" fill="currentColor"></path>
+      </sc-if>
+      <sc-if value="{{ mana }}" hint-placeholder-val="{{ false }}">
+        <path d="M2 3.6 H14 V5.2 H2 Z" fill="currentColor"></path>
+        <path d="M7.2 2 H8.8 V12.6 H7.2 Z" fill="currentColor"></path>
+        <path d="M4.2 12.6 H11.8 V14.5 H4.2 Z" fill="currentColor"></path>
+        <path d="M0.8 8.4 H6.4 A2.8 2.8 0 0 1 0.8 8.4 Z" fill="currentColor"></path>
+        <path d="M9.6 8.4 H15.2 A2.8 2.8 0 0 1 9.6 8.4 Z" fill="currentColor"></path>
+      </sc-if>
+      <sc-if value="{{ cuts }}" hint-placeholder-val="{{ false }}">
+        <path d="M4 1.5 H12 V5.2 L4 10 Z" fill="currentColor"></path>
+        <path d="M12 7.6 V14.5 H4 V12.4 Z" fill="currentColor"></path>
+      </sc-if>
+      <sc-if value="{{ history }}" hint-placeholder-val="{{ false }}">
+        <path fill-rule="evenodd" d="M3 1.5 H13 V14.5 H3 Z M5.2 4.3 H10.8 V5.8 H5.2 Z M5.2 7.3 H10.8 V8.8 H5.2 Z M5.2 10.3 H8.8 V11.8 H5.2 Z" fill="currentColor"></path>
+      </sc-if>
+    </svg>
+  </sc-if>
+
+  <sc-if value="{{ organic }}" hint-placeholder-val="{{ false }}">
+    <svg viewBox="0 0 16 16" width="100%" height="100%" style="display:block;">
+      <sc-if value="{{ swap }}" hint-placeholder-val="{{ false }}">
+        <rect x="1.4" y="1.6" width="5.6" height="8.4" rx="1.8" fill="currentColor" opacity="0.45"></rect>
+        <rect x="8.4" y="6" width="6.2" height="8.6" rx="1.9" fill="currentColor"></rect>
+        <path d="M3.4 12.2 C3.6 14 5 14.6 6.6 14.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+        <path d="M7.6 12.6 L6.9 15.6 L5.2 13.6 Z" fill="currentColor"></path>
+      </sc-if>
+      <sc-if value="{{ mana }}" hint-placeholder-val="{{ false }}">
+        <path d="M4 3.4 C4 3.4 1.6 6.6 1.6 8.3 A2.4 2.4 0 0 0 6.4 8.3 C6.4 6.6 4 3.4 4 3.4 Z" fill="currentColor"></path>
+        <path d="M12 3.4 C12 3.4 9.6 6.6 9.6 8.3 A2.4 2.4 0 0 0 14.4 8.3 C14.4 6.6 12 3.4 12 3.4 Z" fill="currentColor"></path>
+        <path d="M1.4 12.2 C4 11.2 6 11.4 8 12.2 C10 13 12 13.2 14.6 12.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+        <path d="M8 12.2 L6.6 15 H9.4 Z" fill="currentColor"></path>
+      </sc-if>
+      <sc-if value="{{ cuts }}" hint-placeholder-val="{{ false }}">
+        <path d="M4.6 14.6 C4.8 10.4 6.2 6 9.6 1.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+        <path d="M5.6 9.2 C2.8 9.4 1.4 7.6 1.4 5.6 C3.8 5.4 5.6 6.8 5.6 9.2 Z" fill="currentColor"></path>
+        <path d="M11 9.4 C13.8 9.2 15 11.2 14.8 13.2 C12.4 13.4 10.9 11.8 11 9.4 Z" fill="currentColor"></path>
+      </sc-if>
+      <sc-if value="{{ history }}" hint-placeholder-val="{{ false }}">
+        <circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.6"></circle>
+        <circle cx="8.4" cy="7.7" r="3.6" fill="none" stroke="currentColor" stroke-width="1.6"></circle>
+        <circle cx="8.8" cy="7.4" r="1.3" fill="currentColor"></circle>
+      </sc-if>
+    </svg>
+  </sc-if>
+</span>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;64px&quot;,&quot;height&quot;:&quot;64px&quot;},&quot;tool&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;suggested&quot;,&quot;mana&quot;,&quot;cuts&quot;,&quot;history&quot;],&quot;default&quot;:&quot;suggested&quot;,&quot;tsType&quot;:&quot;'suggested' | 'mana' | 'cuts' | 'history'&quot;},&quot;variant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;geo&quot;,&quot;glyph&quot;,&quot;organic&quot;],&quot;default&quot;:&quot;geo&quot;,&quot;tsType&quot;:&quot;'geo' | 'glyph' | 'organic'&quot;},&quot;size&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:20,&quot;min&quot;:12,&quot;max&quot;:64,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;},&quot;ink&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#C6D2D3&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const tool = this.props.tool ?? 'suggested';
+    // Ruled set (Hugh, R1 feedback 3): geometric for all, Proposed cuts takes the glyph.
+    const variant = this.props.variant ?? (tool === 'cuts' ? 'glyph' : 'geo');
+    const size = Number(this.props.size ?? 20);
+    const sw = size >= 28 ? '2.5px' : size >= 18 ? '2px' : '1.5px';
+    return {
+      px: size + 'px', ink: this.props.ink ?? 'currentColor', sw, swThin: size >= 18 ? '1.5px' : '1px',
+      geo: variant === 'geo', glyph: variant === 'glyph', organic: variant === 'organic',
+      swap: tool === 'suggested', mana: tool === 'mana', cuts: tool === 'cuts', history: tool === 'history',
+    };
+  }
+}
+</script>
+</body>
+</html>
