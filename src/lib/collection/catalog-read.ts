@@ -31,11 +31,12 @@ export async function searchCollectionCatalog(userId: string, query: string): Pr
   const match = nameSearch(query);
   if (!match) return [];
   const { flavorHits } = match;
-  // Summed per card once and joined in, rather than a correlated subquery per candidate row.
+  // Summed per card once and joined in, rather than a correlated subquery per candidate row. Left
+  // a bigint: each holding fits an integer, their sum across printings need not.
   const ownedTotals = db
     .select({
       oracleId: collectionItems.oracleId,
-      qty: sql<number>`sum(${collectionItems.quantity})::int`.as("qty"),
+      qty: sql<string>`sum(${collectionItems.quantity})`.as("qty"),
     })
     .from(collectionItems)
     .where(eq(collectionItems.userId, userId))
@@ -46,7 +47,7 @@ export async function searchCollectionCatalog(userId: string, query: string): Pr
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
       imageUri: cards.imageUri, manaCost: cards.manaCost,
       flavorName: flavorHits.flavorName,
-      owned: sql<number>`coalesce(${ownedTotals.qty}, 0)`,
+      owned: sql<string | number>`coalesce(${ownedTotals.qty}, 0)`,
     })
     .from(cards)
     .leftJoin(ownedTotals, eq(ownedTotals.oracleId, cards.oracleId))
@@ -54,7 +55,7 @@ export async function searchCollectionCatalog(userId: string, query: string): Pr
     .where(and(match.where, isGameCardWhere()))
     .orderBy(asc(cards.name))
     .limit(20);
-  return rows.map((r) => ({ ...r, flavorName: match.shownFlavor(r.name, r.flavorName) }));
+  return rows.map((r) => ({ ...r, owned: Number(r.owned), flavorName: match.shownFlavor(r.name, r.flavorName) }));
 }
 
 export type PrintingChoice = {

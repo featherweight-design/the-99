@@ -138,11 +138,16 @@ export async function editCollection(actionId: string, rows: unknown, confirmSho
     return { ...identity, quantity, expected, condition: condition as string | null | undefined };
   });
   const catalog = await resolvePrintings(parsed);
-  const editRows: EditRow[] = parsed.map((r) => ({
-    ...r,
-    scryfallId: catalog.get(printingRefKey(r))?.scryfallId ?? null,
-    condition: r.condition ?? null,
-  }));
+  const editRows: EditRow[] = parsed.map((r) => {
+    const printing = catalog.get(printingRefKey(r));
+    // A row the sheet showed at zero and now raises is one this edit CREATES (a stale guess is
+    // refused by `expected` before it is written). Like an add line, it must name a catalog
+    // printing in a finish that printing has; a row that already exists keeps its own columns.
+    if (r.expected === 0 && r.quantity > 0 && (!printing || !printing.finishes.includes(r.finish))) {
+      throw new Error("not a catalog printing");
+    }
+    return { ...r, scryfallId: printing?.scryfallId ?? null, condition: r.condition ?? null };
+  });
   const result = await applyCollectionChange(
     userId, { kind: "edit", rows: editRows }, { id: actionId, confirmShort: parseShortDecks(confirmShort) },
   );

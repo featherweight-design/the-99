@@ -85,7 +85,8 @@ export type HistoryEntry = HistoryListEntry & { rows: HistoryRow[] };
 type ListRow = {
   id: string; seq: string | number; created_at: Date | string; kind: HistoryListEntry["kind"];
   source: string | null; raised: number; lowered: number; row_count: number; removes_only: boolean;
-  copies_up: number; copies_down: number;
+  // bigint: one row's move fits an integer, a sum of rows need not. The driver hands back text.
+  copies_up: string | number; copies_down: string | number;
   reverts_id: string | null; reverted_by: string | null;
   reverts_visible: boolean; reverted_by_visible: boolean;
   rows?: HistoryRow[];
@@ -109,13 +110,13 @@ const listColumns = sql`
   (
     select coalesce(sum(greatest(
       coalesce((e -> 'after' ->> 'quantity')::int, 0) - coalesce((e -> 'before' ->> 'quantity')::int, 0), 0
-    )), 0)::int
+    )), 0)::bigint
     from jsonb_array_elements(h.rows) e
   ) as copies_up,
   (
     select coalesce(sum(greatest(
       coalesce((e -> 'before' ->> 'quantity')::int, 0) - coalesce((e -> 'after' ->> 'quantity')::int, 0), 0
-    )), 0)::int
+    )), 0)::bigint
     from jsonb_array_elements(h.rows) e
   ) as copies_down,
   exists (
@@ -139,7 +140,7 @@ function toListEntry(r: ListRow): HistoryListEntry {
   return {
     id: r.id, seq: Number(r.seq), createdAt: new Date(r.created_at), kind: r.kind, source: r.source,
     raised: r.raised, lowered: r.lowered, rowCount: r.row_count, removesOnly: r.removes_only,
-    copiesUp: r.copies_up, copiesDown: r.copies_down,
+    copiesUp: Number(r.copies_up), copiesDown: Number(r.copies_down),
     revertsId: r.reverts_id, revertedBy: r.reverted_by,
     revertsVisible: r.reverts_visible, revertedByVisible: r.reverted_by_visible,
   };

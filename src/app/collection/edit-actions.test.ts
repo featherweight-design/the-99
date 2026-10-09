@@ -138,6 +138,17 @@ describe("editCollection", () => {
     await expect(addToCollection(ACTION, [{ ...line, setCode: "", collectorNumber: "" }])).rejects.toThrow("not a catalog printing");
   });
 
+  it("refuses a row it would create unless it names a catalog printing in a finish that printing has", async () => {
+    await expect(editCollection(ACTION, [{ ...line, expected: 0 }])).rejects.toThrow("not a catalog printing");
+    catalogHolds(["nonfoil"]);
+    await expect(editCollection(ACTION, [{ ...line, finish: "foil", expected: 0 }])).rejects.toThrow("not a catalog printing");
+    expect(stub.apply).not.toHaveBeenCalled();
+    // Lowering a row the catalog cannot name is still allowed: it already exists.
+    stub.apply.mockResolvedValue({ status: "applied", entry: { id: ACTION } });
+    await editCollection(ACTION, [{ ...line, setCode: "", collectorNumber: "", quantity: 0, expected: 2 }]);
+    expect(stub.apply).toHaveBeenCalledTimes(1);
+  });
+
   it("takes a holding of any size an import could have built, not only what one add may bring", async () => {
     stub.apply.mockResolvedValue({ status: "applied", entry: { id: ACTION } });
     await editCollection(ACTION, [{ ...line, quantity: 0, expected: 12_000 }]);
