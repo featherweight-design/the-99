@@ -263,6 +263,17 @@ async function main() {
     check("once the reverted entry ages out, its revert still reads as one, with no link drawn",
       later?.revertsId === noop && later?.revertsVisible === false && await getHistoryEntry(USER, noop) === null,
       JSON.stringify({ revertsId: later?.revertsId, visible: later?.revertsVisible }));
+    // A pruned entry is never listed or linked, even inside the window: null one directly, since
+    // the prune itself only ever reaches entries the window already hides.
+    const target2 = randomUUID();
+    await applyCollectionChange(USER, { kind: "add", items: [{ ...at(C), condition: null, quantity: 1 }] }, { id: target2 });
+    await applyCollectionChange(USER, { kind: "revert", entryId: target2 }, { id: randomUUID() });
+    await pool.query("update collection_history set rows = null, pruned_at = now() where id = $1", [target2]);
+    const afterPrune = await listHistory(USER);
+    const linkToPruned = afterPrune.entries.find((e) => e.revertsId === target2);
+    check("an entry pruned inside the window is neither listed nor linked to",
+      !afterPrune.entries.some((e) => e.id === target2) && linkToPruned?.revertsVisible === false,
+      JSON.stringify({ listed: afterPrune.entries.some((e) => e.id === target2), visible: linkToPruned?.revertsVisible }));
     const own = await getHistoryEntry(USER, page.entries[0].id);
     check("one entry reads whole for its owner and not at all for anyone else",
       own !== null && own.rows.length === own.rowCount && await getHistoryEntry(`${USER}-other`, page.entries[0].id) === null,
