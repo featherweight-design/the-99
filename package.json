@@ -83,6 +83,7 @@
     "probe:folder-flash": "node scripts/probe-folder-flash.mjs",
     "probe:stats": "tsx scripts/probe-deck-stats.ts",
     "probe:commander-row": "node scripts/probe-commander-row.mjs",
+    "report:model-spend": "tsx scripts/report-model-spend.mts",
     "probe:payload": "tsx scripts/probe-payload-size.mts",
     "probe:score-lock": "tsx scripts/probe-score-lock.ts",
     "probe:writer-version": "node scripts/probe-writer-version.mjs",

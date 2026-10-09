@@ -3,7 +3,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 // The limit reads the environment and nothing else; the database is never reached.
 vi.mock("../../db", () => ({ db: {} }));
 
-import { callMicroFor, dailyLimitFor } from "./allowance";
+import { PgDialect } from "drizzle-orm/pg-core";
+import { callMicroFor, dailyLimitFor, reserveModelCall } from "./allowance";
 import type { ModelFeature } from "./allowance-rule";
 import { FEATURE_CALLS, featureWorstCaseMicroUsd } from "./prices";
 import { MODEL_FRIEND_DAILY_ALLOWANCE, MODEL_OWNER_DAILY_ALLOWANCE } from "./allowance-rule";
@@ -41,5 +42,27 @@ describe("callMicroFor", () => {
     // The case the named form exists for: a feature dearer than the cheapest is judged by its own.
     const dearest = features.reduce((a, b) => (featureWorstCaseMicroUsd(a) >= featureWorstCaseMicroUsd(b) ? a : b));
     expect(callMicroFor(dearest)).toBeGreaterThan(callMicroFor());
+  });
+});
+
+describe("reserveModelCall and the origins", () => {
+  it("prices the cap from player rows only and writes its own origin", async () => {
+    const wheres: unknown[] = [];
+    let inserted: Record<string, unknown> | undefined;
+    const answers: unknown[][] = [[{ app: "0", user: "0" }], [], []];
+    const tx = {
+      execute: async () => undefined,
+      select: () => ({ from: () => ({ where: (w: unknown) => { wheres.push(w); return Promise.resolve(answers.shift() ?? []); } }) }),
+      insert: () => ({ values: (v: Record<string, unknown>) => { inserted = v; return { returning: async () => [{ id: "call-1" }] }; } }),
+    };
+    const got = await reserveModelCall(tx as never, "user_a", "tuning", "claude-sonnet-5");
+    expect(got).toEqual({ id: "call-1" });
+    expect(inserted?.origin).toBe("player");
+    const dialect = new PgDialect();
+    for (const w of wheres.slice(0, 2)) {
+      const q = dialect.sqlToQuery(w as never);
+      expect(q.sql).toContain('"model_calls"."origin" = $');
+      expect(q.params).toContain("player");
+    }
   });
 });

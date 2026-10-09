@@ -65,7 +65,8 @@ function isOwner(userId: string): boolean {
 }
 
 /**
- * Month-to-date spend, app-wide and this player's, in micro-dollars.
+ * Month-to-date PLAYER-ORIGIN spend, app-wide and this player's, in micro-dollars. A `system` row
+ * (a batch job's summary) is a different budget and never counts against this cap.
  *
  * CREDITS COUNT SUCCESSES; DOLLARS COUNT EVERYTHING BILLED. The allowance ignores refunded rows;
  * this does not. It is the recorded cost of EVERY call this UTC month, spent or refunded, plus the
@@ -82,7 +83,7 @@ async function monthSpend(q: Tx | typeof db, userId: string, now: Date): Promise
       user: sql<string>`coalesce(sum(${modelCalls.costMicroUsd}) filter (where ${modelCalls.userId} = ${userId}), 0)`,
     })
     .from(modelCalls)
-    .where(and(isNotNull(modelCalls.costMicroUsd), gte(modelCalls.createdAt, start)));
+    .where(and(eq(modelCalls.origin, "player"), isNotNull(modelCalls.costMicroUsd), gte(modelCalls.createdAt, start)));
   const unpriced = await q
     .select({
       userId: modelCalls.userId, status: modelCalls.status, feature: modelCalls.feature,
@@ -90,6 +91,7 @@ async function monthSpend(q: Tx | typeof db, userId: string, now: Date): Promise
     })
     .from(modelCalls)
     .where(and(
+      eq(modelCalls.origin, "player"),
       isNull(modelCalls.costMicroUsd),
       gte(modelCalls.createdAt, start),
       gt(modelCalls.createdAt, new Date(now.getTime() - RESERVATION_TTL_MS)),
@@ -186,7 +188,7 @@ export async function reserveModelCall(
   if (allowance.used >= allowance.limit) return { refused: "allowance" };
   const [row] = await tx
     .insert(modelCalls)
-    .values({ userId, feature, model, createdAt: now })
+    .values({ userId, feature, model, origin: "player", createdAt: now })
     .returning({ id: modelCalls.id });
   return row;
 }
@@ -262,7 +264,7 @@ async function alarm(tx: Tx, cost: number, now: Date): Promise<void> {
   const [sum] = await tx
     .select({ billed: sql<string>`coalesce(sum(${modelCalls.costMicroUsd}), 0)` })
     .from(modelCalls)
-    .where(and(isNotNull(modelCalls.costMicroUsd), gte(modelCalls.createdAt, monthStartUtc(now))));
+    .where(and(eq(modelCalls.origin, "player"), isNotNull(modelCalls.costMicroUsd), gte(modelCalls.createdAt, monthStartUtc(now))));
   const after = Number(sum.billed);
   for (const pct of crossedAlarms(after - cost, after)) {
     reportSpendThreshold({
