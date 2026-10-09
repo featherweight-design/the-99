@@ -116,6 +116,25 @@ describe("previewUploadChange", () => {
     expect(stub.apply.mock.calls[0][2].dryRun).toBe(true);
   });
 
+  it("refuses an upload with no matched cards, as the confirm does, without a dry run", async () => {
+    stub.ledger = true;
+    stub.upload = { ...stub.upload!, previewPayload: { pendingItems: [] } };
+    await expect(previewUploadChange(UPLOAD)).rejects.toThrow("no matched cards");
+    expect(stub.apply).not.toHaveBeenCalled();
+  });
+
+  it("names the cards the catalog dropped rather than answering as if confirmed", async () => {
+    stub.ledger = true;
+    stub.apply.mockResolvedValue({ status: "missingCard", names: ["Gone"] });
+    expect(await previewUploadChange(UPLOAD)).toEqual({ missingCard: ["Gone"] });
+  });
+
+  it("answers nothing when another request confirmed the upload during the preview", async () => {
+    stub.ledger = true;
+    stub.apply.mockResolvedValue({ status: "alreadyConfirmed" });
+    expect(await previewUploadChange(UPLOAD)).toBeNull();
+  });
+
   it("answers nothing for an upload already confirmed", async () => {
     stub.ledger = true;
     stub.upload = { ...stub.upload!, confirmedAt: new Date() };

@@ -391,9 +391,11 @@ export async function applyCollectionChange(
       // never confirm one upload while recording another.
       if (uploadId) {
         const stamped = await tx.update(csvUploads)
-          // The transaction's own clock, the one the entry's `created_at` reads, so the two
-          // agree on when this upload landed.
-          .set({ confirmedAt: sql`now()` })
+          // The clock at the stamp, AFTER the per-user lock, so uploads' stamps order as their
+          // writes did. `now()` is frozen at the transaction's start, before the lock: two
+          // concurrent confirms would commit in one order and stamp in the other, and every
+          // reader of the newest upload (`editsSinceUpload`) would pick the wrong one.
+          .set({ confirmedAt: sql`clock_timestamp()` })
           .where(and(
             eq(csvUploads.id, uploadId),
             eq(csvUploads.userId, userId),

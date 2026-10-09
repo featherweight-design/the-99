@@ -166,6 +166,8 @@ export type UploadChangePreview = {
   editsSinceUpload: number;
 };
 
+const NO_MATCHED_CARDS = "Upload has no matched cards; refusing to replace collection";
+
 function parseMode(mode: unknown): UploadMode {
   if (mode === undefined || mode === "replace") return "replace";
   if (mode === "add") return "add";
@@ -193,7 +195,10 @@ async function loadUpload(userId: string, uploadId: string) {
  * What confirming `uploadId` in `mode` would do, computed by the write itself in a rolled-back
  * transaction (`dryRun`), so the screen and the save cannot disagree. Ledger path only.
  */
-export async function previewUploadChange(uploadId: string, mode?: UploadMode): Promise<UploadChangePreview | null> {
+export async function previewUploadChange(
+  uploadId: string,
+  mode?: UploadMode,
+): Promise<UploadChangePreview | { missingCard: string[] } | null> {
   const userId = await requireUserId();
   if (!collectionEditEnabled()) throw new Error("collection editing is off");
   const kind = parseMode(mode);
@@ -201,11 +206,21 @@ export async function previewUploadChange(uploadId: string, mode?: UploadMode): 
   // Already confirmed: there is nothing left to choose.
   if (upload.confirmedAt) return null;
   const { pendingItems } = upload.previewPayload as { pendingItems: PendingItem[] };
+  // The confirm refuses an upload with no matched cards; previewing it would draw an empty
+  // Replace as "removes everything", which the save would never do.
+  if (pendingItems.length === 0) throw new Error(NO_MATCHED_CARDS);
   const [result, edits] = await Promise.all([
     applyCollectionChange(userId, { kind, items: pendingItems, uploadId }, { id: randomUUID(), dryRun: true }),
     editsSinceUpload(userId),
   ]);
-  if (result.status !== "preview") return null;
+  switch (result.status) {
+    case "preview": break;
+    // Confirmed by another request since the read above.
+    case "alreadyConfirmed": return null;
+    // The catalog dropped a card since the upload was matched; the confirm refuses it by name.
+    case "missingCard": return { missingCard: result.names };
+    default: throw new Error(`upload preview refused: ${result.status}`);
+  }
   return { raised: result.raised, lowered: result.lowered, decks: result.decks, editsSinceUpload: edits };
 }
 
@@ -230,7 +245,7 @@ export async function confirmUpload(
     parseErrors?: { line: number; reason: string }[];
   };
   const pendingItems = preview.pendingItems;
-  if (pendingItems.length === 0) throw new Error("Upload has no matched cards; refusing to replace collection");
+  if (pendingItems.length === 0) throw new Error(NO_MATCHED_CARDS);
 
   // THE STATE BEFORE, read now because the replace destroys it. Both reads are
   // point-in-time and deliberately not serialized against the write: the only race is
