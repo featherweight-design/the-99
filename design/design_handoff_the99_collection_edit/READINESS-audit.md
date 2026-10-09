@@ -82,6 +82,26 @@ engineering-resolvable items remain.
    plan names it `applyCollectionChange`. No functional difference — trivial to reconcile when
    implementing.
 
+6. **[eng-resolvable, open — missed in the first pass of this audit] The history `kind` values and
+   the "up/down" figure don't match the approved write-path plan.** `collection-edit · copy
+   strings.ts`'s `history.kinds` lookup keys on `manual_add`, `manual_edit` and a standalone
+   `remove`; the approved plan (`docs/superpowers/plans/2026-10-09-collection-write-path.md`,
+   §2) stores exactly five `kind` values — `upload_replace`, `upload_add`, `add`, `edit`,
+   `revert` — and folds a removal into `edit` ("`removed` from the brief's sketch is folded into
+   `edit`: a removal is an edit to zero, and the history view can label an entry whose every row
+   ends at zero as a removal. `manual_edit` becomes `edit`, and `add` is the in-app sheet, kept
+   apart from `upload_add`"). As written, the handoff's lookup has no entry for the plan's `add`
+   or `edit` keys and a dead entry for a `remove` kind the plan never stores. Separately,
+   `history.figures(up, down, cards)` presents `up`/`down` as **copy-quantity deltas** ("+3 · −1
+   copies across N cards"), while the plan's `raised`/`lowered` columns are **counts of rows**
+   whose quantity moved, not a delta of copies. These differ for a multi-copy holding (a row
+   whose quantity moved 4→2 raises `lowered` by 1 row, not by 2 copies), so implementing the
+   handoff's figure literally against the plan's columns renders the wrong number. **This needs a
+   Design call, not an eng guess**: whether the kind lookup collapses to the plan's five values
+   with "Removed" derived presentation (an `edit` entry whose every row ends at zero), and
+   whether the figure is restated as a row count or the plan grows a copy-delta column instead.
+   Flagging rather than resolving — this was missed in the audit's first pass.
+
 ## Not re-litigated
 
 - READINESS.md's items 5–8 (the `edited` tag needing a ledger-derived read, the 80% overlap

@@ -101,7 +101,11 @@ export const collectionHistory: AboutEntry = {
 };
 
 // The shipped 'import' entry: its last caption line goes false with the switch on (README open 1).
-// Requires a negated switch key in visible.ts.
+// Requires a negated switch key in visible.ts. `resolveLine` (src/lib/about/visible.ts) only
+// REMOVES a line it finds in the caption — it never inserts one — so this also requires the
+// shipped 'import' caption in src/lib/copy/about.ts to be edited to carry BOTH lines below,
+// appended as their own line, before either key can do anything. That caption edit is not made
+// here; it belongs to the build that wires the negation.
 export const importCaptionLineSwitches = {
   // Matched as the caption line appears literally (no paragraph breaks), as the existing keys are.
   "Heads up: an import replaces your whole Collection, it doesn't add to it.": '!COLLECTION_EDIT_ENABLED',

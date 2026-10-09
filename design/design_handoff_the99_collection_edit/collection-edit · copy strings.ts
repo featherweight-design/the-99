@@ -176,7 +176,10 @@ export const collectionEditCopy = {
   },
   revert: {
     title: (kind: string) => `Revert “${kind}”?`,
-    lede: (when: string, c: number) => `From ${when}. This takes out the ${copies(c)} it added.`,
+    // Direction-neutral: a revert can move copies either way (a removal or a lowering edit puts
+    // some back, a Replace upload or a prior revert can move both ways at once), so the lede
+    // names what moved without claiming a direction. The listed Then/Now rows say what changes.
+    lede: (when: string, c: number) => `From ${when}. Reverting this changes ${copies(c)}.`,
     differs: "This does less than the original. Some of these cards have changed since, and a revert never takes you below zero.",
     then: "Then",
     now: "Now",

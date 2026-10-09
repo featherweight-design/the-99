@@ -2,6 +2,11 @@
 
 **Approved (LGTM, 2026-10-09). Self-assessed: Amber until the three items below are ruled.** Every surface and state the brief lists is drawn. Three calls need Hugh before the build, and one depends on an unmerged PR.
 
+**Post-audit status (see `READINESS-audit.md` for the live verdict): item 1 is resolved — PR
+#1304 merged 2026-10-09T16:32:53Z; item 2 is resolved — Hugh ruled 2026-10-09, the History tab;
+item 3 is not a design blocker — it's a copy-review call per the handoff itself. This section is
+kept as Design's original self-assessment and is a historical snapshot, not the current status.**
+
 ## Blocking
 1. **PR #1304 is unmerged.** This handoff was built on `docs/collection-empty-add`. If #1304 changes before it merges, B0 is the section exposed to that.
 2. **Phone strip trade (README open 1).** Taking History as a tab moves the phone's upload into the Add sheet.

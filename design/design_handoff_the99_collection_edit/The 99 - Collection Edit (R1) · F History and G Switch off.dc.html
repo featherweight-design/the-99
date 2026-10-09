@@ -199,7 +199,7 @@
         <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">F4 &middot; desktop &middot; today matches the entry</div>
         <div style="width:480px;border-radius:14px;background:var(--surface);border:1px solid var(--border-strong);box-shadow:0 24px 60px rgba(0,0,0,0.55);padding:24px 24px 20px;display:flex;flex-direction:column;gap:14px;">
           <h3 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:20px;">Revert &ldquo;Added in the app&rdquo;?</h3>
-          <p style="margin:0;font-size:13.5px;line-height:1.55;color:var(--fg-body);">From 8 Oct, 21:10. This takes out the 8 copies it added.</p>
+          <p style="margin:0;font-size:13.5px;line-height:1.55;color:var(--fg-body);">From 8 Oct, 21:10. Reverting this changes 8 copies.</p>
           <div style="border-radius:10px;background:var(--bg);border:1px solid var(--border);padding:4px 14px;">
             <sc-for list="{{ revertSame }}" as="c" hint-placeholder-count="4">
               <div style="display:flex;align-items:center;gap:12px;min-height:36px;border-bottom:1px solid var(--border);"><span style="flex:1;font-size:13.5px;">{{ c.name }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);">{{ c.now }}</span></div>
