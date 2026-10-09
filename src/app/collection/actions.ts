@@ -25,8 +25,7 @@ import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
 import { loadDeckBuyRows } from "../../lib/decks/availability-query";
 
 import { aggregatePendingItems, totalQuantity, type PendingItem } from "../../lib/collection/pending";
-import { recommendCommanders } from "../../lib/recs/recommend";
-import { collectionGeneration, indexGeneration, persistScores } from "../../lib/recs/store";
+import { warmCommanderScores } from "../../lib/recs/warm";
 import {
   COLLECTION_FILE_MAX_BYTES,
   COLLECTION_FILE_MAX_LABEL,
@@ -322,25 +321,7 @@ export async function confirmUpload(
   // Warm the new collection's scores without blocking the upload response. If this
   // is cut short by the route's max duration, the read path recomputes on first
   // visit — the warm is an optimisation, never a correctness requirement.
-  after(async () => {
-    try {
-      // Reads the generation this confirm just created, so the warm's write survives
-      // while an older in-flight compute's write is dropped.
-      //
-      // BOTH fingerprints are taken before the compute, which is the whole
-      // point of them: taken after, each would describe the state the compute
-      // finished in rather than the state it read, and would match itself no
-      // matter what moved underneath.
-      const [generation, indexGen] = await Promise.all([
-        collectionGeneration(userId),
-        indexGeneration(),
-      ]);
-      const recs = await recommendCommanders(userId);
-      await persistScores(userId, recs.results, generation, indexGen);
-    } catch {
-      // Swallow: the lazy path in getRankedList is the correctness backstop.
-    }
-  });
+  after(() => warmCommanderScores(userId));
 }
 
 /**

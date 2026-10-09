@@ -11,6 +11,8 @@ import { applyCollectionChange, parseShortDecks, type ShortDeck } from "../../li
 import type { HistoryRow } from "../../db/schema";
 import { isUuid } from "../../lib/uuid";
 import { randomUUID } from "node:crypto";
+import { after } from "next/server";
+import { warmCommanderScores } from "../../lib/recs/warm";
 
 /**
  * The collection history and revert (collection foundation, sub-project 1, PR 3). Every action
@@ -127,6 +129,7 @@ export async function revertCollectionEntry(
     case "applied":
     case "alreadyApplied":
       invalidateCollectionReaders(userId);
+      after(() => warmCommanderScores(userId));
       return { reverted: { id: result.entry.id } };
     case "notFound": return { notFound: true };
     case "alreadyReverted": return { alreadyReverted: true };

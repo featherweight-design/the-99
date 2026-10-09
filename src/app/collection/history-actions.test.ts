@@ -11,6 +11,7 @@ const stub = vi.hoisted(() => ({
   entry: vi.fn(),
   list: vi.fn(),
   invalidate: vi.fn(),
+  warm: vi.fn(),
 }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
@@ -25,6 +26,9 @@ vi.mock("../../lib/collection/history", async (actual) => ({
   listHistory: stub.list,
 }));
 vi.mock("../../lib/collection/invalidate", () => ({ invalidateCollectionReaders: stub.invalidate }));
+// `after` runs its callback at once, so a test sees the warm the response would have scheduled.
+vi.mock("next/server", () => ({ after: (fn: () => unknown) => fn() }));
+vi.mock("../../lib/recs/warm", () => ({ warmCommanderScores: stub.warm }));
 
 import { loadCollectionHistory, previewRevert, revertCollectionEntry } from "./history-actions";
 
@@ -33,7 +37,7 @@ const deck = { deckId: "d", deckName: "Deck", oracleId: "a", cardName: "Card", s
 
 beforeEach(() => {
   stub.ledger = true;
-  for (const f of [stub.apply, stub.entry, stub.list, stub.invalidate]) f.mockReset();
+  for (const f of [stub.apply, stub.entry, stub.list, stub.invalidate, stub.warm]) f.mockReset();
 });
 
 describe("the history actions", () => {
@@ -81,6 +85,7 @@ describe("revertCollectionEntry", () => {
     expect(stub.apply.mock.calls[0][1]).toEqual({ kind: "revert", entryId: ENTRY, expected: { [KEY]: 0 } });
     expect(stub.apply.mock.calls[0][2]).toEqual({ id: ACTION, confirmShort: [deck] });
     expect(stub.invalidate).toHaveBeenCalledWith("user_1");
+    expect(stub.warm).toHaveBeenCalledWith("user_1");
   });
 
   it("answers a retry of a committed revert as the same success, and invalidates again", async () => {
@@ -93,6 +98,7 @@ describe("revertCollectionEntry", () => {
   it("passes a stale view and a deck warning back to be redrawn, writing nothing", async () => {
     stub.apply.mockResolvedValueOnce({ status: "stale", current: [] });
     expect(await revertCollectionEntry(ENTRY, ACTION, {})).toEqual({ stale: true });
+    expect(stub.warm).not.toHaveBeenCalled();
     stub.apply.mockResolvedValueOnce({ status: "wouldShort", decks: [deck] });
     expect(await revertCollectionEntry(ENTRY, ACTION, {})).toEqual({ wouldShort: [deck] });
     expect(stub.invalidate).not.toHaveBeenCalled();
