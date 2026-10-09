@@ -6,7 +6,8 @@ export type CardFacet =
   | "land"
   | "other";
 
-/** The face a card is played or cast as: everything before the first ` // `.
+/** The first-named face, the one cards file and filter by: everything before
+ *  the first ` // `. A filing convention, not gameplay semantics.
  *  Every layout lists its front (or first-named half) first, so one split
  *  answers modal DFC, transform, adventure, split and flip alike. A single-face
  *  type line has no separator and comes back whole. */
