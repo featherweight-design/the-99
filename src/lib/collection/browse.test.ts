@@ -707,6 +707,13 @@ describe("toListCards", () => {
 });
 
 describe("filterCards", () => {
+  it("type filter reads the front face only: Shatterskull Smashing is a Sorcery, not a Land", () => {
+    const mdfc = [listCard({ oracleId: "m", typeLine: "Sorcery // Land" })];
+    const ids = (types: string[]) =>
+      filterCards(mdfc, { search: "", colors: [], types, setCodes: [] }).map((c) => c.oracleId);
+    expect(ids(["land"])).toEqual([]);
+    expect(ids(["sorcery"])).toEqual(["m"]);
+  });
   const list = [
     listCard({ oracleId: "a", name: "Sol Ring", colorIdentity: [], typeLine: "Artifact", setCodes: ["C21"], primarySetCode: "C21" }),
     listCard({ oracleId: "b", name: "Lightning Bolt", colorIdentity: ["R"], typeLine: "Instant", setCodes: ["2XM"], primarySetCode: "2XM" }),

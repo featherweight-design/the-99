@@ -109,6 +109,22 @@ describe("cardTypeGroup", () => {
   it("Artifact Creature → Creatures (creature check before artifact)", () =>
     expect(cardTypeGroup("Artifact Creature — Golem")).toBe("Creatures"));
   it("unknown → Other", () => expect(cardTypeGroup("Tribal — Ally")).toBe("Other"));
+
+  // One case per layout, each a real card: the front face decides, never the back.
+  it("modal DFC: Shatterskull Smashing (Sorcery // Land) → Sorceries", () =>
+    expect(cardTypeGroup("Sorcery // Land")).toBe("Sorceries"));
+  it("transform: Tales of Master Seshiro → Enchantments", () =>
+    expect(cardTypeGroup("Enchantment — Saga // Enchantment Creature — Snake Warrior")).toBe("Enchantments"));
+  it("adventure: The Arkenstone // Seek the Heart → Artifacts", () =>
+    expect(cardTypeGroup("Legendary Artifact // Sorcery — Adventure")).toBe("Artifacts"));
+  it("omen: a creature front over a Sorcery back → Creatures", () =>
+    expect(cardTypeGroup("Creature — Dragon // Sorcery — Omen")).toBe("Creatures"));
+  it("split: Discovery // Dispersal files by the first-named half → Sorceries", () =>
+    expect(cardTypeGroup("Sorcery // Instant")).toBe("Sorceries"));
+  it("flip: Curse of the Fire Penguin → Enchantments", () =>
+    expect(cardTypeGroup("Enchantment — Aura // Creature — Penguin")).toBe("Enchantments"));
+  it("single face with no separator is unchanged", () =>
+    expect(cardTypeGroup("Legendary Creature — Angel Horror")).toBe("Creatures"));
 });
 
 describe("primaryRole", () => {

@@ -6,6 +6,14 @@ export type CardFacet =
   | "land"
   | "other";
 
+/** The face a card is played or cast as: everything before the first ` // `.
+ *  Every layout lists its front (or first-named half) first, so one split
+ *  answers modal DFC, transform, adventure, split and flip alike. A single-face
+ *  type line has no separator and comes back whole. */
+export function frontFace(typeLine: string): string {
+  return typeLine.split(" // ")[0];
+}
+
 /** The coarse bucket the synergy panel's facet strip groups on. Not the type
  *  line: the `All` facet prints this alone, and the strip counts rows by it.
  *
@@ -18,7 +26,7 @@ export type CardFacet =
  *  A DFC's type line is "Front // Back" and only the front face is played from
  *  hand, so the back is not consulted. */
 export function cardFacet(typeLine: string): CardFacet {
-  const front = typeLine.split(" // ")[0].toLowerCase();
+  const front = frontFace(typeLine).toLowerCase();
   if (front.includes("creature")) return "creature";
   if (front.includes("land")) return "land";
   if (front.includes("instant") || front.includes("sorcery")) return "spell";
@@ -43,7 +51,7 @@ export function cardFacet(typeLine: string): CardFacet {
  * different rather than accidentally divergent.
  */
 export function isLandFace(typeLine: string): boolean {
-  return /\bland\b/.test(typeLine.split(" // ")[0].toLowerCase());
+  return /\bland\b/.test(frontFace(typeLine).toLowerCase());
 }
 
 /** The singular noun `SynergyRow` prints in its type column when the panel is

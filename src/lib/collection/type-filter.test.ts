@@ -97,6 +97,16 @@ describe("buildTypeOptions", () => {
   });
 });
 
+describe("buildTypeOptions: a two-faced card counts under its front face only", () => {
+  const smashing = [card({ oracleId: "s", typeLine: "Sorcery // Land", quantity: 2 })];
+  const count = (label: string) =>
+    buildTypeOptions(smashing, noFilters).find((o) => o.label === label)?.count;
+  it("Shatterskull Smashing counts under Sorcery, not Land", () => {
+    expect(count("Sorcery")).toBe(2);
+    expect(count("Land")).toBe(0);
+  });
+});
+
 describe("parseTypesParam", () => {
   it("reads a comma-separated list", () => {
     expect(parseTypesParam("Creature,Land")).toEqual(["Creature", "Land"]);
