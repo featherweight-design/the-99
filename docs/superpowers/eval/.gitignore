@@ -6,3 +6,4 @@ ledger.jsonl.lock
 # The blind key and the pairs it decodes stay out of the tree until Hugh has answered.
 blind/*-key.json
 blind/*-pairs.json
+blind/*-sheet.html
