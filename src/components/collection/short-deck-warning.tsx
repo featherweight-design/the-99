@@ -1,13 +1,15 @@
 "use client";
-// §E, the short-deck warning (collection edit handoff, A·E1 to E6), in its dialog form.
-// One component for every source that can leave a committed deck short; Replace is the first
-// caller. Rows are always decks. A source that moves one card shows `short N`, a source that
+// §E, the short-deck warning (collection edit handoff, A·E1 to E6): the CONTENT of the dialog, with
+// no scrim, focus trap or history entry of its own. The host owns the dialog, so swapping the
+// confirm for the warning keeps one dialog (and one back-button entry) rather than unmounting one
+// and mounting another. One component for every source that can leave a committed deck short;
+// Replace is the first caller. Rows are always decks. A source that moves one card shows `short N`, a source that
 // moves several shows `N cards short` and the row opens onto its cards. Three decks are named and
 // the rest are counted behind `and N more`, which opens inline under a 320px cap. Cancel takes
 // focus, the confirm is the elevated secondary, and nothing here is red but a failed confirm.
 
-import { useId, useMemo, useRef, useState } from "react";
-import { useDialogA11y } from "../../lib/a11y/dialog";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import type { ShortDeck } from "../../lib/collection/write";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 
@@ -26,6 +28,7 @@ export function groupShortDecks(decks: ShortDeck[]): DeckRow[] {
 }
 
 export function ShortDeckWarning({
+  titleId,
   decks,
   pending,
   error,
@@ -34,6 +37,8 @@ export function ShortDeckWarning({
   onCancel,
   onConfirm,
 }: {
+  /** The id the host's `aria-labelledby` names. */
+  titleId: string;
   decks: ShortDeck[];
   pending: boolean;
   error?: string | null;
@@ -51,30 +56,17 @@ export function ShortDeckWarning({
   const [open, setOpen] = useState<string | null>(null);
   const named = showAll ? rows : rows.slice(0, c.namedCount);
   const hidden = rows.length - c.namedCount;
-  const dialogRef = useRef<HTMLDivElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
-  const titleId = useId();
-  useDialogA11y(dialogRef, onCancel, { initialFocusRef: cancelRef, closeOnEscape: !pending });
+  const firstRevealed = useRef<HTMLAnchorElement>(null);
+  // The warning replaces the confirm inside one dialog, so nothing moves focus here but this.
+  useEffect(() => cancelRef.current?.focus(), []);
+  // `and N more` unmounts the button that had focus: the first row it reveals takes it.
+  useEffect(() => {
+    if (showAll) firstRevealed.current?.focus();
+  }, [showAll]);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-[color-mix(in_oklab,var(--bg)_70%,transparent)] md:items-center"
-      role="presentation"
-      onClick={() => {
-        if (!pending) onCancel();
-      }}
-    >
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        aria-busy={pending || undefined}
-        tabIndex={-1}
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[calc(100dvh-40px)] w-full flex-col gap-[14px] rounded-[22px_22px_0_0] border border-[color:var(--border-strong)] bg-[color:var(--surface)] p-[12px_20px_20px] md:w-[480px] md:rounded-[14px] md:p-[24px_24px_20px] md:shadow-[0_24px_60px_rgba(0,0,0,0.55)]"
-      >
-        <div aria-hidden className="mx-auto h-[4px] w-[40px] flex-none rounded-full bg-[color:var(--border-strong)] md:hidden" />
+    <>
         <h2 id={titleId} className="m-0 flex-none font-display text-[20px] font-bold leading-[1.3] text-[color:var(--fg)]">
           {c.titleReplace(rows.length)}
         </h2>
@@ -87,35 +79,41 @@ export function ShortDeckWarning({
         <ul
           className={`m-0 min-h-0 list-none overflow-y-auto rounded-[10px] border border-[color:var(--border)] bg-[color:var(--bg)] p-0 ${showAll ? "max-h-[320px]" : ""}`}
         >
-          {named.map((row) => {
+          {named.map((row, index) => {
             const expandable = !oneCard && row.cards.length > 1;
             const isOpen = open === row.deckId;
             const figure = oneCard ? c.figureOne(row.short) : c.figureMany(row.cards.length);
-            const label = (
-              <>
-                <span className="min-w-0 flex-1 truncate text-[14px] text-[color:var(--fg)]">{row.deckName}</span>
-                {freshDeckIds?.has(row.deckId) ? (
-                  <span className="flex-none rounded-[4px] border border-[color:var(--border-strong)] px-[5px] font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--fg-muted)]">
-                    {c.newTag}
-                  </span>
-                ) : null}
-                <span className="flex-none font-mono text-[12px] text-[color:var(--danger)]">{figure}</span>
-              </>
-            );
             return (
               <li key={row.deckId} className="border-b border-b-[color:var(--border)] last:border-b-0">
-                {expandable ? (
-                  <button
-                    type="button"
-                    aria-expanded={isOpen}
-                    onClick={() => setOpen(isOpen ? null : row.deckId)}
-                    className="flex min-h-[44px] w-full items-center gap-[12px] px-[14px] text-left"
+                <div className="flex min-h-[44px] items-center gap-[12px] px-[14px]">
+                  {/* A new tab: the review and this warning are state a navigation would lose. */}
+                  <Link
+                    ref={showAll && index === c.namedCount ? firstRevealed : undefined}
+                    href={`/decks/${row.deckId}`}
+                    target="_blank"
+                    rel="noopener"
+                    className="min-w-0 flex-1 truncate text-[14px] text-[color:var(--fg)] underline decoration-[color:var(--border-strong)] underline-offset-2"
                   >
-                    {label}
-                  </button>
-                ) : (
-                  <div className="flex min-h-[44px] items-center gap-[12px] px-[14px]">{label}</div>
-                )}
+                    {row.deckName}
+                  </Link>
+                  {freshDeckIds?.has(row.deckId) ? (
+                    <span className="flex-none rounded-[4px] border border-[color:var(--border-strong)] px-[5px] font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--fg-muted)]">
+                      {c.newTag}
+                    </span>
+                  ) : null}
+                  {expandable ? (
+                    <button
+                      type="button"
+                      aria-expanded={isOpen}
+                      onClick={() => setOpen(isOpen ? null : row.deckId)}
+                      className="flex-none font-mono text-[12px] text-[color:var(--danger)]"
+                    >
+                      {figure}
+                    </button>
+                  ) : (
+                    <span className="flex-none font-mono text-[12px] text-[color:var(--danger)]">{figure}</span>
+                  )}
+                </div>
                 {expandable && isOpen ? (
                   <ul className="m-0 list-none p-[0_14px_10px] text-[12.5px] text-[color:var(--fg-muted)]">
                     {row.cards.map((card) => (
@@ -165,7 +163,6 @@ export function ShortDeckWarning({
             {pending ? c.saving : c.confirmReplace}
           </button>
         </div>
-      </div>
-    </div>
+    </>
   );
 }

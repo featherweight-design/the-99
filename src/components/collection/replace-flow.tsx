@@ -13,7 +13,6 @@ import { ConfirmModal } from "./confirm-modal";
 import { replaceCopy } from "../../lib/copy/replace";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import type { ShortDeck } from "../../lib/collection/write";
-import { ShortDeckWarning } from "./short-deck-warning";
 import { usePendingPush } from "../shell/pending-push";
 
 export function ReplaceFlow({
@@ -96,7 +95,7 @@ export function ReplaceFlow({
         const before = new Set(warning?.decks.map((d) => d.deckId));
         const fresh = warning ? new Set(outcome.wouldShort.map((d) => d.deckId).filter((id) => !before.has(id))) : new Set<string>();
         setWarning({ decks: outcome.wouldShort, fresh, changed: warning !== null });
-        setConfirming(false);
+        setConfirming(true);
         return;
       }
       if (outcome && "missingCard" in outcome) {
@@ -182,26 +181,14 @@ export function ReplaceFlow({
           pending={pending}
           error={confirmError}
           onClose={() => {
+            // Also Cancel on the warning (E7): it writes nothing, and the review is still here.
             setConfirming(false);
+            setWarning(null);
             setConfirmError(null);
           }}
           onConfirm={() => onConfirm()}
           checking={deckCheck}
-        />
-      )}
-      {warning && (
-        <ShortDeckWarning
-          decks={warning.decks}
-          pending={pending}
-          error={confirmError}
-          notice={warning.changed}
-          freshDeckIds={warning.fresh}
-          onCancel={() => {
-            // Writes nothing (E7): the review is still here and Replace is one press away.
-            setWarning(null);
-            setConfirmError(null);
-          }}
-          onConfirm={() => onConfirm(warning.decks)}
+          warning={warning ? { ...warning, onConfirm: () => onConfirm(warning.decks) } : undefined}
         />
       )}
     </>

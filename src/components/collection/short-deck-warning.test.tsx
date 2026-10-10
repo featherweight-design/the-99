@@ -12,7 +12,7 @@ const line = (deckId: string, oracleId: string, short: number): ShortDeck => ({
 });
 
 const draw = (decks: ShortDeck[], extra: Partial<React.ComponentProps<typeof ShortDeckWarning>> = {}) =>
-  render(<ShortDeckWarning decks={decks} pending={false} onCancel={vi.fn()} onConfirm={vi.fn()} {...extra} />);
+  render(<ShortDeckWarning titleId="t" decks={decks} pending={false} onCancel={vi.fn()} onConfirm={vi.fn()} {...extra} />);
 
 describe("groupShortDecks", () => {
   it("makes one row per deck, most short first, keeping the server's order on a tie", () => {
@@ -30,6 +30,15 @@ describe("ShortDeckWarning", () => {
     expect(confirm.className).not.toMatch(/accent|danger/);
   });
 
+  it("names each deck with a link that opens in a new tab, apart from the row's expand control", () => {
+    draw([line("a", "x", 1), line("a", "y", 2)]);
+    const link = screen.getByRole("link", { name: "Deck a" });
+    expect(link.getAttribute("href")).toBe("/decks/a");
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("rel")).toContain("noopener");
+    expect(screen.getByRole("button", { name: "2 cards short" })).not.toContainElement(link);
+  });
+
   it("one card: each row reads `short N`", () => {
     draw([line("a", "x", 2), line("b", "x", 1)]);
     expect(screen.getByText("short 2")).toBeTruthy();
@@ -40,7 +49,7 @@ describe("ShortDeckWarning", () => {
     draw([line("a", "x", 1), line("a", "y", 2), line("b", "x", 1), line("b", "z", 1)]);
     expect(screen.getAllByText("2 cards short")).toHaveLength(2);
     expect(screen.queryByText("Card y")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /Deck a/ }));
+    fireEvent.click(screen.getAllByRole("button", { name: "2 cards short" })[0]);
     expect(screen.getByText("Card y")).toBeTruthy();
     expect(screen.getByText("short 2")).toBeTruthy();
   });
@@ -61,13 +70,9 @@ describe("ShortDeckWarning", () => {
     expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
   });
 
-  it("Escape cancels, except while pending", () => {
-    const onCancel = vi.fn();
-    const { rerender } = draw([line("a", "x", 1)], { onCancel });
-    fireEvent.keyDown(document, { key: "Escape" });
-    expect(onCancel).toHaveBeenCalledTimes(1);
-    rerender(<ShortDeckWarning decks={[line("a", "x", 1)]} pending onCancel={onCancel} onConfirm={vi.fn()} />);
-    fireEvent.keyDown(document, { key: "Escape" });
-    expect(onCancel).toHaveBeenCalledTimes(1);
+  it("`and N more` hands focus to the first row it reveals", () => {
+    draw(["a", "b", "c", "d", "e"].map((id, i) => line(id, "x", 5 - i)));
+    fireEvent.click(screen.getByRole("button", { name: "and 2 more decks" }));
+    expect(document.activeElement).toBe(screen.getByRole("link", { name: "Deck d" }));
   });
 });

@@ -195,6 +195,18 @@ describe("ReplaceFlow — §E, decks the replace would leave short", () => {
     expect(push).not.toHaveBeenCalled();
   });
 
+  it("shows the warning inside the same dialog element, so the confirm's back-button entry is not orphaned", async () => {
+    confirmUpload.mockResolvedValueOnce({ wouldShort: [deck("d1", "Atraxa")] });
+    const replace = await reachConfirm();
+    const before = screen.getByRole("dialog");
+    await act(async () => fireEvent.click(replace));
+    expect(screen.getByRole("dialog")).toBe(before);
+    expect(screen.getByRole("heading", { name: "Replacing leaves a deck short" })).toBeTruthy();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(push).not.toHaveBeenCalled();
+  });
+
   it("confirming resends the SAME decks as confirmShort, then opens the receipt", async () => {
     const decks = [deck("d1", "Atraxa")];
     confirmUpload.mockResolvedValueOnce({ wouldShort: decks }).mockResolvedValueOnce(undefined);

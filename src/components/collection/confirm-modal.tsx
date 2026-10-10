@@ -16,6 +16,8 @@ import { useEffect, useRef } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import type { UploadPreview } from "../../app/collection/actions";
 import { replaceCopy } from "../../lib/copy/replace";
+import type { ShortDeck } from "../../lib/collection/write";
+import { ShortDeckWarning } from "./short-deck-warning";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 
 export function ConfirmModal({
@@ -25,6 +27,7 @@ export function ConfirmModal({
   onClose,
   onConfirm,
   checking = false,
+  warning,
 }: {
   preview: UploadPreview;
   pending: boolean;
@@ -33,6 +36,8 @@ export function ConfirmModal({
   onConfirm: () => Promise<void> | void;
   /** The press starts a deck check as well as the write (collection editing on). */
   checking?: boolean;
+  /** The decks the confirm would leave short: the dialog shows §E in place of the confirm. */
+  warning?: { decks: ShortDeck[]; changed: boolean; fresh: ReadonlySet<string>; onConfirm: () => void };
 }) {
   const c = replaceCopy.confirm;
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -92,6 +97,24 @@ export function ConfirmModal({
         {/* §1.3 Sheet handle, decorative */}
         <div aria-hidden className="md:hidden mx-auto mb-[18px] h-[4px] w-[40px] rounded-full bg-[color:var(--border-strong)]" />
 
+        {warning ? (
+          // §E replaces the confirm's content inside this same dialog: one focus trap and one
+          // back-button entry, where unmounting the confirm and mounting a second dialog left the
+          // first one's history entry behind.
+          <div className="flex flex-col gap-[14px]">
+            <ShortDeckWarning
+              titleId="confirm-title"
+              decks={warning.decks}
+              pending={pending}
+              error={error}
+              notice={warning.changed}
+              freshDeckIds={warning.fresh}
+              onCancel={onClose}
+              onConfirm={warning.onConfirm}
+            />
+          </div>
+        ) : (
+          <>
         {/* §1.4 Title */}
         <h2
           id="confirm-title"
@@ -151,6 +174,8 @@ export function ConfirmModal({
             {pending ? (checking ? collectionEditCopy.shortWarning.checking : words.pending) : words.confirm}
           </button>
         </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -4,13 +4,13 @@
   "shares": {
     "module": "src/components/collection/short-deck-warning.tsx",
     "binding": "ShortDeckWarning",
-    "note": "ReplaceFlow mounts the warning directly, so each row's `view` is replace-flow."
+    "note": "ConfirmModal hosts the warning, so each row's `view` is replace-flow."
   },
   "rows": [
     {
       "id": "short-warning",
       "label": "/collection/replace: the confirm answers with \u00a7E (decks named, rest counted)",
-      "view": "src/components/collection/replace-flow.tsx",
+      "view": "src/components/collection/confirm-modal.tsx",
       "steps": [
         {
           "goto": "/collection/replace",
@@ -43,7 +43,7 @@
         {
           "clickRole": "button",
           "name": "^Replace with",
-          "wait": "[role=dialog] h2",
+          "wait": "[role=dialog] ul li",
           "settle": 1500
         }
       ]
