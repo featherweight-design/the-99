@@ -16,7 +16,7 @@ const labels = new Map<string, Job[]>([
 const byCard = Object.fromEntries([...labels].map(([id, jobs]) => [id, jobRowsOf(jobs)]));
 
 describe("jobTally", () => {
-  const cards = ["rock", "both", "wrath", "guard", "lord", "etb", "new"].map((oracleId) => ({ oracleId, name: oracleId.toUpperCase(), copies: 1 }));
+  const cards = ["rock", "both", "wrath", "guard", "lord", "etb", "new"].map((oracleId) => ({ oracleId, name: oracleId.toUpperCase(), copies: 1, role: "other" }));
   const t = jobTally(cards, byCard);
   const row = (k: string) => t.rows.find((r) => r.key === k)!;
 
@@ -29,17 +29,27 @@ describe("jobTally", () => {
     expect(row("finisher").copies).toBe(0);
   });
 
-  it("states overlap, none and unlabeled separately", () => {
+  it("states overlap and none; a card with no label and no classifier role is in no row", () => {
     expect(t.overlap).toBe(1);
-    expect(t.none).toBe(2);
-    expect(t.unlabeled).toBe(1);
-    expect(t.unlabeledNames).toEqual(["NEW"]);
-    expect(t.labeled).toBe(6);
+    expect(t.none).toBe(3);
+    expect(t.cast).toBe(7);
+  });
+
+  it("reads a card with no label from its classifier role", () => {
+    const f = jobTally([{ oracleId: "new", name: "NEW", copies: 2, role: "draw" }], byCard);
+    expect(f.rows.find((r) => r.key === "draw")).toMatchObject({ copies: 2, names: ["NEW"] });
+    expect(f.none).toBe(0);
+  });
+
+  it("gives a card with no label and no classifier role to no row, and ignores a role the classifier cannot give a row", () => {
+    const u = jobTally([{ oracleId: "a", name: "A", copies: 1, role: "other" }, { oracleId: "b", name: "B", copies: 1 }, { oracleId: "c", name: "C", copies: 1, role: "land" }], byCard);
+    expect(u.rows.every((r) => r.copies === 0)).toBe(true);
+    expect(u.none).toBe(3);
   });
 
   it("weights by copies", () => {
     const w = jobTally([{ oracleId: "rock", name: "ROCK", copies: 3 }], byCard);
     expect(w.rows[0].copies).toBe(3);
-    expect(w.labeled).toBe(3);
+    expect(w.cast).toBe(3);
   });
 });

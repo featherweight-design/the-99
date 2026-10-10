@@ -454,13 +454,10 @@ describe("role counter strip — counting by label", () => {
     expect(cellFor("draw", 2)).not.toBeNull();
   });
 
-  it("names the unlabeled cards in the disclosure only when counting by label and some have none", () => {
-    const { rerender } = render(
-      <RoleCounterStrip mix={TEST_MIX} cards={[card("ramp", 0), card("ramp", 1)]} labelRows={{ "o-ramp-0": ["ramp"] }} />,
-    );
+  it("says nothing about a card with no label, and counts it by its text", () => {
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[card("ramp", 0), card("ramp", 1)]} labelRows={{ "o-ramp-0": ["ramp"] }} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     fireEvent.click(screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggle }));
-    expect(screen.getByText(addPanelCopy.strip.unlabeledLine(1))).toBeTruthy();
-    rerender(<RoleCounterStrip mix={TEST_MIX} cards={[card("ramp", 0), card("ramp", 1)]} />);
-    expect(screen.queryByText(addPanelCopy.strip.unlabeledLine(1))).toBeNull();
+    expect(screen.queryByText(/no label|their text|its text/i)).toBeNull();
+    expect(cellFor("ramp", 2)).not.toBeNull();
   });
 });

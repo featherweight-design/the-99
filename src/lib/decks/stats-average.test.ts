@@ -167,12 +167,6 @@ describe("averageComparison", () => {
     expect(rowOf(averageComparison(avg(), have([spell(0, "Land", 36)])), "lands").side).toBeNull();
   });
 
-  it("counts the unlabeled cards beside the job rows, and none when there are no job rows", () => {
-    const jobs = jobTally([{ oracleId: "a", name: "A", copies: 2 }, { oracleId: "b", name: "B", copies: 1 }], { a: ["ramp"] });
-    expect(averageComparison(avg(), have([], jobs)).unlabeled).toBe(1);
-    expect(averageComparison(avg({ roles: null }), have([], jobs)).unlabeled).toBe(0);
-  });
-
   it("omits the job group when the label read failed", () => {
     const c = averageComparison(avg(), { ...have([]), jobs: null });
     expect(c.groups.map((g) => g.key)).toEqual(["shape", "types"]);

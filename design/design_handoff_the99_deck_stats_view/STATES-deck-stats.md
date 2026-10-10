@@ -29,7 +29,7 @@ Canvas ids in brackets. `README.md` is the prose.
 | d | starting mix | 1f2 | Lands and jobs only; the note says why curve and types are absent. |
 | d | thin | 1f3 | Bars cap with `‹` or `›`; figures whole. |
 | e | populated | 1e1 | Six rows, one open at a time; overlap footnote. |
-| e | unlabeled cards | 1e2 | Dashed squares and their count under the rows. |
+| e | card with no label | 1e2 | RETIRED. No state of its own: the card is read from its text and drawn in its row, and nothing is said. Hugh's ruling, 2026-10-10: users do not know what labels are, so the app never mentions them; a card with no label is read from its rules text and nothing is said. |
 | f | 6+ games | 1h1 | Record, beads, last five underlined and stated. |
 | f | 1 to 5 games | 1h2 | Record and beads; no last-five line. |
 | f + g | no games | 1h3 | One absence for both; link to Games. |

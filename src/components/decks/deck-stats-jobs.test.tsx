@@ -16,7 +16,7 @@ const cards = [
   { oracleId: "both", name: "Wayfarer's Bauble", copies: 1 },
   { oracleId: "wrath", name: "Toxic Deluge", copies: 1 },
   { oracleId: "lord", name: "Elvish Archdruid", copies: 1 },
-  { oracleId: "new", name: "Fresh Card", copies: 2 },
+  { oracleId: "new", name: "Fresh Card", copies: 2, role: "other" },
 ];
 const slice = { curve: manaCurve(list), types: typeCurve(list), jobs: jobTally(cards, byCard) };
 const jobs = () => screen.getByRole("figure", { name: /^Jobs/ });
@@ -57,12 +57,18 @@ describe("DeckStatsView jobs card", () => {
     expect(within(jobs()).getByText("Removal")).toBeInTheDocument();
   });
 
-  it("states overlap, none and unlabeled", () => {
+  it("states overlap and none, and says nothing of labels", () => {
     const { container } = render(<DeckStatsView data={slice} />);
     expect(screen.getByText(/^1 card does two or more of these jobs/)).toBeInTheDocument();
-    expect(screen.getByText("1 nonland card does none of these jobs.")).toBeInTheDocument();
-    expect(screen.getByText(/^2 cards aren’t labeled yet\. They join a row once they are\./)).toBeInTheDocument();
-    expect(container.querySelector("[data-job-unlabeled]")!.querySelectorAll("[aria-hidden] > span")).toHaveLength(2);
+    expect(screen.getByText("3 nonland cards do none of these jobs.")).toBeInTheDocument();
+    expect(container.textContent).not.toMatch(/label/i);
+    expect(container.querySelector("[data-job-unlabeled]")).toBeNull();
+  });
+
+  it("reads a card with no label from its text, in the row its role names", () => {
+    const t = jobTally([{ oracleId: "new", name: "Fresh Card", copies: 2, role: "removal" }], byCard);
+    render(<DeckStatsView data={{ ...slice, jobs: t }} />);
+    expect(within(jobs()).getByRole("button", { name: /^Removal/ })).toBeInTheDocument();
   });
 
   it("keeps the shell when the label read gave nothing", () => {

@@ -87,13 +87,6 @@ describe("DeckStatsView average card", () => {
     expect(card()).toHaveTextContent("56 of 99 cards so far.");
   });
 
-  it("says the job rows may run short while cards are unlabeled", () => {
-    const jobs = jobTally([{ oracleId: "r", name: "R", copies: 12 }, { oracleId: "x", name: "X", copies: 2 }], { r: ["ramp"] });
-    const average = averageComparison(avg(), { curve: manaCurve(cards), types: typeCurve(cards), jobs, cards: 99 });
-    render(<DeckStatsView data={{ curve: manaCurve(cards), types: typeCurve(cards), average }} />);
-    expect(document.querySelector("[data-average-unlabeled]")).toHaveTextContent("2 cards aren’t labeled yet, so the job counts may run short until they are.");
-  });
-
   it("counts the 98 for a pair, in the footer and the short-deck note", () => {
     draw(avg({ body: 98, basis: { of: "pair", names: ["Tymna", "Kraum"], label: "", decks: 812 } }), 56);
     expect(card()).toHaveTextContent("Counts the 98, not the commanders.");

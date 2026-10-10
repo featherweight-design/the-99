@@ -28,7 +28,7 @@ const heading = (roles: MixRole[], mix: RecommendedMix) =>
     })
     .join(" · ");
 
-export function StripRationale({ mix, unlabeled = 0 }: { mix: RecommendedMix; unlabeled?: number }) {
+export function StripRationale({ mix }: { mix: RecommendedMix }) {
   const [open, setOpen] = useState(false);
   // Per instance, not per module: two strips on one page would otherwise share
   // an id, and `aria-describedby` resolves to whichever element the document
@@ -118,11 +118,6 @@ export function StripRationale({ mix, unlabeled = 0 }: { mix: RecommendedMix; un
               {addPanelCopy.strip.rationaleBodies[line.key]}
             </p>
           ))}
-          {unlabeled > 0 && (
-            <p className="text-[12px] leading-[1.55] text-fg-faint">
-              {addPanelCopy.strip.unlabeledLine(unlabeled)}
-            </p>
-          )}
         </div>
       )}
     </div>

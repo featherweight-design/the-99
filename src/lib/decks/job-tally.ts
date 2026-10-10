@@ -1,7 +1,9 @@
 // The Jobs card's tally: one row per job from the label reader. Pure, so the rules are provable
-// without a database. A card absent from `labels` is UNLABELED (stale, unwritten or emptied;
-// `readLabels` leaves all three out), which is not the same as labeled and doing none of the
-// six jobs.
+// without a database. A card absent from `labels` has no fresh label (stale, unwritten or emptied;
+// `readLabels` leaves all three out) and is read from its rules text, the classifier's single
+// `role`, exactly as the strip reads it (Hugh, 2026-10-10: the app never mentions labels). That is
+// the ONE fallback; the strip's counts come from this tally, so the two cannot disagree. A card
+// the classifier gives no role to, or one that is labeled and does none of the six, is in no row.
 
 import type { Job } from "../labels/types";
 
@@ -16,10 +18,13 @@ export const JOB_ROWS = [
 
 export type JobRowKey = (typeof JOB_ROWS)[number]["key"];
 
-export type JobCard = { oracleId: string; name: string; copies: number };
+/** `role` is the classifier's single role for the card (`card.role`); only the four it can name
+ *  count as a row for a card with no fresh label. */
+export type JobCard = { oracleId: string; name: string; copies: number; role?: string };
 
-/** What the page ships per labeled card: the rows it falls in. A card in the map and in no row is
- *  labeled and does none of the six jobs; a card absent from it is unlabeled. */
+const FALLBACK_ROWS: ReadonlySet<string> = new Set(["ramp", "draw", "removal", "wipes"]);
+
+/** What the page ships per labeled card: the rows it falls in. A card absent from it is read from its text. */
 export type JobRowsByCard = Readonly<Record<string, readonly JobRowKey[]>>;
 
 export function jobRowsOf(jobs: readonly Job[]): JobRowKey[] {
@@ -30,32 +35,23 @@ export type JobRow = { key: JobRowKey; copies: number; names: string[] };
 
 export type JobTally = {
   rows: JobRow[];
-  /** Nonland copies the labels cover. */
-  labeled: number;
-  /** Labeled copies doing two or more of the six jobs. */
+  /** Nonland copies counted. */
+  cast: number;
+  /** Copies doing two or more of the six jobs. */
   overlap: number;
-  /** Labeled copies doing none of the six. */
+  /** Copies doing none of the six. */
   none: number;
-  /** Nonland copies with no fresh label. */
-  unlabeled: number;
-  unlabeledNames: string[];
 };
 
 export function jobTally(cards: readonly JobCard[], byCard: JobRowsByCard): JobTally {
   const rows: JobRow[] = JOB_ROWS.map((r) => ({ key: r.key, copies: 0, names: [] }));
-  let labeled = 0;
+  let cast = 0;
   let overlap = 0;
   let none = 0;
-  let unlabeled = 0;
-  const unlabeledNames: string[] = [];
   for (const card of cards) {
-    const hit = byCard[card.oracleId];
-    if (!hit) {
-      unlabeled += card.copies;
-      unlabeledNames.push(card.name);
-      continue;
-    }
-    labeled += card.copies;
+    cast += card.copies;
+    const hit: readonly JobRowKey[] =
+      byCard[card.oracleId] ?? (card.role && FALLBACK_ROWS.has(card.role) ? [card.role as JobRowKey] : []);
     for (const key of hit) {
       const row = rows.find((r) => r.key === key)!;
       row.copies += card.copies;
@@ -64,5 +60,5 @@ export function jobTally(cards: readonly JobCard[], byCard: JobRowsByCard): JobT
     if (hit.length === 0) none += card.copies;
     else if (hit.length > 1) overlap += card.copies;
   }
-  return { rows, labeled, overlap, none, unlabeled, unlabeledNames };
+  return { rows, cast, overlap, none };
 }

@@ -29,7 +29,7 @@ Off: no switch, no fetch, the panel is the list as it ships. The switch remember
 |---|---|---|
 | The curve, by card type | a | Unit tally (one square per card, never rescaled), eight columns to `7+`. Type chips are the breakdown and the control: tap one to light its squares. Land is a dashed chip, never a ninth column. |
 | Colors, asked for and made | b | Butterfly per color pip: share of pips left, share of land sources right, counts printed. Non-land sources as dashed squares, counted, not colored. |
-| Jobs | e | One tally row per job from `readLabels`; tap a row to name its cards. Overlap and unlabeled cards stated. |
+| Jobs | e | One tally row per job from `readLabels`; tap a row to name its cards. Overlap stated. A card with no label is read from its text and says nothing (Hugh's ruling, 2026-10-10: users do not know what labels are, so the app never mentions them; a card with no label is read from its rules text and nothing is said.) |
 | Against the average deck | d | Diverging bars from the average, one neutral ink, figures whole on the right, basis named. Mini diverging curve. |
 | Money and ownership | c | Three figures (deck value, owned, to buy), the deck as one square per card (owned, basics, to buy), priciest five. |
 | Results | f + g | Record, beads oldest first, last five underlined after the sixth game; By version rows with **Version not recorded** last. |
