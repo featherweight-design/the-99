@@ -1731,7 +1731,7 @@ export function CardModal({
   /**
    * What sits under the desktop card (#3, #4): the zoom hint, then the turn
    * control, then the price. The phone's stack retired with its art header and
-   * its zoom (carousel R2): the turn plate sits on the card's corner there, and
+   * its zoom (carousel R2): the turn plate sits at the card's bottom centre there, and
    * the price on the sheet's second line.
    *
    * The ⤢ plate that used to sit in the art's bottom-left corner is gone, and
@@ -1934,11 +1934,11 @@ export function CardModal({
               }}
             >
               {turningArt("rounded-[14px]")}
-              {/* The shipped turn plate, on the card's bottom-right corner (README R2 "Zoom"): the
-                  stack it sat in under the old header is gone. OUTSIDE the box that turns, for the
-                  reason the desktop's is. */}
+              {/* The turn plate, centred along the card's bottom and 10px up: the
+                  bottom-right corner it sat in covered the power/toughness box. OUTSIDE the box
+                  that turns, for the reason the desktop's is. */}
               {twoFaced && (
-                <span className="absolute" style={{ right: 10, bottom: 10 }}>
+                <span className="absolute left-1/2 -translate-x-1/2" style={{ bottom: 10 }}>
                   <FlipControl flipAria={flipLabel(!showingBack)} onFlip={onFlip} size={44} />
                 </span>
               )}
