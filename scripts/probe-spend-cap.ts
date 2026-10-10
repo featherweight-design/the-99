@@ -7,9 +7,9 @@
 // say the SQL around it counts the right rows. The model is never called.
 //
 // Cases:
-//   a  a friend gets 3 a day: three reserves pass, the fourth is refused `allowance`
+//   a  a friend gets 5 a day: five reserves pass, the sixth is refused `allowance`
 //   b  the owner (MODEL_OWNER_USER_ID) gets 10: ten pass, the eleventh is refused
-//   c  with the variable unset, the would-be owner gets 3
+//   c  with the variable unset, the would-be owner gets 5
 //   d  the hard stop: app-wide month-to-date one worst case under $20 still reserves; that
 //      reservation reaches $20, and the next press, anyone's, is refused `paused`
 //   i  a STOPPED call (refunded at once, no meters yet) still counts at its worst case, since its
@@ -33,7 +33,7 @@
 //
 // Mutations, each run against it (file copied to the scratchpad, broken by an exact replace, run,
 // restored by copying back), and each fails it:
-//   - the friend/owner limit (`dailyLimitFor` returns the friend's 3 for everyone): fails
+//   - the friend/owner limit (`dailyLimitFor` returns the friend's 5 for everyone): fails
 //     b "the owner's ten reserve" and b "and reads a limit of ten".
 //   - the hard stop (`spendRefusal` never returns "paused"): fails d "the next press is refused
 //     paused", d "readAllowance says paused", and every i and e check that expects `paused`.
@@ -156,13 +156,13 @@ async function run() {
   console.log(`branch ${branch}; one tuning call's worst case is ${W} micro-dollars`);
   delete process.env.MODEL_OWNER_USER_ID;
 
-  // a · A friend gets three.
+  // a · A friend gets five.
   {
     const u = newUser();
     const got = [];
-    for (let i = 0; i < 4; i++) got.push(kindOf(await reserve(u)));
-    check("a · a friend's three reserve, the fourth is refused", got, ["reserved", "reserved", "reserved", "allowance"]);
-    check("a · and reads a limit of three", (await readAllowance(u)).limit, 3);
+    for (let i = 0; i < 6; i++) got.push(kindOf(await reserve(u)));
+    check("a · a friend's five reserve, the sixth is refused", got, ["reserved", "reserved", "reserved", "reserved", "reserved", "allowance"]);
+    check("a · and reads a limit of five", (await readAllowance(u)).limit, 5);
     await refundAll(u);
   }
 
@@ -181,11 +181,11 @@ async function run() {
     delete process.env.MODEL_OWNER_USER_ID;
     const again = newUser();
     const unset = [];
-    for (let i = 0; i < 4; i++) unset.push(kindOf(await reserve(again)));
-    check("c · unset, the would-be owner's limit is three", [dailyLimitFor(owner), dailyLimitFor(again)], [3, 3]);
-    check("c · three reserve and the fourth is refused", unset, ["reserved", "reserved", "reserved", "allowance"]);
+    for (let i = 0; i < 6; i++) unset.push(kindOf(await reserve(again)));
+    check("c · unset, the would-be owner's limit is five", [dailyLimitFor(owner), dailyLimitFor(again)], [5, 5]);
+    check("c · five reserve and the sixth is refused", unset, ["reserved", "reserved", "reserved", "reserved", "reserved", "allowance"]);
     process.env.MODEL_OWNER_USER_ID = "   ";
-    check("c · a blank variable names no owner either", dailyLimitFor("   "), 3);
+    check("c · a blank variable names no owner either", dailyLimitFor("   "), 5);
     delete process.env.MODEL_OWNER_USER_ID;
     await refundAll(again);
   }

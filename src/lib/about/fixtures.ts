@@ -1206,7 +1206,7 @@ export const SUGGESTED_CHANGES = {
  * left, with every credit out, and while the app-wide monthly limit holds. The owner's fourth
  * (`creditsCopy.ownerShare`) is left out on purpose: the entry speaks to friends (Hugh, 2026-10-06). A friend's allowance
  * (`MODEL_FRIEND_DAILY_ALLOWANCE`), read rather than retyped. The caption spells the number out,
- * so `about.test.ts` checks its "three" against the allowance constant.
+ * so `about.test.ts` checks its number word against the allowance constant.
  *
  * `nextAt` is a fixed instant. `clockTime` formats it in the reader's own clock, so the server's
  * render and the browser's can differ by time zone; the figure draws the time only after

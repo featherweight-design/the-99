@@ -16,20 +16,20 @@ describe("dailyLimitFor", () => {
     else process.env.MODEL_OWNER_USER_ID = before;
   });
 
-  it("gives the owner ten and everyone else three", () => {
+  it("gives the owner ten and everyone else five", () => {
     process.env.MODEL_OWNER_USER_ID = "user_owner";
-    expect([MODEL_OWNER_DAILY_ALLOWANCE, MODEL_FRIEND_DAILY_ALLOWANCE]).toEqual([10, 3]);
+    expect([MODEL_OWNER_DAILY_ALLOWANCE, MODEL_FRIEND_DAILY_ALLOWANCE]).toEqual([10, 5]);
     expect(dailyLimitFor("user_owner")).toBe(10);
-    expect(dailyLimitFor("user_friend")).toBe(3);
+    expect(dailyLimitFor("user_friend")).toBe(5);
   });
 
   it("fails closed: unset or empty, no account is the owner", () => {
     delete process.env.MODEL_OWNER_USER_ID;
-    expect(dailyLimitFor("user_owner")).toBe(3);
-    expect(dailyLimitFor("")).toBe(3);
+    expect(dailyLimitFor("user_owner")).toBe(5);
+    expect(dailyLimitFor("")).toBe(5);
     process.env.MODEL_OWNER_USER_ID = "   ";
-    expect(dailyLimitFor("")).toBe(3);
-    expect(dailyLimitFor("   ")).toBe(3);
+    expect(dailyLimitFor("")).toBe(5);
+    expect(dailyLimitFor("   ")).toBe(5);
   });
 });
 
