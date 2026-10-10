@@ -32,9 +32,10 @@ describe("cutFacts", () => {
     expect(ids).toContain("bear1");
   });
 
-  it("lists cards in the deck's own order, never ranked", () => {
-    const ids = facts({ support: support([]) }).cards.map((c) => c.oracleId);
-    expect(ids.slice(0, 3)).toEqual(["forest", "ramp0", "ramp1"]);
+  it("lists cards by name, a neutral order that ranks nothing", () => {
+    const names = facts({ support: support([]) }).cards.map((c) => c.name);
+    expect(names).toEqual([...names].sort());
+    expect(names.slice(0, 3)).toEqual(["Forest", "bear0", "bear1"]);
   });
 
   it("states every role against its target, on the population the target was derived for", () => {

@@ -1,5 +1,5 @@
 import { isLandFace } from "../cards/facet";
-import { GAME_CHANGER_LIMIT } from "../bracket/rules";
+import { violationsFor } from "../bracket/rules";
 import { isBasicLand } from "../decks/grouping";
 import { recommendedMix, ROLE_ORDER, type MixRole } from "../decks/mix";
 import { curveBucket } from "../decks/stats";
@@ -75,7 +75,8 @@ export type CutFacts = {
   curve: CurveFact[] | null;
   /** The flags that bear on the declared bracket, each with the cards carrying it. */
   brackets: { flag: BracketFlag; cards: { oracleId: string; name: string }[] }[];
-  /** Each card that could come out. Empty when `over` is 0. In the deck's own order. */
+  /** Each card that could come out. Empty when `over` is 0. Sorted by name: the deck rows carry no
+   *  order, so a stored order would be arbitrary, and a model must not be anchored by one. */
   cards: CardCutFacts[];
 };
 
@@ -176,6 +177,8 @@ export function cutFacts(input: {
     });
   }
 
+  cards.sort((x, y) => (x.name < y.name ? -1 : x.name > y.name ? 1 : x.oracleId < y.oracleId ? -1 : 1));
+
   return {
     ...base,
     brackets: flags.map(([flag, ids]) => ({
@@ -205,20 +208,24 @@ function bracketFlags(profile: DeckProfile, declared: Bracket | null): [BracketF
   ];
   if (declared === null) return all;
   if (declared === 4 || declared === 5) return [];
-  // 1 to 3, by `violationsFor`: bracket 1 forbids every flag; 2 forbids Game Changers, mass land
-  // denial and combos; 3 allows extra turns and a Game Changer up to its allowance, and a combo only
-  // when it is a loop (it produces infinite turns).
-  const limit = GAME_CHANGER_LIMIT[declared];
-  const bears: Record<Exclude<BracketFlag, "combo">, boolean> = {
-    gameChanger: b.gameChangers.length > limit,
-    massLandDenial: true,
-    extraTurn: declared === 1,
+  // 1 to 3: a flag bears on the declared bracket when that count ALONE would violate it, asked of
+  // `violationsFor` so the rules live in one place. Bracket 1 forbids every flag; 2 forbids Game
+  // Changers, mass land denial and combos; 3 allows extra turns and Game Changers up to its
+  // allowance, and a combo only when it is a loop (it produces infinite turns).
+  const loops = b.twoCardCombos.filter((c) => producesInfiniteTurns(c.produces));
+  const bears = (counts: Partial<Parameters<typeof violationsFor>[0]>): boolean => {
+    const v = violationsFor({ gameChangers: 0, massLandDenial: 0, extraTurns: 0, combos: 0, loops: 0, ...counts });
+    return declared === 1 ? v.violatesB1 : declared === 2 ? v.violatesB2 : v.violatesB3;
   };
-  const comboPieces = declared <= 2 ? combo : piecesOf(b.twoCardCombos.filter((c) => producesInfiniteTurns(c.produces)));
-  return all.flatMap(([flag, ids]): [BracketFlag, ReadonlySet<string>][] => {
-    if (flag === "combo") return [[flag, comboPieces]];
-    return bears[flag] ? [[flag, ids]] : [];
-  });
+  const kept: Record<BracketFlag, boolean> = {
+    gameChanger: bears({ gameChangers: b.gameChangers.length }),
+    massLandDenial: bears({ massLandDenial: b.massLandDenial.length }),
+    extraTurn: bears({ extraTurns: b.extraTurns.length }),
+    combo: declared === 3 ? bears({ loops: loops.length }) : bears({ combos: b.twoCardCombos.length }),
+  };
+  return all
+    .filter(([flag]) => kept[flag])
+    .map(([flag, ids]): [BracketFlag, ReadonlySet<string>] => [flag, flag === "combo" && declared === 3 ? piecesOf(loops) : ids]);
 }
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
