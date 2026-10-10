@@ -90,6 +90,9 @@ export function CutsPanelView({
   const headingRef = useRef<HTMLHeadingElement>(null);
   const token = useRef(0);
   const ownRun = useRef<string | null>(null);
+  // The run request this panel's own press made, and whether it has answered: Stop waits on it, because
+  // the server reads the deck and builds the prompt BEFORE it inserts the pending row Stop cancels.
+  const inflight = useRef<{ promise: Promise<unknown>; done: boolean } | null>(null);
   const settledRef = useRef(onSettled);
   useEffect(() => { settledRef.current = onSettled; }, [onSettled]);
 
@@ -194,9 +197,13 @@ export function CutsPanelView({
     setNow(Date.now());
     setRefused(null);
     setAnnounced(copy.announce.started);
-    const result = await deps.run(deckId, { runId }).catch(
+    const request = deps.run(deckId, { runId }).catch(
       (): DeckMutationResult => ({ ok: false, message: deckCutsCopy.run.refused }),
     );
+    const flight = { promise: request, done: false };
+    inflight.current = flight;
+    void request.then(() => { flight.done = true; });
+    const result = await request;
     if (token.current !== mine) return;
     ownRun.current = null;
     const next = await reread();
@@ -220,23 +227,32 @@ export function CutsPanelView({
     token.current += 1;
     const own = ownRun.current;
     ownRun.current = null;
-    setPressing(false);
+    const flight = own !== null ? inflight.current : null;
     const target = own ?? pendingId;
     let cancelled = false;
-    for (let attempt = 0; target !== null && attempt < STOP_TRIES; attempt += 1) {
+    // A run this panel started may not have its pending row yet, so the cancel is retried until the
+    // row exists and is cancelled, or the request itself has answered (the credit is then spent, and
+    // the result is drawn). A run begun elsewhere is only looked for a few times.
+    for (let attempt = 0; target !== null; attempt += 1) {
       await deps.cancel(deckId, target).catch(() => null);
       const after = await deps.read(deckId).catch(() => null);
       const seen = after?.run?.id === target ? after.run : null;
       cancelled = seen?.status === "cancelled";
       if (cancelled || (seen !== null && seen.status !== "pending") || (seen === null && own === null)) break;
-      if (attempt < STOP_TRIES - 1) await new Promise((r) => setTimeout(r, STOP_WAIT_MS));
+      if (flight ? flight.done : attempt >= STOP_TRIES - 1) break;
+      await new Promise((r) => setTimeout(r, STOP_WAIT_MS));
     }
+    if (flight && !cancelled) await flight.promise;
+    setPressing(false);
     await reread();
     if (cancelled) setAnnounced(copy.announce.stopped);
   }
 
-  async function verdictSettled(announce: string) {
+  async function verdictSettled(announce: string, refusal?: string) {
     setAnnounced(announce);
+    // A refusal retires the result it was about, which unmounts the row that drew it: so the panel
+    // keeps the reason itself, and the next press or answered verdict clears it.
+    setRefused(refusal ?? null);
     await reread();
   }
 
@@ -443,7 +459,7 @@ function CountLine({ row }: { row: CountRow }) {
 }
 
 function ResultBlock({ panel, deps, standing, onSettled }: {
-  panel: CutsPanel; deps: CutsDeps; standing: string; onSettled: (announce: string) => Promise<void>;
+  panel: CutsPanel; deps: CutsDeps; standing: string; onSettled: (announce: string, refusal?: string) => Promise<void>;
 }) {
   const { items, asked } = panel;
   const d = copy.deeper;
@@ -476,22 +492,19 @@ function ResultBlock({ panel, deps, standing, onSettled }: {
 }
 
 function CutRow({ item, panel, deps, items, onSettled }: {
-  item: CutItem; panel: CutsPanel; deps: CutsDeps; items: CutItem[]; onSettled: (announce: string) => Promise<void>;
+  item: CutItem; panel: CutsPanel; deps: CutsDeps; items: CutItem[]; onSettled: (announce: string, refusal?: string) => Promise<void>;
 }) {
   const [busy, setBusy] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
   const { open } = useCardDetail();
   const intent = useCardIntent(item.cutOracleId);
 
   async function answer(kind: "cut" | "undo" | "keep" | "restore") {
     setBusy(kind);
-    setMessage(null);
     const result = await deps[kind](item.id).catch((): DeckMutationResult => ({ ok: false, message: copy.refusals.generic }));
     setBusy(null);
     if (!result.ok) {
-      setMessage(result.message);
       // A refusal means the list is not the one this row was named for: read again.
-      void onSettled("");
+      void onSettled("", result.message);
       return;
     }
     await onSettled(
@@ -524,7 +537,6 @@ function CutRow({ item, panel, deps, items, onSettled }: {
             {done ? copy.undo : copy.showAgain}
           </button>
         </div>
-        {message ? <MutationError message={message} /> : null}
       </div>
     );
   }
@@ -567,7 +579,6 @@ function CutRow({ item, panel, deps, items, onSettled }: {
           </li>
         ))}
       </ul>
-      {message ? <MutationError message={message} /> : null}
     </article>
   );
 }

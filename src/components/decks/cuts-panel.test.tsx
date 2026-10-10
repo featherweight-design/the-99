@@ -183,6 +183,36 @@ describe("CutsPanelView", () => {
     expect(d.read).toHaveBeenCalledTimes(2);
   });
 
+  it("a refusal keeps its reason after the reread retires the result that drew it", async () => {
+    const stale = panelOf();
+    const read = vi.fn().mockResolvedValueOnce(withResult(1, 1)).mockResolvedValue(stale);
+    const d = deps(null, { read, cut: vi.fn(async () => ({ ok: false as const, message: copy.refusals.stale })) });
+    await mount(d);
+    fireEvent.click(screen.getByRole("button", { name: copy.cut }));
+    await waitFor(() => expect(screen.queryByRole("article")).toBeNull());
+    expect(screen.getByText(copy.refusals.stale)).toBeTruthy();
+  });
+
+  it("Stop on a run whose pending row does not exist yet keeps cancelling until the request answers", async () => {
+    let answer: (r: { ok: true }) => void = () => {};
+    const run = vi.fn(() => new Promise<{ ok: true }>((r) => { answer = r; }));
+    const cancelled = { id: "x", status: "cancelled" as const, errorClass: null, createdAt: new Date(), droppedCount: 0 };
+    let reads = 0;
+    const read = vi.fn(async () => {
+      reads += 1;
+      // The row appears only on the ninth read, long after five misses.
+      return reads < 9 ? panelOf() : panelOf({ run: { ...cancelled, id: lastRun } });
+    });
+    let lastRun = "";
+    const d = deps(null, { read, run: vi.fn((id: string, o?: { runId?: string }) => { lastRun = o?.runId ?? ""; return run(); }), cancel: vi.fn(async () => ({ ok: true as const })) });
+    await mount(d);
+    fireEvent.click(screen.getByRole("button", { name: "Look deeper. Uses 1 credit." }));
+    await waitFor(() => expect(d.run).toHaveBeenCalled());
+    fireEvent.click(await screen.findByRole("button", { name: copy.deeper.stop }));
+    await waitFor(() => expect((d.cancel as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(5), { timeout: 8000 });
+    answer({ ok: true });
+  }, 15000);
+
   it("a refused cut reads again, so a stale result does not stay stuck", async () => {
     const d = deps(withResult(1, 1), { cut: vi.fn(async () => ({ ok: false as const, message: copy.refusals.stale })) });
     await mount(d);
