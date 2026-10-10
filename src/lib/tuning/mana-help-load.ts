@@ -20,5 +20,6 @@ export async function loadManaHelp(deck: DeckDetail, userId: string, color: Bala
   if (entries.some(([, b]) => !b)) return null;
   const basics = Object.fromEntries(entries) as BasicCatalog;
   const [locked, candidates] = await Promise.all([liveLockedIds(db, deck.id), loadManaStaples(deck, userId)]);
+  if (!candidates) return null;
   return helpAddColor(inputs.rows, inputs.nameOf, locked, basics, candidates, color);
 }
