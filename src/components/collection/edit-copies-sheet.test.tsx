@@ -200,6 +200,15 @@ describe("Edit copies, another printing", () => {
   });
 });
 
+describe("Edit copies, a card whose every printing is held", () => {
+  it("offers no Add another printing, since its picker would be empty", async () => {
+    load.mockResolvedValue({ choices: [CHOICES[0]], holdings: [held("c21", "263", 1)] });
+    render(<AddCardsSheet mode="edit" card={card} onClose={vi.fn()} />);
+    const b = (await screen.findByText(/Add another printing/)).closest("button") as HTMLButtonElement;
+    expect(b.disabled).toBe(true);
+  });
+});
+
 describe("Edit copies, removal", () => {
   it("stages every holding at zero, reads Remove N copies and not the accent, and Keep them unstages it", async () => {
     await mount();

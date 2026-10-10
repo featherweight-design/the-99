@@ -123,6 +123,8 @@ export function EditCopiesSheet({
   const sum = useMemo(() => summarizeEdit(card.oracleId, holdings, lines, removing), [card.oracleId, holdings, lines, removing]);
   const isRemoval = removing || sum.removes;
   const owned = holdings.length > 0;
+  // A card whose every printing is held has nothing for `Add another printing` to offer.
+  const hasUnheldPrinting = (loaded?.choices ?? []).some((p) => !holdings.some((h) => h.setCode === p.setCode && h.collectorNumber === p.collectorNumber));
   const canSave = loaded !== null && sum.changed && choosing === null && !saving;
 
   const dirty = sum.changed && !saving;
@@ -176,7 +178,7 @@ export function EditCopiesSheet({
   }
 
   function addPrinting() {
-    if (!loaded || choosing || saving) return;
+    if (!loaded || choosing || saving || !hasUnheldPrinting) return;
     const id = crypto.randomUUID();
     const next = openNewLine(lines, id, card, loaded.choices, loaded.holdings);
     setLines(next);
@@ -369,7 +371,7 @@ export function EditCopiesSheet({
                 <button
                   ref={addRef}
                   type="button"
-                  disabled={choosing !== null || saving}
+                  disabled={choosing !== null || saving || !hasUnheldPrinting}
                   onClick={addPrinting}
                   className={`mt-[12px] min-h-[44px] w-full px-[14px] text-left text-[14px] md:min-h-[38px] ${GHOST} border-dashed`}
                 >

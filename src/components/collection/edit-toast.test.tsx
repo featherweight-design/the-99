@@ -93,6 +93,17 @@ describe("the Edit copies toast", () => {
     settle.mockResolvedValue(undefined);
   });
 
+  it("keeps what is left of the window across a cancelled Undo instead of starting it over", async () => {
+    render(<CollectionEditToast />);
+    act(() => announceEditToast(removed));
+    act(() => armEditToast());
+    await act(async () => void vi.advanceTimersByTime(TOAST_MS - 2000));
+    fireEvent.click(screen.getByRole("button", { name: r.undo }));
+    fireEvent.click(screen.getByText("close"));
+    await act(async () => void vi.advanceTimersByTime(2500));
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
   it("Undo is a revert of that entry through the revert confirmation; the toast steps aside and waits", async () => {
     render(<CollectionEditToast />);
     act(() => announceEditToast(removed));

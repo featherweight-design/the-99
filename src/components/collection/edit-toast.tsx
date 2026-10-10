@@ -51,6 +51,7 @@ export function CollectionEditToast() {
     const on = (e: Event) => {
       setUndoing(false);
       setArmed(false);
+      left.current = TOAST_MS;
       setToast((e as CustomEvent<EditToast>).detail);
     };
     const arm = () => setArmed(true);
@@ -66,13 +67,14 @@ export function CollectionEditToast() {
   // page (a second edit, an Add) makes this subtree inert, and an Undo window spent behind that is
   // one the reader never had.
   const ref = useRef<HTMLDivElement>(null);
+  // What is left of the window survives a cancelled Undo; only a new toast starts it again.
+  const left = useRef(TOAST_MS);
   useEffect(() => {
     if (!toast || undoing || !armed) return;
-    let left = TOAST_MS;
     const tick = setInterval(() => {
       if (ref.current?.closest("[inert]")) return;
-      left -= TICK_MS;
-      if (left <= 0) setToast(null);
+      left.current -= TICK_MS;
+      if (left.current <= 0) setToast(null);
     }, TICK_MS);
     return () => clearInterval(tick);
   }, [toast, undoing, armed]);
@@ -112,6 +114,7 @@ export function CollectionEditToast() {
                 fresh = await settleCollectionWrite().then(() => true, () => false);
               }
               setUndoing(false);
+              left.current = TOAST_MS;
               // The revert committed either way. A list that could not be refreshed says so, rather
               // than vanishing the toast over a page still showing the old count.
               setToast(fresh ? null : { entryId: toast.entryId, removed: false, text: c.undoneStale, done: true });
