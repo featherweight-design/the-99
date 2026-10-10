@@ -451,4 +451,51 @@ describe("PrintingRegion role=choose source=catalog", () => {
     renderChoose({ printings: many, autoFocus: true });
     expect(screen.getByPlaceholderText("Set, code or number")).toHaveFocus();
   });
+
+  describe("controlled by `selected` (I got it's confirm)", () => {
+    it("checks the selected tile with no badge and no label", () => {
+      renderChoose({ selected: "id-2", layout: "row" });
+      const radios = screen.getAllByRole("radio");
+      expect(radios.map((r) => r.getAttribute("aria-checked"))).toEqual(["false", "true", "false"]);
+      expect(screen.queryByText(copy.badgePicked)).toBeNull();
+      // The tab stop parks on the selection.
+      expect(radios[1]).toHaveAttribute("tabindex", "0");
+    });
+
+    it("selects on an arrow key as well as a press, and the step stays open", () => {
+      const { onPick } = renderChoose({ selected: "id-1", layout: "row" });
+      const radios = screen.getAllByRole("radio");
+      radios[0].focus();
+      fireEvent.keyDown(radios[0], { key: "ArrowRight" });
+      expect(onPick).toHaveBeenCalledTimes(1);
+      expect(onPick.mock.calls[0][0].scryfallId).toBe("id-2");
+      fireEvent.click(radios[2]);
+      expect(onPick.mock.calls[1][0].scryfallId).toBe("id-3");
+      expect(screen.getAllByRole("radio")).toHaveLength(3);
+    });
+
+    it("checks nothing when nothing is selected yet", () => {
+      renderChoose({ selected: null, layout: "row", intro: undefined });
+      for (const r of screen.getAllByRole("radio")) expect(r).toHaveAttribute("aria-checked", "false");
+      expect(screen.queryByText("Which printing are you adding? 3 printings.")).toBeNull();
+    });
+
+    it("keeps the selected tile first while a search narrows it out", () => {
+      const many = Array.from({ length: OVERFLOW_THRESHOLD + 3 }, (_, i) =>
+        choice({ scryfallId: `m${i}`, setCode: `s${i}`, setName: `Set ${i}`, collectorNumber: String(i) }),
+      );
+      renderChoose({ printings: many, layout: "row", selected: "m4" });
+      fireEvent.change(screen.getByPlaceholderText("Set, code or number"), { target: { value: "set 12" } });
+      const radios = screen.getAllByRole("radio");
+      expect(radios).toHaveLength(2);
+      expect(radios[0]).toHaveAttribute("aria-checked", "true");
+      expect(radios[0]).toHaveAccessibleName(/Set 4/);
+      expect(radios[1]).toHaveAccessibleName(/Set 12/);
+    });
+
+    it("focuses the selected tile when asked", () => {
+      renderChoose({ selected: "id-3", layout: "row", autoFocus: true });
+      expect(screen.getAllByRole("radio")[2]).toHaveFocus();
+    });
+  });
 });
