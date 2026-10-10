@@ -50,18 +50,31 @@ beforeEach(() => {
 
 describe("a bump with nothing new to draw (legacy gate)", () => {
   // Every switch is off here, and version 12 added only switched entries.
-  it("does not redirect a reader one version behind, and remembers it quietly", async () => {
+  it("does not redirect a reader one version behind, and remembers it", async () => {
     aboutVersionSeen.mockResolvedValue(11);
     const res = await proxy(auth, request("/decks"));
     expect(res?.status).not.toBe(307);
     expect(res?.headers.get("location")).toBeNull();
-    expect(res?.headers.get("set-cookie")).toContain("about_v=user_1.12~quiet");
+    expect(res?.headers.get("set-cookie")).toContain("about_v=user_1.12;");
   });
 
   it("skips the database read on the next navigation", async () => {
     aboutVersionSeen.mockResolvedValue(11);
-    await proxy(auth, request("/decks", {}, "user_1.12~quiet"));
+    await proxy(auth, request("/decks", {}, "user_1.12"));
     expect(aboutVersionSeen).not.toHaveBeenCalled();
+  });
+
+  it("sends a reader once a switch draws an entry they have not met, though their version is current", async () => {
+    // Seen version 12 with no ids; the switch turns an entry on afterwards.
+    aboutVersionSeen.mockResolvedValue(12);
+    vi.stubEnv("COLLECTION_EDIT_ENABLED", "true");
+    try {
+      const res = await proxy(auth, request("/decks", {}, "user_1.12"));
+      expect(res?.status).toBe(307);
+      expect(res?.headers.get("set-cookie")).toContain("about_v=user_1.12%2Bcollection-add");
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("still redirects a brand-new account", async () => {
