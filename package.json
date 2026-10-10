@@ -183,6 +183,7 @@
     "probe:synopsis-ui": "tsx scripts/probe-synopsis-ui.mjs",
     "probe:upgrade-path": "node scripts/probe-upgrade-path.mjs",
     "measure:roles": "tsx scripts/measure-role-targets.mts",
+    "measure:benchmarks": "tsx scripts/measure-benchmarks.mts",
     "probe:card-mark": "node scripts/probe-card-mark.mjs",
     "probe:card-modal-live-printing": "node scripts/probe-card-modal-live-printing.mjs",
     "probe:role-targets": "tsx scripts/probe-role-targets.ts",
