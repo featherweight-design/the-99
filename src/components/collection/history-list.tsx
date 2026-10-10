@@ -3,7 +3,8 @@
 // grouped by day. A whole row opens its entry in place: a short one lists every row it changed, a
 // long one opens on its first group with chips for the four groups and `Show more` in steps, so a
 // Replace of hundreds of rows is never rendered whole (F3). Entries past the first page arrive
-// through `Show older changes`. The Revert control joins with the revert confirmation (PR 6b).
+// through `Show older changes`. Each entry that is not already reverted has its own Revert control,
+// which opens the revert confirmation.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { loadCollectionHistory, loadCollectionHistoryEntry } from "../../app/collection/history-actions";

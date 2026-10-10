@@ -5,7 +5,10 @@ import type { HistoryRow } from "../../db/schema";
 
 const loadEntry = vi.fn();
 const loadPage = vi.fn();
+const previewRevert = vi.fn();
 vi.mock("../../app/collection/history-actions", () => ({
+  previewRevert: (...a: unknown[]) => previewRevert(...a),
+  revertCollectionEntry: vi.fn(),
   loadCollectionHistoryEntry: (...a: unknown[]) => loadEntry(...a),
   loadCollectionHistory: (...a: unknown[]) => loadPage(...a),
 }));
@@ -100,6 +103,15 @@ describe("HistoryList", () => {
     draw([e]);
     await act(async () => fireEvent.click(screen.getByRole("button", { expanded: false })));
     expect(await screen.findByText("details changed")).toBeTruthy();
+  });
+
+  it("offers Revert on an entry that is not reverted, and opens the confirmation from it", async () => {
+    previewRevert.mockReturnValue(new Promise(() => {}));
+    draw([entry({ id: "rv", revertedBy: "x", revertedByVisible: false, firstName: "Mana Crypt", createdAt: new Date("2026-10-09T10:00:00Z") }), entry({})]);
+    expect(screen.getAllByRole("button", { name: /^Revert / })).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "Revert Sol Ring" }));
+    expect(await screen.findByRole("dialog", { name: "Revert “Sol Ring”?" })).toBeTruthy();
+    expect(previewRevert).toHaveBeenCalledWith("e1");
   });
 
   it("states a zero figure and an explicit empty panel for an entry that moved no copies", async () => {
