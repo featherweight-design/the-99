@@ -78,7 +78,7 @@ export const DECK_SIZE = 100;
  * How much each signal weighs. Inclusion leads because it is the one signal specific to this
  * commander; role and curve are the deck's shape against that commander's average; a bracket flag
  * is a fact worth naming more than a reason to cut, so it weighs least. These are the first-draft
- * weights, not yet measured; the eval harness reports recall against them before any tuning.
+ * weights, not yet measured; recall is scored with them untuned before any tuning.
  */
 export const CUT_WEIGHTS = { inclusion: 0.45, role: 0.3, curve: 0.15, bracket: 0.1 } as const;
 
