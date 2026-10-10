@@ -15,10 +15,11 @@ describe("deck tuning schema", () => {
     expect(deck).toEqual(expect.arrayContaining(["notes", "intent", "intent_seeded"]));
   });
 
-  it("has exactly one partial unique index, on pending runs", () => {
+  it("has exactly one partial unique index, on pending runs, per deck and tool", () => {
     const unique = getTableConfig(deckSuggestionRuns).indexes.filter((i) => i.config.unique);
     expect(unique).toHaveLength(1);
-    expect(unique[0].config.name).toBe("deck_suggestion_runs_one_pending_idx");
+    expect(unique[0].config.name).toBe("deck_suggestion_runs_one_pending_tool_idx");
+    expect(unique[0].config.columns.map((c) => (c as { name: string }).name)).toEqual(["deck_id", "tool"]);
     // Rendered, not merely present: an index filtered on any other status would let two
     // pending runs coexist and still pass a presence check.
     const where = unique[0].config.where;

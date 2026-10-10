@@ -87,6 +87,9 @@ export const FEATURE_CALLS: Readonly<Record<ModelFeature, {
   tuning: { model: TUNING_MODEL, inputCeilingTokens: 12_000, maxTokens: TUNING_MAX_TOKENS, callsPerWrite: 1 },
   synopsis: { model: SYNOPSIS_MODEL, inputCeilingTokens: 24_000, maxTokens: SYNOPSIS_MAX_TOKENS, callsPerWrite: 2 },
   intake: { model: INTAKE_MODEL, inputCeilingTokens: 6_000, maxTokens: INTAKE_MAX_TOKENS, callsPerWrite: 1 },
+  // PROVISIONAL: Suggested changes' ceilings, until the cuts smoke run measures the real input and
+  // output (plans/2026-10-09-proposed-cuts-model-tier.md). The cuts reply is the longer one.
+  proposed_cuts: { model: TUNING_MODEL, inputCeilingTokens: 12_000, maxTokens: TUNING_MAX_TOKENS, callsPerWrite: 1 },
 };
 
 /**
