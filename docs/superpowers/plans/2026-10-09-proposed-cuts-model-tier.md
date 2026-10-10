@@ -1,7 +1,7 @@
 # Proposed cuts, model tier — plan
 
 Source: Hugh's ruling of 2026-10-09 and the tier-1 recall eval (`pnpm eval:cuts`, which lands in
-the engine's second PR, #1325 being its first; this plan merges after that PR so the reference is live). Amends sub-projects 4 and 6 of `2026-10-08-tuning-roadmap.md`. Plan only: nothing here is
+the engine's second PR; #1325 is its first). Amends sub-projects 4 and 6 of `2026-10-08-tuning-roadmap.md`. Plan only: nothing here is
 built, and no paid call is made until this plan has merged.
 
 ## The ruling this follows
