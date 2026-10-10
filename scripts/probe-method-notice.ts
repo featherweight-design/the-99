@@ -12,7 +12,7 @@
 // runs with `OVERVIEW_V2_ENABLED` on.
 //
 // FIXTURE. Default: one deck under a per-run `user_id`, deleted in a `finally`. With `--seed`
-// (and `PROBE_USER_ID`, the browser account) it leaves five decks standing in the states the
+// (and `PROBE_USER_ID`, the browser account) it leaves seven decks standing in the states the
 // contact sheet photographs, and prints their ids; `--unseed` removes them. Refuses any database
 // that is not `local-dev` by `neon.branch_id`. NEVER point it anywhere else.
 //

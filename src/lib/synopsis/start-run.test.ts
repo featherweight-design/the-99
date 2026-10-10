@@ -137,12 +137,20 @@ describe("startRun: the free method-change rewrite", () => {
     expect((await free()).kind).toBe("reused");
   });
 
-  it("a rewrite that produced an overview since the press read it ends the need: a plain press, reuse included", async () => {
+  it("a rewrite that produced an overview since the press read it returns that overview, reserving nothing", async () => {
     lock([run("done", true)]);
-    queue.push([{ id: "syn-new" }], [{ id: "syn-new", content: { verdicts: [] } }]);
-    const got = await free();
-    expect(reserveModelCall.mock.calls[0][5]).toBe("player");
-    expect(got.kind).toBe("reused");
+    queue.push([{ id: "syn-new", content: { verdicts: [] } }]);
+    expect((await free()).kind).toBe("reused");
+    expect(reserveModelCall).not.toHaveBeenCalled();
+  });
+
+  it("does so for a section retry too, even with the allowance spent", async () => {
+    lock([run("done", true)]);
+    queue.push([{ id: "syn-new", content: { verdicts: [] } }]);
+    reserveModelCall.mockResolvedValue({ refused: "allowance" });
+    const retry = await startRun("deck", "user", LIST, "stub", new Date(), "syn-old", false, 0, false, 8, "free");
+    expect(retry.kind).toBe("reused");
+    expect(reserveModelCall).not.toHaveBeenCalled();
   });
 
   it("a press that never asked for a free run never reads the count", async () => {

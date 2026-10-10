@@ -434,7 +434,9 @@ export async function startRun(
         // The deck row is locked FOR UPDATE above, and every rewrite for a deck starts here, so
         // this count cannot be passed by two presses at once.
         const runs = await freeRunsFor(tx, deckId);
-        if (runs.succeeded) rewrite = null;
+        // A rewrite produced an overview since this press read the deck: whatever the press was
+        // (a retry included), the answer is that overview, with nothing reserved.
+        if (runs.succeeded) throw new AlreadyWrittenError();
         else if (method === "free" && runs.attempts < FREE_ATTEMPTS) origin = "system";
         else rewrite = "paid";
       }
@@ -453,7 +455,8 @@ export async function startRun(
             // A paid rewrite counts only an overview already at the new contract: the older one it
             // replaces is exactly what the press is for.
             rewrite ? sql`${deckSynopses.contractVersion} >= ${SYNOPSIS_CONTRACT_VERSION_V2}` : sql`true`,
-            sql`${deckSynopses.content} -> 'verdicts' @> '[{"status":"ok"}]'::jsonb`))
+            // A rewrite counts only an overview that PASSED: a partial run (another section ok) is not one.
+            sql`${deckSynopses.content} -> 'verdicts' @> ${rewrite ? '[{"section":"overview","status":"ok"}]' : '[{"status":"ok"}]'}::jsonb`))
           .limit(1);
         if (shownNow) throw new AlreadyWrittenError();
       }
