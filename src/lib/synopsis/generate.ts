@@ -562,7 +562,7 @@ async function run(
   // THE METHOD-CHANGE REWRITE (free, then paid once both tries are spent), decided from eligibility and not from which button was pressed
   // (the audit's build rule 1): the notice's press, ruling D's, Re-analyze's chained write and a
   // section retry all reach here. Only with the switch on, so a deck on contract 7 reads nothing extra.
-  const notice = v2 ? methodNoticeOf({ v2, shown: current, runs: await freeRunsFor(db, deckId) }) : null;
+  const notice = v2 ? methodNoticeOf({ v2, shown: current && { contractVersion: current.contractVersion, overviewOk: !!current.content?.overview }, runs: await freeRunsFor(db, deckId) }) : null;
   const method = notice ? (freeRunAvailable(notice) ? "free" : "paid") : null;
   if (!retry && current && current.fingerprint === reading.list && !replacing && !method) {
     // REUSE IS KEYED ON THE LIST (ruling B): a contract change never rewrites it. The one exception

@@ -198,7 +198,7 @@ export async function readSynopsisState(
   const art = synopsis ? await namedArt(synopsis.content, userId, deckId) : {};
   // Behind the switch, so a deployment on contract 7 reads nothing more.
   const v2 = overviewV2Enabled();
-  const methodNotice = illegal ? null : methodNoticeOf({ v2, shown: synopsis, runs: v2 ? await freeRunsFor(db, deckId) : { attempts: 0, succeeded: false } });
+  const methodNotice = illegal ? null : methodNoticeOf({ v2, shown: synopsis && { contractVersion: synopsis.contractVersion, overviewOk: !!synopsis.content?.overview }, runs: v2 ? await freeRunsFor(db, deckId) : { attempts: 0, succeeded: false } });
   return {
     methodNotice, lastFree: newest?.origin === "system",
     synopsis, ...status, pressWrites: pressWrites(live, synopsis), allowance, lastFailed, lastRejected, lastRefused, art,

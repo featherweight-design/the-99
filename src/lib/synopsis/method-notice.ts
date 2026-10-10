@@ -29,11 +29,13 @@ export type FreeRuns = { attempts: number; succeeded: boolean };
  */
 export function methodNoticeOf(input: {
   v2: boolean;
-  shown: { contractVersion: number } | null;
+  /** `overviewOk` false: a partial run at the new contract whose Overview section was refused wrote no new overview. */
+  shown: { contractVersion: number; overviewOk?: boolean } | null;
   runs: FreeRuns;
 }): MethodNotice | null {
   const { v2, shown, runs } = input;
-  if (!v2 || !shown || shown.contractVersion >= SYNOPSIS_CONTRACT_VERSION_V2 || runs.succeeded) return null;
+  if (!v2 || !shown || runs.succeeded) return null;
+  if (shown.contractVersion >= SYNOPSIS_CONTRACT_VERSION_V2 && shown.overviewOk !== false) return null;
   return { attemptsLeft: Math.max(0, FREE_ATTEMPTS - runs.attempts) };
 }
 
@@ -45,8 +47,8 @@ export function freeRunAvailable(notice: MethodNotice | null): boolean {
 /**
  * Every `system` call this deck has made at the new contract. A failed run counts, so does a
  * refused one and a reaped one: the bound has to hold against a flaky upstream. `succeeded` is
- * `readShownSynopsis`'s own predicate (a finished run with a section that passed), because a
- * failed free run also leaves a row at the new contract and must not end the deck's eligibility.
+ * a finished run whose Overview section passed, because a failed or partial free run also leaves a
+ * row at the new contract and must not end the deck's eligibility.
  *
  * Takes the caller's transaction when the count must be read under the reservation's lock.
  */
@@ -62,6 +64,8 @@ export async function freeRunsFor(q: Pick<typeof db, "select">, deckId: string):
     ));
   return {
     attempts: rows.length,
-    succeeded: rows.some((r) => r.status === "done" && !!r.content?.verdicts.some((v) => v.status === "ok")),
+    // The OVERVIEW passed: a partial run (another section ok, the Overview refused) wrote no new
+    // overview, so it neither ends eligibility nor spends the deck's second try's right to exist.
+    succeeded: rows.some((r) => r.status === "done" && !!r.content?.verdicts.some((v) => v.section === "overview" && v.status === "ok")),
   };
 }

@@ -275,7 +275,8 @@ export function SynopsisOverview({
         sentence={synopsisCopy.overviewRefused}
         failed={overviewVerdict.failed}
         total={overviewVerdict.total}
-        onRetry={canWrite && !stale ? () => onRetry(synopsis.id) : null}
+        // The notice holds the press when it is drawn (a partial new-method run left no overview).
+        onRetry={canWrite && !stale && !showsNoticePress ? () => onRetry(synopsis.id) : null}
         busy={busy}
         note={retryNote}
         spent={spent}

@@ -624,11 +624,13 @@ describe("the method-changed notice", () => {
   });
 
   // Rule 2 beyond the notice: a section retry is the free write too, so its credit note is gone.
-  it("draws no credit note, and does not disable a retry, while a free try is left", () => {
+  it("draws no credit note and no second press over a refused Overview while a free try is left", () => {
     const refused = checkedSynopsis({ overview: null, verdicts: [{ section: "overview", status: "refused", reason: "unknown_card", failed: 1, total: 2 }, ...checkedSynopsis().verdicts.slice(1)] });
     draw(old({ synopsis: synopsisRow(refused), allowance: out }));
-    const retry = screen.getAllByRole("button", { name: copy.tryAgain })[0];
-    expect(inert(retry)).toBe(false);
+    // The notice holds the one press; the refused slot's own retry is not drawn beside it.
+    expect(screen.queryByRole("button", { name: copy.tryAgain })).toBeNull();
+    const press = within(notice()).getByRole("button", { name: copy.writeNew });
+    expect(inert(press)).toBe(false);
     expect(screen.queryByText(/Uses a credit/)).toBeNull();
   });
 });

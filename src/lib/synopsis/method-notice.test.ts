@@ -34,6 +34,12 @@ describe("methodNoticeOf", () => {
     expect(methodNoticeOf({ v2: true, shown: old, runs: { attempts: 1, succeeded: true } })).toBeNull();
   });
 
+  // Copilot r1: a partial contract-8 run (Overview refused, another section ok) wrote no overview.
+  it("stays owed over a partial new-method row whose Overview was refused", () => {
+    expect(methodNoticeOf({ v2: true, shown: { contractVersion: 8, overviewOk: false }, runs: { attempts: 1, succeeded: false } })).toEqual({ attemptsLeft: 1 });
+    expect(methodNoticeOf({ v2: true, shown: { contractVersion: 8, overviewOk: true }, runs: none })).toBeNull();
+  });
+
   it("offers the free press only while an attempt is left", () => {
     expect(freeRunAvailable({ attemptsLeft: 2 })).toBe(true);
     expect(freeRunAvailable({ attemptsLeft: 1 })).toBe(true);
@@ -50,6 +56,7 @@ describe("freeRunsFor", () => {
   }
   const okContent = { verdicts: [{ section: "overview", status: "ok" }] };
   const refusedContent = { verdicts: [{ section: "overview", status: "refused" }] };
+  const partial = { verdicts: [{ section: "overview", status: "refused" }, { section: "primer", status: "ok" }] };
 
   it("reads only this deck's system calls at contract 8", async () => {
     const { q, wheres } = fake([]);
@@ -66,5 +73,7 @@ describe("freeRunsFor", () => {
     expect(await freeRunsFor(fake(rows).q, "d")).toEqual({ attempts: 3, succeeded: false });
     expect(await freeRunsFor(fake([...rows.slice(0, 1), { status: "done", content: okContent }]).q, "d")).toEqual({ attempts: 2, succeeded: true });
     expect(await freeRunsFor(fake([]).q, "d")).toEqual({ attempts: 0, succeeded: false });
+    // A partial run (another section ok, the Overview refused) is an attempt, not a success.
+    expect(await freeRunsFor(fake([{ status: "done", content: partial }]).q, "d")).toEqual({ attempts: 1, succeeded: false });
   });
 });
