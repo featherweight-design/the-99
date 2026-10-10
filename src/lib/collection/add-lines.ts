@@ -32,22 +32,8 @@ export function defaultFinish(p: PrintingChoice): Finish {
   return p.finishes.includes("nonfoil") ? "nonfoil" : (p.finishes[0] ?? "nonfoil");
 }
 
-/** The finish the Foil chip means for this printing, or null when it has none (`no foil printing`). */
-export function foilFinishOf(p: PrintingChoice): Finish | null {
-  if (p.finishes.includes("foil")) return "foil";
-  if (p.finishes.includes("etched")) return "etched";
-  return null;
-}
-
-/** The finish the Foil chip switches this printing to: foil (or etched) when on, nonfoil when off. */
-export function setFinishTarget(p: PrintingChoice, foil: boolean): Finish {
-  return foil ? (foilFinishOf(p) ?? defaultFinish(p)) : "nonfoil";
-}
-
-/** Whether the Foil chip has anything to switch between. A foil-only printing is locked on. */
-export function canToggleFoil(p: PrintingChoice): boolean {
-  return p.finishes.includes("nonfoil") && foilFinishOf(p) !== null;
-}
+/** The finishes the chips offer beside nonfoil, in the order they are drawn. */
+export const SPECIAL_FINISHES = ["foil", "etched"] as const;
 
 export const holdingKeyOf = (l: AddLineState): string | null =>
   l.printing === null ? null : `${l.oracleId}|${l.printing.setCode}|${l.printing.collectorNumber}|${l.finish}`;

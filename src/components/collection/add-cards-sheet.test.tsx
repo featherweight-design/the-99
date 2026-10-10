@@ -209,6 +209,78 @@ describe("AddCardsSheet (add)", () => {
     expect(count).toHaveValue("12");
   });
 
+  async function listOne(printings: PrintingChoice[] = [printing()]) {
+    await find("sol ring", [card()]);
+    await pickFirst(printings);
+    if (printings.length > 1) fireEvent.click((await screen.findAllByRole("radio"))[0]);
+    await waitFor(() => expect(field()).not.toBeDisabled());
+  }
+
+  it("mints a new action id when the list changed after a failed save", async () => {
+    add.mockRejectedValueOnce(new Error("x")).mockRejectedValueOnce(new Error("x")).mockResolvedValue({ applied: { id: "x" } });
+    mount();
+    await listOne();
+    fireEvent.click(screen.getByRole("button", { name: copy.save(1) }));
+    await screen.findByText(copy.failed);
+    fireEvent.click(screen.getByRole("button", { name: copy.retry })); // same list: same id
+    await waitFor(() => expect(add).toHaveBeenCalledTimes(2));
+    await screen.findByText(copy.failed);
+    fireEvent.click(screen.getByRole("button", { name: copy.more }));
+    fireEvent.click(screen.getByRole("button", { name: copy.retry })); // edited list: new id
+    await waitFor(() => expect(add).toHaveBeenCalledTimes(3));
+    expect(add.mock.calls[0][0]).toBe(add.mock.calls[1][0]);
+    expect(add.mock.calls[2][0]).not.toBe(add.mock.calls[1][0]);
+    expect(add.mock.calls[2][1][0].quantity).toBe(2);
+  });
+
+  it("advances the saved-state baseline across Add more", async () => {
+    add.mockResolvedValue({ applied: { id: "x" } });
+    mount();
+    await listOne();
+    fireEvent.click(screen.getByRole("button", { name: copy.save(1) }));
+    await screen.findByText(copy.countsAfter(4492, 4493));
+    fireEvent.click(screen.getByRole("button", { name: copy.addMore }));
+    await listOne();
+    fireEvent.click(screen.getByRole("button", { name: copy.save(1) }));
+    expect(await screen.findByText(copy.countsAfter(4493, 4494))).toBeInTheDocument();
+  });
+
+  it("ignores close while a save is in flight", async () => {
+    let finishSave: (v: unknown) => void = () => {};
+    add.mockReturnValue(new Promise((r) => { finishSave = r; }));
+    const { onClose } = mount();
+    await listOne();
+    fireEvent.click(screen.getByRole("button", { name: copy.save(1) }));
+    expect(screen.getByRole("button", { name: copy.closeAria })).toBeDisabled();
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(onClose).not.toHaveBeenCalled();
+    finishSave({ applied: { id: "x" } });
+    await screen.findByText(copy.savedTitle(1));
+  });
+
+  it("does not add a row that belongs to an earlier query", async () => {
+    mount();
+    await find("sol", [card()]);
+    search.mockReturnValueOnce(new Promise(() => {}));
+    fireEvent.change(field(), { target: { value: "sol ri" } });
+    fireEvent.click(screen.getByRole("option"));
+    expect(choices).not.toHaveBeenCalled();
+  });
+
+  it("offers etched as its own finish and sends it", async () => {
+    add.mockResolvedValue({ applied: { id: "x" } });
+    mount();
+    await listOne([printing({ finishes: ["nonfoil", "foil", "etched"], owned: {} })]);
+    expect(screen.getByRole("button", { name: "Foil" })).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(screen.getByRole("button", { name: "Etched" }));
+    expect(screen.getByRole("button", { name: "Etched" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Foil" })).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(screen.getByRole("button", { name: copy.save(1) }));
+    await screen.findByText(copy.savedTitle(1));
+    expect(add.mock.calls[0][1][0].finish).toBe("etched");
+  });
+
   it("shows nothing about History, which has no route yet", () => {
     mount();
     expect(screen.queryByText(/history/i)).toBeNull();

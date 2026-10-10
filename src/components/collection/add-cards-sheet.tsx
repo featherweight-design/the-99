@@ -14,7 +14,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState, type RefObjec
 import { createPortal } from "react-dom";
 import { addToCollection, loadPrintingChoices, searchCollectionCards } from "../../app/collection/edit-actions";
 import { useInertPage } from "../../lib/a11y/inert-page";
-import { useDialogA11y } from "../../lib/a11y/dialog";
+import { useBackDismiss, useDialogA11y } from "../../lib/a11y/dialog";
 import {
   canSave, choosePrinting, openLine, removeLine, setFinish, setQuantity, summarize, toPayload,
   type AddLineState,
@@ -55,7 +55,7 @@ export function AddCardsSheet({
   void mode;
   // The size when the sheet opened: the head re-reads its figure after a save, and the saved state
   // reports the move from the old one.
-  const [totalCards] = useState(totalCardsNow);
+  const [baseline, setBaseline] = useState(totalCardsNow);
   const phone = !useIsDesktop();
   const host = useSheetHost(true);
   useInertPage(host, true);
@@ -67,7 +67,10 @@ export function AddCardsSheet({
   const keepRef = useRef<HTMLButtonElement>(null);
 
   // Minted once per session of adding, and re-minted by `Add more`: one Save is one entry.
-  const [actionId, setActionId] = useState(() => crypto.randomUUID());
+  // The id belongs to ONE payload. A retry of the same list reuses it (the first try may have
+  // committed with its response lost); an edited list gets a fresh id, or the server would answer
+  // `alreadyApplied` for a write that never carried the edit.
+  const attempt = useRef<{ id: string; payload: string } | null>(null);
   const [lines, setLines] = useState<AddLineState[]>([]);
   const [phase, setPhase] = useState<Phase>("editing");
   const [saved, setSaved] = useState<{ copies: number; cards: number } | null>(null);
@@ -140,16 +143,22 @@ export function AddCardsSheet({
 
   // Escape and the close button share one answer, in order: the question, the picker, the list.
   const requestClose = useCallback(() => {
+    // A write in flight cannot be called back, so it cannot be discarded either.
+    if (saving) return;
     if (discarding) return setDiscarding(false);
     if (pickerFor !== null) return cancelPicker();
     if (dirty) return setDiscarding(true);
     onClose();
-  }, [discarding, pickerFor, cancelPicker, dirty, onClose]);
+  }, [saving, discarding, pickerFor, cancelPicker, dirty, onClose]);
 
   useDialogA11y(panelRef, requestClose, { initialFocusRef: searchRef, lockScroll: false, returnFocusRef });
+  // `lockScroll: false` also turns the hook's Back handling off; Back still has to ask before
+  // it throws away an unsaved list.
+  useBackDismiss(true, requestClose);
 
   async function pick(card: CatalogCardResult) {
-    if (searchDisabled) return;
+    // Rows from an earlier query stay drawn while the next is pending: they are not this search.
+    if (searchDisabled || searched !== trimmed) return;
     setLoadingCard(card.name);
     setNotice(null);
     let choices: PrintingChoice[] = [];
@@ -217,8 +226,11 @@ export function AddCardsSheet({
     if (!canSave(lines) || saving) return;
     setPhase("saving");
     setNotice(null);
+    const payload = toPayload(lines);
+    const json = JSON.stringify(payload);
+    if (attempt.current?.payload !== json) attempt.current = { id: crypto.randomUUID(), payload: json };
     try {
-      const out = await addToCollection(actionId, toPayload(lines));
+      const out = await addToCollection(attempt.current.id, payload);
       if ("applied" in out) {
         const s = summarize(lines);
         setSaved({ copies: s.copies, cards: s.lines });
@@ -234,7 +246,8 @@ export function AddCardsSheet({
   }
 
   function addMore() {
-    setActionId(crypto.randomUUID());
+    attempt.current = null;
+    setBaseline((b) => (b ?? 0) + (saved?.copies ?? 0));
     setLines([]);
     setSaved(null);
     setPhase("editing");
@@ -263,6 +276,7 @@ export function AddCardsSheet({
           <button
             type="button"
             aria-label={copy.closeAria}
+            disabled={saving}
             onClick={requestClose}
             className="flex h-[44px] w-[44px] cursor-pointer items-center justify-center rounded-[10px] bg-[color:var(--elevated)] text-[color:var(--fg-muted)] md:h-[34px] md:w-[34px] md:rounded-[8px]"
           >
@@ -313,9 +327,9 @@ export function AddCardsSheet({
             <div className="flex flex-col items-start gap-[10px] py-[16px]">
               <p className="m-0 font-display text-[19px] font-bold">{copy.savedTitle(saved.copies)}</p>
               <p className="m-0 text-[14px] text-[color:var(--fg-body)]">{copy.savedBody(saved.cards)}</p>
-              {totalCards !== undefined && (
+              {baseline !== undefined && (
                 <p className="m-0 font-mono text-[12px] text-[color:var(--fg-faint)]">
-                  {copy.countsAfter(totalCards, totalCards + saved.copies)}
+                  {copy.countsAfter(baseline, baseline + saved.copies)}
                 </p>
               )}
               <div className="mt-[8px] flex w-full flex-col gap-[8px] md:flex-row">

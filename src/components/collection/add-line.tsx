@@ -6,9 +6,7 @@
 import { useState } from "react";
 import { cssUrl } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
-import {
-  canToggleFoil, foilFinishOf, ownedNote, setFinishTarget, type AddLineState,
-} from "../../lib/collection/add-lines";
+import { ownedNote, SPECIAL_FINISHES, type AddLineState } from "../../lib/collection/add-lines";
 import type { PrintingChoice } from "../../lib/collection/catalog-read";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { PrintingRegion } from "../cards/printing-region";
@@ -45,9 +43,10 @@ export function AddLine(props: AddLineProps) {
   const p = line.printing;
   const choosing = p === null;
   const note = ownedNote(line);
-  const foilOn = line.finish !== "nonfoil";
-  const toggleable = p !== null && canToggleFoil(p);
-  const hasFoil = p !== null && foilFinishOf(p) !== null;
+  // One chip per finish beside nonfoil that the printing exists in. Pressing the lit one goes back
+  // to nonfoil, which a foil-only or etched-only printing does not have, so that chip is locked on.
+  const specials = p === null ? [] : SPECIAL_FINISHES.filter((f) => p.finishes.includes(f));
+  const hasNonfoil = p?.finishes.includes("nonfoil") ?? true;
 
   if (collapsed && !picking) {
     return (
@@ -110,20 +109,27 @@ export function AddLine(props: AddLineProps) {
       ) : (
         <>
           <div className="flex flex-wrap items-center gap-[8px] md:gap-[10px]">
-            <button
-              type="button"
-              aria-pressed={foilOn}
-              disabled={disabled || !toggleable}
-              title={hasFoil ? undefined : copy.noFoil}
-              aria-label={hasFoil ? copy.foil : `${copy.foil}, ${copy.noFoil}`}
-              onClick={() => props.onFinish(setFinishTarget(p, !foilOn))}
-              className={`inline-flex h-[44px] cursor-pointer items-center gap-[6px] rounded-full border border-solid border-[color:var(--border-strong)] px-[14px] text-[12.5px] disabled:cursor-default md:h-[28px] md:px-[10px] md:text-[12px] ${
-                foilOn ? "bg-[color:var(--accent)] text-[color:var(--bg)]" : "bg-transparent text-[color:var(--fg-muted)]"
-              } ${hasFoil ? "" : "opacity-50"}`}
-            >
-              <span aria-hidden>{"◆"}</span>
-              {copy.foil}
-            </button>
+            {(specials.length > 0 ? specials : (["foil"] as const)).map((f) => {
+              const available = specials.length > 0;
+              const on = line.finish === f;
+              return (
+                <button
+                  key={f}
+                  type="button"
+                  aria-pressed={on}
+                  disabled={disabled || !available || (on && !hasNonfoil)}
+                  title={available ? undefined : copy.noFoil}
+                  aria-label={available ? copy[f] : `${copy[f]}, ${copy.noFoil}`}
+                  onClick={() => props.onFinish(on ? "nonfoil" : f)}
+                  className={`inline-flex h-[44px] cursor-pointer items-center gap-[6px] rounded-full border border-solid border-[color:var(--border-strong)] px-[14px] text-[12.5px] disabled:cursor-default md:h-[28px] md:px-[10px] md:text-[12px] ${
+                    on ? "bg-[color:var(--accent)] text-[color:var(--bg)]" : "bg-transparent text-[color:var(--fg-muted)]"
+                  } ${available ? "" : "opacity-50"}`}
+                >
+                  <span aria-hidden>{"\u25c6"}</span>
+                  {copy[f]}
+                </button>
+              );
+            })}
             <span className="inline-flex h-[44px] items-center overflow-hidden rounded-[9px] border border-solid border-[color:var(--border-strong)] md:h-[28px] md:rounded-[7px]">
               <button
                 type="button"

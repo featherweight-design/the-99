@@ -36,6 +36,7 @@ export const collectionEditCopy = {
     afterPrinting: "Foil and how many come next, once it's chosen.",
     printingChipAria: (card: string, printing: string) => `${card}, printing ${printing}. Change it.`,
     foil: "Foil",
+    etched: "Etched",
     noFoil: "no foil printing",
     fewer: "Fewer",
     more: "More",
