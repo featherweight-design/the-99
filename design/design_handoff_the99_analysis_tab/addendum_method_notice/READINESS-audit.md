@@ -125,8 +125,13 @@ canvas.
    - `OVERVIEW_V2_ENABLED` is on.
    - The deck's shown overview exists and has `contractVersion < 8`. The shown overview is the
      current list's if there is one, and otherwise the newest.
-   - No contract-8 row joins a settled `system` call.
-   - Fewer than 2 `system` calls exist for the deck at contract 8.
+   - No contract-8 row written by a `system` call has SUCCEEDED, meaning the row is `done` with an
+     `ok` verdict, which is `readShownSynopsis`'s own predicate (`generate.ts:226-227`). A failed
+     free run also leaves a contract-8 row and settles its call `refunded` (`generate.ts:449-454`).
+     So "has a row" or "the call settled" would end eligibility at the first failure, and 1d could
+     never be reached.
+   - Fewer than 2 `system` calls exist for the deck at contract 8, whatever they settled as. This
+     is the separate count for the cap (rule 4).
 
    This is the plan's rule with one change: the shown row need not be the current list's. Without
    that change, the 1f deck, whose list has moved since its overview, would never be eligible. A
