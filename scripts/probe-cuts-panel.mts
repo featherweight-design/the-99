@@ -53,7 +53,7 @@ async function userId(): Promise<string> {
 
 async function clone(owner: string, onId: (id: string) => void): Promise<string> {
   const source = process.env.PROBE_CUTS_DECK
-    ?? (await q(`select d.id from decks d join deck_cards c on c.deck_id = d.id group by d.id having sum(c.quantity) > 100 limit 1`))[0]?.id;
+    ?? (await q(`select d.id from decks d join deck_cards c on c.deck_id = d.id group by d.id having sum(c.quantity) + 1 + (d.partner_oracle_id is not null)::int > 100 limit 1`))[0]?.id;
   if (!source) throw new Error("no over-100 deck to clone on this database");
   const id = randomUUID();
   // Published before the first write, so a failure part-way still reaches the cleanup.

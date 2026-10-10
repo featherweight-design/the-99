@@ -93,6 +93,9 @@ export function CutsPanelView({
   const ownRun = useRef<string | null>(null);
   // The run request this panel's own press made, and whether it has answered: Stop waits on it, because
   // the server reads the deck and builds the prompt BEFORE it inserts the pending row Stop cancels.
+  // Stop is mid-flight: a second press must not enter it, and a new Look deeper waits for it.
+  const [stopping, setStopping] = useState(false);
+  const stopGuard = useRef(false);
   const inflight = useRef<{ promise: Promise<unknown>; done: boolean } | null>(null);
   const settledRef = useRef(onSettled);
   useEffect(() => { settledRef.current = onSettled; }, [onSettled]);
@@ -189,7 +192,7 @@ export function CutsPanelView({
         : creditsCopy.standing(left, panel.allowance.limit, panel.allowance.nextAt);
 
   async function press() {
-    if (running || blocked) return;
+    if (running || blocked || stopGuard.current) return;
     const mine = ++token.current;
     const runId = crypto.randomUUID();
     ownRun.current = runId;
@@ -225,6 +228,18 @@ export function CutsPanelView({
   }
 
   async function stop() {
+    if (stopGuard.current) return;
+    stopGuard.current = true;
+    setStopping(true);
+    try {
+      await stopRun();
+    } finally {
+      stopGuard.current = false;
+      setStopping(false);
+    }
+  }
+
+  async function stopRun() {
     token.current += 1;
     const own = ownRun.current;
     ownRun.current = null;
@@ -298,7 +313,7 @@ export function CutsPanelView({
                     {`${copy.deeper.pendingRead} · ${clock(now - (startedAt ?? (run ? run.createdAt.getTime() : now)))} · ${copy.deeper.stopNote}`}
                   </p>
                 </div>
-                <button type="button" onClick={() => void stop()}
+                <button type="button" onClick={() => void stop()} disabled={stopping}
                   className="h-[44px] rounded-[8px] px-[14px] text-[13px] font-medium text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)] md:h-auto md:py-[10px]">
                   {copy.deeper.stop}
                 </button>

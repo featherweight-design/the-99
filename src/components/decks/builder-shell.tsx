@@ -1622,7 +1622,7 @@ export function BuilderShell({
                       deckId={deck.id}
                       deeperLooks={deeperLooks}
                       onSettled={onCutsSettled}
-                      revision={`${listKey}|${deck.intent ?? ""}|${headerBracket ?? ""}`}
+                      revision={`${listKey}|${deck.intent ?? ""}|${declaration.declared ?? ""}|${[...lockedIds].sort().join(",")}`}
                     />
                   ) : undefined}
                   tuning={!tuningEnabled ? undefined : (permits) => (

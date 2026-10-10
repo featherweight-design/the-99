@@ -213,6 +213,22 @@ describe("CutsPanelView", () => {
     answer({ ok: true });
   }, 15000);
 
+  it("Stop cannot be entered twice while it is still cancelling", async () => {
+    const pending = panelOf({ run: { id: "r9", status: "pending", errorClass: null, createdAt: new Date(), droppedCount: 0 } });
+    let release: () => void = () => {};
+    const gate = new Promise<void>((r) => { release = r; });
+    const cancel = vi.fn(async () => { await gate; return { ok: true as const }; });
+    const read = vi.fn().mockResolvedValue(pending);
+    const d = deps(null, { read, cancel });
+    await mount(d);
+    const stop = screen.getByRole("button", { name: copy.deeper.stop }) as HTMLButtonElement;
+    fireEvent.click(stop);
+    await waitFor(() => expect(stop.disabled).toBe(true));
+    fireEvent.click(stop);
+    expect(cancel).toHaveBeenCalledTimes(1);
+    release();
+  });
+
   it("a refused cut reads again, so a stale result does not stay stuck", async () => {
     const d = deps(withResult(1, 1), { cut: vi.fn(async () => ({ ok: false as const, message: copy.refusals.stale })) });
     await mount(d);
