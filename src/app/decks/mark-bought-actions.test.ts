@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { PgDialect } from "drizzle-orm/pg-core";
+import type { SQL } from "drizzle-orm";
 
 const DECK = "11111111-1111-4111-8111-111111111111";
 const CARD = "22222222-2222-4222-8222-222222222222";
@@ -11,11 +13,15 @@ const state = vi.hoisted(() => ({
   calls: [] as unknown[][],
   invalidated: 0,
   after: 0,
+  where: null as unknown,
 }));
 
 vi.mock("../../db", () => ({
   db: {
-    select: () => ({ from: () => ({ where: async () => (state.printing ? [state.printing] : []) }) }),
+    select: () => ({ from: () => ({ where: async (condition: unknown) => {
+      state.where = condition;
+      return state.printing ? [state.printing] : [];
+    } }) }),
   },
 }));
 vi.mock("next/server", () => ({ after: () => { state.after += 1; } }));
@@ -75,6 +81,15 @@ describe("markBought", () => {
     state.result = { status: "notInDeck" };
     expect(await press()).toEqual({ refused: "notInDeck" });
     expect(state.invalidated).toBe(0);
+  });
+
+  it("asks the catalog for the printing AS A PRINTING OF THIS CARD", async () => {
+    await press();
+    const { sql, params } = new PgDialect().sqlToQuery(state.where as SQL);
+    // Both halves: the id alone would accept a Scryfall id that belongs to another card.
+    expect(sql).toContain('"printings"."scryfall_id" = $1');
+    expect(sql).toContain('"printings"."oracle_id" = $2');
+    expect(params).toEqual([SCRY, CARD]);
   });
 
   it("refuses a printing of another card, or a finish the printing lacks", async () => {
