@@ -100,7 +100,8 @@ export function proposeCuts(input: {
   const curve = fitSkeleton(profile).curve;
   const missing: MissingSignal[] = [];
   if (!support) missing.push("inclusion");
-  if (!mix.rolesUsable) missing.push("roleTargets");
+  // `measured` covers the land cell too: basics are scored against it, so an asserted land target is disclosed.
+  if (!mix.measured) missing.push("roleTargets");
   if (!curve) missing.push("curve");
 
   if (over === 0) return { total, over, candidates: [], missing };

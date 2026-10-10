@@ -151,6 +151,15 @@ describe("proposeCuts", () => {
     expect(r.candidates.length).toBeGreaterThan(0);
   });
 
+  it("names the land target as missing when roles are measured but composition is not", () => {
+    const r = proposeCuts({
+      profile: profile({ composition: { pair: null, commander: null, identity: null, count: null } }),
+      locked: new Set(),
+      support: support([]),
+    });
+    expect(r.missing).toContain("roleTargets");
+  });
+
   it("returns nothing to cut when every card but the commander is locked", () => {
     const p = profile();
     const r = proposeCuts({ profile: p, locked: new Set(p.cards.map((c) => c.oracleId)), support: support([]) });
