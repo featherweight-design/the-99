@@ -7,6 +7,7 @@ import { synopsisState } from "./__fixtures__/synopsis";
 import { pressNote } from "./synopsis-note";
 import { creditsCopy } from "../../lib/copy/credits";
 import { deckNoticesCopy } from "../../lib/copy/notices";
+import { synopsisCopy } from "../../lib/copy/synopsis";
 import type { SynopsisView } from "./synopsis-state";
 import type { SynopsisState } from "../../lib/synopsis/read";
 
@@ -66,5 +67,33 @@ describe("pressNote", () => {
     const n = pressNote(ready({ pressWrites: true, allowance: { used: 0, limit: 3, reopensAt: null, nextAt: null, ownerShare: true } }), "reanalyze")!;
     expect(n.writes).toBe(false);
     expect(n.text).toMatch(/^Reads the bracket only; you’ve used your testing share for \w+\.$/);
+  });
+
+  // Build rule 2: the method-change rewrite spends no credit, so Re-analyze writes it whatever the
+  // allowance says, and the note says so in place of every credit form.
+  it("says the rewrite is free, and writes, while a free try is left", () => {
+    const paused = { ...out, used: 0, paused: { until: new Date("2026-11-01") } };
+    for (const allowance of [undefined, out, paused, { ...out, used: 0, ownerShare: true as const }]) {
+      for (const attemptsLeft of [2, 1]) {
+        const n = pressNote(ready({ pressWrites: true, methodNotice: { attemptsLeft }, ...(allowance ? { allowance } : {}) } as never), "reanalyze")!;
+        expect(n).toEqual({ text: synopsisCopy.pressNote.free, writes: true });
+      }
+    }
+  });
+
+  it("goes back to the credit rules once both free tries are used", () => {
+    const n = pressNote(ready({ pressWrites: true, methodNotice: { attemptsLeft: 0 }, allowance: out }), "reanalyze")!;
+    expect(n.writes).toBe(false);
+    expect(n.text).toMatch(/^Reads the bracket only/);
+  });
+
+  // Build rule 6: where Re-analyze would write nothing, "writes it the new way" would be false.
+  it("draws nothing over a list that already has its overview, free try or not", () => {
+    expect(pressNote(ready({ pressWrites: false, methodNotice: { attemptsLeft: 2 } }), "reanalyze")).toBeNull();
+  });
+
+  // Rule 8 + the check's own precedence: a legality entry still wins.
+  it("lets the legality check win over the free note", () => {
+    expect(pressNote(ready({ pressWrites: true, illegal: true, methodNotice: { attemptsLeft: 2 } }), "reanalyze")!.see).toBe(true);
   });
 });

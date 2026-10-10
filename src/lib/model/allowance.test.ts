@@ -59,10 +59,27 @@ describe("reserveModelCall and the origins", () => {
     expect(got).toEqual({ id: "call-1" });
     expect(inserted?.origin).toBe("player");
     const dialect = new PgDialect();
-    for (const w of wheres.slice(0, 2)) {
+    // The month's priced and unpriced reads AND the window's ledger rows: a system call is a credit in none.
+    expect(wheres).toHaveLength(3);
+    for (const w of wheres) {
       const q = dialect.sqlToQuery(w as never);
       expect(q.sql).toContain('"model_calls"."origin" = $');
       expect(q.params).toContain("player");
     }
+  });
+
+  it("a system call checks nothing, writes origin system and never reads the player's rows", async () => {
+    let inserted: Record<string, unknown> | undefined;
+    const tx = {
+      execute: vi.fn(async () => undefined),
+      select: vi.fn(() => { throw new Error("a system call read the ledger"); }),
+      insert: () => ({ values: (v: Record<string, unknown>) => { inserted = v; return { returning: async () => [{ id: "call-s" }] }; } }),
+    };
+    const got = await reserveModelCall(tx as never, "user_a", "synopsis", "claude-sonnet-5", new Date(), "system");
+    expect(got).toEqual({ id: "call-s" });
+    expect(inserted).toMatchObject({ userId: "user_a", feature: "synopsis", origin: "system" });
+    // No lock, no month's spend, no allowance: the player path's three reads never ran.
+    expect(tx.execute).not.toHaveBeenCalled();
+    expect(tx.select).not.toHaveBeenCalled();
   });
 });

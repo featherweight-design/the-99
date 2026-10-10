@@ -54,6 +54,38 @@ export const synopsisCopy = {
     paused: (month: string) => `Reads the bracket only; the overview is paused until ${month} 1.`,
     /** The owner's testing share for the month is used. */
     ownerShare: (month: string) => `Reads the bracket only; you’ve used your testing share for ${month}.`,
+    /**
+     * The method-change rewrite is free once per deck, so Re-analyze's note says so in place of
+     * every credit form while a free try is left (addendum_method_notice, 1f). Owed to /copy-review.
+     */
+    free: "Also writes the overview, free this once because we changed how overviews are written.",
+  },
+
+  /**
+   * The method-changed notice (addendum_method_notice, 2026-10-10): the shown overview was written
+   * under the old method. Transcribed from the handoff's `M` block; owed to /copy-review.
+   * `note` never carries the credits standing, so it reads the same at full credits, at none and
+   * while the allowance is paused: the rewrite bypasses all three.
+   */
+  method: {
+    /** Line A, 1a and 1f. */
+    line: "We’ve changed how we write overviews. This one was written the old way.",
+    note: "Free, no credit used. Only the overview is rewritten; your bracket and stats stay as they are.",
+    /** The label row's status while the free rewrite runs (1b). */
+    writing: "writing a new one with the new method",
+    /** Line B, 1d: a free try failed and one is left. */
+    failed: "We couldn’t write the new overview. Nothing about your deck changed.",
+    oneLeft: "1 free try left. No credit used.",
+    /** Line C, 1e: both free tries are used; the paid press takes over. */
+    triesUsed: "We couldn’t write the new overview with the free tries. You can still write one with a credit.",
+    /**
+     * Line C while no credit can be spent (the allowance is paused, the owner's share or every
+     * credit is used): "you can still write one with a credit" is not true this month, and the
+     * paid press beside it says why. OWED to /copy-review (the audit's Copy section).
+     */
+    triesUsedNoCredit: "We couldn’t write the new overview with the free tries.",
+    /** 1f: the stale banner leads, and its Re-analyze is the one press. */
+    withStale: "Re-analyze above writes it the new way, free.",
   },
 
   /** Refused, in the tab (the Overview section itself) and in the modal (any one section). */

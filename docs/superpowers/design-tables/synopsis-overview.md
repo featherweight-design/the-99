@@ -486,6 +486,24 @@ strings below are recorded structurally (which key renders), never compared as w
 
 ---
 
+## 8 · Method-changed notice (`design_handoff_the99_analysis_tab/addendum_method_notice/`, PR 5)
+Built from `Method Notice Addendum.dc.html` (1a to 1f) and the two child canvases' `methodNotice` block. `OVERVIEW_V2_ENABLED` only.
+
+| Property | Mobile (390) | Desktop (1300) |
+|---|---|---|
+| Position | inside the Overview section, under the label row (and the legality warning line), above the held paragraph | same |
+| Box | `display:grid`; padding 13px 14px; margin 2px 0 8px; radius 9; 1px dashed `--border-dashed`; `--surface-sunken` | same |
+| Rows | grid areas: mark + line; button (full width); note | grid areas: mark, line over note, button across both rows |
+| Gaps | 10px both ways | 11px between columns, 4px between line and note; button 9px further right |
+| Mark | 18px ring, 1px `--fg-faint`, `--font-mono` 10.5px 600 `--fg-muted`; `i` informing, `!` after a failure; `aria-hidden`; never recolors | same, margin-top 1px |
+| Line | 13px / 1.5 `--fg-body`, `text-wrap:pretty`; `role="status"`, `role="alert"` for lines B and C | 13.5px |
+| Note | `--font-mono` 9.5px / 1.55 `--fg-faint`, centered | `--font-mono` 11px, left |
+| Button | outlined: 44px, full width, 1px `--border-strong`, radius 8, padding 0 16px, 13.5px 500 `--fg`; `aria-disabled` + `--fg-disabled` when it cannot press | 36px, auto width, 13px, nowrap, centered on both rows |
+| Dismiss | none; gone when the shown overview is the new method's | same |
+| Copy | line A / note / B / `1 free try left. No credit used.` / C and its no-credit form / `Re-analyze above writes it the new way, free.` (`synopsisCopy.method`) | same |
+
+---
+
 ## State Coverage
 
 | # | State | Triggering condition | Tab Overview slot | Modal |
@@ -503,3 +521,9 @@ strings below are recorded structurally (which key renders), never compared as w
 | S11 | **No-write press** (7d) | stored overview fingerprint equals the live list | no credit note on any press | no note |
 | S12 | **Version** (6e) | a committed version with a stored overview, opened from the Versions panel | — | aside = version; record line; no write control; never stale |
 | S13 | **Pre-reading** (2a–2c) | no reading yet | nothing: no Overview section until a reading exists (ruled, see §1) | — |
+| S14 | **Method-changed, free (1a)** | `OVERVIEW_V2_ENABLED`; the shown overview is below contract 8; no free run has produced one; 2 tries left | line A + outlined **Write a new overview** + the free note, above the held paragraph; the note never carries the standing, so it reads the same at 0 credits or paused | no notice; the modal's write keeps its credit note unless a free try is left, when it draws none |
+| S15 | **Method rewrite running (1b)** | a free (`system`) write is pending | notice gone; the label row says `writing a new one with the new method`; the held paragraph stays; focus moves to that status | — |
+| S16 | **Method rewrite landed (1c)** | the free write produced an overview | notice gone, `Overview ready.` said once | — |
+| S17 | **Free try failed, one left (1d)** | one `system` call exists, none produced an overview | line B (`role="alert"`, mark `!`) + **Try again** + `1 free try left. No credit used.`; the slot draws no failure row, rejection or refusal of its own | — |
+| S18 | **Both free tries used (1e)** | two `system` calls, none produced an overview | line C (`role="alert"`) + the shipped paid **Write a new overview** with `Uses a credit. {standing}.`; paused, owner share or no credit: the line drops its clause and the press is disabled under the shipped note | normal rules |
+| S19 | **Method-changed with the stale banner (1f)** | S14 and a stale reading whose Re-analyze would write the overview | the banner leads; the notice keeps line A and loses its button; note `Re-analyze above writes it the new way, free.`; Re-analyze's note is `Also writes the overview, free this once because we changed how overviews are written.` | stale banner as S8 |

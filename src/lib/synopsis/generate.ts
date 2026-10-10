@@ -16,7 +16,8 @@ import { readProfileHead } from "../profile/load";
 import { readStoredReading, sameList, type StoredProfileDeps } from "../profile/stored";
 import { loadUniversalStaples } from "../staples/universal";
 import { buildSynopsisFacts, deckNameIndex, normalizeName, type SynopsisFacts } from "./facts";
-import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_DEADLINE_MS, SYNOPSIS_MAX_TOKENS, SYNOPSIS_MAX_TOKENS_V8, SYNOPSIS_REPAIR_MIN_MS, synopsisContractVersion } from "./limits";
+import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_DEADLINE_MS, SYNOPSIS_MAX_TOKENS, SYNOPSIS_MAX_TOKENS_V8, SYNOPSIS_REPAIR_MIN_MS, synopsisContractVersion } from "./limits";
+import { FREE_ATTEMPTS, freeRunAvailable, freeRunsFor, methodNoticeOf } from "./method-notice";
 import { SYNOPSIS_EFFORT, SYNOPSIS_MODEL } from "./model";
 import { buildSynopsisPrompt, isRepair } from "./prompt";
 import { reapSynopses } from "./reaper";
@@ -377,6 +378,20 @@ export async function startRun(
   replacing = false,
   /** The contract the run is written under: 8 while the v2 method is on. */
   contractVersion: number = SYNOPSIS_CONTRACT_VERSION,
+  /**
+   * The press is the method-change REWRITE (`method-notice.ts`): the deck's shown overview was
+   * written under an older contract and no rewrite has produced a new one. `free` is the first
+   * two tries, `paid` is the fallback once both are used (the audit's 1e). Either bypasses the
+   * reuse early return, because the point is to rewrite an overview the list already has.
+   *
+   * DECIDED AGAIN under the deck's lock, which every rewrite for a deck takes. A rewrite that
+   * produced an overview since the press read it ends the need, and the press is a plain one
+   * (so reuse hands that overview back). `free` is granted only while fewer than `FREE_ATTEMPTS`
+   * `system` calls exist for the deck at the new contract: granted, the call is reserved as
+   * `origin = 'system'` and takes no credit; refused (the cap), the press falls through to the
+   * PLAYER path as `paid`, allowance check included, so a third attempt is the player's own.
+   */
+  method: "free" | "paid" | null = null,
 ): Promise<{ kind: "started"; runId: string; callId: string } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused"; synopsis: SynopsisRow } | { kind: "illegal" } | { kind: "no_reading" }> {
   // The reap COMMITS ON ITS OWN, before the reservation: a spent allowance rolls the reservation's
   // transaction back, and a reap inside it would roll back too, leaving an abandoned run locking
@@ -413,18 +428,31 @@ export async function startRun(
       if (!head || !reading || reading.dirty || reading.fingerprint !== list || !sameList(reading, head)) {
         throw new ListMovedError();
       }
-      const unit = await reserveModelCall(tx, userId, "synopsis", model, now);
+      let origin: "player" | "system" = "player";
+      let rewrite = method;
+      if (method) {
+        // The deck row is locked FOR UPDATE above, and every rewrite for a deck starts here, so
+        // this count cannot be passed by two presses at once.
+        const runs = await freeRunsFor(tx, deckId);
+        if (runs.succeeded) rewrite = null;
+        else if (method === "free" && runs.attempts < FREE_ATTEMPTS) origin = "system";
+        else rewrite = "paid";
+      }
+      const unit = await reserveModelCall(tx, userId, "synopsis", model, now, origin);
       if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
       // REUSE, DECIDED AGAIN UNDER THE LOCK `reserveModelCall` just took. Two first presses both
       // read "no synopsis" before either wrote; if the first finished before the second got here,
       // the one-pending index is clear again and only this check stops a second, charged write.
-      if (checkReuse) {
+      if (checkReuse && origin === "player") {
         // Any shown overview for THIS list, not only the newest: the same rule the read uses.
         const [shownNow] = await tx.select({ id: deckSynopses.id })
           .from(deckSynopses)
           .where(and(eq(deckSynopses.deckId, deckId), eq(deckSynopses.userId, userId), eq(deckSynopses.status, "done"),
             eq(deckSynopses.fingerprint, list),
             replacing ? sql`${deckSynopses.seenSeq} >= ${seenSeq}` : sql`true`,
+            // A paid rewrite counts only an overview already at the new contract: the older one it
+            // replaces is exactly what the press is for.
+            rewrite ? sql`${deckSynopses.contractVersion} >= ${SYNOPSIS_CONTRACT_VERSION_V2}` : sql`true`,
             sql`${deckSynopses.content} -> 'verdicts' @> '[{"status":"ok"}]'::jsonb`))
           .limit(1);
         if (shownNow) throw new AlreadyWrittenError();
@@ -531,7 +559,12 @@ async function run(
   if (retry && (!current || current.id !== retry.id || current.fingerprint !== reading.list)) return { kind: "nothing_to_retry" };
   const replacing = !retry && !!current && current.fingerprint === reading.list
     && (await overviewDataMovedFor(deckId, userId, current.seenSeq ?? 0));
-  if (!retry && current && current.fingerprint === reading.list && !replacing) {
+  // THE METHOD-CHANGE REWRITE (free, then paid once both tries are spent), decided from eligibility and not from which button was pressed
+  // (the audit's build rule 1): the notice's press, ruling D's, Re-analyze's chained write and a
+  // section retry all reach here. Only with the switch on, so a deck on contract 7 reads nothing extra.
+  const notice = v2 ? methodNoticeOf({ v2, shown: current, runs: await freeRunsFor(db, deckId) }) : null;
+  const method = notice ? (freeRunAvailable(notice) ? "free" : "paid") : null;
+  if (!retry && current && current.fingerprint === reading.list && !replacing && !method) {
     // REUSE IS KEYED ON THE LIST (ruling B): a contract change never rewrites it. The one exception
     // is data under the list moving (deck notices D11): the read marks that overview stale and
     // offers *Write a new overview*, which must then write one rather than hand the same one back.
@@ -554,7 +587,7 @@ async function run(
   const refused = base ? refusedSections(base.content) : null;
   const prompt = buildSynopsisPrompt(facts, base && refused ? { keep: base.content, refused } : undefined, { v2, contract8: v2 });
 
-  const started = await startRun(deckId, userId, reading.list, deps.modelName, deps.now(), base?.id ?? null, !retry, reading.seenSeq, replacing, contract);
+  const started = await startRun(deckId, userId, reading.list, deps.modelName, deps.now(), base?.id ?? null, !retry, reading.seenSeq, replacing, contract, method);
   if (started.kind !== "started") return started;
 
   // EVERY PATH AFTER THE RESERVATION SETTLES THE RUN. A throw anywhere past here (the catalog

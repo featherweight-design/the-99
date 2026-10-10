@@ -9,7 +9,8 @@ import type { SynopsisView } from "./synopsis-state";
  *
  * ONE CONDITION, from the server: `pressWrites`, the live list has no overview (fingerprint alone,
  * ruling B). Then the allowance picks the form: credits left, the credit note, and the press
- * writes; none left, the used-up lead and line, and the press reads the bracket only. A list that
+ * writes; none left, the used-up lead and line, and the press reads the bracket only. While the
+ * method-change rewrite has a free try left, the free note replaces all of those. A list that
  * already has its overview draws NO note (7d), and neither does a state not yet read for the list
  * on screen: until it is, nothing is known about what the press would spend, so it spends nothing.
  */
@@ -29,6 +30,13 @@ export function pressNote(view: SynopsisView, where: PressWhere, deeperLooks = f
   // `blocked` line still wins over it (F13): the components draw no note over a blocked press.
   if (view.state.illegal) return { text: deckNoticesCopy.check.note, writes: false, see: true };
   if (!view.state.pressWrites) return null;
+  // THE METHOD-CHANGE REWRITE IS FREE (addendum_method_notice, build rule 2): while a free try is
+  // left the overview this press writes spends no credit, so it writes whatever the allowance says
+  // (paused, owner share and used-up included) and the note says so instead of any credit form.
+  // The server decides the same from eligibility, so the two cannot disagree about the cost.
+  if (view.state.methodNotice && view.state.methodNotice.attemptsLeft > 0) {
+    return { text: synopsisCopy.pressNote.free, writes: true };
+  }
   const { allowance } = view.state;
   const left = Math.max(0, allowance.limit - allowance.used);
   // The press still reads the bracket, which is free; only the overview is withheld. So every form

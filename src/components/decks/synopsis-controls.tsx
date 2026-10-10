@@ -50,7 +50,8 @@ export function WriteRow({
   line, label, note, disabled, busy, onPress,
 }: {
   line: string;
-  label: string;
+  /** Null draws the line alone: the method-change notice above holds the one press (build rule 7). */
+  label: string | null;
   note: string | null;
   disabled: boolean;
   busy: boolean;
@@ -59,7 +60,7 @@ export function WriteRow({
   return (
     <div className="flex flex-col gap-[7px] md:gap-[8px]">
       <p className="m-0 text-[13px] leading-[1.55] text-[var(--fg-faint)] md:text-[13.5px]">{line}</p>
-      <Press label={label} note={note} disabled={disabled} busy={busy} onPress={onPress} />
+      {label ? <Press label={label} note={note} disabled={disabled} busy={busy} onPress={onPress} /> : null}
     </div>
   );
 }

@@ -14,6 +14,7 @@ import { swapToolsEnabled } from "../swaps/flag";
 import { tuningEnabled } from "../tuning/flag";
 import { deckStatsEnabled } from "../decks/stats-flag";
 import { collectionEditEnabled } from "../collection/edit-flag";
+import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { aboutEntries, type AboutEntry, type AboutLineSwitch, type AboutSwitch } from "../copy/about";
 
 /**
@@ -31,6 +32,7 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   TUNING_ENABLED: tuningEnabled,
   DECK_STATS_ENABLED: deckStatsEnabled,
   COLLECTION_EDIT_ENABLED: collectionEditEnabled,
+  OVERVIEW_V2_ENABLED: overviewV2Enabled,
 };
 
 /** Whether a line's switch keeps it: `!NAME` keeps it while NAME is off. */
