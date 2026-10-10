@@ -18,8 +18,12 @@ export type SetDeckPrintingResult =
    */
   | { ok: false; reason: "off" | "refused" | "notInDeck" | "notHeld" };
 
-/** A collector number as the catalog stores it: "31", "12a", "★", "". Bounded, never trusted. */
-const COLLECTOR_NUMBER = /^[\p{L}\p{N}★†\-.]{0,16}$/u;
+/**
+ * A collector number as the catalog stores it ("31", "12a", "★", "a1_2007", ""): bounded, with no
+ * whitespace or control characters. Never trusted beyond that: it is bound as a parameter, and the
+ * ownership check is what decides whether it names a printing the player holds.
+ */
+const COLLECTOR_NUMBER = /^[^\s\p{C}]{0,24}$/u;
 const SET_CODE = /^[a-z0-9]{2,8}$/;
 
 /**

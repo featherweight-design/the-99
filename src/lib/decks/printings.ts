@@ -3,8 +3,9 @@
 // THE CHAIN, in order: the deck's own pick, when the player still holds that printing; else the
 // Collection's pick (`card_art_preferences`); else the default the Collection's resolver lands on;
 // and for a card the player does not own at all, the catalog's oracle-level printing, which is the
-// printing whose art those rows draw today. Every card therefore resolves to a printing, which is
-// what lets a version record one for every card it holds.
+// printing whose art those rows draw today (or, where the catalog skipped that printing, the
+// card's first printing with art). Every card the catalog lists therefore resolves, which is what
+// lets a version record a printing for every card it holds.
 //
 // A PICK THAT IS NO LONGER HELD IS IGNORED, NOT DELETED. A Replace upload deletes and re-adds the
 // whole collection in one transaction, and deleting picks on a collection write would wipe every
@@ -156,12 +157,15 @@ export async function readDeckPrintings(
   const unowned = ids.filter((id) => !printings.has(id));
   if (unowned.length > 0) {
     // The oracle-level printing: `cards.scryfall_id` names one printing of the card, and that
-    // printing's art is what `cards.image_uri` draws for a card nobody owns.
+    // printing's art is what `cards.image_uri` draws for a card nobody owns. That id is not always
+    // a row in `printings` (a printing the ingest skipped), so the lateral takes it when it is and
+    // otherwise the card's first printing with art; a card with no printing at all keeps its
+    // oracle-level art and names no printing (`""`), which a version records as unknown.
     const { rows: catalog } = await db.execute<{
       oracle_id: string;
       name: string;
-      set_code: string;
-      collector_number: string;
+      set_code: string | null;
+      collector_number: string | null;
       image_uri: string | null;
       art_crop_uri: string | null;
       flavor_name: string | null;
@@ -171,7 +175,13 @@ export async function readDeckPrintings(
              coalesce(p.art_crop_uri, c.art_crop_uri) as art_crop_uri,
              p.flavor_name
       from cards c
-      join printings p on p.scryfall_id = c.scryfall_id
+      left join lateral (
+        select pr.set_code, pr.collector_number, pr.image_uri, pr.art_crop_uri, pr.flavor_name
+        from printings pr
+        where pr.oracle_id = c.oracle_id
+        order by (pr.scryfall_id = c.scryfall_id) desc, (pr.image_uri is null), pr.scryfall_id
+        limit 1
+      ) p on true
       where c.oracle_id = any(${sql.param(unowned)}::uuid[])
     `);
     for (const r of catalog) {
@@ -180,8 +190,8 @@ export async function readDeckPrintings(
         printedName: r.flavor_name !== null && r.flavor_name !== r.name ? r.flavor_name : null,
         imageUri: r.image_uri,
         artCropUri: r.art_crop_uri,
-        setCode: r.set_code.toUpperCase(),
-        collectorNumber: r.collector_number,
+        setCode: (r.set_code ?? "").toUpperCase(),
+        collectorNumber: r.collector_number ?? "",
         source: "catalog",
       });
     }

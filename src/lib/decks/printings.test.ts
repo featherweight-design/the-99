@@ -117,6 +117,22 @@ describe("readDeckPrintings", () => {
     });
   });
 
+  it("keeps a card whose catalog lists no printing, with its oracle-level art and no printing named", async () => {
+    state.catalog = [{
+      oracle_id: UNOWNED, name: "Brain Freeze", set_code: null, collector_number: null,
+      image_uri: "img-oracle", art_crop_uri: null, flavor_name: null,
+    }];
+    const { printings } = await readDeckPrintings("u", DECK, [UNOWNED], { usePicks: true });
+    expect(printings.get(UNOWNED)).toMatchObject({ setCode: "", collectorNumber: "", imageUri: "img-oracle", source: "catalog" });
+  });
+
+  it("falls back to another printing of the card when its oracle-level printing is missing", async () => {
+    await readDeckPrintings("u", DECK, [UNOWNED], { usePicks: true });
+    const read = state.texts.find((t) => t.includes("from cards c"));
+    expect(read).toContain("left join lateral");
+    expect(read).toContain("pr.oracle_id = c.oracle_id");
+  });
+
   it("scopes the pick read to the player's decks and to current membership", async () => {
     state.cards = [ownedCard([printing("KHM", "31")])];
     await readDeckPrintings("u", DECK, [OWNED], { usePicks: true });

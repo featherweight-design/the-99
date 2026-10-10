@@ -91,6 +91,15 @@ describe("setDeckPrinting", () => {
     expect(state.texts.some((t) => t.includes("insert into deck_printings"))).toBe(false);
   });
 
+  it("accepts a collector number in the catalog's underscore form", async () => {
+    state.answers = [
+      { match: "deck_cards", rows: [{ held: true }] },
+      { match: "collection_items", rows: [{ held: true }] },
+    ];
+    expect(await setDeckPrinting(DECK, CARD, { setCode: "PRM", collectorNumber: "a1_2007" }))
+      .toEqual({ ok: true, printing: PRINTING });
+  });
+
   it("upserts the lowercase set code and answers with the resolved printing", async () => {
     state.answers = [
       { match: "deck_cards", rows: [{ held: true }] },
