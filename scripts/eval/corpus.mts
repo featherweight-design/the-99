@@ -112,11 +112,11 @@ if (command === "run") {
     const facts = await factsFor(await loadDeckProfileFromHead(head), v2);
     const prompt = buildSynopsisPrompt(facts, undefined, { v2, contract8: v8 });
     const maxTokens = v8 ? SYNOPSIS_MAX_TOKENS_V8 : SYNOPSIS_MAX_TOKENS;
-    const approxIn = Math.ceil((prompt.system.length + prompt.user.length) / 3.5);
-    // TWO attempts: `callModel` retries a malformed reply once, and both are billed (a first v8 run
-    // reserved $0.133 and settled at $0.144 after exactly that). Character count is only an estimate
-    // of input tokens, so the single-call bound is doubled rather than trusted.
-    const worst = 2 * worstCaseUsd(SYNOPSIS_MODEL, approxIn, maxTokens, { batch: false });
+    // `worstCaseUsd` already counts the one malformed-reply retry. Characters are only an estimate of
+    // input tokens, and rules text with symbols runs denser than prose (a first v8 run reserved
+    // $0.133 and settled at $0.144 after a retry), so the estimate divides by 3, not 3.5.
+    const approxIn = Math.ceil((prompt.system.length + prompt.user.length) / 3);
+    const worst = worstCaseUsd(SYNOPSIS_MODEL, approxIn, maxTokens, { batch: false });
     const ledger = readLedger(LEDGER);
     const stop = refusal(ledger, worst, planDone, OVERVIEW_ACCURACY_LIMITS) ?? (runSpend + worst > cap ? `this run's cap of $${cap} would be crossed` : null);
     if (stop) { console.log(`STOP before ${c.id}: ${stop}`); break; }
