@@ -2090,7 +2090,7 @@ export const deckSuggestionItems = pgTable("deck_suggestion_items", {
   runId: uuid("run_id").notNull().references(() => deckSuggestionRuns.id, { onDelete: "cascade" }),
   // uuid, matching cards.oracleId: a suggestion for a card the catalog does not hold cannot
   // be stored at all.
-  // Nullable since the two lists (sub-project 8, migration 0087): an ADDITION carries only its add,
+  // Nullable since the two lists (sub-project 8, migration 0089): an ADDITION carries only its add,
   // a CUT only its cut, each with its own rationale. A row from before it carries both, the
   // swap the earlier contract asked for; `deck_suggestion_items_one_card_check` holds that at least
   // one is set.

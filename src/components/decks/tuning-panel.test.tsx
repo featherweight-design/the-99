@@ -1483,6 +1483,21 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
       expect((d.read as ReturnType<typeof vi.fn>).mock.calls.length).toBe(reads + 1);
     });
 
+    it("keeps every line's buttons disabled until the re-read after Apply all lands", async () => {
+      const apply = vi.fn(async () => ({ ok: true as const }));
+      let release: () => void = () => undefined;
+      const gate = new Promise<void>((r) => { release = r; });
+      const base = deps([withLines([a1, a2, c1])], { card: { apply, undo: apply, reject: apply, restore: apply } });
+      let calls = 0;
+      const d = { ...base, read: vi.fn(async () => { calls += 1; if (calls > 1) await gate; return withLines([a1, a2, c1]); }) };
+      await draw(d);
+      await act(async () => { fireEvent.click(screen.getByRole("button", { name: copy_lists.applyAll })); });
+      // The read is still pending: a line's own Reject is disabled, so it cannot race the bulk apply.
+      expect(screen.getAllByRole("button", { name: copy_lists.reject })[0]).toBeDisabled();
+      await act(async () => { release(); });
+      expect(screen.getAllByRole("button", { name: copy_lists.reject })[0]).not.toBeDisabled();
+    });
+
     it("stops at the first refusal and shows it", async () => {
       const apply = vi.fn(async (id: string) => (id === "a2" ? { ok: false as const, message: "Refused." } : { ok: true as const }));
       const d = deps([withLines([a1, a2, c1])], { card: { apply, undo: apply, reject: apply, restore: apply } });

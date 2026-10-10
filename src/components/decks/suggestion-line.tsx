@@ -41,7 +41,7 @@ export function SuggestionLine({
   permits: readonly Bracket[];
   newestPriceAsOf: Date | null;
   actions: CardActions;
-  onSettled: (announce: string) => void;
+  onSettled: (announce: string) => void | Promise<void>;
 }) {
   const [busy, setBusy] = useState<keyof CardActions | null>(null);
   const [refused, setRefused] = useState<string | null>(null);

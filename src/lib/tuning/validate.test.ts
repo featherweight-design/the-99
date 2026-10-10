@@ -410,12 +410,11 @@ describe("the two lists (sub-project 8)", () => {
     expect(out.droppedCount).toBe(1);
   });
 
-  it("lets one card stand in both lists' names without a duplicate drop, since the sides differ", () => {
-    // A card cannot legally be in both, but the duplicate rule is per side: it must not fire across them.
-    const out = validateSuggestions({
-      response: { additions: [good], cuts: [{ ...goodCut, card: "Oxen" }] }, pack, resolveName,
-    });
-    expect(out.drops).toEqual([]);
+  it("tracks duplicates per list: a card named in both lists is judged on each side's own rules", () => {
+    // Cultivate is not in the deck, so as a cut it reaches `cutInDeck`, not `duplicate`.
+    const out = validateSuggestions({ response: { additions: [good], cuts: [{ ...goodCut, card: "Cultivate" }] }, pack, resolveName });
+    expect(out.drops).toEqual([{ side: "cut", position: 0, rule: "cutInDeck" }]);
+    expect(out.kept.map((k) => k.addOracleId)).toEqual(["cult"]);
   });
 
   it("holds the hard filters on additions only: a cap never drops a cut", () => {

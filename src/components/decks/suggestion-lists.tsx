@@ -25,7 +25,7 @@ export function SuggestionLists({
   permits: readonly Bracket[];
   newestPriceAsOf: Date | null;
   actions: CardActions;
-  onSettled: (announce: string) => void;
+  onSettled: (announce: string) => void | Promise<void>;
 }) {
   const [applying, setApplying] = useState(false);
   const [refused, setRefused] = useState<string | null>(null);
@@ -49,12 +49,14 @@ export function SuggestionLists({
       }
       made += 1;
     }
-    setApplying(false);
-    // One announcement and one re-read for the whole press, even when it stopped part way.
+    // One announcement and one re-read for the whole press, even when it stopped part way. The bulk
+    // state holds until that re-read lands: until then the applied rows still read as pending, and
+    // a press on one would re-submit it.
     if (made > 0) {
       const settled = lines.filter((l) => l.verdict === "accepted").length + made;
-      onSettled(copy.tallyOf(settled, lines.length, lines.filter((l) => l.verdict === "dismissed").length));
+      await onSettled(copy.tallyOf(settled, lines.length, lines.filter((l) => l.verdict === "dismissed").length));
     }
+    setApplying(false);
   }
 
   return (
@@ -81,8 +83,12 @@ export function SuggestionLists({
         ) : null}
       </div>
       {refused ? <MutationError message={refused} /> : null}
-      <List title={copy.additions} empty={copy.emptyAdditions} rows={additions} {...{ permits, newestPriceAsOf, actions, onSettled }} />
-      <List title={copy.cuts} empty={copy.emptyCuts} rows={cuts} {...{ permits, newestPriceAsOf, actions, onSettled }} />
+      {/* A disabled fieldset disables every line's buttons while Apply all works, so a row cannot be
+          answered under it. */}
+      <fieldset disabled={applying} className="m-0 flex min-w-0 flex-col gap-[14px] border-0 p-0">
+        <List title={copy.additions} empty={copy.emptyAdditions} rows={additions} {...{ permits, newestPriceAsOf, actions, onSettled }} />
+        <List title={copy.cuts} empty={copy.emptyCuts} rows={cuts} {...{ permits, newestPriceAsOf, actions, onSettled }} />
+      </fieldset>
     </div>
   );
 }
@@ -96,7 +102,7 @@ function List({
   permits: readonly Bracket[];
   newestPriceAsOf: Date | null;
   actions: CardActions;
-  onSettled: (announce: string) => void;
+  onSettled: (announce: string) => void | Promise<void>;
 }) {
   return (
     <section aria-label={title} className="flex flex-col gap-[10px] md:gap-[6px]">
