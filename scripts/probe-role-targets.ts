@@ -366,6 +366,11 @@ async function main() {
       // `pairsWritten` counted it either way. Reading the value back on the exact composite
       // key is what tells those apart.
       check("the pair's own row carries the value", pair?.avg_ramp !== null, true);
+      // And the label figure, whenever the pass wrote label targets at all: a publish that dropped
+      // the label columns would otherwise leave every assertion here green.
+      if (res.labelFingerprint !== null) {
+        check("the pair's own row carries a label target", pair?.label_ramp !== null, true);
+      }
       check("and it landed on the ordered key, not a transposed one", [pair?.id, pair?.partner], [a, b]);
       }
     }

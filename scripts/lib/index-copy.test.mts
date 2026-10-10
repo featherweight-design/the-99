@@ -124,3 +124,18 @@ describe("the index copy's label preflight, which a dry run also runs", () => {
     expect(t.execute).not.toHaveBeenCalled();
   });
 });
+
+describe("the index copy's label check under the lock", () => {
+  it("refuses inside publish before writing anything, when the labels moved after the preflight", async () => {
+    // A transaction that can only read: any write the publish attempted before refusing would throw
+    // a TypeError here instead of the refusal.
+    const tx = { execute: vi.fn(async () => ({ rows: [] })) };
+    const s = {
+      ...whole(),
+      supportCards: [{ commanderOracleId: "c0", oracleId: "x" }] as unknown as Snapshot["supportCards"],
+      labelFingerprint: "a".repeat(32),
+    };
+    await expect(indexCopySpec.publish(tx as never, s)).rejects.toThrow(/different role sets/);
+    expect(tx.execute).toHaveBeenCalledTimes(1);
+  });
+});
