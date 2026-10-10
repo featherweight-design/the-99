@@ -13,9 +13,10 @@ export const tuningHubCopy = {
       mana: { name: "Mana Balance", purpose: "Counts every source of each color against what your spells ask for.", cost: "free · look deeper 1 credit" },
       cuts: {
         name: "Proposed cuts",
-        purpose: "A shortlist of what to cut, each with the reason it was picked.",
+        // R2 (Hugh, 2026-10-09): model-first, so the free pass names no card.
+        purpose: "Counts where the deck runs long. A deeper look names the cuts.",
         // Hugh, landing feedback: the tile names a paid second look, as Mana Balance's does.
-        // Brief §Proposed cuts ships tier 1 only; this cost line assumes tier 2 lands with it.
+        // Tier 2 is guaranteed work (plan 2026-10-09-proposed-cuts-model-tier).
         cost: "free · look deeper 1 credit",
         over: (n: number) => `this deck is ${n} over`,
         // Inert tile. `total` is the spine's figure, commanders included (ruling 4).
@@ -25,7 +26,7 @@ export const tuningHubCopy = {
     },
     // Dates are US short form, month first: "Oct 7", "Oct 7 · 9:40 PM" (Hugh, landing feedback).
     lastRun: (date: string, outcome?: string) => `last run ${date}${outcome ? ` · ${outcome}` : ""}`,
-    running: { suggested: "reading your deck", deeper: "looking deeper", cuts: "ranking" },
+    running: { suggested: "reading your deck", deeper: "looking deeper", cuts: "counting" },
   },
   shortcuts: {
     proposedCuts: "Proposed cuts →",
@@ -91,43 +92,59 @@ export const tuningHubCopy = {
   },
   // New citation source names, beside deckTuningCopy.card.cite.
   cite: { cardText: "card text", count: "count", edhrec: "edhrec", role: "role", curve: "curve", bracket: "bracket" },
+  // R2 (Hugh, 2026-10-09): model-first. The free pass counts and names no card; Look deeper names the cuts.
+  // numberWord: overCopy's existing spelled-number helper (six, five).
   cuts: {
-    sub: "free",
-    reading: (cards: number) => `Ranking your ${cards} cards. A second, usually less.`,
+    sub: "free count · look deeper 1 credit",
+    counting: (cards: number) => `Counting your ${cards} cards. A second, usually less.`,
     readRows: { list: "Your list", edhrec: (commander: string) => `EDHREC inclusion for ${commander}`, roles: "Your roles and curve", bracket: "Bracket flags" },
-    lead: (n: number) => `${n} cards to look at, likeliest cut first. Cut writes to the list straight away.`,
-    leadPart: (cut: number) => `${cut} cut. The rest stay ranked as they were.`,
-    leadThin: (n: number) => `${n} cards to look at, ranked by role, curve and bracket only.`,
-    thinRow: (n: number) => `${n} decks · too few to rank by`,
-    reason: {
-      edhrec: (pct: number, commander: string, median: number) => `in ${pct}% of ${commander} decks · your median card ${median}%`,
-      role: (role: string, have: number, rec: number) => `${role} ${have} · rec ${rec}`,
-      curve: (mv: number, n: number, total: number) => `${mv} mana · ${n} of ${total} cost 7 or more`,
-      bracket: (flag: string, bracket: number, allows: number, has: number) => `${flag} · bracket ${bracket} allows ${allows}, this deck has ${has}`,
+    // Lead bold is overCopy's over-99 figure, in --fg (never --warning).
+    lead: "Below is what we counted. To have the cards named, look deeper.",
+    leadBare: "Below is what we counted.",
+    leadNamed: (n: number) => `${numberWord(n)} cards named. Cut writes to the list straight away.`,
+    leadPart: (cut: number, kept: number, named: number, open: number) => `${numberWord(cut)} cut, ${numberWord(kept)} kept. ${numberWord(named)} were named, so ${numberWord(open)} are left open.`,
+    facts: {
+      head: "What we counted",
+      read: (cards: number, commander: string, decks: number, bracket: number) => `from ${cards} cards · EDHREC for ${commander}, ${decks} decks · bracket ${bracket}, as declared · free`,
+      role: (rec: number, over: number) => `rec ${rec} · ${over} over`,
+      curveFullest: "the fullest slot",
+      curveOf: (total: number) => `of ${total}`,
+      // Only a flag the declared bracket does not allow.
+      bracket: (bracket: number, allows: number) => `bracket ${bracket} allows ${allows}`,
+      edhrecUnder: (pct: number, commander: string) => `In under ${pct}% of ${commander} decks`,
+      median: (pct: number) => `your median card ${pct}%`,
+      thinRow: (n: number) => `${n} decks · too few to count against`,
+      dividerResult: "The count",
+      dividerPart: "The count, as the list is now",
     },
+    // Chips quote the facts verbatim: role `ramp 14 · rec 10`, edhrec `14% · median 38%`, curve `9 cost 7 or more`.
     cut: "Cut",
     keep: "Keep",
     cutDone: "cut",
     kept: "kept",
     undo: "Undo",
     showAgain: "Show it again",
-    more: (n: number) => `Show ${n} more`,
-    neverCut: (commander: string, locked: number) => `Never lists ${commander} or the ${locked} cards you locked.`,
-    rankAgain: "Rank again",
-    tally: (cut: number, toGo: number) => `free · ${cut} cut · ${toGo} to go`,
+    neverCut: (commander: string, locked: number, key: number) => `Never named: ${commander}, the ${locked} cards you locked and the ${key} Key cards.`,
     done: { head: (body: number, cut: number) => `Back to ${body} / ${body}. You cut ${cut}.`, body: "The deck isn’t over any more, so Proposed cuts closes here." },
-    // Always overage + 2 candidates (Hugh).
-    candidates: (over: number) => over + 2,
     deeper: {
-      lead: "A deeper look reads your description, notes and games against this shortlist, and says which cuts fit what the deck is for.",
-      pendingLead: "The shortlist below stays, and you can keep cutting while it reads.",
-      doneRead: (notes: number, n: number) => `read your description, ${notes} game notes and the ${n} candidates below`,
-      divider: "The shortlist, unchanged",
-      cutFirst: (name: string) => `${name}: cut it first.`,
-      keep: (name: string) => `${name}: keep it.`,
+      offerTitle: (n: number) => `Name the ${numberWord(n)} cuts`,
+      offerLead: (n: number) => `A deeper look names ${numberWord(n)} cards to cut, each with a reason taken from the count below. It also reads your description and game notes.`,
+      offerLeadThin: "EDHREC has too few decks for this commander to count against, so a deeper look names cuts from roles, curve, bracket and your notes only.",
+      pendingLead: (n: number) => `Naming ${numberWord(n)} cuts from the count below. You can keep editing the deck while it reads.`,
+      pendingRead: (cards: number, notes: number) => `reading the count, EDHREC for ${cards} cards, your description and ${notes} game notes`,
+      resultHead: (n: number) => `${numberWord(n)} to cut`,
+      resultRead: (notes: number) => `named by a deeper look · read the count below, your description and ${notes} game notes`,
+      resultReadThin: "named from roles, curve, bracket and your notes · EDHREC too thin",
+      resultFoot: (named: number, asked: number) => `${named} of ${asked} named · each figure checked against the count`,
+      shortRow: (ordinal: string) => `A ${ordinal} wasn’t named`,
+      shortWhy: "it cited a figure the count doesn’t have · left out, not replaced",
+      refused: "The deeper look didn’t name a cut it could back with a count, so nothing is shown. Your credit is back.",
+      refusedFoot: "your list is untouched · the count below stands",
+      failed: { tag: "Didn’t finish", heading: "The deeper look didn’t finish", body: "No answer came back in time, so no card was named. Your credit is back." },
     },
-    allLocked: (commander: string) => `Every card but ${commander} is locked, so there is nothing to cut. Unlock a card on Your deck and it can be ranked here.`,
-    failed: { tag: "Couldn’t rank", heading: "We couldn’t rank this deck’s cards", body: "The card catalog didn’t answer. It is usually back within a minute." },
+    allLocked: (commander: string) => `Every card but ${commander} is locked or a Key card, so a deeper look has nothing it may name. Unlock a card on Your deck and it is offered here.`,
+    failed: { tag: "Couldn’t count", heading: "We couldn’t count this deck’s cards", body: "The card catalog didn’t answer. It is usually back within a minute." },
+    // Retired in R2: reading, lead(n), leadThin, reason.*, more, rankAgain, tally, candidates, deeper.{lead,doneRead,divider,cutFirst,keep}.
   },
   history: {
     sub: "every run of every tool · newest first",

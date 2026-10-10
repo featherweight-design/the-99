@@ -161,3 +161,59 @@ These land on Design's drawing package, so they are recorded rather than patched
 - `TuningToolMark.dc.html` ~88: the metadata `variant: geo` default is always passed by the
   standalone runtime, so `tool=cuts` previews the unapproved geometric mark. Remove the metadata
   default so the tool-specific fallback can run.
+
+## R2 re-audit: Proposed cuts, model-first (2026-10-10)
+
+**Verdict: GREEN, with Design errata that do not block the build.** Audited against
+`docs/superpowers/plans/2026-10-09-proposed-cuts-model-tier.md` (main) and Hugh's model-first ruling.
+
+**Canvases.** `(R2) · C Proposed cuts and History` is CURRENT (C1 to C9 at 900 and 390; C6c is phone only;
+H1 to H4 carried from R1 with the Cuts summaries updated). `(R1) · C Proposed cuts and History` is
+SUPERSEDED, kept for the record. `(R1) · A Landing` and `(R1) · B Mana Balance` remain current. Note the
+drop omitted `READINESS-audit.md`; main's copy is kept and this section is appended to it.
+
+### Checked against the ask
+- **Free pass is counted facts only.** C1 names no card and shows no list: lead, Look deeper, then
+  `What we counted` (role overages, curve crowding, bracket flags, EDHREC spread). The bracket row reads
+  "bracket 3 allows 3", so a flag shows only against the declared bracket, as the plan requires.
+- **Thin-data note.** C5 drops the EDHREC fact row, adds a dashed row, and the offer lead names the gap.
+- **Look deeper is the main action.** First in the panel, filled `--accent`, `1 credit` segment, the hub's
+  only filled button. States drawn: running (C2), results (C3, C4), refused (C6, plus all-locked C6c),
+  failed (C7), thin (C5), back to 99 (C8). Credits-used-up is not redrawn (B6 rule), which is acceptable.
+- **Results reuse the tier-2 frames and the citation pattern.** C2 is the old C8, C3 the old C9. Lines carry the
+  Suggestion tag, one sentence and chips. Exactly the overage is asked for, 1 to N accepted, a shortfall is
+  a dashed slot and never padded (C4). The arithmetic holds: six over, two cut, four over; ramp 14 to 13;
+  EDHREC under 10% from 17 to 16 as the 3% card leaves.
+- **Fact versus claim (C9).** Four carriers (shape, tag, type, words), never color alone.
+- **Over tally never `--warning`.** The R2 canvas uses `--warning` nowhere but the `:root` declaration and a
+  note that forbids it. Only canvas A's A1 tile still draws it (decision 1).
+- **Tokens.** Every `var(--x)` in the R2 canvas is declared in `src/app/globals.css`. The only non-token
+  value is the segment rule `rgba(18,18,23,0.35)` (decision 2).
+- **Copy.** No em dash in the canvas or the copy file; spelling is US. The only em dash in the diff is the `STATES-tuning-hub.md` heading, which the R1 heading already carried (Design errata). Retired R1 keys are listed in the copy file.
+- **No R1 free-ranked-list frame is current.** README marks the R1 canvas superseded and renumbers frames.
+
+### Design items (errata for Design's next round; recorded here, not patched). None is layout or visual, none blocks.
+1. `design-tables/tuning-hub.md` was not re-synced: rows ~192 to ~238 still specify the rank number, `Rank again`,
+   overage + 2 candidates, the tier-2 band over a shortlist, and `Couldn't rank`. There is no R2 property
+   table for C1's `What we counted` rows or C3's lines. The R2 canvas is the specimen until one exists.
+2. `README.md` lines ~63 to ~73 (R1 Proposed cuts bullets: overage + 2, shortlist C2/C8/C9) carry no
+   "superseded" mark beside the R2 section, so a reader of the old bullets sees a live spec.
+3. Canvas notes say every chip repeats a figure "from the count". The EDHREC per-card chips (`14% · median 38%`)
+   and `you said` chips are not count rows; they come from the model's input. C5b also draws a `curve 4 mana`
+   chip that matches no count row. The plan's validator (figure equals the input) governs.
+
+### Decided, override if you disagree
+1. **A1 tile status ink: build in `--fg-muted`**, not `--warning` (README open 10). Hugh's neutral-tally ruling already decides it.
+2. **The segment rule is `color-mix(in srgb, var(--bg) 35%, transparent)`**, a value and no new token.
+3. **Re-offer (README open 9): ship as drawn.** Cuts pressed from a result do not re-offer Look deeper; any other
+   edit does. Re-offering on every Cut would invite a credit per card.
+4. **Stop on a deeper look (open 6): keep it, as in Mana Balance.** One behavior across both tools.
+5. **Ordinal helper (flag 12): engineering writes a small helper** for the shortfall slot ("A sixth"), up to the overage cap.
+   `/copy-review` may reword to a numeral if it prefers.
+6. **Chip contract: the validator's input is the source of truth** (design errata 3), so build chips from the evidence pack, not from the visible count rows.
+7. **Build PR 4 writes the R2 property table from the canvas** and replaces rows ~192 to ~238 when it moves
+   `design-tables/tuning-hub.md` to `docs/superpowers/design-tables/` (existing instruction).
+
+### To `/copy-review` (not decided here)
+The `cuts` block of `tuning-hub · copy strings.ts`: offer lead, `Name the six cuts`, the shortfall slot, the
+refused and failed sentences, and the tile purpose `Counts where the deck runs long. A deeper look names the cuts.`

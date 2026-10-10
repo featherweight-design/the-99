@@ -1,13 +1,17 @@
-# Readiness — Tuning hub R1
+# Readiness — Tuning hub R1 + Proposed cuts R2
+
+**R2 approved (LGTM, Hugh, 2026-10-10). Self-assessed: Green.** Proposed cuts is model-first per `docs/superpowers/plans/2026-10-09-proposed-cuts-model-tier.md`. The current canvas is `… (R2) · C`, with C1–C9 at 900 and 390. R1 C is superseded. PR 4 (UI) of the plan builds from these frames.
 
 **Approved (LGTM, Hugh, 2026-10-09). Self-assessed: Green for the build, with three items engineering should settle in the plan.** Brief items 1–7 are drawn at 900 and 390. Item 8 (About) is deferred, as the brief says.
 
 ## Settle in the plan
-1. **Proposed cuts' Look deeper is now in scope** (Hugh, landing feedback). The brief has tier 2 as eval-contingent. The canvases draw it (C2, C8, C9), so the roadmap and the eval should account for it.
+1. **Proposed cuts' Look deeper is guaranteed work** (plan, roadmap sub-project 6). R2 draws it as the main path (C1–C7).
 2. **Suggested changes as two lists** changes the model contract: one rationale per card, each with its own countable citation (README open 8).
 3. **Stop on a deeper look** (open 6). Keep it, or spend the credit on press.
 
 ## Still open for Hugh, not blocking
+- Re-offer after cuts from a deeper result (README open 9).
+- A1 tile status ink: build in `--fg-muted`, not `--warning` (README open 10).
 4. Curve-weighted pips vs Deck Stats' raw pips (open 1).
 5. Free runs recorded once per list version (open 3).
 6. A third door from Deck Stats' Mana colors card (open 2).
@@ -16,9 +20,12 @@
 ## Flagged
 8. Mana Balance's covers-the-cost target is a fixed table, owned by engineering and unspecified here.
 9. The dork caveat is a counted sentence, not a weighting.
-10. The 400ms delay on Proposed cuts' loading frame is a judgement.
+10. The 400ms delay on Proposed cuts' counting frame is a judgement.
+11. R2's filled Look deeper uses `rgba(18,18,23,0.35)` (`--bg` at 35%) for its segment rule. That's a value, not a new token.
+12. The shortfall slot copy names the missing ordinal (`A sixth`). Engineering needs an ordinal helper, or `/copy-review` rewords it.
 
 ## Read
+- R2: `docs/superpowers/plans/2026-10-09-proposed-cuts-model-tier.md` (main).
 - `tuning-panel.tsx`, `manifest-rows.tsx`, `suggestion-card.tsx`, `role-counter-strip.tsx`, `role-counter-cell.tsx`, `builder-spine.tsx`, `cards/card-fact-mark.tsx` (main).
 - `deck-tuning.ts` cite keys, `decks-builder.ts` (`addPanelCopy`, `overCopy`), `help-me-choose.ts` (`deeper`), `credits.ts`, `package.json` (no icon library).
 
