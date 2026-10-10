@@ -77,4 +77,51 @@ export const deckStatsCopy = {
       land: "Lands",
     },
   },
+  average: {
+    // Counts the body (99, or 98 for a pair), as the Curve card says it counts the commander: EDHREC's type counts sum to the body.
+    denomCommander: (decks: number | null) => (decks === null ? "EDHREC average" : `${decks.toLocaleString("en-US")} decks`),
+    denomColors: (label: string) => `${label} decks`,
+    denomBaseline: "starting mix",
+    counts: (body: number) => (body === 99 ? "Counts the 99, not the commander." : `Counts the ${body}, not the commanders.`),
+    basisCommander: (name: string, decks: number | null) =>
+      `Each bar is this deck’s figure minus the average ${name} deck’s${decks === null ? "." : `, from EDHREC’s ${decks.toLocaleString("en-US")} decks.`}`,
+    basisPair: (a: string, b: string, decks: number | null) =>
+      `Each bar is this deck’s figure minus the average ${a} and ${b} deck’s${decks === null ? "." : `, from EDHREC’s ${decks.toLocaleString("en-US")} decks.`}`,
+    basisColors: (label: string) => `Each bar is this deck’s figure minus the average ${label} deck’s.`,
+    basisBaseline: (name: string) =>
+      `${name} has no average yet: not for the commander, a pair, or its colors. Each bar is this deck’s figure minus The 99’s starting mix.`,
+    baselineNote: "The starting mix has jobs only, so lands, the curve and card types don’t draw here. They return once this commander has an average.",
+    thinNote: (n: number, of: number) =>
+      `${n} of ${of} cards so far. A bar that runs past its end is cut off with a mark; the figures on the right are always whole.`,
+    fewer: "FEWER",
+    more: "MORE",
+    youAvg: "YOU · AVG",
+    curveHeading: "CURVE, BY MANA VALUE",
+    groups: { shape: "SHAPE", types: "CARD TYPES", jobs: "JOBS" },
+    rows: {
+      lands: "Lands",
+      manaValue: "Mana value",
+      creature: "Creatures",
+      instant: "Instants",
+      sorcery: "Sorceries",
+      artifact: "Artifacts",
+      enchantment: "Enchantments",
+      planeswalker: "Planeswalkers",
+      battle: "Battles",
+      ramp: "Ramp",
+      draw: "Card draw",
+      removal: "Removal",
+      wipes: "Board wipes",
+    },
+    diffMore: (n: string) => `${n} more`,
+    diffFewer: (n: string) => `${n} fewer`,
+    diffHigher: (n: string) => `${n} higher`,
+    diffLower: (n: string) => `${n} lower`,
+    same: "the same",
+    jobsShort: (n: number) =>
+      `${n} ${n === 1 ? "card isn’t" : "cards aren’t"} labeled yet, so the job counts may run short until ${n === 1 ? "it is" : "they are"}.`,
+    row: (name: string, you: string, avg: string, diff: string) => `${name}: this deck ${you}, average ${avg}, ${diff}`,
+    miniColumn: (label: string, diff: number) =>
+      diff === 0 ? `Mana value ${label}: the same as the average` : `Mana value ${label}: ${Math.abs(diff).toFixed(1)} ${diff > 0 ? "more" : "fewer"} than the average`,
+  },
 } as const;

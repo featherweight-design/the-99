@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { deckStatsCopy } from "../../lib/copy/deck-stats";
+import { AverageCard } from "./deck-stats-average";
+import { Shell } from "./deck-stats-shell";
 import { JOB_ROWS, type JobTally } from "../../lib/decks/job-tally";
 import { MANA_COLORS, type ManaColor, type ManaSupply } from "../../lib/mana/supply";
 import { CARD_TYPES, CURVE_MAX, type CardType, type DeckStatsSlice } from "../../lib/decks/stats";
@@ -35,26 +37,6 @@ const TYPE_VAR: Record<CardType | "land", string> = {
 const BUCKET_LABELS = Array.from({ length: CURVE_MAX + 1 }, (_, i) =>
   i === CURVE_MAX ? deckStatsCopy.curve.ceiling : String(i),
 );
-
-function Shell({ title, id, label, denom, info, describedBy, children }: { title: string; id: string; label?: string; denom?: string; info?: ReactNode; describedBy?: string; children?: ReactNode }) {
-  return (
-    <section
-      role="figure"
-      aria-label={label ?? title}
-      aria-describedby={describedBy}
-      data-stats-card={id}
-      className="flex flex-col gap-[16px] rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-sunken)] px-[14px] py-[16px] md:px-[22px] md:py-[20px]"
-    >
-      <header className="relative flex items-baseline gap-[10px] border-b border-b-[color:var(--border)] pb-[10px]">
-        <h3 className="whitespace-nowrap font-serif text-[17px] text-[color:var(--fg)] md:text-[19px]">{title}</h3>
-        {info}
-        <span className="flex-1" />
-        {denom ? <span className="whitespace-nowrap text-right font-mono text-[10.5px] text-[color:var(--fg-faint)]">{denom}</span> : null}
-      </header>
-      {children}
-    </section>
-  );
-}
 
 function CurveCard({ data }: { data: DeckStatsSlice }) {
   const copy = deckStatsCopy.curve;
@@ -412,6 +394,8 @@ export function DeckStatsView({ data = null }: { data?: DeckStatsSlice | null })
       <JobsCard key={c.key} tally={data.jobs} />
     ) : c.key === "colors" && data?.mana ? (
       <ColorsCard key={c.key} mana={data.mana} />
+    ) : c.key === "average" && data?.average ? (
+      <AverageCard key={c.key} average={data.average} />
     ) : (
       <Shell key={c.key} id={c.key} title={c.title} />
     );

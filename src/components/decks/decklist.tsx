@@ -13,6 +13,7 @@ import { isOverLimit } from "../../lib/swaps/limit";
 import { isLandFace } from "../../lib/cards/facet";
 import { jobTally } from "../../lib/decks/job-tally";
 import { manaCurve, typeCurve, type DeckStatsInput } from "../../lib/decks/stats";
+import { averageComparison } from "../../lib/decks/stats-average";
 import { landProduces, manaSupply } from "../../lib/mana/supply";
 import type { RecommendedMix } from "../../lib/decks/mix";
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
@@ -429,7 +430,16 @@ export function Decklist({
           ...statsData.commanders.map((c, i) => ({ id: `commander:${i}`, typeLine: c.typeLine, manaCost: c.manaCost, quantity: 1 })),
         ])
       : null;
-    return { curve: manaCurve(list), types: typeCurve(list), jobs, mana };
+    // The Average card compares the 99 (EDHREC's counts sum to 99), so it reads the list without the commanders.
+    const average = statsData.average
+      ? averageComparison(statsData.average, {
+          curve: manaCurve(cards),
+          types: typeCurve(cards),
+          jobs,
+          cards: cards.reduce((a, c) => a + c.quantity, 0),
+        })
+      : null;
+    return { curve: manaCurve(list), types: typeCurve(list), jobs, mana, average };
   }, [cards, statsData]);
 
   // The commanders the Shopping list bills (H28), through the list's own predicate. Every Shopping
