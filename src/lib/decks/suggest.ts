@@ -183,6 +183,20 @@ export function buildSuggestionPayload(
   };
 }
 
+/** The roles a pool card fills under this basis: the classifier's, or, with `roleSets`, its fresh label's
+ *  (no label, no role). A land stays a land either way, so the land slots are untouched; on the label
+ *  basis it is ONLY a land, because the label targets and the strip exclude land faces from the four
+ *  roles, and a utility land whose text also reads draw must not close a draw gap. */
+export function rolesForSuggestion(
+  card: PoolCard,
+  roleSets: ReadonlyMap<string, readonly Exclude<MixRole, "land">[]> | undefined,
+): ReturnType<typeof classifyRoles> {
+  const byText = classifyRoles(card);
+  if (!roleSets) return byText;
+  if (byText.includes("land")) return ["land"];
+  return [...(roleSets.get(card.oracleId) ?? [])];
+}
+
 export function suggestDeck(args: {
   commander: PoolCard;
   ownedPool: PoolCard[];
@@ -193,7 +207,15 @@ export function suggestDeck(args: {
   hasPartner: boolean;
   /** The same targets the tiles quote and the shelf headers count against. */
   mix: RecommendedMix;
+  /**
+   * Fresh-label role sets by oracle id, when the roles are counted by LABEL (`LABEL_ROLE_COUNTS_ENABLED`,
+   * labels-everywhere plan). A card absent from the map has no fresh label and counts toward no role,
+   * the rule the strip beside this shelf counts under; absent altogether is the classifier for every
+   * card, exactly as before. A land stays the classifier's call either way.
+   */
+  roleSets?: ReadonlyMap<string, readonly Exclude<MixRole, "land">[]>;
 }): Suggestion[] {
+  const rolesOf = (c: PoolCard) => rolesForSuggestion(c, args.roleSets);
   const max = deckBodySize(args.hasPartner);
   const lands = args.mix.cells.land.target;
   const out: Suggestion[] = [];
@@ -225,12 +247,12 @@ export function suggestDeck(args: {
   };
   for (const c of args.ownedPool) {
     if (used.has(c.oracleId)) {
-      for (const r of classifyRoles(c)) counts[r]++;
+      for (const r of rolesOf(c)) counts[r]++;
     }
   }
   for (const c of args.ownedPool) {
     if (used.has(c.oracleId)) continue;
-    for (const role of classifyRoles(c)) {
+    for (const role of rolesOf(c)) {
       const target = role === "land" ? lands : args.mix.cells[role].target;
       if (counts[role] < target) { add(c.oracleId, role); counts[role]++; break; }
     }

@@ -23,6 +23,7 @@ import { cardTypeGroup, primaryRole, requireDeck } from "./read";
 import { recommendedMix, type RecommendedMix } from "./mix";
 import { loadSkeletonForCommanders } from "../profile/load";
 import { roleBasisFromEnv } from "./label-counts-flag";
+import { loadPoolRoleBasis } from "../recs/pool-role-basis";
 import { buildSuggestionPayload, suggestDeck, type DeckSuggestion } from "./suggest";
 import { SHELF_CAP } from "./shelf-cap";
 
@@ -150,6 +151,37 @@ export function unownedAppend<T>(eligible: readonly T[]): T[] {
   return eligible.slice(0, SHELF_CAP);
 }
 
+/**
+ * The mix a deck's shelves are counted against and the label sets they are counted by, as ONE
+ * basis (labels-everywhere PR 6). The labels are read first: the mix's targets follow the basis
+ * they come back under, so a failed read is the classifier on BOTH sides and never labels'
+ * targets against classifier counts.
+ */
+export async function resolveSuggestionBasis(
+  commander: { oracleId: string; colorIdentity?: string[] | null },
+  partner: { oracleId: string; colorIdentity?: string[] | null } | null,
+  hasPartner: boolean,
+  available: readonly { oracleId: string }[],
+): Promise<{ mix: RecommendedMix; roleSets: Awaited<ReturnType<typeof loadPoolRoleBasis>>["roleSets"] }> {
+  const { basis: roleBasis, roleSets } = await loadPoolRoleBasis(available);
+  let mix = recommendedMix(null, hasPartner, roleBasis);
+  try {
+    const { skeleton } = await loadSkeletonForCommanders(
+      commander.oracleId,
+      partner?.oracleId ?? null,
+      [...new Set([...commander.colorIdentity ?? [], ...(partner?.colorIdentity ?? [])])],
+      undefined,
+      // The strip counts by label when the switch is on, so its targets are the label ones. The
+      // switch is per deployment and the deployment is in this payload's cache key.
+      { roleBasis },
+    );
+    mix = recommendedMix(skeleton, hasPartner, roleBasis);
+  } catch (err) {
+    console.warn("loadDeckSuggestions: no skeleton — the panel quotes the asserted targets", err);
+  }
+  return { mix, roleSets };
+}
+
 /** `shoppingFigures` is null when EDHREC is unreachable, and a map otherwise. An
     empty map says "we asked and these cards have no figure"; null says "we could
     not ask". The Shopping rows print an absence for the first and nothing at all
@@ -222,23 +254,9 @@ export async function loadDeckSuggestions(deckId: string, userId: string): Promi
   // THE SAME MIX THE DECK PAGE DRAWS. The Add panel's shelf headers count against these and
   // its tiles quote them; two sources would disagree by construction on any commander whose
   // measured ramp is not ten.
-  let mix = recommendedMix(null, hasPartner, roleBasisFromEnv());
-  try {
-    const { skeleton } = await loadSkeletonForCommanders(
-      commander.oracleId,
-      partner?.oracleId ?? null,
-      [...new Set([...commander.colorIdentity ?? [], ...(partner?.colorIdentity ?? [])])],
-      undefined,
-      // The strip counts by label when the switch is on, so its targets are the label ones. The
-      // switch is per deployment and the deployment is in this payload's cache key.
-      { roleBasis: roleBasisFromEnv() },
-    );
-    mix = recommendedMix(skeleton, hasPartner, roleBasisFromEnv());
-  } catch (err) {
-    console.warn("loadDeckSuggestions: no skeleton — the panel quotes the asserted targets", err);
-  }
+  const { mix, roleSets } = await resolveSuggestionBasis(commander, partner ?? null, hasPartner, available);
 
-  const raw = suggestDeck({ commander, ownedPool: available, edhrecTopCards: topCards, hasPartner, mix });
+  const raw = suggestDeck({ commander, ownedPool: available, edhrecTopCards: topCards, hasPartner, mix, roleSets });
 
   // Enrich owned suggestions. Each draws the copy the reader owns, the one its card details will
   // (Hugh, 2026-10-05); fail-soft through `resolveOwnedPrintings`, which keeps the oracle-level art.
