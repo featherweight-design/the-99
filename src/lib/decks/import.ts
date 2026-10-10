@@ -205,12 +205,13 @@ const ANNOTATION_RE = /\s+\*([A-Za-z]+)\*$/;
  * commander it is.
  *
  * Narrow on purpose: these words in full, and only in a trailing bracket. Any
- * parenthetical is a card name's business, and a two-to-six-character one is
- * already a set code — which is exactly why `(CMDR)` is not read here. The
- * abbreviation fits the set-code shape, so claiming it would take a printing
- * identity away from the paste parser. `partner` is seven characters and cannot be
- * mistaken for one. The asterisk spelling of the abbreviation is unambiguous
- * and is still read, by ANNOTATION_RE.
+ * parenthetical is a card name's business, and a two-to-eight-character one is
+ * already a set code to the paste parser — which is exactly why `(CMDR)` is not
+ * read here: claiming it would take a printing identity away from that parser.
+ * `(Partner)` fits the set-code shape too, and is safe only because of ORDER:
+ * this tag is stripped from the line before the paste parser reads a printing
+ * off it. The asterisk spelling of the abbreviation is unambiguous and is still
+ * read, by ANNOTATION_RE.
  */
 const COMMANDER_TAG_RE = /\s+\((?:commander|partner)\)$/i;
 
