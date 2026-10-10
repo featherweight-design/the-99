@@ -23,7 +23,7 @@
 // answered, send the action and show ONLY the action's answer.
 
 import {
-  createContext, lazy, Suspense, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode,
+  createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
   type RefObject,
 } from "react";
 import { twMerge } from "tailwind-merge";
@@ -649,23 +649,14 @@ export function CardDetailProvider({
   // The NAME travels with the art: a renamed owned printing (a Secret Lair card) is titled in the
   // modal with the name printed on it, so its plate's caption and label read that too, even where
   // the opener already passed the same picture under the oracle name.
-  const [readArt, setReadArt] = useState<ReadonlyMap<string, { art: string | null; name: string }>>(() => new Map());
-  // The deck's picks, read through a ref so `file` stays stable: a neighbor plate draws what the
-  // modal draws, and on a deck that is the deck's printing (deck printings), not the Collection's.
-  const deckPicks = useRef({ picks: deckPrintingPicks, deckId, held: deckOracleIds });
-  useLayoutEffect(() => {
-    deckPicks.current = { picks: deckPrintingPicks, deckId, held: deckOracleIds };
-  }, [deckPrintingPicks, deckId, deckOracleIds]);
+  //
+  // The read card is kept, not its art: the plate is derived at render, under the deck's picks and
+  // holdings as they stand then, so a card removed from the deck after its read draws the
+  // Collection's printing, as its modal does (deck printings).
+  const [readArt, setReadArt] = useState<ReadonlyMap<string, BrowseCard>>(() => new Map());
   const file = useCallback((oracleId: string, next: BrowseCard) => {
     cache.current.set(oracleId, next);
-    const { picks, deckId: onDeck, held } = deckPicks.current;
-    const shown = withDeckPick(next, deckPickFor(picks, onDeck, held, oracleId));
-    const art = resolvedPrinting(shown)?.imageUri ?? null;
-    const name = printedNameOf(shown);
-    setReadArt((m) => {
-      const was = m.get(oracleId);
-      return was && was.art === art && was.name === name ? m : new Map(m).set(oracleId, { art, name });
-    });
+    setReadArt((m) => (m.get(oracleId) === next ? m : new Map(m).set(oracleId, next)));
   }, []);
   // How many times each card has been evicted. A read that started before an eviction
   // answers with what the write it raced has not replaced yet, so the count taken when
@@ -1274,8 +1265,10 @@ export function CardDetailProvider({
   // same positions to prefetch them.
   const plate = (s: SiblingCard | undefined): SiblingCard | null => {
     if (!s) return null;
-    const read = readArt.get(s.oracleId);
-    if (!read) return s;
+    const readCard = readArt.get(s.oracleId);
+    if (!readCard) return s;
+    const shown = withDeckPick(readCard, deckPickFor(deckPrintingPicks, deckId, deckOracleIds, s.oracleId));
+    const read = { art: resolvedPrinting(shown)?.imageUri ?? null, name: printedNameOf(shown) };
     return read.art !== (s.imageUri ?? null) || read.name !== s.name ? { ...s, imageUri: read.art, name: read.name } : s;
   };
   const prevSibling = paging && index > 0 ? plate(siblings[index - 1]) : null;

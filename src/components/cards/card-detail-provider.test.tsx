@@ -361,6 +361,30 @@ describe("CardDetailProvider", () => {
       expect(peek().outerHTML).not.toContain("deck-sol.jpg");
     });
 
+    // A card read while the deck held it, then removed: the plate follows the deck as it stands now.
+    it("redraws a plate read while held once the deck drops the card", async () => {
+      const sol = pickedSol(null);
+      const tree = (held: ReadonlySet<string>) => (
+        <CardDetailProvider
+          fetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)}
+          prefetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)}
+          deckId="d1"
+          deckOracleIds={held}
+          deckPrintingPicks={{ "o-sol": { setCode: "LTC", collectorNumber: "284" } }}
+        >
+          <CardDetailTrigger oracleId="o-signet" name="Arcane Signet" siblings={["o-signet", "o-sol"]}>
+            Arcane Signet
+          </CardDetailTrigger>
+        </CardDetailProvider>
+      );
+      const { rerender } = render(tree(new Set(["o-signet", "o-sol"])));
+      await click(screen.getByText("Arcane Signet"));
+      await waitFor(() => expect(peek().outerHTML).toContain("deck-sol.jpg"));
+      rerender(tree(new Set(["o-signet"])));
+      await waitFor(() => expect(peek().outerHTML).toContain("collection-sol.jpg"));
+      expect(peek().outerHTML).not.toContain("deck-sol.jpg");
+    });
+
     it("fills a plate the opener passed no art for", async () => {
       const sol = owned("o-sol", "Sol Ring", "https://cards.scryfall.io/owned-sol.jpg");
       render(
