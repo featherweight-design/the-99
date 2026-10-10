@@ -80,7 +80,8 @@ export const DECK_SIZE = 100;
  * is a fact worth naming more than a reason to cut, so it weighs least. These are the first-draft
  * weights, not yet measured; recall is scored with them untuned before any tuning.
  */
-export const CUT_WEIGHTS = { inclusion: 0.45, role: 0.3, curve: 0.15, bracket: 0.1 } as const;
+export type CutWeights = { inclusion: number; role: number; curve: number; bracket: number };
+export const CUT_WEIGHTS: CutWeights = { inclusion: 0.45, role: 0.3, curve: 0.15, bracket: 0.1 };
 
 /** Cutting a card from a role at or under target costs this much score: a demotion, not a filter,
  *  because an over deck may have to cut into a short role. */
@@ -91,8 +92,10 @@ export function proposeCuts(input: {
   locked: ReadonlySet<string>;
   /** Null when the commander has no usable EDHREC list. */
   support: CutSupport | null;
+  /** Defaults to `CUT_WEIGHTS`; the eval passes others to score them held out. */
+  weights?: CutWeights;
 }): ProposedCuts {
-  const { profile, locked, support } = input;
+  const { profile, locked, support, weights: W = CUT_WEIGHTS } = input;
   const total = profile.counts.total;
   const over = Math.max(0, total - DECK_SIZE);
 
@@ -134,13 +137,13 @@ export function proposeCuts(input: {
         if (pct != null) {
           scored.push({
             reason: { kind: "inclusion", pct, deckCount: support.deckCount },
-            weight: CUT_WEIGHTS.inclusion * (1 - clamp01(pct / 100)),
+            weight: W.inclusion * (1 - clamp01(pct / 100)),
           });
         }
       } else {
         scored.push({
           reason: { kind: "offList", listed: support.listed, deckCount: support.deckCount },
-          weight: CUT_WEIGHTS.inclusion,
+          weight: W.inclusion,
         });
       }
     }
@@ -163,7 +166,7 @@ export function proposeCuts(input: {
     if (surplus && !opensGap) {
       scored.push({
         reason: { kind: "roleSurplus", role: surplus.role, have: surplus.have, target: surplus.target },
-        weight: CUT_WEIGHTS.role * surplus.share,
+        weight: W.role * surplus.share,
       });
     }
 
@@ -173,14 +176,14 @@ export function proposeCuts(input: {
       if (bucket && bucket.delta > 0) {
         scored.push({
           reason: { kind: "curve", cmc: bucket.cmc, have: bucket.have, average: round1(bucket.average) },
-          weight: CUT_WEIGHTS.curve * clamp01(bucket.delta / Math.max(bucket.average, 1)),
+          weight: W.curve * clamp01(bucket.delta / Math.max(bucket.average, 1)),
         });
       }
     }
 
     for (const [flag, ids] of flags) {
       if (ids.has(card.oracleId)) {
-        scored.push({ reason: { kind: "bracket", flag, count: ids.size }, weight: CUT_WEIGHTS.bracket });
+        scored.push({ reason: { kind: "bracket", flag, count: ids.size }, weight: W.bracket });
       }
     }
 

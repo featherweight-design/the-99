@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { buildDeckProfile, type ProfileCardRow, type ProfileInput } from "../profile/build";
 import type { CompositionTargets, DetectionCoverage, FlagSource } from "../profile/types";
-import { proposeCuts, type CutSupport } from "./cuts";
+import { proposeCuts, type CutSupport, type CutWeights } from "./cuts";
 
 const DETECTION: DetectionCoverage = {
   massLandDenial: { methods: ["m"], basis: "t" },
@@ -174,5 +174,18 @@ describe("proposeCuts", () => {
     const mixed = r.candidates.filter((c) => c.signals.length > 1 && c.signals.some((s) => s.kind === "offList"));
     expect(mixed.length).toBeGreaterThan(0);
     for (const c of mixed) expect(c.reason.kind).toBe("offList");
+  });
+
+  it("scores with the weights it is handed, one signal at a time", () => {
+    const sup = support([["ramp0", 90], ["bear0", 2]]);
+    const only = (w: Partial<CutWeights>) => proposeCuts({
+      profile: profile(), locked: new Set(), support: sup,
+      weights: { inclusion: 0, role: 0, curve: 0, bracket: 0, ...w },
+    });
+    const kinds = (r: ReturnType<typeof proposeCuts>) => new Set(r.candidates.flatMap((c) => c.signals.map((s) => s.kind)));
+    expect(kinds(only({ inclusion: 1 }))).toEqual(new Set(["inclusion", "offList"]));
+    expect(kinds(only({ role: 1 }))).toEqual(new Set(["roleSurplus"]));
+    expect(kinds(only({ curve: 1 }))).toEqual(new Set(["curve"]));
+    expect(only({ inclusion: 1 }).candidates[0].oracleId).not.toBe(only({ role: 1 }).candidates[0].oracleId);
   });
 });

@@ -200,6 +200,7 @@
     "eval:rescore-lines": "tsx scripts/eval/rescore-lines.mts",
     "eval:repair": "tsx scripts/eval/repair.mts",
     "eval:overview-read": "tsx scripts/eval/overview-read.mts",
+    "eval:cuts": "tsx scripts/eval/cuts.mts",
     "eval:strategy-input": "tsx scripts/eval/strategy-input.mts",
     "eval:tuning-strategy": "tsx scripts/eval/tuning-strategy-metrics.mts",
     "probe:image-timing": "node scripts/probe-image-timing.mjs",
