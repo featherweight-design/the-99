@@ -162,7 +162,8 @@ export function landCatch(card: LandText): "condition" | "utility" | null {
 
 export type Finds = { types: Set<BasicType>; basicOnly: boolean };
 
-const FETCH = /search your library for (?:up to (?:one|two)|an?|two) ([a-z ,]+?) cards?\b/;
+const COUNT = "one|two|three|four|five|six|seven|eight|nine|ten|x|that many|any number of";
+const FETCH = new RegExp(`search your library(?: and graveyard)? for (?:up to (?:${COUNT})|an?|${COUNT}) ([a-z ,]+?) cards?\\b`);
 
 /**
  * The land types a land finds when it is sacrificed to search, and whether it finds only basics.
@@ -192,17 +193,33 @@ export function activatedFinds(card: LandText): Finds | null {
   return null;
 }
 
-function parseFinds(text: string): Finds | null {
-  const m = FETCH.exec(text);
-  if (!m) return null;
-  const words = m[1];
-  const basicOnly = /\bbasic\b/.test(words);
-  const types = new Set<BasicType>(BASIC_TYPES.filter((t) => new RegExp(`\\b${t}\\b`).test(words)));
-  if (types.size === 0) {
-    if (!/\bland\b/.test(words)) return null;
-    for (const t of BASIC_TYPES) types.add(t);
+/**
+ * What a NON-LAND card's land search can find (Cultivate, Wood Elves): no sacrifice test and no activation
+ * test, because a spell or a trigger searches too. A land goes through `fetchFinds` / `activatedFinds`.
+ * Reads the WHOLE text it is given, not the front face: the caller has already chosen which faces are castable.
+ */
+export function searchFinds(card: LandText): Finds[] {
+  return allFinds(stripReminders((card.oracleText ?? "").toLowerCase()));
+}
+
+/** Every search in the text that names a land, each with its own scope: a card can tutor a creature, fetch
+ *  any basic, and fetch a Forest. A search that names no land is skipped. */
+function allFinds(text: string): Finds[] {
+  const out: Finds[] = [];
+  for (const m of text.matchAll(new RegExp(FETCH.source, "g"))) {
+    const words = m[1];
+    const named = BASIC_TYPES.filter((t) => new RegExp(`\\b${t}\\b`).test(words));
+    if (named.length === 0 && !/\bland\b/.test(words)) continue;
+    out.push({ types: new Set<BasicType>(named.length > 0 ? named : BASIC_TYPES), basicOnly: /\bbasic\b/.test(words) });
   }
-  return { types, basicOnly };
+  return out;
+}
+
+/** The searches merged into one reading, for a land: the union of their types, basics-only when all are. */
+function parseFinds(text: string): Finds | null {
+  const all = allFinds(text);
+  if (all.length === 0) return null;
+  return { types: new Set(all.flatMap((f) => [...f.types])), basicOnly: all.every((f) => f.basicOnly) };
 }
 
 /**

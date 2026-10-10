@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 import { deckStatsCopy } from "../../lib/copy/deck-stats";
 import { JOB_ROWS, type JobTally } from "../../lib/decks/job-tally";
@@ -36,18 +36,20 @@ const BUCKET_LABELS = Array.from({ length: CURVE_MAX + 1 }, (_, i) =>
   i === CURVE_MAX ? deckStatsCopy.curve.ceiling : String(i),
 );
 
-function Shell({ title, id, label, denom, children }: { title: string; id: string; label?: string; denom?: string; children?: ReactNode }) {
+function Shell({ title, id, label, denom, info, describedBy, children }: { title: string; id: string; label?: string; denom?: string; info?: ReactNode; describedBy?: string; children?: ReactNode }) {
   return (
     <section
       role="figure"
       aria-label={label ?? title}
+      aria-describedby={describedBy}
       data-stats-card={id}
       className="flex flex-col gap-[16px] rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-sunken)] px-[14px] py-[16px] md:px-[22px] md:py-[20px]"
     >
-      <header className="flex items-baseline gap-[10px] border-b border-b-[color:var(--border)] pb-[10px]">
-        <h3 className="font-serif text-[17px] text-[color:var(--fg)] md:text-[19px]">{title}</h3>
+      <header className="relative flex items-baseline gap-[10px] border-b border-b-[color:var(--border)] pb-[10px]">
+        <h3 className="whitespace-nowrap font-serif text-[17px] text-[color:var(--fg)] md:text-[19px]">{title}</h3>
+        {info}
         <span className="flex-1" />
-        {denom ? <span className="text-right font-mono text-[10.5px] text-[color:var(--fg-faint)]">{denom}</span> : null}
+        {denom ? <span className="whitespace-nowrap text-right font-mono text-[10.5px] text-[color:var(--fg-faint)]">{denom}</span> : null}
       </header>
       {children}
     </section>
@@ -226,35 +228,134 @@ const PIP_STYLE: Record<ManaColor, { bg: string; ink: string }> = {
 
 const share = (n: number, total: number) => (total === 0 ? 0 : Math.round((n / total) * 100));
 
+const STRIPE = (c: ManaColor) =>
+  `repeating-linear-gradient(135deg, ${PIP_STYLE[c].bg} 0 2px, transparent 2px 5px)`;
+
+/** The ⓘ and its tooltip: a press pins it open on any device, a mouse hovering or the keyboard focusing it shows
+ *  it, Esc closes. The box positions against the card header, so on a phone it spans the card instead of
+ *  running past the viewport. It stays in the document, hidden, so the card can name it as its description. */
+function InfoTip({ id, lines }: { id: string; lines: readonly string[] }) {
+  // Three reasons to be open, kept apart: one flag would let the press that follows a hover close it again.
+  const [hover, setHover] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const open = hover || pinned || focused;
+  const box = useRef<HTMLSpanElement>(null);
+  // A press anywhere else closes a pinned tip. The button's own blur is not enough: Safari does not focus a
+  // button on a mouse press, so a pin made there would never blur.
+  useEffect(() => {
+    if (!pinned) return;
+    const close = (e: PointerEvent) => { if (!box.current?.contains(e.target as Node)) setPinned(false); };
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [pinned]);
+  return (
+    <span
+      ref={box}
+      className="self-center"
+      onPointerEnter={(e) => { if (e.pointerType === "mouse") setHover(true); }}
+      onPointerLeave={(e) => { if (e.pointerType === "mouse") setHover(false); }}
+    >
+      <button
+        type="button"
+        aria-label={deckStatsCopy.colors.infoLabel}
+        aria-expanded={open}
+        onClick={() => setPinned((v) => !v)}
+        onFocus={(e) => {
+          // Keyboard focus only: a tap focuses a button too, and would then hold it open against the next tap.
+          try { if (e.currentTarget.matches(":focus-visible")) setFocused(true); } catch { /* no :focus-visible */ }
+        }}
+        onKeyDown={(e) => { if (e.key === "Escape") { setPinned(false); setHover(false); setFocused(false); } }}
+        onBlur={() => { setPinned(false); setFocused(false); }}
+        className={`relative flex size-[18px] items-center justify-center rounded-full border border-[color:var(--fg-faint)] font-mono text-[10.5px] after:absolute after:-inset-[13px] after:content-[''] md:after:-inset-[5px] ${open ? "text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"}`}
+      >
+        i
+      </button>
+      <span
+        id={id}
+        role="tooltip"
+        hidden={!open}
+        className="absolute inset-x-0 top-[calc(100%+6px)] z-10 flex flex-col gap-[8px] rounded-[8px] border border-[color:var(--border-strong)] bg-[color:var(--elevated)] px-[14px] py-[12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] shadow-[0_8px_24px_rgba(0,0,0,0.45)] md:right-auto md:w-[340px] [&[hidden]]:hidden"
+      >
+        {lines.map((l) => <span key={l}>{l}</span>)}
+      </span>
+    </span>
+  );
+}
+
+function SourceBar({ c, lands, other, widthPct }: { c: ManaColor; lands: number; other: number; widthPct: number }) {
+  const total = lands + other;
+  if (total === 0) return null;
+  return (
+    <span
+      className={`flex h-[14px] flex-none gap-[1px] ${lands > 0 && other > 0 ? "min-w-[13px] md:min-w-[15px]" : "min-w-[8px] md:min-w-[10px]"}`}
+      style={{ width: `${widthPct}%` }}
+      data-source-bar
+    >
+      {lands > 0 ? (
+        <span
+          className={`h-full ${other > 0 ? "rounded-l-[3px]" : "rounded-[3px]"}`}
+          style={{ flex: `${lands} 1 0`, minWidth: 4, background: PIP_STYLE[c].bg }}
+          data-segment="land"
+        />
+      ) : null}
+      {other > 0 ? (
+        <span
+          className={`h-full ${lands > 0 ? "rounded-r-[3px]" : "rounded-[3px]"}`}
+          style={{ flex: `${other} 1 0`, minWidth: 4, backgroundImage: STRIPE(c), boxShadow: `inset 0 0 0 1px ${PIP_STYLE[c].bg}` }}
+          data-segment="nonland"
+        />
+      ) : null}
+    </span>
+  );
+}
+
 function ColorsCard({ mana }: { mana: ManaSupply }) {
   const copy = deckStatsCopy.colors;
-  const rows = MANA_COLORS.map((c) => ({ c, pips: mana.demand[c], sources: mana.supply[c].lands })).filter((r) => r.pips > 0 || r.sources > 0);
+  const tipId = useId();
+  const rows = MANA_COLORS.map((c) => ({ c, pips: mana.demand[c], lands: mana.supply[c].lands, other: mana.supply[c].nonland })).filter(
+    (r) => r.pips > 0 || r.lands + r.other > 0,
+  );
   const pipTotal = rows.reduce((a, r) => a + r.pips, 0);
-  const sourceTotal = rows.reduce((a, r) => a + r.sources, 0);
-  const shares = rows.map((r) => ({ pips: share(r.pips, pipTotal), sources: share(r.sources, sourceTotal) }));
+  const sourceTotal = rows.reduce((a, r) => a + r.lands + r.other, 0);
+  const shares = rows.map((r) => ({ pips: share(r.pips, pipTotal), sources: share(r.lands + r.other, sourceTotal) }));
   const widest = Math.max(1, ...shares.flatMap((s) => [s.pips, s.sources]));
+  // The displayed total and the legend are the bars' own: a source counts once for each color it adds.
+  const landSegments = rows.reduce((a, r) => a + r.lands, 0);
+  const otherSegments = rows.reduce((a, r) => a + r.other, 0);
+  const sources = sourceTotal;
   const asked = rows.filter((r) => r.pips > 0);
-  const caption =
-    mana.lands === 0
+  const tip = asked.length === 1 ? [`${copy.monoLead(copy.names[asked[0].c])} ${copy.tip[0]}`, copy.tip[1]] : copy.tip;
+  // Each line states an absence, so each needs the whole count behind it: a rock whose color we cannot read
+  // is still a rock, and a land that adds nothing is still a land.
+  const footer =
+    mana.lands === 0 && mana.nonlandSources === 0 && mana.unattributedNonland === 0
       ? copy.noLands
-      : asked.length === 1
-        ? `${copy.monoLead(copy.names[asked[0].c])} ${copy.captionMono}`
-        : copy.caption;
+      : mana.nonlandSources === 0 && mana.unattributedNonland === 0 && mana.landSources > 0
+        ? copy.onlyLands
+        : null;
   return (
-    <Shell title={deckStatsCopy.cards.colors} id="colors" denom={copy.denom(pipTotal, mana.lands)} label={`${deckStatsCopy.cards.colors}, ${copy.denom(pipTotal, mana.lands)}`}>
+    <Shell
+      title={deckStatsCopy.cards.colors}
+      id="colors"
+      denom={copy.denom(pipTotal, sources)}
+      label={`${deckStatsCopy.cards.colors}, ${copy.denom(pipTotal, sources)}`}
+      info={<InfoTip id={tipId} lines={tip} />}
+      describedBy={tipId}
+    >
       {rows.length > 0 ? (
         <div className="flex flex-col gap-[9px]" data-colors-rows>
           <div aria-hidden="true" className="grid grid-cols-[minmax(0,1fr)_26px_minmax(0,1fr)] gap-[10px] font-mono text-[9.5px] tracking-[0.12em] text-[color:var(--fg-faint)]">
-            <span className="text-right">{copy.asks}</span>
+            <span className="text-right">{copy.pips}</span>
             <span />
-            <span>{copy.makes}</span>
+            <span>{copy.sources}</span>
           </div>
           <ul className="flex flex-col gap-[9px]">
             {rows.map((r, i) => (
               <li
                 key={r.c}
                 data-color-row={r.c}
-                aria-label={copy.row(copy.names[r.c], r.pips, r.sources)}
+                aria-label={copy.row(copy.names[r.c], r.pips, shares[i].pips, r.lands, r.other, shares[i].sources)}
                 className="grid grid-cols-[minmax(0,1fr)_26px_minmax(0,1fr)] items-center gap-[10px]"
               >
                 <div aria-hidden="true" className="flex flex-row-reverse items-center gap-[8px]">
@@ -269,27 +370,36 @@ function ColorsCard({ mana }: { mana: ManaSupply }) {
                   {r.c}
                 </span>
                 <div aria-hidden="true" className="flex items-center gap-[8px]">
-                  <span className="h-[14px] flex-none rounded-[3px]" style={{ width: `${(shares[i].sources / widest) * 60}%`, background: PIP_STYLE[r.c].bg }} />
-                  <span className="whitespace-nowrap font-mono text-[11px] text-[color:var(--fg-body)]">{r.sources ? `${r.sources} · ${shares[i].sources}%` : "0"}</span>
+                  <SourceBar c={r.c} lands={r.lands} other={r.other} widthPct={(shares[i].sources / widest) * 60} />
+                  <span className="whitespace-nowrap font-mono text-[11px] text-[color:var(--fg-body)]">{r.lands + r.other ? `${r.lands + r.other} · ${shares[i].sources}%` : "0"}</span>
                 </div>
               </li>
             ))}
           </ul>
         </div>
       ) : null}
-      {mana.unattributedNonland > 0 ? (
-        <div className="flex flex-col gap-[8px] border-t border-dashed border-[color:var(--border-dashed)] pt-[12px]" data-colors-nonland>
-          <span aria-hidden="true" className="flex flex-wrap gap-[3px]">
-            {Array.from({ length: mana.unattributedNonland }, (_, k) => (
-              <span key={k} className="size-[10px] rounded-[2px] border border-dashed border-[color:var(--fg-muted)]" />
-            ))}
-          </span>
-          <span className="text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">
-            {mana.unattributedNonland === 1 ? copy.nonlandOne : copy.nonlandMany(mana.unattributedNonland)}
-          </span>
-        </div>
+      {footer || mana.nonlandSources > 0 ? (
+      <div className="flex flex-col gap-[6px] border-t border-dashed border-[color:var(--border-dashed)] pt-[12px]" data-colors-legend>
+        {footer ? (
+          <p className="text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{footer}</p>
+        ) : (
+          <div className="flex flex-wrap gap-x-[18px] gap-y-[6px] text-[12px] text-[color:var(--fg-body)]">
+            <span className="flex items-center gap-[8px]">
+              <span aria-hidden="true" className="h-[10px] w-[18px] rounded-[2px] bg-[color:var(--fg-muted)]" />
+              {copy.legendLand} <span className="font-mono text-[11px]">{landSegments}</span>
+            </span>
+            <span className="flex items-center gap-[8px]">
+              <span
+                aria-hidden="true"
+                className="h-[10px] w-[18px] rounded-[2px]"
+                style={{ backgroundImage: "repeating-linear-gradient(135deg, var(--fg-muted) 0 2px, transparent 2px 5px)", boxShadow: "inset 0 0 0 1px var(--fg-muted)" }}
+              />
+              {copy.legendOther} <span className="font-mono text-[11px]">{otherSegments}</span>
+            </span>
+          </div>
+        )}
+      </div>
       ) : null}
-      <p className="font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">{caption}</p>
     </Shell>
   );
 }

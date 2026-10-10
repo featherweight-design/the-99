@@ -83,7 +83,7 @@ describe("DeckStatsView curve card", () => {
   it("names no average for a deck with nothing cast", () => {
     const none = [{ cmc: 0, quantity: 99, typeLine: "Basic Land — Forest" }];
     render(<DeckStatsView data={{ curve: manaCurve(none), types: typeCurve(none) }} />);
-    expect(screen.getByText(/Average mana value none/)).toBeInTheDocument();
+    expect(screen.getByText(/average mana value none/)).toBeInTheDocument();
   });
 });
 

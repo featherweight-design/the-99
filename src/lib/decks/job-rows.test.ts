@@ -27,4 +27,11 @@ describe("loadJobRows", () => {
     readLabels.mockRejectedValue(new Error("db down"));
     expect(await loadJobRows([{ oracleId: "rock", typeLine: "Artifact" }])).toBeNull();
   });
+
+  it("uses a read the caller already made, and reads nothing", async () => {
+    const labels = new Map([["rock", [job("role", "ramp")]]]) as unknown as Parameters<typeof loadJobRows>[1];
+    expect(await loadJobRows([{ oracleId: "rock", typeLine: "Artifact" }], labels)).toEqual({ rock: ["ramp"] });
+    expect(readLabels).not.toHaveBeenCalled();
+    expect(await loadJobRows([{ oracleId: "rock", typeLine: "Artifact" }], null)).toBeNull();
+  });
 });

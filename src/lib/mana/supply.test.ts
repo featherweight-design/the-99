@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { landProduces, manaSupply, type ManaSupplyCardRow } from "./supply";
+import { makesNoManaSource, landProduces, manaSupply, sourceProduces, type ManaSupplyCardRow } from "./supply";
 
 const JUND = ["B", "R", "G"];
 const land = (typeLine: string, oracleText: string | null, name = "Test Land") => ({ name, typeLine, oracleText });
@@ -63,7 +63,8 @@ describe("landProduces", () => {
   });
 });
 
-const row = (o: Partial<ManaSupplyCardRow>): ManaSupplyCardRow => ({ typeLine: "Creature", manaCost: null, quantity: 1, ...o });
+const row = (o: Partial<ManaSupplyCardRow>): ManaSupplyCardRow => ({ id: `c${++seq}`, typeLine: "Creature", manaCost: null, quantity: 1, ...o });
+let seq = 0;
 
 describe("manaSupply", () => {
   it("counts raw pips per copy, hybrid once per half, and drops generic and Phyrexian pips", () => {
@@ -83,11 +84,34 @@ describe("manaSupply", () => {
     expect(s.supply.G.lands).toBe(6);
     expect(s.supply.B.lands).toBe(1);
     expect(s.lands).toBe(7);
+    expect(s.landSources).toBe(6);
   });
-  it("puts non-land ramp in unattributedNonland and never into a color", () => {
-    const s = manaSupply([row({ typeLine: "Artifact", ramp: true, quantity: 2, manaCost: "{1}" }), row({ ramp: true })]);
+  it("counts an unreadable non-land source in unattributedNonland and in no color", () => {
+    const s = manaSupply([row({ typeLine: "Artifact", ramp: true, quantity: 2, manaCost: "{1}" }), row({ ramp: true, produces: [] })]);
     expect(s.unattributedNonland).toBe(3);
+    expect(s.nonlandSources).toBe(0);
     expect(Object.values(s.supply).every((x) => x.nonland === 0 && x.lands === 0)).toBe(true);
+  });
+  it("credits a non-land source to each color it adds, per copy, apart from the lands", () => {
+    const s = manaSupply([
+      row({ id: "signet", typeLine: "Artifact", ramp: true, quantity: 2, produces: ["U", "B"] }),
+      row({ id: "swamp", typeLine: "Basic Land — Swamp", produces: ["B"] }),
+    ]);
+    expect(s.supply.B).toEqual({ lands: 1, nonland: 2 });
+    expect(s.supply.U).toEqual({ lands: 0, nonland: 2 });
+    expect(s.sources.B).toEqual({ lands: ["swamp"], nonland: ["signet", "signet"] });
+    expect(s.nonlandSources).toBe(2);
+    expect(s.unattributedNonland).toBe(0);
+  });
+  it("lists the ids behind every figure", () => {
+    const s = manaSupply([row({ id: "a", typeLine: "Land", quantity: 3, produces: ["G"] }), row({ id: "b", ramp: true, produces: ["G", "C"] })]);
+    for (const c of ["W", "U", "B", "R", "G", "C"] as const) {
+      expect(s.supply[c].lands).toBe(s.sources[c].lands.length);
+      expect(s.supply[c].nonland).toBe(s.sources[c].nonland.length);
+    }
+  });
+  it("ignores a produces list on a non-land card that is not flagged a source", () => {
+    expect(manaSupply([row({ produces: ["G"] })]).supply.G.nonland).toBe(0);
   });
   it("takes a land's cost and its ramp flag for nothing", () => {
     const s = manaSupply([row({ typeLine: "Land", manaCost: "{R}", ramp: true, produces: ["R"] })]);
@@ -98,5 +122,81 @@ describe("manaSupply", () => {
     const s = manaSupply([]);
     expect(s.lands).toBe(0);
     expect(Object.values(s.demand).every((n) => n === 0)).toBe(true);
+  });
+});
+
+describe("sourceProduces", () => {
+  const card = (oracleText: string, typeLine = "Artifact", name = "Test Card") => ({ name, typeLine, oracleText });
+  it("reads a rock's symbols, and a Signet's two colors", () => {
+    expect(sourceProduces(card("{1}, {T}: Add {U}{B}."), ["tapsForMana"], JUND)).toEqual(["U", "B"]);
+    expect(sourceProduces(card("{T}: Add {C}{C}.", "Artifact", "Sol Ring"), ["tapsForMana"], JUND)).toEqual(["C"]);
+  });
+  it("gives an any-color rock or dork each of the deck's colors", () => {
+    expect(sourceProduces(card("{T}: Add one mana of any color."), ["tapsForMana"], JUND)).toEqual(["B", "R", "G"]);
+    expect(sourceProduces(card("{T}: Add one mana of any color that a land you control could produce."), ["tapsForMana"], JUND)).toEqual([]);
+  });
+  it("does not count a one-shot that sacrifices itself", () => {
+    expect(sourceProduces(card("{T}, Sacrifice this artifact: Add {R}{R}{R}.", "Artifact", "Lotus Petal"), ["tapsForMana"], JUND)).toEqual([]);
+  });
+  it("reads a land search for the basics it names, or the deck's colors for a basic land", () => {
+    expect(sourceProduces(card("Search your library for a Forest or Mountain card, put it onto the battlefield tapped.", "Sorcery"), ["fetchesLand"], JUND)).toEqual(["R", "G"]);
+    expect(sourceProduces(card("Search your library for up to two basic land cards, put one onto the battlefield tapped and the other into your hand.", "Sorcery"), ["fetchesLand"], JUND)).toEqual(["B", "R", "G"]);
+  });
+  it("reads a search for a counted number of basics", () => {
+    expect(sourceProduces(card("Sacrifice two lands. Search your library for four basic land cards, put them onto the battlefield tapped, then shuffle.", "Sorcery"), ["fetchesLand"], JUND)).toEqual(["B", "R", "G"]);
+    expect(sourceProduces(card("Search your library for up to X basic land cards, where X is the number of colors among permanents you control.", "Enchantment"), ["fetchesLand"], JUND)).toEqual(["B", "R", "G"]);
+  });
+  it("reads a search for any count of basics, and one that also reaches the graveyard", () => {
+    expect(sourceProduces(card("Search your library for up to ten land cards, put them onto the battlefield tapped.", "Sorcery"), ["fetchesLand"], JUND)).toEqual(["B", "R", "G"]);
+    expect(sourceProduces(card("Search your library for any number of Plains cards, exile them.", "Enchantment"), ["fetchesLand"], JUND)).toEqual(["W"]);
+    expect(sourceProduces(card("Search your library and graveyard for a basic land card and a card named Foo.", "Sorcery"), ["fetchesLand"], JUND)).toEqual(["B", "R", "G"]);
+  });
+  it("gives a Treasure maker nothing: its mana is one-shot", () => {
+    expect(sourceProduces(card("Whenever an opponent casts a spell, create a Treasure token.", "Enchantment"), ["makesTreasure"], JUND)).toEqual([]);
+  });
+  it("names the cards whose land-ish text is no lasting source", () => {
+    expect(makesNoManaSource({ oracleText: "When this creature enters, create a tapped Powerstone token. (It's an artifact with \"{T}: Add {C}.\")" })).toBe(true);
+    expect(makesNoManaSource({ oracleText: "When this creature enters, create a Lander token." })).toBe(true);
+    expect(makesNoManaSource({ oracleText: "When this creature enters, look at the top four cards of your library. You may reveal a land card." })).toBe(true);
+    expect(makesNoManaSource({ oracleText: "When this creature enters, each opponent may search their library for a basic land card." })).toBe(true);
+    expect(makesNoManaSource({ oracleText: "{T}: Add one mana of any color that a land you control could produce." })).toBe(false);
+  });
+  it("tells a landcycler from other cards", () => {
+    expect(makesNoManaSource({ oracleText: "Trample\nForestcycling {2} ({2}, Discard this card: Search your library for a Forest card.)" })).toBe(true);
+    expect(makesNoManaSource({ oracleText: "Basic landcycling {1}{U}" })).toBe(true);
+    expect(makesNoManaSource({ oracleText: "Cycling {2}" })).toBe(false);
+    expect(makesNoManaSource({ oracleText: null })).toBe(false);
+  });
+  it("reads only the add clauses for a tapsForMana label, and every search for a fetchesLand one", () => {
+    const text = "{T}: Add {G}.\nWhen this enters, search your library for a Plains card.";
+    expect(sourceProduces(card(text, "Creature"), ["tapsForMana"], JUND)).toEqual(["G"]);
+    expect(sourceProduces(card(text, "Creature"), ["fetchesLand"], JUND)).toEqual(["W"]);
+    const two = "When this enters, search your library for a creature card. Then search your library for a Forest card, put it onto the battlefield.\nSearch your library for a Mountain card.";
+    expect(sourceProduces(card(two, "Creature"), ["fetchesLand"], JUND)).toEqual(["R", "G"]);
+  });
+  it("sends a basic-land search to the basics the deck plays, and an any-land search to its colors", () => {
+    const cultivate = card("Search your library for up to two basic land cards.", "Sorcery");
+    expect(sourceProduces(cultivate, ["fetchesLand"], ["W", "U", "B", "R", "G"], ["G", "B"])).toEqual(["B", "G"]);
+    expect(sourceProduces(cultivate, ["fetchesLand"], JUND, [])).toEqual([]);
+    expect(sourceProduces(card("Search your library for a land card.", "Sorcery"), ["fetchesLand"], JUND, ["G"])).toEqual(["B", "R", "G"]);
+  });
+  it("keeps each search's own scope, and credits Wastes to an any-basic search", () => {
+    const both = card("Search your library for a basic land card. Search your library for a Forest card.", "Sorcery");
+    expect(sourceProduces(both, ["fetchesLand"], ["W", "U", "B", "R", "G"], ["B"])).toEqual(["B", "G"]);
+    expect(sourceProduces(card("Search your library for a basic land card.", "Sorcery"), ["fetchesLand"], JUND, ["G", "C"])).toEqual(["G", "C"]);
+  });
+  it("does not read a ritual with no label, but still reads a spell's land search", () => {
+    expect(sourceProduces(card("Add {B}{B}{B}.", "Instant", "Dark Ritual"), [], JUND)).toEqual([]);
+    expect(sourceProduces(card("Search your library for a Forest card.", "Sorcery"), [], JUND)).toEqual(["G"]);
+    expect(sourceProduces(card("{T}: Add {G}.", "Creature"), [], JUND)).toEqual(["G"]);
+  });
+  it("reads each kind of a card with several, and the castable half of an adventure but not a modal back", () => {
+    expect(sourceProduces(card("{T}: Add {G}.\nWhen this enters, search your library for a Plains card.", "Creature"), ["tapsForMana", "fetchesLand"], JUND)).toEqual(["W", "G"]);
+    expect(sourceProduces({ ...card("Beanstalk Giant\n//\nSearch your library for a basic land card.", "Creature // Sorcery"), layout: "adventure" }, ["fetchesLand"], JUND)).toEqual(["B", "R", "G"]);
+    expect(sourceProduces({ ...card("Bring it.\n//\nSearch your library for a Plains card.", "Sorcery // Land"), layout: "modal_dfc" }, [], JUND)).toEqual([]);
+  });
+  it("reads both for a card with no fresh label, and nothing for text that gives no color", () => {
+    expect(sourceProduces(card("{T}: Add {G}.\nWhen this enters, search your library for a Plains card.", "Creature"), [], JUND)).toEqual(["W", "G"]);
+    expect(sourceProduces(card("{T}: Add an amount of mana equal to this creature's power.", "Creature"), [], JUND)).toEqual([]);
   });
 });

@@ -10,27 +10,32 @@ export const deckStatsCopy = {
   },
   cards: {
     curve: "The curve, by card type",
-    colors: "Colors, asked for and made",
+    colors: "Mana colors",
     jobs: "Jobs",
     average: "Against the average deck",
     money: "Money and ownership",
     results: "Results",
   },
   colors: {
-    denom: (pips: number, lands: number) => `${pips} ${pips === 1 ? "pip" : "pips"} · ${lands} ${lands === 1 ? "land" : "lands"}`,
-    asks: "ASKS FOR · PIPS",
-    makes: "MAKES · LAND SOURCES",
-    nonlandOne: "1 more mana source isn’t a land. It’s counted, but its color isn’t.",
-    nonlandMany: (n: number) =>
-      `${n} more mana sources aren’t lands, such as rocks, creatures that tap for mana and spells that fetch lands. They’re counted here, but their colors aren’t.`,
-    caption: "A land counts once for each color it can add, so a dual counts twice. Shares are of all pips, and of all land sources.",
-    // One color asked for: the dual-counts-twice clause is dropped, as drawn in 1d2.
-    captionMono: "A land counts once for each color it can add; shares are of all land sources.",
+    denom: (pips: number, sources: number) => `${pips} ${pips === 1 ? "pip" : "pips"} · ${sources} ${sources === 1 ? "source" : "sources"}`,
+    pips: "PIPS",
+    sources: "SOURCES",
+    infoLabel: "How this is counted",
+    tip: [
+      "A source counts once for each color it can add, so a dual land or a two-color mana rock counts twice. Land search counts the basics in this deck it can find.",
+      "Shares are of all pips and all sources. A card that makes mana in a color we can’t read isn’t counted.",
+    ],
+    legendLand: "Land",
+    legendOther: "Mana rock, dork or land search",
+    onlyLands: "Every source is a land. This deck has no mana rocks, dorks or land search.",
     monoLead: (color: string) => `Every pip is ${color}.`,
-    noLands: "No lands yet, so no land sources are counted.",
+    noLands: "No lands yet, so no sources are counted.",
     names: { W: "white", U: "blue", B: "black", R: "red", G: "green", C: "colorless" },
-    row: (name: string, pips: number, sources: number) =>
-      `${name}: ${pips} ${pips === 1 ? "pip" : "pips"} asked for, ${sources} land ${sources === 1 ? "source" : "sources"} made`,
+    row: (name: string, pips: number, pipShare: number, lands: number, other: number, sourceShare: number) => {
+      const n = (k: number, one: string, many: string) => `${k} ${k === 1 ? one : many}`;
+      const split = other > 0 ? `, ${n(lands, "land", "lands")} and ${n(other, "other", "others")}` : "";
+      return `${name[0].toUpperCase()}${name.slice(1)}, ${n(pips, "pip", "pips")}, ${pipShare} percent; ${n(lands + other, "source", "sources")}${split}, ${sourceShare} percent`;
+    },
   },
   jobs: {
     denom: (n: number) => `${n} nonland ${n === 1 ? "card" : "cards"}`,
@@ -48,7 +53,7 @@ export const deckStatsCopy = {
     // No average to name at zero cast: a deck of nothing but lands has none, and 0.0 would read as one.
     noAverage: "none",
     caption: (avg: string, lands: number) =>
-      `Average mana value ${avg}, commander included · ${lands} ${lands === 1 ? "land" : "lands"}, not on the curve · tap a type to light its cards`,
+      `Counts the commander · average mana value ${avg} · ${lands} ${lands === 1 ? "land" : "lands"}, not on the curve · tap a type to light its cards`,
     lit: (type: string, n: number, cast: number) =>
       `${type} lit: ${n} of ${cast} cast. Tap it again to clear.`,
     types: {

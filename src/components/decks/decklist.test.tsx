@@ -1483,6 +1483,7 @@ describe("the Stats panel", () => {
       statsData: {
         commanders: [{ cmc: 4, typeLine: "Legendary Creature", quantity: 1, manaCost: "{2}{G}{G}", colorIdentity: ["G", "U"] }],
         lands: { dual: ["U" as const, "G" as const] },
+        sources: { "sol-ring": ["C" as const] },
       },
     };
     const dual = makeCard({ oracleId: "dual", name: "Dual", typeLine: "Land", role: "land", cmc: 0 });
@@ -1492,19 +1493,26 @@ describe("the Stats panel", () => {
     const cell = (c: string) => document.querySelector(`[data-color-row="${c}"]`)!.getAttribute("aria-label");
     renderDecklist([dual, spell, rampOwned], stats);
     fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
-    expect(cell("G")).toBe("green: 3 pips asked for, 1 land source made");
-    expect(cell("U")).toBe("blue: 1 pip asked for, 1 land source made");
-    expect(document.querySelector("[data-colors-nonland]")).not.toBeNull();
+    expect(cell("G")).toBe("Green, 3 pips, 75 percent; 1 source, 33 percent");
+    expect(cell("U")).toBe("Blue, 1 pip, 25 percent; 1 source, 33 percent");
+    expect(cell("C")).toBe("Colorless, 0 pips, 0 percent; 1 source, 0 lands and 1 other, 33 percent");
+    expect(document.querySelector('[data-color-row="C"] [data-segment=nonland]')).not.toBeNull();
     cleanup();
 
     renderDecklist([dual, spell, addedForest], stats);
     fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
-    expect(cell("G")).toBe("green: 3 pips asked for, 3 land sources made");
-    expect(document.querySelector("[data-colors-nonland]")).toBeNull();
+    expect(cell("G")).toBe("Green, 3 pips, 75 percent; 3 sources, 75 percent");
+    expect(document.querySelector("[data-segment=nonland]")).toBeNull();
   });
 
   it("keeps the Colors card a shell when no land text was shipped", () => {
-    renderDecklist([rampOwned], { statsEnabled: true, filter: "all", statsData: { commanders: [], lands: null } });
+    renderDecklist([rampOwned], { statsEnabled: true, filter: "all", statsData: { commanders: [], lands: null, sources: {} } });
+    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    expect(document.querySelector("[data-colors-rows]")).toBeNull();
+  });
+
+  it("keeps the Colors card a shell when the non-land source read failed", () => {
+    renderDecklist([rampOwned], { statsEnabled: true, filter: "all", statsData: { commanders: [], lands: {}, sources: null } });
     fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
     expect(document.querySelector("[data-colors-rows]")).toBeNull();
   });
