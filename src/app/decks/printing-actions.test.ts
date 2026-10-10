@@ -28,6 +28,8 @@ vi.mock("../../db", () => {
   };
   return { db: { execute, transaction: async (fn: (tx: unknown) => unknown) => fn({ execute }) } };
 });
+const refresh = vi.hoisted(() => vi.fn());
+vi.mock("next/cache", () => ({ refresh }));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../lib/decks/read", () => ({ requireDeck: async () => ({ id: DECK }) }));
 vi.mock("../../lib/decks/printings", () => ({
@@ -49,6 +51,7 @@ beforeEach(() => {
   state.params = [];
   state.answers = [];
   state.resolved = PRINTING;
+  refresh.mockClear();
   process.env.DECK_PRINTINGS_ENABLED = "true";
 });
 
@@ -77,6 +80,7 @@ describe("setDeckPrinting", () => {
   it("refuses a card the deck does not hold, after taking the deck row's lock", async () => {
     const result = await setDeckPrinting(DECK, CARD, { setCode: "KHM", collectorNumber: "31" });
     expect(result).toEqual({ ok: false, reason: "notInDeck" });
+    expect(refresh).not.toHaveBeenCalled();
     const lock = state.texts.findIndex((t) => t.includes("for update"));
     const member = state.texts.findIndex((t) => t.includes("deck_cards"));
     expect(lock).toBeGreaterThanOrEqual(0);
@@ -88,6 +92,7 @@ describe("setDeckPrinting", () => {
     state.answers = [{ match: "deck_cards", rows: [{ held: true }] }];
     const result = await setDeckPrinting(DECK, CARD, { setCode: "KHM", collectorNumber: "31" });
     expect(result).toEqual({ ok: false, reason: "notHeld" });
+    expect(refresh).not.toHaveBeenCalled();
     expect(state.texts.some((t) => t.includes("insert into deck_printings"))).toBe(false);
   });
 
@@ -107,6 +112,8 @@ describe("setDeckPrinting", () => {
     ];
     const result = await setDeckPrinting(DECK, CARD, { setCode: "KHM", collectorNumber: "31" });
     expect(result).toEqual({ ok: true, printing: PRINTING });
+    // The deck page re-renders with the pick: every row, the commanders and the prices at once.
+    expect(refresh).toHaveBeenCalledTimes(1);
     const i = state.texts.findIndex((t) => t.includes("insert into deck_printings"));
     expect(i).toBeGreaterThanOrEqual(0);
     expect(state.texts[i]).toContain("on conflict (deck_id, oracle_id) do update");
