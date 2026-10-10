@@ -63,6 +63,16 @@ export function flagAllowance(flag: BracketFlag, declared: Bracket): number {
   return 0;
 }
 
+/**
+ * The comparison beside a flag row. A combo is not governed by a card allowance: brackets 1 and 2
+ * forbid an assembled combo and bracket 3 only a measured infinite-turn loop, while the figure
+ * counts the PIECE cards. So it says what the bracket forbids, and never "allows none" of a count.
+ */
+function allowanceNote(flag: BracketFlag, declared: Bracket, allows: number): string {
+  if (flag === "combo") return declared === 3 ? "bracket 3 allows no infinite loops" : `bracket ${declared} allows no combos`;
+  return `bracket ${declared} allows ${allows === 0 ? "none" : allows}`;
+}
+
 export function cutCounts(facts: CutFacts, declared: Bracket | null, commander: string): CutCounts {
   const rows: CountRow[] = [];
   const thin = facts.missing.includes("inclusion");
@@ -97,7 +107,7 @@ export function cutCounts(facts: CutFacts, declared: Bracket | null, commander: 
       flagCounts[b.flag] = b.cards.length;
       rows.push({
         key: `bracket:${b.flag}`, source: "bracket", label: FLAG_LABEL[b.flag], figure: b.cards.length,
-        note: `bracket ${declared} allows ${allows === 0 ? "none" : allows}`,
+        note: allowanceNote(b.flag, declared, allows),
       });
     }
   }
@@ -142,7 +152,7 @@ export function cutChips(cites: readonly CutCite[], reason: string, ctx: ChipCon
       case "flag": {
         const n = ctx.flagCounts[c.flag];
         const tail = n !== undefined && ctx.declared !== null
-          ? ` ${n} · bracket ${ctx.declared} allows ${flagAllowance(c.flag, ctx.declared) === 0 ? "none" : flagAllowance(c.flag, ctx.declared)}`
+          ? ` ${n} · ${allowanceNote(c.flag, ctx.declared, flagAllowance(c.flag, ctx.declared))}`
           : "";
         return { key, kind: "BRACKET", text: `${FLAG_LABEL[c.flag]}${tail}` };
       }

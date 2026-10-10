@@ -39,6 +39,15 @@ describe("flagAllowance", () => {
   });
 });
 
+describe("a combo is not a card allowance", () => {
+  it("says what the bracket forbids, not that it allows none of a piece count", () => {
+    const f = cutFacts({ profile: profile(), locked: new Set(), support: null, declaredBracket: 2 });
+    const withCombo = { ...f, brackets: [{ flag: "combo" as const, cards: [{ oracleId: "a", name: "a" }, { oracleId: "b", name: "b" }] }] };
+    expect(cutCounts(withCombo, 2, "G").rows.find((r) => r.key === "bracket:combo")?.note).toBe("bracket 2 allows no combos");
+    expect(cutCounts(withCombo, 3, "G").rows.find((r) => r.key === "bracket:combo")?.note).toBe("bracket 3 allows no infinite loops");
+  });
+});
+
 describe("cutChips", () => {
   const ctx = { medianPct: 38, flagCounts: { gameChanger: 4 }, declared: 3 as Bracket };
   it("quotes each cite's own figure, one chip per cite", () => {

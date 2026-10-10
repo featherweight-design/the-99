@@ -51,11 +51,13 @@ async function userId(): Promise<string> {
   return users[0].id;
 }
 
-async function clone(owner: string): Promise<string> {
+async function clone(owner: string, onId: (id: string) => void): Promise<string> {
   const source = process.env.PROBE_CUTS_DECK
     ?? (await q(`select d.id from decks d join deck_cards c on c.deck_id = d.id group by d.id having sum(c.quantity) > 100 limit 1`))[0]?.id;
   if (!source) throw new Error("no over-100 deck to clone on this database");
   const id = randomUUID();
+  // Published before the first write, so a failure part-way still reaches the cleanup.
+  onId(id);
   const cols = (await q(`select column_name from information_schema.columns where table_name = 'decks' order by ordinal_position`)).map((r) => r.column_name as string);
   const select = cols.map((c) => (c === "id" ? "$1::uuid" : c === "user_id" ? "$2" : `"${c}"`)).join(", ");
   await q(`insert into decks (${cols.map((c) => `"${c}"`).join(", ")}) select ${select} from decks where id = $3`, [id, owner, source]);
@@ -130,7 +132,7 @@ try {
   for (const w of WIDTHS.filter((x) => !process.env.PROBE_WIDTH || String(x.label) === process.env.PROBE_WIDTH)) {
     // A fresh clone per width: an Undo restores the row but the list is not byte-identical.
     if (deckId) await q(`delete from decks where id = $1`, [deckId]);
-    deckId = await clone(owner);
+    await clone(owner, (id) => { deckId = id; });
     const ctx = await browser.newContext({ viewport: w.viewport });
     const page = await ctx.newPage();
     // tsx's keepNames wraps helpers in `__name`, which does not exist in the page.

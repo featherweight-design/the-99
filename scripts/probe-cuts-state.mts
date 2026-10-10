@@ -41,11 +41,13 @@ const check = (label: string, actual: unknown, expected: unknown) => {
   console.log(`${ok ? "PASS" : "FAIL"}  ${label} - got ${JSON.stringify(actual)}, expected ${JSON.stringify(expected)}`);
 };
 
-async function clone(): Promise<string> {
+async function clone(onId: (id: string) => void): Promise<string> {
   const source = process.env.PROBE_CUTS_DECK
     ?? (await q(`select d.id from decks d join deck_cards c on c.deck_id = d.id group by d.id having sum(c.quantity) > 100 limit 1`))[0]?.id;
   if (!source) throw new Error("no over-100 deck to clone on this database");
   const id = randomUUID();
+  // Published before the first write, so a failure part-way still reaches the cleanup.
+  onId(id);
   const cols = (await q(`select column_name from information_schema.columns where table_name = 'decks' order by ordinal_position`)).map((r) => r.column_name as string);
   const list = cols.map((c) => `"${c}"`).join(", ");
   const select = cols.map((c) => (c === "id" ? "$1::uuid" : c === "user_id" ? "$2" : `"${c}"`)).join(", ");
@@ -56,7 +58,7 @@ async function clone(): Promise<string> {
 
 let deckId = "";
 try {
-  deckId = await clone();
+  await clone((id) => { deckId = id; });
   const inputs = (await readProposedCuts(deckId, USER))!;
   check("the clone is over 100", inputs.facts.over > 0, true);
   const picks = inputs.facts.cards.slice(0, 3);
