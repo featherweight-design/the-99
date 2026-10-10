@@ -17,10 +17,10 @@ import { createPortal } from "react-dom";
 import { editCollection, loadEditSheet } from "../../app/collection/edit-actions";
 import { useBackDismiss, useDialogA11y } from "../../lib/a11y/dialog";
 import { useInertPage } from "../../lib/a11y/inert-page";
-import { choosePrinting, removeLine, setFinish, setQuantity } from "../../lib/collection/add-lines";
+import { removeLine } from "../../lib/collection/add-lines";
 import type { CardHolding, PrintingChoice } from "../../lib/collection/catalog-read";
 import {
-  diffParts, diffRows, holdingKey, lineNote, linesFromHoldings, openNewLine, printingLabel, summarizeEdit,
+  diffParts, diffRows, editChoosePrinting, editSetFinish, editSetQuantity, holdingKey, lineNote, linesFromHoldings, openNewLine, printingLabel, summarizeEdit,
   type EditCard, type EditLineState,
 } from "../../lib/collection/edit-lines";
 import type { ShortDeck } from "../../lib/collection/write";
@@ -159,7 +159,7 @@ export function EditCopiesSheet({
   useDialogA11y(panelRef, requestClose, { initialFocusRef: addRef, lockScroll: false, returnFocusRef });
   useBackDismiss(true, requestClose);
 
-  function afterChoose(res: ReturnType<typeof choosePrinting<EditLineState>>) {
+  function afterChoose(res: { lines: EditLineState[]; merged: EditLineState | null }) {
     setLines(res.lines);
     setPickerFor(null);
     if (res.merged) {
@@ -207,6 +207,8 @@ export function EditCopiesSheet({
       }
       if ("stale" in out) {
         setWarning(null);
+        // The write is over: a reload that fails must not leave the sheet closed to Escape and Back.
+        setPhase("editing");
         setNotice({ text: c.stale, kind: "alert" });
         setRead({ k: "loading" });
         setReload((n) => n + 1);
@@ -329,21 +331,21 @@ export function EditCopiesSheet({
                       pulse={pulse?.id === l.id ? pulse.n : null}
                       phone={phone}
                       disabled={saving}
-                      title={l.origin === null ? c.newPrinting : undefined}
-                      intro={l.origin !== null ? c.fixIntro(l.choices.length) : undefined}
+                      title={l.origins.length === 0 ? c.newPrinting : undefined}
+                      intro={l.origins.length > 0 ? c.fixIntro(l.choices.length) : undefined}
                       note={
                         note === null ? null
                         : note.kind === "delta" ? { text: signed(note.delta), tone: note.delta > 0 ? "up" : "down" }
                         : { text: `${c.was(note.from === "" ? c.noPrinting : note.from)} · ${c.goesWith(note.copies)}`, tone: "plain" }
                       }
                       onOpenPicker={() => setPickerFor(pickerFor === l.id ? null : l.id)}
-                      onChoose={(p) => afterChoose(choosePrinting(lines, l.id, p))}
+                      onChoose={(p) => afterChoose(editChoosePrinting(lines, l.id, p))}
                       onFinish={(f) => {
-                        const res = setFinish(lines, l.id, f);
+                        const res = editSetFinish(lines, l.id, f);
                         if (res.merged) afterChoose(res);
                         else setLines(res.lines);
                       }}
-                      onQuantity={(q) => setLines(setQuantity(lines, l.id, q))}
+                      onQuantity={(q) => setLines(editSetQuantity(lines, l.id, q))}
                       onRemove={() => {
                         setLines(removeLine(lines, l.id));
                         if (pickerFor === l.id) setPickerFor(null);

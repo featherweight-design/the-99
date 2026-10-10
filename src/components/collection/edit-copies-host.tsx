@@ -48,8 +48,13 @@ export function EditCopiesHost({
   }, [toast, undoing, onDone]);
 
   async function savedAndClosed(saved: NonNullable<EditResult["saved"]>) {
-    // The sheet stays up, frozen on `Saving…`, until the readers behind it are fresh.
-    await settleCollectionWrite().catch(() => {});
+    // The sheet stays up, frozen on `Saving…`, until the readers behind it are fresh. A settle that
+    // keeps failing leaves them stale, so the card is NOT reopened over caches that would show the
+    // save as not having happened: the toast stands, and the list catches up on its next read.
+    let fresh = false;
+    for (let attempt = 0; attempt < 3 && !fresh; attempt++) {
+      fresh = await settleCollectionWrite().then(() => true, () => false);
+    }
     setSheet(false);
     setToast({
       entryId: saved.entryId,
@@ -57,7 +62,7 @@ export function EditCopiesHost({
       text: saved.removed ? r.toast(card.name, saved.copiesRemoved) : c.saved(card.name, saved.total),
     });
     // A card that is gone has no details to go back to.
-    if (!saved.removed) onReopen();
+    if (fresh && !saved.removed) onReopen();
   }
 
   return (

@@ -79,35 +79,40 @@ export type PrintingChoice = {
  * printings, and an unowned card's carries no holdings.
  */
 export async function loadPrintingChoices(userId: string, oracleId: string): Promise<PrintingChoice[]> {
-  const [catalog, held] = await Promise.all([
-    db
-      .select({
-        scryfallId: printings.scryfallId,
-        setCode: printings.setCode,
-        setName: sets.name,
-        collectorNumber: printings.collectorNumber,
-        releasedAt: sets.releasedAt,
-        imageUri: printings.imageUri,
-        flavorName: printings.flavorName,
-        finishes: printings.finishes,
-      })
-      .from(printings)
-      // sets.code is the primary key, so this is at most 1:1 and multiplies no rows.
-      .leftJoin(sets, eq(sets.code, printings.setCode))
-      .where(eq(printings.oracleId, oracleId))
-      .orderBy(sql`${sets.releasedAt} desc nulls last`, asc(printings.setCode), asc(printings.collectorNumber)),
-    db
-      .select({
-        setCode: collectionItems.setCode,
-        collectorNumber: collectionItems.collectorNumber,
-        finish: collectionItems.finish,
-        quantity: collectionItems.quantity,
-      })
-      .from(collectionItems)
-      .where(and(eq(collectionItems.userId, userId), eq(collectionItems.oracleId, oracleId))),
-  ]);
+  const [catalog, held] = await Promise.all([readCatalogPrintings(oracleId), readHeldRows(userId, oracleId)]);
   return withHoldings(catalog, held);
 }
+
+const readCatalogPrintings = (oracleId: string) =>
+  db
+    .select({
+      scryfallId: printings.scryfallId,
+      setCode: printings.setCode,
+      setName: sets.name,
+      collectorNumber: printings.collectorNumber,
+      releasedAt: sets.releasedAt,
+      imageUri: printings.imageUri,
+      flavorName: printings.flavorName,
+      finishes: printings.finishes,
+    })
+    .from(printings)
+    // sets.code is the primary key, so this is at most 1:1 and multiplies no rows.
+    .leftJoin(sets, eq(sets.code, printings.setCode))
+    .where(eq(printings.oracleId, oracleId))
+    .orderBy(sql`${sets.releasedAt} desc nulls last`, asc(printings.setCode), asc(printings.collectorNumber));
+
+const readHeldRows = (userId: string, oracleId: string) =>
+  db
+    .select({
+      setCode: collectionItems.setCode,
+      collectorNumber: collectionItems.collectorNumber,
+      finish: collectionItems.finish,
+      quantity: collectionItems.quantity,
+      condition: collectionItems.condition,
+    })
+    .from(collectionItems)
+    .where(and(eq(collectionItems.userId, userId), eq(collectionItems.oracleId, oracleId)))
+    .orderBy(asc(collectionItems.setCode), asc(collectionItems.collectorNumber), asc(collectionItems.finish));
 
 /** One holding the player has of a card, as the Edit copies sheet starts from it. */
 export type CardHolding = {
@@ -119,20 +124,20 @@ export type CardHolding = {
   condition: string | null;
 };
 
-/** Every holding the player has of one card, one row per printing and finish. */
-export async function loadCardHoldings(userId: string, oracleId: string): Promise<CardHolding[]> {
-  const rows = await db
-    .select({
-      setCode: collectionItems.setCode,
-      collectorNumber: collectionItems.collectorNumber,
-      finish: collectionItems.finish,
-      quantity: collectionItems.quantity,
-      condition: collectionItems.condition,
-    })
-    .from(collectionItems)
-    .where(and(eq(collectionItems.userId, userId), eq(collectionItems.oracleId, oracleId)))
-    .orderBy(asc(collectionItems.setCode), asc(collectionItems.collectorNumber), asc(collectionItems.finish));
-  return rows.flatMap((r) => (isFinish(r.finish) ? [{ ...r, finish: r.finish }] : []));
+const holdingsOf = (rows: Awaited<ReturnType<typeof readHeldRows>>): CardHolding[] =>
+  rows.flatMap((r) => (isFinish(r.finish) ? [{ ...r, finish: r.finish }] : []));
+
+/**
+ * The Edit copies sheet's start: every catalog printing and every holding the player has of one
+ * card. The holdings are read ONCE and the tiles' `owned` counts are derived from that same read,
+ * so the sheet's lines and the printing tiles cannot come from two moments.
+ */
+export async function loadEditSheetData(
+  userId: string,
+  oracleId: string,
+): Promise<{ choices: PrintingChoice[]; holdings: CardHolding[] }> {
+  const [catalog, held] = await Promise.all([readCatalogPrintings(oracleId), readHeldRows(userId, oracleId)]);
+  return { choices: withHoldings(catalog, held), holdings: holdingsOf(held) };
 }
 
 /**

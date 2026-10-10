@@ -73,6 +73,17 @@ describe("the Edit copies host", () => {
     expect(screen.getByRole("button", { name: c.undo })).toBeTruthy();
   });
 
+  it("retries a failing settle, and does not reopen the card over stale readers when it never lands", async () => {
+    mount();
+    settle.mockRejectedValue(new Error("down"));
+    await close({ saved: { entryId: "e1", removed: false, total: 6, copiesRemoved: 5 } });
+    expect(settle).toHaveBeenCalledTimes(3);
+    expect(onReopen).not.toHaveBeenCalled();
+    expect(screen.getByRole("status").textContent).toContain(c.saved("Sol Ring", 6)); // the write DID commit
+    settle.mockReset();
+    settle.mockResolvedValue(undefined);
+  });
+
   it("does not reopen a card it removed, and its toast names the copies", async () => {
     mount();
     await close({ saved: { entryId: "e2", removed: true, total: 0, copiesRemoved: 5 } });

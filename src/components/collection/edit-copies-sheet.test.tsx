@@ -142,6 +142,19 @@ describe("Edit copies, saving", () => {
     expect(await screen.findByText(c.stale)).toBeTruthy();
     await waitFor(() => expect(screen.getByText(c.sheetSub("Sol Ring", 9, 1))).toBeTruthy());
   });
+
+  it("is not trapped when the re-read after a stale answer fails: Escape-closing still works", async () => {
+    const { onClose } = await mount();
+    fireEvent.click(fewer(0));
+    edit.mockResolvedValue({ stale: [] });
+    load.mockRejectedValue(new Error("offline"));
+    await press(save());
+    expect(await screen.findByText(c.loadFailed)).toBeTruthy();
+    expect((screen.getByRole("button", { name: collectionEditCopy.add.closeAria }) as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.add.closeAria }));
+    fireEvent.click(screen.getByRole("button", { name: c.discard })); // the staged change still asks first
+    expect(onClose).toHaveBeenCalledWith({ saved: null });
+  });
 });
 
 describe("Edit copies, a printing fixed by re-picking", () => {

@@ -1,4 +1,6 @@
-import { holdingKeyOf, isComplete, type AddLineState } from "./add-lines";
+import {
+  choosePrinting, holdingKeyOf, isComplete, setFinish, setQuantity, type AddLineState,
+} from "./add-lines";
 import type { CardHolding, PrintingChoice } from "./catalog-read";
 import type { Finish } from "./key";
 
@@ -17,9 +19,17 @@ import type { Finish } from "./key";
 export type EditLineState = AddLineState & {
   /** The non-key column a printing fix carries to the row it creates. */
   condition: string | null;
-  /** The holding this line began as, or null for a line the player added. */
-  origin: { key: string; label: string; printKey: string; finish: Finish } | null;
+  /**
+   * The holdings this line began as: one for a held line, none for a line the player added, and
+   * several once re-picked lines have folded into one holding.
+   */
+  origins: Origin[];
 };
+
+export type Origin = { key: string; label: string; printKey: string; finish: Finish; quantity: number };
+
+/** A holding's count may grow to the integer column's bound, unlike one add line's. */
+export const EDIT_MAX_QUANTITY = 2_147_483_647;
 
 /** The key `holdingKeyOf` gives a holding, so held rows and lines are compared in one vocabulary. */
 export const holdingKey = (oracleId: string, h: { setCode: string; collectorNumber: string; finish: Finish }) =>
@@ -73,7 +83,7 @@ export function linesFromHoldings(card: EditCard, choices: PrintingChoice[], hol
         finish: h.finish,
         quantity: h.quantity,
         condition: h.condition,
-        origin: { key, label: printingLabel(h), printKey: `${h.setCode}|${h.collectorNumber}`, finish: h.finish },
+        origins: [{ key, label: printingLabel(h), printKey: `${h.setCode}|${h.collectorNumber}`, finish: h.finish, quantity: h.quantity }],
       };
     });
 }
@@ -101,7 +111,7 @@ export function openNewLine(
       finish: "nonfoil",
       quantity: 1,
       condition: null,
-      origin: null,
+      origins: [],
     },
     ...lines,
   ];
@@ -168,8 +178,10 @@ export type EditSummary = {
   /** Copies the save raises and lowers, across every holding it touches. */
   up: number;
   down: number;
-  /** Lines whose printing was fixed by re-picking. */
+  /** Holdings whose copies were re-picked onto another printing. */
   moved: number;
+  /** Every holding went to a line, and every line holds exactly what came to it: nothing else changed. */
+  pure: boolean;
   /** The copies the lines hold at the end. */
   total: number;
   /** Copies held when the sheet opened. */
@@ -177,7 +189,10 @@ export type EditSummary = {
   changed: boolean;
   /** Nothing is left: every holding goes to zero. */
   removes: boolean;
-  /** A lowering is in it, so the server may answer with the decks it leaves short. */
+  /**
+   * The card's total ends below what was held, which is what can leave a deck short. A holding
+   * lowered while another is raised, a re-pick or a finish change leaves the total alone.
+   */
   lowers: boolean;
 };
 
@@ -187,15 +202,22 @@ export function summarizeEdit(oracleId: string, holdings: CardHolding[], lines: 
   const down = rows.reduce((n, r) => n + Math.max(0, r.expected - r.quantity), 0);
   const done = removeAll ? [] : lines.filter(isComplete);
   const held = holdings.reduce((n, h) => n + h.quantity, 0);
+  const total = done.reduce((n, l) => n + l.quantity, 0);
+  const covered = new Set(done.flatMap((l) => l.origins.map((o) => o.key)));
+  const pure =
+    done.length > 0 &&
+    done.every((l) => l.origins.length > 0 && l.origins.reduce((n, o) => n + o.quantity, 0) === l.quantity) &&
+    holdings.every((h) => covered.has(holdingKey(oracleId, h)));
   return {
     up,
     down,
-    moved: done.filter((l) => l.origin !== null && l.origin.printKey !== printKeyOf(l)).length,
-    total: done.reduce((n, l) => n + l.quantity, 0),
+    moved: done.reduce((n, l) => n + l.origins.filter((o) => o.printKey !== printKeyOf(l)).length, 0),
+    pure,
+    total,
     held,
     changed: rows.length > 0,
     removes: held > 0 && done.length === 0,
-    lowers: down > 0,
+    lowers: total < held,
   };
 }
 
@@ -205,7 +227,7 @@ export function summarizeEdit(oracleId: string, holdings: CardHolding[], lines: 
  */
 export function diffParts(s: EditSummary): { up: number; down: number } | { moved: number } | null {
   if (!s.changed) return null;
-  if (s.moved > 0 && s.up === s.down) return { moved: s.moved };
+  if (s.pure && s.moved > 0) return { moved: s.moved };
   return { up: s.up, down: s.down };
 }
 
@@ -220,12 +242,37 @@ export type LineNote =
 export function lineNote(oracleId: string, holdings: CardHolding[], l: EditLineState): LineNote | null {
   const key = holdingKeyOf(l);
   if (key === null) return null;
-  if (l.origin !== null && l.origin.key !== key) {
+  const from = l.origins.find((o) => o.key !== key);
+  if (from) {
     // A finish change alone keeps the printing, so the note names the finish it was.
-    const same = l.origin.printKey === printKeyOf(l);
-    return { kind: "moved", from: same ? `${l.origin.label} · ${l.origin.finish}` : l.origin.label, copies: l.quantity };
+    const same = from.printKey === printKeyOf(l);
+    return {
+      kind: "moved",
+      from: same ? `${from.label} · ${from.finish}` : from.label,
+      copies: l.origins.length === 1 ? l.quantity : from.quantity,
+    };
   }
   const was = holdings.find((h) => holdingKey(oracleId, h) === key)?.quantity ?? 0;
   const delta = l.quantity - was;
   return delta === 0 ? null : { kind: "delta", delta };
 }
+
+/**
+ * Re-picking and finish changes fold a line into the holding it lands on, and the folded line's
+ * origins go with its copies, or the summary and the note would forget where they came from.
+ */
+function carryOrigins(before: EditLineState[], res: { lines: EditLineState[]; merged: EditLineState | null }, id: string) {
+  const mover = before.find((l) => l.id === id);
+  if (!res.merged || !mover || res.merged.id === id) return res;
+  const merged = { ...res.merged, origins: [...res.merged.origins, ...mover.origins] };
+  return { lines: res.lines.map((l) => (l.id === merged.id ? merged : l)), merged };
+}
+
+export const editChoosePrinting = (lines: EditLineState[], id: string, p: PrintingChoice) =>
+  carryOrigins(lines, choosePrinting(lines, id, p, EDIT_MAX_QUANTITY), id);
+
+export const editSetFinish = (lines: EditLineState[], id: string, f: Finish) =>
+  carryOrigins(lines, setFinish(lines, id, f, EDIT_MAX_QUANTITY), id);
+
+export const editSetQuantity = (lines: EditLineState[], id: string, q: number) =>
+  setQuantity(lines, id, q, EDIT_MAX_QUANTITY);

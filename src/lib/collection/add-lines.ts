@@ -45,13 +45,13 @@ export const isComplete = (l: AddLineState) => l.printing !== null;
  * per holding). The survivor takes the counts, moves to the top and is reported so the sheet can
  * pulse it and say so. A line that is still choosing, or that names no other holding, is left be.
  */
-function fold<L extends AddLineState>(lines: L[], id: string): { lines: L[]; merged: L | null } {
+function fold<L extends AddLineState>(lines: L[], id: string, cap = MAX_LINE_QUANTITY): { lines: L[]; merged: L | null } {
   const line = lines.find((l) => l.id === id);
   const key = line ? holdingKeyOf(line) : null;
   if (!line || key === null) return { lines, merged: null };
   const twin = lines.find((l) => l.id !== id && holdingKeyOf(l) === key);
   if (!twin) return { lines, merged: null };
-  const merged = { ...twin, quantity: Math.min(MAX_LINE_QUANTITY, twin.quantity + line.quantity) };
+  const merged = { ...twin, quantity: Math.min(cap, twin.quantity + line.quantity) };
   return { lines: [merged, ...lines.filter((l) => l.id !== id && l.id !== twin.id)], merged };
 }
 
@@ -61,20 +61,21 @@ export function openLine(lines: AddLineState[], line: Omit<AddLineState, "printi
 }
 
 /** Chooses (or re-chooses) a line's printing: nonfoil where it exists, else its only finish, at the line's count. */
-export function choosePrinting<L extends AddLineState>(lines: L[], id: string, printing: PrintingChoice) {
+export function choosePrinting<L extends AddLineState>(lines: L[], id: string, printing: PrintingChoice, cap = MAX_LINE_QUANTITY) {
   const next = lines.map((l) =>
     l.id === id ? { ...l, printing, finish: defaultFinish(printing) } : l,
   );
-  return fold(next, id);
+  return fold(next, id, cap);
 }
 
-export function setFinish<L extends AddLineState>(lines: L[], id: string, finish: Finish) {
+export function setFinish<L extends AddLineState>(lines: L[], id: string, finish: Finish, cap = MAX_LINE_QUANTITY) {
   const next = lines.map((l) => (l.id === id && l.printing?.finishes.includes(finish) ? { ...l, finish } : l));
-  return fold(next, id);
+  return fold(next, id, cap);
 }
 
-export function setQuantity<L extends AddLineState>(lines: L[], id: string, quantity: number): L[] {
-  const q = Math.max(1, Math.min(MAX_LINE_QUANTITY, Math.trunc(quantity)));
+/** `cap` is the add mode's per-line bound by default; edit mode holds counts up to the integer column's. */
+export function setQuantity<L extends AddLineState>(lines: L[], id: string, quantity: number, cap = MAX_LINE_QUANTITY): L[] {
+  const q = Math.max(1, Math.min(cap, Math.trunc(quantity)));
   return lines.map((l) => (l.id === id ? { ...l, quantity: q } : l));
 }
 
