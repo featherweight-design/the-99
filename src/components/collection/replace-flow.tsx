@@ -107,6 +107,9 @@ export function ReplaceFlow({
     if (!preview || pending) return;
     setPending(true);
     setConfirmError(null);
+    // The review answers a press on its own bar; a confirm made inside the dialog (a first import
+    // that found a collection after all, or the fallback) is answered by the dialog.
+    const review = confirming ? null : change;
     try {
       // `firstImport` is read off the preview, which a server refusal corrects before the
       // modal opens, so a confirm from that modal is no longer "first". A retry after a
@@ -122,12 +125,12 @@ export function ReplaceFlow({
       }
       // A ledger refusal wrote nothing: a deck it would leave short opens §E, and a card the
       // catalog dropped is named in the confirm's own error slot.
-      if (change && outcome && "wouldShort" in outcome) {
+      if (review && outcome && "wouldShort" in outcome) {
         // The decks moved since the review drew them: redraw the same section with a notice and
         // `new` on the ones that were not there, and wait for another press (E6).
-        const was = new Set(change.decks.map((d) => d.deckId));
+        const was = new Set(review.decks.map((d) => d.deckId));
         setChange({
-          ...change,
+          ...review,
           decks: outcome.wouldShort,
           fresh: new Set(outcome.wouldShort.map((d) => d.deckId).filter((id) => !was.has(id))),
           changed: true,
@@ -135,8 +138,8 @@ export function ReplaceFlow({
         });
         return;
       }
-      if (change && outcome && "missingCard" in outcome) {
-        setChange({ ...change, failure: { body: collectionEditCopy.shortWarning.catalogFailure(outcome.missingCard) } });
+      if (review && outcome && "missingCard" in outcome) {
+        setChange({ ...review, failure: { body: collectionEditCopy.shortWarning.catalogFailure(outcome.missingCard) } });
         return;
       }
       if (outcome && "wouldShort" in outcome) {
@@ -157,9 +160,9 @@ export function ReplaceFlow({
       // upload id, so it survives a reload and stays linkable.
       nav.go(`/collection/replace/summary/${preview.uploadId}`);
     } catch (e) {
-      if (change) {
+      if (review) {
         // Nothing was written and the review stays (A5).
-        setChange({ ...change, failure: { body: collectionEditCopy.upload.failedBody } });
+        setChange({ ...review, failure: { body: collectionEditCopy.upload.failedBody } });
         return;
       }
       setConfirmError(e instanceof Error ? e.message : "Confirm failed");

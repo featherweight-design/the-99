@@ -374,6 +374,26 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
     expect(screen.getByRole("dialog")).toBeTruthy();
   });
 
+  it("a confirm made inside the dialog is answered by the dialog even when the comparison has resolved", async () => {
+    // A first import that finds a collection after all opens the dialog; the comparison then resolves.
+    previewChange.mockResolvedValue(data([deck("d1", "Atraxa")]));
+    previewPaste.mockResolvedValueOnce(preview(0));
+    confirmUpload
+      .mockResolvedValueOnce({ needsConfirm: true, currentCollectionCount: 10 })
+      .mockResolvedValueOnce({ wouldShort: [deck("d1", "Atraxa")] });
+    render(<ReplaceFlow currentCardCount={0} deckCheck />);
+    fireEvent.click(screen.getAllByRole("button", { name: /Paste a list instead/ })[0]);
+    fireEvent.change(screen.getByRole("textbox", { name: "Paste your card list" }), { target: { value: "3 Sol Ring" } });
+    fireEvent.click(screen.getByRole("button", { name: /^Preview/ }));
+    const cont = await screen.findByRole("button", { name: /^Continue to import/ });
+    await act(async () => fireEvent.click(cont));
+    const dialog = await screen.findByRole("dialog");
+    await waitFor(() => expect(previewChange).toHaveBeenCalled());
+    await act(async () => fireEvent.click(within(dialog).getByRole("button", { name: /^Replace with/ })));
+    // The warning is drawn INSIDE the dialog, not only behind it.
+    expect(within(screen.getByRole("dialog")).getByRole("heading", { name: "Replacing leaves a deck short" })).toBeTruthy();
+  });
+
   it("a first import never asks for the comparison", async () => {
     previewChange.mockResolvedValue(data());
     previewPaste.mockResolvedValueOnce(preview(0));

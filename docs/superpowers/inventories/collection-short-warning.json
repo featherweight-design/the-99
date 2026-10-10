@@ -31,7 +31,7 @@
         {
           "clickRole": "button",
           "name": "^Preview",
-          "wait": "h3",
+          "wait": "h2",
           "settle": 2500
         }
       ]
