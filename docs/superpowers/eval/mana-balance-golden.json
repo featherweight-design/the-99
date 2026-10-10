@@ -1,0 +1,154 @@
+{
+  "deck": {
+    "name": "HD - Gishath",
+    "deckId": "904fdc61-e190-4ba5-8e34-2b18fa0584f2",
+    "listFingerprint": "eb283ece8f988c71fe2f6dea4a36b7955720f05775aec728d02164d2aa8cb6ff"
+  },
+  "checked": "2026-10-10, by hand, against the oracle text of every non-basic source and an independent count of the pips (a plain symbol tally of the 99 non-land cards and the commander: W 18, R 26, G 56).",
+  "notes": [
+    "Pips: Gishath, Sun's Avatar is {5}{R}{G}{W}, so the commander adds one each of R, G and W. The deck has no U or B pip and no hybrid pip.",
+    "source cards 43 = 34 lands that add a colored mana (18 basics, 16 non-basic) + 9 non-land sources (Arcane Signet, Atzocan Seer, Farseek, Great Forest Druid, Gwenna, Herd Heirloom, Ranging Raptors, Topiary Stomper, Nature's Lore). Sol Ring and the four colorless-only lands (Kessig Wolf Run, Sunhome, and the C halves of Secluded Courtyard, Sheltering Landscape and Unclaimed Territory) are in colorlessSupply (6) and in no color's share.",
+    "Targets: 43 x 18/100 = 7.74 -> 8 (W); 43 x 26/100 = 11.18 -> 11 (R); 43 x 56/100 = 24.08 -> 24 (G). Gap = target - sources: W 8-26 = -18, R 11-27 = -16, G 24-28 = -4. No color is short; green has the thinnest cover.",
+    "Policy the count follows (the Colors card's own, not Mana Balance's): an any-color source with a spending restriction (Herd Heirloom, Gwenna, Secluded Courtyard, Unclaimed Territory) counts for each deck color; a land that fetches a basic (Evolving Wilds, Fabled Passage, Escape Tunnel, Sheltering Landscape) counts for the basics it can fetch; Farseek names Plains, Island, Swamp and Mountain, so it counts for W, U, B and R and not G; Nature's Lore names Forest, so G only. U and B each read 1 source (Farseek) against 0 pips, which is why they show a gap of -1.",
+    "Cards that look like sources and are not: Sunhome, Fortress of the Legion and Kessig Wolf Run add {C} only (their R/W cost sits in an activated ability, not an 'add' clause); Mosswort Bridge and Spinerock Knoll add one color (G, R) and their hideaway costs are not mana."
+  ],
+  "expected": {
+    "state": "ok",
+    "sourceCards": 43,
+    "colorlessSupply": 6,
+    "unattributedNonland": 0,
+    "colors": {
+      "W": {
+        "demand": 18,
+        "target": 8,
+        "gap": -18,
+        "state": "met",
+        "lands": [
+          "Canopy Vista",
+          "Clifftop Retreat",
+          "Command Tower",
+          "Escape Tunnel",
+          "Evolving Wilds",
+          "Fabled Passage",
+          "Jungle Shrine",
+          "Path of Ancestry",
+          "Plains",
+          "Plains",
+          "Plains",
+          "Plains",
+          "Plains",
+          "Plains",
+          "Secluded Courtyard",
+          "Sheltering Landscape",
+          "Sunpetal Grove",
+          "Unclaimed Territory"
+        ],
+        "nonland": [
+          "Arcane Signet",
+          "Atzocan Seer",
+          "Farseek",
+          "Great Forest Druid",
+          "Gwenna, Eyes of Gaea",
+          "Herd Heirloom",
+          "Ranging Raptors",
+          "Topiary Stomper"
+        ]
+      },
+      "U": {
+        "demand": 0,
+        "target": 0,
+        "gap": -1,
+        "state": "met",
+        "lands": [],
+        "nonland": [
+          "Farseek"
+        ]
+      },
+      "B": {
+        "demand": 0,
+        "target": 0,
+        "gap": -1,
+        "state": "met",
+        "lands": [],
+        "nonland": [
+          "Farseek"
+        ]
+      },
+      "R": {
+        "demand": 26,
+        "target": 11,
+        "gap": -16,
+        "state": "met",
+        "lands": [
+          "Cinder Glade",
+          "Clifftop Retreat",
+          "Command Tower",
+          "Escape Tunnel",
+          "Evolving Wilds",
+          "Fabled Passage",
+          "Jungle Shrine",
+          "Mountain",
+          "Mountain",
+          "Mountain",
+          "Mountain",
+          "Mountain",
+          "Mountain",
+          "Path of Ancestry",
+          "Rootbound Crag",
+          "Secluded Courtyard",
+          "Sheltering Landscape",
+          "Spinerock Knoll",
+          "Unclaimed Territory"
+        ],
+        "nonland": [
+          "Arcane Signet",
+          "Atzocan Seer",
+          "Farseek",
+          "Great Forest Druid",
+          "Gwenna, Eyes of Gaea",
+          "Herd Heirloom",
+          "Ranging Raptors",
+          "Topiary Stomper"
+        ]
+      },
+      "G": {
+        "demand": 56,
+        "target": 24,
+        "gap": -4,
+        "state": "met",
+        "lands": [
+          "Canopy Vista",
+          "Cinder Glade",
+          "Command Tower",
+          "Escape Tunnel",
+          "Evolving Wilds",
+          "Fabled Passage",
+          "Forest",
+          "Forest",
+          "Forest",
+          "Forest",
+          "Forest",
+          "Forest",
+          "Jungle Shrine",
+          "Mosswort Bridge",
+          "Path of Ancestry",
+          "Rootbound Crag",
+          "Secluded Courtyard",
+          "Sheltering Landscape",
+          "Sunpetal Grove",
+          "Unclaimed Territory"
+        ],
+        "nonland": [
+          "Arcane Signet",
+          "Atzocan Seer",
+          "Great Forest Druid",
+          "Gwenna, Eyes of Gaea",
+          "Herd Heirloom",
+          "Nature's Lore",
+          "Ranging Raptors",
+          "Topiary Stomper"
+        ]
+      }
+    }
+  }
+}
