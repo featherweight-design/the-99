@@ -23,9 +23,9 @@ describe("rankableScoreRows", () => {
   // `loadScores` condemns a whole set when one row predates the current writer.
   // A row-level filter here would rank the current rows of a mixed set instead —
   // a rank counted over a set the list has already thrown away.
-  it("refuses the whole set when any row predates the current writer", () => {
+  it("refuses the whole set when any row differs from the writer this deployment writes", () => {
     const sql = emitted().sql;
-    expect(sql).toContain("writer_version <");
+    expect(sql).toContain("writer_version <>");
     expect(sql).toMatch(/not exists\s*\(\s*select 1 from "commander_scores" stale/);
     // Not `where cs.writer_version = 2`, which would pass a mixed set through.
     expect(sql).not.toMatch(/"commander_scores"\."writer_version"\s*=/);

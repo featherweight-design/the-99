@@ -26,7 +26,7 @@ describe("unplayedCountsSql", () => {
   // that set's order would disagree with the list Home is drawing, so it yields no candidates.
   it("condemns a stale score set the way loadScores does", async () => {
     const { SCORE_WRITER_CURRENT } = await import("../../db/schema");
-    expect(sql).toContain("stale.rank_score < 0 or stale.writer_version <");
+    expect(sql).toContain("stale.rank_score < 0 or stale.writer_version <>");
     expect(params).toContain(SCORE_WRITER_CURRENT);
   });
 
