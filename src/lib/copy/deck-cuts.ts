@@ -122,7 +122,7 @@ export const deckCutsCopy = {
       untouched: "your list is untouched",
     },
     allLocked: (commander: string) =>
-      `Every card but ${commander} is locked or a Key card, so a deeper look has nothing it may name. Unlock a card on Your deck and it is offered here.`,
+      `Every card but ${commander} is locked or a Key card, so a deeper look has nothing it may name.`,
     failed: { tag: "Couldn\u2019t count", heading: "We couldn\u2019t count this deck\u2019s cards", body: "The card catalog didn\u2019t answer. It is usually back within a minute." },
     refusals: {
       cutGone: "That card is no longer in the deck, so nothing was cut.",

@@ -109,7 +109,7 @@ export async function runProposedCuts(
   const pack = buildCutsPack({ facts, commanderName: name, keyCards, intent, texts });
   // Every card left to cut is a Key card: the validator would drop every answer, so no credit is held.
   if (pack.cards.length > 0 && pack.cards.every((c) => pack.keyCardIds.includes(c.oracleId))) {
-    return { ok: false, message: lockedCardsCopy.tuning.allLocked(await commanderName(head)) };
+    return { ok: false, message: deckCutsCopy.panel.allLocked(await commanderName(head)) };
   }
   const { system, user } = buildCutsPrompt(pack);
   // The reservation prices a request at the feature's input ceiling, so a prompt past it is refused

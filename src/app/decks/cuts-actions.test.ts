@@ -381,7 +381,7 @@ describe("readCutsPanel", () => {
     const panel = await readCutsPanel(DECK);
     expect(panel?.allLocked).toBe(true);
     expect(panel?.keyCount).toBe(facts.cards.length);
-    expect(await runProposedCuts(DECK)).toEqual({ ok: false, message: lockedCardsCopy.tuning.allLocked("Gishath") });
+    expect(await runProposedCuts(DECK)).toEqual({ ok: false, message: deckCutsCopy.panel.allLocked("Gishath") });
     expect(calls.started).toBe(0);
   });
 

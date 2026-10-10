@@ -85,8 +85,9 @@ export function AnalysisPanel({
    * current or held, so its bracket flag is worded against the reading the reader sees.
    */
   tuning?: (permits: readonly Bracket[]) => ReactNode;
-  /** Proposed cuts (Tuning hub R2), drawn after Suggested changes and over the same reading. Absent
-   *  with `PROPOSED_CUTS_ENABLED` off. */
+  /** Proposed cuts (Tuning hub R2), drawn after Suggested changes. It does NOT wait for a reading (an
+   *  overfull deck has none, and a reading needs a whole deck), so a caller must not gate it on
+   *  `held`. Absent with `PROPOSED_CUTS_ENABLED` off. */
   cuts?: ReactNode;
   /** The deck's overview (sub-project 6), drawn beside the verdict and only over a reading. */
   overview?: ReactNode;
