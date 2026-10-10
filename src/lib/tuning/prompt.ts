@@ -108,6 +108,7 @@ const SYSTEM = [
   "An intent citation uses the player's own words. Quote their whole line in quotation marks, or cite a part of it WITHOUT quotation marks.",
   "A notes citation uses the player's own words from what they asked for this run. Quote their whole line in quotation marks, or cite a part of it WITHOUT quotation marks.",
   "A mix citation names a target and its figure as the targets list writes it: \"draw 4 of 10\".",
+  "A card from the staples list is cited with a decklist citation, with the figure as the staples list writes it: \"Sol Ring: in 415 of 431 commanders' decks\". Never as a mix citation: a mix citation names a target from the targets list.",
   `Name cards exactly as the decklist and the staples list spell them. ${COMMANDER_RULE}`,
   "Rules. A suggestion that breaks any of these is discarded before the player sees it:",
   ...Object.values(deckTuningCopy.suggestionRules).map((rule) => `- ${rule}`),

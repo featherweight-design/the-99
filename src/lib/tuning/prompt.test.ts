@@ -231,6 +231,13 @@ describe("the prompt Hugh rated (eval round 4, 2026-09-24)", () => {
         + "Aim for as many cuts as additions, so the deck stays its size, but offer fewer of either when the evidence is thin. Give every card its own rationale and its own citations.",
     )
     .replace("Ground every swap in the evidence", "Ground every card in the evidence")
+    // Revision 1 of v8, after the eval's first run: 13 additions across the 24 answers cited a staple's figure as a
+    // `mix` citation, which the validator cannot hold, and lost the addition for it.
+    .replace(
+      'A mix citation names a target and its figure as the targets list writes it: "draw 4 of 10".',
+      'A mix citation names a target and its figure as the targets list writes it: "draw 4 of 10".\n'
+        + "A card from the staples list is cited with a decklist citation, with the figure as the staples list writes it: \"Sol Ring: in 415 of 431 commanders' decks\". Never as a mix citation: a mix citation names a target from the targets list.",
+    )
     .replace("- The added card must be legal in the commander’s colour identity.", `- ${deckTuningCopy.suggestionRules.colourIdentity}`)
     .replace("- The cut card must currently be in the deck.", `- ${deckTuningCopy.suggestionRules.cutInDeck}`)
     .replace("- Every suggestion is exactly one cut and one add: the deck count never changes.", `- ${deckTuningCopy.suggestionRules.oneCard}`)
