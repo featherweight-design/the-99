@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<sc-if value="{{ isGone }}" hint-placeholder-val="{{ false }}">
+  <div data-decklist-row="" style="{{ goneShell }}">
+    <span aria-hidden="true" style="{{ spacer }}"></span>
+    <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-locked);">{{ goneText }}</span>
+  </div>
+</sc-if>
+<sc-if value="{{ isLive }}" hint-placeholder-val="{{ true }}">
+  <div data-decklist-row="" style="{{ shell }}">
+    <span aria-hidden="true" style="{{ dot }}"></span>
+    <div style="{{ nameBlock }}">
+      <div style="display:flex;align-items:center;gap:6px;min-width:0;">
+        <span style="{{ nameStyle }}">{{ name }}</span>
+        <sc-if value="{{ hasQty }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ qty }}</span></sc-if>
+      </div>
+      <sc-if value="{{ ph }}" hint-placeholder-val="{{ false }}">
+        <span style="display:flex;align-items:center;gap:5px;min-width:0;">
+          <sc-for list="{{ pips }}" as="p" hint-placeholder-count="2"><span style="{{ p.st }}">{{ p.l }}</span></sc-for>
+          <sc-if value="{{ pipSep }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="color:var(--border-strong);">·</span></sc-if>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;white-space:nowrap;color:{{ figInk }};">{{ figPhone }}</span>
+        </span>
+      </sc-if>
+      <sc-if value="{{ desk }}" hint-placeholder-val="{{ true }}">
+        <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:{{ figInk }};">{{ figDesk }}</span>
+        <sc-if value="{{ over }}" hint-placeholder-val="{{ false }}"><span style="flex:none;display:inline-flex;align-items:center;gap:5px;margin-left:-1px;font-family:'IBM Plex Mono',monospace;font-size:10px;white-space:nowrap;"><span aria-hidden="true" style="color:var(--border-strong);">·</span><span style="color:var(--warning);">over {{ limit }}</span></span></sc-if>
+      </sc-if>
+    </div>
+    <sc-if value="{{ desk }}" hint-placeholder-val="{{ true }}">
+      <span style="flex:none;width:40px;display:flex;justify-content:flex-end;gap:3px;"><sc-for list="{{ pips }}" as="p" hint-placeholder-count="2"><span style="{{ p.st }}">{{ p.l }}</span></sc-for></span>
+    </sc-if>
+    <sc-if value="{{ hasShort }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:{{ markSize }};color:var(--avail-over-fg);white-space:nowrap;">&#9670; {{ short }}</span></sc-if>
+    <span role="{{ tagRole }}" aria-label="{{ ctlAria }}" aria-expanded="{{ ctlOpen }}" aria-busy="{{ ctlBusy }}" style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:2px;{{ hitPad }}">
+      <span style="{{ tag }}">buy<sc-if value="{{ hasTail }}" hint-placeholder-val="{{ true }}"><span aria-hidden="true" style="color:var(--border-strong);padding:0 3px;">·</span><span style="{{ figSlot }}">{{ tail }}<sc-if value="{{ hasQual }}" hint-placeholder-val="{{ false }}"><span style="color:var(--fg-faint);"> {{ qual }}</span></sc-if></span></sc-if></span>
+      <sc-if value="{{ overStack }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1;white-space:nowrap;color:var(--warning);">over {{ limit }}</span></sc-if>
+    </span>
+    <sc-if value="{{ hasSwap }}" hint-placeholder-val="{{ false }}"><span aria-label="Cheaper stand-ins for {{ name }}" style="{{ swapStyle }}">⇄</span></sc-if>
+    <sc-if value="{{ hasReserve }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="flex:none;width:22px;"></span></sc-if>
+    <span aria-label="{{ xAria }}" style="{{ xStyle }}">✕</span>
+  </div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:60},&quot;spec&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.props.spec || {};
+    const ph = !!s.ph, desk = !ph;
+    const mono = "'IBM Plex Mono',monospace";
+    const pipInk = { W: ["var(--w)", "#121217"], U: ["var(--u)", "#E6E8F0"], B: ["var(--b)", "#121217"], R: ["var(--r)", "#F1E6E0"], G: ["var(--g)", "#E6EDE4"] };
+    const pd = ph ? 13 : 12;
+    const pips = (s.pips || []).map((l) => {
+      const c = pipInk[l] || ["var(--elevated)", "var(--fg-body)"];
+      return { l, st: { width: pd, height: pd, borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", fontFamily: mono, fontSize: ph ? 7.5 : 7, fontWeight: 600, background: c[0], color: c[1], boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.4)" } };
+    });
+    const edges = [];
+    if (s.edge) edges.push("inset 2px 0 0 0 var(--accent)");
+    const shell = { display: "flex", alignItems: "center", gap: ph ? 9 : 10, borderRadius: 7, padding: ph ? "0 4px 0 8px" : "7px 9px", minHeight: ph ? 52 : 34, background: s.hover ? "var(--elevated-hover)" : "var(--surface-rail)", opacity: s.dim ? 0.6 : 1, ...(edges.length ? { boxShadow: edges.join(", ") } : {}) };
+    const ctl = s.ctl || "rest";
+    const busy = ctl === "pending";
+    const open = ctl === "open";
+    const hot = ctl === "hover" || ctl === "press" || open;
+    const box = ph
+      ? { width: 30, height: 26, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6 }
+      : { height: 22, minWidth: 74, margin: "-1px 0", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "0 8px 0 7px", borderRadius: 6, fontFamily: "'IBM Plex Sans',sans-serif", fontSize: 11.5, fontWeight: 500, whiteSpace: "nowrap" };
+    Object.assign(box, {
+      border: `1px ${ctl === "disabled" ? "dashed" : "solid"} ${hot ? "var(--accent)" : "var(--border-strong)"}`,
+      color: hot ? "var(--fg)" : busy ? "var(--fg-muted)" : "var(--fg-body)",
+      background: ctl === "press" ? "var(--elevated)" : open ? "color-mix(in oklab, var(--accent) 14%, transparent)" : "transparent",
+      opacity: ctl === "disabled" ? 0.4 : busy ? 0.6 : 1,
+      ...(ctl === "focus" ? { outline: "2px solid var(--accent)", outlineOffset: 2 } : {}),
+    });
+    const ctlHit = ph
+      ? { flex: "none", width: 44, height: 44, marginLeft: -7, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }
+      : { flex: "none", display: "flex", alignItems: "center", cursor: "pointer" };
+    const fig = s.fig;
+    const hasFig = Number.isFinite(fig);
+    const tail = busy ? "adding…" : s.soldOut ? "sold out" : s.price || "";
+    const live = ctl !== "none";
+    const wash = ctl === "press" ? 30 : ctl === "hover" || open ? 24 : 13;
+    const ring = s.over ? "inset 0 0 0 1px color-mix(in oklab, var(--warning) 60%, transparent)" : "";
+    const tools = !!s.tools;
+    const swapBtn = tools && s.over && !s.commander;
+    return {
+      ph, desk, name: s.name, qty: s.qty || "", hasQty: !!s.qty, pips, pipSep: ph && pips.length > 0,
+      isGone: !!s.gone, isLive: !s.gone, goneText: s.gone || "",
+      goneShell: { display: "flex", alignItems: "center", gap: ph ? 9 : 10, borderRadius: 7, padding: ph ? "0 4px 0 8px" : "7px 9px", minHeight: ph ? 52 : 34, background: "var(--surface-sunken)", border: "1px dashed var(--border-strong)", opacity: s.fade ?? 1 },
+      spacer: { flex: "none", width: ph ? 7 : 8, height: ph ? 7 : 8 },
+      shell,
+      dot: s.owned
+        ? { flex: "none", width: ph ? 7 : 8, height: ph ? 7 : 8, borderRadius: "50%", background: "var(--success)" }
+        : { flex: "none", width: ph ? 7 : 8, height: ph ? 7 : 8, borderRadius: "50%", border: "1px dashed var(--fg-faint)" },
+      nameBlock: ph ? { flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: 3 } : { flex: "1 1 auto", minWidth: 0, display: "flex", alignItems: "center", gap: 6 },
+      nameStyle: { minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontSize: ph ? 12.5 : 13.5, color: "var(--fg)" },
+      figPhone: hasFig ? `edhrec ${fig}%` : "no EDHREC figure", figDesk: hasFig ? `${fig}%` : "—",
+      figInk: hasFig ? "var(--fg-faint)" : "var(--fg-locked)",
+      over: desk && !!s.over, overStack: ph && !!s.over, limit: s.limit || "$10",
+      hasShort: !!s.short, short: s.short || "", markSize: ph ? "11px" : "11.5px",
+      tag: { flex: "none", fontFamily: mono, fontSize: ph ? 9 : 9.5, borderRadius: 4, padding: "1px 5px", color: "var(--warning)", background: `color-mix(in oklab, var(--warning) ${wash}%, transparent)`, whiteSpace: "nowrap", cursor: live ? "pointer" : "default", opacity: ctl === "disabled" ? 0.45 : busy ? 0.75 : 1, ...(ring ? { boxShadow: ring } : {}), ...(ctl === "focus" ? { outline: "2px solid var(--accent)", outlineOffset: 2 } : {}) },
+      tagRole: live ? "button" : "", hitPad: ph && live ? "padding:8px 0;margin:-8px 0;" : "",
+      hasTail: !s.bare || busy, tail, hasQual: !!s.qual && !s.soldOut && !busy, qual: s.qual || "",
+      figSlot: { ...(desk || busy ? { display: "inline-block", minWidth: desk ? 46 : 0, textAlign: "right" } : {}), color: busy ? "var(--fg-muted)" : "var(--fg-body)" },
+      ctlAria: live ? `Bought ${s.name}? Add it to your collection` : "", ctlOpen: open ? "true" : "false", ctlBusy: busy ? "true" : "false",
+      hasSwap: swapBtn, hasReserve: tools && !swapBtn && desk,
+      swapStyle: { flex: "none", display: "flex", alignItems: "center", justifyContent: "center", width: ph ? 44 : 22, height: ph ? 44 : 20, borderRadius: 6, fontFamily: mono, fontSize: 13, lineHeight: 1, color: "var(--warning)", ...(ph ? { marginRight: -9 } : {}) },
+      xAria: s.commander ? "" : `Remove ${s.name}`,
+      xStyle: { flex: "none", display: "flex", alignItems: "center", justifyContent: "center", width: ph ? 44 : "auto", height: ph ? 44 : "auto", fontSize: 13, lineHeight: 1, color: "var(--border-dashed)", visibility: s.commander ? "hidden" : "visible" },
+    };
+  }
+}
+</script>
+</body>
+</html>
