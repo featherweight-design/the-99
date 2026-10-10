@@ -19,6 +19,8 @@ import { sql } from "drizzle-orm";
 import ws from "ws";
 import { getDeckDetail, listDecksWithStats } from "../src/lib/decks/read";
 import { commitVersion, loadVersionDiff } from "../src/lib/decks/versions";
+import { loadPrices, priceFor } from "../src/lib/decks/price-query";
+import { readHeldPricePicks } from "../src/lib/decks/printings";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -175,6 +177,47 @@ async function main() {
   check("a tile with no pick keeps the Collection's printing", await tileArt(plain), shownTile);
   setSwitch(false);
   check("switch off: the picked deck's tile draws the Collection's printing", await tileArt(picks), shownTile);
+
+  // PRICES: a card with two live non-foil printings at different figures. The deck's pick of the
+  // dearer one prices it; today's figure (no pick, or switch off) is the cheaper one.
+  setSwitch(true);
+  const { rows: [{ newest }] } = await fixture.execute<{ newest: string }>(sql`select max(as_of)::text as newest from printing_prices`);
+  const { rows: [priced] } = await fixture.execute<{ oracle_id: string }>(sql`
+    select p.oracle_id from printings p join printing_prices pp on pp.scryfall_id = p.scryfall_id
+    join cards c on c.oracle_id = p.oracle_id
+    where pp.as_of = ${newest}::timestamp and pp.price_cents is not null
+      and c.type_line not like '%Basic%'
+    group by p.oracle_id having count(distinct pp.price_cents) >= 2
+    order by p.oracle_id limit 1
+  `);
+  const { rows: tiers } = await fixture.execute<{ scryfall_id: string; set_code: string; collector_number: string; price_cents: number }>(sql`
+    select p.scryfall_id, p.set_code, p.collector_number, pp.price_cents
+    from printings p join printing_prices pp on pp.scryfall_id = p.scryfall_id
+    where p.oracle_id = ${priced.oracle_id} and pp.as_of = ${newest}::timestamp and pp.price_cents is not null
+    order by pp.price_cents asc, p.scryfall_id
+  `);
+  const cheapest = tiers[0];
+  const dearer = tiers[tiers.length - 1];
+  await fixture.execute(sql`
+    insert into collection_items (user_id, oracle_id, quantity, set_code, collector_number, scryfall_id)
+    values (${USER}, ${priced.oracle_id}, 1, ${dearer.set_code}, ${dearer.collector_number}, ${dearer.scryfall_id})
+  `);
+  await fixture.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deckId}, ${priced.oracle_id}, 1)`);
+  await fixture.execute(sql`
+    insert into deck_printings (deck_id, oracle_id, set_code, collector_number)
+    values (${deckId}, ${priced.oracle_id}, ${dearer.set_code}, ${dearer.collector_number})
+  `);
+  const held = await readHeldPricePicks(USER, [deckId]);
+  check("a held pick is passed to the price read", held.some((p) => p.oracleId === priced.oracle_id), true);
+  const pickedRead = await loadPrices([priced.oracle_id], held);
+  check("a deck's in-stock pick prices its own printing", priceFor(pickedRead, deckId, priced.oracle_id)?.cents, dearer.price_cents);
+  check("the same card in another deck keeps today's cheapest figure", priceFor(pickedRead, plain, priced.oracle_id)?.cents, cheapest.price_cents);
+  check("the figure names the printing behind it", priceFor(pickedRead, deckId, priced.oracle_id)?.printing?.scryfallId, dearer.scryfall_id);
+  // The player lets go of that printing: the pick is no longer held, so it is not priced.
+  await fixture.execute(sql`delete from collection_items where user_id = ${USER} and oracle_id = ${priced.oracle_id}`);
+  check("a pick the player no longer holds is not passed", (await readHeldPricePicks(USER, [deckId])).some((p) => p.oracleId === priced.oracle_id), false);
+  setSwitch(false);
+  check("switch off: no picks reach the price read", (await readHeldPricePicks(USER, [deckId])).length, 0);
 }
 
 main()

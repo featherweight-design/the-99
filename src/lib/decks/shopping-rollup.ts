@@ -32,7 +32,8 @@
 
 import { loadDeckBuyRows } from "./availability-query";
 import { summarisePrices, type PricedCard } from "./price";
-import { loadPrices } from "./price-query";
+import { loadPrices, priceFor } from "./price-query";
+import { readHeldPricePicks } from "./printings";
 
 export type DeckShopping = { copies: number; cents: number; pricedCopies: number };
 
@@ -75,12 +76,17 @@ export async function loadShoppingRollup(
 
   if (rows.length === 0) return { byDeck: new Map(), total: empty() };
 
-  const { prices, newestAsOf } = await loadPrices([...new Set(rows.map((r) => r.oracleId))]);
+  // Each deck's held printing picks ride in the one read (deck printings), and every row is priced
+  // through its OWN deck's pick: a card two decks picked differently is two figures, so a deck
+  // tile's figure and Home's total agree with that deck's own Shopping rows.
+  const picks = await readHeldPricePicks(userId, [...new Set(rows.map((r) => r.deckId))]);
+  const read = await loadPrices([...new Set(rows.map((r) => r.oracleId))], picks);
+  const { newestAsOf } = read;
 
   const perDeck = new Map<string, PricedCard[]>();
   for (const row of rows) {
     const list = perDeck.get(row.deckId) ?? [];
-    list.push({ quantity: row.quantity, price: prices.get(row.oracleId) ?? null });
+    list.push({ quantity: row.quantity, price: priceFor(read, row.deckId, row.oracleId) });
     perDeck.set(row.deckId, list);
   }
 
