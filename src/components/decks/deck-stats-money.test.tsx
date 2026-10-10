@@ -88,4 +88,10 @@ describe("DeckStatsView money card", () => {
     expect(card()).toHaveTextContent("3 of 12 copies priced, after the ones you own");
     expect(card()).toHaveTextContent("4 of 5 copies priced, plus 12 basics");
   });
+
+  it("reads an empty owned group as a count, not as a missing price", () => {
+    draw(money({ owned: { copies: 0, cents: 0, pricedCopies: 0 }, value: { cents: 7415, pricedCopies: 12, copies: 12 } }));
+    expect(card().querySelector('[data-money-figure="OWNED"]')).toHaveTextContent("0 copies");
+    expect(card().querySelector('[data-money-figure="OWNED"]')).not.toHaveTextContent("no price");
+  });
 });

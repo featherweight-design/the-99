@@ -29,7 +29,7 @@ export function MoneyCard({ money, onShop }: { money: MoneyStats; onShop?: () =>
 
   const valueFig = value.pricedCopies > 0 ? formatCents(value.cents) : copy.noPrice;
   const valueSub = value.pricedCopies < value.copies ? copy.valuePartial(value.pricedCopies, value.copies) : copy.valueSub;
-  const ownedFig = owned.pricedCopies > 0 ? formatCents(owned.cents) : owned.copies === 0 ? copy.noPrice : groupFigure(owned);
+  const ownedFig = groupFigure(owned);
   const toBuyFig = nothingToBuy ? copy.toBuyNone : groupFigure(toBuy);
   const toBuySub = nothingToBuy
     ? copy.toBuyNoneSub
