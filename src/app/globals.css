@@ -1032,4 +1032,8 @@ html {
      average and more than it. Violet and blue, never green and red: more or fewer is a fact, not a grade. */
   --avg-fewer: oklch(0.70 0.11 305);
   --avg-more: oklch(0.72 0.11 235);
+  /* The win bead in the Stats Results card (handoff canvas brass), with the dark ink the pips use.
+     The draw bead's half fill is --border-strong rather than the canvas's --fg-muted: its letter
+     straddles the diagonal, and no one ink reads on both the muted grey and the bare card. */
+  --result-win: #C9A54E;
 }

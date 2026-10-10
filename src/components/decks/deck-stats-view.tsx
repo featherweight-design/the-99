@@ -6,6 +6,7 @@ import { deckStatsCopy } from "../../lib/copy/deck-stats";
 import { AverageCard } from "./deck-stats-average";
 import { Shell } from "./deck-stats-shell";
 import { MoneyCard } from "./deck-stats-money";
+import { ResultsCard } from "./deck-stats-results";
 import { JOB_ROWS, type JobTally } from "../../lib/decks/job-tally";
 import { MANA_COLORS, type ManaColor, type ManaSupply } from "../../lib/mana/supply";
 import { CARD_TYPES, CURVE_MAX, type CardType, type DeckStatsSlice } from "../../lib/decks/stats";
@@ -387,7 +388,7 @@ function ColorsCard({ mana }: { mana: ManaSupply }) {
   );
 }
 
-export function DeckStatsView({ data = null, onShop }: { data?: DeckStatsSlice | null; onShop?: () => void }) {
+export function DeckStatsView({ data = null, onShop, onLogGame }: { data?: DeckStatsSlice | null; onShop?: () => void; onLogGame?: () => void }) {
   const card = (c: (typeof CARDS)[number]) =>
     c.key === "curve" && data ? (
       <CurveCard key={c.key} data={data} />
@@ -399,6 +400,8 @@ export function DeckStatsView({ data = null, onShop }: { data?: DeckStatsSlice |
       <ColorsCard key={c.key} mana={data.mana} />
     ) : c.key === "average" && data?.average ? (
       <AverageCard key={c.key} average={data.average} />
+    ) : c.key === "results" && data?.results ? (
+      <ResultsCard key={c.key} results={data.results} onLogGame={onLogGame} />
     ) : (
       <Shell key={c.key} id={c.key} title={c.title} />
     );

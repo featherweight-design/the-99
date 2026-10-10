@@ -116,3 +116,14 @@ export function formatShortDeckDate(date: Date): string {
   const month = date.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
   return `${date.getUTCDate()} ${month}`;
 }
+
+// "12 Aug" — the design's locator. The year appears only when it is not the
+// current one, so a log read in the same season stays short.
+// Composed rather than handed whole to Intl: en-GB abbreviates September as
+// "Sept", which is correct but a character wider than the fixed meta slot was
+// drawn for.
+export function formatPlayed(date: Date, now: Date = new Date()): string {
+  const month = date.toLocaleDateString("en-US", { month: "short" });
+  const stem = `${date.getDate()} ${month}`;
+  return date.getFullYear() === now.getFullYear() ? stem : `${stem} ${date.getFullYear()}`;
+}
