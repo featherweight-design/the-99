@@ -1,6 +1,6 @@
 {
-  "feature": "Collection screens PRs 2 and 3: the Add cards sheet (add mode), the place head's + Add, the empty-state doors and Home step one",
-  "note": "Needs COLLECTION_EDIT_ENABLED=true on the server and a collection with Sol Ring in the catalog (any account with cards). Deliberately no saving, saved or failed rows: a saved state writes a ledger entry to whatever database the app points at, and the three are covered by add-cards-sheet.test.tsx. The History tab and B8's History link draw only once /collection/history ships (PR 6), so no row has them. Steps are Playwright verbs. The doors rows (`doors-empty`, `doors-add`, `home-add-by-hand`) need an account with NO collection; every other row needs one with cards.",
+  "feature": "Collection screens PR 2: the Add cards sheet (add mode) and the place head's + Add",
+  "note": "Needs COLLECTION_EDIT_ENABLED=true on the server and a collection with Sol Ring in the catalog (any account with cards). Deliberately no saving, saved or failed rows: a saved state writes a ledger entry to whatever database the app points at, and the three are covered by add-cards-sheet.test.tsx. The History tab and B8's History link draw only once /collection/history ships (PR 6), so no row has them. Steps are Playwright verbs. The empty-state doors and Home step one live in `collection-edit-empty.json`: they need an account with NO collection, and this sheet signs in one account for every row.",
   "shares": {
     "module": "src/components/collection/add-cards-sheet.tsx",
     "binding": "AddCardsSheet",
@@ -185,48 +185,6 @@
           "name": "^Close$",
           "wait": "[role=alertdialog]",
           "settle": 800
-        }
-      ]
-    },
-    {
-      "id": "doors-empty",
-      "label": "/collection empty: two equal doors (rows at 390, 260px tiles at 1300)",
-      "view": "src/components/collection/collection-empty-doors.tsx",
-      "steps": [
-        {
-          "goto": "/collection",
-          "wait": "main, [role=main], h1",
-          "settle": 6000
-        }
-      ]
-    },
-    {
-      "id": "doors-add",
-      "label": "/collection empty: the Add cards door opened",
-      "view": "src/components/collection/collection-empty-doors.tsx",
-      "steps": [
-        {
-          "goto": "/collection",
-          "wait": "main, [role=main], h1",
-          "settle": 6000
-        },
-        {
-          "clickRole": "button",
-          "name": "Add cards",
-          "wait": "[role=dialog]",
-          "settle": 800
-        }
-      ]
-    },
-    {
-      "id": "home-add-by-hand",
-      "label": "/ Home step one: Add cards by hand beside Paste",
-      "view": "src/components/home/first-run-step-one.tsx",
-      "steps": [
-        {
-          "goto": "/",
-          "wait": "main, [role=main], h1",
-          "settle": 6000
         }
       ]
     }

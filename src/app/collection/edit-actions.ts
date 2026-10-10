@@ -67,8 +67,14 @@ function settled(userId: string, result: ChangeResult): { applied: { id: string 
   if (result.status !== "applied" && result.status !== "alreadyApplied") return null;
   // A retry invalidates again: the request that wrote it may have died between its commit and
   // its own invalidation.
-  invalidateCollectionReaders(userId);
-  after(() => warmCommanderScores(userId));
+  // After the response, never inside the action: a Server Action that revalidates re-renders the
+  // route it was called from into its own reply, and the empty /collection and first-run Home
+  // would turn into their populated pages and unmount the sheet that is still showing its saved
+  // state. The warm follows the invalidation, as it did when both ran in the action.
+  after(async () => {
+    invalidateCollectionReaders(userId);
+    await warmCommanderScores(userId);
+  });
   return { applied: { id: result.entry.id } };
 }
 
