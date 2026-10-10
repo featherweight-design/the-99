@@ -123,4 +123,25 @@ describe("loadPrices", () => {
     expect(result.picked?.get(`${DECK}|${CARD}`)?.cents).toBe(110);
     expect(priceFor(result, DECK, CARD)?.cents).toBe(110);
   });
+
+  it("names the printing behind each figure, the chosen one and the pick alike (I got it's preset)", async () => {
+    const CHOSEN = "55555555-5555-4555-8555-555555555555";
+    const PICK = "66666666-6666-4666-8666-666666666666";
+    state.rows = [
+      {
+        newest_as_of: NEWEST, deck_id: null, oracle_id: CARD, price_cents: 70, price_cents_foil: null, price_cents_etched: null, as_of: NEWEST, scryfall_id: CHOSEN,
+      },
+      {
+        newest_as_of: NEWEST, deck_id: DECK, oracle_id: CARD, price_cents: 110, price_cents_foil: null, price_cents_etched: null, as_of: NEWEST, scryfall_id: PICK,
+      },
+    ];
+    const result = await loadPrices([CARD], [{ deckId: DECK, oracleId: CARD, setCode: "KHM", collectorNumber: "31" }]);
+    // Both halves select it, in the same column position, so the union lines up.
+    expect(state.texts[0]).toMatch(/pp\.as_of, p\.scryfall_id\s+from unnest/);
+    expect(state.texts[0]).toMatch(/pp\.as_of,\s+p\.scryfall_id\s+from printings p/);
+    expect(state.texts[0]).toMatch(/facts\.as_of,\s+facts\.scryfall_id/);
+    expect(result.prices.get(CARD)?.printing).toEqual({ scryfallId: CHOSEN });
+    expect(priceFor(result, DECK, CARD)?.printing).toEqual({ scryfallId: PICK });
+    expect(priceFor(result, OTHER_DECK, CARD)?.printing).toEqual({ scryfallId: CHOSEN });
+  });
 });
