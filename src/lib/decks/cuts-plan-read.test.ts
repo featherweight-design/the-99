@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
-const { rowsRef, loadComboFacts } = vi.hoisted(() => ({ rowsRef: { rows: [] as unknown[] }, loadComboFacts: vi.fn() }));
-vi.mock("../../db", () => ({ db: { select: () => ({ from: () => ({ where: async () => rowsRef.rows }) }) } }));
+const { rowsRef, loadComboFacts, select } = vi.hoisted(() => {
+  const rowsRef = { rows: [] as unknown[] };
+  return { rowsRef, loadComboFacts: vi.fn(), select: vi.fn(() => ({ from: () => ({ where: async () => rowsRef.rows }) })) };
+});
+vi.mock("../../db", () => ({ db: { select } }));
 vi.mock("../synopsis/combo-facts", () => ({ loadComboFacts }));
 
 import { costColours, readCutsPlan } from "./cuts-plan-read";
@@ -69,8 +72,10 @@ describe("readCutsPlan", () => {
 
   it("reads an empty deck without touching the catalog", async () => {
     rowsRef.rows = [];
+    select.mockClear();
     loadComboFacts.mockResolvedValueOnce(null);
     const plan = await readCutsPlan({ cards: [], commanderOracleIds: [], colours: [] } as never);
     expect(plan).toMatchObject({ colourNeeds: [], basics: [], commanderText: [] });
+    expect(select).not.toHaveBeenCalled();
   });
 });
