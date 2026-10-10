@@ -1,5 +1,5 @@
 import { INTAKE_MAX_TOKENS, INTAKE_MODEL } from "../intake/limits";
-import { SYNOPSIS_MAX_TOKENS } from "../synopsis/limits";
+import { SYNOPSIS_MAX_TOKENS_V8 } from "../synopsis/limits";
 import { SYNOPSIS_MODEL } from "../synopsis/model";
 import { STUB_MODEL } from "../synopsis/stub";
 import { TUNING_MAX_TOKENS, TUNING_MODEL } from "../tuning/limits";
@@ -85,7 +85,10 @@ export const FEATURE_CALLS: Readonly<Record<ModelFeature, {
   callsPerWrite: number;
 }>> = {
   tuning: { model: TUNING_MODEL, inputCeilingTokens: 12_000, maxTokens: TUNING_MAX_TOKENS, callsPerWrite: 1 },
-  synopsis: { model: SYNOPSIS_MODEL, inputCeilingTokens: 24_000, maxTokens: SYNOPSIS_MAX_TOKENS, callsPerWrite: 2 },
+  // Priced at the LARGER of the two contracts' ceilings whatever the switch says: a reservation is
+  // priced from the feature, not from the contract that created it, so a flag turned off or a
+  // rollback while a contract-8 call is in flight would otherwise price it below what it can cost.
+  synopsis: { model: SYNOPSIS_MODEL, inputCeilingTokens: 24_000, maxTokens: SYNOPSIS_MAX_TOKENS_V8, callsPerWrite: 2 },
   intake: { model: INTAKE_MODEL, inputCeilingTokens: 6_000, maxTokens: INTAKE_MAX_TOKENS, callsPerWrite: 1 },
   // MEASURED 2026-10-10 (`pnpm eval:cuts-model --text`, dry run, five staging decks): the largest
   // request with type, mana value and card text was 15,266 input tokens, and the largest reply 4,049

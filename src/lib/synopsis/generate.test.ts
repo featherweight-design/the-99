@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../../db", () => ({ db: {} }));
 
 import type { SynopsisFacts } from "./facts";
+import { validateSynopsisV8 } from "./validate-v8";
 import { chargeFor, failedRunSet, mergeRetry, outcomeOf, refusedSections, shown, sumUsage } from "./generate";
 import { isRepair } from "./prompt";
 import { stubDelayMs, stubMode, stubReply, synopsisLive } from "./stub";
@@ -24,6 +25,26 @@ function content(verdicts: SectionVerdict[], tag: string): CheckedSynopsis {
     cards: {},
   };
 }
+
+describe("a retry under contract 8", () => {
+  const ev = (tag: string) => ({ strategy: [[tag]], keep: [[tag]], sendBack: [[tag]], tips: [[tag]], keyCards: [[tag]], weaknesses: [[tag]] });
+  const stored = { ...content([ok("overview"), no("primer"), ok("keyCards"), no("weaknesses")], "old"), evidence: ev("old"), assessment: [] };
+  const fresh = { ...content([ok("overview"), ok("primer"), ok("keyCards"), ok("weaknesses")], "new"), evidence: ev("new"),
+    assessment: [{ topic: "win_path" as const, verdict: "unknown" as const }] };
+
+  it("takes the evidence and the checklist with the sections it retried, and keeps the rest byte for byte", () => {
+    const { content: merged } = mergeRetry(stored, fresh, ["primer", "weaknesses"]);
+    expect(merged.evidence).toEqual({ strategy: [["new"]], keep: [["new"]], sendBack: [["new"]], tips: [["new"]], keyCards: [["old"]], weaknesses: [["new"]] });
+    expect(merged.assessment).toEqual(fresh.assessment);
+    expect(mergeRetry(stored, fresh, ["primer"]).content.assessment).toEqual([]);
+  });
+
+  it("adds nothing to a contract-7 answer", () => {
+    const { content: merged } = mergeRetry(content([no("primer")], "a"), content([ok("primer")], "b"), ["primer"]);
+    expect(merged.evidence).toBeUndefined();
+    expect(merged.assessment).toBeUndefined();
+  });
+});
 
 describe("the run's outcome and charge", () => {
   it("is survived only when every section passed, and shown when any did", () => {
@@ -127,6 +148,20 @@ describe("the stub", () => {
     expect(stubMode({ SYNOPSIS_STUB: "rejected" })).toBe("rejected");
     expect(run("timeout")).toBe("timeout");
     expect(run("malformed")).toBe("malformed");
+  });
+
+  // Contract 8 (OVERVIEW_V2_ENABLED): the same stub, in the new shape, passes the v8 validator.
+  it("passes contract 8 on a whole deck, with every line anchored and the checklist read", () => {
+    const reply = stubReply(facts, "survived", false, true);
+    expect(reply.ok).toBe(true);
+    if (!reply.ok) return;
+    const checked = validateSynopsisV8(reply.value as never, facts, new Map());
+    expect(checked.verdicts.map((v) => v.status)).toEqual(["ok", "ok", "ok", "ok"]);
+    expect(checked.weaknesses).toEqual(["Moderate: A slow start leaves the deck behind the table."]);
+    expect(checked.assessment).toHaveLength(7);
+    expect(checked.evidence?.tips.every((e) => e.length >= 2)).toBe(true);
+    const partial = stubReply(facts, "partial", false, true);
+    expect(partial.ok && validateSynopsisV8(partial.value as never, facts, new Map()).verdicts[0]).toMatchObject({ section: "overview", status: "refused" });
   });
 
   // Contract B's two outcomes, told apart by the request: a repair's user message names reasons.

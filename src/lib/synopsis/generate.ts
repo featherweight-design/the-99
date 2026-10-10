@@ -11,14 +11,15 @@ import { readProfileHead } from "../profile/load";
 import { readStoredReading, sameList, type StoredProfileDeps } from "../profile/stored";
 import { loadUniversalStaples } from "../staples/universal";
 import { buildSynopsisFacts, deckNameIndex, normalizeName, type SynopsisFacts } from "./facts";
-import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_DEADLINE_MS, SYNOPSIS_MAX_TOKENS, SYNOPSIS_REPAIR_MIN_MS } from "./limits";
+import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_DEADLINE_MS, SYNOPSIS_MAX_TOKENS, SYNOPSIS_MAX_TOKENS_V8, SYNOPSIS_REPAIR_MIN_MS, synopsisContractVersion } from "./limits";
 import { SYNOPSIS_EFFORT, SYNOPSIS_MODEL } from "./model";
 import { buildSynopsisPrompt, isRepair } from "./prompt";
 import { reapSynopses } from "./reaper";
-import { synopsisResponseSchema, type SynopsisResponse } from "./response-schema";
+import { synopsisResponseSchema, synopsisResponseSchemaV8Wire, type SynopsisReply, type SynopsisReplyV8Wire, type SynopsisResponse } from "./response-schema";
 import { STUB_MODEL, stubDelay, stubMode, stubReply, synopsisLive } from "./stub";
 import type { CheckedSynopsis, SectionId, SectionVerdict, SynopsisOutcome } from "./types";
 import { marksIn, validateSynopsis } from "./validate";
+import { normalizeV8, validateSynopsisV8, weaknessLines } from "./validate-v8";
 import { overviewDataMovedFor } from "../notices/overview";
 import { noticesEnabled } from "../notices/flag";
 import { holdsIllegalCard, liveOffendingIds } from "../notices/read";
@@ -75,8 +76,8 @@ export type WriteResult =
   | { kind: "illegal" };
 
 /** `deadlineMs` is what is left of the write's one budget: the repair gets only the remainder. */
-export type ModelCall = (req: { system: string; user: string; deadlineMs: number }, facts: SynopsisFacts) =>
-  Promise<ModelOutcome<SynopsisResponse>>;
+export type ModelCall = (req: { system: string; user: string; deadlineMs: number; v2?: boolean }, facts: SynopsisFacts) =>
+  Promise<ModelOutcome<SynopsisReply>>;
 
 export type GenerateDeps = {
   /** Stored on the run, so the harness can tell models apart and a probe can prove the stub ran. */
@@ -92,18 +93,29 @@ export function defaultDeps(): GenerateDeps {
   return {
     modelName: live ? SYNOPSIS_MODEL : STUB_MODEL,
     model: live
-      ? (req) => callModel({
-        model: SYNOPSIS_MODEL,
-        system: req.system,
-        user: req.user,
-        maxTokens: SYNOPSIS_MAX_TOKENS,
-        effort: SYNOPSIS_EFFORT,
-        schema: synopsisResponseSchema,
-        deadlineMs: req.deadlineMs,
-      })
+      // Contract 8 (the v2 method) asks for a bigger reply and constrains it to its own schema.
+      ? (req): Promise<ModelOutcome<SynopsisReply>> => req.v2
+        ? callModel({
+          model: SYNOPSIS_MODEL,
+          system: req.system,
+          user: req.user,
+          maxTokens: SYNOPSIS_MAX_TOKENS_V8,
+          effort: SYNOPSIS_EFFORT,
+          schema: synopsisResponseSchemaV8Wire,
+          deadlineMs: req.deadlineMs,
+        })
+        : callModel({
+          model: SYNOPSIS_MODEL,
+          system: req.system,
+          user: req.user,
+          maxTokens: SYNOPSIS_MAX_TOKENS,
+          effort: SYNOPSIS_EFFORT,
+          schema: synopsisResponseSchema,
+          deadlineMs: req.deadlineMs,
+        })
       : async (req, facts) => {
         await stubDelay();
-        return stubReply(facts, stubMode(), isRepair(req.user));
+        return stubReply(facts, stubMode(), isRepair(req.user), !!req.v2);
       },
     now: () => new Date(),
   };
@@ -166,6 +178,23 @@ export function mergeRetry(
     lands: fresh.lands ?? stored.lands,
     cards: { ...stored.cards, ...fresh.cards },
   };
+  // Contract 8: the evidence follows its section, and the checklist follows the Weaknesses it chose
+  // them from. A stored answer with neither (contract 7) stays without.
+  if (stored.evidence && fresh.evidence) {
+    const primer = take("primer");
+    const e = stored.evidence;
+    const f = fresh.evidence;
+    content.evidence = {
+      strategy: primer ? f.strategy : e.strategy,
+      keep: primer ? f.keep : e.keep,
+      sendBack: primer ? f.sendBack : e.sendBack,
+      tips: primer ? f.tips : e.tips,
+      keyCards: take("keyCards") ? f.keyCards : e.keyCards,
+      weaknesses: take("weaknesses") ? f.weaknesses : e.weaknesses,
+    };
+  }
+  const assessment = take("weaknesses") ? fresh.assessment : stored.assessment;
+  if (assessment) content.assessment = assessment;
   const anyRetriedPassed = verdicts.some((v) => take(v.section) && v.status === "ok");
   return { content, anyRetriedPassed };
 }
@@ -242,6 +271,16 @@ export async function factsFor(
     v2 ? new Map(texts.map((t) => [t.oracleId, t.keywords])) : null);
 }
 
+/** Check a reply under the contract it was written for: the one validator the write, the repair and the eval harness all call. */
+export async function checkReply(value: SynopsisReply, facts: SynopsisFacts, v2: boolean): Promise<CheckedSynopsis> {
+  if (!v2) {
+    const reply = value as SynopsisResponse;
+    return validateSynopsis(reply, facts, await catalogFor(reply, facts));
+  }
+  const reply = normalizeV8(value as SynopsisReplyV8Wire);
+  return validateSynopsisV8(reply, facts, await catalogFor({ weaknesses: weaknessLines(reply) }, facts));
+}
+
 /** The catalog cards Weaknesses names that the deck does not hold. Exported for the eval harness,
  *  which must run this exact read rather than a copy. */
 export async function catalogFor(reply: Pick<SynopsisResponse, "weaknesses">, facts: SynopsisFacts): Promise<Map<string, Card>> {
@@ -277,6 +316,8 @@ export async function startRun(
    * concurrent press would have written; the moved one it replaces does not stop it.
    */
   replacing = false,
+  /** The contract the run is written under: 8 while the v2 method is on. */
+  contractVersion: number = SYNOPSIS_CONTRACT_VERSION,
 ): Promise<{ kind: "started"; runId: string; callId: string } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused"; synopsis: SynopsisRow } | { kind: "illegal" } | { kind: "no_reading" }> {
   // The reap COMMITS ON ITS OWN, before the reservation: a spent allowance rolls the reservation's
   // transaction back, and a reap inside it would roll back too, leaving an abandoned run locking
@@ -330,7 +371,7 @@ export async function startRun(
         if (shownNow) throw new AlreadyWrittenError();
       }
       const [row] = await tx.insert(deckSynopses).values({
-        deckId, userId, fingerprint: list, contractVersion: SYNOPSIS_CONTRACT_VERSION,
+        deckId, userId, fingerprint: list, contractVersion,
         model, modelCallId: unit.id, status: "pending", retryOf, createdAt: now, seenSeq,
       }).returning({ id: deckSynopses.id });
       return { runId: row.id, callId: unit.id };
@@ -422,6 +463,9 @@ async function run(
   // nothing and starts no run, a retry included.
   // Behind the notices switch: off, the check is not there and the write runs as before.
   if (noticesEnabled() && (await holdsIllegalCard(deckId, userId))) return { kind: "illegal" };
+  // Read once: a write is made wholly under one contract, whatever the switch does mid-flight.
+  const v2 = overviewV2Enabled();
+  const contract = synopsisContractVersion(v2);
   const reading = await freshReading(deckId, userId, deps.profile);
   if (!reading) return { kind: "no_reading" };
   const current = await readShownSynopsis(deckId, userId, reading.list);
@@ -432,7 +476,7 @@ async function run(
   let base: SynopsisRow | null = null;
   if (retry) {
     if (!current || current.id !== retry.id || current.fingerprint !== reading.list) return { kind: "nothing_to_retry" };
-    if (current.contractVersion === SYNOPSIS_CONTRACT_VERSION) {
+    if (current.contractVersion === contract) {
       if (refusedSections(current.content).length === 0) return { kind: "nothing_to_retry" };
       base = current;
     }
@@ -446,11 +490,11 @@ async function run(
     return { kind: "reused", synopsis: current };
   }
 
-  const facts = await factsFor(reading.profile);
+  const facts = await factsFor(reading.profile, v2);
   const refused = base ? refusedSections(base.content) : null;
-  const prompt = buildSynopsisPrompt(facts, base && refused ? { keep: base.content, refused } : undefined, { v2: overviewV2Enabled() });
+  const prompt = buildSynopsisPrompt(facts, base && refused ? { keep: base.content, refused } : undefined, { v2, contract8: v2 });
 
-  const started = await startRun(deckId, userId, reading.list, deps.modelName, deps.now(), base?.id ?? null, !retry, reading.seenSeq, replacing);
+  const started = await startRun(deckId, userId, reading.list, deps.modelName, deps.now(), base?.id ?? null, !retry, reading.seenSeq, replacing, contract);
   if (started.kind !== "started") return started;
 
   // EVERY PATH AFTER THE RESERVATION SETTLES THE RUN. A throw anywhere past here (the catalog
@@ -465,9 +509,9 @@ async function run(
   // what is left of it, so the write can never outlast the deck page's `maxDuration`.
   const startedAt = deps.now().getTime();
   const remaining = () => SYNOPSIS_DEADLINE_MS - (deps.now().getTime() - startedAt);
-  const call = async (req: { system: string; user: string }): Promise<ModelOutcome<SynopsisResponse>> => {
+  const call = async (req: { system: string; user: string }): Promise<ModelOutcome<SynopsisReply>> => {
     try {
-      return await deps.model({ ...req, deadlineMs: remaining() }, facts);
+      return await deps.model({ ...req, deadlineMs: remaining(), v2 }, facts);
     } catch (error) {
       console.error("synopsis model call threw", error);
       return { ok: false, errorClass: "upstream_busy" };
@@ -483,7 +527,7 @@ async function run(
     }
 
     let usage: ModelUsage | undefined = outcome.usage;
-    let content = validateSynopsis(outcome.value, facts, await catalogFor(outcome.value, facts));
+    let content = await checkReply(outcome.value, facts, v2);
     if (base && refused) {
       content = mergeRetry(base.content, content, refused).content;
     } else if (refusedSections(content).length > 0 && remaining() >= SYNOPSIS_REPAIR_MIN_MS) {
@@ -493,11 +537,11 @@ async function run(
       // byte for byte. A refused section the repair fails again stays refused, now with the
       // repair's own reason and counts, which is what a later Try again is asked to fix.
       const failing = refusedSections(content);
-      const repair = await call(buildSynopsisPrompt(facts, { keep: content, refused: failing }, { v2: overviewV2Enabled() }));
+      const repair = await call(buildSynopsisPrompt(facts, { keep: content, refused: failing }, { v2, contract8: v2 }));
       usage = sumUsage(usage, repair.usage);
       if (usage) billed = { model: deps.modelName, usage };
       if (repair.ok) {
-        const repaired = validateSynopsis(repair.value, facts, await catalogFor(repair.value, facts));
+        const repaired = await checkReply(repair.value, facts, v2);
         content = mergeRetry(content, repaired, failing).content;
       }
     }
@@ -513,7 +557,7 @@ async function run(
       kind: "written",
       outcome: result,
       synopsis: shown(content)
-        ? { id: started.runId, fingerprint: reading.list, contractVersion: SYNOPSIS_CONTRACT_VERSION, createdAt: deps.now(), content }
+        ? { id: started.runId, fingerprint: reading.list, contractVersion: contract, createdAt: deps.now(), content }
         : null,
     };
   } catch (error) {

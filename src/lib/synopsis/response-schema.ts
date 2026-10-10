@@ -43,29 +43,48 @@ export type SynopsisResponse = z.infer<typeof synopsisResponseSchema>;
 const evidence = z.array(z.string().max(16)).max(12);
 const claimed = z.object({ text, evidence });
 
-export const synopsisResponseSchemaV8 = z.object({
-  overview: text,
-  primer: z.object({
-    strategy: z.array(claimed).max(12),
-    mulligan: z.object({
-      keep: z.array(claimed).max(8),
-      sendBack: z.array(claimed).max(8),
+function v8Schema<T extends z.ZodType<string>, U extends z.ZodType<string>, W extends z.ZodType<string>>(topic: T, verdict: U, tier: W) {
+  return z.object({
+    overview: text,
+    primer: z.object({
+      strategy: z.array(claimed).max(12),
+      mulligan: z.object({
+        keep: z.array(claimed).max(8),
+        sendBack: z.array(claimed).max(8),
+      }),
+      tips: z.array(claimed).max(8),
     }),
-    tips: z.array(claimed).max(8),
-  }),
-  keyCards: z.array(z.object({
-    card: z.string().max(200),
-    claims: z.array(z.enum(CATEGORIES)).max(CATEGORIES.length),
-    job: text,
-    evidence,
-  })).max(16),
-  assessment: z.array(z.object({
-    topic: z.enum(ASSESSMENT_TOPICS),
-    verdict: z.enum(ASSESSMENT_VERDICTS),
-    tier: z.enum(WEAKNESS_TIERS).optional(),
-    line: text.optional(),
-    evidence,
-  })).max(14),
-});
+    keyCards: z.array(z.object({
+      card: z.string().max(200),
+      claims: z.array(z.enum(CATEGORIES)).max(CATEGORIES.length),
+      job: text,
+      evidence,
+    })).max(16),
+    assessment: z.array(z.object({
+      topic,
+      verdict,
+      tier: tier.optional(),
+      line: text.optional(),
+      evidence,
+    })).max(14),
+  });
+}
+
+/** The reply with its closed words as enums: what the validator works on. */
+export const synopsisResponseSchemaV8 = v8Schema(z.enum(ASSESSMENT_TOPICS), z.enum(ASSESSMENT_VERDICTS), z.enum(WEAKNESS_TIERS));
+
+/**
+ * What the model is held to on the wire. The SDK turns an enum into a description, not a
+ * constraint, so the server never enforced `verdict`; and a strict enum here turned a reply with
+ * one stray word ("none", "n/a") into a MALFORMED reply, retried and billed twice, on 3 of the
+ * first 9 corpus answers. The words are read in code (`normalizeV8`): an unreadable verdict is
+ * `unknown` (silence), an unreadable tier or topic leaves the checklist incomplete.
+ */
+export const synopsisResponseSchemaV8Wire = v8Schema(z.string().max(60), z.string().max(60), z.string().max(60));
 
 export type SynopsisResponseV8 = z.infer<typeof synopsisResponseSchemaV8>;
+/** A contract-8 reply as it comes off the wire, before its closed words are read. */
+export type SynopsisReplyV8Wire = z.infer<typeof synopsisResponseSchemaV8Wire>;
+
+/** What a model call returns under either contract. */
+export type SynopsisReply = SynopsisResponse | SynopsisReplyV8Wire;

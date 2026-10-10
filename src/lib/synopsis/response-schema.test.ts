@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { synopsisResponseSchema, synopsisResponseSchemaV8 } from "./response-schema";
+import { synopsisResponseSchema, synopsisResponseSchemaV8, synopsisResponseSchemaV8Wire } from "./response-schema";
 
 const reply = {
   overview: "A deck.",
@@ -39,5 +39,23 @@ describe("synopsisResponseSchemaV8", () => {
     expect(synopsisResponseSchemaV8.safeParse({ ...v8, assessment: [{ topic: "win_path", verdict: "bad", evidence: [] }] }).success).toBe(false);
     expect(synopsisResponseSchemaV8.safeParse({ ...v8, assessment: [{ topic: "win_path", verdict: "weakness" }] }).success).toBe(false);
     expect(synopsisResponseSchemaV8.safeParse({ ...v8, assessment: undefined, weaknesses: ["x"] }).success).toBe(false);
+  });
+});
+
+describe("synopsisResponseSchemaV8Wire", () => {
+  const reply = (assessment: unknown[]) => ({
+    overview: "O.", primer: { strategy: [], mulligan: { keep: [], sendBack: [] }, tips: [] }, keyCards: [], assessment,
+  });
+
+  // The strict schema failed the whole reply (retried and billed twice) on one stray word.
+  it("accepts a closed word the strict schema refuses", () => {
+    const stray = reply([{ topic: "win_path", verdict: "n/a", tier: "severe", evidence: [] }]);
+    expect(synopsisResponseSchemaV8.safeParse(stray).success).toBe(false);
+    expect(synopsisResponseSchemaV8Wire.safeParse(stray).success).toBe(true);
+  });
+
+  it("still refuses a reply missing a required field", () => {
+    expect(synopsisResponseSchemaV8Wire.safeParse(reply([{ topic: "win_path", evidence: [] }])).success).toBe(false);
+    expect(synopsisResponseSchemaV8Wire.safeParse({ overview: "O." }).success).toBe(false);
   });
 });

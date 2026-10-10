@@ -34,7 +34,7 @@ import type { ModelOutcome } from "../src/lib/model/client";
 import { retrySynopsisFor, writeSynopsisFor, type GenerateDeps } from "../src/lib/synopsis/generate";
 import { pinSynopsisToVersion } from "../src/lib/synopsis/pin";
 import { readSynopsisState, readVersionSynopsis } from "../src/lib/synopsis/read";
-import type { SynopsisResponse } from "../src/lib/synopsis/response-schema";
+import type { SynopsisReply, SynopsisResponse } from "../src/lib/synopsis/response-schema";
 import { STUB_MODEL, stubReply, type StubMode } from "../src/lib/synopsis/stub";
 import type { SynopsisFacts } from "../src/lib/synopsis/facts";
 import { loadUniversalStaples } from "../src/lib/staples/universal";
@@ -42,6 +42,13 @@ import { isRepair } from "../src/lib/synopsis/prompt";
 import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_DEADLINE_MS, SYNOPSIS_REAPER_CUTOFF_MS, SYNOPSIS_REPAIR_MIN_MS } from "../src/lib/synopsis/limits";
 
 neonConfig.webSocketConstructor = ws;
+
+// Its assertions are contract 7's (stored shapes, `SYNOPSIS_CONTRACT_VERSION`). Contract 8 is
+// measured by `eval:corpus` and unit tests until the gate; a flag-on run would fail on shape.
+if (process.env.OVERVIEW_V2_ENABLED === "true") {
+  console.error("probe:synopsis asserts contract 7; unset OVERVIEW_V2_ENABLED to run it.");
+  process.exit(2);
+}
 
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 const pool = new Pool({ connectionString: DATABASE_URL });
@@ -72,21 +79,26 @@ let calls = 0;
 let queue: StubMode[] = [];
 let delayMs = 0;
 /** Every request the fake model was sent, in order, with the deadline it was given. */
-let seen: { user: string; deadlineMs: number; reply: SynopsisResponse | null }[] = [];
+let seen: { user: string; deadlineMs: number; reply: SynopsisReply | null }[] = [];
 /** The facts the fake model was last handed: what `factsFor` built. */
 let lastFacts: SynopsisFacts | null = null;
 const deps: GenerateDeps = {
   // The stub's own name, which the spend cap knows makes no request: a made-up name has no price,
   // and pricing refuses to guess one.
   modelName: STUB_MODEL,
-  model: async (req, facts): Promise<ModelOutcome<SynopsisResponse>> => {
+  model: async (req, facts): Promise<ModelOutcome<SynopsisReply>> => {
     calls += 1;
     lastFacts = facts;
     if (delayMs) await new Promise((r) => setTimeout(r, delayMs));
-    const out = stubReply(facts, queue.shift() ?? "survived");
+    // The stub answers in the contract the request asks for (`req.v2`: OVERVIEW_V2_ENABLED on).
+    const out = stubReply(facts, queue.shift() ?? "survived", false, !!req.v2);
     // A repair's reply words its primer differently, so a merge that took a PASSING section from
     // the repair rather than keeping the first answer's is visible, not identical by construction.
-    if (out.ok && isRepair(req.user)) out.value.primer.strategy[0] = "Build your mana early in the game.";
+    if (out.ok && isRepair(req.user)) {
+      const words = "Build your mana early in the game.";
+      const strategy = out.value.primer.strategy as (string | { text: string })[];
+      strategy[0] = typeof strategy[0] === "string" ? words : { ...strategy[0]!, text: words };
+    }
     seen.push({ user: req.user, deadlineMs: req.deadlineMs, reply: out.ok ? out.value : null });
     return out;
   },
@@ -704,10 +716,14 @@ async function live(fixtureDeck: string) {
       if (debug && out.ok) {
         const { unmarkedNames } = await import("../src/lib/synopsis/validate");
         const names = [...new Set(facts.cards.flatMap((c) => [c.name, ...c.name.split(" // ")]))];
-        const texts = [out.value.overview, ...out.value.primer.strategy, ...out.value.primer.mulligan.keep,
-          ...out.value.primer.mulligan.sendBack, ...out.value.primer.tips.map((t) => t.text), ...out.value.keyCards.map((k) => k.job), ...out.value.weaknesses];
+        // `writeSynopsisFor` asks for contract 8 while OVERVIEW_V2_ENABLED is on, and that reply has no
+        // `weaknesses` list: this legacy debug view reads contract 7 only.
+        if ("assessment" in out.value) { console.log("--debug reads contract 7; OVERVIEW_V2_ENABLED is on, skipped"); return out; }
+        const v7 = out.value;
+        const texts = [v7.overview, ...v7.primer.strategy, ...v7.primer.mulligan.keep,
+          ...v7.primer.mulligan.sendBack, ...v7.primer.tips.map((t) => t.text), ...v7.keyCards.map((k) => k.job), ...v7.weaknesses];
         for (const t of texts) { const bare = unmarkedNames(t, names); if (bare.length) console.log(`UNMARKED ${JSON.stringify(bare)} in: ${t}`); }
-        for (const k of out.value.keyCards) console.log(`JOB ${k.job.length}: ${k.job}`);
+        for (const k of v7.keyCards) console.log(`JOB ${k.job.length}: ${k.job}`);
       }
       return out;
     } });

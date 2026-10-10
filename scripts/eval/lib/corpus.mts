@@ -77,8 +77,12 @@ export function toReply(raw: unknown): Reply {
   };
   const text = (l: string | { text: string }) => (typeof l === "string" ? l : l.text);
   const rank: Record<string, number> = { critical: 0, moderate: 1, minor: 2 };
+  const fold = (t: string) => t.trim().toLowerCase().replace(/[\s-]+/g, "_");
   const word = (t: string) => `${t[0]!.toUpperCase()}${t.slice(1)}`;
   const weaknesses = r.weaknesses ?? (r.assessment ?? [])
+    // The words are folded as the app folds them (`normalizeV8`: case, spaces and hyphens), so a
+    // "Weakness" the app would show is a weakness here too.
+    .map((a) => ({ ...a, verdict: fold(a.verdict), tier: a.tier === undefined ? undefined : fold(a.tier) }))
     .filter((a) => a.verdict === "weakness" && a.tier && a.tier in rank && a.line?.trim())
     .map((a, i) => ({ a, i }))
     .sort((x, y) => rank[x.a.tier!]! - rank[y.a.tier!]! || x.i - y.i)

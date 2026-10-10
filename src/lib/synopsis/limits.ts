@@ -84,6 +84,15 @@ export const SYNOPSIS_OBSERVED_MAX_OUTPUT_TOKENS = 2_240;
 export const SYNOPSIS_MAX_TOKENS = 3_000;
 
 /**
+ * The contract-8 ceiling (plan 2026-10-10-overview-accuracy.md, section 6). The reply adds a
+ * `{ text, evidence }` object to every line and a seven-topic checklist whose weakness lines are
+ * written before the code cuts them to three: about 1,100 tokens over contract 7's worst case of
+ * 2,000, plus the same 1,000 of reasoning headroom, rounded up to the 4,500 the plan's cost
+ * ceiling was priced at. The spend guard's worst case is computed from this figure.
+ */
+export const SYNOPSIS_MAX_TOKENS_V8 = 4_500;
+
+/**
  * Counts per section (`SYNOPSIS-modal.md` §4.2). Checked by the validator, never by the schema:
  * a count out of range is a REFUSED section with a reason the player is shown, not a malformed
  * reply that is silently retried.
