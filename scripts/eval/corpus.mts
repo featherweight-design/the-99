@@ -72,8 +72,15 @@ if (command === "gate") {
   const cases = loadCorpus(CORPUS);
   const load = (list: string) => list.split(",").map((f) => readAnswers(f));
   // Compared on the answers both arms hold: a sample the budget cut short in one arm would otherwise score different decks.
-  const ra = load(args.a);
-  const rb = load(args.b);
+  const ra0 = load(args.a);
+  const rb0 = load(args.b);
+  const ra = ra0;
+  const rb = rb0;
+  // The same pin check `score` makes, on every row of both arms: an answer written for another list is not the list the gold describes.
+  for (const r of [...ra0, ...rb0].flat()) {
+    const pinned = cases.find((c) => c.id === r.id)?.deck.listFingerprint;
+    if (r.listFingerprint && pinned && r.listFingerprint !== pinned) throw new Error(`eval:corpus gate: ${r.id} was answered for list ${r.listFingerprint.slice(0, 8)}, the corpus pins ${pinned.slice(0, 8)}`);
+  }
   const n = Math.min(ra.length, rb.length);
   const both = (x: AnswerRow[], y: AnswerRow[]) => x.filter((r) => y.some((q) => q.id === r.id));
   const sa = Array.from({ length: n }, (_, i) => both(ra[i]!, rb[i]!));
@@ -112,7 +119,7 @@ if (command === "run") {
   const { callModel } = await import("../../src/lib/model/client");
   const { synopsisResponseSchema, synopsisResponseSchemaV8Wire } = await import("../../src/lib/synopsis/response-schema");
   type SynopsisReply = import("../../src/lib/synopsis/response-schema").SynopsisReply;
-  const { SYNOPSIS_MAX_TOKENS, SYNOPSIS_MAX_TOKENS_V8 } = await import("../../src/lib/synopsis/limits");
+  const { SYNOPSIS_MAX_TOKENS, SYNOPSIS_MAX_TOKENS_V8, SYNOPSIS_DEADLINE_MS, SYNOPSIS_REPAIR_MIN_MS } = await import("../../src/lib/synopsis/limits");
   const { SYNOPSIS_MODEL, SYNOPSIS_EFFORT } = await import("../../src/lib/synopsis/model");
   const { costUsd, worstCaseUsd } = await import("./lib/pricing.mjs");
   const { db } = await import("../../src/db/index");
@@ -148,14 +155,15 @@ if (command === "run") {
     // prose (a first v8 run reserved $0.133 and settled at $0.144 after a retry), so the estimate
     // divides by 3, not 3.5. Pending BEFORE the call, settled after: a crash between paying and
     // settling keeps the worst case counted. Returns null when the ledger or the run cap says stop.
-    const ask = async (p: { system: string; user: string }, what: string) => {
+    const ask = async (p: { system: string; user: string }, what: string, deadlineMs: number, reserve = 1) => {
       const approxIn = Math.ceil((p.system.length + p.user.length) / 3);
       const worst = worstCaseUsd(SYNOPSIS_MODEL, approxIn, maxTokens, { batch: false });
-      const stop = refusal(readLedger(LEDGER), worst, planDone, OVERVIEW_ACCURACY_LIMITS) ?? (runSpend + worst > cap ? `this run's cap of $${cap} would be crossed` : null);
+      // The first call reserves its repair too: a ledger that allows the write and then refuses the repair would leave a paid answer with nowhere to go.
+      const stop = refusal(readLedger(LEDGER), worst * reserve, planDone, OVERVIEW_ACCURACY_LIMITS) ?? (runSpend + worst * reserve > cap ? `this run's cap of $${cap} would be crossed` : null);
       if (stop) { console.log(`STOP before ${c.id} ${what}: ${stop}`); return null; }
       const pendingId = `${Date.now()}-${c.id}-${what}`;
       record(LEDGER, { at: new Date().toISOString(), runId: pendingId, source: "pending", usd: worst, requests: 1, pending: pendingId, note: `corpus ${args.prompt} ${c.id} ${what}` });
-      const call = { model: SYNOPSIS_MODEL, system: p.system, user: p.user, maxTokens, effort: SYNOPSIS_EFFORT, deadlineMs: 110_000 };
+      const call = { model: SYNOPSIS_MODEL, system: p.system, user: p.user, maxTokens, effort: SYNOPSIS_EFFORT, deadlineMs };
       const out: Awaited<ReturnType<typeof callModel<SynopsisReply>>> = v8
         ? await callModel({ ...call, schema: synopsisResponseSchemaV8Wire })
         : await callModel({ ...call, schema: synopsisResponseSchema });
@@ -166,7 +174,8 @@ if (command === "run") {
       console.log(`${c.id} ${what}: ok=${out.ok} $${usd.toFixed(4)} (run $${runSpend.toFixed(4)}, campaign $${spent(readLedger(LEDGER)).toFixed(4)})`);
       return { out, usd };
     };
-    const first = await ask(prompt, "write");
+    const startedAt = Date.now();
+    const first = await ask(prompt, "write", SYNOPSIS_DEADLINE_MS, args["no-repair"] ? 1 : 2);
     if (!first) break;
     if (!first.out.ok) { console.log(`  ${first.out.errorClass}`); continue; }
     const checked = await checkReply(first.out.value, facts, v8);
@@ -176,8 +185,11 @@ if (command === "run") {
     let rendered = checked;
     let repairUsd: number | undefined;
     const failing = refusedSections(checked);
-    if (failing.length > 0 && !args["no-repair"]) {
-      const repair = await ask(repairPrompt(facts, checked, failing, v8), "repair");
+    // Production sends the repair only with what is left of the write's ONE budget, and not at all under SYNOPSIS_REPAIR_MIN_MS.
+    const remaining = SYNOPSIS_DEADLINE_MS - (Date.now() - startedAt);
+    if (failing.length > 0 && !args["no-repair"] && remaining < SYNOPSIS_REPAIR_MIN_MS) console.log(`  repair skipped: ${remaining}ms of the write's budget left`);
+    if (failing.length > 0 && !args["no-repair"] && remaining >= SYNOPSIS_REPAIR_MIN_MS) {
+      const repair = await ask(repairPrompt(facts, checked, failing, v8), "repair", remaining);
       if (!repair) break;
       repairUsd = repair.usd;
       rendered = await applyRepair(checked, repair.out, failing, facts, v8);
