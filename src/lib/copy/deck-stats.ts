@@ -15,6 +15,22 @@ export const deckStatsCopy = {
     money: "Money and ownership",
     results: "Results",
   },
+  colors: {
+    denom: (pips: number, lands: number) => `${pips} ${pips === 1 ? "pip" : "pips"} · ${lands} ${lands === 1 ? "land" : "lands"}`,
+    asks: "ASKS FOR · PIPS",
+    makes: "MAKES · LAND SOURCES",
+    nonlandOne: "1 more mana source isn’t a land. It’s counted, but its color isn’t.",
+    nonlandMany: (n: number) =>
+      `${n} more mana sources aren’t lands, such as rocks, creatures that tap for mana and spells that fetch lands. They’re counted here, but their colors aren’t.`,
+    caption: "A land counts once for each color it can add, so a dual counts twice. Shares are of all pips, and of all land sources.",
+    // One color asked for: the dual-counts-twice clause is dropped, as drawn in 1d2.
+    captionMono: "A land counts once for each color it can add; shares are of all land sources.",
+    monoLead: (color: string) => `Every pip is ${color}.`,
+    noLands: "No lands yet, so no land sources are counted.",
+    names: { W: "white", U: "blue", B: "black", R: "red", G: "green", C: "colorless" },
+    row: (name: string, pips: number, sources: number) =>
+      `${name}: ${pips} ${pips === 1 ? "pip" : "pips"} asked for, ${sources} land ${sources === 1 ? "source" : "sources"} made`,
+  },
   jobs: {
     denom: (n: number) => `${n} nonland ${n === 1 ? "card" : "cards"}`,
     rows: { ramp: "Ramp", draw: "Card draw", removal: "Removal", wipes: "Board wipes", protection: "Protection", finisher: "Win conditions" },

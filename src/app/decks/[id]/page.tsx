@@ -40,6 +40,7 @@ import { computeRoleCounts } from "../../../lib/decks/mix";
 import { analysisTabEnabled } from "../../../lib/decks/analysis-flag";
 import { deckStatsEnabled } from "../../../lib/decks/stats-flag";
 import { loadJobRows } from "../../../lib/decks/job-rows";
+import { loadLandMana } from "../../../lib/decks/land-mana";
 import { tuningEnabled } from "../../../lib/tuning/flag";
 import { noticesEnabled } from "../../../lib/notices/flag";
 import { loadDeckNotices } from "../../../lib/notices/read";
@@ -127,6 +128,13 @@ export default async function DeckBuilderPage({
   // awaited only where the card is drawn.
   const statsJobsRead = deckStatsEnabled()
     ? early(detailRead.then((d) => (d ? perf.timed("statsLabels", () => loadJobRows(d.cards)) : null)))
+    : null;
+  // The Colors card's land supply: what each land in the deck can add, read from the catalog's text
+  // the moment the detail resolves, and awaited only where the card is drawn.
+  const statsLandsRead = deckStatsEnabled()
+    ? early(detailRead.then((d) => (d
+        ? perf.timed("statsLands", () => loadLandMana(d.cards, [...d.commander.colorIdentity, ...(d.partner?.colorIdentity ?? [])]))
+        : null)))
     : null;
   // A 60-second cached read shared by both cached payloads below, resolved once rather than
   // per entry, and chained into the suggestions rather than awaited on its own.
@@ -482,9 +490,12 @@ export default async function DeckBuilderPage({
       statsData={deckStatsEnabled()
         ? {
             jobs: statsJobsRead ? await statsJobsRead : null,
+            lands: statsLandsRead ? await statsLandsRead : null,
             commanders: [detail.commander, ...(detail.partner ? [detail.partner] : [])].map((c) => ({
               cmc: c.cmc ?? 0,
               typeLine: c.typeLine,
+              manaCost: c.manaCost,
+              colorIdentity: c.colorIdentity,
               quantity: 1,
             })),
           }

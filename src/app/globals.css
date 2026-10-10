@@ -1013,6 +1013,13 @@ html {
   --type-planeswalker: oklch(0.72 0.12 18);
   --type-battle: oklch(0.75 0.10 115);
   --type-land: oklch(0.58 0.05 75);
+  /* Ink on a WUBRG pip tile in the Stats Colors card: dark on the light pips, light on the dark
+     ones, same in every theme like the pips. Each pairing is at least 4.5:1 on its pip, which the
+     canvas's #F2F4F4 was not on red (3.99) or its #14110E on red (4.28): red takes black (4.77),
+     and the light ink is white, which lifts blue to 5.55 and green to 5.03. */
+  --pip-ink-dark: #14110E;
+  --pip-ink-light: #FFFFFF;
+  --pip-ink-black: #000000;
   /* Job hues for the Stats Jobs rows (handoff canvas values, brass included), measured on each
      theme's --surface-sunken: 6.3:1 or better. */
   --job-ramp: oklch(0.72 0.11 150);
