@@ -26,12 +26,18 @@ import {
   type BrowsePrinting,
 } from "../collection/browse";
 import { recordSoftFailure } from "../cache/soft-failure";
+import { deckPrintingsEnabled } from "./printings-flag";
 
 /** A deck's pick as stored: `set_code` lowercase, `collector_number` text. */
 export type DeckPick = { setCode: string; collectorNumber: string };
 
-/** Where a resolved printing came from, in chain order. */
-export type DeckPrintingSource = "deck" | "collection" | "catalog";
+/**
+ * Where a resolved printing came from, in chain order. `catalogSubstitute` is an unowned card whose
+ * oracle-level printing the catalog does not list, resolved to another printing of it: every surface
+ * draws `cards.image_uri` for such a card, so the substitute names a printing nothing showed, and a
+ * version never records it.
+ */
+export type DeckPrintingSource = "deck" | "collection" | "catalog" | "catalogSubstitute";
 
 export type DeckPrinting = {
   /** Copies owned across EVERY printing of the card; 0 for a card the player does not own. */
@@ -115,14 +121,20 @@ export function heldPrintingFor(
  * `usePicks: false` skips the deck's step entirely, which is the switch-off path: the answer is
  * then the Collection's and the catalog's alone, exactly what every deck surface drew before.
  *
- * THROWS on a failed read. `resolveDeckPrintings` is the fail-soft form for surfaces that draw art;
- * a caller that records the answer (a commit) must not record an empty one.
+ * THROWS on a failed read. `resolveDeckPrintings` is the fail-soft form for surfaces that draw art.
+ * The commit uses the fail-soft form on purpose: a version's cards are the commit and the printing
+ * is a caption, so a failed read records nulls (which read as today's art) rather than refusing the
+ * commit.
  */
 export async function readDeckPrintings(
   userId: string,
   deckId: string,
   oracleIds: string[],
-  opts: { usePicks: boolean },
+  /**
+   * `ownedOnly` skips the catalog step, for a caller that drops unowned cards anyway: the owned-only
+   * helpers below, which would otherwise pay a catalog read only to throw its answer away.
+   */
+  opts: { usePicks: boolean; ownedOnly?: boolean },
 ): Promise<DeckPrintings> {
   const printings = new Map<string, DeckPrinting>();
   const heldPicks = new Map<string, DeckPick>();
@@ -154,7 +166,7 @@ export async function readDeckPrintings(
     });
   }
 
-  const unowned = ids.filter((id) => !printings.has(id));
+  const unowned = opts.ownedOnly ? [] : ids.filter((id) => !printings.has(id));
   if (unowned.length > 0) {
     // The oracle-level printing: `cards.scryfall_id` names one printing of the card, and that
     // printing's art is what `cards.image_uri` draws for a card nobody owns. That id is not always
@@ -169,14 +181,18 @@ export async function readDeckPrintings(
       image_uri: string | null;
       art_crop_uri: string | null;
       flavor_name: string | null;
+      exact: boolean | null;
     }>(sql`
-      select c.oracle_id, c.name, p.set_code, p.collector_number,
+      select c.oracle_id, c.name, p.set_code, p.collector_number, p.exact,
              coalesce(p.image_uri, c.image_uri) as image_uri,
              coalesce(p.art_crop_uri, c.art_crop_uri) as art_crop_uri,
              p.flavor_name
       from cards c
       left join lateral (
-        select pr.set_code, pr.collector_number, pr.image_uri, pr.art_crop_uri, pr.flavor_name
+        select pr.set_code, pr.collector_number, pr.image_uri, pr.art_crop_uri, pr.flavor_name,
+               -- Exact only when that printing also supplied the art: one with a null image draws
+               -- the card's own art, so it names a printing no surface showed.
+               (pr.scryfall_id = c.scryfall_id and pr.image_uri is not null) as exact
         from printings pr
         where pr.oracle_id = c.oracle_id
         order by (pr.scryfall_id = c.scryfall_id) desc, (pr.image_uri is null), pr.scryfall_id
@@ -192,7 +208,7 @@ export async function readDeckPrintings(
         artCropUri: r.art_crop_uri,
         setCode: (r.set_code ?? "").toUpperCase(),
         collectorNumber: r.collector_number ?? "",
-        source: "catalog",
+        source: r.exact === false ? "catalogSubstitute" : "catalog",
       });
     }
   }
@@ -208,10 +224,161 @@ export async function resolveDeckPrintings(
   userId: string,
   deckId: string,
   oracleIds: string[],
-  opts: { usePicks: boolean },
+  /**
+   * `ownedOnly` skips the catalog step, for a caller that drops unowned cards anyway: the owned-only
+   * helpers below, which would otherwise pay a catalog read only to throw its answer away.
+   */
+  opts: { usePicks: boolean; ownedOnly?: boolean },
 ): Promise<DeckPrintings> {
   return readDeckPrintings(userId, deckId, oracleIds, opts).catch(() => {
     recordSoftFailure();
     return { printings: new Map(), heldPicks: new Map() };
   });
+}
+
+/**
+ * The printing this deck shows for each card the player OWNS, in `resolveOwnedPrintings`' shape:
+ * a card they do not own is absent, so every caller's "fall back to the oracle-level art" stays
+ * exactly as it was. The deck's step follows `DECK_PRINTINGS_ENABLED`. Fail-soft.
+ */
+export async function resolveDeckOwnedPrintings(
+  userId: string,
+  deckId: string,
+  oracleIds: string[],
+): Promise<Map<string, DeckPrinting>> {
+  const { printings } = await resolveDeckPrintings(userId, deckId, oracleIds, { usePicks: deckPrintingsEnabled(), ownedOnly: true });
+  return ownedOnly(printings);
+}
+
+/** The same, and it THROWS on a failed read, for a caller that states ownership from it. */
+export async function readDeckOwnedPrintings(
+  userId: string,
+  deckId: string,
+  oracleIds: string[],
+): Promise<Map<string, DeckPrinting>> {
+  const { printings } = await readDeckPrintings(userId, deckId, oracleIds, { usePicks: deckPrintingsEnabled(), ownedOnly: true });
+  return ownedOnly(printings);
+}
+
+function ownedOnly(printings: Map<string, DeckPrinting>): Map<string, DeckPrinting> {
+  return new Map([...printings].filter(([, p]) => p.source === "deck" || p.source === "collection"));
+}
+
+/**
+ * Each deck's commander art, for a grid of deck tiles (`/decks`, Home): the deck's own pick of
+ * its commander when held, else the Collection's. One collection read and one picks read for the
+ * whole grid, keyed by deck id; a deck whose commander the player does not own is absent.
+ * Fail-soft: an empty map keeps every tile on the oracle-level art.
+ */
+export async function resolveCommanderPrintingsByDeck(
+  userId: string,
+  rows: { deckId: string; commanderOracleId: string }[],
+): Promise<Map<string, DeckPrinting>> {
+  const out = new Map<string, DeckPrinting>();
+  if (rows.length === 0) return out;
+  try {
+    const [picks, collectionRows] = await Promise.all([
+      deckPrintingsEnabled()
+        ? readDeckPicks(userId, rows.map((r) => r.deckId))
+        : Promise.resolve(new Map<string, Map<string, DeckPick>>()),
+      selectCollectionRows(userId, [...new Set(rows.map((r) => r.commanderOracleId))]),
+    ]);
+    const owned = new Map(aggregateCollection(collectionRows).map((c) => [c.oracleId, c]));
+    for (const row of rows) {
+      const card = owned.get(row.commanderOracleId);
+      if (!card) continue;
+      const held = heldPrintingFor(card.printings, picks.get(row.deckId)?.get(row.commanderOracleId));
+      const p = held ?? resolvedPrinting(card);
+      if (!p) continue;
+      out.set(row.deckId, {
+        quantity: card.quantity,
+        printedName: held ? cardArt(card.name, held).printedName : card.printedName,
+        imageUri: p.imageUri,
+        artCropUri: p.artCropUri ?? null,
+        setCode: p.setCode,
+        collectorNumber: p.collectorNumber,
+        source: held ? "deck" : "collection",
+      });
+    }
+    return out;
+  } catch {
+    recordSoftFailure();
+    return new Map();
+  }
+}
+
+/** A printing a version recorded, as `(oracle_id, set_code, collector_number)`. */
+export type RecordedPrinting = { oracleId: string; setCode: string; collectorNumber: string };
+
+export const recordedKey = (p: RecordedPrinting) =>
+  `${p.oracleId}|${p.setCode.toLowerCase()}|${p.collectorNumber}`;
+
+/**
+ * The art and printed name of printings a version recorded, keyed by `recordedKey`.
+ *
+ * The SAME three tiers the Collection's resolver takes (`resolveImageUri`, `resolveFlavorName`):
+ * the exact printing's art, else the representative printing of that set, else the card's
+ * oracle-level art, with the printed name taken from whichever printing the art came from. A
+ * version therefore draws what the deck showed at commit, including for a printing whose own
+ * image is null. A recorded card the catalog no longer lists at all is absent, and draws today's.
+ */
+export async function readRecordedPrintingArt(
+  recorded: RecordedPrinting[],
+): Promise<Map<string, { imageUri: string | null; artCropUri: string | null; printedName: string | null }>> {
+  const out = new Map<string, { imageUri: string | null; artCropUri: string | null; printedName: string | null }>();
+  const wanted = [...new Map(recorded.map((r) => [recordedKey(r), r])).values()];
+  if (wanted.length === 0) return out;
+  const { rows } = await db.execute<{
+    oracle_id: string; set_code: string; collector_number: string; name: string;
+    image_uri: string | null; art_crop_uri: string | null; flavor_name: string | null;
+  }>(sql`
+    select w.oracle_id, w.set_code, w.collector_number, c.name,
+           coalesce(e.image_uri, r.image_uri, c.image_uri) as image_uri,
+           -- The crop of whichever printing supplied the art (resolveArtCropUri), never another's.
+           case
+             when e.image_uri is not null then coalesce(e.art_crop_uri, c.art_crop_uri)
+             when r.image_uri is not null then coalesce(r.art_crop_uri, c.art_crop_uri)
+             else c.art_crop_uri
+           end as art_crop_uri,
+           case
+             when e.image_uri is not null then e.flavor_name
+             when r.image_uri is not null then r.flavor_name
+           end as flavor_name
+    from unnest(
+      ${sql.param(wanted.map((w) => w.oracleId))}::uuid[],
+      ${sql.param(wanted.map((w) => w.setCode.toLowerCase()))}::text[],
+      ${sql.param(wanted.map((w) => w.collectorNumber))}::text[]
+    ) as w(oracle_id, set_code, collector_number)
+    join cards c on c.oracle_id = w.oracle_id
+    left join printings e
+      on e.oracle_id = w.oracle_id and e.set_code = w.set_code and e.collector_number = w.collector_number
+    left join printings r
+      on r.oracle_id = w.oracle_id and r.set_code = w.set_code and r.is_representative
+    -- A recorded printing whose set the catalog no longer lists at all answers nothing, so the row
+    -- keeps today's resolver rather than the card's oracle-level art.
+    where e.oracle_id is not null or r.oracle_id is not null
+  `);
+  for (const r of rows) {
+    out.set(recordedKey({ oracleId: r.oracle_id, setCode: r.set_code, collectorNumber: r.collector_number }), {
+      imageUri: r.image_uri,
+      artCropUri: r.art_crop_uri,
+      printedName: r.flavor_name !== null && r.flavor_name !== r.name ? r.flavor_name : null,
+    });
+  }
+  return out;
+}
+
+/**
+ * The version columns for the printing a card showed at commit: lowercase set code as stored, or
+ * both null when nothing resolved, the catalog lists no printing for the card (`""`), or the
+ * printing is a substitute no surface drew.
+ */
+export function recordedColumns(
+  shown: Map<string, DeckPrinting>,
+  oracleId: string | null,
+): { setCode: string | null; collectorNumber: string | null } {
+  const p = oracleId ? shown.get(oracleId) : undefined;
+  return p && p.setCode !== "" && p.source !== "catalogSubstitute"
+    ? { setCode: p.setCode.toLowerCase(), collectorNumber: p.collectorNumber }
+    : { setCode: null, collectorNumber: null };
 }

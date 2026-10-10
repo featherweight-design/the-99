@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
 
-import { resolveOwnedPrintings } from "../collection/owned-printings";
+import { resolveDeckOwnedPrintings } from "../decks/printings";
 import { db } from "../../db";
 import { cards, deckProfiles, deckSynopses, deckVersionSynopses, deckVersions, decks } from "../../db/schema";
 import { readAllowance } from "../model/allowance";
@@ -180,7 +180,7 @@ export async function readSynopsisState(
     && !newest!.content.verdicts.some((v) => v.status === "ok")
     ? newest!.content.verdicts.reduce((sum, v) => ({ failed: sum.failed + v.failed, total: sum.total + v.total }), { failed: 0, total: 0 })
     : null;
-  const art = synopsis ? await namedArt(synopsis.content, userId) : {};
+  const art = synopsis ? await namedArt(synopsis.content, userId, deckId) : {};
   return {
     synopsis, ...status, pressWrites: pressWrites(live, synopsis), allowance, lastFailed, lastRejected, lastRefused, art,
     pending: newest?.status === "pending",
@@ -191,14 +191,15 @@ export async function readSynopsisState(
 /**
  * The preview art for every card an overview names, by oracle id: the printing the reader owns, the
  * one the card's details will draw, over the oracle-level printing (Hugh, 2026-10-05: the preview
- * and the card it opened drew different frames). Fail-soft through `resolveOwnedPrintings`.
+ * and the card it opened drew different frames). The deck's own printing picks come first, since the
+ * details it opens draw them too. Fail-soft through `resolveDeckOwnedPrintings`.
  */
-async function namedArt(content: CheckedSynopsis, userId: string): Promise<Record<string, string | null>> {
+async function namedArt(content: CheckedSynopsis, userId: string, deckId: string): Promise<Record<string, string | null>> {
   const named = [...new Set(Object.values(content.cards).map((c) => c.oracleId))];
   if (named.length === 0) return {};
   const [rows, owned] = await Promise.all([
     db.select({ oracleId: cards.oracleId, imageUri: cards.imageUri }).from(cards).where(inArray(cards.oracleId, named)),
-    resolveOwnedPrintings(userId, named),
+    resolveDeckOwnedPrintings(userId, deckId, named),
   ]);
   return Object.fromEntries(rows.map((r) => [r.oracleId, owned.get(r.oracleId)?.imageUri ?? r.imageUri]));
 }
@@ -209,7 +210,7 @@ export async function readVersionSynopsis(
   userId: string,
 ): Promise<{ versionNumber: number; committedAt: Date; content: CheckedSynopsis; art: Record<string, string | null> } | null> {
   const [row] = await db
-    .select({ versionNumber: deckVersions.number, committedAt: deckVersions.committedAt, content: deckSynopses.content })
+    .select({ versionNumber: deckVersions.number, committedAt: deckVersions.committedAt, deckId: deckVersions.deckId, content: deckSynopses.content })
     .from(deckVersionSynopses)
     .innerJoin(deckSynopses, eq(deckSynopses.id, deckVersionSynopses.synopsisId))
     .innerJoin(deckVersions, eq(deckVersions.id, deckVersionSynopses.versionId))
@@ -217,5 +218,5 @@ export async function readVersionSynopsis(
   if (!row?.content) return null;
   // The art for every card it names, as the draft read carries: a version can name cards the deck
   // no longer holds, and the page's own art covers only the deck as it is now.
-  return { versionNumber: row.versionNumber, committedAt: row.committedAt, content: row.content, art: await namedArt(row.content, userId) };
+  return { versionNumber: row.versionNumber, committedAt: row.committedAt, content: row.content, art: await namedArt(row.content, userId, row.deckId) };
 }

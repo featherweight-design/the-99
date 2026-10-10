@@ -8,7 +8,7 @@
 // loader for the per-card detail only the review page draws, so the two never
 // repeat a read between them.
 
-import { resolveOwnedPrintings } from "../collection/owned-printings";
+import { resolveDeckOwnedPrintings } from "./printings";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, deckCards, decks, deckVersionCards } from "../../db/schema";
@@ -285,7 +285,7 @@ async function readDraft(
   // cost track, the basics set or the row facts.
   // The version's body goes with them: a half that arrives out of the 99 keeps that card's copy.
   const commanderRows = commander
-    ? await loadCommanderRows(userId, commander.from, commander.to, new Set(before.map((c) => c.oracleId)))
+    ? await loadCommanderRows(userId, deckId, commander.from, commander.to, new Set(before.map((c) => c.oracleId)))
     : null;
   const commanderNames = new Map((commanderRows?.rows ?? []).map((r) => [r.oracleId, r.name]));
   // A commander-only draft has changes and no card row: its state is the empty
@@ -609,8 +609,9 @@ export async function loadDraftRows(deckId: string, userId: string): Promise<Dra
   }
 
   // The owned rows draw the copy the reader owns, art and printed name together. Fail-soft through
-  // `resolveOwnedPrintings`: a failed read keeps the oracle-level art and the oracle name.
-  const ownedArt = await resolveOwnedPrintings(userId, built.filter((r) => r.owned).map((r) => r.oracleId));
+  // `resolveDeckOwnedPrintings`: a failed read keeps the oracle-level art and the oracle name. The
+  // deck's own printing picks come first, so the review rows draw what the deck page does.
+  const ownedArt = await resolveDeckOwnedPrintings(userId, deckId, built.filter((r) => r.owned).map((r) => r.oracleId));
   const drawn = built.map((r) => {
     const own = ownedArt.get(r.oracleId);
     return own

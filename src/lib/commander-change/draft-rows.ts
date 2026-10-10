@@ -3,7 +3,7 @@
 //
 // Read by `readDraft` only when the commander moved, so a draft without a swap pays nothing.
 
-import { resolveOwnedPrintings } from "../collection/owned-printings";
+import { resolveDeckOwnedPrintings } from "../decks/printings";
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems } from "../../db/schema";
@@ -31,7 +31,7 @@ const members = (p: CommanderPair) =>
   [p.commanderOracleId, p.partnerOracleId].filter((id): id is string => id !== null);
 
 export async function loadCommanderRows(
-  userId: string, from: CommanderPair, to: CommanderPair, versionBody: ReadonlySet<string>,
+  userId: string, deckId: string, from: CommanderPair, to: CommanderPair, versionBody: ReadonlySet<string>,
 ): Promise<CommanderRows> {
   const fromIds = members(from);
   const toIds = members(to);
@@ -41,9 +41,9 @@ export async function loadCommanderRows(
       .from(cards).where(inArray(cards.oracleId, ids)),
     db.selectDistinct({ oracleId: collectionItems.oracleId }).from(collectionItems)
       .where(and(eq(collectionItems.userId, userId), inArray(collectionItems.oracleId, toIds))),
-    // The crop of the copy the reader owns, the one the card details draw (Hugh, 2026-10-05).
-    // Fail-soft through `resolveOwnedPrintings`: a failed read keeps the oracle-level crop.
-    resolveOwnedPrintings(userId, ids),
+    // The crop of the copy the reader owns, the one the card details draw (Hugh, 2026-10-05), with
+    // the deck's own printing pick first. Fail-soft: a failed read keeps the oracle-level crop.
+    resolveDeckOwnedPrintings(userId, deckId, ids),
   ]);
   const facts = rawFacts.map((f) => ({
     ...f,

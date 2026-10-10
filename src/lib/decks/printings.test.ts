@@ -9,9 +9,11 @@ const UNOWNED = "33333333-3333-4333-8333-333333333333";
 
 const state = vi.hoisted(() => ({
   texts: [] as string[],
+  params: [] as unknown[][],
   picks: [] as unknown[],
   catalog: [] as unknown[],
   cards: [] as unknown[],
+  recorded: [] as unknown[],
   fail: false,
 }));
 
@@ -20,11 +22,13 @@ const dialect = new PgDialect();
 vi.mock("../../db", () => ({
   db: {
     execute: async (q: unknown) => {
-      const text = dialect.sqlToQuery(q as SQL).sql;
+      const { sql: text, params } = dialect.sqlToQuery(q as SQL);
       state.texts.push(text);
+      state.params.push(params);
       if (state.fail) throw new Error("down");
       if (text.includes("from deck_printings")) return { rows: state.picks };
       if (text.includes("from cards c")) return { rows: state.catalog };
+      if (text.includes("as w(oracle_id")) return { rows: state.recorded };
       return { rows: [] };
     },
   },
@@ -42,7 +46,10 @@ vi.mock("../collection/browse", async (importActual) => {
   };
 });
 
-import { heldPrintingFor, readDeckPrintings, resolveDeckPrintings } from "./printings";
+import {
+  heldPrintingFor, readDeckPrintings, readRecordedPrintingArt, recordedColumns, recordedKey,
+  resolveCommanderPrintingsByDeck, resolveDeckOwnedPrintings, resolveDeckPrintings, type DeckPrinting,
+} from "./printings";
 
 function printing(setCode: string, collectorNumber: string, extra: Partial<BrowsePrinting> = {}): BrowsePrinting {
   return {
@@ -61,10 +68,13 @@ function ownedCard(printings: BrowsePrinting[], preferred: { setCode: string; co
 
 beforeEach(() => {
   state.texts = [];
+  state.params = [];
   state.picks = [];
   state.catalog = [];
   state.cards = [];
+  state.recorded = [];
   state.fail = false;
+  process.env.DECK_PRINTINGS_ENABLED = "true";
 });
 
 describe("heldPrintingFor", () => {
@@ -126,11 +136,22 @@ describe("readDeckPrintings", () => {
     expect(printings.get(UNOWNED)).toMatchObject({ setCode: "", collectorNumber: "", imageUri: "img-oracle", source: "catalog" });
   });
 
+  it("marks a substitute printing, which no surface draws and no version records", async () => {
+    state.catalog = [{
+      oracle_id: UNOWNED, name: "Brain Freeze", set_code: "soa", collector_number: "78",
+      image_uri: "img-sub", art_crop_uri: null, flavor_name: null, exact: false,
+    }];
+    const { printings } = await readDeckPrintings("u", DECK, [UNOWNED], { usePicks: true });
+    expect(printings.get(UNOWNED)?.source).toBe("catalogSubstitute");
+    expect(recordedColumns(printings, UNOWNED)).toEqual({ setCode: null, collectorNumber: null });
+  });
+
   it("falls back to another printing of the card when its oracle-level printing is missing", async () => {
     await readDeckPrintings("u", DECK, [UNOWNED], { usePicks: true });
     const read = state.texts.find((t) => t.includes("from cards c"));
     expect(read).toContain("left join lateral");
     expect(read).toContain("pr.oracle_id = c.oracle_id");
+    expect(read).toContain("(pr.scryfall_id = c.scryfall_id and pr.image_uri is not null) as exact");
     // The oracle-level printing first, then the first printing with art, and exactly one.
     expect(read).toMatch(/order by \(pr\.scryfall_id = c\.scryfall_id\) desc, \(pr\.image_uri is null\), pr\.scryfall_id\s+limit 1/);
   });
@@ -151,5 +172,96 @@ describe("readDeckPrintings", () => {
     const soft = await resolveDeckPrintings("u", DECK, [OWNED], { usePicks: true });
     expect(soft.printings.size).toBe(0);
     expect(soft.heldPicks.size).toBe(0);
+  });
+});
+
+const DECK_B = "44444444-4444-4444-8444-444444444444";
+
+describe("resolveDeckOwnedPrintings", () => {
+  it("answers owned cards only, so a caller's oracle-level fallback is untouched", async () => {
+    state.cards = [ownedCard([printing("KHM", "31")])];
+    state.catalog = [{
+      oracle_id: UNOWNED, name: "Cultivate", set_code: "m21", collector_number: "177",
+      image_uri: "img-u", art_crop_uri: null, flavor_name: null,
+    }];
+    const owned = await resolveDeckOwnedPrintings("u", DECK, [OWNED, UNOWNED]);
+    expect([...owned.keys()]).toEqual([OWNED]);
+    // And it never asks the catalog, whose answer it would only throw away.
+    expect(state.texts.some((t) => t.includes("from cards c"))).toBe(false);
+  });
+
+  it("follows the switch for the deck's step", async () => {
+    state.cards = [ownedCard([printing("C21", "263"), printing("KHM", "31")])];
+    state.picks = [{ deck_id: DECK, oracle_id: OWNED, set_code: "khm", collector_number: "31" }];
+    expect((await resolveDeckOwnedPrintings("u", DECK, [OWNED])).get(OWNED)?.setCode).toBe("KHM");
+    process.env.DECK_PRINTINGS_ENABLED = "";
+    expect((await resolveDeckOwnedPrintings("u", DECK, [OWNED])).get(OWNED)?.setCode).toBe("C21");
+  });
+});
+
+describe("resolveCommanderPrintingsByDeck", () => {
+  it("keys by deck, so two decks led by one card draw their own picks", async () => {
+    state.cards = [ownedCard([printing("C21", "263"), printing("KHM", "31")])];
+    state.picks = [
+      { deck_id: DECK, oracle_id: OWNED, set_code: "khm", collector_number: "31" },
+    ];
+    const byDeck = await resolveCommanderPrintingsByDeck("u", [
+      { deckId: DECK, commanderOracleId: OWNED },
+      { deckId: DECK_B, commanderOracleId: OWNED },
+    ]);
+    expect(byDeck.get(DECK)).toMatchObject({ setCode: "KHM", source: "deck" });
+    expect(byDeck.get(DECK_B)).toMatchObject({ setCode: "C21", source: "collection" });
+  });
+
+  it("reads no picks with the switch off, and fails soft to an empty map", async () => {
+    process.env.DECK_PRINTINGS_ENABLED = "";
+    state.cards = [ownedCard([printing("C21", "263"), printing("KHM", "31")])];
+    state.picks = [{ deck_id: DECK, oracle_id: OWNED, set_code: "khm", collector_number: "31" }];
+    const off = await resolveCommanderPrintingsByDeck("u", [{ deckId: DECK, commanderOracleId: OWNED }]);
+    expect(off.get(DECK)?.setCode).toBe("C21");
+    expect(state.texts.some((t) => t.includes("from deck_printings"))).toBe(false);
+    state.fail = true;
+    expect((await resolveCommanderPrintingsByDeck("u", [{ deckId: DECK, commanderOracleId: OWNED }])).size).toBe(0);
+  });
+});
+
+describe("recordedColumns", () => {
+  const shown = new Map<string, DeckPrinting>([
+    [OWNED, { quantity: 1, printedName: null, imageUri: null, artCropUri: null, setCode: "KHM", collectorNumber: "31", source: "deck" }],
+    [UNOWNED, { quantity: 0, printedName: null, imageUri: "x", artCropUri: null, setCode: "", collectorNumber: "", source: "catalog" }],
+  ]);
+  it("records the lowercase set code a version stores", () => {
+    expect(recordedColumns(shown, OWNED)).toEqual({ setCode: "khm", collectorNumber: "31" });
+  });
+  it("records nothing for an unresolved card, a card with no printing, or no card", () => {
+    expect(recordedColumns(shown, UNOWNED)).toEqual({ setCode: null, collectorNumber: null });
+    expect(recordedColumns(shown, "missing")).toEqual({ setCode: null, collectorNumber: null });
+    expect(recordedColumns(shown, null)).toEqual({ setCode: null, collectorNumber: null });
+  });
+});
+
+describe("readRecordedPrintingArt", () => {
+  it("looks up each recorded printing once, by its three-part key", async () => {
+    state.recorded = [{
+      oracle_id: OWNED, set_code: "khm", collector_number: "31", name: "Sol Ring",
+      image_uri: "img", art_crop_uri: "crop", flavor_name: "Renamed",
+    }];
+    const art = await readRecordedPrintingArt([
+      { oracleId: OWNED, setCode: "KHM", collectorNumber: "31" },
+      { oracleId: OWNED, setCode: "khm", collectorNumber: "31" },
+    ]);
+    expect(art.get(recordedKey({ oracleId: OWNED, setCode: "KHM", collectorNumber: "31" })))
+      .toEqual({ imageUri: "img", artCropUri: "crop", printedName: "Renamed" });
+    const at = state.texts.findIndex((t) => t.includes("as w(oracle_id"));
+    const read = state.texts[at];
+    // Two spellings of one printing are one lookup: each unnest array carries a single entry.
+    expect(state.params[at]).toEqual([[OWNED], ["khm"], ["31"]]);
+    expect(read).toContain("unnest(");
+    // The Collection's three tiers, in order, and the name from the printing the art came from.
+    expect(read).toContain("coalesce(e.image_uri, r.image_uri, c.image_uri)");
+    expect(read).toContain("r.is_representative");
+    expect(read).toContain("when e.image_uri is not null then coalesce(e.art_crop_uri, c.art_crop_uri)");
+    expect(read).toContain("where e.oracle_id is not null or r.oracle_id is not null");
+    expect(read).toMatch(/when e\.image_uri is not null then e\.flavor_name\s+when r\.image_uri is not null then r\.flavor_name/);
   });
 });
