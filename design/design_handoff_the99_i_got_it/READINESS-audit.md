@@ -58,6 +58,15 @@ Every item in the brief's "Open for Design to call" (1-8) is made and recorded (
 9. **[Hugh, confirm] C. Toast 8s for the three-line claimed form; D. cap of 20.** Both are judgement calls the handoff already marks. The row repeats the claimed fact, so nothing depends on the toast, and the fallback is 12s for the claimed form only.
 10. **[Unverifiable] "Approved to ship (Hugh, 2026-10-09, LGTM)"** in READINESS.md and README. Recorded by the handoff, not checkable from the repo.
 
+## Errata inside the handoff (Design's next pass; not edited here)
+
+Found by the Copilot round on this PR. Each is real, and none changes the verdict. Build rules until Design corrects the source:
+
+1. **Accessible name of the buy tag.** README call 1 and the R2 canvas say `I got it: <card>`; `gotItCopy.row.tagAria` and `IGI Row` render `Bought <card>? Add it to your collection`. Build the copy-strings name (`tagAria`), which `/copy-review` owns anyway.
+2. **Toast live region.** `IGI Toast.dc.html` hard-codes `aria-live="polite"`, which overrides `role="alert"` on the failed state. Build with the roles alone: `role="status"` for the receipt, `role="alert"` for failure, no explicit `aria-live`.
+3. **README "Notes for engineering" still names the withdrawn R1 shape** (popover; the details link as `I got it`). The R2 truth is the modal and sheet, and `Bought this card?` for both the title and the link (README lines 9-10, call 2, STATES A11). Build R2.
+4. **STATES A1 "Must not: differ from `main` by a pixel"** conflicts with the approved phone-stack flip (finding 5). The exception is: with both switches on, below `lg`, `buy` sits above `over $X`; with either off, the row is main's.
+
 ## Contents drawn (every canvas)
 
 - `The 99 - I Got It (R2) · A Row and B Confirm.dc.html`: current. Shipped Shopping view at 1300 (confirm open) and 390; every row shape (plain, every neighbor, spoken for, commander, sold out, bare buy, foil-only price); the buy tag's states; the details-link second way in; the confirm as desktop modal and phone sheet.
