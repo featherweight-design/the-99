@@ -92,7 +92,8 @@ The draft definitions behind each column:
 - **Graveyard share:** cards with a `recursion` job, a self or each-player `mill` job, a
   `cardsInGraveyard` threshold, or a graveyard keyword (flashback, escape, delve, unearth,
   disturb, retrace, embalm, eternalize, jump-start, aftermath, threshold, dredge, scavenge,
-  encore, craft), over nonland cards plus commanders.
+  encore, craft), among nonland cards plus commanders, over nonland cards plus commanders. Lands
+  are on neither side.
 - **Combo by T8:** the chance at least one assembled combo has every non-commander piece among
   the first 14 cards (seven, then a draw a turn through turn 8 on the play), each tutor seen
   standing in for one missing piece. Mana is not checked in this figure.
@@ -186,8 +187,10 @@ The draft definitions behind each column:
 - **Graveyard jobs and tutors: NOT audited.** `recursion`, `mill`, the `cardsInGraveyard`
   threshold and `tutor` were outside that check. Graveyard dependence and win speed's tutor
   credit need the same free spot check (judge each differing card from its rules text) before
-  the switch goes on. Two staging examples to start from: Deconstruct is read as Elves ramp, and
-  Cephalid Coliseum and Memorial to Folly reach the graveyard ledger through lands.
+  the switch goes on. One staging example to start from: Deconstruct is read as Elves ramp. And one
+  open scope call for the plan: lands that use the graveyard (Cephalid Coliseum, Memorial to
+  Folly in Sultai Arisen) are left out of the measured share, numerator and denominator alike;
+  counting them means counting lands on both sides.
 - **Combos: trusted, with one stated limit.** Spellbook's forced-or-optional flags are not stored
   (Overview plan 11.3, decision 4), so Gishath's Marauding Raptor + Polyraptor loop, which draws
   the game when no outlet is out, counts as a combo line. The win-speed ledger names each combo
