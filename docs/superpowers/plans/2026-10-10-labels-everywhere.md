@@ -204,8 +204,8 @@ before. When the last reader has moved, a cleanup migration drops `avg_ramp/draw
 - The label lookup reads `card_labels` through `freshLabels`, the page's own freshness rule, so a
   stale label behaves the same in the build and on the page. Roles are the `role`-space kinds
   ramp, draw, removal and wipes. A land face counts toward none of the four. `counterspell` is not
-  removal. A card with no fresh label counts toward no role, the same as in the deck's own count,
-  so counts and targets share one rule. That is 2.7% of the inclusion mass today, and the build
+  removal. The BUILD counts a card with no fresh label toward no role (PR 9 moved every reader of
+  the targets to the classifier for that card, per card). That is 2.7% of the inclusion mass today, and the build
   report prints the share so it stays visible.
 - The floors stay as they are. `roleTargetsPublishable` applies to the label pass too, for
   commanders and for pairs.
@@ -238,7 +238,7 @@ staging build, not from this plan's figures.
   panel's coverage shelves (`consider-panel.tsx:48`) and the builder's role toast
   (`builder-shell.tsx:870`). PR 2 finds them by grep for `computeRoleCounts(` rather than by this
   list.
-- A card with no fresh label is not counted in a role, which is the Jobs card's rule. The strip's
+- A card with no fresh label counts by the classifier (PR 9; PR 2 first counted it as none, the Jobs card's rule). The strip's
   disclosure says how many of the deck's cards are unlabeled when that number is above zero. The
   wording goes to `/copy-review`.
 - Gated by a server-read switch, `LABEL_ROLE_COUNTS_ENABLED`, read the way `analysisTabEnabled()`
