@@ -29,9 +29,20 @@ describe("summarizeUploadPreview", () => {
   });
 
   it("orders each list by what matters: most copies leaving, biggest drop, biggest rise", () => {
-    const d = run([row("A", 1, null), row("B", 5, null), row("C", 4, 3), row("D", 9, 2)]);
+    const d = run([
+      row("A", 1, null), row("B", 5, null), row("C", 4, 3), row("D", 9, 2),
+      row("E", 1, 2), row("F", null, 6), row("G", 2, 5),
+    ]);
     expect(d.lists.leaving.rows.map((r) => r.name)).toEqual(["B", "A"]);
     expect(d.lists.down.rows.map((r) => r.name)).toEqual(["D", "C"]);
+    expect(d.lists.up.rows.map((r) => r.name)).toEqual(["F", "G", "E"]);
+  });
+
+  it("a row that changes only its condition stays in unchanged and in no list", () => {
+    const d = run([row("Tweaked", 2, 2), row("Gone", 1, null)]);
+    expect([d.leaving, d.down, d.up]).toEqual([1, 0, 0]);
+    // 10 held, only Gone's quantity moved: 9 stand, Tweaked among them.
+    expect(d.unchanged).toBe(9);
   });
 
   it("tags a holding the player changed by hand since the last upload", () => {

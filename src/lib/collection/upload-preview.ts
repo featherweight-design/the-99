@@ -76,10 +76,10 @@ export function summarizeUploadPreview(args: {
     const before = qty(r.before);
     const after = qty(r.after);
     copyDelta += after - before;
-    if (r.before) {
-      changedAmongHeld += 1;
-      held += 1;
-    }
+    if (r.before) held += 1;
+    // A row can change something else (its condition) and keep its quantity: it is still one of
+    // the unchanged holdings, and sits in none of the three lists below.
+    if (r.before && after !== before) changedAmongHeld += 1;
     const row: PreviewListRow = {
       oracleId: r.oracleId,
       name: r.name,
