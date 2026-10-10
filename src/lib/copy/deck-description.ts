@@ -83,16 +83,16 @@ export const deckDescriptionCopy = {
   // ── The refusal (ruling 6), in AnalysisBanner's frame ──
   refusal: {
     commander: (name: string) =>
-      `${name} is this deck’s commander, so no swap cuts it. The rest of your notes are answered below.`,
+      `${name} is this deck’s commander, so nothing cuts it. The rest of your notes are answered below.`,
     locked: (name: string) =>
-      `${name} is locked, so no swap cuts it. The rest of your notes are answered below.`,
+      `${name} is locked, so nothing cuts it. The rest of your notes are answered below.`,
     lockedMany: (n: number) =>
-      `${n} of the cards you named are locked, so no swap cuts them. The rest of your notes are answered below.`,
+      `${n} of the cards you named are locked, so nothing cuts them. The rest of your notes are answered below.`,
     overCap: (name: string, cap: string) =>
       `${name} costs more than this deck’s ${cap} a card, so it was not suggested. The rest of your notes are answered below.`,
     tooMany: (asked: number) =>
-      `A run suggests five swaps at most, not ${asked}. Here are the five that held up.`,
+      `A run shows five additions and five cuts at most, not ${asked}. Here are the ones that held up.`,
     nothingLeft:
-      "Nothing in your notes could be done within this deck’s rules, so these swaps come from the list alone.",
+      "Nothing in your notes could be done within this deck’s rules, so these suggestions come from the list alone.",
   },
 };
