@@ -145,7 +145,8 @@ the column says so:
 - **Graveyard** (hate: Rest in Peace, Bojuka Bog, Dauthi Voidwalker). The graveyard rule above:
   a `recursion` job, a self or each-player `mill` job, a `cardsInGraveyard` threshold, or a
   graveyard keyword. Commanders included.
-- **Artifacts** (hate: artifact wipes such as Vandalblast, Null Rod, Collector Ouphe). Three
+- **Artifacts** (hate: artifact wipes such as Vandalblast break the artifacts and their payoffs; Null Rod and
+  Collector Ouphe break only the artifacts' activated abilities). Three
   figures: artifact cards (front-face type), artifact PAYOFFS (oracle text naming "artifacts you
   control", "for each artifact", "whenever an artifact", "artifact spells", or "number of
   artifacts"; an `artifacts` threshold; or affinity, improvise or metalcraft), and artifacts with
@@ -157,7 +158,8 @@ the column says so:
   `tribal` or `pump` job not restricted to the card itself, or a repeatable `tokens` job.
 - **Activated abilities** (hate: Cursed Totem). Creatures with a job whose trigger is
   `activated` (mana dorks, Krenko, Elvish Archdruid), commanders included.
-- **Combat-only win path** (hate: fogs, Propaganda, Ghostly Prison). The routes that win without
+- **Combat reliance** (hate: fogs, Propaganda, Ghostly Prison). Heavy means no other route at
+  all (truly combat-only); light means one or two, so a light deck still has an out. The routes that win without
   combat: a repeatable `drain`, `poison` or opponent `mill` job, "you win the game" or "loses the
   game" in oracle text, and assembled combos (the win-speed set). Repeatable only: a one-shot
   Lightning Bolt is reach, not a route.
@@ -197,7 +199,7 @@ the column says so:
 | Enchantments | 0 to 26 enchantments, 0 to 9 payoffs | 2 decks; heavy on Scrappy Survivors (26, 9 payoffs), light on Gods (18) |
 | Creatures | 1 to 25 payoffs | 10 decks; heavy on Thorin (25), Zombies (22), Elves (20) |
 | Activated abilities | 2 to 23 creatures | 4 decks, each with an activated commander; heavy on Elves (23), Goblins (21), Zombies (16) |
-| Combat-only | 0 to 14 other routes, 0 to 17 combos | 5 decks; no other route at all on Elves, Soldiers, Scrappy Survivors |
+| Combat reliance | 0 to 14 other routes, 0 to 17 combos | 5 decks; no other route at all on Elves, Soldiers, Scrappy Survivors |
 
 The commander row is dropped. Every commander reads as an engine (1 to 4 repeatable jobs, median
 2), the 99's cards that name a commander are mostly incidental (0 to 5, and Gods' 5 include
@@ -209,7 +211,7 @@ plan 3.1 and 11.2).
 The draft cut that produced the last column, to be re-derived by the plan like every other
 constant: graveyard 8 or more, or the commander (heavy at 13 or the commander); artifacts 3
 payoffs or 15 artifacts (heavy at 10 payoffs or 30); enchantments 3 payoffs or 15 (heavy at 8 or
-25); creatures 15 payoffs (heavy at 20); activated 12 or the commander (heavy at 15); combat-only
+25); creatures 15 payoffs (heavy at 20); activated 12 or the commander (heavy at 15); combat reliance
 when the deck has no combo and at most 2 other routes (heavy at 0). Under it, every row a deck
 draws, per deck:
 
@@ -218,11 +220,11 @@ draws, per deck:
   (creatures), Tovolar (creatures), Yuriko (graveyard), Counter Intelligence (artifacts heavy),
   Mutant Menace (graveyard), Sultai Arisen (graveyard heavy).
 - **Two:** Goblins (creatures, activated heavy), Gods (enchantments, activated), Soldiers
-  (creatures, combat-only heavy), Blood Rites (graveyard, creatures), Prismari Artistry
-  (graveyard, combat-only).
-- **Three:** Elves (creatures heavy, activated heavy, combat-only heavy), Zombies (graveyard,
-  creatures heavy, activated heavy), Thorin (artifacts, creatures heavy, combat-only).
-- **Four:** Scrappy Survivors (graveyard heavy, enchantments heavy, creatures, combat-only heavy).
+  (creatures, combat reliance heavy), Blood Rites (graveyard, creatures), Prismari Artistry
+  (graveyard, combat reliance).
+- **Three:** Elves (creatures heavy, activated heavy, combat reliance heavy), Zombies (graveyard,
+  creatures heavy, activated heavy), Thorin (artifacts, creatures heavy, combat reliance).
+- **Four:** Scrappy Survivors (graveyard heavy, enchantments heavy, creatures, combat reliance heavy).
 
 ## What eng locks (decided; override if you disagree)
 
@@ -246,7 +248,7 @@ draws, per deck:
    measure script as `db:build:staples` prints its own. Never from Hugh's 21 decks, which are too
    few, and never per commander, which is "Against the average"'s job.
 5. **Dependencies is a risk, never a score.** Six rows: graveyard, artifacts, enchantments,
-   creatures, activated abilities and combat-only win path, each computed as in the section
+   creatures, activated abilities and combat reliance, each computed as in the section
    above. A row is drawn only when the deck reaches its light cut; a deck below every cut draws
    the stated "no dependencies" state (three decks on staging). Each row names the hate that
    breaks it, as a fixed list per row in code, never generated. No total, no count of rows as a
@@ -261,7 +263,9 @@ draws, per deck:
    back to the classifier: the text reader's roles (ramp, draw, removal, wipes) and the oracle-text
    rules above. A job the text reader cannot see (a theme job such as `tribal` or `drain`) is
    simply not counted for that card. The text reader gives roles only, so the fallback fixes the
-   missing fields: a text-read draw card scores as `oneShot` and `self` (1 flow point); a
+   missing fields: a text-read draw card scores as `oneShot` (1 flow point) and only when its text has the
+   controller draw ("you draw", or a bare "Draw" instruction); text in which another player
+   draws (Thought-Knot Seer, Vendilion Clique) scores nothing, matching the labeled rule; a
    text-read ramp card scores by mana value alone, as if it were not `costReduction` or
    `burstMana`; and "counter target" text reads as a counterspell, never as removal, whatever
    `classifyRoles` does with it for its own callers (it keeps counterspells in removal on
@@ -354,7 +358,7 @@ draws, per deck:
   one deck per Dependencies row and state:
   graveyard heavy (Sultai Arisen, commander-driven), artifacts heavy (Counter Intelligence),
   enchantments heavy (Scrappy Survivors, which also carries the four-row maximum), creatures
-  heavy (Thorin), activated abilities heavy (Elves, commander included), combat-only heavy
+  heavy (Thorin), activated abilities heavy (Elves, commander included), combat reliance heavy
   (Soldiers), and no dependency row (Wizards); the stale reading under the banner; and the pre-Analyze empty state, unchanged.
 - One ledger open per benchmark, at both widths.
 - A states table (`STATES-*.md`) in the format of
