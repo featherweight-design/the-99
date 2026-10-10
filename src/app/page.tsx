@@ -16,6 +16,7 @@ import { loadUnplayedCounts } from "../lib/recs/home-novelty";
 import { loadCollectionPool } from "../lib/recs/recommend";
 import { FirstRunChecklist } from "../components/home/first-run";
 import { Dashboard } from "../components/home/dashboard";
+import { collectionEditEnabled } from "../lib/collection/edit-flag";
 import { analysisTabEnabled } from "../lib/decks/analysis-flag";
 import { cachePageForUser, type PageLoad } from "../lib/cache/page-cache";
 import { recordSoftFailure } from "../lib/cache/soft-failure";
@@ -191,7 +192,7 @@ export default async function HomePage() {
       store: !ranked.degraded,
     };
   });
-  if (data.firstRun) return <FirstRunChecklist />;
+  if (data.firstRun) return <FirstRunChecklist addByHand={collectionEditEnabled()} />;
 
   return (
     <Dashboard

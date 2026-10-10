@@ -10,15 +10,23 @@
 // The fan is handed in from the server file rather than drawn here, so this module carries the
 // state and nothing else.
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { AddCardsSheet } from "../collection/add-cards-sheet";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { ReplaceFlow } from "../collection/replace-flow";
 import { refreshCopy } from "../../lib/copy/refresh";
 
-export function FirstRunStepOne({ fan }: { fan: React.ReactNode }) {
+export function FirstRunStepOne({ fan, addByHand = false }: { fan: React.ReactNode; addByHand?: boolean }) {
   const c = refreshCopy.firstRun;
+  const router = useRouter();
+  const [adding, setAdding] = useState(false);
+  const saved = useRef(false);
+  const trigger = useRef<HTMLElement | null>(null);
   const [reviewing, setReviewing] = useState<{ file: string; rows: number } | null>(null);
 
   return (
+    <>
     <div
       // While reviewing, the phone's card drops its padding and clips to its corners, so the
       // review's confirm bar runs flush to the card's sides and foot (5a, §3.3 and §3.8); the
@@ -58,7 +66,7 @@ export function FirstRunStepOne({ fan }: { fan: React.ReactNode }) {
             short variant rather than a second copy of the subtree. While a
             review is open the phone's gives way to the REVIEWING line. */}
         <p className={`m-0 text-[13.5px] leading-[1.6] text-[color:var(--fg-muted)] sm:text-[13px] ${reviewing ? "hidden md:block" : ""}`}>
-          <span className="sm:hidden">{c.step1BodyShort}</span>
+          <span className="sm:hidden">{addByHand ? collectionEditCopy.firstRun.bodyShort : c.step1BodyShort}</span>
           <span className="hidden sm:inline">{c.step1Body}</span>
         </p>
         {/* ReplaceFlow rather than UploadEntry: preview and confirm are its
@@ -72,9 +80,40 @@ export function FirstRunStepOne({ fan }: { fan: React.ReactNode }) {
             centred the review screen's `Unmatched` / `Parse errors` headings
             over lists that are not. Prod walk 2026-09-28, items 9 and 10. */}
         <div className="w-full self-stretch text-left">
-          <ReplaceFlow currentCardCount={0} entry="buttons" embedded onReviewing={setReviewing} />
+          <ReplaceFlow
+            currentCardCount={0}
+            entry="buttons"
+            embedded
+            onReviewing={setReviewing}
+            onAddByHand={
+              addByHand
+                ? (el) => {
+                    trigger.current = el;
+                    saved.current = false;
+                    setAdding(true);
+                  }
+                : undefined
+            }
+          />
         </div>
       </div>
     </div>
+      {adding ? (
+        <AddCardsSheet
+          mode="add"
+          returnFocusRef={trigger}
+          totalCards={0}
+          // The first save turns Home from first run into the dashboard, which would unmount the
+          // sheet and its saved state; the refresh waits for the close.
+          onSaved={() => {
+            saved.current = true;
+          }}
+          onClose={() => {
+            setAdding(false);
+            if (saved.current) router.refresh();
+          }}
+        />
+      ) : null}
+    </>
   );
 }

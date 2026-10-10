@@ -12,6 +12,17 @@ export const collectionEditCopy = {
     /** The phone strip's trailing slot, where the longer label does not fit beside four tabs. */
     addShort: "Add",
   },
+  empty: {
+    body: "A pile of possibilities waiting for a commander. Bring a file over, or add cards one at a time.",
+    uploadTitle: "Upload a file",
+    uploadSub: "A CSV from ManaBox, Moxfield, Archidekt or Deckbox",
+    addTitle: "Add cards",
+    addSub: "Search by name and add them one by one",
+  },
+  firstRun: {
+    addByHand: "Add cards by hand",
+    bodyShort: "Drop a CSV export from Moxfield, Archidekt, Deckbox or Manabox, or add cards by hand.",
+  },
   add: {
     title: "Add cards",
     closeAria: "Close",

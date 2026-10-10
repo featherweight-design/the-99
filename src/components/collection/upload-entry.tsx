@@ -11,6 +11,7 @@ import { parsePasteList } from "../../lib/manabox/paste";
 import { COLLECTION_FILE_MAX_BYTES, COLLECTION_FILE_MAX_LABEL, PASTE_MAX_BYTES } from "../../lib/upload-limits";
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { replaceCopy } from "../../lib/copy/replace";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
 
 type Mode = "dropzone" | "paste";
 
@@ -28,10 +29,13 @@ export function UploadEntry({
   currentCardCount,
   onPreview,
   entry = "dropzone",
+  onAddByHand,
 }: {
   currentCardCount: number;
   onPreview: (preview: UploadPreview) => void;
   entry?: Entry;
+  /** Buttons entry only: a third, ghost button beside Paste that opens Add cards (B0c). */
+  onAddByHand?: (trigger: HTMLElement) => void;
 }) {
   const [mode, setMode] = useState<Mode>("dropzone");
   const [dragOver, setDragOver] = useState(false);
@@ -182,6 +186,15 @@ export function UploadEntry({
             >
               {refreshCopy.firstRun.pasteList}
             </GhostButton>
+            {onAddByHand ? (
+              <GhostButton
+                disabled={pending}
+                onClick={(e) => onAddByHand(e.currentTarget)}
+                className="flex h-[44px] items-center justify-center rounded-[10px] text-[14px] font-normal disabled:opacity-60 sm:h-[32px] sm:justify-start sm:rounded-[8px] sm:px-[13px] sm:text-[12.5px]"
+              >
+                {collectionEditCopy.firstRun.addByHand}
+              </GhostButton>
+            ) : null}
           </div>
         ) : (
           pastePanel

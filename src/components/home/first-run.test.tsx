@@ -14,7 +14,35 @@ vi.mock("../../app/collection/actions", () => ({
   previewUpload: vi.fn(),
 }));
 
+vi.mock("../collection/add-cards-sheet", () => ({
+  AddCardsSheet: () => <div role="dialog" aria-label="Add cards sheet" />,
+}));
+
 const { FirstRunChecklist } = await import("./first-run");
+
+describe("FirstRunChecklist · Add cards by hand (collection edit B0c)", () => {
+  it("draws no button with the switch off", () => {
+    render(<FirstRunChecklist />);
+    expect(screen.queryByRole("button", { name: "Add cards by hand" })).toBeNull();
+    expect(screen.queryByText(/or add cards by hand/)).toBeNull();
+  });
+
+  it("draws the ghost button beside Paste with the switch on, and it opens the sheet", () => {
+    render(<FirstRunChecklist addByHand />);
+    const paste = screen.getByRole("button", { name: "Paste a list" });
+    const add = screen.getByRole("button", { name: "Add cards by hand" });
+    expect(add.className).toBe(paste.className);
+    expect(paste.nextElementSibling).toBe(add);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    fireEvent.click(add);
+    expect(screen.getByRole("dialog")).toBeTruthy();
+  });
+
+  it("the phone body names the new door", () => {
+    render(<FirstRunChecklist addByHand />);
+    expect(screen.getByText(/Manabox, or add cards by hand\./)).toBeTruthy();
+  });
+});
 
 describe("FirstRunChecklist", () => {
   it("counts the steps in the kicker, not in a sentence", () => {
