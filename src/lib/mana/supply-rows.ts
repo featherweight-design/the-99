@@ -4,7 +4,7 @@
 import { isLandFace } from "../cards/facet";
 import { landProduces, type LandManaByCard, type ManaColor, type ManaSupplyCardRow } from "./supply";
 
-type SupplyCard = { oracleId: string; name: string; typeLine: string; manaCost?: string | null; quantity: number };
+type SupplyCard = { oracleId: string; name: string; typeLine: string; manaCost?: string | null; cmc?: number; quantity: number };
 type SupplyCommander = { typeLine: string; manaCost: string | null };
 
 /** The 99 are the cards; a commander adds its pips to demand and is never a source. A land the
@@ -21,6 +21,7 @@ export function manaSupplyRows(
       id: c.oracleId,
       typeLine: c.typeLine,
       manaCost: c.manaCost ?? null,
+      ...(c.cmc === undefined ? {} : { cmc: c.cmc }),
       quantity: c.quantity,
       produces:
         lands[c.oracleId] ??

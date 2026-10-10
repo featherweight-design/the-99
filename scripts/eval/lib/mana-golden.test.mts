@@ -1,49 +1,49 @@
 import { describe, expect, it } from "vitest";
-import { diffGolden, type GoldenBalance, type GoldenColor } from "./mana-golden.mjs";
+import { diffGolden } from "./mana-golden.mjs";
 
-const color = (over: Partial<GoldenColor> = {}): GoldenColor => ({ demand: 10, target: 5, gap: -2, state: "met", lands: ["Forest", "Forest"], nonland: ["Sol Ring"], ...over });
-const golden = (): GoldenBalance => ({
+const golden = () => ({
   state: "ok",
-  sourceCards: 40,
-  colorlessSupply: 3,
-  unattributedNonland: 0,
-  colors: { W: color(), U: color(), B: color(), R: color(), G: color() },
+  lands: { count: 36, karstenLands: 43.3 },
+  colors: { G: { pipsWith: 56, lands: ["Forest", "Forest", "Island"], order: "1CC 2C", patterns: { "1CC": { copies: 2, karsten: "known 28", cards: ["A", "B"] } } } },
 });
 
 describe("diffGolden", () => {
   it("is empty for identical output", () => expect(diffGolden(golden(), golden())).toEqual([]));
 
-  it("names a changed figure", () => {
+  it("names a changed figure by its path", () => {
     const a = golden();
-    a.colors.G.gap = 4;
-    a.colors.G.state = "short";
-    expect(diffGolden(golden(), a)).toEqual(["G.gap: expected -2, got 4", "G.state: expected met, got short"]);
+    a.colors.G.pipsWith = 57;
+    a.lands.karstenLands = 42.1;
+    expect(diffGolden(golden(), a)).toEqual(["lands.karstenLands: expected 43.3, got 42.1", "colors.G.pipsWith: expected 56, got 57"]);
   });
 
   it("names the card that moved, one copy more or less included", () => {
     const a = golden();
-    a.colors.R.lands = ["Forest", "Forest", "Forest"];
-    a.colors.W.nonland = [];
-    expect(diffGolden(golden(), a)).toEqual(["W.nonland: expected 1, got 0; missing Sol Ring", "R.lands: expected 2, got 3; extra Forest"]);
-  });
-
-  it("catches a swapped card at an unchanged count", () => {
-    const a = golden();
-    a.colors.U.nonland = ["Arcane Signet"];
-    expect(diffGolden(golden(), a)).toEqual(["U.nonland: expected 1, got 1; missing Sol Ring; extra Arcane Signet"]);
+    a.colors.G.lands = ["Forest", "Forest", "Forest", "Island"];
+    expect(diffGolden(golden(), a)).toEqual(["colors.G.lands: expected 3, got 4; extra Forest"]);
   });
 
   it("names a swap between copies of cards the list already holds, at an unchanged count", () => {
-    const e = golden();
-    e.colors.G.lands = ["Forest", "Forest", "Island"];
     const a = golden();
     a.colors.G.lands = ["Forest", "Island", "Island"];
-    expect(diffGolden(e, a)).toEqual(["G.lands: expected 3, got 3; missing Forest; extra Island"]);
+    expect(diffGolden(golden(), a)).toEqual(["colors.G.lands: expected 3, got 3; missing Forest; extra Island"]);
   });
 
-  it("catches a top-level difference", () => {
+  it("catches a changed pattern figure, a changed card list, and a pattern that appeared or vanished", () => {
     const a = golden();
-    a.sourceCards = 41;
-    expect(diffGolden(golden(), a)).toEqual(["sourceCards: expected 40, got 41"]);
+    a.colors.G.patterns["1CC"].karsten = "unknown";
+    a.colors.G.patterns["1CC"].cards = ["A", "C"];
+    (a.colors.G.patterns as Record<string, unknown>)["CC"] = { copies: 1, karsten: "known 30", cards: ["D"] };
+    expect(diffGolden(golden(), a)).toEqual([
+      'colors.G.patterns.1CC.karsten: expected "known 28", got "unknown"',
+      "colors.G.patterns.1CC.cards: expected 2, got 2; missing B; extra C",
+      'colors.G.patterns.CC: not expected, got {"copies":1,"karsten":"known 30","cards":["D"]}',
+    ]);
+  });
+
+  it("catches a reordered pattern list", () => {
+    const a = golden();
+    a.colors.G.order = "2C 1CC";
+    expect(diffGolden(golden(), a)).toEqual(['colors.G.order: expected "1CC 2C", got "2C 1CC"']);
   });
 });

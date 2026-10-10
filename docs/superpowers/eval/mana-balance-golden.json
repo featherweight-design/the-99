@@ -4,25 +4,23 @@
     "deckId": "904fdc61-e190-4ba5-8e34-2b18fa0584f2",
     "listFingerprint": "eb283ece8f988c71fe2f6dea4a36b7955720f05775aec728d02164d2aa8cb6ff"
   },
-  "checked": "2026-10-10, by hand, against the oracle text of every non-basic source and an independent count of the pips (a plain symbol tally of the 99 non-land cards and the commander: W 18, R 26, G 56).",
+  "checked": "2026-10-10, by hand. Sources: every non-basic source against its oracle text (unchanged from the verdict-era golden, which listed the same cards). Pips: a plain symbol tally of the 63 nonland cards (the 99 less 36 lands) and the commander (W 18, R 26, G 56; 17, 25, 55 without the commander). Patterns: a second tally with its own regex, no shared parser, for W, R and G. Tapped lands: read from each land's text, the three categories separately. Karsten figures: the 99-card column of Frank Karsten, 'How Many Sources Do You Need to Consistently Cast Your Spells? A 2022 Update' (TCGplayer), as Hugh pasted it.",
   "notes": [
-    "Pips: Gishath, Sun's Avatar is {5}{R}{G}{W}, so the commander adds one each of R, G and W. The deck has no U or B pip and no hybrid pip.",
-    "source cards 43 = 34 lands that add a colored mana (18 basics, 16 non-basic) + 9 non-land sources (Arcane Signet, Atzocan Seer, Farseek, Great Forest Druid, Gwenna, Herd Heirloom, Ranging Raptors, Topiary Stomper, Nature's Lore). colorlessSupply (6) is Sol Ring plus five lands that add {C}: Kessig Wolf Run and Sunhome (colorless only, so in no color's share) and Secluded Courtyard, Sheltering Landscape and Unclaimed Territory (a {C} ability beside a colored one, so also counted in the colors they add).",
-    "Targets: 43 x 18/100 = 7.74 -> 8 (W); 43 x 26/100 = 11.18 -> 11 (R); 43 x 56/100 = 24.08 -> 24 (G). Gap = target - sources: W 8-26 = -18, R 11-27 = -16, G 24-28 = -4. No color is short; green has the thinnest cover.",
-    "Policy the count follows (the Colors card's own, not Mana Balance's): an any-color source with a spending restriction (Herd Heirloom, Gwenna, Secluded Courtyard, Unclaimed Territory) counts for each deck color; a land that fetches a basic (Evolving Wilds, Fabled Passage, Escape Tunnel, Sheltering Landscape) counts for the basics it can fetch; Farseek names Plains, Island, Swamp and Mountain, so it counts for W, U, B and R and not G; Nature's Lore names Forest, so G only. U and B each read 1 source (Farseek) against 0 pips, which is why they show a gap of -1.",
-    "Cards that look like sources and are not: Sunhome, Fortress of the Legion and Kessig Wolf Run add {C} only (their R/W cost sits in an activated ability, not an 'add' clause); Mosswort Bridge and Spinerock Knoll add one color (G, R) and their hideaway costs are not mana."
+    "Pips with the commander: Gishath, Sun's Avatar is {5}{R}{G}{W}, one each of R, G and W. Without it Deckcheck's own Gishath figure reproduces: green is 55 of 97 colored pips, 56.7%. The deck has no U or B pip and no hybrid pip.",
+    "Another color's pips are generic mana for this one. The commander is 7C for green (eight mana value, one green pip): the table has no row for it, so it would show a ceiling of 14, but green has six harder patterns and only the six hardest are listed, so it is not among them. The Tarrasque ({6}{G}{G}{G}) is 6CCC, past the table's 4CCC, and shows a ceiling of 26. Wakening Sun's Avatar is 5CCC for white, also a ceiling of 26.",
+    "The commander appears in a color's pattern list as a card, marked '(commander)'. Shatterskull Smashing // Shatterskull, the Hammer Pass is counted as a spell (CC for red) because its front face is a spell.",
+    "Sources follow the Colors card's own policy: an any-color source with a spending restriction counts for each deck color, a land that fetches a basic counts for the basics it can fetch, Farseek names Plains, Island, Swamp and Mountain so it counts for W, U, B and R and not G. U and B each read 1 source (Farseek) against 0 pips.",
+    "Tapped lands: 4 always = Jungle Shrine, Path of Ancestry, Mosswort Bridge, Spinerock Knoll (each says it enters tapped). 5 unless a condition holds = Clifftop Retreat, Rootbound Crag, Sunpetal Grove, Canopy Vista, Cinder Glade. 4 fetch a tapped land = Evolving Wilds, Fabled Passage, Escape Tunnel, Sheltering Landscape: each enters untapped itself and puts a basic onto the battlefield tapped (Fabled Passage untaps it with four or more lands). Counting the four fetches as tapped lands, as an earlier version did, called Evolving Wilds a land that enters tapped.",
+    "Karsten lands 42.2 = 31.42 + 3.13 x 4.34 - 0.28 x 10. Average mana value 4.34 counts the 63 nonland cards and the commander (8) as one more card, which reproduces Deckcheck's 4.34. Cheap ramp is 10: ten mana sources of mana value 3 or less (draw spells are not counted). Deckcheck reports 6 ramp and 38 lands for the same deck; this engine counts 36 land cards."
   ],
   "expected": {
     "state": "ok",
-    "sourceCards": 43,
     "colorlessSupply": 6,
     "unattributedNonland": 0,
     "colors": {
       "W": {
-        "demand": 18,
-        "target": 8,
-        "gap": -18,
-        "state": "met",
+        "pipsWith": 18,
+        "pipsWithout": 17,
         "lands": [
           "Canopy Vista",
           "Clifftop Retreat",
@@ -52,33 +50,76 @@
           "Herd Heirloom",
           "Ranging Raptors",
           "Topiary Stomper"
-        ]
+        ],
+        "order": "5CCC 2CC 3CC 5CC C 1C",
+        "patterns": {
+          "5CCC": {
+            "copies": 1,
+            "karsten": "atMost 26",
+            "cards": [
+              "Wakening Sun's Avatar"
+            ]
+          },
+          "2CC": {
+            "copies": 1,
+            "karsten": "known 26",
+            "cards": [
+              "Lightmine Field"
+            ]
+          },
+          "3CC": {
+            "copies": 1,
+            "karsten": "known 23",
+            "cards": [
+              "Trapjaw Tyrant"
+            ]
+          },
+          "5CC": {
+            "copies": 1,
+            "karsten": "known 20",
+            "cards": [
+              "Ghalta and Mavren"
+            ]
+          },
+          "C": {
+            "copies": 1,
+            "karsten": "known 19",
+            "cards": [
+              "Kinjalli's Caller"
+            ]
+          },
+          "1C": {
+            "copies": 1,
+            "karsten": "known 19",
+            "cards": [
+              "Boros Charm"
+            ]
+          }
+        }
       },
       "U": {
-        "demand": 0,
-        "target": 0,
-        "gap": -1,
-        "state": "met",
+        "pipsWith": 0,
+        "pipsWithout": 0,
         "lands": [],
         "nonland": [
           "Farseek"
-        ]
+        ],
+        "order": "",
+        "patterns": {}
       },
       "B": {
-        "demand": 0,
-        "target": 0,
-        "gap": -1,
-        "state": "met",
+        "pipsWith": 0,
+        "pipsWithout": 0,
         "lands": [],
         "nonland": [
           "Farseek"
-        ]
+        ],
+        "order": "",
+        "patterns": {}
       },
       "R": {
-        "demand": 26,
-        "target": 11,
-        "gap": -16,
-        "state": "met",
+        "pipsWith": 26,
+        "pipsWithout": 25,
         "lands": [
           "Cinder Glade",
           "Clifftop Retreat",
@@ -109,13 +150,58 @@
           "Herd Heirloom",
           "Ranging Raptors",
           "Topiary Stomper"
-        ]
+        ],
+        "order": "CC 1CC 2CC 3CC 4CC 5CC",
+        "patterns": {
+          "CC": {
+            "copies": 1,
+            "karsten": "known 30",
+            "cards": [
+              "Shatterskull Smashing // Shatterskull, the Hammer Pass"
+            ]
+          },
+          "1CC": {
+            "copies": 1,
+            "karsten": "known 28",
+            "cards": [
+              "Klauth's Will"
+            ]
+          },
+          "2CC": {
+            "copies": 1,
+            "karsten": "known 26",
+            "cards": [
+              "Fiery Confluence"
+            ]
+          },
+          "3CC": {
+            "copies": 1,
+            "karsten": "known 23",
+            "cards": [
+              "Quartzwood Crasher"
+            ]
+          },
+          "4CC": {
+            "copies": 2,
+            "karsten": "known 22",
+            "cards": [
+              "Chandra, Flamecaller",
+              "Etali, Primal Storm"
+            ]
+          },
+          "5CC": {
+            "copies": 2,
+            "karsten": "known 20",
+            "cards": [
+              "Silverclad Ferocidons",
+              "Star of Extinction"
+            ]
+          }
+        }
       },
       "G": {
-        "demand": 56,
-        "target": 24,
-        "gap": -4,
-        "state": "met",
+        "pipsWith": 56,
+        "pipsWithout": 55,
         "lands": [
           "Canopy Vista",
           "Cinder Glade",
@@ -147,8 +233,65 @@
           "Nature's Lore",
           "Ranging Raptors",
           "Topiary Stomper"
-        ]
+        ],
+        "order": "6CCC 1CC 2CC 3CC 4CC 5CC",
+        "patterns": {
+          "6CCC": {
+            "copies": 1,
+            "karsten": "atMost 26",
+            "cards": [
+              "The Tarrasque"
+            ]
+          },
+          "1CC": {
+            "copies": 3,
+            "karsten": "known 28",
+            "cards": [
+              "Runic Armasaur",
+              "Thrashing Brontodon",
+              "Topiary Stomper"
+            ]
+          },
+          "2CC": {
+            "copies": 1,
+            "karsten": "known 26",
+            "cards": [
+              "Ripjaw Raptor"
+            ]
+          },
+          "3CC": {
+            "copies": 1,
+            "karsten": "known 23",
+            "cards": [
+              "Vivien, Monsters' Advocate"
+            ]
+          },
+          "4CC": {
+            "copies": 1,
+            "karsten": "known 22",
+            "cards": [
+              "Regal Behemoth"
+            ]
+          },
+          "5CC": {
+            "copies": 2,
+            "karsten": "known 20",
+            "cards": [
+              "Annoyed Altisaur",
+              "Ghalta and Mavren"
+            ]
+          }
+        }
       }
+    },
+    "lands": {
+      "count": 36,
+      "tappedAlways": 4,
+      "tappedUnless": 5,
+      "averageManaValue": 4.34,
+      "cheapRamp": 10,
+      "karstenLands": 42.2,
+      "tappedFetch": 4
     }
   }
 }
