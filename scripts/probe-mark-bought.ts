@@ -111,7 +111,8 @@ async function main() {
       `deltas ${delta(p)}, ${delta(q)}`);
 
     // ---- 4. The undo's exclusion -------------------------------------------------------------
-    // Both decks now hold B through one copy (senior) ... buy two for the junior so both are covered.
+    // B: one copy, held by the senior deck. One more bought for the junior (1 -> 2) covers both, so
+    // reverting that purchase leaves the junior short again.
     const bought = randomUUID();
     await applyCollectionChange(
       USER,

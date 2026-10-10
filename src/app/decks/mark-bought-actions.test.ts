@@ -120,7 +120,10 @@ describe("markBought", () => {
 
   it("lowercases the ids it keys on", async () => {
     await markBought(DECK.toUpperCase(), CARD.toUpperCase(), { scryfallId: SCRY, finish: "foil", quantity: 1, expected: 0, id: ID });
-    const opts = (state.calls[0] as Record<string, unknown>[])[2] as { source: string };
+    const [, change, opts] = state.calls[0] as [string, { rows: { oracleId: string }[] }, { source: string; receipt: { oracleId: string; deckId: string } }];
     expect(opts.source).toBe(`shopping:${DECK}`);
+    // `loadAvailability` keys its map on lowercase ids: an uppercase one would read no receipt.
+    expect(opts.receipt).toEqual({ oracleId: CARD, deckId: DECK });
+    expect(change.rows[0].oracleId).toBe(CARD);
   });
 });
