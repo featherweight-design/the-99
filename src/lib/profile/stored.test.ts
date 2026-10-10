@@ -6,7 +6,7 @@ vi.mock("../../db", () => ({ db: {} }));
 vi.mock("./load", () => ({ cachedDeckProfile: vi.fn(), loadDeckProfile: vi.fn(), readProfileHead: vi.fn() }));
 vi.mock("../cache/catalog-generation", () => ({ catalogGeneration: vi.fn() }));
 
-const { deckLegality, storedBasisMoved } = await import("./stored");
+const { deckLegality, storedBasisMoved, pressMustRecompute } = await import("./stored");
 
 const cards = (n: number) => Array.from({ length: n }, (_, i) => ({ oracleId: `c${i}`, quantity: 1 }));
 
@@ -47,5 +47,43 @@ describe("storedBasisMoved", () => {
 
   it("follows the deployment's switch by default", () => {
     expect(storedBasisMoved(classifier)).toBe(process.env.LABEL_ROLE_COUNTS_ENABLED === "true");
+  });
+});
+
+describe("pressMustRecompute", () => {
+  const classifier = { skeleton: {} } as never;
+  const labels = { skeleton: { roleBasis: "labels" } } as never;
+  const base = { isPress: true, sameAnswer: true, noticesOn: false, logMoved: async () => false };
+
+  it("recomputes a press on an unchanged list whose stored basis differs from the deployment's", async () => {
+    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
+    expect(await pressMustRecompute({ ...base, storedProfile: classifier })).toBe(true);
+    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "");
+    expect(await pressMustRecompute({ ...base, storedProfile: labels })).toBe(true);
+    vi.unstubAllEnvs();
+  });
+
+  it("answers from the store when the basis matches and the log has not moved", async () => {
+    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
+    expect(await pressMustRecompute({ ...base, storedProfile: labels })).toBe(false);
+    vi.unstubAllEnvs();
+  });
+
+  it("never recomputes a pin or a rebuild (not a press), or a list that changed (not the same answer)", async () => {
+    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
+    expect(await pressMustRecompute({ ...base, isPress: false, storedProfile: classifier })).toBe(false);
+    expect(await pressMustRecompute({ ...base, sameAnswer: false, storedProfile: classifier })).toBe(false);
+    vi.unstubAllEnvs();
+  });
+
+  it("keeps the change-log recompute behind the notices switch, and skips its read once the basis said yes", async () => {
+    const logMoved = vi.fn(async () => true);
+    expect(await pressMustRecompute({ ...base, storedProfile: classifier, noticesOn: false, logMoved })).toBe(false);
+    expect(await pressMustRecompute({ ...base, storedProfile: classifier, noticesOn: true, logMoved })).toBe(true);
+    logMoved.mockClear();
+    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
+    await pressMustRecompute({ ...base, storedProfile: classifier, noticesOn: true, logMoved });
+    expect(logMoved).not.toHaveBeenCalled();
+    vi.unstubAllEnvs();
   });
 });

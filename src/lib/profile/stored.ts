@@ -132,6 +132,24 @@ export function storedBasisMoved(
   return (profile?.skeleton?.roleBasis ?? "classifier") !== basis;
 }
 
+/**
+ * Whether a PRESS on a list whose reading is stored must recompute instead of answering from the
+ * store (ruling 5's shortcut): the role basis moved (`storedBasisMoved`), or, behind the notices
+ * switch, the change log moved under the reading (H1). Only a press; a commit's pin and a quiet
+ * rebuild never recompute for either.
+ */
+export async function pressMustRecompute(args: {
+  isPress: boolean;
+  sameAnswer: boolean;
+  storedProfile: Pick<DeckProfile, "skeleton"> | null | undefined;
+  noticesOn: boolean;
+  logMoved: () => Promise<boolean>;
+}): Promise<boolean> {
+  if (!args.isPress || !args.sameAnswer) return false;
+  if (storedBasisMoved(args.storedProfile)) return true;
+  return args.noticesOn ? args.logMoved() : false;
+}
+
 export function sameList(row: { profileVersion: number; fingerprint: string }, head: ProfileHead): boolean {
   return row.profileVersion === 0
     ? row.fingerprint === profileFingerprint(head)
@@ -336,13 +354,20 @@ export async function computeAndStoreProfile(
       ? { seenSeq: row.seenSeq, rulesVersion: row.rulesVersion, analyzedOracleIds: row.analyzedOracleIds }
       : null);
   // Behind the notices switch (Hugh's release ruling): off, a press keeps ruling 5 unamended.
-  const dataMoved = Boolean(isPress && sameAnswer && row && (storedBasisMoved(row.profile) || (noticesEnabled() && (await readingMoved({
-    seenSeq: row.seenSeq,
-    rulesVersion: row.rulesVersion,
-    // An empty list is a legacy row (schema note), read as the list this press is guarded to.
-    analyzedOracleIds: row.analyzedOracleIds.length > 0 ? row.analyzedOracleIds : analyzedOracleIds(head),
-    commanderOracleIds: [head.commanderOracleId, ...(head.partnerOracleId ? [head.partnerOracleId] : [])],
-  })))));
+  const dataMoved = await pressMustRecompute({
+    isPress,
+    sameAnswer: Boolean(row && sameAnswer),
+    storedProfile: row?.profile,
+    noticesOn: noticesEnabled(),
+    // Read only when nothing cheaper already said yes, and only for a row that exists.
+    logMoved: () => readingMoved({
+      seenSeq: row!.seenSeq,
+      rulesVersion: row!.rulesVersion,
+      // An empty list is a legacy row (schema note), read as the list this press is guarded to.
+      analyzedOracleIds: row!.analyzedOracleIds.length > 0 ? row!.analyzedOracleIds : analyzedOracleIds(head),
+      commanderOracleIds: [head.commanderOracleId, ...(head.partnerOracleId ? [head.partnerOracleId] : [])],
+    }),
+  });
 
   // RULING 5: the same list, under the same code, and the same data (H1), is the same answer. Clear
   // `dirty` (and take the commit's pin) on the row as it stands, guarded on the fingerprint and
