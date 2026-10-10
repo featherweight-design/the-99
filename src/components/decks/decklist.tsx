@@ -10,6 +10,8 @@ import { StandInDoorRegistration } from "./stand-in-door";
 import { SwapReceiptRow } from "./swap-receipt";
 import { placeReceipts } from "../../lib/swaps/place-receipts";
 import { isOverLimit } from "../../lib/swaps/limit";
+import { isLandFace } from "../../lib/cards/facet";
+import { jobTally } from "../../lib/decks/job-tally";
 import { manaCurve, typeCurve, type DeckStatsInput } from "../../lib/decks/stats";
 import type { RecommendedMix } from "../../lib/decks/mix";
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
@@ -397,7 +399,14 @@ export function Decklist({
   const statsSlice = useMemo(() => {
     if (!statsData) return null;
     const list = [...cards, ...statsData.commanders];
-    return { curve: manaCurve(list), types: typeCurve(list) };
+    const byCard = statsData.jobs;
+    const jobs = byCard
+      ? jobTally(
+          cards.filter((c) => !isLandFace(c.typeLine)).map((c) => ({ oracleId: c.oracleId, name: c.name, copies: c.quantity })),
+          byCard,
+        )
+      : null;
+    return { curve: manaCurve(list), types: typeCurve(list), jobs };
   }, [cards, statsData]);
 
   // The commanders the Shopping list bills (H28), through the list's own predicate. Every Shopping

@@ -11,6 +11,7 @@
 // ---------------------------------------------------------------------------
 
 import { isLandFace } from "../cards/facet";
+import type { JobRowsByCard, JobTally } from "./job-tally";
 
 export type GameResult = "win" | "loss" | "draw";
 
@@ -255,11 +256,13 @@ export function cardTypeOf(typeLine: string): CardType | null {
 }
 
 /** What the Stats panel receives: plain data, safe across the server boundary. */
-export type DeckStatsSlice = { curve: ManaCurve; types: TypeCurve };
+/** `jobs` is absent where the label read failed or was skipped: the Jobs card then stays a shell
+ *  rather than calling every card unlabeled. */
+export type DeckStatsSlice = { curve: ManaCurve; types: TypeCurve; jobs?: JobTally | null };
 
 /** What the page ships for the Stats view: the commanders alone. The 99 are drawn from the
  *  optimistic card list in the browser, so an edit moves the curve in the same frame as the deck. */
-export type DeckStatsInput = { commanders: readonly CurveCard[] };
+export type DeckStatsInput = { commanders: readonly CurveCard[]; jobs?: JobRowsByCard | null };
 
 export type TypeCurve = {
   /** One entry per curve bucket, 0 through CURVE_MAX, each the copies of every

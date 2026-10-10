@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 
 import { deckStatsCopy } from "../../lib/copy/deck-stats";
+import { JOB_ROWS, type JobTally } from "../../lib/decks/job-tally";
 import { CARD_TYPES, CURVE_MAX, type CardType, type DeckStatsSlice } from "../../lib/decks/stats";
 
 const CARDS = [
@@ -138,10 +139,87 @@ function CurveCard({ data }: { data: DeckStatsSlice }) {
   );
 }
 
+const JOB_VAR: Record<(typeof JOB_ROWS)[number]["key"], string> = {
+  ramp: "var(--job-ramp)",
+  draw: "var(--job-draw)",
+  removal: "var(--job-removal)",
+  wipes: "var(--job-wipes)",
+  protection: "var(--job-protection)",
+  finisher: "var(--accent)",
+};
+
+function JobsCard({ tally }: { tally: JobTally }) {
+  const copy = deckStatsCopy.jobs;
+  const [open, setOpen] = useState<string | null>(null);
+  const cast = tally.labeled + tally.unlabeled;
+  return (
+    <Shell title={deckStatsCopy.cards.jobs} id="jobs" denom={copy.denom(cast)} label={`${deckStatsCopy.cards.jobs}, ${copy.denom(cast)}`}>
+      <ul className="flex flex-col gap-[10px]">
+        {tally.rows.map((r) => {
+          const on = open === r.key;
+          const head = (
+            <>
+              <span className={`w-[96px] shrink-0 text-left text-[12.5px] md:w-[120px] ${r.copies === 0 ? "text-[color:var(--fg-muted)]" : "text-[color:var(--fg-body)]"}`}>
+                {copy.rows[r.key]}
+              </span>
+              <span aria-hidden="true" className="flex flex-1 flex-wrap gap-[3px]" data-job-squares={r.key}>
+                {Array.from({ length: r.copies }, (_, k) => (
+                  <span key={k} className="size-[9px] rounded-[1px] md:size-[11px]" style={{ background: JOB_VAR[r.key] }} />
+                ))}
+              </span>
+              <span className={`w-[24px] shrink-0 text-right font-mono text-[12px] tabular-nums ${r.copies === 0 ? "text-[color:var(--fg-locked)]" : "text-[color:var(--fg)]"}`}>
+                {r.copies}
+              </span>
+              <span aria-hidden="true" className="w-[12px] shrink-0 text-center font-mono text-[12px] text-[color:var(--fg-muted)]">
+                {r.copies === 0 ? "" : on ? "⌃" : "›"}
+              </span>
+            </>
+          );
+          return (
+            <li key={r.key} data-job-row={r.key}>
+              {r.copies === 0 ? (
+                <div className="flex min-h-[28px] items-center gap-[10px]">{head}</div>
+              ) : (
+                <button
+                  type="button"
+                  aria-expanded={on}
+                  onClick={() => setOpen(on ? null : r.key)}
+                  className="flex min-h-[44px] w-full items-center gap-[10px] md:min-h-[28px]"
+                >
+                  {head}
+                </button>
+              )}
+              {on ? (
+                <p data-job-names className="pb-[4px] pl-[106px] pt-[2px] text-[12px] leading-[1.5] text-[color:var(--fg-muted)] md:pl-[130px]">
+                  {[...r.names].sort((a, b) => a.localeCompare(b)).join(", ")}
+                </p>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+      {tally.unlabeled > 0 ? (
+        <div className="flex flex-col gap-[6px]" data-job-unlabeled>
+          <span aria-hidden="true" className="flex flex-wrap gap-[3px]">
+            {Array.from({ length: tally.unlabeled }, (_, k) => (
+              <span key={k} className="size-[9px] rounded-[1px] border border-dashed border-[color:var(--border-strong)] md:size-[11px]" />
+            ))}
+          </span>
+          <p className="font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">{copy.unlabeled(tally.unlabeled)}</p>
+        </div>
+      ) : null}
+      {tally.overlap > 0 ? <p className="font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">{copy.overlap(tally.overlap)}</p> : null}
+      {tally.none > 0 ? <p className="font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">{copy.none(tally.none)}</p> : null}
+    </Shell>
+  );
+}
+
 export function DeckStatsView({ data = null }: { data?: DeckStatsSlice | null }) {
   const card = (c: (typeof CARDS)[number]) =>
     c.key === "curve" && data ? (
       <CurveCard key={c.key} data={data} />
+    ) : c.key === "jobs" && data?.jobs ? (
+      <JobsCard key={c.key} tally={data.jobs} />
     ) : (
       <Shell key={c.key} id={c.key} title={c.title} />
     );

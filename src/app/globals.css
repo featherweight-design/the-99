@@ -1006,4 +1006,12 @@ html {
   --type-planeswalker: oklch(0.72 0.12 18);
   --type-battle: oklch(0.75 0.10 115);
   --type-land: oklch(0.58 0.05 75);
+  /* Job hues for the Stats Jobs rows (handoff canvas values), measured on each theme's
+     --surface-sunken: 6.3:1 or better. Win conditions has no token of its own: it draws in
+     --accent, the app's brass, which is 4.4:1 or better on the same surface in all six themes. */
+  --job-ramp: oklch(0.72 0.11 150);
+  --job-draw: oklch(0.72 0.11 235);
+  --job-removal: oklch(0.70 0.13 25);
+  --job-wipes: oklch(0.70 0.12 330);
+  --job-protection: oklch(0.76 0.10 95);
 }
