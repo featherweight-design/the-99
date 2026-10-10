@@ -18,6 +18,7 @@ import { requireUserId } from "../../../lib/auth";
 import { collectionEditEnabled } from "../../../lib/collection/edit-flag";
 import { getCollectionLastUpdated, getCollectionStats } from "../../../lib/home/summary";
 import { formatLastUpdated } from "../../../lib/collection/browse";
+import { collectionHasHistory } from "../../../lib/collection/history";
 import { CollectionPlaceHead } from "../../../components/collection/collection-place-head";
 import { CollectionContentScope } from "../../../components/collection/collection-content-scope";
 
@@ -27,9 +28,12 @@ export default async function CollectionListLayout({
   children: React.ReactNode;
 }) {
   const userId = await requireUserId();
-  const [stats, lastUpdated] = await Promise.all([
+  const editEnabled = collectionEditEnabled();
+  const [stats, lastUpdated, historyHasEntries] = await Promise.all([
     getCollectionStats(userId),
     getCollectionLastUpdated(userId),
+    // The History tab's gate on an empty collection; only asked once the ledger is on.
+    editEnabled ? collectionHasHistory(userId) : Promise.resolve(false),
   ]);
   // Formatted here rather than handed down as a raw `Date`: the head is a Client Component
   // and would otherwise recompute the label against the browser's clock and timezone on
@@ -37,7 +41,7 @@ export default async function CollectionListLayout({
   const lastUpdatedLabel = lastUpdated ? formatLastUpdated(lastUpdated) : null;
   return (
     <>
-      <CollectionPlaceHead stats={stats} lastUpdatedLabel={lastUpdatedLabel} editEnabled={collectionEditEnabled()} />
+      <CollectionPlaceHead stats={stats} lastUpdatedLabel={lastUpdatedLabel} editEnabled={editEnabled} historyHasEntries={historyHasEntries} />
       <CollectionContentScope>{children}</CollectionContentScope>
     </>
   );

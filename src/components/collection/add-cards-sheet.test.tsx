@@ -176,6 +176,18 @@ describe("AddCardsSheet (add)", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it("links the saved state to the entry it wrote, and closes the sheet on the way (B8)", async () => {
+    add.mockResolvedValue({ applied: { id: "0b7e6c3a-1d2f-4a55-9a41-5f1c2d3e4f50" } });
+    mount();
+    await find("sol ring", [card()]);
+    await pickFirst();
+    fireEvent.click((await screen.findAllByRole("radio"))[0]);
+    await waitFor(() => expect(field()).not.toBeDisabled());
+    fireEvent.click(screen.getByRole("button", { name: copy.save(1) }));
+    const link = await screen.findByRole("link", { name: copy.seeInHistory });
+    expect(link.getAttribute("href")).toBe("/collection/history?entry=0b7e6c3a-1d2f-4a55-9a41-5f1c2d3e4f50");
+  });
+
   it("starts a fresh action id for Add more", async () => {
     add.mockResolvedValue({ applied: { id: "x" } });
     mount();

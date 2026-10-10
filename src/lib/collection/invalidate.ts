@@ -44,6 +44,8 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   // Reads `getCollectionStats` twice over: for the subtitle's second clause and
   // for whether that clause renders at all. A replace changes both.
   { path: "/collection/proxies", dynamic: false },
+  // The ledger's own list: every collection write adds an entry to it.
+  { path: "/collection/history", dynamic: false },
   { path: "/collection/sets", dynamic: false },
   { path: "/collection/sets/[code]", dynamic: true },
   { path: "/commanders", dynamic: false },
