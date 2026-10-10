@@ -149,20 +149,25 @@ const cutsRunsOfDeck = (deckId: string) => and(
   eq(deckSuggestionRuns.tool, PROPOSED_CUTS_TOOL),
 );
 
+/** The reader's own abandoned Proposed cuts runs on a deck: this tool, this deck, this reader, still
+ *  pending past the cutoff. The reader is part of the predicate because a state read can name any
+ *  deck id, and must write nothing to a run it does not own. */
+export const reapableCutsRuns = (deckId: string, userId: string, now: Date) => and(
+  cutsRunsOfDeck(deckId),
+  eq(deckSuggestionRuns.userId, userId),
+  eq(deckSuggestionRuns.status, "pending"),
+  lt(deckSuggestionRuns.createdAt, reapCutoff(now)),
+);
+
 /**
- * Fail this deck's abandoned Proposed cuts runs as `interrupted` and refund their units, in one
- * transaction. Scoped to the deck and the tool, so one player opening a deck writes nothing across
- * other players' rows and never reaps a Suggested changes run. The same cutoff as the other tool's.
+ * Fail the reader's abandoned Proposed cuts runs on this deck as `interrupted` and refund their
+ * units, in one transaction. The same cutoff as the other tool's.
  */
-export async function reapCutsRuns(deckId: string, now: Date = new Date()): Promise<void> {
+export async function reapCutsRuns(deckId: string, userId: string, now: Date = new Date()): Promise<void> {
   await db.transaction(async (tx) => {
     const reaped = await tx.update(deckSuggestionRuns)
       .set({ status: "failed", errorClass: "interrupted" })
-      .where(and(
-        cutsRunsOfDeck(deckId),
-        eq(deckSuggestionRuns.status, "pending"),
-        lt(deckSuggestionRuns.createdAt, reapCutoff(now)),
-      ))
+      .where(reapableCutsRuns(deckId, userId, now))
       .returning({ callId: deckSuggestionRuns.modelCallId });
     for (const r of reaped) await settleModelCall(tx, r.callId, "refunded", undefined, now);
   });
@@ -173,7 +178,7 @@ export async function reapCutsRuns(deckId: string, now: Date = new Date()): Prom
  * run with its cuts, and the allowance measured against this feature's own call.
  */
 export async function readCutsState(deckId: string, userId: string, now: Date = new Date()): Promise<CutsState> {
-  await reapCutsRuns(deckId, now);
+  await reapCutsRuns(deckId, userId, now);
 
   const runOf = cutsRunsOfDeck(deckId);
   const mine = eq(deckSuggestionRuns.userId, userId);

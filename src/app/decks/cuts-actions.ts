@@ -86,7 +86,7 @@ export async function runProposedCuts(
 
   // A run abandoned by a process that is gone would otherwise answer "in flight" until someone
   // opened the panel.
-  await reapCutsRuns(deckId);
+  await reapCutsRuns(deckId, userId);
   const started = await startCutsRun(userId, deckId, fingerprint, readVersion, { runId: requested });
   if (started.kind === "paused") return { ok: false, message: creditsCopy.pausedServer };
   if (started.kind === "ownerShare") return { ok: false, message: creditsCopy.ownerShare(new Date()) };
