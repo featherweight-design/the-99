@@ -501,8 +501,26 @@ describe("useBackDismiss", () => {
   // next case's spy.
   const mounted: { unmount: () => void }[] = [];
   afterEach(async () => {
+    // An unmount queues a self-pop, and the `popstate` that answers it starts a
+    // scroll-pin loop of up to 30 frames. Under load that pop can land well after a
+    // fixed wait, and the loop then runs into the NEXT case, calling its mocked
+    // `scrollTo` with this case's offset (0), which is how the delayed-disturbance
+    // case read `scrollY` 0. So wait for the pop itself (capped, since jsdom may
+    // answer a back() with nothing), then cancel any loop it started through the
+    // loop's own cancel rule: a wheel.
+    const hadDialogs = mounted.length > 0;
+    const popped = new Promise<void>((resolve) => {
+      const done = () => {
+        window.removeEventListener("popstate", done);
+        resolve();
+      };
+      window.addEventListener("popstate", done);
+      setTimeout(done, hadDialogs ? 500 : 0);
+    });
     while (mounted.length) mounted.pop()?.unmount();
+    await popped;
     await new Promise((r) => setTimeout(r, 60));
+    window.dispatchEvent(new WheelEvent("wheel"));
     window.history.replaceState(null, "", "/");
   });
   const track = <T extends { unmount: () => void }>(hook: T): T => {
