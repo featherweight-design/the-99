@@ -198,25 +198,28 @@ export function activatedFinds(card: LandText): Finds | null {
  * test, because a spell or a trigger searches too. A land goes through `fetchFinds` / `activatedFinds`.
  * Reads the WHOLE text it is given, not the front face: the caller has already chosen which faces are castable.
  */
-export function searchFinds(card: LandText): Finds | null {
-  return parseFinds(stripReminders((card.oracleText ?? "").toLowerCase()));
+export function searchFinds(card: LandText): Finds[] {
+  return allFinds(stripReminders((card.oracleText ?? "").toLowerCase()));
 }
 
-function parseFinds(text: string): Finds | null {
-  // Every search in the text, not the first: a card can tutor a creature and fetch a Forest. A search for
-  // something that names no land is skipped, and the land types of the rest are unioned.
-  const types = new Set<BasicType>();
-  let basicOnly = true;
-  let any = false;
+/** Every search in the text that names a land, each with its own scope: a card can tutor a creature, fetch
+ *  any basic, and fetch a Forest. A search that names no land is skipped. */
+function allFinds(text: string): Finds[] {
+  const out: Finds[] = [];
   for (const m of text.matchAll(new RegExp(FETCH.source, "g"))) {
     const words = m[1];
     const named = BASIC_TYPES.filter((t) => new RegExp(`\\b${t}\\b`).test(words));
     if (named.length === 0 && !/\bland\b/.test(words)) continue;
-    any = true;
-    if (!/\bbasic\b/.test(words)) basicOnly = false;
-    for (const t of named.length > 0 ? named : BASIC_TYPES) types.add(t);
+    out.push({ types: new Set<BasicType>(named.length > 0 ? named : BASIC_TYPES), basicOnly: /\bbasic\b/.test(words) });
   }
-  return any ? { types, basicOnly } : null;
+  return out;
+}
+
+/** The searches merged into one reading, for a land: the union of their types, basics-only when all are. */
+function parseFinds(text: string): Finds | null {
+  const all = allFinds(text);
+  if (all.length === 0) return null;
+  return { types: new Set(all.flatMap((f) => [...f.types])), basicOnly: all.every((f) => f.basicOnly) };
 }
 
 /**

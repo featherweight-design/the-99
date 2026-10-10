@@ -163,12 +163,13 @@ export function sourceProduces(
   const any = kinds.length === 0;
   if (any || kinds.includes("tapsForMana")) readFace(cast, deck, out, false);
   if (any || kinds.includes("fetchesLand")) {
-    const finds = searchFinds(cast);
-    if (finds) {
-      // `a basic land` reaches the basics this deck plays, when the caller knows them; an unrestricted `land`
-      // search reaches the deck's colors. A named type is its own color either way.
-      const basics = basicColors && finds.basicOnly ? COLORED.filter((c) => basicColors.some((b) => b.toUpperCase() === c)) : deck;
-      findsColors(finds, basics, out);
+    for (const finds of searchFinds(cast)) {
+      // `a basic land` reaches the basics this deck plays, Wastes included, when the caller knows them; an
+      // unrestricted `land` search reaches the deck's colors. A named type is its own color either way.
+      if (basicColors && finds.basicOnly && finds.types.size === BASIC_TYPES.length) {
+        COLORED.filter((c) => basicColors.some((b) => b.toUpperCase() === c)).forEach((c) => out.add(c));
+        if (basicColors.includes("C")) out.add("C");
+      } else findsColors(finds, deck, out);
     }
   }
   return MANA_COLORS.filter((c) => out.has(c));

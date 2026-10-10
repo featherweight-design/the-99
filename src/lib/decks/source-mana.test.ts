@@ -43,6 +43,12 @@ describe("loadSourceMana", () => {
     expect(out).toEqual({ cultivate: ["B", "G"] });
   });
 
+  it("counts Wastes among the basics a search can reach", async () => {
+    where.mockResolvedValue([text("cultivate", "Search your library for up to two basic land cards.", "Sorcery")]);
+    const out = await loadSourceMana([card("cultivate", null, "Sorcery"), card("wastes", null, "Basic Land")], ["G"], labelsOf([["cultivate", ramp("fetchesLand")]]));
+    expect(out).toEqual({ cultivate: ["C"] });
+  });
+
   it("falls back to the classifier's ramp role for a card with no fresh label, and not for a labeled non-ramp one", async () => {
     where.mockResolvedValue([text("unlabeled", "{T}: Add {G}.", "Creature")]);
     const labels = labelsOf([["labeled", [{ space: "role", kind: "removal" }]]]);

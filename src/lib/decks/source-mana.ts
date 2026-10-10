@@ -24,8 +24,11 @@ function sourceKinds(jobs: readonly Job[] | undefined, role: string | null): Ram
 }
 
 const BASIC_WORD: Record<string, ManaColor> = { plains: "W", island: "U", swamp: "B", mountain: "R", forest: "G" };
-const basicWords = (typeLine: string): ManaColor[] =>
-  typeLine.toLowerCase().split(/[^a-z]+/).flatMap((w) => (BASIC_WORD[w] ? [BASIC_WORD[w]] : []));
+/** A basic's colors by its types; a basic with none (Wastes) makes colorless. */
+const basicWords = (typeLine: string): ManaColor[] => {
+  const found = typeLine.toLowerCase().split(/[^a-z]+/).flatMap((w) => (BASIC_WORD[w] ? [BASIC_WORD[w]] : []));
+  return found.length > 0 ? found : ["C"];
+};
 
 /** Null when the text read failed: the card then stays a shell rather than state that no rock exists. A
  *  failed LABEL read (`allLabels` null) is not a failure here, because the classifier is the fallback. */
