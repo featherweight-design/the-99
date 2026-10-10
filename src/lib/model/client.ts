@@ -208,12 +208,16 @@ async function tryOnce<T>(
       parsed = format.parse(text) as T;
     } catch (err) {
       // The zod output format throws when the reply is not JSON or fails the schema.
-      log(`[model] malformed: ${err instanceof Error ? err.message : String(err)}`);
+      // The stop reason and the output count tell a reply cut off at max_tokens (an unterminated
+      // string, output at the ceiling) from one the model finished and got wrong. Two overview
+      // runs failed seven times with this line saying neither, and the cause had to be inferred
+      // from what each failed call cost.
+      log(`[model] malformed: ${err instanceof Error ? err.message : String(err)} (stop_reason ${response.stop_reason}, ${usage.outputTokens}/${req.maxTokens} output tokens)`);
       return { kind: "retryable", errorClass: "malformed", usage };
     }
   }
   if (parsed == null) {
-    log(`[model] malformed: no parsed output (stop_reason ${response.stop_reason})`);
+    log(`[model] malformed: no parsed output (stop_reason ${response.stop_reason}, ${usage.outputTokens}/${req.maxTokens} output tokens)`);
     return { kind: "retryable", errorClass: "malformed", usage };
   }
   return { kind: "ok", value: parsed, usage };

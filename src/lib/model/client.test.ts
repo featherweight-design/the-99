@@ -106,6 +106,9 @@ describe("callModel", () => {
     await callModel(req, { messages, log: (l) => lines.push(l) });
     expect(lines).toHaveLength(2);
     expect(lines[0]).toMatch(/^\[model\] malformed:/);
+    // A cut-off reply says so: the stop reason and the output count against the ceiling.
+    expect(lines[0]).toMatch(/\(stop_reason end_turn, \d+\/100 output tokens\)$/);
+    expect(lines[1]).toMatch(/\(stop_reason max_tokens, \d+\/100 output tokens\)$/);
   });
 
   it("retries once on a reply that fails the schema, then reports malformed", async () => {
