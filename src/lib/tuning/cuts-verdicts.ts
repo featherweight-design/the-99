@@ -42,13 +42,20 @@ async function lockDeck(tx: Tx, deckId: string): Promise<void> {
  * still carried the former. Read in a separate step after the commit, the new figure raced the
  * pooled connections' snapshots and the result retired itself after its own cut.
  */
-async function deckFingerprint(tx: Tx, deckId: string, userId: string): Promise<string | null> {
+async function deckFingerprint(tx: Tx, deckId: string, userId: string, keyCards?: readonly string[]): Promise<string | null> {
   const head = await readProfileHead(tx, deckId, userId);
   if (!head) return null;
   const locked = neverCutEnabled() ? [...(await liveLockedIds(tx, deckId))] : [];
   const [d] = await tx.select({ intent: decks.intent }).from(decks).where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
-  return cutsFingerprint(head, locked, d?.intent?.trim() ? d.intent : null, await readKeyCardNames(head));
+  return cutsFingerprint(head, locked, d?.intent?.trim() ? d.intent : null, keyCards ?? (await readKeyCardNames(head)));
 }
+
+/** The Key cards, read ONCE per verdict: both fingerprints of one transaction must be made from the
+ *  same set, or an overview retry landing between them would be adopted into the run silently. */
+const keyCardsOf = async (tx: Tx, deckId: string, userId: string): Promise<string[]> => {
+  const head = await readProfileHead(tx, deckId, userId);
+  return head ? readKeyCardNames(head) : [];
+};
 
 async function chainRun(tx: Tx, runId: string, from: string | null, to: string | null): Promise<void> {
   if (from === null || to === null || from === to) return;
@@ -90,7 +97,8 @@ export async function cutItem(itemId: string, userId: string): Promise<CutOutcom
     const item = await lockedCut(tx, itemId, userId);
     if (!item || item.verdict !== "pending") return { ok: false, reason: "gone" };
     const { deckId, oracleId } = item;
-    const before = await deckFingerprint(tx, deckId, userId);
+    const keys = await keyCardsOf(tx, deckId, userId);
+    const before = await deckFingerprint(tx, deckId, userId, keys);
 
     const [deck] = await tx.select({ commander: decks.commanderOracleId, partner: decks.partnerOracleId })
       .from(decks).where(eq(decks.id, deckId));
@@ -121,7 +129,7 @@ export async function cutItem(itemId: string, userId: string): Promise<CutOutcom
       await pruneOrphanLocks(tx, deckId);
     }
     await touchDeck(tx, deckId);
-    await chainRun(tx, item.runId, before, await deckFingerprint(tx, deckId, userId));
+    await chainRun(tx, item.runId, before, await deckFingerprint(tx, deckId, userId, keys));
     return { ok: true, deckId, runId: item.runId };
   });
 }
@@ -133,7 +141,8 @@ export async function undoCutItem(itemId: string, userId: string): Promise<CutOu
     const snap = item?.undoSnapshot?.cut;
     if (!item || item.verdict !== "accepted" || !snap) return { ok: false, reason: "gone" };
     const { deckId, oracleId } = item;
-    const before = await deckFingerprint(tx, deckId, userId);
+    const keys = await keyCardsOf(tx, deckId, userId);
+    const before = await deckFingerprint(tx, deckId, userId, keys);
     // Only over the deck the cut left: the card's own row is checked below, and the rest of the
     // inputs (the list, the locks, the intent, the bracket) by the run's fingerprint.
     if (item.runStatus !== "ok" || before === null || item.fingerprint !== before) return { ok: false, reason: "moved" };
@@ -158,7 +167,7 @@ export async function undoCutItem(itemId: string, userId: string): Promise<CutOu
       .set({ verdict: "pending", verdictAt: null, undoSnapshot: null })
       .where(and(eq(deckCutItems.id, itemId), eq(deckCutItems.verdict, "accepted")));
     await touchDeck(tx, deckId);
-    await chainRun(tx, item.runId, before, await deckFingerprint(tx, deckId, userId));
+    await chainRun(tx, item.runId, before, await deckFingerprint(tx, deckId, userId, keys));
     return { ok: true, deckId, runId: item.runId };
   });
 }
