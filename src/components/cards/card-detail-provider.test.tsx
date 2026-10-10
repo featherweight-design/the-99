@@ -310,6 +310,57 @@ describe("CardDetailProvider", () => {
       expect(peek().outerHTML).not.toContain("collection-sol.jpg");
     });
 
+    const pickedSol = (deckFlavor: string | null): BrowseCard => ({
+      ...card("o-sol", "Sol Ring"),
+      printings: [
+        { setCode: "CMM", collectorNumber: "676", imageUri: "https://cards.scryfall.io/collection-sol.jpg", quantity: 1, flavorName: null },
+        { setCode: "LTC", collectorNumber: "284", imageUri: "https://cards.scryfall.io/deck-sol.jpg", quantity: 1, flavorName: deckFlavor },
+      ] as unknown as BrowseCard["printings"],
+      preferredPrinting: { setCode: "CMM", collectorNumber: "676" },
+    });
+
+    // The modal titles a deck's renamed pick by the name printed on it, so the plate does too.
+    it("names the plate by the deck's picked printing", async () => {
+      const sol = pickedSol("Ring of Renown");
+      render(
+        <CardDetailProvider
+          fetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)}
+          prefetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)}
+          deckId="d1"
+          deckOracleIds={new Set(["o-signet", "o-sol"])}
+          deckPrintingPicks={{ "o-sol": { setCode: "LTC", collectorNumber: "284" } }}
+        >
+          <CardDetailTrigger oracleId="o-signet" name="Arcane Signet" siblings={["o-signet", "o-sol"]}>
+            Arcane Signet
+          </CardDetailTrigger>
+        </CardDetailProvider>,
+      );
+      await click(screen.getByText("Arcane Signet"));
+      expect(await screen.findAllByRole("button", { name: /Next card: Ring of Renown/ })).not.toHaveLength(0);
+    });
+
+    // The picks are the server's snapshot; a card the deck no longer holds is the Collection's, as
+    // the modal treats it, even while its old pick is still in the map.
+    it("ignores a pick for a card the deck no longer holds", async () => {
+      const sol = pickedSol(null);
+      render(
+        <CardDetailProvider
+          fetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)}
+          prefetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)}
+          deckId="d1"
+          deckOracleIds={new Set(["o-signet"])}
+          deckPrintingPicks={{ "o-sol": { setCode: "LTC", collectorNumber: "284" } }}
+        >
+          <CardDetailTrigger oracleId="o-signet" name="Arcane Signet" siblings={["o-signet", "o-sol"]}>
+            Arcane Signet
+          </CardDetailTrigger>
+        </CardDetailProvider>,
+      );
+      await click(screen.getByText("Arcane Signet"));
+      await waitFor(() => expect(peek().outerHTML).toContain("collection-sol.jpg"));
+      expect(peek().outerHTML).not.toContain("deck-sol.jpg");
+    });
+
     it("fills a plate the opener passed no art for", async () => {
       const sol = owned("o-sol", "Sol Ring", "https://cards.scryfall.io/owned-sol.jpg");
       render(

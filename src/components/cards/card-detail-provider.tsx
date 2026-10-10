@@ -382,6 +382,24 @@ export function CardDetailTrigger({
 
 /** Stable, so the context value's identity does not change every render. */
 const EMPTY_IDS: ReadonlySet<string> = new Set();
+
+type DeckPicks = Readonly<Record<string, PreferredPrinting>> | null;
+
+/**
+ * The deck's pick for one card, or null. On the deck page (`deckId` set) only a card the deck holds
+ * NOW has one: the picks are the server's snapshot, and a card just removed keeps its entry there
+ * until the next read. Off the deck page every pick in the map is the deck's (deck printings, E9).
+ */
+function deckPickFor(
+  picks: DeckPicks,
+  deckId: string | null,
+  held: ReadonlySet<string> | undefined,
+  oracleId: string,
+): PreferredPrinting | null {
+  if (picks === null) return null;
+  if (deckId !== null && !(held ?? EMPTY_IDS).has(oracleId)) return null;
+  return picks[oracleId] ?? null;
+}
 const NOOP = () => {};
 import { STACK_DROP_MS } from "./card-modal";
 export { STACK_DROP_MS };
@@ -634,13 +652,14 @@ export function CardDetailProvider({
   const [readArt, setReadArt] = useState<ReadonlyMap<string, { art: string | null; name: string }>>(() => new Map());
   // The deck's picks, read through a ref so `file` stays stable: a neighbor plate draws what the
   // modal draws, and on a deck that is the deck's printing (deck printings), not the Collection's.
-  const deckPicks = useRef(deckPrintingPicks);
+  const deckPicks = useRef({ picks: deckPrintingPicks, deckId, held: deckOracleIds });
   useLayoutEffect(() => {
-    deckPicks.current = deckPrintingPicks;
-  }, [deckPrintingPicks]);
+    deckPicks.current = { picks: deckPrintingPicks, deckId, held: deckOracleIds };
+  }, [deckPrintingPicks, deckId, deckOracleIds]);
   const file = useCallback((oracleId: string, next: BrowseCard) => {
     cache.current.set(oracleId, next);
-    const shown = withDeckPick(next, deckPicks.current?.[oracleId]);
+    const { picks, deckId: onDeck, held } = deckPicks.current;
+    const shown = withDeckPick(next, deckPickFor(picks, onDeck, held, oracleId));
     const art = resolvedPrinting(shown)?.imageUri ?? null;
     const name = printedNameOf(shown);
     setReadArt((m) => {
@@ -1291,16 +1310,16 @@ export function CardDetailProvider({
   );
   const deckPrintingFor = (oracleId: string): DeckPrintingScope | undefined => {
     if (deckPrintingPicks === null) return undefined;
+    const pick = deckPickFor(deckPrintingPicks, deckId, deckOracleIds, oracleId);
     // The deck page: a card the deck holds picks for it.
     if (deckId !== null) {
       return (deckOracleIds ?? EMPTY_IDS).has(oracleId)
-        ? { pick: deckPrintingPicks[oracleId] ?? null, save: (p) => saveDeckPrinting(oracleId, p) }
+        ? { pick, save: (p) => saveDeckPrinting(oracleId, p) }
         : undefined;
     }
     // A deck surface with no deck write (the review screen, the update diff, E9): a picked card
     // opens on the deck's printing, with no picker; an unpicked one is today's modal, which already
     // shows the Collection's printing the deck falls back to.
-    const pick = deckPrintingPicks[oracleId];
     return pick ? { pick } : undefined;
   };
 
