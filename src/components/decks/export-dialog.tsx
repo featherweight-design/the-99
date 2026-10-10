@@ -9,6 +9,7 @@ import { downloadTextFile } from "../../lib/decks/download";
 import {
   bodyLine,
   buildDecklistText,
+  commanderLines,
   buildShoppingText,
   decklistFilename,
   shoppingFilename,
@@ -34,6 +35,10 @@ interface ExportDialogProps {
   commanderName: string;
   /** The second commander, or null for the single-commander deck most decks are. */
   partnerName: string | null;
+  /** The printing each commander's line names (deck printings): the one the deck shows, absent
+      for a commander the player does not own. */
+  commanderPrinting?: { setCode?: string; collectorNumber?: string } | null;
+  partnerPrinting?: { setCode?: string; collectorNumber?: string } | null;
   /** Body cards (both commanders excluded), each already named by the printing
       the player owns — see `printedNameOf` at the call site. */
   decklistCards: DecklistCard[];
@@ -63,6 +68,8 @@ export function ExportDialog({
   deckName,
   commanderName,
   partnerName,
+  commanderPrinting = null,
+  partnerPrinting = null,
   decklistCards,
   shoppingCards,
   open,
@@ -80,7 +87,9 @@ export function ExportDialog({
 
   if (!open) return null;
 
-  const decklistText = buildDecklistText({ commanderName, partnerName, cards: decklistCards });
+  const decklistText = buildDecklistText({
+    commanderName, partnerName, commanderPrinting, partnerPrinting, cards: decklistCards,
+  });
   const shoppingText = buildShoppingText(shoppingCards);
   const activeText = tab === "decklist" ? decklistText : shoppingText;
 
@@ -88,16 +97,14 @@ export function ExportDialog({
   // beneath, so it composes its own lines rather than splitting the export text
   // — that text now carries section headers, which the preview never showed.
   // Its muted `// name — count` header and separator are presentational only.
-  const commanderLines = [commanderName, ...(partnerName ? [partnerName] : [])].map(
-    (n) => `1 ${n}`,
-  );
+  const commanderPreviewLines = commanderLines({ commanderName, partnerName, commanderPrinting, partnerPrinting });
   // Composed through the same helper the exported text uses, so the preview
   // cannot show a line shape the copied file does not have.
   const bodyLines = decklistCards.map(bodyLine);
   // The body count, which is what `built` means everywhere else — derived here
   // rather than passed in, so it cannot disagree with the preview's own header.
   const built = decklistCards.reduce((sum, c) => sum + c.quantity, 0);
-  const totalCards = commanderLines.length + built;
+  const totalCards = commanderPreviewLines.length + built;
   // A hundred cards including the commanders, so a pair's body is 98 and the
   // overage line measures against that rather than a written-down 99.
   const bodySize = deckBodySize(partnerName !== null);
@@ -145,7 +152,7 @@ export function ExportDialog({
             setTab={setTab}
             activeText={activeText}
             shoppingCards={shoppingCards}
-            commanderLines={commanderLines}
+            commanderLines={commanderPreviewLines}
             bodyLines={bodyLines}
             totalCards={totalCards}
             built={built}
@@ -173,7 +180,7 @@ export function ExportDialog({
             setTab={setTab}
             activeText={activeText}
             shoppingCards={shoppingCards}
-            commanderLines={commanderLines}
+            commanderLines={commanderPreviewLines}
             bodyLines={bodyLines}
             totalCards={totalCards}
             built={built}

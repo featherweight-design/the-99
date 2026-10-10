@@ -175,6 +175,13 @@ export type DeckCommander = {
    */
   printedName?: string | null;
   /**
+   * The printing the art and the name come from, for the export's commander line (deck printings):
+   * the deck's pick, else the Collection's. Null for a commander the player does not own, which
+   * the export names without a printing, as a body line. Optional for the reason `printedName` is.
+   */
+  printedSetCode?: string | null;
+  printedCollectorNumber?: string | null;
+  /**
    * The player owns at least one copy of this commander, by the same test a decklist row's
    * `owned` is. Optional for the reason `proxied` is: fixtures build `DeckCommander` literals
    * that never touch the collection, and ABSENT MEANS OWNED, which is what every surface
@@ -497,6 +504,9 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
       // the mismatch the collection reader forbids, and taking the art without the
       // name would have introduced it here.
       printedName: own?.printedName ?? null,
+      // Read by the export's commander line alone, which is main's (no printing) with the switch off.
+      printedSetCode: deckPrintingsEnabled() ? (own?.setCode ?? null) : null,
+      printedCollectorNumber: deckPrintingsEnabled() ? (own?.collectorNumber ?? null) : null,
     };
   };
   const flags = bracketFlags ?? new Map<string, CardBracketFlags>();

@@ -67,3 +67,34 @@ export function readUpdateArrival(
   if (!Object.values(counts).every(Number.isSafeInteger)) return "countless";
   return counts;
 }
+
+/** Name of the query param, `?printings=12-3`, that an import appends beside `imported` when its
+ *  lines named printings (deck printings): cards that came with the printing the player holds,
+ *  then cards whose lines named only printings they do not. Absent when both are 0. */
+export const PRINTINGS_PARAM = "printings";
+
+export type ArrivalPrintings = { kept: number; notOwned: number };
+
+/** The value an import writes, or null when there is nothing to say. */
+export function arrivalPrintingsParam(kept: number, notOwned: number): string | null {
+  return kept > 0 || notOwned > 0 ? `${kept}-${notOwned}` : null;
+}
+
+/** Reads `?printings=`. Strict, like `readUpdateArrival`, but with no countless state: a value
+ *  this app did not write adds no clause, and the strip reads as it does without one. `enabled`
+ *  is `DECK_PRINTINGS_ENABLED`: off means main's strip, whatever URL a reader kept from while it
+ *  was on. */
+export function readArrivalPrintings(
+  value: string | string[] | undefined,
+  enabled: boolean,
+): ArrivalPrintings | null {
+  if (!enabled || typeof value !== "string") return null;
+  const match = /^(\d+)-(\d+)$/.exec(value);
+  if (!match) return null;
+  const kept = Number(match[1]);
+  const notOwned = Number(match[2]);
+  if (!Number.isSafeInteger(kept) || !Number.isSafeInteger(notOwned) || kept + notOwned === 0) return null;
+  // Only the exact form `arrivalPrintingsParam` writes: `01-2` is digits, and not ours.
+  if (arrivalPrintingsParam(kept, notOwned) !== value) return null;
+  return { kept, notOwned };
+}

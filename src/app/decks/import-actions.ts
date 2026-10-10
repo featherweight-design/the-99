@@ -3,7 +3,7 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "../../db";
-import { cards, collectionItems, deckCards, deckUnresolvedRows, decks } from "../../db/schema";
+import { cards, collectionItems, deckCards, deckPrintings, deckUnresolvedRows, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { isUuid } from "../../lib/uuid";
 import { loadMatchInputs } from "../../lib/collection/import";
@@ -12,6 +12,8 @@ import {
   buildDeckImport, resolveDeckListInput, type DeckImport, type ImportNote,
 } from "../../lib/decks/import";
 import { isBasicLand } from "../../lib/decks/grouping";
+import { deckPrintingsEnabled } from "../../lib/decks/printings-flag";
+import { heldKey, importPicks, type ImportPrintingPick } from "../../lib/decks/import-printings";
 import { canPair, partnerAbility } from "../../lib/decks/partner";
 import { deckSurfaces } from "../../lib/decks/revalidate";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
@@ -66,7 +68,19 @@ export type ImportCommanderCandidate = {
  * leave state 10 with no account of itself — the one place the explanation matters most.
  */
 export type ImportDeckResult =
-  | { ok: true; deckId: string; unresolvedCount: number; notes: ImportNote[] }
+  | {
+      ok: true;
+      deckId: string;
+      unresolvedCount: number;
+      notes: ImportNote[];
+      /**
+       * Deck printings, for the arrival strip: cards whose list line named a printing the player
+       * holds (now the deck's pick), and cards whose lines named only printings they do not. Both
+       * 0 with the switch off.
+       */
+      printingsKept: number;
+      printingsNotOwned: number;
+    }
   /** States 11–12: the source named no commander, so the picker runs before any write. */
   | {
       ok: false;
@@ -114,6 +128,31 @@ async function withOwnership(
     );
   const owned = new Set(ownedRows.map((r) => r.oracleId));
   return candidates.map((c) => ({ ...c, owned: owned.has(c.oracleId) }));
+}
+
+/**
+ * The printings the player holds among the cards an import's lines named, as `heldKey`s. One query
+ * over those cards only. File scope for the reason `withOwnership` is: an export of a "use server"
+ * module is an endpoint, and this takes a userId.
+ */
+async function heldPrintingKeys(userId: string, oracleIds: string[]): Promise<Set<string>> {
+  if (oracleIds.length === 0) return new Set();
+  const rows = await db
+    .selectDistinct({
+      oracleId: collectionItems.oracleId,
+      setCode: collectionItems.setCode,
+      collectorNumber: collectionItems.collectorNumber,
+    })
+    .from(collectionItems)
+    .where(
+      and(
+        eq(collectionItems.userId, userId),
+        inArray(collectionItems.oracleId, oracleIds),
+        sql`${collectionItems.quantity} > 0`,
+      ),
+    );
+  // Lowered here as on every ownership read: older holdings carry an uppercase set code.
+  return new Set(rows.map((r) => heldKey(r.oracleId, r.setCode, r.collectorNumber)));
 }
 
 /**
@@ -257,6 +296,29 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
     (c) => c.oracleId !== commanderOracleId && c.oracleId !== partnerOracleId,
   );
 
+  // Deck printings: a line naming a printing the player holds becomes the deck's pick, in the same
+  // transaction as the deck, so a new deck never shows another printing for a moment. Off, the
+  // import is main's: no read, no picks, no clause.
+  let printingPicks: ImportPrintingPick[] = [];
+  let printingsKept = 0;
+  let printingsNotOwned = 0;
+  if (deckPrintingsEnabled() && result.printings.length > 0) {
+    const members = new Set([
+      ...deckCardValues.map((c) => c.oracleId),
+      commanderOracleId,
+      ...(partnerOracleId !== null ? [partnerOracleId] : []),
+    ]);
+    const held = await heldPrintingKeys(userId, [...new Set(result.printings.map((p) => p.oracleId))]);
+    const chosen = importPicks(result.printings, held, members);
+    printingPicks = chosen.picks;
+    // The strip's clauses count what its headline counts, the body's lines, so a commander's pick
+    // is written but not counted: `All 99 lines … 100 with the printing you own` would contradict
+    // itself.
+    const body = new Set(deckCardValues.map((c) => c.oracleId));
+    printingsKept = chosen.picks.filter((p) => body.has(p.oracleId)).length;
+    printingsNotOwned = chosen.notOwned.filter((id) => body.has(id)).length;
+  }
+
   // One transaction: a deck that exists without its unresolved rows is a deck that
   // silently lost the player's data, and there is no second chance to write them.
   const deckId = await db.transaction(async (tx) => {
@@ -286,11 +348,24 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
       );
     }
 
+    for (let i = 0; i < printingPicks.length; i += INSERT_BATCH) {
+      await tx.insert(deckPrintings).values(
+        printingPicks.slice(i, i + INSERT_BATCH).map((p) => ({ deckId: deck.id, ...p })),
+      );
+    }
+
     return deck.id;
   });
 
   revalidateClaims(deckId, userId);
-  return { ok: true, deckId, unresolvedCount: result.unresolved.length, notes };
+  return {
+    ok: true,
+    deckId,
+    unresolvedCount: result.unresolved.length,
+    notes,
+    printingsKept,
+    printingsNotOwned,
+  };
 }
 
 /**

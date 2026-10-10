@@ -3,6 +3,8 @@ import {
   arrivalDismissKey,
   arrivedFromImport,
   IMPORTED_PARAM,
+  arrivalPrintingsParam,
+  readArrivalPrintings,
   readUpdateArrival,
   UPDATED_PARAM,
 } from "./arrival";
@@ -81,5 +83,28 @@ describe("arrivalDismissKey", () => {
   it("is per deck", () => {
     expect(arrivalDismissKey("a")).not.toBe(arrivalDismissKey("b"));
     expect(arrivalDismissKey("a")).toContain("a");
+  });
+});
+
+describe("arrival printings (deck printings)", () => {
+  it("writes both counts, and nothing when both are 0", () => {
+    expect(arrivalPrintingsParam(12, 3)).toBe("12-3");
+    expect(arrivalPrintingsParam(0, 2)).toBe("0-2");
+    expect(arrivalPrintingsParam(0, 0)).toBeNull();
+  });
+
+  it("reads what it writes", () => {
+    expect(readArrivalPrintings("12-3", true)).toEqual({ kept: 12, notOwned: 3 });
+    expect(readArrivalPrintings(arrivalPrintingsParam(0, 2)!, true)).toEqual({ kept: 0, notOwned: 2 });
+  });
+
+  it("adds no clause with the switch off, whatever the URL says", () => {
+    expect(readArrivalPrintings("12-3", false)).toBeNull();
+  });
+
+  it("adds no clause for anything it did not write", () => {
+    for (const v of [undefined, "", "12", "12-3-1", "a-b", "0-0", "01-2", "1-02", ["1-2", "3-4"], "9".repeat(20) + "-1"]) {
+      expect(readArrivalPrintings(v as string | string[] | undefined, true)).toBeNull();
+    }
   });
 });

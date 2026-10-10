@@ -1,5 +1,6 @@
 // /decks/[id] — Builder page.
 // §Builder Spine, §Role Counter Strip, §Guided Banner, §Degraded Suggestions Banner.
+import { deckPrintingsEnabled } from "../../../lib/decks/printings-flag";
 import { perfRoute } from "../../../lib/perf/timing";
 import { notFound } from "next/navigation";
 import { preload } from "react-dom";
@@ -20,6 +21,8 @@ import { readStoredPermits } from "../../../lib/profile/stored";
 import {
   arrivedFromImport,
   IMPORTED_PARAM,
+  PRINTINGS_PARAM,
+  readArrivalPrintings,
   readUpdateArrival,
   UPDATED_PARAM,
 } from "../../../lib/decks/arrival";
@@ -534,6 +537,8 @@ export default async function DeckBuilderPage({
       // and a bookmarked URL can only be reopened by the deck's owner, who sees
       // one dismissible line.
       arrivedFromImport={arrivedFromImport(query[IMPORTED_PARAM])}
+      // Deck printings: the strip's printing clauses, from the same one navigation.
+      arrivalPrintings={readArrivalPrintings(query[PRINTINGS_PARAM], deckPrintingsEnabled())}
       // Left in the URL for the same reason. Its strip is dismissible too, but
       // the dismissal is component state rather than storage: an update happens
       // many times, and persisting it would silence every one after the first.

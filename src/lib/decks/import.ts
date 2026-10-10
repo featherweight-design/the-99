@@ -91,6 +91,14 @@ export type DeckImport = {
    */
   lineCount: number;
   notes: ImportNote[];
+  /**
+   * Deck printings: every matched line that names a printing (a set code AND a collector number,
+   * the shape an export writes), in line order, commander lines included. Which of these becomes
+   * the deck's pick is a fact about the player's holdings, so the server action decides: the first
+   * line naming a printing they hold wins, as the first line wins a quantity. Set codes are
+   * lowercase, as stored.
+   */
+  printings: { oracleId: string; setCode: string; collectorNumber: string; sourceLine: number }[];
 };
 
 export type DeckImportInput = { catalog: ImportCatalogCard[]; indexes?: MatchIndexes } & (
@@ -168,12 +176,16 @@ const SECTION_MARKERS: { re: RegExp; section: "sideboard" | "maybeboard" | null 
 ];
 
 /**
- * Trailing printing identity and Moxfield's annotation flags, e.g.
- * `1 Sol Ring (LTC) 284 *F*` or `1 Atraxa, Praetors' Voice (2X2) 145 *CMDR*`.
- * Stripped right-to-left so a name containing neither is untouched.
+ * Moxfield's annotation flags, e.g. `1 Sol Ring (LTC) 284 *F*` or
+ * `1 Atraxa, Praetors' Voice (2X2) 145 *CMDR*`. Stripped right-to-left so a name
+ * carrying none is untouched.
+ *
+ * The printing identity before them, `(LTC) 284`, is KEPT on the line (deck printings): the
+ * paste parser reads it into the row's set and collector number exactly as a collection paste
+ * does (`splitPrinting` in `manabox/paste.ts`), and a printing the player holds becomes the
+ * deck's pick. Matching never reads it, so keeping it changes no card a line resolves to.
  */
 const ANNOTATION_RE = /\s+\*([A-Za-z]+)\*$/;
-const SET_CODE_RE = /\s+\([A-Za-z0-9]{2,6}\)(\s+[A-Za-z0-9★†★-]+)?$/;
 
 /**
  * The same declaration in round brackets, after the printing identity:
@@ -182,7 +194,7 @@ const SET_CODE_RE = /\s+\([A-Za-z0-9]{2,6}\)(\s+[A-Za-z0-9★†★-]+)?$/;
  * brings here.
  *
  * Missing it costs more than a missed flag. The tag sits past the set code, so
- * SET_CODE_RE's end anchor fails too and the whole tail stays glued to the
+ * the printing's end anchor fails too and the whole tail stays glued to the
  * name — the deck's own commander arrives as a line we cannot name, which is
  * exactly what an update diff should never say about it.
  *
@@ -193,12 +205,13 @@ const SET_CODE_RE = /\s+\([A-Za-z0-9]{2,6}\)(\s+[A-Za-z0-9★†★-]+)?$/;
  * commander it is.
  *
  * Narrow on purpose: these words in full, and only in a trailing bracket. Any
- * parenthetical is a card name's business, and a two-to-six-character one is
- * already a set code — which is exactly why `(CMDR)` is not read here. The
- * abbreviation fits the set-code shape, so claiming it would take a printing
- * identity away from SET_CODE_RE. `partner` is seven characters and cannot be
- * mistaken for one. The asterisk spelling of the abbreviation is unambiguous
- * and is still read, by ANNOTATION_RE.
+ * parenthetical is a card name's business, and a two-to-eight-character one is
+ * already a set code to the paste parser — which is exactly why `(CMDR)` is not
+ * read here: claiming it would take a printing identity away from that parser.
+ * `(Partner)` fits the set-code shape too, and is safe only because of ORDER:
+ * this tag is stripped from the line before the paste parser reads a printing
+ * off it. The asterisk spelling of the abbreviation is unambiguous and is still
+ * read, by ANNOTATION_RE.
  */
 const COMMANDER_TAG_RE = /\s+\((?:commander|partner)\)$/i;
 
@@ -217,7 +230,7 @@ function normalizeHeader(trimmed: string): string {
 }
 
 type PreparedLine = {
-  /** The line with markers, set codes and annotations removed; "" if excluded. */
+  /** The line with markers and annotations removed, its printing kept; "" if excluded. */
   text: string;
   isCommander: boolean;
 };
@@ -276,7 +289,6 @@ function prepareLines(text: string): { lines: PreparedLine[]; notes: ImportNote[
       }
       break;
     }
-    body = body.replace(SET_CODE_RE, "");
     lines.push({ text: body, isCommander });
   }
 
@@ -433,6 +445,15 @@ export function buildDeckImport(input: DeckImportInput): DeckImport {
     // them would tell the player about lines they will never see anywhere.
     lineCount: matched.length + unmatched.length,
     notes,
+    printings: matched
+      .filter(({ row }) => row.setCode !== "" && row.collectorNumber !== "")
+      .map(({ row, oracleId }) => ({
+        oracleId,
+        setCode: row.setCode.toLowerCase(),
+        collectorNumber: row.collectorNumber,
+        sourceLine: row.line,
+      }))
+      .sort((a, b) => a.sourceLine - b.sourceLine),
   };
 }
 

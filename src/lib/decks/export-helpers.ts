@@ -26,6 +26,38 @@ export function bodyLine(c: DecklistCard): string {
 }
 
 /**
+ * The name a commander's export line prints: the printing's face when the line names a printing,
+ * as `printedNameOf` names a body line. The oracle name beside a renamed printing's set and number
+ * would describe a face that reads something else (`1 World at War (SLD) 2208`).
+ */
+export function commanderExportName(c: {
+  name: string;
+  printedName?: string | null;
+  printedSetCode?: string | null;
+  printedCollectorNumber?: string | null;
+}): string {
+  // The same condition `bodyLine` names a printing on: both halves, or none.
+  return c.printedSetCode && c.printedCollectorNumber ? (c.printedName ?? c.name) : c.name;
+}
+
+/** The commander lines, `1 Name (SET) CN` where the deck names a printing for one (deck
+ *  printings, E4), through `bodyLine` so a commander line and a body line cannot differ in shape.
+ *  The preview and the copied text both read this. */
+export function commanderLines(args: {
+  commanderName: string;
+  partnerName: string | null;
+  commanderPrinting?: { setCode?: string; collectorNumber?: string } | null;
+  partnerPrinting?: { setCode?: string; collectorNumber?: string } | null;
+}): string[] {
+  return [
+    bodyLine({ name: args.commanderName, quantity: 1, ...(args.commanderPrinting ?? {}) }),
+    ...(args.partnerName
+      ? [bodyLine({ name: args.partnerName, quantity: 1, ...(args.partnerPrinting ?? {}) })]
+      : []),
+  ];
+}
+
+/**
  * Assemble the decklist text copied / downloaded — spec format (#8): a
  * `Commander` section holding one or both commanders, then a `Deck` section of
  * `N Card Name (SET) CN` lines, Moxfield/Archidekt-ready. The dialog's preview
@@ -40,6 +72,9 @@ export function buildDecklistText(args: {
   commanderName: string;
   /** The second commander, or null for the single-commander deck most decks are. */
   partnerName: string | null;
+  /** The printing each commander's line names, as a body card's does; absent names none. */
+  commanderPrinting?: { setCode?: string; collectorNumber?: string } | null;
+  partnerPrinting?: { setCode?: string; collectorNumber?: string } | null;
   /**
    * Body cards — both commanders excluded. `name` is the name printed on the
    * copy the player owns, and `setCode` / `collectorNumber` name that same
@@ -49,14 +84,12 @@ export function buildDecklistText(args: {
    */
   cards: DecklistCard[];
 }): string {
-  const { commanderName, partnerName, cards } = args;
-  const commanders = [commanderName, ...(partnerName ? [partnerName] : [])];
   return [
     "Commander",
-    ...commanders.map((n) => `1 ${n}`),
+    ...commanderLines(args),
     "",
     "Deck",
-    ...cards.map(bodyLine),
+    ...args.cards.map(bodyLine),
   ].join("\n");
 }
 

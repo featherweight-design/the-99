@@ -8,6 +8,7 @@ import type { DeckStatsInput } from "../../lib/decks/stats";
 import { printedFaceName } from "../../lib/collection/browse";
 import { useState, useMemo, useCallback, useEffect, useRef, useTransition } from "react";
 import { printedNameOf } from "../../lib/collection/browse";
+import { commanderExportName } from "../../lib/decks/export-helpers";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import type { DeckDetail } from "../../lib/decks/read";
 import { countStatus, statusPill } from "../../lib/decks/status";
@@ -31,7 +32,7 @@ import { useDeclaration } from "./use-declaration";
 import { RoleCounterStrip } from "./role-counter-strip";
 import { ArrivalStrip } from "./arrival-strip";
 import { UpdateStrip } from "./update-strip";
-import type { UpdateArrivalState } from "../../lib/decks/arrival";
+import type { ArrivalPrintings, UpdateArrivalState } from "../../lib/decks/arrival";
 import { UnresolvedBanner } from "./unresolved-banner";
 import { GuidedBanner } from "./guided-banner";
 import { CardFan } from "../marks";
@@ -141,6 +142,8 @@ interface BuilderShellProps {
   commanderIdentity: string[];
   /** True only on the navigation the import itself made — see src/lib/decks/arrival.ts. */
   arrivedFromImport: boolean;
+  /** The import's printing counts for the strip's clauses (deck printings), or null. */
+  arrivalPrintings?: ArrivalPrintings | null;
   /** Counts from the navigation an applied update made, or null on every other
    *  arrival. Like `arrivedFromImport`, true of one trip rather than of the deck. */
   updateArrival?: UpdateArrivalState | null;
@@ -262,6 +265,7 @@ export function BuilderShell({
   firstRun,
   commanderIdentity,
   arrivedFromImport,
+  arrivalPrintings = null,
   updateArrival = null,
   shoppingFigures = {},
   newestAsOf,
@@ -1483,7 +1487,7 @@ export function BuilderShell({
                  And the SERVER list, not the optimistic one: the sentence is a
                  claim about what the import brought over, which an add the
                  player makes while the strip is still up must not revise. */
-              <ArrivalStrip deckId={deck.id} importedLineCount={deck.cards.length} />
+              <ArrivalStrip deckId={deck.id} importedLineCount={deck.cards.length} printings={arrivalPrintings} />
             )}
 
             {/* An update's own strip. Not gated on the unresolved banner the way
@@ -1968,8 +1972,20 @@ export function BuilderShell({
           {exportOpen && (
             <ExportDialog
               deckName={deck.name}
-              commanderName={deck.commander.name}
-              partnerName={deck.partner?.name ?? null}
+              // A commander line naming its printing names that printing's face, as a body line does
+              // (`printedNameOf`): the oracle name over a renamed printing's set and number would
+              // describe a card face that reads something else.
+              commanderName={commanderExportName(deck.commander)}
+              partnerName={deck.partner ? commanderExportName(deck.partner) : null}
+              // The printing the deck shows for each commander, as a body line names its own.
+              commanderPrinting={{
+                setCode: deck.commander.printedSetCode ?? undefined,
+                collectorNumber: deck.commander.printedCollectorNumber ?? undefined,
+              }}
+              partnerPrinting={deck.partner ? {
+                setCode: deck.partner.printedSetCode ?? undefined,
+                collectorNumber: deck.partner.printedCollectorNumber ?? undefined,
+              } : null}
               decklistCards={cards.map((c) => ({
                 // The whole printed string, not the front face: an export is
                 // read by another deckbuilder, which wants the full name and
