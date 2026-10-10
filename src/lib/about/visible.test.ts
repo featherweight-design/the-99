@@ -5,7 +5,7 @@ import { readSheetState } from "./sheet-state";
 import { isSeen, resolveEntry, switchedIds, unseenEntries, visibleEntries, type SeenState } from "./visible";
 
 // TUNING_ENABLED also requires ANALYSIS_TAB_ENABLED (`tuningEnabled()`), already "true" here.
-const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const OFF = {} as unknown as NodeJS.ProcessEnv;
 
 /** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
@@ -41,6 +41,7 @@ describe("with every switch off, nothing changes (the invariance Hugh's ruling r
       ["stand-ins", "SWAP_TOOLS_ENABLED"],
       ["change-commander", "CHANGE_COMMANDER_ENABLED"],
       ["suggested-changes", "TUNING_ENABLED"],
+      ["deck-stats", "DECK_STATS_ENABLED"],
     ]);
     expect(Math.max(...unswitched.map((e) => e.since))).toBe(ABOUT_VERSION);
   });
@@ -86,12 +87,13 @@ describe("an entry tied to a switch", () => {
     // the one exception, since: 10 — `isSeen` ignores `since` entirely for a switch-tied entry,
     // so neither stamp can make one of them unseen again.
     const launch = aboutEntries.filter((e) => e.switch);
-    const [suggestedChanges, originalLaunch] = [
-      launch.filter((e) => e.id === "suggested-changes"),
-      launch.filter((e) => e.id !== "suggested-changes"),
-    ];
+    // `deck-stats` (2026-10-10) is the other: since: 11, the current version, with no bump of its own.
+    const later = ["suggested-changes", "deck-stats"];
+    const [suggestedChanges, deckStats] = ["suggested-changes", "deck-stats"].map((id) => launch.filter((e) => e.id === id));
+    const originalLaunch = launch.filter((e) => !later.includes(e.id));
     expect(originalLaunch.map((e) => e.since)).toEqual(originalLaunch.map(() => 9));
     expect(suggestedChanges.map((e) => e.since)).toEqual([10]);
+    expect(deckStats.map((e) => e.since)).toEqual([11]);
     expect(unseenEntries(visibleEntries(ON), seen(ABOUT_VERSION)).map((e) => e.id)).toEqual([
       "help-me-choose",
       "deck-analysis",
@@ -101,6 +103,7 @@ describe("an entry tied to a switch", () => {
       "stand-ins",
       "change-commander",
       "suggested-changes",
+      "deck-stats",
     ]);
   });
 

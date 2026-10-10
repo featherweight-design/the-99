@@ -60,7 +60,7 @@ import { DECK_VERSIONS,
 // Every feature switch ON for this file, so every entry is drawn, figures included. The page with
 // the switches off is `about-page-r6.test.tsx`'s, and a switched entry's own rules are
 // `about-page-switch.test.tsx`'s.
-const SWITCHES = ["NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "HELP_ME_CHOOSE_ENABLED", "SWAP_TOOLS_ENABLED", "ANALYSIS_TAB_ENABLED", "TUNING_ENABLED"] as const;
+const SWITCHES = ["NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "HELP_ME_CHOOSE_ENABLED", "SWAP_TOOLS_ENABLED", "ANALYSIS_TAB_ENABLED", "TUNING_ENABLED", "DECK_STATS_ENABLED"] as const;
 beforeAll(() => {
   for (const k of SWITCHES) process.env[k] = "true";
 });
@@ -323,6 +323,17 @@ describe("the figures", () => {
       el.className.toString().includes("rounded"),
     );
     expect(tags.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("draws the Stats curve card itself, from the fixture's counts, with Creature lit", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const plate = figures(container)["deck-stats"];
+    const columns = [...plate.querySelectorAll("[data-curve-column]")];
+    expect(columns).toHaveLength(8);
+    // Bucket sizes are the card's own figure, not a retyped list.
+    expect(columns.map((c) => c.querySelector("span")?.textContent)).toEqual(["1", "9", "14", "13", "11", "8", "4", "4"]);
+    expect(plate.querySelector('[data-type-chip="creature"]')).toHaveAttribute("aria-pressed", "true");
+    expect(plate.querySelector('[data-type-chip="land"]')?.textContent).toContain("36");
   });
 
   it("mounts a real bar in each fit shape", () => {

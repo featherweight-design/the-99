@@ -404,6 +404,11 @@ async function startServer(on) {
   for (const k of SWITCHES) env[k] = on.includes(k) ? "true" : "false";
   // Not an entry's switch, so not in SWITCHES: it keys no cookie and names no entry (F7).
   env.HOW_IT_WORKS_ENABLED = on.includes("HOW_IT_WORKS_ENABLED") ? "true" : "false";
+  // Two entry switches the walk does not step through yet (`suggested-changes`, `deck-stats`). Pinned off
+  // so an inherited "true" cannot draw their entries in a stage that claims every switch is off; walking
+  // their off-to-on announcement is a follow-up.
+  env.TUNING_ENABLED = "false";
+  env.DECK_STATS_ENABLED = "false";
   const child = spawn("node_modules/.bin/next", ["dev", "-p", String(FLIP_PORT)], {
     env,
     detached: true,
