@@ -4,7 +4,8 @@
 // It lists the lands whose oracle text mentions adding mana, or searching for a land, but which are
 // credited only colorless or nothing: the shape of a pattern the reader does not know. A deck's
 // colors are all five, so an any-color land is credited every color and falls out of the list.
-// `MEASURE_LAND_LIMIT` caps the printed rows per bucket (default 200).
+// The population is `manaSupply`'s own: a card whose FRONT face is a land (a transform card with a land
+// back, or a modal DFC with one, is a spell row there). `MEASURE_LAND_LIMIT` caps the printed rows per bucket (default 200).
 import { requireEnv } from "./lib/env.mjs";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
@@ -25,7 +26,7 @@ void (async () => {
     const { rows } = await pool.query<{ name: string; type_line: string; oracle_text: string | null }>(
       `select name, type_line, oracle_text from cards where type_line ~* 'land' and commander_legal`,
     );
-    const lands = rows.filter((r) => r.type_line.split(" // ").some(isLandFace));
+    const lands = rows.filter((r) => isLandFace(r.type_line));
     const buckets = { unattributed: [] as string[], colorlessOnly: [] as string[] };
     let flagged = 0;
     for (const r of lands) {
