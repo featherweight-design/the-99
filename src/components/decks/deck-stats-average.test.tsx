@@ -51,6 +51,7 @@ describe("DeckStatsView average card", () => {
     expect(lands.querySelector("[data-cut]")).toBeNull();
     // A gap past the scale is cut (the words read 1 lower, the raw gap is 1.009); one inside it is not.
     expect(container.querySelector('[data-average-row="instant"] [data-cut]')).toBeNull();
+    expect(container.querySelector('[data-average-row="manaValue"] [data-cut="fewer"]')).not.toBeNull();
     const creatures = container.querySelector('[data-average-row="creature"]')!;
     expect(creatures.querySelector('[data-cut="fewer"]')).not.toBeNull();
     expect(container.querySelector('[data-average-row="battle"] [data-cut]')).toBeNull();

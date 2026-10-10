@@ -100,8 +100,10 @@ export function averageComparison(
   const avgCurve = average.curve;
   const mini = avgCurve
     ? have.curve.buckets.map((b, i) => {
-        const diff = b.copies - avgCurve[i];
-        return { label: i, diff, px: Math.min((Math.abs(diff) / 2) * MINI_PX_PER_TWO, MINI_MAX_PX) };
+        const raw = b.copies - avgCurve[i];
+        // The label reads the one-decimal gap, like the rows; a 0.04 gap is the same as the average, not 0.0 more.
+        const diff = round1(raw);
+        return { label: i, diff, px: diff === 0 ? 0 : Math.min((Math.abs(raw) / 2) * MINI_PX_PER_TWO, MINI_MAX_PX) };
       })
     : null;
   const anyCut = groups.some((g) => g.rows.some((r) => r.cut));

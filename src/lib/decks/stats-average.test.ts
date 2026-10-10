@@ -142,6 +142,9 @@ describe("averageComparison", () => {
     expect(c.mini![0].diff).toBe(-1);
     expect(c.mini![0].px).toBe(10);
     expect(c.mini).toHaveLength(8);
+    // A fractional average a hair from a whole count is the same as it, with no sliver drawn.
+    const near = averageComparison(avg({ curve: [1, 9, 11.96, 13, 11, 8, 4, 4] }), have([spell(2, "Creature", 12)]));
+    expect(near.mini![2]).toEqual({ label: 2, diff: 0, px: 0 });
   });
 
   it("says the deck is short only when it is under 99 and a bar is cut off", () => {

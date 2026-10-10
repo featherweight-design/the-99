@@ -1,6 +1,6 @@
 {
-  "feature": "Deck stats, PRs 1-4b: the switch, the placement shell, the curve card, the Jobs card, the Mana colors card and the Against the average card",
-  "note": "Needs DECK_STATS_ENABLED=true on the server and STATS_DECK (a deck with at least one creature and one other non-land card, so pressing Creature shows both lit and dimmed squares). The list toolbar shows the Stats segment beside All and Shopping; the stats row presses it and shows the six Stats cards with the list tools hidden. The curve, Jobs and Colors cards draw data (Jobs needs the deck's cards labeled and a Ramp row above zero; Colors needs the deck's lands readable); the other three figures stay empty shells until their PRs.",
+  "feature": "Deck stats, PRs 1-5: the switch, the placement shell, the curve card, the Jobs card, the Mana colors card and the Against the average card",
+  "note": "Needs DECK_STATS_ENABLED=true on the server and STATS_DECK (a deck with at least one creature and one other non-land card, so pressing Creature shows both lit and dimmed squares). The list toolbar shows the Stats segment beside All and Shopping; the stats row presses it and shows the six Stats cards with the list tools hidden. The curve, Jobs, Colors and Against the average cards draw data (Jobs needs the deck's cards labeled and a Ramp row above zero; Colors needs the deck's lands readable); the other two figures stay empty shells until their PRs.",
   "clearAbout": true,
   "rows": [
     {
