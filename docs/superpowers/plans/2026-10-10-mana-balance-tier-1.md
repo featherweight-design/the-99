@@ -52,13 +52,24 @@ and a deck with no sources returns `noSources`. Neither refuses (Ruling 6).
    share each is held against.
 2. **Trade for ramp.** Replace basics with a rock that makes the short color. The candidate comes
    from the missing-staple read below, so it is a card the commander's decks run, not a name picked
-   by the engine. Fact: the sources the trade adds per color, and the basics it removes.
-3. **Missing staple.** A ramp card `commander_support_cards` lists for this commander (or
-   `format_staples` for its bucket when the commander has too few decks) that the deck does not
-   hold, and whose colors (`sourceProduces`) include a short color. Owned copies are offered
-   first (the collection's available copies, by the same availability rule the Add panel uses),
-   then a not-owned one with its buy path. Fact: the card's inclusion rate under this commander,
-   and the sources it adds.
+   by the engine. Which basics go: only basics of an over-served color, or basics of a balanced
+   color that produce NONE of the short colors, so removing one never lowers a short color's
+   supply. How many: 1 to the rock's count of copies the deck takes in (one), and the trade is
+   simulated before it is emitted: the engine removes the basics, adds the rock's colors, re-runs
+   the counted rule over the new supply (the budget and every target move), and emits the trade
+   only when the short color's gap falls and no other color goes from balanced or over-served to
+   short. A trade that fails the simulation is not shown. Fact: the sources the trade adds per
+   color, the basics it removes, and the before and after gap for every color it touches.
+3. **Missing staple.** A ramp card that the deck does not hold, and whose colors (`sourceProduces`)
+   include a short color. The source is `commander_support_cards` for this commander when it has
+   a page, and its fact is that card's inclusion under this commander, with the commander's deck
+   count as the denominator. When the commander has no page, `format_staples` for its identity
+   condition serves instead, and its fact is a different claim and says so: `commanders` of
+   `commander_total` commanders in that condition recommend it, with `avg_inclusion` as the
+   bucket average, never labelled as this commander's rate. The two are never mixed in one list.
+   Owned copies are offered first (the collection's available copies, by the same availability
+   rule the Add panel uses), then a not-owned one with its buy path. Each carries the sources it
+   adds.
 
 Never offered: a card already in the deck, a card outside the commander's color identity, the
 commander, a locked card (`deck_locks`, read through `src/lib/decks/locks.ts` as Suggested changes does, a hard filter and
