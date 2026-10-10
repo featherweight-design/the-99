@@ -1,5 +1,6 @@
 import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { connectStaging } from "./lib/staging.mjs";
+import { acquireRunLock } from "./lib/ledger.mjs";
 
 /**
  * The priced smoke for the v2 Overview facts (plan 2026-10-10-overview-accuracy.md, E1s):
@@ -30,6 +31,8 @@ const spent = () => {
   return lines.reduce((n, l) => n + (l.pending && l.id && settled.has(l.id) ? 0 : l.usd), 0);
 };
 
+// One smoke at a time against this log: two would each read the same spend and pass the cap check.
+acquireRunLock(log);
 const db = await connectStaging();
 const { sql } = await import("drizzle-orm");
 const { loadProfileHead, loadDeckProfileFromHead } = await import("../../src/lib/profile/load");
