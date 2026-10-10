@@ -216,6 +216,9 @@ describe("editCollection", () => {
     const many = Array.from({ length: 600 }, (_, i) => ({ ...seen[0], collectorNumber: String(i) }));
     await expect(editCollection(ACTION, [edited], undefined, many)).resolves.toBeTruthy();
     await expect(editCollection(ACTION, [edited], undefined, [{ ...seen[0], condition: "x".repeat(33) }])).rejects.toThrow();
+    // Removing such a card names a row per holding.
+    const zero = many.map((m) => ({ ...m, quantity: 0, expected: 1 }));
+    await expect(editCollection(ACTION, zero, undefined, many)).resolves.toBeTruthy();
   });
 });
 

@@ -70,8 +70,8 @@ function identityOf(v: unknown): CollectionItemIdentity | null {
   return { oracleId: (oracleId as string).toLowerCase(), setCode: setCode.toLowerCase(), collectorNumber, finish };
 }
 
-function linesOf(value: unknown): unknown[] {
-  if (!Array.isArray(value) || value.length === 0 || value.length > MAX_LINES) throw new Error("bad collection lines");
+function linesOf(value: unknown, max = MAX_LINES): unknown[] {
+  if (!Array.isArray(value) || value.length === 0 || value.length > max) throw new Error("bad collection lines");
   return value;
 }
 
@@ -149,7 +149,8 @@ export async function editCollection(
 ): Promise<EditOutcome> {
   const userId = await signedInEditor();
   if (!isUuid(actionId)) throw new Error("bad action id");
-  const parsed = linesOf(rows).map((r) => {
+  // An edit may name every holding of one card (a removal zeroes each), so its bound is the snapshot's.
+  const parsed = linesOf(rows, MAX_SEEN).map((r) => {
     const identity = identityOf(r);
     const { quantity, expected, condition, clearCondition } = r as {
       quantity?: unknown; expected?: unknown; condition?: unknown; clearCondition?: unknown;
