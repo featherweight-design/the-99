@@ -231,7 +231,7 @@ const REFUSALS = deckCutsCopy.panel.refusals;
  *  the verdict's own transaction (`cuts-verdicts.ts`), so there is nothing to chain here. */
 async function settleVerdict(outcome: CutOutcome, userId: string, membership: boolean): Promise<DeckMutationResult> {
   if (!outcome.ok) {
-    return { ok: false, message: outcome.reason === "cutGone" ? REFUSALS.cutGone : outcome.reason === "cutLocked" ? REFUSALS.cutLocked : outcome.reason === "moved" ? REFUSALS.moved : REFUSALS.generic };
+    return { ok: false, message: outcome.reason === "cutGone" ? REFUSALS.cutGone : outcome.reason === "cutLocked" ? REFUSALS.cutLocked : outcome.reason === "moved" ? REFUSALS.moved : outcome.reason === "stale" ? REFUSALS.stale : REFUSALS.generic };
   }
   // A cut or an undo changes deck membership, so it retires every surface a claim reaches (the
   // collection, commanders, discover, the changes page); Keep and Show it again move no card.

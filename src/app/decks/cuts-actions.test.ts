@@ -340,6 +340,8 @@ describe("the cut verdicts", () => {
     expect(await cutProposed(ITEM)).toEqual({ ok: false, message: deckCutsCopy.panel.refusals.cutLocked });
     calls.verdict = { ok: false, reason: "cutGone" };
     expect(await cutProposed(ITEM)).toEqual({ ok: false, message: deckCutsCopy.panel.refusals.cutGone });
+    calls.verdict = { ok: false, reason: "stale" };
+    expect(await cutProposed(ITEM)).toEqual({ ok: false, message: deckCutsCopy.panel.refusals.stale });
     calls.verdict = { ok: false, reason: "moved" };
     expect(await undoProposedCut(ITEM)).toEqual({ ok: false, message: deckCutsCopy.panel.refusals.moved });
   });

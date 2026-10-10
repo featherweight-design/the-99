@@ -128,6 +128,11 @@ try {
   check("a locked card is refused at Cut", locked.ok ? "ok" : locked.reason, "cutLocked");
   check("and is still in the deck", (await q(`select count(*)::int n from deck_cards where deck_id = $1 and oracle_id = $2`, [deckId, picks[1].oracleId]))[0].n, 1);
 
+  // A result is actionable only for the list it was made against: the deck was edited above, so a
+  // cut from the old result is refused before it writes anything.
+  const staleCut = await cutItem(itemIds[2], USER);
+  check("a cut from a result the deck has moved past is refused as stale", staleCut.ok ? "ok" : staleCut.reason, "stale");
+
   // Keep and Show it again move no card.
   const k = await setCutKept(itemIds[2], USER, true);
   check("keep dismisses", k.ok, true);

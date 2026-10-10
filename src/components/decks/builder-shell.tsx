@@ -1618,6 +1618,7 @@ export function BuilderShell({
                   }
                   cuts={proposedCutsEnabled ? (
                     <CutsPanelView
+                      key={deck.id}
                       deckId={deck.id}
                       deeperLooks={deeperLooks}
                       onSettled={onCutsSettled}

@@ -24,7 +24,7 @@ import { PROPOSED_CUTS_TOOL } from "./limits";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-export type CutRefusal = "cutGone" | "cutLocked" | "moved";
+export type CutRefusal = "cutGone" | "cutLocked" | "moved" | "stale";
 export type CutOutcome = { ok: true; deckId: string; runId: string } | { ok: false; reason: CutRefusal | "gone" };
 
 const rowOf = (deckId: string, oracleId: string) =>
@@ -60,7 +60,7 @@ async function chainRun(tx: Tx, runId: string, from: string | null, to: string |
 /** The item and its run, or null unless the reader owns a Proposed cuts run; deck locked, then item. */
 async function lockedCut(tx: Tx, itemId: string, userId: string) {
   const [owner] = await tx
-    .select({ deckId: deckSuggestionRuns.deckId, runId: deckSuggestionRuns.id })
+    .select({ deckId: deckSuggestionRuns.deckId, runId: deckSuggestionRuns.id, fingerprint: deckSuggestionRuns.inputFingerprint, runStatus: deckSuggestionRuns.status })
     .from(deckCutItems)
     .innerJoin(deckSuggestionRuns, eq(deckSuggestionRuns.id, deckCutItems.runId))
     .where(and(
@@ -91,6 +91,9 @@ export async function cutItem(itemId: string, userId: string): Promise<CutOutcom
       .from(deckCards).where(rowOf(deckId, oracleId)).for("update");
     if (!row) return { ok: false, reason: "cutGone" };
     if (neverCutEnabled() && (await isLiveLocked(tx, deckId, oracleId))) return { ok: false, reason: "cutLocked" };
+    // A result is actionable only for the list it was made against. Another tab may still show one
+    // after the deck moved, and a cut from it would remove a card the model never saw in this list.
+    if (item.runStatus !== "ok" || before === null || item.fingerprint !== before) return { ok: false, reason: "stale" };
     const [proxy] = await tx.select({ oracleId: deckProxies.oracleId }).from(deckProxies)
       .where(and(eq(deckProxies.deckId, deckId), eq(deckProxies.oracleId, oracleId)));
     const snapshot: ApplySnapshot = {

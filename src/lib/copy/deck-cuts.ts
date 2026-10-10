@@ -128,6 +128,7 @@ export const deckCutsCopy = {
       cutGone: "That card is no longer in the deck, so nothing was cut.",
       cutLocked: "That card is locked, so it was not cut.",
       moved: "The deck has changed since that cut, so it could not be put back.",
+      stale: "The deck has changed since these cuts were named, so nothing was cut. Look deeper again for the list as it is now.",
       generic: "We couldn\u2019t do that. Nothing changed.",
     },
     announce: {
