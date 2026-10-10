@@ -30,8 +30,8 @@ bracket, so the declaration is threaded in and a flag that bracket permits is no
   output and retry path (`src/lib/model/client.ts`).
 - **Input:** the facts layer's output for the deck, the commander's EDHREC inclusion per card as a
   counted figure, the deck's overview Key cards (never cut), locks (never cut), the player's
-  intent and notes through `playerText`, and the number to cut (`over`). No ranked list, so nothing
-  anchors the model on the engine's order.
+  intent through `playerText` (no game notes in this version), and the number to cut (`over`). No
+  ranked list, so nothing anchors the model on the engine's order.
 - **Output:** the prompt asks for exactly `over` cuts, each with a one-line reason that cites a fact
   it was given. No adds: Proposed cuts takes cards out. The schema accepts 1 to `over`, and the
   validator keeps whatever survives; a shortfall against `over` is shown as such, never padded.
@@ -40,11 +40,12 @@ bracket, so the declaration is threaded in and a flag that bracket permits is no
   locked card or a Key card, no duplicates, the count is between 1 and `over`, and every cited figure
   equals the one in the input (a role count, an inclusion percent, a curve cell). A cut failing a
   rule is dropped, never repaired by a second call.
+- **Next step if the blind read finds invented claims:** render the reason in the app from the validated cites, instead of accepting the model's prose. The validator checks each cited figure and three text rules, not that the prose follows from the cites.
 - **Citation pattern:** `presentation.ts`' rule keys, so the reason text and the validator share
   one source. No bracket claim in prose, as Suggested changes already forbids.
 - **Credit:** one credit per press through `allowance.ts`; a new `FEATURE_CALLS` entry
   (`proposed_cuts`) with a measured input ceiling, and a `model_calls` row at `origin: 'player'`.
-- **Prompt injection:** intent and notes go through `playerText`, with the system rule line.
+- **Prompt injection:** intent goes through `playerText`, with the system rule line. Game notes are not sent in this version.
 
 ## The eval, and why it can be trusted
 

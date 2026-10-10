@@ -1,0 +1,12 @@
+{"at":"2026-10-10T08:21:51.310Z","runId":"2026-10-10T08-21-51-309Z-cuts-model/a1","source":"pending","usd":0.14568,"requests":1,"pending":"2026-10-10T08-21-51-309Z-cuts-model/a1"}
+{"at":"2026-10-10T08:21:54.698Z","runId":"2026-10-10T08-21-51-309Z-cuts-model/a1","source":"realtime:1","usd":0.011272,"requests":1,"settles":"2026-10-10T08-21-51-309Z-cuts-model/a1"}
+{"at":"2026-10-10T08:22:17.618Z","runId":"2026-10-10T08-22-17-616Z-round1/a1","source":"pending","usd":1.13259,"requests":15,"pending":"2026-10-10T08-22-17-616Z-round1/a1"}
+{"at":"2026-10-10T08:23:59.935Z","runId":"2026-10-10T08-22-17-616Z-round1/a1","source":"batch","usd":0.223836,"requests":15,"settles":"2026-10-10T08-22-17-616Z-round1/a1"}
+{"at":"2026-10-10T08:24:30.324Z","runId":"2026-10-10T08-24-30-322Z-round1-leak/a1","source":"pending","usd":1.1358825,"requests":15,"pending":"2026-10-10T08-24-30-322Z-round1-leak/a1"}
+{"at":"2026-10-10T08:27:33.194Z","runId":"2026-10-10T08-24-30-322Z-round1-leak/a1","source":"batch","usd":0.263493,"requests":15,"settles":"2026-10-10T08-24-30-322Z-round1-leak/a1"}
+{"at":"2026-10-10T08:30:39.861Z","runId":"2026-10-10T08-30-39-860Z-r2-sonnet-text-text/a1","source":"pending","usd":1.4010525,"requests":15,"pending":"2026-10-10T08-30-39-860Z-r2-sonnet-text-text/a1"}
+{"at":"2026-10-10T08:33:02.911Z","runId":"2026-10-10T08-30-39-860Z-r2-sonnet-text-text/a1","source":"batch","usd":0.34395600000000004,"requests":15,"settles":"2026-10-10T08-30-39-860Z-r2-sonnet-text-text/a1"}
+{"at":"2026-10-10T08:33:43.412Z","runId":"2026-10-10T08-33-43-411Z-r2-opus-opus/a1","source":"pending","usd":2.96086875,"requests":15,"pending":"2026-10-10T08-33-43-411Z-r2-opus-opus/a1"}
+{"at":"2026-10-10T08:35:25.415Z","runId":"2026-10-10T08-33-43-411Z-r2-opus-opus/a1","source":"batch","usd":0.5539725,"requests":15,"settles":"2026-10-10T08-33-43-411Z-r2-opus-opus/a1"}
+{"at":"2026-10-10T08:35:41.879Z","runId":"2026-10-10T08-35-41-877Z-r2-opus-text-text-opus/a1","source":"pending","usd":3.5028187499999994,"requests":15,"pending":"2026-10-10T08-35-41-877Z-r2-opus-text-text-opus/a1"}
+{"at":"2026-10-10T08:37:44.050Z","runId":"2026-10-10T08-35-41-877Z-r2-opus-text-text-opus/a1","source":"batch","usd":0.7728650000000001,"requests":15,"settles":"2026-10-10T08-35-41-877Z-r2-opus-text-text-opus/a1"}
