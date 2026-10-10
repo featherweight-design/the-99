@@ -34,12 +34,12 @@ describe("velocity", () => {
     expect(v.notCounted).toEqual([]);
   });
 
-  it("indexes lands and points against the average nonland mana value; commanders are not in the 99", () => {
+  it("indexes lands and points against the average mana value, commanders included", () => {
     const cmd = card("Gishath", { commander: true, manaValue: 8 });
-    const v = velocity([cmd, land("Forest", { quantity: 33 }), card("Big", { manaValue: 6, quantity: 66 })], 10);
+    const v = velocity([cmd, land("Forest", { quantity: 33 }), card("Big", { manaValue: 6, quantity: 65 })], 10);
     expect(v.lands).toBe(33);
-    expect(v.averageManaValue).toBe(6);
-    expect(v.index).toBeCloseTo((33 * 7 / 99) / 6);
+    expect(v.averageManaValue).toBeCloseTo((8 + 6 * 65) / 66);
+    expect(v.index).toBeCloseTo((33 * 7 / 99) / ((8 + 6 * 65) / 66));
     expect(v.commanderTurn).toBe(7);
   });
 

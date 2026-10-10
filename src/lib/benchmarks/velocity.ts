@@ -9,7 +9,7 @@ export type RampWhy = "ramp" | "land" | "burst" | "costReduction" | "tooLate";
 export type VelocityLine = { card: BenchCard; points: number; why: RampWhy };
 
 export type Velocity = {
-  /** (lands × 7 / body + points) / average nonland mana value: what the grade is cut on. */
+  /** (lands × 7 / 99 + points) / average nonland mana value, commanders included: what the grade is cut on. */
   index: number;
   points: number;
   lands: number;
@@ -36,8 +36,10 @@ export function velocity(cards: readonly BenchCard[], castRamp: number): Velocit
   const deck = body(cards);
   const nonland = deck.filter((c) => !isLand(c));
   const lands = copies(deck.filter(isLand));
-  const nonlandCopies = copies(nonland);
-  const averageManaValue = nonlandCopies === 0 ? 0 : nonland.reduce((s, c) => s + c.manaValue * c.quantity, 0) / nonlandCopies;
+  // The average counts the commanders, as the profile's curve does and as the cut points are derived.
+  const curve = cards.filter((c) => !isLand(c));
+  const curveCopies = copies(curve);
+  const averageManaValue = curveCopies === 0 ? 0 : curve.reduce((s, c) => s + c.manaValue * c.quantity, 0) / curveCopies;
   const counted: VelocityLine[] = [];
   const notCounted: VelocityLine[] = [];
   for (const card of nonland) {
@@ -53,8 +55,9 @@ export function velocity(cards: readonly BenchCard[], castRamp: number): Velocit
     (points > 0 ? counted : notCounted).push({ card, points, why });
   }
   const points = counted.reduce((s, l) => s + l.points * l.card.quantity, 0);
-  const bodySize = copies(deck);
-  const index = averageManaValue === 0 || bodySize === 0 ? 0 : (lands * 7 / bodySize + points) / averageManaValue;
+  // A fixed 99, never the body's own size: a partner deck's 98 would read a little faster than the
+  // same lands in a single-commander deck, and cross a different cut.
+  const index = averageManaValue === 0 ? 0 : (lands * 7 / 99 + points) / averageManaValue;
   const commanderMv = cards.filter((c) => c.commander).map((c) => c.manaValue);
   return {
     index, points, lands, averageManaValue,
