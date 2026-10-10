@@ -1,4 +1,4 @@
-# States — Tuning hub R1 (approved)
+# States — Tuning hub (R1 approved; Proposed cuts R2 approved, 2026-10-10)
 
 Brief §7: ready / running / results / refused / failed, for every tool, at 900 and 390. Frame ids refer to the canvases.
 
@@ -39,19 +39,24 @@ All other states are unchanged.
 | Failed (tier 1) | B8 / B8b | Failure mark + `We couldn't count this deck's mana`; no deeper band | offer Look deeper with no count |
 | Refused (tier 1) | — | Does not exist (ruling 6) | — |
 
-## Proposed cuts
+## Proposed cuts (R2, model-first)
+Hugh, 2026-10-09: the free ranked list is withdrawn. The free pass is counted facts only; Look deeper names the cuts. Frames are in `… (R2) · C Proposed cuts and History.dc.html`. R1 C1 to C3 are superseded.
+
 | State | Drawn | What shows | Must not |
 |---|---|---|---|
-| Running (tier 1) | C1 / C1b | Manifest ticking, accent border; only after 400ms | fan; Stop; credit line |
-| Results (tier 1) | C2 / C2b | Look deeper band; overage + 2 ranked candidates, one reason chip each, Cut / Keep, never-cut foot | list the commander or a locked card; fewer than overage + 2 |
-| Part answered | C3 / C3b | Answered rows in their slots, lead recounted, `Rank again` | reorder; shrink the list |
-| Running (tier 2) | C8 / C8b | Band accent-bordered; shortlist stays live | block Cut / Keep |
-| Results (tier 2) | C9 / C9b | Deeper block above (one line per named candidate: cut it first / keep it); shortlist unchanged below | add cards; re-rank the shortlist |
-| Refused / failed (tier 2) | as B4 / B5 | Same shapes, with "shortlist" for "count" | — |
-| Back to 99 | C4 / C4b | Finishes in place in one line; no action row; tile goes inert | vanish mid-view; mention History |
-| Thin EDHREC | C5 / C5b | Dashed row names the missing signal; no EDHREC chips | refuse |
-| Refused | C6 / C6b | All locked: neutral note | `--danger` |
-| Failed | C7 / C7b | Failure mark beside the heading, Try again | the mark above the heading |
+| Counting (free) | R1 C1 shape, not redrawn | Manifest ticking behind 400ms, `Counting your N cards` | fan; Stop; credit line |
+| Ready = the count (free) | C1 / C1b | Lead (over-99 figure in `--fg`); Look deeper first, filled `--accent` with segment and credit line; What we counted (role overages, curve crowding, bracket flags against the declared bracket, EDHREC spread); never-cut foot | name, rank or order any card; `--warning` on any over figure; a bracket flag the declared bracket allows |
+| Running (deeper) | C2 / C2b | Band accent-bordered in the offer's slot, what it's reading, elapsed, Stop (open 6); count live below | block editing; hide the count |
+| Results (deeper) | C3 / C3b | `N to cut`: one line per named card (Suggestion tag, sentence, chips quoting the count verbatim, Cut / Keep); foot `n of N named · each figure checked`; count below under `The count` | adds; bracket claims in prose; Checked/Unchecked tiers; replace the count |
+| Part answered / short | C4 / C4b | Answered rows in their slots; dashed slot for a dropped line; count recounted (`as the list is now`); no new offer from result cuts | pad to N; a second call to fill; reorder |
+| Thin EDHREC | C5 (offer) / C5b (named) | EDHREC fact row absent; dashed row with the deck count; offer lead names the gap; no EDHREC chips | refuse; show EDHREC as zero |
+| Refused (deeper) | C6 / C6b | B4 neutral note, credit back, Look deeper still offered, count below | `--danger` |
+| Refused (all locked) | C6c | Count shown; neutral note; no offer | `--danger`; offer a call that can name nothing |
+| Failed (deeper) | C7 / C7b | Failure mark (`Didn't finish`), one sentence, credit back, `Try again │ ◆ 1 credit`; count below | auto-retry; the mark above the heading |
+| Failed (count) | B8 shape, not redrawn | `We couldn't count this deck's cards` (`Couldn't count`); no offer | offer Look deeper with no count |
+| Credits used up | not redrawn (B6 rule) | Button disabled, no segment, `0 of 3 credits left`; count unchanged | hide the count |
+| Back to 99 | C8 / C8b | Finishes in place in one line; tile goes inert | vanish mid-view; mention History |
+| Fact vs claim | C9 / C9b | Shape, tag, type and words differ; the chip quotes the fact | color as the only carrier |
 
 ## History
 | State | Drawn | What shows | Must not |

@@ -4,6 +4,8 @@
 
 **Status: R1, approved (LGTM, Hugh, 2026-10-09)** after four feedback rounds (tool marks, landing, Mana Balance, Proposed cuts + History), recorded below. Geometry, tokens and component reuse are final. Card names, deck names and figures are illustrative but arithmetically consistent across the three canvases: HD Gishath, one commander, 105 cards (six over), four locked, 31 green pips against 14 green sources.
 
+**R2 addendum (2026-10-10): Proposed cuts is model-first. Approved (LGTM, Hugh, 2026-10-10).** Canvases A and B are unchanged. See "R2 · Proposed cuts, model-first" below.
+
 Source of truth: `docs/superpowers/design-briefs/2026-10-08-tuning.md` (main), §"What this brief asks Design to draw" items 1–7. Read alongside: `src/components/decks/{tuning-panel,manifest-rows,suggestion-card,role-counter-strip,role-counter-cell,builder-spine}.tsx`, `src/lib/copy/{deck-tuning,decks-builder,help-me-choose,credits}.ts`, and the `deck_tuning`, `over_99`, `deck_stats_mana` and `help_me_choose` handoffs.
 
 **About these files.** The canvases are design references built in HTML. Open them with `support.js` beside them, then rebuild in the app's stack. They pin the Kaldheim values the latest canvases use. **No new tokens, no new motion, no new dependencies.**
@@ -12,11 +14,12 @@ Source of truth: `docs/superpowers/design-briefs/2026-10-08-tuning.md` (main), �
 |---|---|
 | `… (R1) · A Landing, shortcuts and the strip.dc.html` | A0 the calls. A1 landing (offered), A2 Proposed cuts not offered, A3 a run in flight on the landing, A4 a tool open (Suggested changes inside the hub), A5 Your deck: trim-line link, land-cell caption, the strip in one place, A6 what resets the view. |
 | `… (R1) · B Mana Balance.dc.html` | B1 free result with Look deeper on top, B2 deeper running, B3 deeper result above the count, B4 deeper refused, B5 deeper failed, B6 credits used up + an applied suggestion, B7 thin EDHREC data, B8 the count failed, B9 counted fact vs hedged claim. |
-| `… (R1) · C Proposed cuts and History.dc.html` | C1 ranking, C2 shortlist, C3 part answered, C4 back to 99, C5 thin data, C6 refused (all locked), C7 failed. H1 History with a run in flight, H2 filtered and empty, H3 a past run opened, H4 couldn't load. |
+| `… (R2) · C Proposed cuts and History.dc.html` | **Current.** C1 the count (free, no list), C2 deeper running, C3 six named, C4 part answered and short, C5 thin data, C6 refused (deeper, all locked), C7 failed, C8 back to 99, C9 counted fact vs model claim. H1–H4 History (R1, Cuts summaries updated). |
+| `… (R1) · C Proposed cuts and History.dc.html` | Superseded by R2 (2026-10-10), kept for the record. C1–C3 drew the withdrawn free ranking. |
 | `TuningToolMark.dc.html` | The four tool marks, as one component (`tool`, `size`, `ink`). Imported by all three canvases. |
 | `STATES-tuning-hub.md` | Every state per tool, with its Must-nots. |
 | `READINESS.md` | Self-assessed readiness and the open items. |
-| `tuning-hub · copy strings.ts` | Proposed additions to `src/lib/copy/`. Placeholders; `/copy-review` resolves wording. |
+| `tuning-hub · copy strings.ts` | Proposed additions to `src/lib/copy/`. The `cuts` block is R2; retired R1 keys are listed in it. Placeholders; `/copy-review` resolves wording. |
 | `design-tables/tuning-hub.md` | New property tables. **Commit to `docs/superpowers/design-tables/tuning-hub.md`**, beside `deck-tuning.md`, not inside it. |
 | `brand/` | Locked brand sheet + README, copied for self-containment. `support.js` is the canvas runtime. |
 
@@ -77,6 +80,17 @@ On its own tile only: a 1px `--accent` border, the manifest's writing dot, the t
 - **Failure tags are an icon everywhere:** a 16-grid filled disc with the `!` cut out, in `--danger`, with the old tag text as its `aria-label` (`Didn't finish`, `Couldn't count`, `Couldn't rank`, `Couldn't load`). History's `failed` outcome carries the same disc at 13px.
 - **Stop:** open for engineering (open 6).
 
+### R2 · Proposed cuts, model-first (Hugh, 2026-10-09)
+Source: `docs/superpowers/plans/2026-10-09-proposed-cuts-model-tier.md` (main; the `cuts-model-plan` branch is gone). The free ranking caught 10 of Hugh's 58 cuts across five decks (1.1x chance) and 0 of 14 net reductions, so it is withdrawn rather than reworded.
+- **The free pass names no card.** C1 shows the over-99 lead, Look deeper, and `What we counted`: role overages, curve crowding, bracket flags and EDHREC spread. Each row has a source, a label, a mono figure and a comparison. These are the model's input, shown as they are. A bracket flag shows only against the declared bracket.
+- **Look deeper is the primary action.** It comes first in the panel, filled `--accent` with `--bg` ink, and is the hub's only filled button. It keeps the `◆ 1 credit` segment and the standing credit line. The offer's lead says what it reads.
+- **The over tally is neutral.** The over-99 lead and per-role overages are `--fg` / `--fg-muted`, never `--warning`, per Hugh's earlier ruling.
+- **Results (C3).** Exactly the overage is asked for, and 1 to N are accepted. Each line has the Suggestion tag, the card, one sentence and chips, in Suggested changes' citation pattern. Each chip quotes a figure from the count word for word. There's no bracket claim in prose, and no adds. Cut / Keep work as in R1 decision 8. The count stays below, recounting as cards go.
+- **A shortfall is shown, never padded (C4).** A dashed slot says a line was dropped and why. No second call is made.
+- **Counted fact vs model claim (C9).** They differ in four ways: shape (ruled row vs filled card), tag (source only vs `Suggestion` pill), type (figure vs sentence + chips) and words (counts vs names a cut). They meet in the chip. Checked/Unchecked aren't used, because every surviving line has passed the figure check.
+- **Retired from R1:** overage + 2 candidates, `Rank again`, `Show N more`, the rank number, "The shortlist, unchanged", and `Couldn't rank` (now `Couldn't count` / `Didn't finish`).
+- **Frame ids are renumbered.** R1 C8 → C2, C9 → C3, C3 → C4, C4 → C8. C5–C7 keep their numbers. C1 and C9 are new.
+
 ## Other decisions
 
 1. **Navigate away = leave the Analysis tab, leave the page, or reload.** Each resets to the landing. Switching tools, opening History and Re-analyze don't. Runs survive all of it (A6).
@@ -105,6 +119,9 @@ On its own tile only: a 1px `--accent` border, the manifest's writing dot, the t
 6. **Stop on a deeper look.** Hugh questions whether Stop belongs at all. As drawn, it refunds (Help me choose's pattern). Without it, the running band is just the running line and the credit is spent on press. Engineering's call: compare with how often a stop would beat the response.
 7. **Answered lines in History and the eval.** History records lines (`3 added, 2 cut, 1 rejected`). The golden-deck eval should score suggestions as returned, not as applied.
 8. **Suggested changes as two lists** changes the model contract. Today it gives one rationale per swap; this would need one rationale per card, each with its own countable citation. The validator's rules carry over line by line.
+
+9. **Re-offer after cuts from a result (R2).** As drawn, Cut or Keep pressed inside a deeper result doesn't bring the Look deeper offer back, even though each Cut changes the list version. Otherwise every cut would invite another credit. Any other edit does bring it back. Confirm, or re-offer on every version.
+10. **Canvas A, not redrawn.** The A1 tile's `this deck is 6 over` status is drawn in `--warning`; build it in `--fg-muted`, per the neutral-tally ruling. A0's "with a ranked list" note is historical. The tile purpose and running words are updated in the copy file (`Counts where the deck runs long. A deeper look names the cuts.`, `counting`).
 
 ## Notes for engineering
 - **New:**
