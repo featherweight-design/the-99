@@ -184,13 +184,16 @@ export function buildSuggestionPayload(
 }
 
 /** The roles a pool card fills under this basis: the classifier's, or, with `roleSets`, its fresh label's
- *  (no label, no role). A land is the classifier's either way, so the land slots are untouched. */
+ *  (no label, no role). A land stays a land either way, so the land slots are untouched; on the label
+ *  basis it is ONLY a land, because the label targets and the strip exclude land faces from the four
+ *  roles, and a utility land whose text also reads draw must not close a draw gap. */
 export function rolesForSuggestion(
   card: PoolCard,
   roleSets: ReadonlyMap<string, readonly Exclude<MixRole, "land">[]> | undefined,
 ): ReturnType<typeof classifyRoles> {
   const byText = classifyRoles(card);
-  if (!roleSets || byText.includes("land")) return byText;
+  if (!roleSets) return byText;
+  if (byText.includes("land")) return ["land"];
   return [...(roleSets.get(card.oracleId) ?? [])];
 }
 

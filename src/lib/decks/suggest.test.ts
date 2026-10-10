@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { suggestDeck, humanRole, buildSuggestionPayload } from "./suggest";
+import { suggestDeck, humanRole, buildSuggestionPayload, rolesForSuggestion } from "./suggest";
 import type { PoolCard } from "../recs/score";
 import type { DeckSuggestion, Suggestion } from "./suggest";
 
@@ -94,6 +94,12 @@ describe("suggestDeck", () => {
   });
 
   describe("by label", () => {
+    it("counts a land only as a land on the label basis, even when its text also reads draw", () => {
+      const canopy = card({ name: "Canopy", typeLine: "Land", oracleText: "{1}, {T}, Sacrifice Canopy: Draw a card." });
+      expect(rolesForSuggestion(canopy, undefined)).toEqual(["land", "draw"]);
+      expect(rolesForSuggestion(canopy, new Map())).toEqual(["land"]);
+    });
+
     const base = { commander, edhrecTopCards: null, hasPartner: false, mix: TEST_MIX } as const;
     const rocks = Array.from({ length: 12 }, () => card({ typeLine: "Artifact", oracleText: "{T}: Add {C}." }));
 
