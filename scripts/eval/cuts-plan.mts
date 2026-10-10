@@ -42,7 +42,7 @@ import { parseArgs } from "node:util";
 
 import { countTokens, sendBatch, type Got, type Sent } from "./lib/batch.mjs";
 import { acquireRunLock, readLedger, record, spent } from "./lib/ledger.mjs";
-import { costUsd, type Usage } from "./lib/pricing.mjs";
+import { costUsd, worstCaseUsd, type Usage } from "./lib/pricing.mjs";
 import { buildParams, parseReply } from "./lib/request.mjs";
 import { ROOT } from "./lib/run.mjs";
 import { connectStaging } from "./lib/staging.mjs";
@@ -200,10 +200,11 @@ if (args.reuse) {
 } else {
   const tokens = await Promise.all(prepared.map((p) => countTokens(p.sent.params)));
   const taskSpent = () => spent(readLedger(LEDGER_CUTS)) - BASELINE;
-  // Measured: about $0.025 a Sonnet answer at batch prices, up to $0.04 on a long one.
-  const expected = prepared.length * 0.04;
+  // Each request's bound is `worstCaseUsd` (two attempts at the output ceiling), so the cap holds even if every reply truncates.
+  const worstOf = new Map(prepared.map((p, i) => [p.customId, worstCaseUsd(TUNING_MODEL, tokens[i], Number((p.sent.params as { max_tokens: number }).max_tokens), { batch: true })]));
+  const expected = [...worstOf.values()].reduce((a, b) => a + b, 0);
   if (args.send) acquireRunLock(LEDGER_CUTS);
-  console.error(`${prepared.length} requests, largest ${Math.max(...tokens)} input tokens; expected up to $${expected.toFixed(2)}; this task has spent $${taskSpent().toFixed(3)} of $${CAP}`);
+  console.error(`${prepared.length} requests, largest ${Math.max(...tokens)} input tokens; worst case $${expected.toFixed(2)}; this task has spent $${taskSpent().toFixed(3)} of $${CAP}`);
   if (!args.send) { console.error("DRY: nothing sent."); process.exit(0); }
   if (taskSpent() + expected > CAP) { console.error("NOT SENT: would cross the task cap"); process.exit(2); }
 
@@ -213,7 +214,7 @@ if (args.reuse) {
   const send = async (batch: Sent[], pass: string): Promise<Got[]> => {
     if (batch.length === 0) return [];
     const id = `${runId}/${pass}`;
-    record(LEDGER_CUTS, { at: new Date().toISOString(), runId: id, source: "pending", usd: batch.length * 0.04, requests: batch.length, pending: id });
+    record(LEDGER_CUTS, { at: new Date().toISOString(), runId: id, source: "pending", usd: batch.reduce((n, b) => n + worstOf.get(b.customId.replace(/-r$/, ""))! / 2, 0), requests: batch.length, pending: id });
     const { results } = await sendBatch(batch, (l) => console.error(l));
     appendFileSync(new URL(`raw-${pass}.jsonl`, dir), results.map((g) => JSON.stringify(g)).join("\n") + "\n");
     const usd = results.reduce((n, g) => n + (g.ok ? costUsd(TUNING_MODEL, g.message.usage as Usage, { batch: true }) : 0), 0);
@@ -226,7 +227,7 @@ if (args.reuse) {
     const g = attempts.get(p.customId)?.[0];
     return !g || (g.ok ? !parseReply(schemaOf.get(p.customId)!, g.message).ok : g.retry);
   });
-  if (retry.length > 0 && taskSpent() + retry.length * 0.04 <= CAP) {
+  if (retry.length > 0 && taskSpent() + retry.reduce((n, p) => n + worstOf.get(p.customId)! / 2, 0) <= CAP) {
     for (const g of await send(retry.map((p) => ({ ...p.sent, customId: `${p.customId}-r` })), "a2")) {
       const base = g.customId.replace(/-r$/, "");
       attempts.set(base, [...(attempts.get(base) ?? []), g]);

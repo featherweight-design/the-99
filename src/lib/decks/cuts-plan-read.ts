@@ -10,12 +10,15 @@ import type { CutsPlan } from "../tuning/cuts-evidence";
 const COLOURS = ["W", "U", "B", "R", "G"] as const;
 const BASIC_TYPES = ["Plains", "Island", "Swamp", "Mountain", "Forest", "Wastes"] as const;
 
-/** The WUBRG letters a mana cost asks for. A hybrid pip counts both halves; Phyrexian and generic pips none. */
+/** The WUBRG letters a mana cost asks for. A pip with a non-colour alternative ({2/B}, {B/P}) and a generic one count none; a two-colour hybrid counts both. */
 export function costColours(manaCost: string | null): string[] {
   if (!manaCost) return [];
   const found = new Set<string>();
   for (const [, pip] of manaCost.matchAll(/\{([^}]+)\}/g)) {
-    for (const part of pip.split("/")) if ((COLOURS as readonly string[]).includes(part)) found.add(part);
+    // A pip payable without a colour ({2/B}, {B/P}) needs none; a hybrid of two colours needs both halves' colours.
+    const parts = pip.split("/");
+    if (!parts.every((x) => (COLOURS as readonly string[]).includes(x))) continue;
+    for (const part of parts) found.add(part);
   }
   return COLOURS.filter((c) => found.has(c));
 }

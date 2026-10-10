@@ -111,6 +111,15 @@ describe("the plan in the prompt (v2)", () => {
     expect(withPlan().system).not.toContain("run this again");
   });
 
+  it("tells the model a capped combo list may omit pieces, and says nothing of it under the cap", () => {
+    const capped = buildCutsPrompt(buildCutsPack({
+      facts: cutFacts({ profile: profile(), locked: new Set(), support: null, declaredBracket: null }),
+      commanderName: "Gishath", keyCards: [], intent: null, plan: { ...plan, combos: Array.from({ length: 6 }, () => plan.combos[0]) },
+    }));
+    expect(capped.user).toContain("never cite combo state none");
+    expect(withPlan().user).not.toContain("never cite combo state none");
+  });
+
   it("says so when the combo read failed, and omits the whole plan block when none was given", () => {
     const failed = buildCutsPrompt(buildCutsPack({
       facts: cutFacts({ profile: profile(), locked: new Set(), support: null, declaredBracket: null }),

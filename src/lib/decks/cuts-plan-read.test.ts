@@ -10,9 +10,9 @@ describe("costColours", () => {
     expect(costColours("{2}{B}{B}{R}")).toEqual(["B", "R"]);
     expect(costColours("{G}{W}{U}")).toEqual(["W", "U", "G"]);
   });
-  it("counts both halves of a hybrid pip, and neither a generic, an X nor a Phyrexian one", () => {
-    expect(costColours("{W/U}{2/B}")).toEqual(["W", "U", "B"]);
-    expect(costColours("{X}{3}{B/P}")).toEqual(["B"]);
+  it("counts both halves of a two-colour hybrid pip, and no pip payable without the colour", () => {
+    expect(costColours("{W/U}{2/B}")).toEqual(["W", "U"]);
+    expect(costColours("{X}{3}{B/P}")).toEqual([]);
   });
   it("is empty for a cost-free or missing cost", () => {
     expect(costColours(null)).toEqual([]);

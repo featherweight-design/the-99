@@ -1,6 +1,7 @@
 import { CURVE_MAX } from "../decks/stats";
 import { deckCutsCopy } from "../copy/deck-cuts";
 import { PLAYER_TEXT_SYSTEM_RULE } from "../model/player-text";
+import { MAX_COMBO_FACTS, MAX_NEAR_COMBO_FACTS } from "../synopsis/facts-extra";
 import type { CutsPack, CutsPackCard } from "./cuts-evidence";
 
 /** Its own version, apart from Suggested changes' `PROMPT_VERSION`. */
@@ -50,6 +51,9 @@ export function buildCutsPrompt(pack: CutsPack): { system: string; user: string 
     else {
       lines.push(plan.combos.length > 0 ? "Combos the deck assembles:" : "Combos the deck assembles: none.");
       lines.push(...plan.combos.map((c) => `- ${c.pieces.join(" + ")} -> ${c.produces.join(", ")}${c.manaNeeded === null ? "" : `, mana needed ${c.manaNeeded}`}${c.usesCommander ? ", uses the commander" : ""}`));
+    }
+    if ((plan.combos?.length ?? 0) >= MAX_COMBO_FACTS || (plan.nearCombos?.length ?? 0) >= MAX_NEAR_COMBO_FACTS) {
+      lines.push("These combo lists are capped and may omit combos, so never cite combo state none.");
     }
     if (plan.nearCombos !== null && plan.nearCombos.length > 0) {
       lines.push("Combos one card short:", ...plan.nearCombos.map((n) => `- has ${n.have}, lacks ${n.missing} -> ${n.produces.join(", ")}`));
