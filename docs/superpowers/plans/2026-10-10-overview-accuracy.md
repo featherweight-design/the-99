@@ -1,6 +1,6 @@
 # Overview accuracy and evidence, phase 1
 
-Priority 4b (Hugh, 2026-10-09). **A plan only.** Nothing here has spent a dollar: every figure below is read from existing rows, the committed ledger and `scripts/eval/lib/pricing.mts`. Hugh's cap for this line is **$15 of paid eval spend**. Plans need his approval before any PR in section 7 starts.
+Priority 4b (Hugh, 2026-10-09). **A plan only.** Nothing here has spent a dollar: every figure below is read from existing rows, the committed ledger and `scripts/eval/lib/pricing.mts`. Hugh's cap for this line is **$15 of paid eval spend**. Plans need his approval before any PR in section 7 starts. **Approved 2026-10-10, with the amendments of section 11** (his comparison corpus, a new first PR for combo and deck-stats facts, the archetype checklist). Where section 11 and an earlier section disagree, section 11 governs; the earlier text is left as reviewed.
 
 Principle (Hugh): accurate most of the time, humble when not. "Humble" is implemented as **silence, not hedging**: a claim the harness cannot support is dropped, and a verdict the model marks `unknown` renders nothing.
 
@@ -108,9 +108,9 @@ A second, cheap model call **per answer**, not per tip, run only on relational c
 
 What this cannot do: it checks a claim against the cited cards' text. A claim that is wrong because of a card **not cited** (a replacement effect in a third card) passes. Stated in the About copy only if Hugh wants it (section 8).
 
-### 4.3 Mandatory loops (defect 6) and combat-only win paths (defect 8): **open, measure first**
+### 4.3 Mandatory loops (defect 6) and combat-only win paths (defect 8): **a follow-up, not this line**
 
-The app already marks combo pieces (`claims` category `combo`, `comboReach`, Spellbook variants). Spellbook's step text and mandatory/optional flags are **not stored** (memory: "Combo modal payload gap"), so "this loop is forced" cannot be read from our data today. Plan: add assembled two-card combos and their `produces` to the user message (data we do hold), and ask the model to flag a loop as forced only when neither piece's looping clause contains "may"; score that on the Gishath case in the corpus. If recall is poor, the fallback is the humility rule: state "may loop and end the game for everyone; check it has an outlet" and never "this is value". I have not verified what the combo data holds for Gishath's pair; PR 2b opens with that check and the plan changes if it is empty.
+Spellbook's mandatory/optional flags are **not stored** (memory: "Combo modal payload gap"), so "this loop is forced" cannot be read from our data. **Superseded by section 11.1 and 11.3:** assembled combos go into the prompt as facts in the new first PR, and mandatory-loop detection is a recorded follow-up. Until it exists the prompt never calls a loop "value": a combo the facts list is described by what it produces ("infinite mana", "infinite turns") and the primer names it as the win condition. Combat-only win paths are covered by the archetype checklist (11.2).
 
 ## 5. The comparison-corpus eval
 
@@ -153,15 +153,17 @@ Every claim in **our** answer is graded `correct`, `wrong` or `unsupported`; eve
 | Evidence integrity | share of claims whose refs resolve | code |
 | Tip/line survival | tips after the verifier / tips written | code |
 | Loop flagged | gold `loops` present in weaknesses | corpus |
+| **Combo recall** | gold `winCombos` (the deck's primary deterministic combo, as card names) named in the primer's strategy or overview | corpus |
+| Claim grades | every claim of ours graded `correct` / `wrong` / `missed` against the corpus (11.1) | corpus + Hugh on the residue |
 | Cost per accepted answer | usage rows x `pricing.mts` | ledger |
 
 `correct/wrong/missed` for items code cannot decide (is a key card "engine-centric", is a tip *useful*) is Hugh's call on a sample, and **the scorer never reports a number it computed from claims it did not grade**. Report is `docs/superpowers/eval/metrics-overview-accuracy.md`, generated like `metrics-synopsis.md`.
 
-Seed cases, written in PR 1: `imotekh-mummy` and `gishath-hd`. The Imotekh pair is complete in section 1. For Gishath I have only the priorities.md summary, so **its gold lists are partial** until Hugh supplies the Deckcheck export; the case is marked `partial: true` and excluded from headline recall.
+Seed cases, written in the corpus PR: **the nine decks of Hugh's comparison corpus** (section 11.1), atomised from `boards/deckcheck-corpus-2026-10-09.md`, which supersedes the earlier two-seed plan. The Gishath case is no longer partial.
 
 ### 5.3 Free first: a model-free baseline
 
-`eval:rescore-lines` already re-validates stored answers with no model call (`metrics-overview-contracts.md`). PR 1 adds the corpus scorer and runs the new deterministic validators over the **423 stored rows** (7 runs across haiku, sonnet-low and sonnet and several prompt variants, so not all shipped contract-7 output) plus the two production/staging answers. That costs $0 and answers, before any spend: how often does each check fire on shipped contract-7 output, and does the Shard/Ayara tip appear in the stored set.
+`eval:rescore-lines` already re-validates stored answers with no model call (`metrics-overview-contracts.md`). PR 2 adds the corpus scorer and runs the new deterministic validators over the **423 stored rows** (7 runs across haiku, sonnet-low and sonnet and several prompt variants, so not all shipped contract-7 output) plus the two production/staging answers. That costs $0 and answers, before any spend: how often does each check fire on shipped contract-7 output, and does the Shard/Ayara tip appear in the stored set.
 
 ## 6. Measured cost
 
@@ -173,7 +175,7 @@ Seed cases, written in PR 1: `imotekh-mummy` and `gishath-hd`. The Imotekh pair 
 | Production, same filter | 5 answers, 5 decks | $0.0589 | n/a | 17,211 | 2,443 |
 | Eval `metrics-synopsis.md`, sonnet-low budgets-plus, held-out | 45 answers | $0.0330 | n/a | 9,102 | 1,481 |
 
-**The eval's figure is 36% below the app's, with 9.1k against 15.4k input tokens. I could not explain that gap from the files read** (the shipped prompt, and the app's `factsFor`, may include more per-card text than the eval's decks). The plan therefore uses the **app's** figures, the higher ones, and PR 1 reconciles them in the first dry run (`--dry-run` calls nothing).
+**The eval's figure is 36% below the app's, with 9.1k against 15.4k input tokens. I could not explain that gap from the files read** (the shipped prompt, and the app's `factsFor`, may include more per-card text than the eval's decks). The plan therefore uses the **app's** figures, the higher ones, and PR 2 reconciles them in the first dry run (`--dry-run` calls nothing).
 
 Rates (`pricing.mts`): `claude-sonnet-5` $2 in, $10 out; `claude-haiku-4-5` $1 in, $5 out; Batch API halves both.
 
@@ -184,20 +186,23 @@ Rates (`pricing.mts`): `claude-sonnet-5` $2 in, $10 out; `claude-haiku-4-5` $1 i
 | Run | What | Answers or calls | $ |
 |---|---|---|---|
 | E0 | Rescore 423 stored answers with the new validators; reconcile the token gap with `--dry-run` | 0 | **$0** |
-| E1 | Prompt development: 4 dev decks + 2 case decks, 3 variants (`v8a` tiers/checklist, `v8b` + evidence, `v8c` + engine candidates), 1 trial; then a second round of 2 variants | 18 + 12 = 30 | 30 x $0.050 = $1.50 |
-| E2 | Verifier calibration: 80 stratified tips from stored answers + the Shard/Ayara tip + Hugh's false-tip list, 4 per call on Haiku (20 calls), then the same on sonnet-low as a comparison cell | 40 calls | 20 x $0.0035 + 20 x $0.0069 = $0.21, carried as **$0.35** to allow a second calibration pass |
-| E3 | Held-out: 15 held-out + 2 case decks, 3 trials, the chosen variant | 51 | 51 x $0.050 = $2.55 |
-| E3b | A second candidate on the same set, only if E1 does not separate them | 51 | $2.55 |
-| E3c | Contract-7 control on the 2 case decks x 3 trials, no verifier (the 15 held-out controls already exist and are rescored free) | 6 | 6 x ($0.0258 x 1.5) = $0.23, where $0.0258 is half the staging mean $0.0515 |
+| E1s | Priced smoke for the facts PR: 3 corpus decks (Wizards, Counter Intelligence, Gishath), real-time, one trial. No paid run precedes it | 3 | 3 x ($0.0634 x 1.5 + $0.0035) = $0.30 |
+| E1 | Prompt development: 4 dev decks + 4 corpus decks (Gishath, Wizards, Eldrazi, Imotekh: the motivating cases, called the **tuned-on** group), 3 variants (`v8a` tiers/checklist, `v8b` + evidence, `v8c` + engine candidates and facts), 1 trial; then a second round of 2 variants | 24 + 16 = 40 | 40 x $0.052 = $2.08 |
+| E2 | Verifier calibration: 80 stratified tips from stored answers, plus every `knownFalse` claim in the corpus (replaces Hugh labelling about 30 tips, 11.3), 4 per call on Haiku (20 calls), then the same on sonnet-low as a comparison cell | 40 calls | 20 x $0.0035 + 20 x $0.0069 = $0.21, carried as **$0.35** |
+| E3 | Held-out: 15 held-out + all 9 corpus decks (the other 5 are **unseen**, reported separately from the tuned-on 4), 3 trials, the chosen variant | 72 | 72 x $0.052 = $3.74 |
+| E3b | A second candidate on the same set, only if E1 does not separate them. **If run, E5 is cut to what remains under $15** | 72 | $3.74 |
+| E3c | Contract-7 control: the corpus's own stored production answers are the control and are rescored free; a reserve for any corpus deck whose contract-7 row is not stored (about 6 answers) | 6 | $0.30 |
 | E4 | End-to-end smoke through the real write path on staging, real-time, 6 decks | 6 | 6 x ($0.0634 x 1.5 + $0.0035) = $0.59, carried as $0.60 |
-| E5 | Hugh's bulk pairs, budgeted for 20 new decks x 3 trials; **marginal $0.15 per deck** | 60 | 60 x $0.050 = $3.00 |
-| | **Subtotal** | | **$10.78** |
-| | Contingency 25% (output length, batch re-sends, a third E1 round) | | $2.70 |
-| | **Planned ceiling** | | **$13.48** |
+| E5 | Hugh's further pairs beyond the nine, budgeted for 20 decks x 3 trials; **marginal $0.16 per deck** | 60 | 60 x $0.052 = $3.12 |
+| | **Subtotal without E3b** | | **$10.49** |
+| | Contingency 25% (output length, batch re-sends, a third E1 round) | | $2.62 |
+| | **Planned ceiling** | | **$13.11** |
 
-**Fits under $15 with $1.52 to spare.** If output is 3,300 tokens instead of 2,900 the subtotal rises about $0.50 and the ceiling stays under $15; if E1 is forced to real-time (Batch latency), E1 becomes 30 x ($0.0634 x 1.5 + $0.0035) = $2.96, the subtotal $12.24 and the 25% ceiling about **$15.3, over the cap**. The first fallback is therefore to drop E3b (-$2.55), giving a ceiling near $12.1. **E5 is the elastic line: Hugh's corpus size sets it, not the plan.** If he supplies more than 20 pairs, the extra costs $0.15 each from the contingency or he raises the cap.
+Per-answer batch cost is now $0.052: the facts of section 11.1 add about 1k input tokens (combos, ramp count, interaction counts), an **assumption** E1s replaces with a measurement: 18.2k x $2/M x 0.5 + 2.9k x $10/M x 0.5 = $0.0327, x 1.5 + $0.0018 = $0.051.
 
-**The existing ledger cannot hold this campaign, and that was not obvious.** `scripts/eval/lib/ledger.mts` has `HARD_CAP_USD = 25` and `ASK_AT_USD = 15`, and the committed `docs/superpowers/eval/ledger.jsonl` sums to **$23.72** by the guard's own `spent()` rule (settled spend plus unsettled worst cases), leaving $1.28. PR 1 therefore makes the ledger path and both limits arguments: this campaign gets its own file `docs/superpowers/eval/ledger-overview-accuracy.jsonl` with `HARD_CAP_USD = 15` and `ASK_AT_USD = 11`, and a run against the old ledger still refuses as before. The guard's per-batch worst case (`worstCaseUsd`) at the proposed 4,500-token ceiling is 2 x 0.5 x (17.2k x 1.25 x $2 + 4,500 x $10)/1e6 = $0.088 per request in batch, so a 51-answer batch is checked at about $4.49 before it is sent.
+**Fits under $15 with $1.89 to spare** (with E3b run and E5 zeroed the ceiling is $13.9). If output is 3,300 tokens instead of 2,900 the subtotal rises about $0.50 and the ceiling stays under $15; if E1 is forced to real-time (Batch latency), E1 becomes 30 x ($0.0634 x 1.5 + $0.0035) = $2.96, the subtotal $12.24 and the 25% ceiling about **$15.3, over the cap**. The first fallback is therefore to drop E3b (-$3.74). **E5 is the elastic line: Hugh's corpus size sets it, not the plan.** If he supplies more than 20 pairs, the extra costs $0.15 each from the contingency or he raises the cap.
+
+**The existing ledger cannot hold this campaign, and that was not obvious.** `scripts/eval/lib/ledger.mts` has `HARD_CAP_USD = 25` and `ASK_AT_USD = 15`, and the committed `docs/superpowers/eval/ledger.jsonl` sums to **$23.72** by the guard's own `spent()` rule (settled spend plus unsettled worst cases), leaving $1.28. PR 2 therefore makes the ledger path and both limits arguments: this campaign gets its own file `docs/superpowers/eval/ledger-overview-accuracy.jsonl` with `HARD_CAP_USD = 15` and `ASK_AT_USD = 11`, and a run against the old ledger still refuses as before. The guard's per-batch worst case (`worstCaseUsd`) at the proposed 4,500-token ceiling is 2 x 0.5 x (17.2k x 1.25 x $2 + 4,500 x $10)/1e6 = $0.088 per request in batch, so a 51-answer batch is checked at about $4.49 before it is sent.
 
 **Not in the $15, and system spend:** the free re-runs of section 7.4. Production holds **5 decks with an overview** of 31; staging 10. A press goes through the same write as E4 (repair multiplier and verifier included), $0.0634 x 1.5 + $0.0035 = **$0.099**, so **$0.49 on production, $0.99 on staging** if every owner pressed once. The bound for any deployment is eligible decks x about $0.14 (the staging p90 of $0.0727 x 1.23 uplift x 1.5 + $0.0035).
 
@@ -207,14 +212,15 @@ No stacked PRs; each is cut from fresh `main`, reviewed once, merged. Line count
 
 | PR | Contents | Est. lines | Spends | Notes |
 |---|---|---|---|---|
-| **1** Corpus, scorer, campaign ledger | corpus format + schema + 2 seed cases; scorer script and metrics doc; ledger path/limits as arguments (+ test that the old ledger still refuses); E0 | ~650 | $0 | The only PR that edits `scripts/eval/lib/ledger.mts` |
-| **2a** Contract 8: shape and validators | response schema (`assessment`, `evidence`), `claims.ts` deterministic checks, `factsFor` adds `keywords`, new refusal reasons, `OVERVIEW_V2_ENABLED`, `SYNOPSIS_CONTRACT_VERSION` follows the flag; one test per failure path, run against stored answers | ~750 | $0 | Dark with the switch off; its caller is `validateSynopsis` and the eval scorer |
-| **2b** Contract 8: prompt and generation | `prompt.ts` (checklist, tiers, engine candidates, mulligan rule, refs on decklist lines), `SYNOPSIS_MAX_TOKENS`, eval variants `v8a-c`; opens with the combo-data check from 4.3 | ~600 | **E1** | Staging only |
-| **3** Verifier pass | verifier prompt + call + verbatim-quote rule, usage added to the run, upstream-failure behaviour | ~550 | **E2** | Haiku default |
-| *(gate)* | E3/E3b/E4 on staging; Hugh grades the sample; headline report | docs | **E3, E3b, E3c, E4** | Decision: ship, tune, or stop |
-| **4** Method notice and free re-run | section 7.4 | ~650 | $0 | Needs the gate to pass first, since it tells people the new method is better |
-| **5** Evidence tap-through | claim chips and a card sheet | ~700 | $0 | **After the light Design round** |
-| *(close)* | `feature-acceptance` on the overview surface (route x viewport), About edits, switch to Hugh | docs | E5 as Hugh supplies pairs | |
+| **1** Combo and deck-stats facts (11.1) | pure fact builders (`facts-combos.ts`, `facts-stats.ts`), loaded beside `factsFor`; prompt text that states them and requires the primer to name the primary win condition; `OVERVIEW_V2_ENABLED` introduced here | ~600 | **E1s** | Dark with the switch off |
+| **2** Corpus, scorer, campaign ledger | corpus format + schema + the nine seed cases; scorer and metrics doc (incl. combo recall); ledger path/limits as arguments (+ test that the old ledger still refuses); E0 | ~750 | $0 | The only PR that edits `scripts/eval/lib/ledger.mts` |
+| **3a** Contract 8: shape and validators | response schema (`assessment`, `evidence`), `claims.ts` deterministic checks, `factsFor` adds `keywords`, new refusal reasons, `SYNOPSIS_CONTRACT_VERSION` follows the flag; one test per failure path, run against stored answers | ~750 | $0 | Dark with the switch off |
+| **3b** Contract 8: prompt and generation | `prompt.ts` (checklist with the archetype list of 11.2, tiers, engine candidates, mulligan rule, refs on decklist lines), `SYNOPSIS_MAX_TOKENS`, eval variants `v8a-c` | ~600 | **E1** | Staging only |
+| **4** Verifier pass | verifier prompt + call + verbatim-quote rule, usage added to the run, upstream-failure behaviour | ~550 | **E2** | Haiku default |
+| *(gate)* | E3/E3b/E3c/E4 on staging; the corpus scoring and Hugh's sample; headline report | docs | **E3, E3b, E3c, E4** | Decision: ship, tune, or stop |
+| **5** Method notice and free re-run | section 7.4 | ~650 | $0 | Needs the gate to pass first |
+| **6** Evidence tap-through | claim chips and a card sheet | ~700 | $0 | **After the light Design round: not built by the autonomous run; a Design need goes to the orchestrator** |
+| *(close)* | `feature-acceptance`, About entry and one `ABOUT_VERSION` bump (11.3), switch to Hugh | docs | E5 as Hugh supplies pairs | |
 
 ### 7.4 The "method changed, re-analyze your deck" notice and the free re-run
 
@@ -225,7 +231,7 @@ No stacked PRs; each is cut from fresh `main`, reviewed once, merged. Line count
 
 **Eligibility, with no migration.** A deck is eligible when its shown synopsis for the current list has `contract_version < 8`, and no `deck_synopses` row for that deck at `contract_version = 8` joins to a `model_calls` row with `origin = 'system'` that survived. That is one free run per deck per method version by construction: the free run itself writes a version-8 row. A **failed** free run leaves the deck eligible, which would let a flaky upstream loop, so attempts are capped at 2 per deck per version, counted from the same join.
 
-**Ledger.** `reserveModelCall` (`allowance.ts`, the `insert` at about line 191) hardcodes `origin: "player"` and checks the player allowance and the spend cap first. It gains an `origin` argument. A `system` call skips the allowance check, is written `origin = 'system'` (the check constraint `model_calls_origin_check` already allows it), and settles `spent` or `refunded` like any other. **Consequence to state plainly:** `monthSpend` and the allowance read `origin = 'player'` only (`allowance.ts:86, 94, 267`), so this spend is invisible to the app-wide monthly cap. The bound is therefore the eligibility rule plus the 2-attempt limit, both in section 6, and PR 4 adds a test that a system call never reaches the player allowance and a second one for the same deck and version is refused.
+**Ledger.** `reserveModelCall` (`allowance.ts`, the `insert` at about line 191) hardcodes `origin: "player"` and checks the player allowance and the spend cap first. It gains an `origin` argument. A `system` call skips the allowance check, is written `origin = 'system'` (the check constraint `model_calls_origin_check` already allows it), and settles `spent` or `refunded` like any other. **Consequence to state plainly:** `monthSpend` and the allowance read `origin = 'player'` only (`allowance.ts:86, 94, 267`), so this spend is invisible to the app-wide monthly cap. The bound is therefore the eligibility rule plus the 2-attempt limit, both in section 6, and PR 5 adds a test that a system call never reaches the player allowance and a second one for the same deck and version is refused.
 
 **The read side.** `read.ts` (`wouldSpend`, lines ~122-124) hides the press when the allowance is paused, the owner share is hit or credits are used up. An eligible free run must bypass those in `read.ts` as well as in `reserveModelCall`, or an out-of-credits player is told the free run is unavailable.
 
@@ -237,7 +243,7 @@ No stacked PRs; each is cut from fresh `main`, reviewed once, merged. Line count
 
 ## 8. Design, copy and About
 
-**Needs Design: one light round, the claim tap-through (PR 5).** The brief, written by a subagent after approval, asks for: (1) how an item's supporting cards show (inline chips against a count that opens a sheet), on the desktop Overview tab and the phone modal, both in the same PR; (2) the card sheet, which should reuse the existing card-open trigger that `[[marks]]` already render, so it is a new entry point to an existing component and not a new component; (3) what a verified item looks like against an unverified one (the plan's answer is that unverified items are dropped, so there is **no** per-item verified badge, and the brief should confirm that); (4) the weakness line's tier lead word, and whether the rendered max rises from 3 to 4. Everything else below needs no Design.
+**Needs Design: one light round, the claim tap-through (PR 6).** The brief, written by a subagent after approval, asks for: (1) how an item's supporting cards show (inline chips against a count that opens a sheet), on the desktop Overview tab and the phone modal, both in the same PR; (2) the card sheet, which should reuse the existing card-open trigger that `[[marks]]` already render, so it is a new entry point to an existing component and not a new component; (3) what a verified item looks like against an unverified one (the plan's answer is that unverified items are dropped, so there is **no** per-item verified badge, and the brief should confirm that); (4) the weakness line's tier lead word, and whether the rendered max rises from 3 to 4. Everything else below needs no Design.
 
 **Eng-decidable without Design:** the tier as a leading word in the existing weakness slot; the assessment, evidence and verifier plumbing; the `methodOutdated` state reusing the stale layout.
 
@@ -262,7 +268,44 @@ No stacked PRs; each is cut from fresh `main`, reviewed once, merged. Line count
 ## 10. Asks of Hugh
 
 1. Approve the plan and the $15 cap, including a separate campaign ledger (the old one has $1.28 of headroom).
-2. Supply the Deckcheck pairs (Gishath export first), and label about 30 verifier-calibration tips (E2).
-3. Confirm "re-analyze" means rewrite the Overview (7.4).
-4. Rule on the About entry for the tap-through (section 8).
+2. ~~Supply the Deckcheck pairs and label about 30 tips~~ Done 2026-10-09 as the comparison corpus; it replaces the labelling (11.3).
+3. ~~Confirm "re-analyze"~~ Decided (11.3): it rewrites the Overview only.
+4. ~~About entry for the tap-through~~ Decided (11.3): it gets an entry, batched at the line's close.
 5. Whether the weakness slot may grow from 3 to 4 (Design round, section 8).
+
+## 11. Amendments of 2026-10-10 (Hugh's comparison corpus)
+
+Source: `boards/deckcheck-corpus-2026-10-09.md`, nine decks (eight of Hugh's, the friend's Imotekh) with Deckcheck against ours, findings tagged MISS / WRONG / WEAK / OURS+. It ranks six patterns; the plan's contract-8 work already answered patterns 2 to 5, and this section adds the top one and the missing checklist.
+
+### 11.1 The top lever: combos and deck stats as facts (new first PR)
+
+**Combo blindness is 4 of the 9 decks**: a deterministic combo missed in Wizards (Ghostly Flicker + Naru Meha), Counter Intelligence (Magistrate's Scepter / Inspirit; Basalt Monolith + Zirda), Eldrazi (Basalt Monolith + Forsaken Monument), and a mandatory loop read as value in Gishath. The data is free: `loadAssembledCombos` (`src/lib/profile/load.ts`) already returns the two-card combos a deck assembles from `spellbook_variants` / `spellbook_variant_cards`, with `produces`, `mana_needed`, `steps`, and `src/lib/combos/near-miss.ts` holds the one-piece-short pairs.
+
+PR 1 adds to the user message, as **facts**, each stated by name and by what it produces:
+
+- **Detected combos**: assembled combos of counted kinds only (`isCountedCombo`; card count is never the test), each with its pieces and `produces`, capped to the 6 most decisive (game-ending or infinite first).
+- **Near-assembled**: pairs with one piece missing from the deck, same cap of 3, labelled as missing a piece so the model does not claim them as a win condition.
+- **Deck stats**: ramp count and mana-rock/land supply from `jobTally` and `manaSupply`; **expected commander cast turn**, a deterministic function of the commander's mana value and the ramp count (the corpus's Zhulodok "turn 6" against T4 is the case), which the model is told to quote and not to guess; interaction counts by speed (instant versus sorcery) and by cost (one or two mana versus more) from the same oracle text the categories read.
+- **Prompt rule**: when a detected combo exists, the primer names it as the primary win condition. When none exists the rule does not fire (no invention). A forced-versus-optional loop is not asserted (11.3).
+
+Tested pure: fixtures built from the corpus's combos; a test that an empty combo set emits no combo lines; the cast-turn function pinned on the Zhulodok figures. Measured by combo recall (section 5.2) on the corpus.
+
+### 11.2 Archetype weakness checklist
+
+Added to the SYSTEM rule that fills the `assessment` of 3.1 (PR 3b). The model names the **hate card** for each that applies:
+
+- graveyard decks: graveyard hate (Rest in Peace, Bojuka Bog, Dauthi Voidwalker)
+- artifact decks: artifact wipes and Null Rod / Collector Ouphe
+- ninjutsu and activated-ability engines: Cursed Totem and its kin
+- indestructible decks: exile wipes (Farewell, Sunfall)
+- combat decks: fogs and pillowfort (Propaganda, Ghostly Prison)
+- combo decks: removal at the key window (the commander on its combat or ETB trigger)
+- every deck: a count of cheap instant-speed interaction, taken from the facts of 11.1 and not estimated
+
+### 11.3 Decisions recorded (orchestrator, 2026-10-10)
+
+1. **"Re-analyze" rewrites the Overview only** (7.4 stands as written).
+2. **The claim tap-through gets an About entry**, batched at the close of the line with one `ABOUT_VERSION` bump (8 stands).
+3. **The corpus replaces Hugh's labelling of about 30 tips** for verifier calibration (E2).
+4. **Mandatory-loop detection is a follow-up.** Spellbook's step text is partly selected today (`steps`), but forced/optional flags are not stored; the prompt never calls a loop value, and describes it by what it produces.
+5. **The corpus is the gold set** (5.1 to 5.2): every claim of ours graded correct, wrong or missed, plus combo recall. Store atomised, paraphrased claims in the repo, never Deckcheck's text. The Aang colour-count dispute and the Chain Reaction anti-synergy item are corpus cases whose gold is checked against the decklist and oracle text before scoring, not taken from Deckcheck.
