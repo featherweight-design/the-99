@@ -124,7 +124,9 @@ export const collectionEditCopy = {
   // /copy-review. Dates and times are UTC, spelled by the caller.
   history: {
     heading: "Changes to your collection",
-    lede: "Every upload and edit from the last 90 days. Revert any of them. It's undone from today.",
+    // The handoff continues "Revert any of them. It's undone from today." That claim comes with the
+    // Revert control (PR 6b); until then the page does not promise it.
+    lede: "Every upload and edit from the last 90 days.",
     kinds: {
       uploadReplace: "Replace upload",
       uploadAdd: "Add upload",
