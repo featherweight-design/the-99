@@ -177,6 +177,13 @@ export type ManaCurve = {
   lands: number;
 };
 
+/** The bucket a non-land card's mana value falls in: rounded, floored at 0, and `CURVE_MAX` for
+ *  that value and above. Exported so a reader placing ONE card on the curve uses the rule the
+ *  curve was counted with. */
+export function curveBucket(cmc: number): number {
+  return Math.min(Math.max(Math.round(cmc), 0), CURVE_MAX);
+}
+
 /**
  * LANDS ARE EXCLUDED, as they conventionally are: a land is not cast, so its
  * mana value of zero would pile roughly a third of the deck into the 0 column
@@ -205,8 +212,7 @@ export function manaCurve(cards: readonly CurveCard[]): ManaCurve {
     }
     copies += card.quantity;
     totalCmc += card.cmc * card.quantity;
-    const bucket = Math.min(Math.max(Math.round(card.cmc), 0), CURVE_MAX);
-    buckets[bucket].copies += card.quantity;
+    buckets[curveBucket(card.cmc)].copies += card.quantity;
   }
 
   return {
@@ -302,7 +308,7 @@ export function typeCurve(cards: readonly CurveCard[]): TypeCurve {
     if (isLandFace(card.typeLine)) continue;
     const type = cardTypeOf(card.typeLine);
     if (!type) continue;
-    const bucket = Math.min(Math.max(Math.round(card.cmc), 0), CURVE_MAX);
+    const bucket = curveBucket(card.cmc);
     buckets[bucket][type] += card.quantity;
     totals[type] += card.quantity;
   }
