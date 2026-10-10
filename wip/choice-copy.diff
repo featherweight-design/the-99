@@ -1,0 +1,42 @@
+diff --git a/src/lib/copy/collection-edit.ts b/src/lib/copy/collection-edit.ts
+index 63ff78fbc..da260d815 100644
+--- a/src/lib/copy/collection-edit.ts
++++ b/src/lib/copy/collection-edit.ts
+@@ -24,6 +24,37 @@ export const collectionEditCopy = {
+     addByHand: "Add cards by hand",
+     bodyShort: "Drop a CSV export from Moxfield, Archidekt, Deckbox or Manabox, or add cards by hand.",
+   },
++  // §A, the upload choice. Strings are the handoff's; the lines marked (new) have no key there and
++  // go to /copy-review.
++  upload: {
++    step: (i: number, of: number) => `STEP ${i} OF ${of}`,
++    choiceTitle: "Replace your collection, or add to it?",
++    choiceTitlePhone: "Replace or add?",
++    choiceLede: "Nothing changes until you confirm on the next screen.",
++    replaceTitle: "Replace my collection",
++    replaceBody: "Your collection becomes exactly this file. Anything not in it leaves.",
++    addTitle: "Add these cards",
++    addBody: "The file's quantities are added to yours. Nothing is removed, and your art picks stay.",
++    after: (from: number, to: number) => `${n(from)} → ${n(to)} cards`,
++    overwriteCount: (k: number, since: string) =>
++      `${n(k)} ${k === 1 ? "change" : "changes"} you made in the app since your ${since} upload will be overwritten.`,
++    overwriteUnknown: (last: string) =>
++      `Changes you made in the app may be overwritten. Your last upload was ${last}, before the 90 days history keeps, so we can't count them.`,
++    /** (new) Never uploaded, so every change made in the app is still on record. */
++    overwriteNoUpload: (k: number) => `${n(k)} ${k === 1 ? "change" : "changes"} you made in the app will be overwritten.`,
++    overlapNote: (pct: number) => `You already own ${pct}% of these cards. Adding the file doubles those copies.`,
++    continueReplace: "Review the replace →",
++    continueAdd: "Review the add →",
++    /** (new) The desktop foot's lead-in. */
++    nextReplace: "Next: a review of every card this replace moves.",
++    nextAdd: "Next: a review of every card this add raises.",
++    cancel: "Cancel",
++    /** (new) The comparison could not be read. */
++    prepareFailed: "We couldn't read how this file compares to your collection. Nothing was changed.",
++    retry: "Try again",
++    /** (new) Reading how the file compares. */
++    preparing: "Comparing with your collection…",
++  },
+   // §E, the short-deck warning. Replace is the only source so far; Save, Remove and Revert join
+   // with the PRs that draw them. Every string is a placeholder for /copy-review.
+   shortWarning: {
