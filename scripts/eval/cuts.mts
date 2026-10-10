@@ -18,41 +18,18 @@ import { parseArgs } from "node:util";
 
 const { values: args } = parseArgs({ options: { gishathOver: { type: "string", default: "5" } } });
 
-const STAGING = process.env.THE_99_NEON_STAGING_DIRECT;
-if (!STAGING) throw new Error("THE_99_NEON_STAGING_DIRECT is not set");
-process.env.DATABASE_URL = STAGING;
+import { connectStaging } from "./lib/staging.mjs";
+import { CUT_DECKS, GISHATH_DECK, loadCutTruth, pairedSwaps, type Head } from "./lib/cuts-truth.mjs";
 
-const { and, eq, inArray } = await import("drizzle-orm");
-const { db } = await import("../../src/db");
+const db = await connectStaging();
+const { eq, inArray } = await import("drizzle-orm");
 const schema = await import("../../src/db/schema");
 const { loadDeckProfileFromHead } = await import("../../src/lib/profile/load");
 const { readCutSupport } = await import("../../src/lib/decks/cuts-read");
 const { proposeCuts } = await import("../../src/lib/tuning/cuts");
 const { readLabels } = await import("../../src/lib/labels/read");
-type Head = Parameters<typeof loadDeckProfileFromHead>[0];
-
-const DECKS: { name: string; id: string }[] = [
-  { name: "HD - Avatar Aang", id: "0f585441-203e-475b-be7c-f11e67e20d79" },
-  { name: "HD Tune - Counter Intelligence", id: "2829cf41-1e07-4ec7-8353-8b0d9dfd678b" },
-  { name: "HD Tune - Prismari Artistry", id: "1a352a97-00fc-4309-a60e-5d518d56d34f" },
-  { name: "HD - Gods", id: "13a6dc28-958c-4591-a2bb-c0297bbe5d92" },
-  { name: "HD - Wizards", id: "7653dec3-bcf4-4045-8242-9000765c7601" },
-];
-const GISHATH = "904fdc61-e190-4ba5-8e34-2b18fa0584f2";
-
-async function versionCards(deckId: string, number: number) {
-  const [v] = await db.select().from(schema.deckVersions)
-    .where(and(eq(schema.deckVersions.deckId, deckId), eq(schema.deckVersions.number, number)));
-  if (!v) throw new Error(`deck ${deckId} has no version ${number}`);
-  const rows = await db.select({ oracleId: schema.deckVersionCards.oracleId, quantity: schema.deckVersionCards.quantity })
-    .from(schema.deckVersionCards).where(eq(schema.deckVersionCards.versionId, v.id));
-  return { v, rows };
-}
-
-async function userOf(deckId: string) {
-  const [d] = await db.select({ userId: schema.decks.userId }).from(schema.decks).where(eq(schema.decks.id, deckId));
-  return d.userId;
-}
+const { classifyCards } = await import("../../src/lib/edhrec/role-targets");
+const GISHATH = GISHATH_DECK;
 
 type Profile = Awaited<ReturnType<typeof loadDeckProfileFromHead>>;
 type Support = Awaited<ReturnType<typeof readCutSupport>>;
@@ -96,10 +73,18 @@ async function withLabelRoles(profile: Profile, support: Support): Promise<Profi
       if (!commanders.has(c.oracleId)) excl[r] += c.quantity;
     }
   }
+  // A support card with no fresh label takes the classifier's roles, as a deck card does above, so
+  // the targets are not shrunk by the cards labels have not reached.
+  const unlabeled = [...support.inclusion.keys()].filter((id) => !labels.has(id));
+  const fallback = unlabeled.length === 0 ? new Map() : classifyCards(
+    await db.select({ oracleId: schema.cards.oracleId, typeLine: schema.cards.typeLine, oracleText: schema.cards.oracleText, layout: schema.cards.layout, keywords: schema.cards.keywords })
+      .from(schema.cards).where(inArray(schema.cards.oracleId, unlabeled)),
+  );
   const targets = { ramp: 0, draw: 0, removal: 0, wipes: 0 };
   for (const [id, pct] of support.inclusion) {
     if (pct == null || pct <= 0) continue;
-    for (const r of labelRoles(id) ?? []) targets[r] += pct / 100;
+    const roles: string[] = labelRoles(id) ?? fallback.get(id) ?? [];
+    for (const r of ROLE_KEYS) if (roles.includes(r)) targets[r] += pct / 100;
   }
   return {
     ...profile,
@@ -109,38 +94,18 @@ async function withLabelRoles(profile: Profile, support: Support): Promise<Profi
 }
 
 const cases: Case[] = [];
-for (const d of DECKS) {
-  const [v1, v2] = [await versionCards(d.id, 1), await versionCards(d.id, 2)];
-  const in2 = new Set(v2.rows.map((r) => r.oracleId));
-  const in1 = new Set(v1.rows.map((r) => r.oracleId));
-  const cut = v1.rows.filter((r) => !in2.has(r.oracleId)).map((r) => r.oracleId);
-  const added = v2.rows.filter((r) => !in1.has(r.oracleId));
-  const head: Head = {
-    deckId: d.id,
-    userId: await userOf(d.id),
-    commanderOracleId: v2.v.commanderOracleId,
-    partnerOracleId: v2.v.partnerOracleId,
-    declaredBracket: v2.v.declaredBracket,
-    cards: [...v1.rows, ...added],
-  };
+for (const t of await loadCutTruth(db)) {
   const [profile, support] = await Promise.all([
-    loadDeckProfileFromHead(head),
-    readCutSupport(head.commanderOracleId, head.partnerOracleId),
+    loadDeckProfileFromHead(t.head),
+    readCutSupport(t.head.commanderOracleId, t.head.partnerOracleId),
   ]);
-  // An UPGRADE SWAP: a removed card with an unused add that fills one of its roles (classifier
-  // roles; "none" is a role of its own). The rest are NET reductions.
-  const roleSet = new Map<string, Set<string>>();
-  for (const c of profile.cards) roleSet.set(c.oracleId, new Set());
-  for (const r of [...ROLE_KEYS, "land"] as const) for (const c of profile.roles.cards[r] ?? []) roleSet.get(c.oracleId)?.add(r);
-  for (const set of roleSet.values()) if (set.size === 0) set.add("none");
-  const free = new Set(added.map((a) => a.oracleId));
-  const paired = new Set<string>();
-  for (const id of cut) {
-    const mate = [...free].find((a) => [...(roleSet.get(a) ?? [])].some((r) => roleSet.get(id)?.has(r)));
-    if (mate) { free.delete(mate); paired.add(id); }
+  const rolesOf = new Map<string, Set<string>>();
+  for (const r of [...ROLE_KEYS, "land"] as const) {
+    for (const c of profile.roles.cards[r] ?? []) rolesOf.set(c.oracleId, (rolesOf.get(c.oracleId) ?? new Set()).add(r));
   }
-  cases.push({ name: d.name, k: cut.length, cut, paired, profile, labelProfile: await withLabelRoles(profile, support), support });
-  console.error(`${d.name}: ${cut.length} cut, ${added.length} added, ${paired.size} swapped for a card of the same role`);
+  const paired = pairedSwaps(t.cut, t.added, rolesOf);
+  cases.push({ name: t.name, k: t.cut.length, cut: t.cut, paired, profile, labelProfile: await withLabelRoles(profile, support), support });
+  console.error(`${t.name}: ${t.cut.length} cut, ${t.added.length} added, ${paired.size} swapped for a card of the same role`);
 }
 
 /** Hits in the engine's top K, by cut id. */
@@ -182,7 +147,7 @@ const labelHit = sum(cases.map((c) => hitsOf(c, { labels: true })));
 
 console.log("# Proposed cuts tier 1: recall against the cuts Hugh made\n");
 console.log(
-  `**Answer: ${totalHit * 2 < totalK ? "yes" : "no"}, the free tier ${totalHit * 2 < totalK ? "misses most of" : "finds at least half of"} the cuts Hugh made${lift < 1.5 ? ", and does little better than chance" : ""}.**` +
+  `**Answer: ${totalHit * 2 < totalK ? "yes" : "no"}, the free tier ${totalHit * 2 < totalK ? "misses most of" : "finds at least half of"} the cuts Hugh made${lift < 1.5 ? ", and does little better than chance" : ""}.** ` +
   `Its top K holds ${totalHit} of ${totalK} (${pct(totalHit, totalK)}), ${lift.toFixed(1)}x what chance would hold (${chance.toFixed(1)}); the top 2K holds ${totalHit2k} (${pct(totalHit2k, totalK)}). ` +
   `With roles read from card labels it holds ${labelHit} (${(labelHit / Math.max(chance, 1e-9)).toFixed(1)}x chance); with weights tuned on four decks and scored on the fifth it holds ${looHit} (${(looHit / Math.max(chance, 1e-9)).toFixed(1)}x). Caveats: five decks, one player; a v1 to v2 removal is often a swap for a better card rather than a card the deck was too big for (see the split below).\n`,
 );

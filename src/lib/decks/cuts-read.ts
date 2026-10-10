@@ -47,28 +47,31 @@ export async function readProposedCuts(deckId: string, userId: string): Promise<
  * two together, and falling back to one would score the other's cards against the wrong decks.
  */
 export async function readCutSupport(commander: string, partner: string | null): Promise<CutSupport | null> {
-  let header: { state: string; deckCount: number | null } | undefined;
-  let rows: { oracleId: string; inclusion: number | null }[];
-  if (partner) {
-    const pair = canonicalPair(commander, partner);
-    const key = (t: typeof commanderPairSupport | typeof commanderPairSupportCards) => and(
-      eq(t.commanderOracleId, pair.commanderOracleId),
-      eq(t.partnerOracleId, pair.partnerOracleId),
-    );
-    [[header], rows] = await Promise.all([
-      db.select({ state: commanderPairSupport.synergyState, deckCount: commanderPairSupport.deckCount })
-        .from(commanderPairSupport).where(key(commanderPairSupport)),
-      db.select({ oracleId: commanderPairSupportCards.oracleId, inclusion: commanderPairSupportCards.inclusion })
-        .from(commanderPairSupportCards).where(key(commanderPairSupportCards)),
-    ]);
-  } else {
-    [[header], rows] = await Promise.all([
-      db.select({ state: commanderSupport.synergyState, deckCount: commanderSupport.deckCount })
+  const key = (t: typeof commanderPairSupport | typeof commanderPairSupportCards, pair: ReturnType<typeof canonicalPair>) => and(
+    eq(t.commanderOracleId, pair.commanderOracleId),
+    eq(t.partnerOracleId, pair.partnerOracleId),
+  );
+  // The header and its card rows are published together by an index copy; read apart, a copy
+  // landing between the two statements would pair one generation's state with another's list.
+  const { header, rows } = await db.transaction(async (tx) => {
+    if (partner) {
+      const pair = canonicalPair(commander, partner);
+      const [[h], r] = await Promise.all([
+        tx.select({ state: commanderPairSupport.synergyState, deckCount: commanderPairSupport.deckCount })
+          .from(commanderPairSupport).where(key(commanderPairSupport, pair)),
+        tx.select({ oracleId: commanderPairSupportCards.oracleId, inclusion: commanderPairSupportCards.inclusion })
+          .from(commanderPairSupportCards).where(key(commanderPairSupportCards, pair)),
+      ]);
+      return { header: h, rows: r };
+    }
+    const [[h], r] = await Promise.all([
+      tx.select({ state: commanderSupport.synergyState, deckCount: commanderSupport.deckCount })
         .from(commanderSupport).where(eq(commanderSupport.commanderOracleId, commander)),
-      db.select({ oracleId: commanderSupportCards.oracleId, inclusion: commanderSupportCards.inclusion })
+      tx.select({ oracleId: commanderSupportCards.oracleId, inclusion: commanderSupportCards.inclusion })
         .from(commanderSupportCards).where(eq(commanderSupportCards.commanderOracleId, commander)),
     ]);
-  }
+    return { header: h, rows: r };
+  }, { isolationLevel: "repeatable read", accessMode: "read only" });
   if (header?.state !== "ok" || rows.length === 0) return null;
   return {
     deckCount: header.deckCount,
