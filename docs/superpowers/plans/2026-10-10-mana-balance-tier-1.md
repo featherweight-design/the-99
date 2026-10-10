@@ -54,7 +54,7 @@ and a deck with no sources returns `noSources`. Neither refuses (Ruling 6).
    from the missing-staple read below, so it is a card the commander's decks run, not a name picked
    by the engine. Which basics go: only basics of an over-served color, or basics of a balanced
    color that produce NONE of the short colors, so removing one never lowers a short color's
-   supply. How many: 1 to the rock's count of copies the deck takes in (one), and the trade is
+   supply. How many: one basic per rock added, and the trade is
    simulated before it is emitted: the engine removes the basics, adds the rock's colors, re-runs
    the counted rule over the new supply (the budget and every target move), and emits the trade
    only when the short color's gap falls and no other color goes from balanced or over-served to
