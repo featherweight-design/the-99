@@ -15,6 +15,7 @@ import { jobTally } from "../../lib/decks/job-tally";
 import { manaCurve, typeCurve, type DeckStatsInput } from "../../lib/decks/stats";
 import { averageComparison } from "../../lib/decks/stats-average";
 import { moneyStats } from "../../lib/decks/stats-money";
+import { resultsStats } from "../../lib/decks/stats-results";
 import { landProduces, manaSupply } from "../../lib/mana/supply";
 import type { RecommendedMix } from "../../lib/decks/mix";
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
@@ -142,6 +143,12 @@ type DecklistProps = {
   /** `DECK_STATS_ENABLED`. Off: no Stats segment is drawn and nothing else changes. */
   statsEnabled?: boolean;
   statsData?: DeckStatsInput | null;
+  /** The logged games (newest first, as `listDeckGames` returns them) and the deck's versions (newest
+   *  first) for the Results card. A brew has no versions, so the card's by-version section is absent. */
+  games?: readonly { result: "win" | "loss" | "draw"; playedAt: Date; versionNumber: number | null }[];
+  versions?: readonly { number: number; committedAt: Date }[];
+  /** The Results card's empty-state link: opens the Games tab. */
+  onLogGame?: () => void;
   filter: "all" | "shopping";
   grouping: "type" | "role";
   onFilterChange: (f: "all" | "shopping") => void;
@@ -291,6 +298,10 @@ const EMPTY_PENDING_CHANGES: ReadonlyMap<string, PendingChangeMove> = new Map();
  *  render when nothing was spent. */
 const EMPTY_SPENT_SLOTS: DeckDetailCard[] = [];
 
+// Stable empties, so a deck without them does not rebuild the Stats slice on every render.
+const NO_GAMES: readonly { result: "win" | "loss" | "draw"; playedAt: Date; versionNumber: number | null }[] = [];
+const NO_VERSIONS: readonly { number: number; committedAt: Date }[] = [];
+
 export function Decklist({
   deckId,
   cards,
@@ -305,6 +316,9 @@ export function Decklist({
   filled = false,
   statsEnabled = false,
   statsData = null,
+  games = NO_GAMES,
+  versions = NO_VERSIONS,
+  onLogGame,
   filter,
   grouping,
   onFilterChange: onFilterChangeProp,
@@ -449,8 +463,9 @@ export function Decklist({
       },
       newestAsOf,
     );
-    return { curve: manaCurve(list), types: typeCurve(list), jobs, mana, average, money };
-  }, [cards, statsData, commander, partner, newestAsOf]);
+    const results = resultsStats(games, versions);
+    return { curve: manaCurve(list), types: typeCurve(list), jobs, mana, average, money, results };
+  }, [cards, statsData, commander, partner, newestAsOf, games, versions]);
 
   // The commanders the Shopping list bills (H28), through the list's own predicate. Every Shopping
   // figure below counts them; only the Shopping branch draws them, in a group of their own.
@@ -666,7 +681,7 @@ export function Decklist({
           stats={stats}
           {...lockProps}
         />
-        <DeckStatsView data={statsSlice} onShop={() => onFilterChange("shopping")} />
+        <DeckStatsView data={statsSlice} onShop={() => onFilterChange("shopping")} onLogGame={onLogGame} />
       </div>
     );
   }

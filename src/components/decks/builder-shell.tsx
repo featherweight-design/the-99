@@ -1817,6 +1817,9 @@ export function BuilderShell({
               <Decklist
               statsEnabled={statsEnabled}
               statsData={statsData}
+              games={games}
+              versions={versions}
+              onLogGame={() => setView("games")}
               mix={mix}
                 deckId={deck.id}
                 cards={cards}
