@@ -521,6 +521,18 @@ describe("ReplaceFlow · the choice, keyboard and concurrency", () => {
     expect(screen.queryByRole("radiogroup")).toBeNull();
   });
 
+  it("opens the receipt, not a retry, when a confirm threw after the write had committed", async () => {
+    push.mockReset();
+    confirmUpload.mockReset().mockRejectedValueOnce(new Error("receipt write failed"));
+    previewChange.mockResolvedValueOnce(d(5)).mockResolvedValueOnce(d(12)).mockResolvedValue(null);
+    await startFlow();
+    fireEvent.click(await screen.findByRole("radio", { name: /Add these cards/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Review the add →" }));
+    await act(async () => fireEvent.click(await screen.findByRole("button", { name: /^Add \d/ })));
+    expect(push).toHaveBeenCalledWith("/collection/replace/summary/up_1");
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
   it("arrow keys move focus with the pick, from whichever card has focus", async () => {
     previewChange.mockResolvedValue(d(5));
     await startFlow();

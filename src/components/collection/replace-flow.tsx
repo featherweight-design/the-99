@@ -192,6 +192,13 @@ export function ReplaceFlow({
       // upload id, so it survives a reload and stays linkable.
       nav.go(`/collection/replace/summary/${preview.uploadId}`);
     } catch (e) {
+      // A throw is not proof that nothing was written: the write commits before its cache
+      // invalidation and its receipt, and either can fail after it. The preview of an upload that
+      // is already confirmed answers null, so ask it before claiming the collection is unchanged.
+      if (choosing && (await previewUploadChange(preview.uploadId, picked ?? "replace").then((r) => r === null, () => false))) {
+        nav.go(`/collection/replace/summary/${preview.uploadId}`);
+        return;
+      }
       if (review) {
         // Nothing was written and the review stays (A5).
         setChange({ ...review, failure: { body: collectionEditCopy.upload.failedBody } });
