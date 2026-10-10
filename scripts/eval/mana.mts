@@ -103,6 +103,6 @@ for (const [label, id, color] of ASKS) {
   for (const m of h.rebalance) console.log(`  rebalance: up to ${m.maxCopies} ${m.basicOut} to ${m.basicIn} (${changeText(m.changes)})`);
   if (h.rebalance.length === 0) console.log("  rebalance: none that leaves every other color as it is");
   for (const t of h.trades.slice(0, 3)) console.log(`  trade: ${t.basicOut} for ${t.staple.name} (${changeText(t.changes)}), ${t.staple.free > 0 ? `${t.staple.free} free` : "to buy"} ${price(t.staple.priceCents)}`);
-  for (const s of h.staples.slice(0, 5)) console.log(`  staple: ${s.name} [${s.produces.join("")}] ${s.fact.kind === "commander" ? `in ${s.fact.inclusion ?? "?"}% of this commander's decks` : `${s.fact.commanders} of ${s.fact.commanderTotal} ${s.fact.condition} commanders (bucket average ${s.fact.avgInclusion.toFixed(1)}%)`}, ${s.free > 0 ? `${s.free} free` : "to buy"} ${price(s.priceCents)}`);
+  for (const s of h.staples.slice(0, 5)) console.log(`  staple: ${s.name} [${s.produces.join("")}] ${s.fact.kind === "commander" ? `in ${s.fact.inclusion ?? "?"}% of this commander's decks` : s.fact.kind === "pair" ? `in ${s.fact.inclusion ?? "?"}% of this pairing's decks` : `${s.fact.commanders} of ${s.fact.commanderTotal} ${s.fact.condition} commanders (bucket average ${s.fact.avgInclusion.toFixed(1)}%)`}, ${s.free > 0 ? `${s.free} free` : "to buy"} ${price(s.priceCents)}`);
 }
 process.exit(diffs.length > 0 ? 1 : 0);

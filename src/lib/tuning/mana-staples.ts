@@ -15,10 +15,11 @@ import { classifyRoles } from "../recs/roles";
 import { countCondition, identityCondition } from "../staples/condition";
 
 /** What the number behind a staple means, which differs by where it was read. A commander's own
- *  page is a rate over that commander's decks; the identity bucket is an average across commanders,
- *  and is never labelled as this commander's rate. */
+ *  page is a rate over that commander's decks, a partner pair's is a rate over that pairing's decks,
+ *  and the identity bucket is an average across commanders; none is ever labelled as another. */
 export type StapleFact =
   | { kind: "commander"; inclusion: number | null }
+  | { kind: "pair"; inclusion: number | null }
   | { kind: "identity"; condition: string; commanders: number; commanderTotal: number; avgInclusion: number };
 
 export type StapleCandidate = {
@@ -34,7 +35,21 @@ export type StapleCandidate = {
   priceCents: number | null;
 };
 
-const strength = (f: StapleFact) => (f.kind === "commander" ? (f.inclusion ?? -1) : f.commanders / Math.max(1, f.commanderTotal));
+const strength = (f: StapleFact) => (f.kind === "identity" ? f.commanders / Math.max(1, f.commanderTotal) : (f.inclusion ?? -1));
+
+/** The buckets tried, in order, for a commander with no page of its own: its exact identity, then the
+ *  colour-count bucket the profile's floor falls back to. */
+export const bucketConditions = (identity: readonly string[]): string[] => [identityCondition(identity), countCondition(identity.length)];
+
+/** The rows a deck may be offered: not already held, not a basic (the rebalance owns those), and inside
+ *  the commander's identity. Legality is asked of the catalog in the read itself. */
+export function eligibleRows<T extends { oracleId: string; typeLine: string; colorIdentity: readonly string[] }>(
+  rows: readonly T[],
+  held: ReadonlySet<string>,
+  identity: readonly string[],
+): T[] {
+  return rows.filter((r) => !held.has(r.oracleId) && !/\bbasic\b/i.test(r.typeLine) && r.colorIdentity.every((c) => identity.includes(c)));
+}
 
 /** Candidates that add a color in `helps`, owned copies first, then by how often the commander (or
  *  the bucket) runs them, then by name so the order is stable. */
@@ -62,7 +77,7 @@ export async function loadManaStaples(deck: DeckDetail, userId: string): Promise
         and(eq(commanderPairSupportCards.commanderOracleId, a), eq(commanderPairSupportCards.partnerOracleId, b)),
         and(eq(commanderPairSupportCards.commanderOracleId, b), eq(commanderPairSupportCards.partnerOracleId, a)),
       ));
-    facts = new Map(rows.map((r) => [r.oracleId, { kind: "commander", inclusion: r.inclusion }]));
+    facts = new Map(rows.map((r) => [r.oracleId, { kind: "pair", inclusion: r.inclusion }]));
   } else {
     const rows = await db.select({ oracleId: commanderSupportCards.oracleId, inclusion: commanderSupportCards.inclusion })
       .from(commanderSupportCards)
@@ -71,7 +86,7 @@ export async function loadManaStaples(deck: DeckDetail, userId: string): Promise
   }
   // No page of its own: the identity bucket, else the colour-count bucket the floor falls back to (the
   // profile's chain), and the fact keeps the condition that actually supplied the rows.
-  for (const condition of facts.size === 0 ? [identityCondition(identity), countCondition(identity.length)] : []) {
+  for (const condition of facts.size === 0 ? bucketConditions(identity) : []) {
     const rows = await db.select().from(formatStaples).where(eq(formatStaples.condition, condition));
     if (rows.length === 0) continue;
     facts = new Map(rows.map((r) => [r.oracleId, { kind: "identity", condition, commanders: r.commanders, commanderTotal: r.commanderTotal, avgInclusion: r.avgInclusion }]));
@@ -84,8 +99,7 @@ export async function loadManaStaples(deck: DeckDetail, userId: string): Promise
     .select({ oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine, manaCost: cards.manaCost, oracleText: cards.oracleText, keywords: cards.keywords, layout: cards.layout, colorIdentity: cards.colorIdentity })
     .from(cards)
     .where(and(inArray(cards.oracleId, ids), eq(cards.commanderLegal, true)));
-  // Inside the commander's identity, and never a basic: the rebalance suggestion owns the basics.
-  const pool = rows.filter((r) => !/\bbasic\b/i.test(r.typeLine) && r.colorIdentity.every((c) => identity.includes(c)));
+  const pool = eligibleRows(rows, held, identity);
   const labels = await loadStatsLabels(pool);
   const [lands, sources] = await Promise.all([
     loadLandMana(pool, identity),

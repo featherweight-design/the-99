@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { rankStaples, type StapleCandidate } from "./mana-staples";
+import { bucketConditions, eligibleRows, rankStaples, type StapleCandidate } from "./mana-staples";
 
 const c = (name: string, over: Partial<StapleCandidate> = {}): StapleCandidate => ({
   oracleId: name,
@@ -51,5 +51,40 @@ describe("rankStaples", () => {
     const input = [c("B"), c("A")];
     rankStaples(input, ["G"]);
     expect(input.map((x) => x.name)).toEqual(["B", "A"]);
+  });
+});
+
+describe("rankStaples: a pair's figure", () => {
+  it("ranks a partner pair's inclusion like a commander's, and keeps it its own kind", () => {
+    const out = rankStaples([c("Low", { fact: { kind: "pair", inclusion: 10 } }), c("High", { fact: { kind: "pair", inclusion: 60 } })], ["G"]);
+    expect(out.map((x) => [x.name, x.fact.kind])).toEqual([["High", "pair"], ["Low", "pair"]]);
+  });
+});
+
+describe("bucketConditions", () => {
+  it("tries the exact identity, then the colour-count bucket the profile's floor falls back to", () => {
+    expect(bucketConditions(["G", "W", "R"])).toEqual(["GRW", "count:3"]);
+    expect(bucketConditions(["U", "B", "R", "G"])).toEqual(["BGRU", "count:4"]);
+    expect(bucketConditions([])).toEqual(["C", "count:0"]);
+  });
+});
+
+describe("eligibleRows", () => {
+  const row = (oracleId: string, typeLine: string, colorIdentity: string[]) => ({ oracleId, typeLine, colorIdentity });
+  it("drops what the deck holds, basics, and anything outside the commander's identity", () => {
+    const rows = [
+      row("held", "Artifact", []),
+      row("basic", "Basic Land — Forest", ["G"]),
+      row("snow", "Basic Snow Land — Forest", ["G"]),
+      row("off", "Artifact", ["U"]),
+      row("mixed", "Land", ["G", "U"]),
+      row("ok", "Artifact", []),
+      row("okg", "Creature", ["G"]),
+    ];
+    expect(eligibleRows(rows, new Set(["held"]), ["G", "W"]).map((r) => r.oracleId)).toEqual(["ok", "okg"]);
+  });
+
+  it("keeps a colourless card for any identity, including none", () => {
+    expect(eligibleRows([row("a", "Artifact", [])], new Set(), []).map((r) => r.oracleId)).toEqual(["a"]);
   });
 });
