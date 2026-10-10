@@ -139,7 +139,12 @@ export type EditOutcome =
  * from the client, carried across a printing fix. A row naming no catalog printing (a bare
  * `Name,Qty` import's) keeps a null id.
  */
-export async function editCollection(actionId: string, rows: unknown, confirmShort?: unknown): Promise<EditOutcome> {
+export async function editCollection(
+  actionId: string,
+  rows: unknown,
+  confirmShort?: unknown,
+  seen?: unknown,
+): Promise<EditOutcome> {
   const userId = await signedInEditor();
   if (!isUuid(actionId)) throw new Error("bad action id");
   const parsed = linesOf(rows).map((r) => {
@@ -156,6 +161,12 @@ export async function editCollection(actionId: string, rows: unknown, confirmSho
     }
     return { ...identity, quantity, expected, condition: condition as string | null | undefined };
   });
+  // Every holding of the card the sheet showed. Absent for a caller that never drew the card's list.
+  const seenIdentities = seen === undefined ? undefined : linesOf(seen).map((s) => {
+    const identity = identityOf(s);
+    if (!identity) throw new Error("bad collection row");
+    return identity;
+  });
   const catalog = await resolvePrintings(parsed);
   const editRows: EditRow[] = parsed.map((r) => {
     const printing = catalog.get(printingRefKey(r));
@@ -168,7 +179,7 @@ export async function editCollection(actionId: string, rows: unknown, confirmSho
     return { ...r, scryfallId: printing?.scryfallId ?? null, condition: r.condition ?? null };
   });
   const result = await applyCollectionChange(
-    userId, { kind: "edit", rows: editRows }, { id: actionId, confirmShort: parseShortDecks(confirmShort) },
+    userId, { kind: "edit", rows: editRows, seen: seenIdentities }, { id: actionId, confirmShort: parseShortDecks(confirmShort) },
   );
   const done = settled(userId, result);
   if (done) return done;

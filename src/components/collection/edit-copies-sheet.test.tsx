@@ -92,6 +92,8 @@ describe("Edit copies, saving", () => {
       { oracleId: OID, setCode: "c21", collectorNumber: "263", finish: "nonfoil", quantity: 2, expected: 3 },
     ]);
     expect(onClose).toHaveBeenCalledWith({ saved: { entryId: "entry-1", removed: false, total: 4, copiesRemoved: 5 } });
+    // Every holding the sheet drew rides along, so a printing added in another tab answers stale.
+    expect(edit.mock.calls[0][3]).toEqual(HELD.map((h) => ({ oracleId: OID, setCode: h.setCode, collectorNumber: h.collectorNumber, finish: h.finish })));
   });
 
   it("reads Checking decks while a lowering is being checked, and Saving while a raise is written", async () => {

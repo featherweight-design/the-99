@@ -4,7 +4,7 @@ import type { HistoryRow } from "../../db/schema";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import {
   committedShortfalls, countMoves, newlyShort, normalizeItems, planAdd, planEdit, planReplace,
-  planRevert, staleEdits, staleRevert, warningCovers, type ShortDeck,
+  planRevert, staleEdits, unseenHoldings, staleRevert, warningCovers, type ShortDeck,
 } from "./write";
 import { collectionEditEnabled } from "./edit-flag";
 
@@ -108,6 +108,13 @@ describe("planEdit", () => {
     expect(staleEdits(current, [{ ...id(A), quantity: 2, expected: 2 }])).toHaveLength(1);
     expect(staleEdits(current, [{ ...id(B), quantity: 1, expected: 0 }])).toEqual([]);
     expect(staleEdits(current, [{ ...id(A), quantity: 1 }])).toEqual([]);
+  });
+
+  it("finds a holding of the card the editor never showed, and claims nothing without a `seen` list", () => {
+    const current = coll(held(A, 3), { ...held(A, 1), setCode: "lea2" } as never);
+    expect(unseenHoldings(current, undefined)).toEqual([]);
+    expect(unseenHoldings(current, [id(A)])).toHaveLength(1);
+    expect(unseenHoldings(current, [id(A), id(A, "lea2")])).toEqual([]);
   });
 });
 

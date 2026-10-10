@@ -264,7 +264,13 @@ export function lineNote(oracleId: string, holdings: CardHolding[], l: EditLineS
 function carryOrigins(before: EditLineState[], res: { lines: EditLineState[]; merged: EditLineState | null }, id: string) {
   const mover = before.find((l) => l.id === id);
   if (!res.merged || !mover || res.merged.id === id) return res;
-  const merged = { ...res.merged, origins: [...res.merged.origins, ...mover.origins] };
+  // Two lines landing on one NEW holding keep a condition only when they agree, as every other
+  // aggregation of rows does, so the order the player moved them in cannot decide what is stored.
+  const merged = {
+    ...res.merged,
+    origins: [...res.merged.origins, ...mover.origins],
+    condition: res.merged.condition === mover.condition ? res.merged.condition : null,
+  };
   return { lines: res.lines.map((l) => (l.id === merged.id ? merged : l)), merged };
 }
 

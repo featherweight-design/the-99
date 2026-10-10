@@ -16,7 +16,7 @@ import type { EditCard } from "../../lib/collection/edit-lines";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { AddCardsSheet } from "./add-cards-sheet";
 import type { EditResult } from "./edit-copies-sheet";
-import { announceEditToast } from "./edit-toast";
+import { announceEditToast, armEditToast } from "./edit-toast";
 
 const c = collectionEditCopy.copies;
 const r = collectionEditCopy.remove;
@@ -50,6 +50,7 @@ export function EditCopiesHost({
       fresh = await settleCollectionWrite().then(() => true, () => false);
     }
     setSheet(false);
+    armEditToast();
     // A card that is gone has no details to go back to.
     if (fresh && !saved.removed) onReopen();
     onDone();

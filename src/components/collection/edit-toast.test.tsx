@@ -14,7 +14,7 @@ vi.mock("./revert-confirm", () => ({
   ),
 }));
 
-const { CollectionEditToast, announceEditToast, TOAST_MS } = await import("./edit-toast");
+const { CollectionEditToast, announceEditToast, armEditToast, TOAST_MS } = await import("./edit-toast");
 
 const c = collectionEditCopy.copies;
 const r = collectionEditCopy.remove;
@@ -48,6 +48,17 @@ describe("the Edit copies toast", () => {
   it("goes away after eight seconds", async () => {
     render(<CollectionEditToast />);
     act(() => announceEditToast(removed));
+    act(() => armEditToast());
+    await act(async () => void vi.advanceTimersByTime(TOAST_MS + 10));
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("does not start counting until the sheet that saved has closed", async () => {
+    render(<CollectionEditToast />);
+    act(() => announceEditToast(removed));
+    await act(async () => void vi.advanceTimersByTime(TOAST_MS * 3));
+    expect(screen.getByRole("status")).toBeTruthy(); // a slow settle cannot spend the Undo window
+    act(() => armEditToast());
     await act(async () => void vi.advanceTimersByTime(TOAST_MS + 10));
     expect(screen.queryByRole("status")).toBeNull();
   });
@@ -55,6 +66,7 @@ describe("the Edit copies toast", () => {
   it("Undo is a revert of that entry through the revert confirmation; the toast steps aside and waits", async () => {
     render(<CollectionEditToast />);
     act(() => announceEditToast(removed));
+    act(() => armEditToast());
     fireEvent.click(screen.getByRole("button", { name: r.undo }));
     expect(screen.getByText(`e2|${collectionEditCopy.history.kinds.remove}|${c.undoWhen}`)).toBeTruthy();
     expect(screen.queryByRole("status")).toBeNull();

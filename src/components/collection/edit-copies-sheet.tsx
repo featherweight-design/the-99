@@ -188,7 +188,9 @@ export function EditCopiesSheet({
     const json = JSON.stringify(rows);
     if (attempt.current?.payload !== json) attempt.current = { id: crypto.randomUUID(), payload: json };
     try {
-      const out = await editCollection(attempt.current.id, rows, confirmShort);
+      // `seen` is every holding the sheet drew: one added elsewhere since answers `stale`.
+      const seen = holdings.map((h) => ({ oracleId: card.oracleId, setCode: h.setCode, collectorNumber: h.collectorNumber, finish: h.finish }));
+      const out = await editCollection(attempt.current.id, rows, confirmShort, seen);
       if ("applied" in out) {
         onClose({ saved: { entryId: out.applied.id, removed: isRemoval, total: sum.total, copiesRemoved: sum.held } });
         return;

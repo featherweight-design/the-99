@@ -14,7 +14,8 @@ vi.mock("./add-cards-sheet", () => ({
   },
 }));
 const announce = vi.fn();
-vi.mock("./edit-toast", () => ({ announceEditToast: (t: unknown) => announce(t) }));
+const arm = vi.fn();
+vi.mock("./edit-toast", () => ({ announceEditToast: (t: unknown) => announce(t), armEditToast: () => arm() }));
 
 const { EditCopiesHost } = await import("./edit-copies-host");
 
@@ -28,7 +29,7 @@ const mount = () => render(<EditCopiesHost card={card} onReopen={onReopen} onDon
 const close = (res: EditResult) => act(async () => sheetClose(res));
 
 beforeEach(() => {
-  for (const f of [settle, onReopen, onDone, announce]) f.mockClear();
+  for (const f of [settle, onReopen, onDone, announce, arm]) f.mockClear();
   settle.mockResolvedValue(undefined);
 });
 afterEach(cleanup);
@@ -56,6 +57,7 @@ describe("the Edit copies host", () => {
     onReopen.mockImplementationOnce(() => void order.push("reopen"));
     await close({ saved: { entryId: "e1", removed: false, total: 6, copiesRemoved: 5 } });
     expect(order).toEqual(["toast", "settle", "reopen"]);
+    expect(arm).toHaveBeenCalledTimes(1); // the countdown starts once the sheet has closed
     expect(announce).toHaveBeenCalledWith({ entryId: "e1", removed: false, text: c.saved("Sol Ring", 6) });
   });
 

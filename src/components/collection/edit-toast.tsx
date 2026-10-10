@@ -18,6 +18,7 @@ const r = collectionEditCopy.remove;
 /** The toast lasts this long (R2 §D: eight seconds), unless a revert is being decided. */
 export const TOAST_MS = 8000;
 const EVENT = "collection-edit-toast";
+const ARM = "collection-edit-toast-arm";
 
 export type EditToast = { text: string; entryId: string; removed: boolean };
 
@@ -25,24 +26,39 @@ export function announceEditToast(toast: EditToast) {
   window.dispatchEvent(new CustomEvent<EditToast>(EVENT, { detail: toast }));
 }
 
+/**
+ * The sheet that saved has closed and its page is inert no more: the countdown starts now, not when
+ * the toast was announced, or a slow settle would spend the Undo window while nothing could be pressed.
+ */
+export function armEditToast() {
+  window.dispatchEvent(new Event(ARM));
+}
+
 export function CollectionEditToast() {
   const [toast, setToast] = useState<EditToast | null>(null);
+  const [armed, setArmed] = useState(false);
   const [undoing, setUndoing] = useState(false);
 
   useEffect(() => {
     const on = (e: Event) => {
       setUndoing(false);
+      setArmed(false);
       setToast((e as CustomEvent<EditToast>).detail);
     };
+    const arm = () => setArmed(true);
     window.addEventListener(EVENT, on);
-    return () => window.removeEventListener(EVENT, on);
+    window.addEventListener(ARM, arm);
+    return () => {
+      window.removeEventListener(EVENT, on);
+      window.removeEventListener(ARM, arm);
+    };
   }, []);
 
   useEffect(() => {
-    if (!toast || undoing) return;
+    if (!toast || undoing || !armed) return;
     const t = setTimeout(() => setToast(null), TOAST_MS);
     return () => clearTimeout(t);
-  }, [toast, undoing]);
+  }, [toast, undoing, armed]);
 
   return (
     <>

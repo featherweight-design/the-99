@@ -183,6 +183,18 @@ describe("folding keeps what the add cap would drop and where copies came from",
     expect(diffParts(s)).toEqual({ up: s.up, down: s.down });
   });
 
+  it("keeps a condition on a new holding only when the lines moved onto it agree", () => {
+    const held2 = [h("c21", "263", 1, { condition: "NM" }), h("cmm", "410", 1, { condition: "LP" })];
+    const lines = linesFromHoldings(card, CHOICES, held2);
+    const first = editChoosePrinting(lines, lines[0].id, CHOICES[3]);
+    const both = editChoosePrinting(first.lines, first.lines.find((l) => l.printing?.setCode === "cmm")!.id, CHOICES[3]);
+    expect(both.merged?.condition).toBeNull();
+    const same = [h("c21", "263", 1, { condition: "NM" }), h("cmm", "410", 1, { condition: "NM" })];
+    const ls = linesFromHoldings(card, CHOICES, same);
+    const a = editChoosePrinting(ls, ls[0].id, CHOICES[3]);
+    expect(editChoosePrinting(a.lines, a.lines.find((l) => l.printing?.setCode === "cmm")!.id, CHOICES[3]).merged?.condition).toBe("NM");
+  });
+
   it("only warns about decks when the card's total ends lower", () => {
     const lines = linesFromHoldings(card, CHOICES, HELD);
     expect(summarizeEdit(OID, HELD, editChoosePrinting(lines, lines[1].id, CHOICES[3]).lines).lowers).toBe(false);

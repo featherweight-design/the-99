@@ -55,8 +55,12 @@ export type CollectionChange =
   | { kind: "replace"; items: PendingItem[]; uploadId?: string }
   /** Quantities added: an upload in Add mode (`uploadId`, stamped as above), or the Add cards sheet. */
   | { kind: "add"; items: PendingItem[]; uploadId?: string }
-  /** Per-row new counts: card details, a row removed. */
-  | { kind: "edit"; rows: EditRow[] }
+  /**
+   * Per-row new counts: card details, a row removed. `seen` is every holding of the card the
+   * editor showed: a holding of that card the player has now and the editor never saw (another tab
+   * added a printing) refuses with `stale`, so a removal never leaves an unseen holding behind.
+   */
+  | { kind: "edit"; rows: EditRow[]; seen?: CollectionItemIdentity[] }
   /**
    * Reverse entry `entryId` against today's collection. `expected` is the after-count per row
    * the confirmation showed, keyed by `collectionItemKey`; a difference refuses with `stale`.
@@ -230,6 +234,16 @@ export function planEdit(current: Map<string, Held>, rows: EditRow[]): Planned[]
       : { scryfallId: r.scryfallId ?? null, condition: r.condition ?? null };
     return planned(r, before, settle(r.quantity, attrs));
   });
+}
+
+/**
+ * Holdings the player has now that the editor never showed (`seen` is every holding it drew of the
+ * card), so a removal cannot leave behind a printing another tab added. No `seen` means no claim.
+ */
+export function unseenHoldings(current: Map<string, Held>, seen: CollectionItemIdentity[] | undefined): Held[] {
+  if (!seen) return [];
+  const known = new Set(seen.map(keyOf));
+  return [...current.values()].filter((h) => !known.has(keyOf(h)));
 }
 
 /** Rows an edit named with an `expected` that today's count does not match. */
@@ -493,7 +507,7 @@ export async function applyCollectionChange(
         case "replace": plan = planReplace(current, items); break;
         case "add": plan = planAdd(current, items); break;
         case "edit": {
-          const stale = staleEdits(current, change.rows);
+          const stale = [...staleEdits(current, change.rows), ...unseenHoldings(current, change.seen)];
           if (stale.length > 0) throw new Refused({ status: "stale", current: currentOf(current, stale) });
           plan = planEdit(current, change.rows);
           break;
