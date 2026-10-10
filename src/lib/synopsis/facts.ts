@@ -104,7 +104,8 @@ export function buildSynopsisFacts(
   profile: DeckProfile,
   oracleTexts: ReadonlyMap<string, string | null>,
   universal: ReadonlySet<string> = new Set(),
-  nearCombos: NearComboFact[] = [],
+  /** The any-size combo read (v2); null keeps the profile's two-card list and no near-combos. */
+  anySize: { combos: ComboFact[]; nearCombos: NearComboFact[] } | null = null,
 ): SynopsisFacts {
   const cats = categoriesOf(profile);
   const byId = new Map(profile.cards.map((c) => [c.oracleId, c]));
@@ -142,8 +143,8 @@ export function buildSynopsisFacts(
       sendBack.none, sendBack.under, sendBack.over, ...commanderManaValues,
     ])].sort((a, b) => a - b),
     cards: factCards,
-    combos: comboFacts(profile),
-    nearCombos,
+    combos: anySize ? anySize.combos : comboFacts(profile),
+    nearCombos: anySize ? anySize.nearCombos : [],
     stats: deckStatsFact(ramp, commanderManaValues, factCards, profile.roles.excludingCommanders?.ramp ?? ramp),
   };
 }
