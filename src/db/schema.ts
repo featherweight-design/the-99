@@ -541,6 +541,30 @@ export const deckProxies = pgTable("deck_proxies", {
 ]);
 
 /**
+ * The printing a deck means for one card the player owns in more than one printing (deck
+ * printings, collection home sub-project 3). The deck shows, prices and exports it.
+ *
+ * Shaped like `deck_proxies`, and for the same reasons: a statement about one slot, outside
+ * versioning (a pick is not a deck edit), keyed per deck so a commander, which is not a
+ * `deck_cards` row, can carry one. Membership-scoped on every read, and pruned with the proxies
+ * when its card leaves the deck.
+ *
+ * A pick names a printing the player held when it was made. A printing that later leaves the
+ * Collection is IGNORED by the reads rather than deleted: a Replace upload deletes and re-adds
+ * the whole collection in one transaction, and deleting on that would wipe every deck's picks.
+ *
+ * `set_code` is lowercase and `collector_number` is text, matching `card_art_preferences`.
+ */
+export const deckPrintings = pgTable("deck_printings", {
+  deckId: uuid("deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
+  setCode: text("set_code").notNull(),
+  collectorNumber: text("collector_number").notNull().default(""),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (t) => [primaryKey({ columns: [t.deckId, t.oracleId] })]);
+
+/**
  * A player's "never cut this" on one card in one deck (Locked, sub-project 5.1). The tools that
  * cut cards (tuning's suggestions, the swaps, the sweeps) read it as a FILTER inside their own
  * transaction; the lock is never an instruction a model is trusted to follow.
@@ -602,6 +626,16 @@ export const deckVersions = pgTable("deck_versions", {
   commanderSince: timestamp("commander_since").notNull().defaultNow(),
   partnerSince: timestamp("partner_since"),
   /**
+   * The printing each commander showed when this version was committed (deck printings, PR 2
+   * writes them). Commanders are not `deck_version_cards` rows, so their printing lives here, in
+   * the same shape as `deck_version_cards.set_code` / `collector_number`. Null on every version
+   * committed before the line, which reads as today's resolver: older versions show today's art.
+   */
+  commanderSetCode: text("commander_set_code"),
+  commanderCollectorNumber: text("commander_collector_number"),
+  partnerSetCode: text("partner_set_code"),
+  partnerCollectorNumber: text("partner_collector_number"),
+  /**
    * What the player declared FOR THIS VERSION, copied from the deck at commit.
    *
    * The same shape as `commander_oracle_id` above and for the same reason: the deck carries
@@ -659,6 +693,13 @@ export const deckVersionCards = pgTable("deck_version_cards", {
    * write, rather than folded out of history by the hot read.
    */
   since: timestamp("since").notNull().defaultNow(),
+  /**
+   * The printing this card showed when the version was committed (deck printings). Null on
+   * every row written before the line, which reads as today's resolver. Never part of the
+   * draft-versus-version diff, which compares oracle id and quantity: a pick is not a deck edit.
+   */
+  setCode: text("set_code"),
+  collectorNumber: text("collector_number"),
 }, (t) => [
   primaryKey({ columns: [t.versionId, t.oracleId] }),
   // The claim model joins version cards by version and orders by since.
