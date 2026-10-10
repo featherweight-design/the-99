@@ -356,7 +356,9 @@ export async function buildFillPlan(
   // Read for every card the plan can weigh or hold. When the read fails the plan counts by the
   // classifier, so the targets are re-read on the classifier's basis too: a plan must never count
   // by one basis and build to the other's bars.
-  const labelRoles = labelsOn
+  // Only with a skeleton: with none, the plan builds to the asserted CLASSIFIER bars, and a label count
+  // against those is the mismatch this guards. No skeleton means the classifier on both sides.
+  const labelRoles = labelsOn && skeleton
     ? await readLabelRoleSets([...scoped, ...staples, ...held].flatMap((c) => (c.oracleId ? [c.oracleId] : [])))
         .catch((err) => { console.warn("buildFillPlan: no labels — filling by the classifier", err); return undefined; })
     : undefined;
