@@ -77,7 +77,7 @@ export async function runProposedCuts(
 
   const inputs = await readProposedCuts(deckId, userId);
   if (!inputs) return { ok: false, message: deckCutsCopy.run.refused };
-  const { head, facts, allLocked, fingerprint, readVersion } = inputs;
+  const { head, facts, allLocked, fingerprint, readVersion, intent } = inputs;
 
   // Both refusals land BEFORE `startCutsRun` reserves a credit: "No credit is used" is true of the
   // server, not only of a disabled button.
@@ -127,8 +127,9 @@ export async function runProposedCuts(
       const t = castFaceText(r.text, r.layout);
       return t ? [[r.id, t] as const] : [];
     }));
-    // No intent in this version: the player has nothing to type here yet.
-    const pack = buildCutsPack({ facts, commanderName: name, keyCards, intent: null, texts });
+    // The intent the player already stored on the deck (the one Suggested changes reads); it goes
+    // through `playerText` inside the pack. No notes in this version.
+    const pack = buildCutsPack({ facts, commanderName: name, keyCards, intent, texts });
     const { system, user } = buildCutsPrompt(pack);
     const outcome = await callModel({
       model: TUNING_MODEL, system, user, maxTokens: TUNING_MAX_TOKENS,

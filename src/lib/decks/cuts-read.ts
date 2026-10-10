@@ -10,6 +10,7 @@ import {
   commanderSupport,
   commanderSupportCards,
   deckCutItems,
+  decks,
   deckSuggestionRuns,
   deckVersions,
 } from "../../db/schema";
@@ -82,8 +83,10 @@ export type ProposedCutsInputs = {
   allLocked: boolean;
   /** The deck's newest version number in the same snapshot as `head`, or null for none. */
   readVersion: number | null;
-  /** The list and the locks, hashed: what the run's inputs were, for the run record. */
+  /** The list, the locks, the declared bracket and the intent, hashed: what the run's inputs were. */
   fingerprint: string;
+  /** What the player said the deck is for, as stored on the deck; null when they said nothing. */
+  intent: string | null;
 };
 
 /**
@@ -104,10 +107,12 @@ export async function readProposedCuts(deckId: string, userId: string): Promise<
     const [v] = await tx.select({ n: max(deckVersions.number) }).from(deckVersions)
       .where(eq(deckVersions.deckId, deckId));
     const locked = neverCutEnabled() ? [...(await liveLockedIds(tx, deckId))] : [];
-    return { head, readVersion: v?.n ?? null, locked };
+    const [d] = await tx.select({ intent: decks.intent }).from(decks)
+      .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
+    return { head, readVersion: v?.n ?? null, locked, intent: d?.intent?.trim() ? d.intent : null };
   }, { isolationLevel: "repeatable read", accessMode: "read only" });
   if (!snapshot) return null;
-  const { head, readVersion, locked } = snapshot;
+  const { head, readVersion, locked, intent } = snapshot;
   const [profile, support] = await Promise.all([
     profileOfHead(head),
     readCutSupport(head.commanderOracleId, head.partnerOracleId),
@@ -122,9 +127,9 @@ export async function readProposedCuts(deckId: string, userId: string): Promise<
   const body = head.cards.filter((c) => c.oracleId !== head.commanderOracleId && c.oracleId !== head.partnerOracleId);
   const allLocked = body.length > 0 && body.every((c) => lockedSet.has(c.oracleId));
   const fingerprint = createHash("sha256")
-    .update(JSON.stringify([listFingerprint(head), [...locked].sort()]))
+    .update(JSON.stringify([listFingerprint(head), [...locked].sort(), head.declaredBracket ?? null, intent]))
     .digest("hex");
-  return { head, facts, locked, allLocked, readVersion, fingerprint };
+  return { head, facts, locked, allLocked, readVersion, fingerprint, intent };
 }
 
 /**
