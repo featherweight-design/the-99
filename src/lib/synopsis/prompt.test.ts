@@ -137,3 +137,52 @@ describe("buildSynopsisPrompt", () => {
     }
   });
 });
+
+describe("buildSynopsisPrompt under the v2 method", () => {
+  const V2: SynopsisFacts = {
+    ...FACTS,
+    combos: [{ pieces: ["Ghostly Flicker", "Naru Meha, Master Wizard"], produces: ["Infinite mana", "Infinite ETB"], usesCommander: false, manaNeeded: 0 }],
+    nearCombos: [{ have: "Basalt Monolith", missing: "Rings of Brighthearth", produces: ["Infinite colorless mana"] }],
+    stats: { ramp: 10, commanderCastTurn: 4, interaction: { total: 7, instantSpeed: 4, cheap: 3, cheapInstant: 2, wipes: 1 } },
+  };
+
+  it("is byte for byte the old prompt with the switch off, whatever the facts carry", () => {
+    expect(buildSynopsisPrompt(V2)).toEqual(buildSynopsisPrompt(FACTS));
+    expect(buildSynopsisPrompt(V2, undefined, { v2: false })).toEqual(buildSynopsisPrompt(FACTS));
+  });
+
+  it("states the assembled combo by name and by what it produces, free of cost", () => {
+    const { user, system } = buildSynopsisPrompt(V2, undefined, { v2: true });
+    expect(user).toContain("- Ghostly Flicker + Naru Meha, Master Wizard: Infinite mana, Infinite ETB (costs no mana to run)");
+    expect(system).toContain("name the primary win condition");
+  });
+
+  it("marks a near combo as not in the deck and gives the app's own turn and counts", () => {
+    const { user } = buildSynopsisPrompt(V2, undefined, { v2: true });
+    expect(user).toContain("Combos one card short (the missing card is NOT in the deck):");
+    expect(user).toContain("- has Basalt Monolith, lacks Rings of Brighthearth: Infinite colorless mana");
+    expect(user).toContain("Expected commander cast turn: around turn 4");
+    expect(user).toContain("7 cards, 4 at instant speed, 3 costing two or less, 2 both; of these, mass removal: 1");
+  });
+
+  it("leaves a section out when it has nothing, rather than stating none", () => {
+    const { user } = buildSynopsisPrompt({ ...V2, combos: [], nearCombos: [] }, undefined, { v2: true });
+    expect(user).not.toContain("Combos this deck assembles");
+    expect(user).not.toContain("one card short");
+    expect(user).toContain("Deck figures");
+  });
+
+  it("carries the same rules in a repair, so the second call is not looser than the first", () => {
+    const keep = { overview: "x", primer: {}, keyCards: [], weaknesses: [], verdicts: [] } as unknown as CheckedSynopsis;
+    expect(buildSynopsisPrompt(V2, { keep, refused: ["tips"] as never }, { v2: true }).system).toContain("name the primary win condition");
+  });
+});
+
+describe("producesShown", () => {
+  it("keeps the counted feature when it sits past the fourth entry", async () => {
+    const { producesShown } = await import("./prompt");
+    const out = producesShown(["A", "B", "C", "D", "Infinite mana"]);
+    expect(out).toHaveLength(4);
+    expect(out[0]).toBe("Infinite mana");
+  });
+});

@@ -1,5 +1,6 @@
 import { CHAR_BUDGETS, SECTION_COUNTS, TIP_MIN_CARDS } from "./limits";
 import { colorLabel } from "../decks/format";
+import { isInfiniteOrGameEnding } from "../spellbook/combo-features";
 import { identityNameOf, type SynopsisFacts } from "./facts";
 import type { CheckedSynopsis, SectionId } from "./types";
 
@@ -83,6 +84,20 @@ function plusRules(facts: SynopsisFacts): string {
   ].join("\n");
 }
 
+/**
+ * The v2 rules (plan section 11.1), appended only under `OVERVIEW_V2_ENABLED`. They govern what the
+ * model may SAY about the facts the user message adds, and never ask it to count or derive: every
+ * figure and every combo is the app's own. Corpus evidence: a deterministic combo went unnamed on
+ * four of nine decks, a mandatory loop was read as value, and a commander turn was guessed.
+ */
+export const V2_FACT_RULES = [
+  "The facts may list combos this deck assembles. When one is listed, the overview and the strategy name the primary win condition by those cards and by what the combo produces (for example: [[Card A]] and [[Card B]] together make infinite mana). Never describe a listed combo as value, a bonus or a side effect.",
+  "Name only the combos listed. If none is listed, do not claim the deck has a combo.",
+  "Combos listed as one card short are NOT in the deck. Never call one a win condition or a plan; at most, say the deck wants that piece.",
+  "When you give the commander's cast turn, use the turn the facts give, as \"around turn N\". Do not work out another.",
+  "Use the interaction counts exactly as given, and do not call the deck short of or full of interaction beyond them.",
+].join("\n");
+
 const REPAIR_LEAD = "Those sections failed checking for these reasons; fix exactly these:";
 
 /** Whether a user message asks for refused sections again: the repair, or the player's Try again. */
@@ -97,6 +112,8 @@ function range(r: { min: number; max: number }): string {
 export function buildSynopsisPrompt(
   facts: SynopsisFacts,
   retry?: { keep: CheckedSynopsis; refused: SectionId[] },
+  /** `v2`: state the combo and deck-stats facts and their rules. Off, the messages are byte for byte what they were. */
+  opts: { v2?: boolean } = {},
 ): { system: string; user: string } {
   const lines: string[] = [];
   lines.push(`Commander: ${facts.commanders.join(" and ")}`);
@@ -116,6 +133,8 @@ export function buildSynopsisPrompt(
   if (facts.commanderManaValues.length > 0) {
     lines.push(`- Commander mana value (a turn to cast it on is this number): ${facts.commanderManaValues.join(" and ")}`);
   }
+
+  if (opts.v2) lines.push(...v2FactLines(facts));
 
   const total = facts.cards.reduce((n, c) => n + c.quantity, 0);
   lines.push("", `Decklist (${total} cards). Each card: name, type line, [categories], then its rules text.`);
@@ -142,7 +161,41 @@ export function buildSynopsisPrompt(
     lines.push(`${REPAIR_LEAD} ${reasons.join("; ")}.`);
   }
 
-  return { system: `${SYSTEM}\n${LENGTH_RULES}\n${plusRules(facts)}\n${MULLIGAN_BUDGET_RULES}`, user: lines.join("\n") };
+  const base = `${SYSTEM}\n${LENGTH_RULES}\n${plusRules(facts)}\n${MULLIGAN_BUDGET_RULES}`;
+  return { system: opts.v2 ? `${base}\n${V2_FACT_RULES}` : base, user: lines.join("\n") };
+}
+
+/** A combo's feature list can run to a dozen names; the first few say what it is. */
+const V2_PRODUCES_SHOWN = 4;
+
+/** The first few features, counted ones (infinite or game-ending) first, so the cut never hides the one that admitted the combo. */
+export function producesShown(produces: readonly string[]): string[] {
+  const counted = produces.filter((f) => isInfiniteOrGameEnding([f]));
+  const rest = produces.filter((f) => !isInfiniteOrGameEnding([f]));
+  return [...counted, ...rest].slice(0, V2_PRODUCES_SHOWN);
+}
+
+/** The combo and deck-stats section of the user message. Empty parts are left out, never stated as none. */
+export function v2FactLines(facts: SynopsisFacts): string[] {
+  const out: string[] = [];
+  const mana = (n: number | null) => (n === null ? "" : n === 0 ? " (costs no mana to run)" : ` (needs ${n} mana to run)`);
+  if (facts.combos && facts.combos.length > 0) {
+    out.push("", "Combos this deck assembles (Commander Spellbook; every card named is in the deck):");
+    for (const c of facts.combos) out.push(`- ${c.pieces.join(" + ")}: ${producesShown(c.produces).join(", ")}${mana(c.manaNeeded)}`);
+  }
+  if (facts.nearCombos && facts.nearCombos.length > 0) {
+    out.push("", "Combos one card short (the missing card is NOT in the deck):");
+    for (const c of facts.nearCombos) out.push(`- has ${c.have}, lacks ${c.missing}: ${producesShown(c.produces).join(", ")}`);
+  }
+  const s = facts.stats;
+  if (s) {
+    out.push("", "Deck figures (the app's own):");
+    out.push(`- Ramp pieces: ${s.ramp}`);
+    if (s.commanderCastTurn !== null) out.push(`- Expected commander cast turn: around turn ${s.commanderCastTurn}`);
+    const i = s.interaction;
+    out.push(`- Interaction (removal, counterspells and mass removal): ${i.total} cards, ${i.instantSpeed} at instant speed, ${i.cheap} costing two or less, ${i.cheapInstant} both; of these, mass removal: ${i.wipes}`);
+  }
+  return out;
 }
 
 /** Rules text on one line: a line break inside it would read as a new list item. */

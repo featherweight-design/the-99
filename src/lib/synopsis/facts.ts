@@ -1,6 +1,7 @@
 import { colorLabel } from "../decks/format";
 import type { DeckProfile } from "../profile/types";
 import { CATEGORIES, type Category } from "./types";
+import { comboFacts, deckStatsFact, type ComboFact, type DeckStatsFact, type NearComboFact } from "./facts-extra";
 
 /**
  * What the synopsis is written from and checked against. Pure: the profile is the stored
@@ -18,6 +19,8 @@ export type FactCard = {
   quantity: number;
   categories: Category[];
   oracleText: string | null;
+  /** Mana value. Optional so facts stored before it existed still read. */
+  manaValue?: number;
   /** A universal staple (`src/lib/staples/universal.ts`): never a Key card (Hugh, 2026-09-24). */
   universalStaple?: boolean;
 };
@@ -48,6 +51,12 @@ export type SynopsisFacts = {
   /** Every numeral a Mulligan line may quote. */
   figures: number[];
   cards: FactCard[];
+  /** v2 (plan section 11.1): the combos this deck assembles. Absent on facts built before it. */
+  combos?: ComboFact[];
+  /** v2: combos one card short, named so the model does not claim them. */
+  nearCombos?: NearComboFact[];
+  /** v2: ramp, the commander's expected cast turn, interaction by speed and cost. */
+  stats?: DeckStatsFact;
 };
 
 /** The identity's name, for facts built before `identityName` existed as well as after. */
@@ -95,6 +104,7 @@ export function buildSynopsisFacts(
   profile: DeckProfile,
   oracleTexts: ReadonlyMap<string, string | null>,
   universal: ReadonlySet<string> = new Set(),
+  nearCombos: NearComboFact[] = [],
 ): SynopsisFacts {
   const cats = categoriesOf(profile);
   const byId = new Map(profile.cards.map((c) => [c.oracleId, c]));
@@ -105,6 +115,16 @@ export function buildSynopsisFacts(
   const commanderManaValues = profile.commanderOracleIds
     .map((id) => byId.get(id)?.cmc)
     .filter((n): n is number => typeof n === "number");
+  const factCards: FactCard[] = profile.cards.map((c) => ({
+    oracleId: c.oracleId,
+    name: c.name,
+    typeLine: c.typeLine,
+    quantity: c.quantity,
+    manaValue: c.cmc,
+    categories: CATEGORIES.filter((k) => cats.get(c.oracleId)?.has(k)),
+    oracleText: oracleTexts.get(c.oracleId) ?? null,
+    universalStaple: universal.has(c.oracleId),
+  }));
   return {
     commanders: profile.commanderOracleIds.map((id) => byId.get(id)?.name).filter((n): n is string => !!n),
     identity: profile.colours.identity,
@@ -121,15 +141,10 @@ export function buildSynopsisFacts(
       HAND_SIZE, lands, ramp, keep.low, keep.high,
       sendBack.none, sendBack.under, sendBack.over, ...commanderManaValues,
     ])].sort((a, b) => a - b),
-    cards: profile.cards.map((c) => ({
-      oracleId: c.oracleId,
-      name: c.name,
-      typeLine: c.typeLine,
-      quantity: c.quantity,
-      categories: CATEGORIES.filter((k) => cats.get(c.oracleId)?.has(k)),
-      oracleText: oracleTexts.get(c.oracleId) ?? null,
-      universalStaple: universal.has(c.oracleId),
-    })),
+    cards: factCards,
+    combos: comboFacts(profile),
+    nearCombos,
+    stats: deckStatsFact(ramp, commanderManaValues, factCards, profile.roles.excludingCommanders?.ramp ?? ramp),
   };
 }
 
