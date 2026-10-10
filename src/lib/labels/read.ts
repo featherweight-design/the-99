@@ -93,7 +93,7 @@ export async function readLabelRoleSets(
   const out = new Map<string, LabelTargetRole[]>();
   for (const r of rows) {
     const j = jobs.get(r.oracle_id);
-    if (j) out.set(r.oracle_id, labelRoleSet(j, r.type_line ?? ""));
+    if (j) out.set(r.oracle_id, labelRoleSet(j, r.type_line ?? "", r.oracle_text));
   }
   return out;
 }
