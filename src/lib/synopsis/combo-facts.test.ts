@@ -53,6 +53,14 @@ describe("shapeComboFacts", () => {
     expect(out.nearCombos[0].have).toBe("cmd");
   });
 
+  it("ranks a dearer commander combo ahead of a cheaper one without it, once neither is free", () => {
+    const rows = [
+      piece("cheap", "x", { mana_value_needed: 1 }), piece("cheap", "y", { mana_value_needed: 1 }),
+      piece("dear", "cmd", { mana_value_needed: 2 }), piece("dear", "z", { mana_value_needed: 2 }),
+    ];
+    expect(shapeComboFacts(rows, ["U"], ["id-cmd"]).combos[0].usesCommander).toBe(true);
+  });
+
   it("keeps a one-short combo only when the missing piece is legal, in colour and addable", () => {
     const near = (v: string, m: Partial<ComboPieceRow>) => [piece(v, `have-${v}`), piece(v, `miss-${v}`, { held: false, ...m })];
     const rows = [
@@ -81,6 +89,11 @@ describe("anySizeComboQuery", () => {
     expect(text).toContain("cardinality(v.requires_template_ids) = 0");
     expect(text).toContain("count(*) = v2.card_count");
     expect(text).toContain("v.card_count between 2 and");
+    // The bound is a bind parameter; resolve it and pin the value. Six is the product boundary.
+    const q = new PgDialect().sqlToQuery(anySizeComboQuery(["a"], ["a"]));
+    const bound = q.sql.match(/v\.card_count between 2 and \$(\d+)/);
+    expect(bound).not.toBeNull();
+    expect(q.params[Number(bound![1]) - 1]).toBe(6);
     expect(text).toContain("filter (where not p.held) <= 1");
   });
 

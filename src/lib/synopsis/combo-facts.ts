@@ -68,9 +68,14 @@ export function anySizeComboQuery(present: readonly string[], commanders: readon
   `;
 }
 
-/** Fewest pieces first, then free, then the commander's own combos, then a stable tail. */
+/**
+ * Fewest pieces first, then free (mana 0), then the commander's own combos, then the cheaper,
+ * then a stable tail. Free is a bucket and not just the low end of mana: a cheap line that skips
+ * the commander must not outrank a dearer one that uses it.
+ */
 function byRank(a: Ranked, b: Ranked): number {
-  return a.pieces - b.pieces || (a.mana ?? 99) - (b.mana ?? 99) || Number(b.commander) - Number(a.commander) || a.id.localeCompare(b.id);
+  const free = (r: Ranked) => (r.mana === 0 ? 0 : 1);
+  return a.pieces - b.pieces || free(a) - free(b) || Number(b.commander) - Number(a.commander) || (a.mana ?? 99) - (b.mana ?? 99) || a.id.localeCompare(b.id);
 }
 
 type Ranked = { pieces: number; mana: number | null; commander: boolean; id: string; sig: string };
