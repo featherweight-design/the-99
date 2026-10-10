@@ -185,6 +185,11 @@ describe("sourceProduces", () => {
     expect(sourceProduces(both, ["fetchesLand"], ["W", "U", "B", "R", "G"], ["B"])).toEqual(["B", "G"]);
     expect(sourceProduces(card("Search your library for a basic land card.", "Sorcery"), ["fetchesLand"], JUND, ["G", "C"])).toEqual(["G", "C"]);
   });
+  it("does not read a ritual with no label, but still reads a spell's land search", () => {
+    expect(sourceProduces(card("Add {B}{B}{B}.", "Instant", "Dark Ritual"), [], JUND)).toEqual([]);
+    expect(sourceProduces(card("Search your library for a Forest card.", "Sorcery"), [], JUND)).toEqual(["G"]);
+    expect(sourceProduces(card("{T}: Add {G}.", "Creature"), [], JUND)).toEqual(["G"]);
+  });
   it("reads each kind of a card with several, and the castable half of an adventure but not a modal back", () => {
     expect(sourceProduces(card("{T}: Add {G}.\nWhen this enters, search your library for a Plains card.", "Creature"), ["tapsForMana", "fetchesLand"], JUND)).toEqual(["W", "G"]);
     expect(sourceProduces({ ...card("Beanstalk Giant\n//\nSearch your library for a basic land card.", "Creature // Sorcery"), layout: "adventure" }, ["fetchesLand"], JUND)).toEqual(["B", "R", "G"]);

@@ -14,7 +14,7 @@ const card = () => screen.getByRole("figure", { name: /^Mana colors/ });
 describe("DeckStatsView colors card", () => {
   it("states pips and sources in the figure label and draws a row per color asked for or made", () => {
     const { container } = draw([spell("{B}{B}", 2), spell("{R}"), land(["B", "R"], 3), land(["C"])]);
-    expect(screen.getByRole("figure", { name: "Mana colors, 5 pips · 4 sources" })).toBeInTheDocument();
+    expect(screen.getByRole("figure", { name: "Mana colors, 5 pips · 7 sources" })).toBeInTheDocument();
     expect([...container.querySelectorAll("[data-color-row]")].map((r) => r.getAttribute("data-color-row"))).toEqual(["B", "R", "C"]);
     expect(screen.getByLabelText("Black, 4 pips, 80 percent; 3 sources, 43 percent")).toBeInTheDocument();
     expect(screen.getByLabelText("Colorless, 0 pips, 0 percent; 1 source, 14 percent")).toBeInTheDocument();
@@ -99,10 +99,17 @@ describe("DeckStatsView colors card", () => {
     const row = container.querySelector('[data-color-row="G"]')!;
     expect([...row.querySelectorAll("[data-segment]")].map((e) => e.getAttribute("data-segment"))).toEqual(["land", "nonland"]);
     expect(container.querySelector('[data-color-row="U"] [data-segment=land]')).toBeNull();
-    expect(card()).toHaveTextContent("1 pip · 3 sources");
+    expect(card()).toHaveTextContent("1 pip · 4 sources");
     expect(card()).toHaveTextContent("Land 2");
-    expect(card()).toHaveTextContent("Mana rock, dork or land search 1");
+    expect(card()).toHaveTextContent("Mana rock, dork or land search 2");
     expect(screen.getByLabelText("Green, 1 pip, 100 percent; 3 sources, 2 lands and 1 other, 75 percent")).toBeInTheDocument();
+  });
+
+  it("totals a two-color source once per color, so the legend adds up to the denominator", () => {
+    draw([spell("{U}"), land(["U", "B"], 2), spell("{1}", 1, true, ["U", "B"])]);
+    expect(card()).toHaveTextContent("1 pip · 6 sources");
+    expect(card()).toHaveTextContent("Land 4");
+    expect(card()).toHaveTextContent("Mana rock, dork or land search 2");
   });
 
   it("does not draw or count a source whose color is unreadable, and does not say there are no rocks", () => {

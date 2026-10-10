@@ -161,7 +161,10 @@ export function sourceProduces(
   // modal or transform back does not. Both parsers read this one text.
   const cast = { name: card.name, typeLine: card.typeLine, oracleText: castFaceText(card.oracleText, card.layout ?? "normal") };
   const any = kinds.length === 0;
-  if (any || kinds.includes("tapsForMana")) readFace(cast, deck, out, false);
+  // With no label to go on, a ritual (an instant or sorcery that adds mana) is not a lasting source: only a
+  // permanent's own ability can be one. A spell can still search, below.
+  const spell = /\b(?:instant|sorcery)\b/i.test(card.typeLine.split(" // ")[0]);
+  if ((any && !spell) || kinds.includes("tapsForMana")) readFace(cast, deck, out, false);
   if (any || kinds.includes("fetchesLand")) {
     for (const finds of searchFinds(cast)) {
       // `a basic land` reaches the basics this deck plays, Wastes included, when the caller knows them; an

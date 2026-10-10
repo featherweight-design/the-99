@@ -320,7 +320,10 @@ function ColorsCard({ mana }: { mana: ManaSupply }) {
   const sourceTotal = rows.reduce((a, r) => a + r.lands + r.other, 0);
   const shares = rows.map((r) => ({ pips: share(r.pips, pipTotal), sources: share(r.lands + r.other, sourceTotal) }));
   const widest = Math.max(1, ...shares.flatMap((s) => [s.pips, s.sources]));
-  const sources = mana.landSources + mana.nonlandSources;
+  // The displayed total and the legend are the bars' own: a source counts once for each color it adds.
+  const landSegments = rows.reduce((a, r) => a + r.lands, 0);
+  const otherSegments = rows.reduce((a, r) => a + r.other, 0);
+  const sources = sourceTotal;
   const asked = rows.filter((r) => r.pips > 0);
   const tip = asked.length === 1 ? [`${copy.monoLead(copy.names[asked[0].c])} ${copy.tip[0]}`, copy.tip[1]] : copy.tip;
   // Each line states an absence, so each needs the whole count behind it: a rock whose color we cannot read
@@ -383,7 +386,7 @@ function ColorsCard({ mana }: { mana: ManaSupply }) {
           <div className="flex flex-wrap gap-x-[18px] gap-y-[6px] text-[12px] text-[color:var(--fg-body)]">
             <span className="flex items-center gap-[8px]">
               <span aria-hidden="true" className="h-[10px] w-[18px] rounded-[2px] bg-[color:var(--fg-muted)]" />
-              {copy.legendLand} <span className="font-mono text-[11px]">{mana.landSources}</span>
+              {copy.legendLand} <span className="font-mono text-[11px]">{landSegments}</span>
             </span>
             <span className="flex items-center gap-[8px]">
               <span
@@ -391,7 +394,7 @@ function ColorsCard({ mana }: { mana: ManaSupply }) {
                 className="h-[10px] w-[18px] rounded-[2px]"
                 style={{ backgroundImage: "repeating-linear-gradient(135deg, var(--fg-muted) 0 2px, transparent 2px 5px)", boxShadow: "inset 0 0 0 1px var(--fg-muted)" }}
               />
-              {copy.legendOther} <span className="font-mono text-[11px]">{mana.nonlandSources}</span>
+              {copy.legendOther} <span className="font-mono text-[11px]">{otherSegments}</span>
             </span>
           </div>
         )}
