@@ -34,9 +34,12 @@ verdict (no second fetch, nothing popping in after the tab paints).
 - **Cost:** three reads per fetch, each keyed on the reading's oracle ids: the cards' text
   columns (`oracle_text`, `keywords`, `mana_cost`, `type_line`), `readLabels`, and the any-size
   combo rows (the any-size combo read, below). Measured with `pnpm measure:profile-cost`, which
-  times this path (`measure:load` never opens the Analysis tab), before PR 3 merges; if it adds
-  more than ~50ms to a warm open, the result is cached on the reading's list fingerprint (the
-  `cachedDeckProfile` pattern).
+  times this path (`measure:load` never opens the Analysis tab), before PR 3 merges. It is
+  UNCACHED by default, because a list fingerprint alone would serve a stale grade after a label
+  publish or a combo-index refresh, neither of which moves the list. If it adds more than ~50ms
+  to a warm open, a cache keys on every mutable input: the list fingerprint, the newest
+  `card_labels.labelled_at` among the list's cards, and the catalog generation
+  (`catalog_refreshes`, which a combo copy stamps).
 - **Always a whole deck.** A reading exists only for a legal deck (`deckLegality` requires
   `built === deckBodySize`, `src/lib/profile/stored.ts`), so every `DeckProfile.cards` totals
   100. The handoff's tiny-list state (3a) cannot occur and is **not built**; there is no
@@ -68,9 +71,12 @@ type BenchCard = {
   card labelled `opponents` still draws). The benchmarks only WEIGH what those readers admit, so
   the strip and a ledger never disagree about which cards are ramp or draw (lock 7).
 - **Velocity** (`velocity.ts`): every card `isRampJob` admits, weighted by mana value: 1 at 2 or
-  less, 0.5 at 3, 0 above; a card whose only ramp job is `burstMana` counts half again. Index =
+  less, 0.5 at 3, 0 above; a card whose only ramp job is `burstMana` counts half again, and a card
+  whose only ramp job is `costReduction` scores 0 (the brief's definition: a discount is not mana
+  ahead of curve, though the strip counts a general one as ramp). Index =
   (lands × 7 / 99 + points) / average nonland mana value. Its ledger carries every card weighed,
-  with "Read, not counted" for the zeros (ramp above 3 mana). It also returns the commander's
+  with "Read, not counted" for the zeros (cost reducers and ramp above 3 mana), so the strip's
+  ramp cards and the ledger's cards are the same set. It also returns the commander's
   `expectedCastTurn`, called with the SAME input the Overview fact passes
   (`profile.roles.excludingCommanders.ramp`, `src/lib/synopsis/facts.ts`), so the ledger and the
   Overview never state different turns.
@@ -87,8 +93,12 @@ type BenchCard = {
   odds. The query is extended to select what the ledger draws: piece oracle ids, `mana_needed`
   and `mana_value_needed`, `steps` and `notable_prerequisites`, so each line becomes a
   `ComboModal` (`src/lib/bracket/combo-modal.ts`) for `ComboBody`'s plates. The figure is the
-  odds that at least one line has every non-commander piece in the first 14 cards, each tutor
-  seen standing in for one missing piece; each line also carries its own odds (`byT8`).
+  odds that at least one line has every non-commander piece in the first 14 cards, where a tutor
+  seen stands in for a missing piece ONLY when it can find that piece, and each tutor finds one
+  piece (a matching of seen tutors to missing pieces). Reach is the bracket's own:
+  `classifySearches` and `tutorReaches` (`src/lib/bracket/tutor-targets.ts`, as
+  `src/lib/profile/load.ts` pairs them), read from oracle text, so an unlabeled tutor counts and a
+  creature-only tutor never finds an artifact. Each line also carries its own odds (`byT8`).
   **Deterministic:** a fixed-seed PRNG (mulberry32, a constant seed), 4,000 shuffles. No line
   returns `null`, which draws *No combo line*.
 - **Dependencies** (`dependencies.ts`): the six rows exactly as the brief's section defines them
@@ -114,13 +124,18 @@ the model rather than restating it, and prints its whole derivation.
   `ok`. Two derivations, because one figure is not linear:
   - **Expectation, for the linear figures** (velocity points, flow points, interaction weight,
     each dependency count): each card in `commander_support_cards` contributes its weight times
-    `inclusion / 100` (the column is a percent, as `role-targets.ts` reads it). Velocity's index
-    takes lands and average mana value from `avg_land` and `avg_curve`; a commander with either
-    null is left out of the velocity population and counted in the printout.
+    `inclusion / 100` (the column is a percent, as `role-targets.ts` reads it), and the
+    COMMANDER contributes as a fixed card at weight 1, exactly as the app counts it (its flow
+    doubled, its graveyard or activated ability forcing its row), including its mana value in
+    the nonland average. Velocity's index takes lands and average mana value from `avg_land` and
+    `avg_curve`; a commander with either null is left out of the velocity population and counted
+    in the printout.
   - **Sampled decks, for win speed and combat reliance**, which need assembled lines: per
-    commander, a fixed number of decks drawn from its card list with each card included at its
-    inclusion probability (a fixed seed), lines found against the whole Spellbook variant table
-    held in memory, and the same odds function the app runs. This keeps win speed's bands derived
+    commander, a fixed number of legal decks: the commander in the command zone, `avg_land`
+    lands, and the rest of a 99-card body drawn from its card list without replacement in
+    proportion to inclusion (a fixed seed), so every sample has the exact body size the odds
+    function draws 14 cards from. Lines are found against the whole Spellbook variant table held
+    in memory, and the odds are the same function the app runs. This keeps win speed's bands derived
     from the index, as lock 4 and audit rule 12 require, rather than set by hand.
 - **Null policy, `db:build:staples`' own:** `coalesce(deck_count, 1)` as the weight; a card with
   a null `inclusion` carries no weight, through a FILTER on the sum and never a `where`.
@@ -219,7 +234,9 @@ before it opens.
 - **The text fallback:** an unlabeled Counterspell reads as a counterspell; an unlabeled
   Thought-Knot Seer scores no flow; a labeled card never takes the text path.
 - **Win speed:** the same list twice gives the same odds (the seed); no combo returns null; a
-  tutor stands in for a missing piece; seven assembled lines are all kept (no cap).
+  tutor stands in for a piece it reaches and not for one it cannot (a creature tutor and an
+  artifact piece); one tutor never fills two pieces; an unlabeled tutor counts; seven assembled
+  lines are all kept (no cap).
 - **The shared reader (1b):** with the switch on, `deckStatsFact` returns the new reader's
   counts; with it off, exactly today's figures.
 - **One membership rule:** a card the strip counts as ramp or draw is in the matching ledger,
