@@ -1,4 +1,5 @@
 import { refOf } from "./claims";
+import { engineCandidates } from "./engine-candidates";
 import { CHAR_BUDGETS, EVIDENCE_MAX, SECTION_COUNTS, TIP_MIN_CARDS } from "./limits";
 import { colorLabel } from "../decks/format";
 import { isInfiniteOrGameEnding } from "../spellbook/combo-features";
@@ -65,15 +66,15 @@ const REFS_RULE = `Each decklist line starts with its ref, such as "c12:". "evid
 
 const SECTIONS_V8 = [
   `- primer.strategy: ${range(SECTION_COUNTS.strategy)} steps of the deck's plan, in order, each at most ${CHAR_BUDGETS.strategy} characters, as { text, evidence }. A step about particular cards cites their refs.`,
-  `- primer.mulligan.keep and primer.mulligan.sendBack: ${range(SECTION_COUNTS.keep)} lines each, as { text, evidence }, each at most ${CHAR_BUDGETS.mulligan} characters. The app already shows the land range above these lines, so NEVER state a land count, "no lands" or "all spells". Tie the advice to THIS deck: at least one keep line names an engine piece, as [[Name]] (a card of a listed combo, or the card the plan cannot run without), and the send-back lines name what the hand lacks for the deck's colors or plan. Never write advice true of every deck, such as "keep Sol Ring" or "send back a hand with no lands". Do not begin a line with "Keep", "Send back" or "Mulligan". The commander starts in the command zone, never in the opening hand. Use only the figures given under "Mulligan figures"; state no other number.`,
+  `- primer.mulligan.keep and primer.mulligan.sendBack: ${range(SECTION_COUNTS.keep)} lines each, as { text, evidence }, each at most ${CHAR_BUDGETS.mulligan} characters. The app already shows the land range above these lines, so NEVER state a land count, "no lands" or "all spells". Tie the advice to THIS deck: at least one keep line names an engine piece, as [[Name]] (a card of a listed combo, or one of the Engine candidates), and the send-back lines name what the hand lacks for the deck's colors or plan. Never write advice true of every deck, such as "keep Sol Ring" or "send back a hand with no lands". Do not begin a line with "Keep", "Send back" or "Mulligan". The commander starts in the command zone, never in the opening hand. Use only the figures given under "Mulligan figures"; state no other number.`,
   `- primer.tips: ${range(SECTION_COUNTS.tips)} tips, each an interaction between at least ${TIP_MIN_CARDS} cards in this deck, never general rules advice, as { text, evidence }. "evidence" lists the refs of exactly the cards the tip names (at least ${TIP_MIN_CARDS}), and its text names exactly those cards. Each text at most ${CHAR_BUDGETS.tip} characters. State only what the cards' rules text says: a keyword a card lacks (cascade, flying, haste) is never claimed for it, and a forced sacrifice or a "target player sacrifices" effect is never an enter-the-battlefield or a "dies" trigger for you.`,
-  `- keyCards: ${range(SECTION_COUNTS.keyCards)} different cards from the decklist, never one marked "universal staple", each { card, claims, job, evidence } with "evidence" holding at least the card's own ref. Choose the cards that WIN or RUN the deck: the pieces of every combo listed under the facts, the cards the plan cannot work without, and the commander's enablers, before any card that is merely good. Each job at most ${CHAR_BUDGETS.job} characters, on the job it does in this deck. "claims" lists only categories the decklist shows in that card's brackets; leave it empty for a card with none. In a job, never use the words ramp, draw, removal, remove, destroy, wipe, sweeper, tutor, combo or infinite unless that card's brackets list the matching category.`,
+  `- keyCards: ${range(SECTION_COUNTS.keyCards)} different cards from the decklist, never one marked "universal staple", each { card, claims, job, evidence } with "evidence" holding at least the card's own ref. Choose the cards that WIN or RUN the deck: the pieces of every combo listed under the facts, the Engine candidates and other cards that work with the commander's ability, and the commander's enablers, before any card that is merely good. A Key card whose job names neither the commander's trigger nor its payoff is the exception. Each job at most ${CHAR_BUDGETS.job} characters, on the job it does in this deck. "claims" lists only categories the decklist shows in that card's brackets; leave it empty for a card with none. In a job, never use the words ramp, draw, removal, remove, destroy, wipe, sweeper, tutor, combo or infinite unless that card's brackets list the matching category.`,
   `- assessment: the weakness checklist, replacing any list of weaknesses. Give EXACTLY ONE entry for each of these ${ASSESSMENT_TOPICS.length} topics, no more and none missing: ${ASSESSMENT_TOPICS.join(", ")}.`,
 ];
 
 /** The checklist's meaning, topic by topic, with the hate cards to name. Contract 8 only. */
 const CHECKLIST_V8 = [
-  'Each entry is { topic, verdict, tier, line, evidence }. "verdict" is "weakness" (the decklist shows the deck exposed here), "not_a_weakness" (the deck covers it, or the topic does not apply to it) or "unknown" (the decklist cannot tell you). Prefer "unknown" to a guess: an entry that is not a weakness is never shown.',
+  'Each entry is { topic, verdict, tier, line, evidence }. "verdict" is "weakness" (the decklist shows the deck exposed here), "not_a_weakness" (the deck covers it, or the topic does not apply to it) or "unknown" (the decklist cannot tell you). Prefer "unknown" to a guess: an entry that is not a weakness is never shown. But the answer must contain at least one "weakness": when nothing stands out, give the single least bad applicable one as "minor".',
   `A "weakness" carries a "tier" ("critical": it can lose the game outright; "moderate": it costs many games; "minor") and a "line": one sentence of a weakness of THIS deck, at most ${CHAR_BUDGETS.weakness - 12} characters, naming the card that exploits it as [[Name]] (it may be a card the deck lacks). Do not write the tier into the line and do not begin it with a tier word; the app does. Any other verdict carries neither "tier" nor "line". Never write that something is fine, covered or flexible as a weakness. "evidence" may cite the refs of deck cards the weakness is about.`,
   "The topics, and the hate card each should name when it applies:",
   "- graveyard_or_zone_hate: a deck that wins through its graveyard (recursion, reanimation, flashback, self-mill): graveyard hate such as [[Rest in Peace]], [[Bojuka Bog]], [[Dauthi Voidwalker]]. A deck that relies on indestructible or regenerating creatures: exile wipes such as [[Farewell]], [[Sunfall]].",
@@ -190,6 +191,13 @@ export function buildSynopsisPrompt(
   }
 
   if (opts.v2) lines.push(...v2FactLines(facts));
+  if (opts.contract8) {
+    const engine = engineCandidates(facts.cards, facts.commanders);
+    if (engine.length > 0) {
+      lines.push("", "Engine candidates (deck cards that share words with the commander's ability; a starting list, not a verdict):");
+      for (const e of engine) lines.push(`- ${e.name}: ${e.shared.join(", ")}`);
+    }
+  }
 
   const total = facts.cards.reduce((n, c) => n + c.quantity, 0);
   lines.push("", `Decklist (${total} cards). Each card: name, type line, [categories], then its rules text.`);
@@ -223,7 +231,9 @@ export function buildSynopsisPrompt(
   if (opts.contract8) {
     const system = [...SYSTEM_HEAD, ...SYSTEM_OVERVIEW, ...SECTIONS_V8].join("\n");
     return {
-      system: `${system}\n${V8_ARGUMENT_RULES}\n${LENGTH_RULES}\n${plusRules(facts)}\n${V2_FACT_RULES}`,
+      // The Mulligan's budget rules are the measured ones (100% of sections rendered with them, 89%
+      // without), and contract 8's engine pieces make its lines longer, so they stay.
+      system: `${system}\n${V8_ARGUMENT_RULES}\n${LENGTH_RULES}\n${plusRules(facts)}\n${MULLIGAN_BUDGET_RULES}\n${V2_FACT_RULES}`,
       user: lines.join("\n"),
     };
   }

@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { describe, expect, it } from "vitest";
 
 import type { SynopsisFacts } from "./facts";
@@ -191,9 +193,30 @@ describe("producesShown", () => {
 describe("buildSynopsisPrompt under contract 8", () => {
   const C8 = { v2: true, contract8: true };
 
-  it("is untouched without the contract: contract 8 only adds, never edits the shipped prompt", () => {
-    expect(buildSynopsisPrompt(FACTS, undefined, { v2: false, contract8: false })).toEqual(buildSynopsisPrompt(FACTS));
-    expect(buildSynopsisPrompt(FACTS).user).not.toContain("c1:");
+  // The shipped prompt, hashed from the implementation before contract 8 existed (cf76c798e), so
+  // the assertion fails when any word of it moves, not only when the two branches disagree.
+  it("is untouched without the contract: sha256 of the shipped system and user messages", () => {
+    const sha = (t: string) => createHash("sha256").update(t).digest("hex");
+    for (const opts of [undefined, { v2: false, contract8: false }]) {
+      const p = buildSynopsisPrompt(FACTS, undefined, opts);
+      expect(sha(p.system)).toBe("bd9e3326c5c4bc40d2ba6d79fd2678c719302b245469a970803c26426706ab80");
+      expect(sha(p.user)).toBe("dd4e031f66832cedf387850624ae912db2deb4a7be7534083746b8e012939aa9");
+    }
+  });
+
+  it("lists the engine candidates in the user message and asks for a weakness when none stands out", () => {
+    const facts = { ...FACTS, commanders: ["Kratos"], cards: [
+      { oracleId: "k", name: "Kratos", typeLine: "Legendary Creature - God", quantity: 1, categories: [], oracleText: "Whenever a god attacks, create a spirit." },
+      { oracleId: "g1", name: "Iroas", typeLine: "Legendary Creature - God", quantity: 1, categories: [], oracleText: "A god." },
+      { oracleId: "g2", name: "Purphoros", typeLine: "Legendary Creature - God", quantity: 1, categories: [], oracleText: "A god." },
+      ...Array.from({ length: 6 }, (_, i) => ({ oracleId: `f${i}`, name: `Filler ${i}`, typeLine: "Sorcery", quantity: 1, categories: [], oracleText: `Filler ${i}.` })),
+    ] };
+    const { user, system } = buildSynopsisPrompt(facts, undefined, C8);
+    expect(user).toContain("Engine candidates");
+    expect(user).toContain("- Iroas: creature, god, legendary");
+    expect(user).not.toContain("- Filler");
+    expect(system).toContain('give the single least bad applicable one as "minor"');
+    expect(buildSynopsisPrompt(FACTS, undefined, C8).user).not.toContain("Engine candidates");
   });
 
   it("gives every decklist line its ref, in order, as readEvidence resolves them", () => {
@@ -209,6 +232,10 @@ describe("buildSynopsisPrompt under contract 8", () => {
       expect(system).toContain(`[[${hate}]]`);
     }
     expect(system).toContain(`at most ${EVIDENCE_MAX}`);
+  });
+
+  it("keeps the measured Mulligan budget rules, which contract 8 once dropped (85 to 105 characters against 80)", () => {
+    expect(buildSynopsisPrompt(FACTS, undefined, C8).system).toContain("Write 8 to 12 words.");
   });
 
   it("drops the untiered weaknesses list, ties the mulligan to the engine and asks the facts' figures be used", () => {
