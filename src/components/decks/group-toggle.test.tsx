@@ -260,7 +260,8 @@ describe("GroupToggle's Stats segment", () => {
     expect(group.children[3]).toBe(buttons[2]);
     expect(buttons.map((b) => b.getAttribute("aria-pressed"))).toEqual(["false", "true", "false"]);
     // Shopping keeps its warm ink while selected.
-    expect(buttons[1].style.color).toBe("var(--warning)");
+    expect(buttons[1].className).toContain("text-[color:var(--warning)]");
+    expect(buttons[1].className).toContain("bg-[color:var(--elevated)]");
 
     rerender(<GroupToggle {...props} filter="shopping" stats={{ open: true, onChange: vi.fn() }} />);
     expect(

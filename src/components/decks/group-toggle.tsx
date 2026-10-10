@@ -221,8 +221,8 @@ export function GroupToggle({
           >
             {(
               [
-                { key: "all", label: "All", count: allCount, selected: shown === "all", ink: "var(--fg-muted)", onClick: () => onFilterChange("all"), aria: undefined },
-                { key: "shopping", label: "Shopping", count: shoppingCount, selected: shown === "shopping", ink: "var(--warning)", onClick: () => onFilterChange("shopping"), aria: undefined },
+                { key: "all", label: "All", count: allCount, selected: shown === "all", ink: "text-[color:var(--fg-muted)]", onClick: () => onFilterChange("all"), aria: undefined },
+                { key: "shopping", label: "Shopping", count: shoppingCount, selected: shown === "shopping", ink: "text-[color:var(--warning)]", onClick: () => onFilterChange("shopping"), aria: undefined },
               ] as const
             ).map((seg) => (
               <button
@@ -230,8 +230,7 @@ export function GroupToggle({
                 type="button"
                 aria-pressed={seg.selected}
                 onClick={seg.onClick}
-                style={{ color: seg.selected && seg.key === "all" ? "var(--fg)" : seg.ink }}
-                className={`${SEGMENT_BASE} ${seg.selected ? "font-semibold bg-[color:var(--elevated)]" : "font-medium"}`}
+                className={`${SEGMENT_BASE} ${seg.selected && seg.key === "all" ? "text-[color:var(--fg)]" : seg.ink} ${seg.selected ? "font-semibold bg-[color:var(--elevated)]" : "font-medium"}`}
               >
                 {seg.label}{" "}
                 <span className="font-mono text-[11.5px]">{seg.count}</span>
@@ -243,8 +242,7 @@ export function GroupToggle({
               aria-pressed={statsOpen}
               aria-label={deckStatsCopy.segment.aria}
               onClick={() => stats.onChange(true)}
-              style={{ color: statsOpen ? "var(--fg)" : "var(--fg-muted)" }}
-              className={`${SEGMENT_BASE} ${statsOpen ? "font-semibold bg-[color:var(--elevated)]" : "font-medium"}`}
+              className={`${SEGMENT_BASE} ${statsOpen ? "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)]" : "font-medium text-[color:var(--fg-muted)]"}`}
             >
               {deckStatsCopy.segment.stats}
             </button>
