@@ -12,6 +12,7 @@
 import { cache } from "react";
 import { loadSupportLists } from "../edhrec/support-read";
 import { loadRoleTargetsForCommanders } from "../profile/role-targets";
+import { loadPoolRoleBasis } from "./pool-role-basis";
 import { type Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
 import {
@@ -252,9 +253,10 @@ export async function rankFree(
   // `inclusionByName`, which only feeds `roleCards`, and `toListItem` drops those before this
   // function returns: a cache read here pulled every buildable commander's whole EDHREC page
   // (~94KB each) for figures nothing drew.
+  const { basis, roleSets } = await loadPoolRoleBasis(collection);
   const [supportLists, roleTargets] = await Promise.all([
     loadSupportLists(buildable.map((c) => c.card.oracleId)),
-    loadRoleTargetsForCommanders(buildable.map((c) => c.card)),
+    loadRoleTargetsForCommanders(buildable.map((c) => c.card), basis),
   ]);
   const scored = buildable.map(({ card: commander, canon }) => {
     return {
@@ -262,6 +264,7 @@ export async function rankFree(
         commander,
         collection: pool,
         roleTargets: roleTargets.get(commander.oracleId)!.targets,
+        roleSets,
         support: supportLists.get(commander.oracleId) ?? null,
         inclusionByName: null,
       }),

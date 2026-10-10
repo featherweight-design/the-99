@@ -343,6 +343,13 @@ export function scoreCommander(args: {
   /** `pickRoleTargets`' answer for this commander. See `FitInputs.roleTargets`. */
   roleTargets: Record<RoleName, number>;
   /**
+   * Fresh-label role sets by oracle id (`readLabelRoleSets`), when the pool is counted by LABEL
+   * (`LABEL_ROLE_COUNTS_ENABLED`, labels-everywhere plan). A card absent from the map has no fresh
+   * label and counts toward NO role, the rule the label targets were derived under; absent
+   * altogether is the classifier for every card, exactly as before.
+   */
+  roleSets?: ReadonlyMap<string, readonly RoleName[]>;
+  /**
    * The STORED support list, from `commander_support` — never the live EDHREC
    * payload. Ruling D: every Fit reads one source, because the two disagreed on
    * 20 of 95 commanders when `probe:fit-parity` measured them, and a row
@@ -383,7 +390,8 @@ export function scoreCommander(args: {
   const roleCounts = { ramp: 0, draw: 0, removal: 0, wipes: 0 };
   const roleCards: Record<RoleName, RoleCard[]> = { ramp: [], draw: [], removal: [], wipes: [] };
   for (const c of pool) {
-    for (const role of classifyRoles(c)) {
+    const roles = args.roleSets ? args.roleSets.get(c.oracleId) ?? [] : classifyRoles(c);
+    for (const role of roles) {
       if (role !== "land") {
         roleCounts[role]++;
         roleCards[role].push({

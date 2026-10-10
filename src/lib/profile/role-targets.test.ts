@@ -89,4 +89,33 @@ describe("loadRoleTargetsForCommanders", () => {
     expect(got.get("g")?.targets).toEqual(four(5));
     expect(got.get("u")?.targets).toEqual(four(7));
   });
+
+  describe("on the labels basis", () => {
+    const labelled = (n: number) => ({ labelRamp: n, labelDraw: n + 1, labelRemoval: n + 2, labelWipes: n + 3 });
+
+    it("reads the label_* figures, not avg_*, down the same chain", async () => {
+      rows.own = [{ oracleId: "g", ...measured(1), ...labelled(9) }];
+      const got = (await loadRoleTargetsForCommanders([golgari], "labels")).get("g");
+      expect(got).toEqual({ of: "commander", targets: four(9) });
+    });
+
+    it("falls past a commander with no label figures to its bucket's", async () => {
+      rows.own = [{ oracleId: "g", ...measured(1), labelRamp: null, labelDraw: null, labelRemoval: null, labelWipes: null }];
+      rows.buckets = [{ condition: identityCondition(["B", "G"]), ...measured(2), ...labelled(5), withRoles: 40 }];
+      const got = (await loadRoleTargetsForCommanders([golgari], "labels")).get("g");
+      expect(got).toEqual({ of: "identity", targets: four(5) });
+    });
+
+    it("ends at the label flat targets, 12/8/6/1, when no rung carries a label figure", async () => {
+      rows.own = [{ oracleId: "g", ...measured(9) }];
+      const got = (await loadRoleTargetsForCommanders([golgari], "labels")).get("g");
+      expect(got).toEqual({ of: "flat", targets: { ramp: 12, draw: 8, removal: 6, wipes: 1 } });
+    });
+
+    it("leaves the classifier basis reading avg_*, with label_* present", async () => {
+      rows.own = [{ oracleId: "g", ...measured(9), ...labelled(1) }];
+      const got = (await loadRoleTargetsForCommanders([golgari])).get("g");
+      expect(got).toEqual({ of: "commander", targets: four(9) });
+    });
+  });
 });

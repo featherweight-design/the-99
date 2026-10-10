@@ -8,6 +8,7 @@ import { readEdhrecCache, resolveEdhrecData } from "../edhrec/client";
 import { supportOverlap } from "../edhrec/support-overlap";
 import { loadSupportLists } from "../edhrec/support-read";
 import { loadRoleTargetsForCommanders } from "../profile/role-targets";
+import { loadPoolRoleBasis } from "./pool-role-basis";
 import type { ProfileRoleTargets } from "../profile/types";
 import { scoringSynergyState, type SynergyState } from "./synergy-state";
 import { committedSupport, readCommittedDecks, withCommitted } from "../decks/committed";
@@ -273,10 +274,12 @@ export async function recommendCommanders(
   // The live read still happens, for `inclusionByName` and for `synergyState`:
   // the role chips keep the fresher figures, and an EDHREC outage still has to
   // be describable. What moved to the index is the SCORE — Ruling D.
+  // The labels are read first: the targets follow the basis they come back under.
+  const { basis, roleSets } = await loadPoolRoleBasis(collection);
   const [edhrecCache, supportLists, roleTargets] = await Promise.all([
     readEdhrecCache(candidates.map((c) => c.oracleId)),
     loadSupportLists(candidates.map((c) => c.oracleId)),
-    loadRoleTargetsForCommanders(candidates),
+    loadRoleTargetsForCommanders(candidates, basis),
   ]);
 
   // Fetch EDHREC data with bounded concurrency: sequential awaits would make
@@ -293,6 +296,7 @@ export async function recommendCommanders(
         const scored = scoreCommander({
           commander, collection,
           roleTargets: roleTargets.get(commander.oracleId)!.targets,
+          roleSets,
           support,
           inclusionByName: result.data?.inclusionByName ?? null,
         });
@@ -359,10 +363,12 @@ export async function scoreOneCommander(
     collection.find((c) => c.oracleId === oracleId) ?? (await loadPoolCard(oracleId));
   if (!commander) return null;
 
+  // The collection's labels, whichever pool is scored: a free pool is a subset of it.
+  const { basis, roleSets } = await loadPoolRoleBasis(collection);
   const [edhrecCache, supportLists, roleTargets] = await Promise.all([
     readEdhrecCache([oracleId]),
     loadSupportLists([oracleId]),
-    loadRoleTargetsForCommanders([commander]),
+    loadRoleTargetsForCommanders([commander], basis),
   ]);
   const support = supportLists.get(oracleId) ?? null;
   const targets = roleTargets.get(oracleId)!;
@@ -373,6 +379,7 @@ export async function scoreOneCommander(
   const scored = scoreCommander({
     commander, collection: pool ?? collection,
     roleTargets: targets.targets,
+    roleSets,
     support,
     inclusionByName: result.data?.inclusionByName ?? null,
   });
