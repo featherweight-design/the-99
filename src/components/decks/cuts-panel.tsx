@@ -113,7 +113,9 @@ export function CutsPanelView({
       }
       return next;
     } catch {
-      if (mine === asked.current) setLoadFailed(true);
+      // A failed read leaves nothing trustworthy to draw: the old count or offer may describe a deck
+      // the server has since changed, or hide a run that did finish. Draw the count-failed state.
+      if (mine === asked.current) { setLoadFailed(true); setPanel(null); }
       return null;
     }
   }, [deps, deckId]);
@@ -260,8 +262,20 @@ export function CutsPanelView({
     }
     if (flight && !cancelled) await flight.promise;
     setPressing(false);
-    await reread();
-    if (cancelled) setAnnounced(copy.announce.stopped);
+    const next = await reread();
+    if (cancelled) {
+      setAnnounced(copy.announce.stopped);
+    } else if (own !== null && next?.run?.id === own && next.run.status !== "pending") {
+      // Stop lost the race: the run had already settled, and its own press stood down when Stop
+      // began. So say what `press` would have, and move focus to the heading.
+      const ran = next.run;
+      setAnnounced(
+        ran.status === "ok" ? copy.announce.ready(next.items.length)
+          : ran.status === "failed" && ran.errorClass === "ungrounded" ? copy.announce.refused
+            : copy.announce.failed,
+      );
+      headingRef.current?.focus();
+    }
   }
 
   async function verdictSettled(announce: string, refusal?: string) {

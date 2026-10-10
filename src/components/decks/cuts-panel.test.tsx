@@ -229,6 +229,16 @@ describe("CutsPanelView", () => {
     release();
   });
 
+  it("a read that fails after a good one draws the count-failed state, not the old panel", async () => {
+    const read = vi.fn().mockResolvedValueOnce(panelOf()).mockRejectedValue(new Error("down"));
+    const d = deps(null, { read });
+    const { rerender } = render(<CutsPanelView deckId="d1" deps={d} revision="a" />);
+    await screen.findByRole("button", { name: "Look deeper. Uses 1 credit." });
+    rerender(<CutsPanelView deckId="d1" deps={d} revision="b" />);
+    expect(await screen.findByText(copy.failed.heading)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Look deeper. Uses 1 credit." })).toBeNull();
+  });
+
   it("a refused cut reads again, so a stale result does not stay stuck", async () => {
     const d = deps(withResult(1, 1), { cut: vi.fn(async () => ({ ok: false as const, message: copy.refusals.stale })) });
     await mount(d);
