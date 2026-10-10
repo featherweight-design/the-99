@@ -30,6 +30,7 @@ for (const file of process.argv.slice(2)) {
     const facts = await factsFor(await loadDeckProfileFromHead(head), true);
     const byId = new Map(facts.cards.map((f) => [f.oracleId, f]));
     const deck = new Map([...deckNameIndex(facts.cards)].map(([k, v]) => [k, byId.get(v.oracleId)!]));
+    if ((row.reply as { assessment?: unknown }).assessment) throw new Error(`${row.id}: a contract-8 answer holds no tip card names; run validateSynopsisV8 on it instead`);
     const r = toReply(row.reply);
     const all: [string, string, string[]][] = [
       ["overview", r.overview, []],

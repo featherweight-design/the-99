@@ -116,11 +116,29 @@ describe("validateSynopsisV8", () => {
     expect(verdictOf(validateSynopsisV8(repeated, FACTS, CATALOG), "weaknesses")).toMatchObject({ reason: "checklist_incomplete" });
   });
 
-  it("refuses the Weaknesses when nothing is a weakness, and ignores a verdict with no tier or no line", () => {
+  it("refuses the Weaknesses when a weakness verdict has no tier or no line, naming the checklist", () => {
     const reply = good();
     reply.assessment = assessAll({ win_path: { verdict: "weakness", line: "No tier given." }, mana_and_colors: { verdict: "weakness", tier: "minor" } });
+    expect(checklistComplete(reply)).toBe(false);
+    expect(verdictOf(validateSynopsisV8(reply, FACTS, CATALOG), "weaknesses")).toMatchObject({ status: "refused", reason: "checklist_incomplete" });
+  });
+
+  it("refuses the Weaknesses when nothing is a weakness", () => {
+    const reply = good();
+    reply.assessment = assessAll();
     expect(weaknessLines(reply)).toEqual([]);
     expect(verdictOf(validateSynopsisV8(reply, FACTS, CATALOG), "weaknesses")).toMatchObject({ status: "refused", reason: "wrong_count" });
+  });
+
+  it("stores a surviving line's own evidence when an equal line before it was dropped", () => {
+    const reply = good();
+    reply.primer.mulligan.keep = [
+      { text: "A hand with [[Sol Ring]] gets you ahead early.", evidence: ["c99"] },
+      { text: "A hand with [[Sol Ring]] gets you ahead early.", evidence: ["c2"] },
+    ];
+    const r = validateSynopsisV8(reply, FACTS, CATALOG);
+    expect(r.primer?.mulligan.keep).toHaveLength(1);
+    expect(r.evidence?.keep).toEqual([["id-Sol Ring"]]);
   });
 
   it("drops the mono-color color-flexibility weakness and keeps the rest (the Imotekh sentence)", () => {

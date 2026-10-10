@@ -55,8 +55,9 @@ function rank(reply: Pick<SynopsisResponseV8, "assessment">) {
     .sort((a, b) => TIER_RANK[a.tier!] - TIER_RANK[b.tier!] || a.i - b.i);
 }
 
-/** Every topic assessed exactly once. */
+/** Every topic assessed exactly once, and every `weakness` verdict carrying the tier and the line it renders from. */
 export function checklistComplete(reply: Pick<SynopsisResponseV8, "assessment">): boolean {
+  if (reply.assessment.some((a) => a.verdict === "weakness" && (!a.tier || !a.line || a.line.trim() === ""))) return false;
   const seen = reply.assessment.map((a) => a.topic);
   return seen.length === ASSESSMENT_TOPICS.length && ASSESSMENT_TOPICS.every((t) => seen.filter((s) => s === t).length === 1);
 }
@@ -117,11 +118,14 @@ function normalize(reply: SynopsisResponseV8, facts: SynopsisFacts): Normalized 
 }
 
 /** The positions in `original` of `kept`, a subsequence of it with its order and duplicates kept. */
-function positions<T>(original: readonly T[], kept: readonly T[]): number[] {
+function positions<T>(original: readonly T[], kept: readonly T[], checks: readonly (RefusalReason | null)[]): number[] {
   const out: number[] = [];
   let from = 0;
   for (const item of kept) {
-    const at = original.indexOf(item, from);
+    // Equal text can be one line dropped by its own evidence check and another that survived, so the
+    // survivor is the first equal line whose own check passed (the text rules agree on equal text).
+    let at = original.indexOf(item, from);
+    while (at !== -1 && checks[at]) at = original.indexOf(item, at + 1);
     out.push(at);
     from = at + 1;
   }
@@ -144,16 +148,16 @@ export function validateSynopsisV8(
       : v);
   const weaknesses = complete ? checked.weaknesses : null;
 
-  const at = <T>(original: readonly T[], kept: readonly T[], evidence: string[][]) =>
-    positions(original, kept).map((p) => evidence[p] ?? []);
+  const at = <T>(original: readonly T[], kept: readonly T[], evidence: string[][], checks: readonly (RefusalReason | null)[] | undefined) =>
+    positions(original, kept, checks ?? []).map((p) => evidence[p] ?? []);
   const primer = checked.primer;
   const evidence: StoredEvidence = {
-    strategy: primer ? at(n.reply.primer.strategy, primer.strategy, n.evidence.strategy) : [],
-    keep: primer ? at(n.reply.primer.mulligan.keep, primer.mulligan.keep, n.evidence.keep) : [],
-    sendBack: primer ? at(n.reply.primer.mulligan.sendBack, primer.mulligan.sendBack, n.evidence.sendBack) : [],
-    tips: primer ? at(n.reply.primer.tips, primer.tips, n.evidence.tips) : [],
-    keyCards: checked.keyCards ? at(n.reply.keyCards, checked.keyCards, n.evidence.keyCards) : [],
-    weaknesses: weaknesses ? at(n.reply.weaknesses, weaknesses, n.evidence.weaknesses) : [],
+    strategy: primer ? at(n.reply.primer.strategy, primer.strategy, n.evidence.strategy, n.checks.strategy) : [],
+    keep: primer ? at(n.reply.primer.mulligan.keep, primer.mulligan.keep, n.evidence.keep, n.checks.keep) : [],
+    sendBack: primer ? at(n.reply.primer.mulligan.sendBack, primer.mulligan.sendBack, n.evidence.sendBack, n.checks.sendBack) : [],
+    tips: primer ? at(n.reply.primer.tips, primer.tips, n.evidence.tips, n.checks.tips) : [],
+    keyCards: checked.keyCards ? at(n.reply.keyCards, checked.keyCards, n.evidence.keyCards, n.checks.keyCards) : [],
+    weaknesses: weaknesses ? at(n.reply.weaknesses, weaknesses, n.evidence.weaknesses, n.checks.weaknesses) : [],
   };
 
   return {

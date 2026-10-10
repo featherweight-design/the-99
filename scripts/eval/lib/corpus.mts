@@ -63,7 +63,7 @@ export type Reply = {
 
 /**
  * A reply as the model wrote it under either contract, as the scorer's `Reply`. Contract 8 carries
- * its lines as `{ text, evidence }`, its tips with refs instead of names, and its weaknesses as
+ * its lines as `{ text, evidence }`, its tips with refs instead of names (a tip's `cards` is empty here: names need the deck's facts, so the scorer reads the marks in its text), and its weaknesses as
  * the `assessment` checklist: only `weakness` verdicts with a tier and a line count, in the
  * order the app renders them (critical, moderate, minor), led by the tier word, cut to three.
  */
