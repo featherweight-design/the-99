@@ -1,12 +1,13 @@
 import { and, eq, inArray, isNull, lt, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
-  cards, collectionHistory, collectionItems, commanderScores, csvUploads,
+  cards, collectionHistory, collectionItems, commanderScores, csvUploads, decks,
   type HistoryRow, type HistoryRowState,
 } from "../../db/schema";
 import { loadAvailability } from "../decks/availability-query";
 import type { Availability } from "../decks/availability";
 import { allocateClaims } from "../decks/allocate";
+import { proxiedMembership } from "../decks/proxies";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import { mergeHolding, toCollectionItemValues, type PendingItem } from "./pending";
 import type { OwnedCounts } from "./arrivals";
@@ -119,6 +120,13 @@ export type ChangeOptions = {
    * the one its Shopping list draws.
    */
   receipt?: { oracleId: string; deckId: string };
+  /**
+   * Refuse with `notInDeck` unless `deckId` holds `oracleId` (body or commander), checked INSIDE the
+   * transaction with the deck row locked `for update`, the lock every deck edit takes first. A
+   * check before the transaction could pass, then see the card removed before the write commits,
+   * and a purchase would be recorded for a deck that no longer wants it.
+   */
+  requireMember?: { deckId: string; oracleId: string };
 };
 
 export type ReceiptSnapshots = {
@@ -172,6 +180,8 @@ export type ChangeResult =
   | { status: "missingCard"; names: string[] }
   /** The revert target is not the player's, aged out, or pruned. */
   | { status: "notFound" }
+  /** `opts.requireMember`'s deck does not hold the card (any more). Nothing was written. */
+  | { status: "notInDeck" }
   /** The revert target was already reverted, by `by`. */
   | { status: "alreadyReverted"; by: string }
   /** A `dryRun`: nothing was written. */
@@ -487,6 +497,17 @@ export async function applyCollectionChange(
         }
         // Never reported back as anything more specific: another player's id would confirm it exists.
         throw new Error("collection change id is already in use");
+      }
+
+      // The deck's membership, under the deck row's lock: the lock every deck edit takes first, so
+      // no edit can remove the card between this check and the commit.
+      if (opts.requireMember) {
+        const { deckId, oracleId } = opts.requireMember;
+        await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
+        const { rows: [member] } = await tx.execute<{ held: boolean }>(
+          sql`select ${proxiedMembership(deckId, oracleId)} as held`,
+        );
+        if (!member?.held) throw new Refused({ status: "notInDeck" });
       }
 
       // ---- 3. The upload stamp is the upload's own lock, as in `replaceCollection`. The change's

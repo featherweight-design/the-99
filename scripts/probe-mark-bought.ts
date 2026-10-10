@@ -11,6 +11,8 @@
 //      exactly its own copies, because both are read under the write's lock.
 //   4. THE TOAST'S UNDO leaves the source deck out of the deck check, and only for that entry's own
 //      deck: naming another deck changes nothing.
+//   5. MEMBERSHIP IS CHECKED INSIDE THE WRITE: a card removed from the deck is refused `notInDeck`
+//      and nothing is written.
 //
 // It writes under a per-run user_id and deletes everything that id created in a `finally`.
 // Refused on production and staging; point DATABASE_URL at local-dev or a scratch branch.
@@ -109,6 +111,22 @@ async function main() {
       r.status === "applied" && r.receipt ? (r.receipt.after?.owned ?? 0) - (r.receipt.before?.owned ?? 0) : NaN;
     check("each concurrent receipt counts exactly its own copies", delta(p) === 1 && delta(q) === 2,
       `deltas ${delta(p)}, ${delta(q)}`);
+
+    // ---- 5. Membership, checked inside the write ---------------------------------------------
+    await pool.query("delete from deck_cards where deck_id = $1 and oracle_id = $2", [brew, C]);
+    const owned = Number((await one<{ q: number } | undefined>(
+      "select quantity as q from collection_items where user_id = $1 and oracle_id = $2", [USER, C],
+    ))?.q ?? 0);
+    const gone = await applyCollectionChange(
+      USER,
+      { kind: "edit", rows: [{ oracleId: C, setCode: "prb", collectorNumber: "1", finish: "nonfoil", quantity: owned + 1, expected: owned, condition: null }] },
+      { id: randomUUID(), source: `shopping:${brew}`, requireMember: { deckId: brew, oracleId: C } },
+    );
+    const after = Number((await one<{ q: number } | undefined>(
+      "select quantity as q from collection_items where user_id = $1 and oracle_id = $2", [USER, C],
+    ))?.q ?? 0);
+    check("a card the deck no longer holds is refused inside the write, and nothing moves",
+      gone.status === "notInDeck" && after === owned, `${gone.status}; count ${owned} -> ${after}`);
 
     // ---- 4. The undo's exclusion -------------------------------------------------------------
     // B: one copy, held by the senior deck. One more bought for the junior (1 -> 2) covers both, so

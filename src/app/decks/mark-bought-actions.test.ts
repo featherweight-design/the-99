@@ -6,7 +6,6 @@ const SCRY = "33333333-3333-4333-8333-333333333333";
 const ID = "44444444-4444-4444-8444-444444444444";
 
 const state = vi.hoisted(() => ({
-  member: true,
   printing: { setCode: "khm", collectorNumber: "31", finishes: ["nonfoil", "foil"] } as unknown,
   result: null as unknown,
   calls: [] as unknown[][],
@@ -16,7 +15,6 @@ const state = vi.hoisted(() => ({
 
 vi.mock("../../db", () => ({
   db: {
-    execute: async () => ({ rows: [{ held: state.member }] }),
     select: () => ({ from: () => ({ where: async () => (state.printing ? [state.printing] : []) }) }),
   },
 }));
@@ -44,7 +42,6 @@ const applied = (receipt: unknown) => ({
 });
 
 beforeEach(() => {
-  state.member = true;
   state.printing = { setCode: "khm", collectorNumber: "31", finishes: ["nonfoil", "foil"] };
   state.result = applied({ before: null, after: { owned: 3, claims: [] }, afterFromDeck: { owned: 3, free: 0, soft: 0 } });
   state.calls = [];
@@ -66,7 +63,7 @@ describe("markBought", () => {
 
   it("refuses malformed input", async () => {
     for (const over of [
-      { quantity: 0 }, { quantity: 21 }, { quantity: 1.5 }, { expected: -1 },
+      { quantity: 0 }, { quantity: 21 }, { quantity: 1.5 }, { expected: -1 }, { expected: 2_147_483_647 },
       { finish: "shiny" }, { scryfallId: "x" }, { id: "nope" },
     ]) {
       await expect(press(over)).rejects.toThrow("bad mark-bought input");
@@ -74,10 +71,10 @@ describe("markBought", () => {
     expect(state.calls).toEqual([]);
   });
 
-  it("refuses a card the deck does not hold", async () => {
-    state.member = false;
+  it("refuses a card the deck does not hold, as the write's own in-transaction check answers", async () => {
+    state.result = { status: "notInDeck" };
     expect(await press()).toEqual({ refused: "notInDeck" });
-    expect(state.calls).toEqual([]);
+    expect(state.invalidated).toBe(0);
   });
 
   it("refuses a printing of another card, or a finish the printing lacks", async () => {
@@ -96,7 +93,10 @@ describe("markBought", () => {
       oracleId: CARD, setCode: "khm", collectorNumber: "31", finish: "foil",
       quantity: 3, expected: 1, scryfallId: SCRY, condition: null,
     }]);
-    expect(opts).toEqual({ id: ID, source: `shopping:${DECK}`, receipt: { oracleId: CARD, deckId: DECK } });
+    expect(opts).toEqual({
+      id: ID, source: `shopping:${DECK}`, receipt: { oracleId: CARD, deckId: DECK },
+      requireMember: { deckId: DECK, oracleId: CARD },
+    });
     expect(out).toEqual({ applied: { id: ID, receipt: { tookCopy: [], stillNeeds: 0 } } });
   });
 
@@ -116,6 +116,10 @@ describe("markBought", () => {
     state.result = { status: "stale", current: [{ oracleId: CARD, setCode: "khm", collectorNumber: "31", finish: "foil", quantity: 4 }] };
     expect(await press()).toEqual({ stale: [{ oracleId: CARD, setCode: "khm", collectorNumber: "31", finish: "foil", quantity: 4 }] });
     expect(state.invalidated).toBe(0);
+  });
+
+  it("takes a holding of any size a Postgres integer stores", async () => {
+    expect(await press({ expected: 50_000 })).toEqual({ applied: { id: ID, receipt: { tookCopy: [], stillNeeds: 0 } } });
   });
 
   it("lowercases the ids it keys on", async () => {

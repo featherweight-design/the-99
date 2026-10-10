@@ -1,7 +1,7 @@
 "use server";
 
 import { after } from "next/server";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
 import { printings } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
@@ -10,13 +10,12 @@ import { isFinish, type CollectionItemIdentity } from "../../lib/collection/key"
 import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
 import { applyCollectionChange } from "../../lib/collection/write";
 import { requireDeck } from "../../lib/decks/read";
-import { proxiedMembership } from "../../lib/decks/proxies";
 import { shoppingMarkBoughtEnabled } from "../../lib/decks/mark-bought-flag";
 import { MARK_BOUGHT_MAX, receiptFacts, type ReceiptFacts } from "../../lib/decks/mark-bought";
 import { warmCommanderScores } from "../../lib/recs/warm";
 
-/** A holding's count is a PG integer; the same bound the collection editor uses. */
-const MAX_HELD = 10_000;
+/** `collection_items.quantity` is a Postgres integer: the collection editor's bound. */
+const MAX_HELD = 2_147_483_647;
 
 export type MarkBoughtOutcome =
   /**
@@ -67,12 +66,6 @@ export async function markBought(
   }
   await requireDeck(deckId, userId);
 
-  // Body or commander, the rule every per-deck write uses.
-  const { rows: [member] } = await db.execute<{ held: boolean }>(
-    sql`select ${proxiedMembership(deckId, oracleId)} as held`,
-  );
-  if (!member?.held) return { refused: "notInDeck" };
-
   // The printing, from the catalog by its id and only as a printing OF THIS CARD.
   const [printing] = await db
     .select({ setCode: printings.setCode, collectorNumber: printings.collectorNumber, finishes: printings.finishes })
@@ -95,7 +88,14 @@ export async function markBought(
         condition: null,
       }],
     },
-    { id: id as string, source: `shopping:${deckId}`, receipt: { oracleId, deckId } },
+    {
+      id: id as string,
+      source: `shopping:${deckId}`,
+      receipt: { oracleId, deckId },
+      // Body or commander, checked inside the write under the deck row's lock, so no deck edit can
+      // remove the card between the check and the commit.
+      requireMember: { deckId, oracleId },
+    },
   );
   switch (result.status) {
     case "applied":
@@ -112,6 +112,7 @@ export async function markBought(
     }
     case "stale": return { stale: result.current };
     case "missingCard": return { missingCard: result.names };
+    case "notInDeck": return { refused: "notInDeck" };
     // A raise never lowers a count, so `wouldShort` cannot come back; `unchanged` needs a quantity
     // of 0, which the input check refuses.
     default: throw new Error(`mark bought refused: ${result.status}`);
