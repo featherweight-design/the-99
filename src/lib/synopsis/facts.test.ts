@@ -51,6 +51,15 @@ describe("buildSynopsisFacts", () => {
     for (const n of [0, 1, 5]) expect(f.figures).toContain(n);
   });
 
+  it("carries a card's keywords when given them, and leaves the field unset otherwise", () => {
+    const f = buildSynopsisFacts(profile(), new Map(), new Set(), null, new Map([["id-Kratos", ["Haste", "Trample"]], ["id-Sol Ring", []]]));
+    const by = (n: string) => f.cards.find((c) => c.name === n)!;
+    expect(by("Kratos").keywords).toEqual(["Haste", "Trample"]);
+    expect(by("Sol Ring").keywords).toEqual([]);
+    expect(by("Gamble").keywords).toBeUndefined();
+    expect(buildSynopsisFacts(profile(), new Map()).cards.every((c) => c.keywords === undefined)).toBe(true);
+  });
+
   it("passes the harness's refused lines through the validator's own figure reader", () => {
     const allowed = new Set(buildSynopsisFacts(profile(), new Map()).figures);
     for (const line of [

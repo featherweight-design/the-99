@@ -19,6 +19,9 @@ export type FactCard = {
   quantity: number;
   categories: Category[];
   oracleText: string | null;
+  /** The card's keyword abilities as Scryfall lists them (`cards.keywords`). Optional so facts built
+   *  without them still read; the keyword rule (claims.ts) decides nothing for a card without. */
+  keywords?: string[];
   /** Mana value. Optional so facts stored before it existed still read. */
   manaValue?: number;
   /** A universal staple (`src/lib/staples/universal.ts`): never a Key card (Hugh, 2026-09-24). */
@@ -106,6 +109,8 @@ export function buildSynopsisFacts(
   universal: ReadonlySet<string> = new Set(),
   /** The any-size combo read (v2); null keeps the profile's two-card list and no near-combos. */
   anySize: { combos: ComboFact[]; nearCombos: NearComboFact[] } | null = null,
+  /** `cards.keywords` by oracle id (v2); absent leaves every card's `keywords` unset. */
+  keywords: ReadonlyMap<string, readonly string[]> | null = null,
 ): SynopsisFacts {
   const cats = categoriesOf(profile);
   const byId = new Map(profile.cards.map((c) => [c.oracleId, c]));
@@ -124,6 +129,7 @@ export function buildSynopsisFacts(
     manaValue: c.cmc,
     categories: CATEGORIES.filter((k) => cats.get(c.oracleId)?.has(k)),
     oracleText: oracleTexts.get(c.oracleId) ?? null,
+    ...(keywords?.has(c.oracleId) ? { keywords: [...keywords.get(c.oracleId)!] } : {}),
     universalStaple: universal.has(c.oracleId),
   }));
   return {

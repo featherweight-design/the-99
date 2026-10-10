@@ -248,7 +248,7 @@ function lineCheck(
 function section<T>(
   id: SectionId,
   parts: ({ kind: "whole"; lines: LineResult[]; range?: { min: number; max: number } }
-    | { kind: "list"; items: T[]; lines: LineResult[]; range: { min: number; max: number } })[],
+    | { kind: "list"; items: T[]; lines: LineResult[]; range: { min: number; max: number }; truncate?: boolean })[],
   found: Record<string, Card>,
 ): { verdict: SectionVerdict; kept: T[][] } {
   let total = 0;
@@ -267,16 +267,22 @@ function section<T>(
       kept.push([]);
     } else {
       const survivors = part.items.filter((_, i) => part.lines[i].reason === null);
-      if (part.items.length > part.range.max) reason ??= "wrong_count";
+      // A `truncate` list is offered more candidates than it renders (contract 8's weaknesses): the
+      // survivors beyond the maximum are cut, not refused.
+      if (part.items.length > part.range.max && !part.truncate) reason ??= "wrong_count";
       else if (survivors.length < part.range.min) reason ??= firstFail ?? "wrong_count";
-      kept.push(survivors);
+      kept.push(part.truncate ? survivors.slice(0, part.range.max) : survivors);
     }
   }
   if (reason !== null) return { verdict: { section: id, status: "refused", reason, failed, total }, kept };
   // Only what renders resolves: a dropped line's marks never reach the stored card map.
   for (const part of parts) {
+    // A truncated list renders only its first `max` survivors, so only those resolve.
+    let passed = 0;
     part.lines.forEach((l) => {
-      if (l.reason === null) Object.assign(found, l.found);
+      if (l.reason !== null) return;
+      if (part.kind === "list" && part.truncate && ++passed > part.range.max) return;
+      Object.assign(found, l.found);
     });
   }
   return { verdict: { section: id, status: "ok", failed: 0, total }, kept };
@@ -299,6 +305,11 @@ function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function applyExtra(r: Resolver, checks: (RefusalReason | null)[] | undefined, i: number): void {
+  const reason = checks?.[i];
+  if (reason) r.refuse(reason);
+}
+
 /** The rules every item of prose keeps, and its marks resolved. */
 function prose(r: Resolver, text: string, budget: number): void {
   if (!endsSentence(text)) r.refuse("partial_sentence");
@@ -314,6 +325,22 @@ function prose(r: Resolver, text: string, budget: number): void {
 }
 
 /**
+ * Extra refusals decided before validation by checks that need more than the reply's text
+ * (contract 8: evidence refs, keyword and edict claims, the non-weakness guard). One entry per line
+ * of the section, `null` for a line that passed. Applied after the line's own rules, so the first
+ * rule broken is still the reason.
+ */
+export type LineChecks = {
+  overview?: (RefusalReason | null)[];
+  strategy?: (RefusalReason | null)[];
+  keep?: (RefusalReason | null)[];
+  sendBack?: (RefusalReason | null)[];
+  tips?: (RefusalReason | null)[];
+  keyCards?: (RefusalReason | null)[];
+  weaknesses?: (RefusalReason | null)[];
+};
+
+/**
  * Checks a reply against the facts it was written from. Returns every section's verdict and the
  * content that renders: a passing section with its failing list lines dropped (contract A).
  */
@@ -321,6 +348,9 @@ export function validateSynopsis(
   reply: SynopsisResponse,
   facts: SynopsisFacts,
   catalog: ReadonlyMap<string, Card>,
+  extra: LineChecks = {},
+  /** Contract 8: the weaknesses arrive as ranked candidates, of which only the maximum render. */
+  truncateWeaknesses = false,
 ): CheckedSynopsis {
   const deck = deckNameIndex(facts.cards);
   const categories = new Map(facts.cards.map((c) => [c.oracleId, new Set(c.categories)]));
@@ -331,19 +361,23 @@ export function validateSynopsis(
     lineCheck(run, deck, cat, facts.commanders, facts.identity);
 
   const overview = section("overview", [
-    { kind: "whole", lines: [line((r) => prose(r, reply.overview, CHAR_BUDGETS.overview))] },
+    { kind: "whole", lines: [line((r) => { prose(r, reply.overview, CHAR_BUDGETS.overview); applyExtra(r, extra.overview, 0); })] },
   ], found);
 
   const { strategy, mulligan, tips } = reply.primer;
-  const mulliganLine = (text: string) => line((r) => {
+  const mulliganLine = (key: "keep" | "sendBack") => (text: string, i: number) => line((r) => {
     prose(r, text, CHAR_BUDGETS.mulligan);
     if (figuresIn(text).some((n) => !allowedFigures.has(n))) r.refuse("uncomputed_figure");
     if (statesLandCount(text)) r.refuse("land_count");
     if (commanderInHand(text, facts.commanders)) r.refuse("commander_in_hand");
     if (headingPrefix(text)) r.refuse("heading_prefix");
+    applyExtra(r, extra[key], i);
   });
-  const tipLine = (tip: SynopsisResponse["primer"]["tips"][number]) => line((r) => {
+  const tipLine = (tip: SynopsisResponse["primer"]["tips"][number], i: number) => line((r) => {
     prose(r, tip.text, CHAR_BUDGETS.tip);
+    // Contract 8's own checks first, so a tip citing nothing is named for that and not for the
+    // too-few-cards rule it then also breaks.
+    applyExtra(r, extra.tips, i);
     // A listed name is counted through the marks above when the prose marks it, and below when it
     // does not, so each name counts once.
     if (tip.cards.some((name) => !deck.has(normalizeName(name)))) r.refuse("tip_not_in_deck");
@@ -359,17 +393,18 @@ export function validateSynopsis(
     if (markedIds.size !== listedIds.size || [...listedIds].some((id) => !markedIds.has(id))) r.refuse("tip_not_in_deck");
   });
   const primer = section<unknown>("primer", [
-    { kind: "whole", lines: strategy.map((step) => line((r) => prose(r, step, CHAR_BUDGETS.strategy))), range: SECTION_COUNTS.strategy },
-    { kind: "list", items: mulligan.keep, lines: mulligan.keep.map(mulliganLine), range: SECTION_COUNTS.keep },
-    { kind: "list", items: mulligan.sendBack, lines: mulligan.sendBack.map(mulliganLine), range: SECTION_COUNTS.sendBack },
+    { kind: "whole", lines: strategy.map((step, i) => line((r) => { prose(r, step, CHAR_BUDGETS.strategy); applyExtra(r, extra.strategy, i); })), range: SECTION_COUNTS.strategy },
+    { kind: "list", items: mulligan.keep, lines: mulligan.keep.map(mulliganLine("keep")), range: SECTION_COUNTS.keep },
+    { kind: "list", items: mulligan.sendBack, lines: mulligan.sendBack.map(mulliganLine("sendBack")), range: SECTION_COUNTS.sendBack },
     { kind: "list", items: tips, lines: tips.map(tipLine), range: SECTION_COUNTS.tips },
   ], found);
 
   // A Key card whose card an earlier PASSING line already named is a duplicate, and fails as one:
   // the card is shown once, with the first job that checked out.
   const named = new Set<string>();
-  const keyLines = reply.keyCards.map((k) => line((r) => {
+  const keyLines = reply.keyCards.map((k, i) => line((r) => {
     prose(r, k.job, CHAR_BUDGETS.job);
+    applyExtra(r, extra.keyCards, i);
     const card = r.deckCard(k.card);
     if (!card) return;
     if (!jobSupported(k, categories.get(card.oracleId) ?? new Set())) r.refuse("job_unsupported");
@@ -384,7 +419,7 @@ export function validateSynopsis(
   ], found);
 
   const weaknesses = section("weaknesses", [
-    { kind: "list", items: reply.weaknesses, lines: reply.weaknesses.map((w) => line((r) => prose(r, w, CHAR_BUDGETS.weakness), catalog)), range: SECTION_COUNTS.weaknesses },
+    { kind: "list", items: reply.weaknesses, lines: reply.weaknesses.map((w, i) => line((r) => { prose(r, w, CHAR_BUDGETS.weakness); applyExtra(r, extra.weaknesses, i); }, catalog)), range: SECTION_COUNTS.weaknesses, truncate: truncateWeaknesses },
   ], found);
 
   const ok = (v: SectionVerdict) => v.status === "ok";

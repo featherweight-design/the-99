@@ -51,6 +51,17 @@ export const REFUSAL_REASONS = [
   "commander_in_hand",
   /** A Mulligan line opening with its own heading's word ("Keep", "Send back"). */
   "heading_prefix",
+  // Contract 8 (plan 2026-10-10-overview-accuracy.md, section 4.1):
+  /** An evidence ref that names no card of the deck, a claim over the cap, or a tip / Key card with none. */
+  "evidence_not_in_deck",
+  /** A sentence giving a marked card a keyword (cascade, haste...) that card's text and keywords lack. */
+  "keyword_not_on_card",
+  /** A tip saying creatures enter off a card that only makes opponents sacrifice. */
+  "edict_entry",
+  /** A weakness that is true of the data and means nothing (color flexibility on a mono-color deck). */
+  "non_weakness",
+  /** A checklist that does not assess every topic exactly once, or a weakness verdict with no tier or line. */
+  "checklist_incomplete",
 ] as const;
 export type RefusalReason = (typeof REFUSAL_REASONS)[number];
 
@@ -89,6 +100,39 @@ export type SectionVerdict =
 /** The land range the Mulligan draws as its fixed first line, from the facts, never the model. */
 export type LandRange = { keep: { low: number; high: number }; sendBack: { none: number; under: number; over: number } };
 
+/** The closed topics every contract-8 answer assesses, once each. */
+export const ASSESSMENT_TOPICS = [
+  "graveyard_or_zone_hate",
+  "artifact_enchantment_removal",
+  "interaction_speed",
+  "commander_dependence",
+  "win_path",
+  "combo_vulnerability",
+  "mana_and_colors",
+] as const;
+export type AssessmentTopic = (typeof ASSESSMENT_TOPICS)[number];
+export const ASSESSMENT_VERDICTS = ["weakness", "not_a_weakness", "unknown"] as const;
+export type AssessmentVerdict = (typeof ASSESSMENT_VERDICTS)[number];
+export const WEAKNESS_TIERS = ["critical", "moderate", "minor"] as const;
+export type WeaknessTier = (typeof WEAKNESS_TIERS)[number];
+
+/** What a stored contract-8 answer keeps of the checklist: the verdicts, not the lines (those render as Weaknesses). */
+export type StoredAssessment = { topic: AssessmentTopic; verdict: AssessmentVerdict; tier?: WeaknessTier };
+
+/**
+ * The oracle ids each rendered line is about, aligned with the content arrays. Resolved from the
+ * reply's deck-local refs; an old row has none. They anchor a claim to real cards in this list and
+ * do NOT prove it true (plan 3.4).
+ */
+export type StoredEvidence = {
+  strategy: string[][];
+  keep: string[][];
+  sendBack: string[][];
+  tips: string[][];
+  keyCards: string[][];
+  weaknesses: string[][];
+};
+
 export type CheckedSynopsis = {
   verdicts: SectionVerdict[];
   /** Absent on an overview written before the fixed line existed (contract 6), which draws none. */
@@ -97,6 +141,10 @@ export type CheckedSynopsis = {
   primer: Primer | null;
   keyCards: KeyCard[] | null;
   weaknesses: string[] | null;
+  /** Contract 8 only. */
+  assessment?: StoredAssessment[];
+  /** Contract 8 only. */
+  evidence?: StoredEvidence;
   /** Every resolved mark, keyed by `normalizeName` of the name as written (case, curly quotes and
    *  spacing folded), to the card it opens. A renderer looks a mark up through `normalizeName`. */
   cards: Record<string, { oracleId: string; name: string }>;
