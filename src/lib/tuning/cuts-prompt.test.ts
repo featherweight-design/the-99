@@ -147,6 +147,11 @@ describe("the plan in the prompt (v2)", () => {
     expect(short.user).not.toContain("turned up");
   });
 
+  it("scopes the combo none cite to the plan's lists, not to the deck's synergy", () => {
+    expect(withPlan().system).toContain("none for a card in no combo the plan lists");
+    expect(withPlan().system).toContain("not about the deck's synergy");
+  });
+
   it("says so when the combo read failed, and omits the whole plan block when none was given", () => {
     const failed = buildCutsPrompt(buildCutsPack({
       facts: cutFacts({ profile: profile(), locked: new Set(), support: null, declaredBracket: null }),
