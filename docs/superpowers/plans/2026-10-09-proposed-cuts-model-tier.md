@@ -72,15 +72,15 @@ run replaces this estimate with a measured one before the rest is spent.
 
 | Step | Answers | Estimate |
 |---|---|---|
-| Smoke: one deck, three trials, to measure tokens | 3 | $0.20 |
-| Round 1: five decks, three trials, no notes | 15 | $1.50 |
-| Round 2: same, with notes (the leak comparison) | 15 | $1.50 |
-| Prompt iteration: two more rounds on the three training decks | 18 | $2.00 |
-| Held-out confirmation, five decks, three trials | 15 | $1.50 |
-| Blind-read sample, Gishath, retries | 12 | $1.20 |
-| **Total** | **78** | **about $8** |
+| Smoke: one deck, three trials, to measure tokens | 3 | $0.22 |
+| Round 1: five decks, three trials, no notes | 15 | $1.10 |
+| Round 2: same, with notes (the leak comparison) | 15 | $1.10 |
+| Prompt iteration: two more rounds on the three training decks | 18 | $1.32 |
+| Held-out confirmation, five decks, three trials | 15 | $1.10 |
+| Blind-read sample, Gishath, retries | 12 | $0.88 |
+| **Total** | **78** | **about $5.70** |
 
-Each estimate is the $0.0489 basis scaled 1.5x for the longer reply, and the app's one retry
+Each estimate is 78 answers at $0.0734 (the $0.0489 basis scaled 1.5x for the longer reply), and the app's one retry
 included. **Approved ceiling: $15 (Hugh, 2026-10-09, relayed by the orchestrator), measured as it
 goes** by pricing every reply's usage through `scripts/eval/lib/pricing.mts`. The harness stops
 itself at $10 and asks before crossing $15. Batch pricing is half price where latency does not
