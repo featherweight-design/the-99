@@ -89,12 +89,10 @@ describe("loadPrices", () => {
   it("prices each pick in the SAME statement, by its own printing", async () => {
     state.rows = [
       {
-        newest_as_of: NEWEST, deck_id: null, oracle_id: CARD, scryfall_id: "s-cheap", set_code: "m21",
-        collector_number: "1", price_cents: 70, price_cents_foil: null, price_cents_etched: null, as_of: NEWEST,
+        newest_as_of: NEWEST, deck_id: null, oracle_id: CARD, price_cents: 70, price_cents_foil: null, price_cents_etched: null, as_of: NEWEST,
       },
       {
-        newest_as_of: NEWEST, deck_id: DECK, oracle_id: CARD, scryfall_id: "s-pick", set_code: "khm",
-        collector_number: "31", price_cents: 110, price_cents_foil: null, price_cents_etched: null, as_of: NEWEST,
+        newest_as_of: NEWEST, deck_id: DECK, oracle_id: CARD, price_cents: 110, price_cents_foil: null, price_cents_etched: null, as_of: NEWEST,
       },
     ];
     const result = await loadPrices([CARD], [{ deckId: DECK, oracleId: CARD, setCode: "KHM", collectorNumber: "31" }]);
@@ -106,8 +104,6 @@ describe("loadPrices", () => {
     expect(state.params[0]).toContainEqual(["khm"]);
     expect(result.prices.get(CARD)?.cents).toBe(70);
     expect(result.picked?.get(`${DECK}|${CARD}`)?.cents).toBe(110);
-    // The printing behind each figure, for the I got it preset.
-    expect(result.prices.get(CARD)?.printing).toEqual({ scryfallId: "s-cheap", setCode: "m21", collectorNumber: "1" });
-    expect(priceFor(result, DECK, CARD)?.printing?.scryfallId).toBe("s-pick");
+    expect(priceFor(result, DECK, CARD)?.cents).toBe(110);
   });
 });

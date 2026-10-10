@@ -26,12 +26,6 @@ export type PriceFact = {
   foilCents: number | null;
   etchedCents: number | null;
   asOf: Date;
-  /**
-   * The printing behind the figure (deck printings): which printing this fact priced. Optional so
-   * the facts built by hand elsewhere need not carry it; `loadPrices` fills it on every fact it
-   * returns. I got it presets its printing from it.
-   */
-  printing?: { scryfallId: string; setCode: string; collectorNumber: string };
 };
 
 export type PriceState = "priced" | "foilOnly" | "soldOut" | "absent";

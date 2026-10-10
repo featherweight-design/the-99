@@ -212,7 +212,6 @@ async function main() {
   const pickedRead = await loadPrices([priced.oracle_id], held);
   check("a deck's in-stock pick prices its own printing", priceFor(pickedRead, deckId, priced.oracle_id)?.cents, dearer.price_cents);
   check("the same card in another deck keeps today's cheapest figure", priceFor(pickedRead, plain, priced.oracle_id)?.cents, cheapest.price_cents);
-  check("the figure names the printing behind it", priceFor(pickedRead, deckId, priced.oracle_id)?.printing?.scryfallId, dearer.scryfall_id);
   // The player lets go of that printing: the pick is no longer held, so it is not priced.
   await fixture.execute(sql`delete from collection_items where user_id = ${USER} and oracle_id = ${priced.oracle_id}`);
   check("a pick the player no longer holds is not passed", (await readHeldPricePicks(USER, [deckId])).some((p) => p.oracleId === priced.oracle_id), false);

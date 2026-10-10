@@ -15,9 +15,6 @@ type Row = {
   /** Null on today's chosen row; the deck a picked row answers for. */
   deck_id: string | null;
   oracle_id: string | null;
-  scryfall_id: string | null;
-  set_code: string | null;
-  collector_number: string | null;
   price_cents: number | null;
   price_cents_foil: number | null;
   price_cents_etched: number | null;
@@ -101,7 +98,7 @@ export async function loadPrices(oracleIds: string[], picks: PricePick[] = []): 
   // number); `picked` returns that printing's own row, live or not, and `priceFor` decides.
   const pickedCte = picks.length === 0 ? sql`` : sql`,
     picked as (
-      select w.deck_id, p.oracle_id, p.scryfall_id, p.set_code, p.collector_number,
+      select w.deck_id, p.oracle_id,
              pp.price_cents, pp.price_cents_foil, pp.price_cents_etched, pp.as_of
       from unnest(
         ${sql.param(picks.map((k) => k.deckId))}::uuid[],
@@ -123,9 +120,6 @@ export async function loadPrices(oracleIds: string[], picks: PricePick[] = []): 
       select distinct on (p.oracle_id)
         null::uuid as deck_id,
         p.oracle_id,
-        p.scryfall_id,
-        p.set_code,
-        p.collector_number,
         pp.price_cents,
         pp.price_cents_foil,
         pp.price_cents_etched,
@@ -148,9 +142,6 @@ export async function loadPrices(oracleIds: string[], picks: PricePick[] = []): 
       newest.as_of as newest_as_of,
       facts.deck_id,
       facts.oracle_id,
-      facts.scryfall_id,
-      facts.set_code,
-      facts.collector_number,
       facts.price_cents,
       facts.price_cents_foil,
       facts.price_cents_etched,
@@ -169,10 +160,6 @@ export async function loadPrices(oracleIds: string[], picks: PricePick[] = []): 
       foilCents: row.price_cents_foil,
       etchedCents: row.price_cents_etched,
       asOf: parseAsOf(row.as_of),
-      // The printing behind the figure, for the I got it preset. Always filled here, picks or not.
-      ...(row.scryfall_id !== null && row.set_code !== null && row.collector_number !== null
-        ? { printing: { scryfallId: row.scryfall_id, setCode: row.set_code, collectorNumber: row.collector_number } }
-        : {}),
     };
     if (row.deck_id === null) prices.set(row.oracle_id, fact);
     else picked.set(pickKey(row.deck_id, row.oracle_id), fact);
