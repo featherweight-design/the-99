@@ -128,9 +128,10 @@ export function UnresolvedGroup({
             : 1;
     const built = deckCounts(cards).built + added;
     const remaining = rows.length - 1;
-    const roleOfResult = countRoles.byLabel
-      ? labelRolesOf(labelRows?.[result.oracleId])[0]
-      : result.role;
+    const resultRows = labelRows?.[result.oracleId];
+    const roleOfResult = !countRoles.byLabel || result.role === "land" || !resultRows
+      ? result.role // a land, or a card the page's label read does not cover (a search result)
+      : labelRolesOf(resultRows)[0];
     const cell = mix.cells[roleOfResult as MixRole] as
       RecommendedMix["cells"][MixRole] | undefined;
     const role = cell

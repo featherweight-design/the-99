@@ -869,7 +869,10 @@ export function BuilderShell({
       // By label, the card's role is the first role its label names, and an unlabeled card (or one
       // whose label the page never read) names none; otherwise the classifier's `card.role`.
       const countRoles = roleCounterFor(labelRows);
-      const role = countRoles.byLabel ? labelRolesOf(labelRows?.[card.oracleId])[0] : card.role;
+      const rows = labelRows?.[card.oracleId];
+      const role = !countRoles.byLabel || card.role === "land" || !rows
+        ? card.role // a land, or a card the page's label read does not cover (a search result)
+        : labelRolesOf(rows)[0];
       const cell = mix.cells[role as MixRole] as
         | RecommendedMix["cells"][MixRole]
         | undefined;

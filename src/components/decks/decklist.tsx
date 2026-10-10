@@ -691,7 +691,7 @@ export function Decklist({
       const roleCards = missingCards.filter((c) => c.role === role);
       if (roleCards.length === 0) return [];
       const from = roleCounts[role];
-      const n = cardCopies(roleCards.filter(notSpent));
+      const listed = cardCopies(roleCards.filter(notSpent));
       // Where the deck lands if the player buys this group, not the baseline.
       // For a group the fill built they are the same number — the fill buys a
       // role up to its target and no further, so from + n is the target. They
@@ -703,8 +703,10 @@ export function Decklist({
       // strip will read after the purchase.
       const moves = countRoles.byLabel
         ? cardCopies(roleCards.filter(notSpent).filter((c) => labelRolesOf(labelRows?.[c.oracleId]).includes(role)))
-        : n;
-      const to = from + moves;
+        : listed;
+      // `n` is what moves the count, so from + n = to holds on either basis.
+      const n = moves;
+      const to = from + n;
       const gapClause = recommendationsCopy.shopping.groupGap(
         String(n),
         String(from),

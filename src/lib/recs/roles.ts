@@ -11,9 +11,9 @@ export const ROLE_TARGETS: Record<Exclude<Role, "land">, number> = {
  * The flat fallback for the LABELS basis: what a deck is graded against when no commander, pair or
  * bucket carries a `label_*` figure. Re-stated from the label means rather than borrowed from the
  * classifier's 10/10/8/3 (Hugh, 2026-10-09), because a deck counted by label measured against
- * a target the classifier set reads short or long on every role. These are the means of the
- * stored `commander_support.label_*` over the commanders that carry them, rounded to whole cards.
- * The plan expected about 11.6/8.4/6.2/1.5; re-measure from staging's stored `label_*` once the
+ * a target the classifier set reads short or long on every role. These are the PLAN's expected
+ * label means (about 11.6/8.4/6.2/1.5) rounded to whole cards, with wipes held at 1 as Hugh ruled
+ * (a plain round would give 2). NOT yet computed from stored data: re-measure from staging's stored `label_*` once the
  * index build has written them (none were stored on 2026-10-10) and move these if they differ.
  */
 export const LABEL_ROLE_TARGETS: Record<Exclude<Role, "land">, number> = {
