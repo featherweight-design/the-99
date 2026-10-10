@@ -1,10 +1,10 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
-  cards, commanderScores, commanderSupport, commanderSupportCards,
+  cards, commanderSupport, commanderSupportCards,
   commanderPairSupport, commanderPairSupportCards, decks, identityComposition,
 } from "../../db/schema";
-import { retirePersistedScoresIn, SCORE_INDEX_LOCK } from "../recs/score-lock";
+import { retirePersistedScoresIn } from "../recs/score-lock";
 import { choosePairs, LEGAL_PAIR_FLOOR, legalPairs, pairKey, type IndexPair } from "./pair-enumerate";
 import { deriveRoleTargets, roleTargetsPublishable, ROLE_TARGET_FLOOR, type RoleDerivationRow, type RoleTargetRow } from "./role-targets";
 import { readLabelRoleSets } from "../labels/read";

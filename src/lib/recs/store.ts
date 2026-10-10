@@ -11,6 +11,9 @@ import { notBuiltBy } from "../decks/built";
 import { readIndexGeneration } from "../cache/index-generation";
 import { scoreWriterVersion } from "./writer-version";
 import { SCORE_INDEX_LOCK } from "./score-lock";
+import { readLabelRoleSets } from "../labels/read";
+import { roleSetFingerprint } from "../labels/role-sets";
+import type { LabelCheck } from "./pool-role-basis";
 import { recordSoftFailure } from "../cache/soft-failure";
 
 // Postgres codes meaning the schema is behind the code: 42P01 undefined_table,
@@ -250,6 +253,14 @@ export async function persistScores(
    * alone: rows an unguarded writer leaves behind announce 3 and are refused.
    */
   indexGen?: string,
+  /**
+   * What the compute read its label sets as (labels basis only). Re-read under the same shared
+   * lock a label publish retires scores behind: a publish committing before the compute's labels
+   * were read is seen by the compute, one committing after the lock is seen here as a changed
+   * fingerprint, and one holding the lock makes this wait. Either way no row counted by labels
+   * that have since moved is stored. Absent is "do not check".
+   */
+  labelCheck?: LabelCheck,
 ): Promise<void> {
   // A token taken over a failed read guards nothing, so there is nothing to compare against.
   if (indexGen === INDEX_UNREADABLE) return;
@@ -308,6 +319,10 @@ export async function persistScores(
     if (indexGen !== undefined) {
       // Strict: a failed re-read throws and abandons the write, never reads as a match.
       if ((await readIndexGeneration(tx, { strict: true })) !== indexGen) return;
+    }
+    if (labelCheck) {
+      const now = await readLabelRoleSets(labelCheck.oracleIds, tx);
+      if (roleSetFingerprint(labelCheck.oracleIds, now) !== labelCheck.fingerprint) return;
     }
     await tx.delete(commanderScores).where(
       keep.length === 0

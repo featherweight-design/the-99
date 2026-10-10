@@ -2,9 +2,10 @@
 // restates a rule enforced somewhere else too, and every failure mode is the
 // same shape: a number on one screen disagreeing with the same number on
 // another, which no test of either screen alone would catch.
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { db } from "../../db";
 import { commanderScores } from "../../db/schema";
+import { SCORE_WRITER_CURRENT } from "../../db/schema";
 import { rankableScoreRows } from "./store";
 
 const emitted = () =>
@@ -41,5 +42,27 @@ describe("rankableScoreRows", () => {
     const sql = emitted().sql;
     expect(sql).toContain("commander_oracle_id");
     expect(sql).toContain("partner_oracle_id");
+  });
+});
+
+// The role basis rides in the writer version (labels-everywhere PR 5): the window accepts only the
+// version this deployment writes, so the other basis's set is refused whole.
+describe("rankableScoreRows by role basis", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("compares with <> and the classifier version with the switch off", () => {
+    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "");
+    const { sql, params } = emitted();
+    expect(sql).toMatch(/stale\.writer_version <> \$\d+/);
+    expect(params).toContain(SCORE_WRITER_CURRENT);
+    expect(params).not.toContain(-SCORE_WRITER_CURRENT);
+  });
+
+  it("compares with <> and the NEGATED version with the switch on, so a classifier set is refused", () => {
+    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
+    const { sql, params } = emitted();
+    expect(sql).toMatch(/stale\.writer_version <> \$\d+/);
+    expect(params).toContain(-SCORE_WRITER_CURRENT);
+    expect(params).not.toContain(SCORE_WRITER_CURRENT);
   });
 });

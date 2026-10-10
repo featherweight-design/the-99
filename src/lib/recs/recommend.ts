@@ -8,7 +8,7 @@ import { readEdhrecCache, resolveEdhrecData } from "../edhrec/client";
 import { supportOverlap } from "../edhrec/support-overlap";
 import { loadSupportLists } from "../edhrec/support-read";
 import { loadRoleTargetsForCommanders } from "../profile/role-targets";
-import { loadPoolRoleBasis } from "./pool-role-basis";
+import { loadPoolRoleBasis, type LabelCheck } from "./pool-role-basis";
 import type { ProfileRoleTargets } from "../profile/types";
 import { scoringSynergyState, type SynergyState } from "./synergy-state";
 import { committedSupport, readCommittedDecks, withCommitted } from "../decks/committed";
@@ -130,6 +130,8 @@ export type RecommendResult = {
    * every other result.
    */
   labelFallback?: true;
+  /** What the label sets were read as, handed to `persistScores` so it can drop a write whose labels moved. */
+  labelCheck?: LabelCheck;
 };
 
 /**
@@ -282,7 +284,7 @@ export async function recommendCommanders(
   // the role chips keep the fresher figures, and an EDHREC outage still has to
   // be describable. What moved to the index is the SCORE — Ruling D.
   // The labels are read first: the targets follow the basis they come back under.
-  const { basis, roleSets, fellBack } = await loadPoolRoleBasis(collection);
+  const { basis, roleSets, fellBack, labelCheck } = await loadPoolRoleBasis(collection);
   const [edhrecCache, supportLists, roleTargets] = await Promise.all([
     readEdhrecCache(candidates.map((c) => c.oracleId)),
     loadSupportLists(candidates.map((c) => c.oracleId)),
@@ -334,7 +336,11 @@ export async function recommendCommanders(
   const degraded = results.some((r) => r.synergyState === "degraded");
 
   const finalized = finalizeRecommendations(results, uniqueCardsRead, candidates.length);
-  return { ...finalized, degraded, ...(fellBack ? { labelFallback: true as const } : {}) };
+  return {
+    ...finalized, degraded,
+    ...(fellBack ? { labelFallback: true as const } : {}),
+    ...(labelCheck ? { labelCheck } : {}),
+  };
 }
 
 /**

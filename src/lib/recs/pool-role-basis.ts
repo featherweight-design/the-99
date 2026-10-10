@@ -1,5 +1,6 @@
 import { labelRoleCountsEnabled } from "../decks/label-counts-flag";
 import { readLabelRoleSets } from "../labels/read";
+import { roleSetFingerprint } from "../labels/role-sets";
 import type { RoleBasis } from "../profile/build";
 import { recordSoftFailure } from "../cache/soft-failure";
 import type { RoleName } from "./score";
@@ -27,7 +28,17 @@ export type PoolRoleBasis = {
    * classifier counts with the switch on until something unrelated cleared it.
    */
   fellBack: boolean;
+  /**
+   * What the sets were read AS, for a writer that persists the list counted by them: the ids asked
+   * for and `roleSetFingerprint` of the sets that came back. `persistScores` re-reads the same ids
+   * under its lock and drops the write when the fingerprint moved, so a label publish committing
+   * between this read and the write cannot leave scores counted by the old labels. Only on the
+   * labels basis.
+   */
+  labelCheck?: LabelCheck;
 };
+
+export type LabelCheck = { oracleIds: string[]; fingerprint: string };
 
 export const CLASSIFIER_POOL_BASIS: PoolRoleBasis = { basis: "classifier", roleSets: undefined, fellBack: false };
 const FELL_BACK: PoolRoleBasis = { ...CLASSIFIER_POOL_BASIS, fellBack: true };
@@ -39,7 +50,12 @@ export async function loadPoolRoleBasis(
 ): Promise<PoolRoleBasis> {
   if (!enabled) return CLASSIFIER_POOL_BASIS;
   try {
-    return { basis: "labels", roleSets: await read(cards.map((c) => c.oracleId)), fellBack: false };
+    const oracleIds = [...new Set(cards.map((c) => c.oracleId))];
+    const roleSets = await read(oracleIds);
+    return {
+      basis: "labels", roleSets, fellBack: false,
+      labelCheck: { oracleIds, fingerprint: roleSetFingerprint(oracleIds, roleSets as never) },
+    };
   } catch (err) {
     recordSoftFailure();
     console.warn("loadPoolRoleBasis: no labels — the ranked list counts by the classifier", err);
