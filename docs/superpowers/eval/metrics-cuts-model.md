@@ -71,7 +71,7 @@ Chance is about 27 per 174, so Sonnet is 1.3x and the better rows 1.6x to 1.7x. 
 
 Proposed cuts is "this list is over 100, which cards come out". The truth set here is "which cards did Hugh swap out between v1 and v2", and the two differ:
 
-- **Most removals are swaps.** By the same-role pairing, 17 of the 58 cuts have a replacement in the same role, and the notes say the rest are mostly theme changes too (a proliferate rebuild, a five-colour mana fix, a mountain skew). The reason a card left lives in the card that came in, which a cut-only call is never shown.
+- **Most removals are swaps or theme changes.** Every deck added as many cards as it cut (the notes: a proliferate rebuild, a five-colour mana fix, a mountain skew, upgrades to a precon), and 17 of the 58 cuts have a replacement of the same role. The reason a card left lives in the card that came in, which a cut-only call is never shown.
 - **No deck was over 100.** The "pre-cut list" is v1 plus the cards v2 added, a list Hugh never held. The model is asked to cut `|added|` cards from it, and some of the added cards are ones Hugh chose on purpose.
 - **Intent is the signal the product has and this truth withholds.** A player pressing Look deeper on an over-100 deck can say what the deck is for. Showing the model Hugh's v2 note moved Sonnet from 20% to 26%, and those notes name cards.
 - **It cannot tell a defensible cut from a different one.** A model that proposes a sensible cut Hugh did not make scores a miss.
@@ -80,6 +80,6 @@ A better truth set, in order of cost:
 
 1. **Hugh trims two or three real over-100 lists by hand**, writing nothing but the final 100 (a few minutes a deck). The scored question becomes what the product asks. Any deck over 100 on staging or a new one he pads on purpose with 8 to 12 cards he would cut.
 2. **Blind read.** The model proposes cuts for his over-100 lists and Hugh marks each one fine, close or wrong, as for the tuning prompt (`report.md`). No ground truth needed, and it measures reasons too.
-3. **Decks with a known net-reduction history.** Only 14 to 41 of the 58 are net reductions, and none of them is a clean trim.
+3. **Decks with a net-reduction history.** By the same-role pairing 41 of the 58 cuts have no replacement of the same role, but every deck here added about as many cards as it cut, so none is a clean trim.
 
 The recall numbers above are a floor for the free-versus-model comparison and no more.

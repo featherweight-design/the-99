@@ -27,7 +27,7 @@ describe("buildCutsPrompt", () => {
     const { user } = build();
     expect(user).toContain("ramp: 12 of 10");
     expect(user).toContain("Key cards, never to be cut: ramp1.");
-    expect(user).toContain("- ramp0 | roles: ramp | inclusion 41");
+    expect(user).toContain("- ramp0 | Creature — Bear, mv 2 | roles: ramp | inclusion 41");
     expect(user).toContain("not on the commander's EDHREC list");
     expect(user).not.toMatch(/price|owned|\$/i);
   });
@@ -38,8 +38,20 @@ describe("buildCutsPrompt", () => {
     expect(build("Big fliers").user).toContain("<<<PLAYER_TEXT>>>");
   });
 
-  it("contains no em dash", () => {
+  it("writes no em dash of its own; only a catalog type line carries one", () => {
     const { system, user } = build("x");
-    expect(system + user).not.toContain("—");
+    expect(system).not.toContain("—");
+    expect(user.replaceAll(/[A-Za-z ]+ — [A-Za-z ]+, mv/g, "")).not.toContain("—");
+  });
+
+  it("gives a card's oracle text on its line, flattened, only when the caller supplied it", () => {
+    const pack = buildCutsPack({
+      facts: cutFacts({ profile: profile(), locked: new Set(), support: null, declaredBracket: null }),
+      commanderName: "Gishath", keyCards: [], intent: null,
+      texts: new Map([["ramp0", "{T}: Add {G}.\nDraw a card."]]),
+    });
+    const { user } = buildCutsPrompt(pack);
+    expect(user).toContain("- ramp0 | Creature — Bear, mv 2 | text: {T}: Add {G}. / Draw a card. |");
+    expect(user).not.toContain("ramp1 | Creature — Bear, mv 2 | text:");
   });
 });
