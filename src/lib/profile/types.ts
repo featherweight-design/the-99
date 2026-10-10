@@ -195,6 +195,14 @@ export type ProfileSkeleton = {
    * that are perfectly good. Never null — the chain ends at `ROLE_TARGETS`.
    */
   roleTargets: ProfileRoleTargets;
+  /**
+   * `labels` when this profile counted its roles by the cards' LABELS and graded them against
+   * `label_*` targets (`LABEL_ROLE_COUNTS_ENABLED`, labels-everywhere PR 8). ABSENT means the
+   * classifier and `avg_*`, which is every profile built or stored before the switch existed, so
+   * a reader choosing a flat fallback (`recommendedMix`) picks the one that matches its counts.
+   * Written only when `labels`, so a switched-off profile is byte-identical to today's.
+   */
+  roleBasis?: "labels";
   /** The floor's bucket. Always present, even when no composition was found. */
   condition: string;
   /**
