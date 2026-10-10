@@ -112,12 +112,6 @@ async function readHeadAndRow(tx: Tx, deckId: string, userId: string) {
 }
 
 /**
- * Whether the stored row describes the deck's current list. A row written before migration 0054
- * (`profile_version` 0) stored `profileFingerprint`, which carries the version it was built at;
- * every later row stores `listFingerprint`. A legacy row built under an older version than the
- * current one cannot be compared, and reads as a different list.
- */
-/**
  * Whether the deployment counts roles on another basis than the one a stored reading was built
  * under (`LABEL_ROLE_COUNTS_ENABLED`, labels-everywhere PR 8). `PROFILE_VERSION` deliberately does
  * not move with the switch, so without this a press on an unchanged list would answer from the
@@ -150,6 +144,12 @@ export async function pressMustRecompute(args: {
   return args.noticesOn ? args.logMoved() : false;
 }
 
+/**
+ * Whether the stored row describes the deck's current list. A row written before migration 0054
+ * (`profile_version` 0) stored `profileFingerprint`, which carries the version it was built at;
+ * every later row stores `listFingerprint`. A legacy row built under an older version than the
+ * current one cannot be compared, and reads as a different list.
+ */
 export function sameList(row: { profileVersion: number; fingerprint: string }, head: ProfileHead): boolean {
   return row.profileVersion === 0
     ? row.fingerprint === profileFingerprint(head)
