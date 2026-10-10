@@ -98,7 +98,7 @@ type ListRow = {
  * Aliased and qualified throughout: the two link checks are correlated subqueries over the same
  * table, the shape that compares a row with itself when written bare (AGENTS.md).
  */
-const listColumns = sql`
+export const listColumns = sql`
   h.id, h.seq, h.created_at, h.kind, h.source, h.raised, h.lowered,
   jsonb_array_length(h.rows) as row_count, h.reverts_id, h.reverted_by,
   (

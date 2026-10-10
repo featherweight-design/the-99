@@ -131,8 +131,20 @@ export type PrintingRef = { oracleId: string; setCode: string; collectorNumber: 
 export async function resolvePrintings(refs: PrintingRef[]): Promise<Map<string, { scryfallId: string; finishes: string[] }>> {
   const out = new Map<string, { scryfallId: string; finishes: string[] }>();
   if (refs.length === 0) return out;
+  for (const r of await resolvePrintingsQuery(refs)) {
+    out.set(printingRefKey(r), { scryfallId: r.scryfallId, finishes: r.finishes });
+  }
+  return out;
+}
+
+/**
+ * The read behind `resolvePrintings`, apart so a test can render it. The set and collector number
+ * are matched TOGETHER per ref, never as two independent lists: two lists would accept a set from
+ * one ref and a number from another, which is a printing nobody named.
+ */
+export function resolvePrintingsQuery(refs: PrintingRef[]) {
   const oracleIds = [...new Set(refs.map((r) => r.oracleId))];
-  const rows = await db
+  return db
     .select({
       oracleId: printings.oracleId, setCode: printings.setCode, collectorNumber: printings.collectorNumber,
       scryfallId: printings.scryfallId, finishes: printings.finishes,
@@ -142,10 +154,6 @@ export async function resolvePrintings(refs: PrintingRef[]): Promise<Map<string,
       inArray(printings.oracleId, oracleIds),
       or(...refs.map((r) => and(eq(printings.setCode, r.setCode), eq(printings.collectorNumber, r.collectorNumber)))),
     ));
-  for (const r of rows) {
-    out.set(printingRefKey(r), { scryfallId: r.scryfallId, finishes: r.finishes });
-  }
-  return out;
 }
 
 export const printingRefKey = (r: PrintingRef) => `${r.oracleId}|${r.setCode}|${r.collectorNumber}`;

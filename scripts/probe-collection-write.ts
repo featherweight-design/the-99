@@ -29,6 +29,7 @@ import { collectionGeneration } from "../src/lib/recs/store";
 import { commitVersion } from "../src/lib/decks/versions";
 import { editsSinceUpload, getHistoryEntry, listHistory } from "../src/lib/collection/history";
 import { replaceCollection } from "../src/lib/collection/import";
+import { resolvePrintings } from "../src/lib/collection/catalog-read";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -314,6 +315,18 @@ async function main() {
       "select scryfall_id, condition from collection_items where user_id = $1 and oracle_id = $2 and collector_number = '2'",
       [USER, C],
     );
+    const real = await one<{ scryfall_id: string; set_code: string; collector_number: string; finishes: string[] }>(
+      "select scryfall_id, set_code, collector_number, finishes from printings where oracle_id = $1 limit 1", [C],
+    );
+    const resolved = await resolvePrintings([
+      { oracleId: C, setCode: real.set_code, collectorNumber: real.collector_number },
+      { oracleId: C, setCode: real.set_code, collectorNumber: "no-such-number" },
+      { oracleId: A, setCode: real.set_code, collectorNumber: real.collector_number },
+    ]);
+    const hit = resolved.get(`${C}|${real.set_code}|${real.collector_number}`);
+    check("a printing resolves by its exact card, set and number, and nothing else does",
+      resolved.size === 1 && hit?.scryfallId === real.scryfall_id && isDeepStrictEqual(hit?.finishes, real.finishes),
+      JSON.stringify([...resolved.keys()]));
     check("a row an edit creates stores the printing and condition the edit named",
       created?.scryfall_id === printing && created?.condition === "LP", JSON.stringify(created));
   } finally {
