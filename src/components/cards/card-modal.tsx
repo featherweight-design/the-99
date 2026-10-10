@@ -1523,7 +1523,9 @@ export function CardModal({
       preferred={pick}
       // In deck scope `Shown now` names what the deck falls back to without its pick: the
       // Collection's printing (handoff R3, plan call 6), not the art on screen.
-      resolvedKey={keyOf(deckScope ? resolvedPrinting(card) : resolved)}
+      // Once the deck has a pick, no tile is `Shown now` (STATES, "Picked, open"): the badge marks
+      // what the deck falls back to, and only while it is falling back.
+      resolvedKey={keyOf(deckScope ? (pick === null ? resolvedPrinting(card) : undefined) : resolved)}
       scope={deckScope ? "deck" : "collection"}
       notice={deckScope && saveFailed ? deckPrintingsCopy.picker.failed : null}
       cardName={card.name}

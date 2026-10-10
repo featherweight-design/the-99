@@ -86,12 +86,16 @@ describe("the picker in deck scope", () => {
     expect(screen.getAllByText(deckPrintingsCopy.picker.regionIntroPicked).length).toBeGreaterThan(0);
     // The deck's pick is the checked tile, not the Collection's ZNR.
     expect(screen.getAllByRole("radio", { name: /LEA/ })[0].getAttribute("aria-checked")).toBe("true");
+    // Picked and open: no tile is `Shown now`, the Collection's ZNR included.
+    for (const tile of screen.getAllByRole("radio")) expect(tile.getAttribute("aria-label")).not.toMatch(/shown now/);
   });
 
   it("writes the deck's pick, never the Collection's art preference", async () => {
     mount({});
     await openPicker("held");
     expect(screen.getAllByText(deckPrintingsCopy.picker.regionIntro(3)).length).toBeGreaterThan(0);
+    // Nothing picked: `Shown now` marks what the deck falls back to, the Collection's ZNR.
+    expect(screen.getAllByRole("radio", { name: /ZNR.*shown now/ }).length).toBeGreaterThan(0);
     await pickTile(/C21/);
     expect(setDeckPrinting).toHaveBeenCalledWith("d1", "held", { setCode: "C21", collectorNumber: "263" });
     expect(setCardArtPreference).not.toHaveBeenCalled();

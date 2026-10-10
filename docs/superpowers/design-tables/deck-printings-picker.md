@@ -130,7 +130,7 @@ Visually the deck-scope picker is the shipped component with **no new geometry, 
 styles** (README: "unchanged, except that the write goes to the deck"; "no new tokens"). The
 differences are text slots, which controls are present, and where the write goes:
 
-1. Pinned line label slot: `deckPrintingsCopy.picker.pinned` replaces `printingPickerCopy.printing.badgePicked` on the Set field line only (tiles keep `Your pick`).
+1. Pinned line label slot: `deckPrintingsCopy.picker.pinned` replaces `printingPickerCopy.printing.triggerPicked` on the Set field line only (the tiles' `badgePicked` keeps `Your pick`).
 2. Intro slot: `regionIntro(n)` and `regionIntroPicked` swap to the deck variants; same `<p>`, 13.5px, `--fg-muted`.
 3. Reset: hidden.
 4. Dormant tile: hidden; a lapsed pick is cleared instead.
