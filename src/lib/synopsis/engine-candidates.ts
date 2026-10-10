@@ -8,7 +8,7 @@ import type { FactCard } from "./facts";
  * A TERM is a word of the commander's rules text or type line. A card shares a term when the word
  * appears in its own rules text or type line (plural folded). A term every card carries says
  * nothing, and a term only the commander carries links nothing, so only terms found on at least
- * two and at most `MAX_SHARE` of the deck's distinct cards count, and each shared term is worth
+ * one other card and at most `MAX_SHARE` of the deck's other cards count (the commander and a single partner are a pair), and each shared term is worth
  * the inverse of how many cards share it: a rare shared word ("necron", "graveyard") outweighs a
  * common one ("creature"). The list is a starting point for the model's choice, never a verdict.
  */
@@ -52,7 +52,7 @@ export function engineCandidates(cards: readonly FactCard[], commanders: readonl
   const bag = new Map(pool.map((c) => [c, words(`${c.typeLine} ${c.oracleText ?? ""}`)]));
   const df = new Map<string, number>();
   for (const t of terms) df.set(t, [...bag.values()].filter((b) => b.has(t)).length);
-  const usable = [...terms].filter((t) => (df.get(t) ?? 0) >= 2 && (df.get(t) ?? 0) <= MAX_SHARE * pool.length);
+  const usable = [...terms].filter((t) => (df.get(t) ?? 0) >= 1 && (df.get(t) ?? 0) <= MAX_SHARE * pool.length);
 
   return pool
     .map((c) => {

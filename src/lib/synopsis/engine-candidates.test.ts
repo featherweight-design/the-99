@@ -43,4 +43,13 @@ describe("engineCandidates", () => {
         .concat(Array.from({ length: 60 }, (_, i) => card(`Filler ${i}`, "Sorcery", `Filler ${i}.`)))];
     expect(engineCandidates(many, ["Lead"]).length).toBeLessThanOrEqual(ENGINE_CANDIDATES_MAX);
   });
+
+  it("counts the commander and one partner as a pair: a word only one other card shares still links it", () => {
+    const deck = [card("Lead", "Legendary Creature - Squirrel", "Whenever a squirrel dies, draw."),
+      card("Partner", "Creature - Squirrel", "A squirrel."),
+      ...Array.from({ length: 9 }, (_, i) => card(`Filler ${i}`, "Sorcery", `Filler ${i}.`))];
+    const out = engineCandidates(deck, ["Lead"]);
+    expect(out.map((c) => c.name)).toEqual(["Partner"]);
+    expect(out[0]!.shared).toContain("squirrel");
+  });
 });
