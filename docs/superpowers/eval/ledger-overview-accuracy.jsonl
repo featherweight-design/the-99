@@ -1,0 +1,35 @@
+{"at":"2026-10-10T06:26:57.650Z","runId":"smoke-v2","source":"realtime:1","usd":0.030462,"requests":1,"note":"smoke-v2 v2 HD - Wizards"}
+{"at":"2026-10-10T06:27:13.923Z","runId":"smoke-v2","source":"realtime:1","usd":0.035608,"requests":1,"note":"smoke-v2 v2 HD Tune - Counter Intelligence"}
+{"at":"2026-10-10T06:27:31.971Z","runId":"smoke-v2","source":"realtime:1","usd":0.03703,"requests":1,"note":"smoke-v2 v2 HD - Gishath"}
+{"at":"2026-10-10T09:25:21.485Z","runId":"1791624321485-gishath","source":"pending","usd":0.093365,"requests":1,"pending":"1791624321485-gishath","note":"corpus v1 gishath"}
+{"at":"2026-10-10T09:25:37.202Z","runId":"corpus-v1-gishath","source":"realtime:1","usd":0.034456,"requests":1,"settles":"1791624321485-gishath","note":"corpus v1 gishath"}
+{"at":"2026-10-10T09:25:47.324Z","runId":"1791624347324-aang","source":"pending","usd":0.092505,"requests":1,"pending":"1791624347324-aang","note":"corpus v1 aang"}
+{"at":"2026-10-10T09:26:01.845Z","runId":"corpus-v1-aang","source":"realtime:1","usd":0.033174,"requests":1,"settles":"1791624347324-aang","note":"corpus v1 aang"}
+{"at":"2026-10-10T09:26:03.796Z","runId":"1791624363796-counter-intelligence","source":"pending","usd":0.092375,"requests":1,"pending":"1791624363796-counter-intelligence","note":"corpus v1 counter-intelligence"}
+{"at":"2026-10-10T09:26:16.883Z","runId":"corpus-v1-counter-intelligence","source":"realtime:1","usd":0.033778,"requests":1,"settles":"1791624363796-counter-intelligence","note":"corpus v1 counter-intelligence"}
+{"at":"2026-10-10T09:26:18.394Z","runId":"1791624378394-eldrazi","source":"pending","usd":0.09378,"requests":1,"pending":"1791624378394-eldrazi","note":"corpus v1 eldrazi"}
+{"at":"2026-10-10T09:26:32.426Z","runId":"corpus-v1-eldrazi","source":"realtime:1","usd":0.034322,"requests":1,"settles":"1791624378394-eldrazi","note":"corpus v1 eldrazi"}
+{"at":"2026-10-10T09:26:33.804Z","runId":"1791624393804-goblins","source":"pending","usd":0.082155,"requests":1,"pending":"1791624393804-goblins","note":"corpus v1 goblins"}
+{"at":"2026-10-10T09:26:47.067Z","runId":"corpus-v1-goblins","source":"realtime:1","usd":0.027974,"requests":1,"settles":"1791624393804-goblins","note":"corpus v1 goblins"}
+{"at":"2026-10-10T09:26:48.558Z","runId":"1791624408558-gods","source":"pending","usd":0.096455,"requests":1,"pending":"1791624408558-gods","note":"corpus v1 gods"}
+{"at":"2026-10-10T09:27:02.719Z","runId":"corpus-v1-gods","source":"realtime:1","usd":0.035732,"requests":1,"settles":"1791624408558-gods","note":"corpus v1 gods"}
+{"at":"2026-10-10T09:27:04.154Z","runId":"1791624424154-wizards","source":"pending","usd":0.083725,"requests":1,"pending":"1791624424154-wizards","note":"corpus v1 wizards"}
+{"at":"2026-10-10T09:27:17.376Z","runId":"corpus-v1-wizards","source":"realtime:1","usd":0.028044,"requests":1,"settles":"1791624424154-wizards","note":"corpus v1 wizards"}
+{"at":"2026-10-10T09:27:18.687Z","runId":"1791624438687-yuriko","source":"pending","usd":0.094085,"requests":1,"pending":"1791624438687-yuriko","note":"corpus v1 yuriko"}
+{"at":"2026-10-10T09:27:32.327Z","runId":"corpus-v1-yuriko","source":"realtime:1","usd":0.034164,"requests":1,"settles":"1791624438687-yuriko","note":"corpus v1 yuriko"}
+{"at":"2026-10-10T09:27:37.458Z","runId":"1791624457458-aang","source":"pending","usd":0.09539,"requests":1,"pending":"1791624457458-aang","note":"corpus v2 aang"}
+{"at":"2026-10-10T09:27:52.786Z","runId":"corpus-v2-aang","source":"realtime:1","usd":0.036868,"requests":1,"settles":"1791624457458-aang","note":"corpus v2 aang"}
+{"at":"2026-10-10T09:27:55.379Z","runId":"1791624475379-counter-intelligence","source":"pending","usd":0.095465,"requests":1,"pending":"1791624475379-counter-intelligence","note":"corpus v2 counter-intelligence"}
+{"at":"2026-10-10T09:28:10.545Z","runId":"corpus-v2-counter-intelligence","source":"realtime:1","usd":0.037394,"requests":1,"settles":"1791624475379-counter-intelligence","note":"corpus v2 counter-intelligence"}
+{"at":"2026-10-10T09:28:12.070Z","runId":"1791624492070-eldrazi","source":"pending","usd":0.095835,"requests":1,"pending":"1791624492070-eldrazi","note":"corpus v2 eldrazi"}
+{"at":"2026-10-10T09:28:25.025Z","runId":"corpus-v2-eldrazi","source":"realtime:1","usd":0.035972,"requests":1,"settles":"1791624492070-eldrazi","note":"corpus v2 eldrazi"}
+{"at":"2026-10-10T09:28:26.630Z","runId":"1791624506630-gishath","source":"pending","usd":0.096405,"requests":1,"pending":"1791624506630-gishath","note":"corpus v2 gishath"}
+{"at":"2026-10-10T09:28:40.425Z","runId":"corpus-v2-gishath","source":"realtime:1","usd":0.035736,"requests":1,"settles":"1791624506630-gishath","note":"corpus v2 gishath"}
+{"at":"2026-10-10T09:28:43.347Z","runId":"1791624523347-goblins","source":"pending","usd":0.08477,"requests":1,"pending":"1791624523347-goblins","note":"corpus v2 goblins"}
+{"at":"2026-10-10T09:28:57.719Z","runId":"corpus-v2-goblins","source":"realtime:1","usd":0.030542,"requests":1,"settles":"1791624523347-goblins","note":"corpus v2 goblins"}
+{"at":"2026-10-10T09:28:59.666Z","runId":"1791624539666-gods","source":"pending","usd":0.098485,"requests":1,"pending":"1791624539666-gods","note":"corpus v2 gods"}
+{"at":"2026-10-10T09:29:14.606Z","runId":"corpus-v2-gods","source":"realtime:1","usd":0.037106,"requests":1,"settles":"1791624539666-gods","note":"corpus v2 gods"}
+{"at":"2026-10-10T09:29:16.098Z","runId":"1791624556098-wizards","source":"pending","usd":0.08623,"requests":1,"pending":"1791624556098-wizards","note":"corpus v2 wizards"}
+{"at":"2026-10-10T09:29:29.008Z","runId":"corpus-v2-wizards","source":"realtime:1","usd":0.028482,"requests":1,"settles":"1791624556098-wizards","note":"corpus v2 wizards"}
+{"at":"2026-10-10T09:29:30.428Z","runId":"1791624570428-yuriko","source":"pending","usd":0.096215,"requests":1,"pending":"1791624570428-yuriko","note":"corpus v2 yuriko"}
+{"at":"2026-10-10T09:29:45.059Z","runId":"corpus-v2-yuriko","source":"realtime:1","usd":0.036162,"requests":1,"settles":"1791624570428-yuriko","note":"corpus v2 yuriko"}

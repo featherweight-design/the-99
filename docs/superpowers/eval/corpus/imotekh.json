@@ -1,0 +1,76 @@
+{
+  "id": "imotekh",
+  "deck": {
+    "name": "Friend: Imotekh (production, owner user_3Jr0YssplMooLeYZq2IAZJIJQGZ)",
+    "deckId": "f7f11d07-5432-4fd6-b516-0b7e740df12e",
+    "source": "production",
+    "listFingerprint": null
+  },
+  "gold": {
+    "combos": [],
+    "keyCards": [
+      "Biotransference",
+      "Tortured Existence",
+      "Buried Alive"
+    ],
+    "weaknesses": [
+      {
+        "topic": "graveyard hate",
+        "names": [
+          "Rest in Peace",
+          "Dauthi Voidwalker",
+          "Bojuka Bog"
+        ]
+      },
+      {
+        "topic": "no cheap instant interaction",
+        "names": [
+          "instant"
+        ]
+      },
+      {
+        "topic": "commander dependence",
+        "names": [
+          "Imotekh"
+        ]
+      }
+    ],
+    "mulliganPieces": [],
+    "wrong": [
+      {
+        "id": "shard-ayara",
+        "cards": [
+          "Shard of the Void Dragon",
+          "Ayara"
+        ],
+        "why": "Shard makes opponents sacrifice; nothing enters under your control, so Ayara does not trigger",
+        "pattern": "(trigger|enter)"
+      },
+      {
+        "id": "mono-black-colors",
+        "sections": [
+          "weakness"
+        ],
+        "pattern": "(swamps|basic).*(color|colour) (flexibility|options)|(color|colour) flexibility",
+        "why": "a mono-black deck has no color to be flexible about"
+      }
+    ],
+    "right": [
+      {
+        "id": "wellspring-dispute",
+        "cards": [
+          "Ichor Wellspring",
+          "Deadly Dispute"
+        ],
+        "note": "Ichor Wellspring with Deadly Dispute"
+      },
+      {
+        "id": "spyder",
+        "cards": [
+          "Canoptek Spyder"
+        ],
+        "note": "Canoptek Spyder"
+      }
+    ]
+  }
+}

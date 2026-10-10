@@ -1,0 +1,79 @@
+{
+  "id": "wizards",
+  "deck": {
+    "name": "HD - Wizards (Baral)",
+    "deckId": "7653dec3-bcf4-4045-8242-9000765c7601",
+    "source": "staging",
+    "listFingerprint": "b662fff8071fd8e284ff636dcf9035a0a1210050f52866985eb67af322dcc3e3"
+  },
+  "gold": {
+    "combos": [
+      {
+        "cards": [
+          "Ghostly Flicker",
+          "Naru Meha"
+        ],
+        "produces": "infinite mana and flicker, then the library with Sea Gate Oracle, won with Laboratory Maniac or Jace, Wielder of Mysteries",
+        "forced": false
+      }
+    ],
+    "keyCards": [
+      "Ghostly Flicker",
+      "Naru Meha",
+      "Sea Gate Oracle",
+      "Laboratory Maniac",
+      "Jace, Wielder"
+    ],
+    "weaknesses": [
+      {
+        "topic": "no answer to a resolved noncreature permanent",
+        "names": [
+          "noncreature permanent"
+        ]
+      },
+      {
+        "topic": "no mass wipe against go-wide boards",
+        "names": [
+          "wrath",
+          "sweeper",
+          "mass removal",
+          "wipe"
+        ]
+      },
+      {
+        "topic": "removal on Naru Meha's trigger breaks the combo",
+        "names": [
+          "Naru Meha"
+        ]
+      },
+      {
+        "topic": "reliance on basic Islands",
+        "names": [
+          "basic Island"
+        ]
+      },
+      {
+        "topic": "tax effects such as Thalia",
+        "names": [
+          "Thalia"
+        ]
+      }
+    ],
+    "mulliganPieces": [
+      "Ghostly Flicker",
+      "Naru Meha",
+      "Sea Gate Oracle"
+    ],
+    "wrong": [
+      {
+        "id": "brainstorm-mills",
+        "cards": [
+          "Brainstorm"
+        ],
+        "pattern": "mill",
+        "why": "Brainstorm draws and puts back; it does not mill"
+      }
+    ],
+    "right": []
+  }
+}

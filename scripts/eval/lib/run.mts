@@ -4,7 +4,7 @@ import { execSync } from "node:child_process";
 import type { z } from "zod";
 
 import { countTokens, sendBatch, sendRealtime, type Got, type Sent } from "./batch.mjs";
-import { acquireRunLock, readLedger, record, refusal, spent } from "./ledger.mjs";
+import { acquireRunLock, DEFAULT_LIMITS, type Limits, readLedger, record, refusal, spent } from "./ledger.mjs";
 import { costUsd, worstCaseUsd, type Usage } from "./pricing.mjs";
 import { parseReply, type Cell } from "./request.mjs";
 
@@ -52,8 +52,12 @@ export async function runRequests<T>(opts: {
   meta: Record<string, unknown>;
   prepared: unknown;
   log: (line: string) => void;
+  /** Which ledger and limits guard this run; omitted, the original campaign's. */
+  ledger?: { path: string; limits: Limits };
 }): Promise<{ runId: string; dir: URL; answers: Map<string, Answer<T>> } | null> {
   const { first, schema, realtime, log } = opts;
+  const ledgerPath = opts.ledger?.path ?? LEDGER;
+  const limits = opts.ledger?.limits ?? DEFAULT_LIMITS;
   const counted = new Map<string, number>();
   let worst = 0;
   let inputSum = 0;
@@ -64,11 +68,11 @@ export async function runRequests<T>(opts: {
     inputSum += n;
     worst += worstCaseUsd(s.params.model, n, s.params.max_tokens, { batch: !realtime });
   }
-  if (!opts.dryRun) acquireRunLock(LEDGER);
-  const ledger = readLedger(LEDGER);
+  if (!opts.dryRun) acquireRunLock(ledgerPath);
+  const ledger = readLedger(ledgerPath);
   log(`${first.length} requests, ${inputSum} input tokens; worst case $${worst.toFixed(2)}; spent so far $${spent(ledger).toFixed(2)}`);
   if (opts.dryRun) return null;
-  const stop = refusal(ledger, worst, opts.planDone);
+  const stop = refusal(ledger, worst, opts.planDone, limits);
   if (stop) {
     log(`NOT SENT: ${stop}`);
     return null;
@@ -87,7 +91,7 @@ export async function runRequests<T>(opts: {
   const send = async (batch: Sent[], pass: string, worstUsd: number): Promise<Got[]> => {
     if (batch.length === 0) return [];
     const pendingId = `${runId}/${pass}`;
-    record(LEDGER, { at: new Date().toISOString(), runId: pendingId, source: "pending", usd: worstUsd, requests: batch.length, pending: pendingId });
+    record(ledgerPath, { at: new Date().toISOString(), runId: pendingId, source: "pending", usd: worstUsd, requests: batch.length, pending: pendingId });
     let got: Got[];
     let source: string;
     if (realtime) {
@@ -100,7 +104,7 @@ export async function runRequests<T>(opts: {
     }
     appendFileSync(new URL(`raw-${pass}.jsonl`, dir), got.map((g) => JSON.stringify(g)).join("\n") + "\n");
     const usd = got.reduce((n, g) => n + (g.ok ? costUsd(modelOf.get(g.customId.replace(/-r$/, ""))!, g.message.usage as Usage, { batch: !realtime }) : 0), 0);
-    const after = record(LEDGER, { at: new Date().toISOString(), runId: `${runId}/${pass}`, source, usd, requests: batch.length, settles: pendingId });
+    const after = record(ledgerPath, { at: new Date().toISOString(), runId: `${runId}/${pass}`, source, usd, requests: batch.length, settles: pendingId });
     log(`${pass}: ${batch.length} answers, $${usd.toFixed(4)}; ledger total $${spent(after).toFixed(2)}`);
     return got;
   };

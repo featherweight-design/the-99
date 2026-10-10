@@ -1,0 +1,40 @@
+{
+  "id": "aang",
+  "deck": {
+    "name": "HD - Avatar Aang",
+    "deckId": "0f585441-203e-475b-be7c-f11e67e20d79",
+    "source": "staging",
+    "listFingerprint": "adef447b225a484872ac0940305e42fc9cff342a70e157b94004a278f1e6ee86"
+  },
+  "gold": {
+    "combos": [],
+    "keyCards": [],
+    "weaknesses": [
+      {
+        "topic": "a mana base of mostly basics for a four or five color deck",
+        "names": [
+          "basic land",
+          "basics"
+        ]
+      },
+      {
+        "topic": "airbend is temporary removal",
+        "names": [
+          "airbend"
+        ]
+      }
+    ],
+    "mulliganPieces": [],
+    "wrong": [
+      {
+        "id": "iroh-countered",
+        "cards": [
+          "Iroh"
+        ],
+        "pattern": "countered creature",
+        "why": "Iroh, Dragon of the West gives firebending to modified creatures"
+      }
+    ],
+    "right": []
+  }
+}

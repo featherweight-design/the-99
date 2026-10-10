@@ -15,6 +15,15 @@ export const HARD_CAP_USD = 25;
 export const ASK_AT_USD = 15;
 
 /**
+ * A ledger's two thresholds. The original campaign's file keeps `DEFAULT_LIMITS`; the Overview
+ * accuracy line (plan 2026-10-10, Hugh's $15 cap) has its own file and `OVERVIEW_ACCURACY_LIMITS`, because
+ * the original holds $23.72 of settled spend and could not carry a second campaign.
+ */
+export type Limits = { hardCapUsd: number; askAtUsd: number };
+export const DEFAULT_LIMITS: Limits = { hardCapUsd: HARD_CAP_USD, askAtUsd: ASK_AT_USD };
+export const OVERVIEW_ACCURACY_LIMITS: Limits = { hardCapUsd: 15, askAtUsd: 11 };
+
+/**
  * An entry is either SETTLED (what a batch actually cost, from its usage meters) or PENDING (a
  * batch's worst case, written BEFORE it is submitted). A settled entry names the pending one it
  * closes. So a process that dies after paying for a batch and before settling it leaves its
@@ -31,6 +40,8 @@ export type LedgerEntry = {
   /** Present on a pending entry: its id, which the settling entry names in `settles`. */
   pending?: string;
   settles?: string;
+  /** Free text for a human reading the file; no rule reads it. */
+  note?: string;
 };
 
 export type Ledger = { entries: LedgerEntry[] };
@@ -84,12 +95,12 @@ export function acquireRunLock(ledgerPath: string): void {
  * Whether a batch whose worst case is `worstUsd` may be sent. `planDone` is the share of the
  * approved run plan already complete, 0 to 1. Returns a reason to stop, or null to proceed.
  */
-export function refusal(ledger: Ledger, worstUsd: number, planDone: number): string | null {
+export function refusal(ledger: Ledger, worstUsd: number, planDone: number, limits: Limits = DEFAULT_LIMITS): string | null {
   const now = spent(ledger);
-  if (now + worstUsd > HARD_CAP_USD) {
-    return `spent $${now.toFixed(2)}; this batch could cost up to $${worstUsd.toFixed(2)}, which would cross the $${HARD_CAP_USD} cap`;
+  if (now + worstUsd > limits.hardCapUsd) {
+    return `spent $${now.toFixed(2)}; this batch could cost up to $${worstUsd.toFixed(2)}, which would cross the $${limits.hardCapUsd} cap`;
   }
-  if (now >= ASK_AT_USD && planDone < 0.5) {
+  if (now >= limits.askAtUsd && planDone < 0.5) {
     return `spent $${now.toFixed(2)} with the run plan ${(planDone * 100).toFixed(0)}% done: stop and ask the orchestrator`;
   }
   return null;
