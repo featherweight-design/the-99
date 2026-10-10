@@ -81,6 +81,22 @@ describe("readManaBalance: patterns", () => {
     expect(color(b, "R").patterns[0]).toMatchObject({ pattern: "1C", copies: 2 });
   });
 
+  it("takes Karsten's hardest published figure over every pattern, not only the ones shown", () => {
+    // Six patterns of five or more pips (no row in the table) fill the list; the plain {G} below them is pattern C: 19.
+    const heavy = [0, 1, 2, 3, 4, 5].map((g) => spell(`heavy${g}`, `{${g || ""}}{G}{G}{G}{G}{G}`.replace("{}", "")));
+    const b = read([...heavy, spell("plain", "{G}")]);
+    const g = color(b, "G");
+    expect(g.patterns).toHaveLength(PATTERNS_SHOWN);
+    expect(g.patterns.every((p) => p.karsten.kind === "unknown")).toBe(true);
+    expect(g.patterns.some((p) => p.pattern === "C")).toBe(false);
+    expect(g.karstenHardest).toBe(19);
+  });
+
+  it("has no hardest figure for a color whose patterns are all ceilings or unknown, or that has none", () => {
+    expect(color(read([spell("big", "{6}{G}")]), "G").karstenHardest).toBe(0);
+    expect(color(read([spell("a", "{G}")]), "U").karstenHardest).toBe(0);
+  });
+
   it("shows only the hardest PATTERNS_SHOWN", () => {
     const many = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => spell(`c${n}`, `{${n}}{G}`));
     expect(color(read(many), "G").patterns).toHaveLength(PATTERNS_SHOWN);

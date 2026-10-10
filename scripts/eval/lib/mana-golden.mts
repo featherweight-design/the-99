@@ -10,6 +10,8 @@ export const GOLDEN_COLORS = BALANCE_COLORS;
 
 export type GoldenPattern = { copies: number; karsten: string; cards: string[] };
 export type GoldenColor = {
+  /** Karsten's figure for the hardest pattern with a published row, over all the color's patterns. */
+  karstenHardest: number;
   pipsWith: number;
   pipsWithout: number;
   /** Source cards behind the supply, one entry per copy, sorted. */
@@ -19,27 +21,32 @@ export type GoldenColor = {
   order: string;
   patterns: Record<string, GoldenPattern>;
 };
+/** "Help me add <color>" as far as it depends on the deck alone: the rebalance moves, which no collection or index changes. */
+export type GoldenHelp = Record<string, { sourcesNow: number; rebalance: string[] }>;
 export type GoldenBalance = {
   state: ManaBalance["state"];
   colorlessSupply: number;
   unattributedNonland: number;
   colors: Record<BalanceColor, GoldenColor>;
+  help: GoldenHelp;
   lands: { count: number; tappedAlways: number; tappedUnless: number; tappedFetch: number; averageManaValue: number; cheapRamp: number; karstenLands: number };
 };
 
 const karstenText = (k: KarstenSources) => (k.kind === "unknown" ? "unknown" : `${k.kind} ${k.sources}`);
 const round = (n: number, places: number) => Number(n.toFixed(places));
 
-export function goldenShape(b: ManaBalance, nameOf: (id: string) => string): GoldenBalance {
+export function goldenShape(b: ManaBalance, nameOf: (id: string) => string, help: GoldenHelp = {}): GoldenBalance {
   const names = (ids: readonly string[]) => ids.map(nameOf).sort();
   return {
     state: b.state,
     colorlessSupply: b.colorless.supply,
     unattributedNonland: b.unattributedNonland,
+    help,
     colors: Object.fromEntries(
       b.colors.map((c) => [
         c.color,
         {
+          karstenHardest: c.karstenHardest,
           pipsWith: c.pips.withCommander,
           pipsWithout: c.pips.withoutCommander,
           lands: names(b.supply.sources[c.color].lands),
