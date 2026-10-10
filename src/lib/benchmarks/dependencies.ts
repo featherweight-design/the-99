@@ -63,6 +63,61 @@ const hasActivated = (c: BenchCard) => c.jobs.some((j) => j.trigger === "activat
 const isType = (c: BenchCard, type: string) => new RegExp(`\\b${type}\\b`).test(frontType(c));
 
 /**
+ * The raw figure behind each row, before any cut: what the cut points are derived over (plan PR 2,
+ * `measure:benchmarks`), from the same filters the rows apply.
+ */
+export type DependencyFigures = {
+  graveyard: number; graveyardCommander: boolean;
+  artifacts: number; artifactPayoffs: number;
+  enchantments: number; enchantmentPayoffs: number;
+  creaturePayoffs: number;
+  activated: number; activatedCommander: boolean;
+  /** Repeatable routes to win outside combat; meaningful for combat reliance only when `lines` is 0. */
+  routes: number; lines: number;
+};
+
+export function dependencyFigures(cards: readonly BenchCard[], lines: number): DependencyFigures {
+  const r = readRows(cards);
+  return {
+    graveyard: sum(r.graveyard), graveyardCommander: r.graveyardCommander,
+    artifacts: sum(r.artifacts), artifactPayoffs: sum(r.artifactPayoffs),
+    enchantments: sum(r.enchantments), enchantmentPayoffs: sum(r.enchantmentPayoffs),
+    creaturePayoffs: sum(r.creaturePayoffs),
+    activated: sum(r.activated), activatedCommander: r.activatedCommander,
+    routes: sum(r.routes), lines,
+  };
+}
+
+/** Every row's cards, read once. */
+function readRows(cards: readonly BenchCard[]) {
+  const deck = body(cards).filter((c) => !isLand(c));
+  const commanders = cards.filter((c) => c.commander);
+  const withCommanders = [...deck, ...commanders];
+  const artifacts = deck.filter((c) => isType(c, "Artifact"));
+  const enchantments = deck.filter((c) => isType(c, "Enchantment"));
+  return {
+    graveyard: byName(withCommanders.filter(usesGraveyard)),
+    graveyardCommander: commanders.some(usesGraveyard),
+    landsLeftOut: byName(body(cards).filter((c) => isLand(c) && usesGraveyard(c))),
+    artifacts,
+    artifactPayoffs: byName(withCommanders.filter(paysOffArtifacts)),
+    artifactAbilities: artifacts.filter(hasActivated),
+    enchantments,
+    enchantmentPayoffs: byName(withCommanders.filter((c) => ENCHANTMENT_PAYOFF.test(c.oracleText ?? ""))),
+    creaturePayoffs: byName(withCommanders.filter((c) => c.jobs.some((j) => j.recurrence === "repeatable" && (
+      (j.kind === "tribal" && namesACreatureType(j))
+      || (j.kind === "pump" && pumpsOthers(c))
+      || (j.kind === "tokens" && makesOwnTokensRepeatably(c)))))),
+    activated: byName(withCommanders.filter((c) => isType(c, "Creature") && hasActivated(c))),
+    activatedCommander: commanders.some((c) => isType(c, "Creature") && hasActivated(c)),
+    // A route is repeatable: a one-time burn spell is reach, not a route.
+    routes: byName(withCommanders.filter((c) => WINS_OUTRIGHT.test(c.oracleText ?? "") || c.jobs.some((j) =>
+      (j.kind === "drain" || j.kind === "poison" || j.kind === "mill") && (j.affects === "opponents" || j.affects === "each")
+      && j.recurrence === "repeatable" && outsideCombat(j)))),
+  };
+}
+
+/**
  * The deck's dependencies (brief, "Dependencies: one benchmark, a row per dependency"): each row
  * the deck reaches at its light cut or above, heavy first, then the brief's order. A RISK, NEVER A
  * SCORE: a row carries its strength and its cards, and nothing here sums or counts the rows.
@@ -71,78 +126,58 @@ const isType = (c: BenchCard, type: string) => new RegExp(`\\b${type}\\b`).test(
  * left out. The artifacts and enchantments ledgers list a card once, under its first group (rule 11).
  */
 export function dependencies(cards: readonly BenchCard[], lines: number, cuts: DependencyCuts): Dependency[] {
-  const deck = body(cards).filter((c) => !isLand(c));
-  const commanders = cards.filter((c) => c.commander);
-  const withCommanders = [...deck, ...commanders];
+  const r = readRows(cards);
   const rows: Dependency[] = [];
 
-  const graveyard = byName(withCommanders.filter(usesGraveyard));
-  const graveyardCommander = commanders.some(usesGraveyard);
-  const graveyardStrength = graveyardCommander ? "heavy" : strengthOf(sum(graveyard), cuts.graveyard);
+  const graveyardStrength = r.graveyardCommander ? "heavy" : strengthOf(sum(r.graveyard), cuts.graveyard);
   if (graveyardStrength) {
     rows.push({
-      row: "graveyard", strength: graveyardStrength, count: sum(graveyard), commander: graveyardCommander,
-      groups: [{ group: "usesGraveyard", cards: graveyard }],
-      landsLeftOut: byName(body(cards).filter((c) => isLand(c) && usesGraveyard(c))),
+      row: "graveyard", strength: graveyardStrength, count: sum(r.graveyard), commander: r.graveyardCommander,
+      groups: [{ group: "usesGraveyard", cards: r.graveyard }], landsLeftOut: r.landsLeftOut,
     });
   }
 
-  const artifacts = deck.filter((c) => isType(c, "Artifact"));
-  const artifactPayoffs = byName(withCommanders.filter(paysOffArtifacts));
-  const artifactAbilities = artifacts.filter(hasActivated);
-  const artifactStrength = stronger(strengthOf(sum(artifacts), cuts.artifacts.cards), strengthOf(sum(artifactPayoffs), cuts.artifacts.payoffs));
+  const artifactStrength = stronger(strengthOf(sum(r.artifacts), cuts.artifacts.cards), strengthOf(sum(r.artifactPayoffs), cuts.artifacts.payoffs));
   if (artifactStrength) {
-    const listed = new Set(artifactPayoffs);
-    const abilities = byName(artifactAbilities.filter((c) => !listed.has(c)));
+    const listed = new Set(r.artifactPayoffs);
+    const abilities = byName(r.artifactAbilities.filter((c) => !listed.has(c)));
     abilities.forEach((c) => listed.add(c));
     rows.push({
-      row: "artifacts", strength: artifactStrength, count: sum(artifacts), payoffs: sum(artifactPayoffs), activated: sum(artifactAbilities),
+      row: "artifacts", strength: artifactStrength, count: sum(r.artifacts), payoffs: sum(r.artifactPayoffs), activated: sum(r.artifactAbilities),
       groups: [
-        { group: "paysOffArtifacts" as const, cards: artifactPayoffs },
+        { group: "paysOffArtifacts" as const, cards: r.artifactPayoffs },
         { group: "artifactAbilities" as const, cards: abilities },
-        { group: "otherArtifacts" as const, cards: byName(artifacts.filter((c) => !listed.has(c))) },
+        { group: "otherArtifacts" as const, cards: byName(r.artifacts.filter((c) => !listed.has(c))) },
       ].filter((g) => g.cards.length > 0),
     });
   }
 
-  const enchantments = deck.filter((c) => isType(c, "Enchantment"));
-  const enchantmentPayoffs = byName(withCommanders.filter((c) => ENCHANTMENT_PAYOFF.test(c.oracleText ?? "")));
-  const enchantmentStrength = stronger(strengthOf(sum(enchantments), cuts.enchantments.cards), strengthOf(sum(enchantmentPayoffs), cuts.enchantments.payoffs));
+  const enchantmentStrength = stronger(strengthOf(sum(r.enchantments), cuts.enchantments.cards), strengthOf(sum(r.enchantmentPayoffs), cuts.enchantments.payoffs));
   if (enchantmentStrength) {
-    const listed = new Set(enchantmentPayoffs);
+    const listed = new Set(r.enchantmentPayoffs);
     rows.push({
-      row: "enchantments", strength: enchantmentStrength, count: sum(enchantments), payoffs: sum(enchantmentPayoffs),
+      row: "enchantments", strength: enchantmentStrength, count: sum(r.enchantments), payoffs: sum(r.enchantmentPayoffs),
       groups: [
-        { group: "paysOffEnchantments" as const, cards: enchantmentPayoffs },
-        { group: "otherEnchantments" as const, cards: byName(enchantments.filter((c) => !listed.has(c))) },
+        { group: "paysOffEnchantments" as const, cards: r.enchantmentPayoffs },
+        { group: "otherEnchantments" as const, cards: byName(r.enchantments.filter((c) => !listed.has(c))) },
       ].filter((g) => g.cards.length > 0),
     });
   }
 
-  const creaturePayoffs = byName(withCommanders.filter((c) => c.jobs.some((j) => j.recurrence === "repeatable" && (
-    (j.kind === "tribal" && namesACreatureType(j))
-    || (j.kind === "pump" && pumpsOthers(c))
-    || (j.kind === "tokens" && makesOwnTokensRepeatably(c))))));
-  const creatureStrength = strengthOf(sum(creaturePayoffs), cuts.creatures);
+  const creatureStrength = strengthOf(sum(r.creaturePayoffs), cuts.creatures);
   if (creatureStrength) {
-    rows.push({ row: "creatures", strength: creatureStrength, payoffs: sum(creaturePayoffs), groups: [{ group: "paysOffCreatures", cards: creaturePayoffs }] });
+    rows.push({ row: "creatures", strength: creatureStrength, payoffs: sum(r.creaturePayoffs), groups: [{ group: "paysOffCreatures", cards: r.creaturePayoffs }] });
   }
 
-  const activated = byName(withCommanders.filter((c) => isType(c, "Creature") && hasActivated(c)));
-  const activatedCommander = commanders.some((c) => isType(c, "Creature") && hasActivated(c));
-  const activatedStrength = stronger(strengthOf(sum(activated), cuts.activated), activatedCommander ? "light" : null);
+  const activatedStrength = stronger(strengthOf(sum(r.activated), cuts.activated), r.activatedCommander ? "light" : null);
   if (activatedStrength) {
-    rows.push({ row: "activated", strength: activatedStrength, count: sum(activated), commander: activatedCommander, groups: [{ group: "activatedCreatures", cards: activated }] });
+    rows.push({ row: "activated", strength: activatedStrength, count: sum(r.activated), commander: r.activatedCommander, groups: [{ group: "activatedCreatures", cards: r.activated }] });
   }
 
-  // A route is repeatable: a one-time burn spell is reach, not a route.
-  const routes = byName(withCommanders.filter((c) => WINS_OUTRIGHT.test(c.oracleText ?? "") || c.jobs.some((j) =>
-    (j.kind === "drain" || j.kind === "poison" || j.kind === "mill") && (j.affects === "opponents" || j.affects === "each")
-    && j.recurrence === "repeatable" && outsideCombat(j))));
-  const routeCount = sum(routes);
+  const routeCount = sum(r.routes);
   if (lines === 0 && routeCount <= cuts.combat.lightMax) {
     const heavy = routeCount === 0;
-    rows.push({ row: "combat", strength: heavy ? "heavy" : "light", routes: routeCount, groups: heavy ? [] : [{ group: "winsOutsideCombat", cards: routes }] });
+    rows.push({ row: "combat", strength: heavy ? "heavy" : "light", routes: routeCount, groups: heavy ? [] : [{ group: "winsOutsideCombat", cards: r.routes }] });
   }
 
   const order = (d: Dependency) => (d.strength === "heavy" ? 0 : 1) * 10 + DEPENDENCY_ROWS.indexOf(d.row);
