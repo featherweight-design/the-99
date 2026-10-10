@@ -89,4 +89,14 @@ describe("ShortDeckWarning", () => {
     fireEvent.click(screen.getByRole("button", { name: "and 2 more decks" }));
     expect(document.activeElement).toBe(screen.getByRole("link", { name: "Deck d" }));
   });
+
+  it("embedded: the decks under their own heading, with no title, body or buttons", () => {
+    render(<ShortDeckWarning variant="embedded" decks={[line("a", "x", 2), line("b", "x", 1)]} pending={false} />);
+    expect(screen.getByRole("heading", { name: "Decks that will read short · 2" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Deck a" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Replace anyway" })).toBeNull();
+    expect(screen.queryByText(/Nothing about these decks changes/)).toBeNull();
+    expect(document.activeElement).toBe(document.body);
+  });
 });

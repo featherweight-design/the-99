@@ -3,13 +3,15 @@
 // Single scrollable screen; sticky confirm bar at the bottom.
 // unmatched rows carry {name, setCode, line}; parse errors carry {line, reason}.
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { UploadPreview } from "../../app/collection/actions";
 import { IssueInspector } from "./issue-inspector";
 import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { Crown } from "../ui/crown";
 import { replaceCopy } from "../../lib/copy/replace";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
+import { ReplaceReviewDetail, type ReviewChange } from "./replace-review-detail";
 
 const INITIAL_LIMIT = 8; // Per-section preview cap; full list lives in the Issue Inspector.
 
@@ -19,6 +21,9 @@ export function ReviewScreen({
   onContinue,
   pending = false,
   embedded,
+  change,
+  comparing = false,
+  onRetry,
 }: {
   preview: UploadPreview;
   onCancel: () => void;
@@ -26,8 +31,25 @@ export function ReviewScreen({
   /** A first import confirms from this button, with no modal to carry the wait. */
   pending?: boolean;
   embedded?: boolean;
+  /**
+   * The ledger path's read of this Replace: the four figures, what it overwrites, the decks it
+   * leaves short and the card lists, with the decision on the confirm bar. Absent, the review
+   * is the shipped one and `onContinue` opens the confirm dialog.
+   */
+  change?: ReviewChange | null;
+  /** The comparison is still being read. */
+  comparing?: boolean;
+  /** Runs the confirm again after a failure that wrote nothing (A5). */
+  onRetry?: () => void;
 }) {
   const [inspectorOpen, setInspectorOpen] = useState(false);
+  const failureRef = useRef<HTMLDivElement>(null);
+  const failed = change?.failure ?? null;
+  // A failed write keeps the review and puts the reader at the explanation (A5).
+  useEffect(() => {
+    if (failed) failureRef.current?.focus();
+  }, [failed]);
+  const e = collectionEditCopy.upload;
 
   const importCount = preview.matchedCardCount;
   const skipped = preview.unmatchedRows.length + preview.parseErrors.length;
@@ -81,6 +103,23 @@ export function ReviewScreen({
         >
           Review before you replace
         </h1>
+
+        {failed ? (
+          <div
+            ref={failureRef}
+            role="alert"
+            tabIndex={-1}
+            className="mt-[16px] rounded-[10px] border border-[color:var(--border-strong)] border-l-[3px] border-l-[color:var(--danger)] bg-[color:var(--surface)] p-[12px_14px] outline-none"
+          >
+            <div className="text-[14px] font-semibold text-[color:var(--fg)]">{e.failedTitle}</div>
+            <p className="m-0 mt-[4px] text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{failed.body}</p>
+            {onRetry ? (
+              <button type="button" onClick={onRetry} disabled={pending} className="mt-[6px] min-h-[44px] text-[13.5px] text-[color:var(--accent)] underline underline-offset-2 disabled:opacity-60">
+                {e.retry}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
 
         {/* Summary section — flex row on desktop */}
         <div className="mt-[16px] md:mt-[24px] flex flex-col md:flex-row gap-[16px]">
@@ -166,6 +205,14 @@ export function ReviewScreen({
             )}
           </div>
         </div>
+
+        {change ? (
+          <ReplaceReviewDetail change={change.data} decks={change.decks} freshDeckIds={change.fresh} changed={change.changed} />
+        ) : comparing ? (
+          <p role="status" className="m-0 mt-[16px] text-[13px] text-[color:var(--fg-muted)]">
+            {e.preparing}
+          </p>
+        ) : null}
 
         {/* Desktop 2-column issues layout — §Desktop Issues Layout. Collapses to a single column when either section is empty (#32) so the remaining list spans the full width instead of leaving half the row blank. */}
         <div
@@ -297,7 +344,9 @@ export function ReviewScreen({
         <p
           className="text-[11.5px] md:text-[13.5px] text-center md:text-left mb-[10px] md:mb-0 text-[color:var(--fg-faint)] md:text-[color:var(--fg-body)]"
         >
-          {isInitialImport ? (
+          {change ? (
+            e.barReplace(change.data.detail.copiesBefore, change.data.detail.copiesAfter, new Set(change.decks.map((d) => d.deckId)).size)
+          ) : isInitialImport ? (
             <>
               <span className="md:hidden">
                 Imports {importCount.toLocaleString()} cards · skips {skipped} rows
@@ -341,7 +390,15 @@ export function ReviewScreen({
           >
             {/* "Importing…" is the confirm modal's own pending label, which this button now
                 carries when a first import skips the modal. */}
-            {pending ? "Importing…" : isInitialImport ? "Continue to import →" : "Continue to replace →"}
+            {change
+              ? pending
+                ? e.pendingReplace
+                : e.confirmReplace
+              : pending
+                ? "Importing…"
+                : isInitialImport
+                  ? "Continue to import →"
+                  : "Continue to replace →"}
           </PrimaryButton>
         </div>
       </div>
