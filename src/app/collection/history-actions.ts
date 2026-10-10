@@ -68,13 +68,17 @@ const keyOf = (r: CollectionItemIdentity) => collectionItemKey(r);
  * What reverting `entryId` would do now, answered by a dry run of the revert itself, so the
  * confirmation and the save are one computation.
  */
-export async function previewRevert(entryId: string): Promise<RevertPreview | RevertRefusal> {
+export async function previewRevert(
+  entryId: string,
+  ignoreDeckId?: string,
+): Promise<RevertPreview | RevertRefusal> {
   const userId = await signedInEditor();
   if (!isUuid(entryId)) return { notFound: true };
+  if (ignoreDeckId !== undefined && !isUuid(ignoreDeckId)) throw new Error("bad deck id");
   const entry = await getHistoryEntry(userId, entryId);
   if (!entry) return { notFound: true };
   const result = await applyCollectionChange(
-    userId, { kind: "revert", entryId }, { id: randomUUID(), dryRun: true },
+    userId, { kind: "revert", entryId, ignoreDeckId: ignoreDeckId?.toLowerCase() }, { id: randomUUID(), dryRun: true },
   );
   switch (result.status) {
     case "preview": break;
@@ -114,13 +118,19 @@ export async function revertCollectionEntry(
   actionId: string,
   expected: Record<string, number>,
   confirmShort?: ShortDeck[],
+  /**
+   * I got it's toast undo, on the deck the copy was bought for: that deck is left out of the deck
+   * check (call B). The write honours it only for an entry sourced `shopping:<this id>`.
+   */
+  ignoreDeckId?: string,
 ): Promise<{ reverted: { id: string } } | RevertRefusal> {
   const userId = await signedInEditor();
   if (!isUuid(entryId)) return { notFound: true };
   if (!isUuid(actionId)) throw new Error("bad action id");
+  if (ignoreDeckId !== undefined && !isUuid(ignoreDeckId)) throw new Error("bad deck id");
   const result = await applyCollectionChange(
     userId,
-    { kind: "revert", entryId, expected: parseExpected(expected) },
+    { kind: "revert", entryId, expected: parseExpected(expected), ignoreDeckId: ignoreDeckId?.toLowerCase() },
     { id: actionId, confirmShort: parseShortDecks(confirmShort) },
   );
   switch (result.status) {

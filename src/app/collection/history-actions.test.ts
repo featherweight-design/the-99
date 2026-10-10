@@ -104,6 +104,14 @@ describe("revertCollectionEntry", () => {
     expect(stub.invalidate).not.toHaveBeenCalled();
   });
 
+  it("passes the toast's deck to the write, lowercased, and refuses a malformed one (I got it)", async () => {
+    stub.apply.mockResolvedValue({ status: "applied", entry: { id: ACTION } });
+    const DECK = "55555555-5555-4555-8555-555555555555";
+    await revertCollectionEntry(ENTRY, ACTION, {}, [], DECK.toUpperCase());
+    expect(stub.apply.mock.calls[0][1]).toEqual({ kind: "revert", entryId: ENTRY, expected: {}, ignoreDeckId: DECK });
+    await expect(revertCollectionEntry(ENTRY, ACTION, {}, [], "deck")).rejects.toThrow("bad deck id");
+  });
+
   it("refuses a malformed action id or preview before writing", async () => {
     await expect(revertCollectionEntry(ENTRY, "nope", {})).rejects.toThrow("bad action id");
     await expect(revertCollectionEntry(ENTRY, ACTION, { [KEY]: -1 })).rejects.toThrow("bad revert preview");

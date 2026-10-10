@@ -74,7 +74,18 @@ export type CollectionChange =
    * Reverse entry `entryId` against today's collection. `expected` is the after-count per row
    * the confirmation showed, keyed by `collectionItemKey`; a difference refuses with `stale`.
    */
-  | { kind: "revert"; entryId: string; expected?: Record<string, number> };
+  | {
+      kind: "revert";
+      entryId: string;
+      expected?: Record<string, number>;
+      /**
+       * I got it's undo, from the toast on the deck the copy was bought for: that deck is left out
+       * of the deck check, because the player is looking at it and its returning row is the signal
+       * (call B). Honoured only when the entry's own source is `shopping:<this id>`; any other
+       * entry, or another deck, gets the whole check.
+       */
+      ignoreDeckId?: string;
+    };
 
 export type ChangeOptions = {
   /** The caller's idempotency id, minted once per action and reused on every retry. */
@@ -101,6 +112,19 @@ export type ChangeOptions = {
   ownedCounts?: boolean;
   /** Where the change came from, for history: `shopping:<deck id>`. Uploads set their own. */
   source?: string;
+  /**
+   * I got it's receipt: one card's availability either side of the write, read under the lock so
+   * no other write can land between them. `before` and `after` are unexcluded (who holds each
+   * copy, by seniority, the source deck in the queue); `afterFromDeck` is `deckId`'s own vantage,
+   * the one its Shopping list draws.
+   */
+  receipt?: { oracleId: string; deckId: string };
+};
+
+export type ReceiptSnapshots = {
+  before: Availability | null;
+  after: Availability | null;
+  afterFromDeck: Availability | null;
 };
 
 export type ShortDeck = {
@@ -122,7 +146,13 @@ export type AppliedEntry = {
 };
 
 export type ChangeResult =
-  | { status: "applied"; entry: AppliedEntry; owned?: { before: OwnedCounts; after: OwnedCounts } }
+  | {
+      status: "applied";
+      entry: AppliedEntry;
+      owned?: { before: OwnedCounts; after: OwnedCounts };
+      /** With `opts.receipt` alone. */
+      receipt?: ReceiptSnapshots;
+    }
   /** Nothing would change. No entry is written. */
   | { status: "unchanged" }
   /**
@@ -487,10 +517,12 @@ export async function applyCollectionChange(
 
       // ---- 4. Today's rows, and the plan against them.
       let target: { rows: HistoryRow[] | null } | undefined;
+      let ignoredDeck: string | null = null;
       if (change.kind === "revert") {
         const [row] = await tx.select({
           rows: collectionHistory.rows,
           revertedBy: collectionHistory.revertedBy,
+          source: collectionHistory.source,
         })
           .from(collectionHistory)
           .where(and(
@@ -511,6 +543,9 @@ export async function applyCollectionChange(
           .set({ revertsId: change.entryId })
           .where(eq(collectionHistory.id, opts.id));
         target = row;
+        if (change.ignoreDeckId !== undefined && row.source === `shopping:${change.ignoreDeckId}`) {
+          ignoredDeck = change.ignoreDeckId;
+        }
       }
 
       const named: CollectionItemIdentity[] =
@@ -563,6 +598,11 @@ export async function applyCollectionChange(
       const lowered = [...new Set(plan.filter((p) => qty(p.after) < qty(p.before)).map((p) => p.oracleId))];
       const ownedBefore = opts.ownedCounts && !opts.dryRun ? await readOwnedCounts(tx, userId) : null;
       const claimsBefore = lowered.length > 0 ? await loadAvailability(userId, { oracleIds: lowered }, tx) : null;
+      const receiptOf = async (excludeDeckId?: string) => opts.receipt
+        ? (await loadAvailability(userId, { oracleIds: [opts.receipt.oracleId], excludeDeckId }, tx))
+          .get(opts.receipt.oracleId) ?? null
+        : null;
+      const receiptBefore = opts.receipt && !opts.dryRun ? await receiptOf() : null;
 
       // ---- 6. The rows.
       if (change.kind === "replace") {
@@ -579,7 +619,8 @@ export async function applyCollectionChange(
       if (claimsBefore) {
         const claimsAfter = await loadAvailability(userId, { oracleIds: lowered }, tx);
         const names = new Map(rows.map((r) => [r.oracleId, r.name]));
-        const decks = newlyShort(claimsBefore, claimsAfter, lowered, names);
+        const decks = newlyShort(claimsBefore, claimsAfter, lowered, names)
+          .filter((d) => d.deckId !== ignoredDeck);
         if (opts.dryRun) throw new Refused({ status: "preview", ...moves, rows, decks });
         if (decks.length > 0 && !warningCovers(opts.confirmShort ?? [], decks)) {
           throw new Refused({ status: "wouldShort", decks });
@@ -606,6 +647,9 @@ export async function applyCollectionChange(
         status: "applied" as const,
         entry: { id: opts.id, seq: Number(claimed.seq), kind: entryKind(change), rows, ...moves },
         ...(ownedBefore ? { owned: { before: ownedBefore, after: await readOwnedCounts(tx, userId) } } : {}),
+        ...(opts.receipt
+          ? { receipt: { before: receiptBefore, after: await receiptOf(), afterFromDeck: await receiptOf(opts.receipt.deckId) } }
+          : {}),
       };
     });
   } catch (error) {
