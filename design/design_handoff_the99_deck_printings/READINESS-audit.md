@@ -67,3 +67,31 @@ R1 chose any catalog printing, owned or not, with `Use the default`, a Printings
 - README and READINESS "one new string" is five in the copy file, plus D1.
 - README (Tiles) and the picked frames draw `Shown now` on the deck's fallback printing while a pick exists. On main `Shown now` means the art on screen (`printing-region.tsx:446`, `!picked`), so in deck scope `resolvedKey` must be passed as the fallback, not the printing shown; the label then names what the deck would show without its pick. A reader may take it as what is shown now. Eng-resolvable; `/copy-review` may prefer a different label there.
 - The export preview is labelled "unchanged" but gains a printing on the commander line (E4).
+
+## R3 (2026-10-10)
+
+Re-audited only what R3 changed (D1, D2), against the R3 canvas text, the README decisions log and the copy file, on `origin/main`. The earlier E1 to E10 stand as build findings.
+
+**Verdict: YELLOW.** Nothing is left for Design. Every remaining item is engineering or `/copy-review`.
+
+### D1: closed
+- The intro slot is drawn: R3 §D1 and the shared `DP Picker` part draw `You own N of these. Pick the one this deck uses.`, and once picked `Your pick shows in this deck only.` Both match the copy file character for character. The slot, 13.5px and `--fg-muted` match the shipped `<p>` in `printing-region.tsx`, which renders `copy.regionIntro(n)` or `copy.regionIntroPicked`; the build is a `scope === "deck"` branch on those two strings.
+- New-string count: the copy file lists 7 (pinned, regionIntro, regionIntroPicked, failed, announcePicked, importClause, importClauseMobile), and the README, the canvas footer and the file header all say 7. The R2 errata line "five plus D1" is superseded.
+- Departure accepted: in deck scope the region runs the art role, not the choose role (`props.intro` belongs to choose). Accepted as a departure from the shipped role split.
+- The intro wording goes to `/copy-review`.
+
+### D2: closed
+The rule is drawn and logged consistently (README, canvas §D2, copy file): the pick if in stock, else the cheapest in-stock printing, else the shipped `buy · sold out`. No new tag style and no new copy; the tag reads as on `main`. The over-limit ring and the Shopping total use the figure shown; the card details art-column tag stays the price of the printing under the art. This is option (b) of the R2 finding.
+
+### Hugh's rulings, 2026-10-10
+- **(a)** An import naming an unowned printing APPENDS `, N not in your Collection` to the existing import strip: one string, `/copy-review`, no new layout. This overrides the README's "silent" follow-up and makes the new-string count 8 once written. It composes with E3.
+- **(b)** Deck stats' money card prices picks the same way the buy tag does (the pick if in stock, else the cheapest). It lands with deck printings, after Deck stats PR 6.
+- **(c)** "I got it" on a fallback-priced row presets the in-stock printing behind the figure and never writes the pick (as Design decided).
+- **(d)** D2 adds no tag style and no copy.
+
+### Open items (none for Design)
+Build findings E1 to E10; `/copy-review` for the intro wording and the import strip string; the Deck stats money card change in (b).
+
+### Errata (Design's files are not edited)
+- README, canvas and copy file say 7 new strings; ruling (a) adds one, so 8 at build.
+- README's "silent" follow-up for unowned import lines is superseded by ruling (a).

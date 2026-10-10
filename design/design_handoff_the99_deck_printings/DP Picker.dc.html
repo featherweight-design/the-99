@@ -26,6 +26,7 @@
 
   <sc-if value="{{ showRegion }}" hint-placeholder-val="{{ false }}">
     <div style="{{ region }}">
+      <p style="margin:0 0 16px;font-size:13.5px;line-height:1.5;color:var(--fg-muted);">{{ intro }}</p>
       <sc-if value="{{ many }}" hint-placeholder-val="{{ false }}">
         <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;">
           <div style="{{ search }}"><span style="color:var(--fg-faint);">&#9906;</span><span style="color:var(--fg-locked);">Search by set, code or number</span></div>
@@ -107,6 +108,7 @@ class Component extends DCLogic {
       setValue: `${cur.sc} · ${cur.num}`,
       hasDisclosure: !cfg.single, picked: cfg.pick !== null, notPicked: cfg.pick === null,
       count: items.length, chev: cfg.open ? "▴" : "▾",
+      intro: cfg.pick !== null ? "Your pick shows in this deck only." : `You own ${items.length} of these. Pick the one this deck uses.`,
       showField: s.part !== "region", showRegion: !!cfg.open && s.part !== "field",
       open: !!cfg.open, many: !!cfg.many, failed: !!cfg.failed,
       region: ph

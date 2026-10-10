@@ -1,16 +1,11 @@
-# Deck printings — readiness (R2)
+# Deck printings — readiness (R3)
 
-**Green: approved to ship (Hugh, 2026-10-10).** It reuses shipped components and adds two new strings and one new prop (`PrintingRegion` `scope`). There are no new tokens and no new dependencies.
+**Green: approved to ship (Hugh, 2026-10-10).** R3 answers audit findings D1 and D2. It reuses shipped components and adds 7 new strings and one new prop (`PrintingRegion` `scope`). There are no new tokens, no new tag style and no new dependencies.
 
 | Area | Rating |
 |---|---|
-| Picker in deck details (both widths) | Green |
-| The fallback chain and removal | Green |
-| Deck views, Shopping, commander | Green |
-| Import clause, export | Green |
-| Versions, switch off | Green |
-| About entry P1 | Green |
+| D1 intro line in deck scope | Green |
+| D2 out-of-stock pick on rows and Shopping (falls back to the cheapest in-stock figure, as on `main`) | Green |
+| Everything else (R2) | Green |
 
-Build checks:
-1. `card-modal.tsx` wasn't read in full. Confirm that every deck surface opens details with the deck context: rows, tiles, the card view and the commander head.
-2. Strings go through `/copy-review`.
+Handed to engineering: audit E1–E11, the I got it preset on a fallback (it follows the printing behind the figure), and the import of an unowned printing (silent). Strings go through `/copy-review`, including the intro wording and the import-strip composition (E3).
