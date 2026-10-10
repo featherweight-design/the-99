@@ -45,6 +45,14 @@ describe("shapeComboFacts", () => {
     expect(out.combos[0].usesCommander).toBe(true);
   });
 
+  it("ranks a near combo holding the commander ahead of an equal one without it, under the cap", () => {
+    const near = (v: string, held: string) => [piece(v, held), piece(v, `miss-${v}`, { held: false })];
+    const rows = [...["a", "b", "c", "d"].flatMap((v) => near(`v-${v}`, `h-${v}`)), ...near("v-z", "cmd")];
+    const out = shapeComboFacts(rows, ["U"], ["id-cmd"]);
+    expect(out.nearCombos).toHaveLength(3);
+    expect(out.nearCombos[0].have).toBe("cmd");
+  });
+
   it("keeps a one-short combo only when the missing piece is legal, in colour and addable", () => {
     const near = (v: string, m: Partial<ComboPieceRow>) => [piece(v, `have-${v}`), piece(v, `miss-${v}`, { held: false, ...m })];
     const rows = [
@@ -74,6 +82,15 @@ describe("anySizeComboQuery", () => {
     expect(text).toContain("count(*) = v2.card_count");
     expect(text).toContain("v.card_count between 2 and");
     expect(text).toContain("filter (where not p.held) <= 1");
+  });
+
+  it("pins both arms of the held rule to the commander and present lists", () => {
+    const q = new PgDialect().sqlToQuery(anySizeComboQuery(["p1"], ["c1"]));
+    const text = q.sql.replace(/\s+/g, " ");
+    expect(text).toMatch(/case when vc\.must_be_commander then vc\.oracle_id = any\(\$(\d+)::uuid\[\]\) else vc\.oracle_id = any\(\$(\d+)::uuid\[\]\) end/);
+    const m = text.match(/then vc\.oracle_id = any\(\$(\d+)::uuid\[\]\) else vc\.oracle_id = any\(\$(\d+)::uuid\[\]\)/)!;
+    expect(q.params[Number(m[1]) - 1]).toEqual(["c1"]);
+    expect(q.params[Number(m[2]) - 1]).toEqual(["p1"]);
   });
 });
 

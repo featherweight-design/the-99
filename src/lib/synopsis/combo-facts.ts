@@ -103,7 +103,7 @@ export function shapeComboFacts(
   const byVariant = new Map<string, ComboPieceRow[]>();
   for (const r of rows) byVariant.set(r.variant_id, [...(byVariant.get(r.variant_id) ?? []), r]);
   const assembled: (ComboFact & { pieceCount: number; id: string })[] = [];
-  const near: (NearComboFact & { pieceCount: number; mana: number | null; id: string })[] = [];
+  const near: (NearComboFact & { pieceCount: number; mana: number | null; usesCommander: boolean; id: string })[] = [];
   for (const [id, pieces] of byVariant) {
     const first = pieces[0];
     if (pieces.length !== first.card_count || !isInfiniteOrGameEnding(first.produces)) continue;
@@ -126,6 +126,7 @@ export function shapeComboFacts(
         id,
         pieceCount: pieces.length,
         mana: first.mana_value_needed,
+        usesCommander: pieces.some((p) => p.held && commanderIds.includes(p.oracle_id)),
         have: names.filter((p) => p.held).map((p) => p.name).join(" + "),
         missing: m.name,
         produces: first.produces,
@@ -136,8 +137,8 @@ export function shapeComboFacts(
   return {
     combos: pickTop(assembled, (c) => ({ pieces: c.pieceCount, mana: c.manaNeeded, commander: c.usesCommander, id: c.id, sig: sig(c.produces) }), MAX_COMBO_FACTS)
       .map(({ pieceCount: _p, id: _i, ...c }) => c),
-    nearCombos: pickTop(near, (n) => ({ pieces: n.pieceCount, mana: n.mana, commander: false, id: n.id, sig: sig(n.produces) }), MAX_NEAR_COMBO_FACTS)
-      .map(({ pieceCount: _p, mana: _m, id: _i, ...n }) => n),
+    nearCombos: pickTop(near, (n) => ({ pieces: n.pieceCount, mana: n.mana, commander: n.usesCommander, id: n.id, sig: sig(n.produces) }), MAX_NEAR_COMBO_FACTS)
+      .map(({ pieceCount: _p, mana: _m, usesCommander: _u, id: _i, ...n }) => n),
   };
 }
 
