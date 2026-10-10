@@ -8,7 +8,7 @@
  * The cap is derived from tokens per cut, MEASURED on the stored v2 replies of the plan eval
  * (`runs/2026-10-10T17-50-41-290Z-cuts-plan-new`, `usage.output_tokens`, which counts the model's
  * thinking as well as the JSON):
- *   Counter Intelligence  17 cuts  7,467 tokens  = 439 per cut (the worst answer that finished)
+ *   Counter Intelligence  17 cuts  7,467 tokens  = 439 per cut (the worst of the answers with 16 or more cuts; Gods' 465 below is higher but spreads a fixed cost over 6)
  *   Prismari Artistry     16 cuts  4,591 tokens  = 287 per cut
  *   Avatar Aang           19 cuts  3,138 tokens  = 165 per cut
  *   Gods                   6 cuts  2,792 tokens  = 465 per cut (thinking dominates a short answer)
