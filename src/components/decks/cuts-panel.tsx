@@ -404,7 +404,7 @@ function FailMark({ label }: { label: string }) {
   return (
     <svg role="img" aria-label={label} width="18" height="18" viewBox="0 0 16 16" className="flex-none">
       {/* A filled disc with the `!` cut out (even-odd), so whatever is behind it shows through. */}
-      <path fill="var(--danger)" fillRule="evenodd" clipRule="evenodd" d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0Zm-.9 3.6a.9.9 0 0 1 1.8 0v5.2a.9.9 0 0 1-1.8 0V3.6ZM8 10.5a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2Z" />
+      <path fill="var(--danger)" fillRule="evenodd" clipRule="evenodd" d="M8 1.2 A6.8 6.8 0 1 0 8 14.8 A6.8 6.8 0 1 0 8 1.2 Z M7.05 4 H8.95 L8.6 9.3 H7.4 Z M8 10.5 A1.15 1.15 0 1 0 8 12.8 A1.15 1.15 0 1 0 8 10.5 Z" />
     </svg>
   );
 }

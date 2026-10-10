@@ -155,9 +155,10 @@ try {
     await q(`delete from deck_suggestion_runs where deck_id = $1`, [deckId]);
     const run = await startCutsRun(owner, deckId, inputs.fingerprint, inputs.readVersion);
     if (run.kind !== "started") throw new Error(`start: ${run.kind}`);
+    // Recorded the moment it exists: a failure below must still reach the cleanup.
+    callIds.push(run.callId);
     await persistCutsRun(run, picks.map((c, i) => ({ oracleId: c.oracleId, name: c.name, reason: `${c.name} is the least-played of the cards the list holds.`, cites: [{ kind: "offList" as const }], position: i })),
       { askedCount: inputs.facts.over, survivedCount: 3, keptCount: 3, over: inputs.facts.over, drops: [] });
-    callIds.push(run.callId);
     await q(`update model_calls set status = 'refunded' where id = $1`, [run.callId]);
     await page.reload({ waitUntil: "domcontentloaded" });
     await openAnalysis(page, deckId);
@@ -180,10 +181,10 @@ try {
   }
 } finally {
   if (deckId) {
-    await q(`delete from deck_suggestion_runs where deck_id = $1`, [deckId]).catch(() => {});
-    await q(`delete from decks where id = $1`, [deckId]).catch((e) => console.error("cleanup deck:", e));
+    await q(`delete from deck_suggestion_runs where deck_id = $1`, [deckId]).catch((e) => { failures += 1; console.error("cleanup runs:", e); });
+    await q(`delete from decks where id = $1`, [deckId]).catch((e) => { failures += 1; console.error("cleanup deck:", e); });
   }
-  if (callIds.length > 0) await q(`delete from model_calls where id = any($1::uuid[])`, [callIds]).catch(() => {});
+  if (callIds.length > 0) await q(`delete from model_calls where id = any($1::uuid[])`, [callIds]).catch((e) => { failures += 1; console.error("cleanup calls:", e); });
   await browser.close();
   await pool.end();
 }
