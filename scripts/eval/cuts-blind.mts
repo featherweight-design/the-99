@@ -159,10 +159,12 @@ for (const [i, d] of BLIND_DECKS.entries()) {
     throw new Error(`deck ${d.name}: the prompt is past the feature's input ceiling; the app would refuse it`);
   }
   const free = proposeCuts({ profile, locked: new Set(locked), support }).candidates.slice(0, facts.over).map((c) => c.oracleId);
-  // Drawn from every cuttable card, Key cards included, so round 1's sheet stays the one Hugh is
-  // rating. The validator refuses a Key card from the model, so the key marks them and the scorer
-  // leaves them out of random's picks: lift is against the pool the model could choose from.
-  const random = seededShuffle(facts.cards.map((c) => c.oracleId).sort(), SEED + 100 * i).slice(0, facts.over);
+  // Drawn from the pool the model may cut from: the validator refuses a Key card, so random skips
+  // them too and stays a size-matched draw. Round 1 alone drew from every cuttable card, Key cards
+  // included, because Hugh was already rating that sheet when this was found; the key marks its Key
+  // cards and the scorer leaves them out of random's picks.
+  const keyIds = new Set(args.round === "1" ? [] : pack.keyCardIds);
+  const random = seededShuffle(facts.cards.map((c) => c.oracleId).filter((id) => !keyIds.has(id)).sort(), SEED + 100 * i).slice(0, facts.over);
   const customId = `${d.id.slice(0, 8)}-0`;
   prepared.push({
     customId, deckId: d.id, deckName: deck.name, commander, over: facts.over,
