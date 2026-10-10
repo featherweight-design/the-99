@@ -105,6 +105,9 @@ export const collectionEditCopy = {
   // with the PRs that draw them. Every string is a placeholder for /copy-review.
   shortWarning: {
     titleReplace: (k: number) => `Replacing leaves ${decks(k)} short`,
+    titleRevert: (k: number) => `Reverting leaves ${decks(k)} short`,
+    /** (new) The warning's confirm when it is a revert's. */
+    confirmRevert: "Revert anyway",
     body: "Nothing about these decks changes. Each will show what it's short of and put it on its shopping list.",
     figureOne: (k: number) => `short ${n(k)}`,
     figureMany: (k: number) => (k === 1 ? "1 card short" : `${n(k)} cards short`),
@@ -120,13 +123,36 @@ export const collectionEditCopy = {
     catalogFailure: (names: string[]) =>
       `${names.join(", ")} ${names.length === 1 ? "has" : "have"} been removed from the card catalog since this file was read. Nothing was changed.`,
   },
+  // §F, the revert confirmation (F4 to F7). The handoff's strings; (new) lines go to /copy-review.
+  revert: {
+    title: (kind: string) => `Revert “${kind}”?`,
+    // Direction-neutral: a revert can move copies either way, so the lede names what moved without
+    // claiming a direction. The Then and Now rows say what changes.
+    lede: (when: string, c: number) => `From ${when}. Reverting this changes ${c === 1 ? "1 copy" : `${n(c)} copies`}.`,
+    differs: "This does less than the original. Some of these cards have changed since, and a revert never takes you below zero.",
+    then: "Then",
+    now: "Now",
+    confirm: "Revert",
+    confirmPartial: "Revert what's left",
+    nothingLeft: "Nothing left to undo. Every card this changed is already back where it was.",
+    /** (new) The reason beside a row whose count moved since the original. */
+    reasonSince: "Changed since",
+    /** (new) The reason beside a row the revert has nothing to do on. */
+    reasonBack: "Already back",
+    /** (new) Reading what the revert would do. */
+    reading: "Checking what this would change…",
+    catalogTitle: "We couldn't revert this",
+    catalogBody: (names: string[]) =>
+      `${names.join(", ")} ${names.length === 1 ? "has" : "have"} been removed from the card catalog since. A revert can't put back a card that no longer exists. Nothing was changed.`,
+    /** (new) The change is already undone, or has aged out. */
+    gone: "That change has already been undone or has aged out of history. Nothing was changed.",
+    close: "Close",
+  },
   // §F, the history list. The handoff's strings; lines marked (new) have no key there and go to
   // /copy-review. Dates and times are UTC, spelled by the caller.
   history: {
     heading: "Changes to your collection",
-    // The handoff continues "Revert any of them. It's undone from today." That claim comes with the
-    // Revert control (PR 6b); until then the page does not promise it.
-    lede: "Every upload and edit from the last 90 days.",
+    lede: "Every upload and edit from the last 90 days. Revert any of them. It's undone from today.",
     kinds: {
       uploadReplace: "Replace upload",
       uploadAdd: "Add upload",
@@ -170,7 +196,9 @@ export const collectionEditCopy = {
       `History keeps 90 days. Changes from before ${date} have aged out, but your cards haven't. They're all still in your collection.`,
     emptyTitle: "Nothing's changed yet",
     emptyBody: (ship: string) =>
-      `Uploads and edits from ${ship} on show up here. Your collection from before that has no history to show.`,
+      `Uploads and edits from ${ship} on show up here, ready to undo. Your collection from before that has no history to show.`,
+    revert: "Revert",
+    reverting: "Reverting…",
     /** (new) The expanded row's per-row quantity change. */
     rowDelta: (d: number) => (d > 0 ? `+${n(d)}` : `−${n(-d)}`),
   },
