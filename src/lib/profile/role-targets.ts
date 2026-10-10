@@ -25,6 +25,19 @@ export type RoleRow = {
   withRoles?: number;
 };
 
+/** A row's `label_*` figures in the shape `roleTargetsFrom` reads, so the labels basis walks the SAME
+ *  guard (finite, all-or-nothing) as the classifier's. `withRoles` is left off on purpose: it counts
+ *  commanders carrying `avg_*`, and a label bucket's witness is nullity (the column is nullable). */
+export function labelRoleRow(
+  row: { labelRamp?: number | null; labelDraw?: number | null; labelRemoval?: number | null; labelWipes?: number | null } | null | undefined,
+): RoleRow | undefined {
+  if (!row) return undefined;
+  return {
+    avgRamp: row.labelRamp ?? null, avgDraw: row.labelDraw ?? null,
+    avgRemoval: row.labelRemoval ?? null, avgWipes: row.labelWipes ?? null,
+  };
+}
+
 /**
  * The four role figures off a candidate row, or null when the row carries none.
  *

@@ -2,8 +2,9 @@
 // Server component — recomputes role counts from detail.cards.
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
+import { roleCounterFor } from "../../lib/decks/label-role-counts";
+import type { JobRowsByCard } from "../../lib/decks/job-tally";
 import {
-  computeRoleCounts,
   mixSourceLine,
   type RecommendedMix,
   ROLE_ORDER,
@@ -43,6 +44,9 @@ type RoleCounterStripProps = {
    *  `computeRoleCounts` over the version's cards — or the two figures in one
    *  cell are measuring different things. */
   wasCounts?: Record<MixRole, number>;
+  /** The deck's label rows when the strip counts by label (`LABEL_ROLE_COUNTS_ENABLED`); absent or
+   *  null counts by `card.role`, exactly as before. */
+  labelRows?: JobRowsByCard | null;
 } & (
   | { onSeeShelf: (role: MixRole) => void; rolesWithShelves: ReadonlySet<MixRole> }
   | { onSeeShelf?: never; rolesWithShelves?: never }
@@ -55,8 +59,11 @@ export function RoleCounterStrip({
   rolesWithShelves,
   justFilled = false,
   wasCounts,
+  labelRows,
 }: RoleCounterStripProps) {
-  const counts = computeRoleCounts(cards);
+  const countRoles = roleCounterFor(labelRows);
+  const counts = countRoles(cards);
+  const unlabeled = countRoles.unlabeled(cards);
 
   return (
     /*
@@ -139,7 +146,7 @@ export function RoleCounterStrip({
           StripRationale answers the same question about the reader's own deck
           and answers it better. Two explanations of one strip, the permanent
           one weaker than the one behind the disclosure. */}
-      <StripRationale mix={mix} />
+      <StripRationale mix={mix} unlabeled={unlabeled} />
     </section>
   );
 }

@@ -19,6 +19,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, decks } from "../../db/schema";
 import { loadSkeletonForCommanders } from "../profile/load";
+import { roleBasisFromEnv } from "./label-counts-flag";
 import { recommendedMix, type RecommendedMix } from "./mix";
 
 /** Never throws. A deck whose chain cannot be resolved draws the asserted baseline and says
@@ -38,7 +39,7 @@ export async function loadDeckMix(deckId: string, userId: string): Promise<Recom
       })
       .from(decks)
       .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
-    if (!deck || !deck.commanderOracleId) return recommendedMix(null, hasPartner);
+    if (!deck || !deck.commanderOracleId) return recommendedMix(null, hasPartner, roleBasisFromEnv());
     hasPartner = Boolean(deck.partnerOracleId);
 
     const ids = [deck.commanderOracleId, deck.partnerOracleId].filter(
@@ -56,11 +57,13 @@ export async function loadDeckMix(deckId: string, userId: string): Promise<Recom
       deck.commanderOracleId,
       deck.partnerOracleId ?? null,
       [...identity],
+      undefined,
+      { roleBasis: roleBasisFromEnv() },
     );
-    return recommendedMix(skeleton, hasPartner);
+    return recommendedMix(skeleton, hasPartner, roleBasisFromEnv());
   } catch (err) {
     console.warn("loadDeckMix: no skeleton — the strip quotes the asserted targets", err);
-    return recommendedMix(null, hasPartner);
+    return recommendedMix(null, hasPartner, roleBasisFromEnv());
   }
 }
 

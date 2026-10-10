@@ -24,6 +24,7 @@ import {
 // Types only: `draft-state.ts` and `read.ts`/`pull-release.ts` reach `src/db`, which throws at
 // module init in a browser. See `src/lib/client-bundle-safety.test.ts`.
 import type { DraftRow, DraftRows, ShapeCard } from "../../lib/decks/draft-state";
+import type { JobRowsByCard } from "../../lib/decks/job-tally";
 import type { SourceDeckFigure } from "../../lib/decks/read";
 import type { ReleaseSource } from "../../lib/decks/pull-release";
 import { groupByCardType } from "../../lib/decks/grouping";
@@ -86,6 +87,9 @@ type ReviewChangesProps = {
    *  Null `before` is a brew, where nothing states a movement. */
   before: ShapeCard[] | null;
   after: ShapeCard[];
+  /** The label rows for every card the strip folds, when the strip counts by label
+   *  (`LABEL_ROLE_COUNTS_ENABLED`); absent or null counts by `role`, as before. */
+  labelRows?: JobRowsByCard | null;
   /** The server's count of the cards the commit would freeze, passed straight
    *  through to the sheet — see `commit-sheet.tsx`. */
   cardCount: number;
@@ -514,6 +518,7 @@ export function ReviewChanges({
   contestedCount,
   before,
   after,
+  labelRows,
   cardCount,
   sourceFigures,
   releaseSources,
@@ -688,6 +693,8 @@ export function ReviewChanges({
           ...rows.out
             .filter((row) => restoredIds.includes(row.oracleId))
             .map((row) => ({
+              oracleId: row.oracleId,
+              name: row.name,
               role: row.role,
               quantity: row.from - row.to,
               typeLine: row.typeLine,
@@ -936,7 +943,7 @@ export function ReviewChanges({
           {/* Change commander: first under the lede, above the strip (handoff §4). Absent unless
               the draft moved its commander. */}
           <CommanderSection state={state} />
-          <ChangedStrip before={before} after={liveAfter} mix={mix} />
+          <ChangedStrip before={before} after={liveAfter} mix={mix} labelRows={labelRows} />
 
           {/* Desktop only, and a nought is never drawn: an empty chip is a figure
               standing for a purchase, a pull or a column that is not there. */}

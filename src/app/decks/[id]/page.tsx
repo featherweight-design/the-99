@@ -36,7 +36,9 @@ import { readFillPasses } from "../../../lib/decks/fill-passes";
 import { deckBodySize } from "../../../lib/decks/deck-size";
 import { hasChanges, loadDraftState, loadVersionShape } from "../../../lib/decks/draft-state";
 import { listVersions } from "../../../lib/decks/versions";
-import { computeRoleCounts } from "../../../lib/decks/mix";
+import type { JobRowsByCard } from "../../../lib/decks/job-tally";
+import { labelRoleCountsEnabled } from "../../../lib/decks/label-counts-flag";
+import { roleCounterFor } from "../../../lib/decks/label-role-counts";
 import { analysisTabEnabled } from "../../../lib/decks/analysis-flag";
 import { deckStatsEnabled } from "../../../lib/decks/stats-flag";
 import { loadJobRows } from "../../../lib/decks/job-rows";
@@ -254,7 +256,7 @@ export default async function DeckBuilderPage({
   const versionShape = hasChanges(draft) && draft.version
     ? await perf.timed("versionShape", () => loadVersionShape(draft.version!.id))
     : null;
-  const wasCounts = versionShape ? computeRoleCounts(versionShape) : undefined;
+  // `wasCounts` is folded below, after the label rows it may need are read.
   // Copies, not rows — the figure the decklist prints, and what the reader is
   // being told they land on. `undefined` where the shape was not read, which is
   // the absence `PendingBanner` draws no `Discard` for.
@@ -445,9 +447,32 @@ export default async function DeckBuilderPage({
   // Spellbook aggregation, tutor classification and the staples join to produce five integers
   // the page was already holding.
 
+  // THE STRIP COUNTS BY LABEL when `LABEL_ROLE_COUNTS_ENABLED` is on: the Jobs card's own tally, over
+  // the rows it reads. The map covers every card a count can fold: the deck's (already read), the
+  // version a draft compares to, and the suggestions and candidates a reader can add, which the
+  // toast and the shelves count against. One more read for the cards the deck's does not cover. Null
+  // (switch off, or the deck's read failed) counts by `card.role`, exactly as before.
+  let labelRows: JobRowsByCard | null = null;
+  if (labelRoleCountsEnabled()) {
+    const base = await (statsJobsRead ?? early(perf.timed("labelRows", () => loadJobRows(detail.cards))));
+    if (base) {
+      const known = new Set(Object.keys(base));
+      const extra: { oracleId: string; typeLine: string }[] = [];
+      for (const c of [...(versionShape ?? []), ...pricedSuggestions, ...candidates]) {
+        if (c.oracleId !== undefined && !known.has(c.oracleId)) extra.push({ oracleId: c.oracleId, typeLine: c.typeLine });
+      }
+      const more = extra.length > 0
+        ? await perf.timed("labelRowsExtra", () => loadJobRows(extra))
+        : {};
+      labelRows = more ? { ...base, ...more } : base;
+    }
+  }
+  const wasCounts = versionShape ? roleCounterFor(labelRows)(versionShape) : undefined;
+
   const shell = (
     <BuilderShell
       mix={mix}
+      labelRows={labelRows}
       deck={{ ...detail, cards, commander, partner }}
       suggestions={pricedSuggestions}
       newestAsOf={priced?.newestAsOf ?? null}

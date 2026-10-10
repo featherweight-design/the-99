@@ -8,6 +8,8 @@ import { pullSourceChoices } from "../../../../lib/decks/draft-shape";
 import { indexGeneration } from "../../../../lib/cache/index-generation";
 import { cacheForUser } from "../../../../lib/cache/user-lists";
 import { loadDeckMix } from "../../../../lib/decks/deck-mix";
+import { loadJobRows } from "../../../../lib/decks/job-rows";
+import { labelRoleCountsEnabled } from "../../../../lib/decks/label-counts-flag";
 import { deckBodySize } from "../../../../lib/decks/deck-size";
 import {
   changeCount, loadDraftRows, loadDraftShape, loadVersionShape,
@@ -178,9 +180,20 @@ export default async function ChangesPage({
     () => loadDeckMix(id, userId),
   );
 
+  // The strip counts by label when the switch is on, so the label rows cover every card it folds:
+  // both lists and the removed rows a restore puts back. Null (switch off, or the read failed)
+  // counts by role exactly as before.
+  const labelRows = labelRoleCountsEnabled()
+    ? await loadJobRows([
+        ...(before ?? []), ...after,
+        ...rows.out.map((r) => ({ oracleId: r.oracleId, typeLine: r.typeLine })),
+      ].filter((c): c is { oracleId: string; typeLine: string } => c.oracleId !== undefined))
+    : null;
+
   return (
     <ReviewChanges
       mix={mix}
+      labelRows={labelRows}
       deckId={id}
       deckName={detail.name}
       rows={rows}

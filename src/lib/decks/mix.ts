@@ -1,5 +1,7 @@
 import type { CompositionTargets, ProfileSkeleton } from "../profile/types";
 
+import { LABEL_ROLE_TARGETS } from "../recs/roles";
+import type { RoleBasis } from "../profile/build";
 import { FLAT_LAND, landTarget } from "./deck-size";
 
 // ---------------------------------------------------------------------------
@@ -93,6 +95,12 @@ export const FLAT_TARGETS: Readonly<Record<MixRole, number>> = {
   ramp: 10, draw: 10, removal: 8, wipes: 3, land: FLAT_LAND,
 };
 
+/** The same fallback for a strip counting by LABEL: the label means, rounded (`LABEL_ROLE_TARGETS`),
+ *  with the land count unchanged. */
+export const LABEL_FLAT_TARGETS: Readonly<Record<MixRole, number>> = {
+  ...LABEL_ROLE_TARGETS, land: FLAT_LAND,
+};
+
 /** Whole cards, rounded half-up and floored at 0. A bucket's mean is a `real`, and a strip
  *  cannot draw 8.4 of a card — nor a negative one, which no measurement produces but which a
  *  future adjustment subtracting from a target could. */
@@ -114,6 +122,8 @@ const wholeCards = (n: number) => Math.max(0, Math.round(n));
 export function recommendedMix(
   skeleton: ProfileSkeleton | null,
   hasPartner: boolean,
+  /** Which count the strip is graded against; picks the fallback when no role figure was measured. */
+  basis: RoleBasis = "classifier",
 ): RecommendedMix {
   const roles = skeleton?.roleTargets;
   const rolesUsable = roles !== undefined
@@ -126,7 +136,7 @@ export function recommendedMix(
 
   const target = (role: MixRole): number => {
     if (role === "land") return wholeCards(land);
-    if (!rolesUsable) return FLAT_TARGETS[role];
+    if (!rolesUsable) return (basis === "labels" ? LABEL_FLAT_TARGETS : FLAT_TARGETS)[role];
     return wholeCards(roles!.targets[role]);
   };
 

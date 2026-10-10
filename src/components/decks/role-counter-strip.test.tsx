@@ -432,3 +432,35 @@ describe("role counter cell — A4 short cell in a just-filled deck", () => {
     expect(cell.className).toContain("border-border");
   });
 });
+
+describe("role counter strip — counting by label", () => {
+  it("counts by card.role with no label rows, exactly as before", () => {
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[card("ramp", 0), card("ramp", 1)]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
+    expect(cellFor("ramp", 2)).not.toBeNull();
+  });
+
+  it("counts by the label rows when given: a card the classifier calls ramp but labels call draw is draw", () => {
+    const labelRows = { "o-ramp-0": ["draw" as const], "o-ramp-1": ["ramp" as const, "draw" as const] };
+    render(
+      <RoleCounterStrip
+        mix={TEST_MIX}
+        cards={[card("ramp", 0), card("ramp", 1)]}
+        labelRows={labelRows}
+        onSeeShelf={vi.fn()}
+        rolesWithShelves={ALL_SHELVES}
+      />,
+    );
+    expect(cellFor("ramp", 1)).not.toBeNull();
+    expect(cellFor("draw", 2)).not.toBeNull();
+  });
+
+  it("names the unlabeled cards in the disclosure only when counting by label and some have none", () => {
+    const { rerender } = render(
+      <RoleCounterStrip mix={TEST_MIX} cards={[card("ramp", 0), card("ramp", 1)]} labelRows={{ "o-ramp-0": ["ramp"] }} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggle }));
+    expect(screen.getByText(addPanelCopy.strip.unlabeledLine(1))).toBeTruthy();
+    rerender(<RoleCounterStrip mix={TEST_MIX} cards={[card("ramp", 0), card("ramp", 1)]} />);
+    expect(screen.queryByText(addPanelCopy.strip.unlabeledLine(1))).toBeNull();
+  });
+});

@@ -18,7 +18,8 @@ import type { RecommendedMix } from "../../lib/decks/mix";
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
 import { cardCopies, groupByCardType, groupByRole } from "../../lib/decks/grouping";
 import { printedNameOf } from "../../lib/collection/browse";
-import { computeRoleCounts } from "../../lib/decks/mix";
+import { labelRolesOf } from "../../lib/decks/label-role-counts";
+import { useLabelRows, useRoleCounter } from "./label-rows-context";
 import { commanderShoppingRows, isShoppingCard, isSpokenFor } from "../../lib/decks/shopping";
 import type { DeckCommander } from "../../lib/decks/read";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
@@ -397,6 +398,8 @@ export function Decklist({
 
   // The curve is drawn from the list the page draws (the optimistic one) plus the commanders the
   // server sent, so an add or a sweep moves it in the same frame as the rows.
+  const countRoles = useRoleCounter();
+  const labelRows = useLabelRows();
   const statsSlice = useMemo(() => {
     if (!statsData) return null;
     const list = [...cards, ...statsData.commanders];
@@ -652,7 +655,7 @@ export function Decklist({
     // so `from` is where the deck stands before the purchase — counting the
     // unowned cards here would credit the player with the very cards the group
     // is asking them to buy.
-    const roleCounts = computeRoleCounts(cards.filter((c) => c.owned));
+    const roleCounts = countRoles(cards.filter((c) => c.owned));
 
     // A spoken-for card is already inside `from` — it is an owned card in this
     // deck, so `computeRoleCounts` has tallied it. Dropping it into a role group
@@ -695,7 +698,13 @@ export function Decklist({
       // part company once the player adds unowned cards of their own, and there
       // the baseline would draw arithmetic the list cannot honour: "5 · closes
       // 9→10", or, past a role already covered, the backwards "3 · closes 12→10".
-      const to = from + n;
+      // By label, the cards that move the count are the ones whose label names this role, which can
+      // be fewer than the group's size (the group is the classifier's), so `to` stays the figure the
+      // strip will read after the purchase.
+      const moves = countRoles.byLabel
+        ? cardCopies(roleCards.filter(notSpent).filter((c) => labelRolesOf(labelRows?.[c.oracleId]).includes(role)))
+        : n;
+      const to = from + moves;
       const gapClause = recommendationsCopy.shopping.groupGap(
         String(n),
         String(from),
