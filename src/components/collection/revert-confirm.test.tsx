@@ -57,6 +57,18 @@ describe("revertLines", () => {
   });
 });
 
+describe("revertLines · details", () => {
+  it("says a revert that restores only a printing or condition does something, though the counts match", () => {
+    const entry = row("Sol Ring", 2, 2);
+    entry.before = { quantity: 2, scryfallId: "p1", condition: "NM" };
+    entry.after = { quantity: 2, scryfallId: "p2", condition: "NM" };
+    const today = row("Sol Ring", 2, 2);
+    today.before = { quantity: 2, scryfallId: "p2", condition: "NM" };
+    today.after = { quantity: 2, scryfallId: "p1", condition: "NM" };
+    expect(revertLines({ entryRows: [entry], rows: [today] })[0].reason).toBe("Printing or condition");
+  });
+});
+
 describe("RevertConfirm", () => {
   it("says it is checking, then draws the lede and Then and Now for every row the entry changed", async () => {
     preview.mockResolvedValue(matches);
@@ -124,6 +136,35 @@ describe("RevertConfirm", () => {
     expect(screen.getByRole("heading", { name: "Reverting leaves 2 decks short" })).toBeTruthy();
     expect(screen.getAllByText("new")).toHaveLength(1);
     expect(onReverted).not.toHaveBeenCalled();
+  });
+
+  it("leads with what it restores, not 0 copies, when the revert moves no copies", async () => {
+    const entry = row("Sol Ring", 2, 2);
+    entry.before = { quantity: 2, scryfallId: "p1", condition: null };
+    entry.after = { quantity: 2, scryfallId: "p2", condition: null };
+    const today = row("Sol Ring", 2, 2);
+    today.before = { quantity: 2, scryfallId: "p2", condition: null };
+    today.after = { quantity: 2, scryfallId: "p1", condition: null };
+    preview.mockResolvedValue({ ...matches, entryRows: [entry], rows: [today] });
+    open();
+    expect(await screen.findByText("From 9 Oct, 14:02. Reverting this restores the printing or condition of 1 card.")).toBeTruthy();
+  });
+
+  it("says the answer changed when the first confirm is answered with decks the preview did not name", async () => {
+    preview.mockResolvedValue(matches);
+    revert.mockResolvedValue({ wouldShort: [deck("d1", "Atraxa")] });
+    open();
+    await pressRevert();
+    expect(await screen.findByText(/This changed while you were deciding/)).toBeTruthy();
+    expect(screen.getAllByText("new")).toHaveLength(1);
+  });
+
+  it("takes focus into the dialog while the write is in flight", async () => {
+    preview.mockResolvedValue(matches);
+    revert.mockReturnValue(new Promise(() => {}));
+    open();
+    await pressRevert();
+    expect(document.activeElement).toBe(screen.getByRole("dialog"));
   });
 
   it("names a card the catalog dropped and writes nothing", async () => {

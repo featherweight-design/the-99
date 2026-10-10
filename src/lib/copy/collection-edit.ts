@@ -135,6 +135,10 @@ export const collectionEditCopy = {
     confirm: "Revert",
     confirmPartial: "Revert what's left",
     nothingLeft: "Nothing left to undo. Every card this changed is already back where it was.",
+    /** (new) The reason beside a row whose copies stay the same but whose printing or condition is restored. */
+    reasonDetails: "Printing or condition",
+    /** (new) The lede when the revert moves no copies and only restores printings or conditions. */
+    ledeDetails: (when: string, k: number) => `From ${when}. Reverting this restores the printing or condition of ${k === 1 ? "1 card" : `${n(k)} cards`}.`,
     /** (new) The reason beside a row whose count moved since the original. */
     reasonSince: "Changed since",
     /** (new) The reason beside a row the revert has nothing to do on. */

@@ -23,6 +23,10 @@ const qty = (s: { quantity: number } | null | undefined) => s?.quantity ?? 0;
 
 type Line = { key: string; name: string; then: number; now: number; reason: string | null };
 
+/** The state a revert restores besides the count: the printing and the condition. */
+const sameDetail = (a: HistoryRow["before"], b: HistoryRow["before"]) =>
+  (a?.scryfallId ?? null) === (b?.scryfallId ?? null) && (a?.condition ?? null) === (b?.condition ?? null);
+
 /**
  * Every row the ENTRY changed, as Then (what the revert leaves) and Now (today). A row the revert
  * has nothing to do on stays in the list, reading `Already back`: hiding it would make a partial
@@ -35,7 +39,13 @@ export function revertLines(p: Pick<RevertPreview, "rows" | "entryRows">): Line[
     const key = keyOf(e);
     const r = today.get(key);
     if (!r) return { key, name: e.name, then: qty(e.before), now: qty(e.before), reason: c.reasonBack };
-    return { key, name: e.name, then: qty(r.after), now: qty(r.before), reason: qty(r.before) === qty(e.after) ? null : c.reasonSince };
+    const reason =
+      qty(r.before) !== qty(e.after) ? c.reasonSince
+      // The copies did not move but the revert still changes the holding: it puts the printing or
+      // condition back, which Then and Now (counts) cannot show.
+      : qty(r.before) === qty(r.after) && !sameDetail(r.before, r.after) ? c.reasonDetails
+      : null;
+    return { key, name: e.name, then: qty(r.after), now: qty(r.before), reason };
   });
 }
 
@@ -69,6 +79,11 @@ export function RevertConfirm({
   const actionId = useRef<string | null>(null);
 
   useDialogA11y(dialogRef, onClose, { initialFocusRef: closeRef, closeOnEscape: !pending });
+  // Pressing Revert disables the button that has focus, which would drop focus to the body and let
+  // Tab leave the dialog for the length of the write; the dialog takes it instead.
+  useEffect(() => {
+    if (pending) dialogRef.current?.focus();
+  }, [pending]);
 
   useEffect(() => {
     let live = true;
@@ -105,7 +120,9 @@ export function RevertConfirm({
         const was = new Set(view.k === "warning" ? view.decks.map((d) => d.deckId) : []);
         setView({
           k: "warning", p: preview, decks: out.wouldShort,
-          fresh: new Set(out.wouldShort.map((d) => d.deckId).filter((id) => !was.has(id))), changed: view.k === "warning",
+          // Every answer here differs from the one just confirmed (the preview named no decks, or
+          // different ones), so the warning always says it changed.
+          fresh: new Set(out.wouldShort.map((d) => d.deckId).filter((id) => !was.has(id))), changed: true,
         });
       } else if ("stale" in out) {
         // The collection moved since this was drawn: read it again and say so.
@@ -175,7 +192,9 @@ export function RevertConfirm({
                 {view.notice ? (
                   <p role="status" className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)]">{collectionEditCopy.shortWarning.changed}</p>
                 ) : null}
-                <p className="m-0 text-[14px] text-[color:var(--fg-body)]">{c.lede(when, copiesChanged)}</p>
+                <p className="m-0 text-[14px] text-[color:var(--fg-body)]">
+                  {copiesChanged === 0 && preview && preview.rows.length > 0 ? c.ledeDetails(when, preview.rows.length) : c.lede(when, copiesChanged)}
+                </p>
                 {partial && !nothingLeft ? (
                   <p className="m-0 rounded-[8px] border border-[color:var(--border-strong)] border-l-[3px] border-l-[color:var(--warning)] bg-[color:var(--elevated-hover)] p-[10px_12px] text-[13px] leading-[1.5] text-[color:var(--fg-body)]">
                     {c.differs}
