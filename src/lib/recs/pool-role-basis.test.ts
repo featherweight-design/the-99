@@ -10,7 +10,7 @@ describe("loadPoolRoleBasis", () => {
   it("reads nothing and counts by the classifier when the switch is off", async () => {
     const read = vi.fn();
     const got = await loadPoolRoleBasis(cards, false, read);
-    expect(got).toEqual({ basis: "classifier", roleSets: undefined });
+    expect(got).toEqual({ basis: "classifier", roleSets: undefined, fellBack: false });
     expect(read).not.toHaveBeenCalled();
   });
 
@@ -20,12 +20,13 @@ describe("loadPoolRoleBasis", () => {
     const got = await loadPoolRoleBasis(cards, true, read);
     expect(got.basis).toBe("labels");
     expect(got.roleSets).toBe(sets);
+    expect(got.fellBack).toBe(false);
     expect(read).toHaveBeenCalledWith(["a", "b"]);
   });
 
   it("falls to the classifier on BOTH sides when the read fails", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     const got = await loadPoolRoleBasis(cards, true, vi.fn().mockRejectedValue(new Error("down")));
-    expect(got).toEqual({ basis: "classifier", roleSets: undefined });
+    expect(got).toEqual({ basis: "classifier", roleSets: undefined, fellBack: true });
   });
 });

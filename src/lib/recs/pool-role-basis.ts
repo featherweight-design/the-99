@@ -14,14 +14,23 @@ import type { RoleName } from "./score";
  *   label counts toward no role (the rule the label targets were derived under), so the unlabeled
  *   few percent of a collection under-count until the weekly label job reaches them.
  * - Switch on and the label read FAILS: the classifier on BOTH sides, recorded as a soft failure
- *   (this sits on Home's cached path, which `check:list-cache` holds to recorded failures only).
+ *   (this sits on Home's cached path, which `check:list-cache` holds to recorded failures only),
+ *   and marked `fellBack` so the caller serves the list without persisting it.
  */
 export type PoolRoleBasis = {
   basis: RoleBasis;
   roleSets: ReadonlyMap<string, readonly RoleName[]> | undefined;
+  /**
+   * True when the switch is ON and the label read failed, so this answer is the classifier's by
+   * accident rather than by configuration. A list computed under it must be SERVED but never
+   * PERSISTED: `commander_scores` records no basis, so a stored fallback would go on serving
+   * classifier counts with the switch on until something unrelated cleared it.
+   */
+  fellBack: boolean;
 };
 
-export const CLASSIFIER_POOL_BASIS: PoolRoleBasis = { basis: "classifier", roleSets: undefined };
+export const CLASSIFIER_POOL_BASIS: PoolRoleBasis = { basis: "classifier", roleSets: undefined, fellBack: false };
+const FELL_BACK: PoolRoleBasis = { ...CLASSIFIER_POOL_BASIS, fellBack: true };
 
 export async function loadPoolRoleBasis(
   cards: readonly { oracleId: string }[],
@@ -30,10 +39,10 @@ export async function loadPoolRoleBasis(
 ): Promise<PoolRoleBasis> {
   if (!enabled) return CLASSIFIER_POOL_BASIS;
   try {
-    return { basis: "labels", roleSets: await read(cards.map((c) => c.oracleId)) };
+    return { basis: "labels", roleSets: await read(cards.map((c) => c.oracleId)), fellBack: false };
   } catch (err) {
     recordSoftFailure();
     console.warn("loadPoolRoleBasis: no labels — the ranked list counts by the classifier", err);
-    return CLASSIFIER_POOL_BASIS;
+    return FELL_BACK;
   }
 }

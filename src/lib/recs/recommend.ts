@@ -123,6 +123,13 @@ export type RecommendResult = {
   degraded: boolean;
   uniqueCardsRead: number;
   candidateCount: number;
+  /**
+   * True when the list was counted by the classifier only because the label read FAILED with the
+   * switch on. It is served, but a writer must not persist it: `commander_scores` records no
+   * basis, so a stored fallback would outlive the outage (labels-everywhere PR 5). Absent on
+   * every other result.
+   */
+  labelFallback?: true;
 };
 
 /**
@@ -275,7 +282,7 @@ export async function recommendCommanders(
   // the role chips keep the fresher figures, and an EDHREC outage still has to
   // be describable. What moved to the index is the SCORE — Ruling D.
   // The labels are read first: the targets follow the basis they come back under.
-  const { basis, roleSets } = await loadPoolRoleBasis(collection);
+  const { basis, roleSets, fellBack } = await loadPoolRoleBasis(collection);
   const [edhrecCache, supportLists, roleTargets] = await Promise.all([
     readEdhrecCache(candidates.map((c) => c.oracleId)),
     loadSupportLists(candidates.map((c) => c.oracleId)),
@@ -327,7 +334,7 @@ export async function recommendCommanders(
   const degraded = results.some((r) => r.synergyState === "degraded");
 
   const finalized = finalizeRecommendations(results, uniqueCardsRead, candidates.length);
-  return { ...finalized, degraded };
+  return { ...finalized, degraded, ...(fellBack ? { labelFallback: true as const } : {}) };
 }
 
 /**

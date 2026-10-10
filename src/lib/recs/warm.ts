@@ -19,7 +19,7 @@ export async function warmCommanderScores(userId: string): Promise<void> {
   try {
     const [generation, indexGen] = await Promise.all([collectionGeneration(userId), indexGeneration()]);
     const recs = await recommendCommanders(userId);
-    await persistScores(userId, recs.results, generation, indexGen);
+    if (!recs.labelFallback) await persistScores(userId, recs.results, generation, indexGen);
   } catch {
     // Swallow: the lazy path in getRankedList is the correctness backstop.
   }
