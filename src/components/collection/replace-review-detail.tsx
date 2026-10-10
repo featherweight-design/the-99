@@ -40,9 +40,9 @@ function Rows({ heading, list, tone }: { heading: string; list: PreviewList; ton
   const shown = all ? list.rows : list.rows.slice(0, SHOWN);
   return (
     <div className="min-w-0">
-      <h3 className="m-0 mb-[8px] font-mono text-[10px] font-normal uppercase tracking-[0.14em] text-[color:var(--fg-muted)]">
+      <h2 className="m-0 mb-[8px] font-mono text-[10px] font-normal uppercase tracking-[0.14em] text-[color:var(--fg-muted)]">
         {heading}
-      </h3>
+      </h2>
       <ul className="m-0 flex list-none flex-col gap-[6px] p-0">
         {shown.map((r: PreviewListRow) => (
           <li

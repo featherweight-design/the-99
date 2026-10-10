@@ -385,7 +385,8 @@ export function ReviewScreen({
           <PrimaryButton
             type="button"
             onClick={onContinue}
-            disabled={pending}
+            // Held while the comparison is read, so Continue cannot slip past it into the dialog.
+            disabled={pending || comparing}
             className="flex-1 md:flex-none h-[46px] md:h-auto rounded-[10px] md:rounded-lg text-[15px] md:text-[14px] md:whitespace-nowrap md:py-[12px] px-0 md:px-[24px] disabled:opacity-60 disabled:cursor-wait"
           >
             {/* "Importing…" is the confirm modal's own pending label, which this button now

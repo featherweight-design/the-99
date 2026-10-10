@@ -350,6 +350,19 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
     expect(push).not.toHaveBeenCalled();
   });
 
+  it("holds Continue while the comparison is still being read, so it cannot slip into the dialog", async () => {
+    previewChange.mockReturnValue(new Promise(() => {}));
+    previewPaste.mockResolvedValueOnce(preview(10));
+    render(<ReplaceFlow currentCardCount={10} deckCheck />);
+    fireEvent.click(screen.getAllByRole("button", { name: /Paste a list instead/ })[0]);
+    fireEvent.change(screen.getByRole("textbox", { name: "Paste your card list" }), { target: { value: "3 Sol Ring" } });
+    fireEvent.click(screen.getByRole("button", { name: /^Preview/ }));
+    const cont = await screen.findByRole("button", { name: /^Continue to replace/ });
+    await waitFor(() => expect(cont).toBeDisabled());
+    fireEvent.click(cont);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
   it("falls back to the shipped review and its confirm dialog when the comparison cannot be read", async () => {
     previewChange.mockRejectedValue(new Error("down"));
     previewPaste.mockResolvedValueOnce(preview(10));

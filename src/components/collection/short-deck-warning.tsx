@@ -82,9 +82,9 @@ export function ShortDeckWarning({
             {c.titleReplace(rows.length)}
           </h2>
         ) : (
-          <h3 className="m-0 font-mono text-[10px] font-normal uppercase tracking-[0.14em] text-[color:var(--danger)]">
+          <h2 className="m-0 font-mono text-[10px] font-normal uppercase tracking-[0.14em] text-[color:var(--danger)]">
             {collectionEditCopy.upload.decksShortHeading(rows.length)}
-          </h3>
+          </h2>
         )}
         {notice ? (
           <p role="status" className="m-0 flex-none text-[13px] leading-[1.5] text-[color:var(--fg-muted)]">

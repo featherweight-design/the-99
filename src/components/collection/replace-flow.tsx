@@ -224,9 +224,12 @@ export function ReplaceFlow({
           setConfirming(false);
           setPreview(null);
         }}
-        onContinue={() =>
-          firstImport ? void onConfirm() : change ? void onConfirm(change.decks) : setConfirming(true)
-        }
+        onContinue={() => {
+          if (comparing) return;
+          if (firstImport) void onConfirm();
+          else if (change) void onConfirm(change.decks);
+          else setConfirming(true);
+        }}
         pending={pending && !confirming}
         embedded={embedded}
         change={change}
