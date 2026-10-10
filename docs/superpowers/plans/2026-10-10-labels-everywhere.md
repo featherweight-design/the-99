@@ -1,7 +1,10 @@
 # Labels everywhere — implementation plan
 
-Plan, 2026-10-10. Priority 4a on the board (Hugh, 2026-10-09). This plan does not implement; it
-records a read-only measurement and sequences the switch into PRs for Hugh's approval.
+Plan, 2026-10-10. Priority 4a on the board (Hugh, 2026-10-09). **Approved by Hugh, 2026-10-09**,
+with three rulings folded in below: the flat fallback is re-stated from the label means, every
+other reader of the role targets moves to labels in this same line, and `DECK_STATS_ENABLED` stays
+off on production until the strip switch is live there. This plan records a read-only
+measurement and sequences the work into PRs.
 
 **The problem.** One deck page counts the same four roles two ways. The Recommended mix strip
 counts with the text classifier (`classifyRoles`), and Deck stats' Jobs card counts from
@@ -115,18 +118,20 @@ What the disagreement is made of:
 
 ### (c) What switching changes for a reader
 
-**Targets.** Rebuilt from labels with the Jobs card's rules (nonland only; a card with no fresh label
-falls back to the classifier, which is 2.7% of the inclusion mass), the mean target across 3,467
-`ok` commanders moves:
+**Targets.** Rebuilt from labels with the Jobs card's rules, the mean target across 3,467 `ok`
+commanders moves. The rules: nonland only, and a card with no fresh label counts toward no role,
+the same as the Jobs card counts it. Fresh labels cover 97.3% of the inclusion mass.
 
 | role | today (classifier) | from labels | per-commander change, whole cards (p10 / median / p90) |
 |---|---|---|---|
 | ramp | 7.87 | 11.60 | +1 / +3 / +6 |
-| draw | 8.31 | 8.47 | -1 / 0 / +2 |
-| removal | 5.15 | 6.22 | -1 / +1 / +3 |
-| wipes | 0.71 | 1.48 | 0 / +1 / +2 |
+| draw | 8.31 | 8.39 | -1 / 0 / +2 |
+| removal | 5.15 | 6.20 | -1 / +1 / +3 |
+| wipes | 0.71 | 1.47 | 0 / +1 / +2 |
 
 Counting lands as ramp would raise the ramp mean to 13.73. That is the gap the nonland rule closes.
+A first pass let an unlabeled card fall back to the classifier. It moved the draw, removal and
+wipes means by 0.08 or less, and every verdict count below came out identical under both rules.
 
 **Verdicts on Hugh's real decks.** Staging holds 21 decks on one account, 18 committed at least
 once and 6 with a logged game. Twenty have a commander-rung target. (HD - Gods is a pair and was
@@ -158,8 +163,11 @@ role than the classifier does, so measuring them against the classifier's bars f
 A sample of the per-deck change (today's count/target, then labels count/target):
 
 - HD - Gishath: ramp 11/9 met, then 22/17 met. Wipes 1/1, then 7/2. This is the deck from the
-  report. The page reads 12 and 23. The one-card difference comes from the page's own card set and
-  was not chased further.
+  report. The report read 12 and 23. Both figures here are one lower, and they come from staging's
+  snapshot of the deck (84 rows, 99 copies), so a deck one ramp card apart from the one the
+  report read would account for it. That was not confirmed. The strip's 11 includes
+  `Shatterskull Smashing`, because its land back reads as ramp on whole text. The verdict figures are directions on a snapshot, and PR 2's acceptance check
+  re-reads them through the page itself.
 - HD - Wizards: removal 15/19 short, then 6/4 met. The count and the bar both fall, because the
   labels stop counting counterspells as removal.
 - HD - Goblins: ramp 6/6 met, then 7/9 short.
@@ -196,22 +204,23 @@ before. When the last reader has moved, a cleanup migration drops `avg_ramp/draw
 - The label lookup reads `card_labels` through `freshLabels`, the page's own freshness rule, so a
   stale label behaves the same in the build and on the page. Roles are the `role`-space kinds
   ramp, draw, removal and wipes. A land face counts toward none of the four. `counterspell` is not
-  removal. A card with no fresh label falls back to `classifyCards` (2.7% of the inclusion mass
-  today), and the build report prints that share so it stays visible.
+  removal. A card with no fresh label counts toward no role, the same as in the deck's own count,
+  so counts and targets share one rule. That is 2.7% of the inclusion mass today, and the build
+  report prints the share so it stays visible.
 - The floors stay as they are. `roleTargetsPublishable` applies to the label pass too, for
   commanders and for pairs.
-- `db:build:staples` averages `label_*` into `identity_composition` beside `avg_*`, under the same
-  null policy.
+- `db:build:staples` averages `label_*` into `identity_composition` beside `avg_*`, with the same
+  null policy as `avg_*` on that table.
 - `pickRoleTargets` takes a `basis: "classifier" | "labels"` argument, so a reader asks for the set
   that matches its own count. Nothing calls it with labels until PR 2.
 - No model call. The labels already exist. The only cost is one more pass over 892k rows the build
   already holds in memory.
 
-**The flat fallback is a decision for Hugh.** `ROLE_TARGETS` (10/10/8/3) was asserted for the
-classifier. On labels it either stays as it is, or is re-stated from the label means (about
-12/8/6/1). **Recommendation: re-state it from the label means**, rounded and written down in
-`roles.ts` beside how it was measured. The strip and the Jobs card should then disagree nowhere,
-including on a commander that has no row.
+**The flat fallback is re-stated from the label means** (Hugh, 2026-10-09). `ROLE_TARGETS`
+(10/10/8/3) was asserted for the classifier. The label set is the measured means, rounded, about
+12/8/6/1. It goes in `roles.ts` as its own constant beside the old one, with a comment saying how
+it was measured, and the labels basis reads it. Re-measure it from the stored `label_*` after the
+staging build, not from this plan's figures.
 
 ### Switch the strip, behind one switch
 
@@ -276,17 +285,27 @@ different label sets, and the same gap this line exists to close comes back.
 
 The fix, in PR 1:
 
-1. **The build records a label fingerprint.** The index build's ledger row stores an md5 over
-   `(oracle_id, input_hash)` of the fresh labels it read, restricted to the cards the index lists.
-   It sits in the report beside the catalog fingerprint. The staples row inherits it, as it
-   inherits the catalog fingerprint.
-2. **The copy job copies labels first.** `Commander index`'s `copy` job runs `db:copy:labels`
-   before `db:copy:index`. It never calls a model and never deletes, so it is free and safe to
-   repeat.
-3. **`db:copy:index` refuses on a label mismatch.** Inside the target transaction it recomputes the
-   label fingerprint over the same cards on the target. If it differs from the build's, the copy
-   rolls back and exits 2, with the same remedy as a moved catalog: rebuild on staging, then copy.
-   It fails closed, like every other check in the harness.
+1. **The build records a label fingerprint over what it USED.** The index build's ledger row
+   stores an md5 over each card the index lists, paired with the role set the build derived from
+   its fresh labels: the sorted role kinds, after the land and counterspell rules, or "unlabeled".
+   It sits in the report beside the catalog fingerprint, and the staples row inherits it the way
+   it inherits the catalog fingerprint. It hashes the output and not the label's `input_hash`.
+   A `list:` relabel can replace a row's jobs under the same model, version and card text, and
+   then the input hash does not move, so a hash of inputs would vouch for roles the build never
+   saw.
+2. **`db:copy:index` refuses on a label mismatch.** Inside the target transaction it derives the
+   same role sets from the target's own fresh labels and hashes them the same way. If that differs
+   from the build's, the copy rolls back and exits 2. The remedy is a moved catalog's remedy:
+   bring the labels level, rebuild on staging, then copy. It fails closed, like every other check
+   in the harness.
+3. **The copy job does NOT copy labels itself.** A `list:` run is a prompt trial, and its labels
+   stay on staging until the trial is judged (`.github/workflows/card-labels.yml:408-411`).
+   `db:copy:labels` installs every staging label that is fresh on production, so running it from
+   the index copy would publish an unjudged trial. Labels keep reaching production only through
+   the `Card labels` workflow's own `copy` job. The cost is that an index copy refuses while a
+   trial is open on staging and the build read its rows. That is the guard working: the targets
+   would have been derived from labels production does not hold. The copy then waits for the trial
+   to be judged and copied, or for a rebuild after the trial is reverted.
 4. **New columns copy without new copy code.** `index-copy.ts` selects
    `getTableColumns(commanderSupport)` less the prose columns (`scripts/lib/index-copy.ts:39-48,86`),
    so `label_*` travel and are verified with no change. The migration has to reach production
@@ -304,16 +323,28 @@ No stacked PRs. Each PR lands on `main` on its own, and each is well under 20 fi
 
 | # | PR | Scope | Depends on |
 |---|---|---|---|
-| 1 | Label role targets in the build | Migration adding `label_*` to the three tables. `deriveRoleTargets` takes a role lookup. Label pass in `deriveAndWriteRoleTargets` with its floors. `db:build:staples` averages it. `pickRoleTargets` basis argument. Label fingerprint in the ledger. `db:copy:labels` before `db:copy:index` in the workflow, and the copy's refusal. Tests: the nonland rule, the counterspell rule, the fallback, the floor, the fingerprint refusal. No reader changes. | — |
+| 1 | Label role targets in the build | Migration adding `label_*` to the three tables. `deriveRoleTargets` takes a role lookup. Label pass in `deriveAndWriteRoleTargets` with its floors. `db:build:staples` averages it. `pickRoleTargets` basis argument. Role-set fingerprint in the ledger, and the copy's refusal on a mismatch. Tests: the nonland rule, the counterspell rule, an unlabeled card counting toward nothing, the floor, the fingerprint refusal, including a relabel under an unchanged `input_hash`. No reader changes. | — |
 | — | Staging build and production copy | Dispatch `Commander index` with `build+copy`, `prose=skip` once PR 1 is on production. Confirm `label_*` on every `ok` commander on both sides. Re-run this plan's measurement against the stored figures. | 1 |
-| 2 | The strip counts and compares on labels | `LABEL_ROLE_COUNTS_ENABLED`. The strip, Changed strip, Consider shelves and the builder toast count through `jobTally`. Label targets through `pickRoleTargets`. The unlabeled line in the disclosure (copy through `/copy-review`). The re-stated flat fallback, if Hugh rules for it. | the build |
+| 2 | The strip counts and compares on labels | `LABEL_ROLE_COUNTS_ENABLED`. The strip, Changed strip, Consider shelves and the builder toast count through `jobTally`. Label targets through `pickRoleTargets`. The unlabeled line in the disclosure (copy through `/copy-review`). The re-stated flat fallback in `roles.ts`. | the build |
 | 3 | Deck stats PR 4b on labels | `manaSupply()` picks non-land sources by label `rampKind` and colors them from text. Replaces the 4b row in the deck-stats plan. | Deck stats PR 4, the mana addendum |
 
-**Outside this line, named so it is not lost.** The fill, the fit score, Role Coverage, the thinnest
-role, Discover's ranking and the tuning evidence still count with the classifier and read `avg_*`.
-Moving them is the rest of "labels everywhere". Each one is a ranking change Hugh will want to see
-measured on its own, and the fill needs to know a label before it places a card it has never seen.
-**Hugh to rule:** a follow-up line, or extend this one. The `avg_*` drop waits for the last of them.
+| 4 | The fill on labels | The fill counts placed and candidate cards by label and fills to `label_*` targets. **A card with no label yet**, such as a new set before the weekly label job, **falls back to the classifier for that card and is never skipped** (Hugh, 2026-10-09). The fill must still place it, and a skipped card would vanish from the deck the fill builds. | 2 |
+| 5 | The fit score on labels | `src/lib/profile/fit.ts` and its callers count roles by label against `label_*`. | 2 |
+| 6 | Role Coverage and the thinnest role on labels | `src/lib/recs/weakest-role.ts` and the commander page's coverage and why sections. | 2 |
+| 7 | Discover's ranking on labels | `src/lib/discovery/list.ts`, `src/lib/recs/recommend.ts`, `free-ranking.ts` and `score.ts`. | 5 |
+| 8 | The tuning evidence on labels | `src/lib/tuning/evidence.ts`. This changes the Suggested changes model's INPUTS, so it shares ONE paid eval re-run with the roadmap's sub-project 8, one run covering both lists. **Hugh's cost OK comes before that run.** | 2, and Hugh's cost OK |
+| 9 | Drop `avg_*` | The cleanup migration closes the line: drop `avg_ramp/draw/removal/wipes` on the three tables, the classifier pass in the build, and the `basis` argument. Only once a grep finds no reader of `avg_*` or of the classifier basis. | 4 to 8 |
+
+**Every reader PR from 4 to 8 carries before/after numbers in its PR body**, measured read-only on
+Hugh's 20 staging decks the way this plan's verdict table was (Hugh, 2026-10-09). The fill reports
+what it would place in each deck. The fit score, coverage, thinnest role and Discover report each
+deck's commander's figure or rank. The tuning evidence reports the inputs that change for each deck.
+Each is a ranking change Hugh sees measured on its own.
+
+`card.role` (`primaryRole`) also feeds deck grouping, the deck's card search and the swaps
+(`src/lib/swaps/fits.ts`). Those name a card's job rather than count against a target, so they are
+not readers of the targets, and moving them is not this line's acceptance condition. PR 9's grep
+lists any that remain, so their status is recorded before the line closes.
 
 **About entry.** None. The strip and the Jobs card already have entries. This line changes what a
 number on a known surface counts, which is the cosmetic case in AGENTS.md. If the strip's
