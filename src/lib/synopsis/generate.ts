@@ -1,3 +1,5 @@
+import { overviewV2Enabled } from "./overview-v2";
+import { loadNearComboFacts } from "./near-combos";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "../../db";
@@ -225,13 +227,18 @@ async function freshReading(deckId: string, userId: string, deps?: StoredProfile
 }
 
 /** Exported for the eval harness, which must run this exact input builder rather than a copy. */
-export async function factsFor(profile: Parameters<typeof buildSynopsisFacts>[0]): Promise<SynopsisFacts> {
+export async function factsFor(
+  profile: Parameters<typeof buildSynopsisFacts>[0],
+  /** Read the combos one card short (a second query). Off unless the v2 method is on. */
+  v2: boolean = overviewV2Enabled(),
+): Promise<SynopsisFacts> {
   const ids = profile.cards.map((c) => c.oracleId);
   const texts = ids.length === 0 ? [] : await db
     .select({ oracleId: cards.oracleId, oracleText: cards.oracleText })
     .from(cards)
     .where(inArray(cards.oracleId, ids));
-  return buildSynopsisFacts(profile, new Map(texts.map((t) => [t.oracleId, t.oracleText])), await loadUniversalStaples());
+  const near = v2 ? await loadNearComboFacts(profile) : [];
+  return buildSynopsisFacts(profile, new Map(texts.map((t) => [t.oracleId, t.oracleText])), await loadUniversalStaples(), near);
 }
 
 /** The catalog cards Weaknesses names that the deck does not hold. Exported for the eval harness,
@@ -440,7 +447,7 @@ async function run(
 
   const facts = await factsFor(reading.profile);
   const refused = base ? refusedSections(base.content) : null;
-  const prompt = buildSynopsisPrompt(facts, base && refused ? { keep: base.content, refused } : undefined);
+  const prompt = buildSynopsisPrompt(facts, base && refused ? { keep: base.content, refused } : undefined, { v2: overviewV2Enabled() });
 
   const started = await startRun(deckId, userId, reading.list, deps.modelName, deps.now(), base?.id ?? null, !retry, reading.seenSeq, replacing);
   if (started.kind !== "started") return started;
@@ -485,7 +492,7 @@ async function run(
       // byte for byte. A refused section the repair fails again stays refused, now with the
       // repair's own reason and counts, which is what a later Try again is asked to fix.
       const failing = refusedSections(content);
-      const repair = await call(buildSynopsisPrompt(facts, { keep: content, refused: failing }));
+      const repair = await call(buildSynopsisPrompt(facts, { keep: content, refused: failing }, { v2: overviewV2Enabled() }));
       usage = sumUsage(usage, repair.usage);
       if (usage) billed = { model: deps.modelName, usage };
       if (repair.ok) {
