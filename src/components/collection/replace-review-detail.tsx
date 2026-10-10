@@ -159,7 +159,7 @@ function AddReviewDetail({ detail: d, onSwitchToReplace }: { detail: UploadChang
           className="rounded-[10px] border border-[color:var(--border-strong)] border-l-[3px] border-l-[color:var(--warning)] bg-[color:var(--elevated-hover)] p-[12px_14px]"
         >
           <div className="text-[14px] font-semibold text-[color:var(--fg)]">{c.allOwned}</div>
-          <p className="m-0 mt-[4px] text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{c.allOwnedBody(d.up)}</p>
+          <p className="m-0 mt-[4px] text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{c.allOwnedBody(d.distinctCards)}</p>
           {onSwitchToReplace ? (
             <button
               type="button"
