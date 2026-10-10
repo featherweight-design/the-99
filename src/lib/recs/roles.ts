@@ -50,11 +50,12 @@ export function rolesByLabelElseText(
   card: RoleInput & { oracleId: string },
   sets: ReadonlyMap<string, readonly Exclude<Role, "land">[]> | undefined,
 ): Role[] {
-  const byText = classifyRoles(card);
-  if (!sets) return byText;
-  if (byText.includes("land")) return ["land"];
+  if (!sets) return classifyRoles(card);
+  // `isLandFace` is the classifier's own land test, so this needs no regex pass: the classifier runs
+  // only for a card with no label (scoreCommander calls this per pool card per commander).
+  if (isLandFace(card.typeLine)) return ["land"];
   const labelled = sets.get(card.oracleId);
-  return labelled ? [...labelled] : byText;
+  return labelled ? [...labelled] : classifyRoles(card);
 }
 
 export function classifyRoles(card: RoleInput): Role[] {
