@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 // Step 1 reaches the upload flow through ReplaceFlow, which calls useRouter at
@@ -14,9 +14,14 @@ vi.mock("../../app/collection/actions", () => ({
   previewUpload: vi.fn(),
 }));
 
-vi.mock("../../app/collection/edit-actions", () => ({ settleCollectionWrite: vi.fn() }));
+const settle = vi.fn();
+vi.mock("../../app/collection/edit-actions", () => ({ settleCollectionWrite: (...a: unknown[]) => settle(...a) }));
+let sheet: { onSaved?: (n: number) => void; onClose: () => void } | null = null;
 vi.mock("../collection/add-cards-sheet", () => ({
-  AddCardsSheet: () => <div role="dialog" aria-label="Add cards sheet" />,
+  AddCardsSheet: (p: { onSaved?: (n: number) => void; onClose: () => void }) => {
+    sheet = p;
+    return <div role="dialog" aria-label="Add cards sheet" />;
+  },
 }));
 
 const { FirstRunChecklist } = await import("./first-run");
@@ -37,6 +42,20 @@ describe("FirstRunChecklist · Add cards by hand (collection edit B0c)", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     fireEvent.click(add);
     expect(screen.getByRole("dialog")).toBeTruthy();
+  });
+
+  it("settles the write (a fresh Home) only when the sheet closes after a save", () => {
+    settle.mockReset();
+    render(<FirstRunChecklist addByHand />);
+    fireEvent.click(screen.getByRole("button", { name: "Add cards by hand" }));
+    act(() => sheet!.onClose());
+    expect(settle).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Add cards by hand" }));
+    act(() => sheet!.onSaved!(2));
+    expect(settle).not.toHaveBeenCalled();
+    act(() => sheet!.onClose());
+    expect(settle).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   it("the phone body names the new door", () => {
