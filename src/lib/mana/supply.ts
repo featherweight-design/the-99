@@ -28,7 +28,10 @@ export type ManaSupplyCardRow = {
   quantity: number;
   /** For a LAND row: the colors it can add (`landProduces`), or its sources count as none. */
   produces?: readonly ManaColor[];
-  /** For a NON-LAND row: it is a mana source (`classifyRoles` ramp). Counted, never colored (PR 4). */
+  /** For a NON-LAND row: it is a mana source (`classifyRoles` ramp, READINESS Q1). Counted, never
+   *  colored (PR 4). That is the role classifier's definition, deliberately not the Jobs card's
+   *  label-based Ramp row, so the two counts can differ. The caller flags the 99 only: a commander
+   *  that taps for mana is not counted here. */
   ramp?: boolean;
 };
 
