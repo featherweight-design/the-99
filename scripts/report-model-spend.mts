@@ -51,7 +51,8 @@ try {
   }
   const { rows } = await client.query(
     `select origin, feature, status, cost_micro_usd as "costMicroUsd" from model_calls where created_at >= $1`,
-    [since],
+    // ISO text, not a Date: pg would send local time, and a timestamp column drops the offset.
+    [since.toISOString()],
   );
   const spend: SpendRow[] = rows.map((r) => ({ ...r, costMicroUsd: r.costMicroUsd === null ? null : Number(r.costMicroUsd) }));
   console.log(`model_calls since ${since.toISOString()}\n`);
