@@ -450,7 +450,9 @@ export async function loadDiscoveryWithIds(
   );
 
   // The labels first: the targets follow the basis they come back under, and the rollup counts the
-  // same pool by the same sets, so a row and its detail page print one role count.
+  // same pool by the same sets, so with the labels readable a row and its detail page print one role
+  // count. A label outage during this compute is the classifier on both sides, and this payload is
+  // cached (an hour at most), so it can disagree with the detail page until it is rebuilt.
   const { basis, roleSets } = await loadPoolRoleBasis(collection);
   const [priceRead, playedTags, roleTargets] = await Promise.all([
     readPrices(candidates.map((c) => c.oracleId)),
