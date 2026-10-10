@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 import { deckStatsCopy } from "../../lib/copy/deck-stats";
 import { JOB_ROWS, type JobTally } from "../../lib/decks/job-tally";
@@ -240,8 +240,18 @@ function InfoTip({ id, lines }: { id: string; lines: readonly string[] }) {
   const [pinned, setPinned] = useState(false);
   const [focused, setFocused] = useState(false);
   const open = hover || pinned || focused;
+  const box = useRef<HTMLSpanElement>(null);
+  // A press anywhere else closes a pinned tip. The button's own blur is not enough: Safari does not focus a
+  // button on a mouse press, so a pin made there would never blur.
+  useEffect(() => {
+    if (!pinned) return;
+    const close = (e: PointerEvent) => { if (!box.current?.contains(e.target as Node)) setPinned(false); };
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [pinned]);
   return (
     <span
+      ref={box}
       className="self-center"
       onPointerEnter={(e) => { if (e.pointerType === "mouse") setHover(true); }}
       onPointerLeave={(e) => { if (e.pointerType === "mouse") setHover(false); }}
@@ -342,7 +352,7 @@ function ColorsCard({ mana }: { mana: ManaSupply }) {
               <li
                 key={r.c}
                 data-color-row={r.c}
-                aria-label={copy.row(copy.names[r.c], r.pips, r.lands, r.other)}
+                aria-label={copy.row(copy.names[r.c], r.pips, shares[i].pips, r.lands, r.other, shares[i].sources)}
                 className="grid grid-cols-[minmax(0,1fr)_26px_minmax(0,1fr)] items-center gap-[10px]"
               >
                 <div aria-hidden="true" className="flex flex-row-reverse items-center gap-[8px]">

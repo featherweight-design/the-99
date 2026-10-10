@@ -1493,15 +1493,15 @@ describe("the Stats panel", () => {
     const cell = (c: string) => document.querySelector(`[data-color-row="${c}"]`)!.getAttribute("aria-label");
     renderDecklist([dual, spell, rampOwned], stats);
     fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
-    expect(cell("G")).toBe("green: 3 pips, 1 source");
-    expect(cell("U")).toBe("blue: 1 pip, 1 source");
-    expect(cell("C")).toBe("colorless: 0 pips, 1 source, 1 not a land");
+    expect(cell("G")).toBe("Green, 3 pips, 75 percent; 1 source, 33 percent");
+    expect(cell("U")).toBe("Blue, 1 pip, 25 percent; 1 source, 33 percent");
+    expect(cell("C")).toBe("Colorless, 0 pips, 0 percent; 1 source, 0 lands and 1 other, 33 percent");
     expect(document.querySelector('[data-color-row="C"] [data-segment=nonland]')).not.toBeNull();
     cleanup();
 
     renderDecklist([dual, spell, addedForest], stats);
     fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
-    expect(cell("G")).toBe("green: 3 pips, 3 sources");
+    expect(cell("G")).toBe("Green, 3 pips, 75 percent; 3 sources, 75 percent");
     expect(document.querySelector("[data-segment=nonland]")).toBeNull();
   });
 

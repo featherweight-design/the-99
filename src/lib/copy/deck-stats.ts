@@ -31,8 +31,11 @@ export const deckStatsCopy = {
     monoLead: (color: string) => `Every pip is ${color}.`,
     noLands: "No lands yet, so no sources are counted.",
     names: { W: "white", U: "blue", B: "black", R: "red", G: "green", C: "colorless" },
-    row: (name: string, pips: number, lands: number, other: number) =>
-      `${name}: ${pips} ${pips === 1 ? "pip" : "pips"}, ${lands + other} ${lands + other === 1 ? "source" : "sources"}${other > 0 ? `, ${other} not a land` : ""}`,
+    row: (name: string, pips: number, pipShare: number, lands: number, other: number, sourceShare: number) => {
+      const n = (k: number, one: string, many: string) => `${k} ${k === 1 ? one : many}`;
+      const split = other > 0 ? `, ${n(lands, "land", "lands")} and ${n(other, "other", "others")}` : "";
+      return `${name[0].toUpperCase()}${name.slice(1)}, ${n(pips, "pip", "pips")}, ${pipShare} percent; ${n(lands + other, "source", "sources")}${split}, ${sourceShare} percent`;
+    },
   },
   jobs: {
     denom: (n: number) => `${n} nonland ${n === 1 ? "card" : "cards"}`,

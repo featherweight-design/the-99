@@ -16,8 +16,8 @@ describe("DeckStatsView colors card", () => {
     const { container } = draw([spell("{B}{B}", 2), spell("{R}"), land(["B", "R"], 3), land(["C"])]);
     expect(screen.getByRole("figure", { name: "Mana colors, 5 pips · 4 sources" })).toBeInTheDocument();
     expect([...container.querySelectorAll("[data-color-row]")].map((r) => r.getAttribute("data-color-row"))).toEqual(["B", "R", "C"]);
-    expect(screen.getByLabelText("black: 4 pips, 3 sources")).toBeInTheDocument();
-    expect(screen.getByLabelText("colorless: 0 pips, 1 source")).toBeInTheDocument();
+    expect(screen.getByLabelText("Black, 4 pips, 80 percent; 3 sources, 43 percent")).toBeInTheDocument();
+    expect(screen.getByLabelText("Colorless, 0 pips, 0 percent; 1 source, 14 percent")).toBeInTheDocument();
   });
 
   it("inks each pip tile with the token that reads on it, red in black", () => {
@@ -72,6 +72,15 @@ describe("DeckStatsView colors card", () => {
     expect(card()).toHaveTextContent("1 pip · 2 sources");
   });
 
+  it("closes a pinned tooltip on a press outside it, and not on a press inside", () => {
+    draw([spell("{G}"), land(["G"])]);
+    fireEvent.click(screen.getByRole("button", { name: "How this is counted" }));
+    fireEvent.pointerDown(screen.getByRole("tooltip"));
+    expect(screen.getByRole("tooltip")).not.toHaveAttribute("hidden");
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole("tooltip")).toBeNull();
+  });
+
   it("says so when there are no sources, with every source 0", () => {
     const { container } = draw([spell("{B}"), spell("{R}")]);
     expect(card()).toHaveTextContent("No lands yet, so no sources are counted.");
@@ -93,7 +102,7 @@ describe("DeckStatsView colors card", () => {
     expect(card()).toHaveTextContent("1 pip · 3 sources");
     expect(card()).toHaveTextContent("Land 2");
     expect(card()).toHaveTextContent("Mana rock, dork or land search 1");
-    expect(screen.getByLabelText("green: 1 pip, 3 sources, 1 not a land")).toBeInTheDocument();
+    expect(screen.getByLabelText("Green, 1 pip, 100 percent; 3 sources, 2 lands and 1 other, 75 percent")).toBeInTheDocument();
   });
 
   it("does not draw or count a source whose color is unreadable, and does not say there are no rocks", () => {
