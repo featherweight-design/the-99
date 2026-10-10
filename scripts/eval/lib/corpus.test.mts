@@ -67,6 +67,14 @@ describe("claim grades", () => {
     expect(gradeClaim({ section: "keyCard", text: "Chain Reaction: sweeps", cards: ["Chain Reaction"] }, gold).grade).toBe("wrong");
     expect(gradeClaim({ section: "weakness", text: "[[Chain Reaction]] kills your own Goblins.", cards: ["Chain Reaction"] }, gold).grade).toBe("ungraded");
   });
+  it("leaves a negated sentence ungraded, and a right rule only grades a tip", () => {
+    const neg = base({ wrong: [{ id: "shard", cards: ["Shard", "Ayara"], why: "Shard makes opponents sacrifice" }] }).gold;
+    expect(gradeClaim({ section: "tip", text: "[[Shard]] does not trigger [[Ayara]].", cards: ["Shard", "Ayara"] }, neg).grade).toBe("ungraded");
+    expect(gradeClaim({ section: "tip", text: "[[Shard]] triggers [[Ayara]].", cards: ["Shard", "Ayara"] }, neg).grade).toBe("wrong");
+    const rt = base({ right: [{ id: "r", cards: ["A card", "B card"], note: "n" }] }).gold;
+    expect(gradeClaim({ section: "overview", text: "[[A card]] with [[B card]].", cards: ["A card", "B card"] }, rt).grade).toBe("ungraded");
+    expect(gradeClaim({ section: "tip", text: "[[A card]] with [[B card]].", cards: ["A card", "B card"] }, rt).grade).toBe("correct");
+  });
   it("lets a wrong rule beat a right one on the same sentence", () => {
     const both = base({ wrong: [{ id: "w", cards: ["A card"], pattern: "mill", why: "does not mill, ever" }], right: [{ id: "r", cards: ["A card", "B card"], note: "n" }] }).gold;
     expect(gradeClaim({ section: "tip", text: "[[A card]] mills with [[B card]].", cards: ["A card", "B card"] }, both).grade).toBe("wrong");

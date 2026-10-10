@@ -43,7 +43,8 @@
           "Shard of the Void Dragon",
           "Ayara"
         ],
-        "why": "Shard makes opponents sacrifice; nothing enters under your control, so Ayara does not trigger"
+        "why": "Shard makes opponents sacrifice; nothing enters under your control, so Ayara does not trigger",
+        "pattern": "(trigger|enter)"
       },
       {
         "id": "mono-black-colors",

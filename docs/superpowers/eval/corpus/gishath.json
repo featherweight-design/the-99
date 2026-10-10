@@ -13,7 +13,7 @@
           "Marauding Raptor",
           "Polyraptor"
         ],
-        "produces": "a mandatory infinite loop that draws the library without an outlet such as Wrathful Raptors",
+        "produces": "a mandatory token loop (Marauding Raptor damages each entering Polyraptor) that has no end without an outlet such as Wrathful Raptors",
         "forced": true
       }
     ],

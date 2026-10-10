@@ -47,7 +47,7 @@ export const corpusCaseSchema = z.object({
       sections: z.array(z.enum(["overview", "strategy", "mulligan", "tip", "keyCard", "weakness"])).optional(),
       why: z.string(),
     }).refine((w) => w.cards.length > 0 || w.pattern, "a wrong-claim rule needs cards or a pattern")).default([]),
-    /** Claims known to be good: a claim naming all `cards` is correct. Also the regression anchors. */
+    /** Regression anchors: a TIP naming all `cards`, not negated, is correct. Co-occurrence only, by design: it means "this good tip survived", not "this sentence is true". */
     right: z.array(z.object({ id: z.string(), cards: names, note: z.string() })).default([]),
   }),
 });
@@ -85,16 +85,21 @@ export function claimsOf(reply: Reply): Claim[] {
   return out;
 }
 
+/** A sentence denying a relationship is not graded by co-occurrence: "Shard does not trigger Ayara" names the pair too. */
+const NEGATED = /\b(not|never|no longer|cannot|can't|doesn't|don't|isn't|won't|without)\b|n't\b/i;
+
 /** A wrong rule beats a right one: a sentence that names the good pair and says something false is false. */
 export function gradeClaim(c: Claim, gold: CorpusCase["gold"]): { grade: Grade; ruleId?: string } {
   const claimText = `${c.text} ${c.cards.join(" ")}`;
+  if (NEGATED.test(strip(c.text))) return { grade: "ungraded" };
   for (const w of gold.wrong) {
     if (w.sections && !w.sections.includes(c.section)) continue;
     const cardsOk = w.cards.length === 0 || namesAll(claimText, w.cards);
     const patternOk = !w.pattern || new RegExp(w.pattern, "i").test(strip(c.text));
     if (cardsOk && patternOk) return { grade: "wrong", ruleId: w.id };
   }
-  for (const r of gold.right) if (namesAll(claimText, r.cards)) return { grade: "correct", ruleId: r.id };
+  // A right rule is a REGRESSION ANCHOR: it is a tip, because a tip is the one section that names a pair by design.
+  if (c.section === "tip") for (const r of gold.right) if (namesAll(claimText, r.cards)) return { grade: "correct", ruleId: r.id };
   return { grade: "ungraded" };
 }
 

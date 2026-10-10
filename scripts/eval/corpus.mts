@@ -10,7 +10,10 @@ import { acquireRunLock, OVERVIEW_ACCURACY_LIMITS, readLedger, record, refusal, 
  * The Overview accuracy corpus, two commands (plan 2026-10-10-overview-accuracy.md, 5 and 11).
  *
  *   pnpm eval:corpus score --answers <file.jsonl> --label <name> [--out <md>]    $0, no database
- *   pnpm eval:corpus run --prompt v1|v2 --out <file.jsonl> [--only id,id] [--cap 0.6] [--pin]
+ *   pnpm eval:corpus run --prompt v1|v2 --out <file.jsonl> [--only id,id] [--cap 0.6] [--plan-done 0..1] [--pin]
+ *
+ * `--plan-done` is the share of the line's run plan already complete (default 0): from $11 of spend the
+ * ledger stops and asks while it is under 0.5, so the default is the conservative one.
  *
  * `run` makes REAL-TIME paid calls, one per corpus deck, through the app's own `callModel`, prompt
  * and schema, on STAGING (read-only; a corpus deck whose source is production is skipped, and
@@ -25,7 +28,7 @@ import { acquireRunLock, OVERVIEW_ACCURACY_LIMITS, readLedger, record, refusal, 
 const [command, ...rest] = process.argv.slice(2);
 const { values: args } = parseArgs({
   args: rest,
-  options: { answers: { type: "string" }, label: { type: "string" }, out: { type: "string" }, prompt: { type: "string" }, only: { type: "string" }, cap: { type: "string" }, pin: { type: "boolean", default: false } },
+  options: { answers: { type: "string" }, label: { type: "string" }, out: { type: "string" }, prompt: { type: "string" }, only: { type: "string" }, cap: { type: "string" }, "plan-done": { type: "string" }, pin: { type: "boolean", default: false } },
 });
 
 const EVAL = new URL("../../docs/superpowers/eval/", import.meta.url);
@@ -33,7 +36,7 @@ const CORPUS_URL = new URL("corpus/", EVAL);
 const CORPUS = fileURLToPath(CORPUS_URL);
 const LEDGER = fileURLToPath(new URL("ledger-overview-accuracy.jsonl", EVAL));
 
-type AnswerRow = { id: string; reply: Reply };
+type AnswerRow = { id: string; prompt?: string; reply: Reply };
 const readAnswers = (path: string): AnswerRow[] => readFileSync(path, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l) as AnswerRow);
 
 if (command === "score") {
@@ -53,6 +56,8 @@ if (command === "run") {
   if (!args.out) throw new Error("eval:corpus run: --out is required");
   const cap = args.cap === undefined ? 0.6 : Number(args.cap);
   if (!Number.isFinite(cap) || cap < 0) throw new Error(`eval:corpus run: --cap must be a finite, non-negative number (got ${args.cap})`);
+  const planDone = args["plan-done"] === undefined ? 0 : Number(args["plan-done"]);
+  if (!Number.isFinite(planDone) || planDone < 0 || planDone > 1) throw new Error(`eval:corpus run: --plan-done must be between 0 and 1 (got ${args["plan-done"]})`);
   const v2 = args.prompt === "v2";
   const only = args.only ? new Set(args.only.split(",")) : null;
 
@@ -73,7 +78,10 @@ if (command === "run") {
   const { sql } = await import("drizzle-orm");
 
   let runSpend = 0;
-  const done = new Set(existsSync(args.out) ? readAnswers(args.out).map((a) => a.id) : []);
+  const existing = existsSync(args.out) ? readAnswers(args.out) : [];
+  const mixed = existing.filter((a) => a.prompt !== args.prompt);
+  if (mixed.length > 0) throw new Error(`eval:corpus run: ${args.out} holds rows from another prompt (${[...new Set(mixed.map((a) => a.prompt ?? "unlabelled"))].join(", ")}); refusing to resume into it`);
+  const done = new Set(existing.map((a) => a.id));
   for (const c of loadCorpus(CORPUS)) {
     if (only && !only.has(c.id)) continue;
     if (done.has(c.id)) { console.log(`${c.id}: already in ${args.out}, kept`); continue; }
@@ -96,7 +104,7 @@ if (command === "run") {
     const approxIn = Math.ceil((prompt.system.length + prompt.user.length) / 3.5);
     const worst = worstCaseUsd(SYNOPSIS_MODEL, approxIn, SYNOPSIS_MAX_TOKENS, { batch: false });
     const ledger = readLedger(LEDGER);
-    const stop = refusal(ledger, worst, 1, OVERVIEW_ACCURACY_LIMITS) ?? (runSpend + worst > cap ? `this run's cap of $${cap} would be crossed` : null);
+    const stop = refusal(ledger, worst, planDone, OVERVIEW_ACCURACY_LIMITS) ?? (runSpend + worst > cap ? `this run's cap of $${cap} would be crossed` : null);
     if (stop) { console.log(`STOP before ${c.id}: ${stop}`); break; }
     const pendingId = `${Date.now()}-${c.id}`;
     // Pending BEFORE the call, settled after: a crash between paying and settling keeps the worst case counted.
