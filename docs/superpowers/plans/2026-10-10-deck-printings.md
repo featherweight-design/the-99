@@ -225,7 +225,9 @@ worktree, the pre-open subagent pass and the normal pr-review cycle. PRs 2 to 5 
   `priceState` draws as `sold out`. Called with no picks, the SQL and every figure are `main`'s.
 - `PriceFact` gains an OPTIONAL `printing?: { scryfallId, setCode, collectorNumber }`, filled only
   inside `price-query.ts`, so the 39 files that build a fact literally do not move. It is the
-  printing behind the figure, which I got it presets from (ruling c).
+  printing behind the figure, which I got it presets from (ruling c), and it is filled on EVERY
+  fact `loadPrices` returns, with picks or without, the stale sold-out row and the commanders
+  included, so I got it does not depend on this line's switch.
 - Callers: the deck page (rows, the Shopping strip and total, the over-limit ring and the Money
   card, whose file does not change: ruling b, asserted by a test feeding it a picked fact); the
   review screen (`draft-state.ts:349`); the version diff (`versions.ts:571`); and the roll-up
