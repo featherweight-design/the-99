@@ -31,7 +31,7 @@ describe("jobTally", () => {
 
   it("states overlap and none; a card with no label and no classifier role is in no row", () => {
     expect(t.overlap).toBe(1);
-    expect(t.none).toBe(3);
+    expect(t.none).toBe(2); // lord and etb are labeled and do none; "new" has no label and is not said to do none
     expect(t.cast).toBe(7);
   });
 
@@ -44,7 +44,7 @@ describe("jobTally", () => {
   it("gives a card with no label and no classifier role to no row, and ignores a role the classifier cannot give a row", () => {
     const u = jobTally([{ oracleId: "a", name: "A", copies: 1, role: "other" }, { oracleId: "b", name: "B", copies: 1 }, { oracleId: "c", name: "C", copies: 1, role: "land" }], byCard);
     expect(u.rows.every((r) => r.copies === 0)).toBe(true);
-    expect(u.none).toBe(3);
+    expect(u.none).toBe(0);
   });
 
   it("weights by copies", () => {

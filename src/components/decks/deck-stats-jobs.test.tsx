@@ -60,7 +60,7 @@ describe("DeckStatsView jobs card", () => {
   it("states overlap and none, and says nothing of labels", () => {
     const { container } = render(<DeckStatsView data={slice} />);
     expect(screen.getByText(/^1 card does two or more of these jobs/)).toBeInTheDocument();
-    expect(screen.getByText("3 nonland cards do none of these jobs.")).toBeInTheDocument();
+    expect(screen.getByText("1 nonland card does none of these jobs.")).toBeInTheDocument();
     expect(container.textContent).not.toMatch(/label/i);
     expect(container.querySelector("[data-job-unlabeled]")).toBeNull();
   });

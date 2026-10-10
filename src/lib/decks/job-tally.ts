@@ -39,7 +39,7 @@ export type JobTally = {
   cast: number;
   /** Copies doing two or more of the six jobs. */
   overlap: number;
-  /** Copies doing none of the six. */
+  /** Copies whose label names none of the six. A card with no label is never counted here. */
   none: number;
 };
 
@@ -57,7 +57,9 @@ export function jobTally(cards: readonly JobCard[], byCard: JobRowsByCard): JobT
       row.copies += card.copies;
       row.names.push(card.name);
     }
-    if (hit.length === 0) none += card.copies;
+    // Only a card that HAS a label can be said to do none: the classifier cannot see Protection or
+    // Win conditions, so a card it gives no role is unknown rather than idle.
+    if (hit.length === 0) { if (byCard[card.oracleId]) none += card.copies; }
     else if (hit.length > 1) overlap += card.copies;
   }
   return { rows, cast, overlap, none };
