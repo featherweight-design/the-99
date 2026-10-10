@@ -219,7 +219,7 @@ const PIP_STYLE: Record<ManaColor, { bg: string; ink: string }> = {
   W: { bg: "var(--w)", ink: "var(--pip-ink-dark)" },
   U: { bg: "var(--u)", ink: "var(--pip-ink-light)" },
   B: { bg: "var(--b)", ink: "var(--pip-ink-dark)" },
-  R: { bg: "var(--r)", ink: "var(--pip-ink-light)" },
+  R: { bg: "var(--r)", ink: "var(--pip-ink-black)" },
   G: { bg: "var(--g)", ink: "var(--pip-ink-light)" },
   C: { bg: "var(--fg-muted)", ink: "var(--pip-ink-dark)" },
 };

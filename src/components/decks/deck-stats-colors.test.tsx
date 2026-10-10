@@ -20,6 +20,13 @@ describe("DeckStatsView colors card", () => {
     expect(card()).toHaveTextContent("A land counts once for each color it can add, so a dual counts twice.");
   });
 
+  it("inks each pip tile with the token that reads on it, red in black", () => {
+    const { container } = draw([spell("{R}"), spell("{U}"), land(["R", "U"])]);
+    const ink = (c: string) => (container.querySelector(`[data-color-row="${c}"] > span`) as HTMLElement).style.color;
+    expect(ink("R")).toBe("var(--pip-ink-black)");
+    expect(ink("U")).toBe("var(--pip-ink-light)");
+  });
+
   it("prints counts with shares, and 0 bare", () => {
     draw([spell("{B}{B}{B}"), spell("{R}"), land(["B"], 1), land(["R"], 1), land(["C"], 2)]);
     expect(card()).toHaveTextContent("3 · 75%");
