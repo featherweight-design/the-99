@@ -15,15 +15,27 @@ describe("deck tuning schema", () => {
     expect(deck).toEqual(expect.arrayContaining(["notes", "intent", "intent_seeded"]));
   });
 
-  it("has exactly one partial unique index, on pending runs", () => {
+  it("has exactly one partial unique index, on pending runs, per deck and tool", () => {
     const unique = getTableConfig(deckSuggestionRuns).indexes.filter((i) => i.config.unique);
     expect(unique).toHaveLength(1);
-    expect(unique[0].config.name).toBe("deck_suggestion_runs_one_pending_idx");
+    expect(unique[0].config.name).toBe("deck_suggestion_runs_one_pending_tool_idx");
+    expect(unique[0].config.columns.map((c) => (c as { name: string }).name)).toEqual(["deck_id", "tool"]);
     // Rendered, not merely present: an index filtered on any other status would let two
     // pending runs coexist and still pass a presence check.
     const where = unique[0].config.where;
     expect(where).toBeDefined();
     expect(new PgDialect().sqlToQuery(where!).sql).toBe(`"deck_suggestion_runs"."status" = 'pending'`);
+  });
+
+  it("names its tool, and lets model_calls record a Proposed cuts call", () => {
+    const render = (q: Parameters<PgDialect["sqlToQuery"]>[0]) => new PgDialect().sqlToQuery(q).sql.replace(/\s+/g, " ");
+    const runChecks = Object.fromEntries(getTableConfig(deckSuggestionRuns).checks.map((c) => [c.name, render(c.value)]));
+    expect(runChecks.deck_suggestion_runs_tool_check).toContain(`in ('suggested_changes', 'proposed_cuts')`);
+    const tool = getTableConfig(deckSuggestionRuns).columns.find((c) => c.name === "tool");
+    expect(tool?.notNull).toBe(true);
+    expect(tool?.default).toBe("suggested_changes");
+    const callChecks = Object.fromEntries(getTableConfig(modelCalls).checks.map((c) => [c.name, render(c.value)]));
+    expect(callChecks.model_calls_feature_check).toContain(`'proposed_cuts'`);
   });
 
   it("ties both of an item's card columns to the catalog, and a run to its allowance unit", () => {

@@ -1903,7 +1903,7 @@ export const modelCalls = pgTable("model_calls", {
   model: text("model"),
   costMicroUsd: bigint("cost_micro_usd", { mode: "number" }),
 }, (t) => [
-  check("model_calls_feature_check", sql`${t.feature} in ('tuning', 'synopsis', 'intake', 'labels', 'prose')`),
+  check("model_calls_feature_check", sql`${t.feature} in ('tuning', 'synopsis', 'intake', 'proposed_cuts', 'labels', 'prose')`),
   check("model_calls_origin_check", sql`${t.origin} in ('player', 'system')`),
   check("model_calls_status_check", sql`${t.status} in ('reserved', 'spent', 'refunded')`),
   // The allowance's only query: this player's calls inside the window.
@@ -1973,6 +1973,9 @@ export const deckSuggestionRuns = pgTable("deck_suggestion_runs", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   /** The player's own inputs (list, games, notes, intent, collection). No version inside. */
   inputFingerprint: text("input_fingerprint").notNull(),
+  /** Which tool wrote this run: the one shared run record for every Tuning tool (roadmap ruling 3).
+   *  Every run from before the column is Suggested changes, which the default says. */
+  tool: text("tool").notNull().default("suggested_changes"),
   model: text("model").notNull(),
   // Both versions are STORED, never hashed: a bump reopens the gate as its own reason and
   // never reads as the player having changed their deck.
@@ -1994,6 +1997,7 @@ export const deckSuggestionRuns = pgTable("deck_suggestion_runs", {
    *  as a status. */
   validationReport: jsonb("validation_report").$type<ValidationReport>(),
 }, (t) => [
+  check("deck_suggestion_runs_tool_check", sql`${t.tool} in ('suggested_changes', 'proposed_cuts')`),
   check(
     "deck_suggestion_runs_status_check",
     sql`${t.status} in ('pending', 'ok', 'failed', 'cancelled')`,
@@ -2007,8 +2011,8 @@ export const deckSuggestionRuns = pgTable("deck_suggestion_runs", {
   // The constraint that makes a second concurrent run on one deck impossible: the loser of the
   // race gets a unique violation, not a second run. Partial, so a deck accumulates any number
   // of finished runs. Same predicate form as printings_flavor_name_idx.
-  uniqueIndex("deck_suggestion_runs_one_pending_idx")
-    .on(t.deckId)
+  uniqueIndex("deck_suggestion_runs_one_pending_tool_idx")
+    .on(t.deckId, t.tool)
     .where(sql`${t.status} = 'pending'`),
   index("deck_suggestion_runs_deck_created_idx").on(t.deckId, t.createdAt),
   index("deck_suggestion_runs_user_created_idx").on(t.userId, t.createdAt),

@@ -20,6 +20,7 @@ import { PROFILE_VERSION } from "../profile/version";
 import type { Bracket, DeckProfile } from "../profile/types";
 import { bracketAfter } from "../tuning/bracket-shift";
 import { tuningFingerprint } from "../tuning/fingerprint";
+import { SUGGESTED_CHANGES_TOOL } from "../tuning/limits";
 import { PROMPT_VERSION } from "../tuning/prompt-version";
 import { loadUniversalStaples } from "../staples/universal";
 import { readShownSynopsis } from "../synopsis/generate";
@@ -202,6 +203,13 @@ export async function commanderName(head: ProfileHead): Promise<string> {
   return ids.map((id) => rows.find((r) => r.oracleId === id)?.name ?? "").filter(Boolean).join(" and ");
 }
 
+/** A deck's Suggested changes runs. `deck_suggestion_runs` is the one run record for every Tuning
+ *  tool, so every read of "this deck's runs" for the panel names its tool. */
+export const suggestedRunsOfDeck = (deckId: string) => and(
+  eq(deckSuggestionRuns.deckId, deckId),
+  eq(deckSuggestionRuns.tool, SUGGESTED_CHANGES_TOOL),
+);
+
 /**
  * The panel's state. Reaps this deck's abandoned runs on the way past, refunding their units in
  * the same transaction, then reads. Scoped to the deck being read: one player opening a deck
@@ -218,7 +226,7 @@ export async function readTuningState(
     const reaped = await tx.update(deckSuggestionRuns)
       .set({ status: "failed", errorClass: "interrupted" })
       .where(and(
-        eq(deckSuggestionRuns.deckId, deckId),
+        suggestedRunsOfDeck(deckId),
         eq(deckSuggestionRuns.status, "pending"),
         lt(deckSuggestionRuns.createdAt, reapCutoff(now)),
       ))
@@ -226,7 +234,7 @@ export async function readTuningState(
     for (const r of reaped) await settleModelCall(tx, r.callId, "refunded", undefined, now);
   });
 
-  const runOf = eq(deckSuggestionRuns.deckId, deckId);
+  const runOf = suggestedRunsOfDeck(deckId);
   const mine = eq(deckSuggestionRuns.userId, userId);
   const [[newest], [lastOk], [games], allowance] = await Promise.all([
     db.select({

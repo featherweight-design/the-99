@@ -21,6 +21,10 @@ export const MAX_SUGGESTIONS = 5;
  */
 export const ASK_SUGGESTIONS = 8;
 
+/** The `deck_suggestion_runs.tool` value Suggested changes writes and every one of its readers scopes to,
+ *  so a run another tool wrote on the same deck is never read as one of these. */
+export const SUGGESTED_CHANGES_TOOL = "suggested_changes";
+
 /** A pending run older than this was abandoned, and the read-time reaper fails it. */
 export const REAPER_CUTOFF_MS = 5 * 60 * 1000;
 
