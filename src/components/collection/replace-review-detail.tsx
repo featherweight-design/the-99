@@ -117,10 +117,10 @@ export function ReplaceReviewDetail({
         </p>
       ) : null}
       <div className="grid gap-[22px] md:grid-cols-2">
-        <Rows heading={c.listLeaving(d.lists.leaving.total)} list={d.lists.leaving} tone="other" />
         {decks.length > 0 ? (
           <ShortDeckWarning variant="embedded" decks={decks} pending={false} notice={changed} freshDeckIds={freshDeckIds} />
         ) : null}
+        <Rows heading={c.listLeaving(d.lists.leaving.total)} list={d.lists.leaving} tone="other" />
         <Rows heading={c.listDown(d.lists.down.total)} list={d.lists.down} tone="other" />
         <Rows heading={c.listUp(d.lists.up.total)} list={d.lists.up} tone="up" />
       </div>

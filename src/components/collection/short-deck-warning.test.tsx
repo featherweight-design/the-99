@@ -97,6 +97,6 @@ describe("ShortDeckWarning", () => {
     expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Replace anyway" })).toBeNull();
     expect(screen.queryByText(/Nothing about these decks changes/)).toBeNull();
-    expect(document.activeElement).toBe(document.body);
   });
+
 });

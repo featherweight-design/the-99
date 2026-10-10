@@ -68,16 +68,15 @@ export function ShortDeckWarning({
   // The warning replaces the confirm inside one dialog, so nothing moves focus here but this.
   // Again for each answer the server sends back: a changed warning keeps this mounted while the
   // host's pending state moved focus to the dialog itself.
-  useEffect(() => {
-    if (variant === "dialog") cancelRef.current?.focus();
-  }, [decks, variant]);
+  // (The embedded variant draws no Cancel, so there is nothing to focus.)
+  useEffect(() => cancelRef.current?.focus(), [decks]);
   // `and N more` unmounts the button that had focus: the first row it reveals takes it.
   useEffect(() => {
     if (showAll) firstRevealed.current?.focus();
   }, [showAll]);
 
   return (
-    <>
+    <div className="flex flex-col gap-[14px]">
         {variant === "dialog" ? (
           <h2 id={titleId} className="m-0 flex-none font-display text-[20px] font-bold leading-[1.3] text-[color:var(--fg)]">
             {c.titleReplace(rows.length)}
@@ -184,6 +183,6 @@ export function ShortDeckWarning({
           </button>
         </div>
         ) : null}
-    </>
+    </div>
   );
 }
