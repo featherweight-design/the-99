@@ -1,6 +1,6 @@
 // I got it's confirm (plan `2026-10-10-i-got-it.md`, "How the preset is chosen"): which printing
 // and finish it opens on, how many copies the deck needs, and what a stale answer re-bases to.
-// Pure: the confirm and its tests import these as values.
+// Pure: the confirm and its tests read these as plain values.
 import type { PrintingChoice } from "../collection/catalog-read";
 import type { CollectionItemIdentity, Finish } from "../collection/key";
 import { availabilityState } from "./availability";
