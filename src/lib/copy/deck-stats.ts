@@ -95,7 +95,6 @@ export const deckStatsCopy = {
     letters: { win: "W", loss: "L", draw: "D" },
     words: { win: "win", loss: "loss", draw: "draw" },
     bead: (word: string, date: string) => `${word}, ${date}`,
-    versionAria: (name: string, record: string | null) => (record ? `${name}: ${record}` : `${name}: no games yet`),
   },
   money: {
     denom: (n: number) => `${n} ${n === 1 ? "card" : "cards"}`,

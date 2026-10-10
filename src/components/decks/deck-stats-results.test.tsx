@@ -69,6 +69,12 @@ describe("DeckStatsView results card", () => {
     expect(rows[3]).toHaveTextContent("1–0–0");
   });
 
+  it("names the version in each row's spoken results", () => {
+    draw(six, [v(3, 30), v(2, 1), v(1, 10)]);
+    const row = card().querySelector("[data-result-version='2']")!;
+    expect(row.querySelector(".sr-only")).toHaveTextContent("v2: win, win, draw");
+  });
+
   it("draws no by-version section for a brew, and keeps the record and beads", () => {
     draw(six, []);
     expect(card().querySelector("[data-results-versions]")).toBeNull();

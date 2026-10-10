@@ -298,7 +298,8 @@ const EMPTY_PENDING_CHANGES: ReadonlyMap<string, PendingChangeMove> = new Map();
  *  render when nothing was spent. */
 const EMPTY_SPENT_SLOTS: DeckDetailCard[] = [];
 
-// Stable empties, so a deck without them does not rebuild the Stats slice on every render.
+// Stable empties for a caller that passes neither (the page always does, so a render there reuses
+// the slice until a game or version changes).
 const NO_GAMES: readonly { result: "win" | "loss" | "draw"; playedAt: Date; versionNumber: number | null }[] = [];
 const NO_VERSIONS: readonly { number: number; committedAt: Date }[] = [];
 

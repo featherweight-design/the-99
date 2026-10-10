@@ -103,7 +103,7 @@ export function ResultsCard({ results, onLogGame }: { results: ResultsStats; onL
                           <Bead key={i} result={r} className="size-[16px] rounded-[3px] text-[9px]" />
                         ))}
                         {v.record ? (
-                          <span className="sr-only">{v.beads.map((r) => copy.words[r]).join(", ")}</span>
+                          <span className="sr-only">{`${name}: ${v.beads.map((r) => copy.words[r]).join(", ")}`}</span>
                         ) : (
                           <span className="text-[11.5px] text-[color:var(--fg-faint)]">{copy.noGames}</span>
                         )}
