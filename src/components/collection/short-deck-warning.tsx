@@ -28,6 +28,7 @@ export function groupShortDecks(decks: ShortDeck[]): DeckRow[] {
 }
 
 export function ShortDeckWarning({
+  variant = "dialog",
   titleId,
   decks,
   pending,
@@ -37,8 +38,13 @@ export function ShortDeckWarning({
   onCancel,
   onConfirm,
 }: {
-  /** The id the host's `aria-labelledby` names. */
-  titleId: string;
+  /**
+   * `dialog`: the title, body and buttons, hosted in a dialog. `embedded`: just the decks under
+   * their own heading, for the review screen, whose confirm bar carries the decision.
+   */
+  variant?: "dialog" | "embedded";
+  /** The id the host's `aria-labelledby` names. Unused when embedded. */
+  titleId?: string;
   decks: ShortDeck[];
   pending: boolean;
   error?: string | null;
@@ -46,8 +52,9 @@ export function ShortDeckWarning({
   notice?: boolean;
   /** Decks the previous warning did not name; they carry a `new` tag. */
   freshDeckIds?: ReadonlySet<string>;
-  onCancel: () => void;
-  onConfirm: () => void;
+  /** The dialog variant's buttons; the embedded one has none. */
+  onCancel?: () => void;
+  onConfirm?: () => void;
 }) {
   const c = collectionEditCopy.shortWarning;
   const rows = useMemo(() => groupShortDecks(decks), [decks]);
@@ -61,6 +68,7 @@ export function ShortDeckWarning({
   // The warning replaces the confirm inside one dialog, so nothing moves focus here but this.
   // Again for each answer the server sends back: a changed warning keeps this mounted while the
   // host's pending state moved focus to the dialog itself.
+  // (The embedded variant draws no Cancel, so there is nothing to focus.)
   useEffect(() => cancelRef.current?.focus(), [decks]);
   // `and N more` unmounts the button that had focus: the first row it reveals takes it.
   useEffect(() => {
@@ -68,16 +76,24 @@ export function ShortDeckWarning({
   }, [showAll]);
 
   return (
-    <>
-        <h2 id={titleId} className="m-0 flex-none font-display text-[20px] font-bold leading-[1.3] text-[color:var(--fg)]">
-          {c.titleReplace(rows.length)}
-        </h2>
+    <div className="flex flex-col gap-[14px]">
+        {variant === "dialog" ? (
+          <h2 id={titleId} className="m-0 flex-none font-display text-[20px] font-bold leading-[1.3] text-[color:var(--fg)]">
+            {c.titleReplace(rows.length)}
+          </h2>
+        ) : (
+          <h2 className="m-0 font-mono text-[10px] font-normal uppercase tracking-[0.14em] text-[color:var(--danger)]">
+            {collectionEditCopy.upload.decksShortHeading(rows.length)}
+          </h2>
+        )}
         {notice ? (
           <p role="status" className="m-0 flex-none text-[13px] leading-[1.5] text-[color:var(--fg-muted)]">
             {c.changed}
           </p>
         ) : null}
-        <p className={`m-0 flex-none text-[13.5px] leading-[1.55] text-[color:var(--fg-body)] ${showAll ? "max-md:hidden" : ""}`}>{c.body}</p>
+        {variant === "dialog" ? (
+          <p className={`m-0 flex-none text-[13.5px] leading-[1.55] text-[color:var(--fg-body)] ${showAll ? "max-md:hidden" : ""}`}>{c.body}</p>
+        ) : null}
         <ul
           className={`m-0 min-h-0 list-none overflow-y-auto rounded-[10px] border border-[color:var(--border)] bg-[color:var(--bg)] p-0 ${showAll ? "max-h-[320px]" : ""}`}
         >
@@ -146,6 +162,7 @@ export function ShortDeckWarning({
             {error}
           </p>
         ) : null}
+        {variant === "dialog" ? (
         <div className="mt-[4px] flex flex-none flex-col-reverse gap-[10px] md:flex-row md:justify-end">
           <button
             ref={cancelRef}
@@ -165,6 +182,7 @@ export function ShortDeckWarning({
             {pending ? c.saving : c.confirmReplace}
           </button>
         </div>
-    </>
+        ) : null}
+    </div>
   );
 }

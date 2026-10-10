@@ -24,6 +24,37 @@ export const collectionEditCopy = {
     addByHand: "Add cards by hand",
     bodyShort: "Drop a CSV export from Moxfield, Archidekt, Deckbox or Manabox, or add cards by hand.",
   },
+  // §A, the Replace review (the choice step and the Add review come with the next PR). Strings are
+  // the handoff's; lines marked (new) have no key there and go to /copy-review.
+  upload: {
+    tiles: { unchanged: "unchanged", up: "going up or new", down: "going down", leaving: "leaving" },
+    edited: "edited",
+    overwriteBanner: (k: number, since: string) =>
+      `This overwrites ${n(k)} ${k === 1 ? "change" : "changes"} you made in the app since your ${since} upload.`,
+    /** (new) History does not reach the last upload, so no number is quoted. */
+    overwriteUnknown: (last: string) =>
+      `This may overwrite changes you made in the app. Your last upload was ${last}, before the 90 days history keeps, so we can't count them.`,
+    /** (new) Never uploaded, so every change made in the app is still on record. */
+    overwriteNoUpload: (k: number) => `This overwrites ${n(k)} ${k === 1 ? "change" : "changes"} you made in the app.`,
+    decksShortHeading: (k: number) => `Decks that will read short · ${n(k)}`,
+    listLeaving: (k: number) => `Leaving your collection · ${n(k)}`,
+    listDown: (k: number) => `Going down · ${n(k)}`,
+    listUp: (k: number) => `Going up or new · ${n(k)}`,
+    showAll: (k: number) => `Show all ${n(k)}`,
+    /** (new) A list longer than the 500 rows the preview ships. */
+    capNote: (shown: number, total: number) => `Showing the first ${n(shown)} of ${n(total)}.`,
+    /** (new) The new-holding stand-in for a ×0 before figure. */
+    newBadge: "new",
+    /** (new) Reading how the file compares. */
+    preparing: "Comparing with your collection…",
+    barReplace: (from: number, to: number, short: number) =>
+      `Replaces your ${n(from)} cards with ${n(to)}.${short ? ` ${n(short)} ${short === 1 ? "deck" : "decks"} will read short.` : ""}`,
+    confirmReplace: "Replace collection",
+    pendingReplace: "Replacing…",
+    failedTitle: "That didn't go through",
+    failedBody: "Nothing changed. Your collection is exactly as it was, and this review is still here.",
+    retry: "Try again",
+  },
   // §E, the short-deck warning. Replace is the only source so far; Save, Remove and Revert join
   // with the PRs that draw them. Every string is a placeholder for /copy-review.
   shortWarning: {

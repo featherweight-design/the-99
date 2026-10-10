@@ -5,10 +5,11 @@
 //         replace), straight to confirmUpload() with no step 3.
 // Step 3: ConfirmModal (Task 9). Confirm → confirmUpload() → the receipt.
 
-import { useLayoutEffect, useState } from "react";
-import { confirmUpload, type UploadPreview } from "../../app/collection/actions";
+import { useEffect, useLayoutEffect, useState } from "react";
+import { confirmUpload, previewUploadChange, type UploadPreview } from "../../app/collection/actions";
 import { UploadEntry } from "./upload-entry";
 import { ReviewScreen } from "./review-screen";
+import type { ReviewChange } from "./replace-review-detail";
 import { ConfirmModal } from "./confirm-modal";
 import { replaceCopy } from "../../lib/copy/replace";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
@@ -72,10 +73,42 @@ export function ReplaceFlow({
   // modal instead.
   const firstImport = preview?.currentCollectionCount === 0;
 
+  // The ledger path's read of this Replace: figures, lists, overwritten edits and the decks it
+  // would leave short, drawn in the review with the decision on its confirm bar (A2). Absent (a
+  // first import, the switch off, or a read that failed), the review is the shipped one and the
+  // confirm is the dialog.
+  // Held with the upload it was read for, so a new preview starts from nothing without an effect
+  // resetting state: `change` is null and `comparing` is true until THIS upload's read settles.
+  const [read, setRead] = useState<{ id: string; change: ReviewChange | null } | null>(null);
+  const previewedId = preview?.uploadId ?? null;
+  const wantsComparison = deckCheck && previewedId !== null && !firstImport;
+  const settled = read !== null && read.id === previewedId;
+  const change = settled ? read.change : null;
+  const comparing = wantsComparison && !settled;
+  const setChange = (next: ReviewChange | null) => {
+    if (previewedId) setRead({ id: previewedId, change: next });
+  };
+  useEffect(() => {
+    if (!wantsComparison || !previewedId) return;
+    let live = true;
+    previewUploadChange(previewedId, "replace")
+      .then((data) => (data && "detail" in data ? { data, decks: data.decks, fresh: new Set<string>(), changed: false, failure: null } : null))
+      .catch(() => null)
+      .then((next) => {
+        if (live) setRead({ id: previewedId, change: next });
+      });
+    return () => {
+      live = false;
+    };
+  }, [wantsComparison, previewedId]);
+
   async function onConfirm(confirmShort?: ShortDeck[]) {
     if (!preview || pending) return;
     setPending(true);
     setConfirmError(null);
+    // The review answers a press on its own bar; a confirm made inside the dialog (a first import
+    // that found a collection after all, or the fallback) is answered by the dialog.
+    const review = confirming ? null : change;
     try {
       // `firstImport` is read off the preview, which a server refusal corrects before the
       // modal opens, so a confirm from that modal is no longer "first". A retry after a
@@ -91,6 +124,23 @@ export function ReplaceFlow({
       }
       // A ledger refusal wrote nothing: a deck it would leave short opens §E, and a card the
       // catalog dropped is named in the confirm's own error slot.
+      if (review && outcome && "wouldShort" in outcome) {
+        // The decks moved since the review drew them: redraw the same section with a notice and
+        // `new` on the ones that were not there, and wait for another press (E6).
+        const was = new Set(review.decks.map((d) => d.deckId));
+        setChange({
+          ...review,
+          decks: outcome.wouldShort,
+          fresh: new Set(outcome.wouldShort.map((d) => d.deckId).filter((id) => !was.has(id))),
+          changed: true,
+          failure: null,
+        });
+        return;
+      }
+      if (review && outcome && "missingCard" in outcome) {
+        setChange({ ...review, failure: { body: collectionEditCopy.shortWarning.catalogFailure(outcome.missingCard) } });
+        return;
+      }
       if (outcome && "wouldShort" in outcome) {
         const before = new Set(warning?.decks.map((d) => d.deckId));
         const fresh = warning ? new Set(outcome.wouldShort.map((d) => d.deckId).filter((id) => !before.has(id))) : new Set<string>();
@@ -109,6 +159,11 @@ export function ReplaceFlow({
       // upload id, so it survives a reload and stays linkable.
       nav.go(`/collection/replace/summary/${preview.uploadId}`);
     } catch (e) {
+      if (review) {
+        // Nothing was written and the review stays (A5).
+        setChange({ ...review, failure: { body: collectionEditCopy.upload.failedBody } });
+        return;
+      }
       setConfirmError(e instanceof Error ? e.message : "Confirm failed");
       // A skipped confirm has no surface of its own to say it failed, so it opens the modal,
       // whose error slot is where a failed confirm has always been reported. A press from the
@@ -171,9 +226,17 @@ export function ReplaceFlow({
           setConfirming(false);
           setPreview(null);
         }}
-        onContinue={() => (firstImport ? void onConfirm() : setConfirming(true))}
+        onContinue={() => {
+          if (comparing) return;
+          if (firstImport) void onConfirm();
+          else if (change) void onConfirm(change.decks);
+          else setConfirming(true);
+        }}
         pending={pending && !confirming}
         embedded={embedded}
+        change={change}
+        comparing={comparing}
+        onRetry={change ? () => void onConfirm(change.decks) : undefined}
       />
       {confirming && (
         <ConfirmModal

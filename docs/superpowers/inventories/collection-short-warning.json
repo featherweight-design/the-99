@@ -1,16 +1,16 @@
 {
-  "feature": "Collection screens PR 4: the short-deck warning (\u00a7E) on the upload confirm",
-  "note": "Needs COLLECTION_EDIT_ENABLED=true and an account with a committed (99-card) deck, so a pasted one-card list leaves it short. Nothing is written: the confirm answers with the warning and the row stops there. Edit copies (PR 7) and revert (PR 6) add rows and views for the same component.",
+  "feature": "Collection screens PRs 4 and 5b: the short-deck warning (\u00a7E) and the Replace review it sits in",
+  "note": "Needs COLLECTION_EDIT_ENABLED=true and an account with a collection and a committed (99-card) deck, so a pasted one-card list leaves it short. The row stops at the review: it never presses Replace collection, which would write. The confirm dialog is now only the fallback when the comparison cannot be read; its states are covered by replace-flow.test.tsx and were walked in PR 4.",
   "shares": {
     "module": "src/components/collection/short-deck-warning.tsx",
     "binding": "ShortDeckWarning",
-    "note": "ConfirmModal hosts the warning, so each row's `view` is replace-flow."
+    "note": "The review's detail component draws the embedded variant; ConfirmModal still hosts the dialog variant as the fallback. PR 6 (revert) and PR 7 (Edit copies) add views."
   },
   "rows": [
     {
-      "id": "short-warning",
-      "label": "/collection/replace: the confirm answers with \u00a7E (decks named, rest counted)",
-      "view": "src/components/collection/confirm-modal.tsx",
+      "id": "replace-review",
+      "label": "/collection/replace: the review (four figures, overwritten edits, decks short, card lists, confirm bar)",
+      "view": "src/components/collection/replace-review-detail.tsx",
       "steps": [
         {
           "goto": "/collection/replace",
@@ -31,20 +31,8 @@
         {
           "clickRole": "button",
           "name": "^Preview",
-          "wait": "button",
-          "settle": 1500
-        },
-        {
-          "clickRole": "button",
-          "name": "^Continue to replace",
-          "wait": "[role=dialog]",
-          "settle": 600
-        },
-        {
-          "clickRole": "button",
-          "name": "^Replace with",
-          "wait": "[role=dialog] ul li",
-          "settle": 1500
+          "wait": "h2",
+          "settle": 2500
         }
       ]
     }

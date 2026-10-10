@@ -101,7 +101,7 @@ export function ConfirmModal({
           // §E replaces the confirm's content inside this same dialog: one focus trap and one
           // back-button entry, where unmounting the confirm and mounting a second dialog left the
           // first one's history entry behind.
-          <div className="flex flex-col gap-[14px]">
+          <>
             <ShortDeckWarning
               titleId="confirm-title"
               decks={warning.decks}
@@ -112,7 +112,7 @@ export function ConfirmModal({
               onCancel={onClose}
               onConfirm={warning.onConfirm}
             />
-          </div>
+          </>
         ) : (
           <>
         {/* §1.4 Title */}
