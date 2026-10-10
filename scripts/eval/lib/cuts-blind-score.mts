@@ -20,11 +20,13 @@ export type SourceScore = {
 /** Pure: the per-source table, from the key's cards and the ratings. Unrated cards are skipped. */
 export function scoreSources(cards: BlindKey["cards"], ratings: BlindAnswers["ratings"]): SourceScore[] {
   const ids = Object.keys(cards);
-  const cutTotal = ids.filter((id) => ratings[id] === "cut").length;
+  // A Key card is never cuttable by the model (the validator refuses it), so random is scored over
+  // the same pool: a Key card it drew is left out of its picks.
+  const scoredFor = (id: string) => cards[id].sources.filter((s) => !(s === "random" && cards[id].keyCard));
+  // Recall's denominator is the scored pool: a card no source is credited with is not in it.
+  const cutTotal = ids.filter((id) => ratings[id] === "cut" && scoredFor(id).length > 0).length;
   const rows = SOURCES.map((source) => {
-    // A Key card is never cuttable by the model (the validator refuses it), so random is scored over
-    // the same pool: a Key card it drew is left out of its picks.
-    const mine = ids.filter((id) => cards[id].sources.includes(source) && !(source === "random" && cards[id].keyCard));
+    const mine = ids.filter((id) => scoredFor(id).includes(source));
     const rated = mine.filter((id) => ratings[id]);
     const n = (r: Rating) => rated.filter((id) => ratings[id] === r).length;
     const [cut, maybe, keep] = [n("cut"), n("maybe"), n("keep")];

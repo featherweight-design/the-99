@@ -25,6 +25,13 @@ describe("scoreSources", () => {
     expect(by.random).toMatchObject({ picks: 2, keep: 1, precision: 0.5 });
   });
 
+  it("keeps a random-only Key card rated Cut it out of every source's recall", () => {
+    const withKey: BlindKey["cards"] = { ...cards, k: { ...card(["random"]), keyCard: true } };
+    const by = Object.fromEntries(scoreSources(withKey, { a: "cut", b: "cut", e: "cut", k: "cut" }).map((r) => [r.source, r]));
+    expect(by.model.recall).toBe(1);
+    expect(by.random).toMatchObject({ picks: 2, cut: 1 });
+  });
+
   it("skips unrated cards and reports no lift when random cut nothing", () => {
     const rows = scoreSources(cards, { a: "cut", d: "keep" });
     const by = Object.fromEntries(rows.map((r) => [r.source, r]));
