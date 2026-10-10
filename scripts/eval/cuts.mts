@@ -87,7 +87,7 @@ for (const d of DECKS) {
     misses: missed.map((id) => {
       const r = rank.get(id);
       const c = r === undefined ? null : result.candidates[r];
-      return `${names.get(id) ?? id}: ${c ? `rank ${r + 1}, ${c.reason.kind}` : "no signal"}`;
+      return `${names.get(id) ?? id}: ${c && r !== undefined ? `rank ${r + 1}, ${c.reason.kind}` : "no signal"}`;
     }),
   });
   console.error(`${d.name}: over ${result.over}, missing [${result.missing.join(", ")}], support ${support ? support.listed : "none"}`);
