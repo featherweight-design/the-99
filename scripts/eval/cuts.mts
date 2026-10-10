@@ -27,7 +27,7 @@ const { eq, inArray } = await import("drizzle-orm");
 const schema = await import("../../src/db/schema");
 const { loadDeckProfileFromHead } = await import("../../src/lib/profile/load");
 const { readCutSupport } = await import("../../src/lib/decks/cuts-read");
-const { proposeCuts } = await import("../../src/lib/tuning/cuts");
+const { proposeCuts } = await import("./lib/cuts-ranking.mjs");
 const { readLabels } = await import("../../src/lib/labels/read");
 const { FILLS } = await import("../../src/lib/labels/consider");
 const { classifyCards } = await import("../../src/lib/edhrec/role-targets");
@@ -35,7 +35,7 @@ const GISHATH = GISHATH_DECK;
 
 type Profile = Awaited<ReturnType<typeof loadDeckProfileFromHead>>;
 type Support = Awaited<ReturnType<typeof readCutSupport>>;
-type Weights = import("../../src/lib/tuning/cuts").CutWeights;
+type Weights = import("./lib/cuts-ranking.mjs").CutWeights;
 const ROLE_KEYS = ["ramp", "draw", "removal", "wipes"] as const;
 
 type Case = {

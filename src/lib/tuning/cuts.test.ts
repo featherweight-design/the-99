@@ -1,191 +1,111 @@
 import { describe, expect, it } from "vitest";
 
-import { buildDeckProfile, type ProfileCardRow, type ProfileInput } from "../profile/build";
-import type { CompositionTargets, DetectionCoverage, FlagSource } from "../profile/types";
-import { proposeCuts, type CutSupport, type CutWeights } from "./cuts";
+import { cutFacts } from "./cuts";
+import { deck, profile, row, support } from "./cuts-fixture";
 
-const DETECTION: DetectionCoverage = {
-  massLandDenial: { methods: ["m"], basis: "t" },
-  extraTurn: { methods: ["m"], basis: "t" },
-  twoCardCombos: { methods: ["m"], basis: "t" },
-};
+const facts = (over: Parameters<typeof cutFacts>[0] extends infer I ? Partial<I> : never = {}) =>
+  cutFacts({ profile: profile(), locked: new Set(), support: null, declaredBracket: null, ...over });
+const card = (f: ReturnType<typeof cutFacts>, id: string) => f.cards.find((c) => c.oracleId === id);
 
-const row = (over: Partial<ProfileCardRow> & { oracleId: string }): ProfileCardRow => ({
-  name: over.oracleId, typeLine: "Creature — Bear", oracleText: null, keywords: [],
-  cmc: 3, colorIdentity: ["G"], manaCost: "{2}{G}", quantity: 1, commanderLegal: true, layout: "normal",
-  ...over,
-});
-
-const TARGETS: CompositionTargets = {
-  land: 36, basic: 30, nonbasic: 6, creature: 30, instant: 8,
-  sorcery: 8, artifact: 8, enchantment: 6, planeswalker: 0, battle: 0,
-};
-
-// Commander + 37 Forests + 12 ramp dorks (target 10) + 2 draw spells (target 10) + bears.
-// 1 + 37 + 12 + 2 + 50 = 102 cards: two over.
-function deck(bears = 50, extra: ProfileCardRow[] = []) {
-  return [
-    row({ oracleId: "cmd", typeLine: "Legendary Creature — Dinosaur", cmc: 4 }),
-    row({ oracleId: "forest", name: "Forest", typeLine: "Basic Land — Forest", cmc: 0, quantity: 37, manaCost: null }),
-    ...Array.from({ length: 12 }, (_, i) => row({ oracleId: `ramp${i}`, cmc: 2, oracleText: "{T}: Add {G}." })),
-    ...Array.from({ length: 2 }, (_, i) => row({ oracleId: `draw${i}`, typeLine: "Sorcery", cmc: 2, oracleText: "Draw two cards." })),
-    ...Array.from({ length: bears }, (_, i) => row({ oracleId: `bear${i}` })),
-    ...extra,
-  ];
-}
-
-function profile(over: Partial<ProfileInput> = {}, cards = deck()) {
-  return buildDeckProfile({
-    deckId: "d", fingerprint: "f", cards, commanderOracleIds: ["cmd"], identity: ["G"],
-    condition: "G",
-    composition: {
-      pair: null, commander: { targets: TARGETS, averageCurve: { "2": 14, "3": 30 } }, identity: null, count: null,
-    },
-    roles: { pair: null, commander: { ramp: 10, draw: 10, removal: 8, wipes: 3 }, identity: null, count: null },
-    thinCondition: false,
-    staples: [], commanderDeckCount: 1000, population: null,
-    mldFlags: new Map<string, FlagSource[]>(), extraTurnFlags: new Map<string, FlagSource[]>(),
-    gameChangerIds: new Set<string>(), twoCardCombos: [], tutorIds: new Set<string>(),
-    detection: DETECTION,
-    ...over,
-  });
-}
-
-const support = (entries: [string, number | null][]): CutSupport => ({
-  deckCount: 21375, listed: 246, inclusion: new Map(entries),
-});
-
-const ids = (r: ReturnType<typeof proposeCuts>) => r.candidates.map((c) => c.oracleId);
-const find = (r: ReturnType<typeof proposeCuts>, id: string) => r.candidates.find((c) => c.oracleId === id);
-
-describe("proposeCuts", () => {
-  it("is not offered at exactly 100, commanders included", () => {
-    const r = proposeCuts({ profile: profile({}, deck(48)), locked: new Set(), support: null });
-    expect(r).toMatchObject({ total: 100, over: 0, candidates: [] });
+describe("cutFacts", () => {
+  it("offers nothing at exactly 100, commanders included, but still states the deck's figures", () => {
+    const f = facts({ profile: profile({}, deck(48)) });
+    expect(f).toMatchObject({ total: 100, over: 0, cards: [], brackets: [] });
+    expect(f.roles.length).toBe(5);
   });
 
   it("counts the commander toward the total (ruling 4)", () => {
-    const r = proposeCuts({ profile: profile(), locked: new Set(), support: null });
-    expect(r.total).toBe(102);
-    expect(r.over).toBe(2);
-    expect(r.candidates.length).toBeGreaterThan(0);
+    expect(facts()).toMatchObject({ total: 102, over: 2 });
   });
 
-  it("never offers the commander or a locked card, whatever they score", () => {
-    const r = proposeCuts({
-      profile: profile(), locked: new Set(["ramp0", "bear0"]),
-      support: support([]), // every card off the list: the strongest inclusion signal there is
-    });
-    expect(ids(r)).not.toContain("cmd");
-    expect(ids(r)).not.toContain("ramp0");
-    expect(ids(r)).not.toContain("bear0");
-    expect(ids(r)).toContain("bear1");
+  it("never lists the commander or a locked card", () => {
+    const f = facts({ locked: new Set(["ramp0", "bear0"]) });
+    const ids = f.cards.map((c) => c.oracleId);
+    expect(ids).not.toContain("cmd");
+    expect(ids).not.toContain("ramp0");
+    expect(ids).not.toContain("bear0");
+    expect(ids).toContain("bear1");
   });
 
-  it("ranks a card off the commander's list above one most of its decks run, and says which", () => {
-    const entries: [string, number | null][] = Array.from({ length: 50 }, (_, i) => [`bear${i}`, 90]);
-    entries[7] = ["bear7", 4];
-    const r = proposeCuts({ profile: profile(), locked: new Set(), support: support(entries.filter(([id]) => id !== "bear3")) });
-    const order = ids(r);
-    expect(order.indexOf("bear3")).toBeLessThan(order.indexOf("bear7"));
-    expect(order.indexOf("bear7")).toBeLessThan(order.indexOf("bear0"));
-    expect(find(r, "bear3")!.reason).toEqual({ kind: "offList", listed: 246, deckCount: 21375 });
-    expect(find(r, "bear7")!.reason).toEqual({ kind: "inclusion", pct: 4, deckCount: 21375 });
+  it("lists cards in the deck's own order, never ranked", () => {
+    const ids = facts({ support: support([]) }).cards.map((c) => c.oracleId);
+    expect(ids.slice(0, 3)).toEqual(["forest", "ramp0", "ramp1"]);
   });
 
-  it("names a role surplus by its counted figure, against the strip's target", () => {
-    const r = proposeCuts({ profile: profile(), locked: new Set(), support: null });
-    expect(find(r, "ramp0")!.signals).toContainEqual({ kind: "roleSurplus", role: "ramp", have: 12, target: 10 });
+  it("states every role against its target, on the population the target was derived for", () => {
+    const roles = Object.fromEntries(facts().roles.map((r) => [r.role, r]));
+    expect(roles.ramp).toEqual({ role: "ramp", have: 12, target: 10 });
+    expect(roles.draw).toEqual({ role: "draw", have: 2, target: 10 });
   });
 
-  it("demotes a card whose role is under target, and gives it no role reason", () => {
-    const r = proposeCuts({ profile: profile(), locked: new Set(), support: support([]) });
-    const draw = find(r, "draw0")!;
-    expect(draw.opensGap).toBe("draw");
-    expect(draw.signals.some((s) => s.kind === "roleSurplus")).toBe(false);
-    expect(draw.score).toBeLessThan(find(r, "ramp0")!.score);
+  it("gives inclusion as a figure, or as off the list, or none for a basic land", () => {
+    const f = facts({ support: support([["bear7", 4]]) });
+    expect(card(f, "bear7")!.inclusion).toEqual({ kind: "pct", pct: 4 });
+    expect(card(f, "bear3")!.inclusion).toEqual({ kind: "offList" });
+    expect(card(f, "forest")!.inclusion).toBeNull();
+    expect(f.support).toEqual({ deckCount: 21375, listed: 246 });
   });
 
-  it("ranks a card that opens a role gap below an otherwise identical card that fills no role", () => {
-    // Both off the list, both at mana value 2: the gap is the only difference.
-    const cards = deck(49, [row({ oracleId: "vanilla", cmc: 2 })]);
-    const r = proposeCuts({ profile: profile({}, cards), locked: new Set(), support: support([]) });
-    expect(ids(r).indexOf("vanilla")).toBeLessThan(ids(r).indexOf("draw0"));
+  it("marks a role surplus only when every role the card fills is over, and a gap when one is not", () => {
+    const f = facts();
+    expect(card(f, "ramp0")!.roleSurplus).toEqual({ role: "ramp", have: 12, target: 10 });
+    expect(card(f, "draw0")!.roleSurplus).toBeNull();
+    expect(card(f, "draw0")!.opensGap).toBe("draw");
   });
 
-  it("names curve crowding against the commander's average curve", () => {
-    const r = proposeCuts({ profile: profile(), locked: new Set(), support: null });
-    expect(find(r, "bear0")!.reason).toEqual({ kind: "curve", cmc: 3, have: 50, average: 30 });
+  it("names curve crowding against the commander's average curve, and not for a land", () => {
+    const f = facts();
+    expect(card(f, "bear0")!.curve).toEqual({ cmc: 3, have: 50, average: 30 });
+    expect(card(f, "forest")!.curve).toBeNull();
   });
 
-  it("judges a basic land by the land count alone, never as off the list", () => {
-    const r = proposeCuts({ profile: profile(), locked: new Set(), support: support([]) });
-    const forest = find(r, "forest")!;
-    expect(forest.signals).toEqual([{ kind: "roleSurplus", role: "land", have: 37, target: 36 }]);
-  });
-
-  it("names a bracket flag with how many the deck holds", () => {
-    const r = proposeCuts({
-      profile: profile({ gameChangerIds: new Set(["bear1", "bear2"]) }), locked: new Set(), support: null,
-    });
-    expect(find(r, "bear1")!.signals).toContainEqual({ kind: "bracket", flag: "gameChanger", count: 2 });
-    expect(find(r, "bear1")!.score).toBeGreaterThan(find(r, "bear0")!.score);
-  });
-
-  it("runs with no EDHREC list and says the inclusion signal is missing (ruling 6)", () => {
-    const r = proposeCuts({ profile: profile(), locked: new Set(), support: null });
-    expect(r.missing).toEqual(["inclusion"]);
-    expect(r.candidates.length).toBeGreaterThan(0);
+  it("runs with no EDHREC list and says the inclusion fact is missing (ruling 6)", () => {
+    const f = facts();
+    expect(f.missing).toEqual(["inclusion"]);
+    expect(f.cards.length).toBeGreaterThan(0);
   });
 
   it("names asserted role targets and an absent curve as missing", () => {
-    const r = proposeCuts({
+    const f = facts({
       profile: profile({
         composition: { pair: null, commander: null, identity: null, count: null },
         roles: { pair: null, commander: null, identity: null, count: null },
       }),
-      locked: new Set(),
       support: support([]),
     });
-    expect(r.missing).toEqual(["roleTargets", "curve"]);
-    expect(r.candidates.length).toBeGreaterThan(0);
+    expect(f.missing).toEqual(["roleTargets", "curve"]);
+    expect(f.curve).toBeNull();
   });
 
-  it("names the land target as missing when roles are measured but composition is not", () => {
-    const r = proposeCuts({
-      profile: profile({ composition: { pair: null, commander: null, identity: null, count: null } }),
-      locked: new Set(),
-      support: support([]),
+  describe("bracket flags against the declared bracket", () => {
+    const gc = { gameChangerIds: new Set(["bear1", "bear2"]) };
+    const flags = (declaredBracket: number | null, over = gc) =>
+      facts({ profile: profile(over), declaredBracket }).brackets.map((b) => b.flag);
+
+    it("names every flag when no bracket is declared", () => {
+      expect(flags(null)).toEqual(["gameChanger"]);
     });
-    expect(r.missing).toContain("roleTargets");
-  });
 
-  it("returns nothing to cut when every card but the commander is locked", () => {
-    const p = profile();
-    const r = proposeCuts({ profile: p, locked: new Set(p.cards.map((c) => c.oracleId)), support: support([]) });
-    expect(r.over).toBe(2);
-    expect(r.candidates).toEqual([]);
-  });
-
-  it("puts the strongest signal first, and that is the reason", () => {
-    const r = proposeCuts({ profile: profile(), locked: new Set(), support: support([]) });
-    for (const c of r.candidates) expect(c.reason).toEqual(c.signals[0]);
-    // An off-list card carries the heaviest single weight, so it must lead any card it shares with.
-    const mixed = r.candidates.filter((c) => c.signals.length > 1 && c.signals.some((s) => s.kind === "offList"));
-    expect(mixed.length).toBeGreaterThan(0);
-    for (const c of mixed) expect(c.reason.kind).toBe("offList");
-  });
-
-  it("scores with the weights it is handed, one signal at a time", () => {
-    const sup = support([["ramp0", 90], ["bear0", 2]]);
-    const only = (w: Partial<CutWeights>) => proposeCuts({
-      profile: profile(), locked: new Set(), support: sup,
-      weights: { inclusion: 0, role: 0, curve: 0, bracket: 0, ...w },
+    it("names Game Changers for a declared 2, which allows none", () => {
+      expect(flags(2)).toEqual(["gameChanger"]);
+      expect(card(facts({ profile: profile(gc), declaredBracket: 2 }), "bear1")!.flags).toEqual(["gameChanger"]);
     });
-    const kinds = (r: ReturnType<typeof proposeCuts>) => new Set(r.candidates.flatMap((c) => c.signals.map((s) => s.kind)));
-    expect(kinds(only({ inclusion: 1 }))).toEqual(new Set(["inclusion", "offList"]));
-    expect(kinds(only({ role: 1 }))).toEqual(new Set(["roleSurplus"]));
-    expect(kinds(only({ curve: 1 }))).toEqual(new Set(["curve"]));
-    expect(only({ inclusion: 1 }).candidates[0].oracleId).not.toBe(only({ role: 1 }).candidates[0].oracleId);
+
+    it("names Game Changers for a declared 3 only past its allowance of three", () => {
+      expect(flags(3)).toEqual([]);
+      expect(flags(3, { gameChangerIds: new Set(["bear1", "bear2", "bear3", "bear4"]) })).toEqual(["gameChanger"]);
+    });
+
+    it("names no flag for a declared 4 or 5, however many the deck holds", () => {
+      const four = { gameChangerIds: new Set(["bear1", "bear2", "bear3", "bear4"]) };
+      expect(flags(3, four)).toEqual(["gameChanger"]);
+      expect(flags(4, four)).toEqual([]);
+      expect(flags(5, four)).toEqual([]);
+    });
+  });
+
+  it("keeps a card a vanilla and unflagged", () => {
+    const f = facts({ profile: profile({}, deck(49, [row({ oracleId: "vanilla", cmc: 2 })])), support: support([]) });
+    expect(card(f, "vanilla")).toMatchObject({ flags: [], roleSurplus: null, opensGap: null });
   });
 });
