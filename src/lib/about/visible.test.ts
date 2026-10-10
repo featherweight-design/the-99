@@ -5,7 +5,7 @@ import { readSheetState } from "./sheet-state";
 import { isSeen, resolveEntry, switchedIds, unseenEntries, visibleEntries, type SeenState } from "./visible";
 
 // TUNING_ENABLED also requires ANALYSIS_TAB_ENABLED (`tuningEnabled()`), already "true" here.
-const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const OFF = {} as unknown as NodeJS.ProcessEnv;
 
 /** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
@@ -30,9 +30,20 @@ describe("with every switch off, nothing changes (the invariance Hugh's ruling r
             kind: "behind" as const,
             entries: unswitched.filter((e) => e.since > s).map((e) => ({ id: e.id, title: e.title })),
           };
+  // Version 12 added only switched entries, so a reader at 11 with every switch off has nothing
+  // unseen: the sheet has nothing to name and does not draw.
+  const expected = (s: number) => {
+    const l = legacy(s);
+    return l.kind === "behind" && l.entries.length === 0 ? { kind: "none" as const } : l;
+  };
 
   it("ties exactly the launch entries to their switches, and the version to the rest", () => {
     expect(aboutEntries.filter((e) => e.switch).map((e) => [e.id, e.switch])).toEqual([
+      ["collection-add", "COLLECTION_EDIT_ENABLED"],
+      ["upload-choice", "COLLECTION_EDIT_ENABLED"],
+      ["edit-copies", "COLLECTION_EDIT_ENABLED"],
+      ["remove-card", "COLLECTION_EDIT_ENABLED"],
+      ["collection-history", "COLLECTION_EDIT_ENABLED"],
       ["help-me-choose", "HELP_ME_CHOOSE_ENABLED"],
       ["deck-analysis", "ANALYSIS_TAB_ENABLED"],
       ["card-marks", "ANALYSIS_TAB_ENABLED"],
@@ -43,7 +54,11 @@ describe("with every switch off, nothing changes (the invariance Hugh's ruling r
       ["suggested-changes", "TUNING_ENABLED"],
       ["deck-stats", "DECK_STATS_ENABLED"],
     ]);
-    expect(Math.max(...unswitched.map((e) => e.since))).toBe(ABOUT_VERSION);
+    // Version 12 added only switched entries (collection edit), so the newest UNSWITCHED entry is
+    // still 11's: a version no unswitched entry carries moves the cookie and nothing else. Pinned
+    // exactly, so an unswitched entry added (or since moved) without a deliberate edit here fails.
+    expect(Math.max(...unswitched.map((e) => e.since))).toBe(11);
+    expect(ABOUT_VERSION).toBeGreaterThanOrEqual(11);
   });
 
   it("draws every unswitched entry with the switches off, and every entry with them on", () => {
@@ -51,7 +66,7 @@ describe("with every switch off, nothing changes (the invariance Hugh's ruling r
     // on top of (or with no) entry-level switch — resolved the same way `visibleEntries` itself
     // resolves it, rather than hand-duplicating the string surgery here.
     expect(visibleEntries(OFF)).toEqual(unswitched.map((e) => resolveEntry(e, OFF)));
-    expect(visibleEntries(ON)).toEqual(aboutEntries);
+    expect(visibleEntries(ON)).toEqual(aboutEntries.map((e) => resolveEntry(e, ON)));
   });
 
   it("makes the same proxy decision, sheet and cookie as before at every seen", () => {
@@ -59,7 +74,7 @@ describe("with every switch off, nothing changes (the invariance Hugh's ruling r
       const d = sheetDecision({ userId: "u", seen: seen(s), visible: visibleEntries(OFF) });
       expect(d.cookie).toBe(`u.${ABOUT_VERSION}`);
       const state = d.show ? readSheetState(new Headers({ "x-about-sheet": d.header })) : { kind: "none" };
-      expect(state, `seen ${s}`).toEqual(legacy(s));
+      expect(state, `seen ${s}`).toEqual(expected(s));
     }
   });
 
@@ -86,7 +101,7 @@ describe("an entry tied to a switch", () => {
     // of ABOUT_VERSION. `suggested-changes` (2026-10-08, picking up its own TUNING_ENABLED) is
     // the one exception, since: 10 — `isSeen` ignores `since` entirely for a switch-tied entry,
     // so neither stamp can make one of them unseen again.
-    const launch = aboutEntries.filter((e) => e.switch);
+    const launch = aboutEntries.filter((e) => e.switch && e.switch !== "COLLECTION_EDIT_ENABLED");
     // `deck-stats` (2026-10-10) is the other: since: 11, the current version, with no bump of its own.
     const later = ["suggested-changes", "deck-stats"];
     const [suggestedChanges, deckStats] = ["suggested-changes", "deck-stats"].map((id) => launch.filter((e) => e.id === id));
@@ -95,6 +110,11 @@ describe("an entry tied to a switch", () => {
     expect(suggestedChanges.map((e) => e.since)).toEqual([10]);
     expect(deckStats.map((e) => e.since)).toEqual([11]);
     expect(unseenEntries(visibleEntries(ON), seen(ABOUT_VERSION)).map((e) => e.id)).toEqual([
+      "collection-add",
+      "upload-choice",
+      "edit-copies",
+      "remove-card",
+      "collection-history",
       "help-me-choose",
       "deck-analysis",
       "card-marks",
@@ -206,4 +226,34 @@ describe("every switched line names text its entry carries", () => {
       for (const key of Object.keys(entry.keySwitches ?? {})) expect(entry.keys).toContain(key);
     },
   );
+});
+
+describe("a negated line switch, and `import`'s two warnings (collection edit)", () => {
+  const imp = aboutEntries.find((e) => e.id === "import")!;
+  const REPLACES = "Heads up: an import replaces your whole Collection, it doesn't add to it.";
+  const ASKS = "Already have a Collection here? The 99 asks whether the file replaces it or adds to it.";
+  const env = (v?: string) => (v === undefined ? {} : { COLLECTION_EDIT_ENABLED: v }) as unknown as NodeJS.ProcessEnv;
+
+  it("shows the replace warning alone with the switch off, exactly as before the switch existed", () => {
+    const resolved = resolveEntry(imp, env());
+    expect(resolved.caption).toContain(REPLACES);
+    expect(resolved.caption).not.toContain(ASKS);
+    expect(resolved.caption.endsWith(REPLACES)).toBe(true);
+  });
+
+  it("swaps it for the question with the switch on, leaving no blank line behind", () => {
+    const resolved = resolveEntry(imp, env("true"));
+    expect(resolved.caption).not.toContain(REPLACES);
+    expect(resolved.caption.endsWith(`\n\n${ASKS}`)).toBe(true);
+  });
+
+  it("reads anything but the exact string 'true' as off", () => {
+    expect(resolveEntry(imp, env("1")).caption).toContain(REPLACES);
+  });
+
+  it("keeps a `!` key while its switch is off and drops it while on", () => {
+    const e: AboutEntry = { ...aboutEntries[0], id: "neg", since: 3, keys: ["Old", "New"], keySwitches: { Old: "!COLLECTION_EDIT_ENABLED", New: "COLLECTION_EDIT_ENABLED" } };
+    expect(resolveEntry(e, env()).keys).toEqual(["Old"]);
+    expect(resolveEntry(e, env("true")).keys).toEqual(["New"]);
+  });
 });

@@ -1,5 +1,6 @@
 {
   "feature": "Collection screens PR 7, negative row: a card opened from a deck keeps a read-only receipt",
+  "clearAbout": true,
   "note": "Needs an account with a deck holding Sol Ring. EDIT_DECK_ID names it. No Edit copies link may draw.",
   "rows": [
     {

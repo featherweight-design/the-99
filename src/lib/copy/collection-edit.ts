@@ -5,6 +5,7 @@
 
 const n = (x: number) => x.toLocaleString("en-US");
 const decks = (x: number) => (x === 1 ? "a deck" : `${n(x)} decks`);
+const cards = (x: number) => (x === 1 ? "1 card" : `${n(x)} cards`);
 const copies = (x: number) => (x === 1 ? "1 copy" : `${n(x)} copies`);
 
 export const collectionEditCopy = {
@@ -40,7 +41,7 @@ export const collectionEditCopy = {
     replaceBody: "Your collection becomes exactly this file. Anything not in it leaves.",
     addTitle: "Add these cards",
     addBody: "The file's quantities are added to yours. Nothing is removed, and your art picks stay.",
-    after: (from: number, to: number) => `${n(from)} → ${n(to)} cards`,
+    after: (from: number, to: number) => `${n(from)} → ${cards(to)}`,
     overwriteCount: (k: number, since: string) =>
       `${n(k)} ${k === 1 ? "change" : "changes"} you made in the app since your ${since} upload will be overwritten.`,
     choiceOverwriteUnknown: (last: string) =>
@@ -70,7 +71,7 @@ export const collectionEditCopy = {
       `Adding it raises them: ${n(up)} ${up === 1 ? "card goes" : "cards go"} up, none are new. If this is a fresh export of your whole collection, Replace is the one you want.`,
     switchToReplace: "Switch to Replace",
     barAdd: (add: number, skip: number, have: number) =>
-      `Adding ${add === 1 ? "1 copy" : `${n(add)} copies`} and skipping ${n(skip)} rows. Your ${n(have)} cards stay.`,
+      `Adding ${add === 1 ? "1 copy" : `${n(add)} copies`} and skipping ${skip === 1 ? "1 row" : `${n(skip)} rows`}. Your ${cards(have)} ${have === 1 ? "stays" : "stay"}.`,
     confirmAdd: (add: number) => `Add ${add === 1 ? "1 copy" : `${n(add)} copies`}`,
     pendingAdd: "Adding…",
     tiles: { unchanged: "unchanged", up: "going up or new", down: "going down", leaving: "leaving" },
@@ -94,7 +95,7 @@ export const collectionEditCopy = {
     /** (new) Reading how the file compares. */
     preparing: "Comparing with your collection…",
     barReplace: (from: number, to: number, short: number) =>
-      `Replaces your ${n(from)} cards with ${n(to)}.${short ? ` ${n(short)} ${short === 1 ? "deck" : "decks"} will read short.` : ""}`,
+      `Replaces your ${cards(from)} with ${n(to)}.${short ? ` ${n(short)} ${short === 1 ? "deck" : "decks"} will read short.` : ""}`,
     confirmReplace: "Replace collection",
     pendingReplace: "Replacing…",
     failedTitle: "That didn't go through",
@@ -259,7 +260,7 @@ export const collectionEditCopy = {
     keep: "Keep adding",
     savedTitle: (c: number) => `${copies(c)} added`,
     savedBody: (k: number) => `${n(k)} ${k === 1 ? "card is" : "cards are"} in your collection now.`,
-    countsAfter: (from: number, to: number) => `${n(from)} → ${n(to)} cards`,
+    countsAfter: (from: number, to: number) => `${n(from)} → ${cards(to)}`,
     addMore: "Add more",
     done: "Done",
     /** (new) The saved state's link to the entry it just wrote (B8). */

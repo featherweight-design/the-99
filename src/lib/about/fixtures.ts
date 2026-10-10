@@ -2116,3 +2116,93 @@ export const DECK_STATS: { slice: DeckStatsSlice; selected: CardType } = {
   slice: { curve: manaCurve(STATS_CARDS), types: typeCurve(STATS_CARDS) },
   selected: "creature",
 };
+
+// ---- Collection edit (About U1 to U5) ----------------------------------------------------------
+// Strings come from `copy/collection-edit.ts` at render time; these are the holdings and ledger
+// rows the specimens mount the real components with.
+
+const aboutPrinting = (
+  setCode: string,
+  collectorNumber: string,
+  finishes: ("nonfoil" | "foil" | "etched")[],
+  owned: Partial<Record<"nonfoil" | "foil" | "etched", number>>,
+) => ({
+  scryfallId: `about-${setCode}-${collectorNumber}`,
+  setCode,
+  setName: null,
+  collectorNumber,
+  releasedAt: null,
+  imageUri: null,
+  flavorName: null,
+  finishes,
+  owned,
+});
+
+const SOL_RING_CHOICES = [
+  aboutPrinting("c21", "263", ["nonfoil"], { nonfoil: 5 }),
+  aboutPrinting("sld", "1512", ["nonfoil", "foil"], {}),
+  aboutPrinting("cmm", "410", ["nonfoil", "foil"], { nonfoil: 1 }),
+];
+const CULTIVATE_CHOICES = [aboutPrinting("m21", "177", ["nonfoil", "foil"], { nonfoil: 2 })];
+
+/** U1: three Add lines, no search open. `owned 5` on the first, none here for the SLD foil. */
+export const ADD_CARDS_LINES = [
+  { id: "about-add-1", oracleId: "about-sol-ring", name: "Sol Ring", imageUri: null, choices: SOL_RING_CHOICES, printing: SOL_RING_CHOICES[0], finish: "nonfoil" as const, quantity: 2 },
+  { id: "about-add-2", oracleId: "about-sol-ring", name: "Sol Ring", imageUri: null, choices: SOL_RING_CHOICES, printing: SOL_RING_CHOICES[1], finish: "foil" as const, quantity: 1 },
+  { id: "about-add-3", oracleId: "about-cultivate", name: "Cultivate", imageUri: null, choices: CULTIVATE_CHOICES, printing: CULTIVATE_CHOICES[0], finish: "nonfoil" as const, quantity: 1 },
+];
+
+/** U3: the same card in edit mode: C21 nonfoil 3 to 2, SLD foil 1 to 2, CMM nonfoil 1 left alone. */
+export const EDIT_COPIES_LINES = [
+  { id: "about-edit-1", oracleId: "about-sol-ring", name: "Sol Ring", imageUri: null, choices: SOL_RING_CHOICES, printing: SOL_RING_CHOICES[0], finish: "nonfoil" as const, quantity: 2, condition: null, origins: [], note: { text: "−1", tone: "down" as const } },
+  { id: "about-edit-2", oracleId: "about-sol-ring", name: "Sol Ring", imageUri: null, choices: SOL_RING_CHOICES, printing: SOL_RING_CHOICES[1], finish: "foil" as const, quantity: 2, condition: null, origins: [], note: { text: "+1", tone: "up" as const } },
+  { id: "about-edit-3", oracleId: "about-sol-ring", name: "Sol Ring", imageUri: null, choices: SOL_RING_CHOICES, printing: SOL_RING_CHOICES[2], finish: "nonfoil" as const, quantity: 1, condition: null, origins: [], note: null },
+];
+
+/** U2: a Manabox export that matches nearly everything already held. */
+export const UPLOAD_CHOICE = {
+  filename: "manabox-oct.csv",
+  rows: 4388,
+  replaceBefore: 4492,
+  addBefore: 4492,
+  replaceAfter: 4380,
+  addAfter: 8880,
+  facts: { editsSinceUpload: 12, lastUploadAt: "2026-09-12T10:00:00.000Z", historyReaches: true },
+  overlap: { held: 97, of: 100 },
+};
+
+/** U4: removing Sol Ring leaves one committed deck one copy short. */
+export const REMOVE_CARD_DECKS = [
+  { deckId: "about-deck-kinnan", deckName: "HD - Kinnan", oracleId: "about-sol-ring", cardName: "Sol Ring", short: 1 },
+];
+
+const aboutEntry = (
+  e: Partial<import("../collection/history").HistoryListEntry> & Pick<import("../collection/history").HistoryListEntry, "id" | "seq" | "createdAt" | "kind">,
+): import("../collection/history").HistoryListEntry => ({
+  source: null, raised: 0, lowered: 0, rowCount: 1, copiesUp: 0, copiesDown: 0, removesOnly: false,
+  revertsId: null, revertedBy: null, revertsVisible: false, revertedByVisible: false, uploadFilename: null, firstName: null,
+  ...e,
+});
+
+/** U5: a revert, the removal it reverted, and an add opened to its five cards. Newest first. */
+export const HISTORY_ENTRIES = [
+  aboutEntry({ id: "about-h3", seq: 3, createdAt: new Date("2026-10-09T14:02:00.000Z"), kind: "revert", revertsId: "about-h2", revertsVisible: true, copiesUp: 1, firstName: "Rhystic Study" }),
+  aboutEntry({ id: "about-h2", seq: 2, createdAt: new Date("2026-10-09T13:40:00.000Z"), kind: "edit", removesOnly: true, copiesDown: 1, lowered: 1, firstName: "Rhystic Study", revertedBy: "about-h3", revertedByVisible: true }),
+  aboutEntry({ id: "about-h1", seq: 1, createdAt: new Date("2026-10-08T21:10:00.000Z"), kind: "add", raised: 5, rowCount: 5, copiesUp: 8, firstName: "Sol Ring" }),
+];
+
+export const HISTORY_OPEN_ROWS: import("../../db/schema").HistoryRow[] = [
+  ["Sol Ring", "c21", "263", 0, 2],
+  ["Cultivate", "m21", "177", 0, 1],
+  ["Arcane Signet", "cmm", "297", 0, 2],
+  ["Command Tower", "cmm", "355", 0, 1],
+  ["Swords to Plowshares", "cmm", "92", 0, 2],
+].map(([name, setCode, collectorNumber, before, after]) => ({
+  oracleId: `about-${setCode}-${collectorNumber}`,
+  setCode: setCode as string,
+  collectorNumber: collectorNumber as string,
+  finish: "nonfoil",
+  name: name as string,
+  before: null,
+  after: { quantity: after as number, scryfallId: null, condition: null },
+}));

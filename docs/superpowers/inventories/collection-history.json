@@ -1,5 +1,6 @@
 {
   "feature": "Collection screens PRs 6a and 6b: the History tab and list (§F), the Add sheet's link to it (B8) and the revert confirmation (F4)",
+  "clearAbout": true,
   "note": "Needs COLLECTION_EDIT_ENABLED=true and an account with a collection and ledger entries (seed a few on a scratch branch: an add, a removal, a reverted add with its revert, an Add upload and a 40-row Replace). Rows open entries and never press a write control.",
   "shares": {
     "module": "src/components/collection/history-list.tsx",

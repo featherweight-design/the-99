@@ -2,7 +2,6 @@ import { NextResponse, type NextRequest } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import {
   ABOUT_COOKIE,
-  cookieIsCurrent,
   gateApplies,
   gateDecision,
   gateHandles,
@@ -10,12 +9,14 @@ import {
   SHEET_COOKIE,
   SHEET_HEADER,
   sheetCookieIsCurrent,
+  sheetCookieValue,
   sheetDecision,
 } from "./lib/about/gate";
 import { aboutSheetEnabled } from "./lib/about/flag";
 import { howItWorksEnabled } from "./lib/about/how-it-works-flag";
-import { aboutSeen, aboutVersionSeen } from "./lib/about/read";
-import { visibleEntries, type SeenState } from "./lib/about/visible";
+import { ABOUT_VERSION } from "./lib/copy/about";
+import { aboutSeen } from "./lib/about/read";
+import { isFirstRun, unseenEntries, visibleEntries, type SeenState } from "./lib/about/visible";
 
 // Next.js 16 renamed the middleware entrypoint: `src/proxy.ts` is the
 // replacement for `src/middleware.ts` (same functionality, new file convention).
@@ -45,25 +46,39 @@ export default clerkMiddleware(async (auth, req) => {
   if (!gateApplies(path) || !gateHandles(req.method, req.headers)) return;
 
   // The cookie is the fast path and the reason this costs nothing on a normal
-  // navigation: one database read per browser per version per account.
-  if (cookieIsCurrent(req.cookies.get(ABOUT_COOKIE)?.value, userId)) return;
+  // navigation: one database read per browser per version per account. It is keyed to the
+  // switched entries this deployment draws (as the sheet's is), so flipping a switch retires it
+  // and the gate decides again; a bare `<user>.<version>` could not tell a new entry from none.
+  const visible = visibleEntries();
+  const cookie = sheetCookieValue(userId, visible);
+  if (req.cookies.get(ABOUT_COOKIE)?.value === cookie) return;
 
   // A failed read must not lock the reader out of the app. The page is a
   // reference; the app is the point.
-  let seen: number;
+  let seen: SeenState;
   try {
-    seen = await aboutVersionSeen(userId);
+    seen = await aboutSeen(userId);
   } catch {
     return;
   }
 
-  const decision = gateDecision({ userId, pathname: path, search: req.nextUrl.search, seen });
+  // Sent only when there is something to be told, by the same rule the sheet uses: a brand-new
+  // account, or an entry this deployment draws that this reader has not seen. A bump that added
+  // entries only behind switches that are off sends nobody to a page with nothing new, and an
+  // entry switched on later is still new however far the version floor has caught up.
+  const behind = isFirstRun(seen) || unseenEntries(visible, seen).length > 0;
+  const decision = gateDecision({
+    userId,
+    pathname: path,
+    search: req.nextUrl.search,
+    seen: behind ? 0 : ABOUT_VERSION,
+  });
   const response =
     decision.kind === "redirect"
       ? NextResponse.redirect(new URL(decision.to, req.url))
       : NextResponse.next();
 
-  response.cookies.set(ABOUT_COOKIE, decision.cookie, {
+  response.cookies.set(ABOUT_COOKIE, cookie, {
     ...COOKIE_OPTIONS,
     secure: req.nextUrl.protocol === "https:",
   });

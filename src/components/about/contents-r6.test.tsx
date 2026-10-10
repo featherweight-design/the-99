@@ -13,6 +13,9 @@ const { ABOUT_VERSION, aboutCopy, aboutEntries: catalog } = await import("../../
 // What the page draws with every feature switch off, which is this file's environment: an entry
 // tied to a switch is left out. `about-page-switch.test.tsx` covers those.
 const aboutEntries = catalog.filter((e) => !e.switch);
+// One behind the newest entry this file can draw. Version 12 added only switched entries, so
+// `ABOUT_VERSION - 1` would be a reader with nothing new to be told.
+const PRIOR = Math.max(...aboutEntries.map((e) => e.since)) - 1;
 
 const TOTAL = aboutEntries.length;
 /** Both placements are in the document; jsdom computes no styles. Phone first in DOM order. */
@@ -124,11 +127,11 @@ describe("the rail (§Q1–Q3, E4 fallback)", () => {
   });
 
   it("prints N new for a chapter holding new entries, and nothing otherwise", () => {
-    render(<AboutPage seen={ABOUT_VERSION - 1} sheetMode />);
-    const fresh = aboutEntries.find((e) => e.since === ABOUT_VERSION)!;
+    render(<AboutPage seen={PRIOR} sheetMode />);
+    const fresh = aboutEntries.find((e) => e.since === PRIOR + 1)!;
     const row = within(rail()).getByRole("link", { name: new RegExp(`^${fresh.chapter} `) });
     // Counted, not written as 1: the chapter holds every entry `since` the current version.
-    const n = aboutEntries.filter((e) => e.since === ABOUT_VERSION && e.chapter === fresh.chapter).length;
+    const n = aboutEntries.filter((e) => e.since === PRIOR + 1 && e.chapter === fresh.chapter).length;
     expect(row.textContent).toContain(aboutCopy.newInChapter(n));
     const quiet = ["01", "02", "03", "04"].find((n) => n !== fresh.chapter)!;
     const quietRow = within(rail()).getByRole("link", { name: new RegExp(`^${quiet} `) });
@@ -231,7 +234,7 @@ describe("which row the rail marks (§Q3)", () => {
 
 describe("the phone list (§Q4–Q7)", () => {
   it("starts with every chapter closed, even for a reader who is behind (Q7)", () => {
-    render(<AboutPage seen={ABOUT_VERSION - 1} sheetMode />);
+    render(<AboutPage seen={PRIOR} sheetMode />);
     const toggles = within(phone()).getAllByRole("button", { expanded: false });
     expect(toggles).toHaveLength(4);
     expect(entryRows(phone())).toHaveLength(0);
@@ -255,8 +258,8 @@ describe("the phone list (§Q4–Q7)", () => {
   });
 
   it("marks a new entry's row", () => {
-    render(<AboutPage seen={ABOUT_VERSION - 1} sheetMode />);
-    type(phone(), aboutEntries.find((e) => e.since === ABOUT_VERSION)!.title);
+    render(<AboutPage seen={PRIOR} sheetMode />);
+    type(phone(), aboutEntries.find((e) => e.since === PRIOR + 1)!.title);
     expect(entryRows(phone())[0].textContent).toMatch(new RegExp(`${aboutCopy.contents.newRow}$`));
   });
 

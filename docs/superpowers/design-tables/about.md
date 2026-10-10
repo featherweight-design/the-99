@@ -82,7 +82,7 @@ property that produced it does not.
 
 ## Entry count
 
-§3's own heading reads **"thirty-three entries, thirty-three figures"**. The code has 48 (was 47: `deck-stats` was added 2026-10-10, the Deck stats line's entry, no bump, switched; was 46: `credits` was added 2026-10-05, Hugh's one-entry ruling for credits, no version bump; was 45 before
+§3's own heading reads **"thirty-three entries, thirty-three figures"**. The code has 53 (was 48 before the five collection-edit entries, 2026-10-10; was 47: `deck-stats` was added 2026-10-10, the Deck stats line's entry, no bump, switched; was 46: `credits` was added 2026-10-05, Hugh's one-entry ruling for credits, no version bump; was 45 before
 `suggested-changes` was added 2026-10-05, H35 ruling 7, a feature launch — see about.ts; before
 that it was 46, with `reservations` retired 2026-10-04, a removal). Seven are the launch entries `help-me-choose`, `locked-cards`,
 `fits-your-decks`, `stand-ins` and `change-commander`, drawn by the
@@ -93,8 +93,8 @@ extras are `decklist-order`, added after #642 shipped the decklist's sort contro
 template as R5 after a coverage sweep found two routes a reader could reach with nothing on the
 page explaining them; `informed-build`, which closes sub-project 2 of the deck-analysis line;
 `combo-awareness`, which closes sub-project 3; and `suggested-changes`, added 2026-10-05 (H35
-ruling 7). All seven arrived after the canvas was drawn — fourteen additions and one retirement
-(`reservations`, 2026-10-04, which belonged to the canvas's 33) for the net difference of 13. The rule in `AGENTS.md`
+ruling 7). All seven arrived after the canvas was drawn. Seven more followed: `credits` (2026-10-05), `deck-stats` (2026-10-10) and the five collection-edit entries `collection-add`, `upload-choice`, `edit-copies`, `remove-card` and `collection-history` (2026-10-10). That is twenty-one additions and one retirement
+(`reservations`, 2026-10-04, which belonged to the canvas's 33) for the net difference of 20, and 33 + 20 = 53. The rule in `AGENTS.md`
 is that a feature designs and builds its own About entry, so this table's count is expected to trail
 the code and the gap is not a finding. `about.test.ts` pins the figure, so it cannot go stale
 silently.

@@ -13,6 +13,9 @@ const { ABOUT_VERSION, aboutCopy, aboutEntries: catalog } = await import("../../
 // What the page draws with every feature switch off, which is this file's environment: an entry
 // tied to a switch is left out. `about-page-switch.test.tsx` covers those.
 const aboutEntries = catalog.filter((e) => !e.switch);
+// One behind the newest entry this file can draw. Version 12 added only switched entries, so
+// `ABOUT_VERSION - 1` would be a reader with nothing new to be told.
+const PRIOR = Math.max(...aboutEntries.map((e) => e.since)) - 1;
 
 const newSince = (seen: number) => aboutEntries.filter((e) => seen > 0 && e.since > seen);
 const index = () => screen.queryByRole("navigation", { name: /new since your last visit/ });
@@ -35,9 +38,9 @@ describe("the what's-new index (§O)", () => {
   });
 
   it("makes each row one link, holding the title and route as text (O1)", () => {
-    render(<AboutPage seen={ABOUT_VERSION - 1} sheetMode />);
+    render(<AboutPage seen={PRIOR} sheetMode />);
     const [row] = within(index()!).getAllByRole("link");
-    const entry = newSince(ABOUT_VERSION - 1)[0];
+    const entry = newSince(PRIOR)[0];
     expect(row.textContent).toBe(`${entry.title}${entry.route}`);
     expect(row.querySelector("a")).toBeNull();
   });
@@ -51,17 +54,17 @@ describe("the what's-new index (§O)", () => {
   });
 
   it("retires the eyebrow into the index heading", () => {
-    render(<AboutPage seen={ABOUT_VERSION - 1} sheetMode />);
+    render(<AboutPage seen={PRIOR} sheetMode />);
     // Once, in the index, rather than an eyebrow above the title as well.
     // Counted rather than written as 1: two entries are `since` the current version
     // (`suggested-changes` and `credits`), and the eyebrow names however many there are.
-    const n = newSince(ABOUT_VERSION - 1).length;
+    const n = newSince(PRIOR).length;
     expect(screen.getAllByText(aboutCopy.newSinceEyebrow(n))).toHaveLength(1);
     expect(screen.getAllByText(aboutCopy.newSinceEyebrow(n))[0].closest("nav")).not.toBeNull();
   });
 
   it("offers no dismiss, even when a next is on the URL", () => {
-    render(<AboutPage seen={ABOUT_VERSION - 1} next="/decks" sheetMode />);
+    render(<AboutPage seen={PRIOR} next="/decks" sheetMode />);
     expect(screen.queryByRole("button", { name: new RegExp("^" + aboutCopy.dismiss) })).toBeNull();
   });
 });
@@ -78,8 +81,8 @@ describe("the intro", () => {
 
 describe("the new-entry marks (§P0)", () => {
   it("puts the pill before the title visually, and the spoken half after it", () => {
-    render(<AboutPage seen={ABOUT_VERSION - 1} sheetMode />);
-    const entry = newSince(ABOUT_VERSION - 1)[0];
+    render(<AboutPage seen={PRIOR} sheetMode />);
+    const entry = newSince(PRIOR)[0];
     const h3 = document.getElementById(entry.id)!.querySelector("h3")!;
     // childNodes, not firstElementChild: the title is a TEXT node, and an
     // element-only walk reads the pill as first wherever it sits.
@@ -92,8 +95,8 @@ describe("the new-entry marks (§P0)", () => {
   });
 
   it("gives a new entry a 2px accent rule, and an old one none of it", () => {
-    render(<AboutPage seen={ABOUT_VERSION - 1} sheetMode />);
-    const fresh = document.getElementById(newSince(ABOUT_VERSION - 1)[0].id)!;
+    render(<AboutPage seen={PRIOR} sheetMode />);
+    const fresh = document.getElementById(newSince(PRIOR)[0].id)!;
     const old = document.getElementById(aboutEntries.find((e) => e.since === 1)!.id)!;
     expect(fresh.className).toContain("border-t-2");
     expect(fresh.className).toContain("border-[color:var(--accent)]");
@@ -104,7 +107,7 @@ describe("the new-entry marks (§P0)", () => {
 
 describe("recording the visit (§O4, audit E2)", () => {
   it("records once the page is open, for a reader who is behind", () => {
-    render(<AboutPage seen={ABOUT_VERSION - 1} sheetMode />);
+    render(<AboutPage seen={PRIOR} sheetMode />);
     expect(recordAboutVisit).toHaveBeenCalledOnce();
   });
 
@@ -135,7 +138,7 @@ describe("recording the visit (§O4, audit E2)", () => {
   });
 
   it("records nothing with the switch off, where the dismiss still does it", () => {
-    render(<AboutPage seen={ABOUT_VERSION - 1} />);
+    render(<AboutPage seen={PRIOR} />);
     expect(recordAboutVisit).not.toHaveBeenCalled();
   });
 });
@@ -211,7 +214,7 @@ describe("the jump mark (§P)", () => {
 
   it("lands again when the same row is pressed twice", () => {
     const entry = aboutEntries[3];
-    render(<AboutPage seen={ABOUT_VERSION - 1} sheetMode />);
+    render(<AboutPage seen={PRIOR} sheetMode />);
     act(() => {
       window.location.hash = entry.id;
       window.dispatchEvent(new HashChangeEvent("hashchange"));

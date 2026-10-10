@@ -13,7 +13,8 @@ import { helpMeChooseEnabled } from "../intake/flag";
 import { swapToolsEnabled } from "../swaps/flag";
 import { tuningEnabled } from "../tuning/flag";
 import { deckStatsEnabled } from "../decks/stats-flag";
-import { aboutEntries, type AboutEntry, type AboutSwitch } from "../copy/about";
+import { collectionEditEnabled } from "../collection/edit-flag";
+import { aboutEntries, type AboutEntry, type AboutLineSwitch, type AboutSwitch } from "../copy/about";
 
 /**
  * Each switch read through its feature's OWN flag function, never restated here: an About
@@ -29,7 +30,13 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   HOW_IT_WORKS_ENABLED: howItWorksEnabled,
   TUNING_ENABLED: tuningEnabled,
   DECK_STATS_ENABLED: deckStatsEnabled,
+  COLLECTION_EDIT_ENABLED: collectionEditEnabled,
 };
+
+/** Whether a line's switch keeps it: `!NAME` keeps it while NAME is off. */
+function lineKept(sw: AboutLineSwitch, env: NodeJS.ProcessEnv): boolean {
+  return sw.startsWith("!") ? !SWITCHES[sw.slice(1) as AboutSwitch](env) : SWITCHES[sw as AboutSwitch](env);
+}
 
 /**
  * A caption or key line gated by its OWN switch, on top of the entry's (2026-10-08): `credits`'
@@ -47,10 +54,10 @@ export function resolveEntry(entry: AboutEntry, env: NodeJS.ProcessEnv): AboutEn
   if (!entry.captionLineSwitches && !entry.keySwitches) return entry;
   let caption = entry.caption;
   for (const [line, sw] of Object.entries(entry.captionLineSwitches ?? {})) {
-    if (sw && !SWITCHES[sw](env)) caption = resolveLine(caption, line);
+    if (sw && !lineKept(sw, env)) caption = resolveLine(caption, line);
   }
   const keys = entry.keySwitches
-    ? entry.keys.filter((k) => !(k in (entry.keySwitches ?? {})) || SWITCHES[entry.keySwitches![k]!](env))
+    ? entry.keys.filter((k) => !(k in (entry.keySwitches ?? {})) || lineKept(entry.keySwitches![k]!, env))
     : entry.keys;
   return { ...entry, caption, keys };
 }

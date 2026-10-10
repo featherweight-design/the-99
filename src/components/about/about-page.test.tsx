@@ -1,3 +1,4 @@
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { AboutPage } from "./about-page";
@@ -60,7 +61,7 @@ import { DECK_VERSIONS,
 // Every feature switch ON for this file, so every entry is drawn, figures included. The page with
 // the switches off is `about-page-r6.test.tsx`'s, and a switched entry's own rules are
 // `about-page-switch.test.tsx`'s.
-const SWITCHES = ["NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "HELP_ME_CHOOSE_ENABLED", "SWAP_TOOLS_ENABLED", "ANALYSIS_TAB_ENABLED", "TUNING_ENABLED", "DECK_STATS_ENABLED"] as const;
+const SWITCHES = ["NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "HELP_ME_CHOOSE_ENABLED", "SWAP_TOOLS_ENABLED", "ANALYSIS_TAB_ENABLED", "TUNING_ENABLED", "DECK_STATS_ENABLED", "COLLECTION_EDIT_ENABLED"] as const;
 beforeAll(() => {
   for (const k of SWITCHES) process.env[k] = "true";
 });
@@ -1028,6 +1029,50 @@ describe("what each chapter 01 figure actually draws", () => {
     expect(el, `${label} drew no specimen`).toBeTruthy();
     return el as HTMLElement;
   };
+
+  it("collection-add: three lines, the holdings notes and a save bar naming copies", () => {
+    const el = plate("collection-add");
+    expect(el.querySelectorAll("li[aria-label='Sol Ring']")).toHaveLength(2);
+    expect(el.querySelectorAll("li[aria-label='Cultivate']")).toHaveLength(1);
+    expect(el.textContent).toContain(collectionEditCopy.add.owned(5, 7));
+    expect(el.textContent).toContain(collectionEditCopy.add.summary(3, 4));
+    expect(el.textContent).toContain(collectionEditCopy.add.save(4));
+  });
+
+  it("edit-copies: three lines, a lowered note and a raised one, and the diff beside Save", () => {
+    const el = plate("edit-copies");
+    expect(el.querySelectorAll("li[aria-label='Sol Ring']")).toHaveLength(3);
+    expect(el.textContent).toContain("−1");
+    expect(el.textContent).toContain("+1");
+    expect(el.textContent).toContain(collectionEditCopy.copies.save);
+  });
+
+  it("upload-choice: both option cards, Replace picked, and the hand-edits warning", () => {
+    const el = plate("upload-choice");
+    expect(el.querySelector("[data-choice='replace'][aria-checked='true']")).toBeTruthy();
+    expect(el.querySelector("[data-choice='add'][aria-checked='false']")).toBeTruthy();
+    expect(el.textContent).toContain(collectionEditCopy.upload.replaceTitle);
+    expect(el.textContent).toContain(collectionEditCopy.upload.addTitle);
+    expect(el.textContent).toContain(collectionEditCopy.upload.overwriteCount(12, "Sep 12").slice(0, 12));
+  });
+
+  it("remove-card: the short-deck warning for Sol Ring, one deck named, the removal confirm", () => {
+    const el = plate("remove-card");
+    expect(el.textContent).toContain(collectionEditCopy.shortWarning.titleRemove("Sol Ring", 1));
+    expect(el.textContent).toContain("HD - Kinnan");
+    expect(el.textContent).toContain(collectionEditCopy.shortWarning.confirmRemove);
+  });
+
+  it("collection-history: a revert, the removal it undid marked Reverted, and an add opened to its five cards", () => {
+    const el = plate("collection-history");
+    expect(el.querySelectorAll("li")).toHaveLength(3 + 5);
+    expect(el.textContent).toContain(collectionEditCopy.history.reverted);
+    expect(el.textContent).toContain("Undid “Rhystic Study”");
+    expect(el.textContent).toContain("Swords to Plowshares");
+    expect(el.querySelectorAll("button[aria-label^='Revert']")).toHaveLength(2);
+    // No row carries an anchor here, so the Reverted-by note must not link to one.
+    expect(el.querySelector("a[href^='#entry-']")).toBeNull();
+  });
 
   it("sets: the set page, not a strip of cells", () => {
     const el = plate("sets");

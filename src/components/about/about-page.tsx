@@ -38,16 +38,6 @@ import { EntryCaption } from "./entry-caption";
 
 const CHAPTERS: AboutChapter[] = ["01", "02", "03", "04"];
 
-/**
- * An entry is new when the reader has seen a previous version of the page and
- * this entry was not in it. `seen > 0` is the rule rather than an edge case: a
- * reader at 0 has never been here, so marking every `since: 1` entry would
- * mark the whole page and teach them nothing.
- */
-function isNewByVersion(entry: AboutEntry, seen: number): boolean {
-  return seen > 0 && entry.since > seen;
-}
-
 function NewMark() {
   return (
     <span
@@ -279,13 +269,13 @@ export function AboutPage({
   // "How the app reaches its answers" (plan 2026-09-28): its section, its clause in the intro,
   // and the jump mark its rows share with the entries. Off, the page is exactly as it was.
   const howItWorks = howItWorksEnabled();
-  // With the sheet, "new" is the one rule the sheet and the proxy read, so the page marks exactly
-  // what the sheet announced. Without it the page keeps the version rule it always had.
+  // "New" is the one rule the sheet and both gates read (`unseenEntries`): an unswitched entry by
+  // the version floor, a switched one by its id. The legacy gate redirects on it too, so the page
+  // it lands on must mark and acknowledge the same things or the reader is sent with nothing new.
   const seenState: SeenState = { version: seen, ids: seenIds };
   const unseen = new Set(unseenEntries(visible, seenState).map((e) => e.id));
-  const isNew = (entry: AboutEntry): boolean =>
-    sheetMode ? unseen.has(entry.id) : isNewByVersion(entry, seen);
-  const behind = seen < ABOUT_VERSION || (sheetMode && unseen.size > 0);
+  const isNew = (entry: AboutEntry): boolean => unseen.has(entry.id);
+  const behind = seen < ABOUT_VERSION || unseen.size > 0;
   const newCount = visible.filter((e) => isNew(e)).length;
   // Validated here as well as in the action: the page PRINTS the destination,
   // and printing an unvalidated value is its own small problem.

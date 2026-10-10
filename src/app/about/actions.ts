@@ -3,7 +3,7 @@
 import { requireUserId } from "../../lib/auth";
 import { ABOUT_VERSION } from "../../lib/copy/about";
 import { safeNext } from "../../lib/about/gate";
-import { markAboutSeen, markAboutVisited } from "../../lib/about/read";
+import { markAboutVisited } from "../../lib/about/read";
 import { switchedIds, visibleEntries } from "../../lib/about/visible";
 import { howItWorksEnabled } from "../../lib/about/how-it-works-flag";
 import { HOW_IT_WORKS_ID } from "../../lib/copy/how-it-works-links";
@@ -24,7 +24,10 @@ import { HOW_IT_WORKS_ID } from "../../lib/copy/how-it-works-links";
  */
 export async function dismissAbout(formData: FormData): Promise<string> {
   const userId = await requireUserId();
-  await markAboutSeen(userId, ABOUT_VERSION);
+  // The version AND the switched entries this deployment draws, as a visit does: the legacy gate
+  // redirects on an unseen switched entry, so acknowledging only the version would send the same
+  // reader back from another browser.
+  await markAboutVisited(userId, ABOUT_VERSION, switchedIds(visibleEntries()));
   return safeNext(formData.get("next")?.toString());
 }
 
