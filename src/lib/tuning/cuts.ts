@@ -1,30 +1,28 @@
 import { isLandFace } from "../cards/facet";
+import { violationsFor } from "../bracket/rules";
 import { isBasicLand } from "../decks/grouping";
 import { recommendedMix, ROLE_ORDER, type MixRole } from "../decks/mix";
 import { curveBucket } from "../decks/stats";
 import { fitSkeleton } from "../profile/fit";
-import type { DeckProfile } from "../profile/types";
+import { producesInfiniteTurns } from "../spellbook/combo-features";
+import type { Bracket, DeckProfile } from "../profile/types";
 
 /**
- * Proposed cuts, tier 1 (tuning roadmap, sub-project 4): for a deck over 100 cards, which cards to
- * take out first, each with ONE reason a reader can check against a figure the app already shows.
- * Pure and client-safe: no database, no model call. The caller assembles its inputs.
+ * Proposed cuts, the FACTS layer (tuning roadmap, sub-project 4; Hugh's model-first ruling,
+ * 2026-10-09). For a deck over 100 cards: the counted facts about it and about each card that could
+ * come out. Pure and client-safe: no database, no model call, and NO RANKING. The tier-1 ranking was
+ * scored against the cuts Hugh actually made and found 17% of them, 1.1x chance, so the order lives
+ * only in `scripts/eval/lib/cuts-ranking.mts`, where the eval reproduces that baseline.
  *
- * FOUR SIGNALS, each a counted fact:
- *  - inclusion — how often EDHREC's decks for this commander run the card, or that its list
- *    (`listed` cards long) does not carry the card at all;
- *  - role surplus — the card fills only roles the deck already holds more of than the target the
- *    roles strip draws (`recommendedMix`, the same population rule as `buildEvidencePack`);
- *  - curve crowding — the card's mana value bucket holds more copies than the commander's average
- *    deck (`fitSkeleton`'s curve);
- *  - bracket — the card is a Game Changer, mass land denial, an extra turn or a two-card combo piece.
+ * What these facts are for: the hub draws the deck-level ones (roles over target, curve crowding,
+ * bracket flags, what is missing) and the model is told all of them, so a cut it proposes can cite a
+ * figure the app can show.
  *
- * HARD FILTERS, not penalties: a commander and a locked card are never candidates, whatever they
- * score (the never-cut convention Suggested changes enforces).
+ * HARD FILTERS: a commander and a locked card are never in `cards`, whatever their facts say (the
+ * never-cut convention Suggested changes enforces).
  *
- * THIN DATA RUNS ANYWAY (ruling 6): with no EDHREC list the inclusion signal is absent and the
- * result says so in `missing`, as it does for asserted role targets and an absent average curve.
- * Nothing here refuses.
+ * THIN DATA RUNS ANYWAY (ruling 6): with no EDHREC list the inclusion fact is absent and `missing`
+ * says so, as it does for asserted role targets and an absent average curve. Nothing refuses.
  */
 
 export type CutSupport = {
@@ -38,64 +36,61 @@ export type CutSupport = {
 
 export type BracketFlag = "gameChanger" | "massLandDenial" | "extraTurn" | "combo";
 
-/** One counted fact. Every number in it is a figure the app can show beside the card. */
-export type CutReason =
-  | { kind: "inclusion"; pct: number; deckCount: number | null }
-  | { kind: "offList"; listed: number; deckCount: number | null }
-  | { kind: "roleSurplus"; role: MixRole; have: number; target: number }
-  | { kind: "curve"; cmc: number; have: number; average: number }
-  | { kind: "bracket"; flag: BracketFlag; count: number };
-
-export type CutCandidate = {
+export type CardCutFacts = {
   oracleId: string;
   name: string;
   quantity: number;
-  /** The strongest signal: the one reason shown. */
-  reason: CutReason;
-  /** Every signal that argued for the cut, strongest first. `reason` is the first. */
-  signals: CutReason[];
-  /** The card fills a role the deck is at or under target on, so cutting it opens a gap. */
+  /** The commander's decks that run this card, or that its list does not carry at all. Null where
+   *  no figure applies: no list, a basic land, or a listed card with no figure. */
+  inclusion: { kind: "pct"; pct: number } | { kind: "offList" } | null;
+  /** The roles the card fills (the text classifier's, as the roles strip counts them). */
+  roles: MixRole[];
+  /** Set only when EVERY role the card fills is over its target: the smallest surplus among them. */
+  roleSurplus: { role: MixRole; have: number; target: number } | null;
+  /** The first role the card fills that the deck is at or under target on: cutting it opens a gap. */
   opensGap: MixRole | null;
-  score: number;
+  /** Set when the card's mana value bucket holds more copies than the commander's average deck. */
+  curve: { cmc: number; have: number; average: number } | null;
+  /** Bracket flags the card carries that bear on the declared bracket. */
+  flags: BracketFlag[];
 };
+
+export type RoleFact = { role: MixRole; have: number; target: number };
+export type CurveFact = { cmc: number; have: number; average: number };
 
 export type MissingSignal = "inclusion" | "roleTargets" | "curve";
 
-export type ProposedCuts = {
+export type CutFacts = {
   /** Total cards, commanders included (ruling 4). */
   total: number;
   /** How many cards over 100. Zero means Proposed cuts is not offered. */
   over: number;
-  /** Ranked, best cut first. Empty when `over` is 0. */
-  candidates: CutCandidate[];
-  /** Signals the ranking had to go without, so a surface can name them (ruling 6). */
+  /** Signals the facts had to go without, so a surface can name them (ruling 6). */
   missing: MissingSignal[];
+  /** EDHREC's support list the inclusion facts came from. Null with no list. */
+  support: { deckCount: number | null; listed: number } | null;
+  /** Every role against its target, measured on the population the target was derived for. */
+  roles: RoleFact[];
+  /** The commander's average curve against the deck's, per mana value bucket. Null with no average. */
+  curve: CurveFact[] | null;
+  /** The flags that bear on the declared bracket, each with the cards carrying it. */
+  brackets: { flag: BracketFlag; cards: { oracleId: string; name: string }[] }[];
+  /** Each card that could come out. Empty when `over` is 0. Sorted by name: the deck rows carry no
+   *  order, so a stored order would be arbitrary, and a model must not be anchored by one. */
+  cards: CardCutFacts[];
 };
 
 export const DECK_SIZE = 100;
 
-/**
- * How much each signal weighs. Inclusion leads because it is the one signal specific to this
- * commander; role and curve are the deck's shape against that commander's average; a bracket flag
- * is a fact worth naming more than a reason to cut, so it weighs least. These are the first-draft
- * weights, not yet measured; recall is scored with them untuned before any tuning.
- */
-export type CutWeights = { inclusion: number; role: number; curve: number; bracket: number };
-export const CUT_WEIGHTS: CutWeights = { inclusion: 0.45, role: 0.3, curve: 0.15, bracket: 0.1 };
-
-/** Cutting a card from a role at or under target costs this much score: a demotion, not a filter,
- *  because an over deck may have to cut into a short role. */
-const GAP_PENALTY = 0.3;
-
-export function proposeCuts(input: {
+export function cutFacts(input: {
   profile: DeckProfile;
   locked: ReadonlySet<string>;
   /** Null when the commander has no usable EDHREC list. */
   support: CutSupport | null;
-  /** Defaults to `CUT_WEIGHTS`; the eval passes others to score them held out. */
-  weights?: CutWeights;
-}): ProposedCuts {
-  const { profile, locked, support, weights: W = CUT_WEIGHTS } = input;
+  /** The bracket the player declared for the deck, null if none. Decides which flags are facts. */
+  declaredBracket: Bracket | null;
+}): CutFacts {
+  const { profile, locked, support, declaredBracket } = input;
   const total = profile.counts.total;
   const over = Math.max(0, total - DECK_SIZE);
 
@@ -107,12 +102,19 @@ export function proposeCuts(input: {
   if (!mix.measured) missing.push("roleTargets");
   if (!curve) missing.push("curve");
 
-  if (over === 0) return { total, over, candidates: [], missing };
-
   // The population the targets were derived for, as `buildEvidencePack` decides it: the 99 alone
   // against a measured target, the whole deck against the flat one. Land is never a commander.
   const roleHave = mix.rolesUsable ? profile.roles.excludingCommanders : profile.roles.counts;
   const have = (role: MixRole) => (role === "land" ? profile.roles.counts.land : roleHave[role]);
+  const roles: RoleFact[] = ROLE_ORDER.map((role) => ({ role, have: have(role), target: mix.cells[role].target }));
+
+  const base = {
+    total, over, missing,
+    support: support ? { deckCount: support.deckCount, listed: support.listed } : null,
+    roles,
+    curve: curve ? curve.buckets.map((b) => ({ cmc: b.cmc, have: b.have, average: b.average })) : null,
+  };
+  if (over === 0) return { ...base, brackets: [], cards: [] };
 
   const rolesOf = new Map<string, MixRole[]>();
   for (const role of ROLE_ORDER) {
@@ -121,39 +123,30 @@ export function proposeCuts(input: {
     }
   }
 
-  const flags = bracketFlags(profile);
+  const flags = bracketFlags(profile, declaredBracket);
   const commanders = new Set(profile.commanderOracleIds);
 
-  const candidates: CutCandidate[] = [];
+  const cards: CardCutFacts[] = [];
   for (const card of profile.cards) {
     if (commanders.has(card.oracleId) || locked.has(card.oracleId)) continue;
-    const scored: { reason: CutReason; weight: number }[] = [];
 
-    // Inclusion. A basic land is on no support list and carries no inclusion figure that means
-    // anything, so it is judged by the land count alone.
+    // A basic land is on no support list and carries no inclusion figure that means anything, so it
+    // is judged by the land count alone.
+    let inclusion: CardCutFacts["inclusion"] = null;
     if (support && !isBasicLand(card.typeLine)) {
       if (support.inclusion.has(card.oracleId)) {
         const pct = support.inclusion.get(card.oracleId);
-        if (pct != null) {
-          scored.push({
-            reason: { kind: "inclusion", pct, deckCount: support.deckCount },
-            weight: W.inclusion * (1 - clamp01(pct / 100)),
-          });
-        }
+        if (pct != null) inclusion = { kind: "pct", pct };
       } else {
-        scored.push({
-          reason: { kind: "offList", listed: support.listed, deckCount: support.deckCount },
-          weight: W.inclusion,
-        });
+        inclusion = { kind: "offList" };
       }
     }
 
-    // Roles. The card argues for a cut only when EVERY role it fills is over target; the smallest
-    // surplus among them is the one a cut would spend.
-    const roles = rolesOf.get(card.oracleId) ?? [];
+    // The card argues for a cut on role only when EVERY role it fills is over target.
+    const mine = rolesOf.get(card.oracleId) ?? [];
     let opensGap: MixRole | null = null;
     let surplus: { role: MixRole; have: number; target: number; share: number } | null = null;
-    for (const role of roles) {
+    for (const role of mine) {
       const target = mix.cells[role].target;
       const count = have(role);
       if (count <= target) {
@@ -163,64 +156,76 @@ export function proposeCuts(input: {
       const share = clamp01((count - target) / Math.max(target, 1));
       if (!surplus || share < surplus.share) surplus = { role, have: count, target, share };
     }
-    if (surplus && !opensGap) {
-      scored.push({
-        reason: { kind: "roleSurplus", role: surplus.role, have: surplus.have, target: surplus.target },
-        weight: W.role * surplus.share,
-      });
-    }
 
-    // Curve. Lands are off the curve.
+    // Lands are off the curve.
+    let curveFact: CardCutFacts["curve"] = null;
     if (curve && !isLandFace(card.typeLine)) {
       const bucket = curve.buckets[curveBucket(card.cmc)];
-      if (bucket && bucket.delta > 0) {
-        scored.push({
-          reason: { kind: "curve", cmc: bucket.cmc, have: bucket.have, average: round1(bucket.average) },
-          weight: W.curve * clamp01(bucket.delta / Math.max(bucket.average, 1)),
-        });
-      }
+      if (bucket && bucket.delta > 0) curveFact = { cmc: bucket.cmc, have: bucket.have, average: bucket.average };
     }
 
-    for (const [flag, ids] of flags) {
-      if (ids.has(card.oracleId)) {
-        scored.push({ reason: { kind: "bracket", flag, count: ids.size }, weight: W.bracket });
-      }
-    }
-
-    const positive = scored.filter((s) => s.weight > 0).sort((a, b) => b.weight - a.weight);
-    if (positive.length === 0) continue;
-    const score = positive.reduce((sum, s) => sum + s.weight, 0) - (opensGap ? GAP_PENALTY : 0);
-    candidates.push({
+    cards.push({
       oracleId: card.oracleId,
       name: card.name,
       quantity: card.quantity,
-      reason: positive[0].reason,
-      signals: positive.map((s) => s.reason),
+      inclusion,
+      roles: mine,
+      roleSurplus: surplus && !opensGap ? { role: surplus.role, have: surplus.have, target: surplus.target } : null,
       opensGap,
-      score,
+      curve: curveFact,
+      flags: flags.filter(([, ids]) => ids.has(card.oracleId)).map(([flag]) => flag),
     });
   }
 
-  candidates.sort((a, b) => b.score - a.score || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
-  return { total, over, candidates, missing };
+  cards.sort((x, y) => (x.name < y.name ? -1 : x.name > y.name ? 1 : x.oracleId < y.oracleId ? -1 : 1));
+
+  return {
+    ...base,
+    brackets: flags.map(([flag, ids]) => ({
+      flag,
+      cards: profile.cards.filter((c) => ids.has(c.oracleId)).map((c) => ({ oracleId: c.oracleId, name: c.name })),
+    })).filter((b) => b.cards.length > 0),
+    cards,
+  };
 }
 
-/** The deck's bracket-flagged cards by flag. A combo piece is any card of a counted two-card combo
- *  that is not a commander, since a commander is never cut. */
-function bracketFlags(profile: DeckProfile): [BracketFlag, ReadonlySet<string>][] {
+/** The deck's bracket-flagged cards by flag, kept only where the flag bears on the declared bracket.
+ *  The sets hold EVERY flagged card, a commander included, because the declared bracket counts a
+ *  commander's flag; `cutFacts` keeps a commander off the per-card `flags` (it is never a
+ *  candidate) but leaves it in the deck-level `brackets`. No declaration names every flag; a
+ *  declared 4 or 5 permits all of them. */
+function bracketFlags(profile: DeckProfile, declared: Bracket | null): [BracketFlag, ReadonlySet<string>][] {
   const b = profile.brackets;
-  const commanders = new Set(profile.commanderOracleIds);
-  const combo = new Set<string>();
-  for (const c of b.twoCardCombos) {
-    for (const card of c.cards) if (!commanders.has(card.oracleId)) combo.add(card.oracleId);
-  }
-  return [
+  // Every piece, a commander's included: a combo of partner commanders is still a combo the declared
+  // bracket counts. A commander is kept off the per-card flags below, where it is never a candidate.
+  const piecesOf = (combos: typeof b.twoCardCombos) => new Set(combos.flatMap((c) => c.cards.map((card) => card.oracleId)));
+  const combo = piecesOf(b.twoCardCombos);
+  const all: [BracketFlag, ReadonlySet<string>][] = [
     ["gameChanger", new Set(b.gameChangers.map((c) => c.oracleId))],
     ["massLandDenial", new Set(b.massLandDenial.map((c) => c.oracleId))],
     ["extraTurn", new Set(b.extraTurns.map((c) => c.oracleId))],
     ["combo", combo],
   ];
+  if (declared === null) return all;
+  if (declared === 4 || declared === 5) return [];
+  // 1 to 3: a flag bears on the declared bracket when that count ALONE would violate it, asked of
+  // `violationsFor` so the rules live in one place. Bracket 1 forbids every flag; 2 forbids Game
+  // Changers, mass land denial and combos; 3 allows extra turns and Game Changers up to its
+  // allowance, and a combo only when it is a loop (it produces infinite turns).
+  const loops = b.twoCardCombos.filter((c) => producesInfiniteTurns(c.produces));
+  const bears = (counts: Partial<Parameters<typeof violationsFor>[0]>): boolean => {
+    const v = violationsFor({ gameChangers: 0, massLandDenial: 0, extraTurns: 0, combos: 0, loops: 0, ...counts });
+    return declared === 1 ? v.violatesB1 : declared === 2 ? v.violatesB2 : v.violatesB3;
+  };
+  const kept: Record<BracketFlag, boolean> = {
+    gameChanger: bears({ gameChangers: b.gameChangers.length }),
+    massLandDenial: bears({ massLandDenial: b.massLandDenial.length }),
+    extraTurn: bears({ extraTurns: b.extraTurns.length }),
+    combo: declared === 3 ? bears({ loops: loops.length }) : bears({ combos: b.twoCardCombos.length }),
+  };
+  return all
+    .filter(([flag]) => kept[flag])
+    .map(([flag, ids]): [BracketFlag, ReadonlySet<string>] => [flag, flag === "combo" && declared === 3 ? piecesOf(loops) : ids]);
 }
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
-const round1 = (n: number) => Math.round(n * 10) / 10;
