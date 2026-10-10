@@ -60,9 +60,10 @@ const basicColorOf = (r: ManaSupplyCardRow): BalanceColor | null =>
 
 const total = (b: ManaBalance, c: BalanceColor) => b.colors.find((x) => x.color === c)!.sources.total;
 
-/** Sources Karsten's 99-card column asks for the hardest pattern with a published row, 0 where none. */
+/** Sources Karsten's 99-card column asks for the color's hardest pattern with a published row (over all its
+ *  patterns, not the few the evidence lists), 0 where none. */
 function requirement(b: ManaBalance, c: BalanceColor): number {
-  return Math.max(0, ...b.colors.find((x) => x.color === c)!.patterns.map((p) => (p.karsten.kind === "known" ? p.karsten.sources : 0)));
+  return b.colors.find((x) => x.color === c)!.karstenHardest;
 }
 
 function changes(before: ManaBalance, after: ManaBalance): SourceChange[] {

@@ -50,6 +50,9 @@ export type ColorEvidence = {
   sources: { lands: number; nonland: number; total: number };
   /** The hardest `PATTERNS_SHOWN` patterns this color's cards have, most pips first, then least other mana. */
   patterns: PatternEvidence[];
+  /** Karsten's figure for the hardest of ALL this color's patterns that has a published row (not only the
+   *  ones shown, and not a ceiling), 0 when none does. */
+  karstenHardest: number;
 };
 
 export type LandEvidence = {
@@ -90,7 +93,7 @@ const rowManaValue = (r: ManaSupplyCardRow) => r.cmc ?? manaValueOf((r.manaCost 
 /** Hardest first: more pips, then less other mana. */
 const byHardness = (a: { generic: number; pips: number }, b: { generic: number; pips: number }) => b.pips - a.pips || a.generic - b.generic;
 
-function patternsFor(color: ManaColor, rows: readonly ManaSupplyCardRow[], nameOf: (id: string) => string): PatternEvidence[] {
+function patternsFor(color: ManaColor, rows: readonly ManaSupplyCardRow[], nameOf: (id: string) => string): { shown: PatternEvidence[]; karstenHardest: number } {
   const byPattern = new Map<string, PatternEvidence>();
   for (const r of rows) {
     if (isLandFace(r.typeLine)) continue;
@@ -104,7 +107,8 @@ function patternsFor(color: ManaColor, rows: readonly ManaSupplyCardRow[], nameO
     }
   }
   for (const e of byPattern.values()) e.cards.sort((a, b) => a.name.localeCompare(b.name));
-  return [...byPattern.values()].sort(byHardness).slice(0, PATTERNS_SHOWN);
+  const all = [...byPattern.values()].sort(byHardness);
+  return { shown: all.slice(0, PATTERNS_SHOWN), karstenHardest: Math.max(0, ...all.map((p) => (p.karsten.kind === "known" ? p.karsten.sources : 0))) };
 }
 
 export function readManaBalance({ rows, nameOf, tapped }: ManaBalanceInput): ManaBalance {
@@ -115,13 +119,17 @@ export function readManaBalance({ rows, nameOf, tapped }: ManaBalanceInput): Man
   const [pipsWith, pipsWithout] = [colored(supply.demand), colored(without.demand)];
   const share = (n: number, of: number) => (of > 0 ? n / of : 0);
 
-  const colors = BALANCE_COLORS.map((color): ColorEvidence => ({
-    color,
-    pips: { withCommander: supply.demand[color], withoutCommander: without.demand[color] },
-    pipShare: { withCommander: share(supply.demand[color], pipsWith), withoutCommander: share(without.demand[color], pipsWithout) },
-    sources: { lands: supply.supply[color].lands, nonland: supply.supply[color].nonland, total: total(color) },
-    patterns: patternsFor(color, rows, nameOf),
-  }));
+  const colors = BALANCE_COLORS.map((color): ColorEvidence => {
+    const { shown, karstenHardest } = patternsFor(color, rows, nameOf);
+    return {
+      color,
+      pips: { withCommander: supply.demand[color], withoutCommander: without.demand[color] },
+      pipShare: { withCommander: share(supply.demand[color], pipsWith), withoutCommander: share(without.demand[color], pipsWithout) },
+      sources: { lands: supply.supply[color].lands, nonland: supply.supply[color].nonland, total: total(color) },
+      patterns: shown,
+      karstenHardest,
+    };
+  });
 
   // The deck's average mana value is the what-changed strip's (`averageManaValue`), commanders included as cards.
   const averageMv = averageManaValue(rows.map((r) => ({ cmc: rowManaValue(r), quantity: r.quantity, typeLine: r.typeLine }))) ?? 0;

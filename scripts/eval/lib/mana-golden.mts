@@ -10,6 +10,8 @@ export const GOLDEN_COLORS = BALANCE_COLORS;
 
 export type GoldenPattern = { copies: number; karsten: string; cards: string[] };
 export type GoldenColor = {
+  /** Karsten's figure for the hardest pattern with a published row, over all the color's patterns. */
+  karstenHardest: number;
   pipsWith: number;
   pipsWithout: number;
   /** Source cards behind the supply, one entry per copy, sorted. */
@@ -44,6 +46,7 @@ export function goldenShape(b: ManaBalance, nameOf: (id: string) => string, help
       b.colors.map((c) => [
         c.color,
         {
+          karstenHardest: c.karstenHardest,
           pipsWith: c.pips.withCommander,
           pipsWithout: c.pips.withoutCommander,
           lands: names(b.supply.sources[c.color].lands),

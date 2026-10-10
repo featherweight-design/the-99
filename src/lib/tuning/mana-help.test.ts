@@ -64,6 +64,15 @@ describe("helpAddColor: rebalance", () => {
   });
 });
 
+describe("helpAddColor: the guard reads every pattern, not the few the evidence lists", () => {
+  it("keeps blue at its figure when six harder patterns with no published row fill the evidence list", () => {
+    const heavy = [0, 1, 2, 3, 4, 5].map((g) => spell(`heavy${g}`, `{${g || ""}}{U}{U}{U}{U}{U}`.replace("{}", "")));
+    // Blue's plain {U} is pattern C (19 sources) and sits below the six heavy patterns in the list.
+    const rows = [...heavy, spell("g", "{G}"), spell("u", "{U}"), basic("forest", "Forest", 10, "G"), basic("island", "Island", 19, "U")];
+    expect(help(rows, "G").rebalance).toEqual([]);
+  });
+});
+
 describe("helpAddColor: trades and staples", () => {
   it("trades a basic of the color with the most cover for a staple that adds the picked color", () => {
     const h = help(deck(), "G", [], [staple("Signet", ["G", "U"]), staple("Elfhat", ["G"])]);

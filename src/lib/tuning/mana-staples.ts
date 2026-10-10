@@ -12,7 +12,7 @@ import { loadSourceMana } from "../decks/source-mana";
 import { loadStatsLabels } from "../decks/stats-labels";
 import type { ManaColor } from "../mana/supply";
 import { classifyRoles } from "../recs/roles";
-import { identityCondition } from "../staples/condition";
+import { countCondition, identityCondition } from "../staples/condition";
 
 /** What the number behind a staple means, which differs by where it was read. A commander's own
  *  page is a rate over that commander's decks; the identity bucket is an average across commanders,
@@ -69,10 +69,13 @@ export async function loadManaStaples(deck: DeckDetail, userId: string): Promise
       .where(eq(commanderSupportCards.commanderOracleId, deck.commander.oracleId));
     facts = new Map(rows.map((r) => [r.oracleId, { kind: "commander", inclusion: r.inclusion }]));
   }
-  if (facts.size === 0) {
-    const condition = identityCondition(identity);
+  // No page of its own: the identity bucket, else the colour-count bucket the floor falls back to (the
+  // profile's chain), and the fact keeps the condition that actually supplied the rows.
+  for (const condition of facts.size === 0 ? [identityCondition(identity), countCondition(identity.length)] : []) {
     const rows = await db.select().from(formatStaples).where(eq(formatStaples.condition, condition));
+    if (rows.length === 0) continue;
     facts = new Map(rows.map((r) => [r.oracleId, { kind: "identity", condition, commanders: r.commanders, commanderTotal: r.commanderTotal, avgInclusion: r.avgInclusion }]));
+    break;
   }
   const ids = [...facts.keys()].filter((id) => !held.has(id));
   if (ids.length === 0) return [];
@@ -80,13 +83,15 @@ export async function loadManaStaples(deck: DeckDetail, userId: string): Promise
   const rows = await db
     .select({ oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine, manaCost: cards.manaCost, oracleText: cards.oracleText, keywords: cards.keywords, layout: cards.layout, colorIdentity: cards.colorIdentity })
     .from(cards)
-    .where(inArray(cards.oracleId, ids));
+    .where(and(inArray(cards.oracleId, ids), eq(cards.commanderLegal, true)));
   // Inside the commander's identity, and never a basic: the rebalance suggestion owns the basics.
   const pool = rows.filter((r) => !/\bbasic\b/i.test(r.typeLine) && r.colorIdentity.every((c) => identity.includes(c)));
   const labels = await loadStatsLabels(pool);
   const [lands, sources] = await Promise.all([
     loadLandMana(pool, identity),
-    loadSourceMana(pool.map((r) => ({ oracleId: r.oracleId, typeLine: r.typeLine, role: classifyRoles(r).includes("ramp") ? "ramp" : null })), identity, labels),
+    // The deck's own basics ride along: "search for a basic land" reaches the basics the deck plays.
+    // Only the pool's ids are read back out of the result.
+    loadSourceMana([...pool.map((r) => ({ oracleId: r.oracleId, typeLine: r.typeLine, role: classifyRoles(r).includes("ramp") ? "ramp" : null })), ...deck.cards.filter((c) => /\bbasic\b/i.test(c.typeLine)).map((c) => ({ oracleId: c.oracleId, typeLine: c.typeLine, role: null }))], identity, labels),
   ]);
   if (!lands || !sources) return null;
   const [availability, prices] = await Promise.all([
