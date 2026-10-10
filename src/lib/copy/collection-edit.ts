@@ -4,6 +4,7 @@
 // pinned to en-US like the place head, so a server render and a browser agree.
 
 const n = (x: number) => x.toLocaleString("en-US");
+const decks = (x: number) => (x === 1 ? "a deck" : `${n(x)} decks`);
 const copies = (x: number) => (x === 1 ? "1 copy" : `${n(x)} copies`);
 
 export const collectionEditCopy = {
@@ -22,6 +23,25 @@ export const collectionEditCopy = {
   firstRun: {
     addByHand: "Add cards by hand",
     bodyShort: "Drop a CSV export from Moxfield, Archidekt, Deckbox or Manabox, or add cards by hand.",
+  },
+  // §E, the short-deck warning. Replace is the only source so far; Save, Remove and Revert join
+  // with the PRs that draw them. Every string is a placeholder for /copy-review.
+  shortWarning: {
+    titleReplace: (k: number) => `Replacing leaves ${decks(k)} short`,
+    body: "Nothing about these decks changes. Each will show what it's short of and put it on its shopping list.",
+    figureOne: (k: number) => `short ${n(k)}`,
+    figureMany: (k: number) => (k === 1 ? "1 card short" : `${n(k)} cards short`),
+    more: (k: number) => `and ${n(k)} more ${k === 1 ? "deck" : "decks"}`,
+    namedCount: 3,
+    cancel: "Cancel",
+    confirmReplace: "Replace anyway",
+    checking: "Checking decks…",
+    saving: "Saving…",
+    changed:
+      "This changed while you were deciding. Your collection was edited somewhere else, so here's the answer as of now. Nothing was saved.",
+    newTag: "new",
+    catalogFailure: (names: string[]) =>
+      `${names.join(", ")} ${names.length === 1 ? "has" : "have"} been removed from the card catalog since this file was read. Nothing was changed.`,
   },
   add: {
     title: "Add cards",
