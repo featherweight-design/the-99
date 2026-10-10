@@ -400,7 +400,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'Sold a copy, or logged the wrong printing? Open the card and press “Edit copies”. Each printing and finish you own is a line with its own count. If one’s under the wrong printing, tap it and pick the right one.\n\nIt’s separate from picking the art. The printings grid still only chooses which art your Collection shows.',
     keys: [
-      'Adding copies saves right away.',
+      'Adding copies needs no deck check. Press Save and it’s done.',
       'Taking copies away checks your decks first, and names any that would come up short.',
       'Changing a line’s printing doesn’t change your total, so it never leaves a deck short.',
       '“Add another printing” asks which printing before it adds anything.',

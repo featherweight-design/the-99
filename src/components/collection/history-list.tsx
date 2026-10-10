@@ -161,9 +161,14 @@ export function HistoryEntryItem({
           {e.revertedByVisible && revertedByEntry ? (
             <>
               {" · "}
-              <a href={`#entry-${revertedByEntry.id}`} className="text-[color:var(--accent)] underline underline-offset-2">
-                {c.revertedBy(timeLabel(revertedByEntry.createdAt))}
-              </a>
+              {anchor ? (
+                <a href={`#entry-${revertedByEntry.id}`} className="text-[color:var(--accent)] underline underline-offset-2">
+                  {c.revertedBy(timeLabel(revertedByEntry.createdAt))}
+                </a>
+              ) : (
+                // Drawn without row anchors (/about's figure): a link to nothing would be a dead end.
+                <span>{c.revertedBy(timeLabel(revertedByEntry.createdAt))}</span>
+              )}
             </>
           ) : null}
         </p>

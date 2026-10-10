@@ -1070,6 +1070,8 @@ describe("what each chapter 01 figure actually draws", () => {
     expect(el.textContent).toContain("Undid “Rhystic Study”");
     expect(el.textContent).toContain("Swords to Plowshares");
     expect(el.querySelectorAll("button[aria-label^='Revert']")).toHaveLength(2);
+    // No row carries an anchor here, so the Reverted-by note must not link to one.
+    expect(el.querySelector("a[href^='#entry-']")).toBeNull();
   });
 
   it("sets: the set page, not a strip of cells", () => {
