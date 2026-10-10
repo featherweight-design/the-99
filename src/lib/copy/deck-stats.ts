@@ -15,6 +15,13 @@ export const deckStatsCopy = {
     money: "Money and ownership",
     results: "Results",
   },
+  jobs: {
+    denom: (n: number) => `${n} nonland ${n === 1 ? "card" : "cards"}`,
+    rows: { ramp: "Ramp", draw: "Card draw", removal: "Removal", wipes: "Board wipes", protection: "Protection", finisher: "Win conditions" },
+    overlap: (n: number) => `${n} ${n === 1 ? "card does" : "cards do"} two or more of these jobs, so the rows add up to more than the cards in them.`,
+    none: (n: number) => `${n} nonland ${n === 1 ? "card does" : "cards do"} none of these jobs.`,
+    unlabeled: (n: number) => `${n} ${n === 1 ? "card isn’t" : "cards aren’t"} labeled yet. ${n === 1 ? "It joins" : "They join"} a row once ${n === 1 ? "it is" : "they are"}.`,
+  },
   curve: {
     title: "The curve, by card type",
     denom: (cast: number) => `${cast} cast`,

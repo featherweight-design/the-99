@@ -39,6 +39,7 @@ import { listVersions } from "../../../lib/decks/versions";
 import { computeRoleCounts } from "../../../lib/decks/mix";
 import { analysisTabEnabled } from "../../../lib/decks/analysis-flag";
 import { deckStatsEnabled } from "../../../lib/decks/stats-flag";
+import { loadJobRows } from "../../../lib/decks/job-rows";
 import { tuningEnabled } from "../../../lib/tuning/flag";
 import { noticesEnabled } from "../../../lib/notices/flag";
 import { loadDeckNotices } from "../../../lib/notices/read";
@@ -122,6 +123,11 @@ export default async function DeckBuilderPage({
   // the `Promise.all` that awaits it.
   const early = <T,>(p: Promise<T>): Promise<T> => { p.catch(() => {}); return p; };
   const detailRead = early(perf.timed("getDeckDetail", () => getDeckDetail(id, userId)));
+  // The Jobs card's labels start the moment the detail resolves, beside every other read, and are
+  // awaited only where the card is drawn.
+  const statsJobsRead = deckStatsEnabled()
+    ? early(detailRead.then((d) => (d ? perf.timed("statsLabels", () => loadJobRows(d.cards)) : null)))
+    : null;
   // A 60-second cached read shared by both cached payloads below, resolved once rather than
   // per entry, and chained into the suggestions rather than awaited on its own.
   const indexGenRead = early(perf.timed("indexGeneration", () => indexGeneration()));
@@ -475,6 +481,7 @@ export default async function DeckBuilderPage({
       statsEnabled={deckStatsEnabled()}
       statsData={deckStatsEnabled()
         ? {
+            jobs: statsJobsRead ? await statsJobsRead : null,
             commanders: [detail.commander, ...(detail.partner ? [detail.partner] : [])].map((c) => ({
               cmc: c.cmc ?? 0,
               typeLine: c.typeLine,
