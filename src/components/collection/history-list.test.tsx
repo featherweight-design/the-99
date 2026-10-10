@@ -102,6 +102,15 @@ describe("HistoryList", () => {
     expect(await screen.findByText("details changed")).toBeTruthy();
   });
 
+  it("states a zero figure and an explicit empty panel for an entry that moved no copies", async () => {
+    const e = entry({ kind: "upload_replace", uploadFilename: "same.csv", copiesUp: 0, copiesDown: 0, rowCount: 0 });
+    loadEntry.mockResolvedValue(detail(e, []));
+    draw([e]);
+    expect(screen.getByText("0 copies across 0 cards")).toBeTruthy();
+    await act(async () => fireEvent.click(screen.getByRole("button", { expanded: false })));
+    expect(await screen.findByText(/This change didn't move anything/)).toBeTruthy();
+  });
+
   it("says a failed read changed nothing and reads again on Try again", async () => {
     const e = entry({});
     loadEntry.mockRejectedValueOnce(new Error("down")).mockResolvedValueOnce(detail(e, [row("Sol Ring", 1, 3)]));

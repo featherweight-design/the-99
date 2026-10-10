@@ -140,8 +140,12 @@ export const collectionEditCopy = {
     /** (new) An entry's title when the ledger holds no filename or card name for it. */
     untitled: "Untitled change",
     figures: (up: number, down: number, cards: number) =>
-      [up ? `+${n(up)}` : "", down ? `−${n(down)}` : ""].filter(Boolean).join(" · ") +
+      // A change that moved no copies (a printing or condition swap, or a Replace that matched the
+      // collection exactly) states its zero rather than leaving the figure blank.
+      (up || down ? [up ? `+${n(up)}` : "", down ? `−${n(down)}` : ""].filter(Boolean).join(" · ") : "0") +
       ` ${up + down === 1 ? "copy of" : "copies across"} ${n(cards)} ${cards === 1 ? "card" : "cards"}`,
+    /** (new) An opened entry that recorded no rows: a Replace that matched the collection exactly. */
+    noRows: "This change didn't move anything. Your collection already matched.",
     reverted: "Reverted",
     revertedBy: (when: string) => `Reverted by the revert at ${when}`,
     undid: (title: string) => `Undid “${title}”`,

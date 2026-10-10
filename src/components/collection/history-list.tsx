@@ -50,6 +50,7 @@ function EntryRows({ rows }: { rows: HistoryRow[] }) {
   const groups = useMemo(() => groupRows(rows), [rows]);
   const [picked, setPicked] = useState<RowGroup | null>(null);
   const [shown, setShown] = useState(GROUP_FIRST);
+  if (rows.length === 0) return <p className="m-0 py-[6px] text-[13px] text-[color:var(--fg-muted)]">{c.noRows}</p>;
   if (rows.length <= SHORT_ENTRY_ROWS) {
     return <ul className="m-0 list-none p-0">{rows.map((r, i) => <RowLine key={i} row={r} />)}</ul>;
   }
