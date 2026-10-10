@@ -45,6 +45,7 @@ import { loadJobRows } from "../../../lib/decks/job-rows";
 import { loadDeckMix } from "../../../lib/decks/deck-mix";
 import { settleLabelRead } from "../../../lib/decks/label-read-settle";
 import { loadStatsLabels } from "../../../lib/decks/stats-labels";
+import { loadStatsAverage } from "../../../lib/decks/stats-average-load";
 import { loadLandMana } from "../../../lib/decks/land-mana";
 import { loadSourceMana } from "../../../lib/decks/source-mana";
 import { tuningEnabled } from "../../../lib/tuning/flag";
@@ -149,6 +150,10 @@ export default async function DeckBuilderPage({
     ? early(Promise.all([detailRead, statsLabelsRead]).then(([d, labels]) => (d
         ? perf.timed("statsSources", () => loadSourceMana(d.cards, [...d.commander.colorIdentity, ...(d.partner?.colorIdentity ?? [])], labels))
         : null)))
+    : null;
+  // The Average card's basis: the commander's (or pair's, or colors') average deck, through the basis chain.
+  const statsAverageRead = deckStatsEnabled()
+    ? early(detailRead.then((d) => (d ? perf.timed("statsAverage", () => loadStatsAverage(d)) : null)))
     : null;
   // A 60-second cached read shared by both cached payloads below, resolved once rather than
   // per entry, and chained into the suggestions rather than awaited on its own.
@@ -541,6 +546,7 @@ export default async function DeckBuilderPage({
             jobs: statsJobsRead ? await statsJobsRead : null,
             lands: statsLandsRead ? await statsLandsRead : null,
             sources: statsSourcesRead ? await statsSourcesRead : null,
+            average: statsAverageRead ? await statsAverageRead : null,
             commanders: [detail.commander, ...(detail.partner ? [detail.partner] : [])].map((c) => ({
               cmc: c.cmc ?? 0,
               typeLine: c.typeLine,
