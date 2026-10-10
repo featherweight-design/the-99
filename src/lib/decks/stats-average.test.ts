@@ -58,6 +58,12 @@ describe("averageDeckFrom", () => {
     expect(a.roles).toEqual({ ramp: 8, draw: 8, removal: 6, wipes: 2 });
   });
 
+  it("draws no job targets when the roles resolved at a different rung than the named composition", () => {
+    const a = averageDeckFrom(skeleton({ roleTargets: { of: "identity", targets: { ramp: 8, draw: 8, removal: 6, wipes: 2 } } }), ["X"], ["G"]);
+    expect(a.basis.of).toBe("commander");
+    expect(a.roles).toBeNull();
+  });
+
   it("draws no job targets where the composition is measured and the roles are only the flat ones", () => {
     const a = averageDeckFrom(skeleton({ roleTargets: { of: "flat", targets: { ramp: 8, draw: 8, removal: 6, wipes: 2 } } }), ["X"], ["G"]);
     expect(a.targets).not.toBeNull();
@@ -118,6 +124,12 @@ describe("averageComparison", () => {
   it("omits mana value when the deck has no nonland card, rather than compare against a 0", () => {
     const c = averageComparison(avg(), have([spell(0, "Land", 5)]));
     expect(c.groups[0].rows.map((r) => r.key)).toEqual(["lands"]);
+  });
+
+  it("counts the unlabeled cards beside the job rows, and none when there are no job rows", () => {
+    const jobs = jobTally([{ oracleId: "a", name: "A", copies: 2 }, { oracleId: "b", name: "B", copies: 1 }], { a: ["ramp"] });
+    expect(averageComparison(avg(), have([], jobs)).unlabeled).toBe(1);
+    expect(averageComparison(avg({ roles: null }), have([], jobs)).unlabeled).toBe(0);
   });
 
   it("omits the job group when the label read failed", () => {

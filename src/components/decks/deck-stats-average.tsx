@@ -111,6 +111,9 @@ export function AverageCard({ average }: { average: AverageComparison }) {
             <div key={g.key} className="flex flex-col gap-[2px]" data-average-group={g.key}>
               <span aria-hidden="true" className="pb-[4px] font-mono text-[9.5px] tracking-[0.12em] text-[color:var(--fg-faint)]">{copy.groups[g.key]}</span>
               <ul>{g.rows.map((r) => <Row key={r.key} r={r} />)}</ul>
+              {g.key === "jobs" && average.unlabeled > 0 ? (
+                <p data-average-unlabeled className="pt-[6px] text-[12.5px] leading-[1.55] text-[color:var(--fg-faint)]">{copy.jobsShort(average.unlabeled)}</p>
+              ) : null}
             </div>
           ))}
         </div>

@@ -118,6 +118,8 @@ export const deckStatsCopy = {
     diffHigher: (n: string) => `${n} higher`,
     diffLower: (n: string) => `${n} lower`,
     same: "the same",
+    jobsShort: (n: number) =>
+      `${n} ${n === 1 ? "card isn’t" : "cards aren’t"} labeled yet, so the job counts may run short until ${n === 1 ? "it is" : "they are"}.`,
     row: (name: string, you: string, avg: string, diff: string) => `${name}: this deck ${you}, average ${avg}, ${diff}`,
     miniColumn: (label: string, diff: number) =>
       diff === 0 ? `Mana value ${label}: the same as the average` : `Mana value ${label}: ${Math.abs(diff).toFixed(1)} ${diff > 0 ? "more" : "fewer"} than the average`,

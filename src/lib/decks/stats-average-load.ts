@@ -47,7 +47,10 @@ export function averageDeckFrom(skeleton: ProfileSkeleton, names: string[], iden
     targets: composition ? composition.targets : null,
     curve: folded ? Array.from({ length: CURVE_MAX + 1 }, (_, i) => folded.get(i) ?? 0) : null,
     manaValue,
-    roles: composition && !measuredRoles ? null : skeleton.roleTargets.targets,
+    // The two chains resolve independently, so the job targets can come from another rung than the
+    // composition the basis line names. Only a rung that IS the named one draws; otherwise the bars would
+    // sit under a line claiming a different average.
+    roles: composition ? (skeleton.roleTargets.of === composition.of ? skeleton.roleTargets.targets : null) : skeleton.roleTargets.targets,
   };
 }
 
