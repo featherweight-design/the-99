@@ -23,7 +23,9 @@ export type LabelTargetRole = (typeof LABEL_TARGET_ROLES)[number];
 const LAND_TO_BATTLEFIELD = /onto the battlefield/i;
 /** A discount on the spells the controller casts, as opposed to one on the card itself or on an
  *  ability (Metalwork Colossus, Bruenor, Zirda). */
-const DISCOUNTS_YOUR_SPELLS = /\bspells?\b[^.\n]{0,40}\byou cast\b/i;
+const DISCOUNTS_YOUR_SPELLS = /\bspells?\b[^.\n]{0,40}\b(?:you cast|cost)\b/i;
+/** A limit the label stores as `restrictedTo: null` because the type is chosen or imprinted at play (Cloud Key, Semblance Anvil). */
+const CHOSEN_LIMIT = /\b(?:chosen|exiled card|imprint)\b/i;
 
 /** The card's own discount sentence ("This spell costs {1} less for each spell you cast this turn."). */
 const OWN_COST_SENTENCE = /^(?:this|~)\b[^\n]*\bcosts?\b[^\n]*$/gim;
@@ -39,7 +41,10 @@ function isRampJob(job: Job, oracleText: string | null | undefined): boolean {
   if (job.kind !== "ramp") return false;
   if (job.rampKind === "fetchesLand") return oracleText == null || LAND_TO_BATTLEFIELD.test(oracleText);
   if (job.rampKind === "costReduction") {
-    return job.restrictedTo == null && (oracleText == null || DISCOUNTS_YOUR_SPELLS.test(oracleText.replace(OWN_COST_SENTENCE, "")));
+    if (job.restrictedTo != null) return false;
+    if (oracleText == null) return true;
+    const text = oracleText.replace(OWN_COST_SENTENCE, "");
+    return DISCOUNTS_YOUR_SPELLS.test(text) && !CHOSEN_LIMIT.test(text);
   }
   return true;
 }

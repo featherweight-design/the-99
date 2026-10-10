@@ -93,6 +93,15 @@ describe("labelRoleSet", () => {
       expect(labelRoleSet([ramp("costReduction")], "Creature", "Noncreature spells you cast cost {1} less to cast.")).toEqual(["ramp"]);
     });
 
+    it("counts a symmetric discount on spells in general (Helm of Awakening)", () => {
+      expect(labelRoleSet([ramp("costReduction")], "Artifact", "Spells cost {1} less to cast.")).toEqual(["ramp"]);
+    });
+
+    it("does not count a discount limited to a type chosen or imprinted at play", () => {
+      expect(labelRoleSet([ramp("costReduction")], "Artifact", "As this enters, choose a card type. Spells of the chosen type you cast cost {1} less to cast.")).toEqual([]);
+      expect(labelRoleSet([ramp("costReduction")], "Artifact", "Imprint — When this enters, you may exile a nonland card from your hand. Spells you cast that share a card type with the exiled card cost {2} less to cast.")).toEqual([]);
+    });
+
     it("keeps a card ramp when another of its ramp jobs qualifies", () => {
       expect(labelRoleSet([ramp("fetchesLand"), ramp("tapsForMana")], "Creature", SCRYING)).toEqual(["ramp"]);
     });
