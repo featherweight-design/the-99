@@ -37,6 +37,12 @@ describe("rolesWithLabels", () => {
     expect(rolesWithLabels(rock, labels({ other: ["draw"] }))).toEqual(["ramp"]);
   });
 
+  it("credits a land only as a land on the label basis, even when its text also reads draw", () => {
+    const canopy = c({ oracleId: "canopy", typeLine: "Land", oracleText: "{T}, Pay 1 life: Add {G} or {W}.\n{1}, {T}, Sacrifice Horizon Canopy: Draw a card." });
+    expect(rolesWithLabels(canopy, undefined)).toEqual(["land", "draw"]);
+    expect(rolesWithLabels(canopy, labels({}))).toEqual(["land"]);
+  });
+
   it("leaves a land to the classifier whatever its label says", () => {
     const land = c({ oracleId: "land", typeLine: "Land", oracleText: "{T}: Add {G}." });
     expect(rolesWithLabels(land, labels({ land: ["ramp"] }))).toEqual(["land"]);

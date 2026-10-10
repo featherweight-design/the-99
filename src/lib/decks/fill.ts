@@ -268,7 +268,7 @@ const TIE_BREAK_WINDOW = 200;
  * is counted by that label, and a card WITH NO LABEL YET falls back to the classifier for that
  * card: a new set before the weekly label job must still be placeable, and a skipped card would
  * vanish from the deck the fill builds (Hugh, 2026-10-09). A land stays the classifier's call
- * either way, so the mana base and the land drops are untouched; a labeled card with no role
+ * either way, so the mana base and the land drops are untouched, and on the label basis it fills only the land role; a labeled card with no role
  * (`[]`) fills none, which is the Jobs card's rule.
  */
 export function rolesWithLabels(
@@ -276,7 +276,11 @@ export function rolesWithLabels(
   labels: ReadonlyMap<string, readonly LabelTargetRole[]> | undefined,
 ): ReturnType<typeof classifyRoles> {
   const byText = classifyRoles({ ...card, oracleText: castFaceText(card.oracleText, card.layout) });
-  if (!labels || !card.oracleId || byText.includes("land")) return byText;
+  if (!labels || !card.oracleId) return byText;
+  // A land is a land and nothing else on this basis: the label targets and the deck counter exclude
+  // land faces from all four roles, so a land whose text also reads draw or removal (Horizon Canopy)
+  // must not be credited to those floors.
+  if (byText.includes("land")) return ["land"];
   const byLabel = labels.get(card.oracleId);
   return byLabel ? [...byLabel] : byText;
 }
