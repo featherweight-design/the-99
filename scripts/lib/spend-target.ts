@@ -37,10 +37,10 @@ export function resolveSpendTarget(argv: readonly string[], env: Record<string, 
   );
 }
 
-/** Postgres 42703 (undefined_column) on `origin`: the database has not applied migration 0082. */
+/** Postgres 42703 (undefined_column) naming `origin` (any other missing column is a different failure): the database has not applied migration 0082. */
 export function isMissingOriginColumn(err: unknown): boolean {
   const e = err as { code?: string; message?: string } | null;
-  return e?.code === "42703" || /column "origin" does not exist/.test(e?.message ?? "");
+  return /column "origin" does not exist/.test(e?.message ?? "") && (e?.code === undefined || e.code === "42703");
 }
 
 export const MISSING_ORIGIN_MESSAGE =

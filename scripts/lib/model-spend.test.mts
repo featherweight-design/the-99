@@ -59,7 +59,8 @@ describe("resolveSpendTarget", () => {
 
 describe("isMissingOriginColumn", () => {
   it("recognizes an unmigrated database by code or message, and nothing else", () => {
-    expect(isMissingOriginColumn({ code: "42703", message: "x" })).toBe(true);
+    expect(isMissingOriginColumn({ code: "42703", message: 'column "origin" does not exist' })).toBe(true);
+    expect(isMissingOriginColumn({ code: "42703", message: 'column "cost_micro_usd" does not exist' })).toBe(false);
     expect(isMissingOriginColumn(new Error('column "origin" does not exist'))).toBe(true);
     expect(isMissingOriginColumn(new Error("connection refused"))).toBe(false);
     expect(isMissingOriginColumn(null)).toBe(false);
