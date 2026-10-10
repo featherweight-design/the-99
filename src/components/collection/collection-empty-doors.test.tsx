@@ -1,8 +1,8 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const refresh = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh, push: vi.fn() }) }));
+const settle = vi.fn();
+vi.mock("../../app/collection/edit-actions", () => ({ settleCollectionWrite: (...a: unknown[]) => settle(...a) }));
 
 // The sheet is exercised by its own tests; here it only has to open, report a save, and close.
 let sheetProps: { onSaved?: (n: number) => void; onClose: () => void } | null = null;
@@ -17,7 +17,7 @@ const { CollectionEmptyDoors } = await import("./collection-empty-doors");
 
 describe("CollectionEmptyDoors", () => {
   beforeEach(() => {
-    refresh.mockReset();
+    settle.mockReset();
     sheetProps = null;
   });
 
@@ -45,15 +45,15 @@ describe("CollectionEmptyDoors", () => {
     fireEvent.click(screen.getByRole("button", { name: /Add cards/ }));
     act(() => sheetProps!.onClose());
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(refresh).not.toHaveBeenCalled();
+    expect(settle).not.toHaveBeenCalled();
   });
 
-  it("refreshes the page only when the sheet closes after a save, so the saved state is not unmounted under the reader", () => {
+  it("settles the write (a fresh page) only when the sheet closes after a save, so the saved state is not unmounted under the reader", () => {
     render(<CollectionEmptyDoors />);
     fireEvent.click(screen.getByRole("button", { name: /Add cards/ }));
     act(() => sheetProps!.onSaved!(3));
-    expect(refresh).not.toHaveBeenCalled();
+    expect(settle).not.toHaveBeenCalled();
     act(() => sheetProps!.onClose());
-    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(settle).toHaveBeenCalledTimes(1);
   });
 });

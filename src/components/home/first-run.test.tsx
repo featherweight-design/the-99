@@ -14,6 +14,7 @@ vi.mock("../../app/collection/actions", () => ({
   previewUpload: vi.fn(),
 }));
 
+vi.mock("../../app/collection/edit-actions", () => ({ settleCollectionWrite: vi.fn() }));
 vi.mock("../collection/add-cards-sheet", () => ({
   AddCardsSheet: () => <div role="dialog" aria-label="Add cards sheet" />,
 }));

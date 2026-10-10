@@ -37,7 +37,7 @@ vi.mock("../../lib/collection/invalidate", () => ({ invalidateCollectionReaders:
 vi.mock("next/server", () => ({ after: (fn: () => unknown) => (stub.deferred ? stub.deferred.push(fn) : fn()) }));
 vi.mock("../../lib/recs/warm", () => ({ warmCommanderScores: stub.warm }));
 
-import { addToCollection, editCollection, loadPrintingChoices, searchCollectionCards } from "./edit-actions";
+import { addToCollection, editCollection, settleCollectionWrite, loadPrintingChoices, searchCollectionCards } from "./edit-actions";
 
 const catalogHolds = (finishes = ["nonfoil", "foil"]) =>
   stub.resolve.mockResolvedValue(new Map([[`${ORACLE}|lea|1`, { scryfallId: PRINTING, finishes }]]));
@@ -87,6 +87,15 @@ describe("addToCollection", () => {
     expect(stub.apply.mock.calls[0][2]).toEqual({ id: ACTION });
     expect(stub.invalidate).toHaveBeenCalledWith("user_1");
     expect(stub.warm).toHaveBeenCalledWith("user_1");
+  });
+
+  it("settleCollectionWrite invalidates inside the action, and is refused with the switch off", async () => {
+    await settleCollectionWrite();
+    expect(stub.invalidate).toHaveBeenCalledWith("user_1");
+    stub.invalidate.mockReset();
+    stub.ledger = false;
+    await expect(settleCollectionWrite()).rejects.toThrow("collection editing is off");
+    expect(stub.invalidate).not.toHaveBeenCalled();
   });
 
   it("refuses a printing the catalog does not hold, or a finish it was never printed in", async () => {

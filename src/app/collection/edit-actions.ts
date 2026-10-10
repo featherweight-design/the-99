@@ -28,6 +28,17 @@ async function signedInEditor(): Promise<string> {
   return userId;
 }
 
+/**
+ * Called when a sheet that saved is closed. The write invalidated the readers after its response
+ * (`settled`), and a `router.refresh()` from the close could reach the server before that ran and
+ * draw the old list from its cache. This invalidates inside the action instead, so the reply
+ * carries the page as it now is and nothing races: by the time the sheet closes, the reader is
+ * about to look at that page anyway.
+ */
+export async function settleCollectionWrite(): Promise<void> {
+  invalidateCollectionReaders(await signedInEditor());
+}
+
 /** A sheet session is ten to forty cards; this is a bound on a request, not on a session. */
 const MAX_LINES = 500;
 /** What one add line may bring in. A typo bound, not a holding bound: holdings can grow past it. */

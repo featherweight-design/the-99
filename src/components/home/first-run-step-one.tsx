@@ -11,7 +11,7 @@
 // state and nothing else.
 
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { settleCollectionWrite } from "../../app/collection/edit-actions";
 import { AddCardsSheet } from "../collection/add-cards-sheet";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { ReplaceFlow } from "../collection/replace-flow";
@@ -19,7 +19,6 @@ import { refreshCopy } from "../../lib/copy/refresh";
 
 export function FirstRunStepOne({ fan, addByHand = false }: { fan: React.ReactNode; addByHand?: boolean }) {
   const c = refreshCopy.firstRun;
-  const router = useRouter();
   const [adding, setAdding] = useState(false);
   const saved = useRef(false);
   const trigger = useRef<HTMLElement | null>(null);
@@ -110,7 +109,7 @@ export function FirstRunStepOne({ fan, addByHand = false }: { fan: React.ReactNo
           }}
           onClose={() => {
             setAdding(false);
-            if (saved.current) router.refresh();
+            if (saved.current) void settleCollectionWrite();
           }}
         />
       ) : null}

@@ -5,7 +5,7 @@
 
 import Link from "next/link";
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { settleCollectionWrite } from "../../app/collection/edit-actions";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { AddCardsSheet } from "./add-cards-sheet";
 import { ReplaceIcon } from "./replace-icon";
@@ -40,7 +40,6 @@ function DoorMark({ children }: { children: React.ReactNode }) {
 
 export function CollectionEmptyDoors() {
   const c = collectionEditCopy.empty;
-  const router = useRouter();
   const [adding, setAdding] = useState(false);
   const saved = useRef(false);
   const trigger = useRef<HTMLElement | null>(null);
@@ -79,7 +78,7 @@ export function CollectionEmptyDoors() {
           }}
           onClose={() => {
             setAdding(false);
-            if (saved.current) router.refresh();
+            if (saved.current) void settleCollectionWrite();
           }}
         />
       ) : null}

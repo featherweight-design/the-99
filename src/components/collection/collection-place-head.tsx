@@ -36,10 +36,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { GhostButton } from "../ui/button";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
+import { settleCollectionWrite } from "../../app/collection/edit-actions";
 import { AddCardsSheet } from "./add-cards-sheet";
 import { ReplaceIcon } from "./replace-icon";
 import { PendingReporter } from "../shell/pending-reporter";
@@ -164,7 +165,6 @@ export function CollectionPlaceHead({
   const { stats, lastUpdatedLabel } = live;
   // Add cards (collection edit §B). The control that opened the sheet gets focus back on close.
   const [adding, setAdding] = useState(false);
-  const router = useRouter();
   const savedWhileOpen = useRef(false);
   const addTrigger = useRef<HTMLElement | null>(null);
   const openAdd = (e: React.MouseEvent<HTMLElement>) => {
@@ -309,7 +309,7 @@ export function CollectionPlaceHead({
           // save would unmount the sheet's saved state on an empty collection's page.
           onClose={() => {
             setAdding(false);
-            if (savedWhileOpen.current) router.refresh();
+            if (savedWhileOpen.current) void settleCollectionWrite();
           }}
         />
       ) : null}

@@ -1,8 +1,9 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const refresh = vi.fn();
-vi.mock("next/navigation", () => ({ usePathname: () => "/collection", useRouter: () => ({ refresh, push: vi.fn() }) }));
+const settle = vi.fn();
+vi.mock("../../app/collection/edit-actions", () => ({ settleCollectionWrite: (...a: unknown[]) => settle(...a) }));
+vi.mock("next/navigation", () => ({ usePathname: () => "/collection" }));
 vi.mock("next/link", () => ({
   default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
     <a href={href} {...rest}>
@@ -33,21 +34,21 @@ function open() {
 
 describe("CollectionPlaceHead · the list refreshes when the Add sheet closes after a save", () => {
   beforeEach(() => {
-    refresh.mockReset();
+    settle.mockReset();
     sheet = null;
   });
 
-  it("refreshes the route on close after a save, not at the save", () => {
+  it("settles the write on close after a save, not at the save", () => {
     open();
     act(() => sheet!.onSaved!(2));
-    expect(refresh).not.toHaveBeenCalled();
+    expect(settle).not.toHaveBeenCalled();
     act(() => sheet!.onClose());
-    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(settle).toHaveBeenCalledTimes(1);
   });
 
   it("leaves the route alone when the sheet closes unsaved", () => {
     open();
     act(() => sheet!.onClose());
-    expect(refresh).not.toHaveBeenCalled();
+    expect(settle).not.toHaveBeenCalled();
   });
 });
