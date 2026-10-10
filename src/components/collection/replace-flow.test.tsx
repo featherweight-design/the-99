@@ -452,6 +452,14 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
     expect(screen.queryByText("You already own every card in this file.")).toBeNull();
   });
 
+  it("withdraws Switch to Replace while an Add confirm is in flight", async () => {
+    serve(data(), addData(true));
+    confirmUpload.mockReturnValue(new Promise(() => {}));
+    const confirm = await reachReview("add");
+    await act(async () => fireEvent.click(confirm));
+    expect(screen.queryByRole("button", { name: "Switch to Replace" })).toBeNull();
+  });
+
   it("Cancel on the review steps back to the choice, keeping the pick", async () => {
     serve(data());
     await reachReview("add");

@@ -128,7 +128,7 @@ export function ReplaceFlow({
   }, [deckCheck, previewedId, firstImport, readKey]);
 
   function openReview(mode: UploadMode) {
-    if (!datas) return;
+    if (!datas || pending) return;
     const data = datas[mode];
     setPicked(mode);
     setChange({ data, decks: data.decks, fresh: new Set(), changed: false, failure: null });
@@ -349,7 +349,8 @@ export function ReplaceFlow({
         change={change}
         mode={choosing ? (picked ?? "replace") : "replace"}
         step={choosing ? collectionEditCopy.upload.step(3, 4) : undefined}
-        onSwitchToReplace={choosing ? () => openReview("replace") : undefined}
+        // Not while a confirm is in flight: the pick and the review would move to Replace under a write that is still an Add.
+        onSwitchToReplace={choosing && !pending ? () => openReview("replace") : undefined}
         onRetry={change ? () => void onConfirm(change.decks) : undefined}
       />
       {confirming && (
