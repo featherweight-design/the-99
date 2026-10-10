@@ -48,7 +48,8 @@ vi.mock("../collection/browse", async (importActual) => {
 
 import {
   heldPrintingFor, readDeckPrintings, readRecordedPrintingArt, recordedColumns, recordedKey,
-  resolveCommanderPrintingsByDeck, resolveDeckOwnedPrintings, resolveDeckPrintings, type DeckPrinting,
+  readHeldPricePicks, resolveCommanderPrintingsByDeck, resolveDeckOwnedPrintings, resolveDeckPrintings,
+  type DeckPrinting,
 } from "./printings";
 
 function printing(setCode: string, collectorNumber: string, extra: Partial<BrowsePrinting> = {}): BrowsePrinting {
@@ -263,5 +264,30 @@ describe("readRecordedPrintingArt", () => {
     expect(read).toContain("when e.image_uri is not null then coalesce(e.art_crop_uri, c.art_crop_uri)");
     expect(read).toContain("where e.oracle_id is not null or r.oracle_id is not null");
     expect(read).toMatch(/when e\.image_uri is not null then e\.flavor_name\s+when r\.image_uri is not null then r\.flavor_name/);
+  });
+});
+
+describe("readHeldPricePicks", () => {
+  it("reads nothing with the switch off, so every figure is today's", async () => {
+    process.env.DECK_PRINTINGS_ENABLED = "";
+    expect(await readHeldPricePicks("u", [DECK])).toEqual([]);
+    expect(state.texts).toEqual([]);
+  });
+
+  it("passes only picks the player still holds, of cards still in the deck", async () => {
+    state.picks = [{ deck_id: DECK, oracle_id: OWNED, set_code: "khm", collector_number: "31" }];
+    expect(await readHeldPricePicks("u", [DECK])).toEqual([
+      { deckId: DECK, oracleId: OWNED, setCode: "khm", collectorNumber: "31" },
+    ]);
+    const read = state.texts.find((t) => t.includes("from deck_printings"))!;
+    expect(read).toContain("dc.deck_id = dp.deck_id and dc.oracle_id = dp.oracle_id");
+    expect(read).toContain("d.commander_oracle_id = dp.oracle_id");
+    expect(read).toContain("lower(ci.set_code) = dp.set_code");
+    expect(read).toContain("ci.quantity > 0");
+  });
+
+  it("fails soft to no picks", async () => {
+    state.fail = true;
+    expect(await readHeldPricePicks("u", [DECK])).toEqual([]);
   });
 });

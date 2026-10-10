@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { sumShopping } from "./shopping-rollup";
 
 describe("sumShopping", () => {
@@ -30,5 +30,43 @@ describe("sumShopping", () => {
 
   it("is zero over an empty collection of decks", () => {
     expect(sumShopping([])).toEqual({ copies: 0, cents: 0, pricedCopies: 0 });
+  });
+});
+
+describe("loadShoppingRollup, per-deck picks", () => {
+  it("prices one card picked differently in two decks at each deck's own figure", async () => {
+    vi.resetModules();
+    const CARD = "33333333-3333-4333-8333-333333333333";
+    const NEWEST = new Date("2026-10-10T09:00:00Z");
+    const fact = (cents: number) => ({ cents, foilCents: null, etchedCents: null, asOf: NEWEST });
+    vi.doMock("./availability-query", () => ({
+      loadDeckBuyRows: async () => [
+        { deckId: "deck-a", oracleId: CARD, quantity: 1 },
+        { deckId: "deck-b", oracleId: CARD, quantity: 1 },
+        { deckId: "deck-c", oracleId: CARD, quantity: 1 },
+      ],
+    }));
+    vi.doMock("./printings", () => ({ readHeldPricePicks: async () => [] }));
+    vi.doMock("./price-query", async (importActual) => {
+      const actual = await importActual<typeof import("./price-query")>();
+      return {
+        ...actual,
+        loadPrices: async () => ({
+          prices: new Map([[CARD, fact(70)]]),
+          newestAsOf: NEWEST,
+          picked: new Map([[`deck-a|${CARD}`, fact(110)], [`deck-b|${CARD}`, fact(450)]]),
+        }),
+      };
+    });
+    const { loadShoppingRollup } = await import("./shopping-rollup");
+    const rollup = await loadShoppingRollup("u");
+    expect(rollup.byDeck.get("deck-a")?.cents).toBe(110);
+    expect(rollup.byDeck.get("deck-b")?.cents).toBe(450);
+    // A deck with no pick keeps today's figure.
+    expect(rollup.byDeck.get("deck-c")?.cents).toBe(70);
+    expect(rollup.total.cents).toBe(630);
+    vi.doUnmock("./availability-query");
+    vi.doUnmock("./printings");
+    vi.doUnmock("./price-query");
   });
 });

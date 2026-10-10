@@ -27,6 +27,7 @@ import {
 } from "../collection/browse";
 import { recordSoftFailure } from "../cache/soft-failure";
 import { deckPrintingsEnabled } from "./printings-flag";
+import type { PricePick } from "./price-query";
 
 /** A deck's pick as stored: `set_code` lowercase, `collector_number` text. */
 export type DeckPick = { setCode: string; collectorNumber: string };
@@ -381,4 +382,49 @@ export function recordedColumns(
   return p && p.setCode !== "" && p.source !== "catalogSubstitute"
     ? { setCode: p.setCode.toLowerCase(), collectorNumber: p.collectorNumber }
     : { setCode: null, collectorNumber: null };
+}
+
+/**
+ * Every pick these decks hold that the player still owns, as the price read takes them
+ * (`loadPrices(ids, picks)`). Empty with the switch off, so every figure is today's. Membership-
+ * scoped like `readDeckPicks`, and HELD: a pick whose printing left the Collection is not passed,
+ * so no figure prices a printing the art no longer shows. Fail-soft to no picks, which is
+ * today's figure on every row.
+ */
+export async function readHeldPricePicks(userId: string, deckIds: string[]): Promise<PricePick[]> {
+  const ids = [...new Set(deckIds)];
+  if (!deckPrintingsEnabled() || ids.length === 0) return [];
+  try {
+    const { rows } = await db.execute<{
+      deck_id: string; oracle_id: string; set_code: string; collector_number: string;
+    }>(sql`
+      select dp.deck_id, dp.oracle_id, dp.set_code, dp.collector_number
+      from deck_printings dp
+      join decks d on d.id = dp.deck_id
+      where d.user_id = ${userId}
+        and dp.deck_id = any(${sql.param(ids)}::uuid[])
+        and (
+          exists (
+            select 1 from deck_cards dc
+            where dc.deck_id = dp.deck_id and dc.oracle_id = dp.oracle_id
+          )
+          or d.commander_oracle_id = dp.oracle_id
+          or d.partner_oracle_id = dp.oracle_id
+        )
+        and exists (
+          select 1 from collection_items ci
+          where ci.user_id = d.user_id
+            and ci.oracle_id = dp.oracle_id
+            and lower(ci.set_code) = dp.set_code
+            and ci.collector_number = dp.collector_number
+            and ci.quantity > 0
+        )
+    `);
+    return rows.map((r) => ({
+      deckId: r.deck_id, oracleId: r.oracle_id, setCode: r.set_code, collectorNumber: r.collector_number,
+    }));
+  } catch {
+    recordSoftFailure();
+    return [];
+  }
 }

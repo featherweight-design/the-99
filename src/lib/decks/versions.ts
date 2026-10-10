@@ -20,11 +20,12 @@ import { pruneOrphanAssignments } from "./prune-assignments";
 import { clearPullReleases } from "./pull-release";
 import { commanderMoved } from "../commander-change/pending";
 import {
-  readDeckOwnedPrintings, readRecordedPrintingArt, recordedColumns, recordedKey, resolveDeckPrintings,
+  readDeckOwnedPrintings, readHeldPricePicks, readRecordedPrintingArt, recordedColumns, recordedKey,
+  resolveDeckPrintings,
   type DeckPrinting, type RecordedPrinting,
 } from "./printings";
 import { deckPrintingsEnabled } from "./printings-flag";
-import { loadPrices } from "./price-query";
+import { loadPrices, pricesForDeck } from "./price-query";
 import { loadAvailability, loadDeckBuyRows } from "./availability-query";
 import type { Availability } from "./availability";
 import {
@@ -602,7 +603,10 @@ export async function loadVersionDiff(
     // nothing", which these rows would draw as a "not owned" dot and a buy tag on cards the
     // reader holds. A failure here reaches `getVersionDiff`'s caller as an unavailable diff.
     readDeckOwnedPrintings(userId, deckId, all.map((c) => c.oracleId)),
-    loadPrices(pricedIds(all)),
+    // Pick-aware, as the deck page prices its rows (deck printings).
+    readHeldPricePicks(userId, [deckId])
+      .then((picks) => loadPrices(pricedIds(all), picks))
+      .then((read) => ({ ...read, prices: pricesForDeck(read, deckId) })),
     // Shopping's own bill for this deck, so a row's tag is Shopping's answer rather than a second
     // reading of ownership. User-wide claims inside, narrowed to this deck's rows.
     ids.length > 0 ? loadDeckBuyRows(userId, [deckId]) : [],

@@ -28,7 +28,8 @@ import {
   poolEmptiedByNegativeCut,
   type TopOffCandidateWithFacts,
 } from "../../../lib/decks/last-slots";
-import { loadPrices } from "../../../lib/decks/price-query";
+import { loadPrices, priceFor } from "../../../lib/decks/price-query";
+import { readHeldPricePicks } from "../../../lib/decks/printings";
 import { loadAvailability } from "../../../lib/decks/availability-query";
 import { provenanceForm } from "../../../lib/decks/price";
 import { listDeckGames, summarizeGames } from "../../../lib/decks/games";
@@ -343,7 +344,9 @@ export default async function DeckBuilderPage({
   // note, which is the state the round draws for a card that has no facts
   // anyway — never the builder going down.
   const [priced, availability, candidateFacts, completions, considerRead] = await Promise.all([
-    perf.timed("prices", () => loadPrices([
+    // The deck's held printing picks ride in the same price statement (deck printings), so a
+    // picked card is priced as the buy tag rules: its pick when in stock, else today's figure.
+    perf.timed("prices", async () => loadPrices([
       ...new Set([
         ...detail.cards.map((c) => c.oracleId),
         // The commanders too (H28): an unowned or spoken-for commander is on the Shopping list,
@@ -353,7 +356,7 @@ export default async function DeckBuilderPage({
         ...suggestions.map((s) => s.oracleId),
         ...candidateCards.filter((c) => !c.owned).map((c) => c.oracleId),
       ]),
-    ])).catch(() => null),
+    ], await readHeldPricePicks(userId, [id]))).catch(() => null),
     ownedIds.length > 0
       ? perf.timed("availability", () => loadAvailability(userId, { excludeDeckId: id, oracleIds: ownedIds })).catch(() => null)
       : null,
@@ -399,7 +402,7 @@ export default async function DeckBuilderPage({
   // extra scalar rather than a collection across the boundary.
   const withPrice = <T extends { oracleId: string }>(card: T) => ({
     ...card,
-    price: priced?.prices.get(card.oracleId) ?? null,
+    price: priced ? priceFor(priced, id, card.oracleId) : null,
   });
   const cards = detail.cards.map(withPrice);
   // The commanders carry a price for the same reason, and on the same rule: the Shopping list

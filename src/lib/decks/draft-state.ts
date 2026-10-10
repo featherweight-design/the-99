@@ -8,7 +8,7 @@
 // loader for the per-card detail only the review page draws, so the two never
 // repeat a read between them.
 
-import { resolveDeckOwnedPrintings } from "./printings";
+import { readHeldPricePicks, resolveDeckOwnedPrintings } from "./printings";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, deckCards, decks, deckVersionCards } from "../../db/schema";
@@ -21,7 +21,7 @@ import { proxiedOracleIds } from "./proxies";
 import { releasableClaims } from "./draft-shape";
 import { pullSources, type Availability } from "./availability";
 import { loadAvailability } from "./availability-query";
-import { loadPrices, type PriceRead } from "./price-query";
+import { loadPrices, pricesForDeck, type PriceRead } from "./price-query";
 import { formatCents, formatPriceFigure, priceState, summarisePrices } from "./price";
 import { newestVersion, versionCards } from "./versions";
 import { isBasicLand, type DeckDetailCard } from "./grouping";
@@ -346,7 +346,11 @@ async function readDraft(
   const unfree = unfreeAdds(bucketed);
   const priceAsked = (detailed ? changed : unfree.map((a) => a.oracleId)).filter(notBasic);
   const prices = priceAsked.length > 0
-    ? await loadPrices(priceAsked).catch(() => null)
+    // Pick-aware (deck printings): a changed card the deck has picked a printing of is priced as its
+    // own row on the deck page prices it, so the review screen and the deck never disagree.
+    ? await loadPrices(priceAsked, await readHeldPricePicks(userId, [deckId]))
+        .then((read) => ({ ...read, prices: pricesForDeck(read, deckId) }))
+        .catch(() => null)
     : null;
   // `shortfall`, never `needed`: one free copy against an ask of three is a
   // purchase of two, and charging for three quotes a card already on the table.
