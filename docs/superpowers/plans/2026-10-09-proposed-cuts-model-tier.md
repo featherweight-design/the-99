@@ -40,6 +40,7 @@ bracket, so the declaration is threaded in and a flag that bracket permits is no
   locked card or a Key card, no duplicates, the count is between 1 and `over`, and every cited figure
   equals the one in the input (a role count, an inclusion percent, a curve cell). A cut failing a
   rule is dropped, never repaired by a second call.
+- **Next step if the blind read finds invented claims:** render the reason in the app from the validated cites, instead of accepting the model's prose. The validator checks each cited figure and three text rules, not that the prose follows from the cites.
 - **Citation pattern:** `presentation.ts`' rule keys, so the reason text and the validator share
   one source. No bracket claim in prose, as Suggested changes already forbids.
 - **Credit:** one credit per press through `allowance.ts`; a new `FEATURE_CALLS` entry
