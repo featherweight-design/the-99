@@ -114,6 +114,9 @@ describe("what the opening waits on", () => {
     expect(holdsOpening(all)).toBe(false);
     expect(holdsOpening({ ...all, peekPending: true })).toBe(true);
     expect(holdsOpening({ ...all, overviewSettled: false })).toBe(true);
+    // Proposed cuts holds the opening with no reading at all (an overfull deck has none).
+    expect(holdsOpening({ ...all, hasReading: false, cutsSettled: false })).toBe(true);
+    expect(holdsOpening({ ...all, hasReading: false, cutsSettled: true })).toBe(false);
     expect(holdsOpening({ ...all, suggestionsSettled: false })).toBe(true);
   });
 

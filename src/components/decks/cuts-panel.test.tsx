@@ -44,7 +44,7 @@ describe("CutsPanelView", () => {
   it("C1: the count, Look deeper first, no card named", async () => {
     await mount(deps(panelOf()));
     expect(screen.getByText("Six over the ninety-nine.")).toBeTruthy();
-    expect(screen.getByRole("button", { name: copy.deeper.actionAria })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Look deeper. Uses 1 credit." })).toBeTruthy();
     expect(screen.getByTestId("count-role:ramp").textContent).toContain("14");
     expect(screen.getByText(copy.neverCut("Gishath", 4, 6))).toBeTruthy();
     expect(screen.queryByText("Suggestion")).toBeNull();
@@ -58,14 +58,14 @@ describe("CutsPanelView", () => {
   it("a press runs with its own run id and then reads the result", async () => {
     const d = deps(panelOf());
     await mount(d);
-    fireEvent.click(screen.getByRole("button", { name: copy.deeper.actionAria }));
+    fireEvent.click(screen.getByRole("button", { name: "Look deeper. Uses 1 credit." }));
     await waitFor(() => expect(d.run).toHaveBeenCalledWith("d1", { runId: expect.stringMatching(/^[0-9a-f-]{36}$/) }));
     await waitFor(() => expect(d.read).toHaveBeenCalledTimes(2));
   });
 
   it("disables the press, with no segment, when credits are used up", async () => {
     await mount(deps(panelOf({ allowance: { used: 3, limit: 3, reopensAt: null, nextAt: null } })));
-    const b = screen.getByRole("button", { name: copy.deeper.actionAriaSpent }) as HTMLButtonElement;
+    const b = screen.getByRole("button", { name: "Look deeper. No credits left." }) as HTMLButtonElement;
     expect(b.disabled).toBe(true);
     expect(b.textContent).not.toContain(copy.deeper.credit);
   });
@@ -136,20 +136,20 @@ describe("CutsPanelView", () => {
   it("re-offer: a result for a list that has since moved is not shown, and the offer is back", async () => {
     await mount(deps(withResult(3, 3, { resultCurrent: false })));
     expect(screen.queryByText("Suggestion")).toBeNull();
-    expect(screen.getByRole("button", { name: copy.deeper.actionAria })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Look deeper. Uses 1 credit." })).toBeTruthy();
   });
 
   it("C6: an ungrounded run is a neutral refusal with the offer still there", async () => {
     await mount(deps(panelOf({ run: { id: "r", status: "failed", errorClass: "ungrounded", createdAt: new Date(), droppedCount: 3 } })));
     expect(screen.getByText(copy.deeper.refused)).toBeTruthy();
-    expect(screen.getByRole("button", { name: copy.deeper.actionAria })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Look deeper. Uses 1 credit." })).toBeTruthy();
   });
 
   it("C7: a failure carries the mark, one sentence and Try again with the credit", async () => {
     await mount(deps(panelOf({ run: { id: "r", status: "failed", errorClass: "upstream_busy", createdAt: new Date(), droppedCount: 0 } })));
     expect(screen.getByRole("img", { name: copy.deeper.failedTag })).toBeTruthy();
     expect(screen.getByText(copy.deeper.failedBody)).toBeTruthy();
-    expect(screen.getByRole("button", { name: copy.deeper.actionAria }).textContent).toContain(copy.deeper.retry);
+    expect(screen.getByRole("button", { name: "Try again. Uses 1 credit." }).textContent).toContain(copy.deeper.retry);
   });
 
   it("C8: the last cut finishes the tool in place", async () => {
@@ -158,6 +158,18 @@ describe("CutsPanelView", () => {
     await mount(deps(p));
     expect(screen.getByText(copy.done.head(99, 1))).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Look deeper/ })).toBeNull();
+  });
+
+  it("a first read that throws draws the count-failed state, not a vanished panel or a counting frame", async () => {
+    const d = deps(null, { read: vi.fn(async () => { throw new Error("down"); }) });
+    render(<CutsPanelView deckId="d1" deps={d} />);
+    expect(await screen.findByText(copy.failed.heading)).toBeTruthy();
+    expect(screen.getByRole("img", { name: copy.failed.tag })).toBeTruthy();
+  });
+
+  it("a partner deck's lead names its own body", async () => {
+    await mount(deps(panelOf({ bodySize: 98, over: 5, total: 103 })));
+    expect(screen.getByText("Five over the ninety-eight.")).toBeTruthy();
   });
 
   it("draws nothing for a deck that is not over", async () => {

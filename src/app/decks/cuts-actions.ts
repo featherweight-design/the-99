@@ -15,6 +15,7 @@ import { readCutsState, readKeyCardNames, readProposedCuts, reapCutsRuns } from 
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import { deckSurfaces } from "../../lib/decks/revalidate";
+import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { commanderName } from "../../lib/decks/tuning-read";
 import { deckNameIndex, normalizeName } from "../../lib/synopsis/facts";
 import { callModel } from "../../lib/model/client";
@@ -107,6 +108,10 @@ export async function runProposedCuts(
   // The intent the player already stored on the deck (the one Suggested changes reads); it goes
   // through `playerText` inside the pack. No notes in this version.
   const pack = buildCutsPack({ facts, commanderName: name, keyCards, intent, texts });
+  // Every card left to cut is a Key card: the validator would drop every answer, so no credit is held.
+  if (pack.cards.length > 0 && pack.cards.every((c) => pack.keyCardIds.includes(c.oracleId))) {
+    return { ok: false, message: lockedCardsCopy.tuning.allLocked(await commanderName(head)) };
+  }
   const { system, user } = buildCutsPrompt(pack);
   // The reservation prices a request at the feature's input ceiling, so a prompt past it is refused
   // here, before a credit is held, rather than sent at a cost the spend cap never counted. Three
@@ -187,13 +192,19 @@ export async function readCutsPanel(deckId: string): Promise<CutsPanel | null> {
   if (!proposedCutsEnabled() || !isUuid(deckId)) return null;
   const inputs = await readProposedCuts(deckId, userId);
   if (!inputs) return null;
-  const { head, facts, locked, allLocked, fingerprint } = inputs;
+  const { head, facts, locked, allLocked: lockedOut, fingerprint } = inputs;
   const [state, name, keyCards] = await Promise.all([
     readCutsState(deckId, userId),
     commanderName(head),
     readKeyCardNames(head),
   ]);
   const declared = (head.declaredBracket as 1 | 2 | 3 | 4 | 5 | null) ?? null;
+  // Key cards that are still candidates, resolved the way the validator resolves them. A name the
+  // deck no longer holds, a duplicate, or a locked card counts for nothing; and when every card
+  // the player has not locked is a Key card, a deeper look has nothing it may name.
+  const byName = deckNameIndex(facts.cards);
+  const liveKey = new Set(keyCards.flatMap((k) => { const hit = byName.get(normalizeName(k)); return hit ? [hit.oracleId] : []; }));
+  const allLocked = lockedOut || (facts.cards.length > 0 && facts.cards.every((c) => liveKey.has(c.oracleId)));
   const counts = cutCounts(facts, declared, name);
   return {
     ...state,
@@ -203,7 +214,7 @@ export async function readCutsPanel(deckId: string): Promise<CutsPanel | null> {
     commander: name,
     allLocked,
     lockedCount: locked.length,
-    keyCount: keyCards.length,
+    keyCount: liveKey.size,
     declaredBracket: declared,
     edhrecDecks: facts.support?.deckCount ?? null,
     thin: facts.missing.includes("inclusion"),
@@ -218,11 +229,14 @@ const REFUSALS = deckCutsCopy.panel.refusals;
 
 /** A verdict's outcome as the message the panel draws. The run's fingerprint follows a cut inside
  *  the verdict's own transaction (`cuts-verdicts.ts`), so there is nothing to chain here. */
-async function settleVerdict(outcome: CutOutcome): Promise<DeckMutationResult> {
+async function settleVerdict(outcome: CutOutcome, userId: string, membership: boolean): Promise<DeckMutationResult> {
   if (!outcome.ok) {
     return { ok: false, message: outcome.reason === "cutGone" ? REFUSALS.cutGone : outcome.reason === "cutLocked" ? REFUSALS.cutLocked : outcome.reason === "moved" ? REFUSALS.moved : REFUSALS.generic };
   }
-  revalidateDeck(outcome.deckId);
+  // A cut or an undo changes deck membership, so it retires every surface a claim reaches (the
+  // collection, commanders, discover, the changes page); Keep and Show it again move no card.
+  if (membership) revalidateClaims(outcome.deckId, userId);
+  else revalidateDeck(outcome.deckId);
   return { ok: true };
 }
 
@@ -230,24 +244,24 @@ async function settleVerdict(outcome: CutOutcome): Promise<DeckMutationResult> {
 export async function cutProposed(itemId: string): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   if (!proposedCutsEnabled() || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
-  return settleVerdict(await cutItem(itemId, userId));
+  return settleVerdict(await cutItem(itemId, userId), userId, true);
 }
 
 export async function undoProposedCut(itemId: string): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   if (!proposedCutsEnabled() || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
-  return settleVerdict(await undoCutItem(itemId, userId));
+  return settleVerdict(await undoCutItem(itemId, userId), userId, true);
 }
 
 /** Keep and Show it again change no card, so they move no fingerprint. */
 export async function keepProposedCut(itemId: string): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   if (!proposedCutsEnabled() || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
-  return settleVerdict(await setCutKept(itemId, userId, true));
+  return settleVerdict(await setCutKept(itemId, userId, true), userId, false);
 }
 
 export async function restoreProposedCut(itemId: string): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   if (!proposedCutsEnabled() || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
-  return settleVerdict(await setCutKept(itemId, userId, false));
+  return settleVerdict(await setCutKept(itemId, userId, false), userId, false);
 }

@@ -1712,3 +1712,13 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   result re-chains the run's fingerprint; an unchained edit leaves it stale), that a second cuts
   run on a deck is refused and Stop refunds. It preloads `scripts/lib/no-next-cache.cjs`, because
   `readProposedCuts` reads through `unstable_cache`, which raises outside a request.
+
+- `pnpm probe:cuts-panel` draws Proposed cuts in a real browser at 1300x900 and 390x844 against a
+  running server (`PROBE_BASE`, `next start` preferred; `PROBE_WIDTH=390` runs one width,
+  `PROBE_SHOTS=<dir>` saves the panel). It clones an over-100 deck under the audit account (a
+  persistent Clerk dev user), writes one ok run with three cuts through the real run store, and
+  deletes the clone, its runs and ONLY the ledger rows it created in a `finally`. `local-dev` or a
+  scratch branch, never staging (it writes). It proves what jsdom cannot lay out: no overflow, `Look
+  deeper` and `Cut`/`Keep` 44px tall on a phone, the count rows drawn, the Suggestion tag on every
+  line, and that a Cut collapses its row without the offer returning. The same flags must be given
+  to the server and the probe (locks are in the fingerprint).

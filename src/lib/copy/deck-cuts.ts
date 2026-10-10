@@ -16,6 +16,7 @@ export function ordinalWord(n: number): string {
   const suffix = rem100 >= 11 && rem100 <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10] ?? "th";
   return `${n}${suffix}`;
 }
+const BODY_WORDS: Record<number, string> = { 99: "ninety-nine", 98: "ninety-eight" };
 const cap = (w: string) => w.charAt(0).toUpperCase() + w.slice(1);
 
 export const deckCutsCopy = {
@@ -65,6 +66,8 @@ export const deckCutsCopy = {
     counting: "Counting your cards.",
     /** Over-99 lead's bold half comes from `overCopy`; these are the sentences after it. */
     lead: "Below is what we counted. To have the cards named, look deeper.",
+    /** The over lead, against the deck's own body: 99, or 98 with a partner. */
+    overLead: (words: string, bodySize: number) => `${words} over the ${BODY_WORDS[bodySize] ?? bodySize}.`,
     leadBare: "Below is what we counted.",
     leadNamed: (n: number) => `${cap(numberWord(n))} ${n === 1 ? "card" : "cards"} named. Cut writes to the list straight away.`,
     leadPart: (cut: number, kept: number, named: number, open: number) =>
@@ -94,19 +97,19 @@ export const deckCutsCopy = {
     deeper: {
       offerTitle: (n: number) => `Name the ${numberWord(n)} ${n === 1 ? "cut" : "cuts"}`,
       offerLead: (n: number) =>
-        `A deeper look names ${numberWord(n)} ${n === 1 ? "card" : "cards"} to cut, each with a reason taken from the count below. It also reads your description and game notes.`,
-      offerLeadThin: "EDHREC has no list for this commander to count against, so a deeper look names cuts from roles, curve, bracket and your notes only.",
+        `A deeper look names ${numberWord(n)} ${n === 1 ? "card" : "cards"} to cut, each with a reason taken from the count below. It also reads your description.`,
+      offerLeadThin: "EDHREC has no list for this commander to count against, so a deeper look names cuts from roles, curve, bracket and your description only.",
       action: "Look deeper",
       credit: "1 credit",
       actionAria: "Look deeper. Uses 1 credit.",
       actionAriaSpent: "Look deeper. No credits left.",
       pending: "Looking deeper\u2026",
       pendingLead: (n: number) => `Naming ${numberWord(n)} ${n === 1 ? "cut" : "cuts"} from the count below. You can keep editing the deck while it reads.`,
-      pendingRead: "reading the count, your description and your game notes",
+      pendingRead: "reading the count and your description",
       stop: "Stop",
       stopNote: "stopping gives the credit back",
       resultHead: (n: number) => `${cap(numberWord(n))} to cut`,
-      resultRead: (notes: number) => `named by a deeper look \u00b7 read the count below, your description and ${notes} game ${notes === 1 ? "note" : "notes"}`,
+      resultRead: "named by a deeper look \u00b7 read the count below and your description",
       resultFoot: (named: number, asked: number) => `${named} of ${asked} named \u00b7 each figure checked against the count`,
       shortRow: (n: number) => `A ${ordinalWord(n)} wasn\u2019t named`,
       shortWhy: "it cited a figure the count doesn\u2019t have \u00b7 left out, not replaced",

@@ -65,19 +65,19 @@ const clock = (ms: number) => {
 export function CutsPanelView({
   deckId,
   deps = SERVER,
-  noteCount = 0,
   deeperLooks = false,
   onSettled,
 }: {
   deckId: string;
   deps?: CutsDeps;
-  /** The deck's game notes, which a deeper look also reads. */
-  noteCount?: number;
   deeperLooks?: boolean;
   onSettled?: () => void;
 }) {
   const [panel, setPanel] = useState<CutsPanel | null>(null);
   const [counting, setCounting] = useState(false);
+  // The first read threw: the count failed, which is its own state and never a panel that vanishes
+  // or a counting frame that never ends.
+  const [loadFailed, setLoadFailed] = useState(false);
   const [pressing, setPressing] = useState(false);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -98,9 +98,11 @@ export function CutsPanelView({
       const next = await deps.read(deckId);
       if (mine === asked.current) {
         setPanel(next);
+        setLoadFailed(false);
       }
       return next;
     } catch {
+      if (mine === asked.current) setLoadFailed(true);
       return null;
     }
   }, [deps, deckId]);
@@ -128,6 +130,17 @@ export function CutsPanelView({
     return () => clearInterval(id);
   }, [running]);
 
+  if (panel === null && loadFailed) {
+    return (
+      <section aria-labelledby="cuts-heading" className="mt-[18px] rounded-[11px] px-[14px] py-[16px] md:px-[20px] md:py-[18px]"
+        style={{ background: "var(--surface-sunken)", border: "1px solid var(--border)" }}>
+        <h2 id="cuts-heading" className="flex items-center gap-[9px] font-display text-[17px] font-semibold md:text-[19px]" style={{ color: "var(--fg)" }}>
+          <FailMark label={copy.failed.tag} />{copy.failed.heading}
+        </h2>
+        <p className="mt-[6px] text-[13px]" style={{ color: "var(--fg-body)" }}>{copy.failed.body}</p>
+      </section>
+    );
+  }
   if (panel === null) {
     return counting ? (
       <section aria-label={copy.heading} aria-busy className="mt-[18px] rounded-[11px] px-[14px] py-[16px] md:px-[20px] md:py-[18px]"
@@ -224,7 +237,7 @@ export function CutsPanelView({
     if (failed || refusedRun) return copy.leadBare;
     return copy.lead;
   })();
-  const headline = over === 0 ? copy.done.head(panel.bodySize, cutCount) : overCopy.trim.lead(overWords(over));
+  const headline = over === 0 ? copy.done.head(panel.bodySize, cutCount) : copy.overLead(overWords(over), panel.bodySize);
 
   return (
     <section
@@ -286,7 +299,7 @@ export function CutsPanelView({
       )}
 
       {resultShown && !running ? (
-        <ResultBlock panel={panel} noteCount={noteCount} deps={deps} standing={standing} onSettled={verdictSettled} />
+        <ResultBlock panel={panel} deps={deps} standing={standing} onSettled={verdictSettled} />
       ) : null}
 
       {over === 0 ? null : (
@@ -341,7 +354,7 @@ function CreditButton({ label, filled, blocked, spent, onPress }: {
       type="button"
       onClick={onPress}
       disabled={blocked}
-      aria-label={spent ? d.actionAriaSpent : d.actionAria}
+      aria-label={spent ? `${label}. No credits left.` : `${label}. Uses 1 credit.`}
       className={`flex h-[44px] w-full flex-none items-stretch overflow-hidden rounded-[8px] border border-[color:var(--accent)] text-[13px] font-semibold disabled:opacity-50 md:h-[38px] md:w-auto ${filled ? "bg-[color:var(--accent)] text-[color:var(--bg)]" : "bg-transparent text-[color:var(--accent)]"}`}
     >
       <span className="flex flex-1 items-center justify-center px-[16px]">{label}</span>
@@ -416,8 +429,8 @@ function CountLine({ row }: { row: CountRow }) {
   );
 }
 
-function ResultBlock({ panel, noteCount, deps, standing, onSettled }: {
-  panel: CutsPanel; noteCount: number; deps: CutsDeps; standing: string; onSettled: (announce: string) => Promise<void>;
+function ResultBlock({ panel, deps, standing, onSettled }: {
+  panel: CutsPanel; deps: CutsDeps; standing: string; onSettled: (announce: string) => Promise<void>;
 }) {
   const { items, asked } = panel;
   const d = copy.deeper;
@@ -427,7 +440,7 @@ function ResultBlock({ panel, noteCount, deps, standing, onSettled }: {
     <div className="mt-[14px] rounded-[10px] px-[12px] py-[14px] md:px-[14px]" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
       <div className="flex flex-col gap-[3px] md:flex-row md:items-baseline md:gap-[10px]">
         <h3 className="text-[14px] font-semibold" style={{ color: "var(--fg)" }}>{d.resultHead(items.length)}</h3>
-        <span className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{d.resultRead(noteCount)}</span>
+        <span className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{d.resultRead}</span>
       </div>
       <ul className="mt-[10px] flex flex-col gap-[8px]">
         {items.map((item) => (

@@ -447,6 +447,8 @@ export function BuilderShell({
   const visitKey = `${deck.id}:${visit.n}`;
   const [tuningSettled, setTuningSettled] = useState<string | null>(null);
   const onTuningSettled = useCallback(() => setTuningSettled(visitKey), [visitKey]);
+  const [cutsSettledKey, setCutsSettledKey] = useState<string | null>(null);
+  const onCutsSettled = useCallback(() => setCutsSettledKey(visitKey), [visitKey]);
   // Shared by the empty-state field (`AnalysisEmpty`, via `AnalysisPanel`) and the checklist's
   // own "Describing in place" editor (`TuningPanel`, H35 PR 3 review fix) — the two mounts are
   // mutually exclusive, but both write through the same action.
@@ -463,6 +465,7 @@ export function BuilderShell({
     overviewSettled: !analysisEnabled || synopsis.settled,
     hasReading: reading !== null,
     suggestionsSettled: tuningSettled === visitKey,
+    cutsSettled: !proposedCutsEnabled || cutsSettledKey === visitKey,
   });
   const opening = useOpeningGate(useOpenOnce(holding, visitKey, view === "analysis"), deck.id);
   // The credit note beside each press that also writes, and whether it does (`synopsis-note.ts`).
@@ -1616,8 +1619,8 @@ export function BuilderShell({
                   cuts={proposedCutsEnabled ? (
                     <CutsPanelView
                       deckId={deck.id}
-                      noteCount={games.filter((g) => g.note !== null).length}
                       deeperLooks={deeperLooks}
+                      onSettled={onCutsSettled}
                     />
                   ) : undefined}
                   tuning={!tuningEnabled ? undefined : (permits) => (

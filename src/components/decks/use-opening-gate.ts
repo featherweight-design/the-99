@@ -44,14 +44,18 @@ export function holdsOpening({
   overviewSettled,
   hasReading,
   suggestionsSettled,
+  cutsSettled = true,
 }: {
   /** `isOpening`'s answer: a stored reading still being fetched. */
   peekPending: boolean;
   overviewSettled: boolean;
   hasReading: boolean;
   suggestionsSettled: boolean;
+  /** Proposed cuts' first read, when the tool is on. It needs no reading (an overfull deck has
+   *  none), so it is held on its own and not behind `hasReading`. True when the tool is off. */
+  cutsSettled?: boolean;
 }): boolean {
-  return peekPending || !overviewSettled || (hasReading && !suggestionsSettled);
+  return peekPending || !overviewSettled || (hasReading && !suggestionsSettled) || !cutsSettled;
 }
 
 /**

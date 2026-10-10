@@ -370,6 +370,29 @@ describe("readCutsPanel", () => {
     expect((await readCutsPanel(DECK))?.resultCurrent).toBe(false);
   });
 
+  it("every card left to cut being a Key card is the nothing-to-name state, and the run refuses before a credit", async () => {
+    const facts = factsFor();
+    calls.inputs = inputsFor(facts, { head: { declaredBracket: null, partnerOracleId: null } });
+    calls.fingerprints = ["fp"];
+    calls.state = state("fp");
+    calls.keyCards = facts.cards.map((c) => c.name);
+    const panel = await readCutsPanel(DECK);
+    expect(panel?.allLocked).toBe(true);
+    expect(panel?.keyCount).toBe(facts.cards.length);
+    expect(await runProposedCuts(DECK)).toEqual({ ok: false, message: lockedCardsCopy.tuning.allLocked("Gishath") });
+    expect(calls.started).toBe(0);
+  });
+
+  it("counts only Key cards still in the candidates: a stale name counts for nothing", async () => {
+    calls.inputs = inputsFor(factsFor(), { head: { declaredBracket: null, partnerOracleId: null } });
+    calls.fingerprints = ["fp"];
+    calls.state = state("fp");
+    calls.keyCards = ["bear1", "no longer in the deck"];
+    const panel = await readCutsPanel(DECK);
+    expect(panel?.keyCount).toBe(1);
+    expect(panel?.allLocked).toBe(false);
+  });
+
   it("is null with the switch off", async () => {
     calls.enabled = false;
     expect(await readCutsPanel(DECK)).toBeNull();
