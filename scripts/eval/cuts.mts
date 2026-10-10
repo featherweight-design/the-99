@@ -4,7 +4,7 @@
  * No staging deck is over 100, so recall is scored on the five decks with a v1 -> v2 history. Each
  * is rebuilt at its PRE-CUT size: v1's list plus the cards v2 added (the oversize list Hugh was
  * choosing from), and the cards v2 dropped are the cuts to find. K is the number he cut; the
- * engine's top K are its proposal. Weights are the shipped, UNTUNED ones; nothing here tunes.
+ * engine's top K are its proposal. The headline and section 1 use the shipped, UNTUNED weights; section 3 tunes on four decks and scores the fifth, never the same decks.
  *
  * Caveats it prints: a v1 -> v2 swap drops a card for a reason that may be the replacement, not the
  * card's own weakness, and a basic land counts as cut only when v2 holds none of that land.
@@ -180,9 +180,9 @@ const loo = cases.map((held) => {
 const looHit = sum(loo.map((l) => l.heldHits));
 const labelHit = sum(cases.map((c) => hitsOf(c, { labels: true })));
 
-console.log("# Proposed cuts tier 1: recall against the cuts Hugh made (untuned weights)\n");
+console.log("# Proposed cuts tier 1: recall against the cuts Hugh made\n");
 console.log(
-  `**Answer: ${lift < 1.5 ? "yes, badly" : totalHit < totalK ? "yes" : "no"}. The free tier ${totalHit < totalK ? "misses most of" : "finds all of"} the cuts Hugh made.** ` +
+  `**Answer: ${totalHit * 2 < totalK ? "yes" : "no"}, the free tier ${totalHit * 2 < totalK ? "misses most of" : "finds at least half of"} the cuts Hugh made${lift < 1.5 ? ", and does little better than chance" : ""}.**` +
   `Its top K holds ${totalHit} of ${totalK} (${pct(totalHit, totalK)}), ${lift.toFixed(1)}x what chance would hold (${chance.toFixed(1)}); the top 2K holds ${totalHit2k} (${pct(totalHit2k, totalK)}). ` +
   `With roles read from card labels it holds ${labelHit} (${(labelHit / Math.max(chance, 1e-9)).toFixed(1)}x chance); with weights tuned on four decks and scored on the fifth it holds ${looHit} (${(looHit / Math.max(chance, 1e-9)).toFixed(1)}x). Caveats: five decks, one player; a v1 to v2 removal is often a swap for a better card rather than a card the deck was too big for (see the split below).\n`,
 );
