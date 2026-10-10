@@ -56,8 +56,9 @@ describe("rankStaples", () => {
 
 describe("rankStaples: a pair's figure", () => {
   it("ranks a partner pair's inclusion like a commander's, and keeps it its own kind", () => {
-    const out = rankStaples([c("Low", { fact: { kind: "pair", inclusion: 10 } }), c("High", { fact: { kind: "pair", inclusion: 60 } })], ["G"]);
-    expect(out.map((x) => [x.name, x.fact.kind])).toEqual([["High", "pair"], ["Low", "pair"]]);
+    // Named so the alphabet opposes the figure: only the inclusion can put Zeta first.
+    const out = rankStaples([c("Alpha", { fact: { kind: "pair", inclusion: 10 } }), c("Zeta", { fact: { kind: "pair", inclusion: 60 } })], ["G"]);
+    expect(out.map((x) => [x.name, x.fact.kind])).toEqual([["Zeta", "pair"], ["Alpha", "pair"]]);
   });
 });
 
