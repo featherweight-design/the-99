@@ -44,7 +44,9 @@ async function main() {
   const { rows: [{ branch }] } = await fixture.execute<{ branch: string }>(
     sql`select current_setting('neon.branch_id', true) as branch`,
   );
-  if (branch === "br-noisy-violet-a6vw4ess" || branch === "br-polished-pond-a6e63y0b") {
+  // Fails CLOSED: a database that reports no Neon branch at all is refused too, since nothing
+  // then says it is not production.
+  if (!branch || branch === "br-noisy-violet-a6vw4ess" || branch === "br-polished-pond-a6e63y0b") {
     throw new Error(`refusing to write fixtures on ${branch}`);
   }
 

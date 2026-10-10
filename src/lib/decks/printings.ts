@@ -186,7 +186,9 @@ export async function readDeckPrintings(
       from cards c
       left join lateral (
         select pr.set_code, pr.collector_number, pr.image_uri, pr.art_crop_uri, pr.flavor_name,
-               (pr.scryfall_id = c.scryfall_id) as exact
+               -- Exact only when that printing also supplied the art: one with a null image draws
+               -- the card's own art, so it names a printing no surface showed.
+               (pr.scryfall_id = c.scryfall_id and pr.image_uri is not null) as exact
         from printings pr
         where pr.oracle_id = c.oracle_id
         order by (pr.scryfall_id = c.scryfall_id) desc, (pr.image_uri is null), pr.scryfall_id
@@ -324,7 +326,12 @@ export async function readRecordedPrintingArt(
   }>(sql`
     select w.oracle_id, w.set_code, w.collector_number, c.name,
            coalesce(e.image_uri, r.image_uri, c.image_uri) as image_uri,
-           coalesce(e.art_crop_uri, r.art_crop_uri, c.art_crop_uri) as art_crop_uri,
+           -- The crop of whichever printing supplied the art (resolveArtCropUri), never another's.
+           case
+             when e.image_uri is not null then coalesce(e.art_crop_uri, c.art_crop_uri)
+             when r.image_uri is not null then coalesce(r.art_crop_uri, c.art_crop_uri)
+             else c.art_crop_uri
+           end as art_crop_uri,
            case
              when e.image_uri is not null then e.flavor_name
              when r.image_uri is not null then r.flavor_name
@@ -339,6 +346,9 @@ export async function readRecordedPrintingArt(
       on e.oracle_id = w.oracle_id and e.set_code = w.set_code and e.collector_number = w.collector_number
     left join printings r
       on r.oracle_id = w.oracle_id and r.set_code = w.set_code and r.is_representative
+    -- A recorded printing whose set the catalog no longer lists at all answers nothing, so the row
+    -- keeps today's resolver rather than the card's oracle-level art.
+    where e.oracle_id is not null or r.oracle_id is not null
   `);
   for (const r of rows) {
     out.set(recordedKey({ oracleId: r.oracle_id, setCode: r.set_code, collectorNumber: r.collector_number }), {

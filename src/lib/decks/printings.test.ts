@@ -151,6 +151,7 @@ describe("readDeckPrintings", () => {
     const read = state.texts.find((t) => t.includes("from cards c"));
     expect(read).toContain("left join lateral");
     expect(read).toContain("pr.oracle_id = c.oracle_id");
+    expect(read).toContain("(pr.scryfall_id = c.scryfall_id and pr.image_uri is not null) as exact");
     // The oracle-level printing first, then the first printing with art, and exactly one.
     expect(read).toMatch(/order by \(pr\.scryfall_id = c\.scryfall_id\) desc, \(pr\.image_uri is null\), pr\.scryfall_id\s+limit 1/);
   });
@@ -257,6 +258,8 @@ describe("readRecordedPrintingArt", () => {
     // The Collection's three tiers, in order, and the name from the printing the art came from.
     expect(read).toContain("coalesce(e.image_uri, r.image_uri, c.image_uri)");
     expect(read).toContain("r.is_representative");
+    expect(read).toContain("when e.image_uri is not null then coalesce(e.art_crop_uri, c.art_crop_uri)");
+    expect(read).toContain("where e.oracle_id is not null or r.oracle_id is not null");
     expect(read).toMatch(/when e\.image_uri is not null then e\.flavor_name\s+when r\.image_uri is not null then r\.flavor_name/);
   });
 });
