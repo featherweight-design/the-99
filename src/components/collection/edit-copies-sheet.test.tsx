@@ -180,7 +180,7 @@ describe("Edit copies, removal", () => {
     expect(screen.getByText(r.leaves("Sol Ring"))).toBeTruthy();
     const b = save();
     expect(b.textContent).toBe(r.confirm(5));
-    expect(b.className).not.toContain("accent");
+    expect(b.className).toContain("elevated");
     fireEvent.click(screen.getByRole("button", { name: r.keep }));
     expect(save().textContent).toBe(c.save);
   });

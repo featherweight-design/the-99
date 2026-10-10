@@ -99,3 +99,18 @@ describe("pressing it", () => {
     expect(screen.queryByTestId("host")).toBeNull();
   });
 });
+
+describe("pressing it again while the first host is still up (its toast)", () => {
+  it("mounts a fresh host, so the second sheet opens", async () => {
+    mount(sol({ availability: free }), { collectionEdit: true });
+    await openCard();
+    await act(async () => fireEvent.click(screen.getByTestId("edit-copies-link")));
+    await screen.findByTestId("host");
+    const first = hostProps.mock.calls.length;
+    await act(async () => fireEvent.click(screen.getByText("reopen")));
+    await screen.findByRole("dialog");
+    await act(async () => fireEvent.click(screen.getByTestId("edit-copies-link")));
+    await screen.findByTestId("host");
+    expect(hostProps.mock.calls.length).toBeGreaterThan(first);
+  });
+});

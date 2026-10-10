@@ -1112,10 +1112,11 @@ export function CardDetailProvider({
 
   // Edit copies: the card whose sheet is up (or whose toast is), with the list it was paged from so
   // the reopened details keep their Prev/Next. Cleared by the host when it has nothing left to show.
-  const [editing, setEditing] = useState<{ card: EditCardRef; siblings: SiblingCard[] } | null>(null);
+  const [editing, setEditing] = useState<{ card: EditCardRef; siblings: SiblingCard[]; n: number } | null>(null);
+  const editCount = useRef(0);
   const startEdit = useCallback(
     (c: BrowseCard) => {
-      setEditing({ card: { oracleId: c.oracleId, name: c.name, imageUri: c.imageUri }, siblings });
+      setEditing({ card: { oracleId: c.oracleId, name: c.name, imageUri: c.imageUri }, siblings, n: ++editCount.current });
       close();
     },
     [siblings, close],
@@ -1436,7 +1437,7 @@ export function CardDetailProvider({
       ) : null}
       {editing ? (
         <Suspense fallback={null}>
-          <EditCopiesHost card={editing.card} onReopen={reopenEdited} onDone={doneEditing} />
+          <EditCopiesHost key={editing.n} card={editing.card} onReopen={reopenEdited} onDone={doneEditing} />
         </Suspense>
       ) : null}
     </CardDetailContext.Provider>

@@ -18,7 +18,7 @@ export type EditLineState = AddLineState & {
   /** The non-key column a printing fix carries to the row it creates. */
   condition: string | null;
   /** The holding this line began as, or null for a line the player added. */
-  origin: { key: string; label: string } | null;
+  origin: { key: string; label: string; printKey: string; finish: Finish } | null;
 };
 
 /** The key `holdingKeyOf` gives a holding, so held rows and lines are compared in one vocabulary. */
@@ -73,7 +73,7 @@ export function linesFromHoldings(card: EditCard, choices: PrintingChoice[], hol
         finish: h.finish,
         quantity: h.quantity,
         condition: h.condition,
-        origin: { key, label: printingLabel(h) },
+        origin: { key, label: printingLabel(h), printKey: `${h.setCode}|${h.collectorNumber}`, finish: h.finish },
       };
     });
 }
@@ -162,6 +162,8 @@ export function diffRows(
   return rows;
 }
 
+const printKeyOf = (l: EditLineState) => (l.printing ? `${l.printing.setCode}|${l.printing.collectorNumber}` : null);
+
 export type EditSummary = {
   /** Copies the save raises and lowers, across every holding it touches. */
   up: number;
@@ -188,7 +190,7 @@ export function summarizeEdit(oracleId: string, holdings: CardHolding[], lines: 
   return {
     up,
     down,
-    moved: done.filter((l) => l.origin !== null && l.origin.key !== holdingKeyOf(l)).length,
+    moved: done.filter((l) => l.origin !== null && l.origin.printKey !== printKeyOf(l)).length,
     total: done.reduce((n, l) => n + l.quantity, 0),
     held,
     changed: rows.length > 0,
@@ -218,7 +220,11 @@ export type LineNote =
 export function lineNote(oracleId: string, holdings: CardHolding[], l: EditLineState): LineNote | null {
   const key = holdingKeyOf(l);
   if (key === null) return null;
-  if (l.origin !== null && l.origin.key !== key) return { kind: "moved", from: l.origin.label, copies: l.quantity };
+  if (l.origin !== null && l.origin.key !== key) {
+    // A finish change alone keeps the printing, so the note names the finish it was.
+    const same = l.origin.printKey === printKeyOf(l);
+    return { kind: "moved", from: same ? `${l.origin.label} · ${l.origin.finish}` : l.origin.label, copies: l.quantity };
+  }
   const was = holdings.find((h) => holdingKey(oracleId, h) === key)?.quantity ?? 0;
   const delta = l.quantity - was;
   return delta === 0 ? null : { kind: "delta", delta };

@@ -139,3 +139,14 @@ describe("lineNote", () => {
     expect(lineNote(OID, HELD, moved)).toEqual({ kind: "moved", from: "SLD · #1512", copies: 1 });
   });
 });
+
+describe("a finish change alone", () => {
+  it("is not a printing changed, and its note names the finish it was", () => {
+    const lines = start();
+    const foiled = setFinish(lines, lines[0].id, "foil").lines.find((l) => l.finish === "foil" && l.printing?.setCode === "c21")!;
+    const s = summarizeEdit(OID, HELD, setFinish(lines, lines[0].id, "foil").lines);
+    expect(s.moved).toBe(0);
+    expect(diffParts(s)).toEqual({ up: 3, down: 3 });
+    expect(lineNote(OID, HELD, foiled)).toEqual({ kind: "moved", from: "C21 · #263 · nonfoil", copies: 3 });
+  });
+});
