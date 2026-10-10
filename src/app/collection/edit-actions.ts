@@ -4,8 +4,8 @@ import { after } from "next/server";
 import { requireUserId } from "../../lib/auth";
 import { collectionEditEnabled } from "../../lib/collection/edit-flag";
 import {
-  loadPrintingChoices as readPrintingChoices, printingRefKey, resolvePrintings, searchCollectionCatalog,
-  type CatalogCardResult, type PrintingChoice,
+  loadCardHoldings, loadPrintingChoices as readPrintingChoices, printingRefKey, resolvePrintings,
+  searchCollectionCatalog, type CardHolding, type CatalogCardResult, type PrintingChoice,
 } from "../../lib/collection/catalog-read";
 import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
 import { isFinish, type CollectionItemIdentity } from "../../lib/collection/key";
@@ -193,4 +193,19 @@ export async function loadPrintingChoices(oracleId: unknown): Promise<PrintingCh
   const userId = await signedInEditor();
   if (!isUuid(oracleId)) return [];
   return readPrintingChoices(userId, oracleId as string);
+}
+
+/**
+ * What the Edit copies sheet starts from for one card: every catalog printing (a printing fix and
+ * `Add another printing` pick from these) and every holding the player has of it. Read together so
+ * the sheet's two halves come from one moment.
+ */
+export async function loadEditSheet(oracleId: unknown): Promise<{ choices: PrintingChoice[]; holdings: CardHolding[] } | null> {
+  const userId = await signedInEditor();
+  if (!isUuid(oracleId)) return null;
+  const [choices, holdings] = await Promise.all([
+    readPrintingChoices(userId, oracleId as string),
+    loadCardHoldings(userId, oracleId as string),
+  ]);
+  return { choices, holdings };
 }

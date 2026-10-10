@@ -109,6 +109,32 @@ export async function loadPrintingChoices(userId: string, oracleId: string): Pro
   return withHoldings(catalog, held);
 }
 
+/** One holding the player has of a card, as the Edit copies sheet starts from it. */
+export type CardHolding = {
+  setCode: string;
+  collectorNumber: string;
+  finish: Finish;
+  quantity: number;
+  /** Carried across a printing fix: the new row takes the old one's condition. */
+  condition: string | null;
+};
+
+/** Every holding the player has of one card, one row per printing and finish. */
+export async function loadCardHoldings(userId: string, oracleId: string): Promise<CardHolding[]> {
+  const rows = await db
+    .select({
+      setCode: collectionItems.setCode,
+      collectorNumber: collectionItems.collectorNumber,
+      finish: collectionItems.finish,
+      quantity: collectionItems.quantity,
+      condition: collectionItems.condition,
+    })
+    .from(collectionItems)
+    .where(and(eq(collectionItems.userId, userId), eq(collectionItems.oracleId, oracleId)))
+    .orderBy(asc(collectionItems.setCode), asc(collectionItems.collectorNumber), asc(collectionItems.finish));
+  return rows.flatMap((r) => (isFinish(r.finish) ? [{ ...r, finish: r.finish }] : []));
+}
+
 /**
  * Lays the player's holdings over a card's catalog printings, per printing and finish, keeping
  * the catalog's order. A holding no printing names (a bare import's) is on no tile.

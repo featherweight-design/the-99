@@ -45,7 +45,7 @@ export const isComplete = (l: AddLineState) => l.printing !== null;
  * per holding). The survivor takes the counts, moves to the top and is reported so the sheet can
  * pulse it and say so. A line that is still choosing, or that names no other holding, is left be.
  */
-function fold(lines: AddLineState[], id: string): { lines: AddLineState[]; merged: AddLineState | null } {
+function fold<L extends AddLineState>(lines: L[], id: string): { lines: L[]; merged: L | null } {
   const line = lines.find((l) => l.id === id);
   const key = line ? holdingKeyOf(line) : null;
   if (!line || key === null) return { lines, merged: null };
@@ -61,24 +61,24 @@ export function openLine(lines: AddLineState[], line: Omit<AddLineState, "printi
 }
 
 /** Chooses (or re-chooses) a line's printing: nonfoil where it exists, else its only finish, at the line's count. */
-export function choosePrinting(lines: AddLineState[], id: string, printing: PrintingChoice) {
+export function choosePrinting<L extends AddLineState>(lines: L[], id: string, printing: PrintingChoice) {
   const next = lines.map((l) =>
     l.id === id ? { ...l, printing, finish: defaultFinish(printing) } : l,
   );
   return fold(next, id);
 }
 
-export function setFinish(lines: AddLineState[], id: string, finish: Finish) {
+export function setFinish<L extends AddLineState>(lines: L[], id: string, finish: Finish) {
   const next = lines.map((l) => (l.id === id && l.printing?.finishes.includes(finish) ? { ...l, finish } : l));
   return fold(next, id);
 }
 
-export function setQuantity(lines: AddLineState[], id: string, quantity: number): AddLineState[] {
+export function setQuantity<L extends AddLineState>(lines: L[], id: string, quantity: number): L[] {
   const q = Math.max(1, Math.min(MAX_LINE_QUANTITY, Math.trunc(quantity)));
   return lines.map((l) => (l.id === id ? { ...l, quantity: q } : l));
 }
 
-export const removeLine = (lines: AddLineState[], id: string) => lines.filter((l) => l.id !== id);
+export const removeLine = <L extends AddLineState>(lines: L[], id: string) => lines.filter((l) => l.id !== id);
 
 export function summarize(lines: AddLineState[]): { lines: number; copies: number } {
   const done = lines.filter(isComplete);
