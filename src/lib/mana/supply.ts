@@ -48,6 +48,8 @@ export type ManaSupply = {
   lands: number;
 };
 
+const CONDITIONAL_GRANT = /\bcould produce\b|\bamong (lands|[^.]*\b(cards|permanents))\b|\bas you drafted\b/i;
+
 const zeros = (): Record<ManaColor, number> => ({ W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 });
 
 /**
@@ -69,7 +71,11 @@ export function landProduces(typeLine: string, oracleText: string | null, deckCo
   const text = (oracleText ?? "").replace(/\([^)]*\)/g, "");
   for (const [, effect] of text.matchAll(/\badd\b([^.]*)\./gi)) {
     for (const [, sym] of effect.matchAll(/\{([WUBRGC])\}/gi)) out.add(sym.toUpperCase() as ManaColor);
-    if (/\bany (one )?(color|type)\b|\bany combination of colors\b/i.test(effect)) deck.forEach((c) => out.add(c));
+    // A grant that reads another permanent (Exotic Orchard, Reflecting Pool) makes nothing on its
+    // own; the same rule as `CONDITIONAL_GRANT` in `swaps/land.ts`. "The chosen color" (Thriving
+    // lands) is a free pick among the deck's colors, beside the symbol it names.
+    if (CONDITIONAL_GRANT.test(effect)) continue;
+    if (/\bany (one )?(color|type)\b|\bany combination of colors\b|\bchosen colou?r\b/i.test(effect)) deck.forEach((c) => out.add(c));
   }
   for (const [sentence] of text.matchAll(/search your library for[^.]*\./gi)) {
     const named = [...sentence.toLowerCase().matchAll(/\b(plains|island|swamp|mountain|forest)\b/g)];

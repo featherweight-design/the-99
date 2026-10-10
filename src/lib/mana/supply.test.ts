@@ -18,6 +18,13 @@ describe("landProduces", () => {
     expect(landProduces("Land", "{T}: Add one mana of any color in your commander's color identity.", JUND)).toEqual(["B", "R", "G"]);
     expect(landProduces("Land", "{T}: Add one mana of any color in your commander's color identity.", [])).toEqual([]);
   });
+  it("adds the deck's colors for a chosen-color land, beside its own symbol", () => {
+    expect(landProduces("Land", "{T}: Add {G} or one mana of the chosen color.", ["G", "U", "B"])).toEqual(["U", "B", "G"]);
+  });
+  it("gives nothing for a grant that reads another land", () => {
+    expect(landProduces("Land", "{T}: Add one mana of any color that a land an opponent controls could produce.", JUND)).toEqual([]);
+    expect(landProduces("Land", "{T}: Add one mana of any type that a land you control could produce.", JUND)).toEqual([]);
+  });
   it("gives a fetch the basic types it names, and a basic-land search the deck's colors", () => {
     expect(landProduces("Land", "{T}, Pay 1 life, Sacrifice this land: Search your library for a Swamp or Forest card, put it onto the battlefield, then shuffle.", JUND)).toEqual(["B", "G"]);
     expect(landProduces("Land", "{T}, Sacrifice this land: Search your library for a basic land card, put it onto the battlefield tapped, then shuffle.", JUND)).toEqual(["B", "R", "G"]);
