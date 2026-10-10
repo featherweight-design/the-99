@@ -193,6 +193,33 @@ describe("editCollection", () => {
     expect(stub.invalidate).not.toHaveBeenCalled();
     expect(stub.warm).not.toHaveBeenCalled();
   });
+
+  it("passes a clearCondition flag through and refuses a non-boolean one", async () => {
+    stub.apply.mockResolvedValue({ status: "applied", entry: { id: ACTION } });
+    await editCollection(ACTION, [{ ...edited, clearCondition: true }]);
+    expect(stub.apply.mock.calls.at(-1)?.[1].rows[0]).toMatchObject({ clearCondition: true });
+    await expect(editCollection(ACTION, [{ ...edited, clearCondition: "yes" }])).rejects.toThrow();
+  });
+
+  it("takes the editor's seen holdings through, an empty list included, and refuses a malformed one", async () => {
+    stub.apply.mockResolvedValue({ status: "applied", entry: { id: ACTION } });
+    const seen = [{ oracleId: ORACLE, setCode: "lea", collectorNumber: "1", finish: "nonfoil", quantity: 2 }];
+    await editCollection(ACTION, [edited], undefined, seen);
+    expect(stub.apply.mock.calls.at(-1)?.[1]).toMatchObject({ kind: "edit", seen });
+    catalogHolds();
+    await editCollection(ACTION, [{ ...edited, expected: 0 }], undefined, []);
+    expect(stub.apply.mock.calls.at(-1)?.[1]).toMatchObject({ seen: [] });
+    await expect(editCollection(ACTION, [edited], undefined, [{ oracleId: "nope" }])).rejects.toThrow();
+    await expect(editCollection(ACTION, [edited], undefined, [{ ...seen[0], quantity: undefined }])).rejects.toThrow();
+    await expect(editCollection(ACTION, [edited], undefined, "x")).rejects.toThrow();
+    // A card with many holdings is not a malformed request: the cap on rows is not the cap on `seen`.
+    const many = Array.from({ length: 600 }, (_, i) => ({ ...seen[0], collectorNumber: String(i) }));
+    await expect(editCollection(ACTION, [edited], undefined, many)).resolves.toBeTruthy();
+    await expect(editCollection(ACTION, [edited], undefined, [{ ...seen[0], condition: "x".repeat(33) }])).rejects.toThrow();
+    // Removing such a card names a row per holding.
+    const zero = many.map((m) => ({ ...m, quantity: 0, expected: 1 }));
+    await expect(editCollection(ACTION, zero, undefined, many)).resolves.toBeTruthy();
+  });
 });
 
 describe("the sheet's reads", () => {

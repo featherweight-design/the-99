@@ -1,3 +1,4 @@
+import type { ChipContext } from "./cuts-count";
 import { playerTextBody } from "../model/player-text";
 import type { CutsPack, CutsPackCard } from "./cuts-evidence";
 import type { CutCite, CutProposal, CutsResponse } from "./cuts-schema";
@@ -16,7 +17,12 @@ export type CutDrop = { position: number; rule: CutDropRule; name?: string; cite
 
 export type ValidatedCut = { oracleId: string; name: string; reason: string; cites: CutCite[]; position: number };
 
-export type CutsReport = { askedCount: number; survivedCount: number; keptCount: number; over: number; drops: CutDrop[] };
+export type CutsReport = {
+  askedCount: number; survivedCount: number; keptCount: number; over: number; drops: CutDrop[];
+  /** The figures the chips quote, as they stood when the validator checked the cites. Stored with the
+   *  run so a cut made from the result does not change the evidence of the lines still open. */
+  chips?: ChipContext;
+};
 
 const TEXT_RULES: ReadonlySet<string> = new Set(["noBracketClaim", "noResultClaim", "quotedNote"]);
 

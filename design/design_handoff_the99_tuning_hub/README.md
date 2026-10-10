@@ -59,6 +59,7 @@ On its own tile only: a 1px `--accent` border, the manifest's writing dot, the t
 **Usage:** always beside the name, `aria-hidden`. In History the mark plus a short name (Suggested / Mana / Cuts) replaces the mono tag. Marks don't appear inside a tool's own panel heading. Rebuild each as a 24-unit inline SVG component.
 
 ### Feedback · Proposed cuts + History (Hugh)
+**The Proposed cuts bullets in this section (overage + 2 candidates, the shortlist, `Rank again`, the tier-2 band over a list) are SUPERSEDED by "R2 · Proposed cuts, model-first" below. The History bullets stand.**
 - **Going over is fine.** Mana Balance's tally stays in its ordinary ink; past 100 it offers `Proposed cuts →`.
 - **Always overage + 2 candidates:** six over means eight. The count is set when the list is ranked, and it doesn't shrink as cards are cut.
 - **Look deeper on Proposed cuts:**
@@ -85,7 +86,7 @@ Source: `docs/superpowers/plans/2026-10-09-proposed-cuts-model-tier.md` (main; t
 - **The free pass names no card.** C1 shows the over-99 lead, Look deeper, and `What we counted`: role overages, curve crowding, bracket flags and EDHREC spread. Each row has a source, a label, a mono figure and a comparison. These are the model's input, shown as they are. A bracket flag shows only against the declared bracket.
 - **Look deeper is the primary action.** It comes first in the panel, filled `--accent` with `--bg` ink, and is the hub's only filled button. It keeps the `◆ 1 credit` segment and the standing credit line. The offer's lead says what it reads.
 - **The over tally is neutral.** The over-99 lead and per-role overages are `--fg` / `--fg-muted`, never `--warning`, per Hugh's earlier ruling.
-- **Results (C3).** Exactly the overage is asked for, and 1 to N are accepted. Each line has the Suggestion tag, the card, one sentence and chips, in Suggested changes' citation pattern. Each chip quotes a figure from the count word for word. There's no bracket claim in prose, and no adds. Cut / Keep work as in R1 decision 8. The count stays below, recounting as cards go.
+- **Results (C3).** Exactly the overage is asked for, and 1 to N are accepted. Each line has the Suggestion tag, the card, one sentence and chips, in Suggested changes' citation pattern. Each chip quotes a figure the validator checked, which is the evidence pack's input rather than only a visible count row (EDHREC's per-card percentage and `you said` are not count rows; the plan's validator governs, audit decision 6). There's no bracket claim in prose, and no adds. Cut / Keep work as in R1 decision 8. The count stays below, recounting as cards go.
 - **A shortfall is shown, never padded (C4).** A dashed slot says a line was dropped and why. No second call is made.
 - **Counted fact vs model claim (C9).** They differ in four ways: shape (ruled row vs filled card), tag (source only vs `Suggestion` pill), type (figure vs sentence + chips) and words (counts vs names a cut). They meet in the chip. Checked/Unchecked aren't used, because every surviving line has passed the figure check.
 - **Retired from R1:** overage + 2 candidates, `Rank again`, `Show N more`, the rank number, "The shortlist, unchanged", and `Couldn't rank` (now `Couldn't count` / `Didn't finish`).

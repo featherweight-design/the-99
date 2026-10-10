@@ -30,29 +30,45 @@ import { SearchField } from "../ui/text-field";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { AddLine } from "./add-line";
 import { ReplaceIcon } from "./replace-icon";
+import { EditCopiesSheet, type EditResult } from "./edit-copies-sheet";
+import { SHEET_PANEL_CLASS } from "./sheet-frame";
+import type { EditCard } from "../../lib/collection/edit-lines";
 
 const copy = collectionEditCopy.add;
 const SEARCH_DEBOUNCE_MS = 150;
 
 type Phase = "editing" | "saving" | "failed" | "saved";
 
-export function AddCardsSheet({
-  mode,
+export type AddCardsSheetProps =
+  | {
+      mode: "add";
+      onClose: () => void;
+      /** Called once with the copies a save added, so the head can re-read its figures. */
+      onSaved?: (copiesAdded: number) => void;
+      returnFocusRef?: RefObject<HTMLElement | null>;
+      /** The collection's size before this session, for the saved state's `4,492 → 4,500`. */
+      totalCards?: number;
+    }
+  | {
+      /** One card's holdings, one line each (collection edit R2 §C). */
+      mode: "edit";
+      card: EditCard;
+      /** Called once, with the saved entry when the sheet wrote one. */
+      onClose: (result: EditResult) => void;
+      returnFocusRef?: RefObject<HTMLElement | null>;
+    };
+
+/** Add mode and edit mode are one sheet to a caller; each mode keeps its own state below. */
+export function AddCardsSheet(props: AddCardsSheetProps) {
+  return props.mode === "edit" ? <EditCopiesSheet {...props} /> : <AddMode {...props} />;
+}
+
+function AddMode({
   onClose,
   onSaved,
   returnFocusRef,
   totalCards: totalCardsNow,
-}: {
-  /** Edit mode (one card, its holdings) arrives with the Edit copies PR. */
-  mode: "add";
-  onClose: () => void;
-  /** Called once with the copies a save added, so the head can re-read its figures. */
-  onSaved?: (copiesAdded: number) => void;
-  returnFocusRef?: RefObject<HTMLElement | null>;
-  /** The collection's size before this session, for the saved state's `4,492 → 4,500`. */
-  totalCards?: number;
-}) {
-  void mode;
+}: Extract<AddCardsSheetProps, { mode: "add" }>) {
   // The size when the sheet opened: the head re-reads its figure after a save, and the saved state
   // reports the move from the old one.
   const [baseline, setBaseline] = useState(totalCardsNow);
@@ -272,7 +288,7 @@ export function AddCardsSheet({
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
-      className="fixed inset-0 z-50 flex flex-col overscroll-contain border-0 border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] md:inset-y-0 md:left-auto md:right-0 md:w-[480px] md:border-l md:shadow-[-24px_0_60px_rgba(0,0,0,0.45)]"
+      className={SHEET_PANEL_CLASS}
     >
       <div inert={discarding || undefined} className="flex min-h-0 flex-1 flex-col">
         <div className="flex items-center gap-[12px] px-[18px] pb-[12px] pt-[16px] md:px-[22px] md:pb-[14px] md:pt-[20px]">

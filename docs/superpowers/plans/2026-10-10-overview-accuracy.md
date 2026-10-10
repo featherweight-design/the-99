@@ -296,7 +296,7 @@ Added to the SYSTEM rule that fills the `assessment` of 3.1 (PR 3b). The model n
 
 - graveyard decks: graveyard hate (Rest in Peace, Bojuka Bog, Dauthi Voidwalker)
 - artifact decks: artifact wipes and Null Rod / Collector Ouphe
-- ninjutsu and activated-ability engines: Cursed Totem and its kin
+- engines of creature activated abilities on the battlefield: Cursed Totem and its kin. NOT ninjutsu: it is activated from hand, where the card is a creature card and not a creature, so Cursed Totem does not stop it (corrected 2026-10-10; the Yuriko gold said otherwise and was fixed)
 - indestructible decks: exile wipes (Farewell, Sunfall)
 - combat decks: fogs and pillowfort (Propaganda, Ghostly Prison)
 - combo decks: removal at the key window (the commander on its combat or ETB trigger)

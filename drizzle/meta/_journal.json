@@ -610,6 +610,13 @@
       "when": 1791621981993,
       "tag": "0086_deck_cut_items",
       "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1791633643898,
+      "tag": "0087_cut_undo_snapshot",
+      "breakpoints": true
     }
   ]
 }

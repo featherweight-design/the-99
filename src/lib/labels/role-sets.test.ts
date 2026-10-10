@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { labelRoleSet, roleSetFingerprint } from "./role-sets";
 import type { Job } from "./types";
 
-const job = (space: "role" | "theme", kind: string) => ({ space, kind }) as unknown as Job;
+const job = (space: "role" | "theme", kind: string, rest: Record<string, unknown> = {}) =>
+  ({ space, kind, restrictedTo: null, affects: "self", rampKind: null, ...rest }) as unknown as Job;
+const ramp = (rampKind: string, rest: Record<string, unknown> = {}) => job("role", "ramp", { rampKind, ...rest });
 
 describe("labelRoleSet", () => {
   it("reads the four target roles off a nonland card's role jobs", () => {
@@ -23,6 +25,110 @@ describe("labelRoleSet", () => {
 
   it("ignores a theme of the same name", () => {
     expect(labelRoleSet([job("theme", "ramp")], "Creature — Elf")).toEqual([]);
+  });
+
+  it("keeps a counterspell out of removal while a real removal job beside it still counts", () => {
+    expect(labelRoleSet([job("role", "counterspell", { affects: "opponents" })], "Instant")).toEqual([]);
+    expect(
+      labelRoleSet([job("role", "counterspell"), job("role", "removal", { affects: "opponents" })], "Instant"),
+    ).toEqual(["removal"]);
+  });
+
+  describe("draw", () => {
+    it("does not count a draw job that points at opponents", () => {
+      expect(labelRoleSet([job("role", "draw", { affects: "opponents" })], "Creature — Human")).toEqual([]);
+    });
+
+    it("counts a target-player draw the label calls an opponent's", () => {
+      expect(
+        labelRoleSet([job("role", "draw", { affects: "opponents" })], "Sorcery", "Target player draws two cards and loses 2 life."),
+      ).toEqual(["draw"]);
+    });
+
+    it("counts a draw for self, for each player, and for no player", () => {
+      for (const affects of ["self", "each", null]) {
+        expect(labelRoleSet([job("role", "draw", { affects })], "Sorcery")).toEqual(["draw"]);
+      }
+    });
+
+    it("keeps the other jobs of a card whose draw is the opponent's", () => {
+      expect(
+        labelRoleSet([job("role", "draw", { affects: "opponents" }), job("role", "removal", { affects: "opponents" })], "Instant"),
+      ).toEqual(["removal"]);
+    });
+  });
+
+  describe("ramp", () => {
+    const SCRYING = "Search your library for a Forest card, reveal it, put it into your hand, then shuffle.";
+    const FARSEEK = "Search your library for a Plains, Island, Swamp, or Mountain card, put it onto the battlefield tapped, then shuffle.";
+
+    it("does not count a land fetched into the hand", () => {
+      expect(labelRoleSet([ramp("fetchesLand")], "Sorcery", SCRYING)).toEqual([]);
+      expect(labelRoleSet([ramp("fetchesLand", { restrictedTo: "land" })], "Artifact", SCRYING)).toEqual([]);
+    });
+
+    it("does not take another effect's battlefield for the land's", () => {
+      expect(labelRoleSet([ramp("fetchesLand")], "Creature", `${SCRYING} Create two 1/1 tokens. Put a creature card from your hand onto the battlefield.`)).toEqual([]);
+    });
+
+    it("counts a land fetched onto the battlefield", () => {
+      expect(labelRoleSet([ramp("fetchesLand")], "Sorcery", FARSEEK)).toEqual(["ramp"]);
+    });
+
+    it("trusts the label when the text is not known", () => {
+      expect(labelRoleSet([ramp("fetchesLand")], "Sorcery")).toEqual(["ramp"]);
+      expect(labelRoleSet([ramp("costReduction")], "Artifact", null)).toEqual(["ramp"]);
+    });
+
+    it("does not count a discount on one type of the controller's spells", () => {
+      expect(
+        labelRoleSet([ramp("costReduction", { restrictedTo: "creature" })], "Artifact", "Creature spells you cast cost {1} less to cast."),
+      ).toEqual([]);
+    });
+
+    it("does not count a discount on the card itself or on an ability", () => {
+      expect(labelRoleSet([ramp("costReduction")], "Artifact Creature", "This spell costs {X} less to cast, where X is the number of artifacts you control.")).toEqual([]);
+      expect(labelRoleSet([ramp("costReduction")], "Sorcery", "This spell costs {1} less to cast for each spell you cast this turn.")).toEqual([]);
+      expect(labelRoleSet([ramp("costReduction")], "Creature", "Abilities you activate cost {2} less to activate.")).toEqual([]);
+    });
+
+    it("counts a discount on the controller's spells in general", () => {
+      expect(labelRoleSet([ramp("costReduction")], "Artifact", "Spells you cast cost {1} less to cast.")).toEqual(["ramp"]);
+      expect(labelRoleSet([ramp("costReduction")], "Creature", "Noncreature spells you cast cost {1} less to cast.")).toEqual(["ramp"]);
+    });
+
+    it("counts a symmetric discount on spells in general (Helm of Awakening)", () => {
+      expect(labelRoleSet([ramp("costReduction")], "Artifact", "Spells cost {1} less to cast.")).toEqual(["ramp"]);
+    });
+
+    it("does not count a discount limited to a type chosen or imprinted at play", () => {
+      expect(labelRoleSet([ramp("costReduction")], "Artifact", "As this enters, choose a card type. Spells of the chosen type you cast cost {1} less to cast.")).toEqual([]);
+      expect(labelRoleSet([ramp("costReduction")], "Artifact", "Imprint — When this enters, you may exile a nonland card from your hand. Spells you cast that share a card type with the exiled card cost {2} less to cast.")).toEqual([]);
+    });
+
+    it("does not count a tax, an opponent's discount or an alternative cost", () => {
+      for (const text of [
+        "Spells you cast cost {1} more to cast.",
+        "Spells your opponents cast cost {1} less to cast.",
+        "You may pay {W}{U}{B}{R}{G} rather than pay the mana cost for spells you cast.",
+      ]) {
+        expect(labelRoleSet([ramp("costReduction")], "Artifact", text)).toEqual([]);
+      }
+    });
+
+    it("keeps a card ramp when another of its ramp jobs qualifies", () => {
+      expect(labelRoleSet([ramp("fetchesLand"), ramp("tapsForMana")], "Creature", SCRYING)).toEqual(["ramp"]);
+    });
+
+    it("leaves mana makers alone", () => {
+      for (const kind of ["tapsForMana", "makesTreasure", "burstMana", "extraLandDrop", "multiplies"]) {
+        expect(labelRoleSet([ramp(kind)], "Artifact", "x")).toEqual(["ramp"]);
+      }
+    });
+
+    it("leaves a mana rock labelled land to the relabel (Ebony Fly)", () => {
+      expect(labelRoleSet([job("role", "land")], "Artifact Creature — Insect")).toEqual([]);
+    });
   });
 });
 

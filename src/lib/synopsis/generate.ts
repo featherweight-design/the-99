@@ -281,6 +281,28 @@ export async function checkReply(value: SynopsisReply, facts: SynopsisFacts, v2:
   return validateSynopsisV8(reply, facts, await catalogFor({ weaknesses: weaknessLines(reply) }, facts));
 }
 
+/** The one repair call's prompt: the facts, the passing sections to return unchanged, each refused section's reason. Shared by the write and the eval harness. */
+export function repairPrompt(facts: SynopsisFacts, content: CheckedSynopsis, failing: SectionId[], v2: boolean) {
+  return buildSynopsisPrompt(facts, { keep: content, refused: failing }, { v2, contract8: v2 });
+}
+
+/**
+ * The repair's result merged over the first answer: checked by the same rules, every passing
+ * section byte for byte, a refused section the repair fails again left refused. A repair that
+ * did not come back (`ok: false`) leaves the first answer as it was. Shared by the write and the
+ * eval harness, so what the gate measures is what a reader is shown.
+ */
+export async function applyRepair(
+  first: CheckedSynopsis,
+  repair: ModelOutcome<SynopsisReply>,
+  failing: SectionId[],
+  facts: SynopsisFacts,
+  v2: boolean,
+): Promise<CheckedSynopsis> {
+  if (!repair.ok) return first;
+  return mergeRetry(first, await checkReply(repair.value, facts, v2), failing).content;
+}
+
 /** The catalog cards Weaknesses names that the deck does not hold. Exported for the eval harness,
  *  which must run this exact read rather than a copy. */
 export async function catalogFor(reply: Pick<SynopsisResponse, "weaknesses">, facts: SynopsisFacts): Promise<Map<string, Card>> {
@@ -537,13 +559,10 @@ async function run(
       // byte for byte. A refused section the repair fails again stays refused, now with the
       // repair's own reason and counts, which is what a later Try again is asked to fix.
       const failing = refusedSections(content);
-      const repair = await call(buildSynopsisPrompt(facts, { keep: content, refused: failing }, { v2, contract8: v2 }));
+      const repair = await call(repairPrompt(facts, content, failing, v2));
       usage = sumUsage(usage, repair.usage);
       if (usage) billed = { model: deps.modelName, usage };
-      if (repair.ok) {
-        const repaired = await checkReply(repair.value, facts, v2);
-        content = mergeRetry(content, repaired, failing).content;
-      }
+      content = await applyRepair(content, repair, failing, facts, v2);
     }
     const charge = chargeFor(content);
     const result = outcomeOf(content.verdicts);

@@ -104,6 +104,9 @@ function renderDecklist(
     lockMode?: boolean;
     statsEnabled?: boolean;
     statsData?: DeckStatsInput | null;
+    games?: { result: "win" | "loss" | "draw"; playedAt: Date; versionNumber: number | null }[];
+    versions?: { number: number; committedAt: Date }[];
+    onLogGame?: () => void;
     commander?: DeckCommander;
     partner?: DeckCommander | null;
     /** Label rows provided around the list, as the deck page does with the switch on. */
@@ -167,6 +170,9 @@ function renderDecklist(
           lockMode={opts.lockMode}
           statsEnabled={opts.statsEnabled}
           statsData={opts.statsData}
+          games={opts.games}
+          versions={opts.versions}
+          onLogGame={opts.onLogGame}
         />
       ))}</LabelRowsProvider></AddOptimisticCardProvider>
     </CardDetailProvider>,
@@ -1450,6 +1456,25 @@ describe("the Stats panel", () => {
     fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
     expect(count(2)).toBe(before + 1);
     expect(count(4)).toBe(1);
+  });
+
+  it("draws the Results card from the games and versions the page holds, and its empty link opens Games", () => {
+    const stats = { statsEnabled: true, filter: "all" as const, statsData: { commanders: [] } };
+    const onLogGame = vi.fn();
+    renderDecklist([rampOwned], { ...stats, onLogGame });
+    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    fireEvent.click(screen.getByRole("button", { name: /Log a game in Games/ }));
+    expect(onLogGame).toHaveBeenCalledTimes(1);
+    cleanup();
+
+    renderDecklist([rampOwned], {
+      ...stats,
+      games: [{ result: "win", playedAt: new Date(), versionNumber: 1 }],
+      versions: [{ number: 1, committedAt: new Date() }],
+    });
+    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    expect(screen.getByRole("figure", { name: "Results, 1 game" })).toBeInTheDocument();
+    expect(document.querySelector("[data-result-version='1']")).toHaveTextContent("1–0–0");
   });
 
   it("tallies the Jobs rows from the passed cards and the shipped labels, so an optimistic change moves them", () => {

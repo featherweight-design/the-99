@@ -1,6 +1,7 @@
 import { castFaceText, isLandFace, playableAsLand } from "../cards/facet";
 import { manaCurve, type CurveCard } from "../decks/stats";
 import { classifyRoles, LABEL_ROLE_TARGETS, ROLE_TARGETS, type Role } from "../recs/roles";
+import type { LabelTargetRole } from "../labels/role-sets";
 import type {
   Bracket,
   BracketPopulation,
@@ -107,6 +108,14 @@ export type ProfileInput = {
   condition: string;
   composition: CompositionCandidates;
   roles: RoleCandidates;
+  /**
+   * The labels basis (labels-everywhere PR 8): each fresh-labelled card's role set, and the
+   * `label_*` targets they are graded against. Present only when the switch is on; absent builds
+   * exactly the classifier profile it always did. `roles` above stays the classifier's candidates
+   * and is not read when this is present. A card absent from `sets` has no fresh label and falls
+   * back to the classifier for that card alone.
+   */
+  labels?: { sets: ReadonlyMap<string, readonly LabelTargetRole[]>; roleTargets: ProfileRoleTargets };
   /** Whether the bucket serving this deck was derived from a below-bar population. */
   thinCondition: boolean;
   staples: StapleRef[];
@@ -221,7 +230,29 @@ function landCapableRefs(cards: ProfileCardRow[]): CardRef[] {
 
 const ALL_ROLES: Role[] = ["ramp", "draw", "removal", "wipes", "land"];
 
-function rolesOf(cards: ProfileCardRow[], commanders: Set<string>): ProfileRoles {
+/**
+ * The roles one card fills. On the labels basis a fresh-labelled NONLAND card is its label role set
+ * (a counterspell is not removal; `labelRoleSet`), a land face is the land role and nothing else
+ * (the classifier already says that: labels call 163 lands ramp and the deck counts them as
+ * lands), and a card with no fresh label falls back to the classifier for that card.
+ */
+function rolesFor(
+  c: ProfileCardRow,
+  faceText: string | null,
+  sets: ReadonlyMap<string, readonly LabelTargetRole[]> | undefined,
+): Role[] {
+  const byText = classifyRoles({ ...c, oracleText: faceText });
+  if (!sets) return byText;
+  if (isLandFace(c.typeLine)) return byText.filter((r) => r === "land");
+  const labelled = sets.get(c.oracleId);
+  return labelled ? [...labelled] : byText;
+}
+
+function rolesOf(
+  cards: ProfileCardRow[],
+  commanders: Set<string>,
+  sets?: ReadonlyMap<string, readonly LabelTargetRole[]>,
+): ProfileRoles {
   const counts = Object.fromEntries(ALL_ROLES.map((r) => [r, 0])) as Record<Role, number>;
   const excludingCommanders =
     Object.fromEntries(ALL_ROLES.map((r) => [r, 0])) as Record<Role, number>;
@@ -241,7 +272,7 @@ function rolesOf(cards: ProfileCardRow[], commanders: Set<string>): ProfileRoles
     // targets they are compared against classified the other, and `delta` reported a surplus
     // that was an artefact of the two disagreeing about which face to read.
     const faceText = castFaceText(c.oracleText, c.layout);
-    for (const role of classifyRoles({ ...c, oracleText: faceText })) {
+    for (const role of rolesFor(c, faceText, sets)) {
       // The COUNT is copies and the LIST is distinct cards. Three Rampant Growths are three
       // pieces of ramp against a target of ten, and naming the card three times in the
       // receipt would read as three different answers to the same problem.
@@ -329,7 +360,8 @@ function skeleton(input: ProfileInput): ProfileSkeleton {
 
   return {
     composition: hit ? { of: hit[0], ...hit[1]! } : null,
-    roleTargets: pickRoleTargets(input.roles),
+    roleTargets: input.labels ? input.labels.roleTargets : pickRoleTargets(input.roles),
+    ...(input.labels ? { roleBasis: "labels" as const } : {}),
     thinCondition: input.thinCondition,
     condition: input.condition,
     staples: input.staples,
@@ -395,7 +427,7 @@ export function buildDeckProfile(input: ProfileInput): DeckProfile {
     })),
     counts: countCards(cards),
     landCapableCards: landCapableRefs(cards),
-    roles: rolesOf(cards, commanders),
+    roles: rolesOf(cards, commanders, input.labels?.sets),
     curve: manaCurve(curveCards),
     colours: colours(cards, input.identity),
     skeleton: skeleton(input),

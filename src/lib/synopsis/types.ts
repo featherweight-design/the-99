@@ -10,7 +10,8 @@ export type SectionId = (typeof SECTIONS)[number];
 
 /**
  * What the app itself classifies a card as, and so what a Key card's job may claim. The five
- * roles are `classifyRoles`'s; `tutor` is `comboReach.tutors`; `combo` is a piece of a two-card
+ * roles are the profile's (`classifyRoles`, or the cards' labels with the classifier as the
+ * per-card fallback when `LABEL_ROLE_COUNTS_ENABLED` is on); `tutor` is `comboReach.tutors`; `combo` is a piece of a two-card
  * combo the deck assembles; `commander` is a command-zone card. Nothing else is checkable, so
  * nothing else can be claimed.
  */

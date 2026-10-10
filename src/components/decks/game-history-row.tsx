@@ -8,6 +8,7 @@ import { GAME_AXIS_KEYS, type GameAxisKey } from "../../lib/decks/game-axes";
 import { axisCopy, gameLogCopy } from "../../lib/copy/game-log";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DeckGame } from "../../lib/decks/games";
+import { formatPlayed } from "../../lib/decks/format";
 import { ANCHORED_PANEL_CLASS, useAnchoredPanel } from "../ui/anchored-panel";
 import { DeleteConfirm, DELETE_CONFIRM_WIDTH } from "../ui/delete-confirm";
 
@@ -24,17 +25,6 @@ const RESULT_GLYPH = {
   loss: gameLogCopy.history.lost,
   draw: gameLogCopy.history.drawn,
 } as const;
-
-// "12 Aug" — the design's locator. The year appears only when it is not the
-// current one, so a log read in the same season stays short.
-// Composed rather than handed whole to Intl: en-GB abbreviates September as
-// "Sept", which is correct but a character wider than the fixed meta slot was
-// drawn for.
-function formatPlayed(date: Date, now: Date = new Date()): string {
-  const month = date.toLocaleDateString("en-US", { month: "short" });
-  const stem = `${date.getDate()} ${month}`;
-  return date.getFullYear() === now.getFullYear() ? stem : `${stem} ${date.getFullYear()}`;
-}
 
 export function GameHistoryRow({ deckId, game, isLast, onDeleted }: GameHistoryRowProps) {
   const [confirming, setConfirming] = useState(false);

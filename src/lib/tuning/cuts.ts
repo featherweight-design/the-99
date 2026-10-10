@@ -45,7 +45,7 @@ export type CardCutFacts = {
   /** The commander's decks that run this card, or that its list does not carry at all. Null where
    *  no figure applies: no list, a basic land, or a listed card with no figure. */
   inclusion: { kind: "pct"; pct: number } | { kind: "offList" } | null;
-  /** The roles the card fills (the text classifier's, as the roles strip counts them). */
+  /** The roles the card fills, on the profile's basis: the cards' labels when `LABEL_ROLE_COUNTS_ENABLED` is on (an unlabeled card falls back to the text classifier), the classifier's otherwise. */
   roles: MixRole[];
   /** Set only when EVERY role the card fills is over its target: the smallest surplus among them. */
   roleSurplus: { role: MixRole; have: number; target: number } | null;
@@ -96,7 +96,7 @@ export function cutFacts(input: {
   const total = profile.counts.total;
   const over = Math.max(0, total - DECK_SIZE);
 
-  const mix = recommendedMix(profile.skeleton, profile.commanderOracleIds.length > 1);
+  const mix = recommendedMix(profile.skeleton, profile.commanderOracleIds.length > 1, profile.skeleton.roleBasis ?? "classifier");
   const curve = fitSkeleton(profile).curve;
   const missing: MissingSignal[] = [];
   if (!support) missing.push("inclusion");
