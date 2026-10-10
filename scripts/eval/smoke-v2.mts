@@ -16,6 +16,7 @@ const argv = process.argv.slice(2);
 const v1 = argv.includes("--v1");
 const capIx = argv.indexOf("--cap");
 const cap = capIx >= 0 ? Number(argv[capIx + 1]) : 0.5;
+if (!Number.isFinite(cap) || cap < 0) throw new Error(`smoke: --cap must be a finite, non-negative number (got ${argv[capIx + 1]})`);
 const needles = argv.filter((a, i) => !a.startsWith("--") && argv[i - 1] !== "--cap");
 const log = process.env.SMOKE_LOG;
 if (!log) throw new Error("smoke: set SMOKE_LOG to the campaign spend log");

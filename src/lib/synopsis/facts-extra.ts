@@ -124,12 +124,19 @@ export function nearComboFacts(
   return out;
 }
 
+/** Whether a card's colour identity sits inside the deck's: the rule for being addable at all. */
+export function fitsIdentity(deckIdentity: readonly string[], cardIdentity: readonly string[]): boolean {
+  return cardIdentity.every((c) => deckIdentity.includes(c));
+}
+
 export function deckStatsFact(
   ramp: number,
   commanderManaValues: readonly number[],
   cards: Parameters<typeof interactionCounts>[0],
+  /** Ramp that can be drawn BEFORE the commander: the 99's, since a ramp commander cannot cast itself. */
+  castRamp: number = ramp,
 ): DeckStatsFact {
   // The slowest commander of a pair sets the turn both can be out; a single commander is its own.
   const mv = commanderManaValues.length > 0 ? Math.max(...commanderManaValues) : null;
-  return { ramp, commanderCastTurn: mv === null ? null : expectedCastTurn(mv, ramp), interaction: interactionCounts(cards) };
+  return { ramp, commanderCastTurn: mv === null ? null : expectedCastTurn(mv, castRamp), interaction: interactionCounts(cards) };
 }

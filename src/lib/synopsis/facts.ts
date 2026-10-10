@@ -144,7 +144,7 @@ export function buildSynopsisFacts(
     cards: factCards,
     combos: comboFacts(profile),
     nearCombos,
-    stats: deckStatsFact(ramp, commanderManaValues, factCards),
+    stats: deckStatsFact(ramp, commanderManaValues, factCards, profile.roles.excludingCommanders?.ramp ?? ramp),
   };
 }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { comboFacts, deckStatsFact, expectedCastTurn, interactionCounts, nearComboFacts } from "./facts-extra";
+import { fitsIdentity, comboFacts, deckStatsFact, expectedCastTurn, interactionCounts, nearComboFacts } from "./facts-extra";
 import { overviewV2Enabled } from "./overview-v2";
 
 const card = (over: Partial<Parameters<typeof interactionCounts>[0][number]>) => ({
@@ -88,6 +88,24 @@ describe("deckStatsFact", () => {
   it("uses the slowest commander of a pair", () => {
     expect(deckStatsFact(10, [3, 5], []).commanderCastTurn).toBe(expectedCastTurn(5, 10));
     expect(deckStatsFact(10, [], []).commanderCastTurn).toBeNull();
+  });
+});
+
+describe("fitsIdentity", () => {
+  it("accepts a subset and refuses an off-colour card", () => {
+    expect(fitsIdentity(["U", "R"], ["U"])).toBe(true);
+    expect(fitsIdentity(["U", "R"], [])).toBe(true);
+    expect(fitsIdentity(["U", "R"], ["U", "G"])).toBe(false);
+  });
+});
+
+describe("deckStatsFact cast ramp", () => {
+  it("estimates from the ramp the 99 can draw, not the displayed whole-deck count", () => {
+    const whole = deckStatsFact(10, [5], []);
+    const castable = deckStatsFact(10, [5], [], 9);
+    expect(castable.ramp).toBe(10);
+    expect(castable.commanderCastTurn).toBe(expectedCastTurn(5, 9));
+    expect(whole.commanderCastTurn).toBe(expectedCastTurn(5, 10));
   });
 });
 
