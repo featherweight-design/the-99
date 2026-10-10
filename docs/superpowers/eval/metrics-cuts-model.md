@@ -6,7 +6,7 @@ These rounds ran before the facts sorted cards by name, so the card list reached
 
 Reading: per trial the model finds about 11.7 of 58 cuts (20%), 1.26x chance; the free tier found 10 of 58 (1.1x). Showing the model the deck's own v2 note (240 characters, a leakage diagnostic: the note names cards it cut) lifts that to 15 of 58 (26%), 1.7x chance. On this ground truth the model tier is a small step above the free tier, not a large one; most of Hugh's v1 to v2 changes are swaps whose reason sits in the replacement, which no cut list can see.
 
-Measured cost, not estimated: 15 answers cost $0.22 at batch prices ($0.015 each, 3,000 output tokens at most on a 19-cut deck); the plan's $5.70 estimate for the whole eval was about ten times too high. Ledger after both rounds: $0.50 of the $15 ceiling.
+Measured cost, not estimated: 15 answers cost $0.22 at batch prices ($0.015 each, up to about 4,000 output tokens on a 19-cut deck); the plan's $5.70 estimate for the whole eval was about 25 times too high against that round, and ten times too high against the $0.50 spent on both rounds. Ledger after both rounds: $0.50 of the $15 ceiling.
 
 ## Round 1, no intent
 
@@ -65,7 +65,9 @@ Three trials per deck, no intent, batch prices. "Held-out" is Gods plus Wizards 
 | Opus 5.5, names and facts only | 47 of 174 (27%) | 47 of 153 | 0 of 21 | $0.55 |
 | Opus 5.5, plus type, mana value, text | 46 of 174 (26%) | 46 of 153 | 0 of 21 | $0.77 |
 
-Chance is about 27 per 174, so Sonnet is 1.3x and the better rows 1.6x to 1.7x. The free tier was 1.1x. Card text helps Sonnet a little and Opus not at all; Opus is a little better than Sonnet either way. Spend on this ledger: $2.17 of the $15 ceiling.
+Chance is about 27 per 174, so Sonnet is 1.3x and the better rows 1.6x to 1.7x. The free tier was 1.1x. Card text helps Sonnet a little and Opus not at all; Opus is a little better than Sonnet either way. Spend on this ledger: $2.17 of the $15 ceiling. The Opus rows are priced at an ASSUMED Opus 5.5 rate ($5 and $25 per million tokens, the Opus 5 rate), so those two costs are an estimate until the bill is checked.
+
+The "Dropped" columns count the harness's own name resolution, which sees only the offered cards; the app does the same, so a name outside the deck drops as `cardExists` in both.
 
 **The held-out decks are not a test.** Seven cuts, none found by any configuration. Gods is a theme change ("removing mana intensive mana rocks and increasing mana pool to skew towards mountains") and Wizards is one card moved to another deck for its utility there. Neither reads off a list.
 

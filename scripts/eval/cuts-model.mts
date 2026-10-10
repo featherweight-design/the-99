@@ -22,7 +22,8 @@
  * MONEY (Hugh, 2026-10-09, relayed by the orchestrator): this build and its eval are bounded at
  * $15 in total. Every reply's usage is priced through `lib/pricing.mts` as it lands and written to
  * ITS OWN ledger (`ledger-cuts.jsonl`), because the shared one has a lifetime cap the earlier lanes
- * spent. A send is refused when its worst case would cross $15, and the run stops and asks at $10.
+ * spent. A send is refused when its worst case would cross $15, and the retry pass is skipped
+ * (the run stops and asks) once $10 is spent.
  */
 import "../lib/env.mjs";
 
@@ -145,10 +146,10 @@ let worst = 0;
 for (const p of prepared) {
   const h = createHash("sha256").update(JSON.stringify(p.sent.params)).digest("hex");
   if (!tokens.has(h)) tokens.set(h, await countTokens(p.sent.params));
-  // Two attempts: the app retries a malformed reply once.
-  worst += 2 * worstCaseUsd(MODEL, tokens.get(h)!, MAX_TOKENS, { batch: !args.realtime });
+  // `worstCaseUsd` already counts the app's one retry (two attempts).
+  worst += worstCaseUsd(MODEL, tokens.get(h)!, MAX_TOKENS, { batch: !args.realtime });
 }
-const inputTokens = [...tokens.values()].reduce((a, b) => a + b, 0);
+const inputTokens = prepared.reduce((n, p) => n + tokens.get(createHash("sha256").update(JSON.stringify(p.sent.params)).digest("hex"))!, 0);
 const before = spent(readLedger(LEDGER_CUTS));
 console.error(`${prepared.length} requests, ~${inputTokens} input tokens; worst case $${worst.toFixed(2)} (two attempts each, ${args.realtime ? "real-time" : "batch"} prices); spent so far on this ledger $${before.toFixed(2)} of $${CAP_USD}`);
 if (!args.send) {
@@ -185,7 +186,11 @@ const send = async (batch: Sent[], pass: string, worstUsd: number): Promise<Got[
 const schemaOf = new Map(prepared.map((p) => [p.customId, cutsResponseSchema(p.over)]));
 const attempts = new Map<string, Got[]>();
 for (const g of await send(prepared.map((p) => p.sent), "a1", worst / 2)) attempts.set(g.customId, [g]);
-const retry = prepared.filter((p) => {
+const midway = spent(readLedger(LEDGER_CUTS));
+if (midway >= ASK_AT_USD) {
+  console.error(`STOPPED before the retry pass: $${midway.toFixed(2)} spent (ask line $${ASK_AT_USD}); ask the orchestrator`);
+}
+const retry = midway >= ASK_AT_USD ? [] : prepared.filter((p) => {
   const g = attempts.get(p.customId)?.[0];
   return !g || (g.ok ? !parseReply(schemaOf.get(p.customId)!, g.message).ok : g.retry);
 });
@@ -210,6 +215,8 @@ for (const p of prepared) {
     rows.push({ deck: p.deck, trial: p.trial, k: p.k, over: p.over, pool: p.pool, answered: false, asked: 0, kept: 0, hits: 0, swapHits: 0, netHits: 0, drops: [], usd, outTokens });
     continue;
   }
+  // Names resolve against the offered cards only (the app does the same in `cuts-actions.ts`), so a
+  // card outside the pack drops as `cardExists` here, never `notInDeck`.
   const byName = new Map(p.pack.cards.map((c) => [norm(c.name), c.oracleId]));
   const { kept, dropped } = validateCuts({
     reply: value, pack: p.pack,

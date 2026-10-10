@@ -45,7 +45,7 @@ export function validateCuts(args: {
   const keyNames = new Set(pack.keyCards);
   const quotable = pack.intent ? [{ text: playerTextBody(pack.intent.raw), date: null }] : [];
   const seen = new Set<string>();
-  const survivors: ValidatedCut[] = [];
+  const survivors: (ValidatedCut & { at: number })[] = [];
   const dropped: CutDrop[] = [];
 
   reply.cuts.forEach((cut, position) => {
@@ -53,12 +53,12 @@ export function validateCuts(args: {
     if ("rule" in fail) dropped.push({ position, name: cut.name, ...fail });
     else {
       seen.add(fail.oracleId);
-      survivors.push({ ...fail, position: survivors.length });
+      survivors.push({ ...fail, position: survivors.length, at: position });
     }
   });
 
-  const kept = survivors.slice(0, pack.over);
-  for (const extra of survivors.slice(pack.over)) dropped.push({ position: extra.position, rule: "tooMany", name: extra.name });
+  const kept: ValidatedCut[] = survivors.slice(0, pack.over).map(({ at: _at, ...cut }) => cut);
+  for (const extra of survivors.slice(pack.over)) dropped.push({ position: extra.at, rule: "tooMany", name: extra.name });
 
   return {
     kept,

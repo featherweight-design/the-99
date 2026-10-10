@@ -54,6 +54,11 @@ describe("validateCuts", () => {
     expect(r.report).toMatchObject({ survivedCount: 3, keptCount: 2 });
   });
 
+  it("reports every drop at the reply's own index, a tooMany one included", () => {
+    const r = run([c("nope", [OFF]), c("bear1", [OFF]), c("bear3", [OFF]), c("bear4", [OFF])]);
+    expect(r.dropped.map((d) => [d.rule, d.position])).toEqual([["notInDeck", 0], ["tooMany", 3]]);
+  });
+
   describe("cite equality", () => {
     const pack = mk();
     const card = (id: string) => pack.cards.find((x) => x.oracleId === id)!;
