@@ -6,10 +6,12 @@
 // Step 3: ConfirmModal (Task 9). Confirm → confirmUpload() → the receipt.
 
 import { useEffect, useLayoutEffect, useState } from "react";
-import { confirmUpload, previewUploadChange, type UploadPreview } from "../../app/collection/actions";
+import { confirmUpload, previewUploadChange, type UploadChangePreview, type UploadMode, type UploadPreview } from "../../app/collection/actions";
 import { UploadEntry } from "./upload-entry";
 import { ReviewScreen } from "./review-screen";
 import type { ReviewChange } from "./replace-review-detail";
+import { UploadChoice } from "./upload-choice";
+import { GhostButton } from "../ui/button";
 import { ConfirmModal } from "./confirm-modal";
 import { replaceCopy } from "../../lib/copy/replace";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
@@ -73,34 +75,65 @@ export function ReplaceFlow({
   // modal instead.
   const firstImport = preview?.currentCollectionCount === 0;
 
-  // The ledger path's read of this Replace: figures, lists, overwritten edits and the decks it
-  // would leave short, drawn in the review with the decision on its confirm bar (A2). Absent (a
-  // first import, the switch off, or a read that failed), the review is the shipped one and the
-  // confirm is the dialog.
-  // Held with the upload it was read for, so a new preview starts from nothing without an effect
-  // resetting state: `change` is null and `comparing` is true until THIS upload's read settles.
-  const [read, setRead] = useState<{ id: string; change: ReviewChange | null } | null>(null);
+  // The ledger path's read of this upload in BOTH modes, taken together because the choice quotes
+  // each card's after-figure before anything is picked (A1). Absent (a first import, or the switch
+  // off), there is no choice: the review is the shipped Replace one and the confirm is the dialog.
+  // Keyed on the upload and the attempt, so a new upload or a retry reads as "not read yet" by
+  // derivation, with nothing to reset in an effect.
+  const [read, setRead] = useState<{
+    key: string;
+    datas: Record<UploadMode, UploadChangePreview> | null;
+    error: string | null;
+    /** The server answered "nothing to compare" (confirmed elsewhere): the shipped review and dialog stand. */
+    noRead: boolean;
+  } | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  // Which card the reader has picked (never preselected), and whether the review is open.
+  const [picked, setPicked] = useState<UploadMode | null>(null);
+  const [reviewing, setReviewing] = useState(false);
+  // The review's state for the picked mode: the decks as last said, and a failed write's notice.
+  const [change, setChange] = useState<ReviewChange | null>(null);
   const previewedId = preview?.uploadId ?? null;
-  const wantsComparison = deckCheck && previewedId !== null && !firstImport;
-  const settled = read !== null && read.id === previewedId;
-  const change = settled ? read.change : null;
-  const comparing = wantsComparison && !settled;
-  const setChange = (next: ReviewChange | null) => {
-    if (previewedId) setRead({ id: previewedId, change: next });
+  const readKey = `${previewedId}:${attempt}`;
+  const current = read?.key === readKey ? read : null;
+  const datas = current?.datas ?? null;
+  const prepareError = current?.error ?? null;
+  const choosing = deckCheck && !firstImport && previewedId !== null && !current?.noRead;
+  const resetChoice = () => {
+    setPicked(null);
+    setReviewing(false);
+    setChange(null);
   };
   useEffect(() => {
-    if (!wantsComparison || !previewedId) return;
+    if (!deckCheck || !previewedId || firstImport) return;
     let live = true;
-    previewUploadChange(previewedId, "replace")
-      .then((data) => (data && "detail" in data ? { data, decks: data.decks, fresh: new Set<string>(), changed: false, failure: null } : null))
-      .catch(() => null)
-      .then((next) => {
-        if (live) setRead({ id: previewedId, change: next });
-      });
+    const key = readKey;
+    const settle = (r: { datas: Record<UploadMode, UploadChangePreview> | null; error: string | null; noRead: boolean }) => {
+      if (live) setRead({ key, ...r });
+    };
+    Promise.all([previewUploadChange(previewedId, "replace"), previewUploadChange(previewedId, "add")])
+      .then(([replace, add]) => {
+        // Either one answering "confirmed elsewhere" ends the comparison: the other read cannot be acted on.
+        if (!replace || !add) return settle({ datas: null, error: null, noRead: true });
+        const missing = [replace, add].find((r) => r && "missingCard" in r);
+        if (missing && "missingCard" in missing)
+          return settle({ datas: null, error: collectionEditCopy.shortWarning.catalogFailure(missing.missingCard), noRead: false });
+        if (replace && "detail" in replace && add && "detail" in add) return settle({ datas: { replace, add }, error: null, noRead: false });
+        return settle({ datas: null, error: collectionEditCopy.upload.prepareFailed, noRead: false });
+      })
+      .catch(() => settle({ datas: null, error: collectionEditCopy.upload.prepareFailed, noRead: false }));
     return () => {
       live = false;
     };
-  }, [wantsComparison, previewedId]);
+  }, [deckCheck, previewedId, firstImport, readKey]);
+
+  function openReview(mode: UploadMode) {
+    if (!datas || pending) return;
+    const data = datas[mode];
+    setPicked(mode);
+    setChange({ data, decks: data.decks, fresh: new Set(), changed: false, failure: null });
+    setReviewing(true);
+  }
 
   async function onConfirm(confirmShort?: ShortDeck[]) {
     if (!preview || pending) return;
@@ -113,7 +146,7 @@ export function ReplaceFlow({
       // `firstImport` is read off the preview, which a server refusal corrects before the
       // modal opens, so a confirm from that modal is no longer "first". A retry after a
       // FAILED first import keeps the claim, and with it the server's guard (Copilot, #1097).
-      const outcome = await confirmUpload(preview.uploadId, { firstImport, confirmShort });
+      const outcome = await confirmUpload(preview.uploadId, { firstImport, confirmShort, mode: choosing ? (picked ?? "replace") : undefined });
       if (outcome && "needsConfirm" in outcome) {
         // The preview was drawn at 0 cards and the modal reads its variant off that figure,
         // so it would ask for IMPORT over a write that replaces a collection. Correct it first.
@@ -159,6 +192,21 @@ export function ReplaceFlow({
       // upload id, so it survives a reload and stays linkable.
       nav.go(`/collection/replace/summary/${preview.uploadId}`);
     } catch (e) {
+      // A throw is not proof that nothing was written: the write commits before its cache
+      // invalidation and its receipt, and either can fail after it. The preview of an upload that
+      // is already confirmed answers null, so ask it before claiming the collection is unchanged.
+      // A read that fails too is INDETERMINATE: the write may have landed and the answer been lost,
+      // so it must not claim the collection is unchanged either.
+      const landed = choosing ? await previewUploadChange(preview.uploadId, picked ?? "replace").then((r) => (r === null ? "yes" : "no"), () => "unknown" as const) : "no";
+      if (landed === "yes") {
+        nav.go(`/collection/replace/summary/${preview.uploadId}`);
+        return;
+      }
+      if (landed === "unknown") {
+        if (review) setChange({ ...review, failure: { body: collectionEditCopy.upload.unconfirmed } });
+        else setConfirmError(collectionEditCopy.upload.unconfirmed);
+        return;
+      }
       if (review) {
         // Nothing was written and the review stays (A5).
         setChange({ ...review, failure: { body: collectionEditCopy.upload.failedBody } });
@@ -174,6 +222,9 @@ export function ReplaceFlow({
     }
   }
 
+  // With editing on the page takes a file to replace or add, so "Replace collection" would misname it.
+  const pageTitle = deckCheck && knownCount > 0 ? collectionEditCopy.head.upload : replaceCopy.pageTitle(knownCount);
+
   if (!preview) {
     return (
       <>
@@ -187,11 +238,11 @@ export function ReplaceFlow({
             {/* The phone's page header, the upload step's alone: the review draws its own. */}
             <div className="md:hidden flex items-center gap-[12px] p-[20px_18px_14px]" style={{ borderBottom: "1px solid var(--border)" }}>
               <a href="/collection" aria-label="Back to Collection" className="text-[20px] text-[color:var(--accent)]">‹</a>
-              <h1 className="font-display font-semibold text-[19px]" style={{ color: "var(--fg)" }}>{replaceCopy.pageTitle(knownCount)}</h1>
+              <h1 className="font-display font-semibold text-[19px]" style={{ color: "var(--fg)" }}>{pageTitle}</h1>
             </div>
             <div className="hidden md:block md:mx-auto md:w-full md:max-w-[760px] md:p-[28px_48px_0]">
               <a href="/collection" className="font-mono text-[11px] tracking-[0.06em] text-[color:var(--fg-faint)]">‹ Collection</a>
-              <h1 className="font-display font-bold text-[30px] mt-[8px]" style={{ color: "var(--fg)" }}>{replaceCopy.pageTitle(knownCount)}</h1>
+              <h1 className="font-display font-bold text-[30px] mt-[8px]" style={{ color: "var(--fg)" }}>{pageTitle}</h1>
             </div>
           </>
         )}
@@ -201,17 +252,75 @@ export function ReplaceFlow({
         <div className={embedded ? undefined : "px-[18px] pt-[16px] pb-[24px] md:p-0"}>
           <UploadEntry
             currentCardCount={knownCount}
+            choice={deckCheck}
             entry={entry}
             onAddByHand={onAddByHand}
             onPreview={(p) => {
               setConfirmError(null);
               setConfirming(false);
+              resetChoice();
               setPreview(p);
               setKnownCount(p.currentCollectionCount);
             }}
           />
         </div>
       </>
+    );
+  }
+
+  // A confirm made inside the dialog (a first import that found a collection after all) is the
+  // dialog's to answer: the choice never replaces it.
+  if (choosing && !reviewing && !confirming) {
+    const cancel = () => {
+      if (pending) return;
+      setConfirming(false);
+      setPreview(null);
+    };
+    if (!datas) {
+      return (
+        <section className="flex flex-col gap-[14px] p-[20px_18px] md:max-w-[1280px] md:p-[36px_56px]">
+          <p className="m-0 font-mono text-[11px] tracking-[0.06em] text-[color:var(--fg-faint)]">
+            {collectionEditCopy.upload.step(2, 4)} · {preview.filename}
+          </p>
+          {prepareError ? (
+            <div role="alert" className="rounded-[10px] border border-[color:var(--border-strong)] border-l-[3px] border-l-[color:var(--danger)] bg-[color:var(--surface)] p-[12px_14px]">
+              <p className="m-0 text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{prepareError}</p>
+              <button
+                type="button"
+                onClick={() => setAttempt((a) => a + 1)}
+                className="mt-[6px] min-h-[44px] text-[13.5px] text-[color:var(--accent)] underline underline-offset-2"
+              >
+                {collectionEditCopy.upload.retry}
+              </button>
+            </div>
+          ) : (
+            <p role="status" className="m-0 text-[13px] text-[color:var(--fg-muted)]">
+              {collectionEditCopy.upload.preparing}
+            </p>
+          )}
+          <div>
+            <GhostButton type="button" onClick={cancel} className="h-[44px] px-[20px] text-[14px]">
+              {collectionEditCopy.upload.cancel}
+            </GhostButton>
+          </div>
+        </section>
+      );
+    }
+    return (
+      <UploadChoice
+        filename={preview.filename}
+        rows={preview.rowCount}
+        replaceBefore={datas.replace.detail.copiesBefore}
+        addBefore={datas.add.detail.copiesBefore}
+        replaceAfter={datas.replace.detail.copiesAfter}
+        addAfter={datas.add.detail.copiesAfter}
+        facts={datas.replace}
+        overlap={datas.add.detail.overlap}
+        picked={picked}
+        onPick={setPicked}
+        onContinue={() => picked && openReview(picked)}
+        onCancel={cancel}
+      />
     );
   }
 
@@ -224,10 +333,13 @@ export function ReplaceFlow({
           // controls say: the confirm would still land and still open its receipt.
           if (pending) return;
           setConfirming(false);
-          setPreview(null);
+          // With the choice, a review's Cancel steps back to it; without, to the upload step.
+          if (choosing) {
+            setChange(null);
+            setReviewing(false);
+          } else setPreview(null);
         }}
         onContinue={() => {
-          if (comparing) return;
           if (firstImport) void onConfirm();
           else if (change) void onConfirm(change.decks);
           else setConfirming(true);
@@ -235,7 +347,10 @@ export function ReplaceFlow({
         pending={pending && !confirming}
         embedded={embedded}
         change={change}
-        comparing={comparing}
+        mode={choosing ? (picked ?? "replace") : "replace"}
+        step={choosing ? collectionEditCopy.upload.step(3, 4) : undefined}
+        // Not while a confirm is in flight: the pick and the review would move to Replace under a write that is still an Add.
+        onSwitchToReplace={choosing && !pending ? () => openReview("replace") : undefined}
         onRetry={change ? () => void onConfirm(change.decks) : undefined}
       />
       {confirming && (

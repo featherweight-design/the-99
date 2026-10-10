@@ -30,7 +30,10 @@ export function UploadEntry({
   onPreview,
   entry = "dropzone",
   onAddByHand,
+  choice = false,
 }: {
+  /** Collection editing is on: the file may be added instead, so the note stops saying it replaces. */
+  choice?: boolean;
   currentCardCount: number;
   onPreview: (preview: UploadPreview) => void;
   entry?: Entry;
@@ -222,9 +225,9 @@ export function UploadEntry({
           correction 5); only its spacing above stays the page's own. */}
       {currentCardCount > 0 && (
         <p className="m-0 md:mt-[20px] rounded-[10px] border border-[color:var(--border)] bg-[color:var(--surface-sunken)] p-[14px_18px] text-[14px] leading-[1.6] text-pretty text-[color:var(--fg-body)]">
-          {replaceCopy.note.before}
+          {choice ? collectionEditCopy.upload.entryNote.before : replaceCopy.note.before}
           <span className="font-semibold text-[color:var(--fg)]">{replaceCopy.note.count(currentCardCount)}</span>
-          {replaceCopy.note.after}
+          {choice ? collectionEditCopy.upload.entryNote.after : replaceCopy.note.after}
         </p>
       )}
 

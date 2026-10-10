@@ -4,7 +4,7 @@
 // unmatched rows carry {name, setCode, line}; parse errors carry {line, reason}.
 
 import { useEffect, useRef, useState } from "react";
-import type { UploadPreview } from "../../app/collection/actions";
+import type { UploadMode, UploadPreview } from "../../app/collection/actions";
 import { IssueInspector } from "./issue-inspector";
 import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
 import { GhostButton, PrimaryButton } from "../ui/button";
@@ -24,6 +24,9 @@ export function ReviewScreen({
   change,
   comparing = false,
   onRetry,
+  mode = "replace",
+  step = "STEP 2 OF 3",
+  onSwitchToReplace,
 }: {
   preview: UploadPreview;
   onCancel: () => void;
@@ -41,6 +44,12 @@ export function ReviewScreen({
   comparing?: boolean;
   /** Runs the confirm again after a failure that wrote nothing (A5). */
   onRetry?: () => void;
+  /** Which write the review is for. An Add lowers nothing, so it has no deck section or `edited` tag. */
+  mode?: UploadMode;
+  /** The step line: `STEP 3 OF 4` when the choice came first. */
+  step?: string;
+  /** An Add whose every card is already owned offers the other way (A3b). */
+  onSwitchToReplace?: () => void;
 }) {
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const failureRef = useRef<HTMLDivElement>(null);
@@ -70,6 +79,8 @@ export function ReviewScreen({
   // confirm-modal branching landed in #48 — "replace" language is wrong when
   // there's no existing collection to replace).
   const isInitialImport = preview.currentCollectionCount === 0;
+  // An Add's banner states what the add does, in copies; the matched count is a Replace's figure.
+  const addDetail = change && mode === "add" ? change.data.detail : null;
 
   return (
     // Wrapping section splits into scrollable content + sticky confirm bar
@@ -95,13 +106,13 @@ export function ReviewScreen({
           className="hidden md:block font-mono text-[11px] tracking-[0.06em]"
           style={{ color: "var(--fg-faint)" }}
         >
-          STEP 2 OF 3 · {preview.filename} · {preview.rowCount.toLocaleString()} rows
+          {step} · {preview.filename} · {preview.rowCount.toLocaleString()} rows
         </p>
         <h1
           className="hidden md:block font-display font-bold text-[29px] mt-[12px]"
           style={{ color: "var(--fg)" }}
         >
-          Review before you replace
+          {mode === "add" ? e.reviewAdd : "Review before you replace"}
         </h1>
 
         {failed ? (
@@ -143,12 +154,18 @@ export function ReviewScreen({
             <div>
               {/* §Matched Count: Number — mono 22/30px 600 --fg */}
               <div className="font-mono font-semibold text-[22px] md:text-[30px] leading-none" style={{ color: "var(--fg)" }}>
-                {importCount.toLocaleString()}
+                {addDetail ? e.addedFigure(addDetail.copiesAfter - addDetail.copiesBefore) : importCount.toLocaleString()}
               </div>
               {/* §Matched Count: Label */}
               <div className="text-[11.5px] md:text-[13px] mt-[2px] md:mt-[4px] text-[color:var(--fg-faint)] md:text-[color:var(--fg-muted)]">
-                <span className="md:hidden">cards matched &amp; ready</span>
-                <span className="hidden md:inline">cards matched to the Oracle database: ready to import</span>
+                {addDetail ? (
+                  e.addedLabel(addDetail.copiesAfter - addDetail.copiesBefore, addDetail.distinctCards)
+                ) : (
+                  <>
+                    <span className="md:hidden">cards matched &amp; ready</span>
+                    <span className="hidden md:inline">cards matched to the Oracle database: ready to import</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -207,7 +224,14 @@ export function ReviewScreen({
         </div>
 
         {change ? (
-          <ReplaceReviewDetail change={change.data} decks={change.decks} freshDeckIds={change.fresh} changed={change.changed} />
+          <ReplaceReviewDetail
+            change={change.data}
+            decks={change.decks}
+            freshDeckIds={change.fresh}
+            changed={change.changed}
+            mode={mode}
+            onSwitchToReplace={onSwitchToReplace}
+          />
         ) : comparing ? (
           <p role="status" className="m-0 mt-[16px] text-[13px] text-[color:var(--fg-muted)]">
             {e.preparing}
@@ -344,7 +368,9 @@ export function ReviewScreen({
         <p
           className="text-[11.5px] md:text-[13.5px] text-center md:text-left mb-[10px] md:mb-0 text-[color:var(--fg-faint)] md:text-[color:var(--fg-body)]"
         >
-          {change ? (
+          {change && mode === "add" ? (
+            e.barAdd(change.data.detail.copiesAfter - change.data.detail.copiesBefore, skippedTotal, change.data.detail.copiesBefore)
+          ) : change ? (
             e.barReplace(change.data.detail.copiesBefore, change.data.detail.copiesAfter, new Set(change.decks.map((d) => d.deckId)).size)
           ) : isInitialImport ? (
             <>
@@ -392,9 +418,13 @@ export function ReviewScreen({
             {/* "Importing…" is the confirm modal's own pending label, which this button now
                 carries when a first import skips the modal. */}
             {change
-              ? pending
-                ? e.pendingReplace
-                : e.confirmReplace
+              ? mode === "add"
+                ? pending
+                  ? e.pendingAdd
+                  : e.confirmAdd(change.data.detail.copiesAfter - change.data.detail.copiesBefore)
+                : pending
+                  ? e.pendingReplace
+                  : e.confirmReplace
               : pending
                 ? "Importing…"
                 : isInitialImport
