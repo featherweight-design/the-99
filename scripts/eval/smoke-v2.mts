@@ -22,7 +22,13 @@ const log = process.env.SMOKE_LOG;
 if (!log) throw new Error("smoke: set SMOKE_LOG to the campaign spend log");
 const CAMPAIGN_CAP = 15;
 
-const spent = () => (existsSync(log) ? readFileSync(log, "utf8").split("\n").filter(Boolean).reduce((n, l) => n + JSON.parse(l).usd, 0) : 0);
+// Settled spend plus every pending worst case that no settle line names (a crashed run keeps its charge).
+const spent = () => {
+  if (!existsSync(log)) return 0;
+  const lines = readFileSync(log, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l) as { usd: number; pending?: boolean; id?: string; settles?: string });
+  const settled = new Set(lines.flatMap((l) => (l.settles ? [l.settles] : [])));
+  return lines.reduce((n, l) => n + (l.pending && l.id && settled.has(l.id) ? 0 : l.usd), 0);
+};
 
 const db = await connectStaging();
 const { sql } = await import("drizzle-orm");
@@ -48,11 +54,15 @@ for (const needle of needles) {
   const approxIn = Math.ceil((prompt.system.length + prompt.user.length) / 3.5);
   const worst = worstCaseUsd(SYNOPSIS_MODEL, approxIn, SYNOPSIS_MAX_TOKENS, { batch: false });
   if (spent() + worst > CAMPAIGN_CAP || runSpend + worst > cap) { console.log(`STOP before ${d.name}: worst case ${worst.toFixed(3)} would cross a cap (spent ${spent().toFixed(3)}, run ${runSpend.toFixed(3)}/${cap})`); break; }
+  const runId = `${Date.now()}-${d.id}`;
+  // Reserve the worst case BEFORE the call, as the eval ledger does: a crash after the API has
+  // billed but before the settle still leaves a charge in the log. The settle line below replaces it.
+  appendFileSync(log, JSON.stringify({ at: new Date().toISOString(), what: `smoke-v2 pending ${d.name}`, usd: worst, pending: true, id: runId }) + "\n");
   const out = await callModel({ model: SYNOPSIS_MODEL, system: prompt.system, user: prompt.user, maxTokens: SYNOPSIS_MAX_TOKENS, effort: SYNOPSIS_EFFORT, schema: synopsisResponseSchema, deadlineMs: 110_000 });
   const usage = out.usage;
   const usd = usage ? costUsd(SYNOPSIS_MODEL, { input_tokens: usage.inputTokens, output_tokens: usage.outputTokens, cache_read_input_tokens: usage.cacheReadTokens, cache_creation_input_tokens: usage.cacheWriteTokens }, { batch: false }) : 0;
   runSpend += usd;
-  appendFileSync(log, JSON.stringify({ at: new Date().toISOString(), what: `smoke-v2 ${v1 ? "v1" : "v2"} ${d.name}`, usd, usage }) + "\n");
+  appendFileSync(log, JSON.stringify({ at: new Date().toISOString(), what: `smoke-v2 ${v1 ? "v1" : "v2"} ${d.name}`, usd, usage, settles: runId }) + "\n");
   console.log(`\n== ${d.name} ${v1 ? "(v1)" : "(v2)"}  ok=${out.ok} $${usd.toFixed(4)} (run ${runSpend.toFixed(4)}, campaign ${spent().toFixed(4)})`);
   if (!out.ok) { console.log(out.errorClass); continue; }
   const checked = validateSynopsis(out.value, facts, await catalogFor(out.value, facts));
