@@ -40,6 +40,8 @@ export type CardCutFacts = {
   oracleId: string;
   name: string;
   quantity: number;
+  typeLine: string;
+  cmc: number;
   /** The commander's decks that run this card, or that its list does not carry at all. Null where
    *  no figure applies: no list, a basic land, or a listed card with no figure. */
   inclusion: { kind: "pct"; pct: number } | { kind: "offList" } | null;
@@ -168,6 +170,8 @@ export function cutFacts(input: {
       oracleId: card.oracleId,
       name: card.name,
       quantity: card.quantity,
+      typeLine: card.typeLine,
+      cmc: card.cmc,
       inclusion,
       roles: mine,
       roleSurplus: surplus && !opensGap ? { role: surplus.role, have: surplus.have, target: surplus.target } : null,

@@ -51,3 +51,35 @@ Run 2026-10-10T08-22-17-616Z-round1. Model claude-sonnet-5 at effort medium, bat
 | HD - Wizards | 0 | 1 | 1 | 1 | 1 | none | $0.0062 | 207 |
 | HD - Wizards | 1 | 1 | 1 | 1 | 1 | none | $0.0060 | 159 |
 | HD - Wizards | 2 | 1 | 1 | 1 | 1 | none | $0.0061 | 173 |
+
+## Round 2: card text, and Opus
+
+Three trials per deck, no intent, batch prices. "Held-out" is Gods plus Wizards (7 cuts, 21 over three trials); the other three decks are where the one prompt change (mana value, type and oracle text per card) was looked at.
+
+| Configuration | All five decks | Three decks | Held-out two | Cost |
+|---|---|---|---|---|
+| Sonnet 5, names and facts only (round 1) | 35 of 174 (20%) | 35 of 153 | 0 of 21 | $0.22 |
+| Sonnet 5, plus type, mana value, text | 43 of 174 (25%) | 43 of 153 | 0 of 21 | $0.34 |
+| Opus 5.5, names and facts only | 47 of 174 (27%) | 47 of 153 | 0 of 21 | $0.55 |
+| Opus 5.5, plus type, mana value, text | 46 of 174 (26%) | 46 of 153 | 0 of 21 | $0.77 |
+
+Chance is about 27 per 174, so Sonnet is 1.3x and the better rows 1.6x to 1.7x. The free tier was 1.1x. Card text helps Sonnet a little and Opus not at all; Opus is a little better than Sonnet either way. Spend on this ledger: $2.17 of the $15 ceiling.
+
+**The held-out decks are not a test.** Seven cuts, none found by any configuration. Gods is a theme change ("removing mana intensive mana rocks and increasing mana pool to skew towards mountains") and Wizards is one card moved to another deck for its utility there. Neither reads off a list.
+
+## Why this ground truth may not measure the feature
+
+Proposed cuts is "this list is over 100, which cards come out". The truth set here is "which cards did Hugh swap out between v1 and v2", and the two differ:
+
+- **Most removals are swaps.** By the same-role pairing, 17 of the 58 cuts have a replacement in the same role, and the notes say the rest are mostly theme changes too (a proliferate rebuild, a five-colour mana fix, a mountain skew). The reason a card left lives in the card that came in, which a cut-only call is never shown.
+- **No deck was over 100.** The "pre-cut list" is v1 plus the cards v2 added, a list Hugh never held. The model is asked to cut `|added|` cards from it, and some of the added cards are ones Hugh chose on purpose.
+- **Intent is the signal the product has and this truth withholds.** A player pressing Look deeper on an over-100 deck can say what the deck is for. Showing the model Hugh's v2 note moved Sonnet from 20% to 26%, and those notes name cards.
+- **It cannot tell a defensible cut from a different one.** A model that proposes a sensible cut Hugh did not make scores a miss.
+
+A better truth set, in order of cost:
+
+1. **Hugh trims two or three real over-100 lists by hand**, writing nothing but the final 100 (a few minutes a deck). The scored question becomes what the product asks. Any deck over 100 on staging or a new one he pads on purpose with 8 to 12 cards he would cut.
+2. **Blind read.** The model proposes cuts for his over-100 lists and Hugh marks each one fine, close or wrong, as for the tuning prompt (`report.md`). No ground truth needed, and it measures reasons too.
+3. **Decks with a known net-reduction history.** Only 14 to 41 of the 58 are net reductions, and none of them is a clean trim.
+
+The recall numbers above are a floor for the free-versus-model comparison and no more.

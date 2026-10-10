@@ -16,6 +16,8 @@
  *   --trials N        answers per deck (default 1)
  *   --leak            pass the v2 note as the intent (diagnostic)
  *   --realtime        real-time prices and latency (default: batch, half price)
+ *   --text            give the model each card's oracle text (front face), mana value and type
+ *   --model M         `opus` (claude-opus-5-5) or a model id; default the app's tuning model
  *
  * MONEY (Hugh, 2026-10-09, relayed by the orchestrator): this build and its eval are bounded at
  * $15 in total. Every reply's usage is priced through `lib/pricing.mts` as it lands and written to
@@ -44,6 +46,8 @@ const { values: args } = parseArgs({
     trials: { type: "string", default: "1" },
     leak: { type: "boolean", default: false },
     realtime: { type: "boolean", default: false },
+    text: { type: "boolean", default: false },
+    model: { type: "string" },
     label: { type: "string", default: "cuts-model" },
   },
 });
@@ -67,8 +71,10 @@ const { cutsResponseSchema } = await import("../../src/lib/tuning/cuts-schema");
 const { validateCuts } = await import("../../src/lib/tuning/cuts-validate");
 const { TUNING_MODEL } = await import("../../src/lib/tuning/limits");
 const { ROLE_ORDER } = await import("../../src/lib/decks/mix");
+const { castFaceText } = await import("../../src/lib/cards/facet");
+const { inArray } = await import("drizzle-orm");
 
-const MODEL = TUNING_MODEL;
+const MODEL = args.model === "opus" ? "claude-opus-5-5" : (args.model ?? TUNING_MODEL);
 const EFFORT = "medium" as const;
 const norm = (s: string) => s.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase().trim();
 
@@ -110,7 +116,13 @@ for (const t of truths) {
       .where(eq(schema.deckVersions.deckId, t.deckId));
     intent = notes.find((n) => n.number === 2)?.note?.slice(0, 240) ?? null;
   }
-  const pack = buildCutsPack({ facts, commanderName: cmdr.name, keyCards: [], intent });
+  let texts: Map<string, string> | undefined;
+  if (args.text) {
+    const rows = await db.select({ id: schema.cards.oracleId, text: schema.cards.oracleText, layout: schema.cards.layout })
+      .from(schema.cards).where(inArray(schema.cards.oracleId, facts.cards.map((c) => c.oracleId)));
+    texts = new Map(rows.flatMap((r) => { const t = castFaceText(r.text, r.layout); return t ? [[r.id, t] as const] : []; }));
+  }
+  const pack = buildCutsPack({ facts, commanderName: cmdr.name, keyCards: [], intent, texts });
   const { system, user } = buildCutsPrompt(pack);
   const rolesOf = new Map<string, Set<string>>();
   for (const r of ROLE_ORDER) for (const c of profile.roles.cards[r] ?? []) rolesOf.set(c.oracleId, (rolesOf.get(c.oracleId) ?? new Set()).add(r));
@@ -153,7 +165,7 @@ if (before >= ASK_AT_USD) {
 }
 
 acquireRunLock(LEDGER_CUTS);
-const runId = `${new Date().toISOString().replace(/[:.]/g, "-")}-${args.label}${args.leak ? "-leak" : ""}`;
+const runId = `${new Date().toISOString().replace(/[:.]/g, "-")}-${args.label}${args.leak ? "-leak" : ""}${args.text ? "-text" : ""}${args.model ? `-${args.model}` : ""}`;
 const dir = new URL(`runs/${runId}/`, ROOT);
 mkdirSync(dir, { recursive: true });
 const log = (l: string) => console.error(l);
@@ -221,7 +233,7 @@ const chance = sum(rows.map((r) => (r.kept * r.k) / r.pool));
 const swapN = sum(prepared.map((p) => [...p.cut].filter((id) => p.paired.has(id)).length));
 const netN = totalK - swapN;
 console.log(`# Proposed cuts model tier: recall against the cuts Hugh made${args.leak ? " (LEAKAGE DIAGNOSTIC: the v2 note was shown)" : ""}\n`);
-console.log(`Run ${runId}. Model ${MODEL} at effort ${EFFORT}, ${args.realtime ? "real-time" : "batch"}, ${trials} trial(s) per deck, no intent${args.leak ? " except the v2 note" : ""}, no Key cards.\n`);
+console.log(`Run ${runId}. Model ${MODEL} at effort ${EFFORT}${args.text ? ", card text shown" : ""}, ${args.realtime ? "real-time" : "batch"}, ${trials} trial(s) per deck, no intent${args.leak ? " except the v2 note" : ""}, no Key cards.\n`);
 console.log(`**${hits} of ${totalK} cuts found** across ${rows.length} answers (${answered.length} answered), ${(100 * hits / Math.max(totalK, 1)).toFixed(0)}% against the free tier's 17% (10 of 58) and chance ${chance.toFixed(1)}. Swaps ${sum(rows.map((r) => r.swapHits))} of ${swapN}, net reductions ${sum(rows.map((r) => r.netHits))} of ${netN}. Cost $${sum(rows.map((r) => r.usd)).toFixed(3)}; ledger total $${spent(readLedger(LEDGER_CUTS)).toFixed(2)} of $${CAP_USD}.\n`);
 console.log("| Deck | Trial | Cut (K) | Asked | Kept | Hits | Dropped | Cost | Out tokens |");
 console.log("|---|---|---|---|---|---|---|---|---|");

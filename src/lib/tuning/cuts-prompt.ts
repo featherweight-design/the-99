@@ -8,7 +8,8 @@ export const CUTS_PROMPT_VERSION = 1;
 const flagLabel = (f: keyof typeof deckCutsCopy.flags) => deckCutsCopy.flags[f];
 
 function cardLine(c: CutsPackCard): string {
-  const parts = [c.quantity > 1 ? `${c.name} x${c.quantity}` : c.name];
+  const parts = [c.quantity > 1 ? `${c.name} x${c.quantity}` : c.name, `${c.typeLine}, mv ${c.mv}`];
+  if (c.text) parts.push(`text: ${c.text.replace(/\s*\n\s*/g, " / ")}`);
   parts.push(`roles: ${c.roles.length > 0 ? c.roles.join(", ") : "none"}`);
   if (c.inclusion === "offList") parts.push("not on the commander's EDHREC list");
   else if (c.inclusion) parts.push(`inclusion ${c.inclusion.pct}`);

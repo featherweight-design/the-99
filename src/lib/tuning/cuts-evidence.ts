@@ -15,6 +15,11 @@ export type CutsPackCard = {
   oracleId: string;
   name: string;
   quantity: number;
+  typeLine: string;
+  /** Mana value. */
+  mv: number;
+  /** Oracle text, when the caller supplied it. Catalog data: no player can type it. */
+  text?: string;
   roles: MixRole[];
   inclusion?: { pct: number } | "offList";
   roleSurplus?: RoleFact;
@@ -40,11 +45,14 @@ export type CutsPack = {
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
-function packCard(c: CardCutFacts): CutsPackCard {
+function packCard(c: CardCutFacts, text: string | undefined): CutsPackCard {
   return {
     oracleId: c.oracleId,
     name: c.name,
     quantity: c.quantity,
+    typeLine: c.typeLine,
+    mv: c.cmc,
+    ...(text ? { text } : {}),
     roles: c.roles,
     ...(c.inclusion ? { inclusion: c.inclusion.kind === "pct" ? { pct: round1(c.inclusion.pct) } : ("offList" as const) } : {}),
     ...(c.roleSurplus ? { roleSurplus: c.roleSurplus } : {}),
@@ -59,8 +67,10 @@ export function buildCutsPack(input: {
   commanderName: string;
   keyCards: string[];
   intent: string | null;
+  /** Oracle text by oracle id, for the cards that should carry it. */
+  texts?: ReadonlyMap<string, string>;
 }): CutsPack {
-  const { facts, commanderName, keyCards, intent } = input;
+  const { facts, commanderName, keyCards, intent, texts } = input;
   return {
     over: facts.over,
     commander: commanderName,
@@ -74,6 +84,6 @@ export function buildCutsPack(input: {
     roles: facts.roles,
     curve: facts.curve ? facts.curve.map((b) => ({ cmc: b.cmc, have: b.have, average: round1(b.average) })) : null,
     brackets: facts.brackets.map((b) => ({ flag: b.flag, cards: b.cards.map((c) => c.name) })),
-    cards: facts.cards.map(packCard),
+    cards: facts.cards.map((c) => packCard(c, texts?.get(c.oracleId))),
   };
 }
