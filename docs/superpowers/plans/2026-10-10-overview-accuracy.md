@@ -184,7 +184,7 @@ Rates (`pricing.mts`): `claude-sonnet-5` $2 in, $10 out; `claude-haiku-4-5` $1 i
 |---|---|---|---|
 | E0 | Rescore 423 stored answers with the new validators; reconcile the token gap with `--dry-run` | 0 | **$0** |
 | E1 | Prompt development: 4 dev decks + 2 case decks, 3 variants (`v8a` tiers/checklist, `v8b` + evidence, `v8c` + engine candidates), 1 trial; then a second round of 2 variants | 18 + 12 = 30 | 30 x $0.050 = $1.50 |
-| E2 | Verifier calibration: 80 stratified tips from stored answers + the Shard/Ayara tip + Hugh's false-tip list, 4 per call on Haiku (20 calls), then the same on sonnet-low as a comparison cell | 40 calls | 20 x $0.0035 + 20 x $0.0120 = $0.31, rounded **$0.35** |
+| E2 | Verifier calibration: 80 stratified tips from stored answers + the Shard/Ayara tip + Hugh's false-tip list, 4 per call on Haiku (20 calls), then the same on sonnet-low as a comparison cell | 40 calls | 20 x $0.0035 + 20 x $0.0069 = $0.21, carried as **$0.35** to allow a second calibration pass |
 | E3 | Held-out: 15 held-out + 2 case decks, 3 trials, the chosen variant | 51 | 51 x $0.050 = $2.55 |
 | E3b | A second candidate on the same set, only if E1 does not separate them | 51 | $2.55 |
 | E3c | Contract-7 control on the 2 case decks x 3 trials (the 15 held-out controls already exist and are rescored free) | 6 | 6 x ($0.0277 x 1.5 + $0.0018) = $0.26 |
@@ -194,11 +194,11 @@ Rates (`pricing.mts`): `claude-sonnet-5` $2 in, $10 out; `claude-haiku-4-5` $1 i
 | | Contingency 25% (output length, batch re-sends, a third E1 round) | | $2.70 |
 | | **Planned ceiling** | | **$13.51** |
 
-**Fits under $15 with $1.49 to spare.** If the +40% output assumption is wrong by +20 points the subtotal rises about $1.70 and the ceiling stays under $15; if E1 is forced to real-time (Batch latency), E1 doubles to $3.00 and the ceiling is **$15.0**, which is the limit, so the plan's first fallback is to drop E3b (-$2.55). **E5 is the elastic line: Hugh's corpus size sets it, not the plan.** If he supplies more than 20 pairs, the extra costs $0.15 each from the contingency or he raises the cap.
+**Fits under $15 with $1.49 to spare.** If output is 3,300 tokens instead of 2,900 the subtotal rises about $0.50 and the ceiling stays under $15; if E1 is forced to real-time (Batch latency), E1 doubles to $3.00 and the ceiling is **$15.0**, which is the limit, so the plan's first fallback is to drop E3b (-$2.55). **E5 is the elastic line: Hugh's corpus size sets it, not the plan.** If he supplies more than 20 pairs, the extra costs $0.15 each from the contingency or he raises the cap.
 
 **The existing ledger cannot hold this campaign, and that was not obvious.** `scripts/eval/lib/ledger.mts` has `HARD_CAP_USD = 25` and `ASK_AT_USD = 15`, and the committed `docs/superpowers/eval/ledger.jsonl` sums to **$23.72** by the guard's own `spent()` rule (settled spend plus unsettled worst cases), leaving $1.28. PR 1 therefore makes the ledger path and both limits arguments: this campaign gets its own file `docs/superpowers/eval/ledger-overview-accuracy.jsonl` with `HARD_CAP_USD = 15` and `ASK_AT_USD = 11`, and a run against the old ledger still refuses as before. The guard's per-batch worst case (`worstCaseUsd`) at the proposed 4,500-token ceiling is about $0.083 per request in batch, so a 51-answer batch is checked at about $4.2 before it is sent.
 
-**Not in the $15, and system spend:** the free re-runs of section 7.4. Production holds **5 decks with an overview** of 31; staging 10. At the new-method real-time $0.0634 that is **$0.32 on production, $0.63 on staging**, if every owner pressed once. The bound for any deployment is eligible decks x $0.10 (the staging p90 scaled by the new-method uplift).
+**Not in the $15, and system spend:** the free re-runs of section 7.4. Production holds **5 decks with an overview** of 31; staging 10. At the new-method real-time $0.0634 that is **$0.32 on production, $0.63 on staging**, if every owner pressed once. The bound for any deployment is eligible decks x about $0.09 (the staging p90 of $0.0727 scaled by the 1.23 uplift of $0.0634 over $0.0515).
 
 ## 7. PR boundaries, order and the free re-run
 
@@ -220,7 +220,7 @@ No stacked PRs; each is cut from fresh `main`, reviewed once, merged. Line count
 **Can the Notices system (`NOTICES_ENABLED`) carry it without a Design round? Not the sheet; yes the existing stale state, and I recommend that.**
 
 - The Notices sheet and tag are built on `deck_data_changes` entries scoped to a deck's stored reading (`touches.ts`, `read.ts`), grouped by `GROUP_ORDER` (`group.ts`). The only global kind is `rules`, written at deploy from `BRACKET_RULES_VERSION` and worded as a bracket-rule change. Reusing it would tell every deck its **bracket verdict** moved, and mark the overview stale by `movedWithin`, which is false twice. A sibling kind plus a new group and tag semantics is a Design-drawn surface. **Rejected for this line.**
-- The Overview already has a Design-drawn stale state (`copy.synopsis...stale`: "Your deck has changes since this was written, so parts of it might not match your list.") with a *Write a new overview* action, driven by `read.ts` (`stale`, `dataMoved`, `wouldSpend`). A new reason, **`methodOutdated`** (stored `contract_version` below the version that carries this change, while `OVERVIEW_V2_ENABLED` is on), reuses that layout with **one new copy line**. Copy goes through `/copy-review`; copy never justifies a Design round.
+- The Overview already has a Design-drawn stale state (`stale` in `src/lib/copy/synopsis.ts`: "Your deck has changes since this was written, so parts of it might not match your list.") with a *Write a new overview* action, driven by `read.ts` (`stale`, `dataMoved`, `wouldSpend`). A new reason, **`methodOutdated`** (stored `contract_version` below the version that carries this change, while `OVERVIEW_V2_ENABLED` is on), reuses that layout with **one new copy line**. Copy goes through `/copy-review`; copy never justifies a Design round.
 
 **Eligibility, with no migration.** A deck is eligible when its shown synopsis for the current list has `contract_version < 8`, and no `deck_synopses` row for that deck at `contract_version = 8` joins to a `model_calls` row with `origin = 'system'` that survived. That is one free run per deck per method version by construction: the free run itself writes a version-8 row. A **failed** free run leaves the deck eligible, which would let a flaky upstream loop, so attempts are capped at 2 per deck per version, counted from the same join.
 
@@ -228,7 +228,7 @@ No stacked PRs; each is cut from fresh `main`, reviewed once, merged. Line count
 
 **Who pays and when.** Only on the owner's press (*Write a new overview*, relabelled while eligible, with the credit note saying it is free). Not automatic and not a batch: a dormant deck costs nothing.
 
-**What the press does.** The `reused` early return (`generate.ts:~429`) is bypassed for an eligible deck exactly as `replacing` bypasses it for D11 data movement. The new overview replaces the old one as the shown row; the old row stays in `deck_synopses` for the eval.
+**What the press does.** The `reused` early return is bypassed for an eligible deck exactly as `replacing` bypasses it for D11 data movement. It exists at two sites, the pre-check (`generate.ts:~429`) and the re-decision under the reservation lock (`~337`), and both must learn the rule or the lock-side one hands the old overview back. The new overview replaces the old one as the shown row; the old row stays in `deck_synopses` for the eval.
 
 **Open: "re-analyze your deck".** Hugh's wording. This plan reads it as *rewrite the Overview* (the stored profile and the bracket reading are unchanged). If he means the full Analysis, that is a different and larger action and this section changes.
 
