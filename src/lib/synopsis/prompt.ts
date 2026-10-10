@@ -4,6 +4,8 @@ import { CHAR_BUDGETS, EVIDENCE_MAX, SECTION_COUNTS, TIP_MIN_CARDS } from "./lim
 import { colorLabel } from "../decks/format";
 import { isInfiniteOrGameEnding } from "../spellbook/combo-features";
 import { identityNameOf, type SynopsisFacts } from "./facts";
+import { normalizeV8, weaknessLines } from "./validate-v8";
+import type { SynopsisReply } from "./response-schema";
 import { ASSESSMENT_TOPICS, type CheckedSynopsis, type SectionId } from "./types";
 
 /**
@@ -108,6 +110,22 @@ const LENGTH_RULES = [
 ].join("\n");
 
 /**
+ * Contract 8's length rules, added to `LENGTH_RULES` and not in place of them (contract 7's prompt
+ * stays byte for byte). Measured on the 16 stored v8 first writes of the render gate (2026-10-10):
+ * a mulligan line ran over its limit 25% of the time (16 of 64 lines against 4 of 52 on contract 7),
+ * because the engine-piece rule makes it name a card and a commander's name alone is 25 to 35
+ * characters; a strategy step, a WHOLE section the first overrun refuses, had no length rule at
+ * all and ran to 148 against 144. `primer:over_budget` was 5 of those 16 first writes and survived
+ * the repair in 4.
+ */
+const V8_LENGTH_RULES = [
+  `- a strategy step: at most ${CHAR_BUDGETS.strategy}; aim for about ${Math.floor(CHAR_BUDGETS.strategy * 0.8)}. One overlong step refuses the whole Primer.`,
+  "A card's name counts toward a limit in full. A mulligan line that names a long card, a commander's name above all, has room for few other words: name a shorter engine piece, or leave the commander out. Open the line with the card or the situation itself, never with filler such as A hand with or Having.",
+  "Shorter never means a fragment: every job, line, step and tip is a whole sentence and ends with a period.",
+  'A mulligan line that names an engine piece, sized to the budget: "[[Sol Ring]] into a cheap engine piece starts the plan." (51).',
+].join("\n");
+
+/**
  * The Mulligan's budget, restated (eval harness, `primer-budget-c` on contract 6). Its lines overran
  * their limit more than any other part of the answer, because a specific line names cards and runs
  * long: on 15 held-out decks the first write's Mulligan ran a median 75 characters against 80. With
@@ -157,13 +175,45 @@ export function isRepair(user: string): boolean {
   return user.includes(REPAIR_LEAD);
 }
 
+const renderedLength = (text: string) => text.replace(/\[\[([^\[\]]+)\]\]/g, "$1").trim().length;
+const textOf = (x: string | { text: string }) => (typeof x === "string" ? x : x.text);
+
+/**
+ * The lines of a first answer, in the sections being rewritten, that run over their character
+ * limit: "keep line 1 is 98 characters, limit 80: <text>". Both contracts' reply shapes. Only the
+ * sections named in `sections` are read, so a kept section is never second-guessed.
+ * Weaknesses are read as the validator sees them: contract 7's strings, contract 8's ranked lines with the tier word.
+ */
+export function overLengthLines(reply: SynopsisReply, sections: readonly SectionId[]): string[] {
+  const out: string[] = [];
+  const check = (label: string, items: readonly (string | { text: string })[], limit: number) =>
+    items.forEach((item, i) => {
+      const text = textOf(item);
+      const n = renderedLength(text);
+      if (n > limit) out.push(`${label}${items.length > 1 ? ` ${i + 1}` : ""} is ${n} characters, limit ${limit}, write it at about ${Math.floor(limit * 0.8)}: "${text}"`);
+    });
+  if (sections.includes("overview")) check("the overview", [reply.overview], CHAR_BUDGETS.overview);
+  if (sections.includes("primer")) {
+    check("strategy step", reply.primer.strategy, CHAR_BUDGETS.strategy);
+    check("keep line", reply.primer.mulligan.keep, CHAR_BUDGETS.mulligan);
+    check("send-back line", reply.primer.mulligan.sendBack, CHAR_BUDGETS.mulligan);
+    check("tip", reply.primer.tips, CHAR_BUDGETS.tip);
+  }
+  if (sections.includes("weaknesses")) {
+    const lines = "assessment" in reply ? weaknessLines(normalizeV8(reply as never)) : (reply.weaknesses ?? []);
+    check("weakness", lines, CHAR_BUDGETS.weakness);
+  }
+  if (sections.includes("keyCards")) check("key card job", reply.keyCards.map((k) => k.job), CHAR_BUDGETS.job);
+  return out;
+}
+
 function range(r: { min: number; max: number }): string {
   return `${r.min} to ${r.max}`;
 }
 
 export function buildSynopsisPrompt(
   facts: SynopsisFacts,
-  retry?: { keep: CheckedSynopsis; refused: SectionId[] },
+  retry?: { keep: CheckedSynopsis; refused: SectionId[]; first?: SynopsisReply },
   /**
    * `v2`: state the combo and deck-stats facts and their rules. `contract8` (with `v2`): the
    * contract-8 sections, the checklist and the refs on the decklist. Off, the messages are byte for
@@ -226,6 +276,10 @@ export function buildSynopsisPrompt(
         ? [`${v.section}: ${v.reason}${v.failed ? ` (${v.failed} of ${v.total} cards failed checking)` : ""}`]
         : []);
     lines.push(`${REPAIR_LEAD} ${reasons.join("; ")}.`);
+    // A reason alone does not say WHICH line is over; the repair then rewrote the section at the
+    // same lengths (4 of 5 over-budget Primers stayed refused). Name the lines and their counts.
+    const long = retry.first && opts.contract8 ? overLengthLines(retry.first, retry.refused) : [];
+    if (long.length > 0) lines.push(`Shorten these, which ran over their limit (counted as rendered; every other item in those sections must also fit its limit): ${long.join("; ")}.`);
   }
 
   if (opts.contract8) {
@@ -233,7 +287,7 @@ export function buildSynopsisPrompt(
     return {
       // The Mulligan's budget rules are the measured ones (100% of sections rendered with them, 89%
       // without), and contract 8's engine pieces make its lines longer, so they stay.
-      system: `${system}\n${V8_ARGUMENT_RULES}\n${LENGTH_RULES}\n${plusRules(facts)}\n${MULLIGAN_BUDGET_RULES}\n${V2_FACT_RULES}`,
+      system: `${system}\n${V8_ARGUMENT_RULES}\n${LENGTH_RULES}\n${V8_LENGTH_RULES}\n${plusRules(facts)}\n${MULLIGAN_BUDGET_RULES}\n${V2_FACT_RULES}`,
       user: lines.join("\n"),
     };
   }

@@ -184,18 +184,20 @@ if (command === "run") {
     // THE PRODUCTION REPAIR: the same prompt and merge the write uses, so the row is what a reader is shown.
     let rendered = checked;
     let repairUsd: number | undefined;
+    let repairReply: unknown;
     const failing = refusedSections(checked);
     // Production sends the repair only with what is left of the write's ONE budget, and not at all under SYNOPSIS_REPAIR_MIN_MS.
     const remaining = SYNOPSIS_DEADLINE_MS - (Date.now() - startedAt);
     if (failing.length > 0 && !args["no-repair"] && remaining < SYNOPSIS_REPAIR_MIN_MS) console.log(`  repair skipped: ${remaining}ms of the write's budget left`);
     if (failing.length > 0 && !args["no-repair"] && remaining >= SYNOPSIS_REPAIR_MIN_MS) {
-      const repair = await ask(repairPrompt(facts, checked, failing, v8), "repair", remaining);
+      const repair = await ask(repairPrompt(facts, checked, failing, v8, first.out.value), "repair", remaining);
       if (!repair) break;
       repairUsd = repair.usd;
+      if (repair.out.ok) repairReply = repair.out.value;
       rendered = await applyRepair(checked, repair.out, failing, facts, v8);
       console.log(`  repaired: ${show(rendered.verdicts)}`);
     }
-    appendFileSync(args.out, `${JSON.stringify({ id: c.id, prompt: args.prompt, listFingerprint: live, usd: first.usd, repairUsd, firstVerdicts: checked.verdicts, rendered, reply: first.out.value })}\n`);
+    appendFileSync(args.out, `${JSON.stringify({ id: c.id, prompt: args.prompt, listFingerprint: live, usd: first.usd, repairUsd, repairReply, firstVerdicts: checked.verdicts, rendered, reply: first.out.value })}\n`);
   }
   process.exit(0);
 }

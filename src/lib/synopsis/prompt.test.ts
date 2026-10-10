@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import type { SynopsisFacts } from "./facts";
 import { CHAR_BUDGETS, EVIDENCE_MAX, SECTION_COUNTS } from "./limits";
 import { ASSESSMENT_TOPICS } from "./types";
-import { buildSynopsisPrompt } from "./prompt";
+import { buildSynopsisPrompt, overLengthLines } from "./prompt";
 import { figuresIn } from "./validate";
 import type { CheckedSynopsis } from "./types";
 
@@ -250,5 +250,63 @@ describe("buildSynopsisPrompt under contract 8", () => {
     const keep = { overview: "x", primer: {}, keyCards: [], weaknesses: [], verdicts: [] } as unknown as CheckedSynopsis;
     const { user } = buildSynopsisPrompt(FACTS, { keep, refused: ["tips"] as never }, C8);
     expect(user).toContain('an empty "evidence" list');
+  });
+
+  it("gives contract 8 a strategy length rule and a sized engine example, and leaves contract 7's prompt alone", () => {
+    const c8 = buildSynopsisPrompt(FACTS, undefined, C8).system;
+    expect(c8).toContain("a strategy step: at most 144");
+    expect(c8).toContain("Having");
+    expect(c8).toContain("ends with a period");
+    expect(buildSynopsisPrompt(FACTS).system).not.toContain("a strategy step: at most");
+  });
+
+  const c8Aim = () => buildSynopsisPrompt(FACTS, undefined, C8).system;
+  it("states the worked engine example at the length it claims", () => {
+    const m = buildSynopsisPrompt(FACTS, undefined, C8).system.match(/"\[\[([^"]+)\]\]([^"]*)" \((\d+)\)/g)!.find((x) => x.includes("engine piece"))!;
+    const [, name, rest, n] = m.match(/"\[\[([^\]]+)\]\]([^"]*)" \((\d+)\)/)!;
+    expect((name + rest).length).toBe(Number(n));
+    expect(c8Aim()).toContain("aim for about 115");
+  });
+
+  const longKeep = "An early unblockable creature with [[Yuriko, the Tiger's Shadow]] still in the command zone is strong.";
+  const reply = {
+    overview: "ok.",
+    primer: {
+      strategy: [{ text: "x".repeat(148), evidence: [] }, { text: "short.", evidence: [] }],
+      mulligan: { keep: [{ text: longKeep, evidence: [] }, { text: "[[Sol Ring]] opens.", evidence: [] }], sendBack: [{ text: "fine.", evidence: [] }] },
+      tips: [],
+    },
+    keyCards: [{ card: "Sol Ring", claims: [], job: "x".repeat(61), evidence: [] }],
+  } as never;
+
+  it("names the lines of a refused section that ran over, by rendered length", () => {
+    const lines = overLengthLines(reply, ["primer"]);
+    expect(lines).toEqual([
+      `strategy step 1 is 148 characters, limit 144, write it at about 115: "${"x".repeat(148)}"`,
+      `keep line 1 is 98 characters, limit 80, write it at about 64: "${longKeep}"`,
+    ]);
+  });
+
+  it("reads only the sections being rewritten, and the contract 7 string shape too", () => {
+    expect(overLengthLines(reply, ["keyCards"])).toHaveLength(1);
+    expect(overLengthLines(reply, ["weaknesses"])).toEqual([]);
+    const long = "w".repeat(180);
+    expect(overLengthLines({ ...(reply as object), weaknesses: [long] } as never, ["weaknesses"])).toHaveLength(1);
+    const v8 = { ...(reply as object), assessment: [{ topic: "mana_and_colors", verdict: "weakness", tier: "critical", line: long }] } as never;
+    const wire = { ...(reply as object), assessment: [{ topic: "Mana_And_Colors", verdict: "Weakness", tier: "Critical", line: long }] } as never;
+    expect(overLengthLines(wire, ["weaknesses"])).toHaveLength(1);
+    expect(overLengthLines(v8, ["weaknesses"])[0]).toContain("weakness is 190 characters, limit 176");
+    const v7 = { overview: "o".repeat(577), primer: { strategy: [], mulligan: { keep: [], sendBack: [] }, tips: [] }, keyCards: [] } as never;
+    expect(overLengthLines(v7, ["overview"])).toEqual([`the overview is 577 characters, limit 576, write it at about 460: "${"o".repeat(577)}"`]);
+  });
+
+  it("puts the over-length lines in the repair message, and nothing when the first answer is not given", () => {
+    const keep = { overview: "x", primer: {}, keyCards: [], weaknesses: [], verdicts: [] } as unknown as CheckedSynopsis;
+    const withFirst = buildSynopsisPrompt(FACTS, { keep, refused: ["primer"], first: reply }, C8).user;
+    expect(withFirst).toContain("Shorten these, which ran over their limit");
+    expect(withFirst).toContain("keep line 1 is 98 characters, limit 80, write it at about 64");
+    expect(buildSynopsisPrompt(FACTS, { keep, refused: ["primer"] }, C8).user).not.toContain("Shorten these");
+    expect(buildSynopsisPrompt(FACTS, { keep, refused: ["primer"], first: reply }).user).not.toContain("Shorten these");
+    expect(buildSynopsisPrompt(FACTS, { keep, refused: ["primer"], first: reply }, { v2: true }).user).not.toContain("Shorten these");
   });
 });
