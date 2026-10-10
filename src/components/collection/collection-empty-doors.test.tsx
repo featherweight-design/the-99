@@ -26,8 +26,11 @@ describe("CollectionEmptyDoors", () => {
     const upload = screen.getByRole("link", { name: /Upload a file/ });
     expect(upload.getAttribute("href")).toBe("/collection/replace");
     expect(screen.getByRole("button", { name: /Add cards/ })).toBeTruthy();
-    // Equal: neither is the accent primary button.
-    expect(upload.className).toBe(screen.getByRole("button", { name: /Add cards/ }).className);
+    // Equal, and neither is the accent primary.
+    const add = screen.getByRole("button", { name: /Add cards/ });
+    expect(upload.className).toBe(add.className);
+    expect(add.className).not.toMatch(/bg-\[color:var\(--accent\)\]/);
+    expect(add.className).toContain("bg-[color:var(--surface)]");
   });
 
   it("opens the Add cards sheet from the add door", () => {
