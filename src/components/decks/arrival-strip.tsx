@@ -7,7 +7,7 @@
 // confirmation, and this one line is the only thing that says where it came from.
 
 import { deckImportCopy } from "../../lib/copy/deck-import";
-import { arrivalDismissKey } from "../../lib/decks/arrival";
+import { arrivalDismissKey, type ArrivalPrintings } from "../../lib/decks/arrival";
 import { useLocalFlag } from "./use-local-flag";
 
 const copy = deckImportCopy.arrival;
@@ -17,9 +17,11 @@ interface ArrivalStripProps {
   /** Lines that came over, not cards — the sentence below says "lines", and a
    *  single line can carry many copies. */
   importedLineCount: number;
+  /** The import's printing counts (deck printings); null adds no clause. */
+  printings?: ArrivalPrintings | null;
 }
 
-export function ArrivalStrip({ deckId, importedLineCount }: ArrivalStripProps) {
+export function ArrivalStrip({ deckId, importedLineCount, printings = null }: ArrivalStripProps) {
   const [dismissed, dismiss] = useLocalFlag(arrivalDismissKey(deckId));
   if (dismissed) return null;
 
@@ -40,8 +42,12 @@ export function ArrivalStrip({ deckId, importedLineCount }: ArrivalStripProps) {
         ✓
       </span>
       <p className="flex-1 m-0" style={{ color: "var(--fg-body)" }}>
-        <span className="md:hidden font-mono text-[10.5px]">{copy.cleanMobile(n)}</span>
-        <span className="hidden md:inline text-[13.5px]">{copy.clean(n)}</span>
+        <span className="md:hidden font-mono text-[10.5px]">
+          {printings ? copy.cleanWithPrintingsMobile(n, printings.kept, printings.notOwned) : copy.cleanMobile(n)}
+        </span>
+        <span className="hidden md:inline text-[13.5px]">
+          {printings ? copy.cleanWithPrintings(n, printings.kept, printings.notOwned) : copy.clean(n)}
+        </span>
       </p>
       <button
         type="button"

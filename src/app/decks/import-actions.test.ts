@@ -13,6 +13,8 @@ const stub = vi.hoisted(() => {
     decks: [] as Record<string, unknown>[],
     unresolved: [] as Record<string, unknown>[],
     cards: [] as Record<string, unknown>[],
+    /** `collection_items` rows the printing read answers with (deck printings). */
+    collection: [] as Record<string, unknown>[],
     inserts: [] as { values: Record<string, unknown>; mode: "update" | "nothing" }[],
     deletedFrom: [] as string[],
     updates: [] as { table: string; values: Record<string, unknown> }[],
@@ -36,6 +38,7 @@ const stub = vi.hoisted(() => {
             state.wheres.push({ table: key, condition });
             if (key === "decks") return state.decks;
             if (key === "deck_unresolved_rows") return state.unresolved;
+            if (key === "collection_items") return state.collection;
             return state.cards;
           };
           return {
@@ -204,11 +207,54 @@ beforeEach(() => {
   stub.state.decks.length = 0;
   stub.state.unresolved.length = 0;
   stub.state.cards.length = 0;
+  stub.state.collection.length = 0;
+  delete process.env.DECK_PRINTINGS_ENABLED;
   stub.state.inserts.length = 0;
   stub.state.deletedFrom.length = 0;
   stub.state.revalidated.length = 0;
   stub.state.updatedTags.length = 0;
   stub.state.wheres.length = 0;
+});
+
+describe("importDeck — printings (deck printings)", () => {
+  const SOL_RING = "a0000000-0000-4000-8000-000000000001";
+  const ATREUS = "a0000000-0000-4000-8000-000000000002";
+  const KRATOS = "a0000000-0000-4000-8000-000000000003";
+  const LIST =
+    "Commander\n1 Atreus, God of War (SLD) 2212\n1 Kratos, God of War (SLD) 2213\n\nDeck\n1 Sol Ring (LTC) 284";
+  const run = () => importDeck({ text: LIST, source: "paste", name: "Father and son" });
+  const pickInserts = () => stub.state.inserts.filter((i) => "setCode" in i.values).map((i) => i.values);
+
+  beforeEach(() => {
+    stub.state.cards.push(...catalog);
+    // Holdings: Atreus in the named printing (an older uppercase set code), Sol Ring in another.
+    stub.state.collection.push(
+      { oracleId: ATREUS, setCode: "SLD", collectorNumber: "2212" },
+      { oracleId: SOL_RING, setCode: "c21", collectorNumber: "263" },
+    );
+  });
+
+  it("makes a held printing the pick, commanders included, and counts the rest", async () => {
+    process.env.DECK_PRINTINGS_ENABLED = "true";
+    const result = await run();
+    if (!result.ok) throw new Error(JSON.stringify(result));
+    expect(pickInserts()).toEqual([
+      { deckId: stub.DECK_ID, oracleId: ATREUS, setCode: "sld", collectorNumber: "2212" },
+    ]);
+    // Kratos and Sol Ring named printings the player does not hold.
+    expect(result.printingsKept).toBe(1);
+    expect(result.printingsNotOwned).toBe(2);
+    expect(KRATOS).toBeTruthy();
+  });
+
+  it("writes no picks and counts nothing with the switch off", async () => {
+    const result = await run();
+    if (!result.ok) throw new Error(JSON.stringify(result));
+    expect(pickInserts()).toEqual([]);
+    expect(result.printingsKept).toBe(0);
+    expect(result.printingsNotOwned).toBe(0);
+    expect(stub.state.wheres.some((w) => w.table === "collection_items")).toBe(false);
+  });
 });
 
 describe("importDeck — a declared pair", () => {

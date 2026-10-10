@@ -345,8 +345,37 @@ describe("buildDeckImport — locked decision: re-importing the same list create
     expect(second).toEqual(first);
     expect(Object.keys(first).sort()).toEqual([
       "cards", "declaredCommander", "declaredPartner", "legendaryCandidates", "lineCount",
-      "notes", "unresolved",
+      // `printings` is the list's own content (deck printings), not a key an importer could
+      // match a deck on: two decks from one list name the same printings.
+      "notes", "printings", "unresolved",
     ]);
+  });
+});
+
+describe("buildDeckImport — printings (deck printings)", () => {
+  it("keeps the printing a line names, commander lines included, in line order", () => {
+    const r = build("1 Atraxa, Praetors' Voice (2X2) 145 *CMDR*\n1 Sol Ring (LTC) 284 *F*\n1 Forest");
+    expect(r.printings).toEqual([
+      { oracleId: ATRAXA.oracleId, setCode: "2x2", collectorNumber: "145", sourceLine: 1 },
+      { oracleId: SOL_RING.oracleId, setCode: "ltc", collectorNumber: "284", sourceLine: 2 },
+    ]);
+    // Matching never read the printing: the same cards resolve as without it.
+    expect(r.declaredCommander?.oracleId).toBe(ATRAXA.oracleId);
+    expect(r.cards.map((c) => c.oracleId).sort()).toEqual([FOREST.oracleId, SOL_RING.oracleId].sort());
+  });
+
+  it("reads a printing before a bracketed commander tag", () => {
+    const r = build("1 Atraxa, Praetors' Voice (2X2) 145 (Commander)\n1 Sol Ring");
+    expect(r.declaredCommander?.oracleId).toBe(ATRAXA.oracleId);
+    expect(r.printings).toEqual([{ oracleId: ATRAXA.oracleId, setCode: "2x2", collectorNumber: "145", sourceLine: 1 }]);
+  });
+
+  it("names no printing for a line with a set code and no collector number", () => {
+    expect(build("1 Sol Ring (LTC)").printings).toEqual([]);
+  });
+
+  it("names none for a line without one", () => {
+    expect(build("1 Sol Ring").printings).toEqual([]);
   });
 });
 

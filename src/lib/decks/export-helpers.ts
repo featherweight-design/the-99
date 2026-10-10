@@ -36,10 +36,30 @@ export function bodyLine(c: DecklistCard): string {
  * which a pair cannot express; one shape reads back the same either way, and the
  * round-trip through `buildDeckImport` is what proves it.
  */
+/** The commander lines, `1 Name (SET) CN` where the deck names a printing for one (deck
+ *  printings, E4), through `bodyLine` so a commander line and a body line cannot differ in shape.
+ *  The preview and the copied text both read this. */
+export function commanderLines(args: {
+  commanderName: string;
+  partnerName: string | null;
+  commanderPrinting?: { setCode?: string; collectorNumber?: string } | null;
+  partnerPrinting?: { setCode?: string; collectorNumber?: string } | null;
+}): string[] {
+  return [
+    bodyLine({ name: args.commanderName, quantity: 1, ...(args.commanderPrinting ?? {}) }),
+    ...(args.partnerName
+      ? [bodyLine({ name: args.partnerName, quantity: 1, ...(args.partnerPrinting ?? {}) })]
+      : []),
+  ];
+}
+
 export function buildDecklistText(args: {
   commanderName: string;
   /** The second commander, or null for the single-commander deck most decks are. */
   partnerName: string | null;
+  /** The printing each commander's line names, as a body card's does; absent names none. */
+  commanderPrinting?: { setCode?: string; collectorNumber?: string } | null;
+  partnerPrinting?: { setCode?: string; collectorNumber?: string } | null;
   /**
    * Body cards — both commanders excluded. `name` is the name printed on the
    * copy the player owns, and `setCode` / `collectorNumber` name that same
@@ -49,14 +69,12 @@ export function buildDecklistText(args: {
    */
   cards: DecklistCard[];
 }): string {
-  const { commanderName, partnerName, cards } = args;
-  const commanders = [commanderName, ...(partnerName ? [partnerName] : [])];
   return [
     "Commander",
-    ...commanders.map((n) => `1 ${n}`),
+    ...commanderLines(args),
     "",
     "Deck",
-    ...cards.map(bodyLine),
+    ...args.cards.map(bodyLine),
   ].join("\n");
 }
 

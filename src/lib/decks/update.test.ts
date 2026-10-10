@@ -32,6 +32,7 @@ function parsed(over: Partial<DeckImport> = {}): DeckImport {
     declaredPartner: null,
     lineCount: 0,
     notes: [],
+    printings: [],
     ...over,
   };
 }

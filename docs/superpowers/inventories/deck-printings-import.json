@@ -1,0 +1,39 @@
+{
+  "feature": "Deck printings: import and export (PR 5)",
+  "note": "Run against a server started with DECK_PRINTINGS_ENABLED=true. READ-ONLY: the strip is drawn from the arrival URL an import writes (`?imported=1&printings=K-U`), so no row imports anything. DP_DECK is a deck the signed-in account owns with no unresolved rows (an unresolved row replaces the strip with the banner); on local-dev the probe account's `Card mark probe fixture` (d0000000-0000-4000-8000-00000000cafe) serves, and its Talisman of Progress pick (seeded for `deck-printings.json`) is what the export's body line names. The strip rows are the four states the plan's inventory lists: printing clause, not-owned clause, both, neither.",
+  "rows": [
+    {
+      "id": "strip-neither",
+      "label": "/decks/[id]?imported=1: an import that named no printings reads as main",
+      "view": "src/components/decks/arrival-strip.tsx",
+      "steps": [{ "goto": "/decks/${DP_DECK}?imported=1", "wait": "main, [role=main], h1", "settle": 5000 }]
+    },
+    {
+      "id": "strip-kept",
+      "label": "/decks/[id]?imported=1&printings=12-0: the printing clause",
+      "view": "src/components/decks/arrival-strip.tsx",
+      "steps": [{ "goto": "/decks/${DP_DECK}?imported=1&printings=12-0", "wait": "main, [role=main], h1", "settle": 5000 }]
+    },
+    {
+      "id": "strip-not-owned",
+      "label": "/decks/[id]?imported=1&printings=0-3: the not-owned clause",
+      "view": "src/components/decks/arrival-strip.tsx",
+      "steps": [{ "goto": "/decks/${DP_DECK}?imported=1&printings=0-3", "wait": "main, [role=main], h1", "settle": 5000 }]
+    },
+    {
+      "id": "strip-both",
+      "label": "/decks/[id]?imported=1&printings=12-3: both clauses",
+      "view": "src/components/decks/arrival-strip.tsx",
+      "steps": [{ "goto": "/decks/${DP_DECK}?imported=1&printings=12-3", "wait": "main, [role=main], h1", "settle": 5000 }]
+    },
+    {
+      "id": "export",
+      "label": "/decks/[id]: the export dialog names each line's printing, commanders included",
+      "view": "src/components/decks/export-dialog.tsx",
+      "steps": [
+        { "goto": "/decks/${DP_DECK}", "wait": "main, [role=main], h1", "settle": 5000 },
+        { "clickRole": "button", "name": "^Export$", "wait": "[role=dialog]", "settle": 1500 }
+      ]
+    }
+  ]
+}

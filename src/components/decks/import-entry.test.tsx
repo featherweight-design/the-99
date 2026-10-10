@@ -49,7 +49,9 @@ function pickFile(file: File) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  importDeck.mockResolvedValue({ ok: true, deckId: "deck-1", unresolvedCount: 0, notes: [] });
+  importDeck.mockResolvedValue({
+    ok: true, deckId: "deck-1", unresolvedCount: 0, notes: [], printingsKept: 0, printingsNotOwned: 0,
+  });
 });
 
 describe("state 1 — entry", () => {
@@ -82,6 +84,16 @@ describe("state 1 — entry", () => {
       source: "paste",
       name: "Borrowed deck",
     });
+  });
+
+  it("carries the printing counts to the arrival strip (deck printings)", async () => {
+    importDeck.mockResolvedValue({
+      ok: true, deckId: "deck-1", unresolvedCount: 0, notes: [], printingsKept: 12, printingsNotOwned: 3,
+    });
+    render(<ImportEntry />);
+    fillPaste();
+    submit();
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/decks/deck-1?imported=1&printings=12-3"));
   });
 
   it("skips the picker when the source declares its own commander", async () => {

@@ -17,6 +17,15 @@
 
 import { DECK_IMPORT_FILE_MAX_LABEL } from "../upload-limits";
 
+/** The import strip's printing clauses, joined: `12 with the printing you own, 3 not in your
+ *  Collection`. Either count 0 drops its clause. */
+function printingClauses(kept: number, notOwned: number, keptWords: string): string {
+  return [
+    kept > 0 ? `${kept.toLocaleString("en-US")} ${keptWords}` : null,
+    notOwned > 0 ? `${notOwned.toLocaleString("en-US")} not in your Collection` : null,
+  ].filter(Boolean).join(", ");
+}
+
 export const deckImportCopy = {
   // ---- Entry surface -------------------------------------------------------
   entry: {
@@ -305,6 +314,13 @@ export const deckImportCopy = {
     cleanMobile: (n: string) => `All ${n} came over · from your list, just now`,
     clean: (n: string) =>
       `All ${n} lines came over clean. Imported from your list a moment ago.`,
+    // Deck printings: the clean strip with the import's printing clauses (R3 canvas, part C; Hugh's
+    // ruling a adds the not-owned clause). `kept` and `notOwned` are card counts, either 0 to omit
+    // its clause; the caller uses `clean` when both are. The phone keeps the canvas's short form.
+    cleanWithPrintings: (n: string, kept: number, notOwned: number) =>
+      `All ${n} lines came over clean, ${printingClauses(kept, notOwned, "with the printing you own")}. Imported from your list a moment ago.`,
+    cleanWithPrintingsMobile: (n: string, kept: number, notOwned: number) =>
+      `All ${n} came over · ${printingClauses(kept, notOwned, kept === 1 ? "printing kept" : "printings kept")}`,
     dismiss: "Dismiss",
   },
 

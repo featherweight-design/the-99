@@ -44,6 +44,38 @@ describe("buildDecklistText", () => {
     expect(back.cards.map((c) => c.oracleId)).toEqual(["oracle-lightning-bolt"]);
   });
 
+  it("names each commander's printing, and the export round-trips to the same picks", () => {
+    const text = buildDecklistText({
+      commanderName: "Atreus, God of War",
+      partnerName: "Kratos, God of War",
+      commanderPrinting: { setCode: "SLD", collectorNumber: "2212" },
+      partnerPrinting: { setCode: "SLD", collectorNumber: "2213" },
+      cards: [{ quantity: 1, name: "Lightning Bolt", setCode: "M11", collectorNumber: "149" }],
+    });
+    expect(text).toBe(
+      "Commander\n1 Atreus, God of War (SLD) 2212\n1 Kratos, God of War (SLD) 2213\n\nDeck\n1 Lightning Bolt (M11) 149",
+    );
+    // Deck printings E4: importing the export names the same printings, commanders included.
+    const back = buildDeckImport({ text, catalog });
+    expect(back.declaredCommander?.name).toBe("Atreus, God of War");
+    expect(back.declaredPartner?.name).toBe("Kratos, God of War");
+    expect(back.printings.map((p) => [p.oracleId, p.setCode, p.collectorNumber])).toEqual([
+      ["oracle-atreus-god-of-war", "sld", "2212"],
+      ["oracle-kratos-god-of-war", "sld", "2213"],
+      ["oracle-lightning-bolt", "m11", "149"],
+    ]);
+  });
+
+  it("names a commander with no printing by name alone", () => {
+    const text = buildDecklistText({
+      commanderName: "Atreus, God of War",
+      partnerName: null,
+      commanderPrinting: { setCode: undefined, collectorNumber: undefined },
+      cards: [],
+    });
+    expect(text).toBe("Commander\n1 Atreus, God of War\n\nDeck");
+  });
+
   // One shape for both: the old bare-first-line form parsed correctly only by
   // the convention that line one is the commander.
   it("emits the section for a single commander too", () => {
