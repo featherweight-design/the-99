@@ -263,13 +263,6 @@ const NON_LAND_ROLES = ["ramp", "draw", "removal", "wipes"] as const;
 const TIE_BREAK_WINDOW = 200;
 
 /**
- * The roles a candidate fills, classified off the FRONT FACE.
- *
- * `oracle_text` holds both faces joined, so a land-backed modal card otherwise reads as ramp
- * off its back — and is then spent on the ramp floor AND counted as a land, which §2.5a names
- * as the double credit. Memoised because the role pass classifies the same card repeatedly.
- */
-/**
  * The roles one card fills under this plan's basis. WITHOUT `labels` that is the classifier's
  * answer, exactly as before. WITH them (labels-everywhere plan, PR 4), a card whose label is fresh
  * is counted by that label, and a card WITH NO LABEL YET falls back to the classifier for that
@@ -288,6 +281,13 @@ export function rolesWithLabels(
   return byLabel ? [...byLabel] : byText;
 }
 
+/**
+ * The roles a candidate fills, classified off the FRONT FACE.
+ *
+ * `oracle_text` holds both faces joined, so a land-backed modal card otherwise reads as ramp
+ * off its back — and is then spent on the ramp floor AND counted as a land, which §2.5a names
+ * as the double credit. Memoised because the role pass classifies the same card repeatedly.
+ */
 function makeRolesOf(labels: ReadonlyMap<string, readonly LabelTargetRole[]> | undefined) {
   const cache = new WeakMap<FillCandidate, ReturnType<typeof classifyRoles>>();
   return (c: FillCandidate) => {
