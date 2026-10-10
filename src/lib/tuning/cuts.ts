@@ -187,8 +187,10 @@ export function cutFacts(input: {
 }
 
 /** The deck's bracket-flagged cards by flag, kept only where the flag bears on the declared bracket.
- *  A combo piece is any card of a counted two-card combo that is not a commander, since a commander
- *  is never cut. No declaration names every flag; a declared 4 or 5 permits all of them. */
+ *  The sets hold EVERY flagged card, a commander included, because the declared bracket counts a
+ *  commander's flag; `cutFacts` keeps a commander off the per-card `flags` (it is never a
+ *  candidate) but leaves it in the deck-level `brackets`. No declaration names every flag; a
+ *  declared 4 or 5 permits all of them. */
 function bracketFlags(profile: DeckProfile, declared: Bracket | null): [BracketFlag, ReadonlySet<string>][] {
   const b = profile.brackets;
   // Every piece, a commander's included: a combo of partner commanders is still a combo the declared
