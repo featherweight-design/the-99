@@ -121,13 +121,21 @@ describe("previewUploadChange", () => {
 
   it("answers from a dry run, with the hand edits a Replace would overwrite", async () => {
     stub.ledger = true;
-    stub.apply.mockResolvedValue({ status: "preview", raised: 2, lowered: 1, rows: [], decks: [deck] });
+    const st = (quantity: number) => ({ quantity, scryfallId: null, condition: null });
+    const moved = (name: string, before: number | null, after: number | null) => ({
+      oracleId: A, setCode: "lea", collectorNumber: "1", finish: "nonfoil", name,
+      before: before === null ? null : st(before), after: after === null ? null : st(after),
+    });
+    // One holding 4 -> 1 and one new at 2: two rows moved, net -1 copy.
+    stub.apply.mockResolvedValue({
+      status: "preview", raised: 1, lowered: 1, rows: [moved("Down", 4, 1), moved("New", null, 2)], decks: [deck],
+    });
     const got = await previewUploadChange(UPLOAD, "replace");
-    expect(got).toMatchObject({ raised: 2, lowered: 1, decks: [deck], editsSinceUpload: 4 });
+    expect(got).toMatchObject({ raised: 1, lowered: 1, decks: [deck], editsSinceUpload: 4 });
     // The detail is computed from the dry run's rows against the collection's totals.
     expect(got).toHaveProperty("detail.copiesBefore", 25);
-    expect(got).toHaveProperty("detail.copiesAfter", 26);
-    expect(got).toHaveProperty("detail.unchanged", 10);
+    expect(got).toHaveProperty("detail.copiesAfter", 24);
+    expect(got).toHaveProperty("detail.unchanged", 9);
     expect(stub.apply.mock.calls[0][2].dryRun).toBe(true);
   });
 

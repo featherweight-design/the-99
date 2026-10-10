@@ -223,7 +223,6 @@ export async function previewUploadChange(
     editsSinceUpload: edits,
     detail: summarizeUploadPreview({
       rows: result.rows, holdings: totals.holdings, copies: totals.copies, editedKeys,
-      raised: result.raised, lowered: result.lowered,
     }),
   };
 }

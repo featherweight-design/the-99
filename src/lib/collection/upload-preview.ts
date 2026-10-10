@@ -62,8 +62,6 @@ export function summarizeUploadPreview(args: {
   copies: number;
   /** `collectionItemKey`s of holdings changed by hand since the last upload. */
   editedKeys: ReadonlySet<string>;
-  raised: number;
-  lowered: number;
 }): UploadPreviewDetail {
   const { rows, holdings, copies, editedKeys } = args;
   const leaving: PreviewListRow[] = [];
@@ -71,9 +69,13 @@ export function summarizeUploadPreview(args: {
   const up: PreviewListRow[] = [];
   let changedAmongHeld = 0;
   let held = 0;
+  // From the rows, never from the dry run's `raised`/`lowered`: those count holdings that moved,
+  // not copies.
+  let copyDelta = 0;
   for (const r of rows) {
     const before = qty(r.before);
     const after = qty(r.after);
+    copyDelta += after - before;
     if (r.before) {
       changedAmongHeld += 1;
       held += 1;
@@ -98,7 +100,7 @@ export function summarizeUploadPreview(args: {
     down: down.length,
     leaving: leaving.length,
     copiesBefore: copies,
-    copiesAfter: copies + args.raised - args.lowered,
+    copiesAfter: copies + copyDelta,
     lists: {
       leaving: listOf(leaving, (a, b) => b.before - a.before || byName(a, b)),
       down: listOf(down, (a, b) => b.before - b.after - (a.before - a.after) || byName(a, b)),

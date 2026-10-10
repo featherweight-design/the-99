@@ -16,15 +16,16 @@ const row = (name: string, before: number | null, after: number | null, extra: P
 });
 
 const run = (rows: HistoryRow[], over: Partial<Parameters<typeof summarizeUploadPreview>[0]> = {}) =>
-  summarizeUploadPreview({ rows, holdings: 10, copies: 25, editedKeys: new Set(), raised: 0, lowered: 0, ...over });
+  summarizeUploadPreview({ rows, holdings: 10, copies: 25, editedKeys: new Set(), ...over });
 
 describe("summarizeUploadPreview", () => {
   it("sorts changed rows into leaving, down and up, and counts the rest as unchanged", () => {
-    const d = run([row("Gone", 3, null), row("Fewer", 4, 1), row("More", 1, 3), row("New", null, 2)], { raised: 4, lowered: 6 });
+    const d = run([row("Gone", 3, null), row("Fewer", 4, 1), row("More", 1, 3), row("New", null, 2)], {});
     expect([d.leaving, d.down, d.up]).toEqual([1, 1, 2]);
     // 10 held, three of the changed rows were held (Gone, Fewer, More): 7 stand.
     expect(d.unchanged).toBe(7);
-    expect(d.copiesAfter).toBe(25 + 4 - 6);
+    // Gone 3 -> 0, Fewer 4 -> 1, More 1 -> 3, New 0 -> 2: -3 -3 +2 +2.
+    expect(d.copiesAfter).toBe(25 - 3 - 3 + 2 + 2);
   });
 
   it("orders each list by what matters: most copies leaving, biggest drop, biggest rise", () => {
