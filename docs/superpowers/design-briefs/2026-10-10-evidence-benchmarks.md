@@ -7,7 +7,8 @@ exists for it today.
 
 Hugh, 2026-10-09 (priority 4c on `boards/priorities.md`): deterministic, model-free graded
 benchmarks, each with a card ledger showing which cards earned the grade, built from card labels
-and Deck stats math. Five benchmarks:
+and Deck stats math. Five benchmarks (the fourth, since Hugh's 2026-10-10 ruling, is a list of
+risks rather than a grade):
 
 1. **Mana velocity**
 2. **Card flow**
@@ -30,8 +31,8 @@ threat onset is the combo or win turn.
 
 ## What a benchmark is, and what it is not
 
-- **A benchmark is a judgment.** It grades the deck on one axis and shows the cards behind the
-  grade. That is why it lives in Analysis: the Deck stats ruling of 2026-10-03 (ruling 2 of
+- **A benchmark is a judgment.** It grades the deck on one axis, or for Dependencies names the
+  risks it carries, and shows the cards behind it. That is why it lives in Analysis: the Deck stats ruling of 2026-10-03 (ruling 2 of
   `2026-10-03-deck-stats.md`) keeps judgment in Analysis and facts in Stats.
 - **It is not a second Jobs card.** The Stats Jobs card already counts ramp, draw, removal,
   wipes, protection and win conditions and lists each row's names. A benchmark never shows that
@@ -55,7 +56,7 @@ pieces, template-free, infinite or game-ending, every piece held, a must-be-comm
 from the command zone). The scratch scripts were never committed. These are the draft definitions
 the figures were taken with; section "What eng locks" says which parts are fixed.
 
-| Deck | Lands | Avg MV | Velocity pts | Velocity index | Flow pts | Interaction cards | weighted | cheap instant | counterspells (of all interaction) | Graveyard share (one Dependencies row) | Combos | Combo by T8 | Unlabeled (eng only) |
+| Deck | Lands | Avg MV | Velocity pts | Velocity index | Flow pts | Interaction cards | weighted | cheap instant | counterspells (of all interaction) | Graveyard share (Dependencies counts these cards, not the share) | Combos | Combo by T8 | Unlabeled (eng only) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | HD - Avatar Aang | 36 | 2.7 | 8.25 | 4.0 | 22 | 7 | 17 | 3 | 1 | 5% | 2 | 18% | 1 |
 | HD - Brago | 35 | 3.61 | 6 | 2.35 | 16 | 17 | 23 | 2 | 2 | 8% | 12 | 42% | 2 |
@@ -251,7 +252,7 @@ draws, per deck:
    breaks it, as a fixed list per row in code, never generated. No total, no count of rows as a
    figure, and no row is "better" heavy or light. The commander row is not built (measured: it
    does not discriminate); commander dependence stays in the Overview's assessment.
-6. **Every grade has a ledger, and every ledger line is a card.** A line carries the card, what
+6. **Every grade and every Dependencies row has a ledger, and every ledger line is a card.** A line carries the card, what
    it contributed, and why (for interaction: "instant, 1 mana"; for velocity: "ramp, 2 mana";
    for win speed: the combo, its pieces and what it produces, plus the tutors that can find a
    piece). A ledger simply lists its cards.
@@ -259,7 +260,12 @@ draws, per deck:
    per deck on staging) is read from its rules text, silently, the way the fill already falls
    back to the classifier: the text reader's roles (ramp, draw, removal, wipes) and the oracle-text
    rules above. A job the text reader cannot see (a theme job such as `tribal` or `drain`) is
-   simply not counted for that card. No surface says a card was unlabeled, and there is no
+   simply not counted for that card. The text reader gives roles only, so the fallback fixes the
+   missing fields: a text-read draw card scores as `oneShot` and `self` (1 flow point); a
+   text-read ramp card scores by mana value alone, as if it were not `costReduction` or
+   `burstMana`; and "counter target" text reads as a counterspell, never as removal, whatever
+   `classifyRoles` does with it for its own callers (it keeps counterspells in removal on
+   purpose, `src/lib/recs/roles.ts`). No surface says a card was unlabeled, and there is no
    unlabeled or partial state to draw.
 7. **One reader per figure, shared.** The interaction reading replaces the Overview fact's
    `interactionCounts` (`src/lib/synopsis/facts-extra.ts`), which counts by the text classifier,
@@ -290,9 +296,10 @@ draws, per deck:
   battlefield" means the hand. It also inherits the two rocks labeled `land` (Ebony Fly, Planar Atlas). Those are
   follow-up 3 of the check, and velocity ships after it or applies the same filter.
 - **Graveyard jobs, theme jobs and tutors: NOT audited.** `recursion`, `mill`, the
-  `cardsInGraveyard` threshold, `tribal`, `pump`, `tokens`, `drain`, `poison`, the `activated`
-  trigger and `tutor` were outside that check. Every Dependencies row but artifact and
-  enchantment payoffs (oracle text) reads one of them, and win speed's tutor
+  `cardsInGraveyard` and `artifacts` thresholds, `tribal`, `pump`, `tokens`, `drain`, `poison`, the `activated`
+  trigger and `tutor` were outside that check. Every Dependencies row reads one of them
+  (artifact payoffs through the `artifacts` threshold; enchantment payoffs alone are pure oracle
+  text), and win speed's tutor
   credit need the same free spot check (judge each differing card from its rules text) before
   the switch goes on. One staging example to start from: Deconstruct is read as Elves ramp. And one
   open scope call for the plan: lands that use the graveyard (Cephalid Coliseum, Memorial to
