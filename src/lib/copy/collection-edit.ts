@@ -27,7 +27,6 @@ export const collectionEditCopy = {
   // §A, the Replace review (the choice step and the Add review come with the next PR). Strings are
   // the handoff's; lines marked (new) have no key there and go to /copy-review.
   upload: {
-    reviewReplace: "Review before you replace",
     tiles: { unchanged: "unchanged", up: "going up or new", down: "going down", leaving: "leaving" },
     edited: "edited",
     overwriteBanner: (k: number, since: string) =>

@@ -77,31 +77,30 @@ export function ReplaceFlow({
   // would leave short, drawn in the review with the decision on its confirm bar (A2). Absent (a
   // first import, the switch off, or a read that failed), the review is the shipped one and the
   // confirm is the dialog.
-  const [change, setChange] = useState<ReviewChange | null>(null);
-  const [comparing, setComparing] = useState(false);
+  // Held with the upload it was read for, so a new preview starts from nothing without an effect
+  // resetting state: `change` is null and `comparing` is true until THIS upload's read settles.
+  const [read, setRead] = useState<{ id: string; change: ReviewChange | null } | null>(null);
   const previewedId = preview?.uploadId ?? null;
+  const wantsComparison = deckCheck && previewedId !== null && !firstImport;
+  const settled = read !== null && read.id === previewedId;
+  const change = settled ? read.change : null;
+  const comparing = wantsComparison && !settled;
+  const setChange = (next: ReviewChange | null) => {
+    if (previewedId) setRead({ id: previewedId, change: next });
+  };
   useEffect(() => {
-    setChange(null);
-    if (!deckCheck || !previewedId || firstImport) {
-      setComparing(false);
-      return;
-    }
+    if (!wantsComparison || !previewedId) return;
     let live = true;
-    setComparing(true);
     previewUploadChange(previewedId, "replace")
-      .then((data) => {
-        if (!live) return;
-        if (data && "detail" in data) setChange({ data, decks: data.decks, fresh: new Set(), changed: false, failure: null });
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (live) setComparing(false);
+      .then((data) => (data && "detail" in data ? { data, decks: data.decks, fresh: new Set<string>(), changed: false, failure: null } : null))
+      .catch(() => null)
+      .then((next) => {
+        if (live) setRead({ id: previewedId, change: next });
       });
     return () => {
       live = false;
     };
-    // `firstImport` is part of what the preview says about this upload, so it changes with it.
-  }, [deckCheck, previewedId, firstImport]);
+  }, [wantsComparison, previewedId]);
 
   async function onConfirm(confirmShort?: ShortDeck[]) {
     if (!preview || pending) return;

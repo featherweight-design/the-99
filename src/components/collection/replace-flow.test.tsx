@@ -169,7 +169,10 @@ describe("ReplaceFlow — §E, decks the replace would leave short", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /Paste a list instead/ })[0]);
     fireEvent.change(screen.getByRole("textbox", { name: "Paste your card list" }), { target: { value: "3 Sol Ring" } });
     fireEvent.click(screen.getByRole("button", { name: /^Preview/ }));
-    fireEvent.click(await screen.findByRole("button", { name: /^Continue to replace/ }));
+    const cont = await screen.findByRole("button", { name: /^Continue to replace/ });
+    // Held until the comparison settles (here it comes back empty, so the dialog is the path).
+    await waitFor(() => expect(cont).toBeEnabled());
+    fireEvent.click(cont);
     return screen.getByRole("button", { name: /^Replace with/ });
   }
 
@@ -383,7 +386,9 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /Paste a list instead/ })[0]);
     fireEvent.change(screen.getByRole("textbox", { name: "Paste your card list" }), { target: { value: "3 Sol Ring" } });
     fireEvent.click(screen.getByRole("button", { name: /^Preview/ }));
-    fireEvent.click(await screen.findByRole("button", { name: /^Continue to replace/ }));
+    const cont = await screen.findByRole("button", { name: /^Continue to replace/ });
+    await waitFor(() => expect(cont).toBeEnabled());
+    fireEvent.click(cont);
     expect(screen.getByRole("dialog")).toBeTruthy();
   });
 
