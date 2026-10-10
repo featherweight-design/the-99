@@ -32,6 +32,9 @@ export default async function CollectionHistoryPage({ searchParams }: { searchPa
   return (
     <div className="flex flex-col">
       <HistoryList
+        // A revert changes the list (an entry reads Reverted, a new one tops it), and the list's own
+        // state is seeded from what it is given, so it starts over when the ledger moved.
+        key={entries.map((e) => `${e.id}${e.revertedBy ?? ""}`).join(",")}
         initial={entries}
         nextBefore={nextBefore}
         nowMs={nowMs}

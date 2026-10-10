@@ -1,5 +1,5 @@
 {
-  "feature": "Collection screens PR 6a: the History tab and list (§F), and the Add sheet's link to it (B8)",
+  "feature": "Collection screens PRs 6a and 6b: the History tab and list (§F), the Add sheet's link to it (B8) and the revert confirmation (F4)",
   "note": "Needs COLLECTION_EDIT_ENABLED=true and an account with a collection and ledger entries (seed a few on a scratch branch: an add, a removal, a reverted add with its revert, an Add upload and a 40-row Replace). Rows open entries and never press a write control.",
   "shares": {
     "module": "src/components/collection/history-list.tsx",
@@ -34,6 +34,24 @@
           "name": "Replace upload",
           "wait": "[aria-pressed]",
           "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "revert-confirm",
+      "label": "/collection/history: the revert confirmation open on a one-card removal (Then and Now, Revert never pressed)",
+      "view": "src/app/collection/(list)/history/page.tsx",
+      "steps": [
+        {
+          "goto": "/collection/history",
+          "wait": "h2",
+          "settle": 4000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Revert Rhystic Study",
+          "wait": "[role=dialog]",
+          "settle": 4000
         }
       ]
     }

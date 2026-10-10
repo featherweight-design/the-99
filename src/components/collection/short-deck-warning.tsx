@@ -29,6 +29,7 @@ export function groupShortDecks(decks: ShortDeck[]): DeckRow[] {
 
 export function ShortDeckWarning({
   variant = "dialog",
+  source = "replace",
   titleId,
   decks,
   pending,
@@ -43,6 +44,8 @@ export function ShortDeckWarning({
    * their own heading, for the review screen, whose confirm bar carries the decision.
    */
   variant?: "dialog" | "embedded";
+  /** What the decks would be left short by: it words the title and the confirm. */
+  source?: "replace" | "revert";
   /** The id the host's `aria-labelledby` names. Unused when embedded. */
   titleId?: string;
   decks: ShortDeck[];
@@ -79,7 +82,7 @@ export function ShortDeckWarning({
     <div className="flex flex-col gap-[14px]">
         {variant === "dialog" ? (
           <h2 id={titleId} className="m-0 flex-none font-display text-[20px] font-bold leading-[1.3] text-[color:var(--fg)]">
-            {c.titleReplace(rows.length)}
+            {source === "revert" ? c.titleRevert(rows.length) : c.titleReplace(rows.length)}
           </h2>
         ) : (
           <h2 className="m-0 font-mono text-[10px] font-normal uppercase tracking-[0.14em] text-[color:var(--danger)]">
@@ -179,7 +182,7 @@ export function ShortDeckWarning({
             disabled={pending}
             className="flex h-[44px] items-center justify-center rounded-[8px] border border-[color:var(--border-strong)] bg-[color:var(--elevated)] px-[18px] text-[14px] font-semibold text-[color:var(--fg)] disabled:opacity-60"
           >
-            {pending ? c.saving : c.confirmReplace}
+            {pending ? c.saving : source === "revert" ? c.confirmRevert : c.confirmReplace}
           </button>
         </div>
         ) : null}

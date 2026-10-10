@@ -3,18 +3,20 @@
 // grouped by day. A whole row opens its entry in place: a short one lists every row it changed, a
 // long one opens on its first group with chips for the four groups and `Show more` in steps, so a
 // Replace of hundreds of rows is never rendered whole (F3). Entries past the first page arrive
-// through `Show older changes`. The Revert control joins with the revert confirmation (PR 6b).
+// through `Show older changes`. Each entry that is not already reverted has its own Revert control,
+// which opens the revert confirmation.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { loadCollectionHistory, loadCollectionHistoryEntry } from "../../app/collection/history-actions";
 import type { HistoryEntry, HistoryListEntry } from "../../lib/collection/history";
 import { historyKindOf, type HistoryKind } from "../../lib/collection/history-kind";
 import {
-  GROUP_FIRST, GROUP_STEP, SHORT_ENTRY_ROWS, entryTitle, groupByDay, groupRows, rowDelta, timeLabel, type RowGroup,
+  GROUP_FIRST, GROUP_STEP, SHORT_ENTRY_ROWS, dayLabel, entryTitle, groupByDay, groupRows, rowDelta, timeLabel, type RowGroup,
 } from "../../lib/collection/history-view";
 import type { HistoryRow } from "../../db/schema";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { ReplaceIcon } from "./replace-icon";
+import { RevertConfirm } from "./revert-confirm";
 
 const c = collectionEditCopy.history;
 
@@ -113,6 +115,8 @@ export function HistoryList({
   const [open, setOpen] = useState<ReadonlySet<string>>(() => new Set(focusId && initial.some((e) => e.id === focusId) ? [focusId] : []));
   const [details, setDetails] = useState<ReadonlyMap<string, HistoryEntry | "loading" | "failed">>(new Map());
   const [pager, setPager] = useState<"idle" | "loading" | "failed">("idle");
+  // The entry whose revert is being decided, with the words the dialog quotes.
+  const [reverting, setReverting] = useState<{ id: string; title: string; when: string } | null>(null);
   const byId = useMemo(() => new Map(entries.map((e) => [e.id, e])), [entries]);
   const groups = useMemo(() => groupByDay(entries, nowMs), [entries, nowMs]);
 
@@ -192,11 +196,12 @@ export function HistoryList({
                     id={`entry-${e.id}`}
                     className="rounded-[10px] border border-[color:var(--border)] bg-[color:var(--surface)]"
                   >
+                    <div className="flex items-center">
                     <button
                       type="button"
                       aria-expanded={isOpen}
                       onClick={() => toggle(e.id)}
-                      className="grid w-full cursor-pointer grid-cols-[1fr_auto] items-center gap-x-[12px] gap-y-[4px] border-0 bg-transparent p-[12px_14px] text-left text-[color:var(--fg)] md:grid-cols-[150px_1fr_auto]"
+                      className="grid min-w-0 flex-1 cursor-pointer grid-cols-[1fr_auto] items-center gap-x-[12px] gap-y-[4px] border-0 bg-transparent p-[12px_14px] text-left text-[color:var(--fg)] md:grid-cols-[150px_1fr_auto]"
                     >
                       <span className="font-mono text-[11px] uppercase tracking-[0.06em]" style={{ color: TAG_INK[kind] }}>
                         {c.kinds[kind]}
@@ -209,6 +214,18 @@ export function HistoryList({
                         <span className="font-mono text-[11.5px] text-[color:var(--fg-muted)]">{c.figures(e.copiesUp, e.copiesDown, e.rowCount)}</span>
                       </span>
                     </button>
+                    {!reverted ? (
+                      // Its own control beside the disclosure, never inside it: a button in a button.
+                      <button
+                        type="button"
+                        onClick={() => setReverting({ id: e.id, title, when: `${dayLabel(e.createdAt)}, ${timeLabel(e.createdAt)}` })}
+                        aria-label={`${c.revert} ${title}`}
+                        className="mr-[10px] min-h-[44px] flex-none cursor-pointer rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[12px] text-[13px] text-[color:var(--fg)] md:min-h-[32px]"
+                      >
+                        {c.revert}
+                      </button>
+                    ) : null}
+                    </div>
                     {reverted ? (
                       <p className="m-0 px-[14px] pb-[10px] text-[12.5px] text-[color:var(--fg-faint)] md:pl-[176px]">
                         {c.reverted}
@@ -261,6 +278,16 @@ export function HistoryList({
           </button>
           {pager === "failed" ? <p role="alert" className="m-0 mt-[6px] text-[13px] text-[color:var(--fg-body)]">{c.loadFailed}</p> : null}
         </div>
+      ) : null}
+
+      {reverting ? (
+        <RevertConfirm
+          entryId={reverting.id}
+          title={reverting.title}
+          when={reverting.when}
+          onClose={() => setReverting(null)}
+          onReverted={() => setReverting(null)}
+        />
       ) : null}
 
       <p className="m-0 mt-[28px] max-w-[560px] text-[12.5px] leading-[1.6] text-[color:var(--fg-faint)]">{c.foot(reachesBackLabel)}</p>
