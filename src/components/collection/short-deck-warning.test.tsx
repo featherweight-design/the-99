@@ -54,6 +54,20 @@ describe("ShortDeckWarning", () => {
     expect(screen.getByText("short 2")).toBeTruthy();
   });
 
+  it("several cards: a deck short on only one of them still opens onto that card", () => {
+    draw([line("a", "x", 1), line("a", "y", 2), line("b", "x", 1)]);
+    const one = screen.getByRole("button", { name: "1 card short" });
+    fireEvent.click(one);
+    expect(screen.getByText("Card x", { selector: "li span" })).toBeTruthy();
+  });
+
+  it("takes focus back for a redrawn answer", () => {
+    const { rerender } = draw([line("a", "x", 1)]);
+    (document.activeElement as HTMLElement).blur();
+    rerender(<ShortDeckWarning titleId="t" decks={[line("a", "x", 1), line("b", "x", 1)]} pending={false} onCancel={vi.fn()} onConfirm={vi.fn()} />);
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Cancel" }));
+  });
+
   it("names three decks and counts the rest behind `and N more`, which opens inline", () => {
     draw(["a", "b", "c", "d", "e"].map((id, i) => line(id, "x", 5 - i)));
     expect(screen.getByRole("heading", { name: "Replacing leaves 5 decks short" })).toBeTruthy();

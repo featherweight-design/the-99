@@ -6,7 +6,7 @@
 // Replace is the first caller. Rows are always decks. A source that moves one card shows `short N`, a source that
 // moves several shows `N cards short` and the row opens onto its cards. Three decks are named and
 // the rest are counted behind `and N more`, which opens inline under a 320px cap. Cancel takes
-// focus, the confirm is the elevated secondary, and nothing here is red but a failed confirm.
+// focus, and the confirm is the elevated secondary, never red. The shortage figure is --danger ink, as A·E2 draws it.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -59,7 +59,9 @@ export function ShortDeckWarning({
   const cancelRef = useRef<HTMLButtonElement>(null);
   const firstRevealed = useRef<HTMLAnchorElement>(null);
   // The warning replaces the confirm inside one dialog, so nothing moves focus here but this.
-  useEffect(() => cancelRef.current?.focus(), []);
+  // Again for each answer the server sends back: a changed warning keeps this mounted while the
+  // host's pending state moved focus to the dialog itself.
+  useEffect(() => cancelRef.current?.focus(), [decks]);
   // `and N more` unmounts the button that had focus: the first row it reveals takes it.
   useEffect(() => {
     if (showAll) firstRevealed.current?.focus();
@@ -80,7 +82,7 @@ export function ShortDeckWarning({
           className={`m-0 min-h-0 list-none overflow-y-auto rounded-[10px] border border-[color:var(--border)] bg-[color:var(--bg)] p-0 ${showAll ? "max-h-[320px]" : ""}`}
         >
           {named.map((row, index) => {
-            const expandable = !oneCard && row.cards.length > 1;
+            const expandable = !oneCard;
             const isOpen = open === row.deckId;
             const figure = oneCard ? c.figureOne(row.short) : c.figureMany(row.cards.length);
             return (
