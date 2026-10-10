@@ -136,6 +136,10 @@ export function LockModeButton({ lockMode, onToggle }: { lockMode: boolean; onTo
   );
 }
 
+/** One segment of the Stats-on toolbar group (handoff 2a). Ink is set inline per segment. */
+const SEGMENT_BASE =
+  "flex min-h-[44px] flex-1 items-center justify-center gap-[6px] rounded-[6px] px-[14px] py-[6px] font-sans text-[14px] transition-[filter] hover:brightness-125 md:min-h-0 md:flex-none md:text-[13.5px]";
+
 export function GroupToggle({
   allCount,
   shoppingCount,
@@ -166,7 +170,6 @@ export function GroupToggle({
   const statsOpen = stats?.open ?? false;
   // The segment owns the selection while Stats is open, so neither list pill reads as chosen.
   const shown = statsOpen ? null : filter;
-  const segmentSize = stats ? "min-h-[44px] md:min-h-0" : "";
   // `md:` is the only breakpoint this row has ever used, and the panel's form
   // follows it: a labelled 44px pill at phone, the desktop popover above.
   const wide = useIsDesktop();
@@ -205,12 +208,54 @@ export function GroupToggle({
             said with the bone-on-elevated skin, never with a coloured ground.
             Accent does still tint a border — the Shopping pill mixes 30% of it
             into its idle ring below. */}
+        {stats ? (
+          /* DECK_STATS_ENABLED: One segmented group (handoff 2a): a single bordered container holding
+             All and Shopping, a hairline, then Stats. The selected segment is the filled raised pill;
+             Shopping keeps its warm ink selected or not. Full width at phone with the segments
+             sharing it (44px targets), content-width from `md:`. */
+          <div
+            role="group"
+            aria-label={deckStatsCopy.segment.groupAria}
+            data-toolbar-group
+            className="flex w-full items-stretch gap-[2px] rounded-[9px] border border-solid border-[color:var(--border-strong)] p-[3px] md:inline-flex md:w-auto"
+          >
+            {(
+              [
+                { key: "all", label: "All", count: allCount, selected: shown === "all", ink: "var(--fg-muted)", onClick: () => onFilterChange("all"), aria: undefined },
+                { key: "shopping", label: "Shopping", count: shoppingCount, selected: shown === "shopping", ink: "var(--warning)", onClick: () => onFilterChange("shopping"), aria: undefined },
+              ] as const
+            ).map((seg) => (
+              <button
+                key={seg.key}
+                type="button"
+                aria-pressed={seg.selected}
+                onClick={seg.onClick}
+                style={{ color: seg.selected && seg.key === "all" ? "var(--fg)" : seg.ink }}
+                className={`${SEGMENT_BASE} ${seg.selected ? "font-semibold bg-[color:var(--elevated)]" : "font-medium"}`}
+              >
+                {seg.label}{" "}
+                <span className="font-mono text-[11.5px]">{seg.count}</span>
+              </button>
+            ))}
+            <span aria-hidden data-toolbar-divider className="mx-[3px] my-[6px] w-px flex-none self-stretch bg-[color:var(--border-strong)]" />
+            <button
+              type="button"
+              aria-pressed={statsOpen}
+              aria-label={deckStatsCopy.segment.aria}
+              onClick={() => stats.onChange(true)}
+              style={{ color: statsOpen ? "var(--fg)" : "var(--fg-muted)" }}
+              className={`${SEGMENT_BASE} ${statsOpen ? "font-semibold bg-[color:var(--elevated)]" : "font-medium"}`}
+            >
+              {deckStatsCopy.segment.stats}
+            </button>
+          </div>
+        ) : (
+          <>
         <button
           type="button"
           onClick={() => onFilterChange("all")}
           className={[
             "font-sans font-semibold transition-[filter] hover:brightness-125 text-[12px] md:text-[13px] rounded-full px-[11px] py-[4px] md:px-[14px] md:py-[5px]",
-            segmentSize,
             shown === "all"
               ? "text-[color:var(--fg)] bg-[color:var(--elevated)] border border-solid border-[color:var(--border-strong)]"
               : "text-[color:var(--fg-faint)] bg-transparent border border-solid border-[color:var(--border-strong)]",
@@ -225,7 +270,6 @@ export function GroupToggle({
           onClick={() => onFilterChange("shopping")}
           className={[
             "font-sans transition-[filter] hover:brightness-125 text-[12px] md:text-[13px] rounded-full px-[11px] py-[4px] md:px-[14px] md:py-[5px]",
-            segmentSize,
             shown === "shopping"
               ? "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)] border border-solid border-[color:var(--border-strong)]"
               : "font-medium text-[color:var(--warning)] bg-transparent border border-solid border-[color:color-mix(in_srgb,var(--accent)_30%,var(--bg))]",
@@ -234,24 +278,6 @@ export function GroupToggle({
           Shopping {shoppingCount}
         </button>
 
-        {stats && (
-          <>
-            <span aria-hidden className="h-[16px] w-px bg-[color:var(--border-strong)]" />
-            <button
-              type="button"
-              aria-pressed={statsOpen}
-              aria-label={deckStatsCopy.segment.aria}
-              onClick={() => stats.onChange(true)}
-              className={[
-                "font-sans transition-[filter] hover:brightness-125 text-[12px] md:text-[13px] rounded-full px-[11px] py-[4px] md:px-[14px] md:py-[5px] border border-solid border-[color:var(--border-strong)]",
-                segmentSize,
-                statsOpen
-                  ? "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)]"
-                  : "font-medium text-[color:var(--fg-faint)] bg-transparent",
-              ].join(" ")}
-            >
-              {deckStatsCopy.segment.stats}
-            </button>
           </>
         )}
 
