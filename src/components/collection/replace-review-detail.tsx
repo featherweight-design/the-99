@@ -3,7 +3,7 @@
 // figures, what the replace overwrites, the decks it leaves short, then the card lists. The
 // shipped matched banner and issue sections draw around it, unchanged.
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { UploadChangePreview } from "../../app/collection/actions";
 import type { ShortDeck } from "../../lib/collection/write";
 import type { PreviewList, PreviewListRow } from "../../lib/collection/upload-preview";
@@ -36,6 +36,11 @@ function Tile({ n, label, ink }: { n: number; label: string; ink: string }) {
 
 function Rows({ heading, list, tone }: { heading: string; list: PreviewList; tone: "up" | "other" }) {
   const [all, setAll] = useState(false);
+  const firstRevealed = useRef<HTMLLIElement>(null);
+  // The button that revealed the rest is gone: the first row it revealed takes focus.
+  useEffect(() => {
+    if (all) firstRevealed.current?.focus();
+  }, [all]);
   if (list.total === 0) return null;
   const shown = all ? list.rows : list.rows.slice(0, SHOWN);
   return (
@@ -44,10 +49,12 @@ function Rows({ heading, list, tone }: { heading: string; list: PreviewList; ton
         {heading}
       </h2>
       <ul className="m-0 flex list-none flex-col gap-[6px] p-0">
-        {shown.map((r: PreviewListRow) => (
+        {shown.map((r: PreviewListRow, i) => (
           <li
+            ref={all && i === SHOWN ? firstRevealed : undefined}
+            tabIndex={all && i === SHOWN ? -1 : undefined}
             key={`${r.oracleId}|${r.setCode}|${r.collectorNumber}|${r.finish}`}
-            className="flex min-h-[40px] items-center gap-[10px] rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface)] p-[8px_12px]"
+            className="flex min-h-[40px] items-center gap-[10px] rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface)] p-[8px_12px] outline-none"
           >
             <span className="min-w-0 flex-1 truncate text-[13px] text-[color:var(--fg)] md:text-[14px]">{r.name}</span>
             {r.edited ? (
@@ -64,6 +71,9 @@ function Rows({ heading, list, tone }: { heading: string; list: PreviewList; ton
           </li>
         ))}
       </ul>
+      {all && list.total > list.rows.length ? (
+        <p className="m-0 mt-[8px] text-[12.5px] text-[color:var(--fg-muted)]">{c.capNote(list.rows.length, list.total)}</p>
+      ) : null}
       {!all && list.rows.length > SHOWN ? (
         <button
           type="button"

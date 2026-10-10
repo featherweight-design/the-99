@@ -341,6 +341,19 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
     expect(push).toHaveBeenCalledWith("/collection/replace/summary/up_1");
   });
 
+  it("Show all hands focus to the first revealed row and says when the list is longer than what shipped", async () => {
+    const many = Array.from({ length: 12 }, (_, i) => `Card ${String(i).padStart(2, "0")}`);
+    previewChange.mockResolvedValue({
+      ...data(),
+      detail: { ...detail, lists: { ...detail.lists, leaving: { total: 507, rows: list(many, 3, 0).rows } } },
+    });
+    await reachReview();
+    expect(screen.queryByText("Card 09")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Show all 12" }));
+    expect(document.activeElement).toBe(screen.getByText("Card 08").closest("li"));
+    expect(screen.getByText("Showing the first 12 of 507.")).toBeTruthy();
+  });
+
   it("names a card the catalog dropped in the failure, and writes nothing", async () => {
     previewChange.mockResolvedValue(data());
     confirmUpload.mockResolvedValueOnce({ missingCard: ["Sol Ring"] });

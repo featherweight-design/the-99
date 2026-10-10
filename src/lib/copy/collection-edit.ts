@@ -42,6 +42,8 @@ export const collectionEditCopy = {
     listDown: (k: number) => `Going down · ${n(k)}`,
     listUp: (k: number) => `Going up or new · ${n(k)}`,
     showAll: (k: number) => `Show all ${n(k)}`,
+    /** (new) A list longer than the 500 rows the preview ships. */
+    capNote: (shown: number, total: number) => `Showing the first ${n(shown)} of ${n(total)}.`,
     /** (new) The new-holding stand-in for a ×0 before figure. */
     newBadge: "new",
     /** (new) Reading how the file compares. */
