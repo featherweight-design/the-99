@@ -26,6 +26,7 @@ describe("loadStatsAverage", () => {
         staples: [],
         commanderDeckCount: 400,
       },
+      deckCounts: { pair: 400, commander: 9000 },
     });
     const a = await loadStatsAverage(deck);
     expect(loadSkeletonForCommanders).toHaveBeenCalledWith("o-1", "o-2", ["W", "B", "U"], undefined, { roleBasis: "labels" });

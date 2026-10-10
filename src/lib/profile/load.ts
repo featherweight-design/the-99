@@ -628,6 +628,9 @@ export async function loadSkeletonForCommanders(
   condition: string;
   staples: StapleRef[];
   commanderDeckCount: number | null;
+  /** The deck count of each row on its own, for a reader naming WHICH row supplied its figures:
+   *  `commanderDeckCount` above is the pair's, else the commander's, whatever rung served the composition. */
+  deckCounts: { pair: number | null; commander: number | null };
 }> {
   const exactCondition = identityCondition(combinedIdentity);
   const [pairRow, commanderRow] = preloaded
@@ -732,6 +735,7 @@ export async function loadSkeletonForCommanders(
     condition,
     staples,
     commanderDeckCount,
+    deckCounts: { pair: pairRow?.deckCount ?? null, commander: commanderRow?.deckCount ?? null },
   };
 }
 

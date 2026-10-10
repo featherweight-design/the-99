@@ -13,7 +13,7 @@ import type { AverageBasisOf, AverageDeck } from "./stats-average";
 const colorCount = (n: number) => (n === 0 ? "colorless" : `${n}-color`);
 
 /** Pure so the rungs are provable without a database. `identity` is the deck's combined color identity. */
-export function averageDeckFrom(skeleton: ProfileSkeleton, names: string[], identity: readonly string[], hasPartner: boolean): AverageDeck {
+export function averageDeckFrom(skeleton: ProfileSkeleton, names: string[], identity: readonly string[], hasPartner: boolean, deckCounts: { pair: number | null; commander: number | null }): AverageDeck {
   const composition = skeleton.composition;
   const measuredRoles = skeleton.roleTargets.of !== "flat";
   const of: AverageBasisOf = composition ? composition.of : measuredRoles ? skeleton.roleTargets.of as AverageBasisOf : "baseline";
@@ -40,9 +40,9 @@ export function averageDeckFrom(skeleton: ProfileSkeleton, names: string[], iden
       label,
       // A commander rung on a pair deck means the pair row carried no composition, and then it carries no count either
       // (measured on staging: the 38 pair rows without a composition have a null count), so this is the commander's.
-      // Only a composition proves the count came from its own row: a role-only pair (no composition) would
-      // carry the commander row's count under a pair label.
-      decks: composition && (of === "commander" || of === "pair") ? skeleton.commanderDeckCount : null,
+      // The count of the row that SUPPLIED the named basis: the skeleton's single count is the pair's else the
+      // commander's, which names the wrong denominator whenever the composition fell to the other row.
+      decks: composition && (of === "commander" || of === "pair") ? deckCounts[of] : null,
     },
     targets: composition ? composition.targets : null,
     curve: folded ? Array.from({ length: CURVE_MAX + 1 }, (_, i) => folded.get(i) ?? 0) : null,
@@ -64,14 +64,14 @@ export async function loadStatsAverage(deck: {
   try {
     // The identity comes off the deck detail the page already read: no second read of `cards`.
     const identity = [...new Set([...deck.commander.colorIdentity, ...(deck.partner?.colorIdentity ?? [])])];
-    const { skeleton } = await loadSkeletonForCommanders(
+    const { skeleton, deckCounts } = await loadSkeletonForCommanders(
       deck.commander.oracleId,
       deck.partner?.oracleId ?? null,
       identity,
       undefined,
       { roleBasis: "labels" },
     );
-    return averageDeckFrom(skeleton, [deck.commander.name, ...(deck.partner ? [deck.partner.name] : [])], identity, deck.partner !== null);
+    return averageDeckFrom(skeleton, [deck.commander.name, ...(deck.partner ? [deck.partner.name] : [])], identity, deck.partner !== null, deckCounts);
   } catch (err) {
     console.warn("loadStatsAverage: no skeleton, the Average card stays a shell", err);
     return null;

@@ -9,6 +9,7 @@ import { averageDeckFrom } from "./stats-average-load";
 const TARGETS: CompositionTargets = {
   land: 36, basic: 20, nonbasic: 16, creature: 26, instant: 8, sorcery: 9, artifact: 10, enchantment: 6, planeswalker: 1, battle: 0,
 };
+const COUNTS = { pair: 812, commander: 1812 };
 const skeleton = (over: Partial<ProfileSkeleton> = {}): ProfileSkeleton => ({
   composition: { of: "commander", targets: TARGETS, averageCurve: { "1": 8, "2": 12, "3": 12, "9": 2 } },
   roleTargets: { of: "commander", targets: { ramp: 11.4, draw: 10, removal: 8, wipes: 3 } },
@@ -21,7 +22,7 @@ const skeleton = (over: Partial<ProfileSkeleton> = {}): ProfileSkeleton => ({
 
 describe("averageDeckFrom", () => {
   it("names the commander rung with its deck count and folds the tail into 7+", () => {
-    const a = averageDeckFrom(skeleton(), ["Korvold, Fae-Cursed King"], ["B", "G", "R"], false);
+    const a = averageDeckFrom(skeleton(), ["Korvold, Fae-Cursed King"], ["B", "G", "R"], false, COUNTS);
     expect(a.basis).toEqual({ of: "commander", names: ["Korvold, Fae-Cursed King"], label: "", decks: 1812 });
     expect(a.curve).toEqual([0, 8, 12, 12, 0, 0, 0, 2]);
     // The mean runs over the UNFOLDED keys, so the 9 is a 9 and not a 7.
@@ -29,32 +30,42 @@ describe("averageDeckFrom", () => {
     expect(a.roles).toEqual({ ramp: 11.4, draw: 10, removal: 8, wipes: 3 });
   });
 
+  it("quotes the count of the row that supplied the basis, not the skeleton's collapsed one", () => {
+    // The pair row carries a count, but the composition fell to the commander's row.
+    const fell = averageDeckFrom(skeleton({ commanderDeckCount: 812 }), ["A", "B"], ["W"], true, COUNTS);
+    expect(fell.basis).toMatchObject({ of: "commander", decks: 1812 });
+    const pair = averageDeckFrom(skeleton({ composition: { of: "pair", targets: TARGETS, averageCurve: null } }), ["A", "B"], ["W"], true, COUNTS);
+    expect(pair.basis).toMatchObject({ of: "pair", decks: 812 });
+    const none = averageDeckFrom(skeleton({ composition: { of: "pair", targets: TARGETS, averageCurve: null } }), ["A", "B"], ["W"], true, { pair: null, commander: 1812 });
+    expect(none.basis.decks).toBeNull();
+  });
+
   it("quotes no deck count for a role-only pair, whose count is the commander row's", () => {
     const a = averageDeckFrom(
       skeleton({ composition: null, roleTargets: { of: "pair", targets: { ramp: 8, draw: 8, removal: 6, wipes: 2 } } }),
-      ["A", "B"], ["W"], true,
+      ["A", "B"], ["W"], true, COUNTS,
     );
     expect(a.basis).toMatchObject({ of: "pair", decks: null });
   });
 
   it("sizes the body at 99, or 98 for a pair", () => {
-    expect(averageDeckFrom(skeleton(), ["A"], ["W"], false).body).toBe(99);
-    expect(averageDeckFrom(skeleton(), ["A", "B"], ["W"], true).body).toBe(98);
+    expect(averageDeckFrom(skeleton(), ["A"], ["W"], false, COUNTS).body).toBe(99);
+    expect(averageDeckFrom(skeleton(), ["A", "B"], ["W"], true, COUNTS).body).toBe(98);
   });
 
   it("names both partners on a pair rung and only the first when the commander's row served a pair deck", () => {
-    const pair = averageDeckFrom(skeleton({ composition: { of: "pair", targets: TARGETS, averageCurve: null } }), ["A", "B"], ["W"], true);
+    const pair = averageDeckFrom(skeleton({ composition: { of: "pair", targets: TARGETS, averageCurve: null } }), ["A", "B"], ["W"], true, COUNTS);
     expect(pair.basis.names).toEqual(["A", "B"]);
-    const fell = averageDeckFrom(skeleton(), ["A", "B"], ["W"], true);
+    const fell = averageDeckFrom(skeleton(), ["A", "B"], ["W"], true, COUNTS);
     expect(fell.basis.names).toEqual(["A"]);
   });
 
   it("names the identity by its color name and the count rung by its color count, with no deck count", () => {
-    const id = averageDeckFrom(skeleton({ composition: { of: "identity", targets: TARGETS, averageCurve: null } }), ["X"], ["G", "B", "R"], false);
+    const id = averageDeckFrom(skeleton({ composition: { of: "identity", targets: TARGETS, averageCurve: null } }), ["X"], ["G", "B", "R"], false, COUNTS);
     expect(id.basis).toMatchObject({ of: "identity", label: "Jund", decks: null });
-    const count = averageDeckFrom(skeleton({ composition: { of: "count", targets: TARGETS, averageCurve: null } }), ["X"], ["G", "B", "R", "W"], false);
+    const count = averageDeckFrom(skeleton({ composition: { of: "count", targets: TARGETS, averageCurve: null } }), ["X"], ["G", "B", "R", "W"], false, COUNTS);
     expect(count.basis).toMatchObject({ of: "count", label: "4-color", decks: null });
-    const none = averageDeckFrom(skeleton({ composition: { of: "count", targets: TARGETS, averageCurve: null } }), ["X"], [], false);
+    const none = averageDeckFrom(skeleton({ composition: { of: "count", targets: TARGETS, averageCurve: null } }), ["X"], [], false, COUNTS);
     expect(none.basis.label).toBe("colorless");
   });
 
@@ -64,6 +75,7 @@ describe("averageDeckFrom", () => {
       ["Aang, at the Crossroads"],
       ["W"],
       false,
+      COUNTS,
     );
     expect(a.basis.of).toBe("baseline");
     expect(a.targets).toBeNull();
@@ -73,13 +85,13 @@ describe("averageDeckFrom", () => {
   });
 
   it("draws no job targets when the roles resolved at a different rung than the named composition", () => {
-    const a = averageDeckFrom(skeleton({ roleTargets: { of: "identity", targets: { ramp: 8, draw: 8, removal: 6, wipes: 2 } } }), ["X"], ["G"], false);
+    const a = averageDeckFrom(skeleton({ roleTargets: { of: "identity", targets: { ramp: 8, draw: 8, removal: 6, wipes: 2 } } }), ["X"], ["G"], false, COUNTS);
     expect(a.basis.of).toBe("commander");
     expect(a.roles).toBeNull();
   });
 
   it("draws no job targets where the composition is measured and the roles are only the flat ones", () => {
-    const a = averageDeckFrom(skeleton({ roleTargets: { of: "flat", targets: { ramp: 8, draw: 8, removal: 6, wipes: 2 } } }), ["X"], ["G"], false);
+    const a = averageDeckFrom(skeleton({ roleTargets: { of: "flat", targets: { ramp: 8, draw: 8, removal: 6, wipes: 2 } } }), ["X"], ["G"], false, COUNTS);
     expect(a.targets).not.toBeNull();
     expect(a.roles).toBeNull();
   });
