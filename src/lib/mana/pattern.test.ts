@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { costPatterns, manaValueOf } from "./pattern";
+import { castingPatterns, costPatterns, manaValueOf } from "./pattern";
 
 describe("manaValueOf", () => {
   it("adds generic, counts each colored symbol once, and reads X as 0", () => {
@@ -39,5 +39,21 @@ describe("costPatterns", () => {
     expect(costPatterns(null)).toEqual({});
     expect(costPatterns("{4}")).toEqual({});
     expect(costPatterns("{C}{C}")).toEqual({});
+  });
+});
+
+describe("castingPatterns", () => {
+  it("gives one pattern per face of a joined cost, never a sum of the faces", () => {
+    expect(castingPatterns("{2}{R} // {1}{R}", "R")).toEqual([{ generic: 2, pips: 1 }, { generic: 1, pips: 1 }]);
+  });
+
+  it("lists a pattern both faces share once", () => {
+    expect(castingPatterns("{1}{R} // {1}{R}", "R")).toEqual([{ generic: 1, pips: 1 }]);
+  });
+
+  it("gives a face that does not need the color nothing, and skips an empty face", () => {
+    expect(castingPatterns("{1}{R} // {1}{U}", "R")).toEqual([{ generic: 1, pips: 1 }]);
+    expect(castingPatterns(" // {3}{R}", "R")).toEqual([{ generic: 3, pips: 1 }]);
+    expect(castingPatterns(null, "R")).toEqual([]);
   });
 });

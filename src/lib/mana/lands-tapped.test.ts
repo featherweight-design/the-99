@@ -36,6 +36,20 @@ describe("tappedLands", () => {
     expect(out).toEqual({ always: 1, unless: 0, fetch: 0, lands: 1 });
   });
 
+  it("reads a conditional that comes first, or rides a reveal, as conditional and not as always tapped", () => {
+    const out = tappedLands([
+      land("Reverse Land", "Unless you control a Soldier, Reverse Land enters tapped.\n{T}: Add {W}."),
+      land("Reveal Land", "As Reveal Land enters, you may reveal a Mountain or Forest card from your hand. If you don't, Reveal Land enters the battlefield tapped.\n{T}: Add {R} or {G}."),
+      land("Fast Land", "This land enters tapped unless you control two or fewer other lands.\n{T}: Add {U} or {B}."),
+    ]);
+    expect(out).toEqual({ always: 0, unless: 3, fetch: 0, lands: 3 });
+  });
+
+  it("keeps a land tapped when an unrelated sentence about it carries an 'if you control'", () => {
+    const out = tappedLands([land("Gain Land", "This land enters tapped.\nWhen this land enters, if you control a Plains, you gain 1 life.\n{T}: Add {W} or {B}.")]);
+    expect(out).toEqual({ always: 1, unless: 0, fetch: 0, lands: 1 });
+  });
+
   it("ignores a card that is not a land", () => {
     expect(tappedLands([land("Sol Ring", "{T}: Add {C}{C}.", 1, "Artifact")])).toEqual({ always: 0, unless: 0, fetch: 0, lands: 0 });
   });

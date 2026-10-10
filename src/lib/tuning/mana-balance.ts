@@ -13,11 +13,10 @@
 // Karsten: "How Many Sources Do You Need to Consistently Cast Your Spells? A 2022 Update" (TCGplayer).
 
 import { isLandFace } from "../cards/facet";
-import { faceCosts } from "../cards/faces";
 import { averageManaValue } from "../decks/mana-value";
 import { karstenLands, karstenSources, patternName, type KarstenSources } from "../mana/karsten";
 import type { TappedLands } from "../mana/lands-tapped";
-import { costPatterns, manaValueOf } from "../mana/pattern";
+import { castingPatterns, manaValueOf } from "../mana/pattern";
 import { manaSupply, type ManaColor, type ManaSupply, type ManaSupplyCardRow } from "../mana/supply";
 
 export const BALANCE_COLORS = ["W", "U", "B", "R", "G"] as const satisfies readonly ManaColor[];
@@ -96,13 +95,8 @@ function patternsFor(color: ManaColor, rows: readonly ManaSupplyCardRow[], nameO
   for (const r of rows) {
     if (isLandFace(r.typeLine)) continue;
     // Each face of an adventure, a split card or a castable back is its own way to cast the card.
-    const seen = new Set<string>();
-    for (const face of faceCosts(r.manaCost)) {
-      const p = costPatterns(face)[color];
-      if (!p) continue;
+    for (const p of castingPatterns(r.manaCost, color)) {
       const key = patternName(p.generic, p.pips);
-      if (seen.has(key)) continue;
-      seen.add(key);
       const entry = byPattern.get(key) ?? { pattern: key, generic: p.generic, pips: p.pips, copies: 0, cards: [], karsten: karstenSources(p.generic, p.pips) };
       entry.copies += r.quantity;
       entry.cards.push({ name: nameOf(r.id), copies: r.quantity, commander: isCommanderRow(r.id) });
