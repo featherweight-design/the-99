@@ -145,7 +145,7 @@ const JOB_VAR: Record<(typeof JOB_ROWS)[number]["key"], string> = {
   removal: "var(--job-removal)",
   wipes: "var(--job-wipes)",
   protection: "var(--job-protection)",
-  finisher: "var(--accent)",
+  finisher: "var(--job-finisher)",
 };
 
 function JobsCard({ tally }: { tally: JobTally }) {
@@ -202,7 +202,7 @@ function JobsCard({ tally }: { tally: JobTally }) {
         <div className="flex flex-col gap-[6px]" data-job-unlabeled>
           <span aria-hidden="true" className="flex flex-wrap gap-[3px]">
             {Array.from({ length: tally.unlabeled }, (_, k) => (
-              <span key={k} className="size-[9px] rounded-[1px] border border-dashed border-[color:var(--border-strong)] md:size-[11px]" />
+              <span key={k} className="size-[9px] rounded-[1px] border border-dashed border-[color:var(--fg-muted)] md:size-[11px]" />
             ))}
           </span>
           <p className="font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">{copy.unlabeled(tally.unlabeled)}</p>

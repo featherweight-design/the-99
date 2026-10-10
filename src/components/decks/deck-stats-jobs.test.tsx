@@ -34,6 +34,13 @@ describe("DeckStatsView jobs card", () => {
     expect(squares.children).toHaveLength(2);
   });
 
+  it("draws each job in its own hue token, Win conditions included", () => {
+    const { container } = render(<DeckStatsView data={{ ...slice, jobs: jobTally([{ oracleId: "x", name: "X", copies: 1 }], { x: ["ramp", "finisher"] }) }} />);
+    const bg = (k: string) => (container.querySelector(`[data-job-squares="${k}"]`)!.firstElementChild as HTMLElement).style.background;
+    expect(bg("ramp")).toBe("var(--job-ramp)");
+    expect(bg("finisher")).toBe("var(--job-finisher)");
+  });
+
   it("opens one row at a time and names its cards", () => {
     render(<DeckStatsView data={slice} />);
     fireEvent.click(within(jobs()).getByRole("button", { name: /^Ramp/ }));
