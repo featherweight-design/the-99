@@ -308,7 +308,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
     props.onPick(p);
     props.onAnnounce(
       deckScope
-        ? deckCopy.announcePicked(`${p.setName ?? p.setCode} #${p.collectorNumber}`)
+        ? deckCopy.announcePicked(p.setName ?? p.setCode, p.collectorNumber)
         : copy.announcePicked(p.setName ?? p.setCode, p.collectorNumber),
     );
   }

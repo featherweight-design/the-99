@@ -13,6 +13,9 @@ export const deckPrintingsCopy = {
     regionIntroPicked: "Your pick shows in this deck only.",
     failed: "Didn’t save. Try again.",
     /** The modal's one live region, on a pick. */
-    announcePicked: (printing: string) => `${printing} picked for this deck.`,
+    announcePicked: (setName: string, collectorNumber: string) =>
+      collectorNumber
+        ? `${setName} number ${collectorNumber} picked for this deck.`
+        : `${setName} picked for this deck.`,
   },
 } as const;

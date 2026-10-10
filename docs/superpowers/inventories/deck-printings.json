@@ -1,0 +1,228 @@
+{
+  "feature": "Deck printings: the picker in deck scope (PR 4)",
+  "note": "Run against a server started with DECK_PRINTINGS_ENABLED=true. DP_DECK is a deck the signed-in account owns that holds a card owned in two or more printings (DP_CARD) and one owned in exactly one (DP_SINGLE). On local-dev the probe account's `Card mark probe fixture` (d0000000-0000-4000-8000-00000000cafe) serves, with DP_CARD=Solemn Simulacrum and DP_SINGLE=Etchings of the Chosen; its commander is owned in one printing, so its row shows the plain Set field. The `picked` row WRITES a pick to that deck: run on local-dev or a scratch branch only, and delete the deck_printings row afterwards so the `open` row starts unpicked next time. Not reachable in a browser and held by unit tests instead: a refused save (`card-detail-deck-printings.test.tsx`), and overflow past 12 owned printings (no card in the probe account's decks has that many; `printing-region.test.tsx`).",
+  "shares": {
+    "module": "src/components/cards/printing-region.tsx",
+    "binding": "PrintingRegion",
+    "note": "The deck and /collection open the same modal, which renders the region; deck scope is a prop on it, never a second picker."
+  },
+  "rows": [
+    {
+      "id": "closed",
+      "label": "/decks/[id]: a deck card's details, the Set field with N printings you own",
+      "view": "src/components/cards/card-modal.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DP_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 5000
+        },
+        {
+          "clickRole": "button",
+          "name": "^View details for ${DP_CARD}$",
+          "wait": "[role=dialog]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "open",
+      "label": "/decks/[id]: the picker open, nothing picked: the deck intro and Shown now on the fallback",
+      "view": "src/components/cards/card-modal.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DP_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 5000
+        },
+        {
+          "clickRole": "button",
+          "name": "^View details for ${DP_CARD}$",
+          "wait": "[role=dialog]",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "printings owned",
+          "settle": 1200
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "id": "open-phone",
+      "label": "/decks/[id]: the picker open, nothing picked: the deck intro and Shown now on the fallback (phone: the sheet expanded first)",
+      "view": "src/components/cards/card-modal.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DP_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 5000
+        },
+        {
+          "clickRole": "button",
+          "name": "^View details for ${DP_CARD}$",
+          "wait": "[role=dialog]",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^All details$",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "printings owned",
+          "settle": 1200
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "picked",
+      "label": "/decks/[id]: a printing picked: For this deck, the picked intro, the art and Set moved",
+      "view": "src/components/cards/card-modal.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DP_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 5000
+        },
+        {
+          "clickRole": "button",
+          "name": "^View details for ${DP_CARD}$",
+          "wait": "[role=dialog]",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "printings owned",
+          "settle": 1200
+        },
+        {
+          "clickRole": "radio",
+          "name": "^(?!.*(your pick|shown now))",
+          "settle": 4000
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "id": "picked-phone",
+      "label": "/decks/[id]: a printing picked: For this deck, the picked intro, the art and Set moved (phone: the sheet expanded first)",
+      "view": "src/components/cards/card-modal.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DP_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 5000
+        },
+        {
+          "clickRole": "button",
+          "name": "^View details for ${DP_CARD}$",
+          "wait": "[role=dialog]",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^All details$",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "printings owned",
+          "settle": 1200
+        },
+        {
+          "clickRole": "radio",
+          "name": "^(?!.*(your pick|shown now))",
+          "settle": 4000
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "single",
+      "label": "/decks/[id]: a card owned in one printing keeps the plain Set field",
+      "view": "src/components/cards/card-modal.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DP_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 5000
+        },
+        {
+          "clickRole": "button",
+          "name": "^View details for ${DP_SINGLE}$",
+          "wait": "[role=dialog]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "collection",
+      "label": "/collection: the same card keeps the Collection's wording and its reset",
+      "view": "src/components/cards/card-modal.tsx",
+      "steps": [
+        {
+          "goto": "/collection?view=rows&q=${DP_CARD}",
+          "wait": "main, [role=main], h1",
+          "settle": 5000
+        },
+        {
+          "clickRole": "button",
+          "name": "^${DP_CARD}",
+          "wait": "[role=dialog]",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "printings owned",
+          "settle": 1200
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "id": "collection-phone",
+      "label": "/collection: the same card keeps the Collection's wording and its reset (phone: the sheet expanded first)",
+      "view": "src/components/cards/card-modal.tsx",
+      "steps": [
+        {
+          "goto": "/collection?view=rows&q=${DP_CARD}",
+          "wait": "main, [role=main], h1",
+          "settle": 5000
+        },
+        {
+          "clickRole": "button",
+          "name": "^${DP_CARD}",
+          "wait": "[role=dialog]",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^All details$",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "printings owned",
+          "settle": 1200
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    }
+  ]
+}

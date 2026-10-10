@@ -238,7 +238,7 @@ describe("PrintingRegion", () => {
       fireEvent.click(screen.getByRole("radio", { name: /Limited Edition Alpha/ }));
       expect(onPick).toHaveBeenCalled();
       expect(onAnnounce).toHaveBeenCalledTimes(1);
-      expect(onAnnounce).toHaveBeenCalledWith(deckCopy.announcePicked("Limited Edition Alpha #270"));
+      expect(onAnnounce).toHaveBeenCalledWith(deckCopy.announcePicked("Limited Edition Alpha", "270"));
     });
 
     it("draws a refused save as a status line", () => {
