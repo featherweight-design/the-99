@@ -99,10 +99,13 @@ describe("readManaBalance: lands", () => {
     expect(b.lands.karstenLands).toBeCloseTo(31.42 + 3.13 * (25 / 7) - 0.28 * 2);
   });
 
-  it("takes mana value from the row's Scryfall figure, not a sum of every face's cost", () => {
-    // {2}{R} // {1}{R} sums to 5; the card's mana value is 3. Average over this card and a 1-drop is 2.
-    const joined: ManaSupplyCardRow = { id: "adv", typeLine: "Creature", manaCost: "{2}{R} // {1}{R}", cmc: 3, quantity: 1 };
-    expect(read([joined, { ...spell("one", "{R}"), cmc: 1 }, land("mountain", 3, ["R"])]).lands.averageManaValue).toBe(2);
+  it("takes mana value from the row's Scryfall figure, whatever the stored cost sums to", () => {
+    // A split card {1}{R} // {1}{U} has mana value 4 on Scryfall; its front face alone is 2, and a sum of the
+    // stored cost is 4 only by coincidence (an adventure {2}{R} // {1}{R} sums to 5 against a mana value of 3).
+    const split: ManaSupplyCardRow = { id: "split", typeLine: "Instant // Instant", manaCost: "{1}{R} // {1}{U}", cmc: 4, quantity: 1 };
+    const adventure: ManaSupplyCardRow = { id: "adv", typeLine: "Creature", manaCost: "{2}{R} // {1}{R}", cmc: 3, quantity: 1 };
+    expect(read([split, { ...spell("one", "{R}"), cmc: 1 }, land("mountain", 3, ["R"])]).lands.averageManaValue).toBe(2.5);
+    expect(read([adventure, { ...spell("one", "{R}"), cmc: 1 }, land("mountain", 3, ["R"])]).lands.averageManaValue).toBe(2);
   });
 
   it("without a Scryfall figure reads the FRONT face's cost", () => {
