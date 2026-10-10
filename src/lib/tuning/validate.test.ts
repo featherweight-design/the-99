@@ -369,6 +369,26 @@ describe("validateSuggestions", () => {
   });
 });
 
+describe("a staple's figure cited as a decklist citation", () => {
+  const staples = { ...pack, staples: [{ oracleId: "ring", name: "Sol Ring", commanders: 415, commanderTotal: 431 }] };
+  const cite = (value: string) => validateSuggestions({
+    response: { additions: [{ ...good, evidence: [{ kind: "decklist", value }] }], cuts: [] }, pack: staples, resolveName,
+  });
+
+  it("keeps the figure the staples list gives", () => {
+    expect(cite("Sol Ring: in 415 of 431 commanders' decks").droppedCount).toBe(0);
+  });
+
+  it("drops a staple figure the list does not give, or a staple it does not list", () => {
+    expect(cite("Sol Ring: in 1 of 1 commanders' decks").drops[0].rule).toBe("citation");
+    expect(cite("Mana Crypt: in 415 of 431 commanders' decks").drops[0].rule).toBe("citation");
+  });
+
+  it("leaves every other decklist citation as it was", () => {
+    expect(cite("4 of 99 draw").droppedCount).toBe(0);
+  });
+});
+
 describe("the two lists (sub-project 8)", () => {
   it("validates each list on its own side's rules: a cut must be in the deck, an add must not be", () => {
     const out = validateSuggestions({

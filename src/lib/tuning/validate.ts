@@ -356,8 +356,15 @@ export function validateSuggestions(args: {
         return figure !== null && pack.targets.roles.some((cell) =>
           cell.have === figure.n && cell.target === figure.m && text.includes(cell.role.replace(/s$/, "")));
       }
-      case "decklist":
-        return true;
+      case "decklist": {
+        // A decklist citation is otherwise unchecked, but the prompt sends a staple's figure
+        // through it ("Sol Ring: in 415 of 431 commanders' decks"), so that one form is held to
+        // the staples list: the card named must be one the pack lists, with exactly that figure.
+        const staple = /\bin (\d+) of (\d+) commanders/.exec(text);
+        if (!staple) return true;
+        return pack.staples.some((st) => text.includes(st.name.toLowerCase())
+          && st.commanders === Number(staple[1]) && st.commanderTotal === Number(staple[2]));
+      }
     }
   }
 }
