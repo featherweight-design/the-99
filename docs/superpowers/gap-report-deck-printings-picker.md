@@ -12,10 +12,14 @@ handoff alone). Verified row by row against `printing-region.tsx`, `card-modal.t
 
 ## State reachability
 
-Every state in the table is reachable. Nothing picked, open, picked, picked and open, one owned
-printing, switch off and E9 are covered by tests and photographed on the contact sheet. Save failed
-and overflow are covered by unit tests only, because the probe account has neither. No owned
-printing is today's plain Set field.
+Every state in the table is reachable. What proves each one differs:
+
+- Photographed on the contact sheet (`deck-printings.json`, switch on): nothing picked, open,
+  picked and open, one owned printing, and the Collection negative.
+- Unit tests only, not photographed: switch off, E9 (the review screen and the update diff),
+  a refused save and overflow. The probe account has no refused save and no overflow, and
+  the sheet has no switch-off or E9 row. These are walked in a browser at the line's close-out.
+- No owned printing is today's plain Set field.
 
 A pick whose printing left the Collection is ignored rather than cleared (plan: unheld picks are
 ignored, not deleted). On screen it is identical to the design's "pick cleared": no `Your pick`
