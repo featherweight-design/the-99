@@ -43,6 +43,13 @@ import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_DEADLINE_MS, SYNOPSIS_REAPER_CUTOFF
 
 neonConfig.webSocketConstructor = ws;
 
+// Its assertions are contract 7's (stored shapes, `SYNOPSIS_CONTRACT_VERSION`). Contract 8 is
+// measured by `eval:corpus` and unit tests until the gate; a flag-on run would fail on shape.
+if (process.env.OVERVIEW_V2_ENABLED === "true") {
+  console.error("probe:synopsis asserts contract 7; unset OVERVIEW_V2_ENABLED to run it.");
+  process.exit(2);
+}
+
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 const pool = new Pool({ connectionString: DATABASE_URL });
 const fixture = drizzle(pool);
