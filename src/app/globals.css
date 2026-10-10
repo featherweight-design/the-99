@@ -657,6 +657,10 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 /* The filter panel's bottom sheet — the one thing that animates in that
    control ("nothing animates except the sheet's translate-in"). No duration or
    easing was specced; 180ms ease-out matches the shipped modal's feel. */
+@keyframes line-pulse {
+  from { box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 55%, transparent); }
+  to { box-shadow: 0 0 0 2px transparent; }
+}
 @keyframes filter-sheet-in {
   0% { transform: translateY(100%); }
   100% { transform: translateY(0); }
@@ -724,6 +728,8 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   will-change: transform;
 }
 .anim-sheet-in { animation: filter-sheet-in 0.18s ease-out both; }
+/* A line the Add cards sheet folded a duplicate into: its edge pulses once (240ms). */
+.anim-line-pulse { animation: line-pulse 240ms ease-out both; }
 .anim-menu-in { animation: menu-in 0.12s ease-out both; }
 .anim-sheet-up { animation: sheet-up 0.18s cubic-bezier(0.22, 1, 0.36, 1) both; }
 /* A card opened from a sheet, on the phone (stacked sheets R1, motion): it rises the whole height
@@ -867,6 +873,7 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   .anim-breathe,
   /* Reduced motion: the sheet appears in place, no translate. */
   .anim-sheet-in,
+  .anim-line-pulse,
   /* Both account-menu surfaces appear at final position, fully opaque. */
   .anim-menu-in,
   .anim-backdrop-in,

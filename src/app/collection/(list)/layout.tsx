@@ -15,6 +15,7 @@
 // dedupe to one query per request; nothing is fetched twice.
 
 import { requireUserId } from "../../../lib/auth";
+import { collectionEditEnabled } from "../../../lib/collection/edit-flag";
 import { getCollectionLastUpdated, getCollectionStats } from "../../../lib/home/summary";
 import { formatLastUpdated } from "../../../lib/collection/browse";
 import { CollectionPlaceHead } from "../../../components/collection/collection-place-head";
@@ -36,7 +37,7 @@ export default async function CollectionListLayout({
   const lastUpdatedLabel = lastUpdated ? formatLastUpdated(lastUpdated) : null;
   return (
     <>
-      <CollectionPlaceHead stats={stats} lastUpdatedLabel={lastUpdatedLabel} />
+      <CollectionPlaceHead stats={stats} lastUpdatedLabel={lastUpdatedLabel} editEnabled={collectionEditEnabled()} />
       <CollectionContentScope>{children}</CollectionContentScope>
     </>
   );

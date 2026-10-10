@@ -1,0 +1,202 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import type { PrintingChoice, CatalogCardResult } from "../../lib/collection/catalog-read";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
+import { AddCardsSheet } from "./add-cards-sheet";
+
+const copy = collectionEditCopy.add;
+const OID = "11111111-1111-4111-8111-111111111111";
+const OID2 = "22222222-2222-4222-8222-222222222222";
+
+const search = vi.fn();
+const choices = vi.fn();
+const add = vi.fn();
+vi.mock("../../app/collection/edit-actions", () => ({
+  searchCollectionCards: (...a: unknown[]) => search(...a),
+  loadPrintingChoices: (...a: unknown[]) => choices(...a),
+  addToCollection: (...a: unknown[]) => add(...a),
+}));
+vi.mock("next/link", () => ({
+  default: ({ href, children, ...rest }: React.ComponentProps<"a"> & { href: string }) => <a href={href} {...rest}>{children}</a>,
+  useLinkStatus: () => ({ pending: false }),
+}));
+
+const card = (over: Partial<CatalogCardResult> = {}): CatalogCardResult => ({
+  oracleId: OID, name: "Sol Ring", typeLine: "Artifact", imageUri: null, manaCost: "{1}", flavorName: null, owned: 5, ...over,
+});
+const printing = (over: Partial<PrintingChoice> = {}): PrintingChoice => ({
+  scryfallId: "s1", setCode: "c21", setName: "Commander 2021", collectorNumber: "263", releasedAt: "2021-04-23",
+  imageUri: null, flavorName: null, finishes: ["nonfoil", "foil"], owned: { nonfoil: 3 }, ...over,
+});
+const THREE = [printing(), printing({ scryfallId: "s2", setCode: "sld", setName: "Secret Lair", collectorNumber: "1512", owned: {} }), printing({ scryfallId: "s3", setCode: "cmm", setName: "Commander Masters", collectorNumber: "410", owned: {} })];
+
+function mount(over: Partial<React.ComponentProps<typeof AddCardsSheet>> = {}) {
+  const onClose = vi.fn();
+  const onSaved = vi.fn();
+  render(<AddCardsSheet mode="add" onClose={onClose} onSaved={onSaved} totalCards={4492} {...over} />);
+  return { onClose, onSaved };
+}
+const field = () => screen.getByRole("combobox", { name: copy.searchAria });
+
+async function find(q: string, results: CatalogCardResult[]) {
+  search.mockResolvedValueOnce(results);
+  fireEvent.change(field(), { target: { value: q } });
+  await screen.findAllByRole("option");
+}
+async function pickFirst(printingsFor: PrintingChoice[] = THREE) {
+  choices.mockResolvedValueOnce(printingsFor);
+  fireEvent.keyDown(field(), { key: "Enter" });
+  await waitFor(() => expect(choices).toHaveBeenCalled());
+}
+
+beforeEach(() => {
+  search.mockReset().mockResolvedValue([]);
+  choices.mockReset();
+  add.mockReset();
+});
+afterEach(() => {
+  document.body.innerHTML = "";
+});
+
+describe("AddCardsSheet (add)", () => {
+  it("opens as a modal dialog with focus in the search, and holds the page inert", () => {
+    const page = document.createElement("div");
+    document.body.appendChild(page);
+    mount();
+    const dialog = screen.getByRole("dialog", { name: copy.title });
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(field()).toHaveFocus();
+    expect(page.hasAttribute("inert")).toBe(true);
+    expect(dialog.closest("[inert]")).toBeNull();
+    expect(screen.getByRole("button", { name: copy.save(0) })).toBeDisabled();
+  });
+
+  it("searches the whole catalog and shows no-results", async () => {
+    mount();
+    await find("sol r", [card()]);
+    expect(search).toHaveBeenCalledWith("sol r");
+    expect(screen.getByRole("option")).toHaveTextContent("you own ×5");
+    search.mockResolvedValueOnce([]);
+    fireEvent.change(field(), { target: { value: "glimmerlite" } });
+    expect(await screen.findByText(copy.noResultsTitle("glimmerlite"))).toBeInTheDocument();
+  });
+
+  it("makes the printing a required step: nothing selected, search and Save disabled", async () => {
+    mount();
+    await find("sol ring", [card()]);
+    await pickFirst();
+    const radios = await screen.findAllByRole("radio");
+    expect(radios).toHaveLength(3);
+    for (const r of radios) expect(r).toHaveAttribute("aria-checked", "false");
+    expect(field()).toBeDisabled();
+    expect(screen.getByRole("button", { name: /^Save/ })).toBeDisabled();
+    expect(screen.getByText(copy.needsPrinting("Sol Ring"))).toBeInTheDocument();
+  });
+
+  it("completes the line at nonfoil x1 on a tile and gives focus back to the search", async () => {
+    mount();
+    await find("sol ring", [card()]);
+    await pickFirst();
+    fireEvent.click((await screen.findAllByRole("radio"))[1]);
+    await waitFor(() => expect(field()).toHaveFocus());
+    expect(screen.getByText("SLD · #1512")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Foil" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: copy.save(1) })).toBeEnabled();
+    expect(screen.getByText(copy.summary(1, 1))).toBeInTheDocument();
+  });
+
+  it("defaults a foil-only printing to foil, and skips the step for a single printing", async () => {
+    mount();
+    await find("sol ring", [card()]);
+    await pickFirst([printing({ finishes: ["foil"], owned: {} })]);
+    expect(await screen.findByRole("button", { name: "Foil" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Foil" })).toBeDisabled();
+    expect(screen.queryAllByRole("radio")).toHaveLength(0);
+    expect(field()).not.toBeDisabled();
+  });
+
+  it("cancels an unchosen add with Escape and keeps the sheet open", async () => {
+    mount();
+    await find("sol ring", [card()]);
+    await pickFirst();
+    await screen.findAllByRole("radio");
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    await waitFor(() => expect(screen.queryAllByRole("radio")).toHaveLength(0));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.queryByText(copy.listHeading(1))).toBeNull();
+  });
+
+  it("combines an exact duplicate, says so, and writes one line", async () => {
+    mount();
+    for (let i = 0; i < 2; i++) {
+      await find("sol ring", [card()]);
+      await pickFirst();
+      fireEvent.click((await screen.findAllByRole("radio"))[0]);
+      await waitFor(() => expect(field()).not.toBeDisabled());
+    }
+    expect(await screen.findByText(copy.combined("Sol Ring", 2))).toBeInTheDocument();
+    expect(screen.getByText(copy.listHeading(1))).toBeInTheDocument();
+    expect(screen.getByText(copy.summary(1, 2))).toBeInTheDocument();
+  });
+
+  it("saves one entry under one action id, and retries with the same id after a failure", async () => {
+    add.mockRejectedValueOnce(new Error("offline")).mockResolvedValueOnce({ applied: { id: "x" } });
+    const { onSaved } = mount();
+    await find("sol ring", [card()]);
+    await pickFirst();
+    fireEvent.click((await screen.findAllByRole("radio"))[0]);
+    await waitFor(() => expect(field()).not.toBeDisabled());
+    fireEvent.click(screen.getByRole("button", { name: copy.save(1) }));
+    expect(await screen.findByText(copy.failed)).toBeInTheDocument();
+    expect(screen.getByText(copy.listHeading(1))).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: copy.retry }));
+    expect(await screen.findByText(copy.savedTitle(1))).toBeInTheDocument();
+    expect(add).toHaveBeenCalledTimes(2);
+    expect(add.mock.calls[0][0]).toBe(add.mock.calls[1][0]);
+    expect(add.mock.calls[1][1]).toEqual([{ oracleId: OID, setCode: "c21", collectorNumber: "263", finish: "nonfoil", quantity: 1 }]);
+    expect(screen.getByText(copy.countsAfter(4492, 4493))).toBeInTheDocument();
+    expect(onSaved).toHaveBeenCalledWith(1);
+  });
+
+  it("asks before discarding a list, and not for an empty one", async () => {
+    const { onClose } = mount();
+    fireEvent.click(screen.getByRole("button", { name: copy.closeAria }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+
+    onClose.mockClear();
+    await find("sol ring", [card()]);
+    await pickFirst();
+    fireEvent.click((await screen.findAllByRole("radio"))[0]);
+    await waitFor(() => expect(field()).not.toBeDisabled());
+    fireEvent.click(screen.getByRole("button", { name: copy.closeAria }));
+    const alert = await screen.findByRole("alertdialog");
+    expect(within(alert).getByRole("button", { name: copy.keep })).toHaveFocus();
+    expect(onClose).not.toHaveBeenCalled();
+    fireEvent.click(within(alert).getByRole("button", { name: copy.discard }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("starts a fresh action id for Add more", async () => {
+    add.mockResolvedValue({ applied: { id: "x" } });
+    mount();
+    const ids: unknown[] = [];
+    for (let i = 0; i < 2; i++) {
+      await find("sol ring", [card()]);
+      await pickFirst();
+      fireEvent.click((await screen.findAllByRole("radio"))[0]);
+      await waitFor(() => expect(field()).not.toBeDisabled());
+      fireEvent.click(screen.getByRole("button", { name: copy.save(1) }));
+      await screen.findByText(copy.savedTitle(1));
+      ids.push(add.mock.calls[i][0]);
+      if (i === 0) fireEvent.click(screen.getByRole("button", { name: copy.addMore }));
+    }
+    expect(ids[0]).not.toBe(ids[1]);
+  });
+
+  it("shows nothing about History, which has no route yet", () => {
+    mount();
+    expect(screen.queryByText(/history/i)).toBeNull();
+  });
+});
+void OID2;
+void act;

@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { BrowsePrinting } from "../../lib/collection/browse";
+import type { PrintingChoice } from "../../lib/collection/catalog-read";
 import { printingPickerCopy } from "../../lib/copy/collection";
 import { PrintingRegion, OVERFLOW_THRESHOLD, printingKey } from "./printing-region";
 
@@ -18,7 +19,9 @@ const printing = (over: Partial<BrowsePrinting> = {}): BrowsePrinting => ({
   ...over,
 });
 
-function renderRegion(over: Partial<React.ComponentProps<typeof PrintingRegion>> = {}) {
+type ArtOver = Partial<Extract<React.ComponentProps<typeof PrintingRegion>, { preferred: unknown }>>;
+
+function renderRegion(over: ArtOver = {}) {
   const onPick = vi.fn();
   const onReset = vi.fn();
   const onForget = vi.fn();
@@ -329,5 +332,89 @@ describe("PrintingRegion", () => {
       });
       expect(screen.getAllByText("MH3")).toHaveLength(1);
     });
+  });
+});
+
+describe("PrintingRegion role=choose source=catalog", () => {
+  const choice = (over: Partial<PrintingChoice> = {}): PrintingChoice => ({
+    scryfallId: "id-1",
+    setCode: "c21",
+    setName: "Commander 2021",
+    collectorNumber: "263",
+    releasedAt: "2021-04-23",
+    imageUri: null,
+    flavorName: null,
+    finishes: ["nonfoil", "foil"],
+    owned: {},
+    ...over,
+  });
+  const choices = [
+    choice(),
+    choice({ scryfallId: "id-2", setCode: "sld", setName: "Secret Lair", collectorNumber: "1512", owned: { foil: 2, nonfoil: 1 } }),
+    choice({ scryfallId: "id-3", setCode: "cmm", setName: "Commander Masters", collectorNumber: "410" }),
+  ];
+  function renderChoose(over: Partial<Extract<React.ComponentProps<typeof PrintingRegion>, { role: "choose" }>> = {}) {
+    const onPick = vi.fn();
+    const utils = render(
+      <PrintingRegion
+        role="choose"
+        source="catalog"
+        id="choose"
+        printings={choices}
+        intro="Which printing are you adding? 3 printings."
+        cardName="Sol Ring"
+        colorIdentity={[]}
+        onPick={onPick}
+        {...over}
+      />,
+    );
+    return { ...utils, onPick };
+  }
+
+  it("selects nothing, badges nothing and offers no reset", () => {
+    renderChoose();
+    const radios = screen.getAllByRole("radio");
+    expect(radios).toHaveLength(3);
+    for (const r of radios) expect(r).toHaveAttribute("aria-checked", "false");
+    expect(screen.queryByText(copy.badgePicked)).toBeNull();
+    expect(screen.queryByText(copy.badgeShownNow)).toBeNull();
+    expect(screen.queryByText(copy.resetToDefault)).toBeNull();
+    expect(screen.getByText("Which printing are you adding? 3 printings.")).toBeInTheDocument();
+  });
+
+  it("says what the player holds, and nothing on a printing they do not", () => {
+    renderChoose();
+    expect(screen.getByText("#1512 \u00b7 you own \u00d73")).toBeInTheDocument();
+    expect(screen.getByText("#263")).toBeInTheDocument();
+  });
+
+  it("hands back the catalog printing on a press, and only on a press", () => {
+    const { onPick } = renderChoose();
+    const radios = screen.getAllByRole("radio");
+    radios[0].focus();
+    fireEvent.keyDown(radios[0], { key: "ArrowRight" });
+    expect(onPick).not.toHaveBeenCalled();
+    expect(radios[1]).toHaveFocus();
+    fireEvent.click(radios[1]);
+    expect(onPick).toHaveBeenCalledTimes(1);
+    expect(onPick.mock.calls[0][0].scryfallId).toBe("id-2");
+  });
+
+  it("draws the phone's row without set headers, and no finish chips past the threshold", () => {
+    const many = Array.from({ length: OVERFLOW_THRESHOLD + 3 }, (_, i) =>
+      choice({ scryfallId: `m${i}`, setCode: `s${i}`, setName: `Set ${i}`, collectorNumber: String(i) }),
+    );
+    renderChoose({ printings: many, layout: "row" });
+    expect(screen.getByPlaceholderText("Set, code or number")).toBeInTheDocument();
+    expect(screen.queryByText(/^Foil \d+/)).toBeNull();
+    expect(screen.queryByText(/Set 1 \u00b7 s1/)).toBeNull();
+  });
+
+  it("moves focus into its search when asked", () => {
+    const many = Array.from({ length: OVERFLOW_THRESHOLD + 3 }, (_, i) =>
+      choice({ scryfallId: `m${i}`, setCode: `s${i}`, collectorNumber: String(i) }),
+    );
+    renderChoose({ printings: many, autoFocus: true });
+    expect(screen.getByPlaceholderText("Set, code or number")).toHaveFocus();
   });
 });
