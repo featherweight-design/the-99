@@ -1180,16 +1180,14 @@ export const loadOwnedSetMeta = cache(async function loadOwnedSetMeta(
 });
 
 /**
- * The card as a deck that picked `pick` shows it (deck printings): that printing preferred, and the
- * title its OWNED row prints. The rule `aggregateCollection` applies: a flavour name that is the
- * oracle name renames nothing, and only a printing the player owns can print one. `pick` null is
- * the card unchanged.
+ * The card as a deck that picked `pick` shows it (deck printings): that printing preferred, and
+ * titled by the printing that actually resolves, exactly as the card modal titles a deck's pick,
+ * so a neighbor plate and the modal it opens never name one card two ways. `pick` null is the card
+ * unchanged.
  */
 export function withDeckPick(card: BrowseCard, pick: PreferredPrinting | null | undefined): BrowseCard {
   if (!pick) return card;
-  const row = card.printings.find((p) => matchesPreference(p, pick));
-  const renamed = row !== undefined && row.quantity > 0 && row.flavorName != null && row.flavorName !== card.name
-    ? row.flavorName
-    : null;
-  return { ...card, preferredPrinting: pick, printedName: renamed };
+  const next = { ...card, preferredPrinting: pick };
+  const shown = resolvedPrinting(next);
+  return { ...next, printedName: shown ? cardArt(card.name, shown).printedName : null };
 }
