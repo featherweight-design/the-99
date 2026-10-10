@@ -189,10 +189,12 @@ export default async function ChangesPage({
         ...rows.out.map((r) => ({ oracleId: r.oracleId, typeLine: r.typeLine })),
       ].filter((c): c is { oracleId: string; typeLine: string } => c.oracleId !== undefined))
     : null;
+  // The switch is on but the read failed: counts fall back to the classifier, so the targets do too.
+  const shownMix = labelRoleCountsEnabled() && !labelRows ? await loadDeckMix(id, userId, "classifier") : mix;
 
   return (
     <ReviewChanges
-      mix={mix}
+      mix={shownMix}
       labelRows={labelRows}
       deckId={id}
       deckName={detail.name}

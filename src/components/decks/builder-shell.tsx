@@ -80,7 +80,7 @@ import { hasChanges, type DraftState } from "../../lib/decks/draft-shape";
 import { cardCopies, deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/decks/grouping";
 import { type MixRole, type RecommendedMix } from "../../lib/decks/mix";
 import type { JobRowsByCard } from "../../lib/decks/job-tally";
-import { labelRolesOf, roleCounterFor } from "../../lib/decks/label-role-counts";
+import { roleCounterFor, roleNamedFor } from "../../lib/decks/label-role-counts";
 import { LabelRowsProvider } from "./label-rows-context";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import type { ProvenanceForm } from "../../lib/decks/price";
@@ -193,6 +193,9 @@ interface BuilderShellProps {
    *  strip, the Changed strip, the Consider shelves and the toast below all count through them. Absent
    *  or null counts by `card.role`, exactly as before. */
   labelRows?: JobRowsByCard | null;
+  /** The ids that read covered. The map is sparse, so this is what tells an unlabeled card from a
+   *  search result the page never asked about. */
+  labelQueried?: readonly string[] | null;
   /** Cards in the version a discard would land on, straight through to the
       banner — see `pending-banner.tsx`. Absent draws no `Discard` at all. */
   versionCards?: number;
@@ -268,6 +271,7 @@ export function BuilderShell({
   draft = null,
   wasCounts,
   labelRows = null,
+  labelQueried = null,
   versionCards,
   versions = [],
   initialView = "deck",
@@ -861,18 +865,16 @@ export function BuilderShell({
   // Composed from the pre-add list plus this card. `useOptimistic` state is not
   // readable synchronously here, and reading it a render later would announce
   // the previous add.
+  const labelQueriedSet = useMemo(() => (labelQueried ? new Set(labelQueried) : null), [labelQueried]);
   const announceAdd = useCallback(
     (card: Parameters<typeof addOptimisticCard>[0]) => {
       addOptimisticCard(card);
       const before = cards;
       const nextBuilt = deckCounts(before).built + card.quantity;
-      // By label, the card's role is the first role its label names, and an unlabeled card (or one
-      // whose label the page never read) names none; otherwise the classifier's `card.role`.
+      // By label, the card's role is the first role its label names, and a queried card with no
+      // label names none; a land or a card the page never queried (a search result) takes `card.role`.
       const countRoles = roleCounterFor(labelRows);
-      const rows = labelRows?.[card.oracleId];
-      const role = !countRoles.byLabel || card.role === "land" || !rows
-        ? card.role // a land, or a card the page's label read does not cover (a search result)
-        : labelRolesOf(rows)[0];
+      const role = roleNamedFor(card, labelRows, labelQueriedSet);
       const cell = mix.cells[role as MixRole] as
         | RecommendedMix["cells"][MixRole]
         | undefined;
@@ -889,7 +891,7 @@ export function BuilderShell({
           : addPanelCopy.announce.addedNoRole(card.name, nextBuilt, bodySize),
       );
     },
-    [addOptimisticCard, cards, bodySize, labelRows, mix],
+    [addOptimisticCard, cards, bodySize, labelRows, labelQueriedSet, mix],
   );
 
   // Split in two on purpose. `useDeckMutation` dispatches its optimistic update
@@ -1272,7 +1274,7 @@ export function BuilderShell({
     >
       <AddOptimisticCardProvider value={deckEdits}>
         <PassMarkProvider value={passMark}>
-        <LabelRowsProvider value={labelRows}>
+        <LabelRowsProvider value={labelRows} queried={labelQueried}>
         {/* One column at both widths now that the rail is gone. The document is
             the only scrollport at both widths: desktop used to frame the column
             in the viewport (`h-screen` + `overflow-hidden` here, `overflow-y-auto`

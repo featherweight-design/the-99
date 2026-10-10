@@ -20,9 +20,9 @@ import {
   type DeckDetailCard,
   type DeckUnresolvedRow,
 } from "../../lib/decks/grouping";
-import { labelRolesOf } from "../../lib/decks/label-role-counts";
+import { roleNamedFor } from "../../lib/decks/label-role-counts";
 import { type RecommendedMix, type MixRole } from "../../lib/decks/mix";
-import { useLabelRows, useRoleCounter } from "./label-rows-context";
+import { useLabelQueried, useLabelRows, useRoleCounter } from "./label-rows-context";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { UnresolvedRow } from "./unresolved-row";
@@ -68,6 +68,7 @@ export function UnresolvedGroup({
   const isDesktop = useIsDesktop();
   const countRoles = useRoleCounter();
   const labelRows = useLabelRows();
+  const labelQueried = useLabelQueried();
   const noteRef = useRef<HTMLParagraphElement>(null);
 
   // Resolving or deleting unmounts the row that held focus, and the last one
@@ -128,10 +129,7 @@ export function UnresolvedGroup({
             : 1;
     const built = deckCounts(cards).built + added;
     const remaining = rows.length - 1;
-    const resultRows = labelRows?.[result.oracleId];
-    const roleOfResult = !countRoles.byLabel || result.role === "land" || !resultRows
-      ? result.role // a land, or a card the page's label read does not cover (a search result)
-      : labelRolesOf(resultRows)[0];
+    const roleOfResult = roleNamedFor(result, labelRows, labelQueried);
     const cell = mix.cells[roleOfResult as MixRole] as
       RecommendedMix["cells"][MixRole] | undefined;
     const role = cell

@@ -42,6 +42,7 @@ import { roleCounterFor } from "../../../lib/decks/label-role-counts";
 import { analysisTabEnabled } from "../../../lib/decks/analysis-flag";
 import { deckStatsEnabled } from "../../../lib/decks/stats-flag";
 import { loadJobRows } from "../../../lib/decks/job-rows";
+import { loadDeckMix } from "../../../lib/decks/deck-mix";
 import { loadLandMana } from "../../../lib/decks/land-mana";
 import { tuningEnabled } from "../../../lib/tuning/flag";
 import { noticesEnabled } from "../../../lib/notices/flag";
@@ -453,6 +454,12 @@ export default async function DeckBuilderPage({
   // toast and the shelves count against. One more read for the cards the deck's does not cover. Null
   // (switch off, or the deck's read failed) counts by `card.role`, exactly as before.
   let labelRows: JobRowsByCard | null = null;
+  // The ids that read covered. The map is sparse (an unlabeled card has no entry), so this is what
+  // tells a card with no label from a search result the page never asked about.
+  let labelQueried: string[] | null = null;
+  // The switch is on but the read failed: the counts fall back to the classifier, so the targets must
+  // too, or the strip grades classifier counts against `label_*` targets.
+  let shellMix = mix;
   if (labelRoleCountsEnabled()) {
     const base = await (statsJobsRead ?? early(perf.timed("labelRows", () => loadJobRows(detail.cards))));
     if (base) {
@@ -465,14 +472,24 @@ export default async function DeckBuilderPage({
         ? await perf.timed("labelRowsExtra", () => loadJobRows(extra))
         : {};
       labelRows = more ? { ...base, ...more } : base;
+      labelQueried = [
+        ...detail.cards.map((c) => c.oracleId),
+        ...(more ? extra.map((c) => c.oracleId) : []),
+        ...[...(versionShape ?? []), ...pricedSuggestions, ...candidates]
+          .map((c) => c.oracleId)
+          .filter((id): id is string => id !== undefined && (more ? true : known.has(id))),
+      ];
+    } else {
+      shellMix = await loadDeckMix(id, userId, "classifier");
     }
   }
   const wasCounts = versionShape ? roleCounterFor(labelRows)(versionShape) : undefined;
 
   const shell = (
     <BuilderShell
-      mix={mix}
+      mix={shellMix}
       labelRows={labelRows}
+      labelQueried={labelQueried}
       deck={{ ...detail, cards, commander, partner }}
       suggestions={pricedSuggestions}
       newestAsOf={priced?.newestAsOf ?? null}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { jobTally, type JobRowsByCard } from "./job-tally";
-import { computeLabelRoleCounts, labelRolesOf, roleCounterFor, type LabelCountCard } from "./label-role-counts";
+import { computeLabelRoleCounts, labelRolesOf, roleCounterFor, roleNamedFor, type LabelCountCard } from "./label-role-counts";
 import { computeRoleCounts } from "./mix";
 import { labelRoleCountsEnabled, roleBasisFromEnv } from "./label-counts-flag";
 
@@ -94,5 +94,22 @@ describe("LABEL_ROLE_COUNTS_ENABLED", () => {
   it("selects the targets' basis", () => {
     expect(roleBasisFromEnv({} as unknown as NodeJS.ProcessEnv)).toBe("classifier");
     expect(roleBasisFromEnv({ LABEL_ROLE_COUNTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).toBe("labels");
+  });
+});
+
+describe("roleNamedFor", () => {
+  const card = { oracleId: "a", role: "ramp" };
+  it("names nothing for a queried card with no label", () => {
+    expect(roleNamedFor(card, {}, new Set(["a"]))).toBeUndefined();
+  });
+  it("falls back to the classifier for a card the page never queried", () => {
+    expect(roleNamedFor(card, {}, new Set(["b"]))).toBe("ramp");
+  });
+  it("falls back to the classifier when there is no label read, and for a land", () => {
+    expect(roleNamedFor(card, null, new Set(["a"]))).toBe("ramp");
+    expect(roleNamedFor({ oracleId: "a", role: "land" }, {}, new Set(["a"]))).toBe("land");
+  });
+  it("names the first role the label names", () => {
+    expect(roleNamedFor(card, { a: ["draw", "ramp"] }, new Set(["a"]))).toBe("ramp");
   });
 });

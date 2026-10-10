@@ -11,8 +11,25 @@ import { roleCounterFor, type RoleCounter } from "../../lib/decks/label-role-cou
 
 const LabelRowsContext = createContext<JobRowsByCard | null>(null);
 
-export function LabelRowsProvider({ value, children }: { value: JobRowsByCard | null | undefined; children: ReactNode }) {
-  return <LabelRowsContext.Provider value={value ?? null}>{children}</LabelRowsContext.Provider>;
+const LabelQueriedContext = createContext<ReadonlySet<string> | null>(null);
+
+/** `queried` is the ids the page's label read covered: the map is sparse (an unlabeled card has no
+ *  entry), so only this set tells a card with no label from one the page never asked about. */
+export function LabelRowsProvider({ value, queried, children }: {
+  value: JobRowsByCard | null | undefined;
+  queried?: readonly string[] | null;
+  children: ReactNode;
+}) {
+  const set = useMemo(() => (queried ? new Set(queried) : null), [queried]);
+  return (
+    <LabelRowsContext.Provider value={value ?? null}>
+      <LabelQueriedContext.Provider value={set}>{children}</LabelQueriedContext.Provider>
+    </LabelRowsContext.Provider>
+  );
+}
+
+export function useLabelQueried(): ReadonlySet<string> | null {
+  return useContext(LabelQueriedContext);
 }
 
 export function useLabelRows(): JobRowsByCard | null {

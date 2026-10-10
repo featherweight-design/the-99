@@ -42,6 +42,21 @@ export function labelRolesOf(rows: readonly string[] | undefined): Exclude<MixRo
   return (["ramp", "draw", "removal", "wipes"] as const).filter((r) => rows.includes(r));
 }
 
+/**
+ * The role a card's toast or resolve clause names. By label that is the first role the label names,
+ * and a queried card with no label names none. A land, or a card the page never queried (a search
+ * result), takes the classifier's `card.role`: the label map is sparse, so absence from it cannot
+ * tell "unlabeled" from "never asked", and `queried` is what can.
+ */
+export function roleNamedFor(
+  card: { oracleId: string; role: string },
+  byCard: JobRowsByCard | null | undefined,
+  queried: ReadonlySet<string> | null | undefined,
+): string | undefined {
+  if (!byCard || card.role === "land" || !queried?.has(card.oracleId)) return card.role;
+  return labelRolesOf(byCard[card.oracleId])[0];
+}
+
 export type RoleCounter = {
   (cards: readonly LabelCountCard[]): Record<MixRole, number>;
   /** True when counts come from labels. */
