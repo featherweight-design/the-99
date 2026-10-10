@@ -17,9 +17,10 @@ import {
   ownedByOracle, pendingItemsToOwnedCounts, writeArrivalsReceipt,
 } from "../../lib/collection/arrivals-write";
 import type { OwnedCounts } from "../../lib/collection/arrivals";
-import { applyCollectionChange, parseShortDecks, type ShortDeck } from "../../lib/collection/write";
+import { applyCollectionChange, HISTORY_RETENTION_DAYS, parseShortDecks, type ShortDeck } from "../../lib/collection/write";
 import { collectionEditEnabled } from "../../lib/collection/edit-flag";
-import { editsSinceUpload } from "../../lib/collection/history";
+import { collectionTotals, editedKeysSinceUpload, editsSinceUpload, lastUploadConfirmedAt } from "../../lib/collection/history";
+import { summarizeUploadPreview, type UploadPreviewDetail } from "../../lib/collection/upload-preview";
 import { randomUUID } from "node:crypto";
 import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
 import { loadDeckBuyRows } from "../../lib/decks/availability-query";
@@ -163,6 +164,15 @@ export type UploadChangePreview = {
   decks: ShortDeck[];
   /** Hand changes since the last upload, which a Replace overwrites. */
   editsSinceUpload: number;
+  /** ISO time of the newest confirmed upload, or null for none. */
+  lastUploadAt: string | null;
+  /**
+   * Whether history reaches back to that upload. When it does not (no upload, or one older than
+   * the retention window), `editsSinceUpload` undercounts and the screen must not quote a number.
+   */
+  historyReaches: boolean;
+  /** The four figures, the card lists behind them and an Add's overlap (collection edit §A). */
+  detail: UploadPreviewDetail;
 };
 
 const NO_MATCHED_CARDS = "Upload has no matched cards; refusing to replace collection";
@@ -198,9 +208,13 @@ export async function previewUploadChange(
   // The confirm refuses an upload with no matched cards; previewing it would draw an empty
   // Replace as "removes everything", which the save would never do.
   if (pendingItems.length === 0) throw new Error(NO_MATCHED_CARDS);
-  const [result, edits] = await Promise.all([
+  const [result, edits, editedKeys, totals, lastUpload] = await Promise.all([
     applyCollectionChange(userId, { kind, items: pendingItems, uploadId }, { id: randomUUID(), dryRun: true }),
     editsSinceUpload(userId),
+    // Only a Replace overwrites hand changes, so only it tags rows `edited`.
+    kind === "replace" ? editedKeysSinceUpload(userId) : Promise.resolve(new Set<string>()),
+    collectionTotals(userId),
+    lastUploadConfirmedAt(userId),
   ]);
   switch (result.status) {
     case "preview": break;
@@ -210,7 +224,17 @@ export async function previewUploadChange(
     case "missingCard": return { missingCard: result.names };
     default: throw new Error(`upload preview refused: ${result.status}`);
   }
-  return { raised: result.raised, lowered: result.lowered, decks: result.decks, editsSinceUpload: edits };
+  return {
+    raised: result.raised,
+    lowered: result.lowered,
+    decks: result.decks,
+    editsSinceUpload: edits,
+    lastUploadAt: lastUpload?.toISOString() ?? null,
+    historyReaches: lastUpload !== null && Date.now() - lastUpload.getTime() < HISTORY_RETENTION_DAYS * 86_400_000,
+    detail: summarizeUploadPreview({
+      rows: result.rows, holdings: totals.holdings, copies: totals.copies, editedKeys,
+    }),
+  };
 }
 
 export async function confirmUpload(

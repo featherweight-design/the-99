@@ -4,18 +4,8 @@ import type { HistoryRow } from "../../db/schema";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import { HISTORY_RETENTION_DAYS } from "./write";
 
-/**
- * How many changes the player made by hand since their last confirmed upload: the figure the
- * Replace warning quotes ("in-app edits will be overwritten", brief §A). Adds, edits and reverts
- * all count; an upload does not.
- *
- * Anchored on the newest confirmed upload. When that upload wrote a ledger entry, "since" is by
- * the ledger's own order (`seq`), which no clock can disorder. When it did not (confirmed with the
- * switch off, or before the ledger existed), it is by that upload's `confirmed_at`. A player who
- * never uploaded counts every change they made.
- */
-export async function editsSinceUpload(userId: string): Promise<number> {
-  const rows = await db.execute<{ n: number }>(sql`
+/** The anchor and the hand entries after it, shared by the count and the keys below. */
+const handEntriesSince = (userId: string) => sql`
     with last_upload as (
       select u.id, u.confirmed_at from csv_uploads u
       where u.user_id = ${userId} and u.confirmed_at is not null
@@ -27,18 +17,48 @@ export async function editsSinceUpload(userId: string): Promise<number> {
         (select lu.confirmed_at from last_upload lu) as at,
         (select h.seq from collection_history h, last_upload lu
           where h.user_id = ${userId} and h.source = 'csv_uploads:' || lu.id) as seq
-    )
-    select count(*)::int as n
-    from collection_history e, anchor a
-    where e.user_id = ${userId}
-      and e.kind in ('add', 'edit', 'revert')
-      and case
-        when a.seq is not null then e.seq > a.seq
-        when a.at is not null then e.created_at > a.at
-        else true
-      end
-  `);
+    ),
+    hand as (
+      -- Rows past the retention window are treated as pruned even before the lazy prune has run,
+      -- so the keys never name a holding only an aged-out entry touched; the entry still counts.
+      select case when e.created_at > now() - make_interval(days => ${HISTORY_RETENTION_DAYS}) then e.rows end as rows
+      from collection_history e, anchor a
+      where e.user_id = ${userId}
+        and e.kind in ('add', 'edit', 'revert')
+        and case
+          when a.seq is not null then e.seq > a.seq
+          when a.at is not null then e.created_at > a.at
+          else true
+        end
+    )`;
+
+/**
+ * How many changes the player made by hand since their last confirmed upload: the figure the
+ * Replace warning quotes ("in-app edits will be overwritten", brief §A). Adds, edits and reverts
+ * all count; an upload does not.
+ *
+ * Anchored on the newest confirmed upload. When that upload wrote a ledger entry, "since" is by
+ * the ledger's own order (`seq`), which no clock can disorder. When it did not (confirmed with the
+ * switch off, or before the ledger existed), it is by that upload's `confirmed_at`. A player who
+ * never uploaded counts every change they made.
+ */
+export async function editsSinceUpload(userId: string): Promise<number> {
+  const rows = await db.execute<{ n: number }>(sql`${handEntriesSince(userId)} select count(*)::int as n from hand`);
   return rows.rows[0]?.n ?? 0;
+}
+
+/**
+ * The holdings those same hand changes touched, as `collectionItemKey`s: what the Replace preview
+ * tags `edited`. An entry whose rows have aged out (pruned to null) names nothing, so a holding
+ * only that entry touched is not tagged; the count above still includes it.
+ */
+export async function editedKeysSinceUpload(userId: string): Promise<Set<string>> {
+  const res = await db.execute<{ rows: HistoryRow[] | null }>(sql`${handEntriesSince(userId)} select rows from hand`);
+  const keys = new Set<string>();
+  for (const entry of res.rows) {
+    for (const r of entry.rows ?? []) keys.add(collectionItemKey({ ...r, finish: r.finish as CollectionItemIdentity["finish"] }));
+  }
+  return keys;
 }
 
 /** How many entries one page of history holds. */
@@ -197,3 +217,19 @@ export function revertDiffers(
 
 const keyOf = (r: { oracleId: string; setCode: string; collectorNumber: string; finish: string }) =>
   collectionItemKey(r as CollectionItemIdentity);
+
+/** Holdings (`collection_items` rows) and copies now: the base the upload previews count against. */
+export async function collectionTotals(userId: string): Promise<{ holdings: number; copies: number }> {
+  const res = await db.execute<{ holdings: number; copies: number }>(sql`
+    select count(*)::int as holdings, coalesce(sum(quantity), 0)::int as copies
+    from collection_items where user_id = ${userId}`);
+  return res.rows[0] ?? { holdings: 0, copies: 0 };
+}
+
+/** When the newest confirmed upload was confirmed: the date the Replace warning quotes. */
+export async function lastUploadConfirmedAt(userId: string): Promise<Date | null> {
+  const res = await db.execute<{ at: Date | string | null }>(sql`
+    select max(confirmed_at) as at from csv_uploads where user_id = ${userId} and confirmed_at is not null`);
+  const at = res.rows[0]?.at;
+  return at ? new Date(at) : null;
+}
