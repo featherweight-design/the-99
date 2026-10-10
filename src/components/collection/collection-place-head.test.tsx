@@ -340,6 +340,15 @@ describe("CollectionPlaceHead \u00b7 Add cards (COLLECTION_EDIT_ENABLED)", () =>
 });
 
 describe("History tab", () => {
+  it("shows once a refresh says the ledger holds an entry, though it mounted without one", async () => {
+    pathname = "/collection";
+    refreshCollectionHeader.mockReset().mockResolvedValue({ stats: EMPTY, lastUpdatedLabel: null, historyHasEntries: true });
+    render(<CollectionPlaceHead stats={EMPTY} lastUpdatedLabel={null} editEnabled historyHasEntries={false} />);
+    expect(screen.queryByTestId("collection-tab-history")).toBeNull();
+    fireEvent(window, new Event("focus"));
+    expect(await screen.findByTestId("collection-tab-history")).toBeInTheDocument();
+  });
+
   it("is absent with the switch off, whatever the ledger holds", () => {
     expect(visibleTabs("cards", true, { enabled: false, hasEntries: true }).map((t) => t.place)).not.toContain("history");
   });

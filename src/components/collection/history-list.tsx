@@ -162,7 +162,7 @@ export function HistoryList({
 
   return (
     <section className="px-[16px] pb-[32px] pt-[18px] md:px-[24px] md:pt-[24px]">
-      <h2 className="m-0 font-display text-[19px] font-semibold md:text-[22px]">{c.heading}</h2>
+      <h1 className="m-0 font-display text-[19px] font-semibold md:text-[22px]">{c.heading}</h1>
       <p className="m-0 mt-[4px] text-[13.5px] text-[color:var(--fg-muted)]">{c.lede}</p>
 
       {entries.length === 0 ? (
@@ -176,7 +176,7 @@ export function HistoryList({
       ) : (
         groups.map((g) => (
           <div key={g.key} className="mt-[20px]">
-            <h3 className="m-0 mb-[6px] font-mono text-[10.5px] font-normal uppercase tracking-[0.14em] text-[color:var(--fg-muted)]">{g.label}</h3>
+            <h2 className="m-0 mb-[6px] font-mono text-[10.5px] font-normal uppercase tracking-[0.14em] text-[color:var(--fg-muted)]">{g.label}</h2>
             <ul className="m-0 flex list-none flex-col gap-[8px] p-0">
               {g.entries.map((e) => {
                 const kind = historyKindOf(e);

@@ -84,7 +84,10 @@ export function groupRows(rows: readonly HistoryRow[]): { group: RowGroup; rows:
   const by = new Map<RowGroup, HistoryRow[]>();
   for (const r of rows) {
     const g = rowGroup(r);
-    if (g) by.set(g, [...(by.get(g) ?? []), r]);
+    if (!g) continue;
+    const list = by.get(g);
+    if (list) list.push(r);
+    else by.set(g, [r]);
   }
   return ORDER.filter((g) => by.has(g)).map((g) => ({ group: g, rows: by.get(g)! }));
 }

@@ -139,7 +139,7 @@ export function CollectionPlaceHead({
   // tab switch and on window focus (the same cross-tab trigger `DeltaStrip` polls on), and
   // only the latest of possibly several in-flight reads may apply — a focus firing while a
   // tab switch is still loading must not let the switch's answer land after and overwrite it.
-  const [live, setLive] = useState({ stats: initialStats, lastUpdatedLabel: initialLastUpdatedLabel });
+  const [live, setLive] = useState({ stats: initialStats, lastUpdatedLabel: initialLastUpdatedLabel, historyHasEntries });
   const latest = useRef(0);
   // The layout's own props are already fresh on the first render, so the first pass of the
   // effect below would repeat the exact read it just received — a server-action round trip
@@ -174,6 +174,8 @@ export function CollectionPlaceHead({
     return () => window.removeEventListener("focus", onFocus);
   }, []);
   const { stats, lastUpdatedLabel } = live;
+  // The live answer, not the layout's first one: a removal made elsewhere can create the entry that earns the tab.
+  const historyShows = live.historyHasEntries === true;
   // Add cards (collection edit §B). The control that opened the sheet gets focus back on close.
   const [adding, setAdding] = useState(false);
   const savedWhileOpen = useRef(false);
@@ -261,7 +263,7 @@ export function CollectionPlaceHead({
         aria-label={collectionTabsCopy.regionAria}
         className="flex h-[48px] items-stretch gap-[2px] pl-[8px] pr-[4px] border-b border-b-[color:var(--border)] border-[color:var(--border)] md:mt-[14px] md:h-[40px] md:gap-[4px] md:px-[24px]"
       >
-        {visibleTabs(current, hasCollection, { enabled: editEnabled, hasEntries: historyHasEntries }).map((tab) => {
+        {visibleTabs(current, hasCollection, { enabled: editEnabled, hasEntries: historyShows }).map((tab) => {
           const on = tab.place === effective;
           return (
             <Link

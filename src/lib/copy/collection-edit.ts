@@ -163,7 +163,7 @@ export const collectionEditCopy = {
       `History keeps 90 days. Changes from before ${date} have aged out, but your cards haven't. They're all still in your collection.`,
     emptyTitle: "Nothing's changed yet",
     emptyBody: (ship: string) =>
-      `Uploads and edits from ${ship} on show up here, ready to undo. Your collection from before that has no history to show.`,
+      `Uploads and edits from ${ship} on show up here. Your collection from before that has no history to show.`,
     /** (new) The expanded row's per-row quantity change. */
     rowDelta: (d: number) => (d > 0 ? `+${n(d)}` : `−${n(-d)}`),
   },

@@ -17,7 +17,10 @@ vi.mock("../../app/collection/edit-actions", () => ({
   addToCollection: (...a: unknown[]) => add(...a),
 }));
 vi.mock("next/link", () => ({
-  default: ({ href, children, ...rest }: React.ComponentProps<"a"> & { href: string }) => <a href={href} {...rest}>{children}</a>,
+  // A press runs `onNavigate` as the real Link does on a client navigation, and goes nowhere.
+  default: ({ href, children, onNavigate, ...rest }: React.ComponentProps<"a"> & { href: string; onNavigate?: () => void }) => (
+    <a href={href} onClick={(e) => { e.preventDefault(); onNavigate?.(); }} {...rest}>{children}</a>
+  ),
   useLinkStatus: () => ({ pending: false }),
 }));
 
@@ -178,7 +181,7 @@ describe("AddCardsSheet (add)", () => {
 
   it("links the saved state to the entry it wrote, and closes the sheet on the way (B8)", async () => {
     add.mockResolvedValue({ applied: { id: "0b7e6c3a-1d2f-4a55-9a41-5f1c2d3e4f50" } });
-    mount();
+    const { onClose } = mount();
     await find("sol ring", [card()]);
     await pickFirst();
     fireEvent.click((await screen.findAllByRole("radio"))[0]);
@@ -186,6 +189,9 @@ describe("AddCardsSheet (add)", () => {
     fireEvent.click(screen.getByRole("button", { name: copy.save(1) }));
     const link = await screen.findByRole("link", { name: copy.seeInHistory });
     expect(link.getAttribute("href")).toBe("/collection/history?entry=0b7e6c3a-1d2f-4a55-9a41-5f1c2d3e4f50");
+    expect(onClose).not.toHaveBeenCalled();
+    fireEvent.click(link);
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it("starts a fresh action id for Add more", async () => {

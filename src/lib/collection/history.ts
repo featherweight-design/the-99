@@ -158,7 +158,11 @@ export const listColumns = sql`
   -- Scoped to the entry's own user, so a source naming another account's upload can never leak a name.
   (
     select u.filename from csv_uploads u
-    where 'csv_uploads:' || u.id = h.source and u.user_id = h.user_id
+    where u.user_id = h.user_id
+      -- The source is csv_uploads:<uuid>. Parsed to a uuid so the primary key serves the lookup; the guard
+      -- keeps the cast off any source that is not that shape.
+      and u.id = case when h.source ~ '^csv_uploads:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+                      then substr(h.source, 13)::uuid end
   ) as upload_filename,
   h.rows -> 0 ->> 'name' as first_name
 `;
