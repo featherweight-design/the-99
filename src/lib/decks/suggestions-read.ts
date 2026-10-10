@@ -23,6 +23,7 @@ import { cardTypeGroup, primaryRole, requireDeck } from "./read";
 import { recommendedMix, type RecommendedMix } from "./mix";
 import { loadSkeletonForCommanders } from "../profile/load";
 import { roleBasisFromEnv } from "./label-counts-flag";
+import { loadPoolRoleBasis } from "../recs/pool-role-basis";
 import { buildSuggestionPayload, suggestDeck, type DeckSuggestion } from "./suggest";
 import { SHELF_CAP } from "./shelf-cap";
 
@@ -222,7 +223,10 @@ export async function loadDeckSuggestions(deckId: string, userId: string): Promi
   // THE SAME MIX THE DECK PAGE DRAWS. The Add panel's shelf headers count against these and
   // its tiles quote them; two sources would disagree by construction on any commander whose
   // measured ramp is not ten.
-  let mix = recommendedMix(null, hasPartner, roleBasisFromEnv());
+  // The labels first: the mix's targets follow the basis they come back under, so the shelf is
+  // counted and measured on one basis. A failed read is the classifier on BOTH sides.
+  const { basis: roleBasis, roleSets } = await loadPoolRoleBasis(available);
+  let mix = recommendedMix(null, hasPartner, roleBasis);
   try {
     const { skeleton } = await loadSkeletonForCommanders(
       commander.oracleId,
@@ -231,14 +235,14 @@ export async function loadDeckSuggestions(deckId: string, userId: string): Promi
       undefined,
       // The strip counts by label when the switch is on, so its targets are the label ones. The
       // switch is per deployment and the deployment is in this payload's cache key.
-      { roleBasis: roleBasisFromEnv() },
+      { roleBasis },
     );
-    mix = recommendedMix(skeleton, hasPartner, roleBasisFromEnv());
+    mix = recommendedMix(skeleton, hasPartner, roleBasis);
   } catch (err) {
     console.warn("loadDeckSuggestions: no skeleton — the panel quotes the asserted targets", err);
   }
 
-  const raw = suggestDeck({ commander, ownedPool: available, edhrecTopCards: topCards, hasPartner, mix });
+  const raw = suggestDeck({ commander, ownedPool: available, edhrecTopCards: topCards, hasPartner, mix, roleSets });
 
   // Enrich owned suggestions. Each draws the copy the reader owns, the one its card details will
   // (Hugh, 2026-10-05); fail-soft through `resolveOwnedPrintings`, which keeps the oracle-level art.

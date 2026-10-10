@@ -92,6 +92,30 @@ describe("suggestDeck", () => {
     const out = suggestDeck({ commander, ownedPool: pool, edhrecTopCards: null, hasPartner: true, mix: TEST_MIX });
     expect(out.length).toBeLessThanOrEqual(98);
   });
+
+  describe("by label", () => {
+    const base = { commander, edhrecTopCards: null, hasPartner: false, mix: TEST_MIX } as const;
+    const rocks = Array.from({ length: 12 }, () => card({ typeLine: "Artifact", oracleText: "{T}: Add {C}." }));
+
+    it("fills a role from the cards whose LABEL names it, not the ones whose text does", () => {
+      // By text every rock is ramp. By label two are ramp and the rest draw.
+      const roleSets = new Map(rocks.map((r, i) => [r.oracleId, [i < 2 ? "ramp" : "draw"] as ("ramp" | "draw")[]]));
+      const out = suggestDeck({ ...base, ownedPool: rocks, roleSets });
+      expect(out.filter((s) => s.reason === "ramp").map((s) => s.oracleId)).toEqual([rocks[0].oracleId, rocks[1].oracleId]);
+      expect(out.filter((s) => s.reason === "draw")).toHaveLength(10); // the draw target
+    });
+
+    it("never suggests a card with no fresh label for a role", () => {
+      const out = suggestDeck({ ...base, ownedPool: rocks, roleSets: new Map() });
+      expect(out.filter((s) => s.reason !== "land")).toEqual([]);
+    });
+
+    it("leaves a land to the classifier, whatever the label map holds", () => {
+      const forest = card({ name: "Forest", typeLine: "Basic Land — Forest" });
+      const out = suggestDeck({ ...base, ownedPool: [forest], roleSets: new Map([[forest.oracleId, ["ramp"]]]) });
+      expect(out).toContainEqual({ oracleId: forest.oracleId, reason: "land" });
+    });
+  });
 });
 
 describe("humanRole", () => {
