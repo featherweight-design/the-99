@@ -15,6 +15,7 @@ import { readKeyCardNames, readProposedCuts, reapCutsRuns } from "../../lib/deck
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { deckSurfaces } from "../../lib/decks/revalidate";
 import { commanderName } from "../../lib/decks/tuning-read";
+import { deckNameIndex, normalizeName } from "../../lib/synopsis/facts";
 import { callModel } from "../../lib/model/client";
 import { FEATURE_CALLS } from "../../lib/model/prices";
 import { buildCutsPack, type CutsPack } from "../../lib/tuning/cuts-evidence";
@@ -39,16 +40,16 @@ function revalidateDeck(deckId: string): void {
 }
 
 /**
- * A name the model returned, resolved against the cards it was OFFERED. A name two offered cards
- * share resolves to nothing rather than to whichever came last, and the validator drops it as a
- * card that does not exist.
+ * A name the model returned, resolved against the cards it was OFFERED, as the overview's own
+ * validator resolves one (`deckNameIndex`, `normalizeName`): case, spacing and curly quotes folded,
+ * and a face answering for its card unless two offered cards share it. A name that resolves to
+ * nothing is dropped by the validator as a card that does not exist.
  */
 function packNameResolver(pack: CutsPack): (name: string) => { oracleId: string } | null {
-  const byName = new Map<string, string[]>();
-  for (const c of pack.cards) byName.set(c.name, [...(byName.get(c.name) ?? []), c.oracleId]);
+  const index = deckNameIndex(pack.cards);
   return (name) => {
-    const ids = byName.get(name);
-    return ids && ids.length === 1 ? { oracleId: ids[0] } : null;
+    const hit = index.get(normalizeName(name));
+    return hit ? { oracleId: hit.oracleId } : null;
   };
 }
 

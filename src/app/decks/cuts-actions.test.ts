@@ -196,6 +196,17 @@ describe("runProposedCuts, a run that answers", () => {
     expect(calls.modelCalls[0].user).toContain("no stated intent");
   });
 
+  it("resolves a name the way the overview's validator does: case, spacing and curly quotes folded", async () => {
+    calls.modelOutcome = {
+      ok: true,
+      value: { cuts: [{ name: "  BEAR1 ", reason: "Off the commander\u2019s list.", cites: [{ kind: "offList" }] }] },
+      usage: USAGE,
+    };
+    await runProposedCuts(DECK, { runId: RUN });
+    expect(calls.persisted).toHaveLength(1);
+    expect((calls.persisted[0][1] as { oracleId: string }[])[0].oracleId).toBe("bear1");
+  });
+
   it("bounds the reply's array at the deck's over figure", async () => {
     await runProposedCuts(DECK);
     const schema = calls.modelCalls[0].schema as { safeParse: (v: unknown) => { success: boolean } };
