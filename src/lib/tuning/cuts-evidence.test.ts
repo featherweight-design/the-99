@@ -25,6 +25,17 @@ describe("buildCutsPack", () => {
     expect(p.keyCardIds.sort()).toEqual(["dfc", "solo"]);
   });
 
+  it("finds a Key card through curly quotes, case and spacing, as the overview's own validator does", () => {
+    const p = buildCutsPack({
+      facts: cutFacts({
+        profile: profile({}, deck(48, [row({ oracleId: "saga", name: "Urza's Saga" })])),
+        locked: new Set(), support: null, declaredBracket: null,
+      }),
+      commanderName: "Gishath", keyCards: ["urza\u2019s  saga"], intent: null,
+    });
+    expect(p.keyCardIds).toEqual(["saga"]);
+  });
+
   it("carries over, the commander, key cards and deck facts, with the curve rounded to one decimal", () => {
     const p = pack();
     expect(p).toMatchObject({ over: 2, commander: "Gishath", keyCards: ["ramp1"] });

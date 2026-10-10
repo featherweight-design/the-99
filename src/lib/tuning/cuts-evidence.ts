@@ -1,4 +1,5 @@
 import { deckDescriptionCopy } from "../copy/deck-description";
+import { deckNameIndex, normalizeName } from "../synopsis/facts";
 import { playerText } from "../model/player-text";
 import type { MixRole } from "../decks/mix";
 import type { BracketFlag, CardCutFacts, CutFacts, MissingSignal, RoleFact } from "./cuts";
@@ -74,14 +75,15 @@ export function buildCutsPack(input: {
   texts?: ReadonlyMap<string, string>;
 }): CutsPack {
   const { facts, commanderName, keyCards, intent, texts } = input;
-  const keyFaces = new Set(keyCards.flatMap((k) => [k, ...k.split(" // ")]));
+  // Resolved as the overview's own validator resolves a Key card: case, spacing and curly quotes
+  // folded, and a face answering for its card unless two cards share it.
+  const byName = deckNameIndex(facts.cards);
+  const keyCardIds = [...new Set(keyCards.flatMap((k) => { const hit = byName.get(normalizeName(k)); return hit ? [hit.oracleId] : []; }))];
   return {
     over: facts.over,
     commander: commanderName,
     keyCards: [...keyCards],
-    keyCardIds: facts.cards
-      .filter((c) => c.name.split(" // ").some((face) => keyFaces.has(face)) || keyFaces.has(c.name))
-      .map((c) => c.oracleId),
+    keyCardIds,
     intent: intent === null ? null : {
       raw: intent,
       block: playerText("What the deck is for, in the player's own words", intent, deckDescriptionCopy.description.maxLength),

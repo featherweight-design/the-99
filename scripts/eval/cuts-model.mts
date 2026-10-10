@@ -17,7 +17,7 @@
  *   --leak            pass the v2 note as the intent (diagnostic)
  *   --realtime        real-time prices and latency (default: batch, half price)
  *   --text            also give the model each card's oracle text (front face); type and mana value always go
- *   --model M         a model id with a rate in lib/pricing.mts; default the app's tuning model
+ *   --model M         only the app's tuning model is accepted (other rates are unverified)
  *
  * MONEY (Hugh, 2026-10-09, relayed by the orchestrator): this build and its eval are bounded at
  * $15 in total. Every reply's usage is priced through `lib/pricing.mts` as it lands and written to
@@ -75,11 +75,12 @@ const { ROLE_ORDER } = await import("../../src/lib/decks/mix");
 const { castFaceText } = await import("../../src/lib/cards/facet");
 const { inArray } = await import("drizzle-orm");
 
-// Opus is not offered: its rate in `lib/pricing.mts` is assumed, and a cap enforced on an assumed
-// rate is not a cap. The four rounds in the metrics doc ran when it was; it returns once the rate
-// is read off a bill.
-if (args.model === "opus") throw new Error("--model opus is disabled until its rate is verified");
-const MODEL = args.model ?? TUNING_MODEL;
+// Only the app's model is offered: any other rate in `lib/pricing.mts` is assumed, and a cap
+// enforced on an assumed rate is not a cap. The Opus rows in the metrics doc ran when it was.
+const MODEL = TUNING_MODEL;
+if (args.model !== undefined && args.model !== TUNING_MODEL) {
+  throw new Error(`--model ${args.model} is disabled: only ${TUNING_MODEL} has a verified rate`);
+}
 const EFFORT = "medium" as const;
 const norm = (s: string) => s.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase().trim();
 
@@ -155,6 +156,7 @@ for (const p of prepared) {
 }
 const inputTokens = prepared.reduce((n, p) => n + tokens.get(createHash("sha256").update(JSON.stringify(p.sent.params)).digest("hex"))!, 0);
 const perRequest = prepared.map((p) => tokens.get(createHash("sha256").update(JSON.stringify(p.sent.params)).digest("hex"))!);
+if (args.send) acquireRunLock(LEDGER_CUTS);
 const before = spent(readLedger(LEDGER_CUTS));
 console.error(`${prepared.length} requests, ~${inputTokens} input tokens (largest request ${Math.max(...perRequest)}); worst case $${worst.toFixed(2)} (two attempts each, ${args.realtime ? "real-time" : "batch"} prices); spent so far on this ledger $${before.toFixed(2)} of $${CAP_USD}`);
 if (!args.send) {
@@ -170,7 +172,6 @@ if (before >= ASK_AT_USD) {
   process.exit(2);
 }
 
-acquireRunLock(LEDGER_CUTS);
 const runId = `${new Date().toISOString().replace(/[:.]/g, "-")}-${args.label}${args.leak ? "-leak" : ""}${args.text ? "-text" : ""}${args.model ? `-${args.model}` : ""}`;
 const dir = new URL(`runs/${runId}/`, ROOT);
 mkdirSync(dir, { recursive: true });
