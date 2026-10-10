@@ -19,7 +19,9 @@
  * model, effort and output ceiling, one retry, and `validateCuts` with the action's name resolver.
  * Only the transport differs (the Batches API: same message, half price). With `--plan` the pack also
  * carries the deck's plan (`readCutsPlan`, the same read the action makes); without it the pack is
- * what the prompt v1 shipped with, which is how the "old prompt" column was produced.
+ * what the pack carried under v1 but is rendered by the CURRENT prompt builder: the "old prompt" column
+ * of the metrics doc was produced BEFORE the v2 builder replaced v1, so a later run without `--plan` is
+ * "current prompt, no plan", not a reproduction of v1.
  *
  * DRY by default. `--send` spends, into `ledger-cuts.jsonl`, and refuses once this task's spend
  * (ledger total minus `--baseline`) plus the next pass could cross `--cap` (default 0.75).

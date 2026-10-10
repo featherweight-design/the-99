@@ -2,6 +2,7 @@ import type { ChipContext } from "./cuts-count";
 import { playerTextBody } from "../model/player-text";
 import type { CutsPack, CutsPackCard } from "./cuts-evidence";
 import type { CutCite, CutProposal, CutsResponse } from "./cuts-schema";
+import { MAX_COMBO_FACTS, MAX_NEAR_COMBO_FACTS } from "../synopsis/facts-extra";
 import { presentationFailures, type RuleKey } from "./presentation";
 
 /**
@@ -26,6 +27,12 @@ export type CutsReport = {
 
 const TEXT_RULES: ReadonlySet<string> = new Set(["noBracketClaim", "noResultClaim", "quotedNote"]);
 
+/** The Overview's combo read keeps the top 6 assembled and top 3 one-short; a list at its cap may omit pieces, so "in no combo" cannot be vouched for. */
+function cleanlyListed(pack: CutsPack): boolean {
+  const p = pack.plan;
+  return !!p?.combos && !!p.nearCombos && p.combos.length < MAX_COMBO_FACTS && p.nearCombos.length < MAX_NEAR_COMBO_FACTS;
+}
+
 /** Whether a cite states a figure that is true for THIS card and this deck. */
 export function citeHolds(cite: CutCite, card: CutsPackCard, pack: CutsPack): boolean {
   switch (cite.kind) {
@@ -41,7 +48,7 @@ export function citeHolds(cite: CutCite, card: CutsPackCard, pack: CutsPack): bo
     // "none" is a claim about the deck's combos, so it needs the combo read to have succeeded.
     case "combo":
       return cite.state === "none"
-        ? !!pack.plan?.combos && !!pack.plan.nearCombos && card.comboState === undefined
+        ? cleanlyListed(pack) && card.comboState === undefined
         : card.comboState === cite.state;
     case "cost": return card.mv === cite.mv;
     case "tapped": return card.entersTapped !== undefined;

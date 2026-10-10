@@ -91,6 +91,9 @@ describe("landEntersTapped", () => {
     expect(landEntersTapped(LAND, "This land enters tapped unless you control two or more other lands.")).toBe("sometimes");
     expect(landEntersTapped(LAND, "This land enters tapped unless you control a Plains or an Island.")).toBe("sometimes");
   });
+  it("reads an optional tapped entry as sometimes", () => {
+    expect(landEntersTapped(LAND, "You may have this land enter tapped as a copy of a land you control.")).toBe("sometimes");
+  });
   it("says nothing for a land that enters untapped, a spell, or a card with no text", () => {
     expect(landEntersTapped(LAND, "{T}: Add {G}.")).toBeUndefined();
     expect(landEntersTapped("Creature — Elf", "Enters tapped.")).toBeUndefined();

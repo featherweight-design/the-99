@@ -163,6 +163,11 @@ describe("the plan cites (prompt v2)", () => {
     expect(citeHolds({ kind: "combo", state: "none" }, card(bare, "bear2"), bare)).toBe(false);
   });
 
+  it("refuses 'in no combo' when a combo list is at its cap, since it may omit pieces", () => {
+    const full = withPlan({ ...plan, combos: Array.from({ length: 6 }, () => plan.combos[0]) });
+    expect(citeHolds({ kind: "combo", state: "none" }, card(full, "bear2"), full)).toBe(false);
+  });
+
   it("holds a cost cite only at the card's mana value", () => {
     const pack = withPlan();
     expect(citeHolds({ kind: "cost", mv: 3 }, card(pack, "bear1"), pack)).toBe(true);

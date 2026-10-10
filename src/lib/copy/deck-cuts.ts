@@ -105,8 +105,8 @@ export const deckCutsCopy = {
     deeper: {
       offerTitle: (n: number) => `Name the ${numberWord(n)} ${n === 1 ? "cut" : "cuts"}`,
       offerLead: (n: number) =>
-        `A deeper look names ${numberWord(n)} ${n === 1 ? "card" : "cards"} to cut, each with a reason taken from the count below. It also reads your description.`,
-      offerLeadThin: "EDHREC has no list for this commander to count against, so a deeper look names cuts from roles, curve, bracket and your description only.",
+        `A deeper look names ${numberWord(n)} ${n === 1 ? "card" : "cards"} to cut, each with a reason. It reads the deck\u2019s combos, your commander\u2019s text, each card\u2019s cost and colours, the count below and your description.`,
+      offerLeadThin: "EDHREC has no list for this commander to count against, so a deeper look names cuts from the deck\u2019s combos, your commander\u2019s text, each card\u2019s cost and colours, roles, curve, bracket and your description.",
       action: "Look deeper",
       credit: "1 credit",
       actionAria: "Look deeper. Uses 1 credit.",

@@ -87,7 +87,7 @@ export function landEntersTapped(typeLine: string, text: string | undefined): "a
   if (!/\bland\b/i.test(typeLine) || !text) return undefined;
   const sentences = text.split(/(?<=[.\n])\s*/).filter((t) => /enters( the battlefield)? tapped|enter tapped/i.test(t));
   if (sentences.length === 0) return undefined;
-  const unconditional = sentences.some((t) => !/\b(unless|if you|you may pay|if a|if an|if there|if it)\b/i.test(t) && !/untapped/i.test(t));
+  const unconditional = sentences.some((t) => !/\b(unless|if you|you may pay|if a|if an|if there|if it|you may)\b/i.test(t) && !/untapped/i.test(t));
   return unconditional ? "always" : "sometimes";
 }
 

@@ -51,7 +51,7 @@ export async function readCutsPlan(
     const colours = costColours(byId.get(c.oracleId)?.cost ?? null);
     if (colours.length === 0) continue;
     needs.set(c.oracleId, colours);
-    for (const k of colours) counts.set(k, (counts.get(k) ?? 0) + 1);
+    for (const k of colours) counts.set(k, (counts.get(k) ?? 0) + c.quantity);
   }
   const commanderText = [...commanders].flatMap((id) => {
     const r = byId.get(id);
