@@ -40,7 +40,7 @@ const OWN_COST_SENTENCE = /^(?:this|~)\b[^\n]*\bcosts?\b[^\n]*$/gim;
  * the card itself or an ability. A text rule is applied only when the text is known, and `land`
  * on a nonland (Ebony Fly, Planar Atlas) is a label error that waits for a relabel.
  */
-function isRampJob(job: Job, oracleText: string | null | undefined): boolean {
+export function isRampJob(job: Job, oracleText: string | null | undefined): boolean {
   if (job.kind !== "ramp") return false;
   if (job.rampKind === "fetchesLand") return oracleText == null || LAND_TO_BATTLEFIELD.test(oracleText);
   if (job.rampKind === "costReduction") {
@@ -57,7 +57,7 @@ function isRampJob(job: Job, oracleText: string | null | undefined): boolean {
 const TARGET_PLAYER_DRAWS = /\btarget player draws\b/i;
 
 /** A draw job counts for the deck's draw only when it can draw for the controller. */
-function isDrawJob(job: Job, oracleText: string | null | undefined): boolean {
+export function isDrawJob(job: Job, oracleText: string | null | undefined): boolean {
   if (job.kind !== "draw") return false;
   return job.affects !== "opponents" || (oracleText != null && TARGET_PLAYER_DRAWS.test(oracleText));
 }
