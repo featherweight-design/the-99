@@ -45,7 +45,7 @@ for (const file of process.argv.slice(2)) {
       const found: string[] = [];
       for (const h of keywordClaims(text, deck)) found.push(`keyword ${h.keyword} on ${h.card}`);
       if (section === "tip" && edictEntry(text, cited.map((n) => deck.get(normalizeName(n))).filter((x) => !!x) as never, deck)) found.push("edict entry");
-      if (section === "weakness" && nonWeakness(text, facts.identity)) found.push("non-weakness");
+      if (section === "weakness" && nonWeakness(text, facts.identity)) found.push("non-weakness CANDIDATE (contract 7 rows carry no topic; contract 8 applies this to mana_and_colors only)");
       for (const f of found) { hits++; console.log(`${row.id} [${section}] ${f}: ${text}`); }
     }
   }
