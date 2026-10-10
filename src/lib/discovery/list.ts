@@ -1,6 +1,7 @@
 import type { Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
 import { loadCollectionPool } from "../recs/recommend";
+import { loadPoolRoleBasis } from "../recs/pool-role-basis";
 import { buildPoolRollup, rollupFor, type PoolRollup } from "../recs/pool-rollup";
 import { loadCandidates, type CandidateRow } from "./candidates";
 import { readPrices, slotFor, type PriceAggRow, type PriceSlot } from "./price";
@@ -448,10 +449,13 @@ export async function loadDiscoveryWithIds(
     collection.map((c) => c.oracleId),
   );
 
+  // The labels first: the targets follow the basis they come back under, and the rollup counts the
+  // same pool by the same sets, so a row and its detail page print one role count.
+  const { basis, roleSets } = await loadPoolRoleBasis(collection);
   const [priceRead, playedTags, roleTargets] = await Promise.all([
     readPrices(candidates.map((c) => c.oracleId)),
     loadPlayedTags(userId),
-    loadRoleTargetsForCommanders(candidates),
+    loadRoleTargetsForCommanders(candidates, basis),
   ]);
 
   return assembleDiscoveryWithIds({
@@ -461,7 +465,7 @@ export async function loadDiscoveryWithIds(
     playedTags,
     prices: priceRead.prices,
     priceOk: priceRead.ok,
-    rollup: buildPoolRollup(collection, availability),
+    rollup: buildPoolRollup(collection, availability, roleSets),
     cardsRead: collection.length,
     freePoolSize: collection.length,
     // Ruling 8's gate, applied here rather than at the route: novelty measures

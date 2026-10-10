@@ -49,6 +49,14 @@ function add(into: Bucket, from: Bucket, sign: 1 | -1) {
 export function buildPoolRollup(
   collection: PoolCard[],
   availability: Map<string, Availability>,
+  /**
+   * Fresh-label role sets by oracle id, when the roles are counted by LABEL
+   * (`LABEL_ROLE_COUNTS_ENABLED`, labels-everywhere plan). A card absent from the map has no fresh
+   * label and counts toward no role, the rule `scoreCommander` applies to the same pool; absent
+   * altogether is the classifier for every card, exactly as before. The two must agree, or a
+   * commander's Discover row and its detail page would print different role counts.
+   */
+  roleSets?: ReadonlyMap<string, readonly RoleName[]>,
 ): PoolRollup {
   const buckets = Array.from({ length: 32 }, emptyBucket);
   const byOracleId = new Map<string, Bucket>();
@@ -56,7 +64,7 @@ export function buildPoolRollup(
   for (const c of collection) {
     const one = emptyBucket();
     one.size = 1;
-    for (const role of classifyRoles(c)) {
+    for (const role of roleSets ? roleSets.get(c.oracleId) ?? [] : classifyRoles(c)) {
       if (role !== "land") one.roleCounts[role]++;
     }
     const a = availability.get(c.oracleId);

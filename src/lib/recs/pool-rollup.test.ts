@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildPoolRollup, identityMask, rollupFor } from "./pool-rollup";
-import { commanderPool, type PoolCard, type RoleName } from "./score";
+import { commanderPool, scoreCommander, type PoolCard, type RoleName } from "./score";
 import { classifyRoles } from "./roles";
 import { receiptCountsByCommander } from "../commanders/in-use";
 import type { Availability } from "../decks/availability";
@@ -78,4 +78,39 @@ describe("pool rollup", () => {
       expect(got.counts).toEqual(shippedCounts.get(commander.oracleId));
     });
   }
+});
+
+describe("pool rollup by label", () => {
+  // Text reads `a` as draw, `b` as removal and `e` as wipes; the labels disagree on all three,
+  // and `c` has no fresh label at all.
+  const roleSets = new Map<string, readonly RoleName[]>([
+    ["a", ["ramp"]],
+    ["b", ["removal", "wipes"]],
+    ["e", []],
+  ]);
+  const rollup = buildPoolRollup(collection, avail, roleSets);
+
+  it("counts a labeled card by its label and an unlabeled card toward no role", () => {
+    expect(rollupFor(rollup, { oracleId: "x", colorIdentity: ["W", "U", "B", "R", "G"] }).roleCounts)
+      .toEqual({ ramp: 1, draw: 0, removal: 1, wipes: 1 });
+  });
+
+  it("agrees with scoreCommander on the same sets, for every commander", () => {
+    for (const commander of commanders) {
+      const scored = scoreCommander({
+        commander: card({ oracleId: commander.oracleId, colorIdentity: commander.colorIdentity }),
+        collection,
+        roleTargets: { ramp: 1, draw: 1, removal: 1, wipes: 1 },
+        roleSets,
+        support: null,
+        inclusionByName: null,
+      });
+      expect(rollupFor(rollup, commander).roleCounts).toEqual(scored.roleCounts);
+    }
+  });
+
+  it("is the classifier's count without sets", () => {
+    const plain = rollupFor(buildPoolRollup(collection, avail), { oracleId: "x", colorIdentity: ["W", "U", "B", "R", "G"] });
+    expect(plain.roleCounts).toEqual({ ramp: 1, draw: 1, removal: 1, wipes: 1 });
+  });
 });
