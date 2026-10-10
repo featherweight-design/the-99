@@ -98,7 +98,8 @@ because the feed moves daily, but it is a test case, not a frequency to design a
 - The arrival strip's clean strings are `deckImportCopy.arrival.clean` / `cleanMobile`
   (`src/lib/copy/deck-import.ts:305`), both ending in provenance (E3).
 - Latest migration on main is `0086_deck_cut_items`. Open PR #1362 claims `0087`. This line takes
-  **0088**, renumbered at merge if something lands first.
+  **0088**, re-checked against origin/main right before PR 1 pushes, and renumbered if something
+  landed first.
 - `ABOUT_VERSION = 11` (`src/lib/copy/about.ts:58`), and `about.test.ts:109` requires every entry's
   `since` to be at most `ABOUT_VERSION`, so an entry cannot land before its bump.
 
@@ -300,10 +301,10 @@ worktree, the pre-open subagent pass and the normal pr-review cycle. PRs 2 to 5 
   bump**. Entry, specimen and bump land together there, so nothing ships without a caller. It
   cannot land earlier: `about.test.ts` refuses an entry whose `since` is above the current version,
   and the roadmap batches the epic's entries into one bump at its close.
-- **Coordination, flagged:** the collection screens plan's PR 8 bumps on its own (11 to 12). If it
-  merges first, this entry and I got it's take the next number in one bump, and the sheet reads
-  `2 new` rather than the `7 new` the handoff draws. Holding all seven for one bump needs that lane
-  to hand its five entries to the batched PR.
+- **The sheet's count (decided by the orchestrator, 2026-10-10; Hugh can override):** collection
+  screens PR 8 bumps on its own when that feature closes, because it will not wait for this epic,
+  which is weeks out. This entry and I got it's share the one later bump, so the sheet reads that
+  bump's own count (`2 new`, or fewer if a switch is off), not the `7 new` the handoff draws.
 
 ## Route × viewport inventory
 
