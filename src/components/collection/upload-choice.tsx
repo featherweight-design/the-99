@@ -125,11 +125,18 @@ export function UploadChoice({
   const headingId = useId();
   const pct = overlap.of > 0 ? Math.round((overlap.held / overlap.of) * 100) : 0;
   const showOverlap = overlap.of > 0 && overlap.held / overlap.of >= ADD_OVERLAP_NOTE_AT;
-  const move = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowDown" || e.key === "ArrowRight") onPick(picked === "replace" ? "add" : "replace");
-    else if (e.key === "ArrowUp" || e.key === "ArrowLeft") onPick(picked === "add" ? "replace" : "add");
+  // Roving radios: the arrow moves from the card that HAS focus, and focus goes with the pick,
+  // so the one in the tab order is always the one selected.
+  const move = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const from = (e.target as HTMLElement).closest<HTMLElement>("[data-choice]")?.dataset.choice as UploadMode | undefined;
+    if (!from) return;
+    let to: UploadMode;
+    if (e.key === "ArrowDown" || e.key === "ArrowRight") to = from === "replace" ? "add" : "replace";
+    else if (e.key === "ArrowUp" || e.key === "ArrowLeft") to = from === "add" ? "replace" : "add";
     else return;
     e.preventDefault();
+    onPick(to);
+    e.currentTarget.querySelector<HTMLElement>(`[data-choice="${to}"]`)?.focus();
   };
 
   return (

@@ -113,7 +113,8 @@ export function ReplaceFlow({
     };
     Promise.all([previewUploadChange(previewedId, "replace"), previewUploadChange(previewedId, "add")])
       .then(([replace, add]) => {
-        if (!replace && !add) return settle({ datas: null, error: null, noRead: true });
+        // Either one answering "confirmed elsewhere" ends the comparison: the other read cannot be acted on.
+        if (!replace || !add) return settle({ datas: null, error: null, noRead: true });
         const missing = [replace, add].find((r) => r && "missingCard" in r);
         if (missing && "missingCard" in missing)
           return settle({ datas: null, error: collectionEditCopy.shortWarning.catalogFailure(missing.missingCard), noRead: false });

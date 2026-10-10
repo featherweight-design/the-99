@@ -492,3 +492,46 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
     expect(previewChange).not.toHaveBeenCalled();
   });
 });
+
+describe("ReplaceFlow · the choice, keyboard and concurrency", () => {
+  beforeEach(() => {
+    previewPaste.mockReset();
+    previewChange.mockReset();
+  });
+  const startFlow = async () => {
+    previewPaste.mockResolvedValueOnce(preview(10));
+    render(<ReplaceFlow currentCardCount={10} deckCheck />);
+    fireEvent.click(screen.getAllByRole("button", { name: /Paste a list instead/ })[0]);
+    fireEvent.change(screen.getByRole("textbox", { name: "Paste your card list" }), { target: { value: "3 Sol Ring" } });
+    fireEvent.click(screen.getByRole("button", { name: /^Preview/ }));
+  };
+  const d = (copiesAfter: number) => ({
+    raised: 0, lowered: 0, decks: [], editsSinceUpload: 0, lastUploadAt: null, historyReaches: false,
+    detail: {
+      unchanged: 0, up: 0, down: 0, leaving: 0, copiesBefore: 10, copiesAfter,
+      lists: { leaving: { total: 0, rows: [] }, down: { total: 0, rows: [] }, up: { total: 0, rows: [] } },
+      newHoldings: 0, distinctCards: 0, overlap: { held: 0, of: 0 }, allOwned: false,
+    },
+  });
+
+  it("falls back to the shipped review when only ONE of the two reads says the upload is confirmed", async () => {
+    previewChange.mockImplementation(async (_id: string, mode: string) => (mode === "add" ? null : d(5)));
+    await startFlow();
+    expect(await screen.findByRole("button", { name: /^Continue to replace/ })).toBeTruthy();
+    expect(screen.queryByRole("radiogroup")).toBeNull();
+  });
+
+  it("arrow keys move focus with the pick, from whichever card has focus", async () => {
+    previewChange.mockResolvedValue(d(5));
+    await startFlow();
+    await screen.findByRole("radiogroup");
+    const [replace, add] = screen.getAllByRole("radio");
+    replace.focus();
+    fireEvent.keyDown(replace, { key: "ArrowRight" });
+    expect(add.getAttribute("aria-checked")).toBe("true");
+    expect(document.activeElement).toBe(add);
+    fireEvent.keyDown(add, { key: "ArrowLeft" });
+    expect(replace.getAttribute("aria-checked")).toBe("true");
+    expect(document.activeElement).toBe(replace);
+  });
+});
