@@ -113,3 +113,25 @@ Counterspells named as removal: **9**
 - HD - Gods mix cites off: none | on: wipes 1 of 2; draw 12 of 7; draw 12 of 7; ramp 11 of 10; ramp 11 of 10
 - HD - Kratos mix cites off: ramp: 8 of 9; removal: 5 of 4 | on: ramp 11 of 14; ramp 11 of 14; ramp 11 of 14
 - HD - Zombies mix cites off: wipes: 0 of 1; wipes: 0 of 1; ramp: 6 of 7; ramp: 6 of 7; draw: 9 of 8; removal: 9 of 5; removal: 9 of 5; removal: 9 of 5; removal: 9 of 5; removal: 9 of 5 | on: wipes: 0 of 3; wipes: 0 of 3
+
+---
+
+# Against Deckcheck's Power Tune (Hugh, 2026-10-10; no new spend)
+
+Source: `boards/deckcheck-tunes-2026-10-10.md`, same bracket. Our picks are run 2 (revision 1), one sample per deck. Deckcheck's additions are not limited to owned cards and ours are, so cuts are the fair comparison.
+
+| deck | Deckcheck cuts we also cut | our other cuts (off / on) | Deckcheck adds we also add |
+|---|---|---|---|
+| Gishath | Lightmine Field (both arms), Boxing Ring (off), Rite of Passage (off) | Wrathful Raptors; Star of Extinction, Kinjalli's Caller, Otepec Huntmaster (on) | Swords to Plowshares, Heroic Intervention (off) |
+| Counter Intelligence | Universal Surveillance (both arms), Empowered Autogenerator (on) | Pentad Prism, Astral Cornucopia, Tome of Legends, Deepglow Skate, Mikaeus | none |
+| Goblins | Singe (both), Erratic Explosion (off), Spark Spray (on) | Molten Influence, Dismantle, Crash, Demoralize | Lightning Greaves, Swiftfoot Boots, Chaos Warp, Vandalblast (off arm only) |
+
+**What overlaps.** Cuts: 3 of Deckcheck's 13 Gishath cuts (we name 4 and hit 3 on the off arm, 1 on the on arm), 2 of 13 for Counter Intelligence, 2 to 3 of 20 for Goblins. The cheap, obviously dead cards agree (Lightmine Field, Universal Surveillance, Singe). Adds: the off arm lands the same removal and protection on Gishath and the same equipment and burn package on Goblins; nothing for Counter Intelligence (theirs are unowned fixes and tutors).
+
+**Patterns Deckcheck shows that our lists do not yet make.**
+- *Plan-first cuts.* Deckcheck cuts for what the deck is trying to do: Burning Sands as symmetric land sacrifice in Goblins, The Tarrasque and Wakening Sun's Avatar in Gishath because cast-trigger or ward value is lost when cheated in. We cut by role count and weak text (Molten Influence, Singe, Demoralize) and never name an anti-synergy. Nothing in the pack tells the model what each card's trigger needs, so it cannot see these.
+- *Tutors for combo pieces.* Counter Intelligence's adds are Trophy Mage, Reshape, Tezzeret the Seeker. We add equipment and wrath effects. The pack has no combo piece list, so a tutor has nothing to point at.
+- *Untapped lands for tapped.* Deckcheck cuts six tapped lands in Counter Intelligence for shocks and fetches. Our on arm adds Rogue's Passage and Reliquary Tower (utility lands) and never cuts a tapped land. Tapped share belongs to the Mana Balance tool (Deckcheck's Mana Tune shows the same method), not to these lists.
+- *Draw engines for a deck with none.* Deckcheck adds Skullclamp to Goblins and notes it has no draw. Our on arm adds Big Score, Unexpected Windfall, Seize the Spoils and Wayfarer's Bauble to Goblins, so the on-arm basis does see the gap and answers it (its pack reads Goblins draw as "1 of 4"); the off arm, with draw at "3 of 4", adds none.
+
+**Reading.** The label basis moves Goblins toward Deckcheck's draw-engine call and away from its burn-payoff call. The structural gap is evidence the model is never shown: per-card anti-synergy, combo pieces and tapped-land share. That is input work (a later evidence-pack change), not a contract change, and it was not folded into this PR.
