@@ -44,6 +44,6 @@ export function buildCutsPrompt(pack: CutsPack): { system: string; user: string 
   }
   lines.push("", pack.keyCards.length > 0 ? `Key cards, never to be cut: ${pack.keyCards.join(", ")}.` : "No Key cards.");
   lines.push("", pack.intent ? pack.intent.block : "What the deck is for: no stated intent.");
-  lines.push("", "Cards you may cut, in the deck's own order:", ...pack.cards.map(cardLine));
+  lines.push("", "Cards you may cut, in alphabetical order:", ...pack.cards.map(cardLine));
   return { system, user: lines.join("\n") };
 }

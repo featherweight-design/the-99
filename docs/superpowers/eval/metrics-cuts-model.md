@@ -2,6 +2,8 @@
 
 Outputs of `pnpm eval:cuts-model` on 2026-10-10 against staging (read-only), Sonnet 5 at effort medium, batch prices, three trials per deck, scored against the same ground truth as the free tier's baseline (`metrics-cuts.md`: 10 of 58, 17%, 1.1x chance). The model sees the facts and the card names, no Key cards, and by default no intent.
 
+These rounds ran before the facts sorted cards by name, so the card list reached the model in the database's row order. The app sends it alphabetically; recall was not re-measured under that order.
+
 Reading: per trial the model finds about 11.7 of 58 cuts (20%), 1.26x chance; the free tier found 10 of 58 (1.1x). Showing the model the deck's own v2 note (240 characters, a leakage diagnostic: the note names cards it cut) lifts that to 15 of 58 (26%), 1.7x chance. On this ground truth the model tier is a small step above the free tier, not a large one; most of Hugh's v1 to v2 changes are swaps whose reason sits in the replacement, which no cut list can see.
 
 Measured cost, not estimated: 15 answers cost $0.22 at batch prices ($0.015 each, 3,000 output tokens at most on a 19-cut deck); the plan's $5.70 estimate for the whole eval was about ten times too high. Ledger after both rounds: $0.50 of the $15 ceiling.

@@ -21,9 +21,9 @@ describe("buildCutsPack", () => {
     for (const b of p.curve ?? []) expect(b.average).toBe(Math.round(b.average * 10) / 10);
   });
 
-  it("keeps the deck's order and adds no rank or score", () => {
+  it("keeps the facts' name order and adds no rank or score", () => {
     const p = pack();
-    expect(p.cards.slice(0, 2).map((c) => c.oracleId)).toEqual(["forest", "ramp0"]);
+    expect(p.cards.slice(0, 2).map((c) => c.oracleId)).toEqual(["forest", "bear0"]);
     for (const c of p.cards) expect(Object.keys(c)).not.toEqual(expect.arrayContaining(["rank"]));
     expect(JSON.stringify(p)).not.toMatch(/score|price|owned/);
   });

@@ -5,7 +5,7 @@ import type { BracketFlag, CardCutFacts, CutFacts, MissingSignal, RoleFact } fro
 
 /**
  * The evidence a Proposed cuts call is built from. Pure and client-safe. The facts are passed
- * through as counted figures with NO ranking and NO score: cards stay in the deck's own order, so
+ * through as counted figures with NO ranking and NO score: cards stay in the facts' name order, so
  * nothing anchors the model on an engine order. Ownership and price are never in the pack.
  *
  * Optional fields are ABSENT when they do not apply, so the prompt and the validator read presence.
