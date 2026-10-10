@@ -23,14 +23,6 @@
     ],
     "weaknesses": [
       {
-        "topic": "activated-ability hate",
-        "names": [
-          "Cursed Totem",
-          "Linvala",
-          "activated abilit"
-        ]
-      },
-      {
         "topic": "reach or repeatable blockers",
         "names": [
           "blocker",
@@ -43,7 +35,19 @@
       "Insatiable Avarice",
       "Lim-D"
     ],
-    "wrong": [],
+    "wrong": [
+      {
+        "id": "totem-stops-ninjutsu",
+        "cards": [
+          "Cursed Totem"
+        ],
+        "pattern": "ninjutsu",
+        "sections": [
+          "weakness"
+        ],
+        "why": "Cursed Totem stops activated abilities of creatures on the battlefield. Ninjutsu (702.49) is activated from the HAND, where the card is a creature card and not a creature, so it still works. The comparison text had counted Cursed Totem and Linvala against Yuriko's ninjutsu; that was wrong, and the v8 answer that does not say so was right (orchestrator ruling 2026-10-10)."
+      }
+    ],
     "right": []
   }
 }
