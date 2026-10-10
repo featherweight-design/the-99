@@ -54,7 +54,7 @@ pieces, template-free, infinite or game-ending, every piece held, a must-be-comm
 from the command zone). The scratch scripts were never committed. These are the draft definitions
 the figures were taken with; section "What eng locks" says which parts are fixed.
 
-| Deck | Lands | Avg MV | Velocity pts | Velocity index | Flow pts | Interaction cards | weighted | cheap instant | of which counters | Graveyard share | Combos | Combo by T8 | Unlabeled |
+| Deck | Lands | Avg MV | Velocity pts | Velocity index | Flow pts | Interaction cards | weighted | cheap instant | counterspells (of all interaction) | Graveyard share | Combos | Combo by T8 | Unlabeled |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | HD - Avatar Aang | 36 | 2.7 | 8.25 | 4.0 | 22 | 7 | 17 | 3 | 1 | 5% | 2 | 18% | 1 |
 | HD - Brago | 35 | 3.61 | 6 | 2.35 | 16 | 17 | 23 | 2 | 2 | 8% | 12 | 42% | 2 |
@@ -87,7 +87,8 @@ The draft definitions behind each column:
   is `repeatable` and 1 when it is `oneShot`, doubled again for a commander.
 - **Interaction:** each card with a `removal`, `wipes` or `counterspell` job. Weighted is 1, plus
   1 for instant speed (an instant, or flash), plus 1 for mana value 2 or less. Cheap instant is
-  both. Commanders included.
+  both. Counterspells counts the cards with a `counterspell` job among ALL interaction cards, not
+  among the cheap instant ones. Commanders included.
 - **Graveyard share:** cards with a `recursion` job, a self or each-player `mill` job, a
   `cardsInGraveyard` threshold, or a graveyard keyword (flashback, escape, delve, unearth,
   disturb, retrace, embalm, eternalize, jump-start, aftermath, threshold, dredge, scavenge,
@@ -151,7 +152,9 @@ The draft definitions behind each column:
    it contributed, and why (for interaction: "instant, 1 mana"; for velocity: "ramp, 2 mana";
    for win speed: the combo, its pieces and what it produces, plus the tutors that can find a
    piece). The ledger also states the cards it could not read: unlabeled cards are counted
-   nowhere and are named as such, as the Jobs card does today (0 to 8 per deck on staging).
+   nowhere and are listed by name. That goes past the Jobs card, which draws only their count and a
+  sentence (`deckStatsCopy.jobs.unlabeled`); a grade the reader is asked to trust should say which
+  cards it could not see (0 to 8 per deck on staging).
 7. **One reader per figure, shared.** The interaction reading replaces the Overview fact's
    `interactionCounts` (`src/lib/synopsis/facts-extra.ts`), which counts by the text classifier,
    so the Overview prompt and the benchmark can never disagree. The win-speed combo set is
@@ -175,8 +178,10 @@ The draft definitions behind each column:
   Prismari Command's loot are the known errors, all `affects: opponents`; card flow already
   drops those jobs (follow-up 2 of that check, applied here).
 - **Ramp: the weakest role.** Velocity already excludes `costReduction`. It must also drop a
-  `fetchesLand` job that puts the land into the hand (Expedition Map, Sylvan Scrying,
-  landcycling), and it inherits the two rocks labeled `land` (Ebony Fly, Planar Atlas). Those are
+  `fetchesLand` job whose card puts the land into the hand (Expedition Map, Sylvan Scrying,
+  landcycling). No label field records where a land search puts the land (`to` is null on every
+  kind but `recursion` and `tutor`), so this filter reads the oracle text: no "onto the
+  battlefield" means the hand. It also inherits the two rocks labeled `land` (Ebony Fly, Planar Atlas). Those are
   follow-up 3 of the check, and velocity ships after it or applies the same filter.
 - **Graveyard jobs and tutors: NOT audited.** `recursion`, `mill`, the `cardsInGraveyard`
   threshold and `tutor` were outside that check. Graveyard dependence and win speed's tutor
