@@ -1,21 +1,36 @@
 {
-  "feature": "Deck stats, PRs 1-7: the switch, the placement shell, the curve card, the Jobs card, the Mana colors card, the Against the average card, the Money card and the Results card",
-  "note": "Needs DECK_STATS_ENABLED=true on the server and STATS_DECK (a deck with at least one creature and one other non-land card, so pressing Creature shows both lit and dimmed squares). The list toolbar shows the Stats segment beside All and Shopping; the stats row presses it and shows the six Stats cards with the list tools hidden. The curve, Jobs, Colors and Against the average cards draw data (Jobs needs the deck's cards labeled and a Ramp row above zero; Colors needs the deck's lands readable); the Money card needs the deck's cards priced (printing_prices) with some unowned; The Results card draws from logged games: STATS_DECK should hold several games across a version or two (with one unstamped), and STATS_DECK_EMPTY is a deck with no games for the empty row.",
+  "feature": "Deck stats, PRs 1-9: the switch, the placement shell, the curve card, the Jobs card, the Mana colors card, the Against the average card, the Money card and the Results card and the About entry",
+  "note": "Needs DECK_STATS_ENABLED=true on the server and STATS_DECK (a deck with at least one creature and one other non-land card, so pressing Creature shows both lit and dimmed squares). The list toolbar shows the Stats segment beside All and Shopping; the stats row presses it and shows the six Stats cards with the list tools hidden. The curve, Jobs, Colors and Against the average cards draw data (Jobs needs the deck's cards labeled and a Ramp row above zero; Colors needs the deck's lands readable); the Money card needs the deck's cards priced (printing_prices) with some unowned; The Results card draws from logged games: STATS_DECK should hold several games across a version or two (with one unstamped), and STATS_DECK_EMPTY is a deck with no games for the empty row. STATS_DECK_OWNED and STATS_DECK_NOPRICE name decks whose cards are all owned and all unpriced (local-dev fixtures).",
   "clearAbout": true,
   "rows": [
     {
       "id": "stats-segment",
       "label": "/decks/[id] decklist: the Stats segment beside All and Shopping",
       "view": "src/components/decks/group-toggle.tsx",
-      "steps": [{ "goto": "/decks/${STATS_DECK}", "wait": "[role=tablist]", "scrollTo": "[data-toolbar-group]", "settle": 1500 }]
+      "steps": [
+        {
+          "goto": "/decks/${STATS_DECK}",
+          "wait": "[role=tablist]",
+          "scrollTo": "[data-toolbar-group]",
+          "settle": 1500
+        }
+      ]
     },
     {
       "id": "stats-toolbar-shopping",
       "label": "/decks/[id] toolbar group with Shopping selected: one container, divider, Stats",
       "view": "src/components/decks/group-toggle.tsx",
       "steps": [
-        { "goto": "/decks/${STATS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
-        { "clickRole": "button", "name": "^Shopping", "settle": 500 }
+        {
+          "goto": "/decks/${STATS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping",
+          "settle": 500
+        }
       ]
     },
     {
@@ -23,8 +38,17 @@
       "label": "/decks/[id] Stats open: six shells, list tools hidden, provenance line",
       "view": "src/components/decks/deck-stats-view.tsx",
       "steps": [
-        { "goto": "/decks/${STATS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
-        { "clickRole": "button", "name": "^Show the deck as stats", "wait": "[data-deck-stats]", "settle": 800 }
+        {
+          "goto": "/decks/${STATS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Show the deck as stats",
+          "wait": "[data-deck-stats]",
+          "settle": 800
+        }
       ]
     },
     {
@@ -32,9 +56,22 @@
       "label": "/decks/[id] Stats: the curve card with a type chip pressed",
       "view": "src/components/decks/deck-stats-view.tsx",
       "steps": [
-        { "goto": "/decks/${STATS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
-        { "clickRole": "button", "name": "^Show the deck as stats", "wait": "[data-deck-stats]", "settle": 800 },
-        { "clickRole": "button", "name": "^Creature", "settle": 400 }
+        {
+          "goto": "/decks/${STATS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Show the deck as stats",
+          "wait": "[data-deck-stats]",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Creature",
+          "settle": 400
+        }
       ]
     },
     {
@@ -42,9 +79,22 @@
       "label": "/decks/[id] Stats: the Jobs card with a row open",
       "view": "src/components/decks/deck-stats-view.tsx",
       "steps": [
-        { "goto": "/decks/${STATS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
-        { "clickRole": "button", "name": "^Show the deck as stats", "wait": "[data-deck-stats]", "settle": 800 },
-        { "clickRole": "button", "name": "^Ramp", "settle": 400 }
+        {
+          "goto": "/decks/${STATS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Show the deck as stats",
+          "wait": "[data-deck-stats]",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Ramp",
+          "settle": 400
+        }
       ]
     },
     {
@@ -52,8 +102,18 @@
       "label": "/decks/[id] Stats: the Colors card, pips and land sources",
       "view": "src/components/decks/deck-stats-view.tsx",
       "steps": [
-        { "goto": "/decks/${STATS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
-        { "clickRole": "button", "name": "^Show the deck as stats", "wait": "[data-colors-rows]", "scrollTo": "[data-stats-card=colors]", "settle": 800 }
+        {
+          "goto": "/decks/${STATS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Show the deck as stats",
+          "wait": "[data-colors-rows]",
+          "scrollTo": "[data-stats-card=colors]",
+          "settle": 800
+        }
       ]
     },
     {
@@ -61,9 +121,24 @@
       "label": "/decks/[id] Stats: the Mana colors card with its tooltip open",
       "view": "src/components/decks/deck-stats-view.tsx",
       "steps": [
-        { "goto": "/decks/${STATS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
-        { "clickRole": "button", "name": "^Show the deck as stats", "wait": "[data-colors-rows]", "scrollTo": "[data-stats-card=colors]", "settle": 800 },
-        { "clickRole": "button", "name": "^How this is counted", "wait": "[role=tooltip]", "settle": 400 }
+        {
+          "goto": "/decks/${STATS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Show the deck as stats",
+          "wait": "[data-colors-rows]",
+          "scrollTo": "[data-stats-card=colors]",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^How this is counted",
+          "wait": "[role=tooltip]",
+          "settle": 400
+        }
       ]
     },
     {
@@ -71,8 +146,18 @@
       "label": "/decks/[id] Stats: the Against the average card, basis, mini curve and diverging bars",
       "view": "src/components/decks/deck-stats-view.tsx",
       "steps": [
-        { "goto": "/decks/${STATS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
-        { "clickRole": "button", "name": "^Show the deck as stats", "wait": "[data-average-basis]", "scrollTo": "[data-stats-card=average]", "settle": 800 }
+        {
+          "goto": "/decks/${STATS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Show the deck as stats",
+          "wait": "[data-average-basis]",
+          "scrollTo": "[data-stats-card=average]",
+          "settle": 800
+        }
       ]
     },
     {
@@ -80,8 +165,18 @@
       "label": "/decks/[id] Stats: the Money and ownership card, three figures, the square grid and the priciest five",
       "view": "src/components/decks/deck-stats-money.tsx",
       "steps": [
-        { "goto": "/decks/${STATS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
-        { "clickRole": "button", "name": "^Show the deck as stats", "wait": "[data-money-squares]", "scrollTo": "[data-stats-card=money]", "settle": 800 }
+        {
+          "goto": "/decks/${STATS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Show the deck as stats",
+          "wait": "[data-money-squares]",
+          "scrollTo": "[data-stats-card=money]",
+          "settle": 800
+        }
       ]
     },
     {
@@ -89,8 +184,56 @@
       "label": "/decks/[id] Stats: the Results card, record, beads with the last five underlined, and results by version",
       "view": "src/components/decks/deck-stats-results.tsx",
       "steps": [
-        { "goto": "/decks/${STATS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
-        { "clickRole": "button", "name": "^Show the deck as stats", "wait": "[data-results-beads]", "scrollTo": "[data-stats-card=results]", "settle": 800 }
+        {
+          "goto": "/decks/${STATS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Show the deck as stats",
+          "wait": "[data-results-beads]",
+          "scrollTo": "[data-stats-card=results]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "stats-money-all-owned",
+      "label": "/decks/[id] Stats: the Money card with every copy owned, To buy reads Nothing",
+      "view": "src/components/decks/deck-stats-money.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${STATS_DECK_OWNED}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Show the deck as stats",
+          "wait": "[data-money-squares]",
+          "scrollTo": "[data-stats-card=money]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "stats-money-no-price",
+      "label": "/decks/[id] Stats: the Money card where no card has a ManaPool price",
+      "view": "src/components/decks/deck-stats-money.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${STATS_DECK_NOPRICE}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Show the deck as stats",
+          "wait": "[data-money-squares]",
+          "scrollTo": "[data-stats-card=money]",
+          "settle": 800
+        }
       ]
     },
     {
@@ -98,8 +241,31 @@
       "label": "/decks/[id] Stats: the Results card with no games, one stated absence and a link to Games",
       "view": "src/components/decks/deck-stats-results.tsx",
       "steps": [
-        { "goto": "/decks/${STATS_DECK_EMPTY}", "wait": "[role=tablist]", "settle": 1500 },
-        { "clickRole": "button", "name": "^Show the deck as stats", "wait": "[data-results-empty]", "scrollTo": "[data-stats-card=results]", "settle": 800 }
+        {
+          "goto": "/decks/${STATS_DECK_EMPTY}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Show the deck as stats",
+          "wait": "[data-results-empty]",
+          "scrollTo": "[data-stats-card=results]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "about-entry",
+      "label": "/about: the Stats: the deck, drawn entry, its curve specimen with Creature lit",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "#deck-stats",
+          "scrollTo": "#deck-stats",
+          "settle": 1200
+        }
       ]
     }
   ]
