@@ -966,7 +966,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // entry is `since: 11`, the current version, announced by its switch like `deck-analysis`.
     switch: 'DECK_STATS_ENABLED',
     caption:
-      'Your deck has two views, the list and Stats. Stats draws the deck from what is already stored: its curve and card types, the colors its costs ask for against the colors its lands make, its jobs, how it compares with the average deck for its commander, its value and what is left to buy, and the games you have logged, overall and by version. Stats states facts.',
+      'Your deck has two views, the list and Stats. Stats draws the deck from what is already stored: its curve and card types, the colors its costs ask for against the colors its lands and other mana sources make, its jobs, how it compares with the average deck for its commander, its value and what is left to buy, and the games you have logged, overall and by version. Stats states facts.',
     keys: [
       'Stats draws whether or not the deck has been analyzed, and never uses a credit.',
       'Land sources count the colors a land can add. Other mana sources are counted too, by the colors their text names.',
