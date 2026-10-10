@@ -451,7 +451,7 @@ describe("TuningPanel", () => {
     await draw(deps([{ ...results, run }]));
     const banner = screen.getByTestId("analysis-banner");
     expect(banner).toHaveAttribute("data-mode", "note");
-    expect(banner).toHaveTextContent(deckDescriptionCopy.refusal.tooMany(8));
+    expect(banner).toHaveTextContent(deckDescriptionCopy.refusal.tooMany);
     expect(banner.className).not.toMatch(/\bhidden\b/);
   });
 
@@ -1500,6 +1500,8 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
       expect(screen.getByText(copy_lists.tally(1, 1, 99, 99))).toBeInTheDocument();
       await press(copy_lists.applyRest);
       expect(apply.mock.calls.map((c) => (c as unknown[])[0])).toEqual(["a2", "c1"]);
+      // The announcement counts the whole set: two applied of three, one rejected earlier.
+      expect(screen.getAllByText(copy_lists.tallyOf(2, 3, 1)).length).toBeGreaterThan(0);
     });
 
     it("hides Apply all when nothing is open", async () => {

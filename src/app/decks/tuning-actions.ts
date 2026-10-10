@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 
 import { db } from "../../db";
-import { cards, decks } from "../../db/schema";
+import { cards, deckSuggestionItems, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { isUuid } from "../../lib/uuid";
 import { creditsCopy } from "../../lib/copy/credits";
@@ -364,27 +364,42 @@ export async function readTuningPanel(deckId: string): Promise<TuningState | nul
   return readTuningState(deckId, userId, inputs.fingerprint, new Date(), { allLocked: inputs.allLocked });
 }
 
+/** A line of the two lists (one card), as against a pair stored before them: the refusal names a
+ *  "change" for the first and a "swap" for the second. Read only on the refusal path. */
+async function isLine(itemId: string): Promise<boolean> {
+  if (!isUuid(itemId)) return false;
+  const [row] = await db
+    .select({ add: deckSuggestionItems.addOracleId, cut: deckSuggestionItems.cutOracleId })
+    .from(deckSuggestionItems)
+    .where(eq(deckSuggestionItems.id, itemId));
+  return !!row && (row.add === null || row.cut === null);
+}
+
 async function verdict(
   itemId: string,
   write: (userId: string) => Promise<string | null>,
-  refused: string,
+  refused: string | { pair: string; line: string },
   claims: boolean,
 ): Promise<DeckMutationResult> {
   const userId = await requireUserId();
-  if (!tuningEnabled() || !isUuid(itemId)) return { ok: false, message: refused };
+  const refuse = async (): Promise<DeckMutationResult> => ({
+    ok: false,
+    message: typeof refused === "string" ? refused : (await isLine(itemId)) ? refused.line : refused.pair,
+  });
+  if (!tuningEnabled() || !isUuid(itemId)) return refuse();
   const deckId = await write(userId);
-  if (!deckId) return { ok: false, message: refused };
+  if (!deckId) return refuse();
   if (claims) revalidateClaims(deckId, userId);
   else revalidateDeck(deckId);
   return { ok: true };
 }
 
 export async function applySuggestion(itemId: string): Promise<DeckMutationResult> {
-  return verdict(itemId, (u) => applyItem(itemId, u), deckTuningCopy.card.applyRefused, true);
+  return verdict(itemId, (u) => applyItem(itemId, u), { pair: deckTuningCopy.card.applyRefused, line: deckTuningCopy.lists.applyRefused }, true);
 }
 
 export async function undoSuggestion(itemId: string): Promise<DeckMutationResult> {
-  return verdict(itemId, (u) => undoItem(itemId, u), deckTuningCopy.card.undoRefused, true);
+  return verdict(itemId, (u) => undoItem(itemId, u), { pair: deckTuningCopy.card.undoRefused, line: deckTuningCopy.lists.undoRefused }, true);
 }
 
 export async function dismissSuggestion(itemId: string): Promise<DeckMutationResult> {

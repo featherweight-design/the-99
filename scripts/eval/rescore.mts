@@ -51,5 +51,5 @@ if (mismatches.length > 0) {
 }
 writeFileSync(rowsPath, rows.map((r) => JSON.stringify(r)).join("\n") + "\n");
 if (!existsSync(new URL("prepared.json", dir))) writeFileSync(new URL("prepared.json", dir), `${JSON.stringify(prepared)}\n`);
-console.log(`eval:rescore: ${withReply.length} rows re-scored, all agree with the run; keptPositions added`);
+console.log(`eval:rescore: ${withReply.length} rows re-scored, all agree with the run; keptSuggestions added`);
 process.exit(0);

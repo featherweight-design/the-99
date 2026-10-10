@@ -858,7 +858,7 @@ export function TuningPanel({
     // moved past the question this caption answers.
     const report = state.run?.validationReport;
     const tooMany = !failure && !answered && report && report.survivedCount > report.keptCount
-      ? deckDescriptionCopy.refusal.tooMany(report.askedCount)
+      ? deckDescriptionCopy.refusal.tooMany
       : null;
     body = (
       <>

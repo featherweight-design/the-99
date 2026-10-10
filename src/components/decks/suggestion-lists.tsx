@@ -51,7 +51,10 @@ export function SuggestionLists({
     }
     setApplying(false);
     // One announcement and one re-read for the whole press, even when it stopped part way.
-    if (made > 0) onSettled(copy.tallyOf(made, open.length, 0));
+    if (made > 0) {
+      const settled = lines.filter((l) => l.verdict === "accepted").length + made;
+      onSettled(copy.tallyOf(settled, lines.length, lines.filter((l) => l.verdict === "dismissed").length));
+    }
   }
 
   return (

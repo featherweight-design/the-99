@@ -90,8 +90,8 @@ export const deckDescriptionCopy = {
       `${n} of the cards you named are locked, so nothing cuts them. The rest of your notes are answered below.`,
     overCap: (name: string, cap: string) =>
       `${name} costs more than this deck’s ${cap} a card, so it was not suggested. The rest of your notes are answered below.`,
-    tooMany: (asked: number) =>
-      `A run shows five additions and five cuts at most, not ${asked}. Here are the ones that held up.`,
+    tooMany:
+      "A run shows five additions and five cuts at most. Here are the ones that held up.",
     nothingLeft:
       "Nothing in your notes could be done within this deck’s rules, so these suggestions come from the list alone.",
   },
