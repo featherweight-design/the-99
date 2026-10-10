@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { buildRefusal, recordBuild, type BuildRow } from "./builds";
+import { buildRefusal, labelsDetail, labelsOf, phaseReport, recordBuild, type BuildRow } from "./builds";
 
 const done = { ok: true, finishedAt: new Date(), catalogFingerprint: "10:a" };
 
@@ -73,5 +73,23 @@ describe("recordBuild", () => {
     const { deps } = ledger();
     await recordBuild({} as never, "index", async () => 1, () => null, deps, "35572:abc");
     expect((deps as { start: ReturnType<typeof vi.fn> }).start).toHaveBeenCalledWith({}, "index", "35572:abc");
+  });
+});
+
+describe("the label fingerprint in a build's report", () => {
+  const fp = "0123456789abcdef0123456789abcdef";
+
+  it("reads back what the index step wrote, beside its phase and counts", () => {
+    expect(labelsOf(phaseReport("index", `3300 commanders, 1700 pairs; ${labelsDetail(fp)}`))).toBe(fp);
+  });
+
+  it("reads back what the staples step inherited", () => {
+    expect(labelsOf(phaseReport("staples", labelsDetail(fp)))).toBe(fp);
+  });
+
+  it("is null for a build that wrote no label targets, and for one older than the label pass", () => {
+    expect(labelsOf(phaseReport("staples", labelsDetail(null)))).toBeNull();
+    expect(labelsOf(phaseReport("staples"))).toBeNull();
+    expect(labelsOf(null)).toBeNull();
   });
 });

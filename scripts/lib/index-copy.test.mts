@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 // The spec's module reaches `src/db` through the builder's score clear; nothing here queries it.
 vi.mock("../../src/db", () => ({ db: {} }));
 
-const { indexCopySpec } = await import("./index-copy");
+const { indexCopySpec, labelledCards, labelRefusal } = await import("./index-copy");
 type Snapshot = Parameters<typeof indexCopySpec.floors>[0];
 
 const commander = (i: number, derived = true) =>
@@ -16,6 +16,7 @@ const whole = (): Snapshot => ({
   pairCards: [],
   staples: [{} as Snapshot["staples"][number]],
   composition: [],
+  labelFingerprint: null,
 });
 
 describe("the index copy's floors", () => {
@@ -66,5 +67,75 @@ describe("the index copy's build step", () => {
   });
   it("refuses an unmarked row", () => {
     expect(indexCopySpec.buildAccepted!(row(null))).toMatch(/unmarked step/);
+  });
+});
+
+describe("the index copy's label check", () => {
+  it("passes when the target's labels give the build's role sets", () => {
+    expect(labelRefusal("a".repeat(32), "a".repeat(32))).toBeNull();
+  });
+
+  it("refuses when they differ", () => {
+    expect(labelRefusal("a".repeat(32), "b".repeat(32))).toMatch(/different role sets/);
+  });
+
+  it("checks nothing for a build that wrote no label targets", () => {
+    expect(labelRefusal(null, "b".repeat(32))).toBeNull();
+  });
+
+  it("reads the cards of ok commanders and ok pairs only, once each", () => {
+    const s = {
+      support: [
+        { commanderOracleId: "c1", synergyState: "ok" },
+        { commanderOracleId: "c2", synergyState: "absent" },
+      ],
+      supportCards: [
+        { commanderOracleId: "c1", oracleId: "x" },
+        { commanderOracleId: "c1", oracleId: "y" },
+        { commanderOracleId: "c2", oracleId: "z" },
+      ],
+      pairs: [
+        { commanderOracleId: "a", partnerOracleId: "b", synergyState: "ok" },
+        { commanderOracleId: "a", partnerOracleId: "d", synergyState: "degraded" },
+      ],
+      pairCards: [
+        { commanderOracleId: "a", partnerOracleId: "b", oracleId: "x" },
+        { commanderOracleId: "a", partnerOracleId: "b", oracleId: "p" },
+        { commanderOracleId: "a", partnerOracleId: "d", oracleId: "q" },
+      ],
+    } as unknown as Parameters<typeof labelledCards>[0];
+    expect(labelledCards(s).sort()).toEqual(["p", "x", "y"]);
+  });
+});
+
+describe("the index copy's label preflight, which a dry run also runs", () => {
+  const target = (rows: unknown[] = []) => ({ execute: vi.fn(async () => ({ rows })) });
+  const snap = (labelFingerprint: string | null) => ({ ...whole(), labelFingerprint });
+
+  it("refuses when the target's labels give different role sets", async () => {
+    const t = target();
+    expect(await indexCopySpec.targetRefusal!(t as never, snap("a".repeat(32)))).toMatch(/different role sets/);
+    expect(t.execute).not.toHaveBeenCalled(); // no listed card, so nothing to read
+  });
+
+  it("reads nothing for a build that wrote no label targets", async () => {
+    const t = target();
+    expect(await indexCopySpec.targetRefusal!(t as never, snap(null))).toBeNull();
+    expect(t.execute).not.toHaveBeenCalled();
+  });
+});
+
+describe("the index copy's label check under the lock", () => {
+  it("refuses inside publish before writing anything, when the labels moved after the preflight", async () => {
+    // A transaction that can only read: any write the publish attempted before refusing would throw
+    // a TypeError here instead of the refusal.
+    const tx = { execute: vi.fn(async () => ({ rows: [] })) };
+    const s = {
+      ...whole(),
+      supportCards: [{ commanderOracleId: "c0", oracleId: "x" }] as unknown as Snapshot["supportCards"],
+      labelFingerprint: "a".repeat(32),
+    };
+    await expect(indexCopySpec.publish(tx as never, s)).rejects.toThrow(/different role sets/);
+    expect(tx.execute).toHaveBeenCalledTimes(1);
   });
 });

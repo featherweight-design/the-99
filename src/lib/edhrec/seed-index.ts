@@ -6,7 +6,9 @@ import {
 } from "../../db/schema";
 import { SCORE_INDEX_LOCK } from "../recs/store";
 import { choosePairs, LEGAL_PAIR_FLOOR, legalPairs, pairKey, type IndexPair } from "./pair-enumerate";
-import { deriveRoleTargets, roleTargetsPublishable, ROLE_TARGET_FLOOR } from "./role-targets";
+import { deriveRoleTargets, roleTargetsPublishable, ROLE_TARGET_FLOOR, type RoleDerivationRow, type RoleTargetRow } from "./role-targets";
+import { readLabelRoleSets } from "../labels/read";
+import { roleSetFingerprint } from "../labels/role-sets";
 import { isCommanderCandidate } from "../recs/score";
 import { edhrecInit, fetchEdhrecUncached, type EdhrecFetchResult } from "./client";
 import {
@@ -63,7 +65,33 @@ export type RoleTargetPassResult = {
   written: number;
   pairsWritten: number;
   zeroWipes: number;
+  /** `roleSetFingerprint` over every card the index lists, or null when the label pass was
+   *  skipped for coverage (`LABEL_COVERAGE_FLOOR`) and wrote no `label_*`. */
+  labelFingerprint: string | null;
+  /** Share of the commanders' inclusion mass carried by a card with a fresh label, 0 to 1. */
+  labelCoverage: number;
 };
+
+/**
+ * Below this share of the inclusion mass carried by freshly labelled cards, the label pass writes
+ * no `label_*` at all rather than targets derived from a fraction of the list. 97.3% on staging
+ * (2026-10-10), so this trips only on a database the labelling job has not reached, such as a
+ * fresh local one, where a reader then falls through the basis chain instead of reading zeroes.
+ * The classifier pass is not gated on it, so a database with no labels still builds its index.
+ */
+export const LABEL_COVERAGE_FLOOR = 0.9;
+
+/** Share of the positive inclusion mass in `rows` carried by a card in `labelled`. Pure. */
+export function labelCoverage(rows: readonly Pick<RoleDerivationRow, "oracleId" | "inclusion">[], labelled: ReadonlySet<string> | ReadonlyMap<string, unknown>): number {
+  let all = 0;
+  let covered = 0;
+  for (const r of rows) {
+    if (r.inclusion === null || !Number.isFinite(r.inclusion) || r.inclusion <= 0) continue;
+    all += r.inclusion;
+    if (labelled.has(r.oracleId)) covered += r.inclusion;
+  }
+  return all === 0 ? 0 : covered / all;
+}
 
 export type BuildIndexResult = {
   /** Headers actually written — `ok` plus `absent`. Degraded ones are not written. */
@@ -72,6 +100,8 @@ export type BuildIndexResult = {
   roleTargets: number;
   /** Pairs whose four role targets were derived and written by the same pass. */
   pairRoleTargets: number;
+  /** The role pass's `labelFingerprint`, recorded in the build's ledger row for the copy. */
+  labelFingerprint: string | null;
   cardRows: number;
   degraded: number; absent: number; unresolved: number;
   skipped: number; failed: number;
@@ -401,7 +431,7 @@ export async function buildCommanderIndex(
   const already = opts.loadAlreadyComputed ? await opts.loadAlreadyComputed() : new Set<string>();
 
   const r: BuildIndexResult = {
-    commanders: 0, roleTargets: 0, pairRoleTargets: 0, cardRows: 0, degraded: 0, absent: 0,
+    commanders: 0, roleTargets: 0, pairRoleTargets: 0, labelFingerprint: null, cardRows: 0, degraded: 0, absent: 0,
     unresolved: 0, skipped: 0, failed: 0,
     pairs: 0, pairCardRows: 0, pairsFailed: 0, pairsDegraded: 0, pairsUnresolved: 0,
     pairsSkipped: 0, legalPairs: null, pairRefusal: null,
@@ -636,6 +666,7 @@ export async function buildCommanderIndex(
   const roles = await deriveRoles({ commanders: writtenCommanders, pairs: writtenPairs });
   r.roleTargets = roles.written;
   r.pairRoleTargets = roles.pairsWritten;
+  r.labelFingerprint = roles.labelFingerprint;
 
   // The shipped pass clears inside its own publish transaction; this covers an injected one,
   // and costs one empty delete otherwise.
@@ -687,7 +718,10 @@ async function clearRolesFor(written: RunWrites) {
   if (written.commanders.length === 0 && written.pairs.length === 0) {
     return { commanders: 0, pairs: 0 };
   }
-  const NO_ROLES = { avgRamp: null, avgDraw: null, avgRemoval: null, avgWipes: null };
+  const NO_ROLES = {
+      avgRamp: null, avgDraw: null, avgRemoval: null, avgWipes: null,
+      labelRamp: null, labelDraw: null, labelRemoval: null, labelWipes: null,
+    };
   return db.transaction(async (tx) => {
     let c: { id: string }[] = [];
     if (written.commanders.length > 0) {
@@ -768,17 +802,16 @@ export async function deriveAndWriteRoleTargets(
     )
     .where(sql`${commanderSupport.synergyState} = 'ok'`);
 
-  const targets = deriveRoleTargets(
-    rows.map((r) => ({
-      commanderOracleId: r.commanderOracleId,
-      oracleId: r.oracleId,
-      inclusion: r.inclusion,
-      typeLine: r.typeLine ?? "",
-      oracleText: r.oracleText,
-      keywords: r.keywords ?? [],
-      layout: r.layout ?? "normal",
-    })),
-  );
+  const commanderInput: RoleDerivationRow[] = rows.map((r) => ({
+    commanderOracleId: r.commanderOracleId,
+    oracleId: r.oracleId,
+    inclusion: r.inclusion,
+    typeLine: r.typeLine ?? "",
+    oracleText: r.oracleText,
+    keywords: r.keywords ?? [],
+    layout: r.layout ?? "normal",
+  }));
+  const targets = deriveRoleTargets(commanderInput);
 
   const [{ ok }] = await db
     .select({ ok: sql<number>`count(*)::int` })
@@ -826,17 +859,16 @@ export async function deriveAndWriteRoleTargets(
 
   // Keyed on the pair, not the primary: `deriveRoleTargets` groups by whatever id it is given,
   // and two pairs sharing a primary commander would otherwise fold into one set of figures.
-  const pairTargets = deriveRoleTargets(
-    pairRows.map((r) => ({
-      commanderOracleId: `${r.commanderOracleId}|${r.partnerOracleId}`,
-      oracleId: r.oracleId,
-      inclusion: r.inclusion,
-      typeLine: r.typeLine ?? "",
-      oracleText: r.oracleText,
-      keywords: r.keywords ?? [],
-      layout: r.layout ?? "normal",
-    })),
-  );
+  const pairInput: RoleDerivationRow[] = pairRows.map((r) => ({
+    commanderOracleId: `${r.commanderOracleId}|${r.partnerOracleId}`,
+    oracleId: r.oracleId,
+    inclusion: r.inclusion,
+    typeLine: r.typeLine ?? "",
+    oracleText: r.oracleText,
+    keywords: r.keywords ?? [],
+    layout: r.layout ?? "normal",
+  }));
+  const pairTargets = deriveRoleTargets(pairInput);
 
   // THE PAIR POPULATION GETS THE SAME REFUSAL, and needs its own because the commander check
   // above cannot see it: the transaction below clears every pair role column and then fills
@@ -863,6 +895,24 @@ export async function deriveAndWriteRoleTargets(
     );
   }
 
+  // ---- THE SAME TARGETS FROM LABELS -------------------------------------------------------
+  //
+  // Beside `avg_*`, never instead of them (plan `2026-10-10-labels-everywhere.md`): every reader
+  // still counting a deck with the classifier keeps a bar its count can reach. Same rows, same
+  // inclusion sums, same `measured` rule, so the label targets reach exactly the commanders and
+  // pairs the classifier pass just passed its floors on. Only the roles of each card differ.
+  const listed = [...new Set([...commanderInput, ...pairInput].map((r) => r.oracleId))];
+  const labelSets = await readLabelRoleSets(listed);
+  const coverage = labelCoverage(commanderInput, labelSets);
+  const labelled = coverage >= LABEL_COVERAGE_FLOOR;
+  const labelTargets = labelled ? deriveRoleTargets(commanderInput, { rolesOf: labelSets }) : new Map<string, RoleTargetRow>();
+  const pairLabelTargets = labelled ? deriveRoleTargets(pairInput, { rolesOf: labelSets }) : new Map<string, RoleTargetRow>();
+  const labelFingerprint = labelled ? roleSetFingerprint(listed, labelSets) : null;
+  console.log(
+    `commander-index: fresh labels carry ${(coverage * 100).toFixed(1)}% of the inclusion mass` +
+    (labelled ? ` · label fingerprint ${labelFingerprint}` : ` — under ${LABEL_COVERAGE_FLOOR * 100}%, so no label targets are written`),
+  );
+
   // ONE TRANSACTION FOR THE WHOLE PUBLISH, clear then fill — the shape `job=printings` was
   // corrected to in #704, and for the same reason.
   //
@@ -874,7 +924,10 @@ export async function deriveAndWriteRoleTargets(
   // roles at the same instant everyone else gains theirs, rather than hundreds of transactions
   // earlier and irrespective of whether this pass ever succeeds.
   await db.transaction(async (tx) => {
-    const NO_ROLES = { avgRamp: null, avgDraw: null, avgRemoval: null, avgWipes: null };
+    const NO_ROLES = {
+      avgRamp: null, avgDraw: null, avgRemoval: null, avgWipes: null,
+      labelRamp: null, labelDraw: null, labelRemoval: null, labelWipes: null,
+    };
     await tx.update(commanderSupport).set(NO_ROLES);
     await tx.update(commanderPairSupport).set(NO_ROLES);
 
@@ -884,13 +937,19 @@ export async function deriveAndWriteRoleTargets(
     // transaction's duration is the whole cost a reader elsewhere pays for it.
     for (let i = 0; i < entries.length; i += ROLE_WRITE_CHUNK) {
       const slice = entries.slice(i, i + ROLE_WRITE_CHUNK);
-      const tuples = slice.map(([id, t]) =>
-        sql`(${id}::uuid, ${t.ramp}::real, ${t.draw}::real, ${t.removal}::real, ${t.wipes}::real)`);
+      const tuples = slice.map(([id, t]) => {
+        const l = labelTargets.get(id);
+        return sql`(${id}::uuid, ${t.ramp}::real, ${t.draw}::real, ${t.removal}::real, ${t.wipes}::real,
+                    ${l?.ramp ?? null}::real, ${l?.draw ?? null}::real, ${l?.removal ?? null}::real, ${l?.wipes ?? null}::real)`;
+      });
       await tx.execute(sql`
         update ${commanderSupport} as cs
            set avg_ramp = v.ramp, avg_draw = v.draw,
-               avg_removal = v.removal, avg_wipes = v.wipes
-          from (values ${sql.join(tuples, sql`, `)}) as v(id, ramp, draw, removal, wipes)
+               avg_removal = v.removal, avg_wipes = v.wipes,
+               label_ramp = v.lramp, label_draw = v.ldraw,
+               label_removal = v.lremoval, label_wipes = v.lwipes
+          from (values ${sql.join(tuples, sql`, `)})
+            as v(id, ramp, draw, removal, wipes, lramp, ldraw, lremoval, lwipes)
          where cs.commander_oracle_id = v.id`);
     }
 
@@ -898,15 +957,19 @@ export async function deriveAndWriteRoleTargets(
     for (let i = 0; i < pairEntries.length; i += ROLE_WRITE_CHUNK) {
       const tuples = pairEntries.slice(i, i + ROLE_WRITE_CHUNK).map(([key, t]) => {
         const [a, b] = key.split("|");
+        const l = pairLabelTargets.get(key);
         return sql`(${a}::uuid, ${b}::uuid, ${t.ramp}::real, ${t.draw}::real,
-                    ${t.removal}::real, ${t.wipes}::real)`;
+                    ${t.removal}::real, ${t.wipes}::real,
+                    ${l?.ramp ?? null}::real, ${l?.draw ?? null}::real, ${l?.removal ?? null}::real, ${l?.wipes ?? null}::real)`;
       });
       await tx.execute(sql`
         update ${commanderPairSupport} as ps
            set avg_ramp = v.ramp, avg_draw = v.draw,
-               avg_removal = v.removal, avg_wipes = v.wipes
+               avg_removal = v.removal, avg_wipes = v.wipes,
+               label_ramp = v.lramp, label_draw = v.ldraw,
+               label_removal = v.lremoval, label_wipes = v.lwipes
           from (values ${sql.join(tuples, sql`, `)})
-            as v(id, partner, ramp, draw, removal, wipes)
+            as v(id, partner, ramp, draw, removal, wipes, lramp, ldraw, lremoval, lwipes)
          where ps.commander_oracle_id = v.id and ps.partner_oracle_id = v.partner`);
     }
 
@@ -921,6 +984,8 @@ export async function deriveAndWriteRoleTargets(
     written: targets.size,
     pairsWritten: pairTargets.size,
     zeroWipes: entries.filter(([, t]) => t.wipes === 0).length,
+    labelFingerprint,
+    labelCoverage: coverage,
   };
 }
 

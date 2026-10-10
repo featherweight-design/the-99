@@ -589,6 +589,13 @@
       "when": 1791567230114,
       "tag": "0083_collection_history",
       "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1791610582916,
+      "tag": "0084_label_role_targets",
+      "breakpoints": true
     }
   ]
 }

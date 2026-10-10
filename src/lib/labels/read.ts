@@ -3,6 +3,7 @@ import { db } from "../../db";
 import { searchesOnlyLands } from "../bracket/tutor-targets";
 import { labelIsFresh, PROMPT_SYSTEM_SHA256 } from "./prompt";
 import { isJob } from "./schema";
+import { labelRoleSet, type LabelTargetRole } from "./role-sets";
 import type { Job } from "./types";
 
 /**
@@ -59,15 +60,42 @@ type Row = {
  * Absent means the text path compares that card's pairs (the run plan's Task 5, Q1).
  */
 export async function readLabels(oracleIds: readonly string[]): Promise<Map<string, Job[]>> {
+  return freshLabels(await readLabelRows(oracleIds));
+}
+
+/** Anything that can run a raw query on this schema: the app's `db`, or a transaction on another
+ *  database (a copy reads the TARGET's labels inside its publish). */
+type Executor = Pick<typeof db, "execute">;
+
+async function readLabelRows(oracleIds: readonly string[], exec: Executor = db): Promise<Row[]> {
   const ids = [...new Set(oracleIds)];
-  if (ids.length === 0) return new Map();
-  const rows = await db.execute<Row>(sql`
+  if (ids.length === 0) return [];
+  const rows = await exec.execute<Row>(sql`
     select l.oracle_id, l.labels, l.model, l.prompt_version, l.input_hash,
            c.name, c.mana_cost, c.type_line, c.oracle_text, c.layout
       from card_labels l join cards c on c.oracle_id = l.oracle_id
      where l.oracle_id = any(${sql.param(ids)}::uuid[])
   `);
-  return freshLabels(rows.rows);
+  return rows.rows;
+}
+
+/**
+ * Each FRESH-labelled card's role set under the deck-count rule (`labelRoleSet`), read through
+ * the same freshness rule as `readLabels`, so the index build and the page agree on which labels
+ * exist. A card absent from the map has no fresh label.
+ */
+export async function readLabelRoleSets(
+  oracleIds: readonly string[],
+  exec: Executor = db,
+): Promise<Map<string, LabelTargetRole[]>> {
+  const rows = await readLabelRows(oracleIds, exec);
+  const jobs = freshLabels(rows);
+  const out = new Map<string, LabelTargetRole[]>();
+  for (const r of rows) {
+    const j = jobs.get(r.oracle_id);
+    if (j) out.set(r.oracle_id, labelRoleSet(j, r.type_line ?? ""));
+  }
+  return out;
 }
 
 /**

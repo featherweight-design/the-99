@@ -9,7 +9,7 @@ beforeEach(() => { cleared = 0; });
 const stub = vi.hoisted(() => ({ db: {} as Record<string, unknown> }));
 vi.mock("../../db", () => ({ db: stub.db }));
 
-import { buildCommanderIndex,
+import { buildCommanderIndex, labelCoverage, LABEL_COVERAGE_FLOOR,
   pairNameFilter, pairRunProblem, replaceCompositionIn, type BuildIndexResult,
 } from "./seed-index";
 import { commanderScores, identityComposition } from "../../db/schema";
@@ -39,7 +39,7 @@ it("writes one header per commander and one child row per resolved card", async 
     loadPairs: async () => [],
     // Same reasoning for the role-target pass, which is the run's other database-reaching
     // default.
-    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0 }),
+    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0, labelFingerprint: null, labelCoverage: 0 }),
     loadCommanders: async () => [commander("Ghoulcaller Gisa", "g")],
     loadNameIndex: async () => [
       { oracleId: "g", name: "Ghoulcaller Gisa" },
@@ -70,7 +70,7 @@ it("counts an unresolvable name without dropping it from edhrecTotal", async () 
     loadPairs: async () => [],
     // Same reasoning for the role-target pass, which is the run's other database-reaching
     // default.
-    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0 }),
+    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0, labelFingerprint: null, labelCoverage: 0 }),
     loadCommanders: async () => [commander("Ghoulcaller Gisa", "g")],
     loadNameIndex: async () => [{ oracleId: "s", name: "Sol Ring" }],
     fetch: async () => okResult(["Sol Ring", "A Card We Do Not Have"]),
@@ -96,7 +96,7 @@ it("does not write at all when EDHREC is unreachable", async () => {
     loadPairs: async () => [],
     // Same reasoning for the role-target pass, which is the run's other database-reaching
     // default.
-    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0 }),
+    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0, labelFingerprint: null, labelCoverage: 0 }),
     loadCommanders: async () => [commander("Ghoulcaller Gisa", "g")],
     loadNameIndex: async () => [],
     fetch: async () => ({ data: null, unreachable: true }),
@@ -120,7 +120,7 @@ it("writes an absent header when EDHREC genuinely has no page", async () => {
     loadPairs: async () => [],
     // Same reasoning for the role-target pass, which is the run's other database-reaching
     // default.
-    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0 }),
+    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0, labelFingerprint: null, labelCoverage: 0 }),
     loadCommanders: async () => [commander("Obscure Legend", "o")],
     loadNameIndex: async () => [],
     fetch: async () => ({ data: null, unreachable: false }),
@@ -142,7 +142,7 @@ it("does not abort the run when one commander throws", async () => {
     loadPairs: async () => [],
     // Same reasoning for the role-target pass, which is the run's other database-reaching
     // default.
-    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0 }),
+    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0, labelFingerprint: null, labelCoverage: 0 }),
     loadCommanders: async () => [commander("A", "a"), commander("B", "b")],
     loadNameIndex: async () => [],
     fetch: async (name) => {
@@ -166,7 +166,7 @@ it("skips commanders already computed after the run start when resuming", async 
     loadPairs: async () => [],
     // Same reasoning for the role-target pass, which is the run's other database-reaching
     // default.
-    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0 }),
+    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0, labelFingerprint: null, labelCoverage: 0 }),
     loadCommanders: async () => [commander("A", "a"), commander("B", "b")],
     loadNameIndex: async () => [],
     loadAlreadyComputed: async () => new Set(["a"]),
@@ -188,7 +188,7 @@ it("waits delayMs between fetches so EDHREC is not hammered", async () => {
     loadPairs: async () => [],
     // Same reasoning for the role-target pass, which is the run's other database-reaching
     // default.
-    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0 }),
+    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0, labelFingerprint: null, labelCoverage: 0 }),
     loadCommanders: async () => [commander("A", "a"), commander("B", "b")],
     loadNameIndex: async () => [],
     fetch: async () => okResult([]),
@@ -213,7 +213,7 @@ it("clears persisted scores once, after a run that wrote something", async () =>
     loadPairs: async () => [],
     // Same reasoning for the role-target pass, which is the run's other database-reaching
     // default.
-    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0 }),
+    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0, labelFingerprint: null, labelCoverage: 0 }),
     loadCommanders: async () => [commander("A", "a"), commander("B", "b")],
     loadNameIndex: async () => [],
     fetch: async () => okResult(["Sol Ring"]),
@@ -234,7 +234,7 @@ it("leaves persisted scores alone when the run wrote nothing", async () => {
     loadPairs: async () => [],
     // Same reasoning for the role-target pass, which is the run's other database-reaching
     // default.
-    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0 }),
+    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0, labelFingerprint: null, labelCoverage: 0 }),
     loadCommanders: async () => [commander("A", "a")],
     loadNameIndex: async () => [],
     // A `degraded` header is not written, so nothing reached the table.
@@ -259,7 +259,7 @@ it("clears persisted scores on a resume that wrote nothing but skipped work", as
     loadPairs: async () => [],
     // Same reasoning for the role-target pass, which is the run's other database-reaching
     // default.
-    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0 }),
+    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0, labelFingerprint: null, labelCoverage: 0 }),
     loadCommanders: async () => [commander("A", "a"), commander("B", "b")],
     loadNameIndex: async () => [],
     loadAlreadyComputed: async () => new Set(["a", "b"]),
@@ -281,7 +281,7 @@ it("leaves scores alone when every commander failed and none was skipped", async
     loadPairs: async () => [],
     // Same reasoning for the role-target pass, which is the run's other database-reaching
     // default.
-    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0 }),
+    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0, labelFingerprint: null, labelCoverage: 0 }),
     loadCommanders: async () => [commander("A", "a")],
     loadNameIndex: async () => [],
     fetch: async () => { throw new Error("boom"); },
@@ -325,7 +325,7 @@ it("clears scores under an exclusive index lock, in a transaction", async () => 
     loadPairs: async () => [],
     // Same reasoning for the role-target pass, which is the run's other database-reaching
     // default.
-    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0 }),
+    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0, labelFingerprint: null, labelCoverage: 0 }),
     loadCommanders: async () => [commander("A", "a")],
     loadNameIndex: async () => [],
     fetch: async () => okResult(["Sol Ring"]),
@@ -348,7 +348,7 @@ describe("buildCommanderIndex — the pair pass", () => {
     clearScores: async () => {},
     // Injected for the same reason as `clearScores`: the default reaches a real database, and
     // this suite proves the BUILD without one.
-    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0 }),
+    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0, labelFingerprint: null, labelCoverage: 0 }),
     sleep: async () => {},
     delayMs: 0,
   };
@@ -502,7 +502,7 @@ describe("the score clear runs before the pair pass", () => {
         cleared++;
       },
       // Same reasoning as `clearScores`: the default reaches a real database.
-      deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0 }),
+      deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0, labelFingerprint: null, labelCoverage: 0 }),
       delayMs: 0,
     });
     expect(cleared).toBe(0);
@@ -521,7 +521,7 @@ describe("buildCommanderIndex — the role-target pass", () => {
       clearScores: async () => {},
       deriveRoleTargets: async () => {
         ran += 1;
-        return { written: 3279, pairsWritten: 1, zeroWipes: 364 };
+        return { written: 3279, pairsWritten: 1, zeroWipes: 364, labelFingerprint: null, labelCoverage: 0 };
       },
       sleep: async () => {},
       delayMs: 0,
@@ -562,7 +562,7 @@ it("hands the role pass exactly the commanders it wrote, and no others", async (
     loadPairs: async () => [],
     deriveRoleTargets: async (written) => {
       handed = written;
-      return { written: 0, pairsWritten: 0, zeroWipes: 0 };
+      return { written: 0, pairsWritten: 0, zeroWipes: 0, labelFingerprint: null, labelCoverage: 0 };
     },
     loadCommanders: async () => [
       commander("Ghoulcaller Gisa", "g"),
@@ -589,7 +589,7 @@ it("hands the role pass exactly the commanders it wrote, and no others", async (
 
 describe("pairRunProblem", () => {
   const run = (over: Partial<BuildIndexResult>): BuildIndexResult => ({
-    commanders: 0, roleTargets: 0, pairRoleTargets: 0, cardRows: 0, degraded: 0, absent: 0,
+    commanders: 0, roleTargets: 0, pairRoleTargets: 0, labelFingerprint: null, cardRows: 0, degraded: 0, absent: 0,
     unresolved: 0, skipped: 0, failed: 0, pairs: 0, pairCardRows: 0, pairsFailed: 0,
     pairsDegraded: 0, pairsUnresolved: 0, pairsSkipped: 0, legalPairs: 1717, pairRefusal: null,
     ...over,
@@ -630,7 +630,7 @@ it("clears again after the role pass writes targets", async () => {
   const order: string[] = [];
   await buildCommanderIndex({
     loadPairs: async () => [],
-    deriveRoleTargets: async () => { order.push("roles"); return { written: 1, pairsWritten: 0, zeroWipes: 0 }; },
+    deriveRoleTargets: async () => { order.push("roles"); return { written: 1, pairsWritten: 0, zeroWipes: 0, labelFingerprint: null, labelCoverage: 0 }; },
     loadCommanders: async () => [commander("A", "a")],
     loadNameIndex: async () => [],
     fetch: async () => okResult(["Sol Ring"]),
@@ -666,7 +666,7 @@ it("retries the clear on the error path when only the role pass published", asyn
   let clears = 0;
   await expect(buildCommanderIndex({
     loadPairs: async () => [],
-    deriveRoleTargets: async () => { order.push("roles"); return { written: 3279, pairsWritten: 0, zeroWipes: 0 }; },
+    deriveRoleTargets: async () => { order.push("roles"); return { written: 3279, pairsWritten: 0, zeroWipes: 0, labelFingerprint: null, labelCoverage: 0 }; },
     loadCommanders: async () => [],
     loadNameIndex: async () => [],
     clearScores: async () => {
@@ -694,5 +694,22 @@ describe("replaceCompositionIn", () => {
     };
     await replaceCompositionIn(tx as never, []);
     expect(steps).toEqual(["delete:composition", "insert:composition", "lock:exclusive", "delete:scores"]);
+  });
+});
+
+describe("labelCoverage", () => {
+  const r = (oracleId: string, inclusion: number | null) => ({ oracleId, inclusion });
+
+  it("is the share of the positive inclusion mass on a labelled card", () => {
+    expect(labelCoverage([r("a", 60), r("b", 30), r("c", 10)], new Set(["a", "c"]))).toBeCloseTo(0.7);
+  });
+
+  it("weighs no row with a null, zero or negative inclusion", () => {
+    expect(labelCoverage([r("a", 50), r("b", null), r("c", 0), r("d", -5)], new Set(["a"]))).toBe(1);
+  });
+
+  it("is 0 with nothing to measure, so the label pass writes nothing", () => {
+    expect(labelCoverage([], new Set(["a"]))).toBe(0);
+    expect(labelCoverage([], new Set()) >= LABEL_COVERAGE_FLOOR).toBe(false);
   });
 });

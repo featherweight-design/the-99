@@ -164,3 +164,18 @@ describe("a commander with no inclusion data anywhere", () => {
     expect(t.get("cmd")?.draw).toBeGreaterThan(0);
   });
 });
+
+describe("deriveRoleTargets from a handed-in role lookup (the label pass)", () => {
+  it("counts each card by the lookup, not by its text", () => {
+    const out = deriveRoleTargets(
+      [row({ commanderOracleId: "c", oracleId: "a", ...draw }), row({ commanderOracleId: "c", oracleId: "b" })],
+      { rolesOf: new Map([["a", ["ramp"]], ["b", ["draw", "removal"]]]) },
+    );
+    expect(out.get("c")).toEqual({ ramp: 1, draw: 1, removal: 1, wipes: 0 });
+  });
+
+  it("counts a card absent from the lookup toward no role, and still reports the commander", () => {
+    const out = deriveRoleTargets([row({ commanderOracleId: "c", oracleId: "a" })], { rolesOf: new Map() });
+    expect(out.get("c")).toEqual({ ramp: 0, draw: 0, removal: 0, wipes: 0 });
+  });
+});

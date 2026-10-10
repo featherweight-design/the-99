@@ -102,7 +102,7 @@ async function run(): Promise<void> {
     loadPairs: () => loadPairs(),
     loadCommanders: async () => [],
     clearScores: async () => {},
-    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0 }),
+    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0, labelFingerprint: null, labelCoverage: 0 }),
     writePair: async () => {},
     delayMs: 0,
   };

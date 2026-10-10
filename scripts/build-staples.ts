@@ -17,7 +17,7 @@ import { requireEnv } from "./lib/env.mjs";
 requireEnv(["DATABASE_URL"]);
 import { sql } from "drizzle-orm";
 import { db } from "../src/db";
-import { latestBuild, phaseReport, recordBuild } from "../src/lib/catalog/builds";
+import { labelsDetail, labelsOf, latestBuild, phaseReport, recordBuild } from "../src/lib/catalog/builds";
 import { formatStaples } from "../src/db/schema";
 import {
   MIN_COMMANDERS_PER_CONDITION, THIN_COLOR_COUNTS, thinCondition,
@@ -180,7 +180,10 @@ function compositionQuery(
            -- style choice: this text is INSIDE the template and is sent to Postgres, which
            -- has no double-slash comment and fails the whole derivation on one. The comments
            -- above it sit inside an interpolation, so they are TypeScript and stay that way.
-           ${["avg_ramp", "avg_draw", "avg_removal", "avg_wipes"]
+           ${["avg_ramp", "avg_draw", "avg_removal", "avg_wipes",
+              // The same four from labels. Null for a bucket none of whose commanders carries
+              // one, which is the column's own null policy.
+              "label_ramp", "label_draw", "label_removal", "label_wipes"]
               .map(avgRole).join(",\n           ")},
            count(*) filter (where cs.avg_ramp is not null)::int as with_roles
     from commander_support cs
@@ -580,6 +583,11 @@ async function main() {
     avgRamp: Number(c.avg_ramp ?? 0), avgDraw: Number(c.avg_draw ?? 0),
     avgRemoval: Number(c.avg_removal ?? 0), avgWipes: Number(c.avg_wipes ?? 0),
     withRoles: Number(c.with_roles ?? 0),
+    // Null stays null here, unlike `avg_*` above: no label figure is not a zero.
+    labelRamp: c.label_ramp == null ? null : Number(c.label_ramp),
+    labelDraw: c.label_draw == null ? null : Number(c.label_draw),
+    labelRemoval: c.label_removal == null ? null : Number(c.label_removal),
+    labelWipes: c.label_wipes == null ? null : Number(c.label_wipes),
     avgCurve: curves.get(String(c.condition)) ?? null,
   }));
 
@@ -676,7 +684,9 @@ latestBuild(db, "index")
     }
     // The index step's fingerprint, not today's: this row vouches for the catalog the index was
     // derived from, so a catalog refresh that landed during the index build stays a refusal.
-    return recordBuild(db, "index", main, () => phaseReport("staples"), undefined, prev.catalogFingerprint);
+    // And its LABEL fingerprint, so the copy checks the target's labels against the ones the index
+    // step's `label_*` were derived from.
+    return recordBuild(db, "index", main, () => phaseReport("staples", labelsDetail(labelsOf(prev.report))), undefined, prev.catalogFingerprint);
   })
   .then(() => process.exit(0))
   .catch((err) => { console.error(err instanceof Error ? err.message : err); process.exit(1); });
