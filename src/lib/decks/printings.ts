@@ -31,8 +31,13 @@ import { deckPrintingsEnabled } from "./printings-flag";
 /** A deck's pick as stored: `set_code` lowercase, `collector_number` text. */
 export type DeckPick = { setCode: string; collectorNumber: string };
 
-/** Where a resolved printing came from, in chain order. */
-export type DeckPrintingSource = "deck" | "collection" | "catalog";
+/**
+ * Where a resolved printing came from, in chain order. `catalogSubstitute` is an unowned card whose
+ * oracle-level printing the catalog does not list, resolved to another printing of it: every surface
+ * draws `cards.image_uri` for such a card, so the substitute names a printing nothing showed, and a
+ * version never records it.
+ */
+export type DeckPrintingSource = "deck" | "collection" | "catalog" | "catalogSubstitute";
 
 export type DeckPrinting = {
   /** Copies owned across EVERY printing of the card; 0 for a card the player does not own. */
@@ -172,14 +177,16 @@ export async function readDeckPrintings(
       image_uri: string | null;
       art_crop_uri: string | null;
       flavor_name: string | null;
+      exact: boolean | null;
     }>(sql`
-      select c.oracle_id, c.name, p.set_code, p.collector_number,
+      select c.oracle_id, c.name, p.set_code, p.collector_number, p.exact,
              coalesce(p.image_uri, c.image_uri) as image_uri,
              coalesce(p.art_crop_uri, c.art_crop_uri) as art_crop_uri,
              p.flavor_name
       from cards c
       left join lateral (
-        select pr.set_code, pr.collector_number, pr.image_uri, pr.art_crop_uri, pr.flavor_name
+        select pr.set_code, pr.collector_number, pr.image_uri, pr.art_crop_uri, pr.flavor_name,
+               (pr.scryfall_id = c.scryfall_id) as exact
         from printings pr
         where pr.oracle_id = c.oracle_id
         order by (pr.scryfall_id = c.scryfall_id) desc, (pr.image_uri is null), pr.scryfall_id
@@ -195,7 +202,7 @@ export async function readDeckPrintings(
         artCropUri: r.art_crop_uri,
         setCode: (r.set_code ?? "").toUpperCase(),
         collectorNumber: r.collector_number ?? "",
-        source: "catalog",
+        source: r.exact === false ? "catalogSubstitute" : "catalog",
       });
     }
   }
@@ -244,7 +251,7 @@ export async function readDeckOwnedPrintings(
 }
 
 function ownedOnly(printings: Map<string, DeckPrinting>): Map<string, DeckPrinting> {
-  return new Map([...printings].filter(([, p]) => p.source !== "catalog"));
+  return new Map([...printings].filter(([, p]) => p.source === "deck" || p.source === "collection"));
 }
 
 /**
@@ -345,14 +352,15 @@ export async function readRecordedPrintingArt(
 
 /**
  * The version columns for the printing a card showed at commit: lowercase set code as stored, or
- * both null when nothing resolved or the catalog lists no printing for the card (`""`).
+ * both null when nothing resolved, the catalog lists no printing for the card (`""`), or the
+ * printing is a substitute no surface drew.
  */
 export function recordedColumns(
   shown: Map<string, DeckPrinting>,
   oracleId: string | null,
 ): { setCode: string | null; collectorNumber: string | null } {
   const p = oracleId ? shown.get(oracleId) : undefined;
-  return p && p.setCode !== ""
+  return p && p.setCode !== "" && p.source !== "catalogSubstitute"
     ? { setCode: p.setCode.toLowerCase(), collectorNumber: p.collectorNumber }
     : { setCode: null, collectorNumber: null };
 }

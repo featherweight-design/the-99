@@ -136,6 +136,16 @@ describe("readDeckPrintings", () => {
     expect(printings.get(UNOWNED)).toMatchObject({ setCode: "", collectorNumber: "", imageUri: "img-oracle", source: "catalog" });
   });
 
+  it("marks a substitute printing, which no surface draws and no version records", async () => {
+    state.catalog = [{
+      oracle_id: UNOWNED, name: "Brain Freeze", set_code: "soa", collector_number: "78",
+      image_uri: "img-sub", art_crop_uri: null, flavor_name: null, exact: false,
+    }];
+    const { printings } = await readDeckPrintings("u", DECK, [UNOWNED], { usePicks: true });
+    expect(printings.get(UNOWNED)?.source).toBe("catalogSubstitute");
+    expect(recordedColumns(printings, UNOWNED)).toEqual({ setCode: null, collectorNumber: null });
+  });
+
   it("falls back to another printing of the card when its oracle-level printing is missing", async () => {
     await readDeckPrintings("u", DECK, [UNOWNED], { usePicks: true });
     const read = state.texts.find((t) => t.includes("from cards c"));

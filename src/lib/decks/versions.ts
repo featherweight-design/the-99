@@ -244,14 +244,15 @@ async function commitVersionIn(
   if (shown.size > 0) {
     const commander = recorded(deck.commanderOracleId);
     const partner = recorded(deck.partnerOracleId);
-    await tx.update(deckVersions)
-      .set({
-        commanderSetCode: commander.setCode,
-        commanderCollectorNumber: commander.collectorNumber,
-        partnerSetCode: partner.setCode,
-        partnerCollectorNumber: partner.collectorNumber,
-      })
-      .where(eq(deckVersions.id, inserted.id));
+    const columns = {
+      commanderSetCode: commander.setCode,
+      commanderCollectorNumber: commander.collectorNumber,
+      partnerSetCode: partner.setCode,
+      partnerCollectorNumber: partner.collectorNumber,
+    };
+    await tx.update(deckVersions).set(columns).where(eq(deckVersions.id, inserted.id));
+    // The version this returns is the row as committed, printing columns included.
+    Object.assign(inserted, columns);
   }
 
   if (rows.length > 0) {
