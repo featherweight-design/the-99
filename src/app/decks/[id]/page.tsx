@@ -136,7 +136,7 @@ export default async function DeckBuilderPage({
   const statsLabelsRead = deckStatsEnabled()
     ? early(detailRead.then((d) => (d ? perf.timed("statsLabels", () => loadStatsLabels(d.cards)) : null)))
     : null;
-  const statsJobsRead = statsLabelsRead ? early(statsLabelsRead.then((labels) => loadJobRows(labels))) : null;
+  const statsJobsRead = statsLabelsRead ? early(Promise.all([detailRead, statsLabelsRead]).then(([d, labels]) => (d ? loadJobRows(d.cards, labels) : null))) : null;
   // The Colors card's land supply: what each land in the deck can add, read from the catalog's text
   // the moment the detail resolves, and awaited only where the card is drawn.
   const statsLandsRead = deckStatsEnabled()
