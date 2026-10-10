@@ -6,7 +6,7 @@ import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { creditsCopy } from "../../lib/copy/credits";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
-import type { TuningItem, TuningState } from "../../lib/tuning/state";
+import type { LineItem, TuningItem, TuningState } from "../../lib/tuning/state";
 import { manifestRows, readSteps, runSteps, TuningPanel, type TuningDeps, type TuningFacts } from "./tuning-panel";
 
 vi.mock("../../app/decks/tuning-actions", () => ({
@@ -17,6 +17,7 @@ vi.mock("../../app/decks/tuning-actions", () => ({
 vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open: vi.fn() }), useCardIntent: () => ({}) }));
 
 const copy = deckTuningCopy.panel;
+const copy_lists = deckTuningCopy.lists;
 const at = new Date("2026-09-23T12:00:00Z");
 
 const fresh: TuningState = {
@@ -1442,6 +1443,91 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
       );
     });
     expect(screen.getByRole("button", { name: "Describe your deck →" })).toBeInTheDocument();
+  });
+
+  describe("the two lists", () => {
+    const line = (over: Partial<LineItem>): LineItem => ({
+      side: "add", id: "l1", cardOracleId: "a", cardName: "Three Visits", cardTypeLine: "Sorcery", cardImageUri: null,
+      rationale: "Why add.", rationaleShort: "Why.", evidence: [{ kind: "decklist", value: "4 of 99 draw" }],
+      position: 0, verdict: "pending", owned: true, ownedQuantity: 1, availability: null, price: null,
+      bracketAfter: null, applies: true, inDeck: false, locked: false, ...over,
+    });
+    const a1 = line({ id: "a1", cardName: "Three Visits" });
+    const a2 = line({ id: "a2", cardName: "Nature's Lore", cardOracleId: "a2" });
+    const c1 = line({ id: "c1", side: "cut", cardName: "Rampant Growth", cardOracleId: "c1", inDeck: true, rationale: "Why cut." });
+    const withLines = (items: LineItem[], over: Partial<TuningState> = {}): TuningState => ({ ...results, gameCount: 5, items, ...over });
+
+    it("draws Additions and Cuts with the count, and the tally from the deck size", async () => {
+      await draw(deps([withLines([a1, a2, c1])]));
+      expect(screen.getByRole("region", { name: copy_lists.additions })).toBeInTheDocument();
+      expect(screen.getByRole("region", { name: copy_lists.cuts })).toBeInTheDocument();
+      expect(screen.getByText(copy_lists.count(2, 1))).toBeInTheDocument();
+      expect(screen.getByText(copy_lists.tally(2, 1, 100, 99))).toBeInTheDocument();
+      expect(screen.getByText(copy_lists.resultsLead)).toBeInTheDocument();
+      expect(screen.queryByText("Swap Rampant Growth for Three Visits")).toBeNull();
+    });
+
+    it("says stays at N when the open lines balance", async () => {
+      await draw(deps([withLines([a1, c1])]));
+      expect(screen.getByText(copy_lists.tally(1, 1, 99, 99))).toBeInTheDocument();
+    });
+
+    it("applies every open line in order on Apply all, then reads once", async () => {
+      const order: string[] = [];
+      const apply = vi.fn(async (id: string) => { order.push(id); return { ok: true as const }; });
+      const d = deps([withLines([a1, a2, c1])], { card: { apply, undo: apply, reject: apply, restore: apply } });
+      await draw(d);
+      const reads = (d.read as ReturnType<typeof vi.fn>).mock.calls.length;
+      await press(copy_lists.applyAll);
+      expect(order).toEqual(["a1", "a2", "c1"]);
+      expect((d.read as ReturnType<typeof vi.fn>).mock.calls.length).toBe(reads + 1);
+    });
+
+    it("stops at the first refusal and shows it", async () => {
+      const apply = vi.fn(async (id: string) => (id === "a2" ? { ok: false as const, message: "Refused." } : { ok: true as const }));
+      const d = deps([withLines([a1, a2, c1])], { card: { apply, undo: apply, reject: apply, restore: apply } });
+      await draw(d);
+      await press(copy_lists.applyAll);
+      expect(apply).toHaveBeenCalledTimes(2);
+      expect(screen.getByText("Refused.")).toBeInTheDocument();
+    });
+
+    it("reads Apply the rest once something is answered, and skips the answered", async () => {
+      const apply = vi.fn(async () => ({ ok: true as const }));
+      const d = deps([withLines([{ ...a1, verdict: "dismissed" }, a2, c1])], { card: { apply, undo: apply, reject: apply, restore: apply } });
+      await draw(d);
+      expect(screen.queryByRole("button", { name: copy_lists.applyAll })).toBeNull();
+      expect(screen.getByText(copy_lists.tally(1, 1, 99, 99))).toBeInTheDocument();
+      await press(copy_lists.applyRest);
+      expect(apply.mock.calls.map((c) => (c as unknown[])[0])).toEqual(["a2", "c1"]);
+    });
+
+    it("hides Apply all when nothing is open", async () => {
+      await draw(deps([withLines([{ ...a1, verdict: "accepted" }, { ...c1, verdict: "dismissed" }])]));
+      expect(screen.queryByRole("button", { name: copy_lists.applyAll })).toBeNull();
+      expect(screen.queryByRole("button", { name: copy_lists.applyRest })).toBeNull();
+      expect(screen.getByText(copy_lists.allDoneLead(1, 1))).toBeInTheDocument();
+    });
+
+    it("draws a quiet line for an empty list", async () => {
+      await draw(deps([withLines([a1])]));
+      expect(screen.getByText(copy_lists.emptyCuts)).toBeInTheDocument();
+      expect(screen.queryByText(copy_lists.emptyAdditions)).toBeNull();
+    });
+
+    it("keeps drawing an older pair through the swap card", async () => {
+      await draw(deps([{ ...results, gameCount: 5 }]));
+      expect(screen.getByRole("article", { name: deckTuningCopy.card.swap("Divination", "Rhystic Study") })).toBeInTheDocument();
+      expect(screen.queryByRole("region", { name: copy_lists.additions })).toBeNull();
+    });
+
+    it("announces the lists after a run", async () => {
+      const run = vi.fn(async () => ({ ok: true as const }));
+      const d = deps([fresh, withLines([a1, a2, c1])], { run });
+      await draw(d);
+      await press(copy.suggest);
+      expect(screen.getByText(deckTuningCopy.announce.readyLists(2, 1))).toBeInTheDocument();
+    });
   });
 });
 

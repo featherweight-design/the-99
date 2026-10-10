@@ -122,7 +122,7 @@ vi.mock("../../lib/model/client", () => ({
     calls.modelRequest = req;
     return calls.modelOutcome ?? {
       ok: true,
-      value: { suggestions: [{ add: "Sol Ring", cut: "Island" }] },
+      value: { additions: [{ card: "Sol Ring" }], cuts: [{ card: "Island" }] },
       usage: { inputTokens: 4_000, outputTokens: 900, cacheReadTokens: 0, cacheWriteTokens: 0 },
     };
   },
@@ -238,46 +238,57 @@ describe("runTuning's model call (v2)", () => {
   });
 });
 
-// H35, PR 4a: eight asked, five kept. Review round 2 (Low, previously missed): the production
+// H35, PR 4a: more asked than kept. Review round 2 (Low, previously missed): the production
 // slice and its persisted report are otherwise unexercised, since every other test's `db` stub
-// throws before reaching the catalog read.
-describe("runTuning's 8-asked/5-kept slice", () => {
-  const CARD = (n: number) => ({
-    add: `Add ${n}`, cut: `Cut ${n}`, rationale: "Good value for this deck.", rationaleShort: "Good value.",
+// throws before reaching the catalog read. Two lists since sub-project 8: six asked in EACH, five
+// kept from each.
+describe("runTuning's 6-asked/5-kept slice, per list", () => {
+  const LINE = (card: string) => ({
+    card, rationale: "Good value for this deck.", rationaleShort: "Good value.",
     evidence: [{ kind: "decklist" as const, value: "x" }],
   });
-  const EIGHT = Array.from({ length: 8 }, (_, i) => CARD(i));
+  const SIX = Array.from({ length: 6 }, (_, i) => i);
+  const ADDS = SIX.map((i) => LINE(`Add ${i}`));
+  const CUTS = SIX.map((i) => LINE(`Cut ${i}`));
+  type Flagged = { addOracleId: string | null; cutOracleId: string | null }[];
+  type Report = { askedCount: number; survivedCount: number; keptCount: number };
+  const persistedOnce = () => calls.persisted[0] as [unknown, Flagged, number, unknown, Report];
 
   beforeEach(() => {
     calls.startKind = "started";
     calls.reachModel = true;
     calls.modelOutcome = {
       ok: true,
-      value: { suggestions: EIGHT },
+      value: { additions: ADDS, cuts: CUTS },
       usage: { inputTokens: 4_000, outputTokens: 900, cacheReadTokens: 0, cacheWriteTokens: 0 },
     };
     calls.evidencePack = {
       commanders: [{ oracleId: "cmd", name: "Commander" }],
       colorIdentity: [],
-      cards: Array.from({ length: 8 }, (_, i) => ({ oracleId: `cut${i}`, name: `Cut ${i}`, commander: false })),
+      cards: SIX.map((i) => ({ oracleId: `cut${i}`, name: `Cut ${i}`, commander: false })),
       play: { games: [], summary: { count: 0, record: { wins: 0, losses: 0, draws: 0 }, marked: 0, axes: [] } },
       intent: null,
       limits: { capCents: null, sets: [], ownedOnly: false },
     };
-    calls.catalogRows = Array.from({ length: 8 }, (_, i) => [
+    calls.catalogRows = SIX.flatMap((i) => [
       { oracleId: `add${i}`, name: `Add ${i}`, colorIdentity: [], commanderLegal: true, printedInSelectedSets: true },
       { oracleId: `cut${i}`, name: `Cut ${i}`, colorIdentity: [], commanderLegal: true, printedInSelectedSets: true },
-    ]).flat();
+    ]);
   });
 
-  it("keeps only the first five of eight valid survivors", async () => {
+  it("keeps only the first five of six valid survivors in EACH list, additions first", async () => {
     await runTuning(DECK, { anyway: true });
     expect(calls.persisted).toHaveLength(1);
-    const [, flagged, droppedCount, , report] = calls.persisted[0] as [unknown, { addOracleId: string }[], number, unknown, { askedCount: number; survivedCount: number; keptCount: number }];
-    expect(flagged).toHaveLength(5);
-    expect(flagged.map((f) => f.addOracleId)).toEqual(["add0", "add1", "add2", "add3", "add4"]);
+    const [, flagged, droppedCount, , report] = persistedOnce();
+    expect(flagged).toHaveLength(10);
+    expect(flagged.slice(0, 5).map((f) => [f.addOracleId, f.cutOracleId])).toEqual(
+      [0, 1, 2, 3, 4].map((i) => [`add${i}`, null]),
+    );
+    expect(flagged.slice(5).map((f) => [f.addOracleId, f.cutOracleId])).toEqual(
+      [0, 1, 2, 3, 4].map((i) => [null, `cut${i}`]),
+    );
     expect(droppedCount).toBe(0);
-    expect(report).toEqual({ askedCount: 8, survivedCount: 8, keptCount: 5, hadNotes: false, drops: [] });
+    expect(report).toEqual({ askedCount: 12, survivedCount: 12, keptCount: 10, hadNotes: false, drops: [] });
   });
 
   // "Additional notes" (H35, PR 4b): the persisted report says whether THIS run carried any,
@@ -292,49 +303,49 @@ describe("runTuning's 8-asked/5-kept slice", () => {
   // Review round 4: proves the mocked `loadPrices`/`readOwnedOracleIds` results actually reach
   // the hard filters through the real wiring, not just that `validateSuggestions` applies them
   // in its own isolated unit tests.
-  it("drops a candidate over an active price cap, from the price read's own result", async () => {
+  it("drops an addition over an active price cap, from the price read's own result", async () => {
     calls.limits = { capCents: 300, sets: [], ownedOnly: false };
-    calls.priceRows = new Map([["add0", 1000], ...Array.from({ length: 7 }, (_, i) => [`add${i + 1}`, 100] as const)]);
+    calls.priceRows = new Map([["add0", 1000], ...SIX.slice(1).map((i) => [`add${i}`, 100] as const)]);
     await runTuning(DECK, { anyway: true });
-    const [, flagged, droppedCount, , report] = calls.persisted[0] as [unknown, { addOracleId: string }[], number, unknown, { askedCount: number; survivedCount: number; keptCount: number }];
+    const [, flagged, droppedCount, , report] = persistedOnce();
     expect(flagged.map((f) => f.addOracleId)).not.toContain("add0");
-    expect(flagged).toHaveLength(5);
+    expect(flagged).toHaveLength(10);
     expect(droppedCount).toBe(1);
     expect(report).toEqual({
-      askedCount: 8, survivedCount: 7, keptCount: 5, hadNotes: false,
-      drops: [{ position: 0, rule: "overCap", name: "Add 0" }],
+      askedCount: 12, survivedCount: 11, keptCount: 10, hadNotes: false,
+      drops: [{ side: "add", position: 0, rule: "overCap", name: "Add 0" }],
     });
   });
 
-  it("drops an unowned candidate when owned-only is active, from the ownership read's own result", async () => {
+  it("drops an unowned addition when owned-only is active, from the ownership read's own result", async () => {
     calls.limits = { capCents: null, sets: [], ownedOnly: true };
-    calls.ownedIds = new Set(Array.from({ length: 7 }, (_, i) => `add${i + 1}`));
+    calls.ownedIds = new Set(SIX.slice(1).map((i) => `add${i}`));
     await runTuning(DECK, { anyway: true });
-    const [, flagged, droppedCount, , report] = calls.persisted[0] as [unknown, { addOracleId: string }[], number, unknown, { askedCount: number; survivedCount: number; keptCount: number }];
+    const [, flagged, droppedCount, , report] = persistedOnce();
     expect(flagged.map((f) => f.addOracleId)).not.toContain("add0");
-    expect(flagged).toHaveLength(5);
+    expect(flagged).toHaveLength(10);
     expect(droppedCount).toBe(1);
     expect(report).toEqual({
-      askedCount: 8, survivedCount: 7, keptCount: 5, hadNotes: false,
-      drops: [{ position: 0, rule: "notOwned" }],
+      askedCount: 12, survivedCount: 11, keptCount: 10, hadNotes: false,
+      drops: [{ side: "add", position: 0, rule: "notOwned" }],
     });
   });
 
   // Review round 6: "owned" alone is not "sleeveable" — a collection row with every copy
   // already claimed by another deck must still be dropped, the same rule `fill.ts`'s
   // `pool: "sleeveable"` applies (`a === undefined || a.free > 0`).
-  it("drops a candidate the player owns but has no free copy of", async () => {
+  it("drops an addition the player owns but has no free copy of", async () => {
     calls.limits = { capCents: null, sets: [], ownedOnly: true };
-    calls.ownedIds = new Set(Array.from({ length: 8 }, (_, i) => `add${i}`));
+    calls.ownedIds = new Set(SIX.map((i) => `add${i}`));
     calls.freeCopies = new Map([["add0", 0]]);
     await runTuning(DECK, { anyway: true });
-    const [, flagged, droppedCount, , report] = calls.persisted[0] as [unknown, { addOracleId: string }[], number, unknown, { askedCount: number; survivedCount: number; keptCount: number }];
+    const [, flagged, droppedCount, , report] = persistedOnce();
     expect(flagged.map((f) => f.addOracleId)).not.toContain("add0");
-    expect(flagged).toHaveLength(5);
+    expect(flagged).toHaveLength(10);
     expect(droppedCount).toBe(1);
     expect(report).toEqual({
-      askedCount: 8, survivedCount: 7, keptCount: 5, hadNotes: false,
-      drops: [{ position: 0, rule: "notOwned" }],
+      askedCount: 12, survivedCount: 11, keptCount: 10, hadNotes: false,
+      drops: [{ side: "add", position: 0, rule: "notOwned" }],
     });
   });
 
@@ -342,18 +353,29 @@ describe("runTuning's 8-asked/5-kept slice", () => {
   // validator test injects `printedInSelectedSets` directly, and `printed-in.test.ts`
   // reconstructs a separate query, so a regression here (an empty set list reaching the real
   // query, say) would leave both green.
-  it("drops a candidate printed outside the deck's selected sets, from the catalog read's own result", async () => {
+  it("drops an addition printed outside the deck's selected sets, from the catalog read's own result", async () => {
     calls.limits = { capCents: null, sets: ["lea"], ownedOnly: false };
     calls.catalogRows = (calls.catalogRows as { oracleId: string }[]).map((r) => (r.oracleId === "add0" ? { ...r, printedInSelectedSets: false } : r));
     await runTuning(DECK, { anyway: true });
-    const [, flagged, droppedCount, , report] = calls.persisted[0] as [unknown, { addOracleId: string }[], number, unknown, { askedCount: number; survivedCount: number; keptCount: number }];
+    const [, flagged, droppedCount, , report] = persistedOnce();
     expect(flagged.map((f) => f.addOracleId)).not.toContain("add0");
-    expect(flagged).toHaveLength(5);
+    expect(flagged).toHaveLength(10);
     expect(droppedCount).toBe(1);
     expect(report).toEqual({
-      askedCount: 8, survivedCount: 7, keptCount: 5, hadNotes: false,
-      drops: [{ position: 0, rule: "offSet" }],
+      askedCount: 12, survivedCount: 11, keptCount: 10, hadNotes: false,
+      drops: [{ side: "add", position: 0, rule: "offSet" }],
     });
+  });
+
+  // The hard filters belong to additions: the same cap never touches a cut.
+  it("leaves the cuts alone when the cap drops every addition", async () => {
+    calls.limits = { capCents: 300, sets: [], ownedOnly: false };
+    calls.priceRows = new Map(SIX.map((i) => [`add${i}`, 1000] as const));
+    await runTuning(DECK, { anyway: true });
+    const [, flagged, droppedCount] = persistedOnce();
+    expect(flagged.every((f) => f.addOracleId === null && f.cutOracleId !== null)).toBe(true);
+    expect(flagged).toHaveLength(5);
+    expect(droppedCount).toBe(6);
   });
 
   // An all-dropped run is persisted as "ungrounded" with only a one-line `refusal` the player
@@ -361,7 +383,11 @@ describe("runTuning's 8-asked/5-kept slice", () => {
   // candidate failed without re-running the model (no cost: already computed, pure data).
   it("persists every candidate's own drop reason on an all-dropped (ungrounded) run", async () => {
     calls.limits = { capCents: 300, sets: [], ownedOnly: false };
-    calls.priceRows = new Map(Array.from({ length: 8 }, (_, i) => [`add${i}`, 1000] as const));
+    calls.priceRows = new Map(SIX.map((i) => [`add${i}`, 1000] as const));
+    calls.modelOutcome = {
+      ok: true, value: { additions: ADDS, cuts: [] },
+      usage: { inputTokens: 4_000, outputTokens: 900, cacheReadTokens: 0, cacheWriteTokens: 0 },
+    };
     await runTuning(DECK, { anyway: true });
     expect(calls.persisted).toHaveLength(0);
     const [, patch] = calls.finished[calls.finished.length - 1] as [
@@ -370,10 +396,10 @@ describe("runTuning's 8-asked/5-kept slice", () => {
     ];
     expect(patch.status).toBe("failed");
     expect(patch.errorClass).toBe("ungrounded");
-    expect(patch.droppedCount).toBe(8);
-    expect(patch.validationReport.drops).toHaveLength(8);
+    expect(patch.droppedCount).toBe(6);
+    expect(patch.validationReport.drops).toHaveLength(6);
     expect(patch.validationReport.drops.every((d) => d.rule === "overCap")).toBe(true);
-    expect(patch.validationReport.drops.map((d) => d.name)).toEqual(Array.from({ length: 8 }, (_, i) => `Add ${i}`));
+    expect(patch.validationReport.drops.map((d) => d.name)).toEqual(SIX.map((i) => `Add ${i}`));
   });
 });
 

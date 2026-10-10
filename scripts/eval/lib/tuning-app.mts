@@ -27,7 +27,7 @@ export async function openTuning() {
   const { buildPrompt } = await import("../../../src/lib/tuning/prompt");
   const { tuningResponseSchema } = await import("../../../src/lib/tuning/response-schema");
   const { nameResolver } = await import("../../../src/lib/tuning/resolve-names");
-  const { validateSuggestions } = await import("../../../src/lib/tuning/validate");
+  const { sizeLists, validateSuggestions } = await import("../../../src/lib/tuning/validate");
   const limits = await import("../../../src/lib/tuning/limits");
   const { PROMPT_VERSION } = await import("../../../src/lib/tuning/prompt-version");
   type EvidencePack = import("../../../src/lib/tuning/evidence").EvidencePack;
@@ -79,9 +79,11 @@ export async function openTuning() {
     return out;
   }
 
-  /** The real accept contract over parsed replies, with one catalog read for every name. */
+  /** The real accept contract over parsed replies, with one catalog read for every name. Two lists
+   *  (sub-project 8): each is validated on its own side's rules and sized to the first
+   *  MAX_SUGGESTIONS survivors, exactly as `runTuning` does. */
   async function score(items: readonly { pack: EvidencePack; value: TuningResponse }[]) {
-    const names = [...new Set(items.flatMap((a) => a.value.suggestions.flatMap((s) => [s.add, s.cut])))];
+    const names = [...new Set(items.flatMap((a) => [...a.value.additions, ...a.value.cuts].map((l) => l.card)))];
     const catalogRows = names.length === 0 ? [] : await db
       .select({ oracleId: cards.oracleId, name: cards.name, colorIdentity: cards.colorIdentity, commanderLegal: cards.commanderLegal })
       .from(cards)
@@ -91,26 +93,27 @@ export async function openTuning() {
     return items.map(({ pack, value }) => {
       const inDeck = new Set(pack.cards.map((c) => c.oracleId));
       const resolve = nameResolver(catalog, inDeck);
-      const { droppedCount, drops } = validateSuggestions({ response: value, pack, resolveName: resolve });
-      const outside = value.suggestions.reduce((n, s) => {
-        const cut = resolve(s.cut);
-        return n + (cut === null || !inDeck.has(cut.oracleId) ? 1 : 0) + (resolve(s.add) === null ? 1 : 0);
-      }, 0);
-      // 8-asked/5-kept (H35, PR 4a): the app slices to the first MAX_SUGGESTIONS survivors, in
-      // their original reply order, before showing or persisting anything — `drops` carries the
-      // ORIGINAL reply index, never `validateSuggestions`' own renumbered `position`, so the
-      // not-dropped indices here are already in that order.
-      const notDropped = value.suggestions.map((_, i) => i).filter((i) => !drops.some((d) => d.position === i));
-      const keptPositions = notDropped.slice(0, limits.MAX_SUGGESTIONS);
+      const { kept, droppedCount, drops } = validateSuggestions({ response: value, pack, resolveName: resolve });
+      // A name the app could not use: an addition that resolves to nothing, or a cut that is no card
+      // of the deck.
+      const outside = value.additions.reduce((n, l) => n + (resolve(l.card) === null ? 1 : 0), 0)
+        + value.cuts.reduce((n, l) => {
+          const cut = resolve(l.card);
+          return n + (cut === null || !inDeck.has(cut.oracleId) ? 1 : 0);
+        }, 0);
+      const sized = sizeLists(kept, limits.MAX_SUGGESTIONS);
+      const keptAdditions = sized.filter((k) => k.addOracleId !== null).length;
       return {
-        outcome: keptPositions.length > 0 ? "survived" : "ungrounded",
-        returned: value.suggestions.length,
-        kept: keptPositions.length,
+        outcome: sized.length > 0 ? "survived" : "ungrounded",
+        returned: value.additions.length + value.cuts.length,
+        returnedAdditions: value.additions.length,
+        returnedCuts: value.cuts.length,
+        kept: sized.length,
+        keptAdditions,
+        keptCuts: sized.length - keptAdditions,
         droppedCount,
-        drops: drops.map((d) => d.rule),
-        // Which of the reply's suggestions a player would see: positions not dropped AND inside
-        // the five-kept slice, in order.
-        keptPositions,
+        drops: drops.map((d) => `${d.side}:${d.rule}`),
+        keptSuggestions: sized,
         outsideNames: outside,
       };
     });

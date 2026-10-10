@@ -52,11 +52,11 @@ export const deckTuningCopy = {
     // A counted word, as the canvas writes it: "Nine games in, and cards in hand has been marked
     // against you in 7 of 9."
     readyLead: (gamesWord: string, axis: string, marked: number, games: number) =>
-      `${gamesWord} games in, and ${axis} has been marked against you in ${marked} of ${games}. We will read everything below and suggest up to five swaps, each a card out, a card in, and the reason.`,
+      `${gamesWord} games in, and ${axis} has been marked against you in ${marked} of ${games}. We will read everything below and suggest up to five cards to add and five to cut, each with its own reason.`,
     noGamesLead:
-      "No games logged yet, so we will read this list, the recommended mix and what you own, and suggest up to five swaps. Log a game and suggestions can also cite how the deck played.",
+      "No games logged yet, so we will read this list, the recommended mix and what you own, and suggest up to five cards to add and five to cut. Log a game and suggestions can also cite how the deck played.",
     unmarkedLead: (gamesWord: string) =>
-      `${gamesWord} games logged, and none is marked for what worked or hurt. We will read the results, your game notes, this list and what you own, and suggest up to five swaps. Mark what decided a game and suggestions can point at it.`,
+      `${gamesWord} games logged, and none is marked for what worked or hurt. We will read the results, your game notes, this list and what you own, and suggest up to five cards to add and five to cut. Mark what decided a game and suggestions can point at it.`,
     loadingHeading: "Shuffling through your deck\u2026",
     loadingLead:
       "Reading your deck. This takes a few seconds, and the list below stays on screen when the suggestions arrive.",
@@ -175,6 +175,43 @@ export const deckTuningCopy = {
     },
   },
 
+  // ── The two lists (sub-project 8; Design's B10, tuning-hub copy strings `lists`/`tally`) ──
+  // Suggested changes answers in cards to ADD and cards to CUT, each with its own reason. The
+  // swap card below stays for a set generated before the lists, which still holds pairs.
+  lists: {
+    additions: "Additions",
+    cuts: "Cuts",
+    count: (into: number, out: number) => `${into} in, ${out} out`,
+    tally: (into: number, out: number, total: number, now: number) =>
+      `+${into} in \u00b7 \u2212${out} out \u00b7 ${total === now ? `stays at ${total}` : `the deck goes to ${total}`}`,
+    applyAll: "Apply all",
+    applyRest: "Apply the rest",
+    applying: "Applying\u2026",
+    add: "Add",
+    cut: "Cut",
+    reject: "Reject",
+    added: "added",
+    cutDone: "cut",
+    rejected: "rejected",
+    undo: "Undo",
+    showAgain: "Show it again",
+    noLongerApplies: "no longer applies",
+    addAlreadyIn: (name: string) => `${name} is already in the deck, so it cannot be added.`,
+    cutGone: (name: string) => `${name} has left the deck, so it cannot be cut.`,
+    emptyAdditions: "No additions this time.",
+    emptyCuts: "No cuts this time.",
+    open: (name: string) => `Open ${name}`,
+    resultsLead: "Cards to add and cards to cut, each with its own reason. Nothing moves until you answer one.",
+    fewerLead: (droppedWord: string) =>
+      `${droppedWord} more did not hold up to checking. Nothing moves until you answer one.`,
+    allDoneLead: (applied: number, rejected: number) =>
+      `All answered: ${applied} applied, ${rejected} rejected. Suggest again for a new set, read from the deck as it is now.`,
+    tallyOf: (applied: number, total: number, rejected: number) =>
+      rejected > 0 ? `${applied} of ${total} applied \u00b7 ${rejected} rejected` : `${applied} of ${total} applied`,
+    applyRefused: "We couldn\u2019t make that change. The deck is unchanged.",
+    undoRefused: "We couldn\u2019t undo that change. The deck is unchanged.",
+  },
+
   // ── The suggestion card ────────────────────────────────────────────────
   card: {
     apply: "Apply",
@@ -215,12 +252,12 @@ export const deckTuningCopy = {
       'Every count in a rationale or citation must appear with its denominator in the same element: "7 of 9", not "7 games".',
     citation: "Every suggestion must carry at least one citation naming what it read: the games, a note, the decklist, the intent, or the mix.",
     quotedNote: "A quoted note must be byte-identical to the note's text as shown in its own data block, in quotation marks, with its date.",
-    colourIdentity: "The added card must be legal in the commander\u2019s colour identity.",
-    cutInDeck: "The cut card must currently be in the deck.",
-    onePair: "Every suggestion is exactly one cut and one add: the deck count never changes.",
+    colourIdentity: "An added card must be legal in the commander\u2019s colour identity.",
+    cutInDeck: "A cut card must currently be in the deck.",
+    oneCard: "Every suggestion is one card, to add or to cut, with its own rationale and its own citations.",
     ownershipNotRanking: "Ownership and price may not affect which cards are suggested or their order.",
-    noBracketClaim: "No rationale or citation may name a bracket. The app says when a swap moves one.",
-    noResultClaim: "No rationale or citation may promise a result: not that a swap will win, lose, or make the deck stronger.",
+    noBracketClaim: "No rationale or citation may name a bracket. The app says when a change moves one.",
+    noResultClaim: "No rationale or citation may promise a result: not that a change will win, lose, or make the deck stronger.",
   },
 
   // ── The live region, and the reason beside a refused press ─────────────
@@ -229,6 +266,12 @@ export const deckTuningCopy = {
     started: "Reading your deck",
     unchanged: "No new suggestions. Nothing has changed since the last run.",
     ready: (n: number) => (n === 1 ? "One suggested swap is ready." : `${n} suggested swaps are ready.`),
+    // The two lists (sub-project 8): a run answers in cards to add and cards to cut.
+    readyLists: (into: number, out: number) => `${into} to add and ${out} to cut are ready.`,
+    addedCard: (name: string) => `Added. ${name} is in the deck.`,
+    cutCard: (name: string) => `Cut. ${name} is out of the deck.`,
+    undoneAdd: (name: string) => `Put back. ${name} is out of the deck again.`,
+    undoneCut: (name: string) => `Put back. ${name} is in the deck again.`,
     stopped: "Stopped. No credit was used.",
     applied: (cut: string, add: string) => `Applied. ${add} is in the deck and ${cut} is out.`,
     undone: (cut: string) => `Put back. ${cut} is in the deck again.`,

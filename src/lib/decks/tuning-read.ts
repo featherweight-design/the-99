@@ -166,9 +166,9 @@ export async function readOwnedOracleIds(userId: string, oracleIds: readonly str
 }
 
 /**
- * The bracket flag on each kept suggestion (Task 9b). For each, the REAL profile of the swapped
- * list — the cut's row one copy down, the add's one copy up — built by the same loader as
- * `before`, and compared through `bracketAfter`. At most `MAX_SUGGESTIONS` builds per run.
+ * The bracket flag on each kept line (Task 9b). For each, the REAL profile of the changed
+ * list — the cut's row one copy down, or the add's one copy up — built by the same loader as
+ * `before`, and compared through `bracketAfter`. At most twice `MAX_SUGGESTIONS` builds per run: five a list.
  */
 export async function withBracketAfter(
   head: ProfileHead,
@@ -182,16 +182,19 @@ export async function withBracketAfter(
   }));
 }
 
-/** The head's list with one copy of the cut out and one copy of the add in. */
+/** The head's list with one copy of the cut out, one copy of the add in, or both: a line of the two
+ *  lists changes one side, a pair from before them changes both. */
 export function swapped(
   list: ProfileHead["cards"],
   s: Pick<ValidatedSuggestion, "addOracleId" | "cutOracleId">,
 ): ProfileHead["cards"] {
   const next = new Map(list.map((c) => [c.oracleId, c.quantity]));
-  const cut = next.get(s.cutOracleId) ?? 0;
-  if (cut <= 1) next.delete(s.cutOracleId);
-  else next.set(s.cutOracleId, cut - 1);
-  next.set(s.addOracleId, (next.get(s.addOracleId) ?? 0) + 1);
+  if (s.cutOracleId !== null) {
+    const cut = next.get(s.cutOracleId) ?? 0;
+    if (cut <= 1) next.delete(s.cutOracleId);
+    else next.set(s.cutOracleId, cut - 1);
+  }
+  if (s.addOracleId !== null) next.set(s.addOracleId, (next.get(s.addOracleId) ?? 0) + 1);
   return [...next].map(([oracleId, quantity]) => ({ oracleId, quantity }));
 }
 
@@ -315,8 +318,8 @@ async function readItems(
         where lk.deck_id = ${deckId} and lk.oracle_id = i.cut_oracle_id and lk.removed_at is null)`
     : sql`false`;
   const rows = await db.execute<{
-    id: string; add_oracle_id: string; add_name: string; add_type_line: string;
-    cut_oracle_id: string; cut_name: string; rationale: string; rationale_short: string;
+    id: string; add_oracle_id: string | null; add_name: string | null; add_type_line: string | null;
+    cut_oracle_id: string | null; cut_name: string | null; rationale: string; rationale_short: string;
     evidence: TuningItem["evidence"]; position: number; verdict: TuningItem["verdict"];
     bracket_after: number[] | null; owned_quantity: number; applies: boolean;
     add_image_uri: string | null; cut_image_uri: string | null; cut_in_deck: boolean;
@@ -338,28 +341,31 @@ async function readItems(
            -- row reads as no longer applying. A live lock on a card still in this deck; constant
            -- false while NEVER_CUT_ENABLED is off (D3).
            ${cutLocked} as cut_locked,
-           -- The swap can still be made: the cut is in the deck, and the add is not (a basic
-           -- may be held already; the apply adds a copy). The apply checks the same rule.
-           (exists (select 1 from ${deckCards} dc where dc.deck_id = ${deckId} and dc.oracle_id = i.cut_oracle_id)
-             and (a.type_line like '%Basic%' or not exists (
-               select 1 from ${deckCards} dc where dc.deck_id = ${deckId} and dc.oracle_id = i.add_oracle_id))
-             and not ${cutLocked})
+           -- The change can still be made. A side that is absent asks nothing: a CUT line (no add)
+           -- needs its cut still in the deck and not locked; an ADD line (no cut) needs its add not
+           -- in the deck (a basic may be held already; the apply adds a copy); a pair from before
+           -- the two lists needs both. The apply checks the same rules.
+           ((i.cut_oracle_id is null or (
+               exists (select 1 from ${deckCards} dc where dc.deck_id = ${deckId} and dc.oracle_id = i.cut_oracle_id)
+               and not ${cutLocked}))
+             and (i.add_oracle_id is null or a.type_line like '%Basic%' or not exists (
+               select 1 from ${deckCards} dc where dc.deck_id = ${deckId} and dc.oracle_id = i.add_oracle_id)))
              as applies
     from ${deckSuggestionItems} i
-    join ${cards} a on a.oracle_id = i.add_oracle_id
-    join ${cards} c on c.oracle_id = i.cut_oracle_id
+    left join ${cards} a on a.oracle_id = i.add_oracle_id
+    left join ${cards} c on c.oracle_id = i.cut_oracle_id
     where i.run_id = ${runId}
       and exists (select 1 from ${deckSuggestionRuns} r where r.id = i.run_id and r.deck_id = ${deckId})
     order by i.position
   `);
-  const addIds = rows.rows.map((r) => r.add_oracle_id);
+  const addIds = rows.rows.flatMap((r) => (r.add_oracle_id === null ? [] : [r.add_oracle_id]));
   // The add's claims are read from THIS deck's vantage, as the decklist reads its own cards: the
-  // swap would put the card in this deck, so this deck's own claim is not a rival for it.
+  // change would put the card in this deck, so this deck's own claim is not a rival for it.
   // Both are decoration on a card that stands without them, so each fails soft, as the deck page's
   // own price and claim rollups do: a card with no price draws no figure, and one with no claim
   // picture draws no mark, rather than the whole set failing to draw.
   const [{ prices, newestAsOf }, claims] = await Promise.all([
-    loadPrices(addIds).catch((e): Awaited<ReturnType<typeof loadPrices>> => {
+    addIds.length === 0 ? { prices: new Map(), newestAsOf: null } : loadPrices(addIds).catch((e): Awaited<ReturnType<typeof loadPrices>> => {
       console.error("tuning items: price read failed", e);
       return { prices: new Map(), newestAsOf: null };
     }),
@@ -371,29 +377,52 @@ async function readItems(
       : new Map<string, Availability>(),
   ]);
   const items = rows.rows.map((r): TuningItem => {
-    return {
+    const shared = {
       id: r.id,
-      addOracleId: r.add_oracle_id,
-      addName: r.add_name,
-      addTypeLine: r.add_type_line,
-      cutOracleId: r.cut_oracle_id,
-      cutName: r.cut_name,
       rationale: r.rationale,
       rationaleShort: r.rationale_short,
       evidence: r.evidence,
       position: r.position,
       verdict: r.verdict,
-      addImageUri: r.add_image_uri,
-      cutImageUri: r.cut_image_uri,
-      owned: r.owned_quantity > 0,
-      ownedQuantity: r.owned_quantity,
-      availability: r.owned_quantity > 0 ? claims.get(r.add_oracle_id) ?? null : null,
-      price: prices.get(r.add_oracle_id) ?? null,
       bracketAfter: r.bracket_after,
       applies: r.applies,
-      cutInDeck: r.cut_in_deck,
-      addInDeck: r.add_in_deck,
-      cutLocked: r.cut_locked,
+    };
+    // A pair from before the two lists: both sides, the swap card's shape.
+    if (r.add_oracle_id !== null && r.cut_oracle_id !== null) {
+      return {
+        ...shared,
+        addOracleId: r.add_oracle_id,
+        addName: r.add_name ?? "",
+        addTypeLine: r.add_type_line ?? "",
+        cutOracleId: r.cut_oracle_id,
+        cutName: r.cut_name ?? "",
+        addImageUri: r.add_image_uri,
+        cutImageUri: r.cut_image_uri,
+        owned: r.owned_quantity > 0,
+        ownedQuantity: r.owned_quantity,
+        availability: r.owned_quantity > 0 ? claims.get(r.add_oracle_id) ?? null : null,
+        price: prices.get(r.add_oracle_id) ?? null,
+        cutInDeck: r.cut_in_deck,
+        addInDeck: r.add_in_deck,
+        cutLocked: r.cut_locked,
+      };
+    }
+    // One side of the two lists. The CHECK constraint guarantees one of the two ids is set.
+    const add = r.add_oracle_id !== null;
+    const id = (add ? r.add_oracle_id : r.cut_oracle_id)!;
+    return {
+      ...shared,
+      side: add ? "add" : "cut",
+      cardOracleId: id,
+      cardName: (add ? r.add_name : r.cut_name) ?? "",
+      cardTypeLine: add ? r.add_type_line ?? "" : "",
+      cardImageUri: add ? r.add_image_uri : r.cut_image_uri,
+      owned: add && r.owned_quantity > 0,
+      ownedQuantity: add ? r.owned_quantity : 0,
+      availability: add && r.owned_quantity > 0 ? claims.get(id) ?? null : null,
+      price: add ? prices.get(id) ?? null : null,
+      inDeck: add ? r.add_in_deck : r.cut_in_deck,
+      locked: !add && r.cut_locked,
     };
   });
   return { items, newestPriceAsOf: newestAsOf };

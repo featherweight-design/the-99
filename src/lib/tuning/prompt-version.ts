@@ -23,4 +23,10 @@
 // clearer instruction up front is cheaper than a repair downstream. The `note` citation line
 // is untouched (it already asked for a verbatim quote, never "whole or a part"). Unconditional
 // for every deck, like 5 and 6.
-export const PROMPT_VERSION = 7;
+// 8 (2026-10-10, Tuning sub-project 8): two lists, Additions and Cuts, one rationale and one set
+// of citations per card instead of one swap with one rationale. The reply shape moves from
+// `suggestions[{add, cut}]` to `additions[]` and `cuts[]` (up to six apiece, five kept), so the
+// system message's size line, the independence rule and the `oneCard` rule all change.
+// Unconditional for every deck. A deck with a successful run stored at version 7 reopens the gate
+// and can run again; its stored swaps stay on screen, drawn as the swap card, until it does.
+export const PROMPT_VERSION = 8;

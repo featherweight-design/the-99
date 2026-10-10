@@ -8,6 +8,9 @@
  * every deck write in this codebase locks the deck first, and deleting a deck locks it before
  * cascading, so taking any other lock first could deadlock against a delete.
  *
+ * Either side may be absent (tuning's two lists, sub-project 8): a line that only ADDS or only
+ * CUTS plans, applies and restores just its own half, and its snapshot holds a null for the other.
+ *
  * A cut is ONE copy, as `removeCardFromDeck` removes one; an add is one copy at `auto: false`,
  * because the player chose it. A basic already in the deck gains a copy; any other card it already
  * holds is refused, as the singleton rule requires.
@@ -60,68 +63,82 @@ async function readRow(tx: Tx, deckId: string, oracleId: string) {
  * nothing, so a caller can record the snapshot before the deck changes (tuning writes it onto the
  * suggestion first: an undo can only ever read the deck as it was before this very apply).
  */
-export async function planSwap(tx: Tx, deckId: string, cutOracleId: string, addOracleId: string): Promise<SwapPlan> {
+export async function planSwap(
+  tx: Tx, deckId: string, cutOracleId: string | null, addOracleId: string | null,
+): Promise<SwapPlan> {
+  // One side may be absent: a line of tuning's two lists is an addition (no cut) or a cut (no add),
+  // and each side's checks are then simply not asked. Both absent is no change at all.
+  if (cutOracleId === null && addOracleId === null) return { ok: false, reason: "cutGone" };
   // A card cannot stand in for itself. For a basic it would pass every check below, delete the
   // cut's row and then update a row that is no longer there, leaving a snapshot no undo can match.
-  if (cutOracleId === addOracleId) return { ok: false, reason: "addHeld" };
+  if (cutOracleId !== null && cutOracleId === addOracleId) return { ok: false, reason: "addHeld" };
   const [deck] = await tx.select({ commander: decks.commanderOracleId, partner: decks.partnerOracleId })
     .from(decks).where(eq(decks.id, deckId));
-  const cut = await readRow(tx, deckId, cutOracleId);
-  const add = await readRow(tx, deckId, addOracleId);
-  if (!deck || !cut) return { ok: false, reason: "cutGone" };
-  if (neverCutEnabled() && (await isLiveLocked(tx, deckId, cutOracleId))) return { ok: false, reason: "cutLocked" };
+  const cut = cutOracleId === null ? null : await readRow(tx, deckId, cutOracleId);
+  const add = addOracleId === null ? null : await readRow(tx, deckId, addOracleId);
+  if (!deck) return { ok: false, reason: "cutGone" };
+  if (cutOracleId !== null) {
+    if (!cut) return { ok: false, reason: "cutGone" };
+    if (neverCutEnabled() && (await isLiveLocked(tx, deckId, cutOracleId))) return { ok: false, reason: "cutLocked" };
+  }
 
-  const facts = await tx.select({
-    oracleId: cards.oracleId, typeLine: cards.typeLine,
-    colorIdentity: cards.colorIdentity, commanderLegal: cards.commanderLegal,
-  }).from(cards).where(inArray(cards.oracleId, [
-    addOracleId, deck.commander, ...(deck.partner ? [deck.partner] : []),
-  ]));
-  const card = facts.find((f) => f.oracleId === addOracleId);
-  const commander = facts.find((f) => f.oracleId === deck.commander);
-  const partner = facts.find((f) => f.oracleId === deck.partner);
-  if (!card || !commander) return { ok: false, reason: "addIllegal" };
-  if (add && !isBasicLand(card.typeLine)) return { ok: false, reason: "addHeld" };
-  const rejection = validateCardForDeck(
-    { oracleId: addOracleId, commanderLegal: card.commanderLegal, colorIdentity: card.colorIdentity },
-    {
-      commanderOracleId: deck.commander,
-      commanderColorIdentity: commander.colorIdentity,
-      partnerOracleId: deck.partner,
-      partnerColorIdentity: partner?.colorIdentity ?? null,
-      built: 0,
-    },
-  );
-  if (rejection) return { ok: false, reason: "addIllegal" };
+  if (addOracleId !== null) {
+    const facts = await tx.select({
+      oracleId: cards.oracleId, typeLine: cards.typeLine,
+      colorIdentity: cards.colorIdentity, commanderLegal: cards.commanderLegal,
+    }).from(cards).where(inArray(cards.oracleId, [
+      addOracleId, deck.commander, ...(deck.partner ? [deck.partner] : []),
+    ]));
+    const card = facts.find((f) => f.oracleId === addOracleId);
+    const commander = facts.find((f) => f.oracleId === deck.commander);
+    const partner = facts.find((f) => f.oracleId === deck.partner);
+    if (!card || !commander) return { ok: false, reason: "addIllegal" };
+    if (add && !isBasicLand(card.typeLine)) return { ok: false, reason: "addHeld" };
+    const rejection = validateCardForDeck(
+      { oracleId: addOracleId, commanderLegal: card.commanderLegal, colorIdentity: card.colorIdentity },
+      {
+        commanderOracleId: deck.commander,
+        commanderColorIdentity: commander.colorIdentity,
+        partnerOracleId: deck.partner,
+        partnerColorIdentity: partner?.colorIdentity ?? null,
+        built: 0,
+      },
+    );
+    if (rejection) return { ok: false, reason: "addIllegal" };
+  }
 
-  const [proxy] = await tx.select({ oracleId: deckProxies.oracleId }).from(deckProxies)
+  const [proxy] = cutOracleId === null ? [] : await tx.select({ oracleId: deckProxies.oracleId }).from(deckProxies)
     .where(and(eq(deckProxies.deckId, deckId), eq(deckProxies.oracleId, cutOracleId)));
   return {
     ok: true,
     snapshot: {
-      cut: { quantity: cut.quantity, auto: cut.auto, proxied: proxy !== undefined },
-      add: { quantity: add?.quantity ?? 0, auto: add?.auto ?? false },
+      cut: cut ? { quantity: cut.quantity, auto: cut.auto, proxied: proxy !== undefined } : null,
+      add: addOracleId === null ? null : { quantity: add?.quantity ?? 0, auto: add?.auto ?? false },
     },
   };
 }
 
 /** Make a planned swap: one copy of the cut out, one copy of the add in. Does not touch the deck stamp. */
 export async function applySwap(
-  tx: Tx, deckId: string, cutOracleId: string, addOracleId: string, snapshot: ApplySnapshot,
+  tx: Tx, deckId: string, cutOracleId: string | null, addOracleId: string | null, snapshot: ApplySnapshot,
 ): Promise<void> {
-  const cut = snapshot.cut!;
-  if (cut.quantity > 1) {
-    await tx.update(deckCards).set({ quantity: cut.quantity - 1 }).where(rowOf(deckId, cutOracleId));
-  } else {
-    await tx.delete(deckCards).where(rowOf(deckId, cutOracleId));
-    // The slot is gone, so the deck's statement about it goes with it.
-    await pruneOrphanProxies(tx, deckId);
-    await pruneOrphanLocks(tx, deckId);
+  const cut = snapshot.cut;
+  if (cut && cutOracleId !== null) {
+    if (cut.quantity > 1) {
+      await tx.update(deckCards).set({ quantity: cut.quantity - 1 }).where(rowOf(deckId, cutOracleId));
+    } else {
+      await tx.delete(deckCards).where(rowOf(deckId, cutOracleId));
+      // The slot is gone, so the deck's statement about it goes with it.
+      await pruneOrphanProxies(tx, deckId);
+      await pruneOrphanLocks(tx, deckId);
+    }
   }
-  if (snapshot.add.quantity > 0) {
-    await tx.update(deckCards).set({ quantity: snapshot.add.quantity + 1 }).where(rowOf(deckId, addOracleId));
-  } else {
-    await tx.insert(deckCards).values({ deckId, oracleId: addOracleId, quantity: 1, auto: false });
+  if (snapshot.add && addOracleId !== null) {
+    if (snapshot.add.quantity > 0) {
+      await tx.update(deckCards).set({ quantity: snapshot.add.quantity + 1 }).where(rowOf(deckId, addOracleId));
+    } else {
+      await tx.insert(deckCards).values({ deckId, oracleId: addOracleId, quantity: 1, auto: false });
+    }
   }
 }
 
@@ -135,37 +152,39 @@ export async function applySwap(
  * nothing. Does not touch the deck stamp.
  */
 export async function restoreSwap(
-  tx: Tx, deckId: string, cutOracleId: string, addOracleId: string, snap: ApplySnapshot,
+  tx: Tx, deckId: string, cutOracleId: string | null, addOracleId: string | null, snap: ApplySnapshot,
 ): Promise<boolean> {
-  const add = await readRow(tx, deckId, addOracleId);
-  const cut = await readRow(tx, deckId, cutOracleId);
+  const add = addOracleId === null || !snap.add ? null : await readRow(tx, deckId, addOracleId);
+  const cut = cutOracleId === null || !snap.cut ? null : await readRow(tx, deckId, cutOracleId);
   // Quantity AND provenance: the swap inserts a new add at `auto: false` and leaves an existing
   // row's flag alone, and a `keep` pressed since is an edit like any other.
   const cutLeft = snap.cut ? snap.cut.quantity - 1 : null;
-  const addAuto = snap.add.quantity === 0 ? false : snap.add.auto;
-  const addAsApplied = add?.quantity === snap.add.quantity + 1 && add.auto === addAuto;
+  const addAuto = !snap.add || snap.add.quantity === 0 ? false : snap.add.auto;
+  const addAsApplied = !snap.add || (add?.quantity === snap.add.quantity + 1 && add.auto === addAuto);
   const cutAsApplied = !snap.cut || (cutLeft === 0
     ? cut === null
     : cut?.quantity === cutLeft && cut.auto === snap.cut.auto);
   if (!addAsApplied || !cutAsApplied) return false;
   // A lock put on the add since is an edit like a `keep` pressed since: the undo would take that
   // card back out (or a copy of it), so it refuses and writes nothing (Locked, the plan's PR 2).
-  if (neverCutEnabled() && (await isLiveLocked(tx, deckId, addOracleId))) return false;
+  if (snap.add && addOracleId !== null && neverCutEnabled() && (await isLiveLocked(tx, deckId, addOracleId))) return false;
 
-  if (snap.add.quantity === 0) {
-    await tx.delete(deckCards).where(rowOf(deckId, addOracleId));
-    // A proxy mark put on the add while it was in the deck leaves with it.
-    await pruneOrphanProxies(tx, deckId);
-    await pruneOrphanLocks(tx, deckId);
-  } else {
-    await tx.insert(deckCards)
-      .values({ deckId, oracleId: addOracleId, quantity: snap.add.quantity, auto: snap.add.auto })
-      .onConflictDoUpdate({
-        target: [deckCards.deckId, deckCards.oracleId],
-        set: { quantity: snap.add.quantity, auto: snap.add.auto },
-      });
+  if (snap.add && addOracleId !== null) {
+    if (snap.add.quantity === 0) {
+      await tx.delete(deckCards).where(rowOf(deckId, addOracleId));
+      // A proxy mark put on the add while it was in the deck leaves with it.
+      await pruneOrphanProxies(tx, deckId);
+      await pruneOrphanLocks(tx, deckId);
+    } else {
+      await tx.insert(deckCards)
+        .values({ deckId, oracleId: addOracleId, quantity: snap.add.quantity, auto: snap.add.auto })
+        .onConflictDoUpdate({
+          target: [deckCards.deckId, deckCards.oracleId],
+          set: { quantity: snap.add.quantity, auto: snap.add.auto },
+        });
+    }
   }
-  if (snap.cut) {
+  if (snap.cut && cutOracleId !== null) {
     await tx.insert(deckCards)
       .values({ deckId, oracleId: cutOracleId, quantity: snap.cut.quantity, auto: snap.cut.auto })
       .onConflictDoUpdate({

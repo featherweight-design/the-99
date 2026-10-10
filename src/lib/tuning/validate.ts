@@ -6,28 +6,30 @@ import { mentionsDate, noteDate } from "./note-date";
 import { NUMBER_WORDS, presentationFailures, type Quotable, type RuleKey } from "./presentation";
 import { axisLabel } from "./prompt";
 import { escapeRegExp, quotesPlayerText } from "./quote-match";
-import type { TuningResponse, TuningSuggestion } from "./response-schema";
+import type { TuningLine, TuningResponse } from "./response-schema";
 
 /**
  * What the model is NOT trusted about. Pure and client-safe: the catalog lookup is injected as
  * `resolveName`, a closure the caller builds over one read of every name the reply used.
  *
- * Six rules, in order, and a suggestion is kept only if it survives all six:
+ * Six rules, in order, run on each LINE of the two lists, and a line is kept only if it survives all six:
  *  1. schema — already enforced by the structured output and the SDK's parse;
- *  2. the cards exist — both names resolve in the catalog;
- *  3. the cut is real — in this deck, and not a commander; and it is not one the deck depends on:
+ *  2. the card exists — its name resolves in the catalog;
+ *  3. a CUT is real — in this deck, and not a commander; and it is not one the deck depends on:
  *     never a Key card of its overview, and never a universal staple cut without a game, a note or
  *     the intent behind it
  *     (tuning v2, Hugh's ruling 2026-09-24; the prompt asks for both, and this holds it to them);
- *  4. the add is legal — `validateCardForDeck`, the add path's own rule (commander-legal, inside
- *     the colour identity, not a commander), and not already in the deck;
+ *  4. an ADD is legal — `validateCardForDeck`, the add path's own rule (commander-legal, inside
+ *     the colour identity, not a commander), not already in the deck, and inside the deck's limits
+ *     (price cap, sets, owned only);
  *  5. the evidence exists — a cited game count matches the games read, a cited note is one the
  *     player wrote, a cited intent was stated;
  *  6. presentation — the text rules, on the rationale, the short rationale and every citation.
  *
  * Every drop is LISTED in `drops`, and every drop but `neverCut` is COUNTED in `droppedCount` (the
  * lead's "we dropped N"): a cut of a card the player locked is the player's rule working, not a
- * suggestion the model got wrong (Locked, F4). Survivors are renumbered, so the card list has no holes.
+ * suggestion the model got wrong (Locked, F4). Survivors are renumbered within the whole answer,
+ * additions first, so the item list has no holes.
  */
 export type ResolvedCard = {
   oracleId: string;
@@ -50,13 +52,14 @@ export type ResolvedCard = {
 };
 
 export type ValidatedSuggestion = {
-  addOracleId: string;
-  cutOracleId: string;
+  /** Exactly one of the two is set: an addition has only its add, a cut only its cut. */
+  addOracleId: string | null;
+  cutOracleId: string | null;
   rationale: string;
   rationaleShort: string;
   evidence: TuningCitation[];
   position: number;
-  /** Set after validation by the bracket flag; null when the swap moves no bracket. */
+  /** Set after validation by the bracket flag; null when the change moves no bracket. */
   bracketAfter: number[] | null;
 };
 
@@ -65,6 +68,9 @@ export type ValidatedSuggestion = {
  *  `cutInDeck` (H35, PR 4a) so a refusal can name the commander specifically; `overCap`/
  *  `offSet`/`notOwned` are "Kept for this deck"'s three hard filters, checked on the ADD. */
 export type Drop = {
+  /** Which list the dropped line was in. Absent on a drop persisted before the two lists. */
+  side?: "add" | "cut";
+  /** The line's place in ITS list as the model wrote it (before the two lists, in the one list). */
   position: number;
   rule: RuleKey | "cardExists" | "addNotLegal" | "duplicate" | "keyCard" | "universalStaple" | "neverCut"
     | "commander" | "overCap" | "offSet" | "notOwned";
@@ -128,6 +134,17 @@ export function chooseRefusal(drops: readonly Drop[], capCents: number | null): 
   return { reason: "nothingLeft" };
 }
 
+/**
+ * The first `max` survivors of EACH list, additions first, renumbered so the item list has no
+ * holes. 6-asked/5-kept per list (`ASK_PER_LIST`, `MAX_SUGGESTIONS`): the first survivors in
+ * whatever order the validator already gives — no new ranking pass.
+ */
+export function sizeLists(kept: readonly ValidatedSuggestion[], max: number): ValidatedSuggestion[] {
+  const adds = kept.filter((k) => k.addOracleId !== null).slice(0, max);
+  const cuts = kept.filter((k) => k.addOracleId === null).slice(0, max);
+  return [...adds, ...cuts].map((k, position) => ({ ...k, position }));
+}
+
 export function validateSuggestions(args: {
   response: TuningResponse;
   pack: EvidencePack;
@@ -161,74 +178,75 @@ export function validateSuggestions(args: {
 
   const kept: ValidatedSuggestion[] = [];
   const drops: Drop[] = [];
-  const usedAdds = new Set<string>();
-  const usedCuts = new Set<string>();
+  const used = new Set<string>();
   // A genuine part-quote of the intent or this run's notes is repaired to its bare, unquoted
   // form by `firstFailure`'s presentation check rather than dropped (Design's own format for a
-  // part is unquoted) — kept here, by position, since `firstFailure` only reports pass/fail.
-  const repairs = new Map<number, { rationale: string; rationaleShort: string; evidence: TuningCitation[] }>();
+  // part is unquoted) — kept here, by line, since `firstFailure` only reports pass/fail.
+  const repairs = new Map<TuningLine, { rationale: string; rationaleShort: string; evidence: TuningCitation[] }>();
 
-  response.suggestions.forEach((s, position) => {
-    const reason = firstFailure(s, position);
-    if (reason) {
-      drops.push({ position, ...reason });
-      return;
-    }
-    const add = resolveName(s.add)!;
-    const cut = resolveName(s.cut)!;
-    usedAdds.add(add.oracleId);
-    usedCuts.add(cut.oracleId);
-    const fixed = repairs.get(position);
-    kept.push({
-      addOracleId: add.oracleId,
-      cutOracleId: cut.oracleId,
-      rationale: fixed?.rationale ?? s.rationale,
-      rationaleShort: fixed?.rationaleShort ?? s.rationaleShort,
-      evidence: fixed?.evidence ?? s.evidence,
-      position: kept.length,
-      bracketAfter: null,
+  const sides = [["add", response.additions], ["cut", response.cuts]] as const;
+  for (const [side, lines] of sides) {
+    lines.forEach((line, position) => {
+      const reason = firstFailure(side, line);
+      if (reason) {
+        drops.push({ side, position, ...reason });
+        return;
+      }
+      const card = resolveName(line.card)!;
+      used.add(`${side}:${card.oracleId}`);
+      const fixed = repairs.get(line);
+      kept.push({
+        addOracleId: side === "add" ? card.oracleId : null,
+        cutOracleId: side === "cut" ? card.oracleId : null,
+        rationale: fixed?.rationale ?? line.rationale,
+        rationaleShort: fixed?.rationaleShort ?? line.rationaleShort,
+        evidence: fixed?.evidence ?? line.evidence,
+        position: kept.length,
+        bracketAfter: null,
+      });
     });
-  });
+  }
 
   // A `neverCut` drop is NOT counted (Locked, F4): the lead's "we dropped N" describes suggestions
   // the model got wrong, and a cut of a card the player locked is the player's rule working, not a
   // failed suggestion. Still listed in `drops`, so a run whose every drop is one can say so (F10).
   return { kept, droppedCount: drops.filter((d) => d.rule !== "neverCut").length, drops };
 
-  function firstFailure(s: TuningSuggestion, position: number): { rule: Drop["rule"]; name?: string } | null {
-    const add = resolveName(s.add);
-    const cut = resolveName(s.cut);
-    if (!add || !cut) return { rule: "cardExists" };
+  function firstFailure(side: "add" | "cut", s: TuningLine): { rule: Drop["rule"]; name?: string } | null {
+    const card = resolveName(s.card);
+    if (!card) return { rule: "cardExists" };
+    // Two lines naming the same card in one list cannot both be applied.
+    if (used.has(`${side}:${card.oracleId}`)) return { rule: "duplicate" };
 
-    const cutRow = inDeck.get(cut.oracleId);
-    if (!cutRow) return { rule: "cutInDeck" };
-    // Named, so the refusal note can name the commander directly (H35, PR 4a) — split out of
-    // the generic `cutInDeck` it used to share.
-    if (cutRow.commander) return { rule: "commander", name: s.cut };
-    // Never cut (Locked): a FILTER, whatever the prompt told the model (D4).
-    if (cutRow.locked) return { rule: "neverCut", name: s.cut };
-    if (keyCards.has(cut.oracleId)) return { rule: "keyCard" };
-    // "Just to fix a role count": a universal staple may still go for a reason the PLAYER gave, a
-    // game, a note, their stated intent or what they asked this run (H35, PR 4b), each checked
-    // against what they wrote below. A role count is not that, and neither is a decklist
-    // citation, which `citationHolds` cannot check and which would otherwise let a count-only cut
-    // through by adding one.
-    if (universal.has(cut.oracleId) && !s.evidence.some((c) => c.kind === "games" || c.kind === "note" || c.kind === "intent" || c.kind === "notes")) return { rule: "universalStaple" };
-
-    const rejection = validateCardForDeck(add, deck);
-    if (rejection === "off-color-identity") return { rule: "colourIdentity" };
-    if (rejection !== null || inDeck.has(add.oracleId) || add.oracleId === cut.oracleId) return { rule: "addNotLegal" };
-    // "Kept for this deck" (H35, PR 4a): hard filters on the ADD, checked on the model's own
-    // resolved card rather than left to the model to self-police. A card with no usable price
-    // is never dropped for the cap — `priceCents` is null for sold-out or never-listed, not for
-    // "free".
-    if (pack.limits.capCents !== null && add.priceCents !== null && add.priceCents > pack.limits.capCents) {
-      return { rule: "overCap", name: s.add };
+    if (side === "cut") {
+      const cutRow = inDeck.get(card.oracleId);
+      if (!cutRow) return { rule: "cutInDeck" };
+      // Named, so the refusal note can name the commander directly (H35, PR 4a) — split out of
+      // the generic `cutInDeck` it used to share.
+      if (cutRow.commander) return { rule: "commander", name: s.card };
+      // Never cut (Locked): a FILTER, whatever the prompt told the model (D4).
+      if (cutRow.locked) return { rule: "neverCut", name: s.card };
+      if (keyCards.has(card.oracleId)) return { rule: "keyCard" };
+      // "Just to fix a role count": a universal staple may still go for a reason the PLAYER gave, a
+      // game, a note, their stated intent or what they asked this run (H35, PR 4b), each checked
+      // against what they wrote below. A role count is not that, and neither is a decklist
+      // citation, which `citationHolds` cannot check and which would otherwise let a count-only cut
+      // through by adding one.
+      if (universal.has(card.oracleId) && !s.evidence.some((c) => c.kind === "games" || c.kind === "note" || c.kind === "intent" || c.kind === "notes")) return { rule: "universalStaple" };
+    } else {
+      const rejection = validateCardForDeck(card, deck);
+      if (rejection === "off-color-identity") return { rule: "colourIdentity" };
+      if (rejection !== null || inDeck.has(card.oracleId)) return { rule: "addNotLegal" };
+      // "Kept for this deck" (H35, PR 4a): hard filters on an ADD, checked on the model's own
+      // resolved card rather than left to the model to self-police. A card with no usable price
+      // is never dropped for the cap — `priceCents` is null for sold-out or never-listed, not for
+      // "free".
+      if (pack.limits.capCents !== null && card.priceCents !== null && card.priceCents > pack.limits.capCents) {
+        return { rule: "overCap", name: s.card };
+      }
+      if (pack.limits.sets.length > 0 && !card.printedInSelectedSets) return { rule: "offSet" };
+      if (pack.limits.ownedOnly && !card.owned) return { rule: "notOwned" };
     }
-    if (pack.limits.sets.length > 0 && !add.printedInSelectedSets) return { rule: "offSet" };
-    if (pack.limits.ownedOnly && !add.owned) return { rule: "notOwned" };
-    // Two suggestions adding the same card, or cutting the same one, cannot both be applied.
-    if (usedAdds.has(add.oracleId) || usedCuts.has(cut.oracleId)) return { rule: "duplicate" };
 
     for (const c of s.evidence) {
       if (!citationHolds(c, s)) return { rule: "citation" };
@@ -248,12 +266,12 @@ export function validateSuggestions(args: {
     // figure `oneFigure` must then reject as ambiguous. A citation valid against what the model
     // wrote is not automatically valid against what the player actually sees once repaired.
     const repairedEvidence = evidenceChecks.map((e) => ({ ...e.c, value: e.check.text }));
-    const repaired: TuningSuggestion = { ...s, rationale: rationaleCheck.text, rationaleShort: shortCheck.text, evidence: repairedEvidence };
+    const repaired: TuningLine = { ...s, rationale: rationaleCheck.text, rationaleShort: shortCheck.text, evidence: repairedEvidence };
     for (const c of repairedEvidence) {
       if (!citationHolds(c, repaired)) return { rule: "citation" };
     }
 
-    repairs.set(position, {
+    repairs.set(s, {
       rationale: rationaleCheck.text,
       rationaleShort: shortCheck.text,
       evidence: repairedEvidence,
@@ -289,7 +307,7 @@ export function validateSuggestions(args: {
     return { n: /^\d+$/.test(n) ? Number(n) : NUMBER_WORDS.split("|").indexOf(n), m: Number(m) };
   }
 
-  function citationHolds(c: TuningCitation, s: TuningSuggestion): boolean {
+  function citationHolds(c: TuningCitation, s: TuningLine): boolean {
     const count = pack.play.summary.count;
     const text = c.value.toLowerCase();
     switch (c.kind) {

@@ -36,7 +36,7 @@ import { tuningResponseSchema } from "../../lib/tuning/response-schema";
 import { cancelRun, finishRun, persistRun, saveIntent, startRun, type Billed } from "../../lib/tuning/run-store";
 import type { TuningState } from "../../lib/tuning/state";
 import { nameResolver } from "../../lib/tuning/resolve-names";
-import { chooseRefusal, validateSuggestions, type ValidationReport } from "../../lib/tuning/validate";
+import { chooseRefusal, sizeLists, validateSuggestions, type ValidationReport } from "../../lib/tuning/validate";
 import { loadPrices } from "../../lib/decks/price-query";
 import { loadAvailability } from "../../lib/decks/availability-query";
 import { priceOf, priceState } from "../../lib/decks/price";
@@ -264,9 +264,10 @@ export async function runTuning(
     // A rejection is stored as busy here: the distinction is kept for the overview only, for now.
     if (!outcome.ok) return await fail(outcome.errorClass === "upstream_rejected" ? "upstream_busy" : outcome.errorClass);
 
-    const askedCount = outcome.value.suggestions.length;
+    const { additions, cuts } = outcome.value;
+    const askedCount = additions.length + cuts.length;
     // One catalog read of every name the model returned; injected so validate.ts stays pure.
-    const names = [...new Set(outcome.value.suggestions.flatMap((s) => [s.add, s.cut]))];
+    const names = [...new Set([...additions, ...cuts].map((l) => l.card))];
     const nameRows = names.length === 0 ? [] : await db
       .select({
         oracleId: cards.oracleId,
@@ -318,9 +319,10 @@ export async function runTuning(
     const resolveName = nameResolver(rows, new Set(pack.cards.map((c) => c.oracleId)));
 
     const { kept, droppedCount, drops } = validateSuggestions({ response: outcome.value, pack, resolveName });
-    // 8-asked/5-kept (H35, PR 4a): the first survivors in whatever order the validator already
-    // gives — no new ranking pass, no retry, no second model call. Fewer than 5 is shown as-is.
-    const sized = kept.slice(0, MAX_SUGGESTIONS);
+    // 6-asked/5-kept in each list (H35, PR 4a; sub-project 8): the first survivors of each list in
+    // whatever order the validator already gives — no new ranking pass, no retry, no second model
+    // call. Fewer than 5 is shown as-is.
+    const sized = sizeLists(kept, MAX_SUGGESTIONS);
     const report: ValidationReport = { askedCount, survivedCount: kept.length, keptCount: sized.length, hadNotes: notes !== null, drops };
     // F10: every suggestion cut a card the player locked. Its own class, so the empty result says
     // that rather than `ungrounded`'s three causes. Refunded like every failure.

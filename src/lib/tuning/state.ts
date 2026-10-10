@@ -9,8 +9,14 @@ import type { ValidationReport } from "./validate";
  * compile without the server read that fills them (`src/lib/decks/tuning-read.ts`, PR C).
  */
 
-/** The only shape a suggestion card renders: it does no lookups of its own. */
-export type TuningItem = {
+/**
+ * A swap from before the two lists (prompt version 7 and earlier): one cut, one add, one rationale
+ * for the pair. Still stored and still drawn, as the swap card; no new run writes one.
+ * The only shape the swap card renders: it does no lookups of its own.
+ */
+export type PairItem = {
+  /** Absent on a pair: what tells it from a `LineItem`. */
+  side?: undefined;
   id: string;
   addOracleId: string;
   addName: string;
@@ -49,6 +55,47 @@ export type TuningItem = {
    *  applies, and the one it names first, since the cut is still in the deck. */
   cutLocked: boolean;
 };
+
+/**
+ * One line of the two lists (sub-project 8): an ADDITION to the deck or a CUT from it, with its
+ * own rationale and citations (Design's B10, "one rationale per card"). The card is the add for
+ * an addition and the cut for a cut; the line does no lookups of its own either.
+ */
+export type LineItem = {
+  side: "add" | "cut";
+  id: string;
+  cardOracleId: string;
+  cardName: string;
+  cardTypeLine: string;
+  /** Printed art for the thumbnail and the hover preview. Null when the catalog has none. */
+  cardImageUri: string | null;
+  rationale: string;
+  rationaleShort: string;
+  evidence: TuningCitation[];
+  position: number;
+  verdict: "pending" | "accepted" | "dismissed";
+  /** Facts about the collection. Meaningful for an addition only; a cut is in the deck already. */
+  owned: boolean;
+  ownedQuantity: number;
+  /** An addition's claim picture from this deck's vantage; null when unowned or for a cut. */
+  availability: Availability | null;
+  /** An addition's price row, for the shipped buy tag. Null for a cut and when never listed. */
+  price: PriceFact | null;
+  /** The deck's permits with this line applied alone, or null when it moves nothing. */
+  bracketAfter: number[] | null;
+  /** Whether the line can still be made: an addition's card is not in the deck (a basic excepted),
+   *  a cut's card still is and is not locked. Apply refuses a line that does not, whatever was drawn. */
+  applies: boolean;
+  /** The deck holds the card now. */
+  inDeck: boolean;
+  /** The player has locked a cut's card since the run (Locked, F4). Always false for an addition. */
+  locked: boolean;
+};
+
+export type TuningItem = PairItem | LineItem;
+
+/** True for a line of the two lists, false for a pair from an earlier run. */
+export const isLine = (item: TuningItem): item is LineItem => item.side !== undefined;
 
 export type TuningRun = {
   id: string;

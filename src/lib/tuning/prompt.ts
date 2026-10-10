@@ -4,7 +4,7 @@ import { deckTuningCopy } from "../copy/deck-tuning";
 import { deckDescriptionCopy } from "../copy/deck-description";
 import { playerText, PLAYER_TEXT_SYSTEM_RULE } from "../model/player-text";
 import type { EvidencePack } from "./evidence";
-import { ASK_SUGGESTIONS } from "./limits";
+import { ASK_PER_LIST } from "./limits";
 import { noteDate } from "./note-date";
 import { lockedCardsCopy } from "../copy/locked-cards";
 
@@ -54,8 +54,8 @@ function strategyRules(universal: string[], hasOverview: boolean): string[] {
     // "Make 4 or 5 suggestions..." removed (H35, PR 4a review round 2): it contradicted the
     // SYSTEM array's own "Propose up to 8 swaps" line, so a compliant model could stop at five
     // and defeat the eight-candidate buffer the hard filters need.
-    "Size suggestions to the gap. A role that is one short of its target gets one suggestion; if you offer two for it, say in each rationale that they are alternatives to each other.",
-    "Prefer swaps grounded in how this deck plays, its strategy and its cards' interactions, over swaps that only move a role count toward its target.",
+    "Size suggestions to the gap. A role that is one short of its target gets one addition; if you offer two for it, say in each rationale that they are alternatives to each other.",
+    "Prefer changes grounded in how this deck plays, its strategy and its cards' interactions, over changes that only move a role count toward its target.",
     ...(hasOverview ? ["Never suggest cutting a Key card listed under \"How this deck plays\"."] : []),
     ...(universal.length > 0 ? [`Never suggest cutting ${universal.join(", ")} just to fix a role count.`] : []),
   ];
@@ -80,7 +80,7 @@ function limitsRules(limits: EvidencePack["limits"]): string[] {
 
 /** Each rationale is drawn above its citation chips, so it never restates their figures. */
 const RATIONALE_RULES = [
-  "Each rationale is drawn above its citations, which the player sees as chips. Never restate a chip's FIGURE in the rationale (a role count such as \"removal: 5 of 6\", or a game count): say \"one short on removal\", not \"Removal is 5 of 6\", and spend the words on what the added card does in this deck and why the cut card can go.",
+  "Each rationale is drawn above its citations, which the player sees as chips. Never restate a chip's FIGURE in the rationale (a role count such as \"removal: 5 of 6\", or a game count): say \"one short on removal\", not \"Removal is 5 of 6\", and spend the words on what an added card does in this deck, or why a cut card can go.",
   "A note citation is the exception: its note must still be quoted, word for word and in quotation marks, in the rationale.",
   "Never open two rationales the same way: no two may begin with the same role or the same count.",
 ];
@@ -99,8 +99,9 @@ const LOCKED_RULE = lockedCardsCopy.tuning.promptRule;
 const SYSTEM = [
   "You suggest changes to a Magic: The Gathering Commander deck, for the player who built it.",
   PLAYER_TEXT_SYSTEM_RULE,
-  `Propose up to ${ASK_SUGGESTIONS} swaps. Each swap cuts exactly one card from the deck and adds exactly one card.`,
-  "Ground every swap in the evidence you are given: the player's games and notes, the decklist and its targets, and what the player says the deck is for. Cite what you used.",
+  `Propose up to ${ASK_PER_LIST} cards to add and up to ${ASK_PER_LIST} cards to cut, as two separate lists. Each card stands alone: never pair an addition with a cut, and never refer to a card in the other list.`,
+  "Aim for as many cuts as additions, so the deck stays its size, but offer fewer of either when the evidence is thin. Give every card its own rationale and its own citations.",
+  "Ground every card in the evidence you are given: the player's games and notes, the decklist and its targets, and what the player says the deck is for. Cite what you used.",
   "Cite with one of six kinds: games, note, decklist, intent, mix, notes. One figure per citation. A figure with no name, or one the evidence does not give, is discarded.",
   "A games citation names what it counts, in the words the games section uses, with the figure it gives: \"Mana hurt in 3 of 5 games\", \"Lost 4 of 5 games\".",
   "A note citation names the date of the note you quote, as the notes list writes it: \"26 Aug\". Quote that note in the rationale.",

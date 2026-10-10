@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
-import type { TuningItem } from "../../lib/tuning/state";
+import type { PairItem as TuningItem } from "../../lib/tuning/state";
 import { SuggestionCard, type CardActions } from "./suggestion-card";
 
 const open = vi.fn();

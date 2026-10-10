@@ -1,6 +1,6 @@
 /**
  * `pnpm eval:rescore --run <runId>` — scores a run's stored replies again with the real accept
- * contract, and adds what an older runner did not record: each row's `keptPositions`, and the
+ * contract (the two lists since prompt v8: a run made under the swap contract no longer parses), and adds each row's `keptSuggestions` and the
  * run's `prepared.json`. It sends nothing to the model.
  *
  * The packs are rebuilt from staging, read-only, by the same path the run used. A deck edited
@@ -42,7 +42,7 @@ withReply.forEach((r, i) => {
   if (s.outcome !== r.outcome || s.kept !== r.kept || JSON.stringify(s.drops) !== JSON.stringify(r.drops)) {
     mismatches.push(`${r.cell} ${r.deckId} t${r.trial}: run ${r.outcome}/${r.kept} ${r.drops}, now ${s.outcome}/${s.kept} ${s.drops}`);
   }
-  r.keptPositions = s.keptPositions;
+  r.keptSuggestions = s.keptSuggestions;
 });
 
 if (mismatches.length > 0) {
