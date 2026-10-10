@@ -21,7 +21,7 @@ export const deckStatsCopy = {
     makes: "MAKES · LAND SOURCES",
     nonlandOne: "1 more mana source isn’t a land. It’s counted, but its color isn’t.",
     nonlandMany: (n: number) =>
-      `${n} more mana sources aren’t lands: rocks, creatures that tap for mana, and spells that fetch lands. They’re counted here, but their colors aren’t.`,
+      `${n} more mana sources aren’t lands, such as rocks, creatures that tap for mana and spells that fetch lands. They’re counted here, but their colors aren’t.`,
     caption: "A land counts once for each color it can add, so a dual counts twice. Shares are of all pips, and of all land sources.",
     // One color asked for: the dual-counts-twice clause is dropped, as drawn in 1d2.
     captionMono: "A land counts once for each color it can add; shares are of all land sources.",

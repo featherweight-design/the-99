@@ -54,27 +54,10 @@ const CONDITIONAL_GRANT = /\bcould produce\b|\bamong (lands|[^.]*\b(cards|perman
 
 const zeros = (): Record<ManaColor, number> => ({ W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 });
 
-/**
- * What a land can ADD, never its color identity (identity counts a white ability on a colorless
- * land). READINESS Q1: a dual is each color it taps for; a fetch is the basic types it can fetch;
- * an any-color land is each of the deck's colors (`deckColors`, the commanders' identity).
- *
- * The source policy is `swaps/land.ts`'s, so the two cannot disagree about a land: a grant that
- * reads another permanent makes nothing, an ability that sacrifices the land itself is one mana
- * and not a source, and an unrestricted `land card` search reaches every basic type.
- *
- * `oracleText` null reads the type line alone, which is exact for a basic and for a typed dual and
- * is the honest floor for a land the page has no text for.
- */
-export function landProduces(card: LandText, deckColors: readonly string[]): ManaColor[] {
-  const out = new Set<ManaColor>();
-  const deck = COLORED.filter((c) => deckColors.some((d) => d.toUpperCase() === c));
-  for (const word of card.typeLine.toLowerCase().split(/[^a-z]+/)) {
-    const c = BASIC_TYPE[word];
-    if (c) out.add(c);
-  }
-  // Reminder text restates the basic types and describes landcycling; neither is an ability.
-  const text = frontFaceOracle(card.oracleText).replace(/\([^)]*\)/g, "");
+/** One face's abilities into `out`. Reminder text restates the basic types and describes
+ *  landcycling; neither is an ability. */
+function readFace(card: LandText, deck: readonly ManaColor[], out: Set<ManaColor>): void {
+  const text = (card.oracleText ?? "").replace(/\([^)]*\)/g, "");
   for (const ability of text.split("\n")) {
     if (sacrificesItself(ability, card.name)) continue;
     for (const [, effect] of ability.matchAll(/\badd\b([^.]*)\./gi)) {
@@ -91,6 +74,36 @@ export function landProduces(card: LandText, deckColors: readonly string[]): Man
     if (finds.types.size === BASIC_TYPES.length) deck.forEach((c) => out.add(c));
     else for (const t of finds.types) out.add(BASIC_TYPE[t]);
   }
+}
+
+/**
+ * What a land can ADD, never its color identity (identity counts a white ability on a colorless
+ * land). READINESS Q1: a dual is each color it taps for; a fetch is the basic types it can fetch;
+ * an any-color land is each of the deck's colors (`deckColors`, the commanders' identity).
+ *
+ * The source policy is `swaps/land.ts`'s, so the two cannot disagree about a land: a grant that
+ * reads another permanent makes nothing, an ability that sacrifices the land itself is one mana
+ * and not a source, and an unrestricted `land card` search reaches every basic type.
+ *
+ * `oracleText` null reads the type line alone, which is exact for a basic and for a typed dual and
+ * is the honest floor for a land the page has no text for.
+ */
+export function landProduces(card: LandText, deckColors: readonly string[]): ManaColor[] {
+  const out = new Set<ManaColor>();
+  const deck = COLORED.filter((c) => deckColors.some((d) => d.toUpperCase() === c));
+  // Every playable LAND face, unioned: a Pathway is played as either side, so the card can be
+  // either color. A non-land face (a spell on the other side) never speaks for the land.
+  const types = card.typeLine.split(" // ");
+  const texts = (card.oracleText ?? "").split("\n//\n");
+  const names = card.name.split(" // ");
+  types.forEach((typeLine, i) => {
+    if (!isLandFace(typeLine)) return;
+    for (const word of typeLine.toLowerCase().split(/[^a-z]+/)) {
+      const c = BASIC_TYPE[word];
+      if (c) out.add(c);
+    }
+    readFace({ name: names[i] ?? names[0], typeLine, oracleText: texts[i] ?? null }, deck, out);
+  });
   return MANA_COLORS.filter((c) => out.has(c));
 }
 

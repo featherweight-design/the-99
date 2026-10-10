@@ -34,6 +34,11 @@ describe("landProduces", () => {
     const t = "{T}: Add {C}.\n{2}, {T}, Sacrifice this land: Search your library for a land card, put it onto the battlefield tapped, then shuffle.";
     expect(landProduces(land("Land", t, "Urza's Cave"), JUND)).toEqual(["B", "R", "G", "C"]);
   });
+  it("unions every land face of a modal land and ignores a spell face", () => {
+    const t = "({T}: Add {W}.)\n{T}: Add {W}.\n//\n{T}: Add {U}.";
+    expect(landProduces(land("Land // Land", t, "Hengegate Pathway // Mistgate Pathway"), JUND)).toEqual(["W", "U"]);
+    expect(landProduces(land("Land // Instant", "{T}: Add {R}.\n//\nAdd {B}{B}{B}.", "Front // Ritual"), JUND)).toEqual(["R"]);
+  });
   it("gives a fetch the basic types it names, and a basic-land search the deck's colors", () => {
     expect(landProduces(land("Land", "{T}, Pay 1 life, Sacrifice this land: Search your library for a Swamp or Forest card, put it onto the battlefield, then shuffle."), JUND)).toEqual(["B", "G"]);
     expect(landProduces(land("Land", "{T}, Sacrifice this land: Search your library for a basic land card, put it onto the battlefield tapped, then shuffle."), JUND)).toEqual(["B", "R", "G"]);
