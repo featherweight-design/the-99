@@ -65,15 +65,18 @@ export function entryTitle(
   return entry.rowCount > 1 ? c.andMore(entry.firstName, entry.rowCount - 1) : entry.firstName;
 }
 
-export type RowGroup = "left" | "down" | "up" | "new";
-const ORDER: RowGroup[] = ["left", "down", "up", "new"];
+export type RowGroup = "left" | "down" | "up" | "new" | "details";
+const ORDER: RowGroup[] = ["left", "down", "up", "new", "details"];
 const qty = (s: { quantity: number } | null) => s?.quantity ?? 0;
 
-/** Which of a long entry's four groups a row falls in; `null` when it did not change copies. */
-export function rowGroup(r: HistoryRow): RowGroup | null {
+/**
+ * Which of a long entry's groups a row falls in. A row whose copies did not move still changed: a
+ * Replace records a different printing or condition at the same quantity, so it is `details`, never dropped.
+ */
+export function rowGroup(r: HistoryRow): RowGroup {
   const before = qty(r.before);
   const after = qty(r.after);
-  if (before === after) return null;
+  if (before === after) return "details";
   if (after === 0) return "left";
   if (before === 0) return "new";
   return after < before ? "down" : "up";
@@ -84,7 +87,6 @@ export function groupRows(rows: readonly HistoryRow[]): { group: RowGroup; rows:
   const by = new Map<RowGroup, HistoryRow[]>();
   for (const r of rows) {
     const g = rowGroup(r);
-    if (!g) continue;
     const list = by.get(g);
     if (list) list.push(r);
     else by.set(g, [r]);

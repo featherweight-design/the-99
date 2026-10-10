@@ -39,7 +39,7 @@ function RowLine({ row }: { row: HistoryRow }) {
         {where ? <span className="block font-mono text-[11px] text-[color:var(--fg-faint)]">{where}</span> : null}
       </span>
       <span className="flex-none font-mono text-[12.5px]" style={{ color: d > 0 ? "var(--success)" : "var(--fg-muted)" }}>
-        {c.rowDelta(d)}
+        {d === 0 ? c.rowDetails : c.rowDelta(d)}
       </span>
     </li>
   );

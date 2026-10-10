@@ -94,6 +94,14 @@ describe("HistoryList", () => {
     expect(screen.getAllByText(/^Fresh /)).toHaveLength(8);
   });
 
+  it("lists a row whose printing changed at the same quantity, instead of dropping it", async () => {
+    const e = entry({ rowCount: 1 });
+    loadEntry.mockResolvedValue(detail(e, [row("Sol Ring", 2, 2)]));
+    draw([e]);
+    await act(async () => fireEvent.click(screen.getByRole("button", { expanded: false })));
+    expect(await screen.findByText("details changed")).toBeTruthy();
+  });
+
   it("says a failed read changed nothing and reads again on Try again", async () => {
     const e = entry({});
     loadEntry.mockRejectedValueOnce(new Error("down")).mockResolvedValueOnce(detail(e, [row("Sol Ring", 1, 3)]));

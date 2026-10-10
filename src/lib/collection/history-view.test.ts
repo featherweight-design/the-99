@@ -65,13 +65,15 @@ describe("entryTitle", () => {
 });
 
 describe("rowGroup and groupRows", () => {
-  it("splits a long entry into Left, Went down, Went up and New, in that order, skipping unchanged rows", () => {
+  it("splits a long entry into Left, Went down, Went up, New and Details, in that order", () => {
     expect(rowGroup(row(3, null))).toBe("left");
     expect(rowGroup(row(3, 0))).toBe("left");
     expect(rowGroup(row(3, 1))).toBe("down");
     expect(rowGroup(row(1, 3))).toBe("up");
     expect(rowGroup(row(null, 2))).toBe("new");
-    expect(rowGroup(row(2, 2))).toBeNull();
-    expect(groupRows([row(null, 1), row(1, 4), row(2, null), row(2, 2)]).map((g) => g.group)).toEqual(["left", "up", "new"]);
+    // Same copies, different printing or condition: still a change, so it is kept.
+    expect(rowGroup(row(2, 2))).toBe("details");
+    expect(groupRows([row(null, 1), row(1, 4), row(2, null), row(2, 2)]).map((g) => g.group)).toEqual(["left", "up", "new", "details"]);
+    expect(groupRows([row(2, 2)]).map((g) => g.group)).toEqual(["details"]);
   });
 });

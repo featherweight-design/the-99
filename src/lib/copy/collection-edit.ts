@@ -151,7 +151,10 @@ export const collectionEditCopy = {
     agedNote: "That change has aged out of history.",
     today: (date: string) => `Today · ${date}`,
     yesterday: (date: string) => `Yesterday · ${date}`,
-    groups: { left: "Left", down: "Went down", up: "Went up", new: "New" },
+    /** `details` is (new): a row whose printing or condition changed with its copies unchanged. */
+    groups: { left: "Left", down: "Went down", up: "Went up", new: "New", details: "Details" },
+    /** (new) The delta slot of a row whose copies did not move. */
+    rowDetails: "details changed",
     showMore: (k: number, of: number) => `Show ${n(k)} more of ${n(of)}`,
     /** (new) The pager for entries past the first page. */
     olderEntries: "Show older changes",

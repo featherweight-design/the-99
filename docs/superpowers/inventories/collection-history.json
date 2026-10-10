@@ -14,7 +14,7 @@
       "steps": [
         {
           "goto": "/collection/history",
-          "wait": "h3",
+          "wait": "h2",
           "settle": 4000
         }
       ]
@@ -26,7 +26,7 @@
       "steps": [
         {
           "goto": "/collection/history",
-          "wait": "h3",
+          "wait": "h2",
           "settle": 4000
         },
         {
