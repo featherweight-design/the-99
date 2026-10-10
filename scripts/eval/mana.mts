@@ -83,7 +83,8 @@ for (const d of decks) {
 }
 for (const r of rows) console.log(`- ${r.name}: ${r.line}`);
 const judged = rows.filter((r) => r.state === "ok");
-console.log(`\n${rows.length} decks, ${judged.length} judged (${rows.length - judged.length} colorless or unread).`);
+const unjudged = (state: string) => rows.filter((r) => r.state === state).length;
+console.log(`\n${rows.length} decks, ${judged.length} judged (${unjudged("colorless")} colorless, ${unjudged("noSources")} with no colored source, ${unjudged("read failed")} unread).`);
 for (const n of [1, 2, 3]) console.log(`- a color ${n} or more sources under its pip share: ${judged.filter((r) => r.gaps.some((g) => g >= n)).length} of ${judged.length}`);
 // A one-color deck holds every source for its one color, so its margin says nothing; a color with no pip asks for nothing.
 const thinnest = judged.filter((r) => r.margins.length >= 2).map((r) => ({ name: r.name, margin: Math.min(...r.margins) })).sort((x, y) => x.margin - y.margin).slice(0, 5);
