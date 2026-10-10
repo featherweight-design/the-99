@@ -16,7 +16,8 @@ import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import { deckSurfaces } from "../../lib/decks/revalidate";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
-import { commanderName } from "../../lib/decks/tuning-read";
+import { commanderName, profileOfHead } from "../../lib/decks/tuning-read";
+import { readCutsPlan } from "../../lib/decks/cuts-plan-read";
 import { deckNameIndex, normalizeName } from "../../lib/synopsis/facts";
 import { callModel } from "../../lib/model/client";
 import { FEATURE_CALLS } from "../../lib/model/prices";
@@ -91,7 +92,7 @@ export async function runProposedCuts(
   if (facts.over === 0) return { ok: false, message: deckCutsCopy.run.notOver };
   if (allLocked) return { ok: false, message: lockedCardsCopy.tuning.allLocked(await commanderName(head)) };
 
-  const [name, textRows] = await Promise.all([
+  const [name, textRows, plan] = await Promise.all([
     commanderName(head),
     // Oracle text for the cards that could come out: the front face only (`castFaceText`), the
     // configuration the recall eval chose. Catalog data, so no `playerText`.
@@ -99,6 +100,8 @@ export async function runProposedCuts(
       .select({ id: cards.oracleId, text: cards.oracleText, layout: cards.layout })
       .from(cards)
       .where(inArray(cards.oracleId, facts.cards.map((c) => c.oracleId))),
+    // The deck's plan: its combos, the commander's text and the colours it leans on.
+    profileOfHead(head).then(readCutsPlan).catch(() => undefined),
   ]);
   const texts = new Map(textRows.flatMap((r) => {
     const t = castFaceText(r.text, r.layout);
@@ -106,7 +109,7 @@ export async function runProposedCuts(
   }));
   // The intent the player already stored on the deck (the one Suggested changes reads); it goes
   // through `playerText` inside the pack. No notes in this version.
-  const pack = buildCutsPack({ facts, commanderName: name, keyCards, intent, texts });
+  const pack = buildCutsPack({ facts, commanderName: name, keyCards, intent, texts, ...(plan ? { plan } : {}) });
   // Every card left to cut is a Key card: the validator would drop every answer, so no credit is held.
   if (pack.cards.length > 0 && pack.cards.every((c) => pack.keyCardIds.includes(c.oracleId))) {
     return { ok: false, message: deckCutsCopy.panel.allLocked(await commanderName(head)) };
@@ -150,7 +153,7 @@ export async function runProposedCuts(
   try {
     const outcome = await callModel({
       model: TUNING_MODEL, system, user, maxTokens: TUNING_MAX_TOKENS,
-      schema: cutsResponseSchema(facts.over), deadlineMs: MODEL_TIMEOUT_MS,
+      schema: cutsResponseSchema(pack.ask), deadlineMs: MODEL_TIMEOUT_MS,
       effort: TUNING_EFFORT, retryFloorMs: TUNING_RETRY_FLOOR_MS,
     });
     if (outcome.usage) billed = { model: TUNING_MODEL, usage: outcome.usage };

@@ -11,3 +11,13 @@
 {"at":"2026-10-10T08:35:41.879Z","runId":"2026-10-10T08-35-41-877Z-r2-opus-text-text-opus/a1","source":"pending","usd":3.5028187499999994,"requests":15,"pending":"2026-10-10T08-35-41-877Z-r2-opus-text-text-opus/a1"}
 {"at":"2026-10-10T08:37:44.050Z","runId":"2026-10-10T08-35-41-877Z-r2-opus-text-text-opus/a1","source":"batch","usd":0.7728650000000001,"requests":15,"settles":"2026-10-10T08-35-41-877Z-r2-opus-text-text-opus/a1"}
 {"at":"2026-10-10T11:57:05.781Z","runId":"probe-local-dev/cc676a2e-ec55-4559-94fc-005df7569ac4","source":"app","usd":0.02767,"requests":1,"note":"local-dev full-run probe, Avatar Aang deck"}
+{"at":"2026-10-10T17:41:48.495Z","runId":"2026-10-10T17-41-48-493Z-cuts-plan-old/a1","source":"pending","usd":0.08,"requests":2,"pending":"2026-10-10T17-41-48-493Z-cuts-plan-old/a1"}
+{"at":"2026-10-10T17:43:50.873Z","runId":"2026-10-10T17-41-48-493Z-cuts-plan-old/a1","source":"batch","usd":0.08586200000000001,"requests":2,"settles":"2026-10-10T17-41-48-493Z-cuts-plan-old/a1","note":"cuts-plan eval, prompt v1"}
+{"at":"2026-10-10T17:43:50.881Z","runId":"2026-10-10T17-41-48-493Z-cuts-plan-old/a2","source":"pending","usd":0.04,"requests":1,"pending":"2026-10-10T17-41-48-493Z-cuts-plan-old/a2"}
+{"at":"2026-10-10T17:45:53.079Z","runId":"2026-10-10T17-41-48-493Z-cuts-plan-old/a2","source":"batch","usd":0.053117,"requests":1,"settles":"2026-10-10T17-41-48-493Z-cuts-plan-old/a2","note":"cuts-plan eval, prompt v1"}
+{"at":"2026-10-10T17:50:41.292Z","runId":"2026-10-10T17-50-41-290Z-cuts-plan-new/a1","source":"pending","usd":0.2,"requests":5,"pending":"2026-10-10T17-50-41-290Z-cuts-plan-new/a1"}
+{"at":"2026-10-10T17:52:44.035Z","runId":"2026-10-10T17-50-41-290Z-cuts-plan-new/a1","source":"batch","usd":0.21168099999999998,"requests":5,"settles":"2026-10-10T17-50-41-290Z-cuts-plan-new/a1","note":"cuts-plan eval, prompt v2 with plan"}
+{"at":"2026-10-10T17:52:44.046Z","runId":"2026-10-10T17-50-41-290Z-cuts-plan-new/a2","source":"pending","usd":0.04,"requests":1,"pending":"2026-10-10T17-50-41-290Z-cuts-plan-new/a2"}
+{"at":"2026-10-10T17:54:46.323Z","runId":"2026-10-10T17-50-41-290Z-cuts-plan-new/a2","source":"batch","usd":0.059321,"requests":1,"settles":"2026-10-10T17-50-41-290Z-cuts-plan-new/a2","note":"cuts-plan eval, prompt v2 with plan"}
+{"at":"2026-10-10T17:55:16.764Z","runId":"2026-10-10T17-55-16-763Z-cuts-plan-new-mm16k/a1","source":"pending","usd":0.04,"requests":1,"pending":"2026-10-10T17-55-16-763Z-cuts-plan-new-mm16k/a1"}
+{"at":"2026-10-10T17:57:59.714Z","runId":"2026-10-10T17-55-16-763Z-cuts-plan-new-mm16k/a1","source":"batch","usd":0.098301,"requests":1,"settles":"2026-10-10T17-55-16-763Z-cuts-plan-new-mm16k/a1","note":"cuts-plan eval, prompt v2 with plan"}

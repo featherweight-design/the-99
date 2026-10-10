@@ -18,7 +18,7 @@ export type CutDrop = { position: number; rule: CutDropRule; name?: string; cite
 export type ValidatedCut = { oracleId: string; name: string; reason: string; cites: CutCite[]; position: number };
 
 export type CutsReport = {
-  askedCount: number; survivedCount: number; keptCount: number; over: number; drops: CutDrop[];
+  askedCount: number; survivedCount: number; keptCount: number; /** The cuts the run asked for (up to MAX_CUTS_PER_RUN). */ over: number; drops: CutDrop[];
   /** The figures the chips quote, as they stood when the validator checked the cites. Stored with the
    *  run so a cut made from the result does not change the evidence of the lines still open. */
   chips?: ChipContext;
@@ -38,6 +38,14 @@ export function citeHolds(cite: CutCite, card: CutsPackCard, pack: CutsPack): bo
     case "curve": return !!card.curve && card.curve.cmc === cite.cmc && card.curve.have === cite.have;
     case "flag": return (card.flags ?? []).includes(cite.flag);
     case "intent": return pack.intent !== null;
+    // "none" is a claim about the deck's combos, so it needs the combo read to have succeeded.
+    case "combo":
+      return cite.state === "none"
+        ? !!pack.plan?.combos && !!pack.plan.nearCombos && card.comboState === undefined
+        : card.comboState === cite.state;
+    case "cost": return card.mv === cite.mv;
+    case "tapped": return card.entersTapped !== undefined;
+    case "colour": return !!card.needs?.includes(cite.colour) && pack.plan?.colourNeeds.find((n) => n.colour === cite.colour)?.cards === cite.cards;
   }
 }
 
@@ -63,13 +71,13 @@ export function validateCuts(args: {
     }
   });
 
-  const kept: ValidatedCut[] = survivors.slice(0, pack.over).map(({ at: _at, ...cut }) => cut);
-  for (const extra of survivors.slice(pack.over)) dropped.push({ position: extra.at, rule: "tooMany", name: extra.name });
+  const kept: ValidatedCut[] = survivors.slice(0, pack.ask).map(({ at: _at, ...cut }) => cut);
+  for (const extra of survivors.slice(pack.ask)) dropped.push({ position: extra.at, rule: "tooMany", name: extra.name });
 
   return {
     kept,
     dropped,
-    report: { askedCount: reply.cuts.length, survivedCount: survivors.length, keptCount: kept.length, over: pack.over, drops: dropped },
+    report: { askedCount: reply.cuts.length, survivedCount: survivors.length, keptCount: kept.length, over: pack.ask, drops: dropped },
   };
 
   function check(cut: CutProposal): Omit<ValidatedCut, "position"> | { rule: CutDropRule; cite?: CutCite["kind"] } {

@@ -208,6 +208,7 @@
     "eval:cuts": "tsx scripts/eval/cuts.mts",
     "eval:mana": "tsx scripts/eval/mana.mts",
     "eval:cuts-model": "tsx scripts/eval/cuts-model.mts",
+    "eval:cuts-plan": "tsx scripts/eval/cuts-plan.mts",
     "eval:cuts-blind": "tsx scripts/eval/cuts-blind.mts",
     "eval:cuts-blind-score": "tsx scripts/eval/cuts-blind-score.mts",
     "eval:tuning-lists": "tsx scripts/eval/tuning-lists.mts",

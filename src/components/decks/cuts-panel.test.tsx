@@ -152,6 +152,21 @@ describe("CutsPanelView", () => {
     expect(screen.getByRole("button", { name: "Try again. Uses 1 credit." }).textContent).toContain(copy.deeper.retry);
   });
 
+  it("a run that hit the per-run cap says how many are still over", async () => {
+    await mount(deps(withResult(20, 20, { over: 47, total: 147 })));
+    expect(screen.getByTestId("cuts-more").textContent).toBe(copy.deeper.resultMore(27));
+  });
+
+  it("a run under the cap says nothing about more", async () => {
+    await mount(deps(withResult(6, 6)));
+    expect(screen.queryByTestId("cuts-more")).toBeNull();
+  });
+
+  it("offers to name the per-run cap for a deck far over, not the whole overage", async () => {
+    await mount(deps(panelOf({ over: 47, total: 147, asked: 20 })));
+    expect(screen.getByText(copy.deeper.offerTitle(20))).toBeTruthy();
+  });
+
   it("C8: the last cut finishes the tool in place", async () => {
     const p = withResult(1, 1, { over: 0, total: 99 });
     p.items = [item(1, { verdict: "accepted" })];

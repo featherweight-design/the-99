@@ -173,12 +173,12 @@ for (const [i, d] of BLIND_DECKS.entries()) {
     free, random,
     sent: {
       customId,
-      params: buildParams({ model: TUNING_MODEL, system, user, maxTokens: TUNING_MAX_TOKENS, schema: cutsResponseSchema(facts.over) }, { effort: TUNING_EFFORT }),
+      params: buildParams({ model: TUNING_MODEL, system, user, maxTokens: TUNING_MAX_TOKENS, schema: cutsResponseSchema(pack.ask) }, { effort: TUNING_EFFORT }),
     },
   });
 }
 
-const schemaOf = new Map(prepared.map((p) => [p.customId, cutsResponseSchema(p.over)]));
+const schemaOf = new Map(prepared.map((p) => [p.customId, cutsResponseSchema(p.pack.ask)]));
 const attempts = new Map<string, Got[]>();
 let runId: string;
 
@@ -261,7 +261,9 @@ const snippet = (t: string | undefined) => {
 const citeText = (c: { kind: string } & Record<string, unknown>) =>
   c.kind === "inclusion" ? `inclusion ${c.pct}%` : c.kind === "offList" ? "off the commander's list"
     : c.kind === "role" ? `${c.role} ${c.have} of ${c.target}` : c.kind === "curve" ? `curve: ${c.have} at ${c.cmc}`
-      : c.kind === "flag" ? `bracket flag: ${c.flag}` : "the deck's intent";
+      : c.kind === "flag" ? `bracket flag: ${c.flag}`
+        : c.kind === "combo" ? `combo: ${c.state}` : c.kind === "cost" ? `mana value ${c.mv}` : c.kind === "tapped" ? "enters tapped"
+          : c.kind === "colour" ? `${c.colour}: ${c.cards} cards` : "the deck's intent";
 
 const decks: SheetDeck[] = [];
 const key: Record<string, { deck: string; oracleId: string; name: string; sources: string[]; hughCut: boolean; keyCard: boolean }> = {};

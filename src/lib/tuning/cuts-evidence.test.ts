@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { cutFacts } from "./cuts";
 import { deck, profile, row, support } from "./cuts-fixture";
-import { buildCutsPack } from "./cuts-evidence";
+import { buildCutsPack, landEntersTapped } from "./cuts-evidence";
 
 const pack = (o: { intent?: string | null; sup?: boolean; locked?: string[] } = {}) =>
   buildCutsPack({
@@ -78,5 +78,46 @@ describe("buildCutsPack", () => {
     expect(p.intent?.block).toContain("<<<PLAYER_TEXT>>>");
     expect(p.intent?.block.match(/END_PLAYER_TEXT/g)).toHaveLength(2);
     expect(p.intent?.block.split("\n")).toHaveLength(4);
+  });
+});
+
+describe("landEntersTapped", () => {
+  const LAND = "Land";
+  it("reads an unconditional tapped land as always", () => {
+    expect(landEntersTapped(LAND, "This land enters tapped.\n{T}: Add {R}.")).toBe("always");
+    expect(landEntersTapped(LAND, "Temple of Epiphany enters tapped.\nWhen it enters, scry 1.")).toBe("always");
+  });
+  it("reads a conditional one as sometimes", () => {
+    expect(landEntersTapped(LAND, "This land enters tapped unless you control two or more other lands.")).toBe("sometimes");
+    expect(landEntersTapped(LAND, "This land enters tapped unless you control a Plains or an Island.")).toBe("sometimes");
+  });
+  it("says nothing for a land that enters untapped, a spell, or a card with no text", () => {
+    expect(landEntersTapped(LAND, "{T}: Add {G}.")).toBeUndefined();
+    expect(landEntersTapped("Creature — Elf", "Enters tapped.")).toBeUndefined();
+    expect(landEntersTapped(LAND, undefined)).toBeUndefined();
+  });
+});
+
+describe("the plan on the pack", () => {
+  const plan = {
+    combos: [{ pieces: ["bear1", "bear2"], produces: ["Infinite mana"], usesCommander: false, manaNeeded: 0 }],
+    nearCombos: [{ have: "bear3", missing: "Elsewhere", produces: ["Infinite mana"] }],
+    commanderText: ["Gishath: Vigilance"], colourNeeds: [{ colour: "G", cards: 50 }], basics: [{ type: "Forest", count: 37 }],
+    needs: new Map([["bear1", ["G"]]]),
+  };
+  const withPlan = buildCutsPack({
+    facts: cutFacts({ profile: profile(), locked: new Set(), support: null, declaredBracket: null }),
+    commanderName: "Gishath", keyCards: [], intent: null, plan,
+  });
+  it("marks each piece by the state of its combo, and the colours a card needs", () => {
+    const by = (id: string) => withPlan.cards.find((c) => c.oracleId === id)!;
+    expect(by("bear1")).toMatchObject({ comboState: "assembled", needs: ["G"] });
+    expect(by("bear3").comboState).toBe("oneShort");
+    expect(by("bear4").comboState).toBeUndefined();
+  });
+  it("carries no plan, and marks no card, when the caller supplied none", () => {
+    const bare = pack();
+    expect(bare.plan).toBeNull();
+    expect(bare.cards.every((c) => c.comboState === undefined && c.needs === undefined)).toBe(true);
   });
 });

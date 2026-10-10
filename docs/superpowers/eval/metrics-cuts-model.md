@@ -87,3 +87,103 @@ A better truth set, in order of cost:
 3. **Decks with a net-reduction history.** By the same-role pairing 41 of the 58 cuts have no replacement of the same role, but every deck here added about as many cards as it cut, so none is a clean trim.
 
 The recall numbers above are a floor for the free-versus-model comparison and no more.
+
+## Prompt v2: the deck's plan first (2026-10-10, `pnpm eval:cuts-plan`)
+
+Hugh's blind read of v1 found the model at 1.06x a random draw (11 of 36 picks rated Cut it), and Deckcheck, handed the same lists, found 15 of his 39 real removals to the model's 7 of 36 by reasoning from the deck's plan first and card efficiency second. v2 gives the model that signal: the combos the deck assembles or is one card short of (the Overview's Spellbook read, `loadComboFacts`), the commander's text, the colours the deck's spells actually need and the basics it runs, each card's combo state, whether a land enters tapped and the colours it needs; the prompt orders the choice (plan, then the least efficient of cards doing the same job) and demotes role counts, curve and EDHREC inclusion to context. Four new cite kinds (combo, cost, tapped, colour) are checked by the same validator that checks the old six. Per-card role surplus and "opens a gap" lines were removed from the card lines. Nothing in the prompt protects a recently added card.
+
+One Batch API sample per deck on the shipped call path (Sonnet 5, effort medium, 8,000 output tokens), score = picks found in the cards Hugh actually removed. The lists are the previous version plus the newest version's additions (HD Tune - Mutant Menace: its one committed version plus the draft's additions, Hugh's removals being what the draft dropped). Spend $0.508 of the $0.75 cap; the ledger is `ledger-cuts.jsonl`.
+
+| Deck | Hugh removed | Old prompt (v1) | New prompt (v2) | Deckcheck |
+|---|---|---|---|---|
+| HD - Gods | 6 | 0 of 6 | 1 of 6 | 1 of 6 |
+| HD Tune - Counter Intelligence | 17 | 6 of 14 | 6 of 13 | 11 of 17 |
+| HD Tune - Prismari Artistry | 15 | 1 of 16 | 4 of 16 | 3 of 16 |
+| HD - Avatar Aang | 19 | 7 of 19 | 11 of 19 | 11 of 24 |
+| **The four together** | 57 | **14 of 55 (25%)** | **22 of 54 (41%)** | **26 of 63 (41%)** |
+| HD Tune - Mutant Menace | 47 | 20 of 47 (after a retry) | 0 at the app's ceiling; 29 of 46 at an eval-only 16,000 | none |
+
+Reading, with what it does not show:
+
+- v2 finds 22 of 54 picks where v1 found 14 of 55, level with Deckcheck's 26 of 63 on the same four decks. One sample per deck, so a swing of two or three hits on a small deck (Gods) is noise; the Aang gain (7 to 11) and the Prismari gain (1 to 4) are the larger moves.
+- Aang is where the new fact shows: 7 of the 11 hits are the black cards Hugh dropped (Azula, Beifong's Bounty Hunters, Boiling Rock Rioter, Hama, Heartless Act, Dai Li Indoctrination, Northern Air Temple), each reasoned from "black is barely used", which is the colour-weight fact (`Nonland cards by the colour their cost needs: W 24, U 24, G 22, R 16, B 8`). Deckcheck reached the same cards by treating the deck as four-colour.
+- Counter Intelligence did not move (6 and 6) and the model still trails Deckcheck's 11. Four of its 17 answers were dropped by the validator for a cite that was not true (a `tapped` cite on Talismans, which are not lands); the validator did its job, and the prompt's wording of that cite is a candidate for the next round.
+- (Unmeasured follow-up, no new paid run: after this table the prompt was told to lead every reason with the plan or the efficiency fact and to stop giving "not on the commander's EDHREC list", a role surplus or a crowded curve slot as the main reason.) The reasons above still lean on "not on the commander's EDHREC list" and on role counts more than the ordering asks for. Of the Mutant Menace picks, 8 cite the deck being over a role target. The ordering is a request, not an enforcement.
+- Against Hugh's blind ratings (the three decks that had a sheet), 23 of the 35 new picks were cards he had rated: 6 Cut it, 7 Maybe, 10 Keep it, a Cut it share of 26% against v1's 31% of 36. The other 12 new picks were not on the sheet, so v1's rated picks and v2's are different samples; this does not say v2 is worse, and it does not say it is better. The truth set above (what Hugh actually removed) is the comparison that covers every pick.
+- **A 47-over deck does not fit the output ceiling.** Mutant Menace is 147 cards, 47 over; v2's answer was truncated at `max_tokens` 8,000 on both attempts (v1's first attempt was too, and its retry happened to fit at 6,961). The eval-only run with 16,000 tokens answered in one pass ($0.098). The ceiling and the reservation price are shared with Suggested changes (`FEATURE_CALLS.proposed_cuts.maxTokens`), so they stay at 8,000, and the PR instead caps a run at 20 cuts (`MAX_CUTS_PER_RUN`, enforced in the prompt, the reply's bound and the validator), says how many remain, and the player runs it again after cutting. The 20-cut cap is unmeasured: Counter Intelligence's 17-cut answer used 7,467 of the 8,000 tokens, so a 20-cut answer may still truncate on some decks. The Mutant Menace figures above are the uncapped 47-cut ask.
+- The Deckcheck column is what Deckcheck returned on the same lists (Gods, Counter Intelligence and Prismari from `scripts/eval` mock lists; Aang's 24 slots, 21 distinct cards, include five basic lands and score 11 on Hugh's list by the orchestrator's count). It is a comparison point, not a truth: Hugh's own removals are.
+
+Calls: Aang and Mutant Menace under v1 $0.139 (Mutant Menace needed its retry); all five decks under v2 $0.271 (Counter Intelligence's four dropped cites included, Mutant Menace twice at 8,000 tokens $0.119 of it); Mutant Menace at 16,000 tokens $0.098. Total $0.508.
+
+### The v2 picks Hugh asked to read
+
+#### HD - Avatar Aang Hugh removed: 19
+[HUGH] Azula, Cunning Usurper :: Off-color card needing black, a color the deck barely uses, and it is not on the commander's EDHREC list at all.
+[HUGH] Beifong's Bounty Hunters :: Needs black and green but black is barely used in this deck, and the card is not on the commander's EDHREC list.
+[HUGH] Boiling Rock Rioter :: Needs black, a color this deck barely supports, and has low EDHREC inclusion among commander decks.
+[HUGH] Hama, the Bloodbender :: Needs blue and black, pulling into a color the deck barely uses, and is not on the commander's EDHREC list.
+[HUGH] Heartless Act :: Needs black, a splashed color with only 8 cards needing it, and has very low EDHREC inclusion.
+       Iroh's Demonstration :: Needs red and has very low EDHREC inclusion among commander decks running this card.
+[HUGH] Dai Li Indoctrination :: Needs black, a color barely supported by the deck, and has low EDHREC inclusion.
+[HUGH] Northern Air Temple :: Needs black, a splashed color with only 8 cards needing it, and is not on the commander's EDHREC list.
+       Rockalanche :: Needs green and has very low EDHREC inclusion among commander decks running this card.
+       Southern Air Temple :: Needs white but has very low EDHREC inclusion, suggesting weaker support among builders of this commander.
+       Sandbenders' Storm :: Needs white and has low EDHREC inclusion among decks running this commander.
+[HUGH] Allies at Last :: Needs green and has low EDHREC inclusion among decks running this commander.
+       Yip Yip! :: Needs white and has very low EDHREC inclusion among decks running this commander.
+       Accumulate Wisdom :: Needs blue and has low EDHREC inclusion among decks running this commander.
+       Octopus Form :: Needs blue and has low EDHREC inclusion among decks running this commander.
+[HUGH] Jet, Freedom Fighter :: Needs white and red and is not on the commander's EDHREC list at all.
+[HUGH] Smellerbee, Rebel Fighter :: Needs red and is not on the commander's EDHREC list at all.
+[HUGH] Wartime Protestors :: Needs red and has low EDHREC inclusion among decks running this commander.
+       Crescent Island Temple :: Needs red and is not on the commander's EDHREC list at all.
+dropped: 
+#### HD Tune - Mutant Menace Hugh removed: 47
+[HUGH] Bramble Sovereign :: Copies creatures entering but has no link to milling, rad counters, or the commander's +1/+1 counter trigger; not on this commander's EDHREC list.
+[HUGH] Cackling Counterpart :: A one-time copy spell with no mill or counter synergy, costing 3 mana for a single token; not on this commander's EDHREC list.
+       Champion of Lambholt :: Pure combat-power payoff unrelated to milling or counters; not on this commander's EDHREC list and sits at a crowded mana value.
+[HUGH] Croaking Counterpart :: Clone effect with no tie to mill or counters; not on this commander's EDHREC list and costs 3 mana for a shrunk copy.
+[HUGH] Cryptoplasm :: Copy-shifter with no mill or counter payoff; not on this commander's EDHREC list.
+[HUGH] Doppelgang :: Mass-copy sorcery unrelated to the mill/counter plan; not on this commander's EDHREC list.
+[HUGH] Double Major :: Copy-spell with no connection to milling or counters; not on this commander's EDHREC list.
+       Glasspool Mimic // Glasspool Shore :: Clone creature with no mill or counter synergy; not on this commander's EDHREC list.
+[HUGH] Mimic Vat :: Token-copy engine unrelated to the mill or counter plan; not on this commander's EDHREC list.
+[HUGH] Mirror Image :: Simple clone with no mill or counter payoff; not on this commander's EDHREC list.
+       Phyrexian Metamorph :: Copy effect that does nothing for milling or counters; not on this commander's EDHREC list.
+[HUGH] Quasiduplicate :: Copy spell disconnected from the mill/counter plan; not on this commander's EDHREC list.
+[HUGH] Renegade Doppelganger :: Temporary copy ability with no mill or counter synergy; not on this commander's EDHREC list.
+[HUGH] Repudiate // Replicate :: Split card whose copy half and counter-ability half don't feed milling or counters; not on this commander's EDHREC list.
+[HUGH] Rite of Replication :: Expensive clone effect unrelated to mill or counters; not on this commander's EDHREC list.
+[HUGH] See Double :: Copy spell with no tie to the mill/counter plan; not on this commander's EDHREC list.
+[HUGH] Sublime Epiphany :: Modal spell whose main upside is copying a creature, which the plan doesn't use; not on this commander's EDHREC list and sits at a crowded mana value.
+[HUGH] Herald's Horn :: Tribal cost-reducer with no tie to milling, rad, or +1/+1 counters; not on this commander's EDHREC list.
+[HUGH] Vanquisher's Banner :: Tribal draw engine unrelated to the mill/counter plan, and the deck already exceeds its draw target of 8 with 12 draw cards.
+       Wishclaw Talisman :: Tutor that hands the artifact to an opponent, working against the deck's own plan; not on this commander's EDHREC list.
+       Veil of Summer :: Protection/draw spell unrelated to milling or counters; draw is already over its target of 8 with 12 cards.
+       An Offer You Can't Refuse :: Gives the countered spell's controller two Treasures, handing an opponent ramp, while removal is already over its target of 5 at 10 cards.
+[HUGH] Young Deathclaws :: Low-inclusion graveyard payoff with little tie to the mill/counter plan, at a crowded mana value.
+[HUGH] Vat Emergence :: Reanimation spell with only a minor proliferate upside; not on this commander's EDHREC list and sits at a crowded mana value.
+[HUGH] Lumbering Megasloth :: A twelve-mana creature whose only real payoff is trample, at the deck's most overbuilt curve slot.
+[HUGH] Agent Frank Horrigan :: Seven-mana body whose only tie to the plan is proliferate, at the deck's most overbuilt curve slot.
+       Court of Cunning :: Monarch mill effect with very low adoption, at an already crowded mana value.
+[HUGH] Fetid Pools :: Always enters tapped while the deck already runs far more lands than its 35-land target.
+[HUGH] Mortuary Mire :: Always enters tapped while the deck already runs far more lands than its 35-land target.
+       Opulent Palace :: Always enters tapped while the deck already runs far more lands than its 35-land target.
+[HUGH] Path of Ancestry :: Always enters tapped while the deck already runs far more lands than its 35-land target.
+[HUGH] Temple of Deceit :: Always enters tapped while the deck already runs far more lands than its 35-land target.
+[HUGH] Temple of Malady :: Always enters tapped while the deck already runs far more lands than its 35-land target.
+[HUGH] Temple of Mystery :: Always enters tapped while the deck already runs far more lands than its 35-land target.
+       Swarmyard :: Regenerates creature types the deck barely runs, with low adoption, while lands are already well over target.
+       Diamond City :: Colorless utility land not on this commander's EDHREC list, while lands are already well over the 35 target.
+[HUGH] Temple of the False God :: Only produces colorless mana for a three-color deck, with modest adoption, while lands are already well over target.
+       Muddle the Mixture :: Niche transmute counterspell not on this commander's EDHREC list, while removal is already over its target of 5 at 10 cards.
+[HUGH] Casualties of War :: Six-mana removal at an already crowded curve slot, while removal is already over its target of 5 at 10 cards.
+[HUGH] Alpha Deathclaw :: Removal creature at an already crowded curve slot, while removal is already over its target of 5 at 10 cards.
+       Bred for the Hunt :: Very low adoption draw payoff, while draw is already over its target of 8 at 12 cards.
+       Drown in Ichor :: Very low adoption removal spell, while removal is already over its target of 5 at 10 cards.
+       Talisman of Curiosity :: A pain-dealing mana rock redundant with other fixing, while ramp is already over its target of 7 at 11 cards.
+       Talisman of Dominance :: A pain-dealing mana rock redundant with other fixing, while ramp is already over its target of 7 at 11 cards.
+       Talisman of Resilience :: A pain-dealing mana rock redundant with other fixing, while ramp is already over its target of 7 at 11 cards.
+       Ash Barrens :: Only colorless mana or a slow landcycle for a three-color deck, with modest adoption, while lands are already well over target.
+dropped: citeMismatch:Insatiable Avarice
+

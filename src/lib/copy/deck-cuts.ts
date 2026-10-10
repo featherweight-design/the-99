@@ -29,15 +29,23 @@ export const deckCutsCopy = {
     noBracketClaim: "No reason may name a bracket.",
     noResultClaim: "No reason may promise a result: not that a cut will win, lose, or make the deck stronger.",
     quotedNote: "A quoted part of the player's intent must be byte-identical to the intent as shown, in quotation marks.",
-    noInvention: "Do not state what a card does. Use only the names and figures you were given.",
+    noInvention: "Describe a card only as its type line and text say. Do not invent an ability, a combo or a figure you were not given.",
     noOwnershipRanking: "Ownership and price may not affect which cards you cut or their order.",
   },
   prompt: {
     task: (over: number) =>
       `You propose cuts for a Magic: The Gathering Commander deck that is ${over} ${over === 1 ? "card" : "cards"} over 100.`,
-    count: (over: number) =>
-      `Propose exactly ${over} ${over === 1 ? "cut" : "cuts"}. Propose fewer only if the deck genuinely has fewer defensible cuts.`,
-    cites: "Cite with one of six kinds: inclusion (the card's percent), offList, role (role, have, target), curve (cmc, have), flag, intent.",
+    count: (ask: number, over: number) =>
+      `Propose exactly ${ask} ${ask === 1 ? "cut" : "cuts"}. Propose fewer only if the deck genuinely has fewer defensible cuts.${over > ask ? ` The deck is ${over} over, more than one answer holds: name the ${ask} that should come out first, and the player will run this again for the rest.` : ""}`,
+    cites: "Cite with one of ten kinds: combo (state: assembled, oneShort, or none for a card in no combo the deck holds), cost (the card's mana value), tapped (a land that enters tapped), colour (colour, and how many cards need it), inclusion (the card's percent), offList, role (role, have, target), curve (cmc, have), flag, intent.",
+    /** How a cut is chosen, in order. Hugh's ruling of 2026-10-10: the deck's plan first, then the card's quality against its alternatives; role counts are context. */
+    order: [
+      "Choose cuts in this order.",
+      "1. Find the deck's plan: the combos it assembles or is one card short of, and the engine the commander's text asks for. Cut first the cards that serve no part of that plan or work against it: a card that gives up permanents the plan needs, a card whose payoff the deck cannot trigger, a theme card with no enabler, a colour the deck barely uses.",
+      "2. Then, among cards that do the same job, cut the least efficient: more mana for the same effect, sorcery speed where an instant would do, a land that enters tapped when others do not, ramp that is slow.",
+      "3. Role counts, curve and EDHREC inclusion are context, not reasons. Lead every reason with the plan or the efficiency fact. Never give \"not on the commander's EDHREC list\", a role surplus or a crowded curve slot as the main reason, and never cut a card for a count alone; such a figure may stand only as a second cite. Do not protect a card because it is new to the deck.",
+      "A piece of an assembled combo is the plan: do not cut it.",
+    ].join("\n"),
     reasonLength: "Write each reason in one plain line, 200 characters at most.",
   },
   /** Refusals from the run action. The in-flight, allowance and locked refusals reuse the Suggested
@@ -110,6 +118,8 @@ export const deckCutsCopy = {
       stopNote: "stopping gives the credit back",
       resultHead: (n: number) => `${cap(numberWord(n))} to cut`,
       resultRead: "named by a deeper look \u00b7 read the count below and your description",
+      /** After a capped run: how many are still over once these are dealt with. Placeholder owed to /copy-review. */
+      resultMore: (n: number) => `${cap(numberWord(n))} more ${n === 1 ? "is" : "are"} still over. Cut these, then look deeper again for the rest.`,
       resultFoot: (named: number, asked: number) => `${named} of ${asked} named \u00b7 each figure checked against the count`,
       shortRow: (n: number) => `A ${ordinalWord(n)} wasn\u2019t named`,
       shortWhy: "it cited a figure the count doesn\u2019t have \u00b7 left out, not replaced",
