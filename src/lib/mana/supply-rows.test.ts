@@ -19,6 +19,12 @@ describe("manaSupplyRows", () => {
     ]);
   });
 
+  it("carries Scryfall's mana value onto a card's row and leaves a commander's out", () => {
+    const rows = manaSupplyRows([{ ...card("bear", "Creature", 1, "{1}{G}"), cmc: 2 }], [{ typeLine: "Legendary Creature", manaCost: "{3}{G}" }], {}, {}, []);
+    expect(rows[0]).toMatchObject({ id: "bear", cmc: 2 });
+    expect(rows[1]).not.toHaveProperty("cmc");
+  });
+
   it("reads a land the page had no text for from its type line alone", () => {
     const [row] = manaSupplyRows([card("added", "Basic Land — Island")], [], {}, {}, ["U"]);
     expect(row.produces).toEqual(["U"]);

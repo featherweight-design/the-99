@@ -246,18 +246,30 @@ function symbols(s: string): Color[] {
   return [...s.matchAll(/\{([wubrg])\}/g)].map((m) => m[1].toUpperCase() as Color);
 }
 
+/**
+ * How the land ITSELF comes into play, from its own text: tapped, tapped unless a condition holds,
+ * or neither. A fetch that puts a DIFFERENT land onto the battlefield tapped (Evolving Wilds) enters
+ * untapped itself and is not this; `drawbacks` reports that one separately, below.
+ */
+export function entersAs(card: LandText): Extract<Drawback, { kind: "entersTapped" | "entersTappedUnless" }> | null {
+  const text = stripReminders(frontText(card));
+  const unless = /enters(?: the battlefield)? tapped unless ([^.]+)\./.exec(text);
+  // A shock land: "you may pay 2 life. If you don't, it enters tapped" is the same drawback read
+  // the other way round.
+  const shock = /you may pay (\d+|two) life\. if you don't, it enters(?: the battlefield)? tapped/.exec(text);
+  if (unless) return { kind: "entersTappedUnless", condition: unless[1].trim() };
+  if (shock) return { kind: "entersTappedUnless", condition: `you pay ${amount(shock[1])} life` };
+  if (/enters(?: the battlefield)? tapped\b/.test(text)) return { kind: "entersTapped" };
+  return null;
+}
+
 /** What running this land costs, from its own text. A basic land costs nothing. */
 export function drawbacks(card: LandText): Drawback[] {
   const text = stripReminders(frontText(card));
   const out: Drawback[] = [];
 
-  const unless = /enters(?: the battlefield)? tapped unless ([^.]+)\./.exec(text);
-  // A shock land: "you may pay 2 life. If you don't, it enters tapped" is the same drawback read
-  // the other way round.
-  const shock = /you may pay (\d+|two) life\. if you don't, it enters(?: the battlefield)? tapped/.exec(text);
-  if (unless) out.push({ kind: "entersTappedUnless", condition: unless[1].trim() });
-  else if (shock) out.push({ kind: "entersTappedUnless", condition: `you pay ${amount(shock[1])} life` });
-  else if (/enters(?: the battlefield)? tapped\b/.test(text)) out.push({ kind: "entersTapped" });
+  const entry = entersAs(card);
+  if (entry) out.push(entry);
 
   // The colors a cost is paid for: the symbols in its own "add" clause, or every color the land
   // makes when the clause is an any-color grant (Mana Confluence) or the damage is its own line

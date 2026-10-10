@@ -13,6 +13,8 @@
 // Karsten: "How Many Sources Do You Need to Consistently Cast Your Spells? A 2022 Update" (TCGplayer).
 
 import { isLandFace } from "../cards/facet";
+import { faceCosts } from "../cards/faces";
+import { averageManaValue } from "../decks/mana-value";
 import { karstenLands, karstenSources, patternName, type KarstenSources } from "../mana/karsten";
 import type { TappedLands } from "../mana/lands-tapped";
 import { costPatterns, manaValueOf } from "../mana/pattern";
@@ -54,7 +56,7 @@ export type ColorEvidence = {
 export type LandEvidence = {
   /** Copies of land cards. */
   count: number;
-  /** Lands that enter tapped every time, and ones tapped unless a condition holds. */
+  /** Lands that enter tapped, ones tapped unless a condition holds, and fetches that put another land in tapped. */
   tapped: TappedLands;
   /** Mana value averaged over the nonland cards, the commander(s) counted as one more card each. */
   averageManaValue: number;
@@ -83,6 +85,9 @@ export type ManaBalanceInput = {
   tapped: TappedLands;
 };
 
+/** Mana value of a row: Scryfall's, else the FRONT face's cost (the stored cost joins every face). */
+const rowManaValue = (r: ManaSupplyCardRow) => r.cmc ?? manaValueOf((r.manaCost ?? "").split(" // ")[0].trim() || null);
+
 /** Hardest first: more pips, then less other mana. */
 const byHardness = (a: { generic: number; pips: number }, b: { generic: number; pips: number }) => b.pips - a.pips || a.generic - b.generic;
 
@@ -90,13 +95,19 @@ function patternsFor(color: ManaColor, rows: readonly ManaSupplyCardRow[], nameO
   const byPattern = new Map<string, PatternEvidence>();
   for (const r of rows) {
     if (isLandFace(r.typeLine)) continue;
-    const p = costPatterns(r.manaCost)[color];
-    if (!p) continue;
-    const key = patternName(p.generic, p.pips);
-    const entry = byPattern.get(key) ?? { pattern: key, generic: p.generic, pips: p.pips, copies: 0, cards: [], karsten: karstenSources(p.generic, p.pips) };
-    entry.copies += r.quantity;
-    entry.cards.push({ name: nameOf(r.id), copies: r.quantity, commander: isCommanderRow(r.id) });
-    byPattern.set(key, entry);
+    // Each face of an adventure, a split card or a castable back is its own way to cast the card.
+    const seen = new Set<string>();
+    for (const face of faceCosts(r.manaCost)) {
+      const p = costPatterns(face)[color];
+      if (!p) continue;
+      const key = patternName(p.generic, p.pips);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const entry = byPattern.get(key) ?? { pattern: key, generic: p.generic, pips: p.pips, copies: 0, cards: [], karsten: karstenSources(p.generic, p.pips) };
+      entry.copies += r.quantity;
+      entry.cards.push({ name: nameOf(r.id), copies: r.quantity, commander: isCommanderRow(r.id) });
+      byPattern.set(key, entry);
+    }
   }
   for (const e of byPattern.values()) e.cards.sort((a, b) => a.name.localeCompare(b.name));
   return [...byPattern.values()].sort(byHardness).slice(0, PATTERNS_SHOWN);
@@ -118,17 +129,16 @@ export function readManaBalance({ rows, nameOf, tapped }: ManaBalanceInput): Man
     patterns: patternsFor(color, rows, nameOf),
   }));
 
-  const nonland = rows.filter((r) => !isLandFace(r.typeLine));
-  const cards = nonland.reduce((a, r) => a + r.quantity, 0);
-  const averageManaValue = cards > 0 ? nonland.reduce((a, r) => a + manaValueOf(r.manaCost) * r.quantity, 0) / cards : 0;
-  const cheapRamp = rows.reduce((a, r) => (r.ramp && (r.produces ?? []).length > 0 && manaValueOf(r.manaCost) <= 3 ? a + r.quantity : a), 0);
+  // The deck's average mana value is the what-changed strip's (`averageManaValue`), commanders included as cards.
+  const averageMv = averageManaValue(rows.map((r) => ({ cmc: rowManaValue(r), quantity: r.quantity, typeLine: r.typeLine }))) ?? 0;
+  const cheapRamp = rows.reduce((a, r) => (r.ramp && (r.produces ?? []).length > 0 && rowManaValue(r) <= 3 ? a + r.quantity : a), 0);
 
   return {
     state: pipsWith === 0 ? "colorless" : BALANCE_COLORS.every((c) => total(c) === 0) ? "noSources" : "ok",
     colors,
     colorless: { demand: supply.demand.C, supply: total("C") },
     unattributedNonland: supply.unattributedNonland,
-    lands: { count: supply.lands, tapped, averageManaValue, cheapRamp, karstenLands: karstenLands(averageManaValue, cheapRamp) },
+    lands: { count: supply.lands, tapped, averageManaValue: averageMv, cheapRamp, karstenLands: karstenLands(averageMv, cheapRamp) },
     supply,
   };
 }

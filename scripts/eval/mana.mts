@@ -59,7 +59,7 @@ const evidenceLines = (b: NonNullable<typeof balance>) => {
     out.push(`  ${c.color}: pips ${c.pips.withCommander} (${c.pips.withoutCommander} without the commander), sources ${c.sources.total} (${c.sources.lands} lands + ${c.sources.nonland}); hardest ${hardest || "none"}`);
   }
   const l = b.lands;
-  out.push(`  lands ${l.count}, tapped ${l.tapped.always} always + ${l.tapped.unless} unless a condition (${((100 * (l.tapped.always + l.tapped.unless)) / Math.max(1, l.count)).toFixed(1)}% either way); average MV ${l.averageManaValue.toFixed(2)}, cheap ramp ${l.cheapRamp}, Karsten lands ${l.karstenLands.toFixed(1)}`);
+  out.push(`  lands ${l.count}, tapped ${l.tapped.always} always (${((100 * l.tapped.always) / Math.max(1, l.count)).toFixed(1)}%) + ${l.tapped.unless} unless a condition + ${l.tapped.fetch} fetch a tapped land; average MV ${l.averageManaValue.toFixed(2)}, cheap ramp ${l.cheapRamp}, Karsten lands ${l.karstenLands.toFixed(1)}`);
   return out;
 };
 

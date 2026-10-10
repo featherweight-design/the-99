@@ -32,6 +32,9 @@ export type ManaSupplyCardRow = {
   id: string;
   typeLine: string;
   manaCost: string | null;
+  /** Scryfall's mana value. Optional: a row built without a catalog reads the front face's cost. A
+   *  stored cost joins every face (`{2}{R} // {1}{R}`), so summing it would double an adventure. */
+  cmc?: number;
   /** Copies. Every figure below is in copies. */
   quantity: number;
   /** The colors the card can add: `landProduces` for a land, `sourceProduces` for a non-land source. */

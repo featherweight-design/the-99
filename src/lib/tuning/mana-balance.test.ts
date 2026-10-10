@@ -6,7 +6,7 @@ const land = (id: string, quantity: number, produces: ManaColor[]): ManaSupplyCa
 const spell = (id: string, manaCost: string, quantity = 1): ManaSupplyCardRow => ({ id, typeLine: "Creature", manaCost, quantity });
 const rock = (id: string, manaCost: string, quantity: number, produces: ManaColor[]): ManaSupplyCardRow => ({ id, typeLine: "Artifact", manaCost, quantity, produces, ramp: true });
 const commander = (i: number, manaCost: string): ManaSupplyCardRow => ({ id: `commander:${i}`, typeLine: "Legendary Creature", manaCost, quantity: 1 });
-const tapped = { always: 0, unless: 0, lands: 0 };
+const tapped = { always: 0, unless: 0, fetch: 0, lands: 0 };
 const read = (rows: ManaSupplyCardRow[], t = tapped) => readManaBalance({ rows, nameOf: (id) => id, tapped: t });
 const color = (b: ReturnType<typeof read>, c: ManaColor) => b.colors.find((x) => x.color === c)!;
 
@@ -69,6 +69,18 @@ describe("readManaBalance: patterns", () => {
     expect(color(b, "G").patterns).toEqual([expect.objectContaining({ pattern: "6C", karsten: { kind: "atMost", sources: 14 } })]);
   });
 
+  it("lists each face of a joined cost as its own way to cast the card, never one summed pattern", () => {
+    // An adventure stores both faces: {2}{R} // {1}{R}. It is 2C and 1C, and 3CC does not exist.
+    const b = read([{ id: "Adventure", typeLine: "Creature", manaCost: "{2}{R} // {1}{R}", cmc: 3, quantity: 1 }, land("mountain", 5, ["R"])]);
+    expect(color(b, "R").patterns.map((p) => [p.pattern, p.copies, p.cards.map((c) => c.name)])).toEqual([["1C", 1, ["Adventure"]], ["2C", 1, ["Adventure"]]]);
+  });
+
+  it("counts a card once for a pattern both its faces share", () => {
+    const b = read([{ id: "Split", typeLine: "Instant // Instant", manaCost: "{1}{R} // {1}{R}", cmc: 4, quantity: 2 }]);
+    expect(color(b, "R").patterns).toHaveLength(1);
+    expect(color(b, "R").patterns[0]).toMatchObject({ pattern: "1C", copies: 2 });
+  });
+
   it("shows only the hardest PATTERNS_SHOWN", () => {
     const many = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => spell(`c${n}`, `{${n}}{G}`));
     expect(color(read(many), "G").patterns).toHaveLength(PATTERNS_SHOWN);
@@ -77,7 +89,7 @@ describe("readManaBalance: patterns", () => {
 
 describe("readManaBalance: lands", () => {
   it("reports the land count, the tapped counts, the average mana value and Karsten's figure", () => {
-    const t = { always: 3, unless: 2, lands: 10 };
+    const t = { always: 3, unless: 2, fetch: 1, lands: 10 };
     const b = read([spell("a", "{3}{G}", 4), commander(0, "{4}{G}"), rock("sig", "{2}", 2, ["G"]), land("forest", 10, ["G"])], t);
     // (4 + 4 + 4 + 4 + 5 + ...) nonland: 4 x 4 + 5 (commander) + 2 x 2 = 25 over 7 cards.
     expect(b.lands.count).toBe(10);
@@ -85,6 +97,22 @@ describe("readManaBalance: lands", () => {
     expect(b.lands.averageManaValue).toBeCloseTo(25 / 7);
     expect(b.lands.cheapRamp).toBe(2);
     expect(b.lands.karstenLands).toBeCloseTo(31.42 + 3.13 * (25 / 7) - 0.28 * 2);
+  });
+
+  it("takes mana value from the row's Scryfall figure, not a sum of every face's cost", () => {
+    // {2}{R} // {1}{R} sums to 5; the card's mana value is 3. Average over this card and a 1-drop is 2.
+    const joined: ManaSupplyCardRow = { id: "adv", typeLine: "Creature", manaCost: "{2}{R} // {1}{R}", cmc: 3, quantity: 1 };
+    expect(read([joined, { ...spell("one", "{R}"), cmc: 1 }, land("mountain", 3, ["R"])]).lands.averageManaValue).toBe(2);
+  });
+
+  it("without a Scryfall figure reads the FRONT face's cost", () => {
+    const joined: ManaSupplyCardRow = { id: "adv", typeLine: "Creature", manaCost: "{2}{R} // {1}{R}", quantity: 1 };
+    expect(read([joined, land("mountain", 3, ["R"])]).lands.averageManaValue).toBe(3);
+  });
+
+  it("counts a joined-cost mana source by its mana value, so a 3-mana adventure rock is cheap ramp", () => {
+    const rockAdv: ManaSupplyCardRow = { id: "r", typeLine: "Artifact", manaCost: "{2}{G} // {1}{G}", cmc: 3, quantity: 1, produces: ["G"], ramp: true };
+    expect(read([rockAdv, land("forest", 1, ["G"])]).lands.cheapRamp).toBe(1);
   });
 
   it("counts only mana sources of mana value three or less as cheap ramp", () => {

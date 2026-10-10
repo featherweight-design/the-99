@@ -24,7 +24,7 @@ export type GoldenBalance = {
   colorlessSupply: number;
   unattributedNonland: number;
   colors: Record<BalanceColor, GoldenColor>;
-  lands: { count: number; tappedAlways: number; tappedUnless: number; averageManaValue: number; cheapRamp: number; karstenLands: number };
+  lands: { count: number; tappedAlways: number; tappedUnless: number; tappedFetch: number; averageManaValue: number; cheapRamp: number; karstenLands: number };
 };
 
 const karstenText = (k: KarstenSources) => (k.kind === "unknown" ? "unknown" : `${k.kind} ${k.sources}`);
@@ -55,6 +55,7 @@ export function goldenShape(b: ManaBalance, nameOf: (id: string) => string): Gol
       count: b.lands.count,
       tappedAlways: b.lands.tapped.always,
       tappedUnless: b.lands.tapped.unless,
+      tappedFetch: b.lands.tapped.fetch,
       averageManaValue: round(b.lands.averageManaValue, 2),
       cheapRamp: b.lands.cheapRamp,
       karstenLands: round(b.lands.karstenLands, 1),
