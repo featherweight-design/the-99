@@ -84,6 +84,7 @@ describe("labelRoleSet", () => {
 
     it("does not count a discount on the card itself or on an ability", () => {
       expect(labelRoleSet([ramp("costReduction")], "Artifact Creature", "This spell costs {X} less to cast, where X is the number of artifacts you control.")).toEqual([]);
+      expect(labelRoleSet([ramp("costReduction")], "Sorcery", "This spell costs {1} less to cast for each spell you cast this turn.")).toEqual([]);
       expect(labelRoleSet([ramp("costReduction")], "Creature", "Abilities you activate cost {2} less to activate.")).toEqual([]);
     });
 

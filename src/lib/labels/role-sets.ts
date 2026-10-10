@@ -25,6 +25,9 @@ const LAND_TO_BATTLEFIELD = /onto the battlefield/i;
  *  ability (Metalwork Colossus, Bruenor, Zirda). */
 const DISCOUNTS_YOUR_SPELLS = /\bspells?\b[^.\n]{0,40}\byou cast\b/i;
 
+/** The card's own discount sentence ("This spell costs {1} less for each spell you cast this turn."). */
+const OWN_COST_SENTENCE = /^(?:this|~)\b[^\n]*\bcosts?\b[^\n]*$/gim;
+
 /**
  * Whether a ramp job is ramp for the deck's count (check `labels-accuracy-check-2026-10-10`):
  * a land fetched into the HAND is not mana ahead of curve, and a discount is ramp only when it
@@ -36,7 +39,7 @@ function isRampJob(job: Job, oracleText: string | null | undefined): boolean {
   if (job.kind !== "ramp") return false;
   if (job.rampKind === "fetchesLand") return oracleText == null || LAND_TO_BATTLEFIELD.test(oracleText);
   if (job.rampKind === "costReduction") {
-    return job.restrictedTo == null && (oracleText == null || DISCOUNTS_YOUR_SPELLS.test(oracleText));
+    return job.restrictedTo == null && (oracleText == null || DISCOUNTS_YOUR_SPELLS.test(oracleText.replace(OWN_COST_SENTENCE, "")));
   }
   return true;
 }
