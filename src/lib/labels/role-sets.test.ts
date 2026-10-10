@@ -67,6 +67,10 @@ describe("labelRoleSet", () => {
       expect(labelRoleSet([ramp("fetchesLand", { restrictedTo: "land" })], "Artifact", SCRYING)).toEqual([]);
     });
 
+    it("does not take another effect's battlefield for the land's", () => {
+      expect(labelRoleSet([ramp("fetchesLand")], "Creature", `${SCRYING} Create two 1/1 tokens. Put a creature card from your hand onto the battlefield.`)).toEqual([]);
+    });
+
     it("counts a land fetched onto the battlefield", () => {
       expect(labelRoleSet([ramp("fetchesLand")], "Sorcery", FARSEEK)).toEqual(["ramp"]);
     });

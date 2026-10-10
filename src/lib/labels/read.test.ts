@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { labelInputHash, PROMPT_SYSTEM_SHA256 } from "./prompt";
-import { freshLabels, labelSurfacesEnabled, standInLabelsEnabled } from "./read";
+import { freshLabels, labelSurfacesEnabled, readLabelRoleSets, standInLabelsEnabled } from "./read";
 import type { Job } from "./types";
 
 const CARD = {
@@ -132,5 +132,23 @@ describe("labelSurfacesEnabled", () => {
 
   it("is its own switch: the stand-ins sheet's does not turn it on", () => {
     expect(labelSurfacesEnabled(env({ STAND_IN_LABELS_ENABLED: "true" }))).toBe(false);
+  });
+});
+
+describe("readLabelRoleSets", () => {
+  const exec = (rows: unknown[]) => ({ execute: async () => ({ rows }) }) as never;
+  const ramp = (rampKind: string): Job =>
+    ({ ...JOB, kind: "ramp", rampKind, restrictedTo: "land", affects: "self", method: null }) as Job;
+
+  it("applies the oracle-text rules, so a land fetched into the hand is not ramp", async () => {
+    const text = "Search your library for a land card, reveal it, put it into your hand, then shuffle.";
+    const r = row({ labels: [ramp("fetchesLand")], oracle_text: text, type_line: "Sorcery", input_hash: hash({ oracle_text: text, type_line: "Sorcery" }) });
+    expect((await readLabelRoleSets([CARD.oracle_id], exec([r]))).get(CARD.oracle_id)).toEqual([]);
+  });
+
+  it("reads a two-faced card by its cast face only", async () => {
+    const text = "Search your library for a land card, reveal it, put it into your hand, then shuffle.\n//\nCreate a token. Put it onto the battlefield.";
+    const r = row({ labels: [ramp("fetchesLand")], oracle_text: text, layout: "modal_dfc", type_line: "Sorcery // Land", input_hash: hash({ oracle_text: text, layout: "modal_dfc", type_line: "Sorcery // Land" }) });
+    expect((await readLabelRoleSets([CARD.oracle_id], exec([r]))).get(CARD.oracle_id)).toEqual([]);
   });
 });

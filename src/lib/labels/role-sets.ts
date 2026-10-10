@@ -20,7 +20,7 @@ export const LABEL_TARGET_ROLES = ["ramp", "draw", "removal", "wipes"] as const;
 export type LabelTargetRole = (typeof LABEL_TARGET_ROLES)[number];
 
 /** Puts a land onto the battlefield, as opposed to into the hand (Expedition Map, Sylvan Scrying). */
-const LAND_TO_BATTLEFIELD = /onto the battlefield/i;
+const LAND_TO_BATTLEFIELD = /\b(?:search|lands?|forest|plains|island|swamp|mountain)\b[^.\n]*\bonto the battlefield/i;
 /** A discount on the spells the controller casts, as opposed to one on the card itself or on an
  *  ability (Metalwork Colossus, Bruenor, Zirda). */
 const DISCOUNTS_YOUR_SPELLS = /\bspells?\b[^.\n]{0,40}\b(?:you cast|cost)\b[^.\n]*\bless\b/i;
