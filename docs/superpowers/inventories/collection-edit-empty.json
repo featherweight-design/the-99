@@ -1,0 +1,53 @@
+{
+  "feature": "Collection screens PR 3: the empty-state doors and Home step one (Add cards by hand)",
+  "note": "Run as an account with NO collection and no decks, with COLLECTION_EDIT_ENABLED=true: the rows photograph the empty /collection and first-run Home, and with a populated account they would photograph the wrong surfaces. Rows needing a collection are in collection-edit.json.",
+  "shares": {
+    "module": "src/components/collection/add-cards-sheet.tsx",
+    "binding": "AddCardsSheet",
+    "note": "Each host mounts the sheet itself: the empty /collection's doors and first-run Home's step one."
+  },
+  "rows": [
+    {
+      "id": "doors-empty",
+      "label": "/collection empty: two equal doors (rows at 390, 260px tiles at 1300)",
+      "view": "src/components/collection/collection-empty-doors.tsx",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        }
+      ]
+    },
+    {
+      "id": "doors-add",
+      "label": "/collection empty: the Add cards door opened",
+      "view": "src/components/collection/collection-empty-doors.tsx",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "Add cards",
+          "wait": "[role=dialog]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "home-add-by-hand",
+      "label": "/ Home step one: Add cards by hand beside Paste",
+      "view": "src/components/home/first-run-step-one.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        }
+      ]
+    }
+  ]
+}

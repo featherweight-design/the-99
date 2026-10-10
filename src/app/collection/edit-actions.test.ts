@@ -16,6 +16,8 @@ const stub = vi.hoisted(() => ({
   choices: vi.fn(),
   invalidate: vi.fn(),
   warm: vi.fn(),
+  // When set, `after` queues its callbacks here instead of running them.
+  deferred: null as null | (() => unknown)[],
 }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
@@ -32,16 +34,17 @@ vi.mock("../../lib/collection/catalog-read", async (actual) => ({
 }));
 vi.mock("../../lib/collection/invalidate", () => ({ invalidateCollectionReaders: stub.invalidate }));
 // `after` runs its callback at once, so a test sees the warm the response would have scheduled.
-vi.mock("next/server", () => ({ after: (fn: () => unknown) => fn() }));
+vi.mock("next/server", () => ({ after: (fn: () => unknown) => (stub.deferred ? stub.deferred.push(fn) : fn()) }));
 vi.mock("../../lib/recs/warm", () => ({ warmCommanderScores: stub.warm }));
 
-import { addToCollection, editCollection, loadPrintingChoices, searchCollectionCards } from "./edit-actions";
+import { addToCollection, editCollection, settleCollectionWrite, loadPrintingChoices, searchCollectionCards } from "./edit-actions";
 
 const catalogHolds = (finishes = ["nonfoil", "foil"]) =>
   stub.resolve.mockResolvedValue(new Map([[`${ORACLE}|lea|1`, { scryfallId: PRINTING, finishes }]]));
 
 beforeEach(() => {
   stub.ledger = true;
+  stub.deferred = null;
   for (const f of [stub.apply, stub.resolve, stub.search, stub.choices, stub.invalidate, stub.warm]) f.mockReset();
   stub.resolve.mockResolvedValue(new Map());
 });
@@ -86,11 +89,32 @@ describe("addToCollection", () => {
     expect(stub.warm).toHaveBeenCalledWith("user_1");
   });
 
+  it("settleCollectionWrite invalidates inside the action, and is refused with the switch off", async () => {
+    await settleCollectionWrite();
+    expect(stub.invalidate).toHaveBeenCalledWith("user_1");
+    stub.invalidate.mockReset();
+    stub.ledger = false;
+    await expect(settleCollectionWrite()).rejects.toThrow("collection editing is off");
+    expect(stub.invalidate).not.toHaveBeenCalled();
+  });
+
   it("refuses a printing the catalog does not hold, or a finish it was never printed in", async () => {
     await expect(addToCollection(ACTION, [line])).rejects.toThrow("not a catalog printing");
     catalogHolds(["foil"]);
     await expect(addToCollection(ACTION, [line])).rejects.toThrow("not a catalog printing");
     expect(stub.apply).not.toHaveBeenCalled();
+  });
+
+  it("invalidates only after the response, so the page that called the action is not re-rendered into its reply", async () => {
+    stub.deferred = [];
+    catalogHolds();
+    stub.apply.mockResolvedValue({ status: "applied", entry: { id: ACTION } });
+    await addToCollection(ACTION, [line]);
+    expect(stub.invalidate).not.toHaveBeenCalled();
+    expect(stub.warm).not.toHaveBeenCalled();
+    for (const run of stub.deferred) await run();
+    expect(stub.invalidate).toHaveBeenCalledWith("user_1");
+    expect(stub.warm).toHaveBeenCalledWith("user_1");
   });
 
   it("answers a retry of a committed add as the same success, and invalidates again", async () => {

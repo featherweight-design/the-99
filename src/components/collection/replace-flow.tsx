@@ -18,6 +18,7 @@ export function ReplaceFlow({
   embedded,
   entry,
   onReviewing,
+  onAddByHand,
 }: {
   currentCardCount: number;
   embedded?: boolean;
@@ -30,6 +31,8 @@ export function ReplaceFlow({
   // UploadEntry itself, because steps 2 and 3 are this component's to own and a
   // caller reaching past it for step 1 would have to re-implement them.
   entry?: React.ComponentProps<typeof UploadEntry>["entry"];
+  /** First run's `Add cards by hand`, drawn beside Paste. Absent: no button. */
+  onAddByHand?: React.ComponentProps<typeof UploadEntry>["onAddByHand"];
 }) {
   const nav = usePendingPush();
   const [preview, setPreview] = useState<UploadPreview | null>(null);
@@ -128,6 +131,7 @@ export function ReplaceFlow({
           <UploadEntry
             currentCardCount={knownCount}
             entry={entry}
+            onAddByHand={onAddByHand}
             onPreview={(p) => {
               setConfirmError(null);
               setConfirming(false);

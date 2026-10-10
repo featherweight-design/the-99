@@ -31,6 +31,7 @@ vi.mock("../../app/collection/edit-actions", () => ({
   searchCollectionCards: vi.fn(),
   loadPrintingChoices: vi.fn(),
   addToCollection: vi.fn(),
+  settleCollectionWrite: vi.fn(),
 }));
 
 const refreshCollectionHeader = vi.fn();

@@ -40,6 +40,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { GhostButton } from "../ui/button";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
+import { settleCollectionWrite } from "../../app/collection/edit-actions";
 import { AddCardsSheet } from "./add-cards-sheet";
 import { ReplaceIcon } from "./replace-icon";
 import { PendingReporter } from "../shell/pending-reporter";
@@ -164,9 +165,11 @@ export function CollectionPlaceHead({
   const { stats, lastUpdatedLabel } = live;
   // Add cards (collection edit §B). The control that opened the sheet gets focus back on close.
   const [adding, setAdding] = useState(false);
+  const savedWhileOpen = useRef(false);
   const addTrigger = useRef<HTMLElement | null>(null);
   const openAdd = (e: React.MouseEvent<HTMLElement>) => {
     addTrigger.current = e.currentTarget;
+    savedWhileOpen.current = false;
     setAdding(true);
   };
   const reread = () => {
@@ -297,8 +300,17 @@ export function CollectionPlaceHead({
           mode="add"
           returnFocusRef={addTrigger}
           totalCards={stats.totalCards}
-          onSaved={reread}
-          onClose={() => setAdding(false)}
+          onSaved={() => {
+            savedWhileOpen.current = true;
+            reread();
+          }}
+          // The list behind the sheet is refreshed once it closes: the add action invalidates
+          // after its response, so nothing re-renders this route on its own, and doing it at the
+          // save would unmount the sheet's saved state on an empty collection's page.
+          onClose={() => {
+            setAdding(false);
+            if (savedWhileOpen.current) void settleCollectionWrite();
+          }}
         />
       ) : null}
     </div>

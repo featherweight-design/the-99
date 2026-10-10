@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 // Step 1 reaches the upload flow through ReplaceFlow, which calls useRouter at
@@ -14,7 +14,55 @@ vi.mock("../../app/collection/actions", () => ({
   previewUpload: vi.fn(),
 }));
 
+const settle = vi.fn();
+vi.mock("../../app/collection/edit-actions", () => ({ settleCollectionWrite: (...a: unknown[]) => settle(...a) }));
+let sheet: { onSaved?: (n: number) => void; onClose: () => void } | null = null;
+vi.mock("../collection/add-cards-sheet", () => ({
+  AddCardsSheet: (p: { onSaved?: (n: number) => void; onClose: () => void }) => {
+    sheet = p;
+    return <div role="dialog" aria-label="Add cards sheet" />;
+  },
+}));
+
 const { FirstRunChecklist } = await import("./first-run");
+
+describe("FirstRunChecklist · Add cards by hand (collection edit B0c)", () => {
+  it("draws no button with the switch off", () => {
+    render(<FirstRunChecklist />);
+    expect(screen.queryByRole("button", { name: "Add cards by hand" })).toBeNull();
+    expect(screen.queryByText(/or add cards by hand/)).toBeNull();
+  });
+
+  it("draws the ghost button beside Paste with the switch on, and it opens the sheet", () => {
+    render(<FirstRunChecklist addByHand />);
+    const paste = screen.getByRole("button", { name: "Paste a list" });
+    const add = screen.getByRole("button", { name: "Add cards by hand" });
+    expect(add.className).toBe(paste.className);
+    expect(paste.nextElementSibling).toBe(add);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    fireEvent.click(add);
+    expect(screen.getByRole("dialog")).toBeTruthy();
+  });
+
+  it("settles the write (a fresh Home) only when the sheet closes after a save", () => {
+    settle.mockReset();
+    render(<FirstRunChecklist addByHand />);
+    fireEvent.click(screen.getByRole("button", { name: "Add cards by hand" }));
+    act(() => sheet!.onClose());
+    expect(settle).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Add cards by hand" }));
+    act(() => sheet!.onSaved!(2));
+    expect(settle).not.toHaveBeenCalled();
+    act(() => sheet!.onClose());
+    expect(settle).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("the phone body names the new door", () => {
+    render(<FirstRunChecklist addByHand />);
+    expect(screen.getByText(/Manabox, or add cards by hand\./)).toBeTruthy();
+  });
+});
 
 describe("FirstRunChecklist", () => {
   it("counts the steps in the kicker, not in a sentence", () => {

@@ -28,6 +28,9 @@ import {
   EmptyStateTitle,
 } from "../../../components/ui/empty-state";
 import { PrimaryButton } from "../../../components/ui/button";
+import { CollectionEmptyDoors } from "../../../components/collection/collection-empty-doors";
+import { collectionEditEnabled } from "../../../lib/collection/edit-flag";
+import { collectionEditCopy } from "../../../lib/copy/collection-edit";
 
 export default async function CollectionPage({
   searchParams,
@@ -95,6 +98,7 @@ export default async function CollectionPage({
   // `FilterBar`, so the one entry point built ungated was absent for exactly the player it
   // was built for, whose cards are all printed.
   if (stats.uniqueCards === 0) {
+    const editEnabled = collectionEditEnabled();
     return (
       <section className="flex flex-col">
         <EmptyState className="md:p-[48px]">
@@ -104,17 +108,22 @@ export default async function CollectionPage({
             Your collection is empty
           </EmptyStateTitle>
           <EmptyStateBody className="mt-3 max-w-[420px] text-[16px]">
-            A pile of possibilities waiting for a commander. Upload a CSV and the
-            table fills. Commanders and decks follow.
+            {editEnabled
+              ? collectionEditCopy.empty.body
+              : "A pile of possibilities waiting for a commander. Upload a CSV and the table fills. Commanders and decks follow."}
           </EmptyStateBody>
-          <div className="mt-[26px]">
-            <PrimaryButton
-              href="/collection/replace"
-              className="text-[13px] md:text-[14px] px-[20px] md:px-[22px] py-[11px]"
-            >
-              Upload your CSV
-            </PrimaryButton>
-          </div>
+          {editEnabled ? (
+            <CollectionEmptyDoors />
+          ) : (
+            <div className="mt-[26px]">
+              <PrimaryButton
+                href="/collection/replace"
+                className="text-[13px] md:text-[14px] px-[20px] md:px-[22px] py-[11px]"
+              >
+                Upload your CSV
+              </PrimaryButton>
+            </div>
+          )}
         </EmptyState>
       </section>
     );
