@@ -55,8 +55,10 @@ describe("with every switch off, nothing changes (the invariance Hugh's ruling r
       ["deck-stats", "DECK_STATS_ENABLED"],
     ]);
     // Version 12 added only switched entries (collection edit), so the newest UNSWITCHED entry is
-    // the previous bump's: a version no unswitched entry carries moves the cookie and nothing else.
-    expect(Math.max(...unswitched.map((e) => e.since))).toBeLessThanOrEqual(ABOUT_VERSION);
+    // still 11's: a version no unswitched entry carries moves the cookie and nothing else. Pinned
+    // exactly, so an unswitched entry added (or since moved) without a deliberate edit here fails.
+    expect(Math.max(...unswitched.map((e) => e.since))).toBe(11);
+    expect(ABOUT_VERSION).toBeGreaterThanOrEqual(11);
   });
 
   it("draws every unswitched entry with the switches off, and every entry with them on", () => {
