@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="display:flex;flex-direction:column;">
+  <sc-if value="{{ showField }}" hint-placeholder-val="{{ true }}">
+  <div style="{{ field }}">
+    <sc-if value="{{ ph }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="{{ fieldThumb }}"></span></sc-if>
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Set</span>
+      <span style="font-size:15px;color:var(--fg);">{{ setValue }}</span>
+      <sc-if value="{{ hasDisclosure }}" hint-placeholder-val="{{ true }}">
+        <span style="display:flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;">
+          <sc-if value="{{ picked }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="width:7px;height:7px;transform:rotate(45deg);background:var(--accent);"></span><span style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">For this deck</span><span style="color:var(--fg-faint);">&middot; of {{ count }} {{ chev }}</span></sc-if>
+          <sc-if value="{{ notPicked }}" hint-placeholder-val="{{ true }}"><span style="color:var(--accent);">{{ count }} printings you own {{ chev }}</span></sc-if>
+        </span>
+      </sc-if>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ showRegion }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ region }}">
+      <sc-if value="{{ many }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;">
+          <div style="{{ search }}"><span style="color:var(--fg-faint);">&#9906;</span><span style="color:var(--fg-locked);">Search by set, code or number</span></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <span style="{{ chipOn }}">All 6</span><span style="{{ chip }}">Foil 1</span><span style="{{ chip }}">Non-foil 5</span>
+          </div>
+        </div>
+      </sc-if>
+      <div role="radiogroup" style="{{ grid }}">
+        <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="3">
+          <div role="radio" aria-checked="{{ t.checked }}" style="{{ t.wrap }}">
+            <div style="{{ t.art }}">
+              <sc-if value="{{ t.hasBadge }}" hint-placeholder-val="{{ false }}"><span style="{{ t.badge }}">{{ t.glyph }}</span></sc-if>
+            </div>
+            <div style="margin-top:7px;font-size:12.5px;line-height:1.3;color:var(--fg);font-weight:{{ t.weight }};">{{ t.set }}<span style="margin-left:5px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:400;color:var(--fg-faint);">{{ t.sc }}</span></div>
+            <div style="margin-top:2px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ t.meta }}</div>
+            <sc-if value="{{ t.hasLabel }}" hint-placeholder-val="{{ false }}"><div style="margin-top:3px;display:flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:{{ t.labelInk }};"><sc-if value="{{ t.diamond }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="width:7px;height:7px;transform:rotate(45deg);background:var(--accent);"></span></sc-if>{{ t.label }}</div></sc-if>
+          </div>
+        </sc-for>
+      </div>
+      <sc-if value="{{ failed }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:12px;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--fg-body);"><span aria-hidden="true" style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--warning);">!</span>Didn&rsquo;t save. Try again.</div>
+      </sc-if>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:440,&quot;height&quot;:520},&quot;spec&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.props.spec || {};
+    const ph = !!s.ph;
+    const v = s.v || "none";
+    const grad = (a) => `linear-gradient(160deg, ${a[0]}, ${a[1]} 70%, #121217)`;
+    const P = {
+      rix: { set: "Rivals of Ixalan", sc: "RIX", num: "138", qty: "×1", a: ["#4B7A46", "#2C405F"] },
+      lcc: { set: "Ixalan Commander", sc: "LCC", num: "241", qty: "×1", a: ["#4B7A46", "#C05A3E"] },
+      prix: { set: "RIX Promos", sc: "PRIX", num: "138s", qty: "×1 foil", a: ["#4B7A46", "#F4E9C4"], foil: true },
+    };
+    const F = [
+      { set: "Kaldheim", sc: "KHM", num: "393", qty: "×6", a: ["#4B7A46", "#3A6AA5"] },
+      { set: "Bloomburrow", sc: "BLB", num: "278", qty: "×4", a: ["#4B7A46", "#E0913C"] },
+      { set: "Unfinity", sc: "UNF", num: "239", qty: "×2 foil", a: ["#4B7A46", "#98748F"], foil: true },
+      { set: "Duskmourn", sc: "DSK", num: "286", qty: "×3", a: ["#4B7A46", "#2E3340"] },
+      { set: "Foundations", sc: "FDN", num: "280", qty: "×2", a: ["#4B7A46", "#6D6E76"] },
+      { set: "Dominaria United", sc: "DMU", num: "277", qty: "×1", a: ["#4B7A46", "#C05A3E"] },
+    ];
+    // which tile is the deck's pick, and which is shown now (collection pick or default)
+    const cfg = {
+      none:      { list: ["rix", "lcc", "prix"], pick: null, shown: "rix", open: false },
+      noneOpen:  { list: ["rix", "lcc", "prix"], pick: null, shown: "rix", open: true, focus: "lcc" },
+      picked:    { list: ["rix", "lcc", "prix"], pick: "lcc", shown: null, open: false },
+      pickedOpen:{ list: ["rix", "lcc", "prix"], pick: "lcc", shown: null, open: true },
+      failed:    { list: ["rix", "lcc", "prix"], pick: null, shown: "rix", open: true, failed: true },
+      many:      { forest: true, pick: 1, shown: null, open: true, many: true },
+      single:    { list: ["rix"], pick: null, shown: "rix", open: false, single: true },
+      gone:      { list: ["rix", "prix"], pick: null, shown: "rix", open: true },
+    }[v];
+    const items = cfg.forest ? F.map((p, i) => ({ ...p, key: i })) : cfg.list.map((k) => ({ ...P[k], key: k }));
+    const tiles = items.map((p) => {
+      const picked = p.key === cfg.pick;
+      const shown = !picked && p.key === cfg.shown;
+      return {
+        set: p.set, sc: p.sc, meta: `#${p.num} · ${p.qty}`, checked: picked ? "true" : "false", weight: picked ? 600 : 400,
+        wrap: { ...(ph && !cfg.many ? {} : {}), cursor: "pointer", ...(cfg.focus === p.key ? { outline: "2px solid var(--accent)", outlineOffset: 2, borderRadius: 12 } : {}) },
+        art: { position: "relative", width: "100%", aspectRatio: "63/88", borderRadius: 10, background: p.foil ? `linear-gradient(115deg, rgba(255,255,255,0.18) 4%, transparent 24%, rgba(92,134,201,0.2) 44%, transparent 70%), ${grad(p.a)}` : grad(p.a), boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)", ...(picked ? { outline: "2px solid var(--accent)", outlineOffset: 3 } : shown ? { outline: "1px dashed var(--fg-faint)", outlineOffset: 3 } : {}) },
+        hasBadge: picked || shown, glyph: picked ? "✓" : "◇",
+        badge: { position: "absolute", top: 8, right: 8, width: picked ? 21 : 19, height: picked ? 21 : 19, borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, background: picked ? "var(--accent)" : "color-mix(in oklab, var(--bg) 72%, transparent)", border: picked ? "none" : "1px dashed var(--fg-faint)", color: picked ? "var(--bg)" : "var(--fg-body)" },
+        hasLabel: picked || shown, label: picked ? "Your pick" : "Shown now", diamond: picked, labelInk: picked ? "var(--accent)" : "var(--fg-muted)",
+      };
+    });
+    const cur = cfg.forest ? F[1] : P[cfg.pick || cfg.shown];
+    return {
+      ph,
+      field: ph
+        ? { display: "flex", alignItems: "center", gap: 12, minHeight: 62, padding: "11px 14px", background: cfg.single ? "transparent" : "var(--elevated)", border: cfg.single ? "1px solid var(--border)" : "1px dashed var(--border-dashed)", borderRadius: cfg.open ? "10px 10px 0 0" : 10 }
+        : { display: "flex", padding: "8px 12px", margin: "-8px -12px", background: cfg.single ? "transparent" : "var(--elevated)", border: cfg.single ? "1px solid transparent" : "1px dashed var(--border-dashed)", borderRadius: 8 },
+      fieldThumb: { flex: "none", width: 40, height: 56, borderRadius: 5, background: grad(cur.a) },
+      setValue: `${cur.sc} · ${cur.num}`,
+      hasDisclosure: !cfg.single, picked: cfg.pick !== null, notPicked: cfg.pick === null,
+      count: items.length, chev: cfg.open ? "▴" : "▾",
+      showField: s.part !== "region", showRegion: !!cfg.open && s.part !== "field",
+      open: !!cfg.open, many: !!cfg.many, failed: !!cfg.failed,
+      region: ph
+        ? { marginTop: -1, padding: 14, border: "1px dashed var(--border-dashed)", borderTop: "none", borderRadius: "0 0 10px 10px" }
+        : { marginTop: s.part === "region" ? 0 : 24, paddingTop: 22, borderTop: "1px solid var(--border)" },
+      search: { display: "flex", alignItems: "center", gap: 8, height: ph ? 44 : 38, padding: "0 12px", borderRadius: 9, background: "var(--surface-sunken)", border: "1px solid var(--border-strong)", fontSize: ph ? 16 : 13.5 },
+      chip: { display: "inline-flex", alignItems: "center", height: ph ? 44 : "auto", padding: ph ? "0 11px" : "5px 11px", borderRadius: 999, fontSize: 12.5, color: "var(--fg)", background: "var(--elevated)", border: "1px solid var(--border-strong)" },
+      chipOn: { display: "inline-flex", alignItems: "center", height: ph ? 44 : "auto", padding: ph ? "0 11px" : "5px 11px", borderRadius: 999, fontSize: 12.5, color: "var(--bg)", background: "var(--accent)", border: "1px solid var(--border-strong)" },
+      grid: { display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: ph ? 12 : 16 },
+      tiles,
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="{{ box }}">
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">In this deck</div>
+
+  <sc-if value="{{ hasPrinting }}" hint-placeholder-val="{{ true }}">
+    <div style="{{ prRow }}">
+      <span aria-hidden="true" style="{{ thumb }}"></span>
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+        <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:13.5px;color:var(--fg);">{{ setName }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ code }}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:{{ stateInk }};">
+          <sc-if value="{{ chosen }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="flex:none;width:7px;height:7px;transform:rotate(45deg);background:var(--fg-body);"></span></sc-if>
+          <span>{{ stateLine }}</span>
+        </div>
+        <sc-for list="{{ facts }}" as="f" hint-placeholder-count="1">
+          <span style="font-size:12.5px;line-height:1.5;color:{{ f.ink }};">{{ f.t }}</span>
+        </sc-for>
+      </div>
+      <div style="{{ actions }}">
+        <sc-if value="{{ hasChange }}" hint-placeholder-val="{{ true }}"><span role="button" aria-expanded="{{ openAria }}" style="{{ changeStyle }}">{{ changeLabel }}</span></sc-if>
+        <sc-if value="{{ hasReset }}" hint-placeholder-val="{{ false }}"><span role="button" style="{{ resetStyle }}">Use the default</span></sc-if>
+        <sc-if value="{{ pending }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">saving&hellip;</span></sc-if>
+      </div>
+    </div>
+
+    <sc-if value="{{ failed }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top:8px;display:flex;align-items:flex-start;gap:8px;font-size:12.5px;line-height:1.5;color:var(--fg-body);"><span aria-hidden="true" style="flex:none;font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--warning);">!</span><span>That didn&rsquo;t save. HD Gishath still uses Rivals of Ixalan #138.</span></div>
+    </sc-if>
+
+    <sc-if value="{{ open }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top:12px;border-top:1px dashed var(--border-dashed);padding-top:12px;display:flex;flex-direction:column;gap:12px;">
+        <p style="margin:0;font-size:13.5px;line-height:1.5;color:var(--fg-muted);">{{ intro }}</p>
+        <sc-if value="{{ many }}" hint-placeholder-val="{{ false }}">
+          <div style="{{ search }}"><span style="color:var(--fg-faint);">&#9906;</span><span style="color:var(--fg-locked);">Search by set, code or number</span></div>
+        </sc-if>
+        <sc-if value="{{ hasHeadA }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">{{ headA }}</span></sc-if>
+        <div role="radiogroup" style="{{ grid }}">
+          <sc-for list="{{ tilesA }}" as="t" hint-placeholder-count="3">
+            <div role="radio" aria-checked="{{ t.checked }}" style="{{ t.wrap }}">
+              <div style="{{ t.art }}"></div>
+              <div style="margin-top:7px;font-size:12px;line-height:1.3;color:var(--fg);font-weight:{{ t.weight }};">{{ t.set }}<span style="margin-left:5px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:400;color:var(--fg-faint);">{{ t.sc }}</span></div>
+              <div style="margin-top:2px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ t.meta }}</div>
+              <sc-if value="{{ t.hasOwn }}" hint-placeholder-val="{{ false }}"><div style="margin-top:2px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">{{ t.own }}</div></sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <sc-if value="{{ hasB }}" hint-placeholder-val="{{ false }}">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">{{ headB }}</span>
+          <div role="radiogroup" style="{{ grid }}">
+            <sc-for list="{{ tilesB }}" as="t" hint-placeholder-count="3">
+              <div role="radio" aria-checked="{{ t.checked }}" style="{{ t.wrap }}">
+                <div style="{{ t.art }}"></div>
+                <div style="margin-top:7px;font-size:12px;line-height:1.3;color:var(--fg);font-weight:{{ t.weight }};">{{ t.set }}<span style="margin-left:5px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:400;color:var(--fg-faint);">{{ t.sc }}</span></div>
+                <div style="margin-top:2px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ t.meta }}</div>
+                <sc-if value="{{ t.hasOwn }}" hint-placeholder-val="{{ false }}"><div style="margin-top:2px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">{{ t.own }}</div></sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <p style="margin:10px 0 0;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.55;color:var(--fg-faint);">{{ note }}</p>
+    <div style="margin-top:12px;border-top:1px solid var(--border);"></div>
+  </sc-if>
+
+  <div style="{{ proxyRow }}">
+    <span aria-hidden="true" style="{{ tick }}"></span>
+    <span style="font-size:13px;color:var(--fg-body);">Run a proxy in {{ deck }}</span>
+  </div>
+  <p style="margin:8px 0 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">Takes effect at once. A proxy is not part of a version.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:440,&quot;height&quot;:520},&quot;spec&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.props.spec || {};
+    const ph = !!s.ph;
+    const v = s.v || "default";
+    const deck = s.deck || "HD Gishath";
+    const card = s.card || "Polyraptor";
+    const grad = (a) => `linear-gradient(160deg, ${a[0]}, ${a[1]} 70%, #121217)`;
+    const P = {
+      rix: { set: "Rivals of Ixalan", sc: "RIX", num: "138", price: "$9.89", a: ["#4B7A46", "#2C405F"] },
+      lcc: { set: "Ixalan Commander", sc: "LCC", num: "241", price: "$6.19", a: ["#4B7A46", "#C05A3E"] },
+      prix: { set: "RIX Promos", sc: "PRIX", num: "138s", price: "sold out", a: ["#4B7A46", "#F4E9C4"] },
+      sld: { set: "Secret Lair Drop", sc: "SLD", num: "1071", price: "", a: ["#98748F", "#4B7A46"] },
+      j22: { set: "Jumpstart 2022", sc: "J22", num: "702", price: "$7.40", a: ["#3A6AA5", "#4B7A46"] },
+      plst: { set: "The List", sc: "PLST", num: "RIX-138", price: "$11.20", a: ["#6D6E76", "#4B7A46"] },
+    };
+    const cfg = {
+      default:  { p: "rix", chosen: false, state: "Default · from your Collection", facts: [["Priced at the cheapest in stock until you choose one.", "var(--fg-muted)"]] },
+      defaultUnowned: { p: "lcc", chosen: false, state: "Default · no printing chosen", facts: [["Priced at the cheapest in stock until you choose one.", "var(--fg-muted)"]] },
+      owned:    { p: "rix", chosen: true, state: `Chosen for ${deck}`, facts: [["You own this printing ×1.", "var(--fg-body)"]] },
+      other:    { p: "lcc", chosen: true, state: `Chosen for ${deck}`, facts: [["You own a different printing (RIX #138). The deck still counts it as covered.", "var(--fg-body)"]] },
+      unowned:  { p: "lcc", chosen: true, state: `Chosen for ${deck}`, facts: [["You don’t own any printing of this card, so it stays on the Shopping list.", "var(--fg-body)"]] },
+      soldOut:  { p: "prix", chosen: true, state: `Chosen for ${deck}`, facts: [["You own a different printing (RIX #138).", "var(--fg-body)"], ["Sold out at Mana Pool right now. Other printings are in stock.", "var(--fg-muted)"]] },
+      never:    { p: "sld", chosen: true, state: `Chosen for ${deck}`, facts: [["You don’t own any printing of this card, so it stays on the Shopping list.", "var(--fg-body)"], ["Mana Pool has never stocked this printing, so the deck shows no price for it.", "var(--fg-muted)"]] },
+      single:   { p: "rix", chosen: false, state: "The only printing", facts: [], noChange: true },
+      choosing: { p: "rix", chosen: true, state: `Chosen for ${deck}`, facts: [["You own this printing ×1.", "var(--fg-body)"]], open: true },
+      choosingDefault: { p: "rix", chosen: false, state: "Default · from your Collection", facts: [["Priced at the cheapest in stock until you choose one.", "var(--fg-muted)"]], open: true },
+      many:     { p: "rix", chosen: false, state: "Default · from your Collection", facts: [], open: true, many: true },
+      pending:  { p: "lcc", chosen: true, state: `Chosen for ${deck}`, facts: [["You own a different printing (RIX #138). The deck still counts it as covered.", "var(--fg-body)"]], pending: true },
+      failed:   { p: "rix", chosen: true, state: `Chosen for ${deck}`, facts: [["You own this printing ×1.", "var(--fg-body)"]], failed: true },
+      reset:    { p: "rix", chosen: false, state: "Default · from your Collection", facts: [["Priced at the cheapest in stock until you choose one.", "var(--fg-muted)"]] },
+      off:      { off: true },
+    }[v] || {};
+    const pr = s.printing || (cfg.many ? { set: "Kaldheim", sc: "KHM", num: "393", a: ["#4B7A46", "#3A6AA5"] } : P[cfg.p || "rix"]);
+    if (cfg.many && !s.facts) cfg.facts = [["You own this printing ×6.", "var(--fg-body)"]];
+    const forest = s.forest;
+    const tilesFor = (keys, sel) => keys.map((k) => {
+      const t = P[k];
+      const on = k === sel;
+      const own = k === "rix" ? "you own ×1" : "";
+      return {
+        set: t.set, sc: t.sc, checked: on ? "true" : "false", weight: on ? 600 : 400,
+        meta: ["#" + t.num, t.price].filter(Boolean).join(" · "),
+        own, hasOwn: !!own,
+        wrap: { ...(ph ? { width: 100, flex: "none" } : {}), cursor: "pointer", ...(s.focusTile === k ? { outline: "2px solid var(--accent)", outlineOffset: 2, borderRadius: 10 } : {}) },
+        art: { width: "100%", aspectRatio: "63/88", borderRadius: 10, background: grad(t.a), boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)", ...(on ? { outline: "2px solid var(--accent)", outlineOffset: 3 } : {}) },
+      };
+    });
+    const sel = cfg.chosen ? cfg.p : null;
+    let groups = [{ hasHead: false, head: "", tiles: tilesFor(["rix", "lcc", "prix", "j22", "plst", "sld"], s.sel ?? sel) }];
+    if (cfg.many) {
+      const fa = (set, sc, num, price, a, own) => ({ set, sc, checked: "false", weight: 400, meta: ["#" + num, price].filter(Boolean).join(" · "), own: own || "", hasOwn: !!own, wrap: ph ? { width: 100, flex: "none" } : {}, art: { width: "100%", aspectRatio: "63/88", borderRadius: 10, background: grad(a), boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)" } });
+      groups = [
+        { hasHead: !ph, head: "You own · 3", tiles: [fa("Kaldheim", "KHM", "393", "$0.35", ["#4B7A46", "#3A6AA5"], "you own ×6"), fa("Bloomburrow", "BLB", "278", "$0.20", ["#4B7A46", "#E0913C"], "you own ×4"), fa("Unfinity", "UNF", "239", "$1.10", ["#4B7A46", "#98748F"], "you own ×2")] },
+        { hasHead: !ph, head: "Every other printing · 51", tiles: [fa("Duskmourn", "DSK", "286", "$0.18", ["#4B7A46", "#2E3340"]), fa("Foundations", "FDN", "280", "$0.15", ["#4B7A46", "#6D6E76"]), fa("Outlaws of Thunder Junction", "OTJ", "276", "$0.22", ["#4B7A46", "#C05A3E"])] },
+      ];
+      if (ph) groups = [{ hasHead: false, head: "", tiles: [...groups[0].tiles, ...groups[1].tiles] }];
+    }
+    const hasChange = !cfg.noChange && !cfg.pending && !cfg.off;
+    return {
+      deck,
+      box: { borderRadius: 10, marginTop: ph ? 16 : 22, padding: ph ? "14px 16px" : "18px 20px", background: "var(--bg)", border: "1px solid var(--border)", opacity: 1 },
+      hasPrinting: !cfg.off,
+      prRow: { marginTop: 10, display: "flex", alignItems: "flex-start", gap: 12, opacity: cfg.pending ? 0.6 : 1 },
+      thumb: { flex: "none", width: 30, height: 42, borderRadius: 4, background: grad(pr.a), boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)" },
+      setName: pr.set, code: `${pr.sc} #${pr.num}`,
+      chosen: !!cfg.chosen, stateLine: cfg.state || "", stateInk: cfg.chosen ? "var(--fg-body)" : "var(--fg-faint)",
+      facts: (s.facts || cfg.facts || []).map(([t, ink]) => ({ t, ink })),
+      actions: { flex: "none", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: ph ? 0 : 6 },
+      hasChange, changeLabel: cfg.open ? "Close" : "Change",
+      openAria: cfg.open ? "true" : "false",
+      changeStyle: { fontSize: 13, color: "var(--accent)", textDecoration: "underline", textUnderlineOffset: 4, cursor: "pointer", ...(ph ? { minHeight: 44, display: "inline-flex", alignItems: "center", marginTop: -12 } : {}) },
+      hasReset: !!cfg.chosen && !cfg.pending && !cfg.open,
+      resetStyle: { fontSize: 12.5, color: "var(--accent)", cursor: "pointer", ...(ph ? { minHeight: 44, display: "inline-flex", alignItems: "center", marginTop: -8 } : {}) },
+      tilesA: groups[0].tiles, hasHeadA: !!groups[0].hasHead, headA: groups[0].head,
+      hasB: groups.length > 1, tilesB: groups[1] ? groups[1].tiles : [], headB: groups[1] ? groups[1].head : "",
+      pending: !!cfg.pending, failed: !!cfg.failed, open: !!cfg.open, many: !!cfg.many,
+      intro: cfg.many ? "Every printing of Forest, 54 of them. The ones you own come first." : `Every printing of ${card}. The ones you own come first.`,
+      search: { display: "flex", alignItems: "center", gap: 8, height: ph ? 44 : 38, padding: "0 12px", borderRadius: 9, background: "var(--surface-sunken)", border: "1px solid var(--border-strong)", fontSize: ph ? 16 : 13.5 },
+      grid: ph ? { display: "flex", gap: 10, overflowX: "auto", margin: "0 -4px", padding: 4 } : { display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: 16 },
+      note: "Changes this deck’s art, price and export, nothing else. Takes effect at once, and the next version you commit keeps it.",
+      proxyRow: { marginTop: 10, display: "flex", alignItems: "center", gap: 12, minHeight: 44 },
+      tick: { flex: "none", width: ph ? 18 : 16, height: ph ? 18 : 16, borderRadius: 2, boxShadow: "inset 0 0 0 1px var(--fg-faint)" },
+    };
+  }
+}
+</script>
+</body>
+</html>
