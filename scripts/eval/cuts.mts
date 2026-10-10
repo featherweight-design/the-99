@@ -29,6 +29,7 @@ const { loadDeckProfileFromHead } = await import("../../src/lib/profile/load");
 const { readCutSupport } = await import("../../src/lib/decks/cuts-read");
 const { proposeCuts } = await import("../../src/lib/tuning/cuts");
 const { readLabels } = await import("../../src/lib/labels/read");
+const { FILLS } = await import("../../src/lib/labels/consider");
 const { classifyCards } = await import("../../src/lib/edhrec/role-targets");
 const GISHATH = GISHATH_DECK;
 
@@ -58,8 +59,7 @@ async function withLabelRoles(profile: Profile, support: Support): Promise<Profi
   const labels = await readLabels(ids);
   const labelRoles = (id: string) => {
     const jobs = labels.get(id);
-    // A counterspell takes a spell away, so it fills removal (`labels/consider.ts` FILLS).
-    return jobs ? ROLE_KEYS.filter((r) => jobs.some((j) => j.space === "role" && (j.kind === r || (r === "removal" && j.kind === "counterspell")))) : null;
+    return jobs ? ROLE_KEYS.filter((r) => jobs.some((j) => j.space === "role" && FILLS[r].includes(j.kind))) : null;
   };
   const cards: Record<string, { oracleId: string; name: string }[]> = { ramp: [], draw: [], removal: [], wipes: [], land: [...profile.roles.cards.land] };
   const counts: Record<string, number> = { ramp: 0, draw: 0, removal: 0, wipes: 0, land: profile.roles.counts.land };
@@ -218,7 +218,9 @@ console.log();
   console.log(`## HD - Gishath, asked for ${over} cuts as if ${over} over\n`);
   console.log(`Missing signals: ${r.missing.join(", ") || "none"}. Support list: ${support ? `${support.listed} cards, ${support.deckCount ?? "?"} decks` : "none"}. Candidates: ${r.candidates.length} of ${profile.cards.length - profile.commanderOracleIds.length} cards.\n`);
   const cmdr = new Set(profile.commanderOracleIds);
-  console.log(`Commander proposed: ${r.candidates.some((c) => cmdr.has(c.oracleId)) ? "YES (defect)" : "no"}.`);
+  const cmdrProposed = r.candidates.some((c) => cmdr.has(c.oracleId));
+  console.log(`Commander proposed: ${cmdrProposed ? "YES (defect)" : "no"}.`);
+  if (cmdrProposed) process.exitCode = 1;
   const gc = new Set(profile.brackets.gameChangers.map((c) => c.oracleId));
   console.log(`Game Changers held: ${profile.brackets.gameChangers.map((c) => c.name).join(", ") || "none"}; proposed: ${r.candidates.filter((c) => gc.has(c.oracleId)).map((c) => c.name).join(", ") || "none"}.\n`);
   console.log("| # | Card | Score | Reason | Opens gap |");

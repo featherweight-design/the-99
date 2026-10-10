@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { proposedCutsEnabled, tuningEnabled } from "./flag";
+import { tuningEnabled } from "./flag";
 
 describe("the Tuning flag", () => {
   it("is off for every value but the exact string 'true', with Analysis also on", () => {
@@ -29,20 +29,5 @@ describe("the Tuning flag", () => {
 
   it("is off with both unset, the production default", () => {
     expect(tuningEnabled({} as unknown as NodeJS.ProcessEnv)).toBe(false);
-  });
-});
-
-describe("the Proposed cuts flag", () => {
-  const env = (e: Record<string, string | undefined>) => e as unknown as NodeJS.ProcessEnv;
-
-  it("is on only with both Proposed cuts and Analysis exactly 'true'", () => {
-    expect(proposedCutsEnabled(env({ PROPOSED_CUTS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true" }))).toBe(true);
-    for (const [cuts, analysis] of [["true", "1"], ["1", "true"], ["true", undefined], [undefined, "true"]]) {
-      expect(proposedCutsEnabled(env({ PROPOSED_CUTS_ENABLED: cuts, ANALYSIS_TAB_ENABLED: analysis }))).toBe(false);
-    }
-  });
-
-  it("is off with both unset, the production default", () => {
-    expect(proposedCutsEnabled(env({}))).toBe(false);
   });
 });

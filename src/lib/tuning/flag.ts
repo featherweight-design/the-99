@@ -14,13 +14,3 @@
 export function tuningEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
   return env.TUNING_ENABLED === "true" && env.ANALYSIS_TAB_ENABLED === "true";
 }
-
-/**
- * Whether this deployment computes Proposed cuts (tuning roadmap, sub-project 4): the tier-1 cut
- * shortlist for a deck over 100 cards. Logic only until the Tuning hub mounts it. It lives inside
- * Analysis (ruling 2), so it is on only when `PROPOSED_CUTS_ENABLED` AND `ANALYSIS_TAB_ENABLED`
- * are both the exact string `'true'`, the same shape as `tuningEnabled`.
- */
-export function proposedCutsEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  return env.PROPOSED_CUTS_ENABLED === "true" && env.ANALYSIS_TAB_ENABLED === "true";
-}

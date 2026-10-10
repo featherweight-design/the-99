@@ -8,35 +8,7 @@ import {
   commanderSupportCards,
 } from "../../db/schema";
 import { canonicalPair } from "../edhrec/pair";
-import { readProfileHead } from "../profile/load";
-import { proposeCuts, type CutSupport, type ProposedCuts } from "../tuning/cuts";
-import { proposedCutsEnabled } from "../tuning/flag";
-import { liveLockedIds } from "./locks";
-import { neverCutEnabled } from "./never-cut-flag";
-import { profileOfHead } from "./tuning-read";
-
-/**
- * Proposed cuts for a deck (tuning roadmap, sub-project 4): the engine's inputs, read, and its
- * answer. Null when the switch is off or the deck is not the reader's. No model call, no write.
- *
- * The head and the locks come from ONE snapshot, as `tuningInputs` takes them: read apart, a lock
- * landing between the two would be checked against a list it was not placed on.
- */
-export async function readProposedCuts(deckId: string, userId: string): Promise<ProposedCuts | null> {
-  if (!proposedCutsEnabled()) return null;
-  const snapshot = await db.transaction(async (tx) => {
-    const head = await readProfileHead(tx, deckId, userId);
-    if (!head) return null;
-    const locked = neverCutEnabled() ? await liveLockedIds(tx, deckId) : new Set<string>();
-    return { head, locked };
-  }, { isolationLevel: "repeatable read", accessMode: "read only" });
-  if (!snapshot) return null;
-  const [profile, support] = await Promise.all([
-    profileOfHead(snapshot.head),
-    readCutSupport(snapshot.head.commanderOracleId, snapshot.head.partnerOracleId),
-  ]);
-  return proposeCuts({ profile, locked: snapshot.locked, support });
-}
+import type { CutSupport } from "../tuning/cuts";
 
 /**
  * The commander's (or the pair's own) EDHREC support list, as inclusion percents. Null when there

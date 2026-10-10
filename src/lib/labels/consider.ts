@@ -20,7 +20,7 @@ import type { Suggestion } from "../decks/suggest";
 import type { Job } from "./types";
 
 /** The label kinds that fill each role. A counterspell takes a spell away, so it fills removal. */
-const FILLS: Record<Exclude<Suggestion["reason"], "edhrec">, readonly string[]> = {
+export const FILLS: Record<Exclude<Suggestion["reason"], "edhrec">, readonly string[]> = {
   ramp: ["ramp"],
   draw: ["draw"],
   removal: ["removal", "counterspell"],
