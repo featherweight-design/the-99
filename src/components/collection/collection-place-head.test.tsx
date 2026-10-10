@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { ComponentProps, MouseEvent, ReactNode } from "react";
-import { CollectionPlaceHead, placeFromPathname, type CollectionPlace } from "./collection-place-head";
+import { CollectionPlaceHead, placeFromPathname, visibleTabs, type CollectionPlace } from "./collection-place-head";
 import { collectionTabsCopy } from "../../lib/copy/collection";
 
 let pathname = "/collection";
@@ -55,6 +55,7 @@ const PATH_FOR: Record<CollectionPlace, string> = {
   cards: "/collection",
   sets: "/collection/sets",
   proxies: "/collection/proxies",
+  history: "/collection/history",
 };
 
 function head(current: CollectionPlace, stats = OWNED, lastUpdatedLabel: string | null = null) {
@@ -317,8 +318,7 @@ describe("CollectionPlaceHead \u00b7 Add cards (COLLECTION_EDIT_ENABLED)", () =>
     expect(screen.getByText("Upload a file")).toBeInTheDocument();
     expect(screen.getByTestId("collection-add-phone")).toHaveTextContent("Add");
     expect(within(strip()).queryByText("Replace")).toBeNull();
-    // No History tab until its route ships.
-    expect(within(strip()).queryByText("History")).toBeNull();
+    expect(within(strip()).getByText("History")).toBeInTheDocument();
   });
 
   it("switch on, empty collection: no Add in the head (the doors live in the empty state)", () => {
@@ -336,5 +336,33 @@ describe("CollectionPlaceHead \u00b7 Add cards (COLLECTION_EDIT_ENABLED)", () =>
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(trigger).toHaveFocus();
+  });
+});
+
+describe("History tab", () => {
+  it("shows once a refresh says the ledger holds an entry, though it mounted without one", async () => {
+    pathname = "/collection";
+    refreshCollectionHeader.mockReset().mockResolvedValue({ stats: EMPTY, lastUpdatedLabel: null, historyHasEntries: true });
+    render(<CollectionPlaceHead stats={EMPTY} lastUpdatedLabel={null} editEnabled historyHasEntries={false} />);
+    expect(screen.queryByTestId("collection-tab-history")).toBeNull();
+    fireEvent(window, new Event("focus"));
+    expect(await screen.findByTestId("collection-tab-history")).toBeInTheDocument();
+  });
+
+  it("is absent with the switch off, whatever the ledger holds", () => {
+    expect(visibleTabs("cards", true, { enabled: false, hasEntries: true }).map((t) => t.place)).not.toContain("history");
+  });
+
+  it("shows over a collection, and over an empty one only with entries or when it is the current page", () => {
+    const on = { enabled: true, hasEntries: false };
+    expect(visibleTabs("cards", true, on).map((t) => t.place)).toContain("history");
+    expect(visibleTabs("cards", false, on).map((t) => t.place)).not.toContain("history");
+    expect(visibleTabs("cards", false, { enabled: true, hasEntries: true }).map((t) => t.place)).toContain("history");
+    expect(visibleTabs("history", false, on).map((t) => t.place)).toContain("history");
+  });
+
+  it("is a place of its own, matched exactly", () => {
+    expect(placeFromPathname("/collection/history")).toBe("history");
+    expect(placeFromPathname("/collection/history/x")).toBeNull();
   });
 });

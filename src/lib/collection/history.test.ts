@@ -43,4 +43,15 @@ describe("the list's copies figure", () => {
   it("sums wide, since a sum of integer moves need not fit an integer", () => {
     expect(text.match(/\)\), 0\)::bigint from jsonb_array_elements\(h\.rows\) e \) as copies_(up|down)/g)).toHaveLength(2);
   });
+
+  it("names an upload entry by its filename, qualified on both sides and scoped to the entry's own user", () => {
+    // Both columns of the correlated subquery name their table: bare `id` would resolve against
+    // csv_uploads and compare the upload with itself (AGENTS.md).
+    expect(text).toContain("select u.filename from csv_uploads u where u.user_id = h.user_id");
+    // The id is compared bare, so the primary key can serve it; a concatenation on u.id could not.
+    expect(text).toContain("and u.id = case when h.source ~ '^csv_uploads:");
+    expect(text).toContain("then substr(h.source, 13)::uuid end ) as upload_filename");
+    expect(text).not.toContain("'csv_uploads:' || u.id");
+    expect(text).toContain("h.rows -> 0 ->> 'name' as first_name");
+  });
 });

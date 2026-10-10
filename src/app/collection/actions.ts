@@ -19,7 +19,7 @@ import {
 import type { OwnedCounts } from "../../lib/collection/arrivals";
 import { applyCollectionChange, HISTORY_RETENTION_DAYS, parseShortDecks, type ShortDeck } from "../../lib/collection/write";
 import { collectionEditEnabled } from "../../lib/collection/edit-flag";
-import { collectionTotals, editedKeysSinceUpload, editsSinceUpload, lastUploadConfirmedAt } from "../../lib/collection/history";
+import { collectionHasHistory, collectionTotals, editedKeysSinceUpload, editsSinceUpload, lastUploadConfirmedAt } from "../../lib/collection/history";
 import { summarizeUploadPreview, type UploadPreviewDetail } from "../../lib/collection/upload-preview";
 import { randomUUID } from "node:crypto";
 import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
@@ -449,17 +449,20 @@ function invalidateArtCaches(userId: string): void {
 export async function refreshCollectionHeader(): Promise<{
   stats: { totalCards: number; uniqueCards: number };
   lastUpdatedLabel: string | null;
+  /** The History tab's gate on an empty collection, kept as live as the counts beside it. */
+  historyHasEntries: boolean;
 }> {
   const userId = await requireUserId();
-  const [stats, lastUpdated] = await Promise.all([
+  const [stats, lastUpdated, historyHasEntries] = await Promise.all([
     getCollectionStats(userId),
     getCollectionLastUpdated(userId),
+    collectionEditEnabled() ? collectionHasHistory(userId) : Promise.resolve(false),
   ]);
   // Formatted HERE, on the server, rather than handed to the client as a raw `Date` — the
   // head that renders this is a Client Component and would otherwise recompute the label
   // against the browser's own clock and timezone on hydration, which can disagree with the
   // server's render.
-  return { stats, lastUpdatedLabel: lastUpdated ? formatLastUpdated(lastUpdated) : null };
+  return { stats, lastUpdatedLabel: lastUpdated ? formatLastUpdated(lastUpdated) : null, historyHasEntries };
 }
 
 /** Forget the pick, returning the card to the resolver's choice. */

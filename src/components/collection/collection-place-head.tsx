@@ -47,12 +47,13 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { collectionTabsCopy } from "../../lib/copy/collection";
 import { refreshCollectionHeader } from "../../app/collection/actions";
 
-export type CollectionPlace = "cards" | "sets" | "proxies";
+export type CollectionPlace = "cards" | "sets" | "proxies" | "history";
 
 const TABS: { place: CollectionPlace; href: string; label: string }[] = [
   { place: "cards", href: "/collection", label: collectionTabsCopy.cards },
   { place: "sets", href: "/collection/sets", label: collectionTabsCopy.sets },
   { place: "proxies", href: "/collection/proxies", label: collectionTabsCopy.proxies },
+  { place: "history", href: "/collection/history", label: collectionEditCopy.head.historyTab },
 ];
 
 /**
@@ -61,8 +62,14 @@ const TABS: { place: CollectionPlace; href: string; label: string }[] = [
  * from its own strip (E10), so an empty collection that lands on /collection/sets still
  * sees Sets, lit. Proxies is never gated.
  */
-export function visibleTabs(current: CollectionPlace, hasCollection: boolean) {
-  return TABS.filter((tab) => tab.place !== "sets" || hasCollection || current === "sets");
+export function visibleTabs(current: CollectionPlace, hasCollection: boolean, history: { enabled: boolean; hasEntries: boolean } = { enabled: false, hasEntries: false }) {
+  return TABS.filter((tab) => {
+    if (tab.place === "sets") return hasCollection || current === "sets";
+    // History is the ledger's page: absent with the switch off, and, like Sets, absent on an empty
+    // collection with nothing in the ledger (a removal back to nothing still leaves an entry).
+    if (tab.place === "history") return history.enabled && (hasCollection || history.hasEntries || current === "history");
+    return true;
+  });
 }
 
 /**
@@ -75,6 +82,7 @@ export function placeFromPathname(pathname: string): CollectionPlace | null {
   if (pathname === "/collection") return "cards";
   if (pathname === "/collection/sets") return "sets";
   if (pathname === "/collection/proxies") return "proxies";
+  if (pathname === "/collection/history") return "history";
   return null;
 }
 
@@ -82,6 +90,7 @@ export function CollectionPlaceHead({
   stats: initialStats,
   lastUpdatedLabel: initialLastUpdatedLabel,
   editEnabled = false,
+  historyHasEntries = false,
 }: {
   stats: { totalCards: number; uniqueCards: number };
   // Pre-formatted on the server ("today", "yesterday", or a dated string) rather than a raw
@@ -95,6 +104,8 @@ export function CollectionPlaceHead({
    * `+ Add`, and no slot reserved for one (collection edit §G).
    */
   editEnabled?: boolean;
+  /** The ledger holds an entry inside the window: History shows on an empty collection when it does. */
+  historyHasEntries?: boolean;
 }) {
   const pathname = usePathname();
   const current = placeFromPathname(pathname);
@@ -128,7 +139,7 @@ export function CollectionPlaceHead({
   // tab switch and on window focus (the same cross-tab trigger `DeltaStrip` polls on), and
   // only the latest of possibly several in-flight reads may apply — a focus firing while a
   // tab switch is still loading must not let the switch's answer land after and overwrite it.
-  const [live, setLive] = useState({ stats: initialStats, lastUpdatedLabel: initialLastUpdatedLabel });
+  const [live, setLive] = useState({ stats: initialStats, lastUpdatedLabel: initialLastUpdatedLabel, historyHasEntries });
   const latest = useRef(0);
   // The layout's own props are already fresh on the first render, so the first pass of the
   // effect below would repeat the exact read it just received — a server-action round trip
@@ -163,6 +174,8 @@ export function CollectionPlaceHead({
     return () => window.removeEventListener("focus", onFocus);
   }, []);
   const { stats, lastUpdatedLabel } = live;
+  // The live answer, not the layout's first one: a removal made elsewhere can create the entry that earns the tab.
+  const historyShows = live.historyHasEntries === true;
   // Add cards (collection edit §B). The control that opened the sheet gets focus back on close.
   const [adding, setAdding] = useState(false);
   const savedWhileOpen = useRef(false);
@@ -250,7 +263,7 @@ export function CollectionPlaceHead({
         aria-label={collectionTabsCopy.regionAria}
         className="flex h-[48px] items-stretch gap-[2px] pl-[8px] pr-[4px] border-b border-b-[color:var(--border)] border-[color:var(--border)] md:mt-[14px] md:h-[40px] md:gap-[4px] md:px-[24px]"
       >
-        {visibleTabs(current, hasCollection).map((tab) => {
+        {visibleTabs(current, hasCollection, { enabled: editEnabled, hasEntries: historyShows }).map((tab) => {
           const on = tab.place === effective;
           return (
             <Link

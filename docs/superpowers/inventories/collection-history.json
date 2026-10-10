@@ -1,0 +1,41 @@
+{
+  "feature": "Collection screens PR 6a: the History tab and list (§F), and the Add sheet's link to it (B8)",
+  "note": "Needs COLLECTION_EDIT_ENABLED=true and an account with a collection and ledger entries (seed a few on a scratch branch: an add, a removal, a reverted add with its revert, an Add upload and a 40-row Replace). Rows open entries and never press a write control.",
+  "shares": {
+    "module": "src/components/collection/history-list.tsx",
+    "binding": "HistoryList",
+    "note": "One route draws the list today; the shared binding keeps the page importing the one component."
+  },
+  "rows": [
+    {
+      "id": "history-list",
+      "label": "/collection/history: day groups, kind tags, figures, reverted entry and its revert, foot",
+      "view": "src/app/collection/(list)/history/page.tsx",
+      "steps": [
+        {
+          "goto": "/collection/history",
+          "wait": "h2",
+          "settle": 4000
+        }
+      ]
+    },
+    {
+      "id": "history-long-open",
+      "label": "/collection/history: a long Replace opened (chips, first group, Show more)",
+      "view": "src/app/collection/(list)/history/page.tsx",
+      "steps": [
+        {
+          "goto": "/collection/history",
+          "wait": "h2",
+          "settle": 4000
+        },
+        {
+          "clickRole": "button",
+          "name": "Replace upload",
+          "wait": "[aria-pressed]",
+          "settle": 1500
+        }
+      ]
+    }
+  ]
+}

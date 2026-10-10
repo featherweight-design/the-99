@@ -73,7 +73,7 @@ export function AddCardsSheet({
   const attempt = useRef<{ id: string; payload: string } | null>(null);
   const [lines, setLines] = useState<AddLineState[]>([]);
   const [phase, setPhase] = useState<Phase>("editing");
-  const [saved, setSaved] = useState<{ copies: number; cards: number } | null>(null);
+  const [saved, setSaved] = useState<{ copies: number; cards: number; entryId: string } | null>(null);
   const [discarding, setDiscarding] = useState(false);
   const [pickerFor, setPickerFor] = useState<string | null>(null);
   const [loadingCard, setLoadingCard] = useState<string | null>(null);
@@ -238,7 +238,7 @@ export function AddCardsSheet({
       const out = await addToCollection(attempt.current.id, payload);
       if ("applied" in out) {
         const s = summarize(lines);
-        setSaved({ copies: s.copies, cards: s.lines });
+        setSaved({ copies: s.copies, cards: s.lines, entryId: out.applied.id });
         setPhase("saved");
         setAnnounce(copy.announceSaved(s.copies));
         onSaved?.(s.copies);
@@ -338,6 +338,16 @@ export function AddCardsSheet({
                   {copy.countsAfter(baseline, baseline + saved.copies)}
                 </p>
               )}
+              {/* B8: the entry this save wrote, one tap away. The sheet closes on the way, since
+                  the head that hosts it stays mounted across the route change. */}
+              <Link
+                href={`/collection/history?entry=${saved.entryId}`}
+                onNavigate={onClose}
+                className="text-[13.5px] text-[color:var(--accent)] underline underline-offset-2"
+              >
+                {copy.seeInHistory}
+                <PendingReporter href={`/collection/history?entry=${saved.entryId}`} />
+              </Link>
               <div className="mt-[8px] flex w-full flex-col gap-[8px] md:flex-row">
                 <button type="button" onClick={addMore} className="min-h-[44px] cursor-pointer rounded-[8px] border border-solid border-[color:var(--border-strong)] px-[16px] text-[14px] md:min-h-[38px]">
                   {copy.addMore}

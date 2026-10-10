@@ -11,6 +11,7 @@ export const collectionEditCopy = {
   head: {
     /** The head's Replace slot, now that the file may be added instead of replacing (copy-review call). */
     upload: "Upload a file",
+    historyTab: "History",
     add: "Add cards",
     /** The phone strip's trailing slot, where the longer label does not fit beside four tabs. */
     addShort: "Add",
@@ -119,6 +120,60 @@ export const collectionEditCopy = {
     catalogFailure: (names: string[]) =>
       `${names.join(", ")} ${names.length === 1 ? "has" : "have"} been removed from the card catalog since this file was read. Nothing was changed.`,
   },
+  // §F, the history list. The handoff's strings; lines marked (new) have no key there and go to
+  // /copy-review. Dates and times are UTC, spelled by the caller.
+  history: {
+    heading: "Changes to your collection",
+    // The handoff continues "Revert any of them. It's undone from today." That claim comes with the
+    // Revert control (PR 6b); until then the page does not promise it.
+    lede: "Every upload and edit from the last 90 days.",
+    kinds: {
+      uploadReplace: "Replace upload",
+      uploadAdd: "Add upload",
+      add: "Added in the app",
+      edit: "Edited in details",
+      remove: "Removed",
+      revert: "Revert",
+    },
+    /** (new) A multi-card add, edit or removal, titled by its first card. */
+    andMore: (first: string, k: number) => `${first} and ${n(k)} more`,
+    /** (new) An entry's title when the ledger holds no filename or card name for it. */
+    untitled: "Untitled change",
+    figures: (up: number, down: number, cards: number) =>
+      // A change that moved no copies (a printing or condition swap, or a Replace that matched the
+      // collection exactly) states its zero rather than leaving the figure blank.
+      (up || down ? [up ? `+${n(up)}` : "", down ? `−${n(down)}` : ""].filter(Boolean).join(" · ") : "0") +
+      ` ${up + down === 1 ? "copy of" : "copies across"} ${n(cards)} ${cards === 1 ? "card" : "cards"}`,
+    /** (new) An opened entry that recorded no rows: a Replace that matched the collection exactly. */
+    noRows: "This change didn't move anything. Your collection already matched.",
+    reverted: "Reverted",
+    revertedBy: (when: string) => `Reverted by the revert at ${when}`,
+    undid: (title: string) => `Undid “${title}”`,
+    /** (new) A revert whose own entry is not on this page, so it cannot be titled. */
+    undidOlder: "Undid an earlier change",
+    undidAged: (date: string) => `Undid a change from before ${date}`,
+    agedNote: "That change has aged out of history.",
+    today: (date: string) => `Today · ${date}`,
+    yesterday: (date: string) => `Yesterday · ${date}`,
+    /** `details` is (new): a row whose printing or condition changed with its copies unchanged. */
+    groups: { left: "Left", down: "Went down", up: "Went up", new: "New", details: "Details" },
+    /** (new) The delta slot of a row whose copies did not move. */
+    rowDetails: "details changed",
+    showMore: (k: number, of: number) => `Show ${n(k)} more of ${n(of)}`,
+    /** (new) The pager for entries past the first page. */
+    olderEntries: "Show older changes",
+    /** (new) Opening an entry, or paging, failed. */
+    loadFailed: "We couldn't load that. Nothing was changed.",
+    loadRetry: "Try again",
+    loading: "Loading…",
+    foot: (date: string) =>
+      `History keeps 90 days. Changes from before ${date} have aged out, but your cards haven't. They're all still in your collection.`,
+    emptyTitle: "Nothing's changed yet",
+    emptyBody: (ship: string) =>
+      `Uploads and edits from ${ship} on show up here. Your collection from before that has no history to show.`,
+    /** (new) The expanded row's per-row quantity change. */
+    rowDelta: (d: number) => (d > 0 ? `+${n(d)}` : `−${n(-d)}`),
+  },
   add: {
     title: "Add cards",
     closeAria: "Close",
@@ -167,6 +222,8 @@ export const collectionEditCopy = {
     countsAfter: (from: number, to: number) => `${n(from)} → ${n(to)} cards`,
     addMore: "Add more",
     done: "Done",
+    /** (new) The saved state's link to the entry it just wrote (B8). */
+    seeInHistory: "See it in History",
     failed: "Nothing was saved. Your list is still here. Try again in a moment.",
     printingsFailed: "We couldn't load that card's printings. Try picking it again.",
     announceChoose: (card: string, k: number) => `${card}: choose a printing. ${n(k)} printings.`,

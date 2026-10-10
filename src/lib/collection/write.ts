@@ -25,7 +25,8 @@ import type { OwnedCounts } from "./arrivals";
  */
 
 /** Entries older than this are hidden from history and pruned on the player's next write. */
-export const HISTORY_RETENTION_DAYS = 90;
+import { HISTORY_RETENTION_DAYS } from "./retention";
+export { HISTORY_RETENTION_DAYS };
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 

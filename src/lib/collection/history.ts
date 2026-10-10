@@ -98,6 +98,10 @@ export type HistoryListEntry = {
    */
   revertsVisible: boolean;
   revertedByVisible: boolean;
+  /** The file an upload entry came from (`csv_uploads.filename`); null for any other kind. */
+  uploadFilename: string | null;
+  /** The first changed row's card name: what an add, edit or removal is titled by. */
+  firstName: string | null;
 };
 
 export type HistoryEntry = HistoryListEntry & { rows: HistoryRow[] };
@@ -109,6 +113,7 @@ type ListRow = {
   copies_up: string | number; copies_down: string | number;
   reverts_id: string | null; reverted_by: string | null;
   reverts_visible: boolean; reverted_by_visible: boolean;
+  upload_filename: string | null; first_name: string | null;
   rows?: HistoryRow[];
 };
 
@@ -148,7 +153,18 @@ export const listColumns = sql`
     select 1 from collection_history t
     where t.id = h.reverted_by and t.rows is not null
       and t.created_at >= now() - make_interval(days => ${HISTORY_RETENTION_DAYS})
-  ) as reverted_by_visible
+  ) as reverted_by_visible,
+  -- The upload's filename, for titling an upload entry: the entry's source is csv_uploads:<id>.
+  -- Scoped to the entry's own user, so a source naming another account's upload can never leak a name.
+  (
+    select u.filename from csv_uploads u
+    where u.user_id = h.user_id
+      -- The source is csv_uploads:<uuid>. Parsed to a uuid so the primary key serves the lookup; the guard
+      -- keeps the cast off any source that is not that shape.
+      and u.id = case when h.source ~ '^csv_uploads:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+                      then substr(h.source, 13)::uuid end
+  ) as upload_filename,
+  h.rows -> 0 ->> 'name' as first_name
 `;
 
 const inWindow = (userId: string) => sql`
@@ -163,6 +179,7 @@ function toListEntry(r: ListRow): HistoryListEntry {
     copiesUp: Number(r.copies_up), copiesDown: Number(r.copies_down),
     revertsId: r.reverts_id, revertedBy: r.reverted_by,
     revertsVisible: r.reverts_visible, revertedByVisible: r.reverted_by_visible,
+    uploadFilename: r.upload_filename, firstName: r.first_name,
   };
 }
 
@@ -232,4 +249,15 @@ export async function lastUploadConfirmedAt(userId: string): Promise<Date | null
     select max(confirmed_at) as at from csv_uploads where user_id = ${userId} and confirmed_at is not null`);
   const at = res.rows[0]?.at;
   return at ? new Date(at) : null;
+}
+
+/**
+ * Whether the player has any history inside the window: the History tab's gate on an empty
+ * collection (an entry exists once anything was ever changed, even a removal back to nothing).
+ */
+export async function collectionHasHistory(userId: string): Promise<boolean> {
+  const r = await db.execute<{ yes: boolean }>(sql`
+    select exists (select 1 from collection_history h where ${inWindow(userId)}) as yes
+  `);
+  return r.rows[0]?.yes === true;
 }
