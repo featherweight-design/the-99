@@ -120,6 +120,14 @@ describe("the plan in the prompt (v2)", () => {
     expect(withPlan().user).not.toContain("never cite combo state none");
   });
 
+  it("drops the combo and colour cites and the plan wording when no plan was read", () => {
+    const { system } = build();
+    expect(system).toContain("Cite with one of eight kinds");
+    expect(system).not.toMatch(/combo \(state|colour \(colour/);
+    expect(system).not.toContain("assembled combo");
+    expect(withPlan().system).toContain("Cite with one of ten kinds");
+  });
+
   it("says so when the combo read failed, and omits the whole plan block when none was given", () => {
     const failed = buildCutsPrompt(buildCutsPack({
       facts: cutFacts({ profile: profile(), locked: new Set(), support: null, declaredBracket: null }),

@@ -31,8 +31,8 @@ export function buildCutsPrompt(pack: CutsPack): { system: string; user: string 
   const system = [
     prompt.task(pack.over),
     prompt.count(pack.ask, pack.over),
-    prompt.order,
-    prompt.cites,
+    prompt.order(pack.plan !== null),
+    pack.plan !== null ? prompt.cites : prompt.citesNoPlan,
     prompt.reasonLength,
     ...Object.values(rules).map((r) => `- ${r}`),
     PLAYER_TEXT_SYSTEM_RULE,

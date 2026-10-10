@@ -38,13 +38,15 @@ export const deckCutsCopy = {
     count: (ask: number, over: number) =>
       `Propose exactly ${ask} ${ask === 1 ? "cut" : "cuts"}. Propose fewer only if the deck genuinely has fewer defensible cuts.${over > ask ? ` The deck is ${over} over, more than one answer holds: name the ${ask} that should come out first, and the player will run this again for the rest.` : ""}`,
     cites: "Cite with one of ten kinds: combo (state: assembled, oneShort, or none for a card in no combo the deck holds), cost (the card's mana value), tapped (a land that enters tapped), colour (colour, and how many cards need it), inclusion (the card's percent), offList, role (role, have, target), curve (cmc, have), flag, intent.",
+    /** The same line when the plan could not be read: combo and colour figures are not in the call, so they cannot be cited. */
+    citesNoPlan: "Cite with one of eight kinds: cost (the card's mana value), tapped (a land that enters tapped), inclusion (the card's percent), offList, role (role, have, target), curve (cmc, have), flag, intent.",
     /** How a cut is chosen, in order. Hugh's ruling of 2026-10-10: the deck's plan first, then the card's quality against its alternatives; role counts are context. */
-    order: [
+    order: (hasPlan: boolean) => [
       "Choose cuts in this order.",
-      "1. Find the deck's plan: the combos it assembles or is one card short of, and the engine the commander's text asks for. Cut first the cards that serve no part of that plan or work against it: a card that gives up permanents the plan needs, a card whose payoff the deck cannot trigger, a theme card with no enabler, a colour the deck barely uses.",
+      `1. Find the deck's plan: ${hasPlan ? "the combos it assembles or is one card short of, and the engine the commander's text asks for" : "the engine the cards' own text builds toward"}. Cut first the cards that serve no part of that plan or work against it: a card that gives up permanents the plan needs, a card whose payoff the deck cannot trigger, a theme card with no enabler, a colour the deck barely uses.`,
       "2. Then, among cards that do the same job, cut the least efficient: more mana for the same effect, sorcery speed where an instant would do, a land that enters tapped when others do not, ramp that is slow.",
       "3. Role counts, curve and EDHREC inclusion are context, not reasons. Lead every reason with the plan or the efficiency fact. Never give \"not on the commander's EDHREC list\", a role surplus or a crowded curve slot as the main reason, and never cut a card for a count alone; such a figure may stand only as a second cite. Do not protect a card because it is new to the deck.",
-      "A piece of an assembled combo is the plan: do not cut it.",
+      ...(hasPlan ? ["A piece of an assembled combo is the plan: do not cut it."] : []),
     ].join("\n"),
     reasonLength: "Write each reason in one plain line, 200 characters at most.",
   },
