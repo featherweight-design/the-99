@@ -67,11 +67,15 @@ export function CutsPanelView({
   deps = SERVER,
   deeperLooks = false,
   onSettled,
+  revision,
 }: {
   deckId: string;
   deps?: CutsDeps;
   deeperLooks?: boolean;
   onSettled?: () => void;
+  /** Changes whenever an input of the count changes elsewhere on the page (the list, the intent, the
+   *  declared bracket), so the panel reads again rather than showing a result for a list that has gone. */
+  revision?: string;
 }) {
   const [panel, setPanel] = useState<CutsPanel | null>(null);
   const [counting, setCounting] = useState(false);
@@ -114,6 +118,15 @@ export function CutsPanelView({
     void reread().finally(() => { clearTimeout(t); settledRef.current?.(); });
     return () => clearTimeout(t);
   }, [reread]);
+
+  // The page's own edits (a sibling panel's apply, the bracket control, the description) change what
+  // the count and a stored result are measured against; read again when the revision moves.
+  const seenRevision = useRef(revision);
+  useEffect(() => {
+    if (seenRevision.current === revision) return;
+    seenRevision.current = revision;
+    void reread();
+  }, [revision, reread]);
 
   // A run begun elsewhere (another tab, a reload mid-run) is re-read until it settles.
   const pendingId = panel?.run?.status === "pending" ? panel.run.id : null;
@@ -477,6 +490,8 @@ function CutRow({ item, panel, deps, items, onSettled }: {
     setBusy(null);
     if (!result.ok) {
       setMessage(result.message);
+      // A refusal means the list is not the one this row was named for: read again.
+      void onSettled("");
       return;
     }
     await onSettled(

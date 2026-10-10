@@ -158,7 +158,9 @@ export async function runProposedCuts(
     // A rejection is stored as busy: the distinction is kept for the overview only, for now.
     if (!outcome.ok) return await fail(outcome.errorClass === "upstream_rejected" ? "upstream_busy" : outcome.errorClass);
 
-    const { kept, report } = validateCuts({ reply: outcome.value, pack, resolveName: packNameResolver(pack) });
+    const checked = validateCuts({ reply: outcome.value, pack, resolveName: packNameResolver(pack) });
+    const { kept } = checked;
+    const report: CutsReport = { ...checked.report, chips: cutCounts(facts, (head.declaredBracket as 1 | 2 | 3 | 4 | 5 | null) ?? null, name).chips };
     // Nothing survived the checks: refunded like every failure, and the report says why.
     if (kept.length === 0) return await fail("ungrounded", report);
 
@@ -219,7 +221,8 @@ export async function readCutsPanel(deckId: string): Promise<CutsPanel | null> {
     edhrecDecks: facts.support?.deckCount ?? null,
     thin: facts.missing.includes("inclusion"),
     rows: counts.rows,
-    chips: counts.chips,
+    // The chips quote the figures the run's cites were checked against; the rows above stay live.
+    chips: state.itemsReport?.chips ?? counts.chips,
     resultCurrent: state.lastOkFingerprint === fingerprint && !state.modelVersionMoved,
     asked: state.itemsReport?.over ?? state.items.length,
   };

@@ -395,6 +395,22 @@ describe("readCutsPanel", () => {
     expect(panel?.allLocked).toBe(false);
   });
 
+  it("a stored result keeps the chip figures it was checked against, while the rows stay live", async () => {
+    calls.inputs = inputsFor(factsFor(), { head: { declaredBracket: null, partnerOracleId: null } });
+    calls.fingerprints = ["fp"];
+    const stored = { medianPct: 41, flagCounts: { gameChanger: 4 }, declared: 3 };
+    calls.state = { ...state("fp"), itemsReport: { over: 6, chips: stored } };
+    expect((await readCutsPanel(DECK))?.chips).toEqual(stored);
+    calls.state = state("fp");
+    expect((await readCutsPanel(DECK))?.chips).toMatchObject({ declared: null });
+  });
+
+  it("persists the chip figures with the run's report", async () => {
+    expect(await runProposedCuts(DECK, { runId: RUN })).toEqual({ ok: true });
+    const report = (calls.persisted[0] as unknown[])[2] as { chips?: { medianPct: number | null } };
+    expect(report.chips).toBeDefined();
+  });
+
   it("is null with the switch off", async () => {
     calls.enabled = false;
     expect(await readCutsPanel(DECK)).toBeNull();

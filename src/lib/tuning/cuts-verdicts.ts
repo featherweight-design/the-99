@@ -60,7 +60,7 @@ async function chainRun(tx: Tx, runId: string, from: string | null, to: string |
 /** The item and its run, or null unless the reader owns a Proposed cuts run; deck locked, then item. */
 async function lockedCut(tx: Tx, itemId: string, userId: string) {
   const [owner] = await tx
-    .select({ deckId: deckSuggestionRuns.deckId, runId: deckSuggestionRuns.id, fingerprint: deckSuggestionRuns.inputFingerprint, runStatus: deckSuggestionRuns.status })
+    .select({ deckId: deckSuggestionRuns.deckId, runId: deckSuggestionRuns.id })
     .from(deckCutItems)
     .innerJoin(deckSuggestionRuns, eq(deckSuggestionRuns.id, deckCutItems.runId))
     .where(and(
@@ -69,10 +69,18 @@ async function lockedCut(tx: Tx, itemId: string, userId: string) {
       eq(deckSuggestionRuns.tool, PROPOSED_CUTS_TOOL),
     ));
   if (!owner) return null;
+  // The first read only finds the deck. The item AND its run's fingerprint and status are read AGAIN
+  // under the deck lock: read before it, a cut waiting behind another cut would compare the figure
+  // the first one had already moved and be refused as stale.
   await lockDeck(tx, owner.deckId);
   const [row] = await tx
-    .select({ oracleId: deckCutItems.cutOracleId, verdict: deckCutItems.verdict, undoSnapshot: deckCutItems.undoSnapshot })
-    .from(deckCutItems).where(eq(deckCutItems.id, itemId)).for("update");
+    .select({
+      oracleId: deckCutItems.cutOracleId, verdict: deckCutItems.verdict, undoSnapshot: deckCutItems.undoSnapshot,
+      fingerprint: deckSuggestionRuns.inputFingerprint, runStatus: deckSuggestionRuns.status,
+    })
+    .from(deckCutItems)
+    .innerJoin(deckSuggestionRuns, eq(deckSuggestionRuns.id, deckCutItems.runId))
+    .where(eq(deckCutItems.id, itemId)).for("update", { of: deckCutItems });
   return row ? { ...row, ...owner } : null;
 }
 

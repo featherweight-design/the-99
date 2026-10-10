@@ -172,6 +172,25 @@ describe("CutsPanelView", () => {
     expect(screen.getByText("Five over the ninety-eight.")).toBeTruthy();
   });
 
+  it("reads again when the page's revision moves, so a result for a list that has gone retires", async () => {
+    const d = deps(withResult(2, 2));
+    const { rerender } = render(<CutsPanelView deckId="d1" deps={d} revision="a" />);
+    await screen.findByRole("heading", { name: copy.heading });
+    expect(d.read).toHaveBeenCalledTimes(1);
+    rerender(<CutsPanelView deckId="d1" deps={d} revision="b" />);
+    await waitFor(() => expect(d.read).toHaveBeenCalledTimes(2));
+    rerender(<CutsPanelView deckId="d1" deps={d} revision="b" />);
+    expect(d.read).toHaveBeenCalledTimes(2);
+  });
+
+  it("a refused cut reads again, so a stale result does not stay stuck", async () => {
+    const d = deps(withResult(1, 1), { cut: vi.fn(async () => ({ ok: false as const, message: copy.refusals.stale })) });
+    await mount(d);
+    fireEvent.click(screen.getByRole("button", { name: copy.cut }));
+    expect(await screen.findByText(copy.refusals.stale)).toBeTruthy();
+    await waitFor(() => expect(d.read).toHaveBeenCalledTimes(2));
+  });
+
   it("draws nothing for a deck that is not over", async () => {
     const { container } = render(<CutsPanelView deckId="d1" deps={deps(panelOf({ over: 0, total: 99 }))} />);
     await waitFor(() => expect(container.querySelector("section")).toBeNull());
