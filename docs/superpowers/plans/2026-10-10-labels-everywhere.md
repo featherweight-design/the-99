@@ -181,8 +181,11 @@ target rises by three cards, so the fill would place about three more ramp cards
 and every commander's fit score and coverage figures would move.
 
 So the label targets are **new columns beside the old ones**: `label_ramp`, `label_draw`,
-`label_removal` and `label_wipes`, nullable, on `commander_support`, `commander_pair_support` and
-`identity_composition`. A reader moves to them when its own count moves to labels, and never
+`label_removal` and `label_wipes`, on `commander_support`, `commander_pair_support` and
+`identity_composition`. Each takes the null policy of the `avg_*` column it sits beside: nullable
+on the commander and pair tables, where a row the role pass has not reached must fall through the
+chain, and `not null default 0` on `identity_composition` (schema `:1428-1431`), where the very
+next `db:build:staples` overwrites every row. A reader moves to them when its own count moves to labels, and never
 before. When the last reader has moved, a cleanup migration drops `avg_ramp/draw/removal/wipes`.
 
 ### Rebuild the targets from labels in the index build (compute only)
@@ -219,8 +222,13 @@ including on a commander that has no row.
   `isLandFace`, as it does today.
 - The strip takes `label_*` targets through `pickRoleTargets(..., "labels")`.
 - Every `computeRoleCounts` reader on the deck page moves with the strip, or the page disagrees
-  with itself again: the Changed strip (`changed-strip.tsx:137-138`), the Consider panel's coverage
-  shelves (`consider-panel.tsx:48`) and the builder's role toast (`builder-shell.tsx:870`).
+  with itself again. There are six: the strip's before figure (`wasCounts`,
+  `src/app/decks/[id]/page.tsx:249`), the Changed strip (`changed-strip.tsx:137-138`), the
+  Shopping view's `from → to` gap clauses (`decklist.tsx:637`, which the reader checks against the
+  strip on the same screen), the resolve role clause (`unresolved-group.tsx:136`), the Consider
+  panel's coverage shelves (`consider-panel.tsx:48`) and the builder's role toast
+  (`builder-shell.tsx:870`). PR 2 finds them by grep for `computeRoleCounts(` rather than by this
+  list.
 - A card with no fresh label is not counted in a role, which is the Jobs card's rule. The strip's
   disclosure says how many of the deck's cards are unlabeled when that number is above zero. The
   wording goes to `/copy-review`.
@@ -246,15 +254,12 @@ runs on the label-selected sources.
 
 ### What it costs a reader
 
-- The deck page already reads labels for the Jobs card while `DECK_STATS_ENABLED` is on. The strip
-  makes that read unconditional: one indexed join of `card_labels` to `cards` over about 100 ids,
-  inside the deck page's existing cache.
-- On production, labels arrive through `db:copy:labels`. That goes through the copy harness, which
-  stamps `catalog_refreshes`, and every cached list payload is keyed on that stamp. On staging,
-  labels are written by `src/lib/labels/publish.ts`, and this plan did not find a
-  `catalog_refreshes` stamp there. PR 2 confirms whether the deck page's cache retires when labels
-  are published on staging, and adds the stamp if it does not. The Jobs card already has this
-  exposure today.
+- The deck page already reads labels for the Jobs card while `DECK_STATS_ENABLED` is on
+  (`loadJobRows`, `src/app/decks/[id]/page.tsx:128-129`). The strip makes that read unconditional:
+  one indexed join of `card_labels` to `cards` over about 100 ids. It is not cached. `readLabels`
+  is a plain query on every render, so a label publish shows on the next page load with no cache
+  to retire. The targets are different: they arrive in the cached `mix` payload, keyed on the
+  index generation, so a new index copy retires them the way it already does.
 
 ## Risk to the copy-to-production pipeline
 
