@@ -1,5 +1,3 @@
-import "server-only";
-
 import { isLandFace } from "../cards/facet";
 import { readLabels } from "../labels/read";
 import { jobRowsOf, type JobRowsByCard } from "./job-tally";

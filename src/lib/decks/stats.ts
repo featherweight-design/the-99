@@ -260,8 +260,9 @@ export function cardTypeOf(typeLine: string): CardType | null {
  *  rather than calling every card unlabeled. */
 export type DeckStatsSlice = { curve: ManaCurve; types: TypeCurve; jobs?: JobTally | null };
 
-/** What the page ships for the Stats view: the commanders alone. The 99 are drawn from the
- *  optimistic card list in the browser, so an edit moves the curve in the same frame as the deck. */
+/** What the page ships for the Stats view: the commanders, and the Jobs labels as row keys per card.
+ *  The 99 are drawn from the optimistic card list in the browser, so an edit moves the curve and the
+ *  Jobs rows in the same frame as the deck. `jobs` is null where the label read failed. */
 export type DeckStatsInput = { commanders: readonly CurveCard[]; jobs?: JobRowsByCard | null };
 
 export type TypeCurve = {
