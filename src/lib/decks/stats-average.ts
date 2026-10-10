@@ -17,6 +17,8 @@ import { CARD_TYPES, CURVE_MAX, type CardType, type ManaCurve, type TypeCurve } 
 export type AverageBasisOf = "commander" | "pair" | "identity" | "count" | "baseline";
 
 export type AverageDeck = {
+  /** The deck body the counts are over: 99, or 98 for a pair (`deckBodySize`). */
+  body: number;
   basis: {
     of: AverageBasisOf;
     /** The commanders' names, as the deck names them. */
@@ -65,7 +67,8 @@ export type AverageComparison = {
   mini: { label: number; diff: number; px: number }[] | null;
   /** Nonland copies with no fresh label: they join no job row, so the job rows may run short. */
   unlabeled: number;
-  /** Cards in the 99 so far, and whether to say so (short of 99 and a bar is cut off). */
+  /** The body, and the cards in it so far; the note is said when the deck is short of it and a bar is cut off. */
+  body: number;
   cards: number;
   note: "baseline" | "thin" | null;
 };
@@ -114,7 +117,8 @@ export function averageComparison(
     groups,
     mini,
     unlabeled: groups.some((g) => g.key === "jobs") ? have.jobs?.unlabeled ?? 0 : 0,
+    body: average.body,
     cards: have.cards,
-    note: average.basis.of === "baseline" ? "baseline" : have.cards < 99 && anyCut ? "thin" : null,
+    note: average.basis.of === "baseline" ? "baseline" : have.cards < average.body && anyCut ? "thin" : null,
   };
 }

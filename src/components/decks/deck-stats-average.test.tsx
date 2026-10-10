@@ -8,6 +8,7 @@ import { DeckStatsView } from "./deck-stats-view";
 
 const TARGETS = { land: 36, basic: 20, nonbasic: 16, creature: 26, instant: 8, sorcery: 9, artifact: 10, enchantment: 6, planeswalker: 1, battle: 0 };
 const avg = (over: Partial<AverageDeck> = {}): AverageDeck => ({
+  body: 99,
   basis: { of: "commander", names: ["Korvold, Fae-Cursed King"], label: "", decks: 1812 },
   targets: TARGETS,
   curve: [1, 9, 14, 13, 11, 8, 4, 4],
@@ -91,6 +92,12 @@ describe("DeckStatsView average card", () => {
     const average = averageComparison(avg(), { curve: manaCurve(cards), types: typeCurve(cards), jobs, cards: 99 });
     render(<DeckStatsView data={{ curve: manaCurve(cards), types: typeCurve(cards), average }} />);
     expect(document.querySelector("[data-average-unlabeled]")).toHaveTextContent("2 cards aren’t labeled yet, so the job counts may run short until they are.");
+  });
+
+  it("counts the 98 for a pair, in the footer and the short-deck note", () => {
+    draw(avg({ body: 98, basis: { of: "pair", names: ["Tymna", "Kraum"], label: "", decks: 812 } }), 56);
+    expect(card()).toHaveTextContent("Counts the 98, not the commanders.");
+    expect(card()).toHaveTextContent("56 of 98 cards so far.");
   });
 
   it("stays a shell without the basis", () => {

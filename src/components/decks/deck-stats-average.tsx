@@ -74,7 +74,7 @@ export function AverageCard({ average }: { average: AverageComparison }) {
           ? copy.basisBaseline(name)
           : copy.basisColors(basis.label);
   const title = deckStatsCopy.cards.average;
-  const note = average.note === "baseline" ? copy.baselineNote : average.note === "thin" ? copy.thinNote(average.cards, 99) : null;
+  const note = average.note === "baseline" ? copy.baselineNote : average.note === "thin" ? copy.thinNote(average.cards, average.body) : null;
   return (
     <Shell title={title} id="average" denom={denom} label={`${title}, ${denom}`}>
       <p className="text-[13px] leading-[1.55] text-[color:var(--fg-body)]" data-average-basis>{basisLine}</p>
@@ -119,7 +119,7 @@ export function AverageCard({ average }: { average: AverageComparison }) {
         </div>
       ) : null}
       {note ? <p data-average-note className="border-t border-dashed border-t-[color:var(--border-dashed)] pt-[10px] text-[12.5px] leading-[1.55] text-[color:var(--fg-faint)]">{note}</p> : null}
-      <p className="font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">{copy.counts99}</p>
+      <p className="font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">{copy.counts(average.body)}</p>
     </Shell>
   );
 }

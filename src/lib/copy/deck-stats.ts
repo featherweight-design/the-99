@@ -78,11 +78,11 @@ export const deckStatsCopy = {
     },
   },
   average: {
-    // Counts the 99, as the Curve card says it counts the commander: EDHREC's type counts sum to 99.
+    // Counts the body (99, or 98 for a pair), as the Curve card says it counts the commander: EDHREC's type counts sum to the body.
     denomCommander: (decks: number | null) => (decks === null ? "EDHREC average" : `${decks.toLocaleString("en-US")} decks`),
     denomColors: (label: string) => `${label} decks`,
     denomBaseline: "starting mix",
-    counts99: "Counts the 99, not the commander.",
+    counts: (body: number) => (body === 99 ? "Counts the 99, not the commander." : `Counts the ${body}, not the commanders.`),
     basisCommander: (name: string, decks: number | null) =>
       `Each bar is this deck’s figure minus the average ${name} deck’s${decks === null ? "." : `, from EDHREC’s ${decks.toLocaleString("en-US")} decks.`}`,
     basisPair: (a: string, b: string, decks: number | null) =>

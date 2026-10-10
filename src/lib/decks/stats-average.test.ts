@@ -21,7 +21,7 @@ const skeleton = (over: Partial<ProfileSkeleton> = {}): ProfileSkeleton => ({
 
 describe("averageDeckFrom", () => {
   it("names the commander rung with its deck count and folds the tail into 7+", () => {
-    const a = averageDeckFrom(skeleton(), ["Korvold, Fae-Cursed King"], ["B", "G", "R"]);
+    const a = averageDeckFrom(skeleton(), ["Korvold, Fae-Cursed King"], ["B", "G", "R"], false);
     expect(a.basis).toEqual({ of: "commander", names: ["Korvold, Fae-Cursed King"], label: "", decks: 1812 });
     expect(a.curve).toEqual([0, 8, 12, 12, 0, 0, 0, 2]);
     // The mean runs over the UNFOLDED keys, so the 9 is a 9 and not a 7.
@@ -29,19 +29,24 @@ describe("averageDeckFrom", () => {
     expect(a.roles).toEqual({ ramp: 11.4, draw: 10, removal: 8, wipes: 3 });
   });
 
+  it("sizes the body at 99, or 98 for a pair", () => {
+    expect(averageDeckFrom(skeleton(), ["A"], ["W"], false).body).toBe(99);
+    expect(averageDeckFrom(skeleton(), ["A", "B"], ["W"], true).body).toBe(98);
+  });
+
   it("names both partners on a pair rung and only the first when the commander's row served a pair deck", () => {
-    const pair = averageDeckFrom(skeleton({ composition: { of: "pair", targets: TARGETS, averageCurve: null } }), ["A", "B"], ["W"]);
+    const pair = averageDeckFrom(skeleton({ composition: { of: "pair", targets: TARGETS, averageCurve: null } }), ["A", "B"], ["W"], true);
     expect(pair.basis.names).toEqual(["A", "B"]);
-    const fell = averageDeckFrom(skeleton(), ["A", "B"], ["W"]);
+    const fell = averageDeckFrom(skeleton(), ["A", "B"], ["W"], true);
     expect(fell.basis.names).toEqual(["A"]);
   });
 
   it("names the identity by its color name and the count rung by its color count, with no deck count", () => {
-    const id = averageDeckFrom(skeleton({ composition: { of: "identity", targets: TARGETS, averageCurve: null } }), ["X"], ["G", "B", "R"]);
+    const id = averageDeckFrom(skeleton({ composition: { of: "identity", targets: TARGETS, averageCurve: null } }), ["X"], ["G", "B", "R"], false);
     expect(id.basis).toMatchObject({ of: "identity", label: "Jund", decks: null });
-    const count = averageDeckFrom(skeleton({ composition: { of: "count", targets: TARGETS, averageCurve: null } }), ["X"], ["G", "B", "R", "W"]);
+    const count = averageDeckFrom(skeleton({ composition: { of: "count", targets: TARGETS, averageCurve: null } }), ["X"], ["G", "B", "R", "W"], false);
     expect(count.basis).toMatchObject({ of: "count", label: "4-color", decks: null });
-    const none = averageDeckFrom(skeleton({ composition: { of: "count", targets: TARGETS, averageCurve: null } }), ["X"], []);
+    const none = averageDeckFrom(skeleton({ composition: { of: "count", targets: TARGETS, averageCurve: null } }), ["X"], [], false);
     expect(none.basis.label).toBe("colorless");
   });
 
@@ -50,6 +55,7 @@ describe("averageDeckFrom", () => {
       skeleton({ composition: null, roleTargets: { of: "flat", targets: { ramp: 8, draw: 8, removal: 6, wipes: 2 } } }),
       ["Aang, at the Crossroads"],
       ["W"],
+      false,
     );
     expect(a.basis.of).toBe("baseline");
     expect(a.targets).toBeNull();
@@ -59,19 +65,20 @@ describe("averageDeckFrom", () => {
   });
 
   it("draws no job targets when the roles resolved at a different rung than the named composition", () => {
-    const a = averageDeckFrom(skeleton({ roleTargets: { of: "identity", targets: { ramp: 8, draw: 8, removal: 6, wipes: 2 } } }), ["X"], ["G"]);
+    const a = averageDeckFrom(skeleton({ roleTargets: { of: "identity", targets: { ramp: 8, draw: 8, removal: 6, wipes: 2 } } }), ["X"], ["G"], false);
     expect(a.basis.of).toBe("commander");
     expect(a.roles).toBeNull();
   });
 
   it("draws no job targets where the composition is measured and the roles are only the flat ones", () => {
-    const a = averageDeckFrom(skeleton({ roleTargets: { of: "flat", targets: { ramp: 8, draw: 8, removal: 6, wipes: 2 } } }), ["X"], ["G"]);
+    const a = averageDeckFrom(skeleton({ roleTargets: { of: "flat", targets: { ramp: 8, draw: 8, removal: 6, wipes: 2 } } }), ["X"], ["G"], false);
     expect(a.targets).not.toBeNull();
     expect(a.roles).toBeNull();
   });
 });
 
 const avg = (over: Partial<AverageDeck> = {}): AverageDeck => ({
+  body: 99,
   basis: { of: "commander", names: ["Korvold"], label: "", decks: 1812 },
   targets: TARGETS,
   curve: [1, 9, 14, 13, 11, 8, 4, 4],
@@ -164,5 +171,8 @@ describe("averageComparison", () => {
     const flat = avg({ targets: { ...TARGETS, land: 3, creature: 0, instant: 0, sorcery: 0, artifact: 0, enchantment: 0, planeswalker: 0, battle: 0 }, manaValue: null, roles: { ramp: 0, draw: 0, removal: 0, wipes: 0 } });
     expect(averageComparison(flat, have([spell(0, "Land", 3)], undefined, 12)).note).toBeNull();
     expect(averageComparison(avg(), have([spell(0, "Land", 3)], undefined, 99)).note).toBeNull();
+    // A complete pair deck holds 98, so it is not short.
+    expect(averageComparison(avg({ body: 98 }), have([spell(0, "Land", 3)], undefined, 98)).note).toBeNull();
+    expect(averageComparison(avg({ body: 98 }), have([spell(0, "Land", 3)], undefined, 97)).note).toBe("thin");
   });
 });

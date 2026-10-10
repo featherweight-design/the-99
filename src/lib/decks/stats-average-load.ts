@@ -10,13 +10,14 @@ import { guildLabel } from "../copy/color-labels";
 import { foldCurve } from "../profile/fit";
 import { loadSkeletonForCommanders } from "../profile/load";
 import type { ProfileSkeleton } from "../profile/types";
+import { deckBodySize } from "./deck-size";
 import { CURVE_MAX } from "./stats";
 import type { AverageBasisOf, AverageDeck } from "./stats-average";
 
 const colorCount = (n: number) => (n === 0 ? "colorless" : `${n}-color`);
 
 /** Pure so the rungs are provable without a database. `identity` is the deck's combined color identity. */
-export function averageDeckFrom(skeleton: ProfileSkeleton, names: string[], identity: readonly string[]): AverageDeck {
+export function averageDeckFrom(skeleton: ProfileSkeleton, names: string[], identity: readonly string[], hasPartner: boolean): AverageDeck {
   const composition = skeleton.composition;
   const measuredRoles = skeleton.roleTargets.of !== "flat";
   const of: AverageBasisOf = composition ? composition.of : measuredRoles ? skeleton.roleTargets.of as AverageBasisOf : "baseline";
@@ -36,6 +37,7 @@ export function averageDeckFrom(skeleton: ProfileSkeleton, names: string[], iden
   }
   const folded = raw ? foldCurve(raw) : null;
   return {
+    body: deckBodySize(hasPartner),
     basis: {
       of,
       names: of === "pair" ? names : names.slice(0, 1),
@@ -72,7 +74,7 @@ export async function loadStatsAverage(deck: {
       undefined,
       { roleBasis: "labels" },
     );
-    return averageDeckFrom(skeleton, [deck.commander.name, ...(deck.partner ? [deck.partner.name] : [])], identity);
+    return averageDeckFrom(skeleton, [deck.commander.name, ...(deck.partner ? [deck.partner.name] : [])], identity, deck.partner !== null);
   } catch (err) {
     console.warn("loadStatsAverage: no skeleton, the Average card stays a shell", err);
     return null;
