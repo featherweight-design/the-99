@@ -101,7 +101,7 @@ function renderDecklist(
     receipts?: SwapReceipt[];
     lockMode?: boolean;
     statsEnabled?: boolean;
-    statsData?: { commanders: { cmc: number; typeLine: string; quantity: number }[] } | null;
+    statsData?: { commanders: { cmc: number; typeLine: string; quantity: number }[]; jobs?: Record<string, ("ramp" | "draw")[]> | null } | null;
     commander?: DeckCommander;
     partner?: DeckCommander | null;
   } = {},
@@ -1432,6 +1432,30 @@ describe("the Stats panel", () => {
     fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
     expect(count(2)).toBe(before + 1);
     expect(count(4)).toBe(1);
+  });
+
+  it("tallies the Jobs rows from the passed cards and the shipped labels, so an optimistic change moves them", () => {
+    const stats = {
+      statsEnabled: true,
+      filter: "all" as const,
+      statsData: { commanders: [], jobs: { "sol-ring": ["ramp" as const], "rhystic-study": ["draw" as const] } },
+    };
+    const rowCount = (key: string) => document.querySelector(`[data-job-squares="${key}"]`)!.children.length;
+    renderDecklist([rampOwned], stats);
+    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    expect(rowCount("ramp")).toBe(1);
+    expect(rowCount("draw")).toBe(0);
+    cleanup();
+
+    renderDecklist([rampOwned, drawOwned], stats);
+    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    expect(rowCount("draw")).toBe(1);
+  });
+
+  it("keeps the Jobs card a shell when no labels were shipped", () => {
+    renderDecklist([rampOwned], { statsEnabled: true, filter: "all", statsData: { commanders: [], jobs: null } });
+    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    expect(document.querySelector("[data-job-row]")).toBeNull();
   });
 
   it("returns to the list when All is pressed from Stats", () => {
