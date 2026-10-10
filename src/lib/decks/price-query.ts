@@ -80,8 +80,12 @@ export type PriceRead = {
  * them at zero, so a printing that has never been stocked in any run has never
  * appeared. `priceState` renders that as today's bare tag.
  */
-export async function loadPrices(oracleIds: string[], picks: PricePick[] = []): Promise<PriceRead> {
+export async function loadPrices(oracleIds: string[], allPicks: PricePick[] = []): Promise<PriceRead> {
   if (oracleIds.length === 0) return { prices: new Map(), newestAsOf: null };
+  // Only the picks of cards this read prices: a caller passes every held pick of its decks, and
+  // the roll-up's buy rows are a handful of each deck's cards.
+  const asked = new Set(oracleIds);
+  const picks = allPicks.filter((k) => asked.has(k.oracleId));
 
   // sql.param is load-bearing for the array. A bare `${jsArray}` in a drizzle
   // template expands to a parenthesised param LIST — `($1, $2)::uuid[]` — which
@@ -109,6 +113,14 @@ export async function loadPrices(oracleIds: string[], picks: PricePick[] = []): 
       join printings p
         on p.oracle_id = w.oracle_id and p.set_code = w.set_code and p.collector_number = w.collector_number
       join printing_prices pp on pp.scryfall_id = p.scryfall_id
+      -- (set, collector number) is not unique in printings: two variants can share one. A pick
+      -- naming a shared pair answers nothing, and its row takes today's figure, rather than pricing
+      -- whichever sibling an unordered join yields (the rule price-lookup.ts keeps for the same key).
+      where (
+        select count(*) from printings p2
+        where p2.oracle_id = w.oracle_id and p2.set_code = w.set_code
+          and p2.collector_number = w.collector_number
+      ) = 1
     )`;
   const pickedRows = picks.length === 0 ? sql`` : sql`union all select * from picked`;
 

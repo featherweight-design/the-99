@@ -80,6 +80,21 @@ describe("priceFor (the deck printings price rule)", () => {
 });
 
 describe("loadPrices", () => {
+  it("prices only the picks of cards it was asked for", async () => {
+    const OTHER = "44444444-4444-4444-8444-444444444444";
+    await loadPrices([CARD], [
+      { deckId: DECK, oracleId: CARD, setCode: "khm", collectorNumber: "31" },
+      { deckId: DECK, oracleId: OTHER, setCode: "m21", collectorNumber: "1" },
+    ]);
+    expect(state.params[0]).toContainEqual([CARD]);
+    expect(JSON.stringify(state.params[0])).not.toContain(OTHER);
+  });
+
+  it("issues today's statement when none of the picks is for a card it was asked for", async () => {
+    await loadPrices([CARD], [{ deckId: DECK, oracleId: "44444444-4444-4444-8444-444444444444", setCode: "m21", collectorNumber: "1" }]);
+    expect(state.texts[0]).not.toContain("picked");
+  });
+
   it("issues today's statement with no picks, and returns no picked map", async () => {
     const result = await loadPrices([CARD]);
     expect(state.texts[0]).not.toContain("picked");
@@ -100,6 +115,8 @@ describe("loadPrices", () => {
     expect(state.texts[0]).toContain("picked as (");
     expect(state.texts[0]).toContain("union all select * from picked");
     expect(state.texts[0]).toContain("p.set_code = w.set_code and p.collector_number = w.collector_number");
+    // A pair two variants share prices nothing: the row keeps today's figure.
+    expect(state.texts[0]).toMatch(/p2\.collector_number = w\.collector_number\s+\) = 1/);
     // Stored lowercase, so the pick is matched in that form.
     expect(state.params[0]).toContainEqual(["khm"]);
     expect(result.prices.get(CARD)?.cents).toBe(70);
