@@ -101,8 +101,8 @@ export const collectionEditCopy = {
     failedBody: "Nothing changed. Your collection is exactly as it was, and this review is still here.",
     retry: "Try again",
   },
-  // §E, the short-deck warning. Replace is the only source so far; Save, Remove and Revert join
-  // with the PRs that draw them. Every string is a placeholder for /copy-review.
+  // §E, the short-deck warning. Replace and Revert are drawn so far; Save and Remove join with the
+  // PRs that draw them. Every string is a placeholder for /copy-review.
   shortWarning: {
     titleReplace: (k: number) => `Replacing leaves ${decks(k)} short`,
     titleRevert: (k: number) => `Reverting leaves ${decks(k)} short`,
