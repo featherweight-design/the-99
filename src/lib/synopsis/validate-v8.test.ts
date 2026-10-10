@@ -155,6 +155,12 @@ describe("validateSynopsisV8", () => {
     expect(verdictOf(validateSynopsisV8(reply, FACTS, CATALOG), "weaknesses")).toMatchObject({ status: "refused", reason: "non_weakness" });
   });
 
+  it("applies the color guard to the mana_and_colors topic only", () => {
+    const reply = good();
+    reply.assessment = assessAll({ interaction_speed: { verdict: "weakness", tier: "moderate", line: "Little fixing for cheap answers on the stack." } });
+    expect(validateSynopsisV8(reply, FACTS, CATALOG).weaknesses).toEqual(["Moderate: Little fixing for cheap answers on the stack."]);
+  });
+
   it("drops a tip with no evidence or an unknown ref, and keeps the evidence aligned with what survives", () => {
     const reply = good();
     reply.primer.tips = [

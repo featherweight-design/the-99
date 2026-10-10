@@ -109,7 +109,7 @@ function normalize(reply: SynopsisResponseV8, facts: SynopsisFacts): Normalized 
     const line = `${TIER_WORD[a.tier!]}: ${a.line!.trim()}`;
     const e = readEvidence(a.evidence, refs, false);
     ev.weaknesses.push(e.ids);
-    checks.weaknesses!.push(first(e.reason, nonWeakness(a.line!, facts.identity) ? "non_weakness" : null, keyword(line)));
+    checks.weaknesses!.push(first(e.reason, a.topic === "mana_and_colors" && nonWeakness(a.line!, facts.identity) ? "non_weakness" : null, keyword(line)));
     return line;
   });
 
