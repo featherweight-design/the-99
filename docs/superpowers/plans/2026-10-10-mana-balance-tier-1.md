@@ -25,39 +25,43 @@ Missing, and all of this plan: a verdict over those figures (which colors are sh
 the three suggestion kinds each carrying its counted fact, the missing-staple read, and the golden
 eval. Nothing here changes `manaSupply()` or card (b).
 
-## The counted rule (decided, override if you disagree)
+## The counted rule (decided, override if you disagree; REVISED in PR 1 after measuring)
 
-Per colored color `c` (W, U, B, R, G; `C` is reported, never judged):
+A color should be at least as common among the deck's colored sources as it is among its colored
+pips. Per colored color `c` (W, U, B, R, G; `C` is reported, never judged):
 
+- `sourceCards` = copies of lands and non-land sources that add at least one colored mana. A dual
+  counts once here and for both of its colors in `supply[c]`; a colorless-only source is in neither.
 - `pipShare[c]` = `demand[c]` over the sum of the colored demands.
-- `budget` = the sum of `supply[c].lands + supply[c].nonland` over the colored colors. A dual
-  counts in both colors, as in card (b), so the budget is color-source units, not cards.
-- `target[c]` = `budget * pipShare[c]`, rounded to the nearest whole source.
-- `gap[c]` = `target[c] - supply[c]`. A color is **short** when `gap >= 1`, **over-served** when
-  `gap <= -1`. Every other color is balanced and named as such.
+- `target[c]` = `sourceCards * pipShare[c]`, rounded to the nearest whole source.
+- `gap[c]` = `target[c] - supply[c]` (lands plus non-lands). A color is **short** when
+  `gap >= SHORT_BY` (1), and **met** otherwise. A negative gap is cover beyond the share, and is
+  what the rebalance suggestion reads to find basics it can move.
 
-The budget redistributes the deck's own sources by what its spells ask for, so the rule needs no
-outside table and no curve. Every figure it prints is a count (pips, sources, target, gap), which
-is the "shown rather than asserted" requirement. The `>= 1` line is a starting point; the golden
-eval below is where it is tested against Hugh's read of HD - Gishath before it is fixed.
+The first draft redistributed the colors' summed source units by pip share. Measured on Hugh's 21
+staging decks it overstated every gap, because duals inflate the sum: Omnath read "G short by 31",
+which no swap closes. The share-of-source-cards rule never penalizes owning duals and always has a
+feasible fix. It fires on 0 of 20 judged decks at 1, 2 or 3 sources (the decks are mana-rich), so
+the 1-source line is the smallest meaningful unit rather than a tuned figure; the PR 1 body holds
+the measurement. The thinnest multicolor covers are Omnath and Counter Intelligence at +0.
 
 Thin data: a deck with no colored pips (all colorless) returns a `colorless` state naming that,
-and a deck with no sources returns `noSources`. Neither refuses (Ruling 6).
+and a deck with pips and no colored source returns `noSources`. Neither refuses (Ruling 6).
 
 ## Suggestions, each with its own counted fact
 
-1. **Rebalance.** Swap N basics of an over-served color for the short color. Only basics the deck
-   holds are offered (a count read from the rows), N is capped by both the over-served color's
+1. **Rebalance.** Swap N basics of a color holding cover beyond its share for the short color. Only basics the deck
+   holds are offered (a count read from the rows), N is capped by both the covered color's
    basics and the short color's gap. Fact: `current -> after` supply for both colors, and the pip
    share each is held against.
 2. **Trade for ramp.** Replace basics with a rock that makes the short color. The candidate comes
    from the missing-staple read below, so it is a card the commander's decks run, not a name picked
-   by the engine. Which basics go: only basics of an over-served color, or basics of a balanced
+   by the engine. Which basics go: only basics of a color holding cover beyond its share, or basics of a met
    color that produce NONE of the short colors, so removing one never lowers a short color's
    supply. How many: one basic per rock added, and the trade is
    simulated before it is emitted: the engine removes the basics, adds the rock's colors, re-runs
-   the counted rule over the new supply (the budget and every target move), and emits the trade
-   only when the short color's gap falls and no other color goes from balanced or over-served to
+   the counted rule over the new supply (the source count and every target move), and emits the trade
+   only when the short color's gap falls and no other color goes from met to
    short. A trade that fails the simulation is not shown. Fact: the sources the trade adds per
    color, the basics it removes, and the before and after gap for every color it touches.
 3. **Missing staple.** A ramp card that the deck does not hold, and whose colors (`sourceProduces`)
@@ -81,7 +85,7 @@ not a prompt line), and any card `makesNoManaSource` rejects. Candidate colors c
 Two PRs, no stacking. PR 2 starts after PR 1 merges.
 
 **PR 1: the counting engine and its golden check.** `src/lib/tuning/mana-balance.ts`:
-`readManaBalance(rows, deckColors)` over `manaSupply()`'s output, returning the per-color
+`readManaBalance(rows)` over `manaSupply()`'s output, returning the per-color
 `{ demand, pipShare, supply, target, gap, state }` and the `colorless` and `noSources` states. Pure,
 no database, no model. A loader beside it assembles the rows the way the deck page does
 (`loadSourceMana`, `landProduces`), so the two cannot count differently; the page's own row

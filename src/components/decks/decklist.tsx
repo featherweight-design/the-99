@@ -16,7 +16,8 @@ import { manaCurve, typeCurve, type DeckStatsInput } from "../../lib/decks/stats
 import { averageComparison } from "../../lib/decks/stats-average";
 import { moneyStats } from "../../lib/decks/stats-money";
 import { resultsStats } from "../../lib/decks/stats-results";
-import { landProduces, manaSupply } from "../../lib/mana/supply";
+import { manaSupply } from "../../lib/mana/supply";
+import { manaSupplyRows } from "../../lib/mana/supply-rows";
 import type { RecommendedMix } from "../../lib/decks/mix";
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
 import { cardCopies, groupByCardType, groupByRole } from "../../lib/decks/grouping";
@@ -434,17 +435,7 @@ export function Decklist({
     const sourcesByCard = statsData.sources;
     const deckColors = statsData.commanders.flatMap((c) => c.colorIdentity);
     const mana = landsByCard && sourcesByCard
-      ? manaSupply([
-          ...cards.map((c) => ({
-            id: c.oracleId,
-            typeLine: c.typeLine,
-            manaCost: c.manaCost ?? null,
-            quantity: c.quantity,
-            produces: landsByCard[c.oracleId] ?? sourcesByCard[c.oracleId] ?? (isLandFace(c.typeLine) ? landProduces({ name: c.name, typeLine: c.typeLine, oracleText: null }, deckColors) : []),
-            ramp: c.oracleId in sourcesByCard,
-          })),
-          ...statsData.commanders.map((c, i) => ({ id: `commander:${i}`, typeLine: c.typeLine, manaCost: c.manaCost, quantity: 1 })),
-        ])
+      ? manaSupply(manaSupplyRows(cards, statsData.commanders, landsByCard, sourcesByCard, deckColors))
       : null;
     // The Average card compares the 99 (EDHREC's counts sum to 99), so it reads the list without the commanders.
     const average = statsData.average
