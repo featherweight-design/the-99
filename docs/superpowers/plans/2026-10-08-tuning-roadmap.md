@@ -18,8 +18,8 @@ UI sub-project additionally needs a GREEN readiness audit on its handoff before 
 4. Proposed cuts tier 1 engine (no Design — logic only, behind a switch)       ─┤ parallel, both
                                                                                  │ depend on 2
 5. Tuning hub UI               (needs Design — the brief above)  ◄─────────────┘ depends on 3, 4
-6. Tier-2 model passes         (Mana Balance "Look deeper"; Proposed cuts tier 2 if the eval
-                                 shows gaps) — depends on 5 shipping, and on the golden-deck eval
+6. Tier-2 model passes         (Mana Balance "Look deeper"; Proposed cuts' model pass, the
+                                 main path) — depends on 5 shipping, and on the golden-deck eval
                                  existing (part of 3/4's own scope, reused here)
 7. About entry + ABOUT_VERSION bump (last, once 5 and the tier-2 passes that ship are done)
 8. Suggested changes, two lists  (no new Design round; independent of 5, ships before it if ready)
@@ -161,27 +161,26 @@ measure on staging, mutate on local-dev — this sub-project only reads).
 get named PR boundaries); at implementation this likely splits into the counting engine (one PR)
 and the suggestion-generation + missing-staple check (a second), each independently testable.
 
-## Sub-project 4: Proposed cuts, tier 1 engine
+## Sub-project 4: Proposed cuts, tier 1 facts layer
 
-**No Design needed for the engine itself.** Behind a switch (e.g. `PROPOSED_CUTS_ENABLED`).
+**Amended 2026-10-09 (Hugh): Proposed cuts is model-first.** The tier-1 engine built here ranked
+cuts by inclusion, role surplus, curve crowding and bracket flags. Scored against the 58 cuts Hugh
+made across his five v1 to v2 decks it put 10 in its top K (17%, 1.1x chance); label roles gave 12
+and weights tuned leave-one-out gave 12. So the free pass shows **no ranked list**: it keeps the
+counted facts (roles over target, curve crowding, bracket flags, thin-data notes) and the model
+tier (sub-project 6) is the path to a shortlist. Plan: `2026-10-09-proposed-cuts-model-tier.md`.
 
-**Scope**: a pure function that, for a deck over 100 cards:
-- Ranks cut candidates by commander inclusion rate (`commander_support_cards`), roles over target
-  (reusing `src/lib/decks/mix.ts`'s existing role-count machinery — the same figures the roles
-  strip already draws), curve crowding, and bracket flags (`card_bracket_flags`).
-- Excludes the commander and every locked card unconditionally (a hard filter, not a ranking
-  penalty — reusing the same never-cut convention Suggested changes already enforces, per
-  `docs/superpowers/design-tables/never-cut-tuning.md`).
-- Attaches one checkable reason per candidate (the actual counted figure, not a label).
-- Shares the golden-deck eval harness from sub-project 3; this is also where the eval decides
-  whether tier 2 is needed at all (per Hugh's ruling: tier 2 ships "only if the test decks show
-  gaps"). The eval's job here is specifically to find decks where tier 1's shortlist misses a cut
-  a strategy-aware read would make — if it does not, tier 2 for Proposed cuts never starts.
+**No Design needed for the facts layer itself.** Behind `PROPOSED_CUTS_ENABLED`. The hub's free
+state does need a redraw (see the plan's Needs Design).
 
-**Cost implications**: none for tier 1, same reasoning as sub-project 3. The eval that decides
-whether tier 2 is warranted is itself free (read-only, deterministic scoring); only building
-tier 2 afterward would cost anything, and that cost is sub-project 6's, contingent on this eval's
-result.
+**Scope**: a pure function that, for a deck over 100 cards, returns the counted facts the model is
+told and the hub draws: roles over target (reusing `src/lib/decks/mix.ts`), curve crowding, bracket
+flags against the declared bracket, and the thin-data notes. Commanders and locked cards are hard
+exclusions. Every fact is a figure the app can show.
+
+**The eval is the record behind the ruling**: `pnpm eval:cuts`, read-only against staging, free.
+
+**Cost implications**: none for the facts layer.
 
 ## Sub-project 5: The Tuning hub UI
 
@@ -220,9 +219,9 @@ real result; if sub-project 5 already drew the full tier-2 result frame, this is
 (per the accuracy-and-humility principle: tier 1's facts are what the model is told, not what it
 re-derives), through the shared model client (`src/lib/model/client.ts`), spending a credit
 through the existing allowance (`src/lib/model/allowance.ts`), citing its claims the way Suggested
-changes' `presentation.ts` already does. Proposed cuts' tier 2 is NOT built in this round (Hugh,
-2026-10-09, ruling (a) below): it waits for the golden-deck eval of the free tier and ships only if
-that eval shows the free tier missing cuts. Design's C2/C8/C9 screens stay on file as reference.
+changes' `presentation.ts` already does. Proposed cuts' model pass is built here and is the main
+path (Hugh, 2026-10-09, ruling (a) as amended): the golden-deck eval found the free ranking at 17%
+of his cuts, near chance. Plan: `2026-10-09-proposed-cuts-model-tier.md`.
 
 **Resolves the open free-first/deep-by-default question** (below) as part of its implementation,
 following whatever Hugh decides.
@@ -240,8 +239,8 @@ sub-project 1's constraint list once these names are chosen.
 **Last, always.** Per `AGENTS.md`'s standing rule: a multi-round feature line batches its About
 entry at the end, describing the thing as it finally works. Drawn by Design on the per-entry
 artboard (`design/design_handoff_the99_about/`), bumping `ABOUT_VERSION` once this whole line is
-done (whichever of sub-projects 5/6 are the actual last to ship — if Proposed cuts' tier 2 never
-starts per sub-project 4's eval, this sub-project does not wait for a tier that was never built).
+done (whichever of sub-projects 5/6 are the actual last to ship — if Proposed cuts' model pass never
+ships, this sub-project does not wait for it).
 
 ## Sub-project 8: Suggested changes, two lists
 
@@ -281,9 +280,10 @@ No questions remain open. The numbers are Hugh's.
 
 Made on the Tuning hub R1 readiness audit (PR #1312).
 
-(a) **Proposed cuts' paid "Look deeper" (tier 2) is not built this round.** It waits for the
-    golden-deck eval of the free tier (lane b4) and ships only if the eval shows the free tier
-    missing cuts. Design's C2/C8/C9 screens stay on file as reference.
+(a) **Proposed cuts' paid "Look deeper" (tier 2) was deferred to the eval; the eval answered it
+    (2026-10-09).** The free ranking found 10 of Hugh's 58 cuts (17%, 1.1x chance), so Proposed cuts
+    is model-first: the free pass shows counted facts and no ranked list. Design's C1 to C3 need a
+    redraw; C5 to C9 stand.
 (b) **Suggested changes adopts Design's two lists, Additions and Cuts, with one rationale per
     card.** A model-contract change (prompt plus validator), then an eval re-run, which needs
     Hugh's OK on cost. It applies to the shipped panel as well as the hub: sub-project 8.
