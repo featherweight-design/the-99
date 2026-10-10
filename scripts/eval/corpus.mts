@@ -71,8 +71,15 @@ if (command === "gate") {
   if (!args.a || !args.b) throw new Error("usage: eval:corpus gate --a <f1,f2> --b <f1,f2> [--label-a v7] [--label-b v8] [--out <md>]");
   const cases = loadCorpus(CORPUS);
   const load = (list: string) => list.split(",").map((f) => readAnswers(f));
-  const sa = load(args.a);
-  const sb = load(args.b);
+  // Compared on the answers both arms hold: a sample the budget cut short in one arm would otherwise score different decks.
+  const ra = load(args.a);
+  const rb = load(args.b);
+  const n = Math.min(ra.length, rb.length);
+  const both = (x: AnswerRow[], y: AnswerRow[]) => x.filter((r) => y.some((q) => q.id === r.id));
+  const sa = Array.from({ length: n }, (_, i) => both(ra[i]!, rb[i]!));
+  const sb = Array.from({ length: n }, (_, i) => both(rb[i]!, ra[i]!));
+  const dropped = [...ra, ...rb].reduce((t, r) => t + r.length, 0) - [...sa, ...sb].reduce((t, r) => t + r.length, 0);
+  if (dropped > 0) console.log(`gate: ${dropped} answer(s) have no counterpart in the other arm and are left out`);
   const a = armStats(args["label-a"] ?? "contract 7", sa, cases);
   const b = armStats(args["label-b"] ?? "contract 8", sb, cases);
   const text = renderGate([a, b], gateChecks(a, b), Math.min(sa.length, sb.length));
@@ -90,6 +97,8 @@ if (command === "run") {
   if (!Number.isFinite(planDone) || planDone < 0 || planDone > 1) throw new Error(`eval:corpus run: --plan-done must be between 0 and 1 (got ${args["plan-done"]})`);
   // v1: what shipped (facts off, contract 7). v2: facts on, contract 7. v8: facts on and contract 8, the method behind OVERVIEW_V2_ENABLED.
   const v8 = args.prompt === "v8";
+  // The repair prompt follows the production switch (facts and contract 8 together), so `v2` (facts on, contract 7) has no repair that matches its write.
+  if (args.prompt === "v2" && !args["no-repair"]) throw new Error("eval:corpus run: --prompt v2 has no matching repair prompt; pass --no-repair, or use v1 or v8");
   const v2 = args.prompt !== "v1";
   const only = args.only ? new Set(args.only.split(",")) : null;
 
