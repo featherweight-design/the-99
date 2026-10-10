@@ -37,6 +37,13 @@ export type EditRow = CollectionItemIdentity & {
   quantity: number;
   /** The count the player was looking at. A mismatch refuses the edit with `stale`. */
   expected?: number;
+  /**
+   * The non-key columns for a row this edit CREATES: a printing fixed by re-picking, or another
+   * printing added beside the rest. Without them the new row stores a null `scryfall_id` and draws
+   * the set's representative art. A row that already exists keeps its own columns.
+   */
+  scryfallId?: string | null;
+  condition?: string | null;
 };
 
 export type CollectionChange =
@@ -203,7 +210,10 @@ export function planAdd(current: Map<string, Held>, items: Held[]): Planned[] {
   });
 }
 
-/** Edit: each row is set to its new count; a row the player names that does not exist starts bare. */
+/**
+ * Edit: each row is set to its new count. A row the player names that does not exist takes the
+ * row's own `scryfallId` and `condition`, or starts bare without them.
+ */
 export function planEdit(current: Map<string, Held>, rows: EditRow[]): Planned[] {
   if (new Set(rows.map(keyOf)).size !== rows.length) {
     throw new Error("a collection edit names one row twice");
@@ -214,7 +224,10 @@ export function planEdit(current: Map<string, Held>, rows: EditRow[]): Planned[]
     }
     const c = current.get(keyOf(r)) ?? null;
     const before = c && stateOf(c);
-    return planned(r, before, settle(r.quantity, { scryfallId: c?.scryfallId ?? null, condition: c?.condition ?? null }));
+    const attrs = c
+      ? { scryfallId: c.scryfallId, condition: c.condition }
+      : { scryfallId: r.scryfallId ?? null, condition: r.condition ?? null };
+    return planned(r, before, settle(r.quantity, attrs));
   });
 }
 

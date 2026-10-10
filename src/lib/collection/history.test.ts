@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { revertDiffers } from "./history";
+import { PgDialect } from "drizzle-orm/pg-core";
+import { listColumns, revertDiffers } from "./history";
 
 const id = { oracleId: "a", setCode: "lea", collectorNumber: "1", finish: "nonfoil" };
 const row = (before: number | null, after: number | null) => ({
@@ -22,5 +23,24 @@ describe("revertDiffers", () => {
 
   it("is true when the revert has nothing left to do on a row the entry changed", () => {
     expect(revertDiffers([row(null, 3)], [])).toBe(true);
+  });
+});
+
+describe("the list's copies figure", () => {
+  // Rendered, because the figure is SQL over the stored rows. `probe:collection-write` checks
+  // every entry's figure against its own rows on a real database; this pins which side is which.
+  const text = new PgDialect().sqlToQuery(listColumns).sql.replace(/\s+/g, " ");
+
+  it("counts copies up as after minus before, and down as before minus after, never netted", () => {
+    expect(text).toContain(
+      "greatest( coalesce((e -> 'after' ->> 'quantity')::int, 0) - coalesce((e -> 'before' ->> 'quantity')::int, 0), 0 )",
+    );
+    expect(text).toContain(
+      "greatest( coalesce((e -> 'before' ->> 'quantity')::int, 0) - coalesce((e -> 'after' ->> 'quantity')::int, 0), 0 )",
+    );
+  });
+
+  it("sums wide, since a sum of integer moves need not fit an integer", () => {
+    expect(text.match(/\)\), 0\)::bigint from jsonb_array_elements\(h\.rows\) e \) as copies_(up|down)/g)).toHaveLength(2);
   });
 });
