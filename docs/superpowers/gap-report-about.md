@@ -51,7 +51,7 @@ with `padding:30px 30px 34px`, so it sits 30px clear of the edge and never stick
 app has no top chrome at that width, so `top:0` puts the Contents label against the viewport edge
 the moment the page scrolls. The drawn clearance transfers; the property that produced it does not.
 
-**The code has 53 entries (was 48 before the five collection-edit entries, 2026-10-10; was 46: `credits` was added 2026-10-05, Hugh's one-entry ruling for credits, no version bump; was 45 before `suggested-changes` was added 2026-10-05, H35 ruling 7, a
+**The code has 53 entries (was 48 before the five collection-edit entries, 2026-10-10; was 47: `deck-stats` was added 2026-10-10, the Deck stats line's entry, no bump, switched; was 46: `credits` was added 2026-10-05, Hugh's one-entry ruling for credits, no version bump; was 45 before `suggested-changes` was added 2026-10-05, H35 ruling 7, a
 feature launch — see about.ts; before that it was 46, with `reservations` retired 2026-10-04, a
 removal) and the canvas drew 33.** Seven are the launch entries `help-me-choose`,
 `locked-cards`, `fits-your-decks`, `stand-ins` and `change-commander`, drawn by the launch-entries addendum, and
@@ -61,8 +61,8 @@ after #642 shipped the decklist's sort control; `commander-availability`, added 
 `review-and-commit` and `new-deck`, drawn on the §G template as R5; `informed-build`, which closes
 sub-project 2 of the deck-analysis line; `combo-awareness`, which closes sub-project 3; and
 `suggested-changes`, added 2026-10-05 (H35 ruling 7). All seven arrived after the canvas was
-drawn — fourteen additions and one retirement (`reservations`, which belonged to the canvas's
-33) for the net difference of 13. Earlier text here said "a handoff that drew thirty-four" — it drew
+drawn. Seven more followed: `credits` (2026-10-05), `deck-stats` (2026-10-10) and the five collection-edit entries (2026-10-10). That is twenty-one additions and one retirement (`reservations`, which belonged to the canvas's
+33) for the net difference of 20, and 33 + 20 = 53. Earlier text here said "a handoff that drew thirty-four" — it drew
 thirty-three, and the code's own figure has moved twice while this PR was in review, which is why
 `about.test.ts` now pins it rather than leaving it to be re-read.
 
