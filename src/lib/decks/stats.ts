@@ -12,6 +12,7 @@
 
 import { isLandFace } from "../cards/facet";
 import type { LandManaByCard, ManaSupply } from "../mana/supply";
+import type { SourceManaByCard } from "./source-mana";
 import type { JobRowsByCard, JobTally } from "./job-tally";
 
 export type GameResult = "win" | "loss" | "draw";
@@ -275,6 +276,8 @@ export type DeckStatsInput = {
   jobs?: JobRowsByCard | null;
   /** The colors each land can add, read from the catalog's text. Null where the read failed. */
   lands?: LandManaByCard | null;
+  /** The non-land mana sources and the colors each can add. Null where the read failed. */
+  sources?: SourceManaByCard | null;
 };
 
 export type TypeCurve = {

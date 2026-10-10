@@ -1,5 +1,5 @@
 {
-  "feature": "Deck stats, PRs 1-4: the switch, the placement shell, the curve card, the Jobs card and the Colors card",
+  "feature": "Deck stats, PRs 1-4b: the switch, the placement shell, the curve card, the Jobs card and the Mana colors card",
   "note": "Needs DECK_STATS_ENABLED=true on the server and STATS_DECK (a deck with at least one creature and one other non-land card, so pressing Creature shows both lit and dimmed squares). The list toolbar shows the Stats segment beside All and Shopping; the stats row presses it and shows the six Stats cards with the list tools hidden. The curve, Jobs and Colors cards draw data (Jobs needs the deck's cards labeled and a Ramp row above zero; Colors needs the deck's lands readable); the other three figures stay empty shells until their PRs.",
   "clearAbout": true,
   "rows": [
@@ -54,6 +54,16 @@
       "steps": [
         { "goto": "/decks/${STATS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
         { "clickRole": "button", "name": "^Show the deck as stats", "wait": "[data-colors-rows]", "scrollTo": "[data-stats-card=colors]", "settle": 800 }
+      ]
+    },
+    {
+      "id": "stats-colors-tip",
+      "label": "/decks/[id] Stats: the Mana colors card with its tooltip open",
+      "view": "src/components/decks/deck-stats-view.tsx",
+      "steps": [
+        { "goto": "/decks/${STATS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "button", "name": "^Show the deck as stats", "wait": "[data-colors-rows]", "scrollTo": "[data-stats-card=colors]", "settle": 800 },
+        { "clickRole": "button", "name": "^How this is counted", "wait": "[role=tooltip]", "settle": 400 }
       ]
     }
   ]

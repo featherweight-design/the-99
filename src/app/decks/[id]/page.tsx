@@ -45,6 +45,7 @@ import { loadJobRows } from "../../../lib/decks/job-rows";
 import { loadDeckMix } from "../../../lib/decks/deck-mix";
 import { settleLabelRead } from "../../../lib/decks/label-read-settle";
 import { loadLandMana } from "../../../lib/decks/land-mana";
+import { loadSourceMana } from "../../../lib/decks/source-mana";
 import { tuningEnabled } from "../../../lib/tuning/flag";
 import { noticesEnabled } from "../../../lib/notices/flag";
 import { loadDeckNotices } from "../../../lib/notices/read";
@@ -138,6 +139,12 @@ export default async function DeckBuilderPage({
   const statsLandsRead = deckStatsEnabled()
     ? early(detailRead.then((d) => (d
         ? perf.timed("statsLands", () => loadLandMana(d.cards, [...d.commander.colorIdentity, ...(d.partner?.colorIdentity ?? [])]))
+        : null)))
+    : null;
+  // The same card's non-land sources: which cards make mana comes from the labels, the colors from the text.
+  const statsSourcesRead = deckStatsEnabled()
+    ? early(detailRead.then((d) => (d
+        ? perf.timed("statsSources", () => loadSourceMana(d.cards, [...d.commander.colorIdentity, ...(d.partner?.colorIdentity ?? [])]))
         : null)))
     : null;
   // A 60-second cached read shared by both cached payloads below, resolved once rather than
@@ -530,6 +537,7 @@ export default async function DeckBuilderPage({
         ? {
             jobs: statsJobsRead ? await statsJobsRead : null,
             lands: statsLandsRead ? await statsLandsRead : null,
+            sources: statsSourcesRead ? await statsSourcesRead : null,
             commanders: [detail.commander, ...(detail.partner ? [detail.partner] : [])].map((c) => ({
               cmc: c.cmc ?? 0,
               typeLine: c.typeLine,

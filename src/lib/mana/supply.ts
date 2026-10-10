@@ -1,15 +1,19 @@
 // The deck's mana, asked for and made. One pure function, read-only over rows the deck page already
-// holds. Deck stats PR 4 draws card (b) from it; PR 4b extends THIS function (never a second one) to
-// attribute non-land sources by color, and Mana Balance is its second caller. Nothing here weights
-// anything: demand is the raw pip count (Ruling 10, 2026-10-09).
+// holds. Deck stats draws card (b) from it, and Mana Balance is its second caller. Nothing here
+// weights anything: demand is the raw pip count (Ruling 10, 2026-10-09).
 //
-// PR 4 scope, exactly: `supply[c].lands` is real land counting (READINESS Q1); `supply[c].nonland`
-// stays 0 for every color; a non-land mana source is counted once in `unattributedNonland` and
-// carries no color.
+// THE INTERFACE FOR A SECOND CALLER. `manaSupply(rows)` takes one row per distinct card; a land row
+// carries `produces` (`landProduces`), a non-land row carries `ramp: true` and `produces`
+// (`sourceProduces`). It returns `demand` (pips per color), `supply[c].lands` / `.nonland` (copies, a
+// source counted once for each color it adds), and `sources[c].lands` / `.nonland`: the card ids behind
+// every figure, one entry per copy, so `supply[c].lands === sources[c].lands.length` and a prescriptive
+// read can name WHICH cards make a color. A non-land source whose color cannot be read is counted in
+// `unattributedNonland` and appears in no `sources` list.
 
 import { isLandFace } from "../cards/facet";
 import { frontFaceOracle } from "../recs/faces";
-import { activatedFinds, BASIC_TYPES, CONDITIONAL_GRANT, fetchFinds, PICKED_COLOR, sacrificesItself, type LandText } from "../swaps/land";
+import { activatedFinds, BASIC_TYPES, CONDITIONAL_GRANT, fetchFinds, PICKED_COLOR, sacrificesItself, searchFinds, type Finds, type LandText } from "../swaps/land";
+import type { RampKind } from "../labels/types";
 import { manaNeeds } from "../profile/build";
 
 export const MANA_COLORS = ["W", "U", "B", "R", "G", "C"] as const;
@@ -24,16 +28,17 @@ export type LandManaByCard = Readonly<Record<string, readonly ManaColor[]>>;
 
 /** One row per distinct card in the frame being counted (the 99 and the commanders alike). */
 export type ManaSupplyCardRow = {
+  /** What `sources` lists this card as. */
+  id: string;
   typeLine: string;
   manaCost: string | null;
   /** Copies. Every figure below is in copies. */
   quantity: number;
-  /** For a LAND row: the colors it can add (`landProduces`), or its sources count as none. */
+  /** The colors the card can add: `landProduces` for a land, `sourceProduces` for a non-land source. */
   produces?: readonly ManaColor[];
-  /** For a NON-LAND row: it is a mana source (`classifyRoles` ramp, READINESS Q1). Counted, never
-   *  colored (PR 4). That is the role classifier's definition, deliberately not the Jobs card's
-   *  label-based Ramp row, so the two counts can differ. The caller flags the 99 only: a commander
-   *  that taps for mana is not counted here. */
+  /** For a NON-LAND row: it is a mana source (a label's `tapsForMana`, `fetchesLand` or
+   *  `makesTreasure`, or the classifier's ramp where there is no fresh label). The caller flags the 99
+   *  only: a commander that taps for mana is not counted here. */
   ramp?: boolean;
 };
 
@@ -41,10 +46,13 @@ export type ManaSupply = {
   /** Raw pips per color, copies counted. A HYBRID pip asks for either half, so it counts once for
    *  each half; `{C}` counts under C; generic, Phyrexian and `{2/W}` pips ask for nothing. */
   demand: Record<ManaColor, number>;
-  /** Land sources per color: a land counts once for each color it can add, so a dual counts twice.
-   *  `nonland` is 0 until PR 4b. */
+  /** Sources per color: a source counts once for each color it can add, so a dual counts twice. */
   supply: Record<ManaColor, { lands: number; nonland: number }>;
-  /** Copies of non-land mana sources, counted and not colored (PR 4 only). */
+  /** The card ids behind `supply`, one per copy. */
+  sources: Record<ManaColor, { lands: string[]; nonland: string[] }>;
+  /** Copies of non-land sources whose color was read, however many colors each makes. */
+  nonlandSources: number;
+  /** Copies of non-land mana sources whose color could not be read: counted nowhere on the card. */
   unattributedNonland: number;
   /** Copies of land cards, however many colors each makes. */
   lands: number;
@@ -68,11 +76,8 @@ function readFace(card: LandText, deck: readonly ManaColor[], out: Set<ManaColor
     }
   }
   const finds = fetchFinds(card) ?? activatedFinds(card);
-  if (finds) {
-    // Every basic type means an unrestricted search: the deck's colors, as for an any-color land.
-    if (finds.types.size === BASIC_TYPES.length) deck.forEach((c) => out.add(c));
-    else for (const t of finds.types) out.add(BASIC_TYPE[t]);
-  }
+  // Every basic type means an unrestricted search: the deck's colors, as for an any-color land.
+  if (finds) findsColors(finds, deck, out);
 }
 
 /**
@@ -106,23 +111,63 @@ export function landProduces(card: LandText, deckColors: readonly string[]): Man
   return MANA_COLORS.filter((c) => out.has(c));
 }
 
+/** The basics a land search can reach: the deck's colors for `a basic land`, else the named types. */
+function findsColors(finds: Finds, deck: readonly ManaColor[], out: Set<ManaColor>): void {
+  if (finds.types.size === BASIC_TYPES.length) deck.forEach((c) => out.add(c));
+  else for (const t of finds.types) out.add(BASIC_TYPE[t]);
+}
+
+/**
+ * What a NON-LAND mana source can add. The caller has already decided it IS a source, from a label's
+ * `rampKind` (labels carry no color, so the color is read here from the card's text, as the mana
+ * addendum's rule 1 says):
+ * - `tapsForMana` (a rock or a dork): every symbol in an "add" clause and an unconditional any-color
+ *   grant, by `readFace`, the land policy;
+ * - `fetchesLand`: the basics the search names, or the deck's colors for `a basic land`;
+ * - `makesTreasure`: any color, so the deck's colors;
+ * - null, a card with no fresh label: the classifier's ramp, which reads both of the first two.
+ * An empty result is a source whose color cannot be read.
+ */
+export function sourceProduces(card: LandText, kind: RampKind | null, deckColors: readonly string[]): ManaColor[] {
+  const out = new Set<ManaColor>();
+  const deck = COLORED.filter((c) => deckColors.some((d) => d.toUpperCase() === c));
+  if (kind === "makesTreasure") deck.forEach((c) => out.add(c));
+  if (kind === null || kind === "tapsForMana") readFace(card, deck, out);
+  if (kind === null || kind === "fetchesLand") {
+    const finds = searchFinds(card);
+    if (finds) findsColors(finds, deck, out);
+  }
+  return MANA_COLORS.filter((c) => out.has(c));
+}
+
 export function manaSupply(cards: readonly ManaSupplyCardRow[]): ManaSupply {
   const demand = zeros();
-  const lands = zeros();
+  const sources = Object.fromEntries(MANA_COLORS.map((c) => [c, { lands: [] as string[], nonland: [] as string[] }])) as ManaSupply["sources"];
   let landCopies = 0;
   let unattributedNonland = 0;
+  let nonlandSources = 0;
+  const credit = (card: ManaSupplyCardRow, side: "lands" | "nonland") => {
+    for (const c of new Set(card.produces ?? [])) for (let k = 0; k < card.quantity; k++) sources[c][side].push(card.id);
+  };
   for (const card of cards) {
     if (isLandFace(card.typeLine)) {
       landCopies += card.quantity;
-      for (const c of new Set(card.produces ?? [])) lands[c] += card.quantity;
+      credit(card, "lands");
       continue;
     }
     for (const pip of manaNeeds(card.manaCost)) {
       for (const half of pip) demand[half as ManaColor] += card.quantity;
     }
     demand.C += (card.manaCost?.match(/\{C\}/gi)?.length ?? 0) * card.quantity;
-    if (card.ramp) unattributedNonland += card.quantity;
+    if (!card.ramp) continue;
+    if ((card.produces ?? []).length === 0) unattributedNonland += card.quantity;
+    else {
+      nonlandSources += card.quantity;
+      credit(card, "nonland");
+    }
   }
-  const supply = Object.fromEntries(MANA_COLORS.map((c) => [c, { lands: lands[c], nonland: 0 }])) as ManaSupply["supply"];
-  return { demand, supply, unattributedNonland, lands: landCopies };
+  const supply = Object.fromEntries(
+    MANA_COLORS.map((c) => [c, { lands: sources[c].lands.length, nonland: sources[c].nonland.length }]),
+  ) as ManaSupply["supply"];
+  return { demand, supply, sources, nonlandSources, unattributedNonland, lands: landCopies };
 }

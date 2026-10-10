@@ -414,17 +414,19 @@ export function Decklist({
     // Null where the land read failed: the card then stays a shell rather than draw every land as
     // making nothing.
     const landsByCard = statsData.lands;
+    const sourcesByCard = statsData.sources;
     const deckColors = statsData.commanders.flatMap((c) => c.colorIdentity);
-    const mana = landsByCard
+    const mana = landsByCard && sourcesByCard
       ? manaSupply([
           ...cards.map((c) => ({
+            id: c.oracleId,
             typeLine: c.typeLine,
             manaCost: c.manaCost ?? null,
             quantity: c.quantity,
-            produces: landsByCard[c.oracleId] ?? landProduces({ name: c.name, typeLine: c.typeLine, oracleText: null }, deckColors),
-            ramp: c.role === "ramp",
+            produces: landsByCard[c.oracleId] ?? sourcesByCard[c.oracleId] ?? (isLandFace(c.typeLine) ? landProduces({ name: c.name, typeLine: c.typeLine, oracleText: null }, deckColors) : []),
+            ramp: c.oracleId in sourcesByCard,
           })),
-          ...statsData.commanders.map((c) => ({ typeLine: c.typeLine, manaCost: c.manaCost, quantity: 1 })),
+          ...statsData.commanders.map((c, i) => ({ id: `commander:${i}`, typeLine: c.typeLine, manaCost: c.manaCost, quantity: 1 })),
         ])
       : null;
     return { curve: manaCurve(list), types: typeCurve(list), jobs, mana };

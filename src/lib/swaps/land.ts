@@ -162,7 +162,7 @@ export function landCatch(card: LandText): "condition" | "utility" | null {
 
 export type Finds = { types: Set<BasicType>; basicOnly: boolean };
 
-const FETCH = /search your library for (?:up to (?:one|two)|an?|two) ([a-z ,]+?) cards?\b/;
+const FETCH = /search your library for (?:up to (?:one|two|three|four|x)|an?|two|three|four|x) ([a-z ,]+?) cards?\b/;
 
 /**
  * The land types a land finds when it is sacrificed to search, and whether it finds only basics.
@@ -190,6 +190,14 @@ export function activatedFinds(card: LandText): Finds | null {
     if (found) return found;
   }
   return null;
+}
+
+/**
+ * What a NON-LAND card's land search can find (Cultivate, Wood Elves): no sacrifice test and no activation
+ * test, because a spell or a trigger searches too. A land goes through `fetchFinds` / `activatedFinds`.
+ */
+export function searchFinds(card: LandText): Finds | null {
+  return parseFinds(stripReminders(frontText(card)));
 }
 
 function parseFinds(text: string): Finds | null {
