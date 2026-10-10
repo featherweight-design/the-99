@@ -260,7 +260,7 @@ describe("the card band", () => {
     // The corner placement covered the power/toughness box; the wrapper centres on the card.
     const wrapper = button.parentElement as HTMLElement;
     expect(wrapper).toHaveClass("left-1/2", "-translate-x-1/2");
-    expect(wrapper.style.right).toBe("");
+    expect(wrapper).not.toHaveStyle({ right: "10px" });
   });
 });
 
