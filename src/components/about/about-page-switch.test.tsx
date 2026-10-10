@@ -40,3 +40,19 @@ describe("an entry tied to a switch, on the page", () => {
     expect(index()).toBeNull();
   });
 });
+
+describe("the legacy page (no sheet), for a reader current by version", () => {
+  it("marks a newly enabled switched entry new and offers the way back, as the legacy gate sent them for it", () => {
+    process.env.NEVER_CUT_ENABLED = "true";
+    render(<AboutPage seen={ABOUT_VERSION} next="/decks" />);
+    expect(drawn()).toBeTruthy();
+    expect(index()).toBeNull(); // the index is the sheet's; the eyebrow and the mark are the legacy page's
+    expect(screen.getAllByRole("button", { name: /got it/i }).length).toBeGreaterThan(0);
+  });
+
+  it("leaves a reader who has met the entry alone: nothing to acknowledge, no dismiss", () => {
+    process.env.NEVER_CUT_ENABLED = "true";
+    render(<AboutPage seen={ABOUT_VERSION} seenIds={[switched.id]} next="/decks" />);
+    expect(screen.queryByRole("button", { name: /got it/i })).toBeNull();
+  });
+});

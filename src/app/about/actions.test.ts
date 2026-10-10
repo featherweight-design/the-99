@@ -45,8 +45,19 @@ describe("dismissAbout", () => {
   it("authenticates, records the current version, and returns the reader", async () => {
     const to = await dismiss("/decks?sort=name");
     expect(requireUserId).toHaveBeenCalledOnce();
-    expect(markAboutSeen).toHaveBeenCalledWith("user_1", ABOUT_VERSION);
+    expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, expect.any(Array));
     expect(to).toBe("/decks?sort=name");
+  });
+
+  it("records the switched entries this deployment draws too, so the legacy gate asks once", async () => {
+    extraEntries.push({ id: "switched-a", switch: "NEVER_CUT_ENABLED" });
+    try {
+      await dismiss("/decks");
+      const ids = (markAboutVisited.mock.calls.at(-1) as unknown as [string, number, string[]])[2];
+      expect(ids).toContain("switched-a");
+    } finally {
+      extraEntries.length = 0;
+    }
   });
 
   it("validates `next` HERE, because this is what decides the destination", async () => {
@@ -60,7 +71,7 @@ describe("dismissAbout", () => {
 
   it("records the acknowledgement even when the destination is refused", async () => {
     await dismiss("//evil.example");
-    expect(markAboutSeen).toHaveBeenCalledWith("user_1", ABOUT_VERSION);
+    expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, expect.any(Array));
   });
 });
 

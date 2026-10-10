@@ -15,6 +15,7 @@ import {
   REMOVE_CARD_DECKS,
   UPLOAD_CHOICE,
 } from "../../lib/about/fixtures";
+import { useIsDesktop } from "../ui/use-is-desktop";
 import { AddLine } from "../collection/add-line";
 import { HistoryEntryItem } from "../collection/history-list";
 import { ShortDeckWarning } from "../collection/short-deck-warning";
@@ -35,7 +36,6 @@ const lineProps = {
   picking: false,
   collapsed: false,
   pulse: null,
-  phone: false,
   disabled: false,
   onOpenPicker: noop,
   onChoose: noop,
@@ -46,11 +46,13 @@ const lineProps = {
 
 export function CollectionAddFigureBody() {
   const c = collectionEditCopy.add;
+  // The sheets read the breakpoint the same way: a phone line stacks its note and sizes its targets.
+  const phone = !useIsDesktop();
   return (
     <div className="flex flex-col gap-[10px]">
       <ul className="m-0 flex list-none flex-col gap-[8px] p-0">
         {ADD_CARDS_LINES.map((line) => (
-          <AddLine key={line.id} {...lineProps} line={line} />
+          <AddLine key={line.id} {...lineProps} phone={phone} line={line} />
         ))}
       </ul>
       <SaveBar summary={c.summary(3, 4)} save={c.save(4)} />
@@ -60,11 +62,12 @@ export function CollectionAddFigureBody() {
 
 export function EditCopiesFigureBody() {
   const c = collectionEditCopy.copies;
+  const phone = !useIsDesktop();
   return (
     <div className="flex flex-col gap-[10px]">
       <ul className="m-0 flex list-none flex-col gap-[8px] p-0">
         {EDIT_COPIES_LINES.map(({ note, ...line }) => (
-          <AddLine key={line.id} {...lineProps} line={line} note={note} />
+          <AddLine key={line.id} {...lineProps} phone={phone} line={line} note={note} />
         ))}
       </ul>
       <SaveBar summary="+1 · −1" save={c.save} />
