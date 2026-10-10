@@ -1,5 +1,5 @@
 import { edictEntry, keywordClaims, nonWeakness, readEvidence, refIndex } from "./claims";
-import { deckNameIndex, type FactCard, type SynopsisFacts } from "./facts";
+import { deckNameIndex, normalizeName, type FactCard, type SynopsisFacts } from "./facts";
 import type { SynopsisResponse, SynopsisResponseV8 } from "./response-schema";
 import {
   ASSESSMENT_TOPICS,
@@ -95,7 +95,11 @@ function normalize(reply: SynopsisResponseV8, facts: SynopsisFacts): Normalized 
   const keyCards = reply.keyCards.map((k) => {
     const e = readEvidence(k.evidence, refs, true);
     ev.keyCards.push(e.ids);
-    checks.keyCards!.push(first(e.reason, keyword(k.job)));
+    // The card itself must be among its evidence (plan 3.4): evidence about other cards says nothing
+    // for this item.
+    const own = deck.get(normalizeName(k.card));
+    const ownMissing = own && !e.ids.includes(own.oracleId) ? "evidence_not_in_deck" as const : null;
+    checks.keyCards!.push(first(e.reason, ownMissing, keyword(k.job)));
     return { card: k.card, claims: k.claims, job: k.job };
   });
 

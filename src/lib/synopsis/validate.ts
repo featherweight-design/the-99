@@ -277,8 +277,12 @@ function section<T>(
   if (reason !== null) return { verdict: { section: id, status: "refused", reason, failed, total }, kept };
   // Only what renders resolves: a dropped line's marks never reach the stored card map.
   for (const part of parts) {
+    // A truncated list renders only its first `max` survivors, so only those resolve.
+    let passed = 0;
     part.lines.forEach((l) => {
-      if (l.reason === null) Object.assign(found, l.found);
+      if (l.reason !== null) return;
+      if (part.kind === "list" && part.truncate && ++passed > part.range.max) return;
+      Object.assign(found, l.found);
     });
   }
   return { verdict: { section: id, status: "ok", failed: 0, total }, kept };

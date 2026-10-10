@@ -201,6 +201,26 @@ describe("validateSynopsisV8", () => {
     expect(r.evidence?.tips).toHaveLength(2);
   });
 
+  it("drops a Key card whose evidence omits the card itself", () => {
+    const reply = good();
+    reply.keyCards.push({ card: "Blasphemous Act", claims: ["wipes"], job: "Resets a lost board.", evidence: ["c9"] });
+    reply.keyCards[1] = { card: "Sol Ring", claims: ["ramp"], job: "Ramps you a turn ahead.", evidence: ["c3"] };
+    expect(validateSynopsisV8(reply, FACTS, CATALOG).keyCards?.map((k) => k.card)).not.toContain("Sol Ring");
+  });
+
+  it("resolves marks only for the weaknesses that render, not the candidates cut past the maximum", () => {
+    const reply = good();
+    reply.assessment = assessAll({
+      win_path: { verdict: "weakness", tier: "critical", line: "Only one finisher." },
+      interaction_speed: { verdict: "weakness", tier: "critical", line: "Few cheap answers on the stack." },
+      commander_dependence: { verdict: "weakness", tier: "moderate", line: "Leans on [[Kratos]] to start." },
+      graveyard_or_zone_hate: { verdict: "weakness", tier: "minor", line: "[[Rest in Peace]] shuts off the recursion." },
+    });
+    const r = validateSynopsisV8(reply, FACTS, CATALOG);
+    expect(r.weaknesses).toHaveLength(3);
+    expect(r.cards["rest in peace"]).toBeUndefined();
+  });
+
   it("refuses an overview that gives a card a keyword it lacks, and passes one it has", () => {
     const bad = good();
     bad.overview = "Attack with [[Impact Tremors]] to cascade into the finish, with [[Kratos]] close behind.";
