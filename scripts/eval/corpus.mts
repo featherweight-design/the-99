@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
-import { loadCorpus, renderMetrics, scoreCase, type Reply } from "./lib/corpus.mjs";
+import { loadCorpus, renderMetrics, scoreCase, toReply, type Reply } from "./lib/corpus.mjs";
 import { acquireRunLock, OVERVIEW_ACCURACY_LIMITS, readLedger, record, refusal, spent } from "./lib/ledger.mjs";
 
 /**
@@ -43,7 +43,7 @@ if (command === "score") {
   if (!args.answers || !args.label) throw new Error("usage: eval:corpus score --answers <file.jsonl> --label <name> [--out <md>]");
   const cases = loadCorpus(CORPUS);
   const rows = readAnswers(args.answers);
-  const answers = new Map(rows.map((a) => [a.id, a.reply]));
+  const answers = new Map(rows.map((a) => [a.id, toReply(a.reply)]));
   // A row that records the list it was written for must match the case's pin; older rows record none.
   for (const a of rows) {
     const pinned = cases.find((c) => c.id === a.id)?.deck.listFingerprint;

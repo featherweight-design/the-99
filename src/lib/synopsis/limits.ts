@@ -20,6 +20,17 @@ import { RESERVATION_TTL_MS } from "../model/allowance-rule";
 // 7: the Mulligan's budget restated in the prompt (eval harness, primer-budget-c): all four
 //    sections rendered on 100% of held-out answers, against 89% on 6. The validator is unchanged.
 export const SYNOPSIS_CONTRACT_VERSION = 7;
+// 8: the v2 method (plan 2026-10-10-overview-accuracy.md): a weakness checklist with tiers and
+//    evidence refs on every claim. Written only while `OVERVIEW_V2_ENABLED` is on.
+export const SYNOPSIS_CONTRACT_VERSION_V2 = 8;
+
+/** The contract a write is made under: 8 while the v2 method is on, 7 otherwise. */
+export function synopsisContractVersion(v2: boolean): number {
+  return v2 ? SYNOPSIS_CONTRACT_VERSION_V2 : SYNOPSIS_CONTRACT_VERSION;
+}
+
+/** The most cards one claim's evidence may cite (contract 8). */
+export const EVIDENCE_MAX = 4;
 
 /** A pending run older than this was abandoned; the read-time reaper fails it as `interrupted`
  *  and refunds its unit. Below `RESERVATION_TTL_MS`, so the reap always lands while the unit

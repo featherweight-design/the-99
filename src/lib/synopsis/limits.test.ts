@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  SYNOPSIS_CONTRACT_VERSION,
+  SYNOPSIS_CONTRACT_VERSION_V2,
+  synopsisContractVersion,
   SYNOPSIS_ANSWER_TOKENS_WORST_CASE,
   SYNOPSIS_MAX_TOKENS,
   SYNOPSIS_OBSERVED_MAX_OUTPUT_TOKENS,
@@ -16,5 +19,14 @@ describe("the output ceiling", () => {
   // A ceiling under the measured maximum cuts off an answer the harness accepted.
   it("clears the most output any measured answer used", () => {
     expect(SYNOPSIS_MAX_TOKENS).toBeGreaterThan(SYNOPSIS_OBSERVED_MAX_OUTPUT_TOKENS);
+  });
+});
+
+describe("the contract version", () => {
+  it("follows the v2 switch: 8 while it is on, 7 otherwise", () => {
+    expect(synopsisContractVersion(false)).toBe(SYNOPSIS_CONTRACT_VERSION);
+    expect(synopsisContractVersion(true)).toBe(SYNOPSIS_CONTRACT_VERSION_V2);
+    expect(SYNOPSIS_CONTRACT_VERSION).toBe(7);
+    expect(SYNOPSIS_CONTRACT_VERSION_V2).toBe(8);
   });
 });

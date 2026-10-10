@@ -61,6 +61,41 @@ export type Reply = {
   weaknesses: string[];
 };
 
+/**
+ * A reply as the model wrote it under either contract, as the scorer's `Reply`. Contract 8 carries
+ * its lines as `{ text, evidence }`, its tips with refs instead of names, and its weaknesses as
+ * the `assessment` checklist: only `weakness` verdicts with a tier and a line count, in the
+ * order the app renders them (critical, moderate, minor), led by the tier word, cut to three.
+ */
+export function toReply(raw: unknown): Reply {
+  const r = raw as {
+    overview: string;
+    primer: { strategy: (string | { text: string })[]; mulligan: { keep: (string | { text: string })[]; sendBack: (string | { text: string })[] }; tips: { cards?: string[]; text: string }[] };
+    keyCards: Reply["keyCards"];
+    weaknesses?: string[];
+    assessment?: { verdict: string; tier?: string; line?: string }[];
+  };
+  const text = (l: string | { text: string }) => (typeof l === "string" ? l : l.text);
+  const rank: Record<string, number> = { critical: 0, moderate: 1, minor: 2 };
+  const word = (t: string) => `${t[0]!.toUpperCase()}${t.slice(1)}`;
+  const weaknesses = r.weaknesses ?? (r.assessment ?? [])
+    .filter((a) => a.verdict === "weakness" && a.tier && a.tier in rank && a.line?.trim())
+    .map((a, i) => ({ a, i }))
+    .sort((x, y) => rank[x.a.tier!]! - rank[y.a.tier!]! || x.i - y.i)
+    .slice(0, 3)
+    .map(({ a }) => `${word(a.tier!)}: ${a.line!.trim()}`);
+  return {
+    overview: r.overview,
+    primer: {
+      strategy: r.primer.strategy.map(text),
+      mulligan: { keep: r.primer.mulligan.keep.map(text), sendBack: r.primer.mulligan.sendBack.map(text) },
+      tips: r.primer.tips.map((t) => ({ cards: t.cards ?? [], text: t.text })),
+    },
+    keyCards: r.keyCards,
+    weaknesses,
+  };
+}
+
 export type ClaimSection = "overview" | "strategy" | "mulligan" | "tip" | "keyCard" | "weakness";
 export type Claim = { section: ClaimSection; text: string; cards: string[] };
 export type Grade = "correct" | "wrong" | "ungraded";

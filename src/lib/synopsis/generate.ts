@@ -234,16 +234,17 @@ export async function factsFor(
 ): Promise<SynopsisFacts> {
   const ids = profile.cards.map((c) => c.oracleId);
   const texts = ids.length === 0 ? [] : await db
-    .select({ oracleId: cards.oracleId, oracleText: cards.oracleText })
+    .select({ oracleId: cards.oracleId, oracleText: cards.oracleText, keywords: cards.keywords })
     .from(cards)
     .where(inArray(cards.oracleId, ids));
   const anySize = v2 ? await loadComboFacts(profile) : null;
-  return buildSynopsisFacts(profile, new Map(texts.map((t) => [t.oracleId, t.oracleText])), await loadUniversalStaples(), anySize);
+  return buildSynopsisFacts(profile, new Map(texts.map((t) => [t.oracleId, t.oracleText])), await loadUniversalStaples(), anySize,
+    v2 ? new Map(texts.map((t) => [t.oracleId, t.keywords])) : null);
 }
 
 /** The catalog cards Weaknesses names that the deck does not hold. Exported for the eval harness,
  *  which must run this exact read rather than a copy. */
-export async function catalogFor(reply: SynopsisResponse, facts: SynopsisFacts): Promise<Map<string, Card>> {
+export async function catalogFor(reply: Pick<SynopsisResponse, "weaknesses">, facts: SynopsisFacts): Promise<Map<string, Card>> {
   const deck = deckNameIndex(facts.cards);
   const keys = [...new Set(reply.weaknesses.flatMap(marksIn).map(normalizeName))].filter((k) => !deck.has(k));
   if (keys.length === 0) return new Map();

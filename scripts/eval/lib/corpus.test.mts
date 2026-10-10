@@ -2,7 +2,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { claimsOf, gradeClaim, loadCorpus, renderMetrics, scoreCase, type CorpusCase, type Reply } from "./corpus.mjs";
+import { claimsOf, gradeClaim, loadCorpus, renderMetrics, scoreCase, toReply, type CorpusCase, type Reply } from "./corpus.mjs";
 
 const CORPUS = join(process.cwd(), "docs/superpowers/eval/corpus");
 const base = (gold: Partial<CorpusCase["gold"]>): CorpusCase => ({
@@ -107,5 +107,34 @@ describe("the metrics document", () => {
     expect(text).toContain("| t | 1 | 0 | 0 | 1 | n/a | 1/1 | 0/1 | no | none |");
     expect(text).toContain("weaknesses: wipes");
     expect(text).toContain("Skipped (no answer supplied): imotekh.");
+  });
+});
+
+describe("toReply", () => {
+  const v7 = reply({ overview: "O.", weaknesses: ["Slow."], primer: { strategy: ["S."], tips: [{ cards: ["A", "B"], text: "T." }] } });
+
+  it("passes a contract-7 reply through unchanged", () => {
+    expect(toReply(v7)).toEqual(v7);
+  });
+
+  it("reads a contract-8 reply: lines as text, tips without names, weaknesses from the checklist in render order, cut to three", () => {
+    const out = toReply({
+      overview: "O.",
+      primer: { strategy: [{ text: "S.", evidence: ["c1"] }], mulligan: { keep: [{ text: "K.", evidence: [] }], sendBack: [{ text: "B.", evidence: [] }] }, tips: [{ text: "T.", evidence: ["c1", "c2"] }] },
+      keyCards: [],
+      assessment: [
+        { topic: "win_path", verdict: "weakness", tier: "minor", line: "One finisher.", evidence: [] },
+        { topic: "interaction_speed", verdict: "weakness", tier: "critical", line: "No cheap stack answers.", evidence: [] },
+        { topic: "mana_and_colors", verdict: "not_a_weakness", evidence: [] },
+        { topic: "commander_dependence", verdict: "weakness", tier: "moderate", line: "Leans on the commander.", evidence: [] },
+        { topic: "combo_vulnerability", verdict: "weakness", tier: "minor", line: "Removal in response.", evidence: [] },
+        { topic: "graveyard_or_zone_hate", verdict: "unknown", evidence: [] },
+        { topic: "artifact_enchantment_removal", verdict: "weakness", line: "No tier, so no line.", evidence: [] },
+      ],
+    });
+    expect(out.primer.strategy).toEqual(["S."]);
+    expect(out.primer.mulligan).toEqual({ keep: ["K."], sendBack: ["B."] });
+    expect(out.primer.tips).toEqual([{ cards: [], text: "T." }]);
+    expect(out.weaknesses).toEqual(["Critical: No cheap stack answers.", "Moderate: Leans on the commander.", "Minor: One finisher."]);
   });
 });
