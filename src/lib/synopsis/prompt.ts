@@ -4,7 +4,7 @@ import { CHAR_BUDGETS, EVIDENCE_MAX, SECTION_COUNTS, TIP_MIN_CARDS } from "./lim
 import { colorLabel } from "../decks/format";
 import { isInfiniteOrGameEnding } from "../spellbook/combo-features";
 import { identityNameOf, type SynopsisFacts } from "./facts";
-import { weaknessLines } from "./validate-v8";
+import { normalizeV8, weaknessLines } from "./validate-v8";
 import type { SynopsisReply } from "./response-schema";
 import { ASSESSMENT_TOPICS, type CheckedSynopsis, type SectionId } from "./types";
 
@@ -200,7 +200,7 @@ export function overLengthLines(reply: SynopsisReply, sections: readonly Section
     check("tip", reply.primer.tips, CHAR_BUDGETS.tip);
   }
   if (sections.includes("weaknesses")) {
-    const lines = "assessment" in reply ? weaknessLines(reply as never) : (reply.weaknesses ?? []);
+    const lines = "assessment" in reply ? weaknessLines(normalizeV8(reply as never)) : (reply.weaknesses ?? []);
     check("weakness", lines, CHAR_BUDGETS.weakness);
   }
   if (sections.includes("keyCards")) check("key card job", reply.keyCards.map((k) => k.job), CHAR_BUDGETS.job);
