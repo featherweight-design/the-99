@@ -19,7 +19,11 @@ import { clearDormantLocks, pruneOrphanLocks, reviveDormantLocks } from "./locks
 import { pruneOrphanAssignments } from "./prune-assignments";
 import { clearPullReleases } from "./pull-release";
 import { commanderMoved } from "../commander-change/pending";
-import { readOwnedPrintings } from "../collection/owned-printings";
+import {
+  readDeckOwnedPrintings, readRecordedPrintingArt, recordedColumns, recordedKey, resolveDeckPrintings,
+  type DeckPrinting, type RecordedPrinting,
+} from "./printings";
+import { deckPrintingsEnabled } from "./printings-flag";
 import { loadPrices } from "./price-query";
 import { loadAvailability, loadDeckBuyRows } from "./availability-query";
 import type { Availability } from "./availability";
@@ -224,6 +228,32 @@ async function commitVersionIn(
     quantity: deckCards.quantity,
   }).from(deckCards).where(eq(deckCards.deckId, deckId)).for("update");
 
+  // THE PRINTING EACH CARD SHOWED, recorded at commit (deck printings): the deck's pick, then the
+  // Collection's, then the catalog's, the chain every deck surface draws. Off, nothing is recorded,
+  // and a null reads as today's resolver. Fail-soft: a failed read records nulls rather than
+  // failing the commit, because the version's cards are the commit and the printing is a caption.
+  const shown = deckPrintingsEnabled()
+    ? (await resolveDeckPrintings(
+        deck.userId,
+        deckId,
+        [...rows.map((r) => r.oracleId), deck.commanderOracleId, ...(deck.partnerOracleId ? [deck.partnerOracleId] : [])],
+        { usePicks: true },
+      )).printings
+    : new Map<string, DeckPrinting>();
+  const recorded = (oracleId: string | null) => recordedColumns(shown, oracleId);
+  if (shown.size > 0) {
+    const commander = recorded(deck.commanderOracleId);
+    const partner = recorded(deck.partnerOracleId);
+    await tx.update(deckVersions)
+      .set({
+        commanderSetCode: commander.setCode,
+        commanderCollectorNumber: commander.collectorNumber,
+        partnerSetCode: partner.setCode,
+        partnerCollectorNumber: partner.collectorNumber,
+      })
+      .where(eq(deckVersions.id, inserted.id));
+  }
+
   if (rows.length > 0) {
     await tx.insert(deckVersionCards).values(
       rows.map((r) => ({
@@ -231,6 +261,7 @@ async function commitVersionIn(
         oracleId: r.oracleId,
         quantity: r.quantity,
         since: inherited.get(r.oracleId) ?? now,
+        ...recorded(r.oracleId),
       })),
     );
   }
@@ -526,6 +557,8 @@ export async function loadVersionDiff(
     manaCost: cards.manaCost,
     layout: cards.layout,
     imageUri: cards.imageUri,
+    setCode: deckVersionCards.setCode,
+    collectorNumber: deckVersionCards.collectorNumber,
   }).from(deckVersionCards)
     .innerJoin(cards, eq(cards.oracleId, deckVersionCards.oracleId))
     .where(inArray(deckVersionCards.versionId, [versionId, previousVersionId]));
@@ -567,7 +600,7 @@ export async function loadVersionDiff(
     // The throwing read, not `resolveOwnedPrintings`: a failed read there answers "owns
     // nothing", which these rows would draw as a "not owned" dot and a buy tag on cards the
     // reader holds. A failure here reaches `getVersionDiff`'s caller as an unavailable diff.
-    readOwnedPrintings(userId, all.map((c) => c.oracleId)),
+    readDeckOwnedPrintings(userId, deckId, all.map((c) => c.oracleId)),
     loadPrices(pricedIds(all)),
     // Shopping's own bill for this deck, so a row's tag is Shopping's answer rather than a second
     // reading of ownership. User-wide claims inside, narrowed to this deck's rows.
@@ -587,10 +620,28 @@ export async function loadVersionDiff(
     surplus: new Map([...vantage].filter(([id]) => draft.has(id))),
     free: new Map([...vantage].filter(([id]) => !draft.has(id))),
   };
+  // THE PRINTING EACH VERSION RECORDED (deck printings), where it recorded one: an In row is the
+  // newer version's card, an Out row the older one's. A version committed before the line recorded
+  // nothing and draws today's art, with no marker.
+  const recordedIn = new Map<string, RecordedPrinting>();
+  const recordedOut = new Map<string, RecordedPrinting>();
+  for (const r of rows) {
+    if (r.setCode === null || r.collectorNumber === null) continue;
+    const into = r.versionId === versionId ? recordedIn : recordedOut;
+    into.set(r.oracleId, { oracleId: r.oracleId, setCode: r.setCode, collectorNumber: r.collectorNumber });
+  }
+  const recordedArt = deckPrintingsEnabled() && (recordedIn.size > 0 || recordedOut.size > 0)
+    ? await readRecordedPrintingArt([...recordedIn.values(), ...recordedOut.values()]).catch(() => null)
+    : null;
+  const asRecorded = (recorded: Map<string, RecordedPrinting>) => (row: VersionDiffCard): VersionDiffCard => {
+    const at = recorded.get(row.oracleId);
+    const art = at ? recordedArt?.get(recordedKey(at)) : undefined;
+    return art ? { ...row, imageUri: art.imageUri ?? row.imageUri, printedName: art.printedName } : row;
+  };
   return {
-    in: assembleVersionRows(ins, owned, priced, claims),
+    in: assembleVersionRows(ins, owned, priced, claims).map(asRecorded(recordedIn)),
     // An Out row draws no tag, and its claims were not read: its buy is 0 by construction.
-    out: assembleVersionRows(outs, owned, priced, claims).map((c) => ({ ...c, buy: 0 })),
+    out: assembleVersionRows(outs, owned, priced, claims).map(asRecorded(recordedOut)).map((c) => ({ ...c, buy: 0 })),
     newestAsOf: priced.newestAsOf,
   };
 }

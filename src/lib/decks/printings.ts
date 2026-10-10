@@ -26,6 +26,7 @@ import {
   type BrowsePrinting,
 } from "../collection/browse";
 import { recordSoftFailure } from "../cache/soft-failure";
+import { deckPrintingsEnabled } from "./printings-flag";
 
 /** A deck's pick as stored: `set_code` lowercase, `collector_number` text. */
 export type DeckPick = { setCode: string; collectorNumber: string };
@@ -214,4 +215,133 @@ export async function resolveDeckPrintings(
     recordSoftFailure();
     return { printings: new Map(), heldPicks: new Map() };
   });
+}
+
+/**
+ * The printing this deck shows for each card the player OWNS, in `resolveOwnedPrintings`' shape:
+ * a card they do not own is absent, so every caller's "fall back to the oracle-level art" stays
+ * exactly as it was. The deck's step follows `DECK_PRINTINGS_ENABLED`. Fail-soft.
+ */
+export async function resolveDeckOwnedPrintings(
+  userId: string,
+  deckId: string,
+  oracleIds: string[],
+): Promise<Map<string, DeckPrinting>> {
+  const { printings } = await resolveDeckPrintings(userId, deckId, oracleIds, { usePicks: deckPrintingsEnabled() });
+  return ownedOnly(printings);
+}
+
+/** The same, and it THROWS on a failed read, for a caller that states ownership from it. */
+export async function readDeckOwnedPrintings(
+  userId: string,
+  deckId: string,
+  oracleIds: string[],
+): Promise<Map<string, DeckPrinting>> {
+  const { printings } = await readDeckPrintings(userId, deckId, oracleIds, { usePicks: deckPrintingsEnabled() });
+  return ownedOnly(printings);
+}
+
+function ownedOnly(printings: Map<string, DeckPrinting>): Map<string, DeckPrinting> {
+  return new Map([...printings].filter(([, p]) => p.source !== "catalog"));
+}
+
+/**
+ * Each deck's commander art, for a grid of deck tiles (`/decks`, Home): the deck's own pick of
+ * its commander when held, else the Collection's. One collection read and one picks read for the
+ * whole grid, keyed by deck id; a deck whose commander the player does not own is absent.
+ * Fail-soft: an empty map keeps every tile on the oracle-level art.
+ */
+export async function resolveCommanderPrintingsByDeck(
+  userId: string,
+  rows: { deckId: string; commanderOracleId: string }[],
+): Promise<Map<string, DeckPrinting>> {
+  const out = new Map<string, DeckPrinting>();
+  if (rows.length === 0) return out;
+  try {
+    const [picks, collectionRows] = await Promise.all([
+      deckPrintingsEnabled()
+        ? readDeckPicks(userId, rows.map((r) => r.deckId))
+        : Promise.resolve(new Map<string, Map<string, DeckPick>>()),
+      selectCollectionRows(userId, [...new Set(rows.map((r) => r.commanderOracleId))]),
+    ]);
+    const owned = new Map(aggregateCollection(collectionRows).map((c) => [c.oracleId, c]));
+    for (const row of rows) {
+      const card = owned.get(row.commanderOracleId);
+      if (!card) continue;
+      const held = heldPrintingFor(card.printings, picks.get(row.deckId)?.get(row.commanderOracleId));
+      const p = held ?? resolvedPrinting(card);
+      if (!p) continue;
+      out.set(row.deckId, {
+        quantity: card.quantity,
+        printedName: held ? cardArt(card.name, held).printedName : card.printedName,
+        imageUri: p.imageUri,
+        artCropUri: p.artCropUri ?? null,
+        setCode: p.setCode,
+        collectorNumber: p.collectorNumber,
+        source: held ? "deck" : "collection",
+      });
+    }
+    return out;
+  } catch {
+    recordSoftFailure();
+    return new Map();
+  }
+}
+
+/** A printing a version recorded, as `(oracle_id, set_code, collector_number)`. */
+export type RecordedPrinting = { oracleId: string; setCode: string; collectorNumber: string };
+
+export const recordedKey = (p: RecordedPrinting) =>
+  `${p.oracleId}|${p.setCode.toLowerCase()}|${p.collectorNumber}`;
+
+/**
+ * The art and printed name of printings a version recorded, keyed by `recordedKey`. A recorded
+ * printing the catalog no longer lists is absent, and its row draws today's art.
+ */
+export async function readRecordedPrintingArt(
+  recorded: RecordedPrinting[],
+): Promise<Map<string, { imageUri: string | null; artCropUri: string | null; printedName: string | null }>> {
+  const out = new Map<string, { imageUri: string | null; artCropUri: string | null; printedName: string | null }>();
+  const wanted = [...new Map(recorded.map((r) => [recordedKey(r), r])).values()];
+  if (wanted.length === 0) return out;
+  const { rows } = await db.execute<{
+    oracle_id: string; set_code: string; collector_number: string; name: string;
+    image_uri: string | null; art_crop_uri: string | null; flavor_name: string | null;
+  }>(sql`
+    select p.oracle_id, p.set_code, p.collector_number, c.name,
+           coalesce(p.image_uri, c.image_uri) as image_uri,
+           coalesce(p.art_crop_uri, c.art_crop_uri) as art_crop_uri,
+           p.flavor_name
+    from printings p
+    join cards c on c.oracle_id = p.oracle_id
+    where (p.oracle_id, p.set_code, p.collector_number) in (
+      select * from unnest(
+        ${sql.param(wanted.map((w) => w.oracleId))}::uuid[],
+        ${sql.param(wanted.map((w) => w.setCode.toLowerCase()))}::text[],
+        ${sql.param(wanted.map((w) => w.collectorNumber))}::text[]
+      )
+    )
+  `);
+  for (const r of rows) {
+    out.set(recordedKey({ oracleId: r.oracle_id, setCode: r.set_code, collectorNumber: r.collector_number }), {
+      imageUri: r.image_uri,
+      artCropUri: r.art_crop_uri,
+      printedName: r.flavor_name !== null && r.flavor_name !== r.name ? r.flavor_name : null,
+    });
+  }
+  return out;
+}
+
+/**
+ * The version columns for the printing a card showed at commit: lowercase set code as stored, or
+ * both null when nothing resolved or the catalog lists no printing for the card (`""`).
+ */
+export function recordedColumns(
+  shown: Map<string, DeckPrinting>,
+  oracleId: string | null,
+): { setCode: string | null; collectorNumber: string | null } {
+  const p = oracleId ? shown.get(oracleId) : undefined;
+  return p && p.setCode !== ""
+    ? { setCode: p.setCode.toLowerCase(), collectorNumber: p.collectorNumber }
+    : { setCode: null, collectorNumber: null };
 }

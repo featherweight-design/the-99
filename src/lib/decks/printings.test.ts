@@ -12,6 +12,7 @@ const state = vi.hoisted(() => ({
   picks: [] as unknown[],
   catalog: [] as unknown[],
   cards: [] as unknown[],
+  recorded: [] as unknown[],
   fail: false,
 }));
 
@@ -25,6 +26,7 @@ vi.mock("../../db", () => ({
       if (state.fail) throw new Error("down");
       if (text.includes("from deck_printings")) return { rows: state.picks };
       if (text.includes("from cards c")) return { rows: state.catalog };
+      if (text.includes("from printings p")) return { rows: state.recorded };
       return { rows: [] };
     },
   },
@@ -42,7 +44,10 @@ vi.mock("../collection/browse", async (importActual) => {
   };
 });
 
-import { heldPrintingFor, readDeckPrintings, resolveDeckPrintings } from "./printings";
+import {
+  heldPrintingFor, readDeckPrintings, readRecordedPrintingArt, recordedColumns, recordedKey,
+  resolveCommanderPrintingsByDeck, resolveDeckOwnedPrintings, resolveDeckPrintings, type DeckPrinting,
+} from "./printings";
 
 function printing(setCode: string, collectorNumber: string, extra: Partial<BrowsePrinting> = {}): BrowsePrinting {
   return {
@@ -64,7 +69,9 @@ beforeEach(() => {
   state.picks = [];
   state.catalog = [];
   state.cards = [];
+  state.recorded = [];
   state.fail = false;
+  process.env.DECK_PRINTINGS_ENABLED = "true";
 });
 
 describe("heldPrintingFor", () => {
@@ -151,5 +158,86 @@ describe("readDeckPrintings", () => {
     const soft = await resolveDeckPrintings("u", DECK, [OWNED], { usePicks: true });
     expect(soft.printings.size).toBe(0);
     expect(soft.heldPicks.size).toBe(0);
+  });
+});
+
+const DECK_B = "44444444-4444-4444-8444-444444444444";
+
+describe("resolveDeckOwnedPrintings", () => {
+  it("answers owned cards only, so a caller's oracle-level fallback is untouched", async () => {
+    state.cards = [ownedCard([printing("KHM", "31")])];
+    state.catalog = [{
+      oracle_id: UNOWNED, name: "Cultivate", set_code: "m21", collector_number: "177",
+      image_uri: "img-u", art_crop_uri: null, flavor_name: null,
+    }];
+    const owned = await resolveDeckOwnedPrintings("u", DECK, [OWNED, UNOWNED]);
+    expect([...owned.keys()]).toEqual([OWNED]);
+  });
+
+  it("follows the switch for the deck's step", async () => {
+    state.cards = [ownedCard([printing("C21", "263"), printing("KHM", "31")])];
+    state.picks = [{ deck_id: DECK, oracle_id: OWNED, set_code: "khm", collector_number: "31" }];
+    expect((await resolveDeckOwnedPrintings("u", DECK, [OWNED])).get(OWNED)?.setCode).toBe("KHM");
+    process.env.DECK_PRINTINGS_ENABLED = "";
+    expect((await resolveDeckOwnedPrintings("u", DECK, [OWNED])).get(OWNED)?.setCode).toBe("C21");
+  });
+});
+
+describe("resolveCommanderPrintingsByDeck", () => {
+  it("keys by deck, so two decks led by one card draw their own picks", async () => {
+    state.cards = [ownedCard([printing("C21", "263"), printing("KHM", "31")])];
+    state.picks = [
+      { deck_id: DECK, oracle_id: OWNED, set_code: "khm", collector_number: "31" },
+    ];
+    const byDeck = await resolveCommanderPrintingsByDeck("u", [
+      { deckId: DECK, commanderOracleId: OWNED },
+      { deckId: DECK_B, commanderOracleId: OWNED },
+    ]);
+    expect(byDeck.get(DECK)).toMatchObject({ setCode: "KHM", source: "deck" });
+    expect(byDeck.get(DECK_B)).toMatchObject({ setCode: "C21", source: "collection" });
+  });
+
+  it("reads no picks with the switch off, and fails soft to an empty map", async () => {
+    process.env.DECK_PRINTINGS_ENABLED = "";
+    state.cards = [ownedCard([printing("C21", "263"), printing("KHM", "31")])];
+    state.picks = [{ deck_id: DECK, oracle_id: OWNED, set_code: "khm", collector_number: "31" }];
+    const off = await resolveCommanderPrintingsByDeck("u", [{ deckId: DECK, commanderOracleId: OWNED }]);
+    expect(off.get(DECK)?.setCode).toBe("C21");
+    expect(state.texts.some((t) => t.includes("from deck_printings"))).toBe(false);
+    state.fail = true;
+    expect((await resolveCommanderPrintingsByDeck("u", [{ deckId: DECK, commanderOracleId: OWNED }])).size).toBe(0);
+  });
+});
+
+describe("recordedColumns", () => {
+  const shown = new Map<string, DeckPrinting>([
+    [OWNED, { quantity: 1, printedName: null, imageUri: null, artCropUri: null, setCode: "KHM", collectorNumber: "31", source: "deck" }],
+    [UNOWNED, { quantity: 0, printedName: null, imageUri: "x", artCropUri: null, setCode: "", collectorNumber: "", source: "catalog" }],
+  ]);
+  it("records the lowercase set code a version stores", () => {
+    expect(recordedColumns(shown, OWNED)).toEqual({ setCode: "khm", collectorNumber: "31" });
+  });
+  it("records nothing for an unresolved card, a card with no printing, or no card", () => {
+    expect(recordedColumns(shown, UNOWNED)).toEqual({ setCode: null, collectorNumber: null });
+    expect(recordedColumns(shown, "missing")).toEqual({ setCode: null, collectorNumber: null });
+    expect(recordedColumns(shown, null)).toEqual({ setCode: null, collectorNumber: null });
+  });
+});
+
+describe("readRecordedPrintingArt", () => {
+  it("looks up each recorded printing once, by its three-part key", async () => {
+    state.recorded = [{
+      oracle_id: OWNED, set_code: "khm", collector_number: "31", name: "Sol Ring",
+      image_uri: "img", art_crop_uri: "crop", flavor_name: "Renamed",
+    }];
+    const art = await readRecordedPrintingArt([
+      { oracleId: OWNED, setCode: "KHM", collectorNumber: "31" },
+      { oracleId: OWNED, setCode: "khm", collectorNumber: "31" },
+    ]);
+    expect(art.get(recordedKey({ oracleId: OWNED, setCode: "KHM", collectorNumber: "31" })))
+      .toEqual({ imageUri: "img", artCropUri: "crop", printedName: "Renamed" });
+    const read = state.texts.find((t) => t.includes("from printings p"))!;
+    expect(read).toContain("(p.oracle_id, p.set_code, p.collector_number) in");
+    expect(read).toContain("unnest(");
   });
 });

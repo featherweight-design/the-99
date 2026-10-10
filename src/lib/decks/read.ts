@@ -19,10 +19,12 @@ import {
 } from "../../db/schema";
 import { ownedCardsWhere } from "../collection/owned-cards";
 import { commanderDisplayName } from "../cards/printed-name";
+import { resolveOwnedPrintings } from "../collection/owned-printings";
 import {
-  resolveOwnedPrintings,
-  type OwnedPrinting,
-} from "../collection/owned-printings";
+  resolveCommanderPrintingsByDeck,
+  resolveDeckOwnedPrintings,
+  type DeckPrinting,
+} from "./printings";
 import { lockedOracleIds } from "./locks";
 import { neverCutEnabled } from "./never-cut-flag";
 import { proxiedOracleIds, proxyCounts, type ProxyCount } from "./proxies";
@@ -460,7 +462,9 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
           return null;
         })
       : null,
-    resolveOwnedPrintings(userId, [...ownedIds, ...commanderIds]),
+    // The deck's own printing picks first (deck printings), then the Collection's: one chain for
+    // every surface, so the rows, the card details they open and the export name one printing.
+    resolveDeckOwnedPrintings(userId, deckId, [...ownedIds, ...commanderIds]),
     readNoteFlags([...cardRows.map((r) => r.oracleId), ...commanderIds]),
   ]);
 
@@ -1328,9 +1332,15 @@ export async function listDecksWithStats(
   // in another printing drew art that is not on the card in the box. One query for
   // the whole grid, and fail-soft: an unresolved commander keeps the oracle art,
   // which is what every tile drew before this.
+  // Each deck's own pick of its commander comes first (deck printings), so the tile draws the
+  // copy that deck shows, keyed by DECK rather than by card: two decks led by one card can pick
+  // different printings.
   const ownedCommanders = opts.includeCommanderArt && rows.length > 0
-    ? await resolveOwnedPrintings(userId, rows.map((r) => r.commanderOracleId))
-    : new Map<string, OwnedPrinting>();
+    ? await resolveCommanderPrintingsByDeck(
+        userId,
+        rows.map((r) => ({ deckId: r.id, commanderOracleId: r.commanderOracleId })),
+      )
+    : new Map<string, DeckPrinting>();
 
   return rows.map((row) => {
     const proxies = proxiedByDeck.get(row.id);
@@ -1357,12 +1367,12 @@ export async function listDecksWithStats(
       commanderName: row.commanderName,
       // The name of whichever printing the art below came from, so a renamed copy
       // is not captioned with the oracle name over its own art.
-      commanderPrintedName: ownedCommanders.get(row.commanderOracleId)?.printedName ?? null,
+      commanderPrintedName: ownedCommanders.get(row.id)?.printedName ?? null,
       commanderColorIdentity: row.commanderColorIdentity,
       commanderImageUri:
-        ownedCommanders.get(row.commanderOracleId)?.imageUri ?? row.commanderImageUri,
+        ownedCommanders.get(row.id)?.imageUri ?? row.commanderImageUri,
       commanderArtCropUri:
-        ownedCommanders.get(row.commanderOracleId)?.artCropUri ?? row.commanderArtCropUri,
+        ownedCommanders.get(row.id)?.artCropUri ?? row.commanderArtCropUri,
       partnerName: row.partnerName,
       partnerColorIdentity: row.partnerColorIdentity,
       folderId: row.folderId,
