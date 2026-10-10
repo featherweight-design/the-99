@@ -84,6 +84,15 @@ describe("claim grades", () => {
     expect(s.missed.anchors).toEqual(["tyrant"]);
     expect(s.claims).toEqual({ total: 2, correct: 0, wrong: 0, ungraded: 2 });
   });
+  it("loses an anchor whose tip is negated or hit by a wrong rule, not only one that is absent", () => {
+    const c = base({ wrong: [{ id: "w", cards: ["A card"], pattern: "mill", why: "does not mill, ever" }], right: [{ id: "r", cards: ["A card", "B card"], note: "n" }] });
+    const lost = (text: string, section: "tip" | "overview" = "tip") =>
+      scoreCase(c, reply(section === "tip" ? { primer: { tips: [{ cards: ["A card", "B card"], text }] } } : { overview: text })).missed.anchors;
+    expect(lost("[[A card]] with [[B card]].")).toEqual([]);
+    expect(lost("[[A card]] does not work with [[B card]].")).toEqual(["r"]);
+    expect(lost("[[A card]] mills with [[B card]].")).toEqual(["r"]);
+    expect(lost("[[A card]] with [[B card]].", "overview")).toEqual(["r"]);
+  });
   it("splits an overview into sentences and reads marks off every section", () => {
     const cl = claimsOf(reply({ overview: "A [[X]]. B [[Y]]!", keyCards: [{ card: "Z", job: "j" }], weaknesses: ["w [[W]]"] }));
     expect(cl.map((x) => x.section)).toEqual(["overview", "overview", "keyCard", "weakness"]);

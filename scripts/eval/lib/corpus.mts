@@ -134,7 +134,8 @@ export function scoreCase(c: CorpusCase, reply: Reply): Score {
   const mull = [...reply.primer.mulligan.keep, ...reply.primer.mulligan.sendBack];
   const tied = g.mulliganPieces.length === 0 ? null : mull.some((t) => names_in(t, g.mulliganPieces).length > 0);
 
-  const anchors = g.right.filter((r) => !claims.some((cl) => namesAll(`${cl.text} ${cl.cards.join(" ")}`, r.cards))).map((r) => r.id);
+  const survived = new Set(grades.flatMap((x) => (x.grade === "correct" && x.ruleId ? [x.ruleId] : [])));
+  const anchors = g.right.filter((r) => !survived.has(r.id)).map((r) => r.id);
 
   return {
     id: c.id,

@@ -36,15 +36,23 @@ const CORPUS_URL = new URL("corpus/", EVAL);
 const CORPUS = fileURLToPath(CORPUS_URL);
 const LEDGER = fileURLToPath(new URL("ledger-overview-accuracy.jsonl", EVAL));
 
-type AnswerRow = { id: string; prompt?: string; reply: Reply };
+type AnswerRow = { id: string; prompt?: string; listFingerprint?: string; reply: Reply };
 const readAnswers = (path: string): AnswerRow[] => readFileSync(path, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l) as AnswerRow);
 
 if (command === "score") {
   if (!args.answers || !args.label) throw new Error("usage: eval:corpus score --answers <file.jsonl> --label <name> [--out <md>]");
   const cases = loadCorpus(CORPUS);
-  const answers = new Map(readAnswers(args.answers).map((a) => [a.id, a.reply]));
-  const scores = cases.filter((c) => answers.has(c.id)).map((c) => scoreCase(c, answers.get(c.id)!));
-  const skipped = cases.filter((c) => !answers.has(c.id)).map((c) => c.id);
+  const rows = readAnswers(args.answers);
+  const answers = new Map(rows.map((a) => [a.id, a.reply]));
+  // A row that records the list it was written for must match the case's pin; older rows record none.
+  for (const a of rows) {
+    const pinned = cases.find((c) => c.id === a.id)?.deck.listFingerprint;
+    if (a.listFingerprint && pinned && a.listFingerprint !== pinned) throw new Error(`eval:corpus score: ${a.id} was answered for list ${a.listFingerprint.slice(0, 8)}, the corpus pins ${pinned.slice(0, 8)}`);
+  }
+  // A case with no pinned list fingerprint cannot be shown to describe the list the answer was written for.
+  const scorable = (c: (typeof cases)[number]) => answers.has(c.id) && c.deck.listFingerprint !== null;
+  const scores = cases.filter(scorable).map((c) => scoreCase(c, answers.get(c.id)!));
+  const skipped = cases.filter((c) => !scorable(c)).map((c) => (c.deck.listFingerprint === null ? `${c.id} (list not pinned)` : c.id));
   const text = renderMetrics(args.label, scores, skipped);
   if (args.out) writeFileSync(args.out, text);
   console.log(text);
@@ -118,7 +126,7 @@ if (command === "run") {
     if (!out.ok) { console.log(`  ${out.errorClass}`); continue; }
     const checked = validateSynopsis(out.value, facts, await catalogFor(out.value, facts));
     console.log(`  ${checked.verdicts.map((v) => `${v.section}:${v.status}`).join(" ")}`);
-    appendFileSync(args.out, `${JSON.stringify({ id: c.id, prompt: args.prompt, usd, reply: out.value })}\n`);
+    appendFileSync(args.out, `${JSON.stringify({ id: c.id, prompt: args.prompt, listFingerprint: live, usd, reply: out.value })}\n`);
   }
   process.exit(0);
 }
