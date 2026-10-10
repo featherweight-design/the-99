@@ -370,7 +370,7 @@ describe("validateSuggestions", () => {
 });
 
 describe("a staple's figure cited as a decklist citation", () => {
-  const staples = { ...pack, staples: [{ oracleId: "ring", name: "Sol Ring", commanders: 415, commanderTotal: 431 }] };
+  const staples: EvidencePack = { ...pack, staples: [{ oracleId: "ring", name: "Sol Ring", commanders: 415, commanderTotal: 431, owned: true }] };
   const cite = (value: string) => validateSuggestions({
     response: { additions: [{ ...good, evidence: [{ kind: "decklist", value }] }], cuts: [] }, pack: staples, resolveName,
   });
