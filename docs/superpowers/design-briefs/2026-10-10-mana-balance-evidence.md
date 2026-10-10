@@ -28,7 +28,7 @@ B (`The 99 - Tuning Hub (R1) · B Mana Balance.dc.html`, frames B1 to B9; the sa
 | B1 / B1b ready state: the `Color · Cost · Sources · Status` table | **Superseded.** The Status column is a verdict. `ManaSourceTable` (`design-tables/tuning-hub.md`, "ManaSourceTable") needs a new column set |
 | B1 "Additions and Cuts" with `Apply all` | **Superseded** by help on request, below |
 | B2 to B6 Look deeper (tier 2), its band, credits, running, refused, failed | **Out of scope for this round.** Tier 2 is a later sub-project; draw no band, no credit line |
-| B7 thin EDHREC data | Stands for staples: no staple row, a dashed line says why (ruling 6) |
+| B7 thin EDHREC data | **Does not stand as drawn.** The staple read returns candidates, an empty list, or null (a failed read). An empty list cannot say why: the index may be thin, or every indexed card may already be in the deck or filtered out. Draw one neutral no-staples state that gives no reason. Naming a reason needs metadata engineering has not built (open question 5) |
 | B8 tier-1 failed (`We couldn't count this deck's mana`) | Stands |
 | B9 counted fact vs hedged claim | Stands as the rule: every figure on this screen is a counted fact |
 | Land cell `balance mana →` (hub `README.md` "2 · Shortcuts"; `design-tables/tuning-hub.md` "Land cell — balance mana"), shown "whenever Mana Balance's free count finds a color short" | **The condition no longer exists.** Design decides when the roles strip links here (open question 1) |
@@ -68,7 +68,7 @@ before and after source counts); **trades** (one basic becomes a staple, with th
 and **staples** the commander's decks run that this deck does not hold, **owned copies first**, each with
 how often (`this commander's decks`, `this pairing's decks` for a partner pair, or an identity bucket's
 average labelled as the bucket's), the colors it adds, how many copies are free, and a price for one
-that is not owned (`priceCents`, null when never stocked: say nothing then). A buy link-out already
+that is not owned (`priceCents`, null when never stocked: say nothing then). The staple list can be empty with no stated reason, and the whole help read can fail (null). A buy link-out already
 exists for a card name (`manapoolCardUrl`, `src/lib/manapool/links.ts`, used in
 `src/components/cards/card-modal.tsx`).
 
@@ -105,7 +105,7 @@ exists for a card name (`manapoolCardUrl`, `src/lib/manapool/links.ts`, used in
   the staple list with owned and to-buy states and a price, and the "no safe rebalance" and "outside this
   deck's colors" results.
 - **Empty and thin states:** `colorless`, `noSources`, the failed read (B8), a color with sources and no
-  pips (Gishath's blue and black, below), a one-color deck, no staples for a commander (B7).
+  pips (Gishath's blue and black, below), a one-color deck, an empty staple list, which carries no reason (B7 above), and a failed help read (null), which reads like B8.
 - **How the citation appears.**
 - **Copy.** Every string goes through `/copy-review`.
 
@@ -120,6 +120,10 @@ exists for a card name (`manapoolCardUrl`, `src/lib/manapool/links.ts`, used in
    leave the rows as information?
 4. **Where does the citation live:** per figure, per section, once in a footnote? Karsten's figure appears
    in every pattern row and in the land line.
+
+5. **A reason for an empty staple list.** B7 named thin EDHREC data. The read cannot tell thin data from
+   "everything is already held or filtered". Engineering can add a reason and a deck count if Design
+   wants the state to explain itself; say so and it becomes a build task.
 
 ## Fixtures (staging, read-only, figures as of 2026-10-10)
 
@@ -155,7 +159,7 @@ treat them as illustrative if the arithmetic stays consistent across frames, as 
 ## Deliverable
 
 A handoff in `design/design_handoff_the99_tuning_hub/` (a new round) with the Mana Balance frames at 900
-and 390 for: the evidence view on Gishath and on the one-color deck, the pattern rows, the three thin
-states, and the help flow from pick to result on Gishath and Aang; the `STATES` rows and design-table
+and 390 for: the evidence view on Gishath and on the one-color deck, the pattern rows, the thin
+states (colorless, no sources, an empty staple list), and the help flow from pick to result on Gishath and Aang; the `STATES` rows and design-table
 sections they change; and the About entry for the tool on the per-entry artboard (batched at the end of
 the Tuning line, per `AGENTS.md`).
