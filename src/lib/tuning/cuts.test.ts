@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { ComboRef, FlagSource } from "../profile/types";
+import type { Bracket, ComboRef, FlagSource } from "../profile/types";
 import { cutFacts } from "./cuts";
 import { deck, profile, row, support } from "./cuts-fixture";
 
@@ -93,10 +93,10 @@ describe("cutFacts", () => {
         combo("c-loop", ["bear9", "bear10"], ["Infinite turns"]),
       ],
     };
-    const flags = (declaredBracket: number | null, over: Partial<Parameters<typeof profile>[0]> = everything) =>
+    const flags = (declaredBracket: Bracket | null, over: Partial<Parameters<typeof profile>[0]> = everything) =>
       cutFacts({ profile: profile(over), locked: new Set(), support: null, declaredBracket })
         .brackets.map((b) => b.flag);
-    const cards = (declaredBracket: number | null, flag: string) =>
+    const cards = (declaredBracket: Bracket | null, flag: string) =>
       cutFacts({ profile: profile(everything), locked: new Set(), support: null, declaredBracket })
         .brackets.find((b) => b.flag === flag)?.cards.map((c) => c.oracleId).sort();
 
@@ -124,6 +124,16 @@ describe("cutFacts", () => {
       expect(flags(5)).toEqual([]);
     });
 
+    it("keeps a commander piece in the deck-level combo, though no card list carries the commander", () => {
+      const f = cutFacts({
+        profile: profile({ twoCardCombos: [combo("c-cmd", ["cmd", "bear1"], ["Infinite mana"])] }),
+        locked: new Set(), support: null, declaredBracket: 2,
+      });
+      expect(f.brackets.find((b) => b.flag === "combo")!.cards.map((c) => c.oracleId).sort()).toEqual(["bear1", "cmd"]);
+      expect(card(f, "cmd")).toBeUndefined();
+      expect(card(f, "bear1")!.flags).toEqual(["combo"]);
+    });
+
     it("carries the flags a card bears on the card itself", () => {
       const f = cutFacts({ profile: profile(everything), locked: new Set(), support: null, declaredBracket: 3 });
       expect(card(f, "bear1")!.flags).toEqual(["gameChanger"]);
@@ -132,7 +142,7 @@ describe("cutFacts", () => {
     });
   });
 
-  it("keeps a card a vanilla and unflagged", () => {
+  it("keeps a vanilla card unflagged", () => {
     const f = facts({ profile: profile({}, deck(49, [row({ oracleId: "vanilla", cmc: 2 })])), support: support([]) });
     expect(card(f, "vanilla")).toMatchObject({ flags: [], roleSurplus: null, opensGap: null });
   });

@@ -5,7 +5,7 @@ import { recommendedMix, ROLE_ORDER, type MixRole } from "../decks/mix";
 import { curveBucket } from "../decks/stats";
 import { fitSkeleton } from "../profile/fit";
 import { producesInfiniteTurns } from "../spellbook/combo-features";
-import type { DeckProfile } from "../profile/types";
+import type { Bracket, DeckProfile } from "../profile/types";
 
 /**
  * Proposed cuts, the FACTS layer (tuning roadmap, sub-project 4; Hugh's model-first ruling,
@@ -87,7 +87,7 @@ export function cutFacts(input: {
   /** Null when the commander has no usable EDHREC list. */
   support: CutSupport | null;
   /** The bracket the player declared for the deck, null if none. Decides which flags are facts. */
-  declaredBracket: number | null;
+  declaredBracket: Bracket | null;
 }): CutFacts {
   const { profile, locked, support, declaredBracket } = input;
   const total = profile.counts.total;
@@ -189,14 +189,11 @@ export function cutFacts(input: {
 /** The deck's bracket-flagged cards by flag, kept only where the flag bears on the declared bracket.
  *  A combo piece is any card of a counted two-card combo that is not a commander, since a commander
  *  is never cut. No declaration names every flag; a declared 4 or 5 permits all of them. */
-function bracketFlags(profile: DeckProfile, declared: number | null): [BracketFlag, ReadonlySet<string>][] {
+function bracketFlags(profile: DeckProfile, declared: Bracket | null): [BracketFlag, ReadonlySet<string>][] {
   const b = profile.brackets;
-  const commanders = new Set(profile.commanderOracleIds);
-  const piecesOf = (combos: typeof b.twoCardCombos) => {
-    const ids = new Set<string>();
-    for (const c of combos) for (const card of c.cards) if (!commanders.has(card.oracleId)) ids.add(card.oracleId);
-    return ids;
-  };
+  // Every piece, a commander's included: a combo of partner commanders is still a combo the declared
+  // bracket counts. A commander is kept off the per-card flags below, where it is never a candidate.
+  const piecesOf = (combos: typeof b.twoCardCombos) => new Set(combos.flatMap((c) => c.cards.map((card) => card.oracleId)));
   const combo = piecesOf(b.twoCardCombos);
   const all: [BracketFlag, ReadonlySet<string>][] = [
     ["gameChanger", new Set(b.gameChangers.map((c) => c.oracleId))],
@@ -205,11 +202,11 @@ function bracketFlags(profile: DeckProfile, declared: number | null): [BracketFl
     ["combo", combo],
   ];
   if (declared === null) return all;
-  if (declared >= 4) return [];
+  if (declared === 4 || declared === 5) return [];
   // 1 to 3, by `violationsFor`: bracket 1 forbids every flag; 2 forbids Game Changers, mass land
   // denial and combos; 3 allows extra turns and a Game Changer up to its allowance, and a combo only
   // when it is a loop (it produces infinite turns).
-  const limit = GAME_CHANGER_LIMIT[Math.min(Math.max(declared, 1), 3) as 1 | 2 | 3];
+  const limit = GAME_CHANGER_LIMIT[declared];
   const bears: Record<Exclude<BracketFlag, "combo">, boolean> = {
     gameChanger: b.gameChangers.length > limit,
     massLandDenial: true,
