@@ -25,17 +25,6 @@ export function bodyLine(c: DecklistCard): string {
   return `${c.quantity} ${c.name}${printing}`;
 }
 
-/**
- * Assemble the decklist text copied / downloaded — spec format (#8): a
- * `Commander` section holding one or both commanders, then a `Deck` section of
- * `N Card Name (SET) CN` lines, Moxfield/Archidekt-ready. The dialog's preview
- * header/separator are presentational only and never part of this text.
- *
- * The sections are written for a single commander too. The older bare-first-line
- * form said which card led the deck only by the convention that line one does,
- * which a pair cannot express; one shape reads back the same either way, and the
- * round-trip through `buildDeckImport` is what proves it.
- */
 /** The commander lines, `1 Name (SET) CN` where the deck names a printing for one (deck
  *  printings, E4), through `bodyLine` so a commander line and a body line cannot differ in shape.
  *  The preview and the copied text both read this. */
@@ -53,6 +42,17 @@ export function commanderLines(args: {
   ];
 }
 
+/**
+ * Assemble the decklist text copied / downloaded — spec format (#8): a
+ * `Commander` section holding one or both commanders, then a `Deck` section of
+ * `N Card Name (SET) CN` lines, Moxfield/Archidekt-ready. The dialog's preview
+ * header/separator are presentational only and never part of this text.
+ *
+ * The sections are written for a single commander too. The older bare-first-line
+ * form said which card led the deck only by the convention that line one does,
+ * which a pair cannot express; one shape reads back the same either way, and the
+ * round-trip through `buildDeckImport` is what proves it.
+ */
 export function buildDecklistText(args: {
   commanderName: string;
   /** The second commander, or null for the single-commander deck most decks are. */

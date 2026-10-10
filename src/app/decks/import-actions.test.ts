@@ -244,7 +244,17 @@ describe("importDeck — printings (deck printings)", () => {
     // Kratos and Sol Ring named printings the player does not hold.
     expect(result.printingsKept).toBe(1);
     expect(result.printingsNotOwned).toBe(2);
-    expect(KRATOS).toBeTruthy();
+  });
+
+  it("counts a commander line whose printing is held as kept, not as not-owned", async () => {
+    process.env.DECK_PRINTINGS_ENABLED = "true";
+    stub.state.collection.push({ oracleId: KRATOS, setCode: "sld", collectorNumber: "2213" });
+    const result = await run();
+    if (!result.ok) throw new Error(JSON.stringify(result));
+    expect(pickInserts().map((p) => p.oracleId)).toEqual([ATREUS, KRATOS]);
+    // Sol Ring alone is left: its line names LTC 284 and the player holds only C21 263.
+    expect(result.printingsKept).toBe(2);
+    expect(result.printingsNotOwned).toBe(1);
   });
 
   it("writes no picks and counts nothing with the switch off", async () => {

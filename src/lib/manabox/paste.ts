@@ -17,8 +17,9 @@ import type { CollectionRow, ParseError } from "./parse";
  */
 const MAX_QUANTITY = 10_000;
 
-// Same shapes the deck import strips (src/lib/decks/import.ts), read here rather
-// than discarded because a collection row keeps its printing.
+// The printing identity a line names, `(SET) CN`. Read here for both callers: a collection row
+// keeps its printing, and the deck import (src/lib/decks/import.ts) leaves the printing on the
+// line for this parser, so a printing the player holds can become the deck's pick.
 const ANNOTATION_RE = /\s+\*([A-Za-z]+)\*$/;
 const SET_CODE_RE = /\s+\(([A-Za-z0-9]{2,6})\)(?:\s+([A-Za-z0-9★†-]+))?$/;
 
