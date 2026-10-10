@@ -4,13 +4,15 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
 import { loadCorpus, renderMetrics, scoreCase, toReply, type Reply } from "./lib/corpus.mjs";
+import { armStats, fromChecked, gateChecks, renderGate, type GateRow } from "./lib/gate.mjs";
 import { acquireRunLock, OVERVIEW_ACCURACY_LIMITS, readLedger, record, refusal, spent } from "./lib/ledger.mjs";
 
 /**
  * The Overview accuracy corpus, two commands (plan 2026-10-10-overview-accuracy.md, 5 and 11).
  *
  *   pnpm eval:corpus score --answers <file.jsonl> --label <name> [--out <md>]    $0, no database
- *   pnpm eval:corpus run --prompt v1|v2|v8 --out <file.jsonl> [--only id,id] [--cap 0.6] [--plan-done 0..1] [--pin]
+ *   pnpm eval:corpus run --prompt v1|v2|v8 --out <file.jsonl> [--only id,id] [--cap 0.6] [--plan-done 0..1] [--pin] [--no-repair]
+ *   pnpm eval:corpus gate --a <f1,f2> --b <f1,f2> --label-a v7 --label-b v8 [--out <md>]    $0, no database
  *
  * `--plan-done` is the share of the line's run plan already complete (default 0): from $11 of spend the
  * ledger stops and asks while it is under 0.5, so the default is the conservative one.
@@ -22,13 +24,18 @@ import { acquireRunLock, OVERVIEW_ACCURACY_LIMITS, readLedger, record, refusal, 
  * worst case, recorded pending and settled at its metered cost (`ledger-overview-accuracy.jsonl`,
  * $15 hard cap, ask at $11): a crash after the API billed still leaves a charge.
  *
+ * A reply that refuses a section gets the app's ONE repair (`repairPrompt`, `applyRepair`: the same
+ * functions the write calls), guarded and ledgered like the first call; the row stores the content a
+ * reader would see (`rendered`) and `score` and `gate` read that, so the harness scores what renders. `--no-repair`
+ * measures the first write alone. `gate` compares two arms (one or more sample files each) after repair.
+ *
  * `--pin` writes a deck's list fingerprint into its corpus file when none is pinned. A pinned case
  * whose live fingerprint differs is skipped loudly rather than scored against a different list.
  */
 const [command, ...rest] = process.argv.slice(2);
 const { values: args } = parseArgs({
   args: rest,
-  options: { answers: { type: "string" }, label: { type: "string" }, out: { type: "string" }, prompt: { type: "string" }, only: { type: "string" }, cap: { type: "string" }, "plan-done": { type: "string" }, pin: { type: "boolean", default: false } },
+  options: { answers: { type: "string" }, label: { type: "string" }, out: { type: "string" }, prompt: { type: "string" }, only: { type: "string" }, cap: { type: "string" }, "plan-done": { type: "string" }, pin: { type: "boolean", default: false }, "no-repair": { type: "boolean", default: false }, a: { type: "string" }, b: { type: "string" }, "label-a": { type: "string" }, "label-b": { type: "string" } },
 });
 
 const EVAL = new URL("../../docs/superpowers/eval/", import.meta.url);
@@ -36,14 +43,15 @@ const CORPUS_URL = new URL("corpus/", EVAL);
 const CORPUS = fileURLToPath(CORPUS_URL);
 const LEDGER = fileURLToPath(new URL("ledger-overview-accuracy.jsonl", EVAL));
 
-type AnswerRow = { id: string; prompt?: string; listFingerprint?: string; reply: Reply };
+type AnswerRow = GateRow & { listFingerprint?: string; reply: unknown };
 const readAnswers = (path: string): AnswerRow[] => readFileSync(path, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l) as AnswerRow);
 
 if (command === "score") {
   if (!args.answers || !args.label) throw new Error("usage: eval:corpus score --answers <file.jsonl> --label <name> [--out <md>]");
   const cases = loadCorpus(CORPUS);
   const rows = readAnswers(args.answers);
-  const answers = new Map(rows.map((a) => [a.id, toReply(a.reply)]));
+  // What renders, when the row records it; the raw reply otherwise (the first baselines, before the repair path).
+  const answers = new Map<string, Reply>(rows.map((a) => [a.id, a.rendered ? fromChecked(a.rendered) : toReply(a.reply)]));
   // A row that records the list it was written for must match the case's pin; older rows record none.
   for (const a of rows) {
     const pinned = cases.find((c) => c.id === a.id)?.deck.listFingerprint;
@@ -54,6 +62,20 @@ if (command === "score") {
   const scores = cases.filter(scorable).map((c) => scoreCase(c, answers.get(c.id)!));
   const skipped = cases.filter((c) => !scorable(c)).map((c) => (c.deck.listFingerprint === null ? `${c.id} (list not pinned)` : c.id));
   const text = renderMetrics(args.label, scores, skipped);
+  if (args.out) writeFileSync(args.out, text);
+  console.log(text);
+  process.exit(0);
+}
+
+if (command === "gate") {
+  if (!args.a || !args.b) throw new Error("usage: eval:corpus gate --a <f1,f2> --b <f1,f2> [--label-a v7] [--label-b v8] [--out <md>]");
+  const cases = loadCorpus(CORPUS);
+  const load = (list: string) => list.split(",").map((f) => readAnswers(f));
+  const sa = load(args.a);
+  const sb = load(args.b);
+  const a = armStats(args["label-a"] ?? "contract 7", sa, cases);
+  const b = armStats(args["label-b"] ?? "contract 8", sb, cases);
+  const text = renderGate([a, b], gateChecks(a, b), Math.min(sa.length, sb.length));
   if (args.out) writeFileSync(args.out, text);
   console.log(text);
   process.exit(0);
@@ -76,7 +98,7 @@ if (command === "run") {
   await connectStaging();
   const { loadProfileHead, loadDeckProfileFromHead } = await import("../../src/lib/profile/load");
   const { listFingerprint } = await import("../../src/lib/profile/fingerprint");
-  const { factsFor, checkReply } = await import("../../src/lib/synopsis/generate");
+  const { factsFor, checkReply, refusedSections, repairPrompt, applyRepair } = await import("../../src/lib/synopsis/generate");
   const { buildSynopsisPrompt } = await import("../../src/lib/synopsis/prompt");
   const { callModel } = await import("../../src/lib/model/client");
   const { synopsisResponseSchema, synopsisResponseSchemaV8Wire } = await import("../../src/lib/synopsis/response-schema");
@@ -112,30 +134,47 @@ if (command === "run") {
     const facts = await factsFor(await loadDeckProfileFromHead(head), v2);
     const prompt = buildSynopsisPrompt(facts, undefined, { v2, contract8: v8 });
     const maxTokens = v8 ? SYNOPSIS_MAX_TOKENS_V8 : SYNOPSIS_MAX_TOKENS;
-    // `worstCaseUsd` already counts the one malformed-reply retry. Characters are only an estimate of
-    // input tokens, and rules text with symbols runs denser than prose (a first v8 run reserved
-    // $0.133 and settled at $0.144 after a retry), so the estimate divides by 3, not 3.5.
-    const approxIn = Math.ceil((prompt.system.length + prompt.user.length) / 3);
-    const worst = worstCaseUsd(SYNOPSIS_MODEL, approxIn, maxTokens, { batch: false });
-    const ledger = readLedger(LEDGER);
-    const stop = refusal(ledger, worst, planDone, OVERVIEW_ACCURACY_LIMITS) ?? (runSpend + worst > cap ? `this run's cap of $${cap} would be crossed` : null);
-    if (stop) { console.log(`STOP before ${c.id}: ${stop}`); break; }
-    const pendingId = `${Date.now()}-${c.id}`;
-    // Pending BEFORE the call, settled after: a crash between paying and settling keeps the worst case counted.
-    record(LEDGER, { at: new Date().toISOString(), runId: pendingId, source: "pending", usd: worst, requests: 1, pending: pendingId, note: `corpus ${args.prompt} ${c.id}` });
-    const call = { model: SYNOPSIS_MODEL, system: prompt.system, user: prompt.user, maxTokens, effort: SYNOPSIS_EFFORT, deadlineMs: 110_000 };
-    const out: Awaited<ReturnType<typeof callModel<SynopsisReply>>> = v8
-      ? await callModel({ ...call, schema: synopsisResponseSchemaV8Wire })
-      : await callModel({ ...call, schema: synopsisResponseSchema });
-    const u = out.usage;
-    const usd = u ? costUsd(SYNOPSIS_MODEL, { input_tokens: u.inputTokens, output_tokens: u.outputTokens, cache_read_input_tokens: u.cacheReadTokens, cache_creation_input_tokens: u.cacheWriteTokens }, { batch: false }) : 0;
-    runSpend += usd;
-    record(LEDGER, { at: new Date().toISOString(), runId: `corpus-${args.prompt}-${c.id}`, source: "realtime:1", usd, requests: 1, settles: pendingId, note: `corpus ${args.prompt} ${c.id}` });
-    console.log(`${c.id}: ok=${out.ok} $${usd.toFixed(4)} (run $${runSpend.toFixed(4)}, campaign $${spent(readLedger(LEDGER)).toFixed(4)})`);
-    if (!out.ok) { console.log(`  ${out.errorClass}`); continue; }
-    const checked = await checkReply(out.value, facts, v8);
-    console.log(`  ${checked.verdicts.map((v) => `${v.section}:${v.status}${v.status === "refused" ? `(${v.reason} ${v.failed}/${v.total})` : ""}`).join(" ")}`);
-    appendFileSync(args.out, `${JSON.stringify({ id: c.id, prompt: args.prompt, listFingerprint: live, usd, reply: out.value })}\n`);
+    // One guarded, ledgered call. `worstCaseUsd` already counts the one malformed-reply retry.
+    // Characters are only an estimate of input tokens, and rules text with symbols runs denser than
+    // prose (a first v8 run reserved $0.133 and settled at $0.144 after a retry), so the estimate
+    // divides by 3, not 3.5. Pending BEFORE the call, settled after: a crash between paying and
+    // settling keeps the worst case counted. Returns null when the ledger or the run cap says stop.
+    const ask = async (p: { system: string; user: string }, what: string) => {
+      const approxIn = Math.ceil((p.system.length + p.user.length) / 3);
+      const worst = worstCaseUsd(SYNOPSIS_MODEL, approxIn, maxTokens, { batch: false });
+      const stop = refusal(readLedger(LEDGER), worst, planDone, OVERVIEW_ACCURACY_LIMITS) ?? (runSpend + worst > cap ? `this run's cap of $${cap} would be crossed` : null);
+      if (stop) { console.log(`STOP before ${c.id} ${what}: ${stop}`); return null; }
+      const pendingId = `${Date.now()}-${c.id}-${what}`;
+      record(LEDGER, { at: new Date().toISOString(), runId: pendingId, source: "pending", usd: worst, requests: 1, pending: pendingId, note: `corpus ${args.prompt} ${c.id} ${what}` });
+      const call = { model: SYNOPSIS_MODEL, system: p.system, user: p.user, maxTokens, effort: SYNOPSIS_EFFORT, deadlineMs: 110_000 };
+      const out: Awaited<ReturnType<typeof callModel<SynopsisReply>>> = v8
+        ? await callModel({ ...call, schema: synopsisResponseSchemaV8Wire })
+        : await callModel({ ...call, schema: synopsisResponseSchema });
+      const u = out.usage;
+      const usd = u ? costUsd(SYNOPSIS_MODEL, { input_tokens: u.inputTokens, output_tokens: u.outputTokens, cache_read_input_tokens: u.cacheReadTokens, cache_creation_input_tokens: u.cacheWriteTokens }, { batch: false }) : 0;
+      runSpend += usd;
+      record(LEDGER, { at: new Date().toISOString(), runId: `corpus-${args.prompt}-${c.id}-${what}`, source: "realtime:1", usd, requests: 1, settles: pendingId, note: `corpus ${args.prompt} ${c.id} ${what}` });
+      console.log(`${c.id} ${what}: ok=${out.ok} $${usd.toFixed(4)} (run $${runSpend.toFixed(4)}, campaign $${spent(readLedger(LEDGER)).toFixed(4)})`);
+      return { out, usd };
+    };
+    const first = await ask(prompt, "write");
+    if (!first) break;
+    if (!first.out.ok) { console.log(`  ${first.out.errorClass}`); continue; }
+    const checked = await checkReply(first.out.value, facts, v8);
+    const show = (v: typeof checked.verdicts) => v.map((x) => `${x.section}:${x.status}${x.status === "refused" ? `(${x.reason} ${x.failed}/${x.total})` : ""}`).join(" ");
+    console.log(`  ${show(checked.verdicts)}`);
+    // THE PRODUCTION REPAIR: the same prompt and merge the write uses, so the row is what a reader is shown.
+    let rendered = checked;
+    let repairUsd: number | undefined;
+    const failing = refusedSections(checked);
+    if (failing.length > 0 && !args["no-repair"]) {
+      const repair = await ask(repairPrompt(facts, checked, failing, v8), "repair");
+      if (!repair) break;
+      repairUsd = repair.usd;
+      rendered = await applyRepair(checked, repair.out, failing, facts, v8);
+      console.log(`  repaired: ${show(rendered.verdicts)}`);
+    }
+    appendFileSync(args.out, `${JSON.stringify({ id: c.id, prompt: args.prompt, listFingerprint: live, usd: first.usd, repairUsd, firstVerdicts: checked.verdicts, rendered, reply: first.out.value })}\n`);
   }
   process.exit(0);
 }
