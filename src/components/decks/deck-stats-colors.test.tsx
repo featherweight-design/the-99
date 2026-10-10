@@ -44,6 +44,20 @@ describe("DeckStatsView colors card", () => {
     expect(screen.queryByRole("tooltip")).toBeNull();
   });
 
+  it("shows the tooltip for a hovering mouse, ignores touch hover, and a press after a hover still pins it", () => {
+    draw([spell("{G}"), land(["G"])]);
+    const info = screen.getByRole("button", { name: "How this is counted" });
+    fireEvent.pointerEnter(info, { pointerType: "touch" });
+    expect(screen.queryByRole("tooltip")).toBeNull();
+    fireEvent.pointerEnter(info, { pointerType: "mouse" });
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    fireEvent.click(info);
+    fireEvent.pointerLeave(info, { pointerType: "mouse" });
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    fireEvent.click(info);
+    expect(screen.queryByRole("tooltip")).toBeNull();
+  });
+
   it("says so when there are no sources, with every source 0", () => {
     const { container } = draw([spell("{B}"), spell("{R}")]);
     expect(card()).toHaveTextContent("No lands yet, so no sources are counted.");

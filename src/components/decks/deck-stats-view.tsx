@@ -230,31 +230,34 @@ const share = (n: number, total: number) => (total === 0 ? 0 : Math.round((n / t
 const STRIPE = (c: ManaColor) =>
   `repeating-linear-gradient(135deg, ${PIP_STYLE[c].bg} 0 2px, transparent 2px 5px)`;
 
-/** The ⓘ and its tooltip: tap or focus opens on a phone and hover or focus on a desktop; Esc closes. */
+/** The ⓘ and its tooltip: a press pins it open on any device, a mouse hovering shows it, Esc closes. The box
+ *  positions against the card header, so on a phone it spans the card instead of running past the viewport. */
 function InfoTip({ lines }: { lines: readonly string[] }) {
   // Hover shows it and a press pins it: one flag would let the press that follows a hover close it again.
   const [hover, setHover] = useState(false);
   const [pinned, setPinned] = useState(false);
   const open = hover || pinned;
   return (
-    <span className="relative self-center" onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
+    <span
+      className="self-center"
+      onPointerEnter={(e) => { if (e.pointerType === "mouse") setHover(true); }}
+      onPointerLeave={(e) => { if (e.pointerType === "mouse") setHover(false); }}
+    >
       <button
         type="button"
         aria-label={deckStatsCopy.colors.infoLabel}
         aria-expanded={open}
-        aria-controls="colors-tip"
         onClick={() => setPinned((v) => !v)}
         onKeyDown={(e) => { if (e.key === "Escape") { setPinned(false); setHover(false); } }}
         onBlur={() => setPinned(false)}
-        className={`flex size-[18px] items-center justify-center rounded-full border border-[color:var(--fg-faint)] font-mono text-[10.5px] ${open ? "text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"}`}
+        className={`relative flex size-[18px] items-center after:absolute after:-inset-[13px] after:content-[''] md:after:-inset-[5px] justify-center rounded-full border border-[color:var(--fg-faint)] font-mono text-[10.5px] ${open ? "text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"}`}
       >
         i
       </button>
       {open ? (
         <span
-          id="colors-tip"
           role="tooltip"
-          className="absolute left-0 top-[26px] z-10 flex w-[min(340px,calc(100vw-60px))] flex-col gap-[8px] rounded-[8px] border border-[color:var(--border-strong)] bg-[color:var(--elevated)] px-[14px] py-[12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] shadow-[0_8px_24px_rgba(0,0,0,0.45)]"
+          className="absolute inset-x-0 top-[calc(100%+6px)] z-10 flex flex-col md:right-auto md:w-[340px] gap-[8px] rounded-[8px] border border-[color:var(--border-strong)] bg-[color:var(--elevated)] px-[14px] py-[12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] shadow-[0_8px_24px_rgba(0,0,0,0.45)]"
         >
           {lines.map((l) => <span key={l}>{l}</span>)}
         </span>
