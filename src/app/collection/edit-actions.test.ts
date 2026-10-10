@@ -185,3 +185,13 @@ describe("the sheet's reads", () => {
     expect(stub.choices).toHaveBeenCalledWith("user_1", ORACLE);
   });
 });
+
+describe("ids in any case", () => {
+  it("lowercases an oracle id, which is how Postgres hands it back and every map is keyed", async () => {
+    const lettered = "abcdef01-1111-1111-1111-111111111111";
+    stub.resolve.mockResolvedValue(new Map([[`${lettered}|lea|1`, { scryfallId: PRINTING, finishes: ["nonfoil"] }]]));
+    stub.apply.mockResolvedValue({ status: "applied", entry: { id: ACTION } });
+    expect(await addToCollection(ACTION, [{ ...line, oracleId: lettered.toUpperCase() }])).toEqual({ applied: { id: ACTION } });
+    expect(stub.apply.mock.calls[0][1].items[0].oracleId).toBe(lettered);
+  });
+});

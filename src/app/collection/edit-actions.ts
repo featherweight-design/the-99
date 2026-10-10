@@ -52,7 +52,9 @@ function identityOf(v: unknown): CollectionItemIdentity | null {
   if (typeof setCode !== "string" || setCode.length > 12) return null;
   if (typeof collectorNumber !== "string" || collectorNumber.length > 16) return null;
   if (typeof finish !== "string" || !isFinish(finish)) return null;
-  return { oracleId: oracleId as string, setCode: setCode.toLowerCase(), collectorNumber, finish };
+  // Lowercased: Postgres hands uuids back lowercase, and every map this is looked up in is keyed
+  // on what it returned.
+  return { oracleId: (oracleId as string).toLowerCase(), setCode: setCode.toLowerCase(), collectorNumber, finish };
 }
 
 function linesOf(value: unknown): unknown[] {

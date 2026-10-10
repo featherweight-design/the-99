@@ -106,11 +106,23 @@ export async function loadPrintingChoices(userId: string, oracleId: string): Pro
       .from(collectionItems)
       .where(and(eq(collectionItems.userId, userId), eq(collectionItems.oracleId, oracleId))),
   ]);
+  return withHoldings(catalog, held);
+}
+
+/**
+ * Lays the player's holdings over a card's catalog printings, per printing and finish, keeping
+ * the catalog's order. A holding no printing names (a bare import's) is on no tile.
+ */
+export function withHoldings(
+  catalog: (Omit<PrintingChoice, "owned" | "finishes"> & { finishes: string[] })[],
+  held: { setCode: string; collectorNumber: string; finish: string; quantity: number }[],
+): PrintingChoice[] {
   const owned = new Map<string, Partial<Record<Finish, number>>>();
   for (const h of held) {
+    if (!isFinish(h.finish)) continue;
     const k = `${h.setCode}|${h.collectorNumber}`;
     const by = owned.get(k) ?? {};
-    by[h.finish as Finish] = (by[h.finish as Finish] ?? 0) + h.quantity;
+    by[h.finish] = (by[h.finish] ?? 0) + h.quantity;
     owned.set(k, by);
   }
   return catalog.map((p) => ({
