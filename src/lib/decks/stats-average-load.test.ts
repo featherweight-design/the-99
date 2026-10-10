@@ -2,15 +2,13 @@
 // are label counts), passes the combined identity, and never throws.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const select = vi.fn();
 const loadSkeletonForCommanders = vi.fn();
 
-vi.mock("../../db", () => ({ db: { select } }));
 vi.mock("../profile/load", () => ({ loadSkeletonForCommanders }));
 
 const { loadStatsAverage } = await import("./stats-average-load");
 
-const deck = { commander: { oracleId: "o-1", name: "Tymna the Weaver" }, partner: { oracleId: "o-2", name: "Kraum" } };
+const deck = { commander: { oracleId: "o-1", name: "Tymna the Weaver", colorIdentity: ["W", "B"] }, partner: { oracleId: "o-2", name: "Kraum", colorIdentity: ["U", "B"] } };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -19,7 +17,6 @@ beforeEach(() => {
 
 describe("loadStatsAverage", () => {
   it("asks for the label basis with both commanders and their combined identity", async () => {
-    select.mockReturnValueOnce({ from: () => ({ where: async () => [{ colorIdentity: ["W", "B"] }, { colorIdentity: ["U", "B"] }] }) });
     loadSkeletonForCommanders.mockResolvedValue({
       skeleton: {
         composition: { of: "pair", targets: { land: 35 }, averageCurve: null },
@@ -36,7 +33,6 @@ describe("loadStatsAverage", () => {
   });
 
   it("returns null rather than throw, so the card stays a shell", async () => {
-    select.mockReturnValueOnce({ from: () => ({ where: async () => [] }) });
     loadSkeletonForCommanders.mockRejectedValue(new Error("down"));
     expect(await loadStatsAverage(deck)).toBeNull();
   });

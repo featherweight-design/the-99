@@ -2,10 +2,6 @@
 // `averageDeckFrom` is pure (the rungs are provable without a database) and `loadStatsAverage` is the read.
 // NOT `loadDeckProfile`: the basis chain is the only part needed, so this is the `deck-mix.ts` pattern.
 
-import { inArray } from "drizzle-orm";
-
-import { db } from "../../db";
-import { cards } from "../../db/schema";
 import { guildLabel } from "../copy/color-labels";
 import { foldCurve } from "../profile/fit";
 import { loadSkeletonForCommanders } from "../profile/load";
@@ -44,7 +40,9 @@ export function averageDeckFrom(skeleton: ProfileSkeleton, names: string[], iden
       label,
       // A commander rung on a pair deck means the pair row carried no composition, and then it carries no count either
       // (measured on staging: the 38 pair rows without a composition have a null count), so this is the commander's.
-      decks: of === "commander" || of === "pair" ? skeleton.commanderDeckCount : null,
+      // Only a composition proves the count came from its own row: a role-only pair (no composition) would
+      // carry the commander row's count under a pair label.
+      decks: composition && (of === "commander" || of === "pair") ? skeleton.commanderDeckCount : null,
     },
     targets: composition ? composition.targets : null,
     curve: folded ? Array.from({ length: CURVE_MAX + 1 }, (_, i) => folded.get(i) ?? 0) : null,
@@ -60,13 +58,12 @@ export function averageDeckFrom(skeleton: ProfileSkeleton, names: string[], iden
 /** Never throws: null when the chain cannot be resolved, and the card then stays a shell rather than
  *  state a basis it never read. */
 export async function loadStatsAverage(deck: {
-  commander: { oracleId: string; name: string };
-  partner: { oracleId: string; name: string } | null;
+  commander: { oracleId: string; name: string; colorIdentity: readonly string[] };
+  partner: { oracleId: string; name: string; colorIdentity: readonly string[] } | null;
 }): Promise<AverageDeck | null> {
   try {
-    const ids = [deck.commander.oracleId, ...(deck.partner ? [deck.partner.oracleId] : [])];
-    const rows = await db.select({ colorIdentity: cards.colorIdentity }).from(cards).where(inArray(cards.oracleId, ids));
-    const identity = [...new Set(rows.flatMap((r) => r.colorIdentity ?? []))];
+    // The identity comes off the deck detail the page already read: no second read of `cards`.
+    const identity = [...new Set([...deck.commander.colorIdentity, ...(deck.partner?.colorIdentity ?? [])])];
     const { skeleton } = await loadSkeletonForCommanders(
       deck.commander.oracleId,
       deck.partner?.oracleId ?? null,

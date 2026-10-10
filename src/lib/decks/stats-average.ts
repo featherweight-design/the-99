@@ -73,7 +73,9 @@ export type AverageComparison = {
   note: "baseline" | "thin" | null;
 };
 
-const round1 = (n: number) => Math.round(n * 10) / 10;
+/** Half-steps round away from zero, so 0.05 below an average reads as far from it as 0.05 above. */
+// Settled to a millionth first, so 36 - 36.05 is the 0.05 it is and not 0.04999999999999716.
+const round1 = (n: number) => (Math.sign(n) * Math.round(Math.round(Math.abs(n) * 1e6) / 1e5)) / 10 || 0;
 
 function row(key: AverageRowKey, you: number, avg: number, scale: number): AverageRow {
   // The words read the one-decimal difference; the bar and its cut-off read the raw one, as the canvas does.

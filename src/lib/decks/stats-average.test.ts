@@ -29,6 +29,14 @@ describe("averageDeckFrom", () => {
     expect(a.roles).toEqual({ ramp: 11.4, draw: 10, removal: 8, wipes: 3 });
   });
 
+  it("quotes no deck count for a role-only pair, whose count is the commander row's", () => {
+    const a = averageDeckFrom(
+      skeleton({ composition: null, roleTargets: { of: "pair", targets: { ramp: 8, draw: 8, removal: 6, wipes: 2 } } }),
+      ["A", "B"], ["W"], true,
+    );
+    expect(a.basis).toMatchObject({ of: "pair", decks: null });
+  });
+
   it("sizes the body at 99, or 98 for a pair", () => {
     expect(averageDeckFrom(skeleton(), ["A"], ["W"], false).body).toBe(99);
     expect(averageDeckFrom(skeleton(), ["A", "B"], ["W"], true).body).toBe(98);
@@ -131,6 +139,13 @@ describe("averageComparison", () => {
   it("omits mana value when the deck has no nonland card, rather than compare against a 0", () => {
     const c = averageComparison(avg(), have([spell(0, "Land", 5)]));
     expect(c.groups[0].rows.map((r) => r.key)).toEqual(["lands"]);
+  });
+
+  it("reads half-steps the same either side of the average", () => {
+    const c = averageComparison(avg({ targets: { ...TARGETS, land: 36.05 } }), have([spell(0, "Land", 36)]));
+    const d = averageComparison(avg({ targets: { ...TARGETS, land: 35.95 } }), have([spell(0, "Land", 36)]));
+    expect(rowOf(c, "lands").diff).toBe(-0.1);
+    expect(rowOf(d, "lands").diff).toBe(0.1);
   });
 
   it("counts the unlabeled cards beside the job rows, and none when there are no job rows", () => {

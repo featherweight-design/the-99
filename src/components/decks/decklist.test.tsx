@@ -1470,6 +1470,33 @@ describe("the Stats panel", () => {
     expect(rowCount("draw")).toBe(1);
   });
 
+  it("compares the 99 to the shipped average, so an optimistic add moves its rows and a commander never counts", () => {
+    const average = {
+      body: 99,
+      basis: { of: "commander" as const, names: ["Cmdr"], label: "", decks: 100 },
+      targets: { land: 36, basic: 20, nonbasic: 16, creature: 26, instant: 8, sorcery: 9, artifact: 10, enchantment: 6, planeswalker: 1, battle: 0 },
+      curve: null,
+      manaValue: null,
+      roles: null,
+    };
+    const stats = {
+      statsEnabled: true,
+      filter: "all" as const,
+      statsData: { commanders: [{ cmc: 4, typeLine: "Legendary Artifact Creature", quantity: 1, manaCost: "{2}{G}{G}", colorIdentity: ["G"] }], average },
+    };
+    const you = (key: string) => document.querySelector(`[data-average-row="${key}"]`)!.getAttribute("aria-label");
+    renderDecklist([rampOwned], stats);
+    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    // Sol Ring is the one artifact; the commander is a creature the Average card leaves out.
+    expect(you("artifact")).toBe("Artifacts: this deck 1, average 10, 9 fewer");
+    expect(you("creature")).toBe("Creatures: this deck 0, average 26, 26 fewer");
+    cleanup();
+
+    renderDecklist([rampOwned, rampUnowned], stats);
+    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    expect(you("artifact")).toBe("Artifacts: this deck 2, average 10, 8 fewer");
+  });
+
   it("keeps the Jobs card a shell when no labels were shipped", () => {
     renderDecklist([rampOwned], { statsEnabled: true, filter: "all", statsData: { commanders: [], jobs: null } });
     fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
