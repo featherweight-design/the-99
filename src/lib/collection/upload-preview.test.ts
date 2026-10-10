@@ -68,6 +68,12 @@ describe("summarizeUploadPreview", () => {
     expect(all.allOwned).toBe(true);
   });
 
+  it("counts the holdings it creates and the distinct cards it touches", () => {
+    const d = run([row("Fresh", null, 2), row("Held", 1, 3), row("Held", 2, 4, { setCode: "2ed" })]);
+    expect(d.newHoldings).toBe(1);
+    expect(d.distinctCards).toBe(2);
+  });
+
   it("an empty change is not 'all owned'", () => {
     expect(run([]).allOwned).toBe(false);
   });

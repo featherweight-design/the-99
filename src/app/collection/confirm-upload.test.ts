@@ -11,6 +11,7 @@ const stub = vi.hoisted(() => ({
   receipt: vi.fn(),
   invalidate: vi.fn(),
   editedKeys: vi.fn(async () => new Set<string>()),
+  lastUpload: null as Date | null,
 }));
 
 vi.mock("../../db", () => ({
@@ -29,6 +30,7 @@ vi.mock("../../lib/collection/history", () => ({
   editsSinceUpload: async () => 4,
   editedKeysSinceUpload: stub.editedKeys,
   collectionTotals: async () => ({ holdings: 10, copies: 25 }),
+  lastUploadConfirmedAt: async () => stub.lastUpload,
 }));
 vi.mock("../../lib/collection/invalidate", () => ({ invalidateCollectionReaders: stub.invalidate }));
 vi.mock("../../lib/decks/availability-query", () => ({ loadDeckBuyRows: async () => [] }));
@@ -137,6 +139,20 @@ describe("previewUploadChange", () => {
     expect(got).toHaveProperty("detail.copiesAfter", 24);
     expect(got).toHaveProperty("detail.unchanged", 9);
     expect(stub.apply.mock.calls[0][2].dryRun).toBe(true);
+  });
+
+  it("says whether history reaches back to the last upload, and never quotes one older than the window", async () => {
+    stub.ledger = true;
+    stub.apply.mockResolvedValue({ status: "preview", raised: 0, lowered: 0, rows: [], decks: [] });
+    stub.lastUpload = null;
+    expect(await previewUploadChange(UPLOAD)).toMatchObject({ lastUploadAt: null, historyReaches: false });
+    stub.lastUpload = new Date(Date.now() - 10 * 86_400_000);
+    expect(await previewUploadChange(UPLOAD)).toMatchObject({ historyReaches: true });
+    stub.lastUpload = new Date(Date.now() - 100 * 86_400_000);
+    expect(await previewUploadChange(UPLOAD)).toMatchObject({
+      lastUploadAt: stub.lastUpload.toISOString(), historyReaches: false,
+    });
+    stub.lastUpload = null;
   });
 
   it("only a Replace reads the hand-edited holdings", async () => {

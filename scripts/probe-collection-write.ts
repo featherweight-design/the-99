@@ -27,7 +27,7 @@ import ws from "ws";
 import { applyCollectionChange, type ChangeResult } from "../src/lib/collection/write";
 import { collectionGeneration } from "../src/lib/recs/store";
 import { commitVersion } from "../src/lib/decks/versions";
-import { collectionTotals, editedKeysSinceUpload, editsSinceUpload, getHistoryEntry, listHistory } from "../src/lib/collection/history";
+import { collectionTotals, editedKeysSinceUpload, editsSinceUpload, lastUploadConfirmedAt, getHistoryEntry, listHistory } from "../src/lib/collection/history";
 import { collectionItemKey } from "../src/lib/collection/key";
 import { replaceCollection } from "../src/lib/collection/import";
 import { resolvePrintings } from "../src/lib/collection/catalog-read";
@@ -233,6 +233,9 @@ async function main() {
       editedKeys.size === 1 && editedKeys.has(collectionItemKey({ ...at(C), finish: at(C).finish as never }))
         && totals.holdings === Number(truth.n) && totals.copies === Number(truth.q),
       `${[...editedKeys]}; ${JSON.stringify(totals)} vs ${JSON.stringify(truth)}`);
+    const lastAt = await lastUploadConfirmedAt(USER);
+    const lastTruth = await one<{ at: Date }>("select max(confirmed_at) as at from csv_uploads where user_id = $1 and confirmed_at is not null", [USER]);
+    check("the last upload's time is the newest confirmed one", lastAt?.getTime() === new Date(lastTruth.at).getTime(), `${lastAt?.toISOString()}`);
     // An entry past the retention window whose rows the lazy prune has not reached yet names nothing,
     // while still counting as a hand change since the upload.
     const aged = await one<{ id: string; created_at: Date }>(

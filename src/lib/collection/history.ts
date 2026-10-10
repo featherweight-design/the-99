@@ -225,3 +225,11 @@ export async function collectionTotals(userId: string): Promise<{ holdings: numb
     from collection_items where user_id = ${userId}`);
   return res.rows[0] ?? { holdings: 0, copies: 0 };
 }
+
+/** When the newest confirmed upload was confirmed: the date the Replace warning quotes. */
+export async function lastUploadConfirmedAt(userId: string): Promise<Date | null> {
+  const res = await db.execute<{ at: Date | string | null }>(sql`
+    select max(confirmed_at) as at from csv_uploads where user_id = ${userId} and confirmed_at is not null`);
+  const at = res.rows[0]?.at;
+  return at ? new Date(at) : null;
+}

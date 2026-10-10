@@ -40,6 +40,10 @@ export type UploadPreviewDetail = {
   copiesBefore: number;
   copiesAfter: number;
   lists: { leaving: PreviewList; down: PreviewList; up: PreviewList };
+  /** Holdings the write creates (not held before). An Add reads "67 new to your collection". */
+  newHoldings: number;
+  /** Distinct cards among the changed rows, for "across 91 cards". */
+  distinctCards: number;
   /** An Add: file holdings the collection already holds, of all file holdings. */
   overlap: { held: number; of: number };
   /** Every holding in the file is already held, so an Add only raises counts of cards the player has: it brings in nothing new. */
@@ -72,10 +76,14 @@ export function summarizeUploadPreview(args: {
   // From the rows, never from the dry run's `raised`/`lowered`: those count holdings that moved,
   // not copies.
   let copyDelta = 0;
+  let newHoldings = 0;
+  const cards = new Set<string>();
   for (const r of rows) {
     const before = qty(r.before);
     const after = qty(r.after);
     copyDelta += after - before;
+    cards.add(r.oracleId);
+    if (!r.before && after > 0) newHoldings += 1;
     if (r.before) held += 1;
     // A row can change something else (its condition) and keep its quantity: it is still one of
     // the unchanged holdings, and sits in none of the three lists below.
@@ -106,6 +114,8 @@ export function summarizeUploadPreview(args: {
       down: listOf(down, (a, b) => b.before - b.after - (a.before - a.after) || byName(a, b)),
       up: listOf(up, (a, b) => b.after - b.before - (a.after - a.before) || byName(a, b)),
     },
+    newHoldings,
+    distinctCards: cards.size,
     // For an Add every changed row is a file holding, and a row that existed before is one the
     // player already owns. A Replace has no such reading; its screen does not draw this.
     overlap: { held, of: rows.length },
