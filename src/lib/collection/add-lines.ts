@@ -39,12 +39,12 @@ export function foilFinishOf(p: PrintingChoice): Finish | null {
   return null;
 }
 
-/** Whether the Foil chip has anything to switch between. A foil-only printing is locked on. */
 /** The finish the Foil chip switches this printing to: foil (or etched) when on, nonfoil when off. */
 export function setFinishTarget(p: PrintingChoice, foil: boolean): Finish {
   return foil ? (foilFinishOf(p) ?? defaultFinish(p)) : "nonfoil";
 }
 
+/** Whether the Foil chip has anything to switch between. A foil-only printing is locked on. */
 export function canToggleFoil(p: PrintingChoice): boolean {
   return p.finishes.includes("nonfoil") && foilFinishOf(p) !== null;
 }

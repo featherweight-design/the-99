@@ -3,6 +3,7 @@
 // art, a printing chip that reopens the picker, a Foil chip, a stepper and the holdings note. A line
 // whose printing is not chosen yet draws the required step in its place (B4a/B4m).
 
+import { useState } from "react";
 import { cssUrl } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
 import {
@@ -133,17 +134,7 @@ export function AddLine(props: AddLineProps) {
               >
                 {"−"}
               </button>
-              <input
-                inputMode="numeric"
-                aria-label={copy.countAria(line.name)}
-                disabled={disabled}
-                value={line.quantity}
-                onChange={(e) => {
-                  const n = Number.parseInt(e.target.value.replace(/\D/g, ""), 10);
-                  if (Number.isFinite(n) && n > 0) props.onQuantity(n);
-                }}
-                className="h-full w-[36px] border-x border-solid border-[color:var(--border-strong)] bg-transparent text-center text-[14px] outline-none md:w-[30px] md:text-[13px]"
-              />
+              <CountInput name={line.name} quantity={line.quantity} disabled={disabled} onQuantity={props.onQuantity} />
               <button
                 type="button"
                 aria-label={copy.more}
@@ -184,4 +175,29 @@ function ownedText(note: NonNullable<ReturnType<typeof ownedNote>>): string {
     : note.kind === "elsewhere"
       ? copy.ownedElsewhere(note.have)
       : copy.newToYou;
+}
+
+/**
+ * The count field. Keeps its own draft so a player can clear it and type a fresh number; only a
+ * positive whole number reaches the line, and leaving the field puts the line's count back.
+ * 16px below `md` so iOS Safari does not zoom the sheet on focus.
+ */
+function CountInput({ name, quantity, disabled, onQuantity }: { name: string; quantity: number; disabled: boolean; onQuantity: (q: number) => void }) {
+  const [draft, setDraft] = useState<string | null>(null);
+  return (
+    <input
+      inputMode="numeric"
+      aria-label={copy.countAria(name)}
+      disabled={disabled}
+      value={draft ?? String(quantity)}
+      onChange={(e) => {
+        const text = e.target.value.replace(/\D/g, "");
+        setDraft(text);
+        const n = Number.parseInt(text, 10);
+        if (Number.isFinite(n) && n > 0) onQuantity(n);
+      }}
+      onBlur={() => setDraft(null)}
+      className="h-full w-[36px] border-x border-solid border-[color:var(--border-strong)] bg-transparent text-center text-[16px] outline-none md:w-[30px] md:text-[13px]"
+    />
+  );
 }

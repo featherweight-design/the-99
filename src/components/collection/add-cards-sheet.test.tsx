@@ -193,6 +193,22 @@ describe("AddCardsSheet (add)", () => {
     expect(ids[0]).not.toBe(ids[1]);
   });
 
+  it("lets the count be cleared and retyped, and restores it on blur", async () => {
+    mount();
+    await find("sol ring", [card()]);
+    await pickFirst();
+    fireEvent.click((await screen.findAllByRole("radio"))[0]);
+    await waitFor(() => expect(field()).not.toBeDisabled());
+    const count = screen.getByRole("textbox", { name: copy.countAria("Sol Ring") });
+    fireEvent.change(count, { target: { value: "" } });
+    expect(count).toHaveValue("");
+    fireEvent.change(count, { target: { value: "12" } });
+    expect(screen.getByText(copy.summary(1, 12))).toBeInTheDocument();
+    fireEvent.change(count, { target: { value: "" } });
+    fireEvent.blur(count);
+    expect(count).toHaveValue("12");
+  });
+
   it("shows nothing about History, which has no route yet", () => {
     mount();
     expect(screen.queryByText(/history/i)).toBeNull();

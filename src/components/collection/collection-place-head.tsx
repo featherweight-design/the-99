@@ -211,7 +211,7 @@ export function CollectionPlaceHead({
             {lastUpdatedLabel ? ` · last updated ${lastUpdatedLabel}` : ""}
           </p>
         </div>
-        {hasCollection ? (
+        {hasCollection && editEnabled ? (
           <div className="hidden md:flex md:gap-[10px]">
             <GhostButton
               href="/collection/replace"
@@ -220,18 +220,24 @@ export function CollectionPlaceHead({
               <ReplaceIcon />
               Replace collection
             </GhostButton>
-            {editEnabled ? (
-              <GhostButton
-                onClick={openAdd}
-                aria-haspopup="dialog"
-                data-testid="collection-add"
-                className="inline-flex items-center gap-[6px] text-[13px] px-[16px] py-[9px]"
-              >
-                <span aria-hidden className="text-[15px] leading-none">+</span>
-                {collectionEditCopy.head.add}
-              </GhostButton>
-            ) : null}
+            <GhostButton
+              onClick={openAdd}
+              aria-haspopup="dialog"
+              data-testid="collection-add"
+              className="inline-flex items-center gap-[6px] text-[13px] px-[16px] py-[9px]"
+            >
+              <span aria-hidden className="text-[15px] leading-none">+</span>
+              {collectionEditCopy.head.add}
+            </GhostButton>
           </div>
+        ) : hasCollection ? (
+          <GhostButton
+            href="/collection/replace"
+            className="hidden md:inline-block text-[13px] px-[16px] py-[9px]"
+          >
+            <ReplaceIcon />
+            Replace collection
+          </GhostButton>
         ) : null}
       </div>
 

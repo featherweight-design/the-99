@@ -300,13 +300,11 @@ describe("CollectionPlaceHead \u00b7 Add cards (COLLECTION_EDIT_ENABLED)", () =>
     return render(<CollectionPlaceHead stats={stats} lastUpdatedLabel="today" editEnabled={editEnabled} />);
   }
 
-  it("switch off: the tree is exactly the shipped one, with no Add and no reserved slot", () => {
-    const off = withSwitch(false);
-    const offHtml = off.container.innerHTML;
-    off.unmount();
-    pathname = "/collection";
-    const shipped = render(<CollectionPlaceHead stats={OWNED} lastUpdatedLabel="today" />);
-    expect(shipped.container.innerHTML).toBe(offHtml);
+  it("switch off: Replace sits alone in main's own markup, with no Add and no reserved wrapper", () => {
+    withSwitch(false);
+    const replace = screen.getByText("Replace collection").closest("a")!;
+    expect(replace.className).toContain("hidden md:inline-block");
+    expect(replace.parentElement?.className ?? "").not.toContain("md:gap-[10px]");
     expect(screen.queryByTestId("collection-add")).toBeNull();
     expect(screen.queryByTestId("collection-add-phone")).toBeNull();
     expect(screen.getByText("Replace")).toBeInTheDocument();
@@ -328,9 +326,9 @@ describe("CollectionPlaceHead \u00b7 Add cards (COLLECTION_EDIT_ENABLED)", () =>
     expect(screen.queryByTestId("collection-add-phone")).toBeNull();
   });
 
-  it("opens the sheet from either control and returns focus to it on close", async () => {
+  it.each(["collection-add-phone", "collection-add"])("opens the sheet from %s and returns focus to it on close", async (id) => {
     withSwitch(true);
-    const trigger = screen.getByTestId("collection-add-phone");
+    const trigger = screen.getByTestId(id);
     trigger.focus();
     fireEvent.click(trigger);
     expect(screen.getByRole("dialog", { name: "Add cards" })).toBeInTheDocument();
