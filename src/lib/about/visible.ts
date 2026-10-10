@@ -12,6 +12,7 @@ import { neverCutEnabled } from "../decks/never-cut-flag";
 import { helpMeChooseEnabled } from "../intake/flag";
 import { swapToolsEnabled } from "../swaps/flag";
 import { tuningEnabled } from "../tuning/flag";
+import { deckStatsEnabled } from "../decks/stats-flag";
 import { aboutEntries, type AboutEntry, type AboutSwitch } from "../copy/about";
 
 /**
@@ -27,6 +28,7 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   ANALYSIS_TAB_ENABLED: analysisTabEnabled,
   HOW_IT_WORKS_ENABLED: howItWorksEnabled,
   TUNING_ENABLED: tuningEnabled,
+  DECK_STATS_ENABLED: deckStatsEnabled,
 };
 
 /**

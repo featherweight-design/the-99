@@ -17,6 +17,7 @@ import { StatusPillBadge } from "../decks/status-pill";
 import { SetCell } from "../sets/set-cell";
 import { RoleGroupHeader } from "../commanders/coverage-section";
 import { CommitmentsCard } from "../home/commitments-card";
+import { CurveCard } from "../decks/deck-stats-view";
 
 import { BrowseFigureBody } from "./browse-figure";
 import { KeyNumeral } from "./numeral";
@@ -89,6 +90,7 @@ import {
   FIT_FULL_SCORE,
   PRICES,
   STATUSES,
+  DECK_STATS,
 } from "../../lib/about/fixtures";
 
 /** The four availability states, including the one that draws nothing. */
@@ -752,6 +754,15 @@ function SuggestedChangesFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+/** Stats' curve card at plate width with Creature lit, drawn by the card itself from a fixture. */
+function DeckStatsFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="deck-stats" width={width}>
+      <CurveCard data={DECK_STATS.slice} initialLit={DECK_STATS.selected} />
+    </Specimen>
+  );
+}
+
 /** The shared credit line in the three states a friend sees: credits left, every credit out, the monthly limit. */
 function CreditsFigure({ width }: { width: AboutWidth }) {
   return (
@@ -1023,5 +1034,6 @@ export const FIGURES: Partial<
   resume: ResumeFigure,
   proxies: ProxiesFigure,
   "suggested-changes": SuggestedChangesFigure,
+  "deck-stats": DeckStatsFigure,
   credits: CreditsFigure,
 };

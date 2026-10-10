@@ -40,9 +40,10 @@ const BUCKET_LABELS = Array.from({ length: CURVE_MAX + 1 }, (_, i) =>
   i === CURVE_MAX ? deckStatsCopy.curve.ceiling : String(i),
 );
 
-function CurveCard({ data }: { data: DeckStatsSlice }) {
+/** Exported for the About page's specimen, which draws this card from a fixture with a type lit. */
+export function CurveCard({ data, initialLit = null }: { data: DeckStatsSlice; initialLit?: CardType | null }) {
   const copy = deckStatsCopy.curve;
-  const [lit, setLit] = useState<CardType | null>(null);
+  const [lit, setLit] = useState<CardType | null>(initialLit);
   const { curve, types } = data;
   const cast = curve.copies;
   const avg = curve.average === null ? copy.noAverage : curve.average.toFixed(1);

@@ -38,6 +38,7 @@ import { MODEL_FRIEND_DAILY_ALLOWANCE } from "../model/allowance-rule";
 // Study` are cards a Commander player reads without stopping.
 
 import type { Availability } from "../decks/availability";
+import { manaCurve, typeCurve, type CardType, type CurveCard, type DeckStatsSlice } from "../decks/stats";
 import { buildDeckProfile, type ProfileCardRow } from "../profile/build";
 import type { BracketPopulation } from "../profile/types";
 import { slotDeck } from "../bracket/slot";
@@ -2073,4 +2074,45 @@ export const STAND_INS = {
       ].map((r, i) => ({ oracleId: `about-stand-in-spell-${i}`, imageUri: null, soft: 0, foilOnly: false, body: [], muted: [], ...r })),
     } satisfies SheetGroup,
   },
+};
+
+/**
+ * `deck-stats`: the Stats view's curve card (2026-10-10, the entry's handoff
+ * `design_handoff_the99_deck_stats_view/ABOUT-entry.md`). Written as a card list and run through
+ * `manaCurve` and `typeCurve`, the functions the page runs, so the specimen's buckets and totals
+ * cannot disagree with how the app counts. Buckets 1,9,14,13,11,8,4,4 over 64 spells, 36 lands;
+ * creature 26, instant 8, sorcery 12, artifact 10, enchantment 6, planeswalker 1, battle 1.
+ */
+const STATS_TYPE_LINE: Record<CardType, string> = {
+  creature: "Creature",
+  instant: "Instant",
+  sorcery: "Sorcery",
+  artifact: "Artifact",
+  enchantment: "Enchantment",
+  planeswalker: "Planeswalker",
+  battle: "Battle",
+};
+const STATS_BY_BUCKET: Partial<Record<CardType, number>>[] = [
+  { artifact: 1 },
+  { creature: 3, instant: 2, artifact: 3, enchantment: 1 },
+  { creature: 6, instant: 3, sorcery: 2, artifact: 2, enchantment: 1 },
+  { creature: 6, instant: 1, sorcery: 4, artifact: 1, enchantment: 1 },
+  { creature: 5, instant: 1, sorcery: 3, artifact: 1, enchantment: 1 },
+  { creature: 3, instant: 1, sorcery: 2, enchantment: 1, planeswalker: 1 },
+  { creature: 2, artifact: 1, battle: 1 },
+  { creature: 1, sorcery: 1, artifact: 1, enchantment: 1 },
+];
+const STATS_CARDS: CurveCard[] = [
+  ...STATS_BY_BUCKET.flatMap((per, cmc) =>
+    (Object.entries(per) as [CardType, number][]).map(([type, quantity]) => ({
+      cmc,
+      typeLine: STATS_TYPE_LINE[type],
+      quantity,
+    })),
+  ),
+  { cmc: 0, typeLine: "Basic Land", quantity: 36 },
+];
+export const DECK_STATS: { slice: DeckStatsSlice; selected: CardType } = {
+  slice: { curve: manaCurve(STATS_CARDS), types: typeCurve(STATS_CARDS) },
+  selected: "creature",
 };
