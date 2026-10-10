@@ -22,6 +22,12 @@ export const deckCutsCopy = {
     cites: "Cite with one of six kinds: inclusion (the card's percent), offList, role (role, have, target), curve (cmc, have), flag, intent.",
     reasonLength: "Write each reason in one plain line, 200 characters at most.",
   },
+  /** Refusals from the run action. The in-flight, allowance and locked refusals reuse the Suggested
+   *  changes copy, which says the same thing in the same words. */
+  run: {
+    refused: "We couldn\u2019t read that deck.",
+    notOver: "This deck isn\u2019t over 100 cards, so there is nothing to cut. No credit is used.",
+  },
   /** Plain words for what the facts had to go without. */
   missing: {
     inclusion: "No EDHREC list was available, so cards carry no inclusion figure.",

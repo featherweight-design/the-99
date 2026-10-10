@@ -11,6 +11,7 @@ import type { CommanderEngine } from "../lib/recs/engine";
 import type { DeckProfile } from "../lib/profile/types";
 import type { CheckedSynopsis } from "../lib/synopsis/types";
 import type { ValidationReport } from "../lib/tuning/validate";
+import type { CutCite } from "../lib/tuning/cuts-schema";
 
 /**
  * Scryfall's set catalog (api.scryfall.com/sets). Sourced from /sets rather than derived
@@ -2059,6 +2060,30 @@ export const deckSuggestionItems = pgTable("deck_suggestion_items", {
     sql`${t.verdict} in ('pending', 'accepted', 'dismissed')`,
   ),
   index("deck_suggestion_items_run_position_idx").on(t.runId, t.position),
+]);
+
+/**
+ * One proposed cut (Proposed cuts, model tier): a card the model says the deck can spare, with its
+ * reason and the validated cites that reason rests on. Written by the run that produced it, in the
+ * same transaction that marks the run `ok`. A cut has no add, so it does not share
+ * `deck_suggestion_items`, whose `add_oracle_id` is not null.
+ */
+export const deckCutItems = pgTable("deck_cut_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  runId: uuid("run_id").notNull().references(() => deckSuggestionRuns.id, { onDelete: "cascade" }),
+  cutOracleId: uuid("cut_oracle_id").notNull().references(() => cards.oracleId),
+  reason: text("reason").notNull(),
+  /** The cites the validator checked against the facts, as the model stated them. */
+  evidence: jsonb("evidence").$type<CutCite[]>().notNull(),
+  position: integer("position").notNull(),
+  verdict: text("verdict").notNull().default("pending"),
+  verdictAt: timestamp("verdict_at"),
+}, (t) => [
+  check(
+    "deck_cut_items_verdict_check",
+    sql`${t.verdict} in ('pending', 'accepted', 'dismissed')`,
+  ),
+  index("deck_cut_items_run_position_idx").on(t.runId, t.position),
 ]);
 
 /**
