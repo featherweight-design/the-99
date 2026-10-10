@@ -11,7 +11,7 @@
 // its copy. Grouping reads the collection directly, so a failed claim read loses the marks and
 // never the groups (state 24).
 
-import { resolveOwnedPrintings } from "../collection/owned-printings";
+import { resolveDeckOwnedPrintings } from "../decks/printings";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, commanderPairSupportCards, commanderSupportCards, deckCards, decks } from "../../db/schema";
@@ -237,13 +237,14 @@ export async function loadChangeCandidates(deckId: string, userId: string): Prom
   // The art a reader OWNS for each owned half and for the commander(s) now leading, read beside the
   // claims: a candidate's thumbnail, its hover preview and its card's neighbor plate drew the
   // oracle-level printing while the card details drew the owned one (Hugh, 2026-10-05: Shirei,
-  // Shizo's Caretaker jumped from an older frame to the CMM borderless on opening). Fail-soft
-  // through `resolveOwnedPrintings`: a failed read keeps the oracle-level art.
+  // Shizo's Caretaker jumped from an older frame to the CMM borderless on opening). The deck's own
+  // printing picks come first, as they do in the details. Fail-soft: a failed read keeps the
+  // oracle-level art.
   const [availability, ownedArt] = await Promise.all([
     asked.length > 0
       ? loadAvailability(userId, { oracleIds: asked, excludeDeckId: deckId }).catch(() => null)
       : Promise.resolve(new Map<string, Availability>()),
-    resolveOwnedPrintings(userId, [...new Set([...halfIds.filter((id) => owned.has(id)), ...currentIds])]),
+    resolveDeckOwnedPrintings(userId, deckId, [...new Set([...halfIds.filter((id) => owned.has(id)), ...currentIds])]),
   ]);
   const toBuyIds = asked.filter((id) => !owned.has(id));
   const prices = toBuyIds.length > 0

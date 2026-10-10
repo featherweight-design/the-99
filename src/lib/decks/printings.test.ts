@@ -9,6 +9,7 @@ const UNOWNED = "33333333-3333-4333-8333-333333333333";
 
 const state = vi.hoisted(() => ({
   texts: [] as string[],
+  params: [] as unknown[][],
   picks: [] as unknown[],
   catalog: [] as unknown[],
   cards: [] as unknown[],
@@ -21,8 +22,9 @@ const dialect = new PgDialect();
 vi.mock("../../db", () => ({
   db: {
     execute: async (q: unknown) => {
-      const text = dialect.sqlToQuery(q as SQL).sql;
+      const { sql: text, params } = dialect.sqlToQuery(q as SQL);
       state.texts.push(text);
+      state.params.push(params);
       if (state.fail) throw new Error("down");
       if (text.includes("from deck_printings")) return { rows: state.picks };
       if (text.includes("from cards c")) return { rows: state.catalog };
@@ -66,6 +68,7 @@ function ownedCard(printings: BrowsePrinting[], preferred: { setCode: string; co
 
 beforeEach(() => {
   state.texts = [];
+  state.params = [];
   state.picks = [];
   state.catalog = [];
   state.cards = [];
@@ -236,7 +239,10 @@ describe("readRecordedPrintingArt", () => {
     ]);
     expect(art.get(recordedKey({ oracleId: OWNED, setCode: "KHM", collectorNumber: "31" })))
       .toEqual({ imageUri: "img", artCropUri: "crop", printedName: "Renamed" });
-    const read = state.texts.find((t) => t.includes("from printings p"))!;
+    const at = state.texts.findIndex((t) => t.includes("from printings p"));
+    const read = state.texts[at];
+    // Two spellings of one printing are one lookup: each unnest array carries a single entry.
+    expect(state.params[at]).toEqual([[OWNED], ["khm"], ["31"]]);
     expect(read).toContain("(p.oracle_id, p.set_code, p.collector_number) in");
     expect(read).toContain("unnest(");
   });

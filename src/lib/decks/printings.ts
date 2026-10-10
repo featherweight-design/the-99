@@ -116,8 +116,10 @@ export function heldPrintingFor(
  * `usePicks: false` skips the deck's step entirely, which is the switch-off path: the answer is
  * then the Collection's and the catalog's alone, exactly what every deck surface drew before.
  *
- * THROWS on a failed read. `resolveDeckPrintings` is the fail-soft form for surfaces that draw art;
- * a caller that records the answer (a commit) must not record an empty one.
+ * THROWS on a failed read. `resolveDeckPrintings` is the fail-soft form for surfaces that draw art.
+ * The commit uses the fail-soft form on purpose: a version's cards are the commit and the printing
+ * is a caption, so a failed read records nulls (which read as today's art) rather than refusing the
+ * commit.
  */
 export async function readDeckPrintings(
   userId: string,
