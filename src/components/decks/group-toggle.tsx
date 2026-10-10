@@ -20,6 +20,7 @@ import {
 } from "../../lib/copy/deck-sort";
 import { PriceStrip } from "./price-strip";
 import { StandInLimit } from "./stand-in-limit";
+import { ShoppingKey } from "./shopping-key";
 import { deckStatsCopy } from "@/lib/copy/deck-stats";
 import type { PriceSummary, ProvenanceForm } from "../../lib/decks/price";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
@@ -520,6 +521,8 @@ export function GroupToggle({
       {/* A sibling of the strip, not a child: the strip returns null without provenance, and the
           limit still shows then (it reads `none over`). */}
       {!statsOpen && filter === "shopping" && <StandInLimit shoppingCount={shoppingCount} overCount={shoppingOverCount} />}
+      {/* I got it's key, a host of its own so it draws with the swap tools off (null with I got it off). */}
+      {!statsOpen && filter === "shopping" && <ShoppingKey shoppingCount={shoppingCount} />}
     </div>
   );
 }

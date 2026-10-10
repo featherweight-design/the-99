@@ -62,6 +62,8 @@ import { SwapToolsProvider } from "../../../lib/swaps/context";
 import { swapToolsEnabled } from "../../../lib/swaps/flag";
 import { howItWorksEnabled } from "../../../lib/about/how-it-works-flag";
 import { DeckPageSwitches } from "../../../components/decks/deck-page-switches";
+import { GotItProvider } from "../../../components/decks/got-it";
+import { shoppingMarkBoughtEnabled } from "../../../lib/decks/mark-bought-flag";
 import { changeCommanderEnabled } from "../../../lib/commander-change/flag";
 import { ChangeCommanderProvider } from "../../../components/decks/change-commander-context";
 import { readShoppingLimit } from "../../../lib/swaps/read";
@@ -588,9 +590,12 @@ export default async function DeckBuilderPage({
   );
   // Switches read here and needed several layers down (the decisions sheet's method tags).
   const switched = <DeckPageSwitches howItWorks={howItWorksEnabled()}>{shell}</DeckPageSwitches>;
+  // I got it (both switches): the Shopping rows' tags open its confirm. Without it every row is
+  // main's (E1). Keyed per deck, so an open confirm never carries to another deck's page.
+  const bought = shoppingMarkBoughtEnabled() ? <GotItProvider key={id} deckId={id}>{switched}</GotItProvider> : switched;
   const tooled = swapTools ? (
-    <SwapToolsProvider deckId={id} deckName={detail.name} storedLimitCents={shoppingLimit}>{switched}</SwapToolsProvider>
-  ) : switched;
+    <SwapToolsProvider deckId={id} deckName={detail.name} storedLimitCents={shoppingLimit}>{bought}</SwapToolsProvider>
+  ) : bought;
   // Change commander's door and sheet read this context; without it the deck header draws exactly
   // the card-details trigger it drew before the feature (audit F6).
   return changeCommanderEnabled() ? (

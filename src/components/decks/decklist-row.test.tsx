@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { Availability } from "../../lib/decks/availability";
@@ -18,6 +18,7 @@ import { proxyCopy } from "../../lib/copy/proxies";
 import { markerAria } from "../ui/availability-marker";
 import { recommendedMix } from "../../lib/decks/mix";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
+import { gotItCopy } from "../../lib/copy/i-got-it";
 import { SwapToolsProvider, useSwapTools } from "../../lib/swaps/context";
 import { OVER_LIMIT_RING } from "./buy-tag";
 
@@ -49,7 +50,12 @@ vi.mock("../../lib/swaps/actions", () => ({ loadStandInsAction, setShoppingLimit
 // The shell mounts Consider, whose degraded banner refreshes the route.
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
+// I got it's confirm reads its choices and writes through these; the row tests only open it.
+vi.mock("../../app/collection/edit-actions", () => ({ loadPrintingChoices: vi.fn(async () => []) }));
+vi.mock("../../app/decks/mark-bought-actions", () => ({ markBought: vi.fn() }));
+
 const { DecklistRow } = await import("./decklist-row");
+const { GotItProvider } = await import("./got-it");
 const { BuilderShell } = await import("./builder-shell");
 
 // Several tests hold a mutation mid-flight on purpose, since the optimistic
@@ -1465,5 +1471,48 @@ describe("DecklistRow art preload", () => {
       fireEvent.click(document.querySelector("[data-decklist-row]")!);
     });
     expect(asked).toEqual([ART]);
+  });
+});
+
+// I got it (plan PR 2): with the feature on, a Shopping row's tag is the button that opens the
+// confirm, and below lg the stack is `buy` over `over $X`. With it off the row is main's (E1).
+describe("DecklistRow with I got it", () => {
+  const asOf = new Date("2026-09-20T00:00:00Z");
+  const priced = (cents: number) => ({ ...(card as DeckDetailCard), owned: false, price: { cents, foilCents: null, etchedCents: null, asOf } });
+  const tagName = gotItCopy.row.tagAria("Sol Ring");
+  const tools = (ui: React.ReactNode) => <SwapToolsProvider deckId="d1" deckName="Test deck" storedLimitCents={null}>{ui}</SwapToolsProvider>;
+  const row = () => document.querySelector<HTMLElement>("[data-decklist-row]")!;
+
+  it("draws main's row with the feature off: no button, and over $X above the tag", () => {
+    renderRow(tools(<DecklistRow deckId="d1" card={priced(1500)} shoppingFigure={24} inShopping newestAsOf={asOf} />));
+    expect(screen.queryByRole("button", { name: tagName })).toBeNull();
+    const word = screen.getByText(addPanelCopy.unowned.tag);
+    const stacked = screen.getAllByText(swapToolsCopy.row.over("$10")).find((el) => el.className.includes("lg:hidden"))!;
+    // `over $X` precedes the tag in the stack.
+    expect(stacked.compareDocumentPosition(word) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("makes the Shopping tag the button with the feature on, buy over over $X", () => {
+    renderRow(tools(<GotItProvider deckId="d1"><DecklistRow deckId="d1" card={priced(1500)} shoppingFigure={24} inShopping newestAsOf={asOf} /></GotItProvider>));
+    const button = screen.getByRole("button", { name: tagName });
+    const stacked = screen.getAllByText(swapToolsCopy.row.over("$10")).find((el) => button.contains(el))!;
+    const word = within(button).getByText(addPanelCopy.unowned.tag);
+    expect(word.compareDocumentPosition(stacked) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // Exactly one stacked copy: the old stack is not drawn beside the button.
+    expect(screen.getAllByText(swapToolsCopy.row.over("$10")).filter((el) => el.className.includes("lg:hidden"))).toHaveLength(1);
+  });
+
+  it("opens the confirm, not the card's details, and holds the row's hover ground while it is up", async () => {
+    renderRow(<GotItProvider deckId="d1"><DecklistRow deckId="d1" card={priced(300)} shoppingFigure={24} inShopping newestAsOf={asOf} /></GotItProvider>);
+    expect(row().className).not.toContain("bg-[color:var(--elevated-hover)] [--row-bg");
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: tagName })));
+    expect(screen.getByRole("dialog", { name: gotItCopy.confirm.title })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: tagName })).toHaveAttribute("aria-expanded", "true");
+    expect(row().className).toContain("bg-[color:var(--elevated-hover)] [--row-bg:var(--elevated-hover)]");
+  });
+
+  it("leaves the All tab's collapsed tag inert with the feature on", () => {
+    renderRow(<GotItProvider deckId="d1"><DecklistRow deckId="d1" card={priced(300)} newestAsOf={asOf} /></GotItProvider>);
+    expect(screen.queryByRole("button", { name: tagName })).toBeNull();
   });
 });

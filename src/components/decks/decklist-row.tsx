@@ -50,6 +50,7 @@ import { useSwapTools } from "../../lib/swaps/context";
 import { formatLimit, isOverLimit } from "../../lib/swaps/limit";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { useLockCards } from "./lock-cards";
+import { useGotIt } from "./got-it";
 import { LockMark } from "./lock-mark";
 
 // Both rows are the same slot at both widths: phone 44px with the ✕'s own hit
@@ -210,6 +211,9 @@ export function DecklistRow({
   // From a Shopping row with the swap tools on, the card draws the door to its stand-ins (audit F17).
   const opensDoor = swapTools !== null && inShopping && !commanderRow;
   const overText = overLimit ? swapToolsCopy.row.over(formatLimit(swapTools!.limitCents)) : null;
+  // I got it (both switches on, mounted by the deck page): a Shopping row's tag is the button that
+  // opens the confirm, on body and commander rows alike. Null with either switch off: main's row.
+  const gotIt = useGotIt();
   // `over $X` never rides the meta line (it stacks on the buy tag), so being over the limit is no
   // reason to draw one.
   const hasMetaLine = hasShoppingMeta || !inLandsGroup;
@@ -271,6 +275,8 @@ export function DecklistRow({
   const spokenFor = inShopping && isSpokenFor(card);
   // One answer, one slot — see `deckRowTag`.
   const tag = deckRowTag(card, spokenFor);
+  const pressable = gotIt !== null && inShopping && tag === "buy";
+  const confirmOpen = pressable && gotIt.openFor === card.oracleId;
   const passMark = usePassMark();
   const markLabel = passMark?.oracleIds.has(card.oracleId) ? passMark.label : null;
   const marked = markLabel !== null;
@@ -422,6 +428,13 @@ export function DecklistRow({
       // unreachable. The All tab is being scanned, so the tag collapses
       // to `$` — and still speaks the word and the price in full.
       density={inShopping ? "full" : "collapsed"}
+      press={pressable ? {
+        onPress: () => gotIt.open(card, fullName, newestAsOf),
+        state: confirmOpen ? (gotIt.pending ? "pending" : "open") : "rest",
+        cardName: fullName,
+        // Below lg the stack flips to `buy` over `over $X` with the feature on (finding 5).
+        under: overText,
+      } : undefined}
     />
   );
 
@@ -440,8 +453,11 @@ export function DecklistRow({
         // composed class list, which is the caller's and changes with it.
         data-decklist-row
         onClick={openFromRow}
-        className={`group ${rowShell} cursor-pointer bg-[color:var(--surface-rail)] md:hover:bg-[color:var(--elevated-hover)]
-          [--row-bg:var(--surface-rail)] md:hover:[--row-bg:var(--elevated-hover)]`}
+        className={`group ${rowShell} cursor-pointer ${confirmOpen
+          // The row keeps its hover ground while its confirm is up (A7).
+          ? "bg-[color:var(--elevated-hover)] [--row-bg:var(--elevated-hover)]"
+          : `bg-[color:var(--surface-rail)] md:hover:bg-[color:var(--elevated-hover)]
+          [--row-bg:var(--surface-rail)] md:hover:[--row-bg:var(--elevated-hover)]`}`}
         style={rowEdges.length > 0 ? { boxShadow: rowEdges.join(", ") } : undefined}
       >
         {/* Ownership dot: solid green (owned) vs dashed hollow (unowned).
@@ -654,7 +670,7 @@ export function DecklistRow({
             (Hugh, 2026-09-26, from md; extended to the phone 2026-09-28, "particularly on mobile"):
             the name keeps the row's width, and the limit stays beside the price it is about. From
             lg it sits inline after the figure, so this copy is drawn only below that. */}
-        {overText ? (
+        {pressable ? buyTag : overText ? (
           <span className="flex flex-none flex-col items-end gap-[2px]">
             <span className="block lg:hidden font-mono text-[10px] leading-none whitespace-nowrap" style={{ color: "var(--warning)" }}>
               {overText}

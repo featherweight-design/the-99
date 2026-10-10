@@ -15,9 +15,11 @@ import { swapToolsCopy as copy } from "../../lib/copy/swap-tools";
 import { setShoppingLimitAction } from "../../lib/swaps/actions";
 import { useSwapTools } from "../../lib/swaps/context";
 import { DEFAULT_LIMIT_CENTS, formatLimit, parseLimitDollars } from "../../lib/swaps/limit";
+import { useGotIt } from "./got-it";
 
 export function StandInLimit({ shoppingCount, overCount }: { shoppingCount: number; overCount: number }) {
   const tools = useSwapTools();
+  const gotIt = useGotIt();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const [invalid, setInvalid] = useState(false);
@@ -141,10 +143,13 @@ export function StandInLimit({ shoppingCount, overCount }: { shoppingCount: numb
           {copy.limit.invalid}
         </p>
       ) : null}
-      {/* The key: what a marked row's ⇄ does, and that the card's details hold the same door. */}
-      <p className="m-0 font-mono text-[10px] leading-[1.5]" style={{ color: "var(--fg-faint)" }}>
-        <span aria-hidden="true" style={{ color: "var(--warning)" }}>⇄</span> {copy.limit.key}
-      </p>
+      {/* The key: what a marked row's ⇄ does, and that the card's details hold the same door. With
+          I got it on, `ShoppingKey` draws it instead, beside the buy item (R2 review). */}
+      {gotIt ? null : (
+        <p className="m-0 font-mono text-[10px] leading-[1.5]" style={{ color: "var(--fg-faint)" }}>
+          <span aria-hidden="true" style={{ color: "var(--warning)" }}>⇄</span> {copy.limit.key}
+        </p>
+      )}
       <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</span>
     </div>
   );
