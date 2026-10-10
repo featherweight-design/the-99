@@ -398,8 +398,14 @@ export function discoveryKey(sort: string): string[] {
  * but not the rest of the list's work: a rank derived from a different pool
  * would have the detail page and the row it was reached from disagree.
  */
-export async function loadDiscoveryPool(userId: string) {
+export async function loadDiscoveryPool(
+  userId: string,
+  /** Called the moment the collection resolves, before the availability read: lets a caller start a
+   *  read that needs only the collection (the label read) beside it. */
+  onCollection?: (collection: Awaited<ReturnType<typeof loadCollectionPool>>["collection"]) => void,
+) {
   const { collection } = await loadCollectionPool(userId);
+  onCollection?.(collection);
 
   let availability = new Map<string, Availability>();
   let availOk = true;
@@ -441,10 +447,14 @@ export async function loadDiscoveryWithIds(
   userId: string,
   opts: { sort: "fit" | "new" },
 ): Promise<{ list: DiscoveryList; oracleIds: string[] }> {
-  const { collection, availability, availOk } = await loadDiscoveryPool(userId);
-  // Started here, beside the candidate query: it needs only the collection. `loadPoolRoleBasis`
-  // never rejects (a failed read is the classifier on both sides), so it cannot be left dangling.
-  const basisRead = loadPoolRoleBasis(collection);
+  // The label read starts the moment the collection resolves, beside the availability read and then
+  // the candidate query: it needs only the collection. `loadPoolRoleBasis` never rejects (a failed
+  // read is the classifier on both sides), so it cannot be left dangling.
+  let basisStarted: ReturnType<typeof loadPoolRoleBasis> | undefined;
+  const { collection, availability, availOk } = await loadDiscoveryPool(userId, (c) => {
+    basisStarted = loadPoolRoleBasis(c);
+  });
+  const basisRead = basisStarted ?? loadPoolRoleBasis(collection);
   // One oracle-id set, so the second support aggregate has nothing to add: the
   // ranked pool and the collection are the same pool.
   const candidates = await loadCandidates(
