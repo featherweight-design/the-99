@@ -449,15 +449,18 @@ export async function loadDiscoveryWithIds(
     collection.map((c) => c.oracleId),
   );
 
-  // The labels first: the targets follow the basis they come back under, and the rollup counts the
-  // same pool by the same sets, so with the labels readable a row and its detail page print one role
-  // count. A label outage during this compute is the classifier on both sides, and this payload is
-  // cached (an hour at most), so it can disagree with the detail page until it is rebuilt.
-  const { basis, roleSets } = await loadPoolRoleBasis(collection);
-  const [priceRead, playedTags, roleTargets] = await Promise.all([
+  // The labels, then the targets they select: the targets follow the basis the labels come back
+  // under, and the rollup counts the same pool by the same sets, so with the labels readable a row
+  // and its detail page print one role count. A label outage during this compute is the classifier
+  // on both sides, and this payload is cached (an hour at most), so it can disagree with the detail
+  // page until it is rebuilt. The prices and played tags do not wait on either read.
+  const [priceRead, playedTags, { roleSets, roleTargets }] = await Promise.all([
     readPrices(candidates.map((c) => c.oracleId)),
     loadPlayedTags(userId),
-    loadRoleTargetsForCommanders(candidates, basis),
+    loadPoolRoleBasis(collection).then(async ({ basis, roleSets }) => ({
+      roleSets,
+      roleTargets: await loadRoleTargetsForCommanders(candidates, basis),
+    })),
   ]);
 
   return assembleDiscoveryWithIds({
