@@ -1,5 +1,6 @@
 import { CHAR_BUDGETS, SECTION_COUNTS, TIP_MIN_CARDS } from "./limits";
 import { colorLabel } from "../decks/format";
+import { isInfiniteOrGameEnding } from "../spellbook/combo-features";
 import { identityNameOf, type SynopsisFacts } from "./facts";
 import type { CheckedSynopsis, SectionId } from "./types";
 
@@ -167,17 +168,24 @@ export function buildSynopsisPrompt(
 /** A combo's feature list can run to a dozen names; the first few say what it is. */
 const V2_PRODUCES_SHOWN = 4;
 
+/** The first few features, counted ones (infinite or game-ending) first, so the cut never hides the one that admitted the combo. */
+export function producesShown(produces: readonly string[]): string[] {
+  const counted = produces.filter((f) => isInfiniteOrGameEnding([f]));
+  const rest = produces.filter((f) => !isInfiniteOrGameEnding([f]));
+  return [...counted, ...rest].slice(0, V2_PRODUCES_SHOWN);
+}
+
 /** The combo and deck-stats section of the user message. Empty parts are left out, never stated as none. */
 export function v2FactLines(facts: SynopsisFacts): string[] {
   const out: string[] = [];
   const mana = (n: number | null) => (n === null ? "" : n === 0 ? " (costs no mana to run)" : ` (needs ${n} mana to run)`);
   if (facts.combos && facts.combos.length > 0) {
     out.push("", "Combos this deck assembles (Commander Spellbook; every card named is in the deck):");
-    for (const c of facts.combos) out.push(`- ${c.pieces.join(" + ")}: ${c.produces.slice(0, V2_PRODUCES_SHOWN).join(", ")}${mana(c.manaNeeded)}`);
+    for (const c of facts.combos) out.push(`- ${c.pieces.join(" + ")}: ${producesShown(c.produces).join(", ")}${mana(c.manaNeeded)}`);
   }
   if (facts.nearCombos && facts.nearCombos.length > 0) {
     out.push("", "Combos one card short (the missing card is NOT in the deck):");
-    for (const c of facts.nearCombos) out.push(`- has ${c.have}, lacks ${c.missing}: ${c.produces.slice(0, V2_PRODUCES_SHOWN).join(", ")}`);
+    for (const c of facts.nearCombos) out.push(`- has ${c.have}, lacks ${c.missing}: ${producesShown(c.produces).join(", ")}`);
   }
   const s = facts.stats;
   if (s) {
@@ -185,7 +193,7 @@ export function v2FactLines(facts: SynopsisFacts): string[] {
     out.push(`- Ramp pieces: ${s.ramp}`);
     if (s.commanderCastTurn !== null) out.push(`- Expected commander cast turn: around turn ${s.commanderCastTurn}`);
     const i = s.interaction;
-    out.push(`- Interaction (removal and counterspells): ${i.total} cards, ${i.instantSpeed} at instant speed, ${i.cheap} costing two or less, ${i.cheapInstant} both; mass removal: ${i.wipes}`);
+    out.push(`- Interaction (removal, counterspells and mass removal): ${i.total} cards, ${i.instantSpeed} at instant speed, ${i.cheap} costing two or less, ${i.cheapInstant} both; of these, mass removal: ${i.wipes}`);
   }
   return out;
 }

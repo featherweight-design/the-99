@@ -162,7 +162,7 @@ describe("buildSynopsisPrompt under the v2 method", () => {
     expect(user).toContain("Combos one card short (the missing card is NOT in the deck):");
     expect(user).toContain("- has Basalt Monolith, lacks Rings of Brighthearth: Infinite colorless mana");
     expect(user).toContain("Expected commander cast turn: around turn 4");
-    expect(user).toContain("7 cards, 4 at instant speed, 3 costing two or less, 2 both; mass removal: 1");
+    expect(user).toContain("7 cards, 4 at instant speed, 3 costing two or less, 2 both; of these, mass removal: 1");
   });
 
   it("leaves a section out when it has nothing, rather than stating none", () => {
@@ -175,5 +175,14 @@ describe("buildSynopsisPrompt under the v2 method", () => {
   it("carries the same rules in a repair, so the second call is not looser than the first", () => {
     const keep = { overview: "x", primer: {}, keyCards: [], weaknesses: [], verdicts: [] } as unknown as CheckedSynopsis;
     expect(buildSynopsisPrompt(V2, { keep, refused: ["tips"] as never }, { v2: true }).system).toContain("name the primary win condition");
+  });
+});
+
+describe("producesShown", () => {
+  it("keeps the counted feature when it sits past the fourth entry", async () => {
+    const { producesShown } = await import("./prompt");
+    const out = producesShown(["A", "B", "C", "D", "Infinite mana"]);
+    expect(out).toHaveLength(4);
+    expect(out[0]).toBe("Infinite mana");
   });
 });
