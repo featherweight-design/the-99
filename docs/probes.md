@@ -219,6 +219,13 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   behind subtracts nothing until the source commits the card AGAIN, and then hands the asker a
   copy nobody gave up.
 
+- `pnpm probe:mark-bought` proves I got it's receipt and undo (plan `2026-10-10-i-got-it.md`, PR 1)
+  against a real Postgres, where the availability read under the write's lock is the whole point.
+  A copy bought for the junior of two committed decks goes to the senior one, the receipt names it
+  and the junior still needs one; bought for the senior, it names nobody. A brew reads its own need.
+  Two purchases of two printings at once each count exactly their own copies. A revert from History
+  warns the source deck, the toast's undo (`ignoreDeckId`) leaves it out, and naming another deck
+  excludes nothing. Per-run user, cleaned up in a `finally`; refused on production and staging.
 - `pnpm probe:collection-write` proves the collection ledger's concurrency claims
   (`applyCollectionChange`, plan `2026-10-09-collection-write-path.md`) against a real Postgres:
   a double-submitted add applies once, two tabs editing one row with `expected` produce one

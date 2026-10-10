@@ -1,12 +1,13 @@
 import { and, eq, inArray, isNull, lt, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
-  cards, collectionHistory, collectionItems, commanderScores, csvUploads,
+  cards, collectionHistory, collectionItems, commanderScores, csvUploads, decks,
   type HistoryRow, type HistoryRowState,
 } from "../../db/schema";
 import { loadAvailability } from "../decks/availability-query";
 import type { Availability } from "../decks/availability";
 import { allocateClaims } from "../decks/allocate";
+import { proxiedMembership } from "../decks/proxies";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import { mergeHolding, toCollectionItemValues, type PendingItem } from "./pending";
 import type { OwnedCounts } from "./arrivals";
@@ -74,7 +75,18 @@ export type CollectionChange =
    * Reverse entry `entryId` against today's collection. `expected` is the after-count per row
    * the confirmation showed, keyed by `collectionItemKey`; a difference refuses with `stale`.
    */
-  | { kind: "revert"; entryId: string; expected?: Record<string, number> };
+  | {
+      kind: "revert";
+      entryId: string;
+      expected?: Record<string, number>;
+      /**
+       * I got it's undo, from the toast on the deck the copy was bought for: that deck is left out
+       * of the deck check, because the player is looking at it and its returning row is the signal
+       * (call B). Honoured only when the entry's own source is `shopping:<this id>`; any other
+       * entry, or another deck, gets the whole check.
+       */
+      ignoreDeckId?: string;
+    };
 
 export type ChangeOptions = {
   /** The caller's idempotency id, minted once per action and reused on every retry. */
@@ -101,6 +113,28 @@ export type ChangeOptions = {
   ownedCounts?: boolean;
   /** Where the change came from, for history: `shopping:<deck id>`. Uploads set their own. */
   source?: string;
+  /**
+   * I got it's receipt: one card's availability after the write, and before it as the same claims
+   * snapshot less this write's copies. `before` and `after` are unexcluded (who holds each copy, by
+   * seniority, the source deck in the queue); `afterFromDeck` is `deckId`'s own vantage, the one its
+   * Shopping list draws.
+   */
+  receipt?: { oracleId: string; deckId: string };
+  /**
+   * Refuse with `notInDeck` unless `deckId` holds `oracleId` (body or commander), checked INSIDE the
+   * transaction with the deck row locked `for update`, the lock every deck edit takes first. A
+   * check before the transaction could pass, then see the card removed before the write commits,
+   * and a purchase would be recorded for a deck that no longer wants it.
+   */
+  requireMember?: { deckId: string; oracleId: string };
+};
+
+export type ReceiptSnapshots = {
+  /** `after`'s claims with this write's copies taken off `owned`: one snapshot, so the two cannot
+   *  disagree about any other deck. Only `owned` and `claims`, which is all seniority reads. */
+  before: Pick<Availability, "owned" | "claims"> | null;
+  after: Availability | null;
+  afterFromDeck: Availability | null;
 };
 
 export type ShortDeck = {
@@ -122,7 +156,13 @@ export type AppliedEntry = {
 };
 
 export type ChangeResult =
-  | { status: "applied"; entry: AppliedEntry; owned?: { before: OwnedCounts; after: OwnedCounts } }
+  | {
+      status: "applied";
+      entry: AppliedEntry;
+      owned?: { before: OwnedCounts; after: OwnedCounts };
+      /** With `opts.receipt` alone. */
+      receipt?: ReceiptSnapshots;
+    }
   /** Nothing would change. No entry is written. */
   | { status: "unchanged" }
   /**
@@ -142,6 +182,8 @@ export type ChangeResult =
   | { status: "missingCard"; names: string[] }
   /** The revert target is not the player's, aged out, or pruned. */
   | { status: "notFound" }
+  /** `opts.requireMember`'s deck does not hold the card (any more). Nothing was written. */
+  | { status: "notInDeck" }
   /** The revert target was already reverted, by `by`. */
   | { status: "alreadyReverted"; by: string }
   /** A `dryRun`: nothing was written. */
@@ -459,6 +501,17 @@ export async function applyCollectionChange(
         throw new Error("collection change id is already in use");
       }
 
+      // The deck's membership, under the deck row's lock: the lock every deck edit takes first, so
+      // no edit can remove the card between this check and the commit.
+      if (opts.requireMember) {
+        const { deckId, oracleId } = opts.requireMember;
+        await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
+        const { rows: [member] } = await tx.execute<{ held: boolean }>(
+          sql`select ${proxiedMembership(deckId, oracleId)} as held`,
+        );
+        if (!member?.held) throw new Refused({ status: "notInDeck" });
+      }
+
       // ---- 3. The upload stamp is the upload's own lock, as in `replaceCollection`. The change's
       // own `uploadId` is the one id both the stamp and the entry's source read, so a write can
       // never confirm one upload while recording another.
@@ -487,10 +540,12 @@ export async function applyCollectionChange(
 
       // ---- 4. Today's rows, and the plan against them.
       let target: { rows: HistoryRow[] | null } | undefined;
+      let ignoredDeck: string | null = null;
       if (change.kind === "revert") {
         const [row] = await tx.select({
           rows: collectionHistory.rows,
           revertedBy: collectionHistory.revertedBy,
+          source: collectionHistory.source,
         })
           .from(collectionHistory)
           .where(and(
@@ -511,6 +566,9 @@ export async function applyCollectionChange(
           .set({ revertsId: change.entryId })
           .where(eq(collectionHistory.id, opts.id));
         target = row;
+        if (change.ignoreDeckId !== undefined && row.source === `shopping:${change.ignoreDeckId}`) {
+          ignoredDeck = change.ignoreDeckId;
+        }
       }
 
       const named: CollectionItemIdentity[] =
@@ -563,6 +621,25 @@ export async function applyCollectionChange(
       const lowered = [...new Set(plan.filter((p) => qty(p.after) < qty(p.before)).map((p) => p.oracleId))];
       const ownedBefore = opts.ownedCounts && !opts.dryRun ? await readOwnedCounts(tx, userId) : null;
       const claimsBefore = lowered.length > 0 ? await loadAvailability(userId, { oracleIds: lowered }, tx) : null;
+      // ONE claims snapshot for the receipt's before and after. Claim writers (a commit, a deck
+      // edit) take no collection lock, so two reads either side of the write could straddle another
+      // deck's commit and credit this purchase with it. `before` is that same snapshot less the
+      // copies this write added, which is exactly what the write changed.
+      const receiptSnapshots = async (oracleId: string): Promise<ReceiptSnapshots> => {
+        const after = await receiptOf();
+        const added = plan
+          .filter((p) => p.oracleId === oracleId)
+          .reduce((n, p) => n + qty(p.after) - qty(p.before), 0);
+        return {
+          before: after ? { ...after, owned: after.owned - added } : null,
+          after,
+          afterFromDeck: await receiptOf(opts.receipt!.deckId),
+        };
+      };
+      const receiptOf = async (excludeDeckId?: string) => opts.receipt
+        ? (await loadAvailability(userId, { oracleIds: [opts.receipt.oracleId], excludeDeckId }, tx))
+          .get(opts.receipt.oracleId) ?? null
+        : null;
 
       // ---- 6. The rows.
       if (change.kind === "replace") {
@@ -579,7 +656,8 @@ export async function applyCollectionChange(
       if (claimsBefore) {
         const claimsAfter = await loadAvailability(userId, { oracleIds: lowered }, tx);
         const names = new Map(rows.map((r) => [r.oracleId, r.name]));
-        const decks = newlyShort(claimsBefore, claimsAfter, lowered, names);
+        const decks = newlyShort(claimsBefore, claimsAfter, lowered, names)
+          .filter((d) => d.deckId !== ignoredDeck);
         if (opts.dryRun) throw new Refused({ status: "preview", ...moves, rows, decks });
         if (decks.length > 0 && !warningCovers(opts.confirmShort ?? [], decks)) {
           throw new Refused({ status: "wouldShort", decks });
@@ -606,6 +684,7 @@ export async function applyCollectionChange(
         status: "applied" as const,
         entry: { id: opts.id, seq: Number(claimed.seq), kind: entryKind(change), rows, ...moves },
         ...(ownedBefore ? { owned: { before: ownedBefore, after: await readOwnedCounts(tx, userId) } } : {}),
+        ...(opts.receipt ? { receipt: await receiptSnapshots(opts.receipt.oracleId) } : {}),
       };
     });
   } catch (error) {
