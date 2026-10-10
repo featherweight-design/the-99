@@ -19,6 +19,12 @@ describe("scoreSources", () => {
     expect(by.random.lift).toBe(1);
   });
 
+  it("leaves a Key card out of random's picks, the pool the model could cut from", () => {
+    const withKey: BlindKey["cards"] = { ...cards, k: { ...card(["random"]), keyCard: true } };
+    const by = Object.fromEntries(scoreSources(withKey, { a: "cut", d: "keep", e: "cut", k: "keep" }).map((r) => [r.source, r]));
+    expect(by.random).toMatchObject({ picks: 2, keep: 1, precision: 0.5 });
+  });
+
   it("skips unrated cards and reports no lift when random cut nothing", () => {
     const rows = scoreSources(cards, { a: "cut", d: "keep" });
     const by = Object.fromEntries(rows.map((r) => [r.source, r]));

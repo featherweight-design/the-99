@@ -33,7 +33,10 @@ if (!answersPath) throw new Error("usage: pnpm eval:cuts-blind-score <answers.js
 const answers = JSON.parse(readFileSync(answersPath, "utf8")) as Answers;
 const keyPath = args.key ?? new URL(`../../docs/superpowers/eval/blind/${answers.round}-key.json`, import.meta.url).pathname;
 const key = JSON.parse(readFileSync(keyPath, "utf8")) as Key;
-if (answers.sheetHash !== key.sheetHash) throw new Error("these answers were given on a different build of the sheet than this key describes; refusing");
+// An answers file exported before the sheet carried a key hash checks the visible sheet only.
+if (answers.sheetHash !== key.sheetHash || (answers.keyHash !== undefined && answers.keyHash !== key.keyHash)) {
+  throw new Error("these answers were given on a different build of the sheet than this key describes; refusing");
+}
 
 const pct = (x: number | null) => (x === null ? "n/a" : `${Math.round(100 * x)}%`);
 const ids = Object.keys(key.cards);

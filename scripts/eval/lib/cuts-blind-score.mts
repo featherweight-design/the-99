@@ -1,13 +1,13 @@
 /** The pure half of `eval:cuts-blind-score`, so its arithmetic is tested without a key on disk. */
 export type Rating = "cut" | "maybe" | "keep";
 export type BlindAnswers = {
-  round: string; sheetHash: string; submittedAt: string | null;
+  round: string; sheetHash: string; keyHash?: string; submittedAt: string | null;
   ratings: Record<string, Rating>;
   reasonFlags: Record<string, { falseOrInvented: boolean; note: string }>;
 };
 export type BlindKey = {
-  round: string; sheetHash: string;
-  cards: Record<string, { deck: string; oracleId: string; name: string; sources: string[]; hughCut: boolean }>;
+  round: string; sheetHash: string; keyHash: string;
+  cards: Record<string, { deck: string; oracleId: string; name: string; sources: string[]; hughCut: boolean; keyCard?: boolean }>;
 };
 
 export const SOURCES = ["model", "free", "random"] as const;
@@ -22,7 +22,9 @@ export function scoreSources(cards: BlindKey["cards"], ratings: BlindAnswers["ra
   const ids = Object.keys(cards);
   const cutTotal = ids.filter((id) => ratings[id] === "cut").length;
   const rows = SOURCES.map((source) => {
-    const mine = ids.filter((id) => cards[id].sources.includes(source));
+    // A Key card is never cuttable by the model (the validator refuses it), so random is scored over
+    // the same pool: a Key card it drew is left out of its picks.
+    const mine = ids.filter((id) => cards[id].sources.includes(source) && !(source === "random" && cards[id].keyCard));
     const rated = mine.filter((id) => ratings[id]);
     const n = (r: Rating) => rated.filter((id) => ratings[id] === r).length;
     const [cut, maybe, keep] = [n("cut"), n("maybe"), n("keep")];

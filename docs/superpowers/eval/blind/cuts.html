@@ -114,9 +114,17 @@ const CHOICES = [["cut", "Cut it"], ["maybe", "Maybe"], ["keep", "Keep it"]];
 // One saved answer set per sheet build: a rebuilt sheet (new hash) starts empty rather than
 // carrying ratings given to other cards under the same ids.
 const STORE = SHEET ? `the99-cuts-blind:${SHEET.round}:${SHEET.sheetHash}` : null;
-const blank = () => ({ round: SHEET.round, runId: SHEET.runId, sheetHash: SHEET.sheetHash, ratings: {}, reasonFlags: {}, submittedAt: null });
+const blank = () => ({ round: SHEET.round, runId: SHEET.runId, sheetHash: SHEET.sheetHash, keyHash: SHEET.keyHash, ratings: {}, reasonFlags: {}, submittedAt: null });
 function load() {
-  try { const raw = localStorage.getItem(STORE); if (raw) { const a = JSON.parse(raw); if (a.sheetHash === SHEET.sheetHash) return a; } } catch {}
+  try {
+    const raw = localStorage.getItem(STORE);
+    if (raw) {
+      const a = JSON.parse(raw);
+      // Answers saved before the key hash existed were given on this same build; they take it.
+      // Answers carrying a DIFFERENT key hash were given against other sources, and start over.
+      if (a.sheetHash === SHEET.sheetHash && (a.keyHash ?? SHEET.keyHash) === SHEET.keyHash) return { ...a, keyHash: SHEET.keyHash };
+    }
+  } catch {}
   return blank();
 }
 let answers = null;
@@ -139,6 +147,7 @@ function renderTabs() {
 }
 
 function rate(card, k) {
+  if (answers.submittedAt) return;
   answers.ratings[card.id] = k;
   save();
   render();
@@ -154,14 +163,15 @@ function renderDeck(d) {
       el("p", { class: "notice", style: "margin-top:8px" },
         `This list is ${d.size} cards and needs ${cuts} cut. `,
         `None of your decks on staging is over 100, so this is a stand-in: the list you held just before your last trim, the previous version plus the ${d.lastAdded} cards you last added. Pretend it needs trimming by that many. `,
-        `${d.cards.length} candidates are listed; you can mark as many or as few "Cut it" as you like.`)),
+        `${d.cards.length} candidates are listed; you can mark as many or as few "Cut it" as you like.`,
+        answers.submittedAt ? " Your ratings are submitted and can no longer change: the reasons you have read since would unblind them." : null)),
     el("section", { class: "cards", "aria-label": "Candidate cuts" }, d.cards.map((c) => el("article", { class: "card" },
       el("div", {},
         el("div", { class: "name" }, c.name),
         el("div", { class: "meta" }, `${c.typeLine} · mana value ${c.mv}`),
         c.text ? el("p", { class: "text" }, c.text) : null),
       el("div", { class: "picks", role: "group", "aria-label": `Your call on ${c.name}` },
-        CHOICES.map(([k, t]) => el("button", { class: "pick", "data-k": k, "aria-pressed": String(answers.ratings[c.id] === k), onclick: () => rate(c, k) }, t)))))),
+        CHOICES.map(([k, t]) => el("button", { class: "pick", "data-k": k, "aria-pressed": String(answers.ratings[c.id] === k), disabled: !!answers.submittedAt, onclick: () => rate(c, k) }, t)))))),
   ];
 }
 

@@ -159,6 +159,9 @@ for (const [i, d] of BLIND_DECKS.entries()) {
     throw new Error(`deck ${d.name}: the prompt is past the feature's input ceiling; the app would refuse it`);
   }
   const free = proposeCuts({ profile, locked: new Set(locked), support }).candidates.slice(0, facts.over).map((c) => c.oracleId);
+  // Drawn from every cuttable card, Key cards included, so round 1's sheet stays the one Hugh is
+  // rating. The validator refuses a Key card from the model, so the key marks them and the scorer
+  // leaves them out of random's picks: lift is against the pool the model could choose from.
   const random = seededShuffle(facts.cards.map((c) => c.oracleId).sort(), SEED + 100 * i).slice(0, facts.over);
   const customId = `${d.id.slice(0, 8)}-0`;
   prepared.push({
@@ -222,8 +225,11 @@ if (args.reuse) {
     return results;
   };
   for (const g of await send(prepared.map((p) => p.sent), "a1", worst / 2)) attempts.set(g.customId, [g]);
-  // `callModel`'s one retry: a reply that failed the schema, or a retryable error.
-  const retry = prepared.filter((p) => {
+  // `callModel`'s one retry: a reply that failed the schema, or a retryable error. Skipped once the
+  // first pass reaches the ask line, as `eval:cuts-model` does.
+  const midway = spent(readLedger(LEDGER_CUTS));
+  if (midway >= ASK_AT_USD) console.error(`STOPPED before the retry pass: $${midway.toFixed(2)} spent (ask line $${ASK_AT_USD})`);
+  const retry = midway >= ASK_AT_USD ? [] : prepared.filter((p) => {
     const g = attempts.get(p.customId)?.[0];
     return !g || (g.ok ? !parseReply(schemaOf.get(p.customId)!, g.message).ok : g.retry);
   });
@@ -256,7 +262,7 @@ const citeText = (c: { kind: string } & Record<string, unknown>) =>
       : c.kind === "flag" ? `bracket flag: ${c.flag}` : "the deck's intent";
 
 const decks: SheetDeck[] = [];
-const key: Record<string, { deck: string; oracleId: string; name: string; sources: string[]; hughCut: boolean }> = {};
+const key: Record<string, { deck: string; oracleId: string; name: string; sources: string[]; hughCut: boolean; keyCard: boolean }> = {};
 let usdTotal = 0;
 for (const [i, p] of prepared.entries()) {
   const tries = attempts.get(p.customId) ?? [];
@@ -290,18 +296,21 @@ for (const [i, p] of prepared.entries()) {
     modelStatus,
   });
   for (const oid of order) {
-    key[idOf.get(oid)!] = { deck: p.deckName, oracleId: oid, name: byId.get(oid)!.name, sources: [...sources.get(oid)!].sort(), hughCut: p.hughCut.has(oid) };
+    key[idOf.get(oid)!] = { deck: p.deckName, oracleId: oid, name: byId.get(oid)!.name, sources: [...sources.get(oid)!].sort(), hughCut: p.hughCut.has(oid), keyCard: p.pack.keyCardIds.includes(oid) };
   }
   console.error(`${p.deckName}: ${order.length} cards on the sheet (model ${kept.length}${modelStatus === "failed" ? ", FAILED" : ""}, free ${p.free.length}, random ${p.random.length})`);
 }
 
 // The answers file carries this hash back, so the scorer refuses answers given to another sheet.
 const sheetHash = createHash("sha256").update(JSON.stringify(decks)).digest("hex");
+// The key's own hash: a rebuild that moved a card between sources over the same visible decks
+// keeps `sheetHash` (and so the reader's saved answers) but not this, and the scorer checks it.
+const keyHash = createHash("sha256").update(JSON.stringify(key)).digest("hex");
 // Shown in the non-blind section, after submit: where the model's answers came from.
 const modelNote = args.reuse
   ? `The model's answers are reused from run ${runId} (already paid for, nothing spent here) and checked again with today's validator.`
   : `The model's answers were generated for this sheet in run ${runId}.`;
-const sheet = { round: ROUND, runId, sheetHash, modelNote, builtAt: new Date().toISOString(), decks };
+const sheet = { round: ROUND, runId, sheetHash, keyHash, modelNote, builtAt: new Date().toISOString(), decks };
 const out = new URL("blind/", ROOT);
 const template = readFileSync(new URL("cuts.html", out), "utf8");
 const MARK = "/*__SHEET_DATA__*/null";
@@ -309,7 +318,7 @@ if (!template.includes(MARK)) throw new Error("blind/cuts.html lost its data mar
 // `<` is escaped so no card text can close the script element it sits in.
 const html = template.replace(MARK, () => JSON.stringify(sheet).replace(/</g, "\\u003c"));
 writeFileSync(new URL(`${ROUND}-sheet.html`, out), html);
-writeFileSync(new URL(`${ROUND}-key.json`, out), `${JSON.stringify({ round: ROUND, runId, sheetHash, cards: key }, null, 2)}\n`);
+writeFileSync(new URL(`${ROUND}-key.json`, out), `${JSON.stringify({ round: ROUND, runId, sheetHash, keyHash, cards: key }, null, 2)}\n`);
 console.log(`eval:cuts-blind: ${ROUND} written from run ${runId}; ${Object.keys(key).length} cards across ${decks.length} decks; model answers cost $${usdTotal.toFixed(4)}${args.reuse ? " when that run was made (nothing spent now)" : ""}`);
 console.log(`open ${new URL(`${ROUND}-sheet.html`, out).pathname}`);
 process.exit(0);
