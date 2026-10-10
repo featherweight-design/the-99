@@ -89,6 +89,11 @@ type RoleRow = {
   avg_draw: number | null;
   avg_removal: number | null;
   avg_wipes: number | null;
+  // The label pass clears and rewrites these four with `avg_*`, so the restore covers all eight.
+  label_ramp: number | null;
+  label_draw: number | null;
+  label_removal: number | null;
+  label_wipes: number | null;
 };
 
 /** Populated BEFORE the write each covers, never returned at the end — a throw part-way through
@@ -176,11 +181,13 @@ async function main() {
   // ---- capture ------------------------------------------------------------------------
   commanderRoles = await rows<RoleRow>(sql`
     select commander_oracle_id as id, null as partner,
-           avg_ramp, avg_draw, avg_removal, avg_wipes
+           avg_ramp, avg_draw, avg_removal, avg_wipes,
+           label_ramp, label_draw, label_removal, label_wipes
     from commander_support`);
   pairRoles = await rows<RoleRow>(sql`
     select commander_oracle_id as id, partner_oracle_id as partner,
-           avg_ramp, avg_draw, avg_removal, avg_wipes
+           avg_ramp, avg_draw, avg_removal, avg_wipes,
+           label_ramp, label_draw, label_removal, label_wipes
     from commander_pair_support`);
   console.log(`captured ${commanderRoles.length} commander and ${pairRoles.length} pair role row(s)\n`);
 
@@ -349,7 +356,8 @@ async function main() {
       check("the pass reports the pair it wrote", res.pairsWritten, 1);
       const [pair] = await rows<RoleRow>(sql`
         select commander_oracle_id as id, partner_oracle_id as partner,
-               avg_ramp, avg_draw, avg_removal, avg_wipes
+               avg_ramp, avg_draw, avg_removal, avg_wipes,
+               label_ramp, label_draw, label_removal, label_wipes
         from commander_pair_support
         where commander_oracle_id = ${a}::uuid and partner_oracle_id = ${b}::uuid`);
       // THE KEY SPLIT is the point of this section. The derivation groups by a single id, so
@@ -483,7 +491,9 @@ main()
             await db.execute(sql`
               update commander_support
                  set avg_ramp = ${r.avg_ramp}, avg_draw = ${r.avg_draw},
-                     avg_removal = ${r.avg_removal}, avg_wipes = ${r.avg_wipes}
+                     avg_removal = ${r.avg_removal}, avg_wipes = ${r.avg_wipes},
+                     label_ramp = ${r.label_ramp}, label_draw = ${r.label_draw},
+                     label_removal = ${r.label_removal}, label_wipes = ${r.label_wipes}
                where commander_oracle_id = ${r.id}::uuid`);
           }
         }
@@ -492,7 +502,9 @@ main()
             await db.execute(sql`
               update commander_pair_support
                  set avg_ramp = ${r.avg_ramp}, avg_draw = ${r.avg_draw},
-                     avg_removal = ${r.avg_removal}, avg_wipes = ${r.avg_wipes}
+                     avg_removal = ${r.avg_removal}, avg_wipes = ${r.avg_wipes},
+                     label_ramp = ${r.label_ramp}, label_draw = ${r.label_draw},
+                     label_removal = ${r.label_removal}, label_wipes = ${r.label_wipes}
                where commander_oracle_id = ${r.id}::uuid
                  and partner_oracle_id = ${r.partner}::uuid`);
           }
