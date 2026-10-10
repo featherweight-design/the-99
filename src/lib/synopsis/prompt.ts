@@ -278,7 +278,7 @@ export function buildSynopsisPrompt(
     lines.push(`${REPAIR_LEAD} ${reasons.join("; ")}.`);
     // A reason alone does not say WHICH line is over; the repair then rewrote the section at the
     // same lengths (4 of 5 over-budget Primers stayed refused). Name the lines and their counts.
-    const long = retry.first ? overLengthLines(retry.first, retry.refused) : [];
+    const long = retry.first && opts.contract8 ? overLengthLines(retry.first, retry.refused) : [];
     if (long.length > 0) lines.push(`Shorten these, which ran over their limit (counted as rendered; every other item in those sections must also fit its limit): ${long.join("; ")}.`);
   }
 

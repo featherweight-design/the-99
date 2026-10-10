@@ -306,5 +306,7 @@ describe("buildSynopsisPrompt under contract 8", () => {
     expect(withFirst).toContain("Shorten these, which ran over their limit");
     expect(withFirst).toContain("keep line 1 is 98 characters, limit 80, write it at about 64");
     expect(buildSynopsisPrompt(FACTS, { keep, refused: ["primer"] }, C8).user).not.toContain("Shorten these");
+    expect(buildSynopsisPrompt(FACTS, { keep, refused: ["primer"], first: reply }).user).not.toContain("Shorten these");
+    expect(buildSynopsisPrompt(FACTS, { keep, refused: ["primer"], first: reply }, { v2: true }).user).not.toContain("Shorten these");
   });
 });
