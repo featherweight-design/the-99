@@ -1178,3 +1178,16 @@ export const loadOwnedSetMeta = cache(async function loadOwnedSetMeta(
     .where(eq(collectionItems.userId, userId));
   return rows;
 });
+
+/**
+ * The card as a deck that picked `pick` shows it (deck printings): that printing preferred, and
+ * its art, set code and title all from the printing that actually resolves (`cardArt`), exactly as
+ * the card modal titles a deck's pick, so a neighbor plate and the modal it opens never name one
+ * card two ways. `pick` null is the card unchanged.
+ */
+export function withDeckPick(card: BrowseCard, pick: PreferredPrinting | null | undefined): BrowseCard {
+  if (!pick) return card;
+  const next = { ...card, preferredPrinting: pick };
+  const shown = resolvedPrinting(next);
+  return shown ? { ...next, ...cardArt(card.name, shown) } : { ...next, printedName: null };
+}

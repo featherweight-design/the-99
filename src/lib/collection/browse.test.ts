@@ -14,6 +14,7 @@ import {
   resolveFlavorName,
   sortCards,
   toListCards,
+  withDeckPick,
   type BrowseCard,
   type BrowseListCard,
   type BrowsePrinting,
@@ -1023,5 +1024,29 @@ describe("bracket facts on the browse payload", () => {
     // server and the row that draws it.
     const [listed] = toListCards(aggregateCollection([raw({ gameChanger: true })]));
     expect(listed.facts).toEqual(["gameChanger"]);
+  });
+});
+
+describe("withDeckPick", () => {
+  const collection = printing({ setCode: "CMM", collectorNumber: "676", imageUri: "https://x/cmm.jpg" });
+  const picked = printing({ setCode: "LTC", collectorNumber: "284", imageUri: "https://x/ltc.jpg", flavorName: "Ring of Renown" });
+  const held = card({
+    printings: [collection, picked],
+    preferredPrinting: { setCode: "CMM", collectorNumber: "676" },
+    imageUri: "https://x/cmm.jpg",
+    primarySetCode: "CMM",
+    printedName: null,
+  });
+
+  it("moves the art, set code and title together to the deck's pick", () => {
+    const shown = withDeckPick(held, { setCode: "LTC", collectorNumber: "284" });
+    expect(shown.preferredPrinting).toEqual({ setCode: "LTC", collectorNumber: "284" });
+    expect(shown.imageUri).toBe("https://x/ltc.jpg");
+    expect(shown.primarySetCode).toBe("LTC");
+    expect(shown.printedName).toBe("Ring of Renown");
+  });
+
+  it("leaves the card alone with no pick", () => {
+    expect(withDeckPick(held, null)).toBe(held);
   });
 });

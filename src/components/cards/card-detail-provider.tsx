@@ -28,7 +28,7 @@ import {
 } from "react";
 import { twMerge } from "tailwind-merge";
 import type { BrowseCard, CardArt, PreferredPrinting } from "../../lib/collection/browse";
-import { printedNameOf, resolvedPrinting } from "../../lib/collection/browse";
+import { printedNameOf, resolvedPrinting, withDeckPick } from "../../lib/collection/browse";
 import { getCardDetail } from "../../app/card-detail-action";
 import { fetchCardDetail } from "../../lib/cards/fetch-card-detail";
 import { FitsPicker } from "./fits-picker";
@@ -382,6 +382,24 @@ export function CardDetailTrigger({
 
 /** Stable, so the context value's identity does not change every render. */
 const EMPTY_IDS: ReadonlySet<string> = new Set();
+
+type DeckPicks = Readonly<Record<string, PreferredPrinting>> | null;
+
+/**
+ * The deck's pick for one card, or null. On the deck page (`deckId` set) only a card the deck holds
+ * NOW has one: the picks are the server's snapshot, and a card just removed keeps its entry there
+ * until the next read. Off the deck page every pick in the map is the deck's (deck printings, E9).
+ */
+function deckPickFor(
+  picks: DeckPicks,
+  deckId: string | null,
+  held: ReadonlySet<string> | undefined,
+  oracleId: string,
+): PreferredPrinting | null {
+  if (picks === null) return null;
+  if (deckId !== null && !(held ?? EMPTY_IDS).has(oracleId)) return null;
+  return picks[oracleId] ?? null;
+}
 const NOOP = () => {};
 import { STACK_DROP_MS } from "./card-modal";
 export { STACK_DROP_MS };
@@ -631,15 +649,14 @@ export function CardDetailProvider({
   // The NAME travels with the art: a renamed owned printing (a Secret Lair card) is titled in the
   // modal with the name printed on it, so its plate's caption and label read that too, even where
   // the opener already passed the same picture under the oracle name.
-  const [readArt, setReadArt] = useState<ReadonlyMap<string, { art: string | null; name: string }>>(() => new Map());
+  //
+  // The read card is kept, not its art: the plate is derived at render, under the deck's picks and
+  // holdings as they stand then, so a card removed from the deck after its read draws the
+  // Collection's printing, as its modal does (deck printings).
+  const [readArt, setReadArt] = useState<ReadonlyMap<string, BrowseCard>>(() => new Map());
   const file = useCallback((oracleId: string, next: BrowseCard) => {
     cache.current.set(oracleId, next);
-    const art = resolvedPrinting(next)?.imageUri ?? null;
-    const name = printedNameOf(next);
-    setReadArt((m) => {
-      const was = m.get(oracleId);
-      return was && was.art === art && was.name === name ? m : new Map(m).set(oracleId, { art, name });
-    });
+    setReadArt((m) => (m.get(oracleId) === next ? m : new Map(m).set(oracleId, next)));
   }, []);
   // How many times each card has been evicted. A read that started before an eviction
   // answers with what the write it raced has not replaced yet, so the count taken when
@@ -1248,8 +1265,10 @@ export function CardDetailProvider({
   // same positions to prefetch them.
   const plate = (s: SiblingCard | undefined): SiblingCard | null => {
     if (!s) return null;
-    const read = readArt.get(s.oracleId);
-    if (!read) return s;
+    const readCard = readArt.get(s.oracleId);
+    if (!readCard) return s;
+    const shown = withDeckPick(readCard, deckPickFor(deckPrintingPicks, deckId, deckOracleIds, s.oracleId));
+    const read = { art: resolvedPrinting(shown)?.imageUri ?? null, name: printedNameOf(shown) };
     return read.art !== (s.imageUri ?? null) || read.name !== s.name ? { ...s, imageUri: read.art, name: read.name } : s;
   };
   const prevSibling = paging && index > 0 ? plate(siblings[index - 1]) : null;
@@ -1284,16 +1303,16 @@ export function CardDetailProvider({
   );
   const deckPrintingFor = (oracleId: string): DeckPrintingScope | undefined => {
     if (deckPrintingPicks === null) return undefined;
+    const pick = deckPickFor(deckPrintingPicks, deckId, deckOracleIds, oracleId);
     // The deck page: a card the deck holds picks for it.
     if (deckId !== null) {
       return (deckOracleIds ?? EMPTY_IDS).has(oracleId)
-        ? { pick: deckPrintingPicks[oracleId] ?? null, save: (p) => saveDeckPrinting(oracleId, p) }
+        ? { pick, save: (p) => saveDeckPrinting(oracleId, p) }
         : undefined;
     }
     // A deck surface with no deck write (the review screen, the update diff, E9): a picked card
     // opens on the deck's printing, with no picker; an unpicked one is today's modal, which already
     // shows the Collection's printing the deck falls back to.
-    const pick = deckPrintingPicks[oracleId];
     return pick ? { pick } : undefined;
   };
 
