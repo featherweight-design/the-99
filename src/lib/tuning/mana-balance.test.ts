@@ -118,6 +118,12 @@ describe("readManaBalance: lands", () => {
     expect(read([rockAdv, land("forest", 1, ["G"])]).lands.cheapRamp).toBe(1);
   });
 
+  it("counts a cheap mana source whose color could not be read, since Karsten's ramp term is every source", () => {
+    const b = read([rock("mystery", "{2}", 2, []), spell("a", "{G}"), land("forest", 1, ["G"])]);
+    expect(b.unattributedNonland).toBe(2);
+    expect(b.lands.cheapRamp).toBe(2);
+  });
+
   it("counts only mana sources of mana value three or less as cheap ramp", () => {
     const b = read([rock("cheap", "{2}", 1, ["G"]), rock("edge", "{3}", 2, ["G"]), rock("dear", "{4}", 1, ["G"]), spell("a", "{G}"), land("forest", 1, ["G"])]);
     expect(b.lands.cheapRamp).toBe(3);

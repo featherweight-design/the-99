@@ -246,8 +246,11 @@ function symbols(s: string): Color[] {
   return [...s.matchAll(/\{([wubrg])\}/g)].map((m) => m[1].toUpperCase() as Color);
 }
 
-/** A condition in the sentence that says a land enters tapped: `unless`, a declined reveal or payment, or an `if you control`. */
-const CONDITIONAL_ENTRY = /\bunless\b|\bif you (?:don't|do not|didn't|did not|control|have|haven't)\b|\bif an opponent\b/i;
+/** The sentence of the land's own text that says it enters tapped, or null. Reminder text is stripped. */
+export function entersTappedSentence(card: LandText): string | null {
+  const text = stripReminders(frontText(card));
+  return text.split(/(?<=[.!?])\s+|\n/).find((s) => /enters(?: the battlefield)? tapped\b/.test(s)) ?? null;
+}
 
 /**
  * How the land ITSELF comes into play, from its own text: tapped, tapped unless a condition holds,
@@ -262,12 +265,8 @@ export function entersAs(card: LandText): Extract<Drawback, { kind: "entersTappe
   const shock = /you may pay (\d+|two) life\. if you don't, it enters(?: the battlefield)? tapped/.exec(text);
   if (unless) return { kind: "entersTappedUnless", condition: unless[1].trim() };
   if (shock) return { kind: "entersTappedUnless", condition: `you pay ${amount(shock[1])} life` };
-  // The condition can come first ("Unless you control a Soldier, this land enters tapped") or ride a
-  // reveal ("you may reveal a Plains card. If you don't, this land enters tapped"): look at the sentence
-  // that says it enters tapped, not at one wording.
-  const sentence = text.split(/(?<=[.!?])\s+|\n/).find((s) => /enters(?: the battlefield)? tapped\b/.test(s));
-  if (!sentence) return null;
-  return CONDITIONAL_ENTRY.test(sentence) ? { kind: "entersTappedUnless", condition: sentence.replace(/[.!?]+$/, "").trim() } : { kind: "entersTapped" };
+  if (/enters(?: the battlefield)? tapped\b/.test(text)) return { kind: "entersTapped" };
+  return null;
 }
 
 /** What running this land costs, from its own text. A basic land costs nothing. */

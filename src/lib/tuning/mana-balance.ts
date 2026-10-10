@@ -59,7 +59,7 @@ export type LandEvidence = {
   tapped: TappedLands;
   /** Mana value averaged over the nonland cards, the commander(s) counted as one more card each. */
   averageManaValue: number;
-  /** Mana sources of mana value 3 or less: the ramp term of Karsten's land formula (draw spells are not counted). */
+  /** Mana sources of mana value 3 or less, whether or not their color could be read: the ramp term of Karsten's land formula (draw spells are not counted). */
   cheapRamp: number;
   /** Karsten's 99-card land-count regression for those inputs, unrounded. */
   karstenLands: number;
@@ -125,7 +125,7 @@ export function readManaBalance({ rows, nameOf, tapped }: ManaBalanceInput): Man
 
   // The deck's average mana value is the what-changed strip's (`averageManaValue`), commanders included as cards.
   const averageMv = averageManaValue(rows.map((r) => ({ cmc: rowManaValue(r), quantity: r.quantity, typeLine: r.typeLine }))) ?? 0;
-  const cheapRamp = rows.reduce((a, r) => (r.ramp && (r.produces ?? []).length > 0 && rowManaValue(r) <= 3 ? a + r.quantity : a), 0);
+  const cheapRamp = rows.reduce((a, r) => (r.ramp && rowManaValue(r) <= 3 ? a + r.quantity : a), 0);
 
   return {
     state: pipsWith === 0 ? "colorless" : BALANCE_COLORS.every((c) => total(c) === 0) ? "noSources" : "ok",

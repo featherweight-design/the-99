@@ -42,6 +42,13 @@ describe("costPatterns", () => {
   });
 });
 
+describe("a joined cost", () => {
+  it("is refused by the single-cost readers, so no caller sums or parses it as one spell", () => {
+    expect(() => manaValueOf("{2}{R} // {1}{R}")).toThrow(/joined cost/);
+    expect(() => costPatterns("{2}{R} // {1}{R}")).toThrow(/joined cost/);
+  });
+});
+
 describe("castingPatterns", () => {
   it("gives one pattern per face of a joined cost, never a sum of the faces", () => {
     expect(castingPatterns("{2}{R} // {1}{R}", "R")).toEqual([{ generic: 2, pips: 1 }, { generic: 1, pips: 1 }]);

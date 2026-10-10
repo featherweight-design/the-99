@@ -6,10 +6,16 @@ import { faceCosts } from "../cards/faces";
 import { manaNeeds } from "../profile/build";
 import type { ManaColor } from "./supply";
 
-/** Mana value of a cost: generic numbers add, `{X}` is 0, `{2/W}` is 2, every other symbol is 1. */
+/** A stored cost joins every face (`{2}{R} // {1}{R}`); summing or parsing it as one cost is a bug, so refuse it. */
+function oneFace(manaCost: string | null): string | null {
+  if (manaCost?.includes("//")) throw new Error(`mana: a joined cost is not one cost: ${manaCost}. Split it with faceCosts, or use castingPatterns.`);
+  return manaCost;
+}
+
+/** Mana value of ONE FACE'S cost: generic numbers add, `{X}` is 0, `{2/W}` is 2, every other symbol is 1. */
 export function manaValueOf(manaCost: string | null): number {
   let total = 0;
-  for (const [, body] of (manaCost ?? "").matchAll(/\{([^}]+)\}/g)) {
+  for (const [, body] of (oneFace(manaCost) ?? "").matchAll(/\{([^}]+)\}/g)) {
     const sym = body.toUpperCase();
     if (/^\d+$/.test(sym)) total += Number(sym);
     else if (sym === "X" || sym === "Y" || sym === "Z") continue;
@@ -24,7 +30,7 @@ export type ColorPattern = { generic: number; pips: number };
 /** For each color ONE FACE'S cost needs: its pips, and the mana value that is not those pips. A stored
  *  cost joins every face (`{2}{R} // {1}{R}`) and is not one cost: read it with `castingPatterns`. */
 export function costPatterns(manaCost: string | null): Partial<Record<ManaColor, ColorPattern>> {
-  const mv = manaValueOf(manaCost);
+  const mv = manaValueOf(manaCost); // refuses a joined cost
   const pips: Partial<Record<ManaColor, number>> = {};
   for (const need of manaNeeds(manaCost)) for (const c of need) pips[c as ManaColor] = (pips[c as ManaColor] ?? 0) + 1;
   return Object.fromEntries(Object.entries(pips).map(([c, n]) => [c, { generic: mv - n, pips: n }]));
