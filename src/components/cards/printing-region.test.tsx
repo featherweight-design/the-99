@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { BrowsePrinting } from "../../lib/collection/browse";
 import type { PrintingChoice } from "../../lib/collection/catalog-read";
 import { printingPickerCopy } from "../../lib/copy/collection";
+import { deckPrintingsCopy } from "../../lib/copy/deck-printings";
 import { PrintingRegion, OVERFLOW_THRESHOLD, printingKey } from "./printing-region";
 
 const copy = printingPickerCopy.printing;
@@ -21,6 +22,7 @@ const printing = (over: Partial<BrowsePrinting> = {}): BrowsePrinting => ({
 
 type ArtOver = Partial<Extract<React.ComponentProps<typeof PrintingRegion>, { preferred: unknown }>>;
 
+const deckCopy = deckPrintingsCopy.picker;
 function renderRegion(over: ArtOver = {}) {
   const onPick = vi.fn();
   const onReset = vi.fn();
@@ -210,6 +212,38 @@ describe("PrintingRegion", () => {
       renderRegion({ preferred: { setCode: "LEA", collectorNumber: "270" } });
       expect(screen.queryByText(copy.dormantBadge)).not.toBeInTheDocument();
       expect(screen.getAllByRole("radio")).toHaveLength(3);
+    });
+  });
+
+  describe("deck scope (deck printings)", () => {
+    const deck = { scope: "deck" as const };
+
+    it("swaps both intro strings and drops the reset", () => {
+      const { unmount } = renderRegion(deck);
+      expect(screen.getByText(deckCopy.regionIntro(3))).toBeInTheDocument();
+      unmount();
+      renderRegion({ ...deck, preferred: { setCode: "LEA", collectorNumber: "270" } });
+      expect(screen.getByText(deckCopy.regionIntroPicked)).toBeInTheDocument();
+      expect(screen.queryByText(copy.resetToDefault)).not.toBeInTheDocument();
+    });
+
+    it("shows no dormant tile for a pick no longer held", () => {
+      renderRegion({ ...deck, preferred: { setCode: "MMQ", collectorNumber: "9" } });
+      expect(screen.queryByText(copy.dormantBadge)).not.toBeInTheDocument();
+      expect(screen.getAllByRole("radio")).toHaveLength(3);
+    });
+
+    it("announces the pick for this deck, once", () => {
+      const { onAnnounce, onPick } = renderRegion(deck);
+      fireEvent.click(screen.getByRole("radio", { name: /Limited Edition Alpha/ }));
+      expect(onPick).toHaveBeenCalled();
+      expect(onAnnounce).toHaveBeenCalledTimes(1);
+      expect(onAnnounce).toHaveBeenCalledWith(deckCopy.announcePicked("Limited Edition Alpha", "270"));
+    });
+
+    it("draws a refused save as a status line", () => {
+      renderRegion({ ...deck, notice: deckCopy.failed });
+      expect(screen.getByRole("status")).toHaveTextContent(deckCopy.failed);
     });
   });
 

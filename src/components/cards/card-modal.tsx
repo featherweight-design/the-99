@@ -48,6 +48,7 @@ import type { SheetFooterLayout, SiblingCard } from "./card-detail-provider";
 import { useMinWidth } from "../ui/use-min-width";
 import { ProxyControl } from "../decks/proxy-control";
 import { proxyCopy } from "../../lib/copy/proxies";
+import { deckPrintingsCopy } from "../../lib/copy/deck-printings";
 
 const pickerCopy = printingPickerCopy.printing;
 
@@ -645,6 +646,17 @@ const PhonePeek = React.forwardRef<
   );
 });
 
+/** The deck a modal picks a printing for: its current pick (held, or null) and the write. */
+export type DeckPrintingScope = {
+  pick: PreferredPrinting | null;
+  /**
+   * Resolves true once the deck's pick is stored, false on any refusal. Absent on a surface that
+   * shows the deck's printing but must not offer the pick (the review screen and the update diff,
+   * E9): the art follows the deck and the Set field is the plain one.
+   */
+  save?: (p: PreferredPrinting) => Promise<boolean>;
+};
+
 export function CardModal({
   card,
   position,
@@ -666,6 +678,7 @@ export function CardModal({
   deckName = null,
   deckPage = false,
   deckHolds = false,
+  deckPrinting,
   onProxyWrite,
   onSelectCard,
   stacked = false,
@@ -758,6 +771,13 @@ export function CardModal({
    *  cards the deck does not hold — Consider, search — and the control refuses
    *  every one of them, so it must not be drawn for them. */
   deckHolds?: boolean;
+  /**
+   * Deck printings: opened from a deck that holds this card, with the switch on. The picker then
+   * picks for THAT deck: it starts from the deck's own pick, writes through `save`, and the art
+   * falls back to the Collection's printing when the deck has none. Absent everywhere else, which
+   * is today's collection-scoped picker.
+   */
+  deckPrinting?: DeckPrintingScope;
   /** Invalidates this card in the provider's cache after a proxy write, so the
    *  receipt beside the control stops describing the state before the tap. */
   onProxyWrite?: () => void;
@@ -1005,7 +1025,12 @@ export function CardModal({
   // The pick the user just made, before the server action's revalidate lands. Seeding it from
   // the card is only correct because the caller keys this component on oracleId — paging
   // Prev/Next remounts rather than reusing the state of the card you just left.
-  const [pick, setPick] = useState<PreferredPrinting | null>(card.preferredPrinting);
+  // In deck scope the pick is the DECK's, and the Collection's preference is only the fallback
+  // the art takes when the deck has none (`effective` below).
+  const deckScope = deckPrinting !== undefined;
+  const seedPick = deckScope ? deckPrinting.pick : card.preferredPrinting;
+  const [pick, setPick] = useState<PreferredPrinting | null>(seedPick);
+  const [saveFailed, setSaveFailed] = useState(false);
   // Whether the reader has chosen a printing in THIS modal. Until they do, a card opened at
   // a particular printing shows that one; afterwards their choice wins.
   const [picked, setPicked] = useState(false);
@@ -1026,7 +1051,13 @@ export function CardModal({
   const [seeded, setSeeded] = useState(card);
   if (!writing && seeded !== card) {
     setSeeded(card);
-    setPick(card.preferredPrinting);
+    if (!deckScope) setPick(card.preferredPrinting);
+  }
+  // The deck's pick re-read (the deck page refreshes after a write), reconciled the same way.
+  const [seededDeckPick, setSeededDeckPick] = useState(deckPrinting?.pick ?? null);
+  if (deckScope && !writing && seededDeckPick !== deckPrinting.pick) {
+    setSeededDeckPick(deckPrinting.pick);
+    setPick(deckPrinting.pick);
   }
 
   // The read the write's own eviction starts can answer before the write does, and the card
@@ -1042,7 +1073,7 @@ export function CardModal({
   // not take. The card on screen is not that: a write's own re-read can fail, leaving the
   // reader looking at a card older than a pick the server accepted, and rolling a later
   // refusal back to it would revert past a choice that landed.
-  const serverPick = useRef<PreferredPrinting | null>(card.preferredPrinting);
+  const serverPick = useRef<PreferredPrinting | null>(seedPick);
   const writes = useRef(0);
   const settled = useRef(0);
   /**
@@ -1052,27 +1083,35 @@ export function CardModal({
    * when it STARTED, so a reader who picked again while it ran would have the older render's
    * pick reported as current and watch the list revert to a printing they had replaced.
    */
-  const livePick = useRef<PreferredPrinting | null>(card.preferredPrinting);
+  const livePick = useRef<PreferredPrinting | null>(seedPick);
 
   useEffect(() => {
     arrived.current = card;
     // A read taken while a write is outstanding predates it, so its preference is not what
     // the server holds — only the write can say that, and it does so when it settles.
-    if (writes.current === settled.current) serverPick.current = card.preferredPrinting;
-  }, [card]);
+    if (writes.current === settled.current) serverPick.current = deckScope ? deckPrinting.pick : card.preferredPrinting;
+  }, [card, deckScope, deckPrinting?.pick]);
+
+  /** The preference the art resolves through: the deck's pick, else the Collection's (deck scope). */
+  const effective = useCallback(
+    (next: PreferredPrinting | null): PreferredPrinting | null => (deckScope ? next ?? card.preferredPrinting : next),
+    [deckScope, card.preferredPrinting],
+  );
 
   // Everything the modal shows about the current printing — art, caption, shown-now badge —
   // reads from this one object, so an optimistic pick moves all three together or none.
   const preview = useMemo<BrowseCard>(() => {
     const at = picked ? null : openAtPrinting;
     if (!at) {
-      const next = { ...card, preferredPrinting: pick };
+      const next = { ...card, preferredPrinting: effective(pick) };
       // Only once the reader has actually picked. `card.printedName` is the server's
       // answer and is right until then — recomputing it unconditionally would resolve a
       // different printing than `aggregateCollection` did and rename cards nobody touched.
       // After a pick it is stale by construction: it was resolved for the preference the
       // pick just replaced, so the art and caption moved while both headings did not.
-      if (!picked) return next;
+      // A deck's own pick is a different printing from the one the server named the card for, so
+      // its printed name is worked out here too, as it is after a pick in this modal.
+      if (!picked && !(deckScope && pick)) return next;
       const shown = resolvedPrinting(next);
       return { ...next, printedName: shown ? cardArt(card.name, shown).printedName : null };
     }
@@ -1225,7 +1264,7 @@ export function CardModal({
         ? row.flavorName
         : null;
     return { ...card, printings, preferredPrinting: at, printedName: renamed };
-  }, [card, pick, picked, openAtPrinting]);
+  }, [card, pick, picked, openAtPrinting, effective, deckScope]);
   const resolved = resolvedPrinting(preview);
   /**
    * The art a list behind this modal should draw once `next` is the card's preference.
@@ -1236,10 +1275,10 @@ export function CardModal({
    */
   const artFor = useCallback(
     (next: PreferredPrinting | null): CardArt | null => {
-      const shown = resolvedPrinting({ ...card, preferredPrinting: next });
+      const shown = resolvedPrinting({ ...card, preferredPrinting: effective(next) });
       return shown ? cardArt(card.name, shown) : null;
     },
-    [card],
+    [card, effective],
   );
   // The picker is about the printings you OWN — every string it renders says so, and picking
   // one only decides which of your copies represents the card. `card.printings` is not that
@@ -1251,7 +1290,7 @@ export function CardModal({
     () => card.printings.filter((p) => p.quantity > 0),
     [card.printings],
   );
-  const hasPicker = ownedPrintings.length > 1;
+  const hasPicker = ownedPrintings.length > 1 && (deckPrinting === undefined || deckPrinting.save !== undefined);
 
   /**
    * Closing unmounts the layer.
@@ -1426,16 +1465,21 @@ export function CardModal({
     setPick(written);
     livePick.current = written;
     setPicked(true);
+    setSaveFailed(false);
     onArtChange?.(artFor(written), false);
     const generation = ++writes.current;
     startWrite(async () => {
       let wrote = false;
       try {
-        wrote = await setCardArtPreference(card.oracleId, p.setCode, p.collectorNumber);
+        wrote = deckPrinting
+          ? (await deckPrinting.save?.(written)) ?? false
+          : await setCardArtPreference(card.oracleId, p.setCode, p.collectorNumber);
       } catch {
         wrote = false;
       }
       settleWrite(generation, wrote, written);
+      // The region announced the pick; a refusal is said in the region, where the tiles reverted.
+      if (deckPrinting && generation === writes.current) setSaveFailed(!wrote);
     });
   }
 
@@ -1471,12 +1515,19 @@ export function CardModal({
 
   // The mobile and desktop meta blocks are parallel trees with one hidden by CSS, so the
   // region is instantiated twice and each instance needs its own id for aria-controls.
+  const keyOf = (p: BrowsePrinting | undefined) => (p === undefined ? null : printingKey(p));
   const renderRegion = (id: string) => hasPicker && expanded ? (
     <PrintingRegion
       id={id}
       printings={ownedPrintings}
       preferred={pick}
-      resolvedKey={resolved === undefined ? null : printingKey(resolved)}
+      // In deck scope `Shown now` names what the deck falls back to without its pick: the
+      // Collection's printing (handoff R3, plan call 6), not the art on screen.
+      // Once the deck has a pick, no tile is `Shown now` (STATES, "Picked, open"): the badge marks
+      // what the deck falls back to, and only while it is falling back.
+      resolvedKey={keyOf(deckScope ? (pick === null ? resolvedPrinting(card) : undefined) : resolved)}
+      scope={deckScope ? "deck" : "collection"}
+      notice={deckScope && saveFailed ? deckPrintingsCopy.picker.failed : null}
       cardName={card.name}
       colorIdentity={card.colorIdentity}
       onPick={onPick}
@@ -2463,7 +2514,7 @@ export function CardModal({
                     controls={REGION_MOBILE}
                     caption={caption}
                     count={ownedPrintings.length}
-                    picked={pick !== null}
+                    picked={pick === null ? null : deckScope ? deckPrintingsCopy.picker.pinned : pickerCopy.triggerPicked}
                     expanded={expanded}
                     imageUri={resolved?.imageUri ?? null}
                     colorIdentity={card.colorIdentity}
@@ -2481,7 +2532,7 @@ export function CardModal({
                     controls={REGION_DESKTOP}
                     caption={caption}
                     count={ownedPrintings.length}
-                    picked={pick !== null}
+                    picked={pick === null ? null : deckScope ? deckPrintingsCopy.picker.pinned : pickerCopy.triggerPicked}
                     expanded={expanded}
                     onClick={toggleExpanded}
                   />
@@ -2968,9 +3019,9 @@ function MetaField({
  * The third line both triggers share: `N printings you own ▾` before a pick, and the brand
  * diamond + `Your pick · of N ▾` after one.
  */
-function TriggerHint({ count, picked, expanded }: { count: number; picked: boolean; expanded: boolean }) {
+function TriggerHint({ count, picked, expanded }: { count: number; picked: string | null; expanded: boolean }) {
   const chevron = pickerCopy.triggerChevron(expanded);
-  if (!picked) {
+  if (picked === null) {
     return (
       <div className="font-mono text-[11px] mt-[4px]" style={{ color: "var(--accent)" }}>
         {pickerCopy.triggerCount(count)} {chevron}
@@ -2984,7 +3035,7 @@ function TriggerHint({ count, picked, expanded }: { count: number; picked: boole
         className="font-mono uppercase text-[10px] tracking-[0.14em]"
         style={{ color: "var(--accent)" }}
       >
-        {pickerCopy.triggerPicked}
+        {picked}
       </span>
       <span className="font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>
         {pickerCopy.triggerPickedOf(count)} {chevron}
@@ -3004,7 +3055,8 @@ function PickerTrigger({
   controls: string;
   caption: string;
   count: number;
-  picked: boolean;
+  /** The pinned line's label when a pick stands, else null. */
+  picked: string | null;
   expanded: boolean;
   onClick: () => void;
 }) {
@@ -3041,7 +3093,8 @@ function MobileSetRow({
   controls: string;
   caption: string;
   count: number;
-  picked: boolean;
+  /** The pinned line's label when a pick stands, else null. */
+  picked: string | null;
   expanded: boolean;
   imageUri: string | null;
   colorIdentity: string[];

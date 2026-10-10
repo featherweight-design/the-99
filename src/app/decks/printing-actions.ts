@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { requireUserId } from "../../lib/auth";
@@ -7,10 +8,9 @@ import { isUuid } from "../../lib/uuid";
 import { requireDeck } from "../../lib/decks/read";
 import { proxiedMembership } from "../../lib/decks/proxies";
 import { deckPrintingsEnabled } from "../../lib/decks/printings-flag";
-import { readDeckPrintings, type DeckPrinting } from "../../lib/decks/printings";
 
 export type SetDeckPrintingResult =
-  | { ok: true; printing: DeckPrinting }
+  | { ok: true }
   /**
    * `off`: the switch is off. `refused`: the wire input is malformed. `notInDeck`: the card is not
    * this deck's (a Consider tile or a search result opens under the same provider). `notHeld`: the
@@ -94,12 +94,11 @@ export async function setDeckPrinting(
   });
 
   if (outcome !== "ok") return { ok: false, reason: outcome };
-  // The answer the deck now shows, read through the same chain every surface reads, so the client
-  // patches its row with exactly what a reload would draw.
-  const { printings } = await readDeckPrintings(userId, deckId, [oracleId], { usePicks: true });
-  const resolved = printings.get(oracleId);
-  // Unreachable while the player holds the printing just checked; a concurrent removal in between
-  // is the one way here, and then the card resolves down the chain like any lapsed pick.
-  if (!resolved) return { ok: false, reason: "notHeld" };
-  return { ok: true, printing: resolved };
+  // Every surface on the deck page moves with a pick (the rows, the commanders, the prices and
+  // the Money card), and the page is not cached, so a re-render is the one way to move them all
+  // together. The modal keeps its own optimistic pick until the refreshed page arrives.
+  // Nothing is read back after the commit: the refreshed page is the answer, and a read failing
+  // here would report a stored pick as a refused one.
+  refresh();
+  return { ok: true };
 }

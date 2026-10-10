@@ -13,6 +13,7 @@
 // and already opens the card modal from the name. A fork would have had to be
 // taught all three, and would have got one of them wrong.
 
+import type { PreferredPrinting } from "../../lib/collection/browse";
 import type { RecommendedMix } from "../../lib/decks/mix";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -65,6 +66,8 @@ type ReviewChangesProps = {
    *  or a discard. A bare "Back" would make the reader remember which deck they
    *  were editing to know where the link goes. */
   deckName: string;
+  /** The deck's held printing picks (deck printings); null with the switch off. */
+  printingPicks?: Readonly<Record<string, PreferredPrinting>> | null;
   /** True when the reader arrived from a deck-page CTA that means "commit this",
    *  so the sheet at the foot is open on landing rather than behind a second
    *  click on a page they asked to be taken to. */
@@ -513,6 +516,7 @@ export function ReviewChanges({
   mix,
   deckId,
   deckName,
+  printingPicks = null,
   rows,
   state,
   contestedCount,
@@ -902,7 +906,7 @@ export function ReviewChanges({
   return (
     // The rows open the card modal, and the builder's provider does not reach
     // this route — the review page is its own page, as the update diff is.
-    <CardDetailProvider deckPage>
+    <CardDetailProvider deckPage deckPrintingPicks={printingPicks}>
       {/* `w-full` is load-bearing: the shell's `<main>` is a flex column, and a
           flex item with `margin-inline: auto` loses `align-items: stretch` and
           sizes to its content. Without it this page drew ~870px wide on a

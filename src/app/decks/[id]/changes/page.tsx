@@ -1,5 +1,6 @@
 // /decks/[id]/changes — §Surfaces 2, the review page. What the draft is about to
 // commit: what comes in, what goes out, and what it costs.
+import { readModalPicks } from "../../../../lib/decks/printings";
 import { notFound, redirect } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
 import { getDeckReviewHeader, loadSourceDeckFigures, type SourceDeckFigure } from "../../../../lib/decks/read";
@@ -133,7 +134,7 @@ export default async function ChangesPage({
   // bucket in the first place — the single most common case this addendum exists for.
   const inOracleIds = [...new Set(rows.in.map((r) => r.oracleId))];
 
-  const [before, after, contestedCount, sourceFigures, releaseSources] = await Promise.all([
+  const [before, after, contestedCount, sourceFigures, releaseSources, printingPicks] = await Promise.all([
     state.version ? loadVersionShape(state.version.id) : Promise.resolve(null),
     loadDraftShape(id),
     // THE INCOMING ROWS ONLY, read UNEXCLUDED, and degrading to nothing.
@@ -161,6 +162,8 @@ export default async function ChangesPage({
     // `inOracleIds` for why this is not scoped to `claimed`. A row with no release yet (never
     // pulled, or pulled before this read existed) simply has no entry.
     latestReleaseSources(userId, id, inOracleIds).catch(() => new Map<string, ReleaseSource>()),
+    // The deck's held picks, so a card opened here shows the deck's printing (deck printings, E9).
+    readModalPicks(userId, id),
   ]);
 
   // The same mix the deck page draws, through the one reader that defines it — the
@@ -201,6 +204,7 @@ export default async function ChangesPage({
       labelRows={labelRows}
       deckId={id}
       deckName={detail.name}
+      printingPicks={printingPicks}
       rows={rows}
       state={state}
       contestedCount={contestedCount}
