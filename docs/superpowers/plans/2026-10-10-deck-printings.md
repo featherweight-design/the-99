@@ -47,7 +47,8 @@ preview and the Shopping row gain no mark, and only the art and a priced figure 
 | Collection art preferences stored today | 13 |
 | Owned printings with a live price row | 3,313 of 3,314 |
 
-Two things follow. The picker is not a corner case: one owned slot in four can take a pick. And the
+Two things follow. The picker is not a corner case: 22.5% of owned slots (about one in four and a
+half) can take a pick. And the
 D2 fallback (a pick out of stock, so the tag prices the cheapest in stock) is rare on today's feed:
 every owned printing of a multi-printing card is stocked. The fallback still has to be right,
 because the feed moves daily, but it is a test case, not a frequency to design around.
@@ -179,7 +180,11 @@ worktree, the pre-open subagent pass and the normal pr-review cycle. PRs 2 to 5 
 - `src/lib/decks/printings.ts`: `readDeckPicks(userId, deckIds)`, membership-scoped like every
   proxy read, and `resolveDeckPrintings(userId, deckId, oracleIds)`: the deck's pick when the player
   still holds that printing (call 2), else `readOwnedPrintings`' answer (the Collection's pick, then
-  the default). It also returns which picks are HELD, which is what PR 3 prices. One query for the
+  the default). For a card the player does not own, `readOwnedPrintings` returns nothing (it is
+  rooted in `collection_items`), so the resolver falls back to the card's oracle-level printing,
+  `cards.scryfall_id` joined to `printings`, which is the printing whose art those rows draw today.
+  Every card therefore resolves to a printing, and a version records one for every card, owned or
+  not. It also returns which picks are HELD, which is what PR 3 prices. One query for the
   picks, then the existing reader. Fail-soft the way `resolveOwnedPrintings` is.
 - `setDeckPrinting(deckId, oracleId, printing)` server action: switch on; `requireDeck`; the deck
   row locked `for update`; `proxiedMembership(deckId, oracleId)` as the membership gate, so a
@@ -188,7 +193,7 @@ worktree, the pre-open subagent pass and the normal pr-review cycle. PRs 2 to 5 
   can patch the one row; no `revalidatePath`, since the deck page is heavy and the stamp trigger already
   retires Home and `/decks`.
 - `pruneOrphanProxies`' call sites prune `deck_printings` too (call 3).
-- Tests: the resolver's steps and the unheld pick; the action's refusals; the prune;
+- Tests: the resolver's steps, the unheld pick and an unowned card; the action's refusals; the prune;
   `check:list-cache` green with the new table.
 
 ### PR 2 · Deck art reads the chain, and versions record it
@@ -242,9 +247,13 @@ worktree, the pre-open subagent pass and the normal pr-review cycle. PRs 2 to 5 
 - `PrintingRegion` gains `scope: "collection" | "deck"` on the art role. With `deck`: no reset, no
   dormant tile, the intro slot swaps both strings (D1), and `onPick` writes through
   `setDeckPrinting`. The pinned Set line reads `For this deck` in place of `Your pick`.
-- `card-modal.tsx` passes `scope="deck"` only when the provider has a `deckId`, the switch is on and
-  the card is in the deck's membership set. `update-diff` and `review-changes` (no `deckId`) and
-  `/collection` stay as they are (E9).
+- Two things are separated: which deck the card-detail READ resolves against, and whether the
+  picker is OFFERED. `CardDetailProvider` gains a read-only `artDeckId`. The review screen
+  (`review-changes.tsx`) and the update diff (`update-diff.tsx`) pass it, so their modals draw the
+  deck's printing, matching the rows PR 2 gives them, while their region stays `scope="collection"`
+  with no deck write (E9). `card-modal.tsx` passes `scope="deck"` only when the provider has a
+  `deckId` (the deck page alone), the switch is on and the card is in the deck's membership set.
+  `/collection` is unchanged.
 - The card-detail read takes the deck's pick when opened with a deck, so the art, the art-column
   price tag (the price of the printing under the art, `no stock` if none) and the Set field move
   together on a pick.
@@ -309,7 +318,7 @@ in `deck-printings.json`.
 | Overflow (over 12 owned printings): search and chips | ☐ | ☐ | 4 | `PrintingRegion` |
 | Commander's details: same Set field | ☐ | ☐ | 4 | `PrintingRegion` |
 | Negative: Consider tile and search result under the deck provider offer no pick | ☐ | ☐ | 4 | — |
-| Negative: `update-diff` and `review-changes` modals offer no pick | ☐ | ☐ | 4 | — |
+| `update-diff` and `review-changes` modals: the deck's art, and no pick offered | ☐ | ☐ | 4 | — |
 | Negative: card details from `/collection` keep the collection wording and reset | ☐ | ☐ | 4 | `PrintingRegion` |
 | `/decks/[id]` rows, tiles, card view, hover preview: art follows the pick, no mark | ☐ | ☐ | 2 | — |
 | Review screen, overview named-card preview, commander change sheet: the deck's printing | ☐ | ☐ | 2 | — |
