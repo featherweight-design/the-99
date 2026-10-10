@@ -27,6 +27,7 @@ export const deckCutsCopy = {
   run: {
     refused: "We couldn\u2019t read that deck.",
     notOver: "This deck isn\u2019t over 100 cards, so there is nothing to cut. No credit is used.",
+    tooBig: "This deck is too large for Proposed cuts to read. No credit is used.",
   },
   /** Plain words for what the facts had to go without. */
   missing: {

@@ -16,6 +16,7 @@ import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { deckSurfaces } from "../../lib/decks/revalidate";
 import { commanderName } from "../../lib/decks/tuning-read";
 import { callModel } from "../../lib/model/client";
+import { FEATURE_CALLS } from "../../lib/model/prices";
 import { buildCutsPack, type CutsPack } from "../../lib/tuning/cuts-evidence";
 import { buildCutsPrompt } from "../../lib/tuning/cuts-prompt";
 import { cancelCutsRun, finishCutsRun, persistCutsRun, startCutsRun } from "../../lib/tuning/cuts-run-store";
@@ -84,6 +85,31 @@ export async function runProposedCuts(
   if (facts.over === 0) return { ok: false, message: deckCutsCopy.run.notOver };
   if (allLocked) return { ok: false, message: lockedCardsCopy.tuning.allLocked(await commanderName(head)) };
 
+  const [name, keyCards, textRows] = await Promise.all([
+    commanderName(head),
+    readKeyCardNames(head),
+    // Oracle text for the cards that could come out: the front face only (`castFaceText`), the
+    // configuration the recall eval chose. Catalog data, so no `playerText`.
+    facts.cards.length === 0 ? [] : db
+      .select({ id: cards.oracleId, text: cards.oracleText, layout: cards.layout })
+      .from(cards)
+      .where(inArray(cards.oracleId, facts.cards.map((c) => c.oracleId))),
+  ]);
+  const texts = new Map(textRows.flatMap((r) => {
+    const t = castFaceText(r.text, r.layout);
+    return t ? [[r.id, t] as const] : [];
+  }));
+  // The intent the player already stored on the deck (the one Suggested changes reads); it goes
+  // through `playerText` inside the pack. No notes in this version.
+  const pack = buildCutsPack({ facts, commanderName: name, keyCards, intent, texts });
+  const { system, user } = buildCutsPrompt(pack);
+  // The reservation prices a request at the feature's input ceiling, so a prompt past it is refused
+  // here, before a credit is held, rather than sent at a cost the spend cap never counted. Three
+  // characters a token over-counts English and card text alike.
+  if (Math.ceil((system.length + user.length) / 3) > FEATURE_CALLS.proposed_cuts.inputCeilingTokens) {
+    return { ok: false, message: deckCutsCopy.run.tooBig };
+  }
+
   // A run abandoned by a process that is gone would otherwise answer "in flight" until someone
   // opened the panel.
   await reapCutsRuns(deckId, userId);
@@ -113,24 +139,6 @@ export async function runProposedCuts(
   };
 
   try {
-    const [name, keyCards, textRows] = await Promise.all([
-      commanderName(head),
-      readKeyCardNames(head),
-      // Oracle text for the cards that could come out: the front face only (`castFaceText`), the
-      // configuration the recall eval chose. Catalog data, so no `playerText`.
-      facts.cards.length === 0 ? [] : db
-        .select({ id: cards.oracleId, text: cards.oracleText, layout: cards.layout })
-        .from(cards)
-        .where(inArray(cards.oracleId, facts.cards.map((c) => c.oracleId))),
-    ]);
-    const texts = new Map(textRows.flatMap((r) => {
-      const t = castFaceText(r.text, r.layout);
-      return t ? [[r.id, t] as const] : [];
-    }));
-    // The intent the player already stored on the deck (the one Suggested changes reads); it goes
-    // through `playerText` inside the pack. No notes in this version.
-    const pack = buildCutsPack({ facts, commanderName: name, keyCards, intent, texts });
-    const { system, user } = buildCutsPrompt(pack);
     const outcome = await callModel({
       model: TUNING_MODEL, system, user, maxTokens: TUNING_MAX_TOKENS,
       schema: cutsResponseSchema(facts.over), deadlineMs: MODEL_TIMEOUT_MS,

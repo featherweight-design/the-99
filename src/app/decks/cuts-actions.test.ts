@@ -127,6 +127,13 @@ describe("runProposedCuts refuses before any credit is reserved", () => {
     expect(calls.modelCalls).toHaveLength(0);
   });
 
+  it("for a prompt past the reservation's input ceiling, before any credit is held", async () => {
+    calls.textRows = [{ id: "draw0", text: "x".repeat(70_000), layout: "normal" }];
+    expect(await runProposedCuts(DECK)).toEqual({ ok: false, message: deckCutsCopy.run.tooBig });
+    expect(calls.started).toBe(0);
+    expect(calls.modelCalls).toHaveLength(0);
+  });
+
   it("for a deck whose every card is locked", async () => {
     calls.inputs = inputsFor(factsFor(), { allLocked: true });
     expect(await runProposedCuts(DECK)).toEqual({ ok: false, message: lockedCardsCopy.tuning.allLocked("Gishath") });
