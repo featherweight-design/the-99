@@ -128,31 +128,31 @@ describe("manaSupply", () => {
 describe("sourceProduces", () => {
   const card = (oracleText: string, typeLine = "Artifact", name = "Test Card") => ({ name, typeLine, oracleText });
   it("reads a rock's symbols, and a Signet's two colors", () => {
-    expect(sourceProduces(card("{1}, {T}: Add {U}{B}."), "tapsForMana", JUND)).toEqual(["U", "B"]);
-    expect(sourceProduces(card("{T}: Add {C}{C}.", "Artifact", "Sol Ring"), "tapsForMana", JUND)).toEqual(["C"]);
+    expect(sourceProduces(card("{1}, {T}: Add {U}{B}."), ["tapsForMana"], JUND)).toEqual(["U", "B"]);
+    expect(sourceProduces(card("{T}: Add {C}{C}.", "Artifact", "Sol Ring"), ["tapsForMana"], JUND)).toEqual(["C"]);
   });
   it("gives an any-color rock or dork each of the deck's colors", () => {
-    expect(sourceProduces(card("{T}: Add one mana of any color."), "tapsForMana", JUND)).toEqual(["B", "R", "G"]);
-    expect(sourceProduces(card("{T}: Add one mana of any color that a land you control could produce."), "tapsForMana", JUND)).toEqual([]);
+    expect(sourceProduces(card("{T}: Add one mana of any color."), ["tapsForMana"], JUND)).toEqual(["B", "R", "G"]);
+    expect(sourceProduces(card("{T}: Add one mana of any color that a land you control could produce."), ["tapsForMana"], JUND)).toEqual([]);
   });
   it("does not count a one-shot that sacrifices itself", () => {
-    expect(sourceProduces(card("{T}, Sacrifice this artifact: Add {R}{R}{R}.", "Artifact", "Lotus Petal"), "tapsForMana", JUND)).toEqual([]);
+    expect(sourceProduces(card("{T}, Sacrifice this artifact: Add {R}{R}{R}.", "Artifact", "Lotus Petal"), ["tapsForMana"], JUND)).toEqual([]);
   });
   it("reads a land search for the basics it names, or the deck's colors for a basic land", () => {
-    expect(sourceProduces(card("Search your library for a Forest or Mountain card, put it onto the battlefield tapped.", "Sorcery"), "fetchesLand", JUND)).toEqual(["R", "G"]);
-    expect(sourceProduces(card("Search your library for up to two basic land cards, put one onto the battlefield tapped and the other into your hand.", "Sorcery"), "fetchesLand", JUND)).toEqual(["B", "R", "G"]);
+    expect(sourceProduces(card("Search your library for a Forest or Mountain card, put it onto the battlefield tapped.", "Sorcery"), ["fetchesLand"], JUND)).toEqual(["R", "G"]);
+    expect(sourceProduces(card("Search your library for up to two basic land cards, put one onto the battlefield tapped and the other into your hand.", "Sorcery"), ["fetchesLand"], JUND)).toEqual(["B", "R", "G"]);
   });
   it("reads a search for a counted number of basics", () => {
-    expect(sourceProduces(card("Sacrifice two lands. Search your library for four basic land cards, put them onto the battlefield tapped, then shuffle.", "Sorcery"), "fetchesLand", JUND)).toEqual(["B", "R", "G"]);
-    expect(sourceProduces(card("Search your library for up to X basic land cards, where X is the number of colors among permanents you control.", "Enchantment"), "fetchesLand", JUND)).toEqual(["B", "R", "G"]);
+    expect(sourceProduces(card("Sacrifice two lands. Search your library for four basic land cards, put them onto the battlefield tapped, then shuffle.", "Sorcery"), ["fetchesLand"], JUND)).toEqual(["B", "R", "G"]);
+    expect(sourceProduces(card("Search your library for up to X basic land cards, where X is the number of colors among permanents you control.", "Enchantment"), ["fetchesLand"], JUND)).toEqual(["B", "R", "G"]);
   });
   it("reads a search for any count of basics, and one that also reaches the graveyard", () => {
-    expect(sourceProduces(card("Search your library for up to ten land cards, put them onto the battlefield tapped.", "Sorcery"), "fetchesLand", JUND)).toEqual(["B", "R", "G"]);
-    expect(sourceProduces(card("Search your library for any number of Plains cards, exile them.", "Enchantment"), "fetchesLand", JUND)).toEqual(["W"]);
-    expect(sourceProduces(card("Search your library and graveyard for a basic land card and a card named Foo.", "Sorcery"), "fetchesLand", JUND)).toEqual(["B", "R", "G"]);
+    expect(sourceProduces(card("Search your library for up to ten land cards, put them onto the battlefield tapped.", "Sorcery"), ["fetchesLand"], JUND)).toEqual(["B", "R", "G"]);
+    expect(sourceProduces(card("Search your library for any number of Plains cards, exile them.", "Enchantment"), ["fetchesLand"], JUND)).toEqual(["W"]);
+    expect(sourceProduces(card("Search your library and graveyard for a basic land card and a card named Foo.", "Sorcery"), ["fetchesLand"], JUND)).toEqual(["B", "R", "G"]);
   });
   it("gives a Treasure maker nothing: its mana is one-shot", () => {
-    expect(sourceProduces(card("Whenever an opponent casts a spell, create a Treasure token.", "Enchantment"), "makesTreasure", JUND)).toEqual([]);
+    expect(sourceProduces(card("Whenever an opponent casts a spell, create a Treasure token.", "Enchantment"), ["makesTreasure"], JUND)).toEqual([]);
   });
   it("names the cards whose land-ish text is no lasting source", () => {
     expect(makesNoManaSource({ oracleText: "When this creature enters, create a tapped Powerstone token. (It's an artifact with \"{T}: Add {C}.\")" })).toBe(true);
@@ -167,8 +167,13 @@ describe("sourceProduces", () => {
     expect(makesNoManaSource({ oracleText: "Cycling {2}" })).toBe(false);
     expect(makesNoManaSource({ oracleText: null })).toBe(false);
   });
+  it("reads each kind of a card with several, and the castable half of an adventure but not a modal back", () => {
+    expect(sourceProduces(card("{T}: Add {G}.\nWhen this enters, search your library for a Plains card.", "Creature"), ["tapsForMana", "fetchesLand"], JUND)).toEqual(["W", "G"]);
+    expect(sourceProduces({ ...card("Beanstalk Giant\n//\nSearch your library for a basic land card.", "Creature // Sorcery"), layout: "adventure" }, ["fetchesLand"], JUND)).toEqual(["B", "R", "G"]);
+    expect(sourceProduces({ ...card("Bring it.\n//\nSearch your library for a Plains card.", "Sorcery // Land"), layout: "modal_dfc" }, [], JUND)).toEqual([]);
+  });
   it("reads both for a card with no fresh label, and nothing for text that gives no color", () => {
-    expect(sourceProduces(card("{T}: Add {G}.\nWhen this enters, search your library for a Plains card.", "Creature"), null, JUND)).toEqual(["W", "G"]);
-    expect(sourceProduces(card("{T}: Add an amount of mana equal to this creature's power.", "Creature"), null, JUND)).toEqual([]);
+    expect(sourceProduces(card("{T}: Add {G}.\nWhen this enters, search your library for a Plains card.", "Creature"), [], JUND)).toEqual(["W", "G"]);
+    expect(sourceProduces(card("{T}: Add an amount of mana equal to this creature's power.", "Creature"), [], JUND)).toEqual([]);
   });
 });

@@ -3,6 +3,7 @@ import { db } from "../../db";
 import { cards } from "../../db/schema";
 import { isLandFace } from "../cards/facet";
 import type { Job, RampKind } from "../labels/types";
+import { sourceKindsOf } from "../mana/source-kinds";
 import { makesNoManaSource, sourceProduces, type ManaColor } from "../mana/supply";
 
 /** The non-land mana sources of a deck, each with the colors it can add. A card absent from the record
@@ -10,21 +11,16 @@ import { makesNoManaSource, sourceProduces, type ManaColor } from "../mana/suppl
  *  text does not give. */
 export type SourceManaByCard = Readonly<Record<string, readonly ManaColor[]>>;
 
-/** The ramp kinds that leave a lasting source. A cost reducer, an extra land drop, a doubler and a burst
- *  of mana make none, and neither does a Treasure maker: its mana is one-shot, and the mana addendum's
- *  counting table says "ritual, Treasure: not a source" (orchestrator ruling, 2026-10-10). */
-const SOURCE_KINDS: ReadonlySet<RampKind> = new Set(["tapsForMana", "fetchesLand"]);
-
 /**
  * Which cards are sources comes from the labels: a fresh label with a `ramp` job of a source kind. A
- * card with no fresh label falls back to the classifier's ramp role (`kind` null), so it always draws
- * something; a card WITH a fresh label is a source only by its own ramp job's kind, whatever the
- * classifier says, and a ramp job with no kind is not one.
+ * card with no fresh label falls back to the classifier's ramp role (an empty list of kinds, which
+ * `sourceProduces` reads as "try both parsers"), so it always draws something; a card WITH a fresh label
+ * is a source only by its own ramp jobs' kinds, whatever the classifier says. Null: not a source.
  */
-function sourceKind(jobs: readonly Job[] | undefined, role: string | null): RampKind | null | false {
-  if (!jobs) return role === "ramp" ? null : false;
-  const kind = (jobs.find((j) => j.kind === "ramp") as { rampKind?: RampKind | null } | undefined)?.rampKind ?? null;
-  return kind !== null && SOURCE_KINDS.has(kind) ? kind : false;
+function sourceKinds(jobs: readonly Job[] | undefined, role: string | null): RampKind[] | null {
+  if (!jobs) return role === "ramp" ? [] : null;
+  const kinds = sourceKindsOf(jobs);
+  return kinds.length > 0 ? kinds : null;
 }
 
 /** Null when the text read failed: the card then stays a shell rather than state that no rock exists. A
@@ -37,20 +33,20 @@ export async function loadSourceMana(
   const nonland = deckCards.filter((c) => !isLandFace(c.typeLine));
   if (nonland.length === 0) return {};
   const labels = allLabels ?? new Map<string, Job[]>();
-  const kinds = new Map<string, RampKind | null>();
+  const kinds = new Map<string, RampKind[]>();
   for (const c of nonland) {
-    const kind = sourceKind(labels.get(c.oracleId), c.role);
-    if (kind !== false) kinds.set(c.oracleId, kind);
+    const found = sourceKinds(labels.get(c.oracleId), c.role);
+    if (found) kinds.set(c.oracleId, found);
   }
   if (kinds.size === 0) return {};
   try {
     const rows = await db
-      .select({ oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine, oracleText: cards.oracleText })
+      .select({ oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine, oracleText: cards.oracleText, layout: cards.layout })
       .from(cards)
       .where(inArray(cards.oracleId, [...kinds.keys()]));
     const out: Record<string, readonly ManaColor[]> = {};
     for (const r of rows) {
-      const colors = sourceProduces(r, kinds.get(r.oracleId) ?? null, deckColors);
+      const colors = sourceProduces(r, kinds.get(r.oracleId) ?? [], deckColors);
       // Landcyclers, token makers and top-of-library effects are no source at all, rather than an unreadable one.
       if (colors.length === 0 && makesNoManaSource(r)) continue;
       out[r.oracleId] = colors;

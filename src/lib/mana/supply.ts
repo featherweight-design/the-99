@@ -10,7 +10,7 @@
 // read can name WHICH cards make a color. A non-land source whose color cannot be read is counted in
 // `unattributedNonland` and appears in no `sources` list.
 
-import { isLandFace } from "../cards/facet";
+import { castFaceText, isLandFace } from "../cards/facet";
 import { frontFaceOracle } from "../recs/faces";
 import { activatedFinds, BASIC_TYPES, CONDITIONAL_GRANT, fetchFinds, PICKED_COLOR, sacrificesItself, searchFinds, type Finds, type LandText } from "../swaps/land";
 import type { RampKind } from "../labels/types";
@@ -143,15 +143,24 @@ function findsColors(finds: Finds, deck: readonly ManaColor[], out: Set<ManaColo
  * - `tapsForMana` (a rock or a dork): every symbol in an "add" clause and an unconditional any-color
  *   grant, by `readFace`, the land policy;
  * - `fetchesLand`: the basics the search names, or the deck's colors for `a basic land`;
- * - null, a card with no fresh label: the classifier's ramp, which reads both of the first two.
+ * - no kinds, a card with no fresh label: the classifier's ramp, which reads both;
+ * - a card with several kinds reads each, since a label keeps one job per ability.
  * An empty result is a source whose color cannot be read.
  */
-export function sourceProduces(card: LandText, kind: RampKind | null, deckColors: readonly string[]): ManaColor[] {
+export function sourceProduces(
+  card: LandText & { layout?: string },
+  kinds: readonly RampKind[],
+  deckColors: readonly string[],
+): ManaColor[] {
   const out = new Set<ManaColor>();
   const deck = COLORED.filter((c) => deckColors.some((d) => d.toUpperCase() === c));
-  if (kind === null || kind === "tapsForMana") readFace(card, deck, out);
-  if (kind === null || kind === "fetchesLand") {
-    const finds = searchFinds(card);
+  // The text a player can cast, as labels read it: an adventure's or a split card's second half stays, a
+  // modal or transform back does not. Both parsers read this one text.
+  const cast = { name: card.name, typeLine: card.typeLine, oracleText: castFaceText(card.oracleText, card.layout ?? "normal") };
+  const any = kinds.length === 0;
+  if (any || kinds.includes("tapsForMana")) readFace(cast, deck, out);
+  if (any || kinds.includes("fetchesLand")) {
+    const finds = searchFinds(cast);
     if (finds) findsColors(finds, deck, out);
   }
   return MANA_COLORS.filter((c) => out.has(c));

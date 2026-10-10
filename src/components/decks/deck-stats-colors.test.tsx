@@ -96,10 +96,17 @@ describe("DeckStatsView colors card", () => {
     expect(screen.getByLabelText("green: 1 pip, 3 sources, 1 not a land")).toBeInTheDocument();
   });
 
-  it("does not draw or count a source whose color is unreadable", () => {
+  it("does not draw or count a source whose color is unreadable, and does not say there are no rocks", () => {
     const { container } = draw([land(["G"]), spell("{1}", 1, true, [])]);
     expect(container.querySelector("[data-segment=nonland]")).toBeNull();
-    expect(card()).toHaveTextContent("Every source is a land.");
+    expect(card()).not.toHaveTextContent("Every source is a land");
+    expect(card()).toHaveTextContent("1 source");
+  });
+
+  it("does not say there are no lands when the lands there are add nothing", () => {
+    draw([spell("{G}"), land([], 2)]);
+    expect(card()).not.toHaveTextContent("No lands yet");
+    expect(card()).not.toHaveTextContent("Every source is a land");
   });
 
   it("stays a shell where the land read failed", () => {

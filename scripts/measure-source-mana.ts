@@ -8,7 +8,7 @@ import ws from "ws";
 
 import { isLandFace } from "../src/lib/cards/facet";
 import { freshLabels } from "../src/lib/labels/read";
-import type { RampKind } from "../src/lib/labels/types";
+import { sourceKindsOf } from "../src/lib/mana/source-kinds";
 import { makesNoManaSource, sourceProduces } from "../src/lib/mana/supply";
 
 neonConfig.webSocketConstructor = ws;
@@ -16,7 +16,6 @@ neonConfig.webSocketConstructor = ws;
 const { THE_99_NEON_STAGING_DIRECT } = requireEnv(["THE_99_NEON_STAGING_DIRECT"]);
 const pool = new Pool({ connectionString: THE_99_NEON_STAGING_DIRECT });
 const limit = Number(process.env.MEASURE_SOURCE_LIMIT ?? 60);
-const KINDS: RampKind[] = ["tapsForMana", "fetchesLand"];
 const ALL = ["W", "U", "B", "R", "G"];
 
 void (async () => {
@@ -29,29 +28,29 @@ void (async () => {
     const fresh = freshLabels(rows);
     const byId = new Map(rows.map((r) => [r.oracle_id, r]));
     const tally = new Map<string, { read: number; unreadable: string[] }>();
+    // A card counts ONCE in the total, whatever its kinds; under each kind it carries it also counts in that
+    // kind's line, so the kind lines can add to more than the total. Read means any of its parsers gave a color.
+    let total = 0;
+    let unreadableTotal = 0;
     for (const [id, jobs] of fresh) {
       const r = byId.get(id)!;
       if (isLandFace(r.type_line)) continue;
-      const ramp = jobs.find((j) => j.kind === "ramp");
-      if (!ramp) continue;
-      const kind = (ramp as { rampKind?: RampKind | null }).rampKind ?? null;
-      if (kind === null || !KINDS.includes(kind)) continue;
-      const key = kind;
-      const t = tally.get(key) ?? { read: 0, unreadable: [] };
-      const got = sourceProduces({ name: r.name, typeLine: r.type_line, oracleText: r.oracle_text }, kind, ALL);
-      if (got.length) t.read++;
-      else if (makesNoManaSource({ oracleText: r.oracle_text })) continue;
-      else t.unreadable.push(`${r.name} :: ${(r.oracle_text ?? "").replace(/\n/g, " / ").slice(0, 160)}`);
-      tally.set(key, t);
+      const kinds = sourceKindsOf(jobs);
+      if (kinds.length === 0) continue;
+      const card = { name: r.name, typeLine: r.type_line, oracleText: r.oracle_text, layout: r.layout };
+      if (sourceProduces(card, kinds, ALL).length === 0 && makesNoManaSource(card)) continue;
+      total++;
+      const readAll = sourceProduces(card, kinds, ALL).length > 0;
+      if (!readAll) unreadableTotal++;
+      for (const kind of kinds) {
+        const t = tally.get(kind) ?? { read: 0, unreadable: [] };
+        if (sourceProduces(card, [kind], ALL).length) t.read++;
+        else t.unreadable.push(`${r.name} :: ${(r.oracle_text ?? "").replace(/\n/g, " / ").slice(0, 160)}`);
+        tally.set(kind, t);
+      }
     }
-    let read = 0;
-    let bad = 0;
-    for (const [k, t] of tally) {
-      console.log(`${k}: ${t.read} read, ${t.unreadable.length} unreadable`);
-      read += t.read;
-      bad += t.unreadable.length;
-    }
-    console.log(`total: ${read + bad} sources, ${bad} unreadable (${((100 * bad) / Math.max(1, read + bad)).toFixed(1)}%)`);
+    for (const [k, t] of tally) console.log(`${k}: ${t.read} read, ${t.unreadable.length} unreadable`);
+    console.log(`total: ${total} source cards, ${unreadableTotal} unreadable (${((100 * unreadableTotal) / Math.max(1, total)).toFixed(1)}%)`);
     for (const [k, t] of tally) {
       console.log(`\n== ${k} unreadable (${t.unreadable.length}) ==`);
       for (const line of t.unreadable.slice(0, limit)) console.log(line);

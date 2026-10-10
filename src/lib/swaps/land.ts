@@ -196,9 +196,10 @@ export function activatedFinds(card: LandText): Finds | null {
 /**
  * What a NON-LAND card's land search can find (Cultivate, Wood Elves): no sacrifice test and no activation
  * test, because a spell or a trigger searches too. A land goes through `fetchFinds` / `activatedFinds`.
+ * Reads the WHOLE text it is given, not the front face: the caller has already chosen which faces are castable.
  */
 export function searchFinds(card: LandText): Finds | null {
-  return parseFinds(stripReminders(frontText(card)));
+  return parseFinds(stripReminders((card.oracleText ?? "").toLowerCase()));
 }
 
 function parseFinds(text: string): Finds | null {

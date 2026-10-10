@@ -313,7 +313,14 @@ function ColorsCard({ mana }: { mana: ManaSupply }) {
   const sources = mana.landSources + mana.nonlandSources;
   const asked = rows.filter((r) => r.pips > 0);
   const tip = asked.length === 1 ? [`${copy.monoLead(copy.names[asked[0].c])} ${copy.tip[0]}`, copy.tip[1]] : copy.tip;
-  const footer = sources === 0 ? copy.noLands : mana.nonlandSources === 0 ? copy.onlyLands : null;
+  // Each line states an absence, so each needs the whole count behind it: a rock whose color we cannot read
+  // is still a rock, and a land that adds nothing is still a land.
+  const footer =
+    mana.lands === 0 && mana.nonlandSources === 0 && mana.unattributedNonland === 0
+      ? copy.noLands
+      : mana.nonlandSources === 0 && mana.unattributedNonland === 0 && mana.landSources > 0
+        ? copy.onlyLands
+        : null;
   return (
     <Shell
       title={deckStatsCopy.cards.colors}
@@ -358,6 +365,7 @@ function ColorsCard({ mana }: { mana: ManaSupply }) {
           </ul>
         </div>
       ) : null}
+      {footer || mana.nonlandSources > 0 ? (
       <div className="flex flex-col gap-[6px] border-t border-dashed border-[color:var(--border-dashed)] pt-[12px]" data-colors-legend>
         {footer ? (
           <p className="text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{footer}</p>
@@ -378,6 +386,7 @@ function ColorsCard({ mana }: { mana: ManaSupply }) {
           </div>
         )}
       </div>
+      ) : null}
     </Shell>
   );
 }
