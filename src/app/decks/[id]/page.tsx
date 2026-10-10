@@ -462,22 +462,25 @@ export default async function DeckBuilderPage({
   let shellMix = mix;
   if (labelRoleCountsEnabled()) {
     const base = await (statsJobsRead ?? early(perf.timed("labelRows", () => loadJobRows(detail.cards))));
+    // A read that covers only part of the cards it was asked about would count the rest as unlabeled,
+    // so a failed extra read falls the whole page back to the classifier, like a failed base read.
+    let more: JobRowsByCard | null = {};
+    let known = new Set<string>();
+    const extra: { oracleId: string; typeLine: string }[] = [];
     if (base) {
-      const known = new Set(Object.keys(base));
-      const extra: { oracleId: string; typeLine: string }[] = [];
+      known = new Set(Object.keys(base));
       for (const c of [...(versionShape ?? []), ...pricedSuggestions, ...candidates]) {
         if (c.oracleId !== undefined && !known.has(c.oracleId)) extra.push({ oracleId: c.oracleId, typeLine: c.typeLine });
       }
-      const more = extra.length > 0
-        ? await perf.timed("labelRowsExtra", () => loadJobRows(extra))
-        : {};
-      labelRows = more ? { ...base, ...more } : base;
+      if (extra.length > 0) more = await perf.timed("labelRowsExtra", () => loadJobRows(extra));
+    }
+    if (base && more) {
+      labelRows = { ...base, ...more };
       labelQueried = [
         ...detail.cards.map((c) => c.oracleId),
-        ...(more ? extra.map((c) => c.oracleId) : []),
         ...[...(versionShape ?? []), ...pricedSuggestions, ...candidates]
           .map((c) => c.oracleId)
-          .filter((id): id is string => id !== undefined && (more ? true : known.has(id))),
+          .filter((id): id is string => id !== undefined),
       ];
     } else {
       shellMix = await loadDeckMix(id, userId, "classifier");
