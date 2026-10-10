@@ -68,10 +68,12 @@ describe("buildDecklistText", () => {
   });
 
   it("names a renamed commander printing by its face, and round-trips its catalog collector number", () => {
-    const atreus = { name: "Atreus, God of War", printedName: "Atreus, Son of Kratos", printedSetCode: "SLD" };
+    const atreus = { name: "Atreus, God of War", printedName: "Atreus, Son of Kratos", printedSetCode: "SLD", printedCollectorNumber: "2212" };
     expect(commanderExportName(atreus)).toBe("Atreus, Son of Kratos");
     // No printing named: the oracle name, as main exports it.
     expect(commanderExportName({ ...atreus, printedSetCode: null })).toBe("Atreus, God of War");
+    // A set with no collector number names no printing (`bodyLine`), so the line keeps the oracle name.
+    expect(commanderExportName({ ...atreus, printedCollectorNumber: "" })).toBe("Atreus, God of War");
     // A catalog collector number with an underscore still parses back into its printing.
     const text = buildDecklistText({
       commanderName: "Atreus, God of War",

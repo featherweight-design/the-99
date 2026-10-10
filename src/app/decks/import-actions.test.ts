@@ -234,27 +234,37 @@ describe("importDeck — printings (deck printings)", () => {
     );
   });
 
-  it("makes a held printing the pick, commanders included, and counts the rest", async () => {
+  it("makes a held printing the pick, commanders included, and counts the body's lines only", async () => {
     process.env.DECK_PRINTINGS_ENABLED = "true";
     const result = await run();
     if (!result.ok) throw new Error(JSON.stringify(result));
     expect(pickInserts()).toEqual([
       { deckId: stub.DECK_ID, oracleId: ATREUS, setCode: "sld", collectorNumber: "2212" },
     ]);
-    // Kratos and Sol Ring named printings the player does not hold.
-    expect(result.printingsKept).toBe(1);
-    expect(result.printingsNotOwned).toBe(2);
+    // The strip counts the lines its headline counts, the body's: Atreus's pick is written but not
+    // counted, and of the two lines naming printings not held only Sol Ring's is a body line.
+    expect(result.printingsKept).toBe(0);
+    expect(result.printingsNotOwned).toBe(1);
   });
 
-  it("counts a commander line whose printing is held as kept, not as not-owned", async () => {
+  it("writes a commander's held printing without counting it in the strip", async () => {
     process.env.DECK_PRINTINGS_ENABLED = "true";
     stub.state.collection.push({ oracleId: KRATOS, setCode: "sld", collectorNumber: "2213" });
     const result = await run();
     if (!result.ok) throw new Error(JSON.stringify(result));
     expect(pickInserts().map((p) => p.oracleId)).toEqual([ATREUS, KRATOS]);
-    // Sol Ring alone is left: its line names LTC 284 and the player holds only C21 263.
-    expect(result.printingsKept).toBe(2);
+    // Sol Ring alone is counted: its line names LTC 284 and the player holds only C21 263.
+    expect(result.printingsKept).toBe(0);
     expect(result.printingsNotOwned).toBe(1);
+  });
+
+  it("counts a body line whose printing is held as kept", async () => {
+    process.env.DECK_PRINTINGS_ENABLED = "true";
+    stub.state.collection.push({ oracleId: SOL_RING, setCode: "ltc", collectorNumber: "284" });
+    const result = await run();
+    if (!result.ok) throw new Error(JSON.stringify(result));
+    expect(result.printingsKept).toBe(1);
+    expect(result.printingsNotOwned).toBe(0);
   });
 
   it("writes no picks and counts nothing with the switch off", async () => {

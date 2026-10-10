@@ -30,8 +30,14 @@ export function bodyLine(c: DecklistCard): string {
  * as `printedNameOf` names a body line. The oracle name beside a renamed printing's set and number
  * would describe a face that reads something else (`1 World at War (SLD) 2208`).
  */
-export function commanderExportName(c: { name: string; printedName?: string | null; printedSetCode?: string | null }): string {
-  return c.printedSetCode ? (c.printedName ?? c.name) : c.name;
+export function commanderExportName(c: {
+  name: string;
+  printedName?: string | null;
+  printedSetCode?: string | null;
+  printedCollectorNumber?: string | null;
+}): string {
+  // The same condition `bodyLine` names a printing on: both halves, or none.
+  return c.printedSetCode && c.printedCollectorNumber ? (c.printedName ?? c.name) : c.name;
 }
 
 /** The commander lines, `1 Name (SET) CN` where the deck names a printing for one (deck

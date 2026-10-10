@@ -11,7 +11,7 @@ describe("importPicks", () => {
     const held = new Set([heldKey("sol", "LTC", "284")]);
     expect(importPicks([c("sol", "ltc", "284", 2)], held, members)).toEqual({
       picks: [{ oracleId: "sol", setCode: "ltc", collectorNumber: "284" }],
-      notOwned: 0,
+      notOwned: [],
     });
   });
 
@@ -32,16 +32,16 @@ describe("importPicks", () => {
       members,
     );
     expect(picks.map((p) => p.oracleId)).toEqual(["sol"]);
-    expect(notOwned).toBe(1);
+    expect(notOwned).toEqual(["signet"]);
   });
 
   it("ignores a card the deck does not hold", () => {
     expect(importPicks([c("loose", "ltc", "1", 1)], new Set([heldKey("loose", "ltc", "1")]), members))
-      .toEqual({ picks: [], notOwned: 0 });
+      .toEqual({ picks: [], notOwned: [] });
   });
 
   it("matches a collector number exactly", () => {
     expect(importPicks([c("sol", "ltc", "284", 1)], new Set([heldKey("sol", "ltc", "284a")]), members).notOwned)
-      .toBe(1);
+      .toEqual(["sol"]);
   });
 });

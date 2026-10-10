@@ -27,7 +27,7 @@ export function importPicks(
   held: ReadonlySet<string>,
   /** The cards the new deck holds, both commanders included. A line the import dropped is not one. */
   members: ReadonlySet<string>,
-): { picks: ImportPrintingPick[]; notOwned: number } {
+): { picks: ImportPrintingPick[]; notOwned: string[] } {
   const picks = new Map<string, ImportPrintingPick>();
   const named = new Set<string>();
   for (const c of [...candidates].sort((a, b) => a.sourceLine - b.sourceLine)) {
@@ -38,5 +38,5 @@ export function importPicks(
       picks.set(c.oracleId, { oracleId: c.oracleId, setCode: c.setCode.toLowerCase(), collectorNumber: c.collectorNumber });
     }
   }
-  return { picks: [...picks.values()], notOwned: [...named].filter((id) => !picks.has(id)).length };
+  return { picks: [...picks.values()], notOwned: [...named].filter((id) => !picks.has(id)) };
 }

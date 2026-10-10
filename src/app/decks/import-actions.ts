@@ -300,6 +300,7 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
   // transaction as the deck, so a new deck never shows another printing for a moment. Off, the
   // import is main's: no read, no picks, no clause.
   let printingPicks: ImportPrintingPick[] = [];
+  let printingsKept = 0;
   let printingsNotOwned = 0;
   if (deckPrintingsEnabled() && result.printings.length > 0) {
     const members = new Set([
@@ -308,7 +309,14 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
       ...(partnerOracleId !== null ? [partnerOracleId] : []),
     ]);
     const held = await heldPrintingKeys(userId, [...new Set(result.printings.map((p) => p.oracleId))]);
-    ({ picks: printingPicks, notOwned: printingsNotOwned } = importPicks(result.printings, held, members));
+    const chosen = importPicks(result.printings, held, members);
+    printingPicks = chosen.picks;
+    // The strip's clauses count what its headline counts, the body's lines, so a commander's pick
+    // is written but not counted: `All 99 lines … 100 with the printing you own` would contradict
+    // itself.
+    const body = new Set(deckCardValues.map((c) => c.oracleId));
+    printingsKept = chosen.picks.filter((p) => body.has(p.oracleId)).length;
+    printingsNotOwned = chosen.notOwned.filter((id) => body.has(id)).length;
   }
 
   // One transaction: a deck that exists without its unresolved rows is a deck that
@@ -355,7 +363,7 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
     deckId,
     unresolvedCount: result.unresolved.length,
     notes,
-    printingsKept: printingPicks.length,
+    printingsKept,
     printingsNotOwned,
   };
 }
