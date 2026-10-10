@@ -704,10 +704,12 @@ async function live(fixtureDeck: string) {
       if (debug && out.ok) {
         const { unmarkedNames } = await import("../src/lib/synopsis/validate");
         const names = [...new Set(facts.cards.flatMap((c) => [c.name, ...c.name.split(" // ")]))];
-        const texts = [out.value.overview, ...out.value.primer.strategy, ...out.value.primer.mulligan.keep,
-          ...out.value.primer.mulligan.sendBack, ...out.value.primer.tips.map((t) => t.text), ...out.value.keyCards.map((k) => k.job), ...out.value.weaknesses];
+        // The probe asks for contract 7 (no `v2` on the request), so the reply has that shape.
+        const v7 = out.value as import("../src/lib/synopsis/response-schema").SynopsisResponse;
+        const texts = [v7.overview, ...v7.primer.strategy, ...v7.primer.mulligan.keep,
+          ...v7.primer.mulligan.sendBack, ...v7.primer.tips.map((t) => t.text), ...v7.keyCards.map((k) => k.job), ...v7.weaknesses];
         for (const t of texts) { const bare = unmarkedNames(t, names); if (bare.length) console.log(`UNMARKED ${JSON.stringify(bare)} in: ${t}`); }
-        for (const k of out.value.keyCards) console.log(`JOB ${k.job.length}: ${k.job}`);
+        for (const k of v7.keyCards) console.log(`JOB ${k.job.length}: ${k.job}`);
       }
       return out;
     } });

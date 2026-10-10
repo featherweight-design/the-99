@@ -1,6 +1,8 @@
 import type { ModelOutcome } from "../model/client";
 import type { SynopsisFacts } from "./facts";
-import type { SynopsisResponse } from "./response-schema";
+import { refOf } from "./claims";
+import type { SynopsisReply, SynopsisResponse, SynopsisResponseV8 } from "./response-schema";
+import { ASSESSMENT_TOPICS } from "./types";
 
 /**
  * The model stand-in every non-production run uses unless `SYNOPSIS_LIVE=1` (plan, decision 10).
@@ -53,11 +55,40 @@ export function synopsisLive(env: Record<string, string | undefined> = process.e
 
 const USAGE = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 };
 
-export function stubReply(facts: SynopsisFacts, mode: StubMode, repair = false): ModelOutcome<SynopsisResponse> {
+/**
+ * The contract-8 form of a stub reply (`v2`): the same content with every line carrying the ref of
+ * the cards it names, and the weakness moved into the checklist, where the first topic holds it
+ * and the rest are `unknown` (humility is silence, so nothing else renders).
+ */
+function asV8(facts: SynopsisFacts, r: SynopsisResponse): SynopsisResponseV8 {
+  const ref = (name: string) => refOf(Math.max(0, facts.cards.findIndex((c) => c.name === name)));
+  const line = (text: string) => ({ text, evidence: [] as string[] });
+  return {
+    overview: r.overview,
+    primer: {
+      strategy: r.primer.strategy.map(line),
+      mulligan: { keep: r.primer.mulligan.keep.map(line), sendBack: r.primer.mulligan.sendBack.map(line) },
+      tips: r.primer.tips.map((t) => ({ text: t.text, evidence: t.cards.map(ref) })),
+    },
+    keyCards: r.keyCards.map((k) => ({ ...k, evidence: [ref(k.card)] })),
+    assessment: ASSESSMENT_TOPICS.map((topic, i) => (i === 2 && r.weaknesses[0]
+      ? { topic, verdict: "weakness" as const, tier: "moderate" as const, line: r.weaknesses[0], evidence: [] }
+      : { topic, verdict: "unknown" as const, evidence: [] })),
+  };
+}
+
+export function stubReply(facts: SynopsisFacts, mode: StubMode, repair?: boolean, v2?: false): ModelOutcome<SynopsisResponse>;
+export function stubReply(facts: SynopsisFacts, mode: StubMode, repair: boolean | undefined, v2: boolean): ModelOutcome<SynopsisReply>;
+export function stubReply(facts: SynopsisFacts, mode: StubMode, repair = false, v2 = false): ModelOutcome<SynopsisReply> {
+  const out = stubReplyV7(facts, mode, repair);
+  return v2 && out.ok ? { ...out, value: asV8(facts, out.value) } : out;
+}
+
+function stubReplyV7(facts: SynopsisFacts, mode: StubMode, repair = false): ModelOutcome<SynopsisResponse> {
   // Contract B's two outcomes: the first answer refuses its Overview, and the repair either
   // mends it (`repairs`) or fails the same way (`unrepaired`).
-  if (mode === "repairs") return stubReply(facts, repair ? "survived" : "partial");
-  if (mode === "unrepaired") return stubReply(facts, "partial");
+  if (mode === "repairs") return stubReplyV7(facts, repair ? "survived" : "partial");
+  if (mode === "unrepaired") return stubReplyV7(facts, "partial");
   if (mode === "malformed") return { ok: false, errorClass: "malformed" };
   if (mode === "busy") return { ok: false, errorClass: "upstream_busy", status: 529 };
   // A request the upstream refused (H33): a retired model id reads as a 404.

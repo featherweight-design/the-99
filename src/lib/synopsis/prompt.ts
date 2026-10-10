@@ -1,8 +1,9 @@
-import { CHAR_BUDGETS, SECTION_COUNTS, TIP_MIN_CARDS } from "./limits";
+import { refOf } from "./claims";
+import { CHAR_BUDGETS, EVIDENCE_MAX, SECTION_COUNTS, TIP_MIN_CARDS } from "./limits";
 import { colorLabel } from "../decks/format";
 import { isInfiniteOrGameEnding } from "../spellbook/combo-features";
 import { identityNameOf, type SynopsisFacts } from "./facts";
-import type { CheckedSynopsis, SectionId } from "./types";
+import { ASSESSMENT_TOPICS, type CheckedSynopsis, type SectionId } from "./types";
 
 /**
  * The two messages a synopsis run sends. Pure string work.
@@ -27,7 +28,7 @@ import type { CheckedSynopsis, SectionId } from "./types";
  * rendered on 96% of answers against 18% without them.
  */
 
-const SYSTEM = [
+const SYSTEM_HEAD = [
   "You write a synopsis of a Magic: The Gathering Commander deck: how it plays, for the player who built it first and for their playgroup second. Nothing may make sense only to the builder.",
   "Say how the deck plays, never how strong it is. Never mention a bracket, power level, tier, score, rating or cEDH, never call the deck or a card strong, powerful, efficient or similar, and never rate anything out of ten. Facts of the game are fine (\"deals 16 damage\").",
   "Write every card name exactly as the decklist spells it, wrapped in double square brackets: [[Sol Ring]]. EVERY mention, every time, including the commander's own name and a name repeated in the same sentence: a card name written without brackets fails its whole section. Name only cards in the decklist, except in weaknesses, which may name a card the deck lacks.",
@@ -35,13 +36,63 @@ const SYSTEM = [
   "Name the deck's colors by the identity name given (\"Gruul\", \"Sultai\", \"Colorless\"), never by mana letters such as RG or BUG.",
   "Every item is one or more whole sentences ending in a period, question mark or exclamation mark.",
   "Sections:",
+];
+
+const SYSTEM_OVERVIEW = [
   `- overview: one paragraph, at most ${CHAR_BUDGETS.overview} characters: what the deck is and how it wins.`,
+];
+
+/** Contract 7's section rules: the lines the shipped prompt has always carried. */
+const SECTIONS_V7 = [
   `- primer.strategy: ${range(SECTION_COUNTS.strategy)} steps of the deck's plan, in order, each at most ${CHAR_BUDGETS.strategy} characters.`,
   `- primer.mulligan.keep and primer.mulligan.sendBack: ${range(SECTION_COUNTS.keep)} lines each, each at most ${CHAR_BUDGETS.mulligan} characters, about what opening hand to keep and what to send back. The app already shows the land range above these lines, so NEVER state a land count, "no lands" or "all spells": each line names a card, a point on the curve, or a line of play instead. Do not begin a line with "Keep", "Send back" or "Mulligan"; the heading says it. The commander starts in the command zone, never in the opening hand: never write a hand "with" or "holding" it. Use only the figures given under "Mulligan figures"; state no other number.`,
   `- primer.tips: ${range(SECTION_COUNTS.tips)} tips, each an interaction between at least ${TIP_MIN_CARDS} cards in this deck, never general rules advice. List the tip's cards in "cards", and name exactly those cards in its text. Each text at most ${CHAR_BUDGETS.tip} characters.`,
   `- keyCards: ${range(SECTION_COUNTS.keyCards)} different cards from the decklist, never one marked "universal staple" (a card nearly every deck plays says nothing about this one), each with one line, at most ${CHAR_BUDGETS.job} characters, on the job it does in this deck. "claims" lists only categories the decklist shows in that card's brackets; leave it empty for a card with none. In a job, never use the words ramp, draw, removal, remove, destroy, wipe, sweeper, tutor, combo or infinite unless that card's brackets list the matching category.`,
   `- weaknesses: ${range(SECTION_COUNTS.weaknesses)} weaknesses of how the deck plays, untiered and unranked, each at most ${CHAR_BUDGETS.weakness} characters.`,
+];
+
+const SYSTEM = [...SYSTEM_HEAD, ...SYSTEM_OVERVIEW, ...SECTIONS_V7].join("\n");
+
+/**
+ * Contract 8's section rules (plan 2026-10-10-overview-accuracy.md, sections 3 and 11). Same
+ * counts and budgets as contract 7, plus: every line cites the decklist refs of the cards it is
+ * about, Key cards name the deck's win conditions and engine pieces, the Mulligan is tied to those
+ * pieces and to the colors the spells need, and the Weaknesses are a CHECKLIST of seven topics the
+ * model assesses once each. The app, not the model, picks the three that render and writes the
+ * tier word, so the model is never asked to rank or to count.
+ */
+const REFS_RULE = `Each decklist line starts with its ref, such as "c12:". "evidence" lists the refs of the cards an item is about (at most ${EVIDENCE_MAX}), copied exactly from the decklist; a ref is never a card name and never a ref the decklist lacks.`;
+
+const SECTIONS_V8 = [
+  `- primer.strategy: ${range(SECTION_COUNTS.strategy)} steps of the deck's plan, in order, each at most ${CHAR_BUDGETS.strategy} characters, as { text, evidence }. A step about particular cards cites their refs.`,
+  `- primer.mulligan.keep and primer.mulligan.sendBack: ${range(SECTION_COUNTS.keep)} lines each, as { text, evidence }, each at most ${CHAR_BUDGETS.mulligan} characters. The app already shows the land range above these lines, so NEVER state a land count, "no lands" or "all spells". Tie the advice to THIS deck: at least one keep line names an engine piece, as [[Name]] (a card of a listed combo, or the card the plan cannot run without), and the send-back lines name what the hand lacks for the deck's colors or plan. Never write advice true of every deck, such as "keep Sol Ring" or "send back a hand with no lands". Do not begin a line with "Keep", "Send back" or "Mulligan". The commander starts in the command zone, never in the opening hand. Use only the figures given under "Mulligan figures"; state no other number.`,
+  `- primer.tips: ${range(SECTION_COUNTS.tips)} tips, each an interaction between at least ${TIP_MIN_CARDS} cards in this deck, never general rules advice, as { text, evidence }. "evidence" lists the refs of exactly the cards the tip names (at least ${TIP_MIN_CARDS}), and its text names exactly those cards. Each text at most ${CHAR_BUDGETS.tip} characters. State only what the cards' rules text says: a keyword a card lacks (cascade, flying, haste) is never claimed for it, and a forced sacrifice or a "target player sacrifices" effect is never an enter-the-battlefield or a "dies" trigger for you.`,
+  `- keyCards: ${range(SECTION_COUNTS.keyCards)} different cards from the decklist, never one marked "universal staple", each { card, claims, job, evidence } with "evidence" holding at least the card's own ref. Choose the cards that WIN or RUN the deck: the pieces of every combo listed under the facts, the cards the plan cannot work without, and the commander's enablers, before any card that is merely good. Each job at most ${CHAR_BUDGETS.job} characters, on the job it does in this deck. "claims" lists only categories the decklist shows in that card's brackets; leave it empty for a card with none. In a job, never use the words ramp, draw, removal, remove, destroy, wipe, sweeper, tutor, combo or infinite unless that card's brackets list the matching category.`,
+  `- assessment: the weakness checklist, replacing any list of weaknesses. Give EXACTLY ONE entry for each of these ${ASSESSMENT_TOPICS.length} topics, no more and none missing: ${ASSESSMENT_TOPICS.join(", ")}.`,
+];
+
+/** The checklist's meaning, topic by topic, with the hate cards to name. Contract 8 only. */
+const CHECKLIST_V8 = [
+  'Each entry is { topic, verdict, tier, line, evidence }. "verdict" is "weakness" (the decklist shows the deck exposed here), "not_a_weakness" (the deck covers it, or the topic does not apply to it) or "unknown" (the decklist cannot tell you). Prefer "unknown" to a guess: an entry that is not a weakness is never shown.',
+  `A "weakness" carries a "tier" ("critical": it can lose the game outright; "moderate": it costs many games; "minor") and a "line": one sentence of a weakness of THIS deck, at most ${CHAR_BUDGETS.weakness - 12} characters, naming the card that exploits it as [[Name]] (it may be a card the deck lacks). Do not write the tier into the line and do not begin it with a tier word; the app does. Any other verdict carries neither "tier" nor "line". Never write that something is fine, covered or flexible as a weakness. "evidence" may cite the refs of deck cards the weakness is about.`,
+  "The topics, and the hate card each should name when it applies:",
+  "- graveyard_or_zone_hate: a deck that wins through its graveyard (recursion, reanimation, flashback, self-mill): graveyard hate such as [[Rest in Peace]], [[Bojuka Bog]], [[Dauthi Voidwalker]]. A deck that relies on indestructible or regenerating creatures: exile wipes such as [[Farewell]], [[Sunfall]].",
+  "- artifact_enchantment_removal: a deck built on artifacts: artifact hate and wipes such as [[Null Rod]], [[Collector Ouphe]], [[Vandalblast]]. A deck whose engine is ninjutsu or other activated abilities: [[Cursed Totem]] and cards like it. Also the deck's own lack of an answer to an opposing artifact or enchantment, when the decklist shows none.",
+  "- interaction_speed: use the interaction figures in the facts exactly as given, never your own count. When few of the deck's interaction pieces are cheap or at instant speed, that is the weakness against a fast combo; name what it cannot stop in time.",
+  "- commander_dependence: how much of the plan stops if the commander is removed or taxed repeatedly, and what the deck loses without it.",
+  "- win_path: a deck that wins mostly through combat or one route: fogs and pillowfort such as [[Propaganda]], [[Ghostly Prison]], and what stops that route.",
+  "- combo_vulnerability: only when the facts list a combo or the plan depends on one piece: the removal or disruption that breaks it at its key window (the commander's combat or enter-the-battlefield trigger, the engine piece), naming the piece. If no combo is listed, answer \"not_a_weakness\" or \"unknown\".",
+  "- mana_and_colors: the deck's own color needs, the basic-land count against its colors, tapped lands, or tapping out for its expensive spells. Judge the colors only against the identity named above; a single-color deck has no color-flexibility weakness.",
 ].join("\n");
+
+const MARKS_RULE_V8 = "The double square brackets go around a card name in EVERY text you write, evidence refs excepted: the overview, each strategy step, each mulligan line, each tip, each Key card's job and each weakness line. Text such as \"Gishath leads a deck\" fails; \"[[Gishath, Sun's Avatar]] leads a deck\" passes. Refs (c12) are never written inside brackets.";
+
+const V8_ARGUMENT_RULES = [
+  MARKS_RULE_V8,
+  REFS_RULE,
+  CHECKLIST_V8,
+].join("\n");
+
 
 /**
  * Lengths, restated with targets under each limit and one worked example. Asking for shorter text
@@ -112,8 +163,12 @@ function range(r: { min: number; max: number }): string {
 export function buildSynopsisPrompt(
   facts: SynopsisFacts,
   retry?: { keep: CheckedSynopsis; refused: SectionId[] },
-  /** `v2`: state the combo and deck-stats facts and their rules. Off, the messages are byte for byte what they were. */
-  opts: { v2?: boolean } = {},
+  /**
+   * `v2`: state the combo and deck-stats facts and their rules. `contract8` (with `v2`): the
+   * contract-8 sections, the checklist and the refs on the decklist. Off, the messages are byte for
+   * byte what they were.
+   */
+  opts: { v2?: boolean; contract8?: boolean } = {},
 ): { system: string; user: string } {
   const lines: string[] = [];
   lines.push(`Commander: ${facts.commanders.join(" and ")}`);
@@ -138,16 +193,20 @@ export function buildSynopsisPrompt(
 
   const total = facts.cards.reduce((n, c) => n + c.quantity, 0);
   lines.push("", `Decklist (${total} cards). Each card: name, type line, [categories], then its rules text.`);
-  for (const c of facts.cards) {
+  for (const [i, c] of facts.cards.entries()) {
+    const ref = opts.contract8 ? `${refOf(i)}: ` : "";
     const qty = c.quantity > 1 ? `${c.quantity}x ` : "";
     const cats = c.categories.length > 0 ? ` [${c.categories.join(", ")}]` : "";
     const staple = c.universalStaple ? " (universal staple)" : "";
-    lines.push(`- ${qty}${c.name} (${c.typeLine})${cats}${staple}${c.oracleText ? `: ${oneLine(c.oracleText)}` : ""}`);
+    lines.push(`- ${ref}${qty}${c.name} (${c.typeLine})${cats}${staple}${c.oracleText ? `: ${oneLine(c.oracleText)}` : ""}`);
   }
 
   if (retry) {
     lines.push("", `Rewrite these sections, which did not pass checking last time: ${retry.refused.join(", ")}.`);
     lines.push("The other sections passed and are kept as they are. They are given here so the rewrite agrees with them; return them unchanged.");
+    if (opts.contract8) {
+      lines.push('Your reply keeps its usual shape. For a kept section give its items with an empty "evidence" list: the app keeps the stored section and ignores yours. If Weaknesses is kept, answer every topic of the checklist as "unknown".');
+    }
     lines.push(JSON.stringify({
       overview: retry.keep.overview,
       primer: retry.keep.primer,
@@ -161,6 +220,13 @@ export function buildSynopsisPrompt(
     lines.push(`${REPAIR_LEAD} ${reasons.join("; ")}.`);
   }
 
+  if (opts.contract8) {
+    const system = [...SYSTEM_HEAD, ...SYSTEM_OVERVIEW, ...SECTIONS_V8].join("\n");
+    return {
+      system: `${system}\n${V8_ARGUMENT_RULES}\n${LENGTH_RULES}\n${plusRules(facts)}\n${V2_FACT_RULES}`,
+      user: lines.join("\n"),
+    };
+  }
   const base = `${SYSTEM}\n${LENGTH_RULES}\n${plusRules(facts)}\n${MULLIGAN_BUDGET_RULES}`;
   return { system: opts.v2 ? `${base}\n${V2_FACT_RULES}` : base, user: lines.join("\n") };
 }

@@ -1,8 +1,10 @@
 import { edictEntry, keywordClaims, nonWeakness, readEvidence, refIndex } from "./claims";
 import { deckNameIndex, normalizeName, type FactCard, type SynopsisFacts } from "./facts";
-import type { SynopsisResponse, SynopsisResponseV8 } from "./response-schema";
+import type { SynopsisReplyV8Wire, SynopsisResponse, SynopsisResponseV8 } from "./response-schema";
 import {
   ASSESSMENT_TOPICS,
+  ASSESSMENT_VERDICTS,
+  WEAKNESS_TIERS,
   type CheckedSynopsis,
   type RefusalReason,
   type StoredAssessment,
@@ -42,6 +44,33 @@ type Normalized = {
   evidence: { strategy: string[][]; keep: string[][]; sendBack: string[][]; tips: string[][]; keyCards: string[][]; weaknesses: string[][] };
   assessment: StoredAssessment[] | null;
 };
+
+const word = (w: string) => w.trim().toLowerCase().replace(/[\s-]+/g, "_");
+
+/**
+ * Reads the closed words of a reply off the wire (`synopsisResponseSchemaV8Wire`). Case, spaces and
+ * hyphens are folded. A verdict that is not one of the three becomes `unknown`, which renders
+ * nothing: the cost of a stray word is a weakness not shown, never a refused answer. A tier that is
+ * not one of the three is dropped, which leaves a `weakness` without its tier and so the checklist
+ * incomplete (the same refusal as a missing tier). A topic is folded and otherwise kept, so an
+ * unknown one fails the every-topic-once rule rather than being guessed at.
+ */
+export function normalizeV8(raw: SynopsisReplyV8Wire | SynopsisResponseV8): SynopsisResponseV8 {
+  return {
+    ...raw,
+    assessment: raw.assessment.map((a) => {
+      const verdict = word(a.verdict);
+      const tier = a.tier === undefined ? undefined : word(a.tier);
+      const entry = {
+        ...a,
+        topic: word(a.topic) as SynopsisResponseV8["assessment"][number]["topic"],
+        verdict: (ASSESSMENT_VERDICTS as readonly string[]).includes(verdict) ? verdict as SynopsisResponseV8["assessment"][number]["verdict"] : "unknown" as const,
+        tier: tier !== undefined && (WEAKNESS_TIERS as readonly string[]).includes(tier) ? tier as WeaknessTier : undefined,
+      };
+      return entry.tier === undefined ? (({ tier: _drop, ...rest }) => rest)(entry) : entry;
+    }),
+  };
+}
 
 /** The candidate weakness lines, ranked, as the validator will see them. Also what `catalogFor` reads. */
 export function weaknessLines(reply: Pick<SynopsisResponseV8, "assessment">): string[] {
@@ -137,10 +166,11 @@ function positions<T>(original: readonly T[], kept: readonly T[], checks: readon
 }
 
 export function validateSynopsisV8(
-  reply: SynopsisResponseV8,
+  wire: SynopsisReplyV8Wire | SynopsisResponseV8,
   facts: SynopsisFacts,
   catalog: ReadonlyMap<string, Card>,
 ): CheckedSynopsis {
+  const reply = normalizeV8(wire);
   const n = normalize(reply, facts);
   const complete = n.assessment !== null;
   const checked = validateSynopsis(n.reply, facts, catalog, n.checks, true);

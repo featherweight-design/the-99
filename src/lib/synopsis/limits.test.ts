@@ -6,6 +6,7 @@ import {
   synopsisContractVersion,
   SYNOPSIS_ANSWER_TOKENS_WORST_CASE,
   SYNOPSIS_MAX_TOKENS,
+  SYNOPSIS_MAX_TOKENS_V8,
   SYNOPSIS_OBSERVED_MAX_OUTPUT_TOKENS,
   SYNOPSIS_REASONING_HEADROOM_TOKENS,
 } from "./limits";
@@ -19,6 +20,12 @@ describe("the output ceiling", () => {
   // A ceiling under the measured maximum cuts off an answer the harness accepted.
   it("clears the most output any measured answer used", () => {
     expect(SYNOPSIS_MAX_TOKENS).toBeGreaterThan(SYNOPSIS_OBSERVED_MAX_OUTPUT_TOKENS);
+  });
+});
+
+describe("the contract-8 ceiling", () => {
+  it("is above contract 7's, which it must hold plus the evidence and the checklist", () => {
+    expect(SYNOPSIS_MAX_TOKENS_V8).toBeGreaterThan(SYNOPSIS_MAX_TOKENS);
   });
 });
 

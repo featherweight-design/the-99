@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { SynopsisFacts } from "./facts";
 import type { SynopsisResponseV8 } from "./response-schema";
 import { ASSESSMENT_TOPICS } from "./types";
-import { checklistComplete, validateSynopsisV8, weaknessLines } from "./validate-v8";
+import { checklistComplete, normalizeV8, validateSynopsisV8, weaknessLines } from "./validate-v8";
 
 const card = (name: string, extra: Partial<SynopsisFacts["cards"][number]> = {}) => ({
   oracleId: `id-${name}`, name, typeLine: "Creature", quantity: 1, categories: [], oracleText: null, ...extra,
@@ -240,5 +240,33 @@ describe("validateSynopsisV8", () => {
     const reply = good();
     reply.primer.mulligan.keep[0] = { text: "A hand with [[Sol Ring]] and 3 lands gets you ahead.", evidence: ["c2"] };
     expect(verdictOf(validateSynopsisV8(reply, FACTS, CATALOG), "primer")).toMatchObject({ status: "refused" });
+  });
+});
+
+describe("normalizeV8: the closed words off the wire", () => {
+  const entry = (topic: string, verdict: string, tier?: string) => ({ topic, verdict, ...(tier === undefined ? {} : { tier }), line: "A line.", evidence: [] as string[] });
+  const wire = (assessment: ReturnType<typeof entry>[]) => ({ overview: "", primer: { strategy: [], mulligan: { keep: [], sendBack: [] }, tips: [] }, keyCards: [], assessment });
+
+  it("folds case, spaces and hyphens", () => {
+    const [a] = normalizeV8(wire([entry("Win Path", "Not-A-Weakness", "Critical")])).assessment;
+    expect(a).toMatchObject({ topic: "win_path", verdict: "not_a_weakness", tier: "critical" });
+  });
+
+  it("turns a stray verdict into unknown, which renders nothing, instead of refusing the answer", () => {
+    const out = normalizeV8(wire(ASSESSMENT_TOPICS.map((t, i) => entry(t, i === 0 ? "n/a" : "unknown"))));
+    expect(out.assessment[0]!.verdict).toBe("unknown");
+    expect(checklistComplete(out)).toBe(true);
+    expect(weaknessLines(out)).toEqual([]);
+  });
+
+  it("drops an unreadable tier, which leaves a weakness without one and the checklist incomplete", () => {
+    const out = normalizeV8(wire(ASSESSMENT_TOPICS.map((t, i) => entry(t, i === 0 ? "weakness" : "unknown", i === 0 ? "severe" : undefined))));
+    expect(out.assessment[0]).not.toHaveProperty("tier");
+    expect(checklistComplete(out)).toBe(false);
+  });
+
+  it("keeps an unknown topic as written, so the every-topic-once rule catches it", () => {
+    const out = normalizeV8(wire(ASSESSMENT_TOPICS.map((t, i) => entry(i === 0 ? "vibes" : t, "unknown"))));
+    expect(checklistComplete(out)).toBe(false);
   });
 });

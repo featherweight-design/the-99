@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import type { SynopsisFacts } from "./facts";
-import { CHAR_BUDGETS, SECTION_COUNTS } from "./limits";
+import { CHAR_BUDGETS, EVIDENCE_MAX, SECTION_COUNTS } from "./limits";
+import { ASSESSMENT_TOPICS } from "./types";
 import { buildSynopsisPrompt } from "./prompt";
 import { figuresIn } from "./validate";
 import type { CheckedSynopsis } from "./types";
@@ -184,5 +185,43 @@ describe("producesShown", () => {
     const out = producesShown(["A", "B", "C", "D", "Infinite mana"]);
     expect(out).toHaveLength(4);
     expect(out[0]).toBe("Infinite mana");
+  });
+});
+
+describe("buildSynopsisPrompt under contract 8", () => {
+  const C8 = { v2: true, contract8: true };
+
+  it("is untouched without the contract: contract 8 only adds, never edits the shipped prompt", () => {
+    expect(buildSynopsisPrompt(FACTS, undefined, { v2: false, contract8: false })).toEqual(buildSynopsisPrompt(FACTS));
+    expect(buildSynopsisPrompt(FACTS).user).not.toContain("c1:");
+  });
+
+  it("gives every decklist line its ref, in order, as readEvidence resolves them", () => {
+    const { user } = buildSynopsisPrompt(FACTS, undefined, C8);
+    expect(user).toContain("- c1: Sol Ring (Artifact)");
+    expect(user).toContain("- c2: 12x Forest (Basic Land)");
+  });
+
+  it("names every checklist topic once and the hate cards the corpus missed", () => {
+    const { system } = buildSynopsisPrompt(FACTS, undefined, C8);
+    for (const t of ASSESSMENT_TOPICS) expect(system.split(`- ${t}:`).length - 1, t).toBe(1);
+    for (const hate of ["Rest in Peace", "Bojuka Bog", "Dauthi Voidwalker", "Null Rod", "Collector Ouphe", "Cursed Totem", "Farewell", "Propaganda"]) {
+      expect(system).toContain(`[[${hate}]]`);
+    }
+    expect(system).toContain(`at most ${EVIDENCE_MAX}`);
+  });
+
+  it("drops the untiered weaknesses list, ties the mulligan to the engine and asks the facts' figures be used", () => {
+    const { system } = buildSynopsisPrompt(FACTS, undefined, C8);
+    expect(system).not.toContain("untiered and unranked");
+    expect(system).toContain("names an engine piece");
+    expect(system).toContain("use the interaction figures in the facts exactly as given");
+    expect(system).toContain("name the primary win condition");
+  });
+
+  it("tells a repair to give kept sections empty evidence", () => {
+    const keep = { overview: "x", primer: {}, keyCards: [], weaknesses: [], verdicts: [] } as unknown as CheckedSynopsis;
+    const { user } = buildSynopsisPrompt(FACTS, { keep, refused: ["tips"] as never }, C8);
+    expect(user).toContain('an empty "evidence" list');
   });
 });
