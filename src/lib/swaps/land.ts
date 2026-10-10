@@ -162,7 +162,7 @@ export function landCatch(card: LandText): "condition" | "utility" | null {
 
 export type Finds = { types: Set<BasicType>; basicOnly: boolean };
 
-const FETCH = /search your library for (?:up to (?:one|two) )?(an?|two) ([a-z ,]+?) cards?\b/;
+const FETCH = /search your library for (?:up to (?:one|two)|an?|two) ([a-z ,]+?) cards?\b/;
 
 /**
  * The land types a land finds when it is sacrificed to search, and whether it finds only basics.
@@ -174,7 +174,7 @@ export function fetchFinds(card: LandText): Finds | null {
   if (!/\bsacrifice\b/.test(text)) return null;
   const m = FETCH.exec(text);
   if (!m) return null;
-  const words = m[2];
+  const words = m[1];
   const basicOnly = /\bbasic\b/.test(words);
   const types = new Set<BasicType>(BASIC_TYPES.filter((t) => new RegExp(`\\b${t}\\b`).test(words)));
   if (types.size === 0) {
