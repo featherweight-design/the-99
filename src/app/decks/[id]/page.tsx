@@ -473,6 +473,15 @@ export default async function DeckBuilderPage({
       // is retired; see the note in `lib/decks/builder-view.ts`.
       analysisEnabled={analysisEnabled}
       statsEnabled={deckStatsEnabled()}
+      statsData={deckStatsEnabled()
+        ? {
+            commanders: [detail.commander, ...(detail.partner ? [detail.partner] : [])].map((c) => ({
+              cmc: c.cmc ?? 0,
+              typeLine: c.typeLine,
+              quantity: 1,
+            })),
+          }
+        : null}
       tuningEnabled={tuned}
       noticesEnabled={noticesEnabled()}
       initialNotices={notices}

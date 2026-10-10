@@ -993,3 +993,17 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 [data-marks-pending] [data-key-numeral] {
   display: none;
 }
+
+html {
+  /* Card-type hues for the Stats curve: the same eight values in every theme, near-equal
+     lightness so hue alone tells the types apart. Measured on each theme's --surface-sunken:
+     the seven types 6.4:1 or better, --type-land (deliberately dimmer) 4.15:1 or better. */
+  --type-creature: oklch(0.74 0.12 65);
+  --type-instant: oklch(0.72 0.11 235);
+  --type-sorcery: oklch(0.70 0.12 305);
+  --type-artifact: oklch(0.72 0.03 250);
+  --type-enchantment: oklch(0.74 0.10 185);
+  --type-planeswalker: oklch(0.72 0.12 18);
+  --type-battle: oklch(0.75 0.10 115);
+  --type-land: oklch(0.58 0.05 75);
+}

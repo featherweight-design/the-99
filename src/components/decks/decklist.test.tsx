@@ -101,6 +101,7 @@ function renderDecklist(
     receipts?: SwapReceipt[];
     lockMode?: boolean;
     statsEnabled?: boolean;
+    statsData?: { commanders: { cmc: number; typeLine: string; quantity: number }[] } | null;
     commander?: DeckCommander;
     partner?: DeckCommander | null;
   } = {},
@@ -161,6 +162,7 @@ function renderDecklist(
           onAnnounce={opts.onAnnounce}
           lockMode={opts.lockMode}
           statsEnabled={opts.statsEnabled}
+          statsData={opts.statsData}
         />
       ))}</AddOptimisticCardProvider>
     </CardDetailProvider>,
@@ -1415,6 +1417,21 @@ describe("the Stats panel", () => {
     expect(document.querySelector("[data-deck-stats]")).not.toBeNull();
     expect(screen.getAllByRole("figure")).toHaveLength(6);
     expect(screen.queryByText("Sol Ring")).toBeNull();
+  });
+
+  it("draws the curve from the passed cards plus the commanders, so an optimistic change moves it", () => {
+    const stats = { statsEnabled: true, filter: "all" as const, statsData: { commanders: [{ cmc: 4, typeLine: "Legendary Creature", quantity: 1 }] } };
+    renderDecklist([rampOwned], stats);
+    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    const count = (cmc: number) => document.querySelector(`[data-curve-column="${cmc}"]`)!.querySelectorAll("[data-curve-square]").length;
+    const before = count(2);
+    expect(count(4)).toBe(1);
+    cleanup();
+
+    renderDecklist([rampOwned, drawOwned], stats);
+    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    expect(count(2)).toBe(before + 1);
+    expect(count(4)).toBe(1);
   });
 
   it("returns to the list when All is pressed from Stats", () => {

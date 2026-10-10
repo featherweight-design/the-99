@@ -4,6 +4,7 @@
 // coverage strip stays above both and the quick-add bar is pinned under both.
 "use client";
 
+import type { DeckStatsInput } from "../../lib/decks/stats";
 import { printedFaceName } from "../../lib/collection/browse";
 import { useState, useMemo, useCallback, useEffect, useRef, useTransition } from "react";
 import { printedNameOf } from "../../lib/collection/browse";
@@ -200,6 +201,9 @@ interface BuilderShellProps {
   analysisEnabled?: boolean;
   /** `DECK_STATS_ENABLED`, read on the server. Off: the list control draws no Stats segment. */
   statsEnabled?: boolean;
+  /** What the Stats panel needs beyond the card list: the commander row(s), which count toward the
+   *  curve. The figures themselves are derived on the client from the optimistic list. Null when off. */
+  statsData?: DeckStatsInput | null;
   /** `NOTICES_ENABLED` (`src/lib/notices/flag.ts`): whether the header draws the notice tag and the
    *  Notices sheet can open. Off, nothing of the notices is read or drawn. */
   noticesEnabled?: boolean;
@@ -261,6 +265,7 @@ export function BuilderShell({
   initialView = "deck",
   analysisEnabled = false,
   statsEnabled = false,
+  statsData = null,
   noticesEnabled = false,
   initialNotices = null,
   openNoticesOnArrival = false,
@@ -1792,6 +1797,7 @@ export function BuilderShell({
               <LockCardsProvider value={lockCards}>
               <Decklist
               statsEnabled={statsEnabled}
+              statsData={statsData}
               mix={mix}
                 deckId={deck.id}
                 cards={cards}

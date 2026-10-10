@@ -1,6 +1,6 @@
 {
-  "feature": "Deck stats, PR 1: the switch and the placement shell",
-  "note": "Needs DECK_STATS_ENABLED=true on the server and STATS_DECK (any deck with cards). The list toolbar shows the Stats segment beside All and Shopping; the stats row presses it and shows six empty shells with the list tools hidden. Shells carry no data until the card PRs, so no row photographs a figure's contents.",
+  "feature": "Deck stats, PRs 1-2: the switch, the placement shell and the curve card",
+  "note": "Needs DECK_STATS_ENABLED=true on the server and STATS_DECK (a deck with at least one creature and one other non-land card, so pressing Creature shows both lit and dimmed squares). The list toolbar shows the Stats segment beside All and Shopping; the stats row presses it and shows six empty shells with the list tools hidden. The curve card draws data; the other five figures stay empty shells until their PRs.",
   "clearAbout": true,
   "rows": [
     {
@@ -16,6 +16,16 @@
       "steps": [
         { "goto": "/decks/${STATS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
         { "clickRole": "button", "name": "^Show the deck as stats", "wait": "[data-deck-stats]", "settle": 800 }
+      ]
+    },
+    {
+      "id": "stats-curve-lit",
+      "label": "/decks/[id] Stats: the curve card with a type chip pressed",
+      "view": "src/components/decks/deck-stats-view.tsx",
+      "steps": [
+        { "goto": "/decks/${STATS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "button", "name": "^Show the deck as stats", "wait": "[data-deck-stats]", "settle": 800 },
+        { "clickRole": "button", "name": "^Creature", "settle": 400 }
       ]
     }
   ]
