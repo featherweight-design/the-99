@@ -10,6 +10,7 @@ const stub = vi.hoisted(() => ({
   replace: vi.fn(),
   receipt: vi.fn(),
   invalidate: vi.fn(),
+  editedKeys: vi.fn(async () => new Set<string>()),
 }));
 
 vi.mock("../../db", () => ({
@@ -24,7 +25,11 @@ vi.mock("../../lib/collection/write", async (actual) => ({
   applyCollectionChange: stub.apply,
 }));
 vi.mock("../../lib/collection/import", () => ({ replaceCollection: stub.replace, loadMatchInputs: vi.fn() }));
-vi.mock("../../lib/collection/history", () => ({ editsSinceUpload: async () => 4 }));
+vi.mock("../../lib/collection/history", () => ({
+  editsSinceUpload: async () => 4,
+  editedKeysSinceUpload: stub.editedKeys,
+  collectionTotals: async () => ({ holdings: 10, copies: 25 }),
+}));
 vi.mock("../../lib/collection/invalidate", () => ({ invalidateCollectionReaders: stub.invalidate }));
 vi.mock("../../lib/decks/availability-query", () => ({ loadDeckBuyRows: async () => [] }));
 vi.mock("../../lib/collection/arrivals-write", async (actual) => ({
@@ -117,9 +122,23 @@ describe("previewUploadChange", () => {
   it("answers from a dry run, with the hand edits a Replace would overwrite", async () => {
     stub.ledger = true;
     stub.apply.mockResolvedValue({ status: "preview", raised: 2, lowered: 1, rows: [], decks: [deck] });
-    expect(await previewUploadChange(UPLOAD, "replace"))
-      .toEqual({ raised: 2, lowered: 1, decks: [deck], editsSinceUpload: 4 });
+    const got = await previewUploadChange(UPLOAD, "replace");
+    expect(got).toMatchObject({ raised: 2, lowered: 1, decks: [deck], editsSinceUpload: 4 });
+    // The detail is computed from the dry run's rows against the collection's totals.
+    expect(got).toHaveProperty("detail.copiesBefore", 25);
+    expect(got).toHaveProperty("detail.copiesAfter", 26);
+    expect(got).toHaveProperty("detail.unchanged", 10);
     expect(stub.apply.mock.calls[0][2].dryRun).toBe(true);
+  });
+
+  it("only a Replace reads the hand-edited holdings", async () => {
+    stub.ledger = true;
+    stub.editedKeys.mockClear();
+    stub.apply.mockResolvedValue({ status: "preview", raised: 1, lowered: 0, rows: [], decks: [] });
+    await previewUploadChange(UPLOAD, "add");
+    expect(stub.editedKeys).not.toHaveBeenCalled();
+    await previewUploadChange(UPLOAD, "replace");
+    expect(stub.editedKeys).toHaveBeenCalledTimes(1);
   });
 
   it("refuses an upload with no matched cards, as the confirm does, without a dry run", async () => {

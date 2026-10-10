@@ -27,7 +27,8 @@ import ws from "ws";
 import { applyCollectionChange, type ChangeResult } from "../src/lib/collection/write";
 import { collectionGeneration } from "../src/lib/recs/store";
 import { commitVersion } from "../src/lib/decks/versions";
-import { editsSinceUpload, getHistoryEntry, listHistory } from "../src/lib/collection/history";
+import { collectionTotals, editedKeysSinceUpload, editsSinceUpload, getHistoryEntry, listHistory } from "../src/lib/collection/history";
+import { collectionItemKey } from "../src/lib/collection/key";
 import { replaceCollection } from "../src/lib/collection/import";
 import { resolvePrintings } from "../src/lib/collection/catalog-read";
 
@@ -224,6 +225,14 @@ async function main() {
     const editsLater = await editsSinceUpload(USER);
     check("edits since the upload count from the upload's own entry", editsAfter === 0 && editsLater === 1,
       `${editsAfter} then ${editsLater}`);
+    const editedKeys = await editedKeysSinceUpload(USER);
+    const totals = await collectionTotals(USER);
+    const truth = await one<{ n: string; q: string }>(
+      "select count(*) as n, coalesce(sum(quantity), 0) as q from collection_items where user_id = $1", [USER]);
+    check("the keys of what was edited since the upload are the edited holding's, and the totals count it",
+      editedKeys.size === 1 && editedKeys.has(collectionItemKey({ ...at(C), finish: at(C).finish as never }))
+        && totals.holdings === Number(truth.n) && totals.copies === Number(truth.q),
+      `${[...editedKeys]}; ${JSON.stringify(totals)} vs ${JSON.stringify(truth)}`);
     const u2 = await upload(replaceItems);
     const added = await applyCollectionChange(USER, { kind: "add", items: replaceItems, uploadId: u2 },
       { id: randomUUID(), ownedCounts: true });
