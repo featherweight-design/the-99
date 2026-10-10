@@ -21,7 +21,9 @@ const MAX_QUANTITY = 10_000;
 // keeps its printing, and the deck import (src/lib/decks/import.ts) leaves the printing on the
 // line for this parser, so a printing the player holds can become the deck's pick.
 const ANNOTATION_RE = /\s+\*([A-Za-z]+)\*$/;
-const SET_CODE_RE = /\s+\(([A-Za-z0-9]{2,6})\)(?:\s+([A-Za-z0-9★†-]+))?$/;
+// The collector number takes any run without whitespace or brackets: the catalog's own forms include
+// `a1_2007` and `123★`, and an export names whatever the catalog holds.
+const SET_CODE_RE = /\s+\(([A-Za-z0-9]{2,6})\)(?:\s+([^\s()]+))?$/;
 
 function splitPrinting(text: string): Pick<CollectionRow, "name" | "setCode" | "collectorNumber" | "finish"> {
   let rest = text;

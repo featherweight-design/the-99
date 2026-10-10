@@ -8,6 +8,7 @@ import type { DeckStatsInput } from "../../lib/decks/stats";
 import { printedFaceName } from "../../lib/collection/browse";
 import { useState, useMemo, useCallback, useEffect, useRef, useTransition } from "react";
 import { printedNameOf } from "../../lib/collection/browse";
+import { commanderExportName } from "../../lib/decks/export-helpers";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import type { DeckDetail } from "../../lib/decks/read";
 import { countStatus, statusPill } from "../../lib/decks/status";
@@ -1971,8 +1972,11 @@ export function BuilderShell({
           {exportOpen && (
             <ExportDialog
               deckName={deck.name}
-              commanderName={deck.commander.name}
-              partnerName={deck.partner?.name ?? null}
+              // A commander line naming its printing names that printing's face, as a body line does
+              // (`printedNameOf`): the oracle name over a renamed printing's set and number would
+              // describe a card face that reads something else.
+              commanderName={commanderExportName(deck.commander)}
+              partnerName={deck.partner ? commanderExportName(deck.partner) : null}
               // The printing the deck shows for each commander, as a body line names its own.
               commanderPrinting={{
                 setCode: deck.commander.printedSetCode ?? undefined,

@@ -25,6 +25,15 @@ export function bodyLine(c: DecklistCard): string {
   return `${c.quantity} ${c.name}${printing}`;
 }
 
+/**
+ * The name a commander's export line prints: the printing's face when the line names a printing,
+ * as `printedNameOf` names a body line. The oracle name beside a renamed printing's set and number
+ * would describe a face that reads something else (`1 World at War (SLD) 2208`).
+ */
+export function commanderExportName(c: { name: string; printedName?: string | null; printedSetCode?: string | null }): string {
+  return c.printedSetCode ? (c.printedName ?? c.name) : c.name;
+}
+
 /** The commander lines, `1 Name (SET) CN` where the deck names a printing for one (deck
  *  printings, E4), through `bodyLine` so a commander line and a body line cannot differ in shape.
  *  The preview and the copied text both read this. */

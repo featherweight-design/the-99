@@ -81,9 +81,14 @@ export function arrivalPrintingsParam(kept: number, notOwned: number): string | 
 }
 
 /** Reads `?printings=`. Strict, like `readUpdateArrival`, but with no countless state: a value
- *  this app did not write adds no clause, and the strip reads as it does without one. */
-export function readArrivalPrintings(value: string | string[] | undefined): ArrivalPrintings | null {
-  if (typeof value !== "string") return null;
+ *  this app did not write adds no clause, and the strip reads as it does without one. `enabled`
+ *  is `DECK_PRINTINGS_ENABLED`: off means main's strip, whatever URL a reader kept from while it
+ *  was on. */
+export function readArrivalPrintings(
+  value: string | string[] | undefined,
+  enabled: boolean,
+): ArrivalPrintings | null {
+  if (!enabled || typeof value !== "string") return null;
   const match = /^(\d+)-(\d+)$/.exec(value);
   if (!match) return null;
   const kept = Number(match[1]);

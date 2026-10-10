@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildDecklistText,
+  commanderExportName,
   buildShoppingText,
   decklistFilename,
   shoppingFilename,
@@ -64,6 +65,22 @@ describe("buildDecklistText", () => {
       ["oracle-kratos-god-of-war", "sld", "2213"],
       ["oracle-lightning-bolt", "m11", "149"],
     ]);
+  });
+
+  it("names a renamed commander printing by its face, and round-trips its catalog collector number", () => {
+    const atreus = { name: "Atreus, God of War", printedName: "Atreus, Son of Kratos", printedSetCode: "SLD" };
+    expect(commanderExportName(atreus)).toBe("Atreus, Son of Kratos");
+    // No printing named: the oracle name, as main exports it.
+    expect(commanderExportName({ ...atreus, printedSetCode: null })).toBe("Atreus, God of War");
+    // A catalog collector number with an underscore still parses back into its printing.
+    const text = buildDecklistText({
+      commanderName: "Atreus, God of War",
+      partnerName: null,
+      cards: [{ quantity: 1, name: "Lightning Bolt", setCode: "PRM", collectorNumber: "a1_2007" }],
+    });
+    const back = buildDeckImport({ text, catalog });
+    expect(back.cards.map((c) => c.oracleId)).toEqual(["oracle-lightning-bolt"]);
+    expect(back.printings.map((p) => [p.setCode, p.collectorNumber])).toEqual([["prm", "a1_2007"]]);
   });
 
   it("names a commander with no printing by name alone", () => {
