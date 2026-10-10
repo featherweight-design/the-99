@@ -8,6 +8,8 @@
 // carries no color.
 
 import { isLandFace } from "../cards/facet";
+import { frontFaceOracle } from "../recs/faces";
+import { BASIC_TYPES, fetchFinds, sacrificesItself, type LandText } from "../swaps/land";
 import { manaNeeds } from "../profile/build";
 
 export const MANA_COLORS = ["W", "U", "B", "R", "G", "C"] as const;
@@ -57,30 +59,37 @@ const zeros = (): Record<ManaColor, number> => ({ W: 0, U: 0, B: 0, R: 0, G: 0, 
  * land). READINESS Q1: a dual is each color it taps for; a fetch is the basic types it can fetch;
  * an any-color land is each of the deck's colors (`deckColors`, the commanders' identity).
  *
+ * The source policy is `swaps/land.ts`'s, so the two cannot disagree about a land: a grant that
+ * reads another permanent makes nothing, an ability that sacrifices the land itself is one mana
+ * and not a source, and an unrestricted `land card` search reaches every basic type.
+ *
  * `oracleText` null reads the type line alone, which is exact for a basic and for a typed dual and
  * is the honest floor for a land the page has no text for.
  */
-export function landProduces(typeLine: string, oracleText: string | null, deckColors: readonly string[]): ManaColor[] {
+export function landProduces(card: LandText, deckColors: readonly string[]): ManaColor[] {
   const out = new Set<ManaColor>();
   const deck = COLORED.filter((c) => deckColors.some((d) => d.toUpperCase() === c));
-  for (const word of typeLine.toLowerCase().split(/[^a-z]+/)) {
+  for (const word of card.typeLine.toLowerCase().split(/[^a-z]+/)) {
     const c = BASIC_TYPE[word];
     if (c) out.add(c);
   }
   // Reminder text restates the basic types and describes landcycling; neither is an ability.
-  const text = (oracleText ?? "").replace(/\([^)]*\)/g, "");
-  for (const [, effect] of text.matchAll(/\badd\b([^.]*)\./gi)) {
-    for (const [, sym] of effect.matchAll(/\{([WUBRGC])\}/gi)) out.add(sym.toUpperCase() as ManaColor);
-    // A grant that reads another permanent (Exotic Orchard, Reflecting Pool) makes nothing on its
-    // own; the same rule as `CONDITIONAL_GRANT` in `swaps/land.ts`. "The chosen color" (Thriving
-    // lands) is a free pick among the deck's colors, beside the symbol it names.
-    if (CONDITIONAL_GRANT.test(effect)) continue;
-    if (/\bany (one )?(color|type)\b|\bany combination of colors\b|\bchosen colou?r\b/i.test(effect)) deck.forEach((c) => out.add(c));
+  const text = frontFaceOracle(card.oracleText).replace(/\([^)]*\)/g, "");
+  for (const ability of text.split("\n")) {
+    if (sacrificesItself(ability, card.name)) continue;
+    for (const [, effect] of ability.matchAll(/\badd\b([^.]*)\./gi)) {
+      for (const [, sym] of effect.matchAll(/\{([WUBRGC])\}/gi)) out.add(sym.toUpperCase() as ManaColor);
+      // A grant that reads another permanent (Exotic Orchard, Reflecting Pool) makes nothing on its
+      // own. "The chosen color" (Thriving lands) is a free pick among the deck's colors.
+      if (CONDITIONAL_GRANT.test(effect)) continue;
+      if (/\bany (one )?(color|type)\b|\bany combination of colors\b|\bchosen colou?r\b/i.test(effect)) deck.forEach((c) => out.add(c));
+    }
   }
-  for (const [sentence] of text.matchAll(/search your library for[^.]*\./gi)) {
-    const named = [...sentence.toLowerCase().matchAll(/\b(plains|island|swamp|mountain|forest)\b/g)];
-    if (named.length > 0) named.forEach(([, t]) => out.add(BASIC_TYPE[t]));
-    else if (/\bbasic land\b/i.test(sentence)) deck.forEach((c) => out.add(c));
+  const finds = fetchFinds(card);
+  if (finds) {
+    // Every basic type means an unrestricted search: the deck's colors, as for an any-color land.
+    if (finds.types.size === BASIC_TYPES.length) deck.forEach((c) => out.add(c));
+    else for (const t of finds.types) out.add(BASIC_TYPE[t]);
   }
   return MANA_COLORS.filter((c) => out.has(c));
 }

@@ -1459,6 +1459,39 @@ describe("the Stats panel", () => {
     expect(document.querySelector("[data-job-row]")).toBeNull();
   });
 
+  it("draws the Colors card from the shipped land text, the commanders and the passed cards, so an optimistic change moves it", () => {
+    const stats = {
+      statsEnabled: true,
+      filter: "all" as const,
+      statsData: {
+        commanders: [{ cmc: 4, typeLine: "Legendary Creature", quantity: 1, manaCost: "{2}{G}{G}", colorIdentity: ["G", "U"] }],
+        lands: { dual: ["U" as const, "G" as const] },
+      },
+    };
+    const dual = makeCard({ oracleId: "dual", name: "Dual", typeLine: "Land", role: "land", cmc: 0 });
+    const spell = makeCard({ oracleId: "spell", name: "Spell", typeLine: "Creature", manaCost: "{U}{G}", cmc: 2 });
+    // A land added after load has no shipped text, so it reads its type line alone.
+    const addedForest = makeCard({ oracleId: "forest", name: "Forest", typeLine: "Basic Land — Forest", role: "land", cmc: 0, quantity: 2 });
+    const cell = (c: string) => document.querySelector(`[data-color-row="${c}"]`)!.getAttribute("aria-label");
+    renderDecklist([dual, spell, rampOwned], stats);
+    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    expect(cell("G")).toBe("green: 3 pips asked for, 1 land source made");
+    expect(cell("U")).toBe("blue: 1 pip asked for, 1 land source made");
+    expect(document.querySelector("[data-colors-nonland]")).not.toBeNull();
+    cleanup();
+
+    renderDecklist([dual, spell, addedForest], stats);
+    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    expect(cell("G")).toBe("green: 3 pips asked for, 3 land sources made");
+    expect(document.querySelector("[data-colors-nonland]")).toBeNull();
+  });
+
+  it("keeps the Colors card a shell when no land text was shipped", () => {
+    renderDecklist([rampOwned], { statsEnabled: true, filter: "all", statsData: { commanders: [], lands: null } });
+    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    expect(document.querySelector("[data-colors-rows]")).toBeNull();
+  });
+
   it("returns to the list when All is pressed from Stats", () => {
     renderDecklist([rampOwned], { filter: "all", statsEnabled: true });
     fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));

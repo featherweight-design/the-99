@@ -12,7 +12,7 @@ describe("loadLandMana", () => {
   });
 
   it("reads lands only and converts each row to the colors it adds", async () => {
-    where.mockResolvedValue([{ oracleId: "tower", typeLine: "Land", oracleText: "{T}: Add one mana of any color in your commander's color identity." }]);
+    where.mockResolvedValue([{ oracleId: "tower", name: "Command Tower", typeLine: "Land", oracleText: "{T}: Add one mana of any color in your commander's color identity." }]);
     const out = await loadLandMana(
       [{ oracleId: "tower", typeLine: "Land" }, { oracleId: "rock", typeLine: "Artifact" }],
       ["R", "G"],

@@ -2,35 +2,44 @@ import { describe, expect, it } from "vitest";
 import { landProduces, manaSupply, type ManaSupplyCardRow } from "./supply";
 
 const JUND = ["B", "R", "G"];
+const land = (typeLine: string, oracleText: string | null, name = "Test Land") => ({ name, typeLine, oracleText });
 
 describe("landProduces", () => {
   it("reads a basic from its type", () => {
-    expect(landProduces("Basic Land — Forest", "({T}: Add {G}.)", JUND)).toEqual(["G"]);
+    expect(landProduces(land("Basic Land — Forest", "({T}: Add {G}.)"), JUND)).toEqual(["G"]);
   });
   it("reads a typed dual from its type line and a plain dual from its text", () => {
-    expect(landProduces("Land — Forest Island", null, JUND)).toEqual(["U", "G"]);
-    expect(landProduces("Land", "{T}: Add {B} or {R}.", JUND)).toEqual(["B", "R"]);
+    expect(landProduces(land("Land — Forest Island", null), JUND)).toEqual(["U", "G"]);
+    expect(landProduces(land("Land", "{T}: Add {B} or {R}."), JUND)).toEqual(["B", "R"]);
   });
   it("counts a white ability on a colorless land only where it ADDS white", () => {
-    expect(landProduces("Land", "{T}: Add {C}.\n{W}, {T}: Create a 1/1 white Spirit.", JUND)).toEqual(["C"]);
+    expect(landProduces(land("Land", "{T}: Add {C}.\n{W}, {T}: Create a 1/1 white Spirit."), JUND)).toEqual(["C"]);
   });
   it("gives an any-color land each of the deck's colors", () => {
-    expect(landProduces("Land", "{T}: Add one mana of any color in your commander's color identity.", JUND)).toEqual(["B", "R", "G"]);
-    expect(landProduces("Land", "{T}: Add one mana of any color in your commander's color identity.", [])).toEqual([]);
+    expect(landProduces(land("Land", "{T}: Add one mana of any color in your commander's color identity."), JUND)).toEqual(["B", "R", "G"]);
+    expect(landProduces(land("Land", "{T}: Add one mana of any color in your commander's color identity."), [])).toEqual([]);
   });
   it("adds the deck's colors for a chosen-color land, beside its own symbol", () => {
-    expect(landProduces("Land", "{T}: Add {G} or one mana of the chosen color.", ["G", "U", "B"])).toEqual(["U", "B", "G"]);
+    expect(landProduces(land("Land", "{T}: Add {G} or one mana of the chosen color."), ["G", "U", "B"])).toEqual(["U", "B", "G"]);
   });
   it("gives nothing for a grant that reads another land", () => {
-    expect(landProduces("Land", "{T}: Add one mana of any color that a land an opponent controls could produce.", JUND)).toEqual([]);
-    expect(landProduces("Land", "{T}: Add one mana of any type that a land you control could produce.", JUND)).toEqual([]);
+    expect(landProduces(land("Land", "{T}: Add one mana of any color that a land an opponent controls could produce."), JUND)).toEqual([]);
+    expect(landProduces(land("Land", "{T}: Add one mana of any type that a land you control could produce."), JUND)).toEqual([]);
+  });
+  it("does not credit a land that sacrifices itself for a color as a source of it", () => {
+    const t = "{T}: Add {W}.\n{T}, Sacrifice this land: Add one mana of any color.";
+    expect(landProduces(land("Land", t, "Abandoned Outpost"), JUND)).toEqual(["W"]);
+  });
+  it("reads an unrestricted land search as the deck's colors", () => {
+    const t = "{T}: Add {C}.\n{2}, {T}, Sacrifice this land: Search your library for a land card, put it onto the battlefield tapped, then shuffle.";
+    expect(landProduces(land("Land", t, "Urza's Cave"), JUND)).toEqual(["B", "R", "G", "C"]);
   });
   it("gives a fetch the basic types it names, and a basic-land search the deck's colors", () => {
-    expect(landProduces("Land", "{T}, Pay 1 life, Sacrifice this land: Search your library for a Swamp or Forest card, put it onto the battlefield, then shuffle.", JUND)).toEqual(["B", "G"]);
-    expect(landProduces("Land", "{T}, Sacrifice this land: Search your library for a basic land card, put it onto the battlefield tapped, then shuffle.", JUND)).toEqual(["B", "R", "G"]);
+    expect(landProduces(land("Land", "{T}, Pay 1 life, Sacrifice this land: Search your library for a Swamp or Forest card, put it onto the battlefield, then shuffle."), JUND)).toEqual(["B", "G"]);
+    expect(landProduces(land("Land", "{T}, Sacrifice this land: Search your library for a basic land card, put it onto the battlefield tapped, then shuffle."), JUND)).toEqual(["B", "R", "G"]);
   });
   it("ignores reminder text, so landcycling is not a fetch", () => {
-    expect(landProduces("Land", "{T}: Add {C}.\nBasic landcycling {1} ({1}, Discard this card: Search your library for a basic land card, reveal it, put it into your hand, then shuffle.)", JUND)).toEqual(["C"]);
+    expect(landProduces(land("Land", "{T}: Add {C}.\nBasic landcycling {1} ({1}, Discard this card: Search your library for a basic land card, reveal it, put it into your hand, then shuffle.)"), JUND)).toEqual(["C"]);
   });
 });
 

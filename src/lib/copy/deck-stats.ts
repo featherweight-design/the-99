@@ -26,7 +26,7 @@ export const deckStatsCopy = {
     // One color asked for: the dual-counts-twice clause is dropped, as drawn in 1d2.
     captionMono: "A land counts once for each color it can add; shares are of all land sources.",
     monoLead: (color: string) => `Every pip is ${color}.`,
-    noLands: "No lands yet, so no sources are counted.",
+    noLands: "No lands yet, so no land sources are counted.",
     names: { W: "white", U: "blue", B: "black", R: "red", G: "green", C: "colorless" },
     row: (name: string, pips: number, sources: number) =>
       `${name}: ${pips} ${pips === 1 ? "pip" : "pips"} asked for, ${sources} land ${sources === 1 ? "source" : "sources"} made`,

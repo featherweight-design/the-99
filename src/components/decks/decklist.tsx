@@ -418,7 +418,7 @@ export function Decklist({
             typeLine: c.typeLine,
             manaCost: c.manaCost ?? null,
             quantity: c.quantity,
-            produces: landsByCard[c.oracleId] ?? landProduces(c.typeLine, null, deckColors),
+            produces: landsByCard[c.oracleId] ?? landProduces({ name: c.name, typeLine: c.typeLine, oracleText: null }, deckColors),
             ramp: c.role === "ramp",
           })),
           ...statsData.commanders.map((c) => ({ typeLine: c.typeLine, manaCost: c.manaCost, quantity: 1 })),

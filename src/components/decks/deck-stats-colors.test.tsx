@@ -34,7 +34,7 @@ describe("DeckStatsView colors card", () => {
 
   it("says so when there are no lands, with every source 0", () => {
     const { container } = draw([spell("{B}"), spell("{R}")]);
-    expect(card()).toHaveTextContent("No lands yet, so no sources are counted.");
+    expect(card()).toHaveTextContent("No lands yet, so no land sources are counted.");
     expect(card()).toHaveTextContent("0 lands");
     expect(container.querySelectorAll("[data-color-row]")).toHaveLength(2);
   });

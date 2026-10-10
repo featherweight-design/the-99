@@ -14,10 +14,10 @@ export async function loadLandMana(
   if (ids.length === 0) return {};
   try {
     const rows = await db
-      .select({ oracleId: cards.oracleId, typeLine: cards.typeLine, oracleText: cards.oracleText })
+      .select({ oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine, oracleText: cards.oracleText })
       .from(cards)
       .where(inArray(cards.oracleId, ids));
-    return Object.fromEntries(rows.map((r) => [r.oracleId, landProduces(r.typeLine, r.oracleText, deckColors)]));
+    return Object.fromEntries(rows.map((r) => [r.oracleId, landProduces(r, deckColors)]));
   } catch {
     return null;
   }
