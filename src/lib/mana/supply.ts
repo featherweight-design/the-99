@@ -81,7 +81,7 @@ const zeros = (): Record<ManaColor, number> => ({ W: 0, U: 0, B: 0, R: 0, G: 0, 
 
 /** One face's abilities into `out`. Reminder text restates the basic types and describes
  *  landcycling; neither is an ability. */
-function readFace(card: LandText, deck: readonly ManaColor[], out: Set<ManaColor>): void {
+function readFace(card: LandText, deck: readonly ManaColor[], out: Set<ManaColor>, searches = true): void {
   const text = (card.oracleText ?? "").replace(/\([^)]*\)/g, "");
   for (const ability of text.split("\n")) {
     if (sacrificesItself(ability, card.name)) continue;
@@ -94,6 +94,7 @@ function readFace(card: LandText, deck: readonly ManaColor[], out: Set<ManaColor
       if (/\bany (one )?(color|type)\b|\bany combination of colors\b|\bchosen colou?r\b/i.test(effect)) deck.forEach((c) => out.add(c));
     }
   }
+  if (!searches) return;
   const finds = fetchFinds(card) ?? activatedFinds(card);
   // Every basic type means an unrestricted search: the deck's colors, as for an any-color land.
   if (finds) findsColors(finds, deck, out);
@@ -158,7 +159,7 @@ export function sourceProduces(
   // modal or transform back does not. Both parsers read this one text.
   const cast = { name: card.name, typeLine: card.typeLine, oracleText: castFaceText(card.oracleText, card.layout ?? "normal") };
   const any = kinds.length === 0;
-  if (any || kinds.includes("tapsForMana")) readFace(cast, deck, out);
+  if (any || kinds.includes("tapsForMana")) readFace(cast, deck, out, false);
   if (any || kinds.includes("fetchesLand")) {
     const finds = searchFinds(cast);
     if (finds) findsColors(finds, deck, out);

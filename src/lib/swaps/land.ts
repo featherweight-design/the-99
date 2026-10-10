@@ -203,16 +203,20 @@ export function searchFinds(card: LandText): Finds | null {
 }
 
 function parseFinds(text: string): Finds | null {
-  const m = FETCH.exec(text);
-  if (!m) return null;
-  const words = m[1];
-  const basicOnly = /\bbasic\b/.test(words);
-  const types = new Set<BasicType>(BASIC_TYPES.filter((t) => new RegExp(`\\b${t}\\b`).test(words)));
-  if (types.size === 0) {
-    if (!/\bland\b/.test(words)) return null;
-    for (const t of BASIC_TYPES) types.add(t);
+  // Every search in the text, not the first: a card can tutor a creature and fetch a Forest. A search for
+  // something that names no land is skipped, and the land types of the rest are unioned.
+  const types = new Set<BasicType>();
+  let basicOnly = true;
+  let any = false;
+  for (const m of text.matchAll(new RegExp(FETCH.source, "g"))) {
+    const words = m[1];
+    const named = BASIC_TYPES.filter((t) => new RegExp(`\\b${t}\\b`).test(words));
+    if (named.length === 0 && !/\bland\b/.test(words)) continue;
+    any = true;
+    if (!/\bbasic\b/.test(words)) basicOnly = false;
+    for (const t of named.length > 0 ? named : BASIC_TYPES) types.add(t);
   }
-  return { types, basicOnly };
+  return any ? { types, basicOnly } : null;
 }
 
 /**
