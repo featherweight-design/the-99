@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { HistoryRow } from "../../db/schema";
 
@@ -28,9 +28,13 @@ function open(onClose = vi.fn(), onReverted = vi.fn()) {
   return { onClose, onReverted };
 }
 
-// Find first, then act: a findBy inside act() never resolves.
+// Find first, then act: a findBy inside act() never resolves. The dialog draws a DISABLED Revert
+// while it reads, so a bare findByRole resolves on that button and the click lands on it before
+// the preview has committed (ignored, and the test then waits for a result that never comes).
+// Wait for it to be enabled, which is the state the press is about.
 async function pressRevert() {
   const b = await screen.findByRole("button", { name: "Revert" });
+  await waitFor(() => expect(b).toBeEnabled());
   await act(async () => fireEvent.click(b));
 }
 
