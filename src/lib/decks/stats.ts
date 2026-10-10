@@ -15,6 +15,7 @@ import type { LandManaByCard, ManaSupply } from "../mana/supply";
 import type { SourceManaByCard } from "./source-mana";
 import type { JobRowsByCard, JobTally } from "./job-tally";
 import type { AverageComparison, AverageDeck } from "./stats-average";
+import type { MoneyStats } from "./stats-money";
 
 export type GameResult = "win" | "loss" | "draw";
 
@@ -267,7 +268,7 @@ export function cardTypeOf(typeLine: string): CardType | null {
 /** What the Stats panel receives: plain data, safe across the server boundary. */
 /** `jobs` is absent where the label read failed or was skipped: the Jobs card then stays a shell
  *  rather than calling every card unlabeled. */
-export type DeckStatsSlice = { curve: ManaCurve; types: TypeCurve; jobs?: JobTally | null; mana?: ManaSupply | null; average?: AverageComparison | null };
+export type DeckStatsSlice = { curve: ManaCurve; types: TypeCurve; jobs?: JobTally | null; mana?: ManaSupply | null; average?: AverageComparison | null; money?: MoneyStats | null };
 
 /** What the page ships for the Stats view: the commanders, and the Jobs labels as row keys per card.
  *  The 99 are drawn from the optimistic card list in the browser, so an edit moves the curve and the

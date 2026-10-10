@@ -1,6 +1,6 @@
 {
-  "feature": "Deck stats, PRs 1-5: the switch, the placement shell, the curve card, the Jobs card, the Mana colors card and the Against the average card",
-  "note": "Needs DECK_STATS_ENABLED=true on the server and STATS_DECK (a deck with at least one creature and one other non-land card, so pressing Creature shows both lit and dimmed squares). The list toolbar shows the Stats segment beside All and Shopping; the stats row presses it and shows the six Stats cards with the list tools hidden. The curve, Jobs, Colors and Against the average cards draw data (Jobs needs the deck's cards labeled and a Ramp row above zero; Colors needs the deck's lands readable); the other two figures stay empty shells until their PRs.",
+  "feature": "Deck stats, PRs 1-6: the switch, the placement shell, the curve card, the Jobs card, the Mana colors card, the Against the average card and the Money card",
+  "note": "Needs DECK_STATS_ENABLED=true on the server and STATS_DECK (a deck with at least one creature and one other non-land card, so pressing Creature shows both lit and dimmed squares). The list toolbar shows the Stats segment beside All and Shopping; the stats row presses it and shows the six Stats cards with the list tools hidden. The curve, Jobs, Colors and Against the average cards draw data (Jobs needs the deck's cards labeled and a Ramp row above zero; Colors needs the deck's lands readable); the Money card needs the deck's cards priced (printing_prices) with some unowned; Results stays an empty shell until its PR.",
   "clearAbout": true,
   "rows": [
     {
@@ -73,6 +73,15 @@
       "steps": [
         { "goto": "/decks/${STATS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
         { "clickRole": "button", "name": "^Show the deck as stats", "wait": "[data-average-basis]", "scrollTo": "[data-stats-card=average]", "settle": 800 }
+      ]
+    },
+    {
+      "id": "stats-money",
+      "label": "/decks/[id] Stats: the Money and ownership card, three figures, the square grid and the priciest five",
+      "view": "src/components/decks/deck-stats-money.tsx",
+      "steps": [
+        { "goto": "/decks/${STATS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "button", "name": "^Show the deck as stats", "wait": "[data-money-squares]", "scrollTo": "[data-stats-card=money]", "settle": 800 }
       ]
     }
   ]

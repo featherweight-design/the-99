@@ -5,6 +5,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { deckStatsCopy } from "../../lib/copy/deck-stats";
 import { AverageCard } from "./deck-stats-average";
 import { Shell } from "./deck-stats-shell";
+import { MoneyCard } from "./deck-stats-money";
 import { JOB_ROWS, type JobTally } from "../../lib/decks/job-tally";
 import { MANA_COLORS, type ManaColor, type ManaSupply } from "../../lib/mana/supply";
 import { CARD_TYPES, CURVE_MAX, type CardType, type DeckStatsSlice } from "../../lib/decks/stats";
@@ -386,12 +387,14 @@ function ColorsCard({ mana }: { mana: ManaSupply }) {
   );
 }
 
-export function DeckStatsView({ data = null }: { data?: DeckStatsSlice | null }) {
+export function DeckStatsView({ data = null, onShop }: { data?: DeckStatsSlice | null; onShop?: () => void }) {
   const card = (c: (typeof CARDS)[number]) =>
     c.key === "curve" && data ? (
       <CurveCard key={c.key} data={data} />
     ) : c.key === "jobs" && data?.jobs ? (
       <JobsCard key={c.key} tally={data.jobs} />
+    ) : c.key === "money" && data?.money ? (
+      <MoneyCard key={c.key} money={data.money} onShop={onShop} />
     ) : c.key === "colors" && data?.mana ? (
       <ColorsCard key={c.key} mana={data.mana} />
     ) : c.key === "average" && data?.average ? (

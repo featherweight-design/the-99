@@ -14,6 +14,7 @@ import { isLandFace } from "../../lib/cards/facet";
 import { jobTally } from "../../lib/decks/job-tally";
 import { manaCurve, typeCurve, type DeckStatsInput } from "../../lib/decks/stats";
 import { averageComparison } from "../../lib/decks/stats-average";
+import { moneyStats } from "../../lib/decks/stats-money";
 import { landProduces, manaSupply } from "../../lib/mana/supply";
 import type { RecommendedMix } from "../../lib/decks/mix";
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
@@ -21,7 +22,7 @@ import { cardCopies, groupByCardType, groupByRole } from "../../lib/decks/groupi
 import { printedNameOf } from "../../lib/collection/browse";
 import { labelRolesOf } from "../../lib/decks/label-role-counts";
 import { useLabelRows, useRoleCounter } from "./label-rows-context";
-import { commanderShoppingRows, isShoppingCard, isSpokenFor } from "../../lib/decks/shopping";
+import { commanderAsRow, commanderShoppingRows, isShoppingCard, isSpokenFor } from "../../lib/decks/shopping";
 import type { DeckCommander } from "../../lib/decks/read";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
@@ -439,8 +440,17 @@ export function Decklist({
           cards: cards.reduce((a, c) => a + c.quantity, 0),
         })
       : null;
-    return { curve: manaCurve(list), types: typeCurve(list), jobs, mana, average };
-  }, [cards, statsData]);
+    // The Money card partitions by the Shopping pill's own basket, so its "to buy" is the pill's count.
+    const money = moneyStats(
+      {
+        cards,
+        commanders: commander ? [commander, ...(partner ? [partner] : [])].map(commanderAsRow) : [],
+        shopping: [...(commander ? commanderShoppingRows(commander, partner, cards) : []), ...cards.filter(isShoppingCard)],
+      },
+      newestAsOf,
+    );
+    return { curve: manaCurve(list), types: typeCurve(list), jobs, mana, average, money };
+  }, [cards, statsData, commander, partner, newestAsOf]);
 
   // The commanders the Shopping list bills (H28), through the list's own predicate. Every Shopping
   // figure below counts them; only the Shopping branch draws them, in a group of their own.
@@ -656,7 +666,7 @@ export function Decklist({
           stats={stats}
           {...lockProps}
         />
-        <DeckStatsView data={statsSlice} />
+        <DeckStatsView data={statsSlice} onShop={() => onFilterChange("shopping")} />
       </div>
     );
   }
