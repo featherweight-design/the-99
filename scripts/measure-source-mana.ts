@@ -9,7 +9,7 @@ import ws from "ws";
 import { isLandFace } from "../src/lib/cards/facet";
 import { freshLabels } from "../src/lib/labels/read";
 import type { RampKind } from "../src/lib/labels/types";
-import { landcycles, sourceProduces } from "../src/lib/mana/supply";
+import { makesNoManaSource, sourceProduces } from "../src/lib/mana/supply";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -40,7 +40,7 @@ void (async () => {
       const t = tally.get(key) ?? { read: 0, unreadable: [] };
       const got = sourceProduces({ name: r.name, typeLine: r.type_line, oracleText: r.oracle_text }, kind, ALL);
       if (got.length) t.read++;
-      else if (landcycles({ oracleText: r.oracle_text })) continue;
+      else if (makesNoManaSource({ oracleText: r.oracle_text })) continue;
       else t.unreadable.push(`${r.name} :: ${(r.oracle_text ?? "").replace(/\n/g, " / ").slice(0, 160)}`);
       tally.set(key, t);
     }

@@ -3,7 +3,7 @@ import { db } from "../../db";
 import { cards } from "../../db/schema";
 import { isLandFace } from "../cards/facet";
 import type { Job, RampKind } from "../labels/types";
-import { landcycles, sourceProduces, type ManaColor } from "../mana/supply";
+import { makesNoManaSource, sourceProduces, type ManaColor } from "../mana/supply";
 
 /** The non-land mana sources of a deck, each with the colors it can add. A card absent from the record
  *  is not a source (or was added after load); one present with no colors is a source whose color the
@@ -51,8 +51,8 @@ export async function loadSourceMana(
     const out: Record<string, readonly ManaColor[]> = {};
     for (const r of rows) {
       const colors = sourceProduces(r, kinds.get(r.oracleId) ?? null, deckColors);
-      // A landcycler's search is a way to cycle the card, not mana: not a source, rather than an unreadable one.
-      if (colors.length === 0 && landcycles(r)) continue;
+      // Landcyclers, token makers and top-of-library effects are no source at all, rather than an unreadable one.
+      if (colors.length === 0 && makesNoManaSource(r)) continue;
       out[r.oracleId] = colors;
     }
     return out;

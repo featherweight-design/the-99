@@ -250,12 +250,14 @@ staging build, not from this plan's figures.
 Deck stats PR 4b has not been built. Its plan
 (`docs/superpowers/plans/2026-10-08-deck-stats.md:88-106`) finds non-land mana sources by extending
 `classifyRoles`'s ramp pattern. Instead, **which cards are sources** comes from the labels: a
-nonland card whose label carries `ramp` with `rampKind` `tapsForMana`, `fetchesLand` or
-`makesTreasure`. `costReduction`, `extraLandDrop`, `multiplies` and `burstMana` make no lasting
+nonland card whose label carries `ramp` with `rampKind` `tapsForMana` or `fetchesLand`.
+`makesTreasure`, `costReduction`, `extraLandDrop`, `multiplies` and `burstMana` make no lasting
 source and stay out. **Which color** still comes from the card's text, which is what the mana
 addendum's rule 1 says (`design/design_handoff_the99_deck_stats_mana/README.md:68`). Labels carry
-no color. A treasure maker counts as any color. A card with no fresh label falls back to the
-classifier's ramp pattern, so the card always draws something.
+no color. The Colors card excludes Treasure, Powerstone and Lander tokens (one-shot or restricted mana, as the
+mana addendum's counting table has it), landcycling and look-at-the-top effects (orchestrator ruling,
+2026-10-10). A card with no fresh label falls back to the classifier's ramp pattern, so the card always
+draws something.
 
 This changes the input of `manaSupply()`, not what the card draws. The addendum still applies as
 written, and needs no new Design round. The addendum's "measure the unreadable-color share" step

@@ -162,7 +162,8 @@ export function landCatch(card: LandText): "condition" | "utility" | null {
 
 export type Finds = { types: Set<BasicType>; basicOnly: boolean };
 
-const FETCH = /search your library for (?:up to (?:one|two|three|four|x)|an?|two|three|four|x) ([a-z ,]+?) cards?\b/;
+const COUNT = "one|two|three|four|five|six|seven|eight|nine|ten|x|that many|any number of";
+const FETCH = new RegExp(`search your library(?: and graveyard)? for (?:up to (?:${COUNT})|an?|${COUNT}) ([a-z ,]+?) cards?\\b`);
 
 /**
  * The land types a land finds when it is sacrificed to search, and whether it finds only basics.

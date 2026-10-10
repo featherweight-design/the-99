@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { landcycles, landProduces, manaSupply, sourceProduces, type ManaSupplyCardRow } from "./supply";
+import { makesNoManaSource, landProduces, manaSupply, sourceProduces, type ManaSupplyCardRow } from "./supply";
 
 const JUND = ["B", "R", "G"];
 const land = (typeLine: string, oracleText: string | null, name = "Test Land") => ({ name, typeLine, oracleText });
@@ -146,14 +146,26 @@ describe("sourceProduces", () => {
     expect(sourceProduces(card("Sacrifice two lands. Search your library for four basic land cards, put them onto the battlefield tapped, then shuffle.", "Sorcery"), "fetchesLand", JUND)).toEqual(["B", "R", "G"]);
     expect(sourceProduces(card("Search your library for up to X basic land cards, where X is the number of colors among permanents you control.", "Enchantment"), "fetchesLand", JUND)).toEqual(["B", "R", "G"]);
   });
+  it("reads a search for any count of basics, and one that also reaches the graveyard", () => {
+    expect(sourceProduces(card("Search your library for up to ten land cards, put them onto the battlefield tapped.", "Sorcery"), "fetchesLand", JUND)).toEqual(["B", "R", "G"]);
+    expect(sourceProduces(card("Search your library for any number of Plains cards, exile them.", "Enchantment"), "fetchesLand", JUND)).toEqual(["W"]);
+    expect(sourceProduces(card("Search your library and graveyard for a basic land card and a card named Foo.", "Sorcery"), "fetchesLand", JUND)).toEqual(["B", "R", "G"]);
+  });
   it("gives a Treasure maker nothing: its mana is one-shot", () => {
     expect(sourceProduces(card("Whenever an opponent casts a spell, create a Treasure token.", "Enchantment"), "makesTreasure", JUND)).toEqual([]);
   });
+  it("names the cards whose land-ish text is no lasting source", () => {
+    expect(makesNoManaSource({ oracleText: "When this creature enters, create a tapped Powerstone token. (It's an artifact with \"{T}: Add {C}.\")" })).toBe(true);
+    expect(makesNoManaSource({ oracleText: "When this creature enters, create a Lander token." })).toBe(true);
+    expect(makesNoManaSource({ oracleText: "When this creature enters, look at the top four cards of your library. You may reveal a land card." })).toBe(true);
+    expect(makesNoManaSource({ oracleText: "When this creature enters, each opponent may search their library for a basic land card." })).toBe(true);
+    expect(makesNoManaSource({ oracleText: "{T}: Add one mana of any color that a land you control could produce." })).toBe(false);
+  });
   it("tells a landcycler from other cards", () => {
-    expect(landcycles({ oracleText: "Trample\nForestcycling {2} ({2}, Discard this card: Search your library for a Forest card.)" })).toBe(true);
-    expect(landcycles({ oracleText: "Basic landcycling {1}{U}" })).toBe(true);
-    expect(landcycles({ oracleText: "Cycling {2}" })).toBe(false);
-    expect(landcycles({ oracleText: null })).toBe(false);
+    expect(makesNoManaSource({ oracleText: "Trample\nForestcycling {2} ({2}, Discard this card: Search your library for a Forest card.)" })).toBe(true);
+    expect(makesNoManaSource({ oracleText: "Basic landcycling {1}{U}" })).toBe(true);
+    expect(makesNoManaSource({ oracleText: "Cycling {2}" })).toBe(false);
+    expect(makesNoManaSource({ oracleText: null })).toBe(false);
   });
   it("reads both for a card with no fresh label, and nothing for text that gives no color", () => {
     expect(sourceProduces(card("{T}: Add {G}.\nWhen this enters, search your library for a Plains card.", "Creature"), null, JUND)).toEqual(["W", "G"]);

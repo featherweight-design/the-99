@@ -60,10 +60,21 @@ export type ManaSupply = {
   landSources: number;
 };
 
-/** A card with a landcycling ability (`Forestcycling {2}`, `Basic landcycling {1}{U}`), which the text keeps
- *  only in reminder text for the search. */
-export function landcycles(card: { oracleText: string | null }): boolean {
-  return /\b(?:basic land|plains|island|swamp|mountain|forest|land)cycling\b/i.test(card.oracleText ?? "");
+/**
+ * A card whose land-ish text is not a lasting source, so a source label with no color to read on it is
+ * a card that is NOT a source rather than one we cannot read (orchestrator ruling, 2026-10-10):
+ * - landcycling, a way to cycle the card;
+ * - a Lander or Powerstone token maker, whose token is one-shot or restricted mana (as Treasure is);
+ * - a look at, or reveal from, the top of the library, and an `each player or opponent may search`.
+ * Asked only of a card `sourceProduces` read no color from; a rock that also looks at the top still taps.
+ */
+export function makesNoManaSource(card: { oracleText: string | null }): boolean {
+  const text = (card.oracleText ?? "").replace(/\([^)]*\)/g, "");
+  return (
+    /\b(?:basic land|plains|island|swamp|mountain|forest|land)cycling\b/i.test(text) ||
+    /\bcreates? (?:a |an |one |two |three |x |that many |each )?(?:tapped )?(?:lander|powerstone)\b/i.test(text) ||
+    /\b(?:look at|reveal) the top\b|\breveal cards from the top\b|\beach (?:other )?(?:player|opponent)\b[^.]*\bmay search\b/i.test(text)
+  );
 }
 
 const zeros = (): Record<ManaColor, number> => ({ W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 });

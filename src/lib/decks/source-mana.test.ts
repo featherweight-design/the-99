@@ -45,7 +45,7 @@ describe("loadSourceMana", () => {
     expect(await loadSourceMana([card("x")], ["G"], labelsOf([["x", ramp("tapsForMana")]]))).toEqual({ x: [] });
   });
 
-  it("drops a landcycler instead of calling it unreadable, and keeps one that also taps for mana", async () => {
+  it("drops a no-source card (a landcycler here) instead of calling it unreadable, and keeps one that also taps for mana", async () => {
     where.mockResolvedValue([
       text("cycler", "Trample\nForestcycling {2} ({2}, Discard this card: Search your library for a Forest card.)", "Creature"),
       text("both", "{T}: Add {G}.\nBasic landcycling {1}", "Creature"),
