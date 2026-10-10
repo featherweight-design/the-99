@@ -1,5 +1,6 @@
 {
   "feature": "Collection screens PR 2: the Add cards sheet (add mode) and the place head's + Add",
+  "clearAbout": true,
   "note": "Needs COLLECTION_EDIT_ENABLED=true on the server and a collection with Sol Ring in the catalog (any account with cards). Deliberately no saving, saved or failed rows: a saved state writes a ledger entry to whatever database the app points at, and the three are covered by add-cards-sheet.test.tsx. The History tab and B8's History link draw only once /collection/history ships (PR 6), so no row has them. Steps are Playwright verbs. The empty-state doors and Home step one live in `collection-edit-empty.json`: they need an account with NO collection, and this sheet signs in one account for every row.",
   "shares": {
     "module": "src/components/collection/add-cards-sheet.tsx",

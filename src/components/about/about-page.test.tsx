@@ -60,7 +60,7 @@ import { DECK_VERSIONS,
 // Every feature switch ON for this file, so every entry is drawn, figures included. The page with
 // the switches off is `about-page-r6.test.tsx`'s, and a switched entry's own rules are
 // `about-page-switch.test.tsx`'s.
-const SWITCHES = ["NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "HELP_ME_CHOOSE_ENABLED", "SWAP_TOOLS_ENABLED", "ANALYSIS_TAB_ENABLED", "TUNING_ENABLED", "DECK_STATS_ENABLED"] as const;
+const SWITCHES = ["NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "HELP_ME_CHOOSE_ENABLED", "SWAP_TOOLS_ENABLED", "ANALYSIS_TAB_ENABLED", "TUNING_ENABLED", "DECK_STATS_ENABLED", "COLLECTION_EDIT_ENABLED"] as const;
 beforeAll(() => {
   for (const k of SWITCHES) process.env[k] = "true";
 });

@@ -55,7 +55,9 @@
 // changes. about.test.ts pins a content hash, so a change forces either a
 // deliberate bump or a deliberate re-pin.
 
-export const ABOUT_VERSION = 11;
+import { HISTORY_RETENTION_DAYS } from '../collection/retention';
+
+export const ABOUT_VERSION = 12;
 
 export type AboutChapter = '01' | '02' | '03' | '04';
 export type AboutWidth = 'inset' | 'plate';
@@ -73,7 +75,15 @@ export type AboutSwitch =
   | 'ANALYSIS_TAB_ENABLED'
   | 'HOW_IT_WORKS_ENABLED'
   | 'TUNING_ENABLED'
-  | 'DECK_STATS_ENABLED';
+  | 'DECK_STATS_ENABLED'
+  | 'COLLECTION_EDIT_ENABLED';
+
+/**
+ * A switch as a caption or key LINE names it: the bare name keeps the line while that switch is
+ * on, and a leading `!` keeps it while the switch is off (collection edit: `import`'s old
+ * warning is false with the switch on, and its replacement is false with it off).
+ */
+export type AboutLineSwitch = AboutSwitch | `!${AboutSwitch}`;
 
 export interface AboutEntry {
   id: string;
@@ -93,12 +103,12 @@ export interface AboutEntry {
    * only way one line of it can depend on a feature — the entry's content otherwise never varies
    * by switch state (2026-10-08, Suggested changes' own `TUNING_ENABLED`).
    */
-  captionLineSwitches?: Partial<Record<string, AboutSwitch>>;
+  captionLineSwitches?: Partial<Record<string, AboutLineSwitch>>;
   /** 0–4 lines, in numeral order. Read in sequence by a screen reader. */
   keys: string[];
   /** A key line (matched by its own exact text) gated the same way `captionLineSwitches` gates
    *  a caption line — dropped from the resolved entry when its switch is off. */
-  keySwitches?: Partial<Record<string, AboutSwitch>>;
+  keySwitches?: Partial<Record<string, AboutLineSwitch>>;
   /**
    * The key lines were rewritten (Hugh's voice pass, 2026-10-07) and the figure's numbered
    * marks have not been re-placed yet. While true, the key renders as a plain list and the
@@ -201,13 +211,36 @@ export const aboutEntries: readonly AboutEntry[] = [
     since: 1,
   },
   {
+    id: 'collection-add',
+    switch: 'COLLECTION_EDIT_ENABLED',
+    chapter: '01',
+    title: 'Adding cards by hand',
+    route: '/collection',
+    opens: 'opens Add cards',
+    width: 'plate',
+    caption:
+      'Opened a pack and don\'t feel like exporting? Press “Add cards” and search by name, for any card, not just ones you own. Pick the printing, mark it foil, set how many, and keep going. One Save adds the lot.\n\nNo collection yet? You can start here instead of with a file.',
+    keys: [
+      'Each line is one printing and finish, so a foil and a nonfoil are two lines.',
+      'You choose the printing before a card goes on the list.',
+      'A card you already own shows how many you’ll have after.',
+      'Nothing is saved until you press Save, and the save shows in History as one change.',
+    ],
+    marksPending: true,
+    since: 12,
+  },
+  {
     id: 'import',
     chapter: '01',
     title: 'Importing your Collection',
     route: '/collection/replace',
     width: 'inset',
     caption:
-      "Your collection probably already lives somewhere else. Mine's in ManaBox. Export it, drop the file in, and The 99 picks up every copy, set and foil.\n\nHeads up: an import replaces your whole Collection, it doesn't add to it.",
+      "Your collection probably already lives somewhere else. Mine's in ManaBox. Export it, drop the file in, and The 99 picks up every copy, set and foil.\n\nHeads up: an import replaces your whole Collection, it doesn't add to it.\nAlready have a Collection here? The 99 asks whether the file replaces it or adds to it.",
+    captionLineSwitches: {
+      "Heads up: an import replaces your whole Collection, it doesn't add to it.": '!COLLECTION_EDIT_ENABLED',
+      'Already have a Collection here? The 99 asks whether the file replaces it or adds to it.': 'COLLECTION_EDIT_ENABLED',
+    },
     keys: [
       'Takes ManaBox, Moxfield, Archidekt or Deckbox CSVs, or a pasted list.',
       'Any CSV with Name and Quantity columns works too.',
@@ -216,6 +249,25 @@ export const aboutEntries: readonly AboutEntry[] = [
     ],
     marksPending: true,
     since: 1,
+  },
+  {
+    id: 'upload-choice',
+    switch: 'COLLECTION_EDIT_ENABLED',
+    chapter: '01',
+    title: 'Replacing or adding from a file',
+    route: '/collection/replace',
+    opens: 'opens the upload',
+    width: 'plate',
+    caption:
+      'Got a new export? When you upload a file, The 99 asks what it’s for. “Replace” makes your Collection exactly the file. “Add” puts its cards on top of what you have, which is right for a booster haul or a trade binder.\n\nBefore anything changes, you see every card that moves. Replace also warns you if it’ll overwrite changes you made in the app, and names any decks that will read short.',
+    keys: [
+      'Replace: anything not in the file leaves your Collection.',
+      'Add: quantities go up, nothing leaves, and your art picks stay.',
+      'Adding a full export doubles your copies, and the screen tells you when that’s about to happen.',
+      'Your very first upload skips the question, since there’s nothing to replace.',
+    ],
+    marksPending: true,
+    since: 12,
   },
   {
     id: 'post-import',
@@ -337,6 +389,60 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
 
   // ---- 02 · Finding a commander -------------------------------------------
+  {
+    id: 'edit-copies',
+    switch: 'COLLECTION_EDIT_ENABLED',
+    chapter: '01',
+    title: 'Changing how many you own',
+    route: '/collection',
+    opens: 'opens the card detail',
+    width: 'plate',
+    caption:
+      'Sold a copy, or logged the wrong printing? Open the card and press “Edit copies”. Each printing and finish you own is a line with its own count. If one’s under the wrong printing, tap it and pick the right one.\n\nIt’s separate from picking the art. The printings grid still only chooses which art your Collection shows.',
+    keys: [
+      'Adding copies saves right away.',
+      'Taking copies away checks your decks first, and names any that would come up short.',
+      'Changing a line’s printing doesn’t change your total, so it never leaves a deck short.',
+      '“Add another printing” asks which printing before it adds anything.',
+    ],
+    marksPending: true,
+    since: 12,
+  },
+  {
+    id: 'remove-card',
+    switch: 'COLLECTION_EDIT_ENABLED',
+    chapter: '01',
+    title: 'Removing a card from your Collection',
+    route: '/collection',
+    width: 'plate',
+    caption:
+      'Traded it away? Open the card, press “Edit copies”, then “Remove from collection”. That takes every copy of every printing.\n\nIf a committed deck runs it, you’ll see which decks will come up short before anything changes. The deck is left alone. It just shows the card as short and puts it on its shopping list.',
+    keys: [
+      'To take away only some copies, lower their line instead.',
+      'Right after, “Undo” puts it all back. So does History, later.',
+      'Nothing about a deck changes on its own.',
+    ],
+    marksPending: true,
+    since: 12,
+  },
+  {
+    id: 'collection-history',
+    switch: 'COLLECTION_EDIT_ENABLED',
+    chapter: '01',
+    title: 'Undoing a change to your Collection',
+    route: '/collection/history',
+    width: 'plate',
+    caption:
+      `Every upload, add, edit and removal from the last ${HISTORY_RETENTION_DAYS} days is in History, newest first. Press “Revert” on any of them to undo it.\n\nA revert works on your Collection as it is today. If you’ve sold two of the three copies an add brought in, reverting it takes away the one that’s left. A revert is a change of its own, so you can revert that too, in case you change your mind about changing your mind.`,
+    keys: [
+      'Open a change to see every card it moved.',
+      'Reverting a Replace puts back every card that upload moved.',
+      'A reverted change stays in the list, marked and linked to its revert.',
+      `Changes older than ${HISTORY_RETENTION_DAYS} days age out. Your cards don’t.`,
+    ],
+    marksPending: true,
+    since: 12,
+  },
   {
     id: 'ready-to-build',
     chapter: '02',

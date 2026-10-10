@@ -70,7 +70,7 @@ back, in the shape `probe:review` uses for its collection edits.
 
 ## Everything is built
 
-**48 entries, 48 figures.** (Was 47: `deck-stats` was added 2026-10-10, the Deck stats line's About entry, with no ABOUT_VERSION bump (switched by DECK_STATS_ENABLED). Before that it was 46: `credits` was added 2026-10-05, Hugh's ruling that credits get one entry of their own, with no version bump. Before that it was 45: `suggested-changes` was added 2026-10-05, H35 ruling 7 — see
+**53 entries, 53 figures.** (Was 48: the five collection-edit entries `collection-add`, `upload-choice`, `edit-copies`, `remove-card` and `collection-history` were added 2026-10-10 with the collection edit launch, each `Specimen`-rooted, behind `COLLECTION_EDIT_ENABLED`, in the 11 to 12 bump. Before that it was 46: `credits` was added 2026-10-05, Hugh's ruling that credits get one entry of their own, with no version bump. Before that it was 45: `suggested-changes` was added 2026-10-05, H35 ruling 7 — see
 about.ts — a feature launch, not a drift. Before that it was 46: `reservations` was retired
 2026-10-04 — a removal, not a drift, so each is noted here rather than silently folded into the
 count.) The ledger
@@ -85,7 +85,7 @@ described as its four hardest plates. The number was not checked before it was w
 artifact here would have contradicted it — the inventory photographed the figures that existed, so
 the sheet confirmed the scope back to its author.
 
-**Forty-eight are `Specimen`-rooted and zero are `Legend`-rooted.** (`credits`, added 2026-10-05, is `Specimen`-rooted too, and before it this read forty-six. `suggested-changes` is also
+**Fifty-three are `Specimen`-rooted and zero are `Legend`-rooted.** (The five collection-edit entries, 2026-10-10, are `Specimen`-rooted too; before them this read forty-eight. `credits`, added 2026-10-05, is `Specimen`-rooted too, and before it this read forty-six. `suggested-changes` is also
 `Specimen`-rooted, added 2026-10-05 — see about.ts. Before that it was forty-five, and before
 `reservations`, itself `Specimen`-rooted, was retired 2026-10-04, it was forty-six.) This record said "four mount
 and the rest are legends" — wrong when written, and wrong in the paragraph correcting a previous

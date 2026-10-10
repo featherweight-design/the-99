@@ -1,5 +1,6 @@
 {
   "feature": "Collection screens PRs 4 and 5b: the short-deck warning (§E) and the Replace review it sits in",
+  "clearAbout": true,
   "note": "Needs COLLECTION_EDIT_ENABLED=true and an account with a collection and a committed (99-card) deck, so a pasted one-card list leaves it short. The row picks Replace on the choice (5c) and stops at the review: it never presses Replace collection, which would write. The confirm dialog is now only the fallback when the server answers that there is nothing to compare (the upload was confirmed elsewhere); a comparison that cannot be read shows an explicit error with Try again; its states are covered by replace-flow.test.tsx and were walked in PR 4.",
   "shares": {
     "module": "src/components/collection/short-deck-warning.tsx",

@@ -548,6 +548,71 @@
       ]
     },
     {
+      "id": "fig-collection-add",
+      "label": "/about, the collection-add figure (needs COLLECTION_EDIT_ENABLED)",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='collection-add']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='collection-add']"
+        }
+      ]
+    },
+    {
+      "id": "fig-upload-choice",
+      "label": "/about, the upload-choice figure (needs COLLECTION_EDIT_ENABLED)",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='upload-choice']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='upload-choice']"
+        }
+      ]
+    },
+    {
+      "id": "fig-edit-copies",
+      "label": "/about, the edit-copies figure (needs COLLECTION_EDIT_ENABLED)",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='edit-copies']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='edit-copies']"
+        }
+      ]
+    },
+    {
+      "id": "fig-remove-card",
+      "label": "/about, the remove-card figure (needs COLLECTION_EDIT_ENABLED)",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='remove-card']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='remove-card']"
+        }
+      ]
+    },
+    {
+      "id": "fig-collection-history",
+      "label": "/about, the collection-history figure (needs COLLECTION_EDIT_ENABLED)",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='collection-history']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='collection-history']"
+        }
+      ]
+    },
+    {
       "id": "about-with-destination",
       "label": "/about \u2014 arriving with a destination, as the gate appends it",
       "view": "src/components/about/about-page.tsx",

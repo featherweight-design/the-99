@@ -51,7 +51,7 @@ with `padding:30px 30px 34px`, so it sits 30px clear of the edge and never stick
 app has no top chrome at that width, so `top:0` puts the Contents label against the viewport edge
 the moment the page scrolls. The drawn clearance transfers; the property that produced it does not.
 
-**The code has 48 entries (was 47: `deck-stats` was added 2026-10-10, the Deck stats line's entry, no bump, switched; was 46: `credits` was added 2026-10-05, Hugh's one-entry ruling for credits, no version bump; was 45 before `suggested-changes` was added 2026-10-05, H35 ruling 7, a
+**The code has 53 entries (was 48 before the five collection-edit entries, 2026-10-10; was 46: `credits` was added 2026-10-05, Hugh's one-entry ruling for credits, no version bump; was 45 before `suggested-changes` was added 2026-10-05, H35 ruling 7, a
 feature launch — see about.ts; before that it was 46, with `reservations` retired 2026-10-04, a
 removal) and the canvas drew 33.** Seven are the launch entries `help-me-choose`,
 `locked-cards`, `fits-your-decks`, `stand-ins` and `change-commander`, drawn by the launch-entries addendum, and

@@ -1,5 +1,6 @@
 {
   "feature": "Collection screens PR 7: Edit copies and removal (\u00a7C, \u00a7D) from the card modal on /collection",
+  "clearAbout": true,
   "note": "Needs COLLECTION_EDIT_ENABLED=true and an account owning Sol Ring in several printings (the audit user on scratch-5c-choice, with C21 #263 and CMM #410 added beside the bare imports). Rows open the sheet and never press Save or Remove. The toast and Undo, \u00a7E and the saving and failed states are walked by hand, since each needs a write. The negative row (a deck's card modal) is in collection-edit-copies-negative.json.",
   "shares": {
     "module": "src/components/collection/add-cards-sheet.tsx",

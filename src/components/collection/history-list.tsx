@@ -92,6 +92,105 @@ function EntryRows({ rows }: { rows: HistoryRow[] }) {
   );
 }
 
+/**
+ * One entry of the list: its disclosure, its Revert, the reverted and aged notes and, when open,
+ * its rows. Exported so /about draws the same row with fixture props rather than a copy of it.
+ */
+export function HistoryEntryItem({
+  e,
+  title,
+  revertedByEntry,
+  isOpen,
+  detail,
+  onToggle,
+  onRevert,
+  onRetry,
+  anchor = true,
+}: {
+  e: HistoryListEntry;
+  title: string;
+  revertedByEntry?: HistoryListEntry;
+  isOpen: boolean;
+  detail: HistoryEntry | "loading" | "failed" | undefined;
+  onToggle: () => void;
+  onRevert: (title: string) => void;
+  onRetry: () => void;
+  /** The row carries `id="entry-…"` for the Add sheet's link. /about draws it without: a page of its own ids. */
+  anchor?: boolean;
+}) {
+  const kind = historyKindOf(e);
+  const reverted = e.revertedBy !== null;
+  return (
+    <li
+      id={anchor ? `entry-${e.id}` : undefined}
+      className="rounded-[10px] border border-[color:var(--border)] bg-[color:var(--surface)]"
+    >
+      <div className="flex items-center">
+      <button
+        type="button"
+        aria-expanded={isOpen}
+        onClick={onToggle}
+        className="grid min-w-0 flex-1 cursor-pointer grid-cols-[1fr_auto] items-center gap-x-[12px] gap-y-[4px] border-0 bg-transparent p-[12px_14px] text-left text-[color:var(--fg)] md:grid-cols-[150px_1fr_auto]"
+      >
+        <span className="font-mono text-[11px] uppercase tracking-[0.06em]" style={{ color: TAG_INK[kind] }}>
+          {c.kinds[kind]}
+        </span>
+        <span className="font-mono text-[11.5px] text-[color:var(--fg-faint)] md:order-last">{timeLabel(e.createdAt)}</span>
+        <span className="col-span-2 flex min-w-0 flex-col gap-[3px] md:col-span-1">
+          <span className="truncate text-[14px]" style={{ color: reverted ? "var(--fg-muted)" : "var(--fg)" }}>
+            {title} <span aria-hidden className="text-[12px] text-[color:var(--fg-faint)]">{isOpen ? "▴" : "▾"}</span>
+          </span>
+          <span className="font-mono text-[11.5px] text-[color:var(--fg-muted)]">{c.figures(e.copiesUp, e.copiesDown, e.rowCount)}</span>
+        </span>
+      </button>
+      {!reverted ? (
+        // Its own control beside the disclosure, never inside it: a button in a button.
+        <button
+          type="button"
+          onClick={() => onRevert(title)}
+          aria-label={`${c.revert} ${title}`}
+          className="mr-[10px] min-h-[44px] flex-none cursor-pointer rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[12px] text-[13px] text-[color:var(--fg)] md:min-h-[32px]"
+        >
+          {c.revert}
+        </button>
+      ) : null}
+      </div>
+      {reverted ? (
+        <p className="m-0 px-[14px] pb-[10px] text-[12.5px] text-[color:var(--fg-faint)] md:pl-[176px]">
+          {c.reverted}
+          {e.revertedByVisible && revertedByEntry ? (
+            <>
+              {" · "}
+              <a href={`#entry-${revertedByEntry.id}`} className="text-[color:var(--accent)] underline underline-offset-2">
+                {c.revertedBy(timeLabel(revertedByEntry.createdAt))}
+              </a>
+            </>
+          ) : null}
+        </p>
+      ) : null}
+      {e.kind === "revert" && !e.revertsVisible ? (
+        <p className="m-0 px-[14px] pb-[10px] text-[12.5px] text-[color:var(--fg-faint)] md:pl-[176px]">{c.agedNote}</p>
+      ) : null}
+      {isOpen ? (
+        <div className="border-t border-t-[color:var(--border)] px-[14px] py-[8px] md:pl-[176px]">
+          {detail && detail !== "loading" && detail !== "failed" ? (
+            <EntryRows rows={detail.rows} />
+          ) : detail === "failed" ? (
+            <p role="alert" className="m-0 text-[13px] text-[color:var(--fg-body)]">
+              {c.loadFailed}{" "}
+              <button type="button" onClick={onRetry} className="min-h-[44px] cursor-pointer border-0 bg-transparent p-0 text-[color:var(--accent)] underline underline-offset-2">
+                {c.loadRetry}
+              </button>
+            </p>
+          ) : (
+            <p role="status" className="m-0 text-[13px] text-[color:var(--fg-muted)]">{c.loading}</p>
+          )}
+        </div>
+      ) : null}
+    </li>
+  );
+}
+
 export function HistoryList({
   initial,
   nextBefore: initialNext,
@@ -183,84 +282,19 @@ export function HistoryList({
           <div key={g.key} className="mt-[20px]">
             <h2 className="m-0 mb-[6px] font-mono text-[10.5px] font-normal uppercase tracking-[0.14em] text-[color:var(--fg-muted)]">{g.label}</h2>
             <ul className="m-0 flex list-none flex-col gap-[8px] p-0">
-              {g.entries.map((e) => {
-                const kind = historyKindOf(e);
-                const isOpen = open.has(e.id);
-                const detail = details.get(e.id);
-                const title = entryTitle(e, byId, reachesBack);
-                const reverted = e.revertedBy !== null;
-                const revertedByEntry = e.revertedBy ? byId.get(e.revertedBy) : undefined;
-                return (
-                  <li
-                    key={e.id}
-                    id={`entry-${e.id}`}
-                    className="rounded-[10px] border border-[color:var(--border)] bg-[color:var(--surface)]"
-                  >
-                    <div className="flex items-center">
-                    <button
-                      type="button"
-                      aria-expanded={isOpen}
-                      onClick={() => toggle(e.id)}
-                      className="grid min-w-0 flex-1 cursor-pointer grid-cols-[1fr_auto] items-center gap-x-[12px] gap-y-[4px] border-0 bg-transparent p-[12px_14px] text-left text-[color:var(--fg)] md:grid-cols-[150px_1fr_auto]"
-                    >
-                      <span className="font-mono text-[11px] uppercase tracking-[0.06em]" style={{ color: TAG_INK[kind] }}>
-                        {c.kinds[kind]}
-                      </span>
-                      <span className="font-mono text-[11.5px] text-[color:var(--fg-faint)] md:order-last">{timeLabel(e.createdAt)}</span>
-                      <span className="col-span-2 flex min-w-0 flex-col gap-[3px] md:col-span-1">
-                        <span className="truncate text-[14px]" style={{ color: reverted ? "var(--fg-muted)" : "var(--fg)" }}>
-                          {title} <span aria-hidden className="text-[12px] text-[color:var(--fg-faint)]">{isOpen ? "▴" : "▾"}</span>
-                        </span>
-                        <span className="font-mono text-[11.5px] text-[color:var(--fg-muted)]">{c.figures(e.copiesUp, e.copiesDown, e.rowCount)}</span>
-                      </span>
-                    </button>
-                    {!reverted ? (
-                      // Its own control beside the disclosure, never inside it: a button in a button.
-                      <button
-                        type="button"
-                        onClick={() => setReverting({ id: e.id, title, when: `${dayLabel(e.createdAt)}, ${timeLabel(e.createdAt)}` })}
-                        aria-label={`${c.revert} ${title}`}
-                        className="mr-[10px] min-h-[44px] flex-none cursor-pointer rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[12px] text-[13px] text-[color:var(--fg)] md:min-h-[32px]"
-                      >
-                        {c.revert}
-                      </button>
-                    ) : null}
-                    </div>
-                    {reverted ? (
-                      <p className="m-0 px-[14px] pb-[10px] text-[12.5px] text-[color:var(--fg-faint)] md:pl-[176px]">
-                        {c.reverted}
-                        {e.revertedByVisible && revertedByEntry ? (
-                          <>
-                            {" · "}
-                            <a href={`#entry-${revertedByEntry.id}`} className="text-[color:var(--accent)] underline underline-offset-2">
-                              {c.revertedBy(timeLabel(revertedByEntry.createdAt))}
-                            </a>
-                          </>
-                        ) : null}
-                      </p>
-                    ) : null}
-                    {e.kind === "revert" && !e.revertsVisible ? (
-                      <p className="m-0 px-[14px] pb-[10px] text-[12.5px] text-[color:var(--fg-faint)] md:pl-[176px]">{c.agedNote}</p>
-                    ) : null}
-                    {isOpen ? (
-                      <div className="border-t border-t-[color:var(--border)] px-[14px] py-[8px] md:pl-[176px]">
-                        {detail && detail !== "loading" && detail !== "failed" ? (
-                          <EntryRows rows={detail.rows} />
-                        ) : detail === "failed" ? (
-                          <p role="alert" className="m-0 text-[13px] text-[color:var(--fg-body)]">
-                            {c.loadFailed}{" "}
-                            <button type="button" onClick={() => void fetchDetail(e.id)} className="min-h-[44px] cursor-pointer border-0 bg-transparent p-0 text-[color:var(--accent)] underline underline-offset-2">
-                              {c.loadRetry}
-                            </button>
-                          </p>
-                        ) : (
-                          <p role="status" className="m-0 text-[13px] text-[color:var(--fg-muted)]">{c.loading}</p>
-                        )}
-                      </div>
-                    ) : null}
-                  </li>
-                );
-              })}
+              {g.entries.map((e) => (
+                <HistoryEntryItem
+                  key={e.id}
+                  e={e}
+                  title={entryTitle(e, byId, reachesBack)}
+                  revertedByEntry={e.revertedBy ? byId.get(e.revertedBy) : undefined}
+                  isOpen={open.has(e.id)}
+                  detail={details.get(e.id)}
+                  onToggle={() => toggle(e.id)}
+                  onRevert={(title) => setReverting({ id: e.id, title, when: `${dayLabel(e.createdAt)}, ${timeLabel(e.createdAt)}` })}
+                  onRetry={() => void fetchDetail(e.id)}
+                />
+              ))}
             </ul>
           </div>
         ))

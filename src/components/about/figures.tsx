@@ -67,6 +67,13 @@ import {
   SuggestedChangesFigureBody,
   CreditsFigureBody,
 } from "./ch01-figures";
+import {
+  CollectionAddFigureBody,
+  CollectionHistoryFigureBody,
+  EditCopiesFigureBody,
+  RemoveCardFigureBody,
+  UploadChoiceFigureBody,
+} from "./collection-edit-figures";
 import { statusBarStyle } from "../../lib/decks/status-style";
 import type { StatusPill } from "../../lib/decks/status";
 import { refreshCopy } from "../../lib/copy/refresh";
@@ -828,6 +835,46 @@ function UndoRemovalFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+function CollectionAddFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="collection-add" width={width}>
+      <CollectionAddFigureBody />
+    </Specimen>
+  );
+}
+
+function UploadChoiceFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="upload-choice" width={width}>
+      <UploadChoiceFigureBody />
+    </Specimen>
+  );
+}
+
+function EditCopiesFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="edit-copies" width={width}>
+      <EditCopiesFigureBody />
+    </Specimen>
+  );
+}
+
+function RemoveCardFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="remove-card" width={width}>
+      <RemoveCardFigureBody />
+    </Specimen>
+  );
+}
+
+function CollectionHistoryFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="collection-history" width={width}>
+      <CollectionHistoryFigureBody />
+    </Specimen>
+  );
+}
+
 function DeckImportFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="deck-import" width={width}>
@@ -1036,4 +1083,9 @@ export const FIGURES: Partial<
   "suggested-changes": SuggestedChangesFigure,
   "deck-stats": DeckStatsFigure,
   credits: CreditsFigure,
+  "collection-add": CollectionAddFigure,
+  "upload-choice": UploadChoiceFigure,
+  "edit-copies": EditCopiesFigure,
+  "remove-card": RemoveCardFigure,
+  "collection-history": CollectionHistoryFigure,
 };

@@ -1,5 +1,6 @@
 {
   "feature": "Collection screens PR 3: the empty-state doors and Home step one (Add cards by hand)",
+  "clearAbout": true,
   "note": "Run as an account with NO collection and no decks, with COLLECTION_EDIT_ENABLED=true: the rows photograph the empty /collection and first-run Home, and with a populated account they would photograph the wrong surfaces. Rows needing a collection are in collection-edit.json.",
   "shares": {
     "module": "src/components/collection/add-cards-sheet.tsx",

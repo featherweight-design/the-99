@@ -164,9 +164,12 @@ describe("the appendix's line on the sheet (plan 2026-09-28, PR C)", () => {
   const all = aboutEntries.filter((e) => !e.switch);
   const seen = (version: number, ids: string[] = []) => ({ version, ids });
   const V = ABOUT_VERSION;
+  // The newest unswitched entry's version: 12 added only switched entries, so a reader one behind
+  // the CURRENT version has nothing to be told about while a reader one behind this one does.
+  const W = Math.max(...all.map((e) => e.since));
 
   it("rides a sheet already drawing, after its entries", () => {
-    const d = sheetDecision({ userId: "u", seen: seen(V - 1), visible: all, version: V, appendix: true });
+    const d = sheetDecision({ userId: "u", seen: seen(W - 1), visible: all, version: V, appendix: true });
     expect(d.show && d.header.split(",").at(-1)).toBe("how-it-works");
   });
 
@@ -206,10 +209,11 @@ describe("the sheet (R6)", () => {
   const all = aboutEntries.filter((e) => !e.switch);
   const seen = (version: number, ids: string[] = []) => ({ version, ids });
   const V = ABOUT_VERSION;
+  const W = Math.max(...all.map((e) => e.since));
 
   it("shows the sheet to a reader who is behind, naming what they have not seen", () => {
-    const d = sheetDecision({ userId: "u", seen: seen(V - 1), visible: all, version: V });
-    const want = all.filter((e) => e.since > V - 1).map((e) => e.id).join(",");
+    const d = sheetDecision({ userId: "u", seen: seen(W - 1), visible: all, version: V });
+    const want = all.filter((e) => e.since > W - 1).map((e) => e.id).join(",");
     expect(d).toEqual({ show: true, header: want, cookie: `u.${V}` });
   });
 
