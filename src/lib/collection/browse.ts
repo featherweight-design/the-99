@@ -1181,13 +1181,13 @@ export const loadOwnedSetMeta = cache(async function loadOwnedSetMeta(
 
 /**
  * The card as a deck that picked `pick` shows it (deck printings): that printing preferred, and
- * titled by the printing that actually resolves, exactly as the card modal titles a deck's pick,
- * so a neighbor plate and the modal it opens never name one card two ways. `pick` null is the card
- * unchanged.
+ * its art, set code and title all from the printing that actually resolves (`cardArt`), exactly as
+ * the card modal titles a deck's pick, so a neighbor plate and the modal it opens never name one
+ * card two ways. `pick` null is the card unchanged.
  */
 export function withDeckPick(card: BrowseCard, pick: PreferredPrinting | null | undefined): BrowseCard {
   if (!pick) return card;
   const next = { ...card, preferredPrinting: pick };
   const shown = resolvedPrinting(next);
-  return { ...next, printedName: shown ? cardArt(card.name, shown).printedName : null };
+  return shown ? { ...next, ...cardArt(card.name, shown) } : { ...next, printedName: null };
 }
