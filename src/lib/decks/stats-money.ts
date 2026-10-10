@@ -82,7 +82,13 @@ export function moneyStats(
   });
   // Priced cards, dearest first; a card with no price only fills a slot the priced ones leave,
   // and the card to buy comes first among them, since it is the one a reader wants a price for.
-  const byName = (a: PriciestCard, b: PriciestCard) => a.name.localeCompare(b.name);
+  // By code point and then id, never `localeCompare`: this renders on the server and again in the browser.
+  const byName = (a: PriciestCard, b: PriciestCard) => {
+    const l = a.name.toLowerCase();
+    const r = b.name.toLowerCase();
+    if (l !== r) return l < r ? -1 : 1;
+    return a.oracleId < b.oracleId ? -1 : a.oracleId > b.oracleId ? 1 : 0;
+  };
   const withPrice = priced.filter((p) => p.cents !== null).sort((a, b) => (b.cents as number) - (a.cents as number) || byName(a, b));
   const without = priced.filter((p) => p.cents === null).sort((a, b) => Number(b.toBuy) - Number(a.toBuy) || byName(a, b));
 
