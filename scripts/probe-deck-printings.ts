@@ -117,7 +117,7 @@ async function main() {
     sql`select commander_set_code from deck_versions where id = ${v2.id}`,
   );
   check("a commit records the commander's printing", v2Row.commander_set_code !== null, true);
-  check("the version a commit returns carries the commander's printing", v2.commanderSetCode, v2Row.commander_set_code);
+  check("the version a commit returns carries the commander's printing", (v2 as unknown as Record<string, unknown>).commanderSetCode, v2Row.commander_set_code);
 
   // Move the pick back to the Collection's printing: the version must still draw what it recorded.
   await fixture.execute(sql`delete from deck_printings where deck_id = ${deckId}`);
