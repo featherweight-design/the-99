@@ -55,6 +55,8 @@ export type AverageRow = {
   avg: number;
   /** you - avg, to one decimal: the figure the bar, the words and the 'same' test all read. */
   diff: number;
+  /** Which side the bar draws on, from the RAW gap (the words read the rounded one, so a 0.04 gap is "the same" with a sliver). */
+  side: "fewer" | "more" | null;
   /** Bar length as a share of its end, capped at 1. */
   fill: number;
   /** The bar ran past its end and is cut off with a mark. */
@@ -82,7 +84,8 @@ function row(key: AverageRowKey, you: number, avg: number, scale: number): Avera
   const diff = round1(you - avg);
   // Rounded far below any figure drawn, only so 2.4 against 3.4 is a gap of one and not 1.0000000000000002.
   const r = Math.round(Math.abs(you - avg) * 1e6) / 1e6 / scale;
-  return { key, you, avg, diff, fill: Math.min(r, 1), cut: r > 1 };
+  const raw = Math.round((you - avg) * 1e6);
+  return { key, you, avg, diff, side: raw < 0 ? "fewer" : raw > 0 ? "more" : null, fill: Math.min(r, 1), cut: r > 1 };
 }
 
 export function averageComparison(

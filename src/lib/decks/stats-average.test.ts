@@ -160,6 +160,13 @@ describe("averageComparison", () => {
     expect(rowOf(d, "lands").diff).toBe(0.1);
   });
 
+  it("draws the bar on the raw side of a gap the words call the same", () => {
+    const c = averageComparison(avg({ targets: { ...TARGETS, land: 36.04 } }), have([spell(0, "Land", 36)]));
+    expect(rowOf(c, "lands")).toMatchObject({ diff: 0, side: "fewer" });
+    expect(rowOf(c, "lands").fill).toBeGreaterThan(0);
+    expect(rowOf(averageComparison(avg(), have([spell(0, "Land", 36)])), "lands").side).toBeNull();
+  });
+
   it("counts the unlabeled cards beside the job rows, and none when there are no job rows", () => {
     const jobs = jobTally([{ oracleId: "a", name: "A", copies: 2 }, { oracleId: "b", name: "B", copies: 1 }], { a: ["ramp"] });
     expect(averageComparison(avg(), have([], jobs)).unlabeled).toBe(1);

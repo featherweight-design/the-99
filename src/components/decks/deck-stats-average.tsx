@@ -37,13 +37,13 @@ function Row({ r }: { r: AverageRow }) {
       <span aria-hidden="true" className="text-[13px] text-[color:var(--fg-body)]">{name}</span>
       <div aria-hidden="true" className="grid h-[22px] grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)] items-center">
         <div className="flex min-w-0 items-center justify-end">
-          {r.cut && r.diff < 0 ? <span data-cut="fewer" className="mr-[2px] text-[10px] text-[color:var(--fg)]">‹</span> : null}
-          <span data-bar="fewer" className="h-[10px] rounded-l-[2px]" style={{ width: r.diff < 0 ? pct : "0%", background: FEWER }} />
+          {r.cut && r.side === "fewer" ? <span data-cut="fewer" className="mr-[2px] text-[10px] text-[color:var(--fg)]">‹</span> : null}
+          <span data-bar="fewer" className="h-[10px] rounded-l-[2px]" style={{ width: r.side === "fewer" ? pct : "0%", background: FEWER }} />
         </div>
         <span className="h-[22px] bg-[color:var(--border-strong)]" />
         <div className="flex min-w-0 items-center">
-          <span data-bar="more" className="h-[10px] rounded-r-[2px]" style={{ width: r.diff > 0 ? pct : "0%", background: MORE }} />
-          {r.cut && r.diff > 0 ? <span data-cut="more" className="ml-[2px] text-[10px] text-[color:var(--fg)]">›</span> : null}
+          <span data-bar="more" className="h-[10px] rounded-r-[2px]" style={{ width: r.side === "more" ? pct : "0%", background: MORE }} />
+          {r.cut && r.side === "more" ? <span data-cut="more" className="ml-[2px] text-[10px] text-[color:var(--fg)]">›</span> : null}
         </div>
       </div>
       <div aria-hidden="true" className="flex flex-col items-end gap-[1px]">
