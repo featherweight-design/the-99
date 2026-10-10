@@ -54,6 +54,7 @@ describe("resolveSpendTarget", () => {
     expect(resolveSpendTarget([], { REPORT_DB_URL: "postgres://x", REPORT_DB_BRANCH: "br-x" })).toEqual({ name: "REPORT_DB_URL", url: "postgres://x", branchId: "br-x" });
     expect(resolveSpendTarget([], { REPORT_DB_URL: "postgres://x" }).branchId).toBeNull();
     expect(() => resolveSpendTarget(["--target", "staging"], { ...env, REPORT_DB_URL: "postgres://x" })).toThrow(/not both/);
+    expect(() => resolveSpendTarget(["--target"], { ...env, REPORT_DB_URL: "postgres://x" })).toThrow(/not both/);
   });
 });
 

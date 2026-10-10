@@ -17,9 +17,10 @@ export type SpendTarget = { name: string; url: string; branchId: string | null }
  */
 export function resolveSpendTarget(argv: readonly string[], env: Record<string, string | undefined>): SpendTarget {
   const i = argv.indexOf("--target");
-  const named = i >= 0 ? argv[i + 1] : undefined;
+  const given = i >= 0;
+  const named = given ? argv[i + 1] : undefined;
   if (env.REPORT_DB_URL) {
-    if (named) throw new Error("pass --target or REPORT_DB_URL, not both");
+    if (given) throw new Error("pass --target or REPORT_DB_URL, not both");
     return { name: "REPORT_DB_URL", url: env.REPORT_DB_URL, branchId: env.REPORT_DB_BRANCH ?? null };
   }
   if (named === "staging") {
