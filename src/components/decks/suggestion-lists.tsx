@@ -41,10 +41,12 @@ export function SuggestionLists({
     setApplying(true);
     setRefused(null);
     let made = 0;
+    let refusedWith: string | null = null;
     for (const line of open) {
       const result = await actions.apply(line.id).catch((): { ok: false; message: string } => ({ ok: false, message: copy.applyRefused }));
       if (!result.ok) {
         setRefused(result.message);
+        refusedWith = result.message;
         break;
       }
       made += 1;
@@ -56,6 +58,9 @@ export function SuggestionLists({
       const settled = lines.filter((l) => l.verdict === "accepted").length + made;
       await onSettled(copy.tallyOf(settled, lines.length, lines.filter((l) => l.verdict === "dismissed").length));
     }
+    // A refusal before anything landed still re-reads: the row it stopped on is stale (applied
+    // elsewhere, or no longer applies), and without a fresh read every later press retries it.
+    else if (refusedWith !== null) await onSettled(refusedWith);
     setApplying(false);
   }
 

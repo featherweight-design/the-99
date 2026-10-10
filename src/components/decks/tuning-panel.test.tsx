@@ -1498,6 +1498,29 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
       expect(screen.getAllByRole("button", { name: copy_lists.reject })[0]).not.toBeDisabled();
     });
 
+    it("re-reads after a bulk press refused on its first row, so the stale row is replaced", async () => {
+      const apply = vi.fn(async () => ({ ok: false as const, message: "Refused." }));
+      const d = deps([withLines([a1, a2, c1])], { card: { apply, undo: apply, reject: apply, restore: apply } });
+      await draw(d);
+      const reads = (d.read as ReturnType<typeof vi.fn>).mock.calls.length;
+      await press(copy_lists.applyAll);
+      expect((d.read as ReturnType<typeof vi.fn>).mock.calls.length).toBe(reads + 1);
+    });
+
+    it("keeps a line busy through the re-read after its own press", async () => {
+      const apply = vi.fn(async () => ({ ok: true as const }));
+      let release: () => void = () => undefined;
+      const gate = new Promise<void>((r) => { release = r; });
+      const base = deps([withLines([a1, c1])], { card: { apply, undo: apply, reject: apply, restore: apply } });
+      let calls = 0;
+      const d = { ...base, read: vi.fn(async () => { calls += 1; if (calls > 1) await gate; return withLines([a1, c1]); }) };
+      await draw(d);
+      await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: copy_lists.reject })[0]); });
+      expect(screen.getAllByRole("button", { name: copy_lists.reject })[0]).toBeDisabled();
+      await act(async () => { release(); });
+      expect(screen.getAllByRole("button", { name: copy_lists.reject })[0]).not.toBeDisabled();
+    });
+
     it("stops at the first refusal and shows it", async () => {
       const apply = vi.fn(async (id: string) => (id === "a2" ? { ok: false as const, message: "Refused." } : { ok: true as const }));
       const d = deps([withLines([a1, a2, c1])], { card: { apply, undo: apply, reject: apply, restore: apply } });

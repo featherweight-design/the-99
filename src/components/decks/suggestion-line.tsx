@@ -52,18 +52,21 @@ export function SuggestionLine({
     setRefused(null);
     const refusal = kind === "apply" ? copy.applyRefused : kind === "undo" ? copy.undoRefused : cardCopy.verdictRefused;
     const result = await actions[kind](item.id).catch((): DeckMutationResult => ({ ok: false, message: refusal }));
-    setBusy(null);
     if (!result.ok) {
+      setBusy(null);
       setRefused(result.message);
       return;
     }
     const announce = deckTuningCopy.announce;
-    onSettled(
+    // The row stays busy through the panel's re-read: until it lands the item still reads as it did,
+    // and a second press would submit the same verdict again.
+    await onSettled(
       kind === "apply" ? (isAdd ? announce.addedCard(item.cardName) : announce.cutCard(item.cardName))
         : kind === "undo" ? (isAdd ? announce.undoneAdd(item.cardName) : announce.undoneCut(item.cardName))
           : kind === "reject" ? announce.rejected
             : announce.restored,
     );
+    setBusy(null);
   }
 
   if (item.verdict === "accepted") {
