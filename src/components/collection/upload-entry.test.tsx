@@ -43,3 +43,16 @@ describe("UploadEntry file size", () => {
     expect(previewUpload).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("UploadEntry note over an existing collection", () => {
+  it("says the file replaces the collection when it can only replace", () => {
+    render(<UploadEntry currentCardCount={12} onPreview={() => {}} />);
+    expect(screen.getByText(/nothing is merged/)).toBeTruthy();
+  });
+
+  it("stops saying nothing is merged once the file can be added instead", () => {
+    render(<UploadEntry currentCardCount={12} onPreview={() => {}} choice />);
+    expect(screen.queryByText(/nothing is merged/)).toBeNull();
+    expect(screen.getByText(/can replace your current/)).toBeTruthy();
+  });
+});

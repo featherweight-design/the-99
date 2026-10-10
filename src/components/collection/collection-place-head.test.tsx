@@ -314,7 +314,7 @@ describe("CollectionPlaceHead \u00b7 Add cards (COLLECTION_EDIT_ENABLED)", () =>
   it("switch on: + Add beside Replace on desktop, and in place of Replace on the phone strip", () => {
     withSwitch(true);
     expect(screen.getByTestId("collection-add")).toHaveTextContent("Add cards");
-    expect(screen.getByText("Replace collection")).toBeInTheDocument();
+    expect(screen.getByText("Upload a file")).toBeInTheDocument();
     expect(screen.getByTestId("collection-add-phone")).toHaveTextContent("Add");
     expect(within(strip()).queryByText("Replace")).toBeNull();
     // No History tab until its route ships.

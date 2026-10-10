@@ -1,0 +1,75 @@
+{
+  "feature": "Collection screens PR 5c: the upload choice (A1) and the Add review (A3)",
+  "note": "Needs COLLECTION_EDIT_ENABLED=true and an account with a collection. Neither row presses a confirm, so nothing is written. Replace's review is in collection-short-warning.json.",
+  "rows": [
+    {
+      "id": "upload-choice",
+      "label": "/collection/replace: STEP 2 OF 4, nothing picked, after-figure on each card",
+      "view": "src/components/collection/upload-choice.tsx",
+      "steps": [
+        {
+          "goto": "/collection/replace",
+          "wait": "main, [role=main], h1",
+          "settle": 10000
+        },
+        {
+          "clickRole": "button",
+          "name": "Paste a list instead",
+          "wait": "textarea",
+          "settle": 300
+        },
+        {
+          "fill": "textarea",
+          "text": "1 Sol Ring",
+          "settle": 300
+        },
+        {
+          "clickRole": "button",
+          "name": "^Preview",
+          "wait": "[role=radiogroup]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "add-review",
+      "label": "/collection/replace: the Add review (banner, what gets added, no deck section, Add bar)",
+      "view": "src/components/collection/replace-review-detail.tsx",
+      "steps": [
+        {
+          "goto": "/collection/replace",
+          "wait": "main, [role=main], h1",
+          "settle": 10000
+        },
+        {
+          "clickRole": "button",
+          "name": "Paste a list instead",
+          "wait": "textarea",
+          "settle": 300
+        },
+        {
+          "fill": "textarea",
+          "text": "1 Sol Ring",
+          "settle": 300
+        },
+        {
+          "clickRole": "button",
+          "name": "^Preview",
+          "wait": "[role=radiogroup]",
+          "settle": 2500
+        },
+        {
+          "clickRole": "radio",
+          "name": "Add these cards",
+          "settle": 300
+        },
+        {
+          "clickRole": "button",
+          "name": "Review the add",
+          "wait": "h2",
+          "settle": 1500
+        }
+      ]
+    }
+  ]
+}

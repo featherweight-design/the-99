@@ -4,7 +4,7 @@
 // shipped matched banner and issue sections draw around it, unchanged.
 
 import { useEffect, useRef, useState } from "react";
-import type { UploadChangePreview } from "../../app/collection/actions";
+import type { UploadChangePreview, UploadMode } from "../../app/collection/actions";
 import type { ShortDeck } from "../../lib/collection/write";
 import type { PreviewList, PreviewListRow } from "../../lib/collection/upload-preview";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
@@ -103,7 +103,12 @@ export function ReplaceReviewDetail({
   decks,
   freshDeckIds,
   changed,
+  mode = "replace",
+  onSwitchToReplace,
 }: {
+  mode?: UploadMode;
+  /** An Add that brings in nothing new offers the other way. */
+  onSwitchToReplace?: () => void;
   change: UploadChangePreview;
   /** The decks the replace would leave short: the preview's, or a later confirm's redrawn answer. */
   decks: ShortDeck[];
@@ -112,6 +117,7 @@ export function ReplaceReviewDetail({
   changed: boolean;
 }) {
   const d = change.detail;
+  if (mode === "add") return <AddReviewDetail detail={d} onSwitchToReplace={onSwitchToReplace} />;
   const overwrite = overwriteLine(change);
   return (
     <div className="mt-[16px] flex flex-col gap-[16px] md:mt-[24px] md:gap-[22px]">
@@ -134,6 +140,38 @@ export function ReplaceReviewDetail({
         <Rows heading={c.listDown(d.lists.down.total)} list={d.lists.down} tone="other" />
         <Rows heading={c.listUp(d.lists.up.total)} list={d.lists.up} tone="up" />
       </div>
+    </div>
+  );
+}
+
+/**
+ * An Add's review: what gets added and nothing else. It lowers nothing, so it has no deck section,
+ * no overwritten-edits line and no `edited` tag, and its four figures collapse into the banner.
+ * When every card is already owned the list is still drawn, under a note saying so (A3b): the
+ * add is allowed, it just brings nothing new.
+ */
+function AddReviewDetail({ detail: d, onSwitchToReplace }: { detail: UploadChangePreview["detail"]; onSwitchToReplace?: () => void }) {
+  return (
+    <div className="mt-[16px] flex flex-col gap-[16px] md:mt-[24px] md:gap-[22px]">
+      {d.allOwned ? (
+        <div
+          role="note"
+          className="rounded-[10px] border border-[color:var(--border-strong)] border-l-[3px] border-l-[color:var(--warning)] bg-[color:var(--elevated-hover)] p-[12px_14px]"
+        >
+          <div className="text-[14px] font-semibold text-[color:var(--fg)]">{c.allOwned}</div>
+          <p className="m-0 mt-[4px] text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{c.allOwnedBody(d.up)}</p>
+          {onSwitchToReplace ? (
+            <button
+              type="button"
+              onClick={onSwitchToReplace}
+              className="mt-[6px] min-h-[44px] text-[13.5px] text-[color:var(--accent)] underline underline-offset-2"
+            >
+              {c.switchToReplace}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+      <Rows heading={c.listAdded(d.lists.up.total)} list={d.lists.up} tone="up" />
     </div>
   );
 }

@@ -169,10 +169,7 @@ describe("ReplaceFlow — §E, decks the replace would leave short", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /Paste a list instead/ })[0]);
     fireEvent.change(screen.getByRole("textbox", { name: "Paste your card list" }), { target: { value: "3 Sol Ring" } });
     fireEvent.click(screen.getByRole("button", { name: /^Preview/ }));
-    const cont = await screen.findByRole("button", { name: /^Continue to replace/ });
-    // Held until the comparison settles (here it comes back empty, so the dialog is the path).
-    await waitFor(() => expect(cont).toBeEnabled());
-    fireEvent.click(cont);
+    fireEvent.click(await screen.findByRole("button", { name: /^Continue to replace/ }));
     return screen.getByRole("button", { name: /^Replace with/ });
   }
 
@@ -276,13 +273,33 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
     raised: 2, lowered: 3, decks, editsSinceUpload: 3, lastUploadAt: "2026-09-12T10:00:00.000Z", historyReaches: true, detail,
   });
 
-  async function reachReview() {
+  // An Add lowers nothing, so it carries no decks; the file brings 6 copies across 2 cards.
+  const addData = (allOwned = false) => ({
+    raised: 2, lowered: 0, decks: [], editsSinceUpload: 3, lastUploadAt: "2026-09-12T10:00:00.000Z", historyReaches: true,
+    detail: {
+      ...detail,
+      unchanged: 20, up: 2, down: 0, leaving: 0, copiesBefore: 25, copiesAfter: 31,
+      lists: { leaving: list([], 0, 0), down: list([], 0, 0), up: list(["More", "Fresh"], 1, 4) },
+      newHoldings: allOwned ? 0 : 1, distinctCards: 2, overlap: { held: 9, of: 10 }, allOwned,
+    },
+  });
+  const serve = (replace: ReturnType<typeof data>, add: ReturnType<typeof addData> = addData()) =>
+    previewChange.mockImplementation(async (_id: string, mode: string) => (mode === "add" ? add : replace));
+
+  async function reachChoice() {
     previewPaste.mockResolvedValueOnce(preview(10));
     render(<ReplaceFlow currentCardCount={10} deckCheck />);
     fireEvent.click(screen.getAllByRole("button", { name: /Paste a list instead/ })[0]);
     fireEvent.change(screen.getByRole("textbox", { name: "Paste your card list" }), { target: { value: "3 Sol Ring" } });
     fireEvent.click(screen.getByRole("button", { name: /^Preview/ }));
-    return screen.findByRole("button", { name: "Replace collection" });
+    return screen.findByRole("radiogroup");
+  }
+
+  async function reachReview(mode: "replace" | "add" = "replace") {
+    await reachChoice();
+    fireEvent.click(screen.getByRole("radio", { name: new RegExp(mode === "add" ? "Add these cards" : "Replace my collection") }));
+    fireEvent.click(screen.getByRole("button", { name: mode === "add" ? "Review the add →" : "Review the replace →" }));
+    return screen.findByRole("button", { name: mode === "add" ? /^Add \d/ : "Replace collection" });
   }
 
   beforeEach(() => {
@@ -293,7 +310,7 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
   });
 
   it("draws the four figures, what is overwritten, the decks and the lists, and decides on the confirm bar", async () => {
-    previewChange.mockResolvedValue(data([deck("d1", "Atraxa")]));
+    serve(data([deck("d1", "Atraxa")]));
     await reachReview();
     expect(previewChange).toHaveBeenCalledWith("up_1", "replace");
     expect(screen.getByText("going up or new").previousSibling?.textContent).toBe("2");
@@ -310,16 +327,16 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
 
   it("confirms from the bar with the decks the review showed, then opens the receipt", async () => {
     const decks = [deck("d1", "Atraxa")];
-    previewChange.mockResolvedValue(data(decks));
+    serve(data(decks));
     confirmUpload.mockResolvedValueOnce(undefined);
     const confirm = await reachReview();
     await act(async () => fireEvent.click(confirm));
-    expect(confirmUpload).toHaveBeenCalledWith("up_1", { firstImport: false, confirmShort: decks });
+    expect(confirmUpload).toHaveBeenCalledWith("up_1", { firstImport: false, confirmShort: decks, mode: "replace" });
     expect(push).toHaveBeenCalledWith("/collection/replace/summary/up_1");
   });
 
   it("redraws the same section when the decks moved, with a notice and `new`, and writes nothing", async () => {
-    previewChange.mockResolvedValue(data([deck("d1", "Atraxa")]));
+    serve(data([deck("d1", "Atraxa")]));
     confirmUpload.mockResolvedValueOnce({ wouldShort: [deck("d1", "Atraxa"), deck("d2", "Korvold")] });
     const confirm = await reachReview();
     await act(async () => fireEvent.click(confirm));
@@ -331,7 +348,7 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
   });
 
   it("a failed write keeps the review, says nothing changed, and Try again confirms again", async () => {
-    previewChange.mockResolvedValue(data());
+    serve(data());
     confirmUpload.mockRejectedValueOnce(new Error("boom")).mockResolvedValueOnce(undefined);
     const confirm = await reachReview();
     await act(async () => fireEvent.click(confirm));
@@ -346,7 +363,7 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
 
   it("Show all hands focus to the first revealed row and says when the list is longer than what shipped", async () => {
     const many = Array.from({ length: 12 }, (_, i) => `Card ${String(i).padStart(2, "0")}`);
-    previewChange.mockResolvedValue({
+    serve({
       ...data(),
       detail: { ...detail, lists: { ...detail.lists, leaving: { total: 507, rows: list(many, 3, 0).rows } } },
     });
@@ -358,7 +375,7 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
   });
 
   it("names a card the catalog dropped in the failure, and writes nothing", async () => {
-    previewChange.mockResolvedValue(data());
+    serve(data());
     confirmUpload.mockResolvedValueOnce({ missingCard: ["Sol Ring"] });
     const confirm = await reachReview();
     await act(async () => fireEvent.click(confirm));
@@ -366,35 +383,86 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
     expect(push).not.toHaveBeenCalled();
   });
 
-  it("holds Continue while the comparison is still being read, so it cannot slip into the dialog", async () => {
+  it("says it is comparing while the file is read, and draws no choice until both reads land", async () => {
     previewChange.mockReturnValue(new Promise(() => {}));
     previewPaste.mockResolvedValueOnce(preview(10));
     render(<ReplaceFlow currentCardCount={10} deckCheck />);
     fireEvent.click(screen.getAllByRole("button", { name: /Paste a list instead/ })[0]);
     fireEvent.change(screen.getByRole("textbox", { name: "Paste your card list" }), { target: { value: "3 Sol Ring" } });
     fireEvent.click(screen.getByRole("button", { name: /^Preview/ }));
-    const cont = await screen.findByRole("button", { name: /^Continue to replace/ });
-    await waitFor(() => expect(cont).toBeDisabled());
-    fireEvent.click(cont);
+    expect((await screen.findByRole("status")).textContent).toMatch(/Comparing with your collection/);
+    expect(screen.queryByRole("radiogroup")).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("falls back to the shipped review and its confirm dialog when the comparison cannot be read", async () => {
+  it("says so when the comparison cannot be read, and Try again reads it again", async () => {
     previewChange.mockRejectedValue(new Error("down"));
     previewPaste.mockResolvedValueOnce(preview(10));
     render(<ReplaceFlow currentCardCount={10} deckCheck />);
     fireEvent.click(screen.getAllByRole("button", { name: /Paste a list instead/ })[0]);
     fireEvent.change(screen.getByRole("textbox", { name: "Paste your card list" }), { target: { value: "3 Sol Ring" } });
     fireEvent.click(screen.getByRole("button", { name: /^Preview/ }));
-    const cont = await screen.findByRole("button", { name: /^Continue to replace/ });
-    await waitFor(() => expect(cont).toBeEnabled());
-    fireEvent.click(cont);
-    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect((await screen.findByRole("alert")).textContent).toMatch(/couldn't read how this file compares/);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    serve(data());
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Try again" })));
+    expect(await screen.findByRole("radiogroup")).toBeTruthy();
+  });
+
+  it("draws the choice with nothing picked, each card's after-figure, and Continue held", async () => {
+    serve(data());
+    await reachChoice();
+    expect(screen.getByText("STEP 2 OF 4", { exact: false })).toBeTruthy();
+    expect(screen.getAllByRole("radio").every((r) => r.getAttribute("aria-checked") === "false")).toBe(true);
+    expect(screen.getByText("25 → 12 cards")).toBeTruthy();
+    expect(screen.getByText("25 → 31 cards")).toBeTruthy();
+    expect(screen.getByText(/You already own 90% of these cards/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Review the replace →" })).toBeDisabled();
+  });
+
+  it("an Add review draws what is added and no deck section, edited tag or overwrite line", async () => {
+    serve(data([deck("d1", "Atraxa")]));
+    await reachReview("add");
+    expect(screen.getByText("STEP 3 OF 4", { exact: false })).toBeTruthy();
+    expect(screen.getByText("+6")).toBeTruthy();
+    expect(screen.getByText("copies across 2 cards")).toBeTruthy();
+    expect(screen.getByText("What gets added · 2")).toBeTruthy();
+    expect(screen.getByText("Adding 6 copies and skipping 0 rows. Your 25 cards stay.")).toBeTruthy();
+    expect(screen.queryByText(/Decks that will read short/)).toBeNull();
+    expect(screen.queryByText("edited")).toBeNull();
+    expect(screen.queryByText(/overwrites/)).toBeNull();
+  });
+
+  it("an Add confirms in add mode with no decks, then opens the receipt", async () => {
+    serve(data());
+    confirmUpload.mockResolvedValueOnce(undefined);
+    const confirm = await reachReview("add");
+    await act(async () => fireEvent.click(confirm));
+    expect(confirmUpload).toHaveBeenCalledWith("up_1", { firstImport: false, confirmShort: [], mode: "add" });
+    expect(push).toHaveBeenCalledWith("/collection/replace/summary/up_1");
+  });
+
+  it("an Add of cards all already owned says so, keeps Add available, and can switch to Replace", async () => {
+    serve(data(), addData(true));
+    const confirm = await reachReview("add");
+    expect(screen.getByText("You already own every card in this file.")).toBeTruthy();
+    expect(confirm).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Switch to Replace" }));
+    expect(await screen.findByRole("button", { name: "Replace collection" })).toBeTruthy();
+    expect(screen.queryByText("You already own every card in this file.")).toBeNull();
+  });
+
+  it("Cancel on the review steps back to the choice, keeping the pick", async () => {
+    serve(data());
+    await reachReview("add");
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(await screen.findByRole("radiogroup")).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /Add these cards/ }).getAttribute("aria-checked")).toBe("true");
   });
 
   it("a confirm made inside the dialog is answered by the dialog even when the comparison has resolved", async () => {
     // A first import that finds a collection after all opens the dialog; the comparison then resolves.
-    previewChange.mockResolvedValue(data([deck("d1", "Atraxa")]));
+    serve(data([deck("d1", "Atraxa")]));
     previewPaste.mockResolvedValueOnce(preview(0));
     confirmUpload
       .mockResolvedValueOnce({ needsConfirm: true, currentCollectionCount: 10 })
@@ -413,7 +481,7 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
   });
 
   it("a first import never asks for the comparison", async () => {
-    previewChange.mockResolvedValue(data());
+    serve(data());
     previewPaste.mockResolvedValueOnce(preview(0));
     confirmUpload.mockResolvedValueOnce(undefined);
     render(<ReplaceFlow currentCardCount={0} deckCheck />);

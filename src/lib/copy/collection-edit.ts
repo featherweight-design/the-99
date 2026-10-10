@@ -9,6 +9,8 @@ const copies = (x: number) => (x === 1 ? "1 copy" : `${n(x)} copies`);
 
 export const collectionEditCopy = {
   head: {
+    /** The head's Replace slot, now that the file may be added instead of replacing (copy-review call). */
+    upload: "Upload a file",
     add: "Add cards",
     /** The phone strip's trailing slot, where the longer label does not fit beside four tabs. */
     addShort: "Add",
@@ -27,6 +29,47 @@ export const collectionEditCopy = {
   // §A, the Replace review (the choice step and the Add review come with the next PR). Strings are
   // the handoff's; lines marked (new) have no key there and go to /copy-review.
   upload: {
+    // The choice (§A1). Strings are the handoff's; the lines marked (new) have no key there and go to
+    // /copy-review.
+    step: (i: number, of: number) => `STEP ${i} OF ${of}`,
+    choiceTitle: "Replace your collection, or add to it?",
+    choiceTitlePhone: "Replace or add?",
+    choiceLede: "Nothing changes until you confirm on the next screen.",
+    replaceTitle: "Replace my collection",
+    replaceBody: "Your collection becomes exactly this file. Anything not in it leaves.",
+    addTitle: "Add these cards",
+    addBody: "The file's quantities are added to yours. Nothing is removed, and your art picks stay.",
+    after: (from: number, to: number) => `${n(from)} → ${n(to)} cards`,
+    overwriteCount: (k: number, since: string) =>
+      `${n(k)} ${k === 1 ? "change" : "changes"} you made in the app since your ${since} upload will be overwritten.`,
+    choiceOverwriteUnknown: (last: string) =>
+      `Changes you made in the app may be overwritten. Your last upload was ${last}, before the 90 days history keeps, so we can't count them.`,
+    /** (new) Never uploaded, so every change made in the app is still on record. */
+    choiceOverwriteNoUpload: (k: number) => `${n(k)} ${k === 1 ? "change" : "changes"} you made in the app will be overwritten.`,
+    overlapNote: (pct: number) => `You already own ${pct}% of these cards. Adding the file doubles those copies.`,
+    continueReplace: "Review the replace →",
+    continueAdd: "Review the add →",
+    /** (new) The desktop foot's lead-in. */
+    nextReplace: "Next: a review of every card this replace moves.",
+    nextAdd: "Next: a review of every card this add raises.",
+    cancel: "Cancel",
+    /** (new) The comparison could not be read. */
+    prepareFailed: "We couldn't read how this file compares to your collection. Nothing was changed.",
+    /** (new) The upload entry's note once the file can be added instead: the count sits between the two. */
+    entryNote: { before: "Your file can replace your current ", after: " or be added to them. You’ll see every match before anything changes." },
+    reviewAdd: "Review before you add",
+    listAdded: (k: number) => `What gets added · ${n(k)}`,
+    /** (new) The Add review's matched banner: the number, then its label. */
+    addedFigure: (copies: number) => `+${n(copies)}`,
+    addedLabel: (cards: number) => `${cards === 1 ? "copy" : "copies"} across ${n(cards)} ${cards === 1 ? "card" : "cards"}`,
+    allOwned: "You already own every card in this file.",
+    allOwnedBody: (up: number) =>
+      `Adding it doubles them: ${n(up)} ${up === 1 ? "card goes" : "cards go"} up, none are new. If this is a fresh export of your whole collection, Replace is the one you want.`,
+    switchToReplace: "Switch to Replace",
+    barAdd: (add: number, skip: number, have: number) =>
+      `Adding ${add === 1 ? "1 copy" : `${n(add)} copies`} and skipping ${n(skip)} rows. Your ${n(have)} cards stay.`,
+    confirmAdd: (add: number) => `Add ${add === 1 ? "1 copy" : `${n(add)} copies`}`,
+    pendingAdd: "Adding…",
     tiles: { unchanged: "unchanged", up: "going up or new", down: "going down", leaving: "leaving" },
     edited: "edited",
     overwriteBanner: (k: number, since: string) =>

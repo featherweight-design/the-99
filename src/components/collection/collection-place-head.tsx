@@ -221,7 +221,7 @@ export function CollectionPlaceHead({
               className="inline-block text-[13px] px-[16px] py-[9px]"
             >
               <ReplaceIcon />
-              Replace collection
+              {collectionEditCopy.head.upload}
             </GhostButton>
             <GhostButton
               onClick={openAdd}
