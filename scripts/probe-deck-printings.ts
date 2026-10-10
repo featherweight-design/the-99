@@ -1,8 +1,9 @@
 // Deck printings, proved against a real Postgres through the real callers: that a deck's pick moves
 // the art and the printing the deck page draws (and that switching off restores the Collection's),
 // that a commit records each card's and the commander's printing (and nothing with the switch off),
-// and that the version diff draws the printing a version recorded rather than today's, for an In
-// row and an Out row alike. The resolver's own rules are unit tested in `printings.test.ts`; only a
+// that the version diff draws the printing a version recorded rather than today's, for an In row
+// and an Out row alike, and that deck tiles (`/decks`, Home) draw each deck's own pick of its
+// commander. The resolver's own rules are unit tested in `printings.test.ts`; only a
 // database can answer whether the deck page, the commit and the diff actually read it.
 //
 // It writes a fixture under a per-run user_id and deletes it in a finally. Run it against a scratch
@@ -16,7 +17,7 @@ import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import ws from "ws";
-import { getDeckDetail } from "../src/lib/decks/read";
+import { getDeckDetail, listDecksWithStats } from "../src/lib/decks/read";
 import { commitVersion, loadVersionDiff } from "../src/lib/decks/versions";
 
 neonConfig.webSocketConstructor = ws;
@@ -131,6 +132,43 @@ async function main() {
   const { version: v3 } = await commitVersion(deckId, "probe v3");
   const outDiff = await loadVersionDiff(v3.id, v2.id, USER, deckId);
   check("the diff's Out row draws the printing the older version recorded", outDiff.out.find((c) => c.oracleId === card.oracle_id)?.imageUri, other.image_uri);
+
+  // DECK TILES (`/decks`, Home): two decks led by one OWNED commander, one with a pick. Each tile
+  // draws its own deck's printing, keyed by deck rather than by card.
+  const { rows: [owned] } = await fixture.execute<{ oracle_id: string }>(sql`
+    select p.oracle_id from printings p join cards c on c.oracle_id = p.oracle_id
+    where c.type_line ~ 'Legendary Creature' and c.commander_legal and p.image_uri is not null
+    group by p.oracle_id having count(distinct p.image_uri) >= 2
+    order by p.oracle_id limit 1
+  `);
+  const { rows: legendPrintings } = await fixture.execute<Printing & { art_crop_uri: string }>(sql`
+    select distinct on (image_uri) scryfall_id, set_code, collector_number, image_uri, art_crop_uri
+    from printings where oracle_id = ${owned.oracle_id} and image_uri is not null
+    order by image_uri, scryfall_id limit 2
+  `);
+  for (const p of legendPrintings) {
+    await fixture.execute(sql`
+      insert into collection_items (user_id, oracle_id, quantity, set_code, collector_number, scryfall_id)
+      values (${USER}, ${owned.oracle_id}, 1, ${p.set_code}, ${p.collector_number}, ${p.scryfall_id})
+    `);
+  }
+  const deckOf = async (name: string) => (await fixture.execute<{ id: string }>(sql`
+    insert into decks (user_id, name, commander_oracle_id) values (${USER}, ${name}, ${owned.oracle_id}) returning id
+  `)).rows[0].id;
+  const picks = await deckOf("Probe tile with a pick");
+  const plain = await deckOf("Probe tile without one");
+  const tileArt = async (id: string) =>
+    (await listDecksWithStats(USER, "name", { includeCommanderArt: true })).find((d) => d.id === id)?.commanderImageUri;
+  const shownTile = await tileArt(plain);
+  const tileOther = legendPrintings.find((p) => p.image_uri !== shownTile)!;
+  await fixture.execute(sql`
+    insert into deck_printings (deck_id, oracle_id, set_code, collector_number)
+    values (${picks}, ${owned.oracle_id}, ${tileOther.set_code}, ${tileOther.collector_number})
+  `);
+  check("a tile draws its own deck's pick of its commander", await tileArt(picks), tileOther.image_uri);
+  check("a tile with no pick keeps the Collection's printing", await tileArt(plain), shownTile);
+  setSwitch(false);
+  check("switch off: the picked deck's tile draws the Collection's printing", await tileArt(picks), shownTile);
 }
 
 main()

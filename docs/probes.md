@@ -331,7 +331,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   the art and the printing `getDeckDetail` draws (and switching `DECK_PRINTINGS_ENABLED` off
   restores the Collection's), a commit records the card's and the commander's printing (and nothing
   with the switch off), and `loadVersionDiff` draws the printing a version recorded rather than
-  today's, for an In row and an Out row. Same fixture discipline as `probe:stats`: a per-run
+  today's, for an In row and an Out row; and `listDecksWithStats`' tiles draw each deck's own pick of
+  a commander two decks share. Same fixture discipline as `probe:stats`: a per-run
   `user_id` deleted in a `finally`, refused on production and staging by branch id, pointed at
   `local-dev` or a scratch branch.
 

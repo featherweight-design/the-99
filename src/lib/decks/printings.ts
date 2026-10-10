@@ -297,8 +297,13 @@ export const recordedKey = (p: RecordedPrinting) =>
   `${p.oracleId}|${p.setCode.toLowerCase()}|${p.collectorNumber}`;
 
 /**
- * The art and printed name of printings a version recorded, keyed by `recordedKey`. A recorded
- * printing the catalog no longer lists is absent, and its row draws today's art.
+ * The art and printed name of printings a version recorded, keyed by `recordedKey`.
+ *
+ * The SAME three tiers the Collection's resolver takes (`resolveImageUri`, `resolveFlavorName`):
+ * the exact printing's art, else the representative printing of that set, else the card's
+ * oracle-level art, with the printed name taken from whichever printing the art came from. A
+ * version therefore draws what the deck showed at commit, including for a printing whose own
+ * image is null. A recorded card the catalog no longer lists at all is absent, and draws today's.
  */
 export async function readRecordedPrintingArt(
   recorded: RecordedPrinting[],
@@ -310,19 +315,23 @@ export async function readRecordedPrintingArt(
     oracle_id: string; set_code: string; collector_number: string; name: string;
     image_uri: string | null; art_crop_uri: string | null; flavor_name: string | null;
   }>(sql`
-    select p.oracle_id, p.set_code, p.collector_number, c.name,
-           coalesce(p.image_uri, c.image_uri) as image_uri,
-           coalesce(p.art_crop_uri, c.art_crop_uri) as art_crop_uri,
-           p.flavor_name
-    from printings p
-    join cards c on c.oracle_id = p.oracle_id
-    where (p.oracle_id, p.set_code, p.collector_number) in (
-      select * from unnest(
-        ${sql.param(wanted.map((w) => w.oracleId))}::uuid[],
-        ${sql.param(wanted.map((w) => w.setCode.toLowerCase()))}::text[],
-        ${sql.param(wanted.map((w) => w.collectorNumber))}::text[]
-      )
-    )
+    select w.oracle_id, w.set_code, w.collector_number, c.name,
+           coalesce(e.image_uri, r.image_uri, c.image_uri) as image_uri,
+           coalesce(e.art_crop_uri, r.art_crop_uri, c.art_crop_uri) as art_crop_uri,
+           case
+             when e.image_uri is not null then e.flavor_name
+             when r.image_uri is not null then r.flavor_name
+           end as flavor_name
+    from unnest(
+      ${sql.param(wanted.map((w) => w.oracleId))}::uuid[],
+      ${sql.param(wanted.map((w) => w.setCode.toLowerCase()))}::text[],
+      ${sql.param(wanted.map((w) => w.collectorNumber))}::text[]
+    ) as w(oracle_id, set_code, collector_number)
+    join cards c on c.oracle_id = w.oracle_id
+    left join printings e
+      on e.oracle_id = w.oracle_id and e.set_code = w.set_code and e.collector_number = w.collector_number
+    left join printings r
+      on r.oracle_id = w.oracle_id and r.set_code = w.set_code and r.is_representative
   `);
   for (const r of rows) {
     out.set(recordedKey({ oracleId: r.oracle_id, setCode: r.set_code, collectorNumber: r.collector_number }), {

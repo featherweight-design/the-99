@@ -28,7 +28,7 @@ vi.mock("../../db", () => ({
       if (state.fail) throw new Error("down");
       if (text.includes("from deck_printings")) return { rows: state.picks };
       if (text.includes("from cards c")) return { rows: state.catalog };
-      if (text.includes("from printings p")) return { rows: state.recorded };
+      if (text.includes("as w(oracle_id")) return { rows: state.recorded };
       return { rows: [] };
     },
   },
@@ -239,11 +239,14 @@ describe("readRecordedPrintingArt", () => {
     ]);
     expect(art.get(recordedKey({ oracleId: OWNED, setCode: "KHM", collectorNumber: "31" })))
       .toEqual({ imageUri: "img", artCropUri: "crop", printedName: "Renamed" });
-    const at = state.texts.findIndex((t) => t.includes("from printings p"));
+    const at = state.texts.findIndex((t) => t.includes("as w(oracle_id"));
     const read = state.texts[at];
     // Two spellings of one printing are one lookup: each unnest array carries a single entry.
     expect(state.params[at]).toEqual([[OWNED], ["khm"], ["31"]]);
-    expect(read).toContain("(p.oracle_id, p.set_code, p.collector_number) in");
     expect(read).toContain("unnest(");
+    // The Collection's three tiers, in order, and the name from the printing the art came from.
+    expect(read).toContain("coalesce(e.image_uri, r.image_uri, c.image_uri)");
+    expect(read).toContain("r.is_representative");
+    expect(read).toMatch(/when e\.image_uri is not null then e\.flavor_name\s+when r\.image_uri is not null then r\.flavor_name/);
   });
 });
