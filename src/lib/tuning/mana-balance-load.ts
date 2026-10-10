@@ -6,14 +6,17 @@ import { loadLandMana } from "../decks/land-mana";
 import type { DeckDetail } from "../decks/read";
 import { loadSourceMana } from "../decks/source-mana";
 import { loadStatsLabels } from "../decks/stats-labels";
-import { tappedLands } from "../mana/lands-tapped";
+import { tappedLands, type TappedLands } from "../mana/lands-tapped";
+import type { ManaSupplyCardRow } from "../mana/supply";
 import { manaSupplyRows } from "../mana/supply-rows";
 import { readManaBalance, type ManaBalance } from "./mana-balance";
 
-/** Mana Balance's evidence for a deck, through the same three reads the Colors card makes plus the
- *  text of each land for the tapped count. Null when a text read failed: the evidence would then
- *  state what the reads never learned. */
-export async function loadManaBalance(deck: Pick<DeckDetail, "cards" | "commander" | "partner">): Promise<ManaBalance | null> {
+export type ManaInputs = { rows: ManaSupplyCardRow[]; nameOf: (id: string) => string; tapped: TappedLands };
+
+/** The three reads the Colors card makes plus the text of each land for the tapped count, as the rows
+ *  the engine counts. Null when a text read failed: the evidence would then state what the reads
+ *  never learned. */
+export async function loadManaInputs(deck: Pick<DeckDetail, "cards" | "commander" | "partner">): Promise<ManaInputs | null> {
   const commanders = [deck.commander, ...(deck.partner ? [deck.partner] : [])];
   const deckColors = commanders.flatMap((c) => c.colorIdentity);
   const labels = await loadStatsLabels(deck.cards);
@@ -33,5 +36,11 @@ export async function loadManaBalance(deck: Pick<DeckDetail, "cards" | "commande
   const tapped = tappedLands(deckLands.map((c) => ({ name: c.name, typeLine: c.typeLine, oracleText: text.get(c.oracleId) ?? null, quantity: c.quantity })));
 
   const names = new Map<string, string>([...deck.cards.map((c) => [c.oracleId, c.name] as const), ...commanders.map((c, i) => [`commander:${i}`, c.name] as const)]);
-  return readManaBalance({ rows: manaSupplyRows(deck.cards, commanders, lands, sources, deckColors), nameOf: (id) => names.get(id) ?? id, tapped });
+  return { rows: manaSupplyRows(deck.cards, commanders, lands, sources, deckColors), nameOf: (id) => names.get(id) ?? id, tapped };
+}
+
+/** Mana Balance's evidence for a deck. */
+export async function loadManaBalance(deck: Pick<DeckDetail, "cards" | "commander" | "partner">): Promise<ManaBalance | null> {
+  const inputs = await loadManaInputs(deck);
+  return inputs && readManaBalance(inputs);
 }

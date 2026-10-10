@@ -11,7 +11,8 @@
     "The commander appears in a color's pattern list as a card, marked '(commander)'. Shatterskull Smashing // Shatterskull, the Hammer Pass is counted as a spell (CC for red) because its front face is a spell.",
     "Sources follow the Colors card's own policy: an any-color source with a spending restriction counts for each deck color, a land that fetches a basic counts for the basics it can fetch, Farseek names Plains, Island, Swamp and Mountain so it counts for W, U, B and R and not G. U and B each read 1 source (Farseek) against 0 pips.",
     "Tapped lands: 4 always = Jungle Shrine, Path of Ancestry, Mosswort Bridge, Spinerock Knoll (each says it enters tapped). 5 unless a condition holds = Clifftop Retreat, Rootbound Crag, Sunpetal Grove, Canopy Vista, Cinder Glade. 4 fetch a tapped land = Evolving Wilds, Fabled Passage, Escape Tunnel, Sheltering Landscape: each enters untapped itself and puts a basic onto the battlefield tapped (Fabled Passage untaps it with four or more lands). Counting the four fetches as tapped lands, as an earlier version did, called Evolving Wilds a land that enters tapped.",
-    "Karsten lands 42.2 = 31.42 + 3.13 x 4.34 - 0.28 x 10. Average mana value 4.34 counts the 63 nonland cards and the commander (8) as one more card, which reproduces Deckcheck's 4.34. Cheap ramp is 10: ten mana sources of mana value 3 or less (draw spells are not counted). Deckcheck reports 6 ramp and 38 lands for the same deck; this engine counts 36 land cards."
+    "Karsten lands 42.2 = 31.42 + 3.13 x 4.34 - 0.28 x 10. Average mana value 4.34 counts the 63 nonland cards and the commander (8) as one more card, which reproduces Deckcheck's 4.34. Cheap ramp is 10: ten mana sources of mana value 3 or less (draw spells are not counted). Deckcheck reports 6 ramp and 38 lands for the same deck; this engine counts 36 land cards.",
+    "Help, add green: no Plains or Mountain may move. The guard keeps a color that meets Karsten's figure for its hardest published pattern at or above it, and a color below it from losing a source. White has 26 sources against 26 for 2CC (Lightmine Field), so a Plains out drops it under; red has 27 against 30 for CC (Shatterskull Smashing), so a Mountain out is a loss while under; blue and black hold no basics. Rebalance is therefore empty. Trades and staples depend on the collection and the commander index and are printed by the eval and not pinned."
   ],
   "expected": {
     "state": "ok",
@@ -292,6 +293,12 @@
       "cheapRamp": 10,
       "karstenLands": 42.2,
       "tappedFetch": 4
+    },
+    "help": {
+      "G": {
+        "sourcesNow": 28,
+        "rebalance": []
+      }
     }
   }
 }

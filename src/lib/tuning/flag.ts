@@ -26,3 +26,14 @@ export function tuningEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
 export function proposedCutsEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
   return env.PROPOSED_CUTS_ENABLED === "true" && env.ANALYSIS_TAB_ENABLED === "true";
 }
+
+/**
+ * Whether this deployment offers Mana Balance (tier 1, free): the counted read of a deck's colors
+ * and its suggestions. The same shape as `proposedCutsEnabled`: server-side, per request, OFF for
+ * anything but the exact string `'true'`, and it needs the Analysis tab, where the tool mounts.
+ * Independent of `TUNING_ENABLED` and `PROPOSED_CUTS_ENABLED`. It gates the surface and not a
+ * spend: tier 1 makes no model call.
+ */
+export function manaBalanceEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.MANA_BALANCE_ENABLED === "true" && env.ANALYSIS_TAB_ENABLED === "true";
+}

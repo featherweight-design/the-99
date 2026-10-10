@@ -26,6 +26,7 @@ const { eq } = await import("drizzle-orm");
 const schema = await import("../../src/db/schema");
 const { getDeckDetail } = await import("../../src/lib/decks/read");
 const { loadManaBalance } = await import("../../src/lib/tuning/mana-balance-load");
+const { loadManaHelp } = await import("../../src/lib/tuning/mana-help-load");
 const { listFingerprint } = await import("../../src/lib/profile/fingerprint");
 
 const [owner] = await db.select({ userId: schema.decks.userId }).from(schema.decks).where(eq(schema.decks.id, golden.deck.deckId));
@@ -37,7 +38,9 @@ const balance = await loadManaBalance(detail);
 if (!balance) throw new Error("eval:mana: the golden deck's text reads failed");
 // A source row's id is an oracle id; the commanders' are `commander:N`, which only patterns list.
 const names = new Map(detail.cards.map((c) => [c.oracleId, c.name]));
-const actual = goldenShape(balance, (id) => names.get(id) ?? id);
+const goldenHelp = await loadManaHelp(detail, owner.userId, "G");
+if (!goldenHelp) throw new Error("eval:mana: the golden deck's help could not be read");
+const actual = goldenShape(balance, (id) => names.get(id) ?? id, { G: { sourcesNow: goldenHelp.sourcesNow, rebalance: goldenHelp.rebalance.map((m) => `${m.from} x${m.maxCopies}`) } });
 const fingerprint = listFingerprint({ commanderOracleId: detail.commander.oracleId, partnerOracleId: detail.partner?.oracleId ?? null, cards: detail.cards });
 
 if (args.print) {
@@ -83,5 +86,23 @@ for (const d of decks) {
   console.log(`- ${d.name}${!b ? ": read failed" : b.state === "ok" ? "" : ` [${b.state}]`}`);
   // A colorless or no-source deck still has lands, tapped counts, an average and Karsten's figure.
   if (b) for (const line of evidenceLines(b)) console.log(line);
+}
+console.log("\n## 3. Help on request (what a player asking for a color would see)\n");
+const ASKS: [string, string, "W" | "U" | "B" | "R" | "G"][] = [
+  ["HD - Gishath", "904fdc61-e190-4ba5-8e34-2b18fa0584f2", "G"],
+  ["HD - Avatar Aang", "0f585441-203e-475b-be7c-f11e67e20d79", "U"],
+  ["HD - Gods", "13a6dc28-958c-4591-a2bb-c0297bbe5d92", "U"],
+];
+const price = (cents: number | null) => (cents === null ? "no price" : `$${(cents / 100).toFixed(2)}`);
+const changeText = (cs: { color: string; before: number; after: number }[]) => cs.map((c) => `${c.color} ${c.before} to ${c.after}`).join(", ");
+for (const [label, id, color] of ASKS) {
+  const d = await getDeckDetail(id, owner.userId);
+  const h = d ? await loadManaHelp(d, owner.userId, color) : null;
+  console.log(`- ${label}, add ${color} (${h?.sourcesNow ?? "?"} sources now)${h ? "" : ": read failed"}`);
+  if (!h) continue;
+  for (const m of h.rebalance) console.log(`  rebalance: up to ${m.maxCopies} ${m.basicOut} to ${m.basicIn} (${changeText(m.changes)})`);
+  if (h.rebalance.length === 0) console.log("  rebalance: none that leaves every other color as it is");
+  for (const t of h.trades.slice(0, 3)) console.log(`  trade: ${t.basicOut} for ${t.staple.name} (${changeText(t.changes)}), ${t.staple.free > 0 ? `${t.staple.free} free` : "to buy"} ${price(t.staple.priceCents)}`);
+  for (const s of h.staples.slice(0, 5)) console.log(`  staple: ${s.name} [${s.produces.join("")}] ${s.fact.kind === "commander" ? `in ${s.fact.inclusion ?? "?"}% of this commander's decks` : `${s.fact.commanders} of ${s.fact.commanderTotal} ${s.fact.condition} commanders (bucket average ${s.fact.avgInclusion.toFixed(1)}%)`}, ${s.free > 0 ? `${s.free} free` : "to buy"} ${price(s.priceCents)}`);
 }
 process.exit(diffs.length > 0 ? 1 : 0);
