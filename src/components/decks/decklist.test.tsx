@@ -14,6 +14,7 @@ import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
 import { PendingChangeProvider } from "./pending-change";
+import { LabelRowsProvider } from "./label-rows-context";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { cardTileCopy, viewToggleCopy } from "../../lib/copy/card-surfaces";
 import { proxyCopy } from "../../lib/copy/proxies";
@@ -105,6 +106,8 @@ function renderDecklist(
     statsData?: DeckStatsInput | null;
     commander?: DeckCommander;
     partner?: DeckCommander | null;
+    /** Label rows provided around the list, as the deck page does with the switch on. */
+    labelRows?: Record<string, readonly ("ramp" | "draw" | "removal" | "wipes")[]>;
   } = {},
 ) {
   const deckEdits = {
@@ -140,7 +143,7 @@ function renderDecklist(
     <CardDetailProvider
       fetchCard={(opts.fetchCard ?? vi.fn().mockResolvedValue(null)) as never}
     >
-      <AddOptimisticCardProvider value={deckEdits}>{withSwaps(withDraft(
+      <AddOptimisticCardProvider value={deckEdits}><LabelRowsProvider value={opts.labelRows ?? null}>{withSwaps(withDraft(
         <Decklist mix={TEST_MIX}
           deckId="deck-1"
           cards={cards}
@@ -165,7 +168,7 @@ function renderDecklist(
           statsEnabled={opts.statsEnabled}
           statsData={opts.statsData}
         />
-      ))}</AddOptimisticCardProvider>
+      ))}</LabelRowsProvider></AddOptimisticCardProvider>
     </CardDetailProvider>,
   );
 }
@@ -201,6 +204,20 @@ describe("Shopping groups by role and heads each group with the gap it closes", 
     expect(screen.getByText("Draw")).toBeInTheDocument();
     // Owned-only roles must NOT appear
     expect(screen.queryByText("Removal")).not.toBeInTheDocument();
+  });
+
+  it("counts only the copies whose label names the role when a label read is provided", () => {
+    const talisman = makeCard({ oracleId: "talisman", name: "Talisman", role: "ramp", owned: false, auto: true });
+    const classifier = (() => { renderDecklist([rampOwned, rampUnowned, talisman]); return document.body.textContent ?? ""; })();
+    cleanup();
+    // The classifier calls both unowned cards ramp; the label names only Arcane Signet as ramp.
+    renderDecklist([rampOwned, rampUnowned, talisman], {
+      labelRows: { "sol-ring": ["ramp"], "arcane-signet": ["ramp"], talisman: ["draw"] },
+    });
+    const byLabel = document.body.textContent ?? "";
+    expect(classifier).toMatch(/2 · closes (\d+)→(\d+)/);
+    expect(byLabel).toMatch(/1 · closes (\d+)→(\d+)/);
+    expect(byLabel).not.toMatch(/2 · closes/);
   });
 
   it("does not render owned cards in the Shopping filter", () => {
