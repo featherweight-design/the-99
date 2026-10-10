@@ -42,6 +42,7 @@ import { GhostButton } from "../ui/button";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { settleCollectionWrite } from "../../app/collection/edit-actions";
 import { AddCardsSheet } from "./add-cards-sheet";
+import { CollectionEditToast } from "./edit-toast";
 import { ReplaceIcon } from "./replace-icon";
 import { PendingReporter } from "../shell/pending-reporter";
 import { collectionTabsCopy } from "../../lib/copy/collection";
@@ -308,6 +309,7 @@ export function CollectionPlaceHead({
           </a>
         ) : null}
       </nav>
+      {editEnabled ? <CollectionEditToast /> : null}
       {editEnabled && adding ? (
         <AddCardsSheet
           mode="add"
