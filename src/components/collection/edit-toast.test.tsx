@@ -67,6 +67,32 @@ describe("the Edit copies toast", () => {
     expect(screen.queryByRole("status")).toBeNull();
   });
 
+  it("does not spend the Undo window while another sheet has the page inert", async () => {
+    const { container } = render(<CollectionEditToast />);
+    act(() => announceEditToast(removed));
+    act(() => armEditToast());
+    container.setAttribute("inert", "");
+    await act(async () => void vi.advanceTimersByTime(TOAST_MS * 3));
+    expect(screen.getByRole("status")).toBeTruthy();
+    container.removeAttribute("inert");
+    await act(async () => void vi.advanceTimersByTime(TOAST_MS + 500));
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("keeps saying so when an Undo went through but the list could not be refreshed", async () => {
+    settle.mockRejectedValue(new Error("down"));
+    render(<CollectionEditToast />);
+    act(() => announceEditToast(removed));
+    act(() => armEditToast());
+    fireEvent.click(screen.getByRole("button", { name: r.undo }));
+    await act(async () => fireEvent.click(screen.getByText("reverted")));
+    expect(settle).toHaveBeenCalledTimes(3);
+    expect(screen.getByRole("status").textContent).toContain(c.undoneStale);
+    expect(screen.queryByRole("button", { name: r.undo })).toBeNull();
+    settle.mockReset();
+    settle.mockResolvedValue(undefined);
+  });
+
   it("Undo is a revert of that entry through the revert confirmation; the toast steps aside and waits", async () => {
     render(<CollectionEditToast />);
     act(() => announceEditToast(removed));

@@ -66,7 +66,7 @@ export type CollectionChange =
    * editor showed: a holding of that card the player has now and the editor never saw (another tab
    * added a printing) refuses with `stale`, so a removal never leaves an unseen holding behind.
    */
-  | { kind: "edit"; rows: EditRow[]; seen?: CollectionItemIdentity[] }
+  | { kind: "edit"; rows: EditRow[]; seen?: (CollectionItemIdentity & { quantity: number })[] }
   /**
    * Reverse entry `entryId` against today's collection. `expected` is the after-count per row
    * the confirmation showed, keyed by `collectionItemKey`; a difference refuses with `stale`.
@@ -243,13 +243,21 @@ export function planEdit(current: Map<string, Held>, rows: EditRow[]): Planned[]
 }
 
 /**
- * Holdings the player has now that the editor never showed (`seen` is every holding it drew of the
- * card), so a removal cannot leave behind a printing another tab added. No `seen` means no claim.
+ * Holdings the editor's picture of the card no longer matches (`seen` is every holding it drew,
+ * with its count): one it never showed (another tab added a printing) or one whose count moved,
+ * touched by this edit or not. So a removal never leaves an unseen holding behind and a toast never
+ * reports a total the card no longer has. No `seen` means no claim.
  */
-export function unseenHoldings(current: Map<string, Held>, seen: CollectionItemIdentity[] | undefined): Held[] {
+export function unseenHoldings(
+  current: Map<string, Held>,
+  seen: (CollectionItemIdentity & { quantity: number })[] | undefined,
+): CollectionItemIdentity[] {
   if (!seen) return [];
-  const known = new Set(seen.map(keyOf));
-  return [...current.values()].filter((h) => !known.has(keyOf(h)));
+  const known = new Map(seen.map((s) => [keyOf(s), s.quantity]));
+  const moved: CollectionItemIdentity[] = [...current.values()].filter((h) => known.get(keyOf(h)) !== h.quantity);
+  // A holding the editor drew that is gone now has no row in `current`, and is stale all the same.
+  const gone = seen.filter((s) => s.quantity > 0 && !current.has(keyOf(s)));
+  return [...moved, ...gone];
 }
 
 /** Rows an edit named with an `expected` that today's count does not match. */

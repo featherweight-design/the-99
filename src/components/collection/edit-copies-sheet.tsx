@@ -159,7 +159,11 @@ export function EditCopiesSheet({
   useDialogA11y(panelRef, requestClose, { initialFocusRef: addRef, lockScroll: false, returnFocusRef });
   useBackDismiss(true, requestClose);
 
-  function afterChoose(res: { lines: EditLineState[]; merged: EditLineState | null }) {
+  function afterChoose(res: { lines: EditLineState[]; merged: EditLineState | null; overflow?: true }) {
+    if (res.overflow) {
+      setNotice({ text: c.tooMany, kind: "alert" });
+      return;
+    }
     setLines(res.lines);
     setPickerFor(null);
     if (res.merged) {
@@ -190,8 +194,11 @@ export function EditCopiesSheet({
     const json = JSON.stringify(rows);
     if (attempt.current?.payload !== json) attempt.current = { id: crypto.randomUUID(), payload: json };
     try {
-      // `seen` is every holding the sheet drew: one added elsewhere since answers `stale`.
-      const seen = holdings.map((h) => ({ oracleId: card.oracleId, setCode: h.setCode, collectorNumber: h.collectorNumber, finish: h.finish }));
+      // `seen` is every holding the sheet drew, with its count: one added or changed elsewhere since
+      // (a holding this save never touches included) answers `stale`.
+      const seen = holdings.map((h) => ({
+        oracleId: card.oracleId, setCode: h.setCode, collectorNumber: h.collectorNumber, finish: h.finish, quantity: h.quantity,
+      }));
       const out = await editCollection(attempt.current.id, rows, confirmShort, seen);
       if ("applied" in out) {
         onClose({ saved: { entryId: out.applied.id, removed: isRemoval, total: sum.total, copiesRemoved: sum.held } });

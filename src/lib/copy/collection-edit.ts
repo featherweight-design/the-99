@@ -317,6 +317,10 @@ export const collectionEditCopy = {
     discardBody: "They're not saved yet. Close now and your copies stay as they were.",
     discard: "Discard",
     keep: "Keep editing",
+    /** (new) Two lines would fold into more copies than one holding can hold. */
+    tooMany: "That would be more copies than one printing can hold, so these two stay separate.",
+    /** (new) An Undo went through but the list could not be refreshed. */
+    undoneStale: "Undone. The list may show the old count until you refresh the page.",
     /** (new) The entry's time, as the revert confirmation spells it for the toast's Undo. */
     undoWhen: "today",
   },

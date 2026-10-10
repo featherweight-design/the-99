@@ -208,6 +208,15 @@ describe("folding keeps what the add cap would drop and where copies came from",
     expect(row2).not.toHaveProperty("clearCondition");
   });
 
+  it("refuses a fold that would not fit one holding, keeping both lines and every copy", () => {
+    const huge = [h("c21", "263", 2_000_000_000), h("cmm", "410", 2_000_000_000)];
+    const lines = linesFromHoldings(card, CHOICES, huge);
+    const res = editChoosePrinting(lines, lines[1].id, CHOICES[0]);
+    expect(res.overflow).toBe(true);
+    expect(res.lines).toBe(lines);
+    expect(diffRows(OID, huge, res.lines)).toEqual([]);
+  });
+
   it("only warns about decks when the card's total ends lower", () => {
     const lines = linesFromHoldings(card, CHOICES, HELD);
     expect(summarizeEdit(OID, HELD, editChoosePrinting(lines, lines[1].id, CHOICES[3]).lines).lowers).toBe(false);

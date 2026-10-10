@@ -269,9 +269,17 @@ export function lineNote(oracleId: string, holdings: CardHolding[], l: EditLineS
  * Re-picking and finish changes fold a line into the holding it lands on, and the folded line's
  * origins go with its copies, or the summary and the note would forget where they came from.
  */
-function carryOrigins(before: EditLineState[], res: { lines: EditLineState[]; merged: EditLineState | null }, id: string) {
+function carryOrigins(
+  before: EditLineState[],
+  res: { lines: EditLineState[]; merged: EditLineState | null },
+  id: string,
+): { lines: EditLineState[]; merged: EditLineState | null; overflow?: true } {
   const mover = before.find((l) => l.id === id);
   if (!res.merged || !mover || res.merged.id === id) return res;
+  // Clamping would zero the source holding and drop the excess: two holdings that cannot fit in
+  // one stay apart, and the sheet says so.
+  const twin = before.find((l) => l.id !== id && holdingKeyOf(l) === holdingKeyOf(res.merged!));
+  if (twin && twin.quantity + mover.quantity > EDIT_MAX_QUANTITY) return { lines: before, merged: null, overflow: true };
   // Two lines landing on one NEW holding keep a condition only when they agree, as every other
   // aggregation of rows does, so the order the player moved them in cannot decide what is stored.
   const merged = {

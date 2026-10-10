@@ -169,8 +169,9 @@ export async function editCollection(
   if (seen !== undefined && (!Array.isArray(seen) || seen.length > MAX_LINES)) throw new Error("bad collection lines");
   const seenIdentities = seen === undefined ? undefined : (seen as unknown[]).map((s) => {
     const identity = identityOf(s);
-    if (!identity) throw new Error("bad collection row");
-    return identity;
+    const q = (s as { quantity?: unknown } | null)?.quantity;
+    if (!identity || !isCount(q, 0, MAX_HELD)) throw new Error("bad collection row");
+    return { ...identity, quantity: q };
   });
   const catalog = await resolvePrintings(parsed);
   const editRows: EditRow[] = parsed.map((r) => {

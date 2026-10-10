@@ -7,7 +7,7 @@
 // provider and everything in it, and the toast carrying Undo for exactly that removal went with it.
 // The sheet's host announces a toast through `announceEditToast`, and this draws it.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { settleCollectionWrite } from "../../app/collection/edit-actions";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { RevertConfirm } from "./revert-confirm";
@@ -17,11 +17,12 @@ const r = collectionEditCopy.remove;
 
 /** The toast lasts this long (R2 §D: eight seconds), unless a revert is being decided. */
 export const TOAST_MS = 8000;
+const TICK_MS = 250;
 const EVENT = "collection-edit-toast";
 const ARM = "collection-edit-toast-arm";
 const SAVED = "collection-edit-saved";
 
-export type EditToast = { text: string; entryId: string; removed: boolean };
+export type EditToast = { text: string; entryId: string; removed: boolean; /** No Undo: the revert already went through. */ done?: boolean };
 
 export function announceEditToast(toast: EditToast) {
   window.dispatchEvent(new CustomEvent<EditToast>(EVENT, { detail: toast }));
@@ -61,10 +62,19 @@ export function CollectionEditToast() {
     };
   }, []);
 
+  // The countdown ticks, and only while the toast can be pressed: another sheet opening over the
+  // page (a second edit, an Add) makes this subtree inert, and an Undo window spent behind that is
+  // one the reader never had.
+  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!toast || undoing || !armed) return;
-    const t = setTimeout(() => setToast(null), TOAST_MS);
-    return () => clearTimeout(t);
+    let left = TOAST_MS;
+    const tick = setInterval(() => {
+      if (ref.current?.closest("[inert]")) return;
+      left -= TICK_MS;
+      if (left <= 0) setToast(null);
+    }, TICK_MS);
+    return () => clearInterval(tick);
   }, [toast, undoing, armed]);
 
   return (
@@ -73,17 +83,20 @@ export function CollectionEditToast() {
           z-layer and would cover its buttons on a phone. Its timer is paused meanwhile. */}
       {toast && !undoing ? (
         <div
+          ref={ref}
           role="status"
           className="fixed bottom-[calc(var(--tabbar-h,0px)+16px)] left-1/2 z-[60] flex w-[calc(100%-32px)] max-w-[420px] -translate-x-1/2 items-center gap-[14px] rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] py-[4px] pl-[16px] pr-[6px] shadow-[0_12px_40px_rgba(0,0,0,0.5)] md:bottom-[24px]"
         >
           <span className="min-w-0 flex-1 py-[8px] text-[13.5px] text-[color:var(--fg)]">{toast.text}</span>
-          <button
-            type="button"
-            onClick={() => setUndoing(true)}
-            className="min-h-[44px] cursor-pointer border-0 bg-transparent px-[12px] text-[13.5px] font-semibold text-[color:var(--accent)] underline underline-offset-2"
-          >
-            {toast.removed ? r.undo : c.undo}
-          </button>
+          {toast.done ? null : (
+            <button
+              type="button"
+              onClick={() => setUndoing(true)}
+              className="min-h-[44px] cursor-pointer border-0 bg-transparent px-[12px] text-[13.5px] font-semibold text-[color:var(--accent)] underline underline-offset-2"
+            >
+              {toast.removed ? r.undo : c.undo}
+            </button>
+          )}
         </div>
       ) : null}
       {toast && undoing ? (
@@ -93,12 +106,18 @@ export function CollectionEditToast() {
           when={c.undoWhen}
           onClose={() => setUndoing(false)}
           onReverted={() => {
-            void settleCollectionWrite().catch(() => {}).then(() => {
+            void (async () => {
+              let fresh = false;
+              for (let attempt = 0; attempt < 3 && !fresh; attempt++) {
+                fresh = await settleCollectionWrite().then(() => true, () => false);
+              }
               setUndoing(false);
-              setToast(null);
+              // The revert committed either way. A list that could not be refreshed says so, rather
+              // than vanishing the toast over a page still showing the old count.
+              setToast(fresh ? null : { entryId: toast.entryId, removed: false, text: c.undoneStale, done: true });
               // The head's totals moved back too.
               announceCollectionSaved();
-            });
+            })();
           }}
         />
       ) : null}

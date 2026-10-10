@@ -203,13 +203,14 @@ describe("editCollection", () => {
 
   it("takes the editor's seen holdings through, an empty list included, and refuses a malformed one", async () => {
     stub.apply.mockResolvedValue({ status: "applied", entry: { id: ACTION } });
-    const seen = [{ oracleId: ORACLE, setCode: "lea", collectorNumber: "1", finish: "nonfoil" }];
+    const seen = [{ oracleId: ORACLE, setCode: "lea", collectorNumber: "1", finish: "nonfoil", quantity: 2 }];
     await editCollection(ACTION, [edited], undefined, seen);
     expect(stub.apply.mock.calls.at(-1)?.[1]).toMatchObject({ kind: "edit", seen });
     catalogHolds();
     await editCollection(ACTION, [{ ...edited, expected: 0 }], undefined, []);
     expect(stub.apply.mock.calls.at(-1)?.[1]).toMatchObject({ seen: [] });
     await expect(editCollection(ACTION, [edited], undefined, [{ oracleId: "nope" }])).rejects.toThrow();
+    await expect(editCollection(ACTION, [edited], undefined, [{ ...seen[0], quantity: undefined }])).rejects.toThrow();
     await expect(editCollection(ACTION, [edited], undefined, "x")).rejects.toThrow();
   });
 });
