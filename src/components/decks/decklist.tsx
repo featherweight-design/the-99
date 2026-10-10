@@ -13,6 +13,7 @@ import { isOverLimit } from "../../lib/swaps/limit";
 import { isLandFace } from "../../lib/cards/facet";
 import { jobTally } from "../../lib/decks/job-tally";
 import { manaCurve, typeCurve, type DeckStatsInput } from "../../lib/decks/stats";
+import { landProduces, manaSupply } from "../../lib/mana/supply";
 import type { RecommendedMix } from "../../lib/decks/mix";
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
 import { cardCopies, groupByCardType, groupByRole } from "../../lib/decks/grouping";
@@ -406,7 +407,24 @@ export function Decklist({
           byCard,
         )
       : null;
-    return { curve: manaCurve(list), types: typeCurve(list), jobs };
+    // The Colors card. A land the page had no text for (added since load) reads its type line alone.
+    // Null where the land read failed: the card then stays a shell rather than draw every land as
+    // making nothing.
+    const landsByCard = statsData.lands;
+    const deckColors = statsData.commanders.flatMap((c) => c.colorIdentity);
+    const mana = landsByCard
+      ? manaSupply([
+          ...cards.map((c) => ({
+            typeLine: c.typeLine,
+            manaCost: c.manaCost ?? null,
+            quantity: c.quantity,
+            produces: landsByCard[c.oracleId] ?? landProduces(c.typeLine, null, deckColors),
+            ramp: c.role === "ramp",
+          })),
+          ...statsData.commanders.map((c) => ({ typeLine: c.typeLine, manaCost: c.manaCost, quantity: 1 })),
+        ])
+      : null;
+    return { curve: manaCurve(list), types: typeCurve(list), jobs, mana };
   }, [cards, statsData]);
 
   // The commanders the Shopping list bills (H28), through the list's own predicate. Every Shopping

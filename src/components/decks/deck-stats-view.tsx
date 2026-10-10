@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 
 import { deckStatsCopy } from "../../lib/copy/deck-stats";
 import { JOB_ROWS, type JobTally } from "../../lib/decks/job-tally";
+import { MANA_COLORS, type ManaColor, type ManaSupply } from "../../lib/mana/supply";
 import { CARD_TYPES, CURVE_MAX, type CardType, type DeckStatsSlice } from "../../lib/decks/stats";
 
 const CARDS = [
@@ -214,12 +215,93 @@ function JobsCard({ tally }: { tally: JobTally }) {
   );
 }
 
+const PIP_STYLE: Record<ManaColor, { bg: string; ink: string }> = {
+  W: { bg: "var(--w)", ink: "var(--pip-ink-dark)" },
+  U: { bg: "var(--u)", ink: "var(--pip-ink-light)" },
+  B: { bg: "var(--b)", ink: "var(--pip-ink-dark)" },
+  R: { bg: "var(--r)", ink: "var(--pip-ink-light)" },
+  G: { bg: "var(--g)", ink: "var(--pip-ink-light)" },
+  C: { bg: "var(--fg-muted)", ink: "var(--pip-ink-dark)" },
+};
+
+const share = (n: number, total: number) => (total === 0 ? 0 : Math.round((n / total) * 100));
+
+function ColorsCard({ mana }: { mana: ManaSupply }) {
+  const copy = deckStatsCopy.colors;
+  const rows = MANA_COLORS.map((c) => ({ c, pips: mana.demand[c], sources: mana.supply[c].lands })).filter((r) => r.pips > 0 || r.sources > 0);
+  const pipTotal = rows.reduce((a, r) => a + r.pips, 0);
+  const sourceTotal = rows.reduce((a, r) => a + r.sources, 0);
+  const shares = rows.map((r) => ({ pips: share(r.pips, pipTotal), sources: share(r.sources, sourceTotal) }));
+  const widest = Math.max(1, ...shares.flatMap((s) => [s.pips, s.sources]));
+  const asked = rows.filter((r) => r.pips > 0);
+  const caption =
+    mana.lands === 0
+      ? copy.noLands
+      : asked.length === 1
+        ? `${copy.monoLead(copy.names[asked[0].c])} ${copy.captionMono}`
+        : copy.caption;
+  return (
+    <Shell title={deckStatsCopy.cards.colors} id="colors" denom={copy.denom(pipTotal, mana.lands)} label={`${deckStatsCopy.cards.colors}, ${copy.denom(pipTotal, mana.lands)}`}>
+      {rows.length > 0 ? (
+        <div className="flex flex-col gap-[9px]" data-colors-rows>
+          <div aria-hidden="true" className="grid grid-cols-[minmax(0,1fr)_26px_minmax(0,1fr)] gap-[10px] font-mono text-[9.5px] tracking-[0.12em] text-[color:var(--fg-faint)]">
+            <span className="text-right">{copy.asks}</span>
+            <span />
+            <span>{copy.makes}</span>
+          </div>
+          <ul className="flex flex-col gap-[9px]">
+            {rows.map((r, i) => (
+              <li
+                key={r.c}
+                data-color-row={r.c}
+                aria-label={copy.row(copy.names[r.c], r.pips, r.sources)}
+                className="grid grid-cols-[minmax(0,1fr)_26px_minmax(0,1fr)] items-center gap-[10px]"
+              >
+                <div aria-hidden="true" className="flex flex-row-reverse items-center gap-[8px]">
+                  <span className="h-[14px] flex-none rounded-[3px]" style={{ width: `${(shares[i].pips / widest) * 60}%`, background: PIP_STYLE[r.c].bg }} />
+                  <span className="whitespace-nowrap font-mono text-[11px] text-[color:var(--fg-body)]">{r.pips ? `${r.pips} · ${shares[i].pips}%` : "0"}</span>
+                </div>
+                <span
+                  aria-hidden="true"
+                  className="flex size-[26px] items-center justify-center rounded-[5px] font-mono text-[11.5px] font-semibold"
+                  style={{ background: PIP_STYLE[r.c].bg, color: PIP_STYLE[r.c].ink }}
+                >
+                  {r.c}
+                </span>
+                <div aria-hidden="true" className="flex items-center gap-[8px]">
+                  <span className="h-[14px] flex-none rounded-[3px]" style={{ width: `${(shares[i].sources / widest) * 60}%`, background: PIP_STYLE[r.c].bg }} />
+                  <span className="whitespace-nowrap font-mono text-[11px] text-[color:var(--fg-body)]">{r.sources ? `${r.sources} · ${shares[i].sources}%` : "0"}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {mana.unattributedNonland > 0 ? (
+        <div className="flex flex-col gap-[8px] border-t border-dashed border-[color:var(--border-dashed)] pt-[12px]" data-colors-nonland>
+          <span aria-hidden="true" className="flex flex-wrap gap-[3px]">
+            {Array.from({ length: mana.unattributedNonland }, (_, k) => (
+              <span key={k} className="size-[10px] rounded-[2px] border border-dashed border-[color:var(--fg-muted)]" />
+            ))}
+          </span>
+          <span className="text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">
+            {mana.unattributedNonland === 1 ? copy.nonlandOne : copy.nonlandMany(mana.unattributedNonland)}
+          </span>
+        </div>
+      ) : null}
+      <p className="font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">{caption}</p>
+    </Shell>
+  );
+}
+
 export function DeckStatsView({ data = null }: { data?: DeckStatsSlice | null }) {
   const card = (c: (typeof CARDS)[number]) =>
     c.key === "curve" && data ? (
       <CurveCard key={c.key} data={data} />
     ) : c.key === "jobs" && data?.jobs ? (
       <JobsCard key={c.key} tally={data.jobs} />
+    ) : c.key === "colors" && data?.mana ? (
+      <ColorsCard key={c.key} mana={data.mana} />
     ) : (
       <Shell key={c.key} id={c.key} title={c.title} />
     );

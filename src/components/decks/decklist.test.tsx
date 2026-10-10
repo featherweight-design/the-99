@@ -6,6 +6,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import type { DeckCommander } from "../../lib/decks/read";
+import type { DeckStatsInput } from "../../lib/decks/stats";
 import type { SwapReceipt } from "../../lib/swaps/context";
 import { useEffect } from "react";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
@@ -101,7 +102,7 @@ function renderDecklist(
     receipts?: SwapReceipt[];
     lockMode?: boolean;
     statsEnabled?: boolean;
-    statsData?: { commanders: { cmc: number; typeLine: string; quantity: number }[]; jobs?: Record<string, ("ramp" | "draw")[]> | null } | null;
+    statsData?: DeckStatsInput | null;
     commander?: DeckCommander;
     partner?: DeckCommander | null;
   } = {},
@@ -1420,7 +1421,7 @@ describe("the Stats panel", () => {
   });
 
   it("draws the curve from the passed cards plus the commanders, so an optimistic change moves it", () => {
-    const stats = { statsEnabled: true, filter: "all" as const, statsData: { commanders: [{ cmc: 4, typeLine: "Legendary Creature", quantity: 1 }] } };
+    const stats = { statsEnabled: true, filter: "all" as const, statsData: { commanders: [{ cmc: 4, typeLine: "Legendary Creature", quantity: 1, manaCost: "{2}{G}{G}", colorIdentity: ["G"] }] } };
     renderDecklist([rampOwned], stats);
     fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
     const count = (cmc: number) => document.querySelector(`[data-curve-column="${cmc}"]`)!.querySelectorAll("[data-curve-square]").length;
