@@ -74,7 +74,8 @@
   .you { font: 500 11px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; }
   .you.cut { color: var(--cut); } .you.maybe { color: var(--maybe); } .you.keep { color: var(--keep); }
   .flag { display: flex; gap: 8px; align-items: center; font-weight: 500; }
-  input[type="text"] { width: 100%; box-sizing: border-box; font: inherit; color: var(--ink); background: var(--ground); border: 1px solid var(--rule); border-radius: 8px; padding: 6px 10px; }
+  /* 16px: iOS Safari zooms the page into any smaller input. */
+  input[type="text"] { width: 100%; box-sizing: border-box; font: inherit; font-size: 16px; color: var(--ink); background: var(--ground); border: 1px solid var(--rule); border-radius: 8px; padding: 6px 10px; }
   @media (prefers-reduced-motion: no-preference) { .pick, .tab { transition: background-color 120ms, border-color 120ms; } }
 </style>
 
@@ -185,7 +186,7 @@ function renderReasons() {
         el("p", {}, r.reason),
         el("div", { class: "cites" }, r.cites.map((c) => el("span", { class: "cite" }, c))),
         el("label", { class: "flag" },
-          el("input", { type: "checkbox", checked: flag.falseOrInvented, onchange: (e) => { answers.reasonFlags[r.cardId] = { ...flag, falseOrInvented: e.target.checked }; save(); render(); } }),
+          el("input", { type: "checkbox", checked: flag.falseOrInvented, onchange: (e) => { answers.reasonFlags[r.cardId] = { ...(answers.reasonFlags[r.cardId] ?? flag), falseOrInvented: e.target.checked }; save(); render(); } }),
           "This reason is false or invented"),
         el("input", { type: "text", placeholder: "What's wrong with it (optional)", value: flag.note, "aria-label": `What's wrong with the reason for ${r.name}`,
           onchange: (e) => { answers.reasonFlags[r.cardId] = { ...(answers.reasonFlags[r.cardId] ?? flag), note: e.target.value }; save(); } })));
