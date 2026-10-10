@@ -511,11 +511,12 @@ describe("useBackDismiss", () => {
     const hadDialogs = mounted.length > 0;
     const popped = new Promise<void>((resolve) => {
       const done = () => {
+        clearTimeout(timer);
         window.removeEventListener("popstate", done);
         resolve();
       };
       window.addEventListener("popstate", done);
-      setTimeout(done, hadDialogs ? 500 : 0);
+      const timer = setTimeout(done, hadDialogs ? 500 : 0);
     });
     while (mounted.length) mounted.pop()?.unmount();
     await popped;
