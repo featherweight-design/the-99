@@ -81,6 +81,7 @@ for (const d of decks) {
   const detailN = await getDeckDetail(d.id, owner.userId);
   const b = detailN ? await loadManaBalance(detailN) : null;
   console.log(`- ${d.name}${!b ? ": read failed" : b.state === "ok" ? "" : ` [${b.state}]`}`);
-  if (b && b.state === "ok") for (const line of evidenceLines(b)) console.log(line);
+  // A colorless or no-source deck still has lands, tapped counts, an average and Karsten's figure.
+  if (b) for (const line of evidenceLines(b)) console.log(line);
 }
 process.exit(diffs.length > 0 ? 1 : 0);
