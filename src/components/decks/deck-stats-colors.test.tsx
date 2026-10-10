@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { DeckStatsView } from "./deck-stats-view";
 import { manaCurve, typeCurve } from "../../lib/decks/stats";
 import { manaSupply, type ManaSupplyCardRow } from "../../lib/mana/supply";
@@ -56,6 +56,20 @@ describe("DeckStatsView colors card", () => {
     expect(screen.getByRole("tooltip")).toBeInTheDocument();
     fireEvent.click(info);
     expect(screen.queryByRole("tooltip")).toBeNull();
+  });
+
+  it("opens for keyboard focus, names the figure's description, and does not count a land that adds nothing", () => {
+    draw([spell("{G}"), land(["G"], 2), land([], 3)]);
+    expect(screen.getByRole("figure", { name: /^Mana colors/ })).toHaveAttribute("aria-describedby");
+    const id = screen.getByRole("figure", { name: /^Mana colors/ }).getAttribute("aria-describedby")!;
+    expect(document.getElementById(id)).toHaveAttribute("hidden");
+    // jsdom has no :focus-visible; the keyboard is what sets it in a browser.
+    const info = screen.getByRole("button", { name: "How this is counted" });
+    const matches = vi.spyOn(HTMLElement.prototype, "matches").mockImplementation(() => true);
+    act(() => info.focus());
+    matches.mockRestore();
+    expect(document.getElementById(id)).not.toHaveAttribute("hidden");
+    expect(card()).toHaveTextContent("1 pip · 2 sources");
   });
 
   it("says so when there are no sources, with every source 0", () => {

@@ -44,6 +44,7 @@ import { deckStatsEnabled } from "../../../lib/decks/stats-flag";
 import { loadJobRows } from "../../../lib/decks/job-rows";
 import { loadDeckMix } from "../../../lib/decks/deck-mix";
 import { settleLabelRead } from "../../../lib/decks/label-read-settle";
+import { loadStatsLabels } from "../../../lib/decks/stats-labels";
 import { loadLandMana } from "../../../lib/decks/land-mana";
 import { loadSourceMana } from "../../../lib/decks/source-mana";
 import { tuningEnabled } from "../../../lib/tuning/flag";
@@ -131,9 +132,11 @@ export default async function DeckBuilderPage({
   const detailRead = early(perf.timed("getDeckDetail", () => getDeckDetail(id, userId)));
   // The Jobs card's labels start the moment the detail resolves, beside every other read, and are
   // awaited only where the card is drawn.
-  const statsJobsRead = deckStatsEnabled()
-    ? early(detailRead.then((d) => (d ? perf.timed("statsLabels", () => loadJobRows(d.cards)) : null)))
+  // One label read serves the Jobs card and the Mana colors card's non-land sources.
+  const statsLabelsRead = deckStatsEnabled()
+    ? early(detailRead.then((d) => (d ? perf.timed("statsLabels", () => loadStatsLabels(d.cards)) : null)))
     : null;
+  const statsJobsRead = statsLabelsRead ? early(statsLabelsRead.then((labels) => loadJobRows(labels))) : null;
   // The Colors card's land supply: what each land in the deck can add, read from the catalog's text
   // the moment the detail resolves, and awaited only where the card is drawn.
   const statsLandsRead = deckStatsEnabled()
@@ -142,9 +145,9 @@ export default async function DeckBuilderPage({
         : null)))
     : null;
   // The same card's non-land sources: which cards make mana comes from the labels, the colors from the text.
-  const statsSourcesRead = deckStatsEnabled()
-    ? early(detailRead.then((d) => (d
-        ? perf.timed("statsSources", () => loadSourceMana(d.cards, [...d.commander.colorIdentity, ...(d.partner?.colorIdentity ?? [])]))
+  const statsSourcesRead = statsLabelsRead
+    ? early(Promise.all([detailRead, statsLabelsRead]).then(([d, labels]) => (d
+        ? perf.timed("statsSources", () => loadSourceMana(d.cards, [...d.commander.colorIdentity, ...(d.partner?.colorIdentity ?? [])], labels))
         : null)))
     : null;
   // A 60-second cached read shared by both cached payloads below, resolved once rather than

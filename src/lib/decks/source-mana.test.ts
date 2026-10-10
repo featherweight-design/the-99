@@ -1,66 +1,71 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const where = vi.fn();
-const readLabels = vi.fn();
 vi.mock("../../db", () => ({ db: { select: () => ({ from: () => ({ where: (w: unknown) => where(w) }) }) } }));
 vi.mock("drizzle-orm", async (orig) => ({ ...(await orig<typeof import("drizzle-orm")>()), inArray: (_c: unknown, ids: string[]) => ids }));
-vi.mock("../labels/read", () => ({ readLabels: (ids: string[]) => readLabels(ids) }));
 
 import { loadSourceMana } from "./source-mana";
 
 const ramp = (rampKind: string | null) => [{ space: "role", kind: "ramp", rampKind }];
 const text = (oracleId: string, oracleText: string, typeLine = "Artifact") => ({ oracleId, name: oracleId, typeLine, oracleText });
+const labelsOf = (entries: [string, unknown[]][]) => new Map(entries) as unknown as Map<string, import("../labels/types").Job[]>;
 const card = (oracleId: string, role: string | null = null, typeLine = "Artifact") => ({ oracleId, typeLine, role });
 
 describe("loadSourceMana", () => {
   beforeEach(() => {
     where.mockReset();
-    readLabels.mockReset();
-    readLabels.mockResolvedValue(new Map());
   });
 
-  it("takes sources from the labels' ramp kinds and leaves out kinds that make no lasting source", async () => {
-    readLabels.mockResolvedValue(new Map<string, unknown[]>([
+  it("takes sources from the labels' ramp kinds and leaves out every kind that makes no lasting source", async () => {
+    const labels = labelsOf([
       ["signet", ramp("tapsForMana")],
+      ["cultivate", ramp("fetchesLand")],
       ["tithe", ramp("makesTreasure")],
       ["ritual", ramp("burstMana")],
       ["helm", ramp("costReduction")],
+      ["kindless", ramp(null)],
       ["draw", [{ space: "role", kind: "draw" }]],
-    ]));
-    where.mockResolvedValue([text("signet", "{1}, {T}: Add {U}{B}."), text("tithe", "Whenever an opponent casts a spell, create a Treasure token.")]);
-    const out = await loadSourceMana(["signet", "tithe", "ritual", "helm", "draw"].map((id) => card(id)), ["U", "B"]);
-    expect(where).toHaveBeenCalledWith(["signet", "tithe"]);
-    expect(out).toEqual({ signet: ["U", "B"], tithe: ["U", "B"] });
+    ]);
+    where.mockResolvedValue([text("signet", "{1}, {T}: Add {U}{B}."), text("cultivate", "Search your library for a basic land card.", "Sorcery")]);
+    const out = await loadSourceMana(["signet", "cultivate", "tithe", "ritual", "helm", "kindless", "draw"].map((id) => card(id, "ramp")), ["U", "B"], labels);
+    expect(where).toHaveBeenCalledWith(["signet", "cultivate"]);
+    expect(out).toEqual({ signet: ["U", "B"], cultivate: ["U", "B"] });
   });
 
   it("falls back to the classifier's ramp role for a card with no fresh label, and not for a labeled non-ramp one", async () => {
-    readLabels.mockResolvedValue(new Map<string, unknown[]>([["labeled", [{ space: "role", kind: "removal" }]]]));
     where.mockResolvedValue([text("unlabeled", "{T}: Add {G}.", "Creature")]);
-    const out = await loadSourceMana([card("unlabeled", "ramp", "Creature"), card("labeled", "ramp")], ["G"]);
+    const labels = labelsOf([["labeled", [{ space: "role", kind: "removal" }]]]);
+    const out = await loadSourceMana([card("unlabeled", "ramp", "Creature"), card("labeled", "ramp")], ["G"], labels);
     expect(where).toHaveBeenCalledWith(["unlabeled"]);
     expect(out).toEqual({ unlabeled: ["G"] });
   });
 
   it("keeps a source whose text gives no color, with no colors", async () => {
-    readLabels.mockResolvedValue(new Map<string, unknown[]>([["x", ramp("tapsForMana")]]));
     where.mockResolvedValue([text("x", "{T}: Add an amount of mana equal to this card's power.")]);
-    expect(await loadSourceMana([card("x")], ["G"])).toEqual({ x: [] });
+    expect(await loadSourceMana([card("x")], ["G"], labelsOf([["x", ramp("tapsForMana")]]))).toEqual({ x: [] });
   });
 
-  it("uses the classifier alone when the label read fails", async () => {
-    readLabels.mockRejectedValue(new Error("db down"));
+  it("drops a landcycler instead of calling it unreadable, and keeps one that also taps for mana", async () => {
+    where.mockResolvedValue([
+      text("cycler", "Trample\nForestcycling {2} ({2}, Discard this card: Search your library for a Forest card.)", "Creature"),
+      text("both", "{T}: Add {G}.\nBasic landcycling {1}", "Creature"),
+    ]);
+    const out = await loadSourceMana([card("cycler", null, "Creature"), card("both", null, "Creature")], ["G"], labelsOf([["cycler", ramp("fetchesLand")], ["both", ramp("tapsForMana")]]));
+    expect(out).toEqual({ both: ["G"] });
+  });
+
+  it("uses the classifier alone when the label read failed", async () => {
     where.mockResolvedValue([text("rock", "{T}: Add {C}.")]);
-    expect(await loadSourceMana([card("rock", "ramp")], [])).toEqual({ rock: ["C"] });
+    expect(await loadSourceMana([card("rock", "ramp")], [], null)).toEqual({ rock: ["C"] });
   });
 
   it("skips the read for a deck with no source, and ignores lands", async () => {
-    expect(await loadSourceMana([card("island", "ramp", "Basic Land — Island")], [])).toEqual({});
+    expect(await loadSourceMana([card("island", "ramp", "Basic Land — Island")], [], new Map())).toEqual({});
     expect(where).not.toHaveBeenCalled();
   });
 
   it("returns null, not an empty record, when the text read fails", async () => {
-    readLabels.mockResolvedValue(new Map<string, unknown[]>([["x", ramp("tapsForMana")]]));
     where.mockRejectedValue(new Error("db down"));
-    expect(await loadSourceMana([card("x")], [])).toBeNull();
+    expect(await loadSourceMana([card("x")], [], labelsOf([["x", ramp("tapsForMana")]]))).toBeNull();
   });
 });
