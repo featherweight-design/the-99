@@ -134,10 +134,17 @@ describe("the plan in the prompt (v2)", () => {
       facts: cutFacts({ profile: profile(), locked: new Set(), support: null, declaredBracket: null }),
       commanderName: "Gishath", keyCards: [], intent: null, plan: { ...plan, combos: [], nearCombos: [] },
     }));
-    expect(empty.user).toContain("No infinite or game-ending combos turned up in the read");
+    expect(empty.user).toContain("The deck assembles no infinite or game-ending combo that the read found");
     expect(empty.user).toContain("does not show the deck has none");
     expect(empty.user).toContain("says nothing about the deck's other synergies");
     expect(empty.user).not.toContain("Combos the deck assembles: none");
+    const short = buildCutsPrompt(buildCutsPack({
+      facts: cutFacts({ profile: profile(), locked: new Set(), support: null, declaredBracket: null }),
+      commanderName: "Gishath", keyCards: [], intent: null, plan: { ...plan, combos: [] },
+    }));
+    expect(short.user).toContain("The deck assembles no infinite or game-ending combo that the read found");
+    expect(short.user).toContain("Combos one card short:");
+    expect(short.user).not.toContain("turned up");
   });
 
   it("says so when the combo read failed, and omits the whole plan block when none was given", () => {
