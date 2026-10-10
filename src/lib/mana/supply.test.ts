@@ -174,6 +174,12 @@ describe("sourceProduces", () => {
     const two = "When this enters, search your library for a creature card. Then search your library for a Forest card, put it onto the battlefield.\nSearch your library for a Mountain card.";
     expect(sourceProduces(card(two, "Creature"), ["fetchesLand"], JUND)).toEqual(["R", "G"]);
   });
+  it("sends a basic-land search to the basics the deck plays, and an any-land search to its colors", () => {
+    const cultivate = card("Search your library for up to two basic land cards.", "Sorcery");
+    expect(sourceProduces(cultivate, ["fetchesLand"], ["W", "U", "B", "R", "G"], ["G", "B"])).toEqual(["B", "G"]);
+    expect(sourceProduces(cultivate, ["fetchesLand"], JUND, [])).toEqual([]);
+    expect(sourceProduces(card("Search your library for a land card.", "Sorcery"), ["fetchesLand"], JUND, ["G"])).toEqual(["B", "R", "G"]);
+  });
   it("reads each kind of a card with several, and the castable half of an adventure but not a modal back", () => {
     expect(sourceProduces(card("{T}: Add {G}.\nWhen this enters, search your library for a Plains card.", "Creature"), ["tapsForMana", "fetchesLand"], JUND)).toEqual(["W", "G"]);
     expect(sourceProduces({ ...card("Beanstalk Giant\n//\nSearch your library for a basic land card.", "Creature // Sorcery"), layout: "adventure" }, ["fetchesLand"], JUND)).toEqual(["B", "R", "G"]);

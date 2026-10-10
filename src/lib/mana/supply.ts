@@ -143,7 +143,8 @@ function findsColors(finds: Finds, deck: readonly ManaColor[], out: Set<ManaColo
  * addendum's rule 1 says):
  * - `tapsForMana` (a rock or a dork): every symbol in an "add" clause and an unconditional any-color
  *   grant, by `readFace`, the land policy;
- * - `fetchesLand`: the basics the search names, or the deck's colors for `a basic land`;
+ * - `fetchesLand`: the basics the search names, or for `a basic land` the basics the deck plays (`basicColors`,
+ *   else the deck's colors);
  * - no kinds, a card with no fresh label: the classifier's ramp, which reads both;
  * - a card with several kinds reads each, since a label keeps one job per ability.
  * An empty result is a source whose color cannot be read.
@@ -152,6 +153,7 @@ export function sourceProduces(
   card: LandText & { layout?: string },
   kinds: readonly RampKind[],
   deckColors: readonly string[],
+  basicColors?: readonly string[],
 ): ManaColor[] {
   const out = new Set<ManaColor>();
   const deck = COLORED.filter((c) => deckColors.some((d) => d.toUpperCase() === c));
@@ -162,7 +164,12 @@ export function sourceProduces(
   if (any || kinds.includes("tapsForMana")) readFace(cast, deck, out, false);
   if (any || kinds.includes("fetchesLand")) {
     const finds = searchFinds(cast);
-    if (finds) findsColors(finds, deck, out);
+    if (finds) {
+      // `a basic land` reaches the basics this deck plays, when the caller knows them; an unrestricted `land`
+      // search reaches the deck's colors. A named type is its own color either way.
+      const basics = basicColors && finds.basicOnly ? COLORED.filter((c) => basicColors.some((b) => b.toUpperCase() === c)) : deck;
+      findsColors(finds, basics, out);
+    }
   }
   return MANA_COLORS.filter((c) => out.has(c));
 }

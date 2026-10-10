@@ -23,6 +23,10 @@ function sourceKinds(jobs: readonly Job[] | undefined, role: string | null): Ram
   return kinds.length > 0 ? kinds : null;
 }
 
+const BASIC_WORD: Record<string, ManaColor> = { plains: "W", island: "U", swamp: "B", mountain: "R", forest: "G" };
+const basicWords = (typeLine: string): ManaColor[] =>
+  typeLine.toLowerCase().split(/[^a-z]+/).flatMap((w) => (BASIC_WORD[w] ? [BASIC_WORD[w]] : []));
+
 /** Null when the text read failed: the card then stays a shell rather than state that no rock exists. A
  *  failed LABEL read (`allLabels` null) is not a failure here, because the classifier is the fallback. */
 export async function loadSourceMana(
@@ -30,6 +34,8 @@ export async function loadSourceMana(
   deckColors: readonly string[],
   allLabels: ReadonlyMap<string, Job[]> | null,
 ): Promise<SourceManaByCard | null> {
+  // The colors of the basics the deck plays: what `a basic land` search can reach. Read at load, like the text.
+  const basicColors = deckCards.flatMap((c) => (/\bbasic\b/i.test(c.typeLine) ? basicWords(c.typeLine) : []));
   const nonland = deckCards.filter((c) => !isLandFace(c.typeLine));
   if (nonland.length === 0) return {};
   const labels = allLabels ?? new Map<string, Job[]>();
@@ -46,7 +52,7 @@ export async function loadSourceMana(
       .where(inArray(cards.oracleId, [...kinds.keys()]));
     const out: Record<string, readonly ManaColor[]> = {};
     for (const r of rows) {
-      const colors = sourceProduces(r, kinds.get(r.oracleId) ?? [], deckColors);
+      const colors = sourceProduces(r, kinds.get(r.oracleId) ?? [], deckColors, basicColors);
       // Landcyclers, token makers and top-of-library effects are no source at all, rather than an unreadable one.
       if (colors.length === 0 && makesNoManaSource(r)) continue;
       out[r.oracleId] = colors;

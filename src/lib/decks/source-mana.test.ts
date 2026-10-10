@@ -27,9 +27,20 @@ describe("loadSourceMana", () => {
       ["draw", [{ space: "role", kind: "draw" }]],
     ]);
     where.mockResolvedValue([text("signet", "{1}, {T}: Add {U}{B}."), text("cultivate", "Search your library for a basic land card.", "Sorcery")]);
-    const out = await loadSourceMana(["signet", "cultivate", "tithe", "ritual", "helm", "kindless", "draw"].map((id) => card(id, "ramp")), ["U", "B"], labels);
+    const basics = [card("island", null, "Basic Land — Island"), card("swamp", null, "Basic Land — Swamp")];
+    const out = await loadSourceMana([...["signet", "cultivate", "tithe", "ritual", "helm", "kindless", "draw"].map((id) => card(id, "ramp")), ...basics], ["U", "B"], labels);
     expect(where).toHaveBeenCalledWith(["signet", "cultivate"]);
     expect(out).toEqual({ signet: ["U", "B"], cultivate: ["U", "B"] });
+  });
+
+  it("gives a basic-land search the basics in the deck, not the whole identity", async () => {
+    where.mockResolvedValue([text("cultivate", "Search your library for up to two basic land cards.", "Sorcery")]);
+    const out = await loadSourceMana(
+      [card("cultivate", null, "Sorcery"), card("forest", null, "Basic Land — Forest"), card("swamp", null, "Basic Land — Swamp")],
+      ["W", "U", "B", "R", "G"],
+      labelsOf([["cultivate", ramp("fetchesLand")]]),
+    );
+    expect(out).toEqual({ cultivate: ["B", "G"] });
   });
 
   it("falls back to the classifier's ramp role for a card with no fresh label, and not for a labeled non-ramp one", async () => {
