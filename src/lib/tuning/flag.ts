@@ -14,3 +14,15 @@
 export function tuningEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
   return env.TUNING_ENABLED === "true" && env.ANALYSIS_TAB_ENABLED === "true";
 }
+
+/**
+ * Whether this deployment offers Proposed cuts' model pass (Look deeper on a deck over 100): the
+ * server actions that run and stop it, and the reads behind them. The same shape as
+ * `tuningEnabled`, and OFF for anything but the exact string `'true'`. It needs the Analysis tab
+ * for the same reason Suggested changes does (the panel mounts there, over a reading), so it reads
+ * true only when BOTH `PROPOSED_CUTS_ENABLED` and `ANALYSIS_TAB_ENABLED` are `'true'`. Independent
+ * of `TUNING_ENABLED`: a deployment can ship either tool without the other.
+ */
+export function proposedCutsEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.PROPOSED_CUTS_ENABLED === "true" && env.ANALYSIS_TAB_ENABLED === "true";
+}

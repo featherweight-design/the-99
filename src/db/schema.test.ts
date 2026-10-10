@@ -3,7 +3,7 @@ import { getTableConfig, PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 
 import {
-  deckGames, decks, deckSuggestionItems, deckSuggestionRuns, deckSynopses, deckVersionSynopses, modelCalls,
+  deckCutItems, deckGames, decks, deckSuggestionItems, deckSuggestionRuns, deckSynopses, deckVersionSynopses, modelCalls,
 } from "./schema";
 
 describe("deck tuning schema", () => {
@@ -51,6 +51,21 @@ describe("deck tuning schema", () => {
       "run_id->deck_suggestion_runs.id",
     ]));
     expect(pairs(deckSuggestionRuns)).toContain("model_call_id->model_calls.id");
+  });
+
+  it("ties a proposed cut to its run (cascading) and to the catalog, and bounds its verdict", () => {
+    const cfg = getTableConfig(deckCutItems);
+    const fks = Object.fromEntries(cfg.foreignKeys.map((fk) => {
+      const ref = fk.reference();
+      return [`${ref.columns[0].name}->${getTableName(ref.foreignTable)}.${ref.foreignColumns[0].name}`, fk.onDelete];
+    }));
+    expect(fks).toEqual({
+      "run_id->deck_suggestion_runs.id": "cascade",
+      "cut_oracle_id->cards.oracle_id": "no action",
+    });
+    const checks = Object.fromEntries(cfg.checks.map((c) => [c.name, new PgDialect().sqlToQuery(c.value).sql]));
+    expect(checks.deck_cut_items_verdict_check).toContain(`in ('pending', 'accepted', 'dismissed')`);
+    expect(cfg.indexes.map((i) => i.config.name)).toContain("deck_cut_items_run_position_idx");
   });
 
   it("stores both versions on a run rather than hashing them", () => {

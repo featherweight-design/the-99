@@ -31,13 +31,13 @@ import type { ValidatedSuggestion, ValidationReport } from "./validate";
  *  whose every suggestion cut a locked card. Refunded like every failure. */
 export type ErrorClass = Exclude<ModelErrorClass, "upstream_rejected"> | "ungrounded" | "interrupted" | "locked_only";
 
-class RunSupersededError extends Error {}
+export class RunSupersededError extends Error {}
 /** Thrown inside `startRun`'s transaction to abandon it, reserving nothing. */
-class AllLockedError extends Error {}
+export class AllLockedError extends Error {}
 
 export type { Billed };
 
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /**
  * A started run as its caller holds it for the whole request: the run row's id, and the id of the
@@ -55,8 +55,30 @@ export type RunHandle = { runId: string; callId: string };
  * back (`recordModelUsage` writes them only while none are recorded, so this never counts a call
  * twice).
  */
-async function recordLate(tx: Tx, callId: string, billed: Billed | undefined): Promise<void> {
+export async function recordLate(tx: Tx, callId: string, billed: Billed | undefined): Promise<void> {
   if (billed) await recordModelUsage(tx, callId, billed);
+}
+
+/**
+ * EVERY CARD LOCKED is re-checked in the reservation's own transaction and under the deck row lock
+ * `setCardLocked` also takes (Locked, never cut). The gate's read came from a snapshot taken
+ * before this: a last card locked in between would otherwise still reserve a credit and call the
+ * model for a deck with nothing to cut. Deck row first, then the unit, the order the overview's
+ * `startRun` takes. Throws `AllLockedError`; a no-op while `NEVER_CUT_ENABLED` is off. Shared by
+ * both tools' starts (`cuts-run-store.ts`).
+ */
+export async function assertSomeCardOpen(tx: Tx, deckId: string): Promise<void> {
+  if (neverCutEnabled()) {
+    await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
+    const { rows: [body] } = await tx.execute<{ cards: number; open: number }>(sql`
+      select count(*)::int as cards,
+             count(*) filter (where not exists (
+               select 1 from deck_locks l
+               where l.deck_id = dc.deck_id and l.oracle_id = dc.oracle_id and l.removed_at is null
+             ))::int as open
+      from deck_cards dc where dc.deck_id = ${deckId}`);
+    if (body && body.cards > 0 && body.open === 0) throw new AllLockedError();
+  }
 }
 
 /**
@@ -81,22 +103,7 @@ export async function startRun(
   const now = opts.now ?? new Date();
   try {
     const handle = await db.transaction(async (tx): Promise<RunHandle> => {
-      // EVERY CARD LOCKED is re-checked HERE, in the reservation's own transaction and under the
-      // deck row lock `setCardLocked` also takes (Locked, never cut). The gate's read came from a
-      // snapshot taken before this: a last card locked in between would otherwise still reserve a
-      // credit and call the model for a deck with nothing to cut. Deck row first, then the unit,
-      // the order the overview's `startRun` takes.
-      if (neverCutEnabled()) {
-        await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
-        const { rows: [body] } = await tx.execute<{ cards: number; open: number }>(sql`
-          select count(*)::int as cards,
-                 count(*) filter (where not exists (
-                   select 1 from deck_locks l
-                   where l.deck_id = dc.deck_id and l.oracle_id = dc.oracle_id and l.removed_at is null
-                 ))::int as open
-          from deck_cards dc where dc.deck_id = ${deckId}`);
-        if (body && body.cards > 0 && body.open === 0) throw new AllLockedError();
-      }
+      await assertSomeCardOpen(tx, deckId);
       const unit = await reserveModelCall(tx, userId, "tuning", TUNING_MODEL, now);
       if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
       const [row] = await tx.insert(deckSuggestionRuns).values({
@@ -211,16 +218,25 @@ export async function persistRun(
  * and the reader, so a Stop pressed after that run settled cannot cancel the next one. A Stop is
  * not an answer, so its unit comes back. False when there was nothing pending to stop.
  */
-export async function cancelRun(runId: string, deckId: string, userId: string): Promise<boolean> {
+export const cancellableRun = (runId: string, deckId: string, userId: string, tool: string) => and(
+  eq(deckSuggestionRuns.id, runId),
+  eq(deckSuggestionRuns.deckId, deckId),
+  eq(deckSuggestionRuns.userId, userId),
+  eq(deckSuggestionRuns.tool, tool),
+  eq(deckSuggestionRuns.status, "pending"),
+);
+
+/** `tool` is the tool whose Stop this is: a run id from another tool's run on the deck is not found. */
+export async function cancelRun(
+  runId: string,
+  deckId: string,
+  userId: string,
+  tool: string = SUGGESTED_CHANGES_TOOL,
+): Promise<boolean> {
   const rows = await db.transaction(async (tx) => {
     const cancelled = await tx.update(deckSuggestionRuns)
       .set({ status: "cancelled" })
-      .where(and(
-        eq(deckSuggestionRuns.id, runId),
-        eq(deckSuggestionRuns.deckId, deckId),
-        eq(deckSuggestionRuns.userId, userId),
-        eq(deckSuggestionRuns.status, "pending"),
-      ))
+      .where(cancellableRun(runId, deckId, userId, tool))
       .returning({ callId: deckSuggestionRuns.modelCallId });
     for (const r of cancelled) await settleModelCall(tx, r.callId, "refunded", undefined);
     return cancelled;

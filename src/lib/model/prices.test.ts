@@ -53,6 +53,8 @@ describe("worstCaseMicroUsd", () => {
 describe("FEATURE_CALLS", () => {
   it("prices each feature with its own model, ceiling and max_tokens", () => {
     expect(FEATURE_CALLS.tuning).toEqual({ model: TUNING_MODEL, inputCeilingTokens: 12_000, maxTokens: TUNING_MAX_TOKENS, callsPerWrite: 1 });
+    // Measured, not provisional: the largest cuts request was 15,266 input tokens.
+    expect(FEATURE_CALLS.proposed_cuts).toEqual({ model: TUNING_MODEL, inputCeilingTokens: 20_000, maxTokens: TUNING_MAX_TOKENS, callsPerWrite: 1 });
     expect(FEATURE_CALLS.synopsis).toEqual({ model: SYNOPSIS_MODEL, inputCeilingTokens: 24_000, maxTokens: SYNOPSIS_MAX_TOKENS, callsPerWrite: 2 });
     // $0.208 at today's Sonnet 5 and an 8,000-token ceiling; $0.312 for the synopsis, whose one
     // write can make two calls (the first answer and its repair) at a 3,000-token ceiling each.

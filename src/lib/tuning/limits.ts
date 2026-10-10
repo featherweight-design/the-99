@@ -25,6 +25,9 @@ export const ASK_SUGGESTIONS = 8;
  *  so a run another tool wrote on the same deck is never read as one of these. */
 export const SUGGESTED_CHANGES_TOOL = "suggested_changes";
 
+/** The `deck_suggestion_runs.tool` value Proposed cuts writes and its readers scope to. */
+export const PROPOSED_CUTS_TOOL = "proposed_cuts";
+
 /** A pending run older than this was abandoned, and the read-time reaper fails it. */
 export const REAPER_CUTOFF_MS = 5 * 60 * 1000;
 
