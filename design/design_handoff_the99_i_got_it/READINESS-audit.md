@@ -21,7 +21,7 @@ Every item in the brief's "Open for Design to call" (1-8) is made and recorded (
 
 ## Closed rulings
 
-- **Defaults to the printing behind the Shopping price, changeable:** holds (B1, B2). Preset order matches `priceOf` (nonfoil, then foil, then etched).
+- **Defaults to the printing behind the Shopping price, changeable:** holds (B1, B2). The preset finish follows `priceOf`'s states (`priced` gives nonfoil; `foilOnly` gives foil, else etched). `priceOf` returns null for a `sold out` row, so there the finish preset has no source in the price: build rule, nonfoil when the printing offers it, otherwise its first offered finish. The handoff does not state this.
 - **One entry tagged `From Shopping`:** holds. Consistent with the reserved, ghosted tag in `design_handoff_the99_collection_edit/` (F1 row; its README line 46 and READINESS item 7).
 - **Undo is a revert and shows `ShortDeckWarning`:** holds for every deck except the source deck (see Hugh item B).
 - **Switch off matches main:** holds for the row, with one internal contradiction (finding 5).
@@ -33,7 +33,7 @@ Every item in the brief's "Open for Design to call" (1-8) is made and recorded (
 - `applyCollectionChange`, kind `edit`, `source: shopping:<deck id>`: the handoff matches. `EditRow.expected` and `staleEdits` give the required stale outcome (`status: "stale"` with `current`), `opts.id` is the per-press idempotency key (`alreadyApplied` makes a double press apply once), and `planEdit` keeps an existing holding's condition and `scryfallId`, as the brief says.
 - `confirmShort` and `wouldShort` exist, and `revert` runs the same deck check.
 - Tokens: all 26 `var(--x)` names in the canvases and About artboard exist in `src/app/globals.css`.
-- Copy: `i-got-it · copy strings.ts` and the About entry contain no em or en dashes and no British spellings. The `—` in `IGI Row*.dc.html` is the shipped empty-figure glyph, not copy.
+- Copy: `i-got-it · copy strings.ts` and the About entry contain no em or en dashes in shipped copy and no British spellings (the About entry file has one `—` in a code comment, line 11). The `—` in `IGI Row*.dc.html` is the shipped empty-figure glyph, not copy.
 - The 1+2 components this handoff reuses (`PrintingRegion` choose role, `ShortDeckWarning`, the toast, the History page) are not on main yet. That is sequencing (brief: ships after sub-project 2), not a gap.
 
 ## Server gaps (what the UI needs that the server cannot supply today)
@@ -51,7 +51,7 @@ Every item in the brief's "Open for Design to call" (1-8) is made and recorded (
 2. **[eng-resolvable] `alreadyReverted` and `notFound` on undo.** Not drawn. Treat `alreadyReverted` as undone (the toast's `undone` form); `notFound` as the failed form.
 3. **[eng-resolvable] Held slot over revalidation.** C9's slot must survive the revalidation the action triggers; the existing `spent` slot mechanism (`spent-slot-undo`) is the model.
 4. **[eng-resolvable] History tag source.** There is no `shopping_mark_bought` kind in the schema (`kind` stays `edit`; `collection_history_kind_check` is unchanged). The tag is `kind = 'edit'` and `source like 'shopping:%'`, and the copy key name in `collection-edit.ts` is a UI-side label only. No migration.
-5. **[eng-resolvable, Design wording] Shipped-surface changes versus "the row is main's".** README flags two changes to shipped surfaces (the ⇄ key text shortened; below `lg` the stack flipped to `buy` over `over $X`; main has `over $X` above the tag, `decklist-row.tsx:653`). The E frame says "Visually the row was always main's". Both statements cannot hold with the switch off. Build rule: gate both changes on `SHOPPING_MARK_BOUGHT_ENABLED && COLLECTION_EDIT_ENABLED`, so off is main.
+5. **[eng-resolvable, Design wording] Shipped-surface changes versus "the row is main's".** README flags two changes to shipped surfaces (the ⇄ key text shortened; below `lg` the stack flipped to `buy` over `over $X`; main has `over $X` above the tag, `decklist-row.tsx:653-663`, below `lg` only; from `lg` it sits inline after the figure). The E frame says "Visually the row was always main's". Both statements cannot hold with the switch off. Build rule: gate both changes on `SHOPPING_MARK_BOUGHT_ENABLED && COLLECTION_EDIT_ENABLED`, so off is main.
 6. **[eng-resolvable] Copy.** All strings go through `/copy-review` as the handoff says. Annotation prose in the R1 C-D-E canvas uses six `&mdash;` entities and the R2 A-B canvas and READMEs say "neighbour", "centred" and "judgement". None of it is shipped copy; fix only if the canvases are edited again.
 7. **[Hugh, confirm] A. Fallback printing.** The brief says the no-price preset is "the Add cards default"; the 1+2 handoff (Hugh, 2026-10-09) ruled Add cards has no default. The handoff follows the ruling: nothing preselected, `Choose a printing`. Consistent with the earlier ruling; confirm that it is also what the brief meant.
 8. **[Hugh, confirm] B. Source deck left out of the undo warning** (gap 3). A committed source deck that goes short after an undo gets no warning. Its returning row is the signal. The alternative is to warn about the deck on screen every time.
