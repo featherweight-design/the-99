@@ -42,7 +42,7 @@ export type UploadPreviewDetail = {
   lists: { leaving: PreviewList; down: PreviewList; up: PreviewList };
   /** An Add: file holdings the collection already holds, of all file holdings. */
   overlap: { held: number; of: number };
-  /** Every holding in the file is already owned, so an Add only doubles copies. */
+  /** Every holding in the file is already held, so an Add only raises counts of cards the player has: it brings in nothing new. */
   allOwned: boolean;
 };
 

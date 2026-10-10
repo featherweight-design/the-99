@@ -233,6 +233,16 @@ async function main() {
       editedKeys.size === 1 && editedKeys.has(collectionItemKey({ ...at(C), finish: at(C).finish as never }))
         && totals.holdings === Number(truth.n) && totals.copies === Number(truth.q),
       `${[...editedKeys]}; ${JSON.stringify(totals)} vs ${JSON.stringify(truth)}`);
+    // An entry past the retention window whose rows the lazy prune has not reached yet names nothing,
+    // while still counting as a hand change since the upload.
+    const aged = await one<{ id: string; created_at: Date }>(
+      "select id, created_at from collection_history where user_id = $1 and kind = 'edit' order by seq desc limit 1", [USER]);
+    await pool.query("update collection_history set created_at = now() - interval '100 days' where id = $1", [aged.id]);
+    const agedKeys = await editedKeysSinceUpload(USER);
+    const agedCount = await editsSinceUpload(USER);
+    await pool.query("update collection_history set created_at = $2 where id = $1", [aged.id, aged.created_at]);
+    check("an entry past the retention window, not yet pruned, names no holding but still counts",
+      agedKeys.size === 0 && agedCount === 1, `${agedKeys.size} keys; count ${agedCount}`);
     const u2 = await upload(replaceItems);
     const added = await applyCollectionChange(USER, { kind: "add", items: replaceItems, uploadId: u2 },
       { id: randomUUID(), ownedCounts: true });

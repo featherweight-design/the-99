@@ -19,7 +19,9 @@ const handEntriesSince = (userId: string) => sql`
           where h.user_id = ${userId} and h.source = 'csv_uploads:' || lu.id) as seq
     ),
     hand as (
-      select e.rows
+      -- Rows past the retention window are treated as pruned even before the lazy prune has run,
+      -- so the keys never name a holding only an aged-out entry touched; the entry still counts.
+      select case when e.created_at > now() - make_interval(days => ${HISTORY_RETENTION_DAYS}) then e.rows end as rows
       from collection_history e, anchor a
       where e.user_id = ${userId}
         and e.kind in ('add', 'edit', 'revert')
