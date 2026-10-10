@@ -20,7 +20,7 @@ The hub handoff is `design/design_handoff_the99_tuning_hub/` (approved: R1, and 
 Read `README.md`, `STATES-tuning-hub.md` and `design-tables/tuning-hub.md` there. **There are no R2
 frames for Mana Balance.** R2 redrew only Proposed cuts and History
 (`The 99 - Tuning Hub (R2) · C Proposed cuts and History.dc.html`); Mana Balance exists only as R1 frame
-B (`The 99 - Tuning Hub (R1) · B Mana Balance.dc.html`, frames B1 to B9).
+B (`The 99 - Tuning Hub (R1) · B Mana Balance.dc.html`, frames B1 to B9; the same canvas's B10 / B10b draw Suggested changes' two lists, which this brief does not touch).
 
 | R1 frame / piece | Status under the ruling |
 |---|---|
@@ -44,7 +44,7 @@ commander counts as a card where noted.
 | Field | What it is |
 |---|---|
 | Pips | Colored pips of this color across the deck, **with the commander and without it** (Deckcheck, the comparison tool, leaves the commander out). A hybrid pip counts once for each half. Each also as a share of all colored pips |
-| Sources | Lands, other sources, and the total. A dual counts once for every color it makes. This is the Colors card's own count on Deck stats (`src/components/decks/deck-stats-view.tsx`, card (b)) and the two must show the same numbers |
+| Sources | Lands, other sources, and the total. A dual counts once for every color it makes. This is the Colors card's own count on Deck stats (the Colors card in `src/components/decks/deck-stats-view.tsx`) and the two must show the same numbers |
 | Hardest patterns | Up to six, hardest first (most pips, then least other mana). A pattern is Karsten's notation: `1CC` is one other mana and two pips of this color, where another color's pips count as other mana. Each carries the copies, **the card names** (a card with two copies shows `x2`; the commander is marked), and Karsten's 99-card figure |
 | Karsten's figure | One of: a number (`28`); a ceiling (`at most 14`, for a cost with more other mana than his table has a row for); or `no published figure` (five or more pips). Never a guess |
 | Hardest published figure | The largest published number over **all** the color's patterns, not only the six shown |
