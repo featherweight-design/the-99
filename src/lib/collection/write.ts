@@ -33,6 +33,9 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 /** A row as stored, keyed and carrying its two non-key columns. */
 type Held = CollectionItemIdentity & HistoryRowState;
 
+/** One holding as an editor drew it: its count and its condition, both of which an edit may rest on. */
+export type SeenHolding = CollectionItemIdentity & { quantity: number; condition?: string | null };
+
 /** A holding the player names by key; `quantity` is the new count, never a delta. */
 export type EditRow = CollectionItemIdentity & {
   quantity: number;
@@ -66,7 +69,7 @@ export type CollectionChange =
    * editor showed: a holding of that card the player has now and the editor never saw (another tab
    * added a printing) refuses with `stale`, so a removal never leaves an unseen holding behind.
    */
-  | { kind: "edit"; rows: EditRow[]; seen?: (CollectionItemIdentity & { quantity: number })[] }
+  | { kind: "edit"; rows: EditRow[]; seen?: SeenHolding[] }
   /**
    * Reverse entry `entryId` against today's collection. `expected` is the after-count per row
    * the confirmation showed, keyed by `collectionItemKey`; a difference refuses with `stale`.
@@ -248,13 +251,13 @@ export function planEdit(current: Map<string, Held>, rows: EditRow[]): Planned[]
  * touched by this edit or not. So a removal never leaves an unseen holding behind and a toast never
  * reports a total the card no longer has. No `seen` means no claim.
  */
-export function unseenHoldings(
-  current: Map<string, Held>,
-  seen: (CollectionItemIdentity & { quantity: number })[] | undefined,
-): CollectionItemIdentity[] {
+export function unseenHoldings(current: Map<string, Held>, seen: SeenHolding[] | undefined): CollectionItemIdentity[] {
   if (!seen) return [];
-  const known = new Map(seen.map((s) => [keyOf(s), s.quantity]));
-  const moved: CollectionItemIdentity[] = [...current.values()].filter((h) => known.get(keyOf(h)) !== h.quantity);
+  const known = new Map(seen.map((s) => [keyOf(s), s]));
+  const moved: CollectionItemIdentity[] = [...current.values()].filter((h) => {
+    const s = known.get(keyOf(h));
+    return !s || s.quantity !== h.quantity || (s.condition ?? null) !== (h.condition ?? null);
+  });
   // A holding the editor drew that is gone now has no row in `current`, and is stale all the same.
   const gone = seen.filter((s) => s.quantity > 0 && !current.has(keyOf(s)));
   return [...moved, ...gone];

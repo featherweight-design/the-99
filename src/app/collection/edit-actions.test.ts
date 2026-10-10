@@ -212,6 +212,10 @@ describe("editCollection", () => {
     await expect(editCollection(ACTION, [edited], undefined, [{ oracleId: "nope" }])).rejects.toThrow();
     await expect(editCollection(ACTION, [edited], undefined, [{ ...seen[0], quantity: undefined }])).rejects.toThrow();
     await expect(editCollection(ACTION, [edited], undefined, "x")).rejects.toThrow();
+    // A card with many holdings is not a malformed request: the cap on rows is not the cap on `seen`.
+    const many = Array.from({ length: 600 }, (_, i) => ({ ...seen[0], collectorNumber: String(i) }));
+    await expect(editCollection(ACTION, [edited], undefined, many)).resolves.toBeTruthy();
+    await expect(editCollection(ACTION, [edited], undefined, [{ ...seen[0], condition: "x".repeat(33) }])).rejects.toThrow();
   });
 });
 

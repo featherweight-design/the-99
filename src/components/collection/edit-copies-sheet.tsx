@@ -199,7 +199,7 @@ export function EditCopiesSheet({
       // `seen` is every holding the sheet drew, with its count: one added or changed elsewhere since
       // (a holding this save never touches included) answers `stale`.
       const seen = holdings.map((h) => ({
-        oracleId: card.oracleId, setCode: h.setCode, collectorNumber: h.collectorNumber, finish: h.finish, quantity: h.quantity,
+        oracleId: card.oracleId, setCode: h.setCode, collectorNumber: h.collectorNumber, finish: h.finish, quantity: h.quantity, condition: h.condition,
       }));
       const out = await editCollection(attempt.current.id, rows, confirmShort, seen);
       if ("applied" in out) {

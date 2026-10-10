@@ -119,12 +119,15 @@ describe("planEdit", () => {
 
   it("finds a holding the editor never showed, one whose count moved or that is gone, and claims nothing without `seen`", () => {
     const current = coll(held(A, 3), { ...held(A, 1), setCode: "lea2" } as never);
-    const seen = (q: number, set = "lea") => ({ ...id(A, set), quantity: q });
+    const seen = (q: number, set = "lea") => ({ ...id(A, set), quantity: q, condition: "NM" });
     expect(unseenHoldings(current, undefined)).toEqual([]);
     expect(unseenHoldings(current, [seen(3)])).toHaveLength(1); // lea2 was never shown
     expect(unseenHoldings(current, [seen(3), seen(1, "lea2")])).toEqual([]);
     expect(unseenHoldings(current, [seen(2), seen(1, "lea2")])).toHaveLength(1); // untouched holding moved
     expect(unseenHoldings(current, [seen(3), seen(1, "lea2"), seen(2, "lea3")])).toHaveLength(1); // one drawn, now gone
+    // A condition changed in another tab is a change too (the fixture holds NM).
+    expect(unseenHoldings(current, [seen(3), seen(1, "lea2")])).toEqual([]);
+    expect(unseenHoldings(current, [{ ...seen(3), condition: "LP" }, { ...seen(1, "lea2"), condition: "NM" }])).toHaveLength(1);
   });
 });
 

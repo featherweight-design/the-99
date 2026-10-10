@@ -41,6 +41,8 @@ export async function settleCollectionWrite(): Promise<void> {
 
 /** A sheet session is ten to forty cards; this is a bound on a request, not on a session. */
 const MAX_LINES = 500;
+/** A card's whole holdings list rides along as `seen`: every printing in every finish, so a wider bound. */
+const MAX_SEEN = 5000;
 /** What one add line may bring in. A typo bound, not a holding bound: holdings can grow past it. */
 const MAX_ADDED = 9999;
 /** `collection_items.quantity` is a Postgres integer. An edit names a holding of any size. */
@@ -166,12 +168,16 @@ export async function editCollection(
   });
   // Every holding of the card the sheet showed. Absent for a caller that never drew the card's list.
   // An empty list is a valid claim (a card the player did not own), so it is checked apart from `linesOf`.
-  if (seen !== undefined && (!Array.isArray(seen) || seen.length > MAX_LINES)) throw new Error("bad collection lines");
+  if (seen !== undefined && (!Array.isArray(seen) || seen.length > MAX_SEEN)) throw new Error("bad collection lines");
   const seenIdentities = seen === undefined ? undefined : (seen as unknown[]).map((s) => {
     const identity = identityOf(s);
     const q = (s as { quantity?: unknown } | null)?.quantity;
     if (!identity || !isCount(q, 0, MAX_HELD)) throw new Error("bad collection row");
-    return { ...identity, quantity: q };
+    const cond = (s as { condition?: unknown }).condition;
+    if (cond !== undefined && cond !== null && (typeof cond !== "string" || cond.length > MAX_CONDITION)) {
+      throw new Error("bad collection row");
+    }
+    return { ...identity, quantity: q, condition: (cond as string | null | undefined) ?? null };
   });
   const catalog = await resolvePrintings(parsed);
   const editRows: EditRow[] = parsed.map((r) => {
