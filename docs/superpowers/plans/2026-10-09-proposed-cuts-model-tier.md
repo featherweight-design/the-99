@@ -1,7 +1,7 @@
 # Proposed cuts, model tier — plan
 
-Source: Hugh's ruling of 2026-10-09 and the tier-1 recall eval (`pnpm eval:cuts`, PR 2 of the
-engine). Amends sub-projects 4 and 6 of `2026-10-08-tuning-roadmap.md`. Plan only: nothing here is
+Source: Hugh's ruling of 2026-10-09 and the tier-1 recall eval (`pnpm eval:cuts`, which lands in
+the engine's second PR, #1325 being its first; this plan merges after that PR so the reference is live). Amends sub-projects 4 and 6 of `2026-10-08-tuning-roadmap.md`. Plan only: nothing here is
 built, and no paid call is made until this plan has merged.
 
 ## The ruling this follows
@@ -32,10 +32,12 @@ bracket, so the declaration is threaded in and a flag that bracket permits is no
   counted figure, the deck's overview Key cards (never cut), locks (never cut), the player's
   intent and notes through `playerText`, and the number to cut (`over`). No ranked list, so nothing
   anchors the model on the engine's order.
-- **Output:** exactly `over` cuts, each with a one-line reason that cites a fact it was given. No
-  adds: Proposed cuts takes cards out. The schema caps the count; fewer is legal and says so.
+- **Output:** the prompt asks for exactly `over` cuts, each with a one-line reason that cites a fact
+  it was given. No adds: Proposed cuts takes cards out. The schema accepts 1 to `over`, and the
+  validator keeps whatever survives; a shortfall against `over` is shown as such, never padded.
+  Asked count and accepted range are separate on purpose.
 - **Validator** (`validate.ts` pattern): every name resolves in the deck, none is a commander, a
-  locked card or a Key card, no duplicates, the count is `over` or fewer, and every cited figure
+  locked card or a Key card, no duplicates, the count is between 1 and `over`, and every cited figure
   equals the one in the input (a role count, an inclusion percent, a curve cell). A cut failing a
   rule is dropped, never repaired by a second call.
 - **Citation pattern:** `presentation.ts`' rule keys, so the reason text and the validator share
@@ -51,8 +53,9 @@ Ground truth is Hugh's own cuts: five decks, 58 removals, each deck rebuilt at i
 came from, so the model is scored against the 17% it replaces.
 
 - **Leak control.** A v2 note often names the cards it cut ("Removing Kratos"). The eval strips
-  notes and intent from the input. A second, labelled pass includes them, to show what a real
-  player's note buys.
+  notes and intent from the input. A second pass includes them as a LEAKAGE DIAGNOSTIC only: the
+  notes contain the answer, so it is excluded from prompt selection and from headline recall, and
+  says nothing about what an ordinary note buys.
 - **Metrics:** recall in the model's `over` against Hugh's cuts, split by swap against net
   reduction; validity (answered, kept after validation); reasons citing a figure that is true;
   and a blind read by Hugh of a sample, as the tuning prompt was judged.
@@ -74,7 +77,7 @@ run replaces this estimate with a measured one before the rest is spent.
 |---|---|---|
 | Smoke: one deck, three trials, to measure tokens | 3 | $0.22 |
 | Round 1: five decks, three trials, no notes | 15 | $1.10 |
-| Round 2: same, with notes (the leak comparison) | 15 | $1.10 |
+| Round 2: same, with notes (leakage diagnostic only) | 15 | $1.10 |
 | Prompt iteration: two more rounds on the three training decks | 18 | $1.32 |
 | Held-out confirmation, five decks, three trials | 15 | $1.10 |
 | Blind-read sample, Gishath, retries | 12 | $0.88 |
@@ -94,7 +97,8 @@ matter; the eval uses real-time only for the latency read.
    Action in the `runTuning` shape). About 15 files, so split if it passes 20.
 3. **Eval.** `scripts/eval/cuts-model.mts` and the metrics doc. Read-only on staging, paid calls
    priced as they land.
-4. **UI and the About entry** (sub-project 5's frames, plus the entry named in the roadmap).
+4. **UI** (sub-project 5's frames). The About entry is not here: it is the line's single close-out
+   entry (sub-project 7), after sub-projects 5 and 6.
 
 ## Needs Design
 

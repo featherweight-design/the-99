@@ -223,8 +223,9 @@ changes' `presentation.ts` already does. Proposed cuts' model pass is built here
 path (Hugh, 2026-10-09, ruling (a) as amended): the golden-deck eval found the free ranking at 17%
 of his cuts, near chance. Plan: `2026-10-09-proposed-cuts-model-tier.md`.
 
-**Resolves the open free-first/deep-by-default question** (below) as part of its implementation,
-following whatever Hugh decides.
+**The free-first question is settled**: ruling 1 for Mana Balance, and for Proposed cuts the
+2026-10-09 model-first ruling (the free pass shows counted facts and no ranked list; Look deeper is
+the main path). Nothing is left to decide at implementation.
 
 **Cost implications**: real, per-run, the first actual new model spend in this line. Each tier-2
 run needs its own entry in `FEATURE_CALLS` (`src/lib/model/prices.ts`) with a measured input
@@ -263,7 +264,7 @@ is expected to be unchanged, to be confirmed by that eval.
 
 No questions remain open. The numbers are Hugh's.
 
-1. **Free first.** The free result shows instantly, with "Look deeper" (1 credit) at the top. No
+1. **Free first** (Mana Balance; Proposed cuts is model-first, 2026-10-09, see ruling (a) below). The free result shows instantly, with "Look deeper" (1 credit) at the top. No
    always-deeper setting for now.
 2. **Tuning sits inside Analysis**, where Suggested changes is today.
 3. **History is one shared run record for every tool.** Sub-project 5 extends
