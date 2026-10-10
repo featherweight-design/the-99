@@ -188,6 +188,8 @@
     "probe:edhrec-snapshot": "tsx scripts/probe-edhrec-snapshot.ts",
     "assets:brackets": "tsx scripts/copy-bracket-marks.mts",
     "probe:tuning-run": "tsx scripts/probe-tuning-run.ts",
+    "probe:cuts-panel": "NODE_OPTIONS=--require=./scripts/lib/no-next-cache.cjs tsx scripts/probe-cuts-panel.mts",
+    "probe:cuts-state": "NODE_OPTIONS=--require=./scripts/lib/no-next-cache.cjs tsx scripts/probe-cuts-state.mts",
     "probe:spend-cap": "tsx scripts/probe-spend-cap.ts",
     "probe:tuning-panel": "node scripts/probe-tuning-panel.mjs",
     "probe:intent-line": "node scripts/probe-intent-line.mjs",

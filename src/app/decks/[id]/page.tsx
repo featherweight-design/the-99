@@ -48,7 +48,7 @@ import { loadStatsLabels } from "../../../lib/decks/stats-labels";
 import { loadStatsAverage } from "../../../lib/decks/stats-average-load";
 import { loadLandMana } from "../../../lib/decks/land-mana";
 import { loadSourceMana } from "../../../lib/decks/source-mana";
-import { tuningEnabled } from "../../../lib/tuning/flag";
+import { proposedCutsEnabled, tuningEnabled } from "../../../lib/tuning/flag";
 import { noticesEnabled } from "../../../lib/notices/flag";
 import { loadDeckNotices } from "../../../lib/notices/read";
 import { NOTICES_PARAM, readNoticesArrival } from "../../../lib/notices/arrival";
@@ -557,6 +557,7 @@ export default async function DeckBuilderPage({
           }
         : null}
       tuningEnabled={tuned}
+      proposedCutsEnabled={proposedCutsEnabled()}
       noticesEnabled={noticesEnabled()}
       initialNotices={notices}
       // The tile's `!` asks for the sheet (`noticesHref`). The shell opens it on arrival and strips

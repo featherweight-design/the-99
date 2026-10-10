@@ -19,6 +19,7 @@ const FILES = [
   "src/lib/commander-change/write.ts",
   "src/lib/decks/versions.ts",
   "src/lib/swaps/draft-swap.ts",
+  "src/lib/tuning/cuts-verdicts.ts",
 ];
 
 /**
@@ -81,7 +82,7 @@ describe("proxy rows are reconciled wherever deck membership shrinks", () => {
     // The count is asserted because the guard above is only as good as the set
     // it walks, and the first version of this test silently walked a subset.
     const counts = FILES.map((file) => deleteSites(readFileSync(file, "utf8")).length);
-    expect(counts).toEqual([4, 1, 1, 1, 2]);
+    expect(counts).toEqual([4, 1, 1, 1, 2, 1]);
   });
 
   // The ordering is load-bearing on exactly one path. `restoreDraftFromVersion`
