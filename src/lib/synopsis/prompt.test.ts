@@ -290,10 +290,10 @@ describe("buildSynopsisPrompt under contract 8", () => {
   it("reads only the sections being rewritten, and the contract 7 string shape too", () => {
     expect(overLengthLines(reply, ["keyCards"])).toHaveLength(1);
     expect(overLengthLines(reply, ["weaknesses"])).toEqual([]);
-    const long = "w".repeat(170);
+    const long = "w".repeat(180);
     expect(overLengthLines({ ...(reply as object), weaknesses: [long] } as never, ["weaknesses"])).toHaveLength(1);
     const v8 = { ...(reply as object), assessment: [{ topic: "mana_and_colors", verdict: "weakness", tier: "critical", line: long }] } as never;
-    expect(overLengthLines(v8, ["weaknesses"])[0]).toContain("weakness is 180 characters, limit 176");
+    expect(overLengthLines(v8, ["weaknesses"])[0]).toContain("weakness is 190 characters, limit 176");
     const v7 = { overview: "o".repeat(577), primer: { strategy: [], mulligan: { keep: [], sendBack: [] }, tips: [] }, keyCards: [] } as never;
     expect(overLengthLines(v7, ["overview"])).toEqual([`the overview is 577 characters, limit 576, write it at about 460: "${"o".repeat(577)}"`]);
   });
