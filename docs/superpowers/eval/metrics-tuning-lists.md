@@ -118,7 +118,7 @@ Counterspells named as removal: **9**
 
 # Against Deckcheck's Power Tune (Hugh, 2026-10-10; no new spend)
 
-Source: `boards/deckcheck-tunes-2026-10-10.md`, same bracket. Our picks are run 2 (revision 1), one sample per deck. Deckcheck's additions are not limited to owned cards and ours are, so cuts are the fair comparison.
+Source: `boards/deckcheck-tunes-2026-10-10.md`, same bracket. Our picks are run 2 (revision 1), one sample per deck. Both sides add any card: the eval ran the "Any card" default (`ownedOnly` false), so additions compare as fairly as cuts. The one asymmetry is that our model is shown the deck's staples list and nothing else outside the deck, so its additions come from there and from what it already knows.
 
 | deck | Deckcheck cuts we also cut | our other cuts (off / on) | Deckcheck adds we also add |
 |---|---|---|---|
@@ -126,7 +126,7 @@ Source: `boards/deckcheck-tunes-2026-10-10.md`, same bracket. Our picks are run 
 | Counter Intelligence | Universal Surveillance (both arms), Empowered Autogenerator (on) | Pentad Prism, Astral Cornucopia, Tome of Legends, Deepglow Skate, Mikaeus | none |
 | Goblins | Singe (both), Erratic Explosion (off), Spark Spray (on) | Molten Influence, Dismantle, Crash, Demoralize | Lightning Greaves, Swiftfoot Boots, Chaos Warp, Vandalblast (off arm only) |
 
-**What overlaps.** Cuts: 3 of Deckcheck's 13 Gishath cuts (we name 4 and hit 3 on the off arm, 1 on the on arm), 2 of 13 for Counter Intelligence, 2 to 3 of 20 for Goblins. The cheap, obviously dead cards agree (Lightmine Field, Universal Surveillance, Singe). Adds: the off arm lands the same removal and protection on Gishath and the same equipment and burn package on Goblins; nothing for Counter Intelligence (theirs are unowned fixes and tutors).
+**What overlaps.** Cuts: 3 of Deckcheck's 13 Gishath cuts (we name 4 and hit 3 on the off arm, 1 on the on arm), 2 of 13 for Counter Intelligence, 2 to 3 of 20 for Goblins. The cheap, obviously dead cards agree (Lightmine Field, Universal Surveillance, Singe). Adds: the off arm lands the same removal and protection on Gishath and the same equipment and burn package on Goblins; nothing for Counter Intelligence, where Deckcheck adds shocks, fetches, Mana Drain, Cyclonic Rift and tutors and we add equipment and a wrath. Its additions reach for cards no staples list shows us (shocks and fetches for fixing, Skullclamp), which is the evidence-input gap below rather than an ownership one.
 
 **Patterns Deckcheck shows that our lists do not yet make.**
 - *Plan-first cuts.* Deckcheck cuts for what the deck is trying to do: Burning Sands as symmetric land sacrifice in Goblins, The Tarrasque and Wakening Sun's Avatar in Gishath because cast-trigger or ward value is lost when cheated in. We cut by role count and weak text (Molten Influence, Singe, Demoralize) and never name an anti-synergy. Nothing in the pack tells the model what each card's trigger needs, so it cannot see these.
