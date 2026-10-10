@@ -189,6 +189,7 @@ export const deckTuningCopy = {
     applying: "Applying\u2026",
     add: "Add",
     cut: "Cut",
+    working: "Working\u2026",
     reject: "Reject",
     added: "added",
     cutDone: "cut",
