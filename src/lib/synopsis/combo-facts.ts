@@ -7,7 +7,7 @@ import type { DeckProfile } from "../profile/types";
 import { fitsIdentity, MAX_COMBO_FACTS, type ComboFact, type NearComboFact } from "./facts-extra";
 
 export const MAX_NEAR_COMBO_FACTS = 3;
-/** Largest variant the facts consider. Spellbook stores 6 to 10 pieces for only 37 variants. */
+/** Largest variant the facts consider. Spellbook stores 6 to 10 pieces for only 37 variants in all; seven or more are left out. */
 export const MAX_COMBO_PIECES = 6;
 
 /** One piece of a stored variant, with whether the deck holds it. */

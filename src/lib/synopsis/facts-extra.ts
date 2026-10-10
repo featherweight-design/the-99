@@ -1,4 +1,3 @@
-import { isInfiniteOrGameEnding } from "../spellbook/combo-features";
 import type { DeckProfile } from "../profile/types";
 import type { FactCard } from "./facts";
 
@@ -16,7 +15,7 @@ export type ComboFact = {
   /** Spellbook's own feature names: "Infinite colorless mana", "Infinite turns". */
   produces: string[];
   usesCommander: boolean;
-  /** Mana to run it once both pieces are out. 0 is free, null is unknown. */
+  /** Mana to run it once every piece is out. 0 is free, null is unknown. */
   manaNeeded: number | null;
 };
 
