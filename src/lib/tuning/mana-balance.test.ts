@@ -88,8 +88,8 @@ describe("readManaBalance: lands", () => {
   });
 
   it("counts only mana sources of mana value three or less as cheap ramp", () => {
-    const b = read([rock("cheap", "{2}", 1, ["G"]), rock("dear", "{4}", 1, ["G"]), spell("a", "{G}"), land("forest", 1, ["G"])]);
-    expect(b.lands.cheapRamp).toBe(1);
+    const b = read([rock("cheap", "{2}", 1, ["G"]), rock("edge", "{3}", 2, ["G"]), rock("dear", "{4}", 1, ["G"]), spell("a", "{G}"), land("forest", 1, ["G"])]);
+    expect(b.lands.cheapRamp).toBe(3);
   });
 });
 
