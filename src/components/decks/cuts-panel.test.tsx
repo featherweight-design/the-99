@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { describe, expect, it, vi } from "vitest";
 
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
+import { MAX_CUTS_PER_RUN } from "../../lib/tuning/cuts-ask";
 import type { CutItem, CutsPanel } from "../../lib/tuning/cuts-state";
 import { CutsPanelView, type CutsDeps } from "./cuts-panel";
 
@@ -153,12 +154,12 @@ describe("CutsPanelView", () => {
   });
 
   it("a run that hit the per-run cap says how many are still over", async () => {
-    await mount(deps(withResult(20, 20, { over: 47, total: 147 })));
-    expect(screen.getByTestId("cuts-more").textContent).toBe(copy.deeper.resultMore(27));
+    await mount(deps(withResult(MAX_CUTS_PER_RUN, MAX_CUTS_PER_RUN, { over: 47, total: 147 })));
+    expect(screen.getByTestId("cuts-more").textContent).toBe(copy.deeper.resultMore(47 - MAX_CUTS_PER_RUN));
   });
 
   it("cards the player kept still count as named, so they are not 'more'", async () => {
-    const p = withResult(20, 20, { over: 20, total: 120 });
+    const p = withResult(MAX_CUTS_PER_RUN, MAX_CUTS_PER_RUN, { over: MAX_CUTS_PER_RUN, total: 100 + MAX_CUTS_PER_RUN });
     p.items = p.items.map((it, i) => (i < 5 ? { ...it, verdict: "dismissed" as const } : it));
     await mount(deps(p));
     expect(screen.queryByTestId("cuts-more")).toBeNull();
@@ -170,8 +171,8 @@ describe("CutsPanelView", () => {
   });
 
   it("offers to name the per-run cap for a deck far over, not the whole overage", async () => {
-    await mount(deps(panelOf({ over: 47, total: 147, asked: 20 })));
-    expect(screen.getByText(copy.deeper.offerTitle(20))).toBeTruthy();
+    await mount(deps(panelOf({ over: 47, total: 147, asked: MAX_CUTS_PER_RUN })));
+    expect(screen.getByText(copy.deeper.offerTitle(MAX_CUTS_PER_RUN))).toBeTruthy();
   });
 
   it("C8: the last cut finishes the tool in place", async () => {

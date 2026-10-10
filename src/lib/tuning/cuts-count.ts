@@ -159,7 +159,7 @@ export function cutChips(cites: readonly CutCite[], reason: string, ctx: ChipCon
         return { key, kind: "BRACKET", text: `${FLAG_LABEL[c.flag]}${tail}` };
       }
       case "combo":
-        return { key, kind: "PLAN", text: c.state === "assembled" ? "in a combo the deck assembles" : c.state === "oneShort" ? "in a combo one card short" : "in no combo the deck holds" };
+        return { key, kind: "PLAN", text: c.state === "assembled" ? "in a combo the deck assembles" : c.state === "oneShort" ? "in a combo one card short" : "in no combo the read found" };
       case "cost":
         return { key, kind: "COST", text: `mana value ${c.mv}` };
       case "tapped":

@@ -60,6 +60,12 @@ describe("a flag chip with no declared bracket", () => {
 
 describe("cutChips", () => {
   const ctx = { medianPct: 38, flagCounts: { gameChanger: 4 }, declared: 3 as Bracket };
+  it("words the combo none chip as what the read found, never as a claim about the deck", () => {
+    const chips = cutChips([
+      { kind: "combo", state: "assembled" }, { kind: "combo", state: "oneShort" }, { kind: "combo", state: "none" },
+    ], "reason", ctx);
+    expect(chips.map((c) => c.text)).toEqual(["in a combo the deck assembles", "in a combo one card short", "in no combo the read found"]);
+  });
   it("quotes each cite's own figure, one chip per cite", () => {
     const chips = cutChips([
       { kind: "role", role: "ramp", have: 14, target: 10 },

@@ -5,7 +5,7 @@ import { MAX_COMBO_FACTS, MAX_NEAR_COMBO_FACTS } from "../synopsis/facts-extra";
 import type { CutsPack, CutsPackCard } from "./cuts-evidence";
 
 /** Its own version, apart from Suggested changes' `PROMPT_VERSION`. */
-export const CUTS_PROMPT_VERSION = 2;
+export const CUTS_PROMPT_VERSION = 3;
 
 /** The last curve bucket holds that mana value and above, so it reads `7+`; a cite still uses 7. */
 const bucket = (cmc: number) => (cmc >= CURVE_MAX ? `${cmc}+` : `${cmc}`);
@@ -49,7 +49,7 @@ export function buildCutsPrompt(pack: CutsPack): { system: string; user: string 
     if (plan.commanderText.length > 0) lines.push("Commander text:", ...plan.commanderText.map((t) => `- ${t}`));
     if (plan.combos === null) lines.push("The combo read failed, so no combos are listed.");
     else {
-      lines.push(plan.combos.length > 0 ? "Combos the deck assembles:" : "Combos the deck assembles: none.");
+      lines.push(plan.combos.length > 0 ? "Combos the deck assembles:" : "The deck assembles no infinite or game-ending combo that the read found. It checks only indexed Spellbook combos of 2 to 6 cards without template-gated steps, so it does not show the deck has none (combos one card short are listed separately), and it says nothing about the deck's other synergies.");
       lines.push(...plan.combos.map((c) => `- ${c.pieces.join(" + ")} -> ${c.produces.join(", ")}${c.manaNeeded === null ? "" : `, mana needed ${c.manaNeeded}`}${c.usesCommander ? ", uses the commander" : ""}`));
     }
     if ((plan.combos?.length ?? 0) >= MAX_COMBO_FACTS || (plan.nearCombos?.length ?? 0) >= MAX_NEAR_COMBO_FACTS) {

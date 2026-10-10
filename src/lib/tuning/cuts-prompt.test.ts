@@ -4,6 +4,7 @@ import { PLAYER_TEXT_SYSTEM_RULE } from "../model/player-text";
 import { cutFacts } from "./cuts";
 import { deck, profile, support } from "./cuts-fixture";
 import { buildCutsPack } from "./cuts-evidence";
+import { MAX_CUTS_PER_RUN } from "./cuts-ask";
 import { buildCutsPrompt, CUTS_PROMPT_VERSION } from "./cuts-prompt";
 
 const build = (intent: string | null = null, sup = true) =>
@@ -21,7 +22,7 @@ describe("buildCutsPrompt", () => {
     expect(user).not.toMatch(/- cmc 7: have/);
   });
 
-  it("has its own version", () => expect(CUTS_PROMPT_VERSION).toBe(2));
+  it("has its own version", () => expect(CUTS_PROMPT_VERSION).toBe(3));
 
   it("asks for exactly over cuts and carries the player-text rule and the cite rules", () => {
     const { system } = build();
@@ -106,7 +107,7 @@ describe("the plan in the prompt (v2)", () => {
       facts: cutFacts({ profile: profile({}, deck(70)), locked: new Set(), support: null, declaredBracket: null }),
       commanderName: "Gishath", keyCards: [], intent: null,
     }));
-    expect(big.system).toContain("Propose exactly 20 cuts.");
+    expect(big.system).toContain(`Propose exactly ${MAX_CUTS_PER_RUN} cuts.`);
     expect(big.system).toContain("The deck is 22 over");
     expect(withPlan().system).not.toContain("run this again");
   });
@@ -126,6 +127,29 @@ describe("the plan in the prompt (v2)", () => {
     expect(system).not.toMatch(/combo \(state|colour \(colour/);
     expect(system).not.toContain("assembled combo");
     expect(withPlan().system).toContain("Cite with one of ten kinds");
+  });
+
+  it("words an empty combo list as what the read covers, never as 'none'", () => {
+    const empty = buildCutsPrompt(buildCutsPack({
+      facts: cutFacts({ profile: profile(), locked: new Set(), support: null, declaredBracket: null }),
+      commanderName: "Gishath", keyCards: [], intent: null, plan: { ...plan, combos: [], nearCombos: [] },
+    }));
+    expect(empty.user).toContain("The deck assembles no infinite or game-ending combo that the read found");
+    expect(empty.user).toContain("does not show the deck has none");
+    expect(empty.user).toContain("says nothing about the deck's other synergies");
+    expect(empty.user).not.toContain("Combos the deck assembles: none");
+    const short = buildCutsPrompt(buildCutsPack({
+      facts: cutFacts({ profile: profile(), locked: new Set(), support: null, declaredBracket: null }),
+      commanderName: "Gishath", keyCards: [], intent: null, plan: { ...plan, combos: [] },
+    }));
+    expect(short.user).toContain("The deck assembles no infinite or game-ending combo that the read found");
+    expect(short.user).toContain("Combos one card short:");
+    expect(short.user).not.toContain("turned up");
+  });
+
+  it("scopes the combo none cite to the plan's lists, not to the deck's synergy", () => {
+    expect(withPlan().system).toContain("none for a card in no combo the plan lists");
+    expect(withPlan().system).toContain("not about the deck's synergy");
   });
 
   it("says so when the combo read failed, and omits the whole plan block when none was given", () => {

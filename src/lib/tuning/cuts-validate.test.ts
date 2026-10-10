@@ -4,6 +4,7 @@ import { cutFacts } from "./cuts";
 import { profile, row, support, deck } from "./cuts-fixture";
 import { buildCutsPack, type CutsPack } from "./cuts-evidence";
 import type { CutCite, CutsResponse } from "./cuts-schema";
+import { MAX_CUTS_PER_RUN } from "./cuts-ask";
 import { citeHolds, validateCuts } from "./cuts-validate";
 
 // 102 cards, 2 over. bear1 is off the list, ramp0 is at 41 percent, one bear is a Game Changer.
@@ -122,14 +123,14 @@ describe("the per-run cap", () => {
     facts: cutFacts({ profile: profile({}, deck(70)), locked: new Set(), support: null, declaredBracket: null }),
     commanderName: "Gishath", keyCards: [], intent: null,
   });
-  it("asks for no more than 20 of a deck 22 over, and keeps no more than that", () => {
+  it("asks for no more than the cap of a deck 22 over, and keeps no more than that", () => {
     const pack = big();
-    expect([pack.over, pack.ask]).toEqual([22, 20]);
+    expect([pack.over, pack.ask]).toEqual([22, MAX_CUTS_PER_RUN]);
     const cuts = Array.from({ length: 22 }, (_, i) => c(`bear${i}`, [{ kind: "cost", mv: 3 }]));
     const r = run(cuts, pack);
-    expect(r.kept).toHaveLength(20);
-    expect(r.dropped.map((d) => d.rule)).toEqual(["tooMany", "tooMany"]);
-    expect(r.report).toMatchObject({ over: 20, keptCount: 20 });
+    expect(r.kept).toHaveLength(MAX_CUTS_PER_RUN);
+    expect(r.dropped.map((d) => d.rule)).toEqual(Array(22 - MAX_CUTS_PER_RUN).fill("tooMany"));
+    expect(r.report).toMatchObject({ over: MAX_CUTS_PER_RUN, keptCount: MAX_CUTS_PER_RUN });
   });
 });
 
@@ -185,5 +186,23 @@ describe("the plan cites (prompt v2)", () => {
   it("holds a tapped cite only for a land that enters tapped", () => {
     const pack = withPlan();
     expect(citeHolds({ kind: "tapped" }, card(pack, "bear1"), pack)).toBe(false);
+  });
+
+  it("holds a tapped cite for a land whose text enters it tapped, always or under a condition", () => {
+    const pack = buildCutsPack({
+      facts: cutFacts({
+        profile: profile({}, deck(50, [
+          row({ oracleId: "temple", typeLine: "Land", cmc: 0, manaCost: null, oracleText: "This land enters tapped." }),
+          row({ oracleId: "check", typeLine: "Land", cmc: 0, manaCost: null, oracleText: "This land enters tapped unless you control a Forest." }),
+          row({ oracleId: "plain", typeLine: "Land", cmc: 0, manaCost: null, oracleText: "{T}: Add {G}." }),
+        ])),
+        locked: new Set(), support: null, declaredBracket: null,
+      }),
+      commanderName: "Gishath", keyCards: [], intent: null,
+      texts: new Map([["temple", "This land enters tapped."], ["check", "This land enters tapped unless you control a Forest."], ["plain", "{T}: Add {G}."]]),
+    });
+    expect(citeHolds({ kind: "tapped" }, card(pack, "temple"), pack)).toBe(true);
+    expect(citeHolds({ kind: "tapped" }, card(pack, "check"), pack)).toBe(true);
+    expect(citeHolds({ kind: "tapped" }, card(pack, "plain"), pack)).toBe(false);
   });
 });
