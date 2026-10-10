@@ -2082,6 +2082,9 @@ export const deckCutItems = pgTable("deck_cut_items", {
   position: integer("position").notNull(),
   verdict: text("verdict").notNull().default("pending"),
   verdictAt: timestamp("verdict_at"),
+  /** The card's row as the cut found it (migration 0087), so Undo puts back exactly that and refuses
+   *  over a deck that has moved since. Null until the cut is pressed, and again after an Undo. */
+  undoSnapshot: jsonb("undo_snapshot").$type<ApplySnapshot>(),
 }, (t) => [
   check(
     "deck_cut_items_verdict_check",

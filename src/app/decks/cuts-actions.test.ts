@@ -22,6 +22,11 @@ const calls = vi.hoisted(() => ({
   modelThrows: false,
   textRows: [] as { id: string; text: string | null; layout: string }[],
   keyCards: [] as string[],
+  verdict: { ok: true, deckId: "11111111-1111-4111-8111-111111111111", runId: "run_1" } as unknown,
+  rechained: [] as unknown[][],
+  verdictCalls: [] as string[],
+  state: undefined as unknown,
+  fingerprints: ["fp0", "fp1"] as string[],
 }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
@@ -31,7 +36,12 @@ vi.mock("../../db", () => ({
   db: { select: () => ({ from: () => ({ where: async () => calls.textRows }) }) },
 }));
 vi.mock("../../lib/decks/cuts-read", () => ({
-  readProposedCuts: async () => { calls.inputsReads += 1; return calls.inputs; },
+  readProposedCuts: async () => {
+    calls.inputsReads += 1;
+    const inputs = calls.inputs as { fingerprint: string } | null;
+    return inputs && calls.fingerprints.length > 0 ? { ...inputs, fingerprint: calls.fingerprints[Math.min(calls.inputsReads - 1, calls.fingerprints.length - 1)] } : inputs;
+  },
+  readCutsState: async () => calls.state,
   readKeyCardNames: async () => calls.keyCards,
   reapCutsRuns: async () => { calls.reaped += 1; },
 }));
@@ -44,6 +54,11 @@ vi.mock("../../lib/tuning/cuts-run-store", () => ({
   finishCutsRun: async (...args: unknown[]) => { calls.finished.push(args); return true; },
   persistCutsRun: async (...args: unknown[]) => { calls.persisted.push(args); return calls.persistResult; },
   cancelCutsRun: async (...args: unknown[]) => { calls.cancelled.push(args); return true; },
+}));
+vi.mock("../../lib/tuning/cuts-verdicts", () => ({
+  cutItem: async () => { calls.verdictCalls.push("cut"); return calls.verdict; },
+  undoCutItem: async () => { calls.verdictCalls.push("undo"); return calls.verdict; },
+  setCutKept: async (_i: string, _u: string, kept: boolean) => { calls.verdictCalls.push(kept ? "keep" : "restore"); return calls.verdict; },
 }));
 const USAGE = { inputTokens: 5_000, outputTokens: 1_200, cacheReadTokens: 0, cacheWriteTokens: 0 };
 vi.mock("../../lib/model/client", () => ({
@@ -62,7 +77,7 @@ import { creditsCopy } from "../../lib/copy/credits";
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
-import { cancelProposedCuts, runProposedCuts } from "./cuts-actions";
+import { cancelProposedCuts, cutProposed, keepProposedCut, readCutsPanel, restoreProposedCut, runProposedCuts, undoProposedCut } from "./cuts-actions";
 
 const DECK = "11111111-1111-4111-8111-111111111111";
 const RUN = "22222222-2222-4222-8222-222222222222";
@@ -88,6 +103,10 @@ beforeEach(() => {
   calls.finished = [];
   calls.persisted = [];
   calls.persistResult = true;
+  calls.verdict = { ok: true, deckId: DECK, runId: "run_1" };
+  calls.rechained = [];
+  calls.verdictCalls = [];
+  calls.fingerprints = ["fp0", "fp1"];
   calls.cancelled = [];
   calls.modelCalls = [];
   calls.modelOutcome = undefined;
@@ -302,5 +321,57 @@ describe("cancelProposedCuts", () => {
     await cancelProposedCuts("nope", RUN);
     await cancelProposedCuts(DECK, "nope");
     expect(calls.cancelled).toHaveLength(0);
+  });
+});
+
+const ITEM = "33333333-3333-4333-8333-333333333333";
+
+describe("the cut verdicts", () => {
+  it("a cut, an undo, a keep and a restore each reach their own transaction and answer ok", async () => {
+    expect(await cutProposed(ITEM)).toEqual({ ok: true });
+    expect(await undoProposedCut(ITEM)).toEqual({ ok: true });
+    expect(await keepProposedCut(ITEM)).toEqual({ ok: true });
+    expect(await restoreProposedCut(ITEM)).toEqual({ ok: true });
+    expect(calls.verdictCalls).toEqual(["cut", "undo", "keep", "restore"]);
+  });
+
+  it("a refusal says why in the copy", async () => {
+    calls.verdict = { ok: false, reason: "cutLocked" };
+    expect(await cutProposed(ITEM)).toEqual({ ok: false, message: deckCutsCopy.panel.refusals.cutLocked });
+    calls.verdict = { ok: false, reason: "cutGone" };
+    expect(await cutProposed(ITEM)).toEqual({ ok: false, message: deckCutsCopy.panel.refusals.cutGone });
+    calls.verdict = { ok: false, reason: "moved" };
+    expect(await undoProposedCut(ITEM)).toEqual({ ok: false, message: deckCutsCopy.panel.refusals.moved });
+  });
+
+  it("refuses with the switch off or an id that is not a uuid, before any write", async () => {
+    calls.enabled = false;
+    expect((await cutProposed(ITEM)).ok).toBe(false);
+    calls.enabled = true;
+    expect((await cutProposed("nope")).ok).toBe(false);
+    expect(calls.verdictCalls).toEqual([]);
+  });
+});
+
+describe("readCutsPanel", () => {
+  const state = (lastOkFingerprint: string | null, moved = false) => ({
+    run: null, items: [], itemsReport: { over: 6 }, lastOkFingerprint, lastOkAt: null, modelVersionMoved: moved,
+    allowance: { used: 0, limit: 3, reopensAt: null, nextAt: null },
+  });
+
+  it("a result is current only while the deck matches the fingerprint it was made against", async () => {
+    calls.inputs = inputsFor(factsFor(), { head: { declaredBracket: null, partnerOracleId: null } });
+    calls.fingerprints = ["fp"];
+    calls.state = state("fp");
+    expect((await readCutsPanel(DECK))?.resultCurrent).toBe(true);
+    calls.state = state("older");
+    expect((await readCutsPanel(DECK))?.resultCurrent).toBe(false);
+    calls.state = state("fp", true);
+    expect((await readCutsPanel(DECK))?.resultCurrent).toBe(false);
+  });
+
+  it("is null with the switch off", async () => {
+    calls.enabled = false;
+    expect(await readCutsPanel(DECK)).toBeNull();
   });
 });

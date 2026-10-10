@@ -11,16 +11,20 @@ import { creditsCopy } from "../../lib/copy/credits";
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
-import { readKeyCardNames, readProposedCuts, reapCutsRuns } from "../../lib/decks/cuts-read";
+import { readCutsState, readKeyCardNames, readProposedCuts, reapCutsRuns } from "../../lib/decks/cuts-read";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
+import { deckBodySize } from "../../lib/decks/deck-size";
 import { deckSurfaces } from "../../lib/decks/revalidate";
 import { commanderName } from "../../lib/decks/tuning-read";
 import { deckNameIndex, normalizeName } from "../../lib/synopsis/facts";
 import { callModel } from "../../lib/model/client";
 import { FEATURE_CALLS } from "../../lib/model/prices";
+import { cutCounts } from "../../lib/tuning/cuts-count";
 import { buildCutsPack, type CutsPack } from "../../lib/tuning/cuts-evidence";
 import { buildCutsPrompt } from "../../lib/tuning/cuts-prompt";
 import { cancelCutsRun, finishCutsRun, persistCutsRun, startCutsRun } from "../../lib/tuning/cuts-run-store";
+import type { CutsPanel } from "../../lib/tuning/cuts-state";
+import { cutItem, setCutKept, undoCutItem, type CutOutcome } from "../../lib/tuning/cuts-verdicts";
 import { cutsResponseSchema } from "../../lib/tuning/cuts-schema";
 import { validateCuts, type CutsReport } from "../../lib/tuning/cuts-validate";
 import { proposedCutsEnabled } from "../../lib/tuning/flag";
@@ -167,4 +171,83 @@ export async function cancelProposedCuts(deckId: string, runId: string): Promise
   if (!proposedCutsEnabled() || !isUuid(deckId) || !isUuid(runId)) return { ok: true };
   if (await cancelCutsRun(runId, deckId, userId)) revalidateDeck(deckId);
   return { ok: true };
+}
+
+/**
+ * The panel's one read: the run state, and the count the model reads for the deck as it stands.
+ * Null when the switch is off, the id is not a uuid or the deck is not the reader's.
+ *
+ * `resultCurrent` is the re-offer rule (README open 9, decided in the R2 audit): the newest ok
+ * run's cuts stand while the deck still matches the fingerprint they were made against, and a cut
+ * pressed FROM them moves that fingerprint in its own transaction (`cuts-verdicts.ts`), so only an edit that is not
+ * one of their own cuts retires them and brings the offer back.
+ */
+export async function readCutsPanel(deckId: string): Promise<CutsPanel | null> {
+  const userId = await requireUserId();
+  if (!proposedCutsEnabled() || !isUuid(deckId)) return null;
+  const inputs = await readProposedCuts(deckId, userId);
+  if (!inputs) return null;
+  const { head, facts, locked, allLocked, fingerprint } = inputs;
+  const [state, name, keyCards] = await Promise.all([
+    readCutsState(deckId, userId),
+    commanderName(head),
+    readKeyCardNames(head),
+  ]);
+  const declared = (head.declaredBracket as 1 | 2 | 3 | 4 | 5 | null) ?? null;
+  const counts = cutCounts(facts, declared, name);
+  return {
+    ...state,
+    total: facts.total,
+    bodySize: deckBodySize(head.partnerOracleId !== null),
+    over: facts.over,
+    commander: name,
+    allLocked,
+    lockedCount: locked.length,
+    keyCount: keyCards.length,
+    declaredBracket: declared,
+    edhrecDecks: facts.support?.deckCount ?? null,
+    thin: facts.missing.includes("inclusion"),
+    rows: counts.rows,
+    chips: counts.chips,
+    resultCurrent: state.lastOkFingerprint === fingerprint && !state.modelVersionMoved,
+    asked: state.itemsReport?.over ?? state.items.length,
+  };
+}
+
+const REFUSALS = deckCutsCopy.panel.refusals;
+
+/** A verdict's outcome as the message the panel draws. The run's fingerprint follows a cut inside
+ *  the verdict's own transaction (`cuts-verdicts.ts`), so there is nothing to chain here. */
+async function settleVerdict(outcome: CutOutcome): Promise<DeckMutationResult> {
+  if (!outcome.ok) {
+    return { ok: false, message: outcome.reason === "cutGone" ? REFUSALS.cutGone : outcome.reason === "cutLocked" ? REFUSALS.cutLocked : outcome.reason === "moved" ? REFUSALS.moved : REFUSALS.generic };
+  }
+  revalidateDeck(outcome.deckId);
+  return { ok: true };
+}
+
+/** Cut: writes to the list straight away, refused when the card is locked or gone. */
+export async function cutProposed(itemId: string): Promise<DeckMutationResult> {
+  const userId = await requireUserId();
+  if (!proposedCutsEnabled() || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
+  return settleVerdict(await cutItem(itemId, userId));
+}
+
+export async function undoProposedCut(itemId: string): Promise<DeckMutationResult> {
+  const userId = await requireUserId();
+  if (!proposedCutsEnabled() || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
+  return settleVerdict(await undoCutItem(itemId, userId));
+}
+
+/** Keep and Show it again change no card, so they move no fingerprint. */
+export async function keepProposedCut(itemId: string): Promise<DeckMutationResult> {
+  const userId = await requireUserId();
+  if (!proposedCutsEnabled() || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
+  return settleVerdict(await setCutKept(itemId, userId, true));
+}
+
+export async function restoreProposedCut(itemId: string): Promise<DeckMutationResult> {
+  const userId = await requireUserId();
+  if (!proposedCutsEnabled() || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
+  return settleVerdict(await setCutKept(itemId, userId, false));
 }

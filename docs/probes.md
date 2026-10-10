@@ -1700,3 +1700,15 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   as its Scryfall id and stamp) is held to 1.25MB, a little over the 1.129MB (228.8KB gzipped) the
   staging-shaped account measured when it landed. The wire budget fails on the pre-trim shape
   (1.439MB with each card's full availability). Makes no writes.
+
+- `pnpm probe:cuts-state` proves Proposed cuts' state read and verdicts against a real Postgres,
+  with NO model call: a run is written the way `runProposedCuts` writes it once the model has
+  answered. It clones the first over-100 deck it finds (or `PROBE_CUTS_DECK`) under a per-run
+  user id and deletes the clone in a `finally`; `local-dev` or a scratch branch only, never
+  staging (it writes). It asserts `readCutsState` (newest run, newest ok run and its items as one
+  instant, a failed re-run leaving the last ok cuts standing), that Cut removes one copy and stores
+  the undo snapshot, that Undo restores exactly and refuses over a moved deck, that a card locked
+  after the run is refused at Cut and the commander is refused, the re-offer rule (a cut from a
+  result re-chains the run's fingerprint; an unchained edit leaves it stale), that a second cuts
+  run on a deck is refused and Stop refunds. It preloads `scripts/lib/no-next-cache.cjs`, because
+  `readProposedCuts` reads through `unstable_cache`, which raises outside a request.

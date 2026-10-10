@@ -46,6 +46,7 @@ export function AnalysisPanel({
   locked = NO_LOCKS,
   legality,
   tuning,
+  cuts,
   opening = "off",
   overview,
   hold = null,
@@ -84,6 +85,9 @@ export function AnalysisPanel({
    * current or held, so its bracket flag is worded against the reading the reader sees.
    */
   tuning?: (permits: readonly Bracket[]) => ReactNode;
+  /** Proposed cuts (Tuning hub R2), drawn after Suggested changes and over the same reading. Absent
+   *  with `PROPOSED_CUTS_ENABLED` off. */
+  cuts?: ReactNode;
   /** The deck's overview (sub-project 6), drawn beside the verdict and only over a reading. */
   overview?: ReactNode;
   /**
@@ -202,6 +206,11 @@ export function AnalysisPanel({
           {tuning(slotDeck(held.profile).permits)}
         </div>
       ) : null}
+      {/* PROPOSED CUTS DOES NOT WAIT FOR A READING. A reading is made of a whole deck (the body at its
+          size), and the tool exists for a deck that is over it, so the two preconditions exclude each
+          other: a deck built long was never read. Its facts come from the profile it builds for itself
+          and it draws nothing for a deck that is not over 100. */}
+      {cuts ? <div hidden={behind} className="contents">{cuts}</div> : null}
       <p role="status" className="sr-only">{announced}</p>
     </div>
     </>

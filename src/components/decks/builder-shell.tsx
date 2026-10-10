@@ -17,6 +17,7 @@ import type { DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import { BuilderSpine } from "./builder-spine";
 import { AnalysisPanel } from "./analysis-panel";
 import { HoverPreviewProvider } from "./hover-preview";
+import { CutsPanelView } from "./cuts-panel";
 import { TuningPanel } from "./tuning-panel";
 import { pressNote } from "./synopsis-note";
 import { SynopsisOverview } from "./synopsis-overview";
@@ -236,6 +237,8 @@ interface BuilderShellProps {
    *  no `TuningPanel`, the empty state's description field (asked only to feed a run) and the
    *  credit lines' mention of it are withheld, same as `analysisEnabled` withholds the whole tab. */
   tuningEnabled?: boolean;
+  /** `proposedCutsEnabled()`: whether the Analysis tab draws Proposed cuts after Suggested changes. */
+  proposedCutsEnabled?: boolean;
 }
 
 // The Games tab's default: a deck nobody has logged against. Hoisted so the
@@ -285,6 +288,7 @@ export function BuilderShell({
   neverCut = false,
   deeperLooks = false,
   tuningEnabled = false,
+  proposedCutsEnabled = false,
 }: BuilderShellProps) {
   // UI state
   const [filter, setFilter] = useState<"all" | "shopping">("all");
@@ -1609,6 +1613,13 @@ export function BuilderShell({
                       />
                     ) : null
                   }
+                  cuts={proposedCutsEnabled ? (
+                    <CutsPanelView
+                      deckId={deck.id}
+                      noteCount={games.filter((g) => g.note !== null).length}
+                      deeperLooks={deeperLooks}
+                    />
+                  ) : undefined}
                   tuning={!tuningEnabled ? undefined : (permits) => (
                     <TuningPanel
                       deckId={deck.id}

@@ -65,13 +65,20 @@ export async function readCutSupport(commander: string, partner: string | null):
         .from(commanderSupportCards).where(eq(commanderSupportCards.commanderOracleId, commander)),
     ]);
     return { header: h, rows: r };
-  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+  }, { isolationLevel: "repeatable read" });
   if (header?.state !== "ok" || rows.length === 0) return null;
   return {
     deckCount: header.deckCount,
     listed: rows.length,
     inclusion: new Map(rows.map((r) => [r.oracleId, r.inclusion])),
   };
+}
+
+/** What a run's inputs were: the list, the locks, the declared bracket and the intent, hashed. */
+export function cutsFingerprint(head: ProfileHead, locked: readonly string[], intent: string | null): string {
+  return createHash("sha256")
+    .update(JSON.stringify([listFingerprint(head), [...locked].sort(), head.declaredBracket ?? null, intent]))
+    .digest("hex");
 }
 
 export type ProposedCutsInputs = {
@@ -110,7 +117,7 @@ export async function readProposedCuts(deckId: string, userId: string): Promise<
     const [d] = await tx.select({ intent: decks.intent }).from(decks)
       .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
     return { head, readVersion: v?.n ?? null, locked, intent: d?.intent?.trim() ? d.intent : null };
-  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+  }, { isolationLevel: "repeatable read" });
   if (!snapshot) return null;
   const { head, readVersion, locked, intent } = snapshot;
   const [profile, support] = await Promise.all([
@@ -126,9 +133,7 @@ export async function readProposedCuts(deckId: string, userId: string): Promise<
   const lockedSet = new Set(locked);
   const body = head.cards.filter((c) => c.oracleId !== head.commanderOracleId && c.oracleId !== head.partnerOracleId);
   const allLocked = body.length > 0 && body.every((c) => lockedSet.has(c.oracleId));
-  const fingerprint = createHash("sha256")
-    .update(JSON.stringify([listFingerprint(head), [...locked].sort(), head.declaredBracket ?? null, intent]))
-    .digest("hex");
+  const fingerprint = cutsFingerprint(head, locked, intent);
   return { head, facts, locked, allLocked, readVersion, fingerprint, intent };
 }
 
@@ -158,6 +163,12 @@ export const reapableCutsRuns = (deckId: string, userId: string, now: Date) => a
   eq(deckSuggestionRuns.status, "pending"),
   lt(deckSuggestionRuns.createdAt, reapCutoff(now)),
 );
+
+// NO `accessMode: "read only"` on this file's snapshots. A read-only transaction on the pooled Neon
+// connection left the NEXT transaction taken from the pool read-only too, and `reapCutsRuns` below
+// then failed with "cannot execute UPDATE in a read-only transaction" in a real server (found by
+// `probe:cuts-panel`; a script outside Next never reproduced it). The snapshots write nothing, so
+// `repeatable read` alone keeps what they need: one instant.
 
 /**
  * Fail the reader's abandoned Proposed cuts runs on this deck as `interrupted` and refund their
@@ -221,7 +232,7 @@ export async function readCutsState(deckId: string, userId: string, now: Date = 
             .orderBy(deckCutItems.position)
         : [];
       return { newest, lastOk, rows };
-    }, { isolationLevel: "repeatable read", accessMode: "read only" }),
+    }, { isolationLevel: "repeatable read" }),
     readAllowance(userId, now, "proposed_cuts"),
   ]);
 
