@@ -190,10 +190,10 @@ and every commander's fit score and coverage figures would move.
 
 So the label targets are **new columns beside the old ones**: `label_ramp`, `label_draw`,
 `label_removal` and `label_wipes`, on `commander_support`, `commander_pair_support` and
-`identity_composition`. Each takes the null policy of the `avg_*` column it sits beside: nullable
-on the commander and pair tables, where a row the role pass has not reached must fall through the
-chain, and `not null default 0` on `identity_composition` (schema `:1428-1431`), where the very
-next `db:build:staples` overwrites every row. A reader moves to them when its own count moves to labels, and never
+`identity_composition`. All are nullable, on `identity_composition` too, although its `avg_*` are
+`not null default 0` (schema `:1428-1431`). A bucket none of whose commanders carries a label
+figure has no measurement, which happens on a database the labelling job has not reached, and a 0
+there would read as "this identity plays no ramp" to a reader taking the labels basis. A reader moves to them when its own count moves to labels, and never
 before. When the last reader has moved, a cleanup migration drops `avg_ramp/draw/removal/wipes`.
 
 ### Rebuild the targets from labels in the index build (compute only)
@@ -209,8 +209,8 @@ before. When the last reader has moved, a cleanup migration drops `avg_ramp/draw
   report prints the share so it stays visible.
 - The floors stay as they are. `roleTargetsPublishable` applies to the label pass too, for
   commanders and for pairs.
-- `db:build:staples` averages `label_*` into `identity_composition` beside `avg_*`, with the same
-  null policy as `avg_*` on that table.
+- `db:build:staples` averages `label_*` into `identity_composition` beside `avg_*`. A bucket with
+  no label figure stays null.
 - `pickRoleTargets` takes a `basis: "classifier" | "labels"` argument, so a reader asks for the set
   that matches its own count. Nothing calls it with labels until PR 2.
 - No model call. The labels already exist. The only cost is one more pass over 892k rows the build
