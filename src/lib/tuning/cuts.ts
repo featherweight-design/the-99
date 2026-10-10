@@ -8,7 +8,7 @@ import type { DeckProfile } from "../profile/types";
 /**
  * Proposed cuts, tier 1 (tuning roadmap, sub-project 4): for a deck over 100 cards, which cards to
  * take out first, each with ONE reason a reader can check against a figure the app already shows.
- * Pure and client-safe: no database, no model call. `cuts-read.ts` assembles its inputs.
+ * Pure and client-safe: no database, no model call. The caller assembles its inputs.
  *
  * FOUR SIGNALS, each a counted fact:
  *  - inclusion — how often EDHREC's decks for this commander run the card, or that its list

@@ -161,5 +161,9 @@ describe("proposeCuts", () => {
   it("puts the strongest signal first, and that is the reason", () => {
     const r = proposeCuts({ profile: profile(), locked: new Set(), support: support([]) });
     for (const c of r.candidates) expect(c.reason).toEqual(c.signals[0]);
+    // An off-list card carries the heaviest single weight, so it must lead any card it shares with.
+    const mixed = r.candidates.filter((c) => c.signals.length > 1 && c.signals.some((s) => s.kind === "offList"));
+    expect(mixed.length).toBeGreaterThan(0);
+    for (const c of mixed) expect(c.reason.kind).toBe("offList");
   });
 });
