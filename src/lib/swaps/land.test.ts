@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  drawbacks, fetchFinds, givesUp, GIVES_UP_PATTERNS, colorSource, landCatch, landColors, landColorsOnce, makesFreely, nameAbility, nonManaAbilities, quote,
+  activatedFinds, drawbacks, fetchFinds, givesUp, GIVES_UP_PATTERNS, colorSource, landCatch, landColors, landColorsOnce, makesFreely, nameAbility, nonManaAbilities, quote,
   QUOTE_BUDGET, type LandText,
 } from "./land";
 
@@ -107,6 +107,15 @@ describe("landColors over every self-sacrificing land", () => {
     expect(sorted(landColorsOnce(L("Abandoned Outpost", "Land", SELF_SACRIFICE[0][2])))).toEqual(["B", "G", "R", "U"]);
     expect(sorted(landColorsOnce(L("Dwarven Ruins", "Land", SELF_SACRIFICE[5][2])))).toEqual([]);
     expect(sorted(landColorsOnce(PLATEAU))).toEqual([]);
+  });
+});
+
+describe("activatedFinds", () => {
+  it("reads a search that does not sacrifice, and leaves a fetch to fetchFinds", () => {
+    const glaciers = { name: "Thawing Glaciers", typeLine: "Land", oracleText: "{1}, {T}: Search your library for a basic land card, put that card onto the battlefield tapped, then shuffle." };
+    expect(activatedFinds(glaciers)?.basicOnly).toBe(true);
+    expect(fetchFinds(glaciers)).toBeNull();
+    expect(activatedFinds(FOOTHILLS)).toBeNull();
   });
 });
 

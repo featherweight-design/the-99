@@ -9,7 +9,7 @@
 
 import { isLandFace } from "../cards/facet";
 import { frontFaceOracle } from "../recs/faces";
-import { BASIC_TYPES, fetchFinds, sacrificesItself, type LandText } from "../swaps/land";
+import { activatedFinds, BASIC_TYPES, CONDITIONAL_GRANT, fetchFinds, PICKED_COLOR, sacrificesItself, type LandText } from "../swaps/land";
 import { manaNeeds } from "../profile/build";
 
 export const MANA_COLORS = ["W", "U", "B", "R", "G", "C"] as const;
@@ -50,8 +50,6 @@ export type ManaSupply = {
   lands: number;
 };
 
-const CONDITIONAL_GRANT = /\bcould produce\b|\bamong (lands|[^.]*\b(cards|permanents))\b|\bas you drafted\b/i;
-
 const zeros = (): Record<ManaColor, number> => ({ W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 });
 
 /** One face's abilities into `out`. Reminder text restates the basic types and describes
@@ -60,6 +58,7 @@ function readFace(card: LandText, deck: readonly ManaColor[], out: Set<ManaColor
   const text = (card.oracleText ?? "").replace(/\([^)]*\)/g, "");
   for (const ability of text.split("\n")) {
     if (sacrificesItself(ability, card.name)) continue;
+    if (PICKED_COLOR.test(ability) && !CONDITIONAL_GRANT.test(ability)) deck.forEach((c) => out.add(c));
     for (const [, effect] of ability.matchAll(/\badd\b([^.]*)\./gi)) {
       for (const [, sym] of effect.matchAll(/\{([WUBRGC])\}/gi)) out.add(sym.toUpperCase() as ManaColor);
       // A grant that reads another permanent (Exotic Orchard, Reflecting Pool) makes nothing on its
@@ -68,7 +67,7 @@ function readFace(card: LandText, deck: readonly ManaColor[], out: Set<ManaColor
       if (/\bany (one )?(color|type)\b|\bany combination of colors\b|\bchosen colou?r\b/i.test(effect)) deck.forEach((c) => out.add(c));
     }
   }
-  const finds = fetchFinds(card);
+  const finds = fetchFinds(card) ?? activatedFinds(card);
   if (finds) {
     // Every basic type means an unrestricted search: the deck's colors, as for an any-color land.
     if (finds.types.size === BASIC_TYPES.length) deck.forEach((c) => out.add(c));

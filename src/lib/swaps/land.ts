@@ -40,7 +40,7 @@ function stripReminders(text: string): string {
  */
 // Also `among legendary creature cards in your graveyard` (The Grey Havens), `among legendary permanents you
 // control` (Plaza of Heroes), and Paliano's colors `chosen as you drafted`, which a Commander game never has.
-const CONDITIONAL_GRANT = /\bcould produce\b|\bamong (lands|[^.]*\b(cards|permanents))\b|\bas you drafted\b/;
+export const CONDITIONAL_GRANT = /\bcould produce\b|\bamong (lands|[^.]*\b(cards|permanents))\b|\bas you drafted\b/i;
 
 /**
  * A mana ability whose COST sacrifices the land itself makes its mana once, and then the land is
@@ -172,6 +172,27 @@ const FETCH = /search your library for (?:up to (?:one|two)|an?|two) ([a-z ,]+?)
 export function fetchFinds(card: LandText): Finds | null {
   const text = stripReminders(frontText(card));
   if (!/\bsacrifice\b/.test(text)) return null;
+  return parseFinds(text);
+}
+
+/**
+ * A land that searches WITHOUT being sacrificed: Thawing Glaciers' `{1}, {T}: Search your library for a
+ * basic land card` returns itself to hand and goes again, so it is a ramp source, not a fetch. Kept apart
+ * from `fetchFinds`, whose sacrifice test is what Swaps reads a fetch land by.
+ */
+export function activatedFinds(card: LandText): Finds | null {
+  const text = stripReminders(frontText(card));
+  if (/\bsacrifice\b/.test(text)) return null;
+  for (const ability of text.split("\n")) {
+    const colon = ability.indexOf(":");
+    if (colon < 0) continue;
+    const found = parseFinds(ability.slice(colon + 1));
+    if (found) return found;
+  }
+  return null;
+}
+
+function parseFinds(text: string): Finds | null {
   const m = FETCH.exec(text);
   if (!m) return null;
   const words = m[1];
@@ -183,6 +204,14 @@ export function fetchFinds(card: LandText): Finds | null {
   }
   return { types, basicOnly };
 }
+
+/**
+ * Mana the player picks the color of from the deck's colors, in a form `ANY_COLOR` does not read:
+ * Rhystic Cave's `Choose a color. Add one mana of that color` and Cryptic Spires' `either of the
+ * circled colors`. A choice tied to a permanent (Meteor Crater's `a color of a permanent you control`)
+ * is not one: the `. Add` right after the choice rules it out. Tested on a whole ability.
+ */
+export const PICKED_COLOR = /\bchoose a colou?r\.\s*add\b[^.]*\bof that colou?r\b|\bcircled colou?rs?\b/i;
 
 /** A drawback: something a land costs to run, one clause each, in the copy's named set. */
 export type Drawback =

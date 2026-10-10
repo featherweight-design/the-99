@@ -26,6 +26,17 @@ describe("landProduces", () => {
     expect(landProduces(land("Land", "{T}: Add one mana of any color that a land an opponent controls could produce."), JUND)).toEqual([]);
     expect(landProduces(land("Land", "{T}: Add one mana of any type that a land you control could produce."), JUND)).toEqual([]);
   });
+  it("gives a pick-a-color land (Rhystic Cave) the deck's colors, but not a choice tied to a permanent", () => {
+    expect(landProduces(land("Land", "{T}: Choose a color. Add one mana of that color unless any player pays {1}. Activate only as an instant.", "Rhystic Cave"), JUND)).toEqual(["B", "R", "G"]);
+    expect(landProduces(land("Land", "{T}: Choose a color of a permanent you control. Add one mana of that color.", "Meteor Crater"), JUND)).toEqual([]);
+  });
+  it("gives a circled-colors land (Cryptic Spires) the deck's colors, and not Paliano's drafted ones", () => {
+    expect(landProduces(land("Land", "As you create your deck, circle two of the colors below.\nThis land enters tapped.\n{T}: Add one mana of either of the circled colors.", "Cryptic Spires"), JUND)).toEqual(["B", "R", "G"]);
+    expect(landProduces(land("Land", "{T}: Add one mana of any color chosen as you drafted.", "Paliano, the High City"), JUND)).toEqual([]);
+  });
+  it("credits a land that searches for a basic without being sacrificed (Thawing Glaciers)", () => {
+    expect(landProduces(land("Land", "This land enters tapped.\n{1}, {T}: Search your library for a basic land card, put that card onto the battlefield tapped, then shuffle. Return this land to its owner's hand at the beginning of the next cleanup step.", "Thawing Glaciers"), JUND)).toEqual(["B", "R", "G"]);
+  });
   it("does not credit a land that sacrifices itself for a color as a source of it", () => {
     const t = "{T}: Add {W}.\n{T}, Sacrifice this land: Add one mana of any color.";
     expect(landProduces(land("Land", t, "Abandoned Outpost"), JUND)).toEqual(["W"]);
