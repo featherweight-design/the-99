@@ -124,4 +124,28 @@ describe("the picker in deck scope", () => {
     expect(setCardArtPreference).toHaveBeenCalled();
     expect(setDeckPrinting).not.toHaveBeenCalled();
   });
+
+  it("shows the deck's printing with no picker where the deck takes no write (E9)", async () => {
+    // The review screen and the update diff: `deckPage` with picks and no deck id.
+    render(
+      <CardDetailProvider fetchCard={async (id) => card(id)} deckPage deckPrintingPicks={{ held: { setCode: "LEA", collectorNumber: "270" } }}>
+        <Open id="held" />
+        <Open id="loose" />
+      </CardDetailProvider>,
+    );
+    await act(async () => { fireEvent.click(screen.getByText("open held")); });
+    expect(screen.queryAllByRole("button", { name: /printings owned/ })).toHaveLength(0);
+    expect(document.body.textContent).toContain("LEA");
+    expect(document.body.textContent).not.toContain("ZNR");
+  });
+
+  it("leaves an unpicked card's picker as it was there", async () => {
+    render(
+      <CardDetailProvider fetchCard={async (id) => card(id)} deckPage deckPrintingPicks={{}}>
+        <Open id="held" />
+      </CardDetailProvider>,
+    );
+    await act(async () => { fireEvent.click(screen.getByText("open held")); });
+    expect(screen.getAllByRole("button", { name: /printings owned/ }).length).toBeGreaterThan(0);
+  });
 });

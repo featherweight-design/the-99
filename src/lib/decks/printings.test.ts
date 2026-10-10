@@ -48,7 +48,7 @@ vi.mock("../collection/browse", async (importActual) => {
 
 import {
   heldPrintingFor, readDeckPrintings, readRecordedPrintingArt, recordedColumns, recordedKey,
-  readHeldPricePicks, resolveCommanderPrintingsByDeck, resolveDeckOwnedPrintings, resolveDeckPrintings,
+  readHeldPricePicks, readModalPicks, resolveCommanderPrintingsByDeck, resolveDeckOwnedPrintings, resolveDeckPrintings,
   type DeckPrinting,
 } from "./printings";
 
@@ -289,5 +289,18 @@ describe("readHeldPricePicks", () => {
   it("fails soft to no picks", async () => {
     state.fail = true;
     expect(await readHeldPricePicks("u", [DECK])).toEqual([]);
+  });
+});
+
+describe("readModalPicks", () => {
+  it("is null with the switch off, which keeps the modal's picker as it is", async () => {
+    process.env.DECK_PRINTINGS_ENABLED = "";
+    expect(await readModalPicks("u", DECK)).toBeNull();
+    expect(state.texts).toEqual([]);
+  });
+
+  it("keys the held picks by card, in the modal's uppercase display form", async () => {
+    state.picks = [{ deck_id: DECK, oracle_id: OWNED, set_code: "khm", collector_number: "31" }];
+    expect(await readModalPicks("u", DECK)).toEqual({ [OWNED]: { setCode: "KHM", collectorNumber: "31" } });
   });
 });

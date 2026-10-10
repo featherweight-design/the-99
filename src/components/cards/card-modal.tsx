@@ -649,8 +649,12 @@ const PhonePeek = React.forwardRef<
 /** The deck a modal picks a printing for: its current pick (held, or null) and the write. */
 export type DeckPrintingScope = {
   pick: PreferredPrinting | null;
-  /** Resolves true once the deck's pick is stored, false on any refusal. */
-  save: (p: PreferredPrinting) => Promise<boolean>;
+  /**
+   * Resolves true once the deck's pick is stored, false on any refusal. Absent on a surface that
+   * shows the deck's printing but must not offer the pick (the review screen and the update diff,
+   * E9): the art follows the deck and the Set field is the plain one.
+   */
+  save?: (p: PreferredPrinting) => Promise<boolean>;
 };
 
 export function CardModal({
@@ -1286,7 +1290,7 @@ export function CardModal({
     () => card.printings.filter((p) => p.quantity > 0),
     [card.printings],
   );
-  const hasPicker = ownedPrintings.length > 1;
+  const hasPicker = ownedPrintings.length > 1 && (deckPrinting === undefined || deckPrinting.save !== undefined);
 
   /**
    * Closing unmounts the layer.
@@ -1468,7 +1472,7 @@ export function CardModal({
       let wrote = false;
       try {
         wrote = deckPrinting
-          ? await deckPrinting.save(written)
+          ? (await deckPrinting.save?.(written)) ?? false
           : await setCardArtPreference(card.oracleId, p.setCode, p.collectorNumber);
       } catch {
         wrote = false;

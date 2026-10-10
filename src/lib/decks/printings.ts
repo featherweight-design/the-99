@@ -428,3 +428,21 @@ export async function readHeldPricePicks(userId: string, deckIds: string[]): Pro
     return [];
   }
 }
+
+/**
+ * One deck's held picks in the card modal's display form (`DeckDetail.printingPicks`), for a deck
+ * surface that does not read `getDeckDetail`: the review screen and the update diff. Null with the
+ * switch off.
+ */
+export async function readModalPicks(
+  userId: string,
+  deckId: string,
+): Promise<Record<string, { setCode: string; collectorNumber: string }> | null> {
+  if (!deckPrintingsEnabled()) return null;
+  const picks = await readHeldPricePicks(userId, [deckId]);
+  return Object.fromEntries(picks.map((p) => [
+    p.oracleId,
+    // `BrowsePrinting.setCode` is uppercased for display; a pick is stored lowercase.
+    { setCode: p.setCode.toUpperCase(), collectorNumber: p.collectorNumber },
+  ]));
+}

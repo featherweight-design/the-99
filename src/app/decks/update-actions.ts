@@ -1,5 +1,6 @@
 "use server";
 
+import { readModalPicks } from "../../lib/decks/printings";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, deckCards, deckUnresolvedRows, decks } from "../../db/schema";
@@ -72,6 +73,9 @@ export type DeckUpdatePreview = {
    *  until the player commits, so the preview has to say which version it is
    *  drafting against; a brew has nothing to say and renders no notice. */
   version: number | null;
+  /** The deck's held printing picks, so a card opened from the diff shows the deck's printing
+   *  (deck printings, E9). Null with the switch off; absent reads the same. */
+  printingPicks?: Record<string, { setCode: string; collectorNumber: string }> | null;
 };
 
 export type DeckUpdateResult =
@@ -213,6 +217,7 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
   const locked = neverCutEnabled() && plan.out.length > 0
     ? await lockedOracleIds(input.deckId, userId, "throw")
     : new Set<string>();
+  const printingPicks = await readModalPicks(userId, input.deckId);
 
   return {
     ok: true,
@@ -229,6 +234,7 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
     unresolved: plan.unresolved,
     noChange: plan.noChange,
     version: version?.number ?? null,
+    printingPicks,
   };
 }
 

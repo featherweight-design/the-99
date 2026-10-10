@@ -441,9 +441,10 @@ export function CardDetailProvider({
   /** See `CardDetailContextValue.deckOracleIds`. */
   deckOracleIds?: ReadonlySet<string>;
   /**
-   * Deck printings: the deck's held picks by oracle id (`DeckDetail.printingPicks`). Set, a card
-   * the deck holds opens with the picker in deck scope, picking for this deck; null (the switch
-   * off, or no deck) keeps today's collection-scoped picker.
+   * Deck printings: the deck's held picks by oracle id (`DeckDetail.printingPicks`). With a
+   * `deckId`, a card the deck holds opens with the picker in deck scope, picking for this deck.
+   * Without one (the review screen, the update diff), a picked card opens on the deck's printing
+   * and offers no pick. Null (the switch off) keeps today's collection-scoped picker everywhere.
    */
   deckPrintingPicks?: Readonly<Record<string, PreferredPrinting>> | null;
   /**
@@ -1281,10 +1282,20 @@ export function CardDetailProvider({
       deckId !== null && (await setDeckPrinting(deckId, oracleId, p)).ok,
     [deckId],
   );
-  const deckPrintingFor = (oracleId: string): DeckPrintingScope | undefined =>
-    deckId !== null && deckPrintingPicks !== null && (deckOracleIds ?? EMPTY_IDS).has(oracleId)
-      ? { pick: deckPrintingPicks[oracleId] ?? null, save: (p) => saveDeckPrinting(oracleId, p) }
-      : undefined;
+  const deckPrintingFor = (oracleId: string): DeckPrintingScope | undefined => {
+    if (deckPrintingPicks === null) return undefined;
+    // The deck page: a card the deck holds picks for it.
+    if (deckId !== null) {
+      return (deckOracleIds ?? EMPTY_IDS).has(oracleId)
+        ? { pick: deckPrintingPicks[oracleId] ?? null, save: (p) => saveDeckPrinting(oracleId, p) }
+        : undefined;
+    }
+    // A deck surface with no deck write (the review screen, the update diff, E9): a picked card
+    // opens on the deck's printing, with no picker; an unpicked one is today's modal, which already
+    // shows the Collection's printing the deck falls back to.
+    const pick = deckPrintingPicks[oracleId];
+    return pick ? { pick } : undefined;
+  };
 
   return (
     <CardDetailContext.Provider value={value}>

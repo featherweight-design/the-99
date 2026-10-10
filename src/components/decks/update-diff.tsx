@@ -228,7 +228,7 @@ export function UpdateDiff({
     // The rows open the card modal, and the builder's provider does not reach
     // this route — the update flow is its own page. It is one of the deck's own pages, and its
     // rows draw the deck page's bare `short`, so the modal does too (`deckPage`).
-    <CardDetailProvider deckPage>
+    <CardDetailProvider deckPage deckPrintingPicks={preview.printingPicks ?? null}>
       <div className="p-[16px_18px_24px] md:mx-auto md:w-full md:max-w-[860px] md:p-[44px_48px]">
         <h2 className="font-display font-bold text-[20px] md:text-[28px] m-0 text-[color:var(--fg)]">
           {copy.heading}
