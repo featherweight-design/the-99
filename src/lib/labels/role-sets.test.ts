@@ -102,6 +102,16 @@ describe("labelRoleSet", () => {
       expect(labelRoleSet([ramp("costReduction")], "Artifact", "Imprint — When this enters, you may exile a nonland card from your hand. Spells you cast that share a card type with the exiled card cost {2} less to cast.")).toEqual([]);
     });
 
+    it("does not count a tax, an opponent's discount or an alternative cost", () => {
+      for (const text of [
+        "Spells you cast cost {1} more to cast.",
+        "Spells your opponents cast cost {1} less to cast.",
+        "You may pay {W}{U}{B}{R}{G} rather than pay the mana cost for spells you cast.",
+      ]) {
+        expect(labelRoleSet([ramp("costReduction")], "Artifact", text)).toEqual([]);
+      }
+    });
+
     it("keeps a card ramp when another of its ramp jobs qualifies", () => {
       expect(labelRoleSet([ramp("fetchesLand"), ramp("tapsForMana")], "Creature", SCRYING)).toEqual(["ramp"]);
     });
