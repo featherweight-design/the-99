@@ -494,7 +494,7 @@ function ResultBlock({ panel, deps, standing, onSettled }: {
   const { items, asked } = panel;
   const d = copy.deeper;
   // A run that hit the per-run cap leaves the rest of the overage for the next one.
-  const more = asked >= MAX_CUTS_PER_RUN ? Math.max(0, panel.over - items.filter((i) => i.verdict === "pending").length) : 0;
+  const more = asked >= MAX_CUTS_PER_RUN ? Math.max(0, panel.over - items.filter((i) => i.verdict !== "accepted").length) : 0;
   const slots = Array.from({ length: Math.max(0, asked - items.length) }, (_, i) => items.length + i + 1);
   const hasRead = panel.itemsReport !== null;
   return (

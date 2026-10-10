@@ -157,6 +157,13 @@ describe("CutsPanelView", () => {
     expect(screen.getByTestId("cuts-more").textContent).toBe(copy.deeper.resultMore(27));
   });
 
+  it("cards the player kept still count as named, so they are not 'more'", async () => {
+    const p = withResult(20, 20, { over: 20, total: 120 });
+    p.items = p.items.map((it, i) => (i < 5 ? { ...it, verdict: "dismissed" as const } : it));
+    await mount(deps(p));
+    expect(screen.queryByTestId("cuts-more")).toBeNull();
+  });
+
   it("a run under the cap says nothing about more", async () => {
     await mount(deps(withResult(6, 6)));
     expect(screen.queryByTestId("cuts-more")).toBeNull();
