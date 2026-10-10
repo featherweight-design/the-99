@@ -23,7 +23,8 @@
 // answered, send the action and show ONLY the action's answer.
 
 import {
-  createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject,
+  createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
+  type RefObject,
 } from "react";
 import { twMerge } from "tailwind-merge";
 import type { BrowseCard, CardArt, PreferredPrinting } from "../../lib/collection/browse";
@@ -33,6 +34,12 @@ import { fetchCardDetail } from "../../lib/cards/fetch-card-detail";
 import { FitsPicker } from "./fits-picker";
 import { CardModal } from "./card-modal";
 import { cardCarouselCopy } from "../../lib/copy/card-carousel";
+
+// Edit copies (collection edit R2 §C) is loaded when first pressed: every deck surface mounts this
+// provider, and only /collection ever opens the sheet.
+const EditCopiesHost = lazy(() =>
+  import("../collection/edit-copies-host").then((m) => ({ default: m.EditCopiesHost })),
+);
 
 export const cardDetailCopy = {
   triggerAria: (name: string) => `View details for ${name}`,
@@ -378,6 +385,7 @@ const NOOP = () => {};
 import { STACK_DROP_MS } from "./card-modal";
 export { STACK_DROP_MS };
 
+type EditCardRef = { oracleId: string; name: string; imageUri: string | null };
 type OpenAt = {
   oracleId: string;
   printing: PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null };
@@ -399,6 +407,7 @@ export function CardDetailProvider({
   deckPage = false,
   deckOracleIds,
   comboDeckOracleIds,
+  collectionEdit = false,
 }: {
   children: ReactNode;
   /**
@@ -437,6 +446,12 @@ export function CardDetailProvider({
    * block calling a card in-deck because it happens to be proxyable.
    */
   comboDeckOracleIds?: readonly string[];
+  /**
+   * Collection edit R2 §C: the receipt draws `Edit copies`, and pressing it closes the modal and
+   * opens the Add cards sheet in edit mode for the card. Passed by `/collection` alone, and only
+   * with `COLLECTION_EDIT_ENABLED` on, so every other surface keeps a read-only receipt.
+   */
+  collectionEdit?: boolean;
   /**
    * Fired when a printing pick is ATTEMPTED, and again when it settles — including when
    * the write was refused and the modal has rolled its own state back. It is a nudge that
@@ -1095,6 +1110,27 @@ export function CardDetailProvider({
     [load],
   );
 
+  // Edit copies: the card whose sheet is up (or whose toast is), with the list it was paged from so
+  // the reopened details keep their Prev/Next. Cleared by the host when it has nothing left to show.
+  const [editing, setEditing] = useState<{ card: EditCardRef; siblings: SiblingCard[]; n: number } | null>(null);
+  const editCount = useRef(0);
+  const startEdit = useCallback(
+    (c: BrowseCard) => {
+      setEditing({ card: { oracleId: c.oracleId, name: c.name, imageUri: c.imageUri }, siblings, n: ++editCount.current });
+      close();
+    },
+    [siblings, close],
+  );
+  const editedId = editing?.card.oracleId ?? null;
+  const editedSiblings = editing?.siblings;
+  const reopenEdited = useCallback(() => {
+    if (editedId === null) return;
+    // Dropped without a re-read: the card is read again by the open below, after the write.
+    evict(editedId, { reread: false });
+    open(editedId, editedSiblings);
+  }, [editedId, editedSiblings, evict, open]);
+  const doneEditing = useCallback(() => setEditing(null), []);
+
   const prefetch = useCallback(
     (oracleId: string, art?: string | null) => {
       // Yields to every read already running: a prefetch is a guess, and a second request
@@ -1300,6 +1336,9 @@ export function CardDetailProvider({
           // Fits your decks' door, on a card with no sheet under it (stacked sheets R1, call 8): nothing
           // in a stacked card opens a further layer, and a stand-in's Take replaces the door anyway.
           onFindDeck={sheetsBelow > 0 ? null : fitsDoor(card)}
+          // Only from /collection, and only on a card nothing is stacked on: a partner opened from a
+          // combo block or a card over a sheet is not the reader's own collection row.
+          onEditCopies={collectionEdit && sheetsBelow === 0 && partnerOf === null ? () => startEdit(card) : null}
           fitsOpen={fitsFor !== null}
           // Only a card the door has something for: a door with nothing in it would still take its room
           // from the art.
@@ -1395,6 +1434,11 @@ export function CardDetailProvider({
           enterFrom={enterFrom}
           enterOffset={enterOffset}
         />
+      ) : null}
+      {editing ? (
+        <Suspense fallback={null}>
+          <EditCopiesHost key={editing.n} card={editing.card} onReopen={reopenEdited} onDone={doneEditing} />
+        </Suspense>
       ) : null}
     </CardDetailContext.Provider>
   );

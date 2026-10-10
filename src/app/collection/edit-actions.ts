@@ -4,8 +4,8 @@ import { after } from "next/server";
 import { requireUserId } from "../../lib/auth";
 import { collectionEditEnabled } from "../../lib/collection/edit-flag";
 import {
-  loadPrintingChoices as readPrintingChoices, printingRefKey, resolvePrintings, searchCollectionCatalog,
-  type CatalogCardResult, type PrintingChoice,
+  loadEditSheetData, loadPrintingChoices as readPrintingChoices, printingRefKey, resolvePrintings,
+  searchCollectionCatalog, type CardHolding, type CatalogCardResult, type PrintingChoice,
 } from "../../lib/collection/catalog-read";
 import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
 import { isFinish, type CollectionItemIdentity } from "../../lib/collection/key";
@@ -41,6 +41,8 @@ export async function settleCollectionWrite(): Promise<void> {
 
 /** A sheet session is ten to forty cards; this is a bound on a request, not on a session. */
 const MAX_LINES = 500;
+/** A card's whole holdings list rides along as `seen`: every printing in every finish, so a wider bound. */
+const MAX_SEEN = 5000;
 /** What one add line may bring in. A typo bound, not a holding bound: holdings can grow past it. */
 const MAX_ADDED = 9999;
 /** `collection_items.quantity` is a Postgres integer. An edit names a holding of any size. */
@@ -68,8 +70,8 @@ function identityOf(v: unknown): CollectionItemIdentity | null {
   return { oracleId: (oracleId as string).toLowerCase(), setCode: setCode.toLowerCase(), collectorNumber, finish };
 }
 
-function linesOf(value: unknown): unknown[] {
-  if (!Array.isArray(value) || value.length === 0 || value.length > MAX_LINES) throw new Error("bad collection lines");
+function linesOf(value: unknown, max = MAX_LINES): unknown[] {
+  if (!Array.isArray(value) || value.length === 0 || value.length > max) throw new Error("bad collection lines");
   return value;
 }
 
@@ -139,12 +141,20 @@ export type EditOutcome =
  * from the client, carried across a printing fix. A row naming no catalog printing (a bare
  * `Name,Qty` import's) keeps a null id.
  */
-export async function editCollection(actionId: string, rows: unknown, confirmShort?: unknown): Promise<EditOutcome> {
+export async function editCollection(
+  actionId: string,
+  rows: unknown,
+  confirmShort?: unknown,
+  seen?: unknown,
+): Promise<EditOutcome> {
   const userId = await signedInEditor();
   if (!isUuid(actionId)) throw new Error("bad action id");
-  const parsed = linesOf(rows).map((r) => {
+  // An edit may name every holding of one card (a removal zeroes each), so its bound is the snapshot's.
+  const parsed = linesOf(rows, MAX_SEEN).map((r) => {
     const identity = identityOf(r);
-    const { quantity, expected, condition } = r as { quantity?: unknown; expected?: unknown; condition?: unknown };
+    const { quantity, expected, condition, clearCondition } = r as {
+      quantity?: unknown; expected?: unknown; condition?: unknown; clearCondition?: unknown;
+    };
     // `expected` is REQUIRED: without it `staleEdits` has nothing to compare, and a sheet drawn
     // before another tab's save would overwrite the newer count.
     if (!identity || !isCount(quantity, 0, MAX_HELD) || !isCount(expected, 0, MAX_HELD)) {
@@ -154,7 +164,21 @@ export async function editCollection(actionId: string, rows: unknown, confirmSho
       && (typeof condition !== "string" || condition.length === 0 || condition.length > MAX_CONDITION)) {
       throw new Error("bad collection row");
     }
-    return { ...identity, quantity, expected, condition: condition as string | null | undefined };
+    if (clearCondition !== undefined && typeof clearCondition !== "boolean") throw new Error("bad collection row");
+    return { ...identity, quantity, expected, condition: condition as string | null | undefined, ...(clearCondition === true ? { clearCondition: true } : {}) };
+  });
+  // Every holding of the card the sheet showed. Absent for a caller that never drew the card's list.
+  // An empty list is a valid claim (a card the player did not own), so it is checked apart from `linesOf`.
+  if (seen !== undefined && (!Array.isArray(seen) || seen.length > MAX_SEEN)) throw new Error("bad collection lines");
+  const seenIdentities = seen === undefined ? undefined : (seen as unknown[]).map((s) => {
+    const identity = identityOf(s);
+    const q = (s as { quantity?: unknown } | null)?.quantity;
+    if (!identity || !isCount(q, 0, MAX_HELD)) throw new Error("bad collection row");
+    const cond = (s as { condition?: unknown }).condition;
+    if (cond !== undefined && cond !== null && (typeof cond !== "string" || cond.length > MAX_CONDITION)) {
+      throw new Error("bad collection row");
+    }
+    return { ...identity, quantity: q, condition: (cond as string | null | undefined) ?? null };
   });
   const catalog = await resolvePrintings(parsed);
   const editRows: EditRow[] = parsed.map((r) => {
@@ -168,7 +192,7 @@ export async function editCollection(actionId: string, rows: unknown, confirmSho
     return { ...r, scryfallId: printing?.scryfallId ?? null, condition: r.condition ?? null };
   });
   const result = await applyCollectionChange(
-    userId, { kind: "edit", rows: editRows }, { id: actionId, confirmShort: parseShortDecks(confirmShort) },
+    userId, { kind: "edit", rows: editRows, seen: seenIdentities }, { id: actionId, confirmShort: parseShortDecks(confirmShort) },
   );
   const done = settled(userId, result);
   if (done) return done;
@@ -193,4 +217,15 @@ export async function loadPrintingChoices(oracleId: unknown): Promise<PrintingCh
   const userId = await signedInEditor();
   if (!isUuid(oracleId)) return [];
   return readPrintingChoices(userId, oracleId as string);
+}
+
+/**
+ * What the Edit copies sheet starts from for one card: every catalog printing (a printing fix and
+ * `Add another printing` pick from these) and every holding the player has of it, the tiles' counts
+ * derived from the same holdings read.
+ */
+export async function loadEditSheet(oracleId: unknown): Promise<{ choices: PrintingChoice[]; holdings: CardHolding[] } | null> {
+  const userId = await signedInEditor();
+  if (!isUuid(oracleId)) return null;
+  return loadEditSheetData(userId, oracleId as string);
 }

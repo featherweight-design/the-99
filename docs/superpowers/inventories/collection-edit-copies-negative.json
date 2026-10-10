@@ -1,0 +1,24 @@
+{
+  "feature": "Collection screens PR 7, negative row: a card opened from a deck keeps a read-only receipt",
+  "note": "Needs an account with a deck holding Sol Ring. EDIT_DECK_ID names it. No Edit copies link may draw.",
+  "rows": [
+    {
+      "id": "deck-receipt-read-only",
+      "label": "/decks/[id]: the same card opened from a deck has a read-only receipt (negative row, no Edit copies)",
+      "view": "src/components/cards/card-detail-provider.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${EDIT_DECK_ID}",
+          "wait": "[role=tablist]",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^View details for Sol Ring",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        }
+      ]
+    }
+  ]
+}

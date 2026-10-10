@@ -138,6 +138,7 @@ export default async function CollectionPage({
         ownedSets={ownedSets}
         availabilityOk={availability !== null}
         viewHint={viewHint}
+        collectionEdit={collectionEditEnabled()}
       />
     </section>
   );

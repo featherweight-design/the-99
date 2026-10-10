@@ -108,6 +108,14 @@ export const collectionEditCopy = {
     titleRevert: (k: number) => `Reverting leaves ${decks(k)} short`,
     /** (new) The warning's confirm when it is a revert's. */
     confirmRevert: "Revert anyway",
+    // Edit copies (§C/§D): the handoff's strings for a save and a removal.
+    titleRemove: (card: string, k: number) => `Removing ${card} leaves ${decks(k)} short`,
+    titleSave: (k: number) => `Saving leaves ${decks(k)} short`,
+    confirmRemove: "Remove anyway",
+    confirmSave: "Save anyway",
+    /** (new) The body for one card, as the R2 D2 specimen draws it. */
+    bodyCard: (card: string) =>
+      `Nothing about these decks changes. Each will show ${card} as short and put it on its shopping list.`,
     body: "Nothing about these decks changes. Each will show what it's short of and put it on its shopping list.",
     figureOne: (k: number) => `short ${n(k)}`,
     figureMany: (k: number) => (k === 1 ? "1 card short" : `${n(k)} cards short`),
@@ -271,5 +279,57 @@ export const collectionEditCopy = {
       emptyBody: (q: string, card: string) => `No printing of ${card} comes from a set matching “${q}”.`,
       tileOwned: (q: number) => `you own ×${n(q)}`,
     },
+  },
+  // Edit copies and removal (§C/§D, R2 canvas): the handoff's strings. Lines marked (new) have no
+  // key there and go to /copy-review.
+  copies: {
+    edit: "Edit copies",
+    addToCollection: "Add to collection",
+    none: "none",
+    sheetTitle: "Edit copies",
+    sheetSub: (card: string, q: number, p: number) =>
+      `${card} · you own ×${n(q)} in ${n(p)} ${p === 1 ? "printing" : "printings"}`,
+    /** (new) The sub line for a card the player does not own yet. */
+    sheetSubNone: (card: string) => `${card} · you own none`,
+    addPrinting: "Add another printing",
+    newPrinting: "New printing",
+    newPrintingFirst: "Choose the new printing first",
+    fixIntro: (k: number) => `Which printing is this copy? ${n(k)} printings.`,
+    was: (from: string) => `was ${from}`,
+    goesWith: (k: number) => (k === 1 ? "your 1 copy goes with it" : `your ${n(k)} copies go with it`),
+    printingChanged: (k: number) => (k === 1 ? "1 printing changed" : `${n(k)} printings changed`),
+    lastCopy: (card: string) => `That's your last copy. Saving takes ${card} out of your collection.`,
+    save: "Save",
+    saving: "Saving…",
+    retry: "Try again",
+    saved: (card: string, q: number) => `Saved. ${card} ×${n(q)}.`,
+    undo: "Undo",
+    failed: "Nothing was saved. Your changes are still here.",
+    /** (new) A holding with no catalog printing behind it (a bare Name,Qty import). */
+    noPrinting: "No printing recorded",
+    /** (new) Reading the card's holdings, and the read failing. */
+    loading: "Reading your copies…",
+    loadFailed: "We couldn't read your copies just now. Check your connection and try again.",
+    /** (new) The collection moved while the sheet was open. */
+    stale: "This card's copies changed somewhere else, so the list is as it is now. Nothing was saved. Make your change again.",
+    /** (new) The sheet's own discard question (B6), worded for changes rather than a list. */
+    discardTitle: "Discard these changes?",
+    discardBody: "They're not saved yet. Close now and your copies stay as they were.",
+    discard: "Discard",
+    keep: "Keep editing",
+    /** (new) Two lines would fold into more copies than one holding can hold. */
+    tooMany: "That would be more copies than one printing can hold, so these two stay separate.",
+    /** (new) An Undo went through but the list could not be refreshed. */
+    undoneStale: "Undone. The list may show the old count until you refresh the page.",
+    /** (new) The entry's time, as the revert confirmation spells it for the toast's Undo. */
+    undoWhen: "today",
+  },
+  remove: {
+    action: "Remove from collection",
+    leaves: (card: string) => `${card} leaves your collection.`,
+    confirm: (q: number) => `Remove ${copies(q)}`,
+    keep: "Keep them",
+    toast: (card: string, q: number) => `${card} removed · ${copies(q)}`,
+    undo: "Undo",
   },
 } as const;

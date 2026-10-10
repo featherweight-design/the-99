@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { PrintingChoice, CatalogCardResult } from "../../lib/collection/catalog-read";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
-import { AddCardsSheet } from "./add-cards-sheet";
+import { AddCardsSheet, type AddCardsSheetProps } from "./add-cards-sheet";
 
 const copy = collectionEditCopy.add;
 const OID = "11111111-1111-4111-8111-111111111111";
@@ -33,7 +33,7 @@ const printing = (over: Partial<PrintingChoice> = {}): PrintingChoice => ({
 });
 const THREE = [printing(), printing({ scryfallId: "s2", setCode: "sld", setName: "Secret Lair", collectorNumber: "1512", owned: {} }), printing({ scryfallId: "s3", setCode: "cmm", setName: "Commander Masters", collectorNumber: "410", owned: {} })];
 
-function mount(over: Partial<React.ComponentProps<typeof AddCardsSheet>> = {}) {
+function mount(over: Partial<Extract<AddCardsSheetProps, { mode: "add" }>> = {}) {
   const onClose = vi.fn();
   const onSaved = vi.fn();
   render(<AddCardsSheet mode="add" onClose={onClose} onSaved={onSaved} totalCards={4492} {...over} />);

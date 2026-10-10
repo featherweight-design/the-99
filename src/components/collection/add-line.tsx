@@ -7,6 +7,7 @@ import { useState } from "react";
 import { cssUrl } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
 import { ownedNote, SPECIAL_FINISHES, type AddLineState } from "../../lib/collection/add-lines";
+import { isSynthetic, printingLabel as labelOf } from "../../lib/collection/edit-lines";
 import type { PrintingChoice } from "../../lib/collection/catalog-read";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { PrintingRegion } from "../cards/printing-region";
@@ -18,8 +19,9 @@ const thumb = (uri: string | null): React.CSSProperties =>
     ? { backgroundImage: cssUrl(uri), backgroundSize: "cover", backgroundPosition: "center" }
     : { background: identityGradient([]) };
 
+/** A holding with no catalog printing behind it (edit mode only) names no set to draw. */
 const printingLabel = (p: PrintingChoice) =>
-  `${p.setCode.toUpperCase()}${p.collectorNumber ? ` · #${p.collectorNumber}` : ""}`;
+  p.setCode === "" && p.collectorNumber === "" ? collectionEditCopy.copies.noPrinting : labelOf(p);
 
 export type AddLineProps = {
   line: AddLineState;
@@ -36,13 +38,27 @@ export type AddLineProps = {
   onFinish: (finish: AddLineState["finish"]) => void;
   onQuantity: (q: number) => void;
   onRemove: () => void;
+  /**
+   * Edit mode: the note at the right edge, in place of the add mode's holdings note. `tone` inks
+   * a change (`up` is --success, `down` stays body ink) and a note is plain text otherwise.
+   */
+  note?: { text: string; tone: "up" | "down" | "plain" } | null;
+  /** Edit mode's line for a printing still to choose: `New printing`, in place of the card's name. */
+  title?: string;
+  /** The printing region's question, when it is not the add mode's (a fixed printing asks which copy). */
+  intro?: string;
 };
 
 export function AddLine(props: AddLineProps) {
   const { line, picking, collapsed, pulse, phone, disabled } = props;
   const p = line.printing;
   const choosing = p === null;
-  const note = ownedNote(line);
+  // Edit mode names its own note (`props.note`), even when it has none to give: the add mode's
+  // `you own ×3 → ×4` would describe the line against a count the sheet already shows.
+  const note = props.note !== undefined ? null : ownedNote(line);
+  const editNote = props.note ?? null;
+  // A printing the catalog does not list cannot change finish: a row naming none cannot be made.
+  const synthetic = p !== null && isSynthetic(p);
   // One chip per finish beside nonfoil that the printing exists in. Pressing the lit one goes back
   // to nonfoil, which a foil-only or etched-only printing does not have, so that chip is locked on.
   const specials = p === null ? [] : SPECIAL_FINISHES.filter((f) => p.finishes.includes(f));
@@ -71,7 +87,7 @@ export function AddLine(props: AddLineProps) {
       <div className="flex items-start gap-[12px]">
         <span aria-hidden className="h-[42px] w-[30px] shrink-0 rounded-[4px]" style={thumb(p?.imageUri ?? line.imageUri)} />
         <div className="flex min-w-0 flex-1 flex-col gap-[6px] md:gap-[4px]">
-          <span className="text-[14px] font-semibold">{line.name}</span>
+          <span className="text-[14px] font-semibold">{choosing && props.title ? props.title : line.name}</span>
           {choosing ? (
             <span
               className="inline-flex h-[32px] items-center self-start rounded-[7px] border border-dashed px-[10px] text-[11.5px] md:h-[24px] md:rounded-[6px] md:text-[11px]"
@@ -109,7 +125,7 @@ export function AddLine(props: AddLineProps) {
       ) : (
         <>
           <div className="flex flex-wrap items-center gap-[8px] md:gap-[10px]">
-            {(specials.length > 0 ? specials : (["foil"] as const)).map((f) => {
+            {(synthetic ? [] : specials.length > 0 ? specials : (["foil"] as const)).map((f) => {
               const available = specials.length > 0;
               const on = line.finish === f;
               return (
@@ -152,8 +168,10 @@ export function AddLine(props: AddLineProps) {
               </button>
             </span>
             {note && !phone && <span className="ml-auto text-[11px] text-[color:var(--fg-faint)]">{ownedText(note)}</span>}
+            {editNote && !phone && <EditNote note={editNote} className="ml-auto" />}
           </div>
           {note && phone && <span className="text-[11px] text-[color:var(--fg-faint)]">{ownedText(note)}</span>}
+          {editNote && phone && <EditNote note={editNote} />}
         </>
       )}
 
@@ -164,7 +182,7 @@ export function AddLine(props: AddLineProps) {
           layout={phone ? "row" : "grid"}
           id={`add-printings-${line.id}`}
           printings={line.choices}
-          intro={phone ? collectionEditCopy.add.choose.introPhone(line.choices.length) : collectionEditCopy.add.choose.intro(line.choices.length)}
+          intro={props.intro ?? (phone ? collectionEditCopy.add.choose.introPhone(line.choices.length) : collectionEditCopy.add.choose.intro(line.choices.length))}
           cardName={line.name}
           colorIdentity={[]}
           onPick={props.onChoose}
@@ -172,6 +190,16 @@ export function AddLine(props: AddLineProps) {
         />
       )}
     </li>
+  );
+}
+
+const NOTE_INK = { up: "var(--success)", down: "var(--fg-body)", plain: "var(--fg-faint)" } as const;
+
+function EditNote({ note, className = "" }: { note: NonNullable<AddLineProps["note"]>; className?: string }) {
+  return (
+    <span className={`font-mono text-[11px] ${className}`} style={{ color: NOTE_INK[note.tone] }}>
+      {note.text}
+    </span>
   );
 }
 
