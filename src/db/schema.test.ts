@@ -27,6 +27,17 @@ describe("deck tuning schema", () => {
     expect(new PgDialect().sqlToQuery(where!).sql).toBe(`"deck_suggestion_runs"."status" = 'pending'`);
   });
 
+  it("names its tool, and lets model_calls record a Proposed cuts call", () => {
+    const render = (q: Parameters<PgDialect["sqlToQuery"]>[0]) => new PgDialect().sqlToQuery(q).sql.replace(/\s+/g, " ");
+    const runChecks = Object.fromEntries(getTableConfig(deckSuggestionRuns).checks.map((c) => [c.name, render(c.value)]));
+    expect(runChecks.deck_suggestion_runs_tool_check).toContain(`in ('suggested_changes', 'proposed_cuts')`);
+    const tool = getTableConfig(deckSuggestionRuns).columns.find((c) => c.name === "tool");
+    expect(tool?.notNull).toBe(true);
+    expect(tool?.default).toBe("suggested_changes");
+    const callChecks = Object.fromEntries(getTableConfig(modelCalls).checks.map((c) => [c.name, render(c.value)]));
+    expect(callChecks.model_calls_feature_check).toContain(`'proposed_cuts'`);
+  });
+
   it("ties both of an item's card columns to the catalog, and a run to its allowance unit", () => {
     // Counting foreign keys proves nothing about which columns carry them, so name the pairs.
     const pairs = (t: Parameters<typeof getTableConfig>[0]) =>

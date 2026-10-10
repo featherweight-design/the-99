@@ -7,7 +7,7 @@ import { AllowanceSpentError, recordModelUsage, reserveModelCall, settleModelCal
 import type { ModelErrorClass } from "../model/client";
 import { neverCutEnabled } from "../decks/never-cut-flag";
 import { PROFILE_VERSION } from "../profile/version";
-import { intentTooLong, TUNING_MODEL } from "./limits";
+import { intentTooLong, SUGGESTED_CHANGES_TOOL, TUNING_MODEL } from "./limits";
 import { PROMPT_VERSION } from "./prompt-version";
 import type { ValidatedSuggestion, ValidationReport } from "./validate";
 
@@ -62,7 +62,7 @@ async function recordLate(tx: Tx, callId: string, billed: Billed | undefined): P
 /**
  * ONE transaction: reserve an allowance unit, then insert the pending row. Committed before any
  * network call. The allowance lock makes the last unit single-winner across decks; the partial
- * unique index makes a second concurrent run on one deck impossible, and because the unit and
+ * unique index (per deck AND tool) makes a second concurrent run of this tool on one deck impossible, and because the unit and
  * the row share the transaction, the loser of that race holds no unit. A run holds both or
  * neither.
  */
@@ -101,7 +101,7 @@ export async function startRun(
       if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
       const [row] = await tx.insert(deckSuggestionRuns).values({
         ...(opts.runId ? { id: opts.runId } : {}),
-        deckId, userId, inputFingerprint: fingerprint, modelCallId: unit.id,
+        deckId, userId, tool: SUGGESTED_CHANGES_TOOL, inputFingerprint: fingerprint, modelCallId: unit.id,
         model: TUNING_MODEL, promptVersion: PROMPT_VERSION, profileVersion: PROFILE_VERSION,
         readVersion,
         status: "pending",
