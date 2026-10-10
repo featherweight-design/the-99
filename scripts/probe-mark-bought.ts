@@ -7,8 +7,9 @@
 //      still needs one. Bought for the SENIOR deck, the receipt names nobody.
 //   2. A DRAFT DECK's need is read from its own vantage: bought for a brew, it needs nothing more
 //      and no committed deck is named.
-//   3. TWO PURCHASES AT ONCE (two printings of one card): each receipt's before and after differ by
-//      exactly its own copies, because both are read under the write's lock.
+//   3. TWO PURCHASES AT ONCE (two printings of one card): each receipt is its own. `before` is the
+//      after snapshot less this write's copies, so a concurrent purchase never shows up in it, and
+//      each receipt's `after` already counts whatever committed before it under the lock.
 //   4. THE TOAST'S UNDO leaves the source deck out of the deck check, and only for that entry's own
 //      deck: naming another deck changes nothing.
 //   5. MEMBERSHIP IS CHECKED INSIDE THE WRITE: a card removed from the deck is refused `notInDeck`
@@ -109,7 +110,9 @@ async function main() {
     const [p, q] = await Promise.all([buy(junior, A, "2", 0, 1), buy(junior, A, "3", 0, 2)]);
     const delta = (r: ChangeResult) =>
       r.status === "applied" && r.receipt ? (r.receipt.after?.owned ?? 0) - (r.receipt.before?.owned ?? 0) : NaN;
-    check("each concurrent receipt counts exactly its own copies", delta(p) === 1 && delta(q) === 2,
+    const owns = (r: ChangeResult) => (r.status === "applied" ? r.receipt?.after?.owned ?? NaN : NaN);
+    check("each concurrent receipt counts exactly its own copies, and the later one sees the earlier",
+      delta(p) === 1 && delta(q) === 2 && Math.max(owns(p), owns(q)) - Math.min(owns(p), owns(q)) === (owns(p) > owns(q) ? 1 : 2),
       `deltas ${delta(p)}, ${delta(q)}`);
 
     // ---- 5. Membership, checked inside the write ---------------------------------------------

@@ -114,10 +114,10 @@ export type ChangeOptions = {
   /** Where the change came from, for history: `shopping:<deck id>`. Uploads set their own. */
   source?: string;
   /**
-   * I got it's receipt: one card's availability either side of the write, read under the lock so
-   * no other write can land between them. `before` and `after` are unexcluded (who holds each
-   * copy, by seniority, the source deck in the queue); `afterFromDeck` is `deckId`'s own vantage,
-   * the one its Shopping list draws.
+   * I got it's receipt: one card's availability after the write, and before it as the same claims
+   * snapshot less this write's copies. `before` and `after` are unexcluded (who holds each copy, by
+   * seniority, the source deck in the queue); `afterFromDeck` is `deckId`'s own vantage, the one its
+   * Shopping list draws.
    */
   receipt?: { oracleId: string; deckId: string };
   /**
@@ -130,7 +130,9 @@ export type ChangeOptions = {
 };
 
 export type ReceiptSnapshots = {
-  before: Availability | null;
+  /** `after`'s claims with this write's copies taken off `owned`: one snapshot, so the two cannot
+   *  disagree about any other deck. Only `owned` and `claims`, which is all seniority reads. */
+  before: Pick<Availability, "owned" | "claims"> | null;
   after: Availability | null;
   afterFromDeck: Availability | null;
 };
@@ -619,11 +621,25 @@ export async function applyCollectionChange(
       const lowered = [...new Set(plan.filter((p) => qty(p.after) < qty(p.before)).map((p) => p.oracleId))];
       const ownedBefore = opts.ownedCounts && !opts.dryRun ? await readOwnedCounts(tx, userId) : null;
       const claimsBefore = lowered.length > 0 ? await loadAvailability(userId, { oracleIds: lowered }, tx) : null;
+      // ONE claims snapshot for the receipt's before and after. Claim writers (a commit, a deck
+      // edit) take no collection lock, so two reads either side of the write could straddle another
+      // deck's commit and credit this purchase with it. `before` is that same snapshot less the
+      // copies this write added, which is exactly what the write changed.
+      const receiptSnapshots = async (oracleId: string): Promise<ReceiptSnapshots> => {
+        const after = await receiptOf();
+        const added = plan
+          .filter((p) => p.oracleId === oracleId)
+          .reduce((n, p) => n + qty(p.after) - qty(p.before), 0);
+        return {
+          before: after ? { ...after, owned: after.owned - added } : null,
+          after,
+          afterFromDeck: await receiptOf(opts.receipt!.deckId),
+        };
+      };
       const receiptOf = async (excludeDeckId?: string) => opts.receipt
         ? (await loadAvailability(userId, { oracleIds: [opts.receipt.oracleId], excludeDeckId }, tx))
           .get(opts.receipt.oracleId) ?? null
         : null;
-      const receiptBefore = opts.receipt && !opts.dryRun ? await receiptOf() : null;
 
       // ---- 6. The rows.
       if (change.kind === "replace") {
@@ -668,9 +684,7 @@ export async function applyCollectionChange(
         status: "applied" as const,
         entry: { id: opts.id, seq: Number(claimed.seq), kind: entryKind(change), rows, ...moves },
         ...(ownedBefore ? { owned: { before: ownedBefore, after: await readOwnedCounts(tx, userId) } } : {}),
-        ...(opts.receipt
-          ? { receipt: { before: receiptBefore, after: await receiptOf(), afterFromDeck: await receiptOf(opts.receipt.deckId) } }
-          : {}),
+        ...(opts.receipt ? { receipt: await receiptSnapshots(opts.receipt.oracleId) } : {}),
       };
     });
   } catch (error) {
