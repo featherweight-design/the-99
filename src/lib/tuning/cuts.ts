@@ -4,6 +4,7 @@ import { isBasicLand } from "../decks/grouping";
 import { recommendedMix, ROLE_ORDER, type MixRole } from "../decks/mix";
 import { curveBucket } from "../decks/stats";
 import { fitSkeleton } from "../profile/fit";
+import { producesInfiniteTurns } from "../spellbook/combo-features";
 import type { DeckProfile } from "../profile/types";
 
 /**
@@ -191,10 +192,12 @@ export function cutFacts(input: {
 function bracketFlags(profile: DeckProfile, declared: number | null): [BracketFlag, ReadonlySet<string>][] {
   const b = profile.brackets;
   const commanders = new Set(profile.commanderOracleIds);
-  const combo = new Set<string>();
-  for (const c of b.twoCardCombos) {
-    for (const card of c.cards) if (!commanders.has(card.oracleId)) combo.add(card.oracleId);
-  }
+  const piecesOf = (combos: typeof b.twoCardCombos) => {
+    const ids = new Set<string>();
+    for (const c of combos) for (const card of c.cards) if (!commanders.has(card.oracleId)) ids.add(card.oracleId);
+    return ids;
+  };
+  const combo = piecesOf(b.twoCardCombos);
   const all: [BracketFlag, ReadonlySet<string>][] = [
     ["gameChanger", new Set(b.gameChangers.map((c) => c.oracleId))],
     ["massLandDenial", new Set(b.massLandDenial.map((c) => c.oracleId))],
@@ -204,15 +207,19 @@ function bracketFlags(profile: DeckProfile, declared: number | null): [BracketFl
   if (declared === null) return all;
   if (declared >= 4) return [];
   // 1 to 3, by `violationsFor`: bracket 1 forbids every flag; 2 forbids Game Changers, mass land
-  // denial and combos; 3 allows combos and extra turns, and a Game Changer only past its allowance.
+  // denial and combos; 3 allows extra turns and a Game Changer up to its allowance, and a combo only
+  // when it is a loop (it produces infinite turns).
   const limit = GAME_CHANGER_LIMIT[Math.min(Math.max(declared, 1), 3) as 1 | 2 | 3];
-  const bears: Record<BracketFlag, boolean> = {
+  const bears: Record<Exclude<BracketFlag, "combo">, boolean> = {
     gameChanger: b.gameChangers.length > limit,
     massLandDenial: true,
     extraTurn: declared === 1,
-    combo: declared <= 2,
   };
-  return all.filter(([flag]) => bears[flag]);
+  const comboPieces = declared <= 2 ? combo : piecesOf(b.twoCardCombos.filter((c) => producesInfiniteTurns(c.produces)));
+  return all.flatMap(([flag, ids]): [BracketFlag, ReadonlySet<string>][] => {
+    if (flag === "combo") return [[flag, comboPieces]];
+    return bears[flag] ? [[flag, ids]] : [];
+  });
 }
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));

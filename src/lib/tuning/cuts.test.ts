@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 
+import type { ComboRef, FlagSource } from "../profile/types";
 import { cutFacts } from "./cuts";
 import { deck, profile, row, support } from "./cuts-fixture";
 
 const facts = (over: Parameters<typeof cutFacts>[0] extends infer I ? Partial<I> : never = {}) =>
   cutFacts({ profile: profile(), locked: new Set(), support: null, declaredBracket: null, ...over });
+const combo = (variantId: string, ids: string[], produces: string[]): ComboRef => ({
+  variantId, cards: ids.map((oracleId) => ({ oracleId, name: oracleId })), produces, bracketTag: "R", usesCommander: false,
+  manaValueNeeded: null, manaNeeded: null, steps: null, notablePrerequisites: null,
+});
 const card = (f: ReturnType<typeof cutFacts>, id: string) => f.cards.find((c) => c.oracleId === id);
 
 describe("cutFacts", () => {
@@ -78,29 +83,52 @@ describe("cutFacts", () => {
   });
 
   describe("bracket flags against the declared bracket", () => {
-    const gc = { gameChangerIds: new Set(["bear1", "bear2"]) };
-    const flags = (declaredBracket: number | null, over = gc) =>
-      facts({ profile: profile(over), declaredBracket }).brackets.map((b) => b.flag);
+    const four = { gameChangerIds: new Set(["bear1", "bear2", "bear3", "bear4"]) };
+    const everything = {
+      ...four,
+      mldFlags: new Map<string, FlagSource[]>([["bear5", ["oracle_rule"]]]),
+      extraTurnFlags: new Map<string, FlagSource[]>([["bear6", ["oracle_rule"]]]),
+      twoCardCombos: [
+        combo("c-plain", ["bear7", "bear8"], ["Infinite mana"]),
+        combo("c-loop", ["bear9", "bear10"], ["Infinite turns"]),
+      ],
+    };
+    const flags = (declaredBracket: number | null, over: Partial<Parameters<typeof profile>[0]> = everything) =>
+      cutFacts({ profile: profile(over), locked: new Set(), support: null, declaredBracket })
+        .brackets.map((b) => b.flag);
+    const cards = (declaredBracket: number | null, flag: string) =>
+      cutFacts({ profile: profile(everything), locked: new Set(), support: null, declaredBracket })
+        .brackets.find((b) => b.flag === flag)?.cards.map((c) => c.oracleId).sort();
 
     it("names every flag when no bracket is declared", () => {
-      expect(flags(null)).toEqual(["gameChanger"]);
+      expect(flags(null)).toEqual(["gameChanger", "massLandDenial", "extraTurn", "combo"]);
     });
 
-    it("names Game Changers for a declared 2, which allows none", () => {
-      expect(flags(2)).toEqual(["gameChanger"]);
-      expect(card(facts({ profile: profile(gc), declaredBracket: 2 }), "bear1")!.flags).toEqual(["gameChanger"]);
+    it("names all four for a declared 1", () => {
+      expect(flags(1)).toEqual(["gameChanger", "massLandDenial", "extraTurn", "combo"]);
     });
 
-    it("names Game Changers for a declared 3 only past its allowance of three", () => {
-      expect(flags(3)).toEqual([]);
-      expect(flags(3, { gameChangerIds: new Set(["bear1", "bear2", "bear3", "bear4"]) })).toEqual(["gameChanger"]);
+    it("drops extra turns at a declared 2, and keeps Game Changers, mass land denial and combos", () => {
+      expect(flags(2)).toEqual(["gameChanger", "massLandDenial", "combo"]);
+      expect(cards(2, "combo")).toEqual(["bear10", "bear7", "bear8", "bear9"]);
+    });
+
+    it("at a declared 3 names a combo only when it is a loop, and a Game Changer only past three", () => {
+      expect(flags(3)).toEqual(["gameChanger", "massLandDenial", "combo"]);
+      expect(cards(3, "combo")).toEqual(["bear10", "bear9"]);
+      expect(flags(3, { gameChangerIds: new Set(["bear1", "bear2"]) })).toEqual([]);
     });
 
     it("names no flag for a declared 4 or 5, however many the deck holds", () => {
-      const four = { gameChangerIds: new Set(["bear1", "bear2", "bear3", "bear4"]) };
-      expect(flags(3, four)).toEqual(["gameChanger"]);
-      expect(flags(4, four)).toEqual([]);
-      expect(flags(5, four)).toEqual([]);
+      expect(flags(4)).toEqual([]);
+      expect(flags(5)).toEqual([]);
+    });
+
+    it("carries the flags a card bears on the card itself", () => {
+      const f = cutFacts({ profile: profile(everything), locked: new Set(), support: null, declaredBracket: 3 });
+      expect(card(f, "bear1")!.flags).toEqual(["gameChanger"]);
+      expect(card(f, "bear9")!.flags).toEqual(["combo"]);
+      expect(card(f, "bear7")!.flags).toEqual([]);
     });
   });
 
