@@ -87,10 +87,19 @@ export const SYNOPSIS_MAX_TOKENS = 3_000;
  * The contract-8 ceiling (plan 2026-10-10-overview-accuracy.md, section 6). The reply adds a
  * `{ text, evidence }` object to every line and a seven-topic checklist whose weakness lines are
  * written before the code cuts them to three: about 1,100 tokens over contract 7's worst case of
- * 2,000, plus the same 1,000 of reasoning headroom, rounded up to the 4,500 the plan's cost
- * ceiling was priced at. The spend guard's worst case is computed from this figure.
+ * 2,000, plus the same 1,000 of reasoning headroom.
+ *
+ * 6,000, raised from the plan's 4,500 after the gate's third and fourth samples (2026-10-10):
+ * seven calls in 30 failed as an "Unterminated string", and each cost about what 4,500 output
+ * tokens would (an inference from the ledger's dollars; the stop reason was not logged then, and
+ * it is now), against 2,100 to 2,400 for an answer that finished. Gods failed both attempts in
+ * sample 4 and finished at about 4,600 tokens under the new ceiling. The finished answers are
+ * tight (JSON 4.0 to 4.9k characters, about 1,300 tokens), so the spread is reasoning, which counts inside the ceiling
+ * and is unbounded by it. Paying for the headroom costs nothing on a call that finishes; it is
+ * priced in full only by the spend guard's reservation (`FEATURE_CALLS.synopsis`, +$0.06 per
+ * write) and by a reply that runs away.
  */
-export const SYNOPSIS_MAX_TOKENS_V8 = 4_500;
+export const SYNOPSIS_MAX_TOKENS_V8 = 6_000;
 
 /**
  * Counts per section (`SYNOPSIS-modal.md` §4.2). Checked by the validator, never by the schema:
