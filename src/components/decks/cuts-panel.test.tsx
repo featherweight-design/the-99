@@ -107,8 +107,10 @@ describe("CutsPanelView", () => {
     const first = screen.getAllByRole("article")[0];
     fireEvent.click(within(first).getByRole("button", { name: copy.cut }));
     await waitFor(() => expect(d.cut).toHaveBeenCalledWith("i1"));
+    await waitFor(() => expect(d.read).toHaveBeenCalledTimes(2));
     fireEvent.click(within(screen.getAllByRole("article")[1]).getByRole("button", { name: copy.keep }));
     await waitFor(() => expect(d.keep).toHaveBeenCalledWith("i2"));
+    await waitFor(() => expect(d.read).toHaveBeenCalledTimes(3));
   });
 
   it("a refused cut says so on its own row and changes nothing", async () => {
