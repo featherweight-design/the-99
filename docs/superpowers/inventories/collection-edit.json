@@ -1,0 +1,192 @@
+{
+  "feature": "Collection screens PR 2: the Add cards sheet (add mode) and the place head's + Add",
+  "note": "Needs COLLECTION_EDIT_ENABLED=true on the server and a collection with Sol Ring in the catalog (any account with cards). Deliberately no saving, saved or failed rows: a saved state writes a ledger entry to whatever database the app points at, and the three are covered by add-cards-sheet.test.tsx. The History tab and B8's History link draw only once /collection/history ships (PR 6), so no row has them. The empty-state doors and Home step one are PR 3. Steps are Playwright verbs.",
+  "shares": {
+    "module": "src/components/collection/add-cards-sheet.tsx",
+    "binding": "AddCardsSheet",
+    "note": "The place head mounts the sheet directly, so each row's `view` is the head. PR 7 adds the card modal's Edit copies host as a second view when it mounts the same sheet in edit mode."
+  },
+  "rows": [
+    {
+      "id": "place-head",
+      "label": "/collection: the head with + Add, strip at y 109",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        }
+      ],
+      "view": "src/components/collection/collection-place-head.tsx"
+    },
+    {
+      "id": "add-empty",
+      "label": "Add cards: the empty sheet (side sheet at 1300, full height at 390, upload line on the phone)",
+      "view": "src/components/collection/collection-place-head.tsx",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^(\\+\\s*)?Add( cards)?$",
+          "wait": "[role=dialog]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "add-results",
+      "label": "Add cards: typing, with results",
+      "view": "src/components/collection/collection-place-head.tsx",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^(\\+\\s*)?Add( cards)?$",
+          "wait": "[role=dialog]",
+          "settle": 800
+        },
+        {
+          "fill": "[role=dialog] input[role=combobox]",
+          "text": "sol r",
+          "wait": "[role=dialog] [role=option]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "add-no-results",
+      "label": "Add cards: no results",
+      "view": "src/components/collection/collection-place-head.tsx",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^(\\+\\s*)?Add( cards)?$",
+          "wait": "[role=dialog]",
+          "settle": 800
+        },
+        {
+          "fill": "[role=dialog] input[role=combobox]",
+          "text": "zzqxj",
+          "wait": "[role=dialog] [role=status]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "add-required-printing",
+      "label": "Add cards: the required printing step, nothing chosen, search and Save disabled",
+      "view": "src/components/collection/collection-place-head.tsx",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^(\\+\\s*)?Add( cards)?$",
+          "wait": "[role=dialog]",
+          "settle": 800
+        },
+        {
+          "fill": "[role=dialog] input[role=combobox]",
+          "text": "sol ring",
+          "wait": "[role=dialog] [role=option]",
+          "settle": 800
+        },
+        {
+          "click": "[role=dialog] [role=option]",
+          "wait": "[role=dialog] [role=radio]",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "add-line",
+      "label": "Add cards: a chosen line, foil, count and the holdings note",
+      "view": "src/components/collection/collection-place-head.tsx",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^(\\+\\s*)?Add( cards)?$",
+          "wait": "[role=dialog]",
+          "settle": 800
+        },
+        {
+          "fill": "[role=dialog] input[role=combobox]",
+          "text": "sol ring",
+          "wait": "[role=dialog] [role=option]",
+          "settle": 800
+        },
+        {
+          "click": "[role=dialog] [role=option]",
+          "wait": "[role=dialog] [role=radio]",
+          "settle": 600
+        },
+        {
+          "click": "[role=dialog] [role=radio]",
+          "wait": "[role=dialog] [aria-pressed]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "add-discard",
+      "label": "Add cards: closing with an unsaved line asks first",
+      "view": "src/components/collection/collection-place-head.tsx",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^(\\+\\s*)?Add( cards)?$",
+          "wait": "[role=dialog]",
+          "settle": 800
+        },
+        {
+          "fill": "[role=dialog] input[role=combobox]",
+          "text": "sol ring",
+          "wait": "[role=dialog] [role=option]",
+          "settle": 800
+        },
+        {
+          "click": "[role=dialog] [role=option]",
+          "wait": "[role=dialog] [role=radio]",
+          "settle": 600
+        },
+        {
+          "click": "[role=dialog] [role=radio]",
+          "wait": "[role=dialog] [aria-pressed]",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "^Close$",
+          "wait": "[role=alertdialog]",
+          "settle": 800
+        }
+      ]
+    }
+  ]
+}

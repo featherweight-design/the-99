@@ -5,14 +5,18 @@
 // trap, no live region of its own. The modal owns the single live region and
 // receives strings through `onAnnounce`.
 
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { PrintingChoice } from "../../lib/collection/catalog-read";
+import { heldOf } from "../../lib/collection/add-lines";
 import type { BrowsePrinting, PreferredPrinting } from "../../lib/collection/browse";
 import { comparePrintings, cssUrl, matchesPreference } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
 import { printingPickerCopy } from "../../lib/copy/collection";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { SearchField } from "../ui/text-field";
 
 const copy = printingPickerCopy.printing;
+const chooseCopy = collectionEditCopy.add.choose;
 
 /**
  * Entry count past which search, finish chips and set group headers appear.
@@ -64,18 +68,10 @@ function compareSetGroups(
   return a.label.localeCompare(b.label);
 }
 
-export function PrintingRegion({
-  id,
-  printings,
-  preferred,
-  resolvedKey,
-  cardName,
-  colorIdentity,
-  onPick,
-  onReset,
-  onForget,
-  onAnnounce,
-}: {
+type ArtRegionProps = {
+  role?: "art";
+  source?: "owned";
+  layout?: undefined;
   /** Matches the trigger's aria-controls. Two instances would collide, so the modal owns it. */
   id: string;
   printings: BrowsePrinting[];
@@ -91,7 +87,66 @@ export function PrintingRegion({
   onReset: () => void;
   onForget: () => void;
   onAnnounce: (message: string) => void;
-}) {
+};
+
+/**
+ * The required printing step of the Add cards sheet (collection edit R1, B4a/B4m): every catalog
+ * printing of one card, nothing selected and nothing defaulted. It owns no preference: no pick or
+ * shown-now badge, no reset, no dormant tile, and an arrow key MOVES focus without choosing, since
+ * a choice here completes a line and closes the step. The caller announces what was chosen.
+ */
+type ChooseRegionProps = {
+  role: "choose";
+  source: "catalog";
+  /** `row` is the phone's one sideways-scrolling row; the grid is the default. */
+  layout?: "grid" | "row";
+  id: string;
+  printings: PrintingChoice[];
+  intro: string;
+  cardName: string;
+  colorIdentity: string[];
+  onPick: (p: PrintingChoice) => void;
+  /** Move focus into the picker's own search (else its first tile) when it opens. */
+  autoFocus?: boolean;
+};
+
+export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
+  const choose = props.role === "choose";
+  const row = choose && props.layout === "row";
+  const { id, cardName, colorIdentity } = props;
+  const preferred = props.role === "choose" ? null : props.preferred;
+  const resolvedKey = props.role === "choose" ? null : props.resolvedKey;
+  const sourcePrintings = props.printings;
+  // A catalog printing becomes a tile through the same entry shape an owned one has, so the grid,
+  // the search and the keyboard are written once. `quantity` is what the player holds of it.
+  const catalogByKey = useMemo(
+    () => (choose ? new Map((sourcePrintings as PrintingChoice[]).map((c) => [printingKey(c), c])) : null),
+    [choose, sourcePrintings],
+  );
+  const printings: BrowsePrinting[] = useMemo(
+    () =>
+      choose
+        ? (sourcePrintings as PrintingChoice[]).map((c) => ({
+            setCode: c.setCode,
+            scryfallId: c.scryfallId,
+            setName: c.setName,
+            collectorNumber: c.collectorNumber,
+            releasedAt: c.releasedAt,
+            quantity: heldOf(c),
+            finishes: {},
+            imageUri: c.imageUri,
+            flavorName: c.flavorName,
+          }))
+        : (sourcePrintings as BrowsePrinting[]),
+    [choose, sourcePrintings],
+  );
+  const rootRef = useRef<HTMLDivElement>(null);
+  const autoFocus = props.role === "choose" && props.autoFocus === true;
+  useEffect(() => {
+    if (!autoFocus) return;
+    const root = rootRef.current;
+    (root?.querySelector<HTMLElement>("input") ?? root?.querySelector<HTMLElement>('[role="radio"]'))?.focus();
+  }, [autoFocus]);
   const [query, setQuery] = useState("");
   const [finish, setFinish] = useState<FinishFilter>("all");
   const tileRefs = useRef(new Map<string, HTMLButtonElement>());
@@ -132,6 +187,8 @@ export function PrintingRegion({
   }, [printings, dormantPick]);
 
   const overflow = entries.length > OVERFLOW_THRESHOLD;
+  // The phone's row is one run of tiles; set headers only make sense in the grid.
+  const grouped = overflow && !row;
 
   const counts = useMemo(() => {
     let foil = 0;
@@ -178,7 +235,7 @@ export function PrintingRegion({
   // Past the threshold the tiles are grouped under set headers; below it they are one flat
   // grid in the order aggregateCollection produced.
   const groups = useMemo(() => {
-    if (!overflow) return [{ key: "", label: "", code: "", releasedAt: null as string | null, items: visible }];
+    if (!grouped) return [{ key: "", label: "", code: "", releasedAt: null as string | null, items: visible }];
     const byCode = new Map<string, { key: string; label: string; code: string; releasedAt: string | null; items: Entry[] }>();
     for (const p of visible) {
       const g = byCode.get(p.setCode);
@@ -197,7 +254,7 @@ export function PrintingRegion({
       });
     }
     return [...byCode.values()].sort(compareSetGroups);
-  }, [visible, overflow]);
+  }, [visible, grouped]);
 
   /** Selectable entries in render order — the roving-tabindex sequence. Dormant is excluded. */
   const navigable = useMemo(
@@ -227,12 +284,18 @@ export function PrintingRegion({
     const next = navigable[index];
     if (next === undefined) return;
     tileRefs.current.get(printingKey(next))?.focus();
-    pick(next);
+    // Choosing ends the required step, so an arrow key only moves.
+    if (!choose) pick(next);
   }
 
   function pick(p: Entry) {
-    onPick(p);
-    onAnnounce(copy.announcePicked(p.setName ?? p.setCode, p.collectorNumber));
+    if (props.role === "choose") {
+      const chosen = catalogByKey?.get(printingKey(p));
+      if (chosen) props.onPick(chosen);
+      return;
+    }
+    props.onPick(p);
+    props.onAnnounce(copy.announcePicked(p.setName ?? p.setCode, p.collectorNumber));
   }
 
   function onKeyDown(e: React.KeyboardEvent, index: number) {
@@ -255,29 +318,32 @@ export function PrintingRegion({
   function onQueryChange(value: string) {
     setQuery(value);
     const q = value.trim();
-    if (q === "") return;
-    onAnnounce(copy.announceMatches(matching(q.toLowerCase(), finish).length, q));
+    if (q === "" || props.role === "choose") return;
+    props.onAnnounce(copy.announceMatches(matching(q.toLowerCase(), finish).length, q));
   }
 
   return (
     // Mobile: a bordered continuation of the promoted Set row. Desktop: a block below the
     // meta row on the Prev/Next divider's rhythm.
     <div
+      ref={rootRef}
       className={
-        "-mt-px rounded-b-[10px] border border-t-0 border-dashed border-[color:var(--border-dashed)] p-[14px] " +
-        "md:mt-[24px] md:rounded-none md:border-0 md:border-t md:border-solid md:border-[color:var(--border)] md:p-0 md:pt-[22px]"
+        choose
+          ? "border-t border-dashed border-[color:var(--border-dashed)] pt-[12px]"
+          : "-mt-px rounded-b-[10px] border border-t-0 border-dashed border-[color:var(--border-dashed)] p-[14px] " +
+            "md:mt-[24px] md:rounded-none md:border-0 md:border-t md:border-solid md:border-[color:var(--border)] md:p-0 md:pt-[22px]"
       }
     >
       <div className="flex items-start justify-between gap-[12px]">
         <p className="text-[13.5px] m-0" style={{ color: "var(--fg-muted)" }}>
-          {preferred === null ? copy.regionIntro(printings.length) : copy.regionIntroPicked}
+          {props.role === "choose" ? props.intro : preferred === null ? copy.regionIntro(printings.length) : copy.regionIntroPicked}
         </p>
-        {preferred !== null && (
+        {props.role !== "choose" && preferred !== null && (
           <button
             type="button"
             // The modal announces this one — the string names the printing that becomes
             // current, which only the resolver knows.
-            onClick={onReset}
+            onClick={props.onReset}
             aria-label={copy.resetAria}
             className="shrink-0 cursor-pointer text-[13px] text-[color:var(--accent)]"
           >
@@ -302,8 +368,9 @@ export function PrintingRegion({
           <button
             type="button"
             onClick={() => {
-              onForget();
-              onAnnounce(copy.announceForget);
+              if (props.role === "choose") return;
+              props.onForget();
+              props.onAnnounce(copy.announceForget);
             }}
             aria-label={copy.dormantClearAria}
             className="shrink-0 cursor-pointer text-[12.5px] text-[color:var(--accent)]"
@@ -319,16 +386,17 @@ export function PrintingRegion({
           <SearchField
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
-            placeholder={copy.searchPlaceholder}
-            aria-label={copy.searchAriaLabel}
+            placeholder={choose ? chooseCopy.searchPlaceholder : copy.searchPlaceholder}
+            aria-label={choose ? chooseCopy.searchAria : copy.searchAriaLabel}
             className="text-[16px] md:text-[13.5px] py-[9px]"
           />
-          {/* The chip geometry, not a chip component: single-select, no dismiss ✕. */}
-          <div className="flex flex-wrap items-center gap-[6px] md:gap-[8px]">
+          {/* The chip geometry, not a chip component: single-select, no dismiss ✕. A catalog
+              printing's finishes are not held counts, so the choose role has no finish chips. */}
+          {!choose && <div className="flex flex-wrap items-center gap-[6px] md:gap-[8px]">
             <FinishChip label={copy.filterAll(counts.all)} active={finish === "all"} onClick={() => setFinish("all")} />
             <FinishChip label={copy.filterFoil(counts.foil)} active={finish === "foil"} onClick={() => setFinish("foil")} />
             <FinishChip label={copy.filterNonFoil(counts.nonfoil)} active={finish === "nonfoil"} onClick={() => setFinish("nonfoil")} />
-          </div>
+          </div>}
         </div>
       )}
 
@@ -336,7 +404,7 @@ export function PrintingRegion({
         <div className="mt-[18px]">
           <p className="m-0 text-[14px]" style={{ color: "var(--fg)" }}>{copy.emptyTitle}</p>
           <p className="mt-[4px] mb-0 text-[13px]" style={{ color: "var(--fg-muted)" }}>
-            {copy.emptyBody(query.trim(), cardName)}
+            {choose ? chooseCopy.emptyBody(query.trim(), cardName) : copy.emptyBody(query.trim(), cardName)}
           </p>
           <button
             type="button"
@@ -352,10 +420,10 @@ export function PrintingRegion({
           a11y tree. It stays mounted through the empty-search branch — an empty radiogroup is
           valid, a dangling aria-controls is not. Search and chips sit outside it deliberately:
           they are not radios. */}
-      <div id={id} role="radiogroup" aria-label={copy.regionLabel} className={visible.length === 0 ? "" : "mt-[16px]"}>
+      <div id={id} role="radiogroup" aria-label={choose ? chooseCopy.regionLabel : copy.regionLabel} className={visible.length === 0 ? "" : "mt-[16px]"}>
         {groups.map((g) => (
             <div key={g.key} className={g.key === "" ? "" : "mt-[16px] first:mt-0"}>
-              {overflow && (
+              {grouped && (
                 <div
                   className="mb-[8px] font-mono uppercase text-[9.5px] md:text-[10px] tracking-[0.16em]"
                   style={{ color: "var(--fg-faint)" }}
@@ -365,7 +433,13 @@ export function PrintingRegion({
               )}
               {/* Three across wherever the tiles clear the 100px legibility floor. Inside the
                   modal's padding a 375px viewport leaves 281px, so those phones drop to two. */}
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-[12px] md:grid-cols-3 md:gap-[16px]">
+              <div
+                className={
+                  row
+                    ? "-mx-[4px] flex gap-[10px] overflow-x-auto p-[4px]"
+                    : "grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-[12px] md:grid-cols-3 md:gap-[16px]"
+                }
+              >
                 {g.items.map((p) => {
                   const key = printingKey(p);
                   const picked = key === preferredKey && !p.dormant;
@@ -375,6 +449,8 @@ export function PrintingRegion({
                     <PrintingTile
                       key={key}
                       entry={p}
+                      choose={choose}
+                      row={row}
                       picked={picked}
                       shownNow={shownNow}
                       colorIdentity={colorIdentity}
@@ -419,6 +495,8 @@ function FinishChip({ label, active, onClick }: { label: string; active: boolean
 
 function PrintingTile({
   entry,
+  choose,
+  row,
   picked,
   shownNow,
   colorIdentity,
@@ -428,6 +506,8 @@ function PrintingTile({
   registerRef,
 }: {
   entry: Entry;
+  choose: boolean;
+  row: boolean;
   picked: boolean;
   shownNow: boolean;
   colorIdentity: string[];
@@ -443,7 +523,8 @@ function PrintingTile({
   // code (no catalog row), so the tile doesn't read "MH3 MH3".
   const setHint = entry.setName ? entry.setCode.toUpperCase() : undefined;
   const setAria = setHint ? `${setLabel} (${setHint})` : setLabel;
-  const qty = quantityLabel(entry);
+  // The choose role says what the player holds of the printing, or nothing at all.
+  const qty = choose ? (entry.quantity > 0 ? chooseCopy.tileOwned(entry.quantity) : "") : quantityLabel(entry);
   const state = picked ? "picked" : shownNow ? "shown-now" : "plain";
   const artStyle: React.CSSProperties = entry.imageUri
     ? { backgroundImage: cssUrl(entry.imageUri), backgroundSize: "cover", backgroundPosition: "center" }
@@ -474,7 +555,7 @@ function PrintingTile({
       tabIndex={entry.dormant ? -1 : tabStop ? 0 : -1}
       onClick={entry.dormant ? undefined : onSelect}
       onKeyDown={entry.dormant ? undefined : onKeyDown}
-      className={`text-left ${entry.dormant ? "" : "cursor-pointer"}`}
+      className={`text-left ${row ? "w-[96px] shrink-0" : ""} ${entry.dormant ? "" : "cursor-pointer"}`}
       style={{ opacity: entry.dormant ? 0.55 : undefined }}
     >
       <div
@@ -552,7 +633,7 @@ function PrintingTile({
         className="mt-[2px] font-mono text-[10.5px] md:text-[11px]"
         style={{ color: picked ? "var(--fg-body)" : "var(--fg-faint)" }}
       >
-        {copy.entryMeta(entry.collectorNumber, qty)}
+        {choose ? [entry.collectorNumber ? `#${entry.collectorNumber}` : "", qty].filter(Boolean).join(" · ") : copy.entryMeta(entry.collectorNumber, qty)}
       </div>
       {(picked || shownNow || entry.dormant) && (
         <div

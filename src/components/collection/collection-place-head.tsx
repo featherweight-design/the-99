@@ -39,34 +39,14 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { GhostButton } from "../ui/button";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
+import { AddCardsSheet } from "./add-cards-sheet";
+import { ReplaceIcon } from "./replace-icon";
 import { PendingReporter } from "../shell/pending-reporter";
 import { collectionTabsCopy } from "../../lib/copy/collection";
 import { refreshCollectionHeader } from "../../app/collection/actions";
 
 export type CollectionPlace = "cards" | "sets" | "proxies";
-
-/* The handoff spells this mark as the "↻" glyph, but glyph metrics render it
-   noticeably smaller than the label it sits beside and no font stack agrees on
-   its size. Same mark, drawn at an explicit 14px so it matches the 13px text. */
-function ReplaceIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-      className="inline-block align-[-2px] mr-[6px]"
-    >
-      <path d="M13.5 8a5.5 5.5 0 1 1-1.9-4.16" />
-      <path d="M13.5 1.5v3.2h-3.2" />
-    </svg>
-  );
-}
 
 const TABS: { place: CollectionPlace; href: string; label: string }[] = [
   { place: "cards", href: "/collection", label: collectionTabsCopy.cards },
@@ -100,6 +80,7 @@ export function placeFromPathname(pathname: string): CollectionPlace | null {
 export function CollectionPlaceHead({
   stats: initialStats,
   lastUpdatedLabel: initialLastUpdatedLabel,
+  editEnabled = false,
 }: {
   stats: { totalCards: number; uniqueCards: number };
   // Pre-formatted on the server ("today", "yesterday", or a dated string) rather than a raw
@@ -108,6 +89,11 @@ export function CollectionPlaceHead({
   // disagree with what the server rendered, which is a hydration mismatch on the initial
   // paint and a label that visibly flips on a later refresh.
   lastUpdatedLabel: string | null;
+  /**
+   * `COLLECTION_EDIT_ENABLED`, read by the layout. Off, the head is exactly what main draws: no
+   * `+ Add`, and no slot reserved for one (collection edit §G).
+   */
+  editEnabled?: boolean;
 }) {
   const pathname = usePathname();
   const current = placeFromPathname(pathname);
@@ -176,6 +162,21 @@ export function CollectionPlaceHead({
     return () => window.removeEventListener("focus", onFocus);
   }, []);
   const { stats, lastUpdatedLabel } = live;
+  // Add cards (collection edit §B). The control that opened the sheet gets focus back on close.
+  const [adding, setAdding] = useState(false);
+  const addTrigger = useRef<HTMLElement | null>(null);
+  const openAdd = (e: React.MouseEvent<HTMLElement>) => {
+    addTrigger.current = e.currentTarget;
+    setAdding(true);
+  };
+  const reread = () => {
+    const ticket = ++latest.current;
+    void refreshCollectionHeader()
+      .then((next) => {
+        if (ticket === latest.current) setLive(next);
+      })
+      .catch(() => {});
+  };
   const hasCollection = stats.totalCards > 0;
   // The group's layout mounts this only on the three routes `placeFromPathname` answers for
   // (see the file header) — a null here would mean this component were reached from
@@ -210,7 +211,26 @@ export function CollectionPlaceHead({
             {lastUpdatedLabel ? ` · last updated ${lastUpdatedLabel}` : ""}
           </p>
         </div>
-        {hasCollection ? (
+        {hasCollection && editEnabled ? (
+          <div className="hidden md:flex md:gap-[10px]">
+            <GhostButton
+              href="/collection/replace"
+              className="inline-block text-[13px] px-[16px] py-[9px]"
+            >
+              <ReplaceIcon />
+              Replace collection
+            </GhostButton>
+            <GhostButton
+              onClick={openAdd}
+              aria-haspopup="dialog"
+              data-testid="collection-add"
+              className="inline-flex items-center gap-[6px] text-[13px] px-[16px] py-[9px]"
+            >
+              <span aria-hidden className="text-[15px] leading-none">+</span>
+              {collectionEditCopy.head.add}
+            </GhostButton>
+          </div>
+        ) : hasCollection ? (
           <GhostButton
             href="/collection/replace"
             className="hidden md:inline-block text-[13px] px-[16px] py-[9px]"
@@ -249,7 +269,20 @@ export function CollectionPlaceHead({
             </Link>
           );
         })}
-        {hasCollection ? (
+        {hasCollection && editEnabled ? (
+          // The strip has room for one trailing control beside the tabs, and `+ Add` (70px) fits
+          // where `↻ Replace` (92px) does not; the upload moves into the sheet (B0).
+          <button
+            type="button"
+            onClick={openAdd}
+            aria-haspopup="dialog"
+            data-testid="collection-add-phone"
+            className="md:hidden ml-auto flex min-h-[44px] cursor-pointer items-center px-[10px] text-[13px] text-[color:var(--accent)]"
+          >
+            <span aria-hidden className="mr-[6px] text-[15px]">+</span>
+            {collectionEditCopy.head.addShort}
+          </button>
+        ) : hasCollection ? (
           <a
             href="/collection/replace"
             className="md:hidden ml-auto flex min-h-[44px] items-center px-[10px] text-[13px] text-[color:var(--accent)]"
@@ -259,6 +292,15 @@ export function CollectionPlaceHead({
           </a>
         ) : null}
       </nav>
+      {editEnabled && adding ? (
+        <AddCardsSheet
+          mode="add"
+          returnFocusRef={addTrigger}
+          totalCards={stats.totalCards}
+          onSaved={reread}
+          onClose={() => setAdding(false)}
+        />
+      ) : null}
     </div>
   );
 }
