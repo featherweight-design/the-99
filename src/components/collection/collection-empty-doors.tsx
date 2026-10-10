@@ -9,6 +9,7 @@ import { settleCollectionWrite } from "../../app/collection/edit-actions";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { AddCardsSheet } from "./add-cards-sheet";
 import { ReplaceIcon } from "./replace-icon";
+import { PendingReporter } from "../shell/pending-reporter";
 
 const TILE =
   "flex min-h-[64px] w-full items-center gap-[12px] rounded-[12px] border border-[color:var(--border-strong)] bg-[color:var(--surface)] p-[14px_16px] text-left md:min-h-0 md:flex-col md:items-start md:gap-[8px] md:p-[18px]";
@@ -52,6 +53,7 @@ export function CollectionEmptyDoors() {
             <ReplaceIcon size={18} className="block" />
           </DoorMark>
           <DoorText title={c.uploadTitle} sub={c.uploadSub} />
+          <PendingReporter href="/collection/replace" />
         </Link>
         <button
           type="button"
