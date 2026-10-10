@@ -71,7 +71,7 @@ export const collectionEditCopy = {
       `Adding it raises them: ${n(up)} ${up === 1 ? "card goes" : "cards go"} up, none are new. If this is a fresh export of your whole collection, Replace is the one you want.`,
     switchToReplace: "Switch to Replace",
     barAdd: (add: number, skip: number, have: number) =>
-      `Adding ${add === 1 ? "1 copy" : `${n(add)} copies`} and skipping ${n(skip)} rows. Your ${cards(have)} ${have === 1 ? "stays" : "stay"}.`,
+      `Adding ${add === 1 ? "1 copy" : `${n(add)} copies`} and skipping ${skip === 1 ? "1 row" : `${n(skip)} rows`}. Your ${cards(have)} ${have === 1 ? "stays" : "stay"}.`,
     confirmAdd: (add: number) => `Add ${add === 1 ? "1 copy" : `${n(add)} copies`}`,
     pendingAdd: "Adding…",
     tiles: { unchanged: "unchanged", up: "going up or new", down: "going down", leaving: "leaving" },

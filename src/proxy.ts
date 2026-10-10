@@ -10,6 +10,7 @@ import {
   SHEET_COOKIE,
   SHEET_HEADER,
   sheetCookieIsCurrent,
+  sheetCookieValue,
   sheetDecision,
 } from "./lib/about/gate";
 import { aboutSheetEnabled } from "./lib/about/flag";
@@ -46,7 +47,13 @@ export default clerkMiddleware(async (auth, req) => {
 
   // The cookie is the fast path and the reason this costs nothing on a normal
   // navigation: one database read per browser per version per account.
-  if (cookieIsCurrent(req.cookies.get(ABOUT_COOKIE)?.value, userId)) return;
+  const rawCookie = req.cookies.get(ABOUT_COOKIE)?.value;
+  if (cookieIsCurrent(rawCookie, userId)) return;
+  // "Nothing new to send them to" is remembered per set of drawn switched entries, so flipping a
+  // switch retires it (see below). Not the bare `<user>.<version>`, which means "sent".
+  const visible = visibleEntries();
+  const quiet = `${sheetCookieValue(userId, visible)}~quiet`;
+  if (rawCookie === quiet) return;
 
   // A failed read must not lock the reader out of the app. The page is a
   // reference; the app is the point.
@@ -55,6 +62,18 @@ export default clerkMiddleware(async (auth, req) => {
     seen = await aboutVersionSeen(userId);
   } catch {
     return;
+  }
+
+  // A bump that added entries only behind switches that are off has nothing to show this
+  // deployment's readers: redirecting them would land on a page with nothing new. A returning
+  // reader (seen > 0) is sent only when some entry this deployment draws is newer than they are.
+  if (seen > 0 && !visible.some((e) => e.since > seen)) {
+    const quietResponse = NextResponse.next();
+    quietResponse.cookies.set(ABOUT_COOKIE, quiet, {
+      ...COOKIE_OPTIONS,
+      secure: req.nextUrl.protocol === "https:",
+    });
+    return quietResponse;
   }
 
   const decision = gateDecision({ userId, pathname: path, search: req.nextUrl.search, seen });
