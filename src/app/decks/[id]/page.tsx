@@ -448,7 +448,7 @@ export default async function DeckBuilderPage({
   // the page was already holding.
 
   // THE STRIP COUNTS BY LABEL when `LABEL_ROLE_COUNTS_ENABLED` is on: the Jobs card's own tally, over
-  // the rows it reads. The map covers every card a count can fold: the deck's (already read), the
+  // the rows it reads. The map covers the cards the page holds (a search result or a resolved row is not among them, and falls back to card.role in the toast): the deck's (already read), the
   // version a draft compares to, and the suggestions and candidates a reader can add, which the
   // toast and the shelves count against. One more read for the cards the deck's does not cover. Null
   // (switch off, or the deck's read failed) counts by `card.role`, exactly as before.
