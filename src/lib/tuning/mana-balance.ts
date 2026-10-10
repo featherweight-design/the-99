@@ -1,83 +1,134 @@
-// Mana Balance, tier 1: which colors a deck's mana leaves short of what its spells ask for. Pure and
-// free: no database, no model. Supply and demand are `manaSupply()`'s (the Colors card's own), so the
-// two cannot disagree; demand is the raw pip count, never curve-weighted (Deck stats Ruling 10).
+// Mana Balance, tier 1: the evidence about a deck's mana. Pure and free: no database, no model.
 //
-// THE RULE. A color should be at least as common among the deck's colored sources as it is among its
-// colored pips: with N sources that can add a color, a color asking for 40% of the pips wants 40% of N.
-// A dual counts for both its colors, so a deck never pays for owning duals; a colorless source is no
-// one's. A color holding `SHORT_BY` or more fewer sources than that is short. (The first draft
-// redistributed the colors' summed source units instead; duals inflate that sum, and Omnath read
-// "G short by 31" when no swap could close it. Measured in the PR body.)
+// IT RENDERS NO VERDICT (Hugh, 2026-10-10). There is no "short" and no "fine" anywhere in this
+// output. Ten decks of Hugh's with a known play history were scored against five candidate shortfall
+// rules (pip share against source share, share of source cards, Karsten's requirement for the hardest
+// card, for the N-th hardest, and the commander's own cost); none matched, and Deckcheck's share
+// verdict was wrong on four decks he rated fine. The plan's "Verdict rules rejected" holds the table.
+// So the engine reports what a player needs to judge for themselves, each figure counted:
+//   - pips per color, with the commander and without it (Deckcheck leaves it out);
+//   - sources per color, a dual counted for every color it makes (the Colors card's own count);
+//   - the hardest cost patterns the deck's cards share, each beside Karsten's 99-card requirement;
+//   - how many lands enter tapped, the average mana value, and Karsten's land count.
+// Karsten: "How Many Sources Do You Need to Consistently Cast Your Spells? A 2022 Update" (TCGplayer).
 
 import { isLandFace } from "../cards/facet";
+import { karstenLands, karstenSources, patternName, type KarstenSources } from "../mana/karsten";
+import type { TappedLands } from "../mana/lands-tapped";
+import { costPatterns, manaValueOf } from "../mana/pattern";
 import { manaSupply, type ManaColor, type ManaSupply, type ManaSupplyCardRow } from "../mana/supply";
 
 export const BALANCE_COLORS = ["W", "U", "B", "R", "G"] as const satisfies readonly ManaColor[];
 export type BalanceColor = (typeof BALANCE_COLORS)[number];
 
-/** Whole sources under the pip share before a color is named short. */
-export const SHORT_BY = 1;
+/** Patterns listed per color, hardest first. */
+export const PATTERNS_SHOWN = 6;
 
-export type ColorBalance = {
+/** A row id that is a commander's: `manaSupplyRows` names them `commander:0`, `commander:1`. */
+const isCommanderRow = (id: string) => id.startsWith("commander:");
+
+export type PatternEvidence = {
+  /** Karsten's notation: `1CC` is one other mana and two pips of this color. */
+  pattern: string;
+  generic: number;
+  pips: number;
+  /** Copies of cards with this pattern in this color. */
+  copies: number;
+  cards: { name: string; copies: number; commander: boolean }[];
+  /** What the article asks of a 99-card deck for this pattern; the deck's own count is the color's `sources.total`. */
+  karsten: KarstenSources;
+};
+
+export type ColorEvidence = {
   color: BalanceColor;
-  /** Raw pips of this color in the deck's spells and commanders. */
-  demand: number;
-  /** `demand` over the colored pips of every color. */
-  pipShare: number;
-  supply: { lands: number; nonland: number; total: number };
-  /** `sourceCards * pipShare`, rounded to a whole source. */
-  target: number;
-  /** `target - supply.total`: positive is short, negative is cover beyond the share. */
-  gap: number;
-  state: "short" | "met";
+  /** Raw pips of this color, copies counted. A hybrid pip counts once for each half. */
+  pips: { withCommander: number; withoutCommander: number };
+  /** `pips` over the colored pips of every color, in the same frame. */
+  pipShare: { withCommander: number; withoutCommander: number };
+  /** Sources that add this color: a dual is one source for each color it makes. */
+  sources: { lands: number; nonland: number; total: number };
+  /** The hardest `PATTERNS_SHOWN` patterns this color's cards have, most pips first, then least other mana. */
+  patterns: PatternEvidence[];
+};
+
+export type LandEvidence = {
+  /** Copies of land cards. */
+  count: number;
+  /** Lands that enter tapped every time, and ones tapped unless a condition holds. */
+  tapped: TappedLands;
+  /** Mana value averaged over the nonland cards, the commander(s) counted as one more card each. */
+  averageManaValue: number;
+  /** Mana sources of mana value 3 or less: the ramp term of Karsten's land formula (draw spells are not counted). */
+  cheapRamp: number;
+  /** Karsten's 99-card land-count regression for those inputs, unrounded. */
+  karstenLands: number;
 };
 
 export type ManaBalance = {
-  /** `colorless`: no colored pip to judge. `noSources`: colored pips and no source of any color. */
+  /** `colorless`: no colored pip in the deck. `noSources`: colored pips and no source of any color. */
   state: "ok" | "colorless" | "noSources";
-  colors: ColorBalance[];
-  /** Copies of lands and non-land sources that add at least one colored mana: the N the shares apply to. */
-  sourceCards: number;
-  /** Colored pips across the deck. */
-  coloredPips: number;
-  /** `{C}` pips and colorless sources, reported and never judged. */
+  colors: ColorEvidence[];
+  /** `{C}` pips and colorless sources. */
   colorless: { demand: number; supply: number };
   /** Non-land sources whose color could not be read: counted in no figure above. */
   unattributedNonland: number;
+  lands: LandEvidence;
   supply: ManaSupply;
 };
 
-export function readManaBalance(rows: readonly ManaSupplyCardRow[]): ManaBalance {
+export type ManaBalanceInput = {
+  rows: readonly ManaSupplyCardRow[];
+  /** The card's name for a row id, `commander:0` included. */
+  nameOf: (id: string) => string;
+  tapped: TappedLands;
+};
+
+/** Hardest first: more pips, then less other mana. */
+const byHardness = (a: { generic: number; pips: number }, b: { generic: number; pips: number }) => b.pips - a.pips || a.generic - b.generic;
+
+function patternsFor(color: ManaColor, rows: readonly ManaSupplyCardRow[], nameOf: (id: string) => string): PatternEvidence[] {
+  const byPattern = new Map<string, PatternEvidence>();
+  for (const r of rows) {
+    if (isLandFace(r.typeLine)) continue;
+    const p = costPatterns(r.manaCost)[color];
+    if (!p) continue;
+    const key = patternName(p.generic, p.pips);
+    const entry = byPattern.get(key) ?? { pattern: key, generic: p.generic, pips: p.pips, copies: 0, cards: [], karsten: karstenSources(p.generic, p.pips) };
+    entry.copies += r.quantity;
+    entry.cards.push({ name: nameOf(r.id), copies: r.quantity, commander: isCommanderRow(r.id) });
+    byPattern.set(key, entry);
+  }
+  for (const e of byPattern.values()) e.cards.sort((a, b) => a.name.localeCompare(b.name));
+  return [...byPattern.values()].sort(byHardness).slice(0, PATTERNS_SHOWN);
+}
+
+export function readManaBalance({ rows, nameOf, tapped }: ManaBalanceInput): ManaBalance {
   const supply = manaSupply(rows);
+  const without = manaSupply(rows.filter((r) => !isCommanderRow(r.id)));
   const total = (c: ManaColor) => supply.supply[c].lands + supply.supply[c].nonland;
-  const coloredPips = BALANCE_COLORS.reduce((a, c) => a + supply.demand[c], 0);
-  const sourceCards = rows.reduce((a, r) => {
-    const makesColor = (r.produces ?? []).some((c) => c !== "C");
-    return makesColor && (isLandFace(r.typeLine) || r.ramp) ? a + r.quantity : a;
-  }, 0);
-  const colors = BALANCE_COLORS.map((color): ColorBalance => {
-    const demand = supply.demand[color];
-    const pipShare = coloredPips > 0 ? demand / coloredPips : 0;
-    const target = Math.round(sourceCards * pipShare);
-    const have = total(color);
-    const gap = target - have;
-    return {
-      color,
-      demand,
-      pipShare,
-      supply: { lands: supply.supply[color].lands, nonland: supply.supply[color].nonland, total: have },
-      target,
-      gap,
-      state: gap >= SHORT_BY ? "short" : "met",
-    };
-  });
+  const colored = (d: Record<ManaColor, number>) => BALANCE_COLORS.reduce((a, c) => a + d[c], 0);
+  const [pipsWith, pipsWithout] = [colored(supply.demand), colored(without.demand)];
+  const share = (n: number, of: number) => (of > 0 ? n / of : 0);
+
+  const colors = BALANCE_COLORS.map((color): ColorEvidence => ({
+    color,
+    pips: { withCommander: supply.demand[color], withoutCommander: without.demand[color] },
+    pipShare: { withCommander: share(supply.demand[color], pipsWith), withoutCommander: share(without.demand[color], pipsWithout) },
+    sources: { lands: supply.supply[color].lands, nonland: supply.supply[color].nonland, total: total(color) },
+    patterns: patternsFor(color, rows, nameOf),
+  }));
+
+  const nonland = rows.filter((r) => !isLandFace(r.typeLine));
+  const cards = nonland.reduce((a, r) => a + r.quantity, 0);
+  const averageManaValue = cards > 0 ? nonland.reduce((a, r) => a + manaValueOf(r.manaCost) * r.quantity, 0) / cards : 0;
+  const cheapRamp = rows.reduce((a, r) => (r.ramp && (r.produces ?? []).length > 0 && manaValueOf(r.manaCost) <= 3 ? a + r.quantity : a), 0);
+
   return {
-    state: coloredPips === 0 ? "colorless" : sourceCards === 0 ? "noSources" : "ok",
+    state: pipsWith === 0 ? "colorless" : BALANCE_COLORS.every((c) => total(c) === 0) ? "noSources" : "ok",
     colors,
-    sourceCards,
-    coloredPips,
     colorless: { demand: supply.demand.C, supply: total("C") },
     unattributedNonland: supply.unattributedNonland,
+    lands: { count: supply.lands, tapped, averageManaValue, cheapRamp, karstenLands: karstenLands(averageManaValue, cheapRamp) },
     supply,
   };
 }

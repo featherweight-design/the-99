@@ -1,54 +1,66 @@
 /**
- * Mana Balance's golden check: the engine's counted output for a deck, shaped so it can be compared
- * to a hand-checked expectation and diffed. Pure (the script supplies the names), so the comparison
- * itself is unit tested.
+ * Mana Balance's golden check: the engine's counted evidence for a deck, shaped so it can be compared
+ * to a hand-checked expectation and diffed. Pure (the script supplies nothing but the engine's
+ * output), so the comparison itself is unit tested.
  */
-import type { BalanceColor, ManaBalance } from "../../../src/lib/tuning/mana-balance";
+import type { KarstenSources } from "../../../src/lib/mana/karsten";
+import { BALANCE_COLORS, type BalanceColor, type ManaBalance } from "../../../src/lib/tuning/mana-balance";
 
-export const GOLDEN_COLORS = ["W", "U", "B", "R", "G"] as const satisfies readonly BalanceColor[];
+export const GOLDEN_COLORS = BALANCE_COLORS;
 
+export type GoldenPattern = { copies: number; karsten: string; cards: string[] };
 export type GoldenColor = {
-  demand: number;
-  target: number;
-  gap: number;
-  state: "short" | "met";
-  /** Card names behind the supply, one per copy, sorted. */
+  pipsWith: number;
+  pipsWithout: number;
+  /** Source cards behind the supply, one entry per copy, sorted. */
   lands: string[];
   nonland: string[];
+  /** The patterns shown, hardest first, as one string. */
+  order: string;
+  patterns: Record<string, GoldenPattern>;
 };
-
 export type GoldenBalance = {
   state: ManaBalance["state"];
-  sourceCards: number;
   colorlessSupply: number;
   unattributedNonland: number;
   colors: Record<BalanceColor, GoldenColor>;
+  lands: { count: number; tappedAlways: number; tappedUnless: number; averageManaValue: number; cheapRamp: number; karstenLands: number };
 };
+
+const karstenText = (k: KarstenSources) => (k.kind === "unknown" ? "unknown" : `${k.kind} ${k.sources}`);
+const round = (n: number, places: number) => Number(n.toFixed(places));
 
 export function goldenShape(b: ManaBalance, nameOf: (id: string) => string): GoldenBalance {
   const names = (ids: readonly string[]) => ids.map(nameOf).sort();
   return {
     state: b.state,
-    sourceCards: b.sourceCards,
     colorlessSupply: b.colorless.supply,
     unattributedNonland: b.unattributedNonland,
     colors: Object.fromEntries(
       b.colors.map((c) => [
         c.color,
         {
-          demand: c.demand,
-          target: c.target,
-          gap: c.gap,
-          state: c.state,
+          pipsWith: c.pips.withCommander,
+          pipsWithout: c.pips.withoutCommander,
           lands: names(b.supply.sources[c.color].lands),
           nonland: names(b.supply.sources[c.color].nonland),
+          order: c.patterns.map((p) => p.pattern).join(" "),
+          patterns: Object.fromEntries(
+            c.patterns.map((p) => [p.pattern, { copies: p.copies, karsten: karstenText(p.karsten), cards: p.cards.map((x) => `${x.name}${x.copies > 1 ? ` x${x.copies}` : ""}${x.commander ? " (commander)" : ""}`).sort() }]),
+          ),
         },
       ]),
     ) as GoldenBalance["colors"],
+    lands: {
+      count: b.lands.count,
+      tappedAlways: b.lands.tapped.always,
+      tappedUnless: b.lands.tapped.unless,
+      averageManaValue: round(b.lands.averageManaValue, 2),
+      cheapRamp: b.lands.cheapRamp,
+      karstenLands: round(b.lands.karstenLands, 1),
+    },
   };
 }
-
-const sameNames = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((n, i) => n === b[i]);
 
 /** Names `from` holds more copies of than `than` does, each repeated by how many more. */
 const surplus = (from: readonly string[], than: readonly string[]): string[] => {
@@ -63,23 +75,23 @@ const surplus = (from: readonly string[], than: readonly string[]): string[] => 
   return out;
 };
 
-/** One line per difference; empty when the engine matches the expectation. */
-export function diffGolden(expected: GoldenBalance, actual: GoldenBalance): string[] {
-  const out: string[] = [];
-  for (const k of ["state", "sourceCards", "colorlessSupply", "unattributedNonland"] as const) {
-    if (expected[k] !== actual[k]) out.push(`${k}: expected ${expected[k]}, got ${actual[k]}`);
+const isNames = (v: unknown): v is string[] => Array.isArray(v) && v.every((x) => typeof x === "string");
+
+/** One line per difference, by path; empty when the engine matches the expectation. */
+export function diffGolden(expected: unknown, actual: unknown, path = ""): string[] {
+  if (isNames(expected) && isNames(actual)) {
+    if (expected.length === actual.length && expected.every((n, i) => n === actual[i])) return [];
+    const [missing, extra] = [surplus(expected, actual), surplus(actual, expected)];
+    return [`${path}: expected ${expected.length}, got ${actual.length}${missing.length ? `; missing ${missing.join(", ")}` : ""}${extra.length ? `; extra ${extra.join(", ")}` : ""}`];
   }
-  for (const c of GOLDEN_COLORS) {
-    const [e, a] = [expected.colors[c], actual.colors[c]];
-    for (const k of ["demand", "target", "gap", "state"] as const) {
-      if (e[k] !== a[k]) out.push(`${c}.${k}: expected ${e[k]}, got ${a[k]}`);
-    }
-    for (const side of ["lands", "nonland"] as const) {
-      if (sameNames(e[side], a[side])) continue;
-      const missing = surplus(e[side], a[side]);
-      const extra = surplus(a[side], e[side]);
-      out.push(`${c}.${side}: expected ${e[side].length}, got ${a[side].length}${missing.length ? `; missing ${missing.join(", ")}` : ""}${extra.length ? `; extra ${extra.join(", ")}` : ""}`);
-    }
+  if (expected && actual && typeof expected === "object" && typeof actual === "object" && !Array.isArray(expected) && !Array.isArray(actual)) {
+    const [e, a] = [expected as Record<string, unknown>, actual as Record<string, unknown>];
+    return [...new Set([...Object.keys(e), ...Object.keys(a)])].flatMap((k) => {
+      const where = path ? `${path}.${k}` : k;
+      if (!(k in e)) return [`${where}: not expected, got ${JSON.stringify(a[k])}`];
+      if (!(k in a)) return [`${where}: expected ${JSON.stringify(e[k])}, got nothing`];
+      return diffGolden(e[k], a[k], where);
+    });
   }
-  return out;
+  return expected === actual ? [] : [`${path}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`];
 }

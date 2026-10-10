@@ -1,142 +1,134 @@
 # Mana Balance, tier 1 engine: implementation plan
 
-Plan, 2026-10-10. Sub-project 3 of `2026-10-08-tuning-roadmap.md`. Logic only: no Design round and
-no model call, so no cost to approve. Awaiting Hugh's approval before any code.
+Plan, 2026-10-10, amended the same day (Hugh's ruling below). Sub-project 3 of
+`2026-10-08-tuning-roadmap.md`. Logic only: no Design round and no model call, so no cost to approve.
+Approved by Hugh through f0; PR 1 (#1380) merged before the amendment.
+
+## The ruling that reshaped this plan
+
+**Mana Balance shows evidence, not verdicts (Hugh, 2026-10-10).** There is no "short" flag anywhere.
+The first version of this plan judged a color by a rule over its sources. Scored against Hugh's play
+experience on ten decks, no such rule matched (below), so the tool reports what a player needs to judge
+for themselves: counted figures, each beside the published reference where one exists.
 
 Rulings this plan applies, none reopened:
 
-- Demand is plain pip counts. Curve weighting is dropped (Deck stats plan, Ruling 10, 2026-10-09).
-  The brief's "curve-weighted" wording is stale.
+- Demand is plain pip counts, the commander's included, and the figure without it beside it
+  (Deckcheck leaves the commander out). Curve weighting is dropped (Deck stats plan, Ruling 10).
 - Supply is `manaSupply()` (`src/lib/mana/supply.ts`) and the source rules from #1323 and #1338,
   unchanged: Treasure, Powerstone and Lander tokens, look-at-top effects and landcyclers are not
-  sources (`makesNoManaSource`). The engine calls them and restates none of them.
-- Counterspells are not removal (Hugh, 2026-10-10). Mana Balance reads no removal role, so this
-  constrains nothing here beyond the staple read below never counting a counterspell as one.
-- Missing staples read `format_staples` and `commander_support_cards`, owned cards first. No new
-  index, no new table.
+  sources (`makesNoManaSource`). A dual counts once for each color it makes.
+- Counterspells are not removal (Hugh, 2026-10-10). Mana Balance reads no removal role.
+- Missing staples read `format_staples` and `commander_support_cards`, owned cards first.
 
-## What exists, and what is missing
+## The evidence the engine reports
 
-`manaSupply(rows)` already returns pips per color (`demand`), sources per color split into lands and
-non-lands (`supply`), and the card ids behind every figure (`sources`). `loadSourceMana` and the
-labels give each non-land source its colors. Deck stats card (b) draws from it.
+Reference: Frank Karsten, "How Many Sources Do You Need to Consistently Cast Your Spells? A 2022
+Update", TCGplayer. Its 99-card column (41 lands, free first mulligan, 89 + M% by turn M) is in
+`src/lib/mana/karsten.ts`, pasted from the article by Hugh. The article publishes 19 patterns and
+nothing beyond: a pattern with more generic mana than the last row for its pips (6C, 6CC) is shown as a
+ceiling ("at most 14", the 5C figure), and a pattern with five or more pips has no row and is shown as
+having none.
 
-Missing, and all of this plan: a verdict over those figures (which colors are short, by how much),
-the three suggestion kinds each carrying its counted fact, the missing-staple read, and the golden
-eval. Nothing here changes `manaSupply()` or card (b).
+Per color (W, U, B, R, G):
 
-## The counted rule (decided, override if you disagree; REVISED in PR 1 after measuring)
+1. **Pips**, with the commander and without it, and each as a share of the colored pips.
+2. **Sources**: lands and non-lands, a dual counted for every color it makes (the Colors card's count).
+3. **The hardest patterns its cards have**, six at most, most pips first and then least other mana.
+   A pattern is Karsten's notation (`1CC`: one other mana and two pips of this color; another color's
+   pips count as other mana), with the copies, the card names behind it (the commander marked), and
+   the article's requirement beside it. The deck's own source count is the color's, one line up.
 
-A color should be at least as common among the deck's colored sources as it is among its colored
-pips. Per colored color `c` (W, U, B, R, G; `C` is reported, never judged):
+For the deck:
 
-- `sourceCards` = copies of lands and non-land sources that add at least one colored mana. A dual
-  counts once here and for both of its colors in `supply[c]`; a colorless-only source is in neither.
-- `pipShare[c]` = `demand[c]` over the sum of the colored demands.
-- `target[c]` = `sourceCards * pipShare[c]`, rounded to the nearest whole source.
-- `gap[c]` = `target[c] - supply[c]` (lands plus non-lands). A color is **short** when
-  `gap >= SHORT_BY` (1), and **met** otherwise. A negative gap is cover beyond the share, and is
-  what the rebalance suggestion reads to find basics it can move.
+4. **Lands**: the count, how many enter tapped always and how many unless a condition holds (read by
+   `drawbacks`, the swap tools' reader), against the average mana value.
+5. **Land count against Karsten's regression**: lands = 31.42 + 3.13 x average mana value - 0.28 x
+   cheap ramp. Average mana value counts the commander as one more card; the constants are as quoted in
+   secondary write-ups of his Commander land article, not checked against the article; draw spells are
+   not counted in the ramp term, which overstates the figure for a deck that draws.
 
-The first draft redistributed the colors' summed source units by pip share. Measured on Hugh's 21
-staging decks it overstated every gap, because duals inflate the sum: Omnath read "G short by 31",
-which no swap closes. The share-of-source-cards rule never penalizes owning duals and always has a
-feasible fix. It fires on 0 of 20 judged decks at 1, 2 or 3 sources (the decks are mana-rich), so
-the 1-source line is the smallest meaningful unit rather than a tuned figure; the PR 1 body holds
-the measurement. The thinnest multicolor covers are Omnath and Counter Intelligence at +0.
+Thin data: a deck with no colored pip reads `colorless`, and one with pips and no colored source reads
+`noSources`. Neither refuses (Ruling 6). Nothing in the output is a verdict.
 
-Thin data: a deck with no colored pips (all colorless) returns a `colorless` state naming that,
-and a deck with pips and no colored source returns `noSources`. Neither refuses (Ruling 6).
+## Verdict rules rejected (the evidence for the ruling)
 
-## Suggestions, each with its own counted fact
+Hugh's play experience, `boards/mana-ground-truth-2026-10-10.md`, scored 15 deck-color rows: 3 short
+(Gishath green, a hunch on an unplayed deck; Avatar Aang blue, specifically double-blue; Blood Rites
+white) and 12 fine (Blood Rites black, Gods blue, Counter Intelligence W/U/R, Scrappy Survivors W/R/G,
+Tovolar R/G, Brago W/U). Omnath had no play data; Yuriko was borderline for lean land count, not color.
 
-1. **Rebalance.** Swap N basics of a color holding cover beyond its share for the short color. Only basics the deck
-   holds are offered (a count read from the rows), N is capped by both the covered color's
-   basics and the short color's gap. Fact: `current -> after` supply for both colors, and the pip
-   share each is held against.
-2. **Trade for ramp.** Replace basics with a rock that makes the short color. The candidate comes
-   from the missing-staple read below, so it is a card the commander's decks run, not a name picked
-   by the engine. Which basics go: only basics of a color holding cover beyond its share, or basics of a met
-   color that produce NONE of the short colors, so removing one never lowers a short color's
-   supply. How many: one basic per rock added, and the trade is
-   simulated before it is emitted: the engine removes the basics, adds the rock's colors, re-runs
-   the counted rule over the new supply (the source count and every target move), and emits the trade
-   only when the short color's gap falls and no other color goes from met to
-   short. A trade that fails the simulation is not shown. Fact: the sources the trade adds per
-   color, the basics it removes, and the before and after gap for every color it touches.
-3. **Missing staple.** A ramp card that the deck does not hold, and whose colors (`sourceProduces`)
-   include a short color. The source is `commander_support_cards` for this commander when it has
-   a page, and its fact is that card's inclusion under this commander, with the commander's deck
-   count as the denominator. When the commander has no page, `format_staples` for its identity
-   condition serves instead, and its fact is a different claim and says so: `commanders` of
-   `commander_total` commanders in that condition recommend it, with `avg_inclusion` as the
-   bucket average, never labelled as this commander's rate. The two are never mixed in one list.
-   Owned copies are offered first (the collection's available copies, by the same availability
-   rule the Add panel uses), then a not-owned one with its buy path. Each carries the sources it
-   adds.
+| Rule | Result on the 15 rows |
+|---|---|
+| Pip share against share of source units, a dual counted once per color (Deckcheck's; the plan's first draft) | With colorless units in the denominator it flags Omnath G 41 points, Counter Intelligence U 33, Yuriko U 28, Scrappy W 23, Blood Rites B 22; a 5-point margin flags 18 of 20 decks and catches Deckcheck's three. With colored units only, a 10-point margin flags 9 of 20 decks and catches two (Gishath G 22.3, Aang U 11.6) but not Gods U (4.6). No margin separates those from rows Hugh rates fine. Adding Deckcheck's own ten Gishath adds moves green's share from 33.7% to 36.2% (gap 22.3 to 19.8 points): the fix it recommends does not close its gap |
+| Pip share against share of source CARDS (merged in #1380) | Flags 0 of 20 decks at 1, 2 or 3 sources. Never wrong, never useful |
+| Karsten requirement for the hardest card, N=1 | 13 of 22 rows flagged; finds Aang U and Blood Rites W, wrongly flags six fine rows |
+| Karsten requirement for the N-th hardest card, N=2 to 4, sources - T | Best at N=1 and T=5: finds Aang U and Blood Rites W, wrongly flags Scrappy W (20 sources against 30) and Tovolar R; misses Gishath G. A slack chosen after seeing 15 rows is a fit, not a rule. N=2 to 4 with T >= 3 finds Aang U only |
+| Commander-color sources against the requirement for the commander's own cost | Flags nothing (Gods R has 22 sources against 18 needed). It cannot reproduce Gods' history from today's list |
+| Minority-color source count | Blood Rites W (34% of pips, 24 sources) fails while Scrappy R (18%, 19) and Scrappy W (52%, 20) are fine with fewer |
 
-Never offered: a card already in the deck, a card outside the commander's color identity, the
-commander, a locked card (`deck_locks`, read through `src/lib/decks/locks.ts` as Suggested changes does, a hard filter and
-not a prompt line), and any card `makesNoManaSource` rejects. Candidate colors come through
-`sourceProduces`, so a suggestion cannot claim a color the shared rule does not give the card.
+Why none separates: Aang U (21 sources, 34% of pips) and Gods U (20, 36%) are near-identical by share and
+supply with opposite verdicts, and differ only in pattern depth (four double-blue cards against 2CC).
+Scrappy W has fewer sources than Blood Rites W and no problems. Deckcheck's Mana Tune on Counter
+Intelligence and Brago, both rated fine, flagged blue and white. The Karsten table was also partial when
+the rules were scored (11 of 19 rows, the rest taken as lower bounds); the full column is now in, and the
+rules were not re-scored because the contrasts above do not depend on it. Count-based signals explain
+Aang U and little else, so color-source count may not be what Hugh's failures were: tapped lands,
+timing and colorless utility lands are things a count cannot see, and two are now reported as evidence.
+
+Pip counts against Deckcheck's: it leaves the commander out. Gishath green is 55 of 97 without it,
+56.7%, its figure exactly; the engine reports both. Gods blue is 28 pips without the commander (29 with),
+matching Deckcheck's 28, and its share implies a total of 68 that no variant reproduces.
+
+## Suggestions: on request, for a color the player picks
+
+No suggestion is offered unprompted. A player picks a color ("help me add blue") and the tool shows moves
+that add sources of it, each with its counted before and after.
+
+1. **Rebalance.** Swap N basics of another color for the chosen color's. Only basics the deck holds are
+   moved, a locked basic never is (`deck_locks`, `liveLockedIds`), and N is the fewest that stops helping.
+2. **Trade for a source.** Replace one basic with a staple that makes the chosen color.
+3. **Staples.** Mana sources the commander's decks run that this deck does not hold, whose colors include
+   the chosen one, owned copies first, then by how often the commander runs them. The number behind each
+   is the commander's own inclusion when its page has one, else the identity bucket's share of commanders
+   that recommend it, labelled as the bucket's and never as this commander's rate.
+
+Never offered: a card already in the deck, a card outside the commander's identity, the commander, a
+locked card, any card `makesNoManaSource` rejects, and a basic as a staple. Every move is simulated
+through the engine before it is shown. **The no-worse guard** (replacing the old "no color goes short"):
+the chosen color gains at least one source; no other color loses a source it needed, meaning a color
+whose count meets Karsten's requirement for its hardest published pattern does not fall below it, and a
+color already below it does not fall at all. Karsten is a guard here and never a verdict.
 
 ## PR boundaries
 
-Two PRs, no stacking. PR 2 starts after PR 1 merges.
+Three PRs, no stacking, each after the last merges:
 
-**PR 1: the counting engine and its golden check.** `src/lib/tuning/mana-balance.ts`:
-`readManaBalance(rows)` over `manaSupply()`'s output, returning the per-color
-`{ demand, pipShare, supply, target, gap, state }` and the `colorless` and `noSources` states. Pure,
-no database, no model. A loader beside it assembles the rows the way the deck page does
-(`loadSourceMana`, `landProduces`), so the two cannot count differently; the page's own row
-builder is reused if it can be lifted without touching card (b), and PR 1 says which. The golden
-eval ships here (below), since the counting rule is what it checks. About 6 files.
-
-**PR 2: suggestions and the missing-staple read.** `mana-suggestions.ts` (rebalance, trade, staple)
-and `mana-staples.ts` (the `format_staples` and `commander_support_cards` read, owned first), plus
-`manaBalanceEnabled()` in `src/lib/tuning/flag.ts` beside `tuningEnabled`: `MANA_BALANCE_ENABLED`
-and `ANALYSIS_TAB_ENABLED` both `'true'`, off for anything else, the same shape as the other two.
-The eval grows the suggestion expectations for Gishath. About 7 files.
-
-Neither PR has a UI caller: the hub is sub-project 5. The eval script is each PR's caller, and the
-switch function in PR 2 is the one export that nothing in the app reads until sub-project 5 mounts
-the tool. PR 2's body names that, so it is a recorded exception and not a surprise.
-
-## The switch
-
-`MANA_BALANCE_ENABLED`, read per request on the server, on only for the exact string `'true'`, and
-requires `ANALYSIS_TAB_ENABLED` for the reason `tuningEnabled` and `proposedCutsEnabled` do (the tool
-mounts on the Analysis tab). Independent of `TUNING_ENABLED` and `PROPOSED_CUTS_ENABLED`. Unset on
-production. Tier 1 is the free result and makes no call, so the switch gates the surface and not a
-spend.
+1. **#1380 (merged): the counting engine and its Gishath golden check.** Its verdict rule is replaced by
+   PR 2.
+2. **PR 2: the evidence engine.** `karsten.ts`, `pattern.ts`, `lands-tapped.ts`, the rewritten
+   `mana-balance.ts` and its loader, the golden file and `pnpm eval:mana`, and this amendment. No
+   switch yet, no UI.
+3. **PR 3: help on request.** `mana-staples.ts`, `mana-suggestions.ts`, the loader that ties them, and
+   `manaBalanceEnabled()` in `flag.ts` (`MANA_BALANCE_ENABLED`, with `ANALYSIS_TAB_ENABLED`, the same
+   shape as the other two). No UI: the Tuning hub's Design round draws it. The switch is the one export
+   nothing in the app reads until the hub mounts the tool.
 
 ## The golden-deck eval
 
-HD - Gishath, `904fdc61-e190-4ba5-8e34-2b18fa0584f2`, the same deck and fingerprint
-`docs/superpowers/eval/corpus/gishath.json` pins (`listFingerprint`). Tier 1 makes no model call,
-so "scoring" is asserting the counted output equals a hand-checked expectation.
-
-- `docs/superpowers/eval/mana-balance-golden.json`: per color, the pips, the sources (lands and
-  non-lands, with the card names behind each), the target, the gap and the state, worked out by
-  hand from the deck's list and its cards' oracle text. Each expected figure carries the card it
-  rests on. In PR 2 it adds the suggestion expectations: which basics the rebalance moves and which
-  staple is missing.
-- `pnpm eval:mana` (`scripts/eval/mana.mts`): connects to staging read-only (`connectStaging`, the
-  `eval:cuts` pattern), refuses when the deck's list no longer matches the pinned fingerprint
-  (printing the drift rather than failing on a stale expectation), runs the engine, and prints
-  expected against actual per color, exiting non-zero on any difference. It writes nothing and
-  calls no model.
-- The same script prints the verdict across every staging deck of Hugh's
-  (`user_3GkZrrTwOJBdqUpq6GambP0BC8w`) as a measurement: how many decks read a short color, how
-  many `noSources`. This is where the `>= 1` line is judged. Every frequency in it is read from
-  staging; the script never writes, and the fixtures on `local-dev` are not used.
-- Failure path: before PR 1 is believed, the check is run against a mutated engine (a wrong
-  target rounding, a dropped dual) and must fail.
+HD - Gishath, `904fdc61-e190-4ba5-8e34-2b18fa0584f2`, the list `docs/superpowers/eval/corpus/gishath.json`
+pins. `docs/superpowers/eval/mana-balance-golden.json` holds the hand-checked expectation: pips, sources,
+the patterns with their cards and Karsten figures, the tapped counts, the average mana value and
+Karsten's land figure. `pnpm eval:mana` reads staging read-only, refuses (exit 2) when the list has moved
+since the expectation was checked, diffs the engine's output against it (exit 1 on any difference), and
+prints every deck of that owner's evidence. It writes nothing and calls no model. Figures cross-checked
+against Deckcheck where it reports the same quantity: average mana value (Gishath 4.34, Omnath 3.71,
+Brago 3.62), land count (Brago 35, Counter Intelligence 38) and Counter Intelligence's tapped share (10 of
+38 lands, 26.3%).
 
 ## Not in this plan
 
-- Dorks and land search weighted by reliability ("a dork that dies to removal"): the brief asks for
-  a caveat tier 1 has no room to draw. `manaSupply()` counts them as sources; the caveat belongs
-  to the hub UI and to tier 2. Recorded here so it is not read as forgotten.
-- Tier 2 ("Look deeper") and any hub surface: sub-projects 5 and 6.
-- The About entry and `ABOUT_VERSION` bump: sub-project 7, batched at the end of the line.
+- Any verdict, flag or score of a color. Candidates for later, if Hugh wants one, are a land count
+  above or below Karsten's regression and the tapped-land share against the curve, shown as facts first.
+- Dorks and land search weighted by reliability; tier 2 ("Look deeper"); any hub surface (sub-projects 5
+  and 6); the About entry and `ABOUT_VERSION` bump (sub-project 7, batched at the end of the line).
