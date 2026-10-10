@@ -34,7 +34,7 @@ import type { ModelOutcome } from "../src/lib/model/client";
 import { retrySynopsisFor, writeSynopsisFor, type GenerateDeps } from "../src/lib/synopsis/generate";
 import { pinSynopsisToVersion } from "../src/lib/synopsis/pin";
 import { readSynopsisState, readVersionSynopsis } from "../src/lib/synopsis/read";
-import type { SynopsisResponse } from "../src/lib/synopsis/response-schema";
+import type { SynopsisReply, SynopsisResponse } from "../src/lib/synopsis/response-schema";
 import { STUB_MODEL, stubReply, type StubMode } from "../src/lib/synopsis/stub";
 import type { SynopsisFacts } from "../src/lib/synopsis/facts";
 import { loadUniversalStaples } from "../src/lib/staples/universal";
@@ -72,21 +72,26 @@ let calls = 0;
 let queue: StubMode[] = [];
 let delayMs = 0;
 /** Every request the fake model was sent, in order, with the deadline it was given. */
-let seen: { user: string; deadlineMs: number; reply: SynopsisResponse | null }[] = [];
+let seen: { user: string; deadlineMs: number; reply: SynopsisReply | null }[] = [];
 /** The facts the fake model was last handed: what `factsFor` built. */
 let lastFacts: SynopsisFacts | null = null;
 const deps: GenerateDeps = {
   // The stub's own name, which the spend cap knows makes no request: a made-up name has no price,
   // and pricing refuses to guess one.
   modelName: STUB_MODEL,
-  model: async (req, facts): Promise<ModelOutcome<SynopsisResponse>> => {
+  model: async (req, facts): Promise<ModelOutcome<SynopsisReply>> => {
     calls += 1;
     lastFacts = facts;
     if (delayMs) await new Promise((r) => setTimeout(r, delayMs));
-    const out = stubReply(facts, queue.shift() ?? "survived");
+    // The stub answers in the contract the request asks for (`req.v2`: OVERVIEW_V2_ENABLED on).
+    const out = stubReply(facts, queue.shift() ?? "survived", false, !!req.v2);
     // A repair's reply words its primer differently, so a merge that took a PASSING section from
     // the repair rather than keeping the first answer's is visible, not identical by construction.
-    if (out.ok && isRepair(req.user)) out.value.primer.strategy[0] = "Build your mana early in the game.";
+    if (out.ok && isRepair(req.user)) {
+      const words = "Build your mana early in the game.";
+      const strategy = out.value.primer.strategy as (string | { text: string })[];
+      strategy[0] = typeof strategy[0] === "string" ? words : { ...strategy[0]!, text: words };
+    }
     seen.push({ user: req.user, deadlineMs: req.deadlineMs, reply: out.ok ? out.value : null });
     return out;
   },

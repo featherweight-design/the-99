@@ -237,7 +237,7 @@ async function run() {
   //      model is the stub the dev server uses, so nothing is spent.
   const generate: GenerateDeps = {
     modelName: STUB_MODEL,
-    model: async (_req, facts) => stubReply(facts, "survived"),
+    model: async (req, facts) => stubReply(facts, "survived", false, !!req.v2),
     now: () => new Date(),
     profile: deps,
   };
