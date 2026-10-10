@@ -178,13 +178,19 @@ describe("RevertConfirm", () => {
     expect(onReverted).not.toHaveBeenCalled();
   });
 
-  it("reads again with a notice when the collection moved since the confirmation was drawn", async () => {
-    preview.mockResolvedValue(matches);
+  it("reads again with a notice when the collection moved, and cannot confirm the old answer meanwhile", async () => {
+    let finish: (v: unknown) => void = () => {};
+    preview.mockResolvedValueOnce(matches).mockReturnValueOnce(new Promise((r) => (finish = r)));
     revert.mockResolvedValue({ stale: true });
     open();
     await pressRevert();
-    expect(await screen.findByText(/This changed while you were deciding/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Revert" })).toBeDisabled();
+    expect(screen.getByText(/This changed while you were deciding/)).toBeTruthy();
+    expect(screen.getByRole("status").textContent).toMatch(/Checking what this would change/);
+    await act(async () => finish(matches));
     expect(preview).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole("button", { name: "Revert" })).toBeEnabled();
+    expect(screen.getByText(/This changed while you were deciding/)).toBeTruthy();
   });
 
   it("says an already-undone change is gone, with nothing to confirm", async () => {

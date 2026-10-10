@@ -50,7 +50,7 @@ export function revertLines(p: Pick<RevertPreview, "rows" | "entryRows">): Line[
 }
 
 type View =
-  | { k: "reading" }
+  | { k: "reading"; notice?: boolean }
   | { k: "ready"; p: RevertPreview; notice: boolean }
   | { k: "warning"; p: RevertPreview; decks: ShortDeck[]; fresh: ReadonlySet<string>; changed: boolean }
   | { k: "refused"; text: string; title: string };
@@ -90,7 +90,7 @@ export function RevertConfirm({
     previewRevert(entryId)
       .then((r) => {
         if (!live) return;
-        if ("rows" in r) setView((v) => ({ k: "ready", p: r, notice: v.k === "ready" && v.notice }));
+        if ("rows" in r) setView((v) => ({ k: "ready", p: r, notice: (v.k === "ready" || v.k === "reading") && v.notice === true }));
         else if ("missingCard" in r) setView({ k: "refused", title: c.catalogTitle, text: c.catalogBody(r.missingCard) });
         else setView({ k: "refused", title: c.catalogTitle, text: c.gone });
       })
@@ -127,7 +127,8 @@ export function RevertConfirm({
       } else if ("stale" in out) {
         // The collection moved since this was drawn: read it again and say so.
         actionId.current = null;
-        setView({ k: "ready", p: preview, notice: true });
+        // The old answer is withdrawn while the new one is read: it must not be confirmable.
+        setView({ k: "reading", notice: true });
         setAttempt((a) => a + 1);
       } else if ("missingCard" in out) setView({ k: "refused", title: c.catalogTitle, text: c.catalogBody(out.missingCard) });
       else setView({ k: "refused", title: c.catalogTitle, text: c.gone });
@@ -186,7 +187,12 @@ export function RevertConfirm({
           <div className="flex flex-col gap-[14px]">
             <h2 id={headingId} className="m-0 font-display text-[20px] font-bold leading-[1.3] text-[color:var(--fg)] md:text-[24px]">{c.title(title)}</h2>
             {view.k === "reading" ? (
-              <p role="status" className="m-0 text-[13.5px] text-[color:var(--fg-muted)]">{c.reading}</p>
+              <>
+                {view.notice ? (
+                  <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)]">{collectionEditCopy.shortWarning.changed}</p>
+                ) : null}
+                <p role="status" className="m-0 text-[13.5px] text-[color:var(--fg-muted)]">{c.reading}</p>
+              </>
             ) : (
               <>
                 {view.notice ? (
