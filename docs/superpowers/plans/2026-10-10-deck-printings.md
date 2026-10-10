@@ -66,13 +66,24 @@ because the feed moves daily, but it is a test case, not a frequency to design a
   (`read.ts:1332`, `/decks` and Home), `draft-state.ts:613`, `versions.ts:571`.
 - Prices come from `loadPrices` (`src/lib/decks/price-query.ts:67`): one statement, `distinct on
   (oracle_id)` ordered live first, real non-foil first, cheapest, then `scryfall_id`. `PriceFact`
-  (`src/lib/decks/price.ts`) carries cents and `asOf` only; the winning printing is dropped.
+  (`src/lib/decks/price.ts:24`) carries `cents`, `foilCents`, `etchedCents` and `asOf`; the winning
+  printing is dropped.
 - The deck page prices every row from one `loadPrices` call (`src/app/decks/[id]/page.tsx:346`) and
   hands each row its fact (`:402`, `:441`). The Money card (`src/lib/decks/stats-money.ts`) reads
   the row's fact, and its header already says it follows a pick with no change of its own. So
   pricing the pick inside the deck page's read is the whole of ruling (b).
 - Other deck-row price reads: `draft-state.ts:349` (review screen), `versions.ts:571` (version
   diff), `shopping-rollup.ts:78` (deck tile `3 to buy · $18.40` and Home's Commitments row).
+  The roll-up makes ONE oracle-keyed `loadPrices` call across every deck (`shopping-rollup.ts:78`),
+  so a card picked differently in two decks cannot be priced through an oracle-keyed map.
+- Other deck art reads: the review screen (`draft-state.ts:613`), the overview's named-card preview
+  (`src/lib/synopsis/read.ts:196`, which must match the card details it opens), and the commander
+  change sheet's current commander (`src/lib/commander-change/draft-rows.ts:46`).
+- Commanders are not version cards: they live on `deck_versions.commander_oracle_id` /
+  `partner_oracle_id` (`schema.ts:597`), and commit writes only body cards into
+  `deck_version_cards`.
+- `pruneOrphanProxies` (`src/lib/decks/prune-proxies.ts:48`) drops proxies for cards that left a
+  deck.
 - `deck_proxies` (`schema.ts:531`) is the precedent for a per-(deck, oracle) statement outside
   versioning, and `drizzle/0073_user_data_stamps.sql:116` gives it the `user_data_touch` trigger.
   The proxy action gates on `proxiedMembership(deckId, oracleId)` under a `for update` deck lock
@@ -92,23 +103,35 @@ because the feed moves daily, but it is a test case, not a frequency to design a
 
 ## Calls this plan makes (decided; override if you disagree)
 
-1. **Only a deck pick changes the price.** "The pick" in ruling (d) is the deck's pick. A card with
-   no deck pick keeps today's cheapest-in-stock figure even if the Collection has an art
-   preference. That keeps the audit's "nothing looks different the day it ships" true: with no
-   deck picks stored, every figure on every surface is byte-identical to main.
+1. **Only a deck pick changes the price. This departs from the handoff, and is flagged to Hugh.**
+   The README says one chain (deck pick, then the Collection's pick, then the default) feeds art,
+   the price tag, export, Shopping and the preset. Taken literally, that reprices every spoken-for
+   card the day this ships, even with no deck pick stored: its figure would move from the cheapest
+   printing to the Collection's pick or the default printing. Ruling (d) names "the pick", and the
+   audit's migration note says nothing looks different on ship day. So the price follows the
+   deck's pick only; with none, the figure is today's. The cost: a card with a Collection art
+   preference and no deck pick shows that preference's art over the cheapest printing's figure,
+   exactly as `main` does today. If Hugh wants the whole chain priced, it is one argument in PR 3
+   (pass the resolver's printing for every card instead of the deck picks).
 2. **A pick that leaves the Collection is ignored at read time, not deleted.** The handoff says the
    pick is cleared. Deleting it on every collection write would wipe every deck's picks on a
    Replace upload, which deletes and re-inserts the whole collection in one transaction, and would
    leave Undo unable to bring a pick back (E6). Reading it as absent while the printing is not held
    draws exactly the handoff's state (the deck falls to the Collection's pick, then the default; no
    dormant tile, no notice), costs no trigger on `collection_items`, and makes Undo and re-upload
-   restore the pick. The one visible difference: re-acquiring that exact printing later brings the
-   pick back. A stored pick for a printing not held is never drawn anywhere.
-3. **Version restore leaves picks alone** (E7), as it leaves proxies alone.
-4. **Update from list writes no picks.** The drawn surface is the new-deck arrival strip. Update
+   restore the pick. Only held picks reach the price read, so a figure never prices a printing the
+   art no longer shows. The one visible difference: re-acquiring that exact printing later brings
+   the pick back.
+3. **A pick goes when its card leaves the deck.** `pruneOrphanProxies`' call sites also prune
+   `deck_printings`, so a card removed and later re-added starts with no pick, as a proxy does.
+   Version restore leaves the remaining picks alone (E7), as it leaves proxies alone.
+4. **"In stock" means the pick's row is live and draws a figure**: `priceState` reads it as
+   `priced`, or `foilOnly` (the tag then reads the foil figure with its qualifier, as `main` does
+   for a foil-only card). A live pick with no figure in any finish falls back.
+5. **Update from list writes no picks.** The drawn surface is the new-deck arrival strip. Update
    from list is a draft edit with its own diff screen, which has no drawn clause. If it is wanted,
    it goes to Design (see the end).
-5. **The `Shown now` tile in deck scope names the deck's fallback** (the printing the deck shows
+6. **The `Shown now` tile in deck scope names the deck's fallback** (the printing the deck shows
    without its pick), as the handoff draws it. `resolvedKey` is passed as that fallback, not the
    art on screen (audit errata). The label goes to `/copy-review` with the other strings.
 
@@ -119,9 +142,9 @@ because the feed moves daily, but it is a test case, not a frequency to design a
 the exact string `'true'`.
 
 Off means `main`: no deck scope reaches the modal, the resolver skips the deck step, prices take no
-picks, import writes no picks and adds no clause, export names what it names today. Stored picks
-are kept. Every UI PR carries a test rendering its surface with the switch off and asserting the
-shipped tree.
+picks, versions record nothing, import writes no picks and adds no clause, export names what it
+names today. Stored picks are kept. Every PR carries a test with the switch off asserting `main`'s
+output on its surfaces.
 
 ## Migration
 
@@ -136,63 +159,85 @@ re-stamp the local ledger if another lands first):
 - The `user_data_touch` constraint trigger on it, `DEFERRABLE INITIALLY DEFERRED`, as 0073 gives
   `deck_proxies`. Without it Home and `/decks` serve stale commander art, and
   `pnpm check:list-cache` fails.
-- `deck_version_cards` gains nullable `set_code` and `collector_number`. No backfill: a null reads
+- `deck_version_cards` gains nullable `set_code` and `collector_number`, and `deck_versions` gains
+  nullable `commander_set_code`, `commander_collector_number`, `partner_set_code` and
+  `partner_collector_number`, because commanders are not version cards. No backfill: a null reads
   as today's resolver, which is "older versions show today's art". The commit's
-  draft-versus-version diff (`draft-state.ts`) compares oracle id and quantity only and must keep
-  doing so, or a pick would read as a deck edit.
+  draft-versus-version diff compares oracle id and quantity only and must keep doing so, or a pick
+  would read as a deck edit.
 
 ## PR boundaries
 
-Four PRs, in order, none stacked, each under about 20 files and 800 lines. Each takes its own
-worktree, the pre-open subagent pass and the normal pr-review cycle. PRs 2 to 4 run
-`feature-acceptance` on their rows, and PR 4 runs it again for the line.
+Five PRs, in order, none stacked, each under about 20 files and 800 lines. Each takes its own
+worktree, the pre-open subagent pass and the normal pr-review cycle. PRs 2 to 5 run
+`feature-acceptance` on their rows, and PR 5 runs it again for the line.
 
-### PR 1 · The store, the resolver and the price rule (no UI)
+### PR 1 · The store, the resolver and the write (no UI)
 
-- Migration 0088 and the Drizzle schema for `deck_printings` and the two version columns.
+- Migration 0088 and the Drizzle schema for `deck_printings` and the six version columns.
 - `deckPrintingsEnabled()` with its test.
 - `src/lib/decks/printings.ts`: `readDeckPicks(userId, deckIds)`, membership-scoped like every
   proxy read, and `resolveDeckPrintings(userId, deckId, oracleIds)`: the deck's pick when the player
   still holds that printing (call 2), else `readOwnedPrintings`' answer (the Collection's pick, then
-  the default). One query for the picks, then the existing reader. Fail-soft the way
-  `resolveOwnedPrintings` is.
-- **The price rule, inside the one statement.** `loadPrices(oracleIds, picks?)` takes an optional
-  `Map<oracleId, {setCode, collectorNumber}>`. A `picked` CTE joins the picks to `printings` and
-  `printing_prices` in the same statement, so the pick and the fallback share a snapshot (the
-  reason the query is one statement, `price-query.ts:34`). Per card: the pick's row when it is live
-  (its `as_of` is the newest) and carries a figure; otherwise today's chosen row. That is the pick
-  in stock, else the cheapest in stock, else today's stale row, which `priceState` already draws
-  as `sold out`. Called with no picks, the SQL and every figure are main's.
-- `PriceFact` gains `printing: { scryfallId, setCode, collectorNumber }`, the printing behind the
-  figure. I got it presets from it (ruling c). No surface draws it in this line.
-- `setDeckPrinting(deckId, oracleId, printing | null)` server action: switch on; `requireDeck`; the
-  deck row locked `for update`; `proxiedMembership(deckId, oracleId)` as the membership gate, so a
+  the default). It also returns which picks are HELD, which is what PR 3 prices. One query for the
+  picks, then the existing reader. Fail-soft the way `resolveOwnedPrintings` is.
+- `setDeckPrinting(deckId, oracleId, printing)` server action: switch on; `requireDeck`; the deck
+  row locked `for update`; `proxiedMembership(deckId, oracleId)` as the membership gate, so a
   commander is in and a Consider or search result is out (E1); the printing must be one the player
-  holds. Upsert, or delete on null (a pick of the fallback stores nothing extra; the action takes
-  the tile the player pressed). No `revalidatePath`, since the client moves art and figure
-  optimistically; the stamp trigger retires Home and `/decks`.
-- Tests: the resolver's three steps and the unheld pick; the price rule's three states plus the
-  no-picks byte-identity, and a `.toSQL()` assertion that the picked join is qualified (AGENTS.md's
-  correlated-subquery rule); the action's refusals; `check:list-cache` green with the new table.
+  holds. Upsert. It returns the card's new art (and, from PR 3, its price fact) so the client
+  can patch the one row; no `revalidatePath`, since the deck page is heavy and the stamp trigger already
+  retires Home and `/decks`.
+- `pruneOrphanProxies`' call sites prune `deck_printings` too (call 3).
+- Tests: the resolver's steps and the unheld pick; the action's refusals; the prune;
+  `check:list-cache` green with the new table.
 
-### PR 2 · Deck surfaces read the chain
+### PR 2 · Deck art reads the chain, and versions record it
 
-- `getDeckDetail` resolves art through `resolveDeckPrintings` for cards and both commanders.
+- `getDeckDetail` resolves art through `resolveDeckPrintings` for cards and both commanders. Export
+  body lines follow with no change of their own, since export reads the row's printed set
+  (`builder-shell.tsx:1961`).
 - Deck tiles' commander art (`read.ts:1332`) reads each deck's own pick, so `/decks` and Home
   follow (E2's surfaces the handoff does not name). One picks read for the grid.
-- The deck page passes the deck's picks to its `loadPrices` call. Rows, the Shopping strip and
-  total, the over-limit ring and the Money card all move with it, and the Money card file does not
-  change (ruling b; asserted by a test that feeds the Money card a picked fact).
-- The same picks reach `draft-state.ts:349`, `versions.ts:571` and `shopping-rollup.ts:78`, so the
-  review screen, the version diff, the deck tile's `to buy` figure and Home's Commitments row
-  never price a card differently from its own Shopping row.
-- Commit writes each card's resolved printing into `deck_version_cards.set_code` /
-  `collector_number`. A version view draws the recorded printing where present, today's resolver
-  where null.
-- Tests: switch off is main on every surface above; a picked spoken-for card prices its pick, its
-  fallback, and `sold out`; the diff ignores the new columns.
+- The review screen's art (`draft-state.ts:613`), the overview's named-card preview
+  (`synopsis/read.ts:196`) and the commander change sheet's current commander (`draft-rows.ts:46`)
+  read the deck's chain, so no deck surface draws a different printing from the card details it
+  opens.
+- Commit writes each card's resolved printing into `deck_version_cards`, and each commander's into
+  the new `deck_versions` columns. A version view draws the recorded printing where present,
+  today's resolver where null.
+- Tests: switch off is `main` on every surface above, export included; the diff ignores the new
+  columns.
 
-### PR 3 · The picker in deck scope (UI)
+### PR 3 · Prices follow the pick
+
+- **The price rule, inside the one statement.** `loadPrices(oracleIds, picks?)` takes an optional
+  list of `{ deckId, oracleId, setCode, collectorNumber }`, held picks only (call 2). A `picked`
+  CTE joins them to `printings` and `printing_prices` in the same statement, so a pick and its
+  fallback share a snapshot (the reason the query is one statement, `price-query.ts:34`). The read
+  returns today's oracle-keyed map plus a `(deckId, oracleId)`-keyed map of pick facts, and one
+  helper, `priceFor(read, deckId, oracleId)`, answers: the pick's fact when it is in stock (call 4),
+  else today's chosen row, which is the cheapest in stock or, with nothing live, the stale row
+  `priceState` draws as `sold out`. Called with no picks, the SQL and every figure are `main`'s.
+- `PriceFact` gains an OPTIONAL `printing?: { scryfallId, setCode, collectorNumber }`, filled only
+  inside `price-query.ts`, so the 39 files that build a fact literally do not move. It is the
+  printing behind the figure, which I got it presets from (ruling c).
+- Callers: the deck page (rows, the Shopping strip and total, the over-limit ring and the Money
+  card, whose file does not change: ruling b, asserted by a test feeding it a picked fact); the
+  review screen (`draft-state.ts:349`); the version diff (`versions.ts:571`); and the roll-up
+  (`shopping-rollup.ts:78`), which passes every deck's held picks and prices each deck's rows
+  through `priceFor`, so a deck tile's `to buy`, Home's Commitments row and deck stats
+  (`stats-query.ts:132`) agree with that deck's Shopping rows.
+- Reviewed and left as they are, because no pick reaches them: `proxy-list.ts:138` (a proxy is
+  printed, not bought), tuning (`tuning-read.ts:362`, `tuning-actions.ts:296`), the commander
+  change candidates, intake, `/commanders/[slug]`, `read.ts:1479`, `pre-filled-commander.ts`,
+  `suggestions-read.ts`. The swap cut card (`swaps/gather.ts:212`) is a deck card and could take
+  its pick's price; it is left at today's figure, because the swap compares stand-in prices
+  against the card's market price, not the printing in the box.
+- Tests: the three states, a foil-only pick, the no-picks byte-identity, a card picked differently
+  in two decks priced per deck in the roll-up, and a `.toSQL()` assertion that the picked join is
+  qualified (AGENTS.md's correlated-subquery rule).
+
+### PR 4 · The picker in deck scope (UI)
 
 - `PrintingRegion` gains `scope: "collection" | "deck"` on the art role. With `deck`: no reset, no
   dormant tile, the intro slot swaps both strings (D1), and `onPick` writes through
@@ -202,26 +247,33 @@ worktree, the pre-open subagent pass and the normal pr-review cycle. PRs 2 to 4 
   `/collection` stay as they are (E9).
 - The card-detail read takes the deck's pick when opened with a deck, so the art, the art-column
   price tag (the price of the printing under the art, `no stock` if none) and the Set field move
-  together on a pick. On failure the tiles revert and `Didn’t save. Try again.` shows, not red.
-  One live-region announcement per pick.
+  together on a pick.
+- `builder-shell.tsx` patches the row from the action's answer: the provider gains an art-change
+  callback here (only `/collection` and the set grid wire one today), and the deck holds a small
+  per-card override for art, printed set and price fact, so rows, tiles, the Shopping total, the
+  Money card and the export dialog move in the same frame. On failure the tiles revert and
+  `Didn’t save. Try again.` shows, not red. One live-region announcement per pick.
 - One or no owned printings: the shipped plain MetaField. Overflow: the shipped search and chips.
 - `src/lib/copy/deck-printings.ts` with the five picker strings, through `/copy-review`.
 - Inventory `docs/superpowers/inventories/deck-printings.json` (rows below), contact sheet at both
   widths, `check:shared` holding `PrintingRegion` across `/collection` and the deck, and the
   `design-review` property table against R3.
 
-### PR 4 · Import and export
+### PR 5 · Import and export
 
-- Import keeps the printing it used to strip: `(SET) CN` is read off the line before the name
-  resolves. A printing the player holds becomes the deck's pick, commander lines included (E4). A
-  printing they do not hold falls to the chain and is counted.
+- Import keeps the printing it used to strip: `(SET) CN` is read off a text line before the name
+  resolves, and a CSV row already carries its set and collector number (`import.ts:98`). A printing
+  the player holds becomes the deck's pick, commander lines included (E4). A printing they do not
+  hold falls to the chain and is counted. When two lines name the same card in different
+  printings, the first line naming a held printing wins, matching how quantities keep the first
+  line (`import.ts:372`).
 - The arrival strip composes the shipped clean string with the two clauses, `12 came with the
   printing you own` and Hugh's `, N not in your Collection` (ruling a), on desktop and the phone.
   The combined strings and whether the provenance sentence survives go to `/copy-review` (E3). That
   makes eight new strings for the line, as the audit counts.
-- Export names the printing the deck shows for every line, commanders included, and the import of
-  that export round-trips to the same picks (a test).
-- Switch off: import writes no picks and adds no clause; export is main's.
+- Export's commander lines name the printing the deck shows (body lines already do after PR 2), and
+  importing that export round-trips to the same picks (a test).
+- Switch off: import writes no picks and adds no clause; export is `main`'s.
 - Then the line's close-out: every inventory row walked at both widths in a real browser against a
   `pull:staging` copy, the full contact sheet, and the E8 phone states the handoff did not draw.
 
@@ -233,10 +285,10 @@ worktree, the pre-open subagent pass and the normal pr-review cycle. PRs 2 to 4 
   lines from `about-entry/about · deck printings entry.ts` through `/prose-pass`, and the
   `deckPrinting` specimen: the shipped Set field and region in deck scope, static, on fixture props.
 - **Where it lands:** in the epic's single batched About PR, which is the last PR of the I got it
-  plan (`2026-10-10-i-got-it.md`), with **the one `ABOUT_VERSION` bump**. It cannot land earlier:
-  `about.test.ts` refuses an entry whose `since` is above the current version, and the roadmap
-  batches the epic's entries into one bump at its close. The specimen component is built in PR 3
-  here, behind a test, so the About PR only writes the entry.
+  line (its plan is the sibling doc PR, `2026-10-10-i-got-it.md`), with **the one `ABOUT_VERSION`
+  bump**. Entry, specimen and bump land together there, so nothing ships without a caller. It
+  cannot land earlier: `about.test.ts` refuses an entry whose `since` is above the current version,
+  and the roadmap batches the epic's entries into one bump at its close.
 - **Coordination, flagged:** the collection screens plan's PR 8 bumps on its own (11 to 12). If it
   merges first, this entry and I got it's take the next number in one bump, and the sheet reads
   `2 new` rather than the `7 new` the handoff draws. Holding all seven for one bump needs that lane
@@ -249,34 +301,35 @@ in `deck-printings.json`.
 
 | Surface | 390 | 1300 | PR | Shares with |
 |---|---|---|---|---|
-| Card details from a deck card: Set field, nothing picked (`N printings you own ▾`) | ☐ | ☐ | 3 | `PrintingRegion` |
-| Open, nothing picked: deck intro, `Shown now` on the fallback, no preselection | ☐ | ☐ | 3 | `PrintingRegion` |
-| Picked: `For this deck · of N`, picked intro, art + price tag + Set move together | ☐ | ☐ | 3 | `PrintingRegion` |
-| Save failed: tiles revert, `Didn’t save. Try again.` | ☐ | ☐ | 3 | — |
-| One or no owned printings: plain MetaField | ☐ | ☐ | 3 | — |
-| Overflow (over 12 owned printings): search and chips | ☐ | ☐ | 3 | `PrintingRegion` |
-| Commander's details: same Set field | ☐ | ☐ | 3 | `PrintingRegion` |
-| Negative: Consider tile and search result under the deck provider offer no pick | ☐ | ☐ | 3 | — |
-| Negative: `update-diff` and `review-changes` modals offer no pick | ☐ | ☐ | 3 | — |
-| Negative: card details from `/collection` keep the collection wording and reset | ☐ | ☐ | 3 | `PrintingRegion` |
+| Card details from a deck card: Set field, nothing picked (`N printings you own ▾`) | ☐ | ☐ | 4 | `PrintingRegion` |
+| Open, nothing picked: deck intro, `Shown now` on the fallback, no preselection | ☐ | ☐ | 4 | `PrintingRegion` |
+| Picked: `For this deck · of N`, picked intro, art + price tag + Set move together | ☐ | ☐ | 4 | `PrintingRegion` |
+| Save failed: tiles revert, `Didn’t save. Try again.` | ☐ | ☐ | 4 | — |
+| One or no owned printings: plain MetaField | ☐ | ☐ | 4 | — |
+| Overflow (over 12 owned printings): search and chips | ☐ | ☐ | 4 | `PrintingRegion` |
+| Commander's details: same Set field | ☐ | ☐ | 4 | `PrintingRegion` |
+| Negative: Consider tile and search result under the deck provider offer no pick | ☐ | ☐ | 4 | — |
+| Negative: `update-diff` and `review-changes` modals offer no pick | ☐ | ☐ | 4 | — |
+| Negative: card details from `/collection` keep the collection wording and reset | ☐ | ☐ | 4 | `PrintingRegion` |
 | `/decks/[id]` rows, tiles, card view, hover preview: art follows the pick, no mark | ☐ | ☐ | 2 | — |
-| Shopping, spoken-for row: pick in stock / pick sold out (cheapest figure) / none in stock | ☐ | ☐ | 2 | `BuyTag` |
-| Shopping strip total and over-limit ring use the figure shown | ☐ | ☐ | 2 | — |
-| Deck stats Money card follows the pick | ☐ | ☐ | 2 | — |
-| `/decks` tile: commander art and `to buy` figure | ☐ | ☐ | 2 | — |
-| `/` Home: deck tile commander art and Commitments figure | ☐ | ☐ | 2 | — |
+| Review screen, overview named-card preview, commander change sheet: the deck's printing | ☐ | ☐ | 2 | — |
+| Shopping, spoken-for row: pick in stock / pick sold out (cheapest figure) / none in stock | ☐ | ☐ | 3 | `BuyTag` |
+| Shopping strip total and over-limit ring use the figure shown | ☐ | ☐ | 3 | — |
+| Deck stats Money card follows the pick | ☐ | ☐ | 3 | — |
+| `/decks` tile: commander art and `to buy` figure | ☐ | ☐ | 2, 3 | — |
+| `/` Home: deck tile commander art and Commitments figure | ☐ | ☐ | 2, 3 | — |
 | Version view: a post-line version's recorded printing; an older version's today art | ☐ | ☐ | 2 | — |
-| After a pick: no pending banner, no Commit, no History line, analysis not stale | ☐ | ☐ | 3 | — |
-| `/decks/import` arrival strip: printing clause, not-owned clause, both, neither | ☐ | ☐ | 4 | — |
-| Export dialog decklist: printings named, commander lines included | ☐ | ☐ | 4 | — |
+| After a pick: no pending banner, no Commit, no History line, analysis not stale | ☐ | ☐ | 4 | — |
+| `/decks/import` arrival strip: printing clause, not-owned clause, both, neither | ☐ | ☐ | 5 | — |
+| Export dialog decklist: printings named, commander lines included | ☐ | ☐ | 2, 5 | — |
 | Switch off: every row above is main's, picks kept | ☐ | ☐ | every | — |
-| `/about`: the entry, switch on and off | ☐ | ☐ | I got it PR 5 | — |
+| `/about`: the entry, switch on and off | ☐ | ☐ | I got it's About PR | — |
 
 ## Left for Design
 
 Nothing blocks the build. Two items are recorded:
 
-- **Update from list** writes no picks (call 4). If the clause is wanted on the update diff, that is
+- **Update from list** writes no picks (call 5). If the clause is wanted on the update diff, that is
   a drawn surface, so it is Design's.
 - **Phone states the handoff did not draw at 390** (E8: save failed, overflow, pick left the
   Collection, commander head, deck tiles) are shipped components and are covered by the contact
