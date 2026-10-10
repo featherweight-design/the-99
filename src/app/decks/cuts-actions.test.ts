@@ -8,6 +8,7 @@ import { deck, profile, support } from "../../lib/tuning/cuts-fixture";
 // prompt, the schema and the validator are the real ones.
 const calls = vi.hoisted(() => ({
   enabled: true,
+  planThrows: false,
   inputs: undefined as unknown,
   inputsReads: 0,
   reaped: 0,
@@ -45,7 +46,14 @@ vi.mock("../../lib/decks/cuts-read", () => ({
   readCutsState: async () => calls.state,
   reapCutsRuns: async () => { calls.reaped += 1; },
 }));
-vi.mock("../../lib/decks/tuning-read", () => ({ commanderName: async () => "Gishath" }));
+vi.mock("../../lib/decks/tuning-read", () => ({ commanderName: async () => "Gishath", profileOfHead: async () => ({}) }));
+// The plan read is its own module with its own test; here it answers a fixed plan (or throws, to prove the run carries on without one).
+vi.mock("../../lib/decks/cuts-plan-read", () => ({
+  readCutsPlan: async () => {
+    if (calls.planThrows) throw new Error("plan read down");
+    return { combos: [], nearCombos: [], commanderText: ["Gishath: Vigilance"], colourNeeds: [], basics: [], needs: new Map() };
+  },
+}));
 vi.mock("../../lib/tuning/cuts-run-store", () => ({
   startCutsRun: async () => {
     calls.started += 1;
@@ -95,6 +103,7 @@ const inputsFor = (facts: CutFacts, over: object = {}) => ({
 
 beforeEach(() => {
   calls.enabled = true;
+  calls.planThrows = false;
   calls.inputs = inputsFor(factsFor());
   calls.inputsReads = 0;
   calls.reaped = 0;
@@ -202,6 +211,17 @@ describe("runProposedCuts, a run that answers", () => {
     expect(req.user).not.toContain("Back face.");
     expect(req.user).toContain("Key cards, never to be cut: ramp1.");
     expect(req.user).toContain("Cards over 100: 2");
+  });
+
+  it("sends the deck's plan, and runs on without one when the plan read throws", async () => {
+    await runProposedCuts(DECK);
+    expect(calls.modelCalls[0].user).toContain("The deck's plan.");
+    expect(calls.modelCalls[0].user).toContain("Gishath: Vigilance");
+    calls.modelCalls.length = 0;
+    calls.planThrows = true;
+    await runProposedCuts(DECK);
+    expect(calls.modelCalls).toHaveLength(1);
+    expect(calls.modelCalls[0].user).not.toContain("The deck's plan.");
   });
 
   it("sends the intent the player stored on the deck, as player text, and says so plainly when there is none", async () => {

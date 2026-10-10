@@ -116,3 +116,74 @@ describe("validateCuts", () => {
     expect(run([c("bear1", [OFF], "Cutting it will make the deck stronger.")]).dropped[0].rule).toBe("noResultClaim");
   });
 });
+
+describe("the per-run cap", () => {
+  const big = () => buildCutsPack({
+    facts: cutFacts({ profile: profile({}, deck(70)), locked: new Set(), support: null, declaredBracket: null }),
+    commanderName: "Gishath", keyCards: [], intent: null,
+  });
+  it("asks for no more than 20 of a deck 22 over, and keeps no more than that", () => {
+    const pack = big();
+    expect([pack.over, pack.ask]).toEqual([22, 20]);
+    const cuts = Array.from({ length: 22 }, (_, i) => c(`bear${i}`, [{ kind: "cost", mv: 3 }]));
+    const r = run(cuts, pack);
+    expect(r.kept).toHaveLength(20);
+    expect(r.dropped.map((d) => d.rule)).toEqual(["tooMany", "tooMany"]);
+    expect(r.report).toMatchObject({ over: 20, keptCount: 20 });
+  });
+});
+
+describe("the plan cites (prompt v2)", () => {
+  const plan = {
+    combos: [{ pieces: ["bear1", "bear3"], produces: ["Infinite mana"], usesCommander: false, manaNeeded: 0 }],
+    nearCombos: [{ have: "bear5", missing: "Elsewhere", produces: ["Infinite mana"] }],
+    commanderText: [], colourNeeds: [{ colour: "G", cards: 40 }], basics: [],
+    needs: new Map([["bear1", ["G"]], ["bear2", ["G"]]]),
+  };
+  const withPlan = (p: typeof plan | null = plan): CutsPack =>
+    buildCutsPack({
+      facts: cutFacts({ profile: profile({}, deck(50)), locked: new Set(), support: null, declaredBracket: null }),
+      commanderName: "Gishath", keyCards: [], intent: null, ...(p ? { plan: p } : {}),
+    });
+  const card = (pack: CutsPack, id: string) => pack.cards.find((x) => x.oracleId === id)!;
+
+  it("holds a combo cite only for the state the card is in", () => {
+    const pack = withPlan();
+    expect(citeHolds({ kind: "combo", state: "assembled" }, card(pack, "bear1"), pack)).toBe(true);
+    expect(citeHolds({ kind: "combo", state: "oneShort" }, card(pack, "bear5"), pack)).toBe(true);
+    expect(citeHolds({ kind: "combo", state: "assembled" }, card(pack, "bear5"), pack)).toBe(false);
+    expect(citeHolds({ kind: "combo", state: "none" }, card(pack, "bear2"), pack)).toBe(true);
+    expect(citeHolds({ kind: "combo", state: "none" }, card(pack, "bear1"), pack)).toBe(false);
+  });
+
+  it("refuses 'in no combo' when the combo read failed or there was no plan", () => {
+    const failed = withPlan({ ...plan, combos: null as never });
+    expect(citeHolds({ kind: "combo", state: "none" }, card(failed, "bear2"), failed)).toBe(false);
+    const bare = withPlan(null);
+    expect(citeHolds({ kind: "combo", state: "none" }, card(bare, "bear2"), bare)).toBe(false);
+  });
+
+  it("refuses 'in no combo' when a combo list is at its cap, since it may omit pieces", () => {
+    const full = withPlan({ ...plan, combos: Array.from({ length: 6 }, () => plan.combos[0]) });
+    expect(citeHolds({ kind: "combo", state: "none" }, card(full, "bear2"), full)).toBe(false);
+  });
+
+  it("holds a cost cite only at the card's mana value", () => {
+    const pack = withPlan();
+    expect(citeHolds({ kind: "cost", mv: 3 }, card(pack, "bear1"), pack)).toBe(true);
+    expect(citeHolds({ kind: "cost", mv: 4 }, card(pack, "bear1"), pack)).toBe(false);
+  });
+
+  it("holds a colour cite only for a colour the card needs, at the deck's figure", () => {
+    const pack = withPlan();
+    expect(citeHolds({ kind: "colour", colour: "G", cards: 40 }, card(pack, "bear1"), pack)).toBe(true);
+    expect(citeHolds({ kind: "colour", colour: "G", cards: 39 }, card(pack, "bear1"), pack)).toBe(false);
+    expect(citeHolds({ kind: "colour", colour: "R", cards: 40 }, card(pack, "bear1"), pack)).toBe(false);
+    expect(citeHolds({ kind: "colour", colour: "G", cards: 40 }, card(pack, "bear3"), pack)).toBe(false);
+  });
+
+  it("holds a tapped cite only for a land that enters tapped", () => {
+    const pack = withPlan();
+    expect(citeHolds({ kind: "tapped" }, card(pack, "bear1"), pack)).toBe(false);
+  });
+});

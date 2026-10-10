@@ -16,6 +16,7 @@ import { creditsCopy } from "../../lib/copy/credits";
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
 import { overCopy } from "../../lib/copy/decks-builder";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
+import { cutsAsk, MAX_CUTS_PER_RUN } from "../../lib/tuning/cuts-ask";
 import { cutChips, type Chip, type CountRow } from "../../lib/tuning/cuts-count";
 import type { CutItem, CutsPanel } from "../../lib/tuning/cuts-state";
 import { useCardDetail, useCardIntent } from "../cards/card-detail-provider";
@@ -288,7 +289,7 @@ export function CutsPanelView({
 
   // The lead: the over figure in --fg (never --warning), then what the state says next.
   const lead = (() => {
-    if (running) return copy.deeper.pendingLead(over);
+    if (running) return copy.deeper.pendingLead(cutsAsk(over));
     if (resultShown && answered > 0) {
       return copy.leadPart(cutCount, items.filter((i) => i.verdict === "dismissed").length, items.length, items.length - answered);
     }
@@ -389,9 +390,9 @@ function Offer({ panel, variant, blocked, standing, onPress }: {
       {variant === "offer" ? (
         <div className="flex flex-col gap-[12px] md:flex-row md:items-start md:justify-between md:gap-[20px]">
           <div className="min-w-0">
-            <h3 className="text-[14px] font-semibold" style={{ color: "var(--fg)" }}>{d.offerTitle(panel.over)}</h3>
+            <h3 className="text-[14px] font-semibold" style={{ color: "var(--fg)" }}>{d.offerTitle(cutsAsk(panel.over))}</h3>
             <p className="mt-[5px] text-[12.5px] leading-[1.5]" style={{ color: "var(--fg-body)" }}>
-              {panel.thin ? d.offerLeadThin : d.offerLead(panel.over)}
+              {panel.thin ? d.offerLeadThin : d.offerLead(cutsAsk(panel.over))}
             </p>
           </div>
           <CreditButton label={d.action} filled blocked={blocked} spent={spent} onPress={onPress} />
@@ -492,6 +493,8 @@ function ResultBlock({ panel, deps, standing, onSettled }: {
 }) {
   const { items, asked } = panel;
   const d = copy.deeper;
+  // A run that hit the per-run cap leaves the rest of the overage for the next one.
+  const more = asked >= MAX_CUTS_PER_RUN ? Math.max(0, panel.over - items.filter((i) => i.verdict !== "accepted").length) : 0;
   const slots = Array.from({ length: Math.max(0, asked - items.length) }, (_, i) => items.length + i + 1);
   const hasRead = panel.itemsReport !== null;
   return (
@@ -513,6 +516,9 @@ function ResultBlock({ panel, deps, standing, onSettled }: {
           </li>
         ))}
       </ul>
+      {more > 0 && (
+        <p data-testid="cuts-more" className="mt-[10px] text-[12.5px]" style={{ color: "var(--fg-muted)" }}>{d.resultMore(more)}</p>
+      )}
       <p className="mt-[12px] font-mono text-[10.5px] leading-[1.5]" style={{ color: "var(--fg-faint)" }}>
         {`${d.resultFoot(items.length, hasRead ? asked : items.length)} · ${standing}`}
       </p>

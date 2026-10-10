@@ -2,6 +2,7 @@ import type { ChipContext } from "./cuts-count";
 import { playerTextBody } from "../model/player-text";
 import type { CutsPack, CutsPackCard } from "./cuts-evidence";
 import type { CutCite, CutProposal, CutsResponse } from "./cuts-schema";
+import { MAX_COMBO_FACTS, MAX_NEAR_COMBO_FACTS } from "../synopsis/facts-extra";
 import { presentationFailures, type RuleKey } from "./presentation";
 
 /**
@@ -18,13 +19,19 @@ export type CutDrop = { position: number; rule: CutDropRule; name?: string; cite
 export type ValidatedCut = { oracleId: string; name: string; reason: string; cites: CutCite[]; position: number };
 
 export type CutsReport = {
-  askedCount: number; survivedCount: number; keptCount: number; over: number; drops: CutDrop[];
+  askedCount: number; survivedCount: number; keptCount: number; /** The cuts the run asked for (up to MAX_CUTS_PER_RUN). */ over: number; drops: CutDrop[];
   /** The figures the chips quote, as they stood when the validator checked the cites. Stored with the
    *  run so a cut made from the result does not change the evidence of the lines still open. */
   chips?: ChipContext;
 };
 
 const TEXT_RULES: ReadonlySet<string> = new Set(["noBracketClaim", "noResultClaim", "quotedNote"]);
+
+/** The Overview's combo read keeps the top 6 assembled and top 3 one-short; a list at its cap may omit pieces, so "in no combo" cannot be vouched for. */
+function cleanlyListed(pack: CutsPack): boolean {
+  const p = pack.plan;
+  return !!p?.combos && !!p.nearCombos && p.combos.length < MAX_COMBO_FACTS && p.nearCombos.length < MAX_NEAR_COMBO_FACTS;
+}
 
 /** Whether a cite states a figure that is true for THIS card and this deck. */
 export function citeHolds(cite: CutCite, card: CutsPackCard, pack: CutsPack): boolean {
@@ -38,6 +45,14 @@ export function citeHolds(cite: CutCite, card: CutsPackCard, pack: CutsPack): bo
     case "curve": return !!card.curve && card.curve.cmc === cite.cmc && card.curve.have === cite.have;
     case "flag": return (card.flags ?? []).includes(cite.flag);
     case "intent": return pack.intent !== null;
+    // "none" is a claim about the deck's combos, so it needs the combo read to have succeeded.
+    case "combo":
+      return cite.state === "none"
+        ? cleanlyListed(pack) && card.comboState === undefined
+        : card.comboState === cite.state;
+    case "cost": return card.mv === cite.mv;
+    case "tapped": return card.entersTapped !== undefined;
+    case "colour": return !!card.needs?.includes(cite.colour) && pack.plan?.colourNeeds.find((n) => n.colour === cite.colour)?.cards === cite.cards;
   }
 }
 
@@ -63,13 +78,13 @@ export function validateCuts(args: {
     }
   });
 
-  const kept: ValidatedCut[] = survivors.slice(0, pack.over).map(({ at: _at, ...cut }) => cut);
-  for (const extra of survivors.slice(pack.over)) dropped.push({ position: extra.at, rule: "tooMany", name: extra.name });
+  const kept: ValidatedCut[] = survivors.slice(0, pack.ask).map(({ at: _at, ...cut }) => cut);
+  for (const extra of survivors.slice(pack.ask)) dropped.push({ position: extra.at, rule: "tooMany", name: extra.name });
 
   return {
     kept,
     dropped,
-    report: { askedCount: reply.cuts.length, survivedCount: survivors.length, keptCount: kept.length, over: pack.over, drops: dropped },
+    report: { askedCount: reply.cuts.length, survivedCount: survivors.length, keptCount: kept.length, over: pack.ask, drops: dropped },
   };
 
   function check(cut: CutProposal): Omit<ValidatedCut, "position"> | { rule: CutDropRule; cite?: CutCite["kind"] } {

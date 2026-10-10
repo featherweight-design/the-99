@@ -48,6 +48,7 @@ export type InteractionCounts = {
 };
 
 export const MAX_COMBO_FACTS = 6;
+export const MAX_NEAR_COMBO_FACTS = 3;
 export const CHEAP_MANA_VALUE = 2;
 
 /**

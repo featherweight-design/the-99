@@ -15,6 +15,10 @@ export const citeSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("curve"), cmc: z.number(), have: z.number() }),
   z.object({ kind: z.literal("flag"), flag: z.enum(["gameChanger", "massLandDenial", "extraTurn", "combo"]) }),
   z.object({ kind: z.literal("intent") }),
+  z.object({ kind: z.literal("combo"), state: z.enum(["assembled", "oneShort", "none"]) }),
+  z.object({ kind: z.literal("cost"), mv: z.number() }),
+  z.object({ kind: z.literal("tapped") }),
+  z.object({ kind: z.literal("colour"), colour: z.enum(["W", "U", "B", "R", "G"]), cards: z.number() }),
 ]);
 
 export const cutSchema = z.object({

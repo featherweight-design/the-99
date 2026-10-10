@@ -4,9 +4,8 @@ import { spellbookVariantCards, spellbookVariants } from "../../db/schema";
 import { GAME_ENDING_FEATURES } from "../spellbook/produces-kinds.generated";
 import { isInfiniteOrGameEnding } from "../spellbook/combo-features";
 import type { DeckProfile } from "../profile/types";
-import { fitsIdentity, MAX_COMBO_FACTS, type ComboFact, type NearComboFact } from "./facts-extra";
+import { fitsIdentity, MAX_COMBO_FACTS, MAX_NEAR_COMBO_FACTS, type ComboFact, type NearComboFact } from "./facts-extra";
 
-export const MAX_NEAR_COMBO_FACTS = 3;
 /** Largest variant the facts consider. Spellbook stores 6 to 10 pieces for only 37 variants in all; seven or more are left out. */
 export const MAX_COMBO_PIECES = 6;
 

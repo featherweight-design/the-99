@@ -127,7 +127,7 @@ export function cutCounts(facts: CutFacts, declared: Bracket | null, commander: 
   return { rows, chips: { medianPct: med, flagCounts, declared } };
 }
 
-export type Chip = { key: string; kind: "ROLE" | "EDHREC" | "CURVE" | "BRACKET" | "YOU SAID"; text: string };
+export type Chip = { key: string; kind: "ROLE" | "EDHREC" | "CURVE" | "BRACKET" | "YOU SAID" | "PLAN" | "COST" | "COLOUR"; text: string };
 
 /** The part of a reason inside the first pair of quotation marks, as the validator requires it to be written. */
 export function quotedPart(reason: string): string | null {
@@ -158,6 +158,14 @@ export function cutChips(cites: readonly CutCite[], reason: string, ctx: ChipCon
           : ` ${n} · ${allowanceNote(c.flag, ctx.declared, flagAllowance(c.flag, ctx.declared))}`;
         return { key, kind: "BRACKET", text: `${FLAG_LABEL[c.flag]}${tail}` };
       }
+      case "combo":
+        return { key, kind: "PLAN", text: c.state === "assembled" ? "in a combo the deck assembles" : c.state === "oneShort" ? "in a combo one card short" : "in no combo the deck holds" };
+      case "cost":
+        return { key, kind: "COST", text: `mana value ${c.mv}` };
+      case "tapped":
+        return { key, kind: "COST", text: "enters tapped" };
+      case "colour":
+        return { key, kind: "COLOUR", text: `${c.colour} · ${c.cards} ${c.cards === 1 ? "card needs" : "cards need"} it` };
       case "intent": {
         const q = quotedPart(reason);
         return { key, kind: "YOU SAID", text: q ? `“${q}”` : "your description" };
