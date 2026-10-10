@@ -1,6 +1,6 @@
 import type { Availability } from "../decks/availability";
 import { frontFaceOracle, frontFaceTypeLine } from "./faces";
-import { classifyRoles, ROLE_TARGETS } from "./roles";
+import { rolesByLabelElseText, ROLE_TARGETS } from "./roles";
 import { supportOverlap, type SupportList } from "../edhrec/support-overlap";
 
 export type PoolCard = {
@@ -345,7 +345,7 @@ export function scoreCommander(args: {
   /**
    * Fresh-label role sets by oracle id (`readLabelRoleSets`), when the pool is counted by LABEL
    * (`LABEL_ROLE_COUNTS_ENABLED`, labels-everywhere plan). A card absent from the map has no fresh
-   * label and counts toward NO role, the rule the label targets were derived under; absent
+   * label and falls back to the classifier for that card (`rolesByLabelElseText`); absent
    * altogether is the classifier for every card, exactly as before.
    */
   roleSets?: ReadonlyMap<string, readonly RoleName[]>;
@@ -390,7 +390,7 @@ export function scoreCommander(args: {
   const roleCounts = { ramp: 0, draw: 0, removal: 0, wipes: 0 };
   const roleCards: Record<RoleName, RoleCard[]> = { ramp: [], draw: [], removal: [], wipes: [] };
   for (const c of pool) {
-    const roles = args.roleSets ? args.roleSets.get(c.oracleId) ?? [] : classifyRoles(c);
+    const roles = rolesByLabelElseText(c, args.roleSets);
     for (const role of roles) {
       if (role !== "land") {
         roleCounts[role]++;

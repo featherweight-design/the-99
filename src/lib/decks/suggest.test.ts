@@ -111,8 +111,13 @@ describe("suggestDeck", () => {
       expect(out.filter((s) => s.reason === "draw")).toHaveLength(10); // the draw target
     });
 
-    it("never suggests a card with no fresh label for a role", () => {
+    it("counts a card with no fresh label by the classifier, so it can still fill a role", () => {
       const out = suggestDeck({ ...base, ownedPool: rocks, roleSets: new Map() });
+      expect(out.filter((s) => s.reason === "ramp").length).toBeGreaterThan(0);
+    });
+
+    it("never fills a role from a labeled card whose label names none", () => {
+      const out = suggestDeck({ ...base, ownedPool: rocks, roleSets: new Map(rocks.map((r) => [r.oracleId, []])) });
       expect(out.filter((s) => s.reason !== "land")).toEqual([]);
     });
 

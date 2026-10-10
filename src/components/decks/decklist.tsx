@@ -740,7 +740,11 @@ export function Decklist({
       // be fewer than the group's size (the group is the classifier's), so `to` stays the figure the
       // strip will read after the purchase.
       const moves = countRoles.byLabel
-        ? cardCopies(roleCards.filter(notSpent).filter((c) => labelRolesOf(labelRows?.[c.oracleId]).includes(role)))
+        ? cardCopies(roleCards.filter(notSpent).filter((c) => {
+            // An unlabeled card is the classifier's call, and the group is already its role.
+            const rows = labelRows?.[c.oracleId];
+            return rows ? labelRolesOf(rows).includes(role) : true;
+          }))
         : listed;
       // `n` is what moves the count, so from + n = to holds on either basis.
       const n = moves;
