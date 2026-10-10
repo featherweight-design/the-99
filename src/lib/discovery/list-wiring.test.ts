@@ -163,7 +163,7 @@ describe("loadDiscovery — wiring", () => {
       const byLabel = await loadDiscovery("user-1", { sort: "fit" });
       expect(roleTargetMock.basisSeen).toEqual(["labels"]);
       expect(roles(byLabel)).toBeGreaterThan(roles(byText));
-      // And no labelled card counts toward nothing: an empty map scores below the labelled one.
+      // And an UNLABELLED card counts toward no role: an empty map scores below the labelled one.
       basisMock.value = { basis: "labels", roleSets: new Map(), fellBack: false };
       expect(roles(await loadDiscovery("user-1", { sort: "fit" }))).toBeLessThan(roles(byLabel));
     } finally {

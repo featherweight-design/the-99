@@ -442,6 +442,9 @@ export async function loadDiscoveryWithIds(
   opts: { sort: "fit" | "new" },
 ): Promise<{ list: DiscoveryList; oracleIds: string[] }> {
   const { collection, availability, availOk } = await loadDiscoveryPool(userId);
+  // Started here, beside the candidate query: it needs only the collection. `loadPoolRoleBasis`
+  // never rejects (a failed read is the classifier on both sides), so it cannot be left dangling.
+  const basisRead = loadPoolRoleBasis(collection);
   // One oracle-id set, so the second support aggregate has nothing to add: the
   // ranked pool and the collection are the same pool.
   const candidates = await loadCandidates(
@@ -457,7 +460,7 @@ export async function loadDiscoveryWithIds(
   const [priceRead, playedTags, { roleSets, roleTargets }] = await Promise.all([
     readPrices(candidates.map((c) => c.oracleId)),
     loadPlayedTags(userId),
-    loadPoolRoleBasis(collection).then(async ({ basis, roleSets }) => ({
+    basisRead.then(async ({ basis, roleSets }) => ({
       roleSets,
       roleTargets: await loadRoleTargetsForCommanders(candidates, basis),
     })),
