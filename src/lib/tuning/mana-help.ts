@@ -43,6 +43,9 @@ export type TradeMove = {
 
 export type ManaHelp = {
   color: BalanceColor;
+  /** False when the color is outside the commander's identity: a basic or a staple of it is not legal in
+   *  the deck, so nothing is offered. */
+  inIdentity: boolean;
   /** The picked color's sources now. */
   sourcesNow: number;
   rebalance: RebalanceMove[];
@@ -77,6 +80,7 @@ export function helpAddColor(
   basics: BasicCatalog,
   candidates: readonly StapleCandidate[],
   color: BalanceColor,
+  identity: readonly string[],
 ): ManaHelp {
   const read = (r: readonly ManaSupplyCardRow[]) => readManaBalance({ rows: r, nameOf, tapped: NO_TAPPED });
   const before = read(rows);
@@ -97,7 +101,9 @@ export function helpAddColor(
     return c && !lockedIds.has(r.id) && r.quantity > 0 ? [{ row: r, color: c }] : [];
   });
 
-  const out: ManaHelp = { color, sourcesNow: total(before, color), rebalance: [], trades: [], staples: rankStaples(candidates, [color]) };
+  const inIdentity = identity.includes(color);
+  const out: ManaHelp = { color, inIdentity, sourcesNow: total(before, color), rebalance: [], trades: [], staples: inIdentity ? rankStaples(candidates, [color]) : [] };
+  if (!inIdentity) return out;
 
   // REBALANCE: basics of another color become basics of this one, as many as stay safe.
   const target = basics[color];

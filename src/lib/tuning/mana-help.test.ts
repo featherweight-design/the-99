@@ -23,8 +23,8 @@ const staple = (name: string, produces: ManaColor[], over: Partial<StapleCandida
   priceCents: 15,
   ...over,
 });
-const help = (rows: ManaSupplyCardRow[], color: ManaColor, locked: string[] = [], candidates: StapleCandidate[] = []) =>
-  helpAddColor(rows, (id) => id[0].toUpperCase() + id.slice(1), new Set(locked), basics, candidates, color as "G");
+const help = (rows: ManaSupplyCardRow[], color: ManaColor, locked: string[] = [], candidates: StapleCandidate[] = [], identity: string[] = ["W", "U", "B", "R", "G"]) =>
+  helpAddColor(rows, (id) => id[0].toUpperCase() + id.slice(1), new Set(locked), basics, candidates, color as "G", identity);
 
 // A one-pip green and a one-pip blue spell are pattern C: Karsten asks 19 sources of each (99-card column).
 // Ten Forests leave green under 19; twenty-five Islands put blue over it, with six to spare.
@@ -118,6 +118,19 @@ describe("helpAddColor: trades and staples", () => {
   it("puts an owned copy first", () => {
     const h = help(deck(), "G", [], [staple("Popular", ["G"], { free: 0, fact: { kind: "commander", inclusion: 90 } }), staple("Owned", ["G"], { free: 1, fact: { kind: "commander", inclusion: 10 } })]);
     expect(h.staples.map((s) => s.name)).toEqual(["Owned", "Popular"]);
+  });
+});
+
+describe("helpAddColor: the commander's identity", () => {
+  it("offers nothing for a color the commander cannot play, and says so", () => {
+    const rows = [spell("g", "{G}"), basic("forest", "Forest", 10, "G"), basic("plains", "Plains", 5, "W")];
+    const h = help(rows, "U", [], [staple("Mox", ["U"])], ["G", "W"]);
+    expect(h).toMatchObject({ color: "U", inIdentity: false, sourcesNow: 0, rebalance: [], trades: [], staples: [] });
+  });
+
+  it("offers help for a color inside it", () => {
+    const rows = [spell("g", "{G}"), basic("forest", "Forest", 10, "G"), basic("plains", "Plains", 5, "W")];
+    expect(help(rows, "G", [], [], ["G", "W"])).toMatchObject({ inIdentity: true, rebalance: [{ from: "W", maxCopies: 5 }] });
   });
 });
 
