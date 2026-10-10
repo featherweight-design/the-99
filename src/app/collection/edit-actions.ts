@@ -149,7 +149,9 @@ export async function editCollection(
   if (!isUuid(actionId)) throw new Error("bad action id");
   const parsed = linesOf(rows).map((r) => {
     const identity = identityOf(r);
-    const { quantity, expected, condition } = r as { quantity?: unknown; expected?: unknown; condition?: unknown };
+    const { quantity, expected, condition, clearCondition } = r as {
+      quantity?: unknown; expected?: unknown; condition?: unknown; clearCondition?: unknown;
+    };
     // `expected` is REQUIRED: without it `staleEdits` has nothing to compare, and a sheet drawn
     // before another tab's save would overwrite the newer count.
     if (!identity || !isCount(quantity, 0, MAX_HELD) || !isCount(expected, 0, MAX_HELD)) {
@@ -159,7 +161,8 @@ export async function editCollection(
       && (typeof condition !== "string" || condition.length === 0 || condition.length > MAX_CONDITION)) {
       throw new Error("bad collection row");
     }
-    return { ...identity, quantity, expected, condition: condition as string | null | undefined };
+    if (clearCondition !== undefined && typeof clearCondition !== "boolean") throw new Error("bad collection row");
+    return { ...identity, quantity, expected, condition: condition as string | null | undefined, ...(clearCondition === true ? { clearCondition: true } : {}) };
   });
   // Every holding of the card the sheet showed. Absent for a caller that never drew the card's list.
   // An empty list is a valid claim (a card the player did not own), so it is checked apart from `linesOf`.

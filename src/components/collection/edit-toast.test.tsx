@@ -20,11 +20,15 @@ const c = collectionEditCopy.copies;
 const r = collectionEditCopy.remove;
 const removed = { entryId: "e2", removed: true, text: r.toast("Sol Ring", 5) };
 
+const savedEvents = vi.fn();
 beforeEach(() => {
+  window.addEventListener("collection-edit-saved", savedEvents);
   vi.useFakeTimers({ shouldAdvanceTime: true });
   settle.mockClear();
 });
 afterEach(() => {
+  window.removeEventListener("collection-edit-saved", savedEvents);
+  savedEvents.mockClear();
   cleanup();
   vi.useRealTimers();
 });
@@ -76,6 +80,7 @@ describe("the Edit copies toast", () => {
     fireEvent.click(screen.getByRole("button", { name: r.undo }));
     await act(async () => fireEvent.click(screen.getByText("reverted")));
     expect(settle).toHaveBeenCalledTimes(1);
+    expect(savedEvents).toHaveBeenCalledTimes(1); // the place head re-reads its totals after an Undo
     expect(screen.queryByRole("status")).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();
   });

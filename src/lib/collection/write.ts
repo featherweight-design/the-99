@@ -45,6 +45,12 @@ export type EditRow = CollectionItemIdentity & {
    */
   scryfallId?: string | null;
   condition?: string | null;
+  /**
+   * An EXISTING row keeps its own condition on an edit, except when copies of another condition
+   * were folded into it: then the rows disagree and the stored value is cleared, as every other
+   * aggregation of rows does (`normalizeItems`).
+   */
+  clearCondition?: boolean;
 };
 
 export type CollectionChange =
@@ -230,7 +236,7 @@ export function planEdit(current: Map<string, Held>, rows: EditRow[]): Planned[]
     const c = current.get(keyOf(r)) ?? null;
     const before = c && stateOf(c);
     const attrs = c
-      ? { scryfallId: c.scryfallId, condition: c.condition }
+      ? { scryfallId: c.scryfallId, condition: r.clearCondition ? null : c.condition }
       : { scryfallId: r.scryfallId ?? null, condition: r.condition ?? null };
     return planned(r, before, settle(r.quantity, attrs));
   });

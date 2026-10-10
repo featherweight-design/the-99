@@ -96,6 +96,8 @@ export function CollectionEditToast() {
             void settleCollectionWrite().catch(() => {}).then(() => {
               setUndoing(false);
               setToast(null);
+              // The head's totals moved back too.
+              announceCollectionSaved();
             });
           }}
         />

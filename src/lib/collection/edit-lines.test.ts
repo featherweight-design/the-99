@@ -195,6 +195,19 @@ describe("folding keeps what the add cap would drop and where copies came from",
     expect(editChoosePrinting(a.lines, a.lines.find((l) => l.printing?.setCode === "cmm")!.id, CHOICES[3]).merged?.condition).toBe("NM");
   });
 
+  it("tells a held row to clear its condition when copies of another condition fold into it", () => {
+    const hs = [h("c21", "263", 1, { condition: "NM" }), h("cmm", "410", 1, { condition: "LP" })];
+    const lines = linesFromHoldings(card, CHOICES, hs);
+    const folded = editChoosePrinting(lines, lines[1].id, CHOICES[0]);
+    const row = diffRows(OID, hs, folded.lines).find((r) => r.setCode === "c21")!;
+    expect(row).toMatchObject({ quantity: 2, expected: 1, clearCondition: true });
+    // Same condition: the held row keeps it, nothing to clear.
+    const hs2 = [h("c21", "263", 1, { condition: "NM" }), h("cmm", "410", 1, { condition: "NM" })];
+    const l2 = linesFromHoldings(card, CHOICES, hs2);
+    const row2 = diffRows(OID, hs2, editChoosePrinting(l2, l2[1].id, CHOICES[0]).lines).find((r) => r.setCode === "c21")!;
+    expect(row2).not.toHaveProperty("clearCondition");
+  });
+
   it("only warns about decks when the card's total ends lower", () => {
     const lines = linesFromHoldings(card, CHOICES, HELD);
     expect(summarizeEdit(OID, HELD, editChoosePrinting(lines, lines[1].id, CHOICES[3]).lines).lowers).toBe(false);

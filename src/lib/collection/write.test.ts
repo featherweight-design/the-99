@@ -97,6 +97,13 @@ describe("planEdit", () => {
     expect(row.after).toEqual({ quantity: 1, scryfallId: null, condition: null });
   });
 
+  it("clears an existing row's condition only when told the folded copies disagreed", () => {
+    const [kept] = planEdit(coll(held(A, 3)), [{ ...id(A), quantity: 4, expected: 3 }]);
+    expect(kept.after?.condition).toBe("NM");
+    const [cleared] = planEdit(coll(held(A, 3)), [{ ...id(A), quantity: 4, expected: 3, clearCondition: true }]);
+    expect(cleared.after?.condition).toBeNull();
+  });
+
   it("refuses a negative count and a row named twice", () => {
     expect(() => planEdit(coll(), [{ ...id(A), quantity: -1 }])).toThrow();
     expect(() => planEdit(coll(), [{ ...id(A), quantity: 1 }, { ...id(A), quantity: 2 }])).toThrow();

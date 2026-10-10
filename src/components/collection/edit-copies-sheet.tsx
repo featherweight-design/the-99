@@ -227,7 +227,7 @@ export function EditCopiesSheet({
   const frozen = saving ? "pointer-events-none opacity-60" : "";
   const title = owned || read.k === "loading" ? c.sheetTitle : c.addToCollection;
   const sub = !loaded ? null : owned
-    ? c.sheetSub(card.name, sum.held, holdings.length)
+    ? c.sheetSub(card.name, sum.held, new Set(holdings.map((h) => `${h.setCode}|${h.collectorNumber}`)).size)
     : c.sheetSubNone(card.name);
   const parts = diffParts(sum);
   const diffText = !parts

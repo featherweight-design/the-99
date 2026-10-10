@@ -194,6 +194,13 @@ describe("editCollection", () => {
     expect(stub.warm).not.toHaveBeenCalled();
   });
 
+  it("passes a clearCondition flag through and refuses a non-boolean one", async () => {
+    stub.apply.mockResolvedValue({ status: "applied", entry: { id: ACTION } });
+    await editCollection(ACTION, [{ ...edited, clearCondition: true }]);
+    expect(stub.apply.mock.calls.at(-1)?.[1].rows[0]).toMatchObject({ clearCondition: true });
+    await expect(editCollection(ACTION, [{ ...edited, clearCondition: "yes" }])).rejects.toThrow();
+  });
+
   it("takes the editor's seen holdings through, an empty list included, and refuses a malformed one", async () => {
     stub.apply.mockResolvedValue({ status: "applied", entry: { id: ACTION } });
     const seen = [{ oracleId: ORACLE, setCode: "lea", collectorNumber: "1", finish: "nonfoil" }];

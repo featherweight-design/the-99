@@ -126,6 +126,7 @@ export type EditPayloadRow = {
   quantity: number;
   expected: number;
   condition?: string | null;
+  clearCondition?: boolean;
 };
 
 type Staged = { quantity: number; line: EditLineState };
@@ -156,9 +157,16 @@ export function diffRows(
   const staged = removeAll ? new Map<string, Staged>() : stagedByKey(lines);
   const rows: EditPayloadRow[] = [];
   for (const [key, h] of held) {
-    const quantity = staged.get(key)?.quantity ?? 0;
+    const st = staged.get(key);
+    const quantity = st?.quantity ?? 0;
     if (quantity !== h.quantity) {
-      rows.push({ oracleId, setCode: h.setCode, collectorNumber: h.collectorNumber, finish: h.finish, quantity, expected: h.quantity });
+      // Copies of another condition folded into a held row leave the line's condition null, which
+      // the row must be told: an existing row otherwise keeps the condition it has.
+      const clear = st !== undefined && st.line.condition === null && h.condition !== null;
+      rows.push({
+        oracleId, setCode: h.setCode, collectorNumber: h.collectorNumber, finish: h.finish, quantity, expected: h.quantity,
+        ...(clear ? { clearCondition: true } : {}),
+      });
     }
   }
   for (const [key, s] of staged) {
