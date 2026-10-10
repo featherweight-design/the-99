@@ -268,7 +268,7 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   commander and pair headers, both card lists, `format_staples` and `identity_composition`,
   replaced EXACTLY in one transaction. Exact because `readIndexGeneration` keys on
   `max(computed_at)`: a row only the target held, dated later, would pin that maximum and stop the
-  copy retiring cached pages. Four rules sit inside that transaction:
+  copy retiring cached pages. Five rules sit inside that transaction:
 
   - **The target's `commander_scores` are cleared first**, by the builder's own clear
     (`clearPersistedScoresIn`, under `SCORE_INDEX_LOCK`), so no score outlives the index it was
@@ -280,6 +280,14 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
     so that pair's row goes with everything else the source lacks. Staging's builder sweeps every
     pair `canPair` forms, so a pair missing from it is one the app cannot form; a production-only
     index dispatch for it would last only until the next copy.
+  - **The target's own labels must give the role sets the build's `label_*` were derived from**
+    (labels everywhere plan, 2026-10-10). The index build records a `roleSetFingerprint` over every
+    card an `ok` commander or pair lists in its ledger report (`labels=`, inherited by the staples
+    row), and the copy recomputes it from the target's fresh labels and refuses on a mismatch. The
+    copy never copies labels itself: a `list:` trial's labels stay on staging until judged, so an
+    open trial the build read makes the copy refuse until it is judged and copied by `Card labels`.
+    A build that wrote no `label_*` (labels under 90% of the inclusion mass) records `labels=none`
+    and is not checked.
   - The floors re-checked on the snapshot are the builders' own: an `ok` commander exists, role
     targets reach `ROLE_TARGET_FLOOR` of the ok commanders and, when any pair is ok, of the ok
     pairs, the pairs reach `LEGAL_PAIR_FLOOR`, and

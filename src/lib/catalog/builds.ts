@@ -29,6 +29,17 @@ export const phaseOf = (report: string | null): string | null =>
   report?.match(/^phase=([a-z]+)/)?.[1] ?? null;
 
 /**
+ * The index build's LABEL fingerprint (`roleSetFingerprint`), carried in its report the way the phase
+ * is, so the copy can refuse a target whose labels would give different role sets than the ones the
+ * `label_*` targets were derived from. The staples step inherits it from the index step, as it
+ * inherits the catalog fingerprint. Null when the build wrote no label targets: there is then nothing
+ * label-derived for a copy to vouch for.
+ */
+export const labelsDetail = (fingerprint: string | null): string => `labels=${fingerprint ?? "none"}`;
+export const labelsOf = (report: string | null): string | null =>
+  report?.match(/(?:^|; )labels=([0-9a-f]{32})(?:;|$)/)?.[1] ?? null;
+
+/**
  * `inherit` carries an earlier step's catalog fingerprint instead of reading today's: the last
  * step of a build made of steps must vouch for the catalog the FIRST step derived from, or a catalog
  * refresh landing mid-build would be recorded as the build's catalog and pass every copy check.

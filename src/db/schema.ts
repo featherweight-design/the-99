@@ -1168,6 +1168,19 @@ export const commanderSupport = pgTable("commander_support", {
   avgDraw: real("avg_draw"),
   avgRemoval: real("avg_removal"),
   avgWipes: real("avg_wipes"),
+  /**
+   * The same four targets derived from `card_labels` instead of `classifyRoles` (plan
+   * `2026-10-10-labels-everywhere.md`): nonland cards only, a card with no fresh label counting
+   * toward no role, and `counterspell` not counted as removal. That is the rule a deck's own
+   * label count follows, so a reader counting a deck by label compares against these and never
+   * against `avg_*`. They stand BESIDE `avg_*` until every reader of those has moved, because
+   * a classifier count measured against a label target reads short on every deck. Nullable for
+   * the same reason as `avg_*`.
+   */
+  labelRamp: real("label_ramp"),
+  labelDraw: real("label_draw"),
+  labelRemoval: real("label_removal"),
+  labelWipes: real("label_wipes"),
   computedAt: timestamp("computed_at").notNull().defaultNow(),
 }, (t) => [
   // The enum options above only narrow the TypeScript type; without these the
@@ -1257,6 +1270,11 @@ export const commanderPairSupport = pgTable("commander_pair_support", {
   avgDraw: real("avg_draw"),
   avgRemoval: real("avg_removal"),
   avgWipes: real("avg_wipes"),
+  /** The pair's label-derived targets, as `commander_support.label_*` are the commander's. */
+  labelRamp: real("label_ramp"),
+  labelDraw: real("label_draw"),
+  labelRemoval: real("label_removal"),
+  labelWipes: real("label_wipes"),
   avgCurve: jsonb("avg_curve").$type<Record<string, number>>(),
   computedAt: timestamp("computed_at").notNull().defaultNow(),
 }, (t) => [
@@ -1429,6 +1447,16 @@ export const identityComposition = pgTable("identity_composition", {
   avgDraw: real("avg_draw").notNull().default(0),
   avgRemoval: real("avg_removal").notNull().default(0),
   avgWipes: real("avg_wipes").notNull().default(0),
+  /**
+   * The bucket's means of `commander_support.label_*`. NULLABLE, unlike `avg_*` beside them: a
+   * bucket none of whose commanders carries a label figure (a database the labelling job has not
+   * reached, where the build writes no `label_*`) has no measurement, and a zero there would read as
+   * "this identity plays no ramp" to a reader taking the labels basis.
+   */
+  labelRamp: real("label_ramp"),
+  labelDraw: real("label_draw"),
+  labelRemoval: real("label_removal"),
+  labelWipes: real("label_wipes"),
   /** The bucket's size — the sample bar's own witness. */
   commanders: integer("commanders").notNull(),
   /** How many of them actually carried a composition. The denominator behind the TYPE

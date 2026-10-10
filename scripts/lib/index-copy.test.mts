@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 // The spec's module reaches `src/db` through the builder's score clear; nothing here queries it.
 vi.mock("../../src/db", () => ({ db: {} }));
 
-const { indexCopySpec } = await import("./index-copy");
+const { indexCopySpec, labelledCards, labelRefusal } = await import("./index-copy");
 type Snapshot = Parameters<typeof indexCopySpec.floors>[0];
 
 const commander = (i: number, derived = true) =>
@@ -16,6 +16,7 @@ const whole = (): Snapshot => ({
   pairCards: [],
   staples: [{} as Snapshot["staples"][number]],
   composition: [],
+  labelFingerprint: null,
 });
 
 describe("the index copy's floors", () => {
@@ -66,5 +67,43 @@ describe("the index copy's build step", () => {
   });
   it("refuses an unmarked row", () => {
     expect(indexCopySpec.buildAccepted!(row(null))).toMatch(/unmarked step/);
+  });
+});
+
+describe("the index copy's label check", () => {
+  it("passes when the target's labels give the build's role sets", () => {
+    expect(labelRefusal("a".repeat(32), "a".repeat(32))).toBeNull();
+  });
+
+  it("refuses when they differ", () => {
+    expect(labelRefusal("a".repeat(32), "b".repeat(32))).toMatch(/different role sets/);
+  });
+
+  it("checks nothing for a build that wrote no label targets", () => {
+    expect(labelRefusal(null, "b".repeat(32))).toBeNull();
+  });
+
+  it("reads the cards of ok commanders and ok pairs only, once each", () => {
+    const s = {
+      support: [
+        { commanderOracleId: "c1", synergyState: "ok" },
+        { commanderOracleId: "c2", synergyState: "absent" },
+      ],
+      supportCards: [
+        { commanderOracleId: "c1", oracleId: "x" },
+        { commanderOracleId: "c1", oracleId: "y" },
+        { commanderOracleId: "c2", oracleId: "z" },
+      ],
+      pairs: [
+        { commanderOracleId: "a", partnerOracleId: "b", synergyState: "ok" },
+        { commanderOracleId: "a", partnerOracleId: "d", synergyState: "degraded" },
+      ],
+      pairCards: [
+        { commanderOracleId: "a", partnerOracleId: "b", oracleId: "x" },
+        { commanderOracleId: "a", partnerOracleId: "b", oracleId: "p" },
+        { commanderOracleId: "a", partnerOracleId: "d", oracleId: "q" },
+      ],
+    } as unknown as Parameters<typeof labelledCards>[0];
+    expect(labelledCards(s).sort()).toEqual(["p", "x", "y"]);
   });
 });

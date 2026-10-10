@@ -11,12 +11,14 @@ import {
   formatStaples,
   identityComposition,
 } from "../../src/db/schema";
-import { phaseOf } from "../../src/lib/catalog/builds";
+import { labelsOf, latestBuild, phaseOf } from "../../src/lib/catalog/builds";
 import { canonicalPair } from "../../src/lib/edhrec/pair";
 import { LEGAL_PAIR_FLOOR } from "../../src/lib/edhrec/pair-enumerate";
 import { roleTargetsPublishable } from "../../src/lib/edhrec/role-targets";
 import { clearPersistedScoresIn } from "../../src/lib/edhrec/seed-index";
-import { copyTable, type CopySpec, type CopyTx } from "./catalog-copy";
+import { readLabelRoleSets } from "../../src/lib/labels/read";
+import { roleSetFingerprint } from "../../src/lib/labels/role-sets";
+import { copyTable, CopyRefused, type CopySpec, type CopyTx } from "./catalog-copy";
 
 /**
  * The three prose columns are NOT the index's. `db:copy:prose` installs them, behind an input-hash
@@ -33,7 +35,36 @@ export type IndexSnapshot = {
   pairCards: (typeof commanderPairSupportCards.$inferSelect)[];
   staples: (typeof formatStaples.$inferSelect)[];
   composition: (typeof identityComposition.$inferSelect)[];
+  /** The newest index build's label fingerprint (`labelsOf`), read in the same snapshot. */
+  labelFingerprint: string | null;
 };
+
+/**
+ * The cards the label pass read: every card an `ok` commander or `ok` pair lists, as
+ * `deriveAndWriteRoleTargets` selects them. Pure.
+ */
+export function labelledCards(s: Pick<IndexSnapshot, "support" | "supportCards" | "pairs" | "pairCards">): string[] {
+  const okCommanders = new Set(s.support.filter((r) => r.synergyState === "ok").map((r) => r.commanderOracleId));
+  const okPairs = new Set(s.pairs.filter((r) => r.synergyState === "ok").map((r) => `${r.commanderOracleId}|${r.partnerOracleId}`));
+  return [...new Set([
+    ...s.supportCards.filter((c) => okCommanders.has(c.commanderOracleId)).map((c) => c.oracleId),
+    ...s.pairCards.filter((c) => okPairs.has(`${c.commanderOracleId}|${c.partnerOracleId}`)).map((c) => c.oracleId),
+  ])];
+}
+
+/**
+ * Why the target's labels may not receive this build's `label_*`, or null. The build recorded the
+ * role sets it derived them from; the target's own labels must give the same sets over the same
+ * cards, or production's decks would be counted from one label set and measured against targets
+ * derived from another. A build with no label fingerprint wrote no `label_*`, so there is nothing
+ * to check. Pure.
+ */
+export function labelRefusal(built: string | null, target: string): string | null {
+  if (built === null) return null;
+  return built === target ? null
+    : `the target's labels give different role sets than the build derived label_* from ` +
+      `(built ${built}, target ${target}); copy the labels and rebuild, or wait for an open label trial to be judged`;
+}
 
 /** A table's columns keyed by property, less the ones named by their SQL name. */
 function columnsWithout(table: PgTable, exclude: readonly string[]): Record<string, PgColumn> {
@@ -89,6 +120,7 @@ export const indexCopySpec: CopySpec<IndexSnapshot> = {
     pairCards: await tx.select().from(commanderPairSupportCards),
     staples: await tx.select().from(formatStaples),
     composition: await tx.select().from(identityComposition),
+    labelFingerprint: labelsOf((await latestBuild(tx, "index"))?.report ?? null),
   }),
   // The builders' own refusals, on what the snapshot holds: an index with no `ok` commander, role
   // targets reaching under ROLE_TARGET_FLOOR of the ok commanders or (when any pair is ok) of the ok
@@ -122,6 +154,14 @@ export const indexCopySpec: CopySpec<IndexSnapshot> = {
     `${s.support.length} commanders · ${s.supportCards.length} support cards · ${s.pairs.length} pairs · ` +
     `${s.pairCards.length} pair cards · ${s.staples.length} staples · ${s.composition.length} compositions`,
   publish: async (tx, s) => {
+    // 0 · The labels: the target's own must give the role sets the build derived `label_*` from.
+    // Read inside the publish, so a label copy landing meanwhile is either seen here or after.
+    if (s.labelFingerprint !== null) {
+      const listed = labelledCards(s);
+      const refusal = labelRefusal(s.labelFingerprint, roleSetFingerprint(listed, await readLabelRoleSets(listed, tx)));
+      if (refusal) throw new CopyRefused(refusal);
+    }
+
     // 1 · Scores are scored against the index, so the old ones go in the same transaction.
     await clearPersistedScoresIn(tx);
 

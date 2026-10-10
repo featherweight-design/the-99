@@ -71,14 +71,22 @@ export function classifyCards(
   return out;
 }
 
+/**
+ * @param opts.rolesOf Each card's roles from somewhere other than its text: the LABEL pass hands
+ *   in `readLabelRoleSets`, and a card absent from it counts toward no role. Omitted, the cards are
+ *   classified from their text, which is how `avg_*` are derived.
+ */
 export function deriveRoleTargets(
   rows: readonly RoleDerivationRow[],
-  opts: { onClassify?: (oracleId: string) => void } = {},
+  opts: {
+    onClassify?: (oracleId: string) => void;
+    rolesOf?: ReadonlyMap<string, readonly string[]>;
+  } = {},
 ): Map<string, RoleTargetRow> {
   // Classified ONCE per distinct card. `classifyRoles` is pure, so two rows naming the same card
   // cannot disagree — and the pair-wise form is 892,185 regex passes on staging against ~31,830
   // distinct commander-legal cards here.
-  const rolesOf = classifyCards(rows, opts.onClassify);
+  const rolesOf: ReadonlyMap<string, readonly string[]> = opts.rolesOf ?? classifyCards(rows, opts.onClassify);
   const out = new Map<string, RoleTargetRow>();
 
   // A commander that contributed at least one row whose inclusion the index actually STORED.

@@ -4,7 +4,7 @@ import {
 } from "../src/lib/edhrec/seed-index";
 import { stampCatalogRefresh } from "../src/lib/cache/stamp-catalog";
 import { db } from "../src/db";
-import { phaseReport, recordBuild } from "../src/lib/catalog/builds";
+import { labelsDetail, phaseReport, recordBuild } from "../src/lib/catalog/builds";
 
 // RESUME_SINCE is an ISO timestamp set by a re-dispatched workflow run so the
 // retry skips commanders the aborted run already wrote. Absent, everything is
@@ -102,6 +102,6 @@ recordBuild(db, "index", async () => {
     throw new Error(`commander-index: ${pairProblem}`);
   }
   return r;
-}, (r) => phaseReport("index", `${r.commanders} commanders, ${r.pairs} pairs`))
+}, (r) => phaseReport("index", `${r.commanders} commanders, ${r.pairs} pairs; ${labelsDetail(r.labelFingerprint)}`))
   .then(() => process.exit(0))
   .catch((err) => { console.error(err instanceof Error ? err.message : err); process.exit(1); });
