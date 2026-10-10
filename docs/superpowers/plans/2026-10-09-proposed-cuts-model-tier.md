@@ -30,7 +30,7 @@ bracket, so the declaration is threaded in and a flag that bracket permits is no
   output and retry path (`src/lib/model/client.ts`).
 - **Input:** the facts layer's output for the deck, the commander's EDHREC inclusion per card as a
   counted figure, the deck's overview Key cards (never cut), locks (never cut), the player's
-  intent and notes through `playerText`, and the number to cut (`over`). No ranked list, so nothing
+  the player's intent through `playerText` (no game notes in this version), and the number to cut (`over`). No ranked list, so nothing
   anchors the model on the engine's order.
 - **Output:** the prompt asks for exactly `over` cuts, each with a one-line reason that cites a fact
   it was given. No adds: Proposed cuts takes cards out. The schema accepts 1 to `over`, and the
@@ -44,7 +44,7 @@ bracket, so the declaration is threaded in and a flag that bracket permits is no
   one source. No bracket claim in prose, as Suggested changes already forbids.
 - **Credit:** one credit per press through `allowance.ts`; a new `FEATURE_CALLS` entry
   (`proposed_cuts`) with a measured input ceiling, and a `model_calls` row at `origin: 'player'`.
-- **Prompt injection:** intent and notes go through `playerText`, with the system rule line.
+- **Prompt injection:** intent goes through `playerText`, with the system rule line. Game notes are not sent in this version.
 
 ## The eval, and why it can be trusted
 

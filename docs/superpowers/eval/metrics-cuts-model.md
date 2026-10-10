@@ -56,16 +56,16 @@ Run 2026-10-10T08-22-17-616Z-round1. Model claude-sonnet-5 at effort medium, bat
 
 ## Round 2: card text, and Opus
 
-Three trials per deck, no intent, batch prices. "Held-out" is Gods plus Wizards (7 cuts, 21 over three trials); the other three decks are where the one prompt change (mana value, type and oracle text per card) was looked at.
+Three trials per deck, no intent, batch prices. "Held-out" is Gods plus Wizards (7 cuts, 21 over three trials); the other three decks are where the one prompt change (type, mana value and oracle text per card) was looked at.
 
 | Configuration | All five decks | Three decks | Held-out two | Cost |
 |---|---|---|---|---|
-| Sonnet 5, names and facts only (round 1) | 35 of 174 (20%) | 35 of 153 | 0 of 21 | $0.22 |
-| Sonnet 5, plus type, mana value, text | 43 of 174 (25%) | 43 of 153 | 0 of 21 | $0.34 |
-| Opus 5.5, names and facts only | 47 of 174 (27%) | 47 of 153 | 0 of 21 | $0.55 |
-| Opus 5.5, plus type, mana value, text | 46 of 174 (26%) | 46 of 153 | 0 of 21 | $0.77 |
+| Sonnet 5, facts only: no type, mana value or text (round 1) | 35 of 174 (20%) | 35 of 153 | 0 of 21 | $0.22 |
+| Sonnet 5, type, mana value and text | 43 of 174 (25%) | 43 of 153 | 0 of 21 | $0.34 |
+| Opus 5.5, type and mana value, no text | 47 of 174 (27%) | 47 of 153 | 0 of 21 | $0.55 |
+| Opus 5.5, type, mana value and text | 46 of 174 (26%) | 46 of 153 | 0 of 21 | $0.77 |
 
-Chance is about 27 per 174, so Sonnet is 1.3x and the better rows 1.6x to 1.7x. The free tier was 1.1x. Card text helps Sonnet a little and Opus not at all; Opus is a little better than Sonnet either way. Spend on this ledger: $2.17 of the $15 ceiling. The Opus rows are priced at an ASSUMED Opus 5.5 rate ($5 and $25 per million tokens, the Opus 5 rate), so those two costs are an estimate until the bill is checked.
+Chance is about 27 per 174, so Sonnet is 1.3x and the better rows 1.6x to 1.7x. The free tier was 1.1x. The rows differ in more than the model: the first has neither type nor mana value, the Opus rows without text have them, and the Sonnet rows do not isolate them from text. Read it as: adding type, mana value and text moved Sonnet from 20% to 25%, and Opus sits at 26% to 27% with or without text. Spend on this ledger: $2.17 of the $15 ceiling. The Opus rows are priced at an ASSUMED Opus 5.5 rate ($5 and $25 per million tokens, the Opus 5 rate), so those two costs are an estimate until the bill is checked.
 
 The "Dropped" columns count the harness's own name resolution, which sees only the offered cards; the app does the same, so a name outside the deck drops as `cardExists` in both.
 

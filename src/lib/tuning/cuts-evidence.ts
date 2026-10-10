@@ -33,6 +33,9 @@ export type CutsPack = {
   commander: string;
   /** Names. Never cut. */
   keyCards: string[];
+  /** The Key cards that are cut candidates, by oracle id: a Key card may be stored under one face
+   *  name (`Fire` for `Fire // Ice`), so the validator compares ids, not spellings. */
+  keyCardIds: string[];
   /** The player's words as a ready-to-embed `playerText` block, plus the raw text the validator quotes against. */
   intent: { raw: string; block: string } | null;
   missing: MissingSignal[];
@@ -71,10 +74,14 @@ export function buildCutsPack(input: {
   texts?: ReadonlyMap<string, string>;
 }): CutsPack {
   const { facts, commanderName, keyCards, intent, texts } = input;
+  const keyFaces = new Set(keyCards.flatMap((k) => [k, ...k.split(" // ")]));
   return {
     over: facts.over,
     commander: commanderName,
     keyCards: [...keyCards],
+    keyCardIds: facts.cards
+      .filter((c) => c.name.split(" // ").some((face) => keyFaces.has(face)) || keyFaces.has(c.name))
+      .map((c) => c.oracleId),
     intent: intent === null ? null : {
       raw: intent,
       block: playerText("What the deck is for, in the player's own words", intent, deckDescriptionCopy.description.maxLength),

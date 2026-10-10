@@ -42,7 +42,7 @@ export function validateCuts(args: {
 }): { kept: ValidatedCut[]; dropped: CutDrop[]; report: CutsReport } {
   const { reply, pack, resolveName } = args;
   const inDeck = new Map(pack.cards.map((c) => [c.oracleId, c]));
-  const keyNames = new Set(pack.keyCards);
+  const keyIds = new Set(pack.keyCardIds);
   const quotable = pack.intent ? [{ text: playerTextBody(pack.intent.raw), date: null }] : [];
   const seen = new Set<string>();
   const survivors: (ValidatedCut & { at: number })[] = [];
@@ -71,7 +71,7 @@ export function validateCuts(args: {
     if (!resolved) return { rule: "cardExists" };
     const card = inDeck.get(resolved.oracleId);
     if (!card) return { rule: "notInDeck" };
-    if (keyNames.has(card.name)) return { rule: "keyCard" };
+    if (keyIds.has(card.oracleId)) return { rule: "keyCard" };
     if (seen.has(card.oracleId)) return { rule: "duplicate" };
     for (const cite of cut.cites) {
       if (!citeHolds(cite, card, pack)) return { rule: "citeMismatch", cite: cite.kind };

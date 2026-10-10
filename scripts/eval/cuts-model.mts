@@ -16,8 +16,8 @@
  *   --trials N        answers per deck (default 1)
  *   --leak            pass the v2 note as the intent (diagnostic)
  *   --realtime        real-time prices and latency (default: batch, half price)
- *   --text            give the model each card's oracle text (front face), mana value and type
- *   --model M         `opus` (claude-opus-5-5) or a model id; default the app's tuning model
+ *   --text            also give the model each card's oracle text (front face); type and mana value always go
+ *   --model M         a model id with a rate in lib/pricing.mts; default the app's tuning model
  *
  * MONEY (Hugh, 2026-10-09, relayed by the orchestrator): this build and its eval are bounded at
  * $15 in total. Every reply's usage is priced through `lib/pricing.mts` as it lands and written to
@@ -75,7 +75,11 @@ const { ROLE_ORDER } = await import("../../src/lib/decks/mix");
 const { castFaceText } = await import("../../src/lib/cards/facet");
 const { inArray } = await import("drizzle-orm");
 
-const MODEL = args.model === "opus" ? "claude-opus-5-5" : (args.model ?? TUNING_MODEL);
+// Opus is not offered: its rate in `lib/pricing.mts` is assumed, and a cap enforced on an assumed
+// rate is not a cap. The four rounds in the metrics doc ran when it was; it returns once the rate
+// is read off a bill.
+if (args.model === "opus") throw new Error("--model opus is disabled until its rate is verified");
+const MODEL = args.model ?? TUNING_MODEL;
 const EFFORT = "medium" as const;
 const norm = (s: string) => s.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase().trim();
 
@@ -241,7 +245,7 @@ const chance = sum(rows.map((r) => (r.kept * r.k) / r.pool));
 const swapN = sum(prepared.map((p) => [...p.cut].filter((id) => p.paired.has(id)).length));
 const netN = totalK - swapN;
 console.log(`# Proposed cuts model tier: recall against the cuts Hugh made${args.leak ? " (LEAKAGE DIAGNOSTIC: the v2 note was shown)" : ""}\n`);
-console.log(`Run ${runId}. Model ${MODEL} at effort ${EFFORT}${args.text ? ", card text shown" : ""}, ${args.realtime ? "real-time" : "batch"}, ${trials} trial(s) per deck, no intent${args.leak ? " except the v2 note" : ""}, no Key cards.\n`);
+console.log(`Run ${runId}. Model ${MODEL} at effort ${EFFORT}${args.text ? ", type, mana value and card text shown" : ", type and mana value shown, no card text"}, ${args.realtime ? "real-time" : "batch"}, ${trials} trial(s) per deck, no intent${args.leak ? " except the v2 note" : ""}, no Key cards.\n`);
 console.log(`**${hits} of ${totalK} cuts found** across ${rows.length} answers (${answered.length} answered), ${(100 * hits / Math.max(totalK, 1)).toFixed(0)}% against the free tier's 17% (10 of 58) and chance ${chance.toFixed(1)}. Swaps ${sum(rows.map((r) => r.swapHits))} of ${swapN}, net reductions ${sum(rows.map((r) => r.netHits))} of ${netN}. Cost $${sum(rows.map((r) => r.usd)).toFixed(3)}; ledger total $${spent(readLedger(LEDGER_CUTS)).toFixed(2)} of $${CAP_USD}.\n`);
 console.log("| Deck | Trial | Cut (K) | Asked | Kept | Hits | Dropped | Cost | Out tokens |");
 console.log("|---|---|---|---|---|---|---|---|---|");

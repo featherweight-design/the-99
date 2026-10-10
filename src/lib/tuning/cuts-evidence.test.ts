@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { cutFacts } from "./cuts";
-import { profile, support } from "./cuts-fixture";
+import { deck, profile, row, support } from "./cuts-fixture";
 import { buildCutsPack } from "./cuts-evidence";
 
 const pack = (o: { intent?: string | null; sup?: boolean; locked?: string[] } = {}) =>
@@ -14,6 +14,17 @@ const pack = (o: { intent?: string | null; sup?: boolean; locked?: string[] } = 
   });
 
 describe("buildCutsPack", () => {
+  it("carries Key cards by oracle id, a face name or a whole name matching a split card", () => {
+    const p = buildCutsPack({
+      facts: cutFacts({
+        profile: profile({}, deck(48, [row({ oracleId: "dfc", name: "Fire // Ice" }), row({ oracleId: "solo", name: "Sol Ring" })])),
+        locked: new Set(), support: null, declaredBracket: null,
+      }),
+      commanderName: "Gishath", keyCards: ["Fire", "Sol Ring"], intent: null,
+    });
+    expect(p.keyCardIds.sort()).toEqual(["dfc", "solo"]);
+  });
+
   it("carries over, the commander, key cards and deck facts, with the curve rounded to one decimal", () => {
     const p = pack();
     expect(p).toMatchObject({ over: 2, commander: "Gishath", keyCards: ["ramp1"] });
