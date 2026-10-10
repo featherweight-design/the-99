@@ -162,7 +162,9 @@ export async function editCollection(
     return { ...identity, quantity, expected, condition: condition as string | null | undefined };
   });
   // Every holding of the card the sheet showed. Absent for a caller that never drew the card's list.
-  const seenIdentities = seen === undefined ? undefined : linesOf(seen).map((s) => {
+  // An empty list is a valid claim (a card the player did not own), so it is checked apart from `linesOf`.
+  if (seen !== undefined && (!Array.isArray(seen) || seen.length > MAX_LINES)) throw new Error("bad collection lines");
+  const seenIdentities = seen === undefined ? undefined : (seen as unknown[]).map((s) => {
     const identity = identityOf(s);
     if (!identity) throw new Error("bad collection row");
     return identity;

@@ -15,7 +15,8 @@ vi.mock("./add-cards-sheet", () => ({
 }));
 const announce = vi.fn();
 const arm = vi.fn();
-vi.mock("./edit-toast", () => ({ announceEditToast: (t: unknown) => announce(t), armEditToast: () => arm() }));
+const saved = vi.fn();
+vi.mock("./edit-toast", () => ({ announceEditToast: (t: unknown) => announce(t), armEditToast: () => arm(), announceCollectionSaved: () => saved() }));
 
 const { EditCopiesHost } = await import("./edit-copies-host");
 
@@ -29,7 +30,7 @@ const mount = () => render(<EditCopiesHost card={card} onReopen={onReopen} onDon
 const close = (res: EditResult) => act(async () => sheetClose(res));
 
 beforeEach(() => {
-  for (const f of [settle, onReopen, onDone, announce, arm]) f.mockClear();
+  for (const f of [settle, onReopen, onDone, announce, arm, saved]) f.mockClear();
   settle.mockResolvedValue(undefined);
 });
 afterEach(cleanup);
@@ -58,6 +59,7 @@ describe("the Edit copies host", () => {
     await close({ saved: { entryId: "e1", removed: false, total: 6, copiesRemoved: 5 } });
     expect(order).toEqual(["toast", "settle", "reopen"]);
     expect(arm).toHaveBeenCalledTimes(1); // the countdown starts once the sheet has closed
+    expect(saved).toHaveBeenCalledTimes(1); // and the place head re-reads its totals
     expect(announce).toHaveBeenCalledWith({ entryId: "e1", removed: false, text: c.saved("Sol Ring", 6) });
   });
 

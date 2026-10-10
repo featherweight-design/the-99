@@ -68,6 +68,17 @@ describe("Edit copies, at rest", () => {
     expect((screen.getByRole("button", { name: r.action }) as HTMLButtonElement).disabled).toBe(true);
   });
 
+  it("saves a card the player did not own: an empty `seen` list is a valid claim", async () => {
+    load.mockResolvedValue({ choices: CHOICES, holdings: [] });
+    const onClose = vi.fn();
+    render(<AddCardsSheet mode="edit" card={card} onClose={onClose} />);
+    fireEvent.click((await screen.findAllByRole("radio"))[0]);
+    edit.mockResolvedValue({ applied: { id: "e" } });
+    await press(save());
+    expect(edit.mock.calls[0][3]).toEqual([]);
+    expect(onClose).toHaveBeenCalled();
+  });
+
   it("says so when the holdings cannot be read, and reads again on Try again", async () => {
     load.mockRejectedValueOnce(new Error("x"));
     render(<AddCardsSheet mode="edit" card={card} onClose={vi.fn()} />);
@@ -185,6 +196,7 @@ describe("Edit copies, another printing", () => {
     expect((save() as HTMLButtonElement).disabled).toBe(true);
     const tiles = await screen.findAllByRole("radio");
     expect(tiles).toHaveLength(1); // only CMR is not held
+    expect(screen.getAllByText(collectionEditCopy.add.announceChoose("Sol Ring", 1)).length).toBeGreaterThan(0); // the filtered count
   });
 });
 

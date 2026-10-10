@@ -174,10 +174,12 @@ export function EditCopiesSheet({
   function addPrinting() {
     if (!loaded || choosing || saving) return;
     const id = crypto.randomUUID();
-    setLines(openNewLine(lines, id, card, loaded.choices, loaded.holdings));
+    const next = openNewLine(lines, id, card, loaded.choices, loaded.holdings);
+    setLines(next);
     setPickerFor(id);
     setNotice(null);
-    setAnnounce(collectionEditCopy.add.announceChoose(card.name, loaded.choices.length));
+    // The picker lists what is left once the held printings are out, so that is what is announced.
+    setAnnounce(collectionEditCopy.add.announceChoose(card.name, next[0].choices.length));
   }
 
   async function save(confirmShort?: ShortDeck[]) {

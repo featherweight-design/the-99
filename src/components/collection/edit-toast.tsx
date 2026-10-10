@@ -19,6 +19,7 @@ const r = collectionEditCopy.remove;
 export const TOAST_MS = 8000;
 const EVENT = "collection-edit-toast";
 const ARM = "collection-edit-toast-arm";
+const SAVED = "collection-edit-saved";
 
 export type EditToast = { text: string; entryId: string; removed: boolean };
 
@@ -30,6 +31,12 @@ export function announceEditToast(toast: EditToast) {
  * The sheet that saved has closed and its page is inert no more: the countdown starts now, not when
  * the toast was announced, or a slow settle would spend the Undo window while nothing could be pressed.
  */
+/** The place head re-reads its totals and its History tab when a save has settled. */
+export const COLLECTION_SAVED_EVENT = SAVED;
+export function announceCollectionSaved() {
+  window.dispatchEvent(new Event(SAVED));
+}
+
 export function armEditToast() {
   window.dispatchEvent(new Event(ARM));
 }

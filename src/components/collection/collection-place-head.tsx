@@ -42,7 +42,7 @@ import { GhostButton } from "../ui/button";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { settleCollectionWrite } from "../../app/collection/edit-actions";
 import { AddCardsSheet } from "./add-cards-sheet";
-import { CollectionEditToast } from "./edit-toast";
+import { COLLECTION_SAVED_EVENT, CollectionEditToast } from "./edit-toast";
 import { ReplaceIcon } from "./replace-icon";
 import { PendingReporter } from "../shell/pending-reporter";
 import { collectionTabsCopy } from "../../lib/copy/collection";
@@ -172,7 +172,12 @@ export function CollectionPlaceHead({
         .catch(() => {});
     };
     window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
+    // An Edit copies save settles in the card modal's host, which this head cannot see.
+    window.addEventListener(COLLECTION_SAVED_EVENT, onFocus);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener(COLLECTION_SAVED_EVENT, onFocus);
+    };
   }, []);
   const { stats, lastUpdatedLabel } = live;
   // The live answer, not the layout's first one: a removal made elsewhere can create the entry that earns the tab.
