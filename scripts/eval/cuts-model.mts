@@ -200,8 +200,11 @@ const retry = midway >= ASK_AT_USD ? [] : prepared.filter((p) => {
   const g = attempts.get(p.customId)?.[0];
   return !g || (g.ok ? !parseReply(schemaOf.get(p.customId)!, g.message).ok : g.retry);
 });
-for (const g of await send(retry.map((p) => ({ ...p.sent, customId: `${p.customId}-r` })), "a2", worst / 2)) {
-  attempts.get(g.customId.replace(/-r$/, ""))?.push(g);
+const worstOf = new Map(prepared.map((p) => [p.customId, worstCaseUsd(MODEL, tokens.get(createHash("sha256").update(JSON.stringify(p.sent.params)).digest("hex"))!, MAX_TOKENS, { batch: !args.realtime }) / 2]));
+const retryWorst = retry.reduce((n, p) => n + worstOf.get(p.customId)!, 0);
+for (const g of await send(retry.map((p) => ({ ...p.sent, customId: `${p.customId}-r` })), "a2", retryWorst)) {
+  const base = g.customId.replace(/-r$/, "");
+  attempts.set(base, [...(attempts.get(base) ?? []), g]);
 }
 
 // Score each answer: the model's KEPT cuts (after the app's own validator) against Hugh's.

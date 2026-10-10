@@ -13,6 +13,14 @@ const build = (intent: string | null = null, sup = true) =>
   }));
 
 describe("buildCutsPrompt", () => {
+  it("tells the model every rule the validator enforces, and writes the last curve bucket as 7+", () => {
+    const { system, user } = build();
+    expect(system).toContain("promise a result");
+    expect(system).toContain("byte-identical");
+    expect(user).toMatch(/- cmc 7\+: have/);
+    expect(user).not.toMatch(/- cmc 7: have/);
+  });
+
   it("has its own version", () => expect(CUTS_PROMPT_VERSION).toBe(1));
 
   it("asks for exactly over cuts and carries the player-text rule and the cite rules", () => {

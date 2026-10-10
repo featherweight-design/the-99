@@ -9,6 +9,8 @@ export const deckCutsCopy = {
     citeFigures: "Every reason must cite a fact you were given. Add one cites entry for each fact the reason uses.",
     citeExact: "A cited figure must equal the figure given for that card or that deck. A figure that differs is discarded.",
     noBracketClaim: "No reason may name a bracket.",
+    noResultClaim: "No reason may promise a result: not that a cut will win, lose, or make the deck stronger.",
+    quotedNote: "A quoted part of the player's intent must be byte-identical to the intent as shown, in quotation marks.",
     noInvention: "Do not state what a card does. Use only the names and figures you were given.",
     noOwnershipRanking: "Ownership and price may not affect which cards you cut or their order.",
   },
