@@ -4,6 +4,7 @@ import { CHAR_BUDGETS, EVIDENCE_MAX, SECTION_COUNTS, TIP_MIN_CARDS } from "./lim
 import { colorLabel } from "../decks/format";
 import { isInfiniteOrGameEnding } from "../spellbook/combo-features";
 import { identityNameOf, type SynopsisFacts } from "./facts";
+import { weaknessLines } from "./validate-v8";
 import type { SynopsisReply } from "./response-schema";
 import { ASSESSMENT_TOPICS, type CheckedSynopsis, type SectionId } from "./types";
 
@@ -181,7 +182,7 @@ const textOf = (x: string | { text: string }) => (typeof x === "string" ? x : x.
  * The lines of a first answer, in the sections being rewritten, that run over their character
  * limit: "keep line 1 is 98 characters, limit 80: <text>". Both contracts' reply shapes. Only the
  * sections named in `sections` are read, so a kept section is never second-guessed.
- * Weaknesses are not read: contract 8 carries them as ranked candidates, none over budget in the 32 stored gate answers.
+ * Weaknesses are read as the validator sees them: contract 7's strings, contract 8's ranked lines with the tier word.
  */
 export function overLengthLines(reply: SynopsisReply, sections: readonly SectionId[]): string[] {
   const out: string[] = [];
@@ -197,6 +198,10 @@ export function overLengthLines(reply: SynopsisReply, sections: readonly Section
     check("keep line", reply.primer.mulligan.keep, CHAR_BUDGETS.mulligan);
     check("send-back line", reply.primer.mulligan.sendBack, CHAR_BUDGETS.mulligan);
     check("tip", reply.primer.tips, CHAR_BUDGETS.tip);
+  }
+  if (sections.includes("weaknesses")) {
+    const lines = "assessment" in reply ? weaknessLines(reply as never) : (reply.weaknesses ?? []);
+    check("weakness", lines, CHAR_BUDGETS.weakness);
   }
   if (sections.includes("keyCards")) check("key card job", reply.keyCards.map((k) => k.job), CHAR_BUDGETS.job);
   return out;
