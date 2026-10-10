@@ -15,6 +15,7 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import type { NeonDatabase } from "drizzle-orm/neon-serverless";
 
+import { retirePersistedScoresIn } from "../recs/score-lock";
 import { cardLabelBatches, cardLabels, cards, cardLabelsStaging } from "../../db/schema";
 
 /**
@@ -78,6 +79,9 @@ export async function publishRun(db: Db, runId: string): Promise<number> {
         from ${cardLabelsStaging} where run_id = ${runId}
     `);
     await tx.delete(cardLabelsStaging).where(eq(cardLabelsStaging.runId, runId));
+    // Persisted scores count the collection by these labels (LABEL_ROLE_COUNTS_ENABLED); none
+    // outlives the labels it was counted by. A cache, recomputed on the next visit.
+    await retirePersistedScoresIn(tx);
     return ids.length;
   });
 }
@@ -124,6 +128,8 @@ export async function publishWave(tx: Tx, runId: string, oracleIds: readonly str
   `);
   await tx.delete(cardLabelsStaging)
     .where(and(eq(cardLabelsStaging.runId, runId), inArray(cardLabelsStaging.oracleId, present)));
+  // See `publishRun`: no persisted score outlives the labels it was counted by.
+  await retirePersistedScoresIn(tx);
   return present.length;
 }
 

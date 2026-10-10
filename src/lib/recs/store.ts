@@ -1,7 +1,7 @@
 import { and, desc, eq, notInArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
-  cards, commanderScores, SCORE_WRITER_CURRENT, type RoleCounts,
+  cards, commanderScores, type RoleCounts,
 } from "../../db/schema";
 import { receiptsPreview } from "./format";
 import { measurableTotalFor } from "./score";
@@ -9,6 +9,8 @@ import type { CommanderListItem, RankedCommander } from "./recommend";
 import type { SynergyState } from "./synergy-state";
 import { notBuiltBy } from "../decks/built";
 import { readIndexGeneration } from "../cache/index-generation";
+import { scoreWriterVersion } from "./writer-version";
+import { SCORE_INDEX_LOCK } from "./score-lock";
 import { recordSoftFailure } from "../cache/soft-failure";
 
 // Postgres codes meaning the schema is behind the code: 42P01 undefined_table,
@@ -63,7 +65,7 @@ export function toScoreRow(userId: string, r: RankedCommander) {
     roleCounts: r.roleCounts,
     // Named on every insert, which is what makes the column's default a sentinel
     // for rows an older deployment wrote. See `SCORE_WRITER_CURRENT`.
-    writerVersion: SCORE_WRITER_CURRENT,
+    writerVersion: scoreWriterVersion(),
     computedAt: new Date(),
   };
 }
@@ -159,7 +161,7 @@ export function generationToken(seq: string | number | null, at: string | number
  * bigint and this repo already reaches for that pairing in `collection/import`
  * and `decks/assign`.
  */
-export const SCORE_INDEX_LOCK = "commander-scores:commander-index";
+export { SCORE_INDEX_LOCK };
 
 /**
  * Fingerprint of the commander index a score compute is about to read.
@@ -261,7 +263,7 @@ export async function persistScores(
     // compute that was already in flight at cutover. A writer that says nothing
     // is, by definition, one that predates the marker.
     await tx.execute(
-      sql`select set_config('app.writer_version', ${String(SCORE_WRITER_CURRENT)}, true)`,
+      sql`select set_config('app.writer_version', ${String(scoreWriterVersion())}, true)`,
     );
 
     // BOTH LOCKS COME BEFORE EITHER FINGERPRINT READ, and that ordering is the
@@ -390,7 +392,7 @@ export async function loadScores(
     // the set. One stale row condemns the set: `persistScores` writes a user's
     // rows in one transaction, so the rest is no more current than the row that
     // gives it away.
-    if (rows.some((r) => r.writerVersion < SCORE_WRITER_CURRENT)) {
+    if (rows.some((r) => r.writerVersion !== scoreWriterVersion())) {
       return { items: [], degradedOracleIds: [] };
     }
 
@@ -445,7 +447,7 @@ export function rankableScoreRows(userId: string) {
       select 1 from ${commanderScores} stale
       where stale.user_id = ${userId}
         and (
-          stale.writer_version < ${SCORE_WRITER_CURRENT}
+          stale.writer_version <> ${scoreWriterVersion()}
           or stale.rank_score < ${0}
         )
     )`,

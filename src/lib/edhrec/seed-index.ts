@@ -4,7 +4,7 @@ import {
   cards, commanderScores, commanderSupport, commanderSupportCards,
   commanderPairSupport, commanderPairSupportCards, decks, identityComposition,
 } from "../../db/schema";
-import { SCORE_INDEX_LOCK } from "../recs/store";
+import { retirePersistedScoresIn, SCORE_INDEX_LOCK } from "../recs/score-lock";
 import { choosePairs, LEGAL_PAIR_FLOOR, legalPairs, pairKey, type IndexPair } from "./pair-enumerate";
 import { deriveRoleTargets, roleTargetsPublishable, ROLE_TARGET_FLOOR, type RoleDerivationRow, type RoleTargetRow } from "./role-targets";
 import { readLabelRoleSets } from "../labels/read";
@@ -357,15 +357,9 @@ async function clearPersistedScores(): Promise<void> {
  * clear them rolls back whole.
  */
 export async function clearPersistedScoresIn(tx: Pick<typeof db, "execute" | "delete">): Promise<void> {
-  // EXCLUSIVE against every in-flight score write — see `SCORE_INDEX_LOCK`.
-  // Without it the delete can land between a writer's generation check and
-  // its inserts, and those pre-rebuild rows survive the clear. In a
-  // transaction because `pg_advisory_xact_lock` is released at commit, and a
-  // bare statement would hold it for no span at all.
-  await tx.execute(
-    sql`select pg_advisory_xact_lock(hashtextextended(${SCORE_INDEX_LOCK}, 0))`,
-  );
-  await tx.delete(commanderScores);
+  // EXCLUSIVE against every in-flight score write: the body lives in `recs/score-lock`, which the
+  // label publish shares.
+  await retirePersistedScoresIn(tx);
 }
 
 /**

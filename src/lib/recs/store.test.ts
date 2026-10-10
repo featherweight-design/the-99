@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sql } from "drizzle-orm";
 
 // store.ts imports the db client, which throws at module init without DATABASE_URL.
@@ -652,6 +652,35 @@ describe("loadScores and the rows a mid-deploy write left behind", () => {
 
   it("names the current writer on every row it writes", () => {
     expect(toScoreRow("user_1", ranked()).writerVersion).toBe(SCORE_WRITER_CURRENT);
+  });
+
+  // The role basis rides in the version (labels-everywhere PR 5): the switch flipping either way
+  // must make the other basis's persisted set a miss, never serve it as current.
+  describe("by role basis", () => {
+    afterEach(() => vi.unstubAllEnvs());
+
+    it("stamps a label-counted row with the negated writer version", () => {
+      vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
+      expect(toScoreRow("user_1", ranked()).writerVersion).toBe(-SCORE_WRITER_CURRENT);
+    });
+
+    it("reads a classifier-counted set as a miss with the switch on", async () => {
+      vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
+      stub.db.select = resolvingSelect([row({ writerVersion: SCORE_WRITER_CURRENT })]);
+      await expect(loadScores("user_1")).resolves.toEqual({ items: [], degradedOracleIds: [] });
+    });
+
+    it("serves a label-counted set with the switch on", async () => {
+      vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
+      stub.db.select = resolvingSelect([row({ writerVersion: -SCORE_WRITER_CURRENT })]);
+      expect((await loadScores("user_1")).items).toHaveLength(1);
+    });
+
+    it("reads a label-counted set as a miss with the switch off, so a rollback restores the classifier", async () => {
+      vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "");
+      stub.db.select = resolvingSelect([row({ writerVersion: -SCORE_WRITER_CURRENT })]);
+      await expect(loadScores("user_1")).resolves.toEqual({ items: [], degradedOracleIds: [] });
+    });
   });
 });
 

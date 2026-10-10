@@ -253,7 +253,12 @@ export async function rankFree(
   // `inclusionByName`, which only feeds `roleCards`, and `toListItem` drops those before this
   // function returns: a cache read here pulled every buildable commander's whole EDHREC page
   // (~94KB each) for figures nothing drew.
-  const { basis, roleSets } = await loadPoolRoleBasis(collection);
+  const { basis, roleSets, fellBack } = await loadPoolRoleBasis(collection);
+  // The canonical list this one is carried against may have been persisted under the labels basis.
+  // With the label read down this list would count by the classifier, and the toggle would draw
+  // two bases as one ranking. The control is disabled for this response instead, like any other
+  // missing prerequisite; the canonical list is still served.
+  if (fellBack) return { items: [], ok: false };
   const [supportLists, roleTargets] = await Promise.all([
     loadSupportLists(buildable.map((c) => c.card.oracleId)),
     loadRoleTargetsForCommanders(buildable.map((c) => c.card), basis),

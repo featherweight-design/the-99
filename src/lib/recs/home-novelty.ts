@@ -1,6 +1,6 @@
 import { sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
-import { SCORE_WRITER_CURRENT } from "../../db/schema";
+import { scoreWriterVersion } from "./writer-version";
 import { READY_COUNT } from "./ready-to-build";
 import { recordSoftFailure } from "../cache/soft-failure";
 
@@ -46,7 +46,7 @@ export function unplayedCountsSql(userId: string, limit = NOVELTY_CANDIDATES): S
         and not exists (
           select 1 from commander_scores stale
           where stale.user_id = ${userId}
-            and (stale.rank_score < 0 or stale.writer_version < ${SCORE_WRITER_CURRENT})
+            and (stale.rank_score < 0 or stale.writer_version <> ${scoreWriterVersion()})
         )
         and not exists (
           select 1 from commander_scores dg

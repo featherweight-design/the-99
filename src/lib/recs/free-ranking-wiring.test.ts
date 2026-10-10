@@ -64,6 +64,11 @@ vi.mock("../profile/role-targets", async () => {
   };
 });
 vi.mock("../edhrec/support-read", () => ({ loadSupportLists: async () => new Map() }));
+// The label read, answered here: `fellBack` is the switch ON with the label read down.
+const basisMock = vi.hoisted(() => ({ fellBack: false }));
+vi.mock("./pool-role-basis", () => ({
+  loadPoolRoleBasis: async () => ({ basis: "classifier", roleSets: undefined, fellBack: basisMock.fellBack }),
+}));
 
 const { rankFree } = await import("./free-ranking");
 
@@ -128,6 +133,17 @@ describe("rankFree — wiring", () => {
       expect(measured.items[0].fitRoles).toBeGreaterThan(flat.items[0].fitRoles);
     } finally {
       roleTargetMock.measured = false;
+    }
+  });
+
+  // The canonical list may have been persisted under the labels basis. With the label read down
+  // the free list would count by the classifier, so the toggle would draw two bases as one ranking.
+  it("reports ok: false, not a classifier-counted ranking, when the label read fell back", async () => {
+    basisMock.fellBack = true;
+    try {
+      expect(await rankFree("user-1", [item("korvold")])).toEqual({ items: [], ok: false });
+    } finally {
+      basisMock.fellBack = false;
     }
   });
 

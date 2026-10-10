@@ -14,6 +14,7 @@ import { sql } from "drizzle-orm";
 import { cardLabels } from "../src/db/schema";
 import { planCopy, type SourceLabel, type TargetCard, type TargetLabel } from "../src/lib/labels/copy";
 import { LABEL_PROMPT_VERSION } from "../src/lib/labels/prompt";
+import { retirePersistedScoresIn } from "../src/lib/recs/score-lock";
 import {
   publishOnTarget, readSourceSnapshot, runCopyMain, withCopyPair, type CopyDb, type CopyPair, type CopyTx,
 } from "./lib/catalog-copy";
@@ -128,6 +129,9 @@ async function main({ source, sourceUrl, target, sourceBranch, targetBranch, dry
         },
       });
     }
+    // Persisted scores count the collection by these labels (LABEL_ROLE_COUNTS_ENABLED); none
+    // outlives the labels it was counted by. A cache, recomputed on the next visit.
+    await retirePersistedScoresIn(tx);
   });
   console.log(`\ninstalled ${installed} label(s)`);
 }
