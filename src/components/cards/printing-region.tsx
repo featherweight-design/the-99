@@ -13,9 +13,11 @@ import { comparePrintings, cssUrl, matchesPreference } from "../../lib/collectio
 import { identityGradient } from "../../lib/collection/gradients";
 import { printingPickerCopy } from "../../lib/copy/collection";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
+import { deckPrintingsCopy } from "../../lib/copy/deck-printings";
 import { SearchField } from "../ui/text-field";
 
 const copy = printingPickerCopy.printing;
+const deckCopy = deckPrintingsCopy.picker;
 const chooseCopy = collectionEditCopy.add.choose;
 
 /**
@@ -72,6 +74,14 @@ type ArtRegionProps = {
   role?: "art";
   source?: "owned";
   layout?: undefined;
+  /**
+   * `deck` (deck printings): opened from a deck, the pick is that deck's. The intro speaks of this
+   * deck rather than the Collection, there is no reset (picking another tile is the way back) and
+   * no dormant tile (a deck's pick is always a printing the player holds). `collection` is today's.
+   */
+  scope?: "collection" | "deck";
+  /** A save the server refused, said under the intro (deck scope). Null when there is none. */
+  notice?: string | null;
   /** Matches the trigger's aria-controls. Two instances would collide, so the modal owns it. */
   id: string;
   printings: BrowsePrinting[];
@@ -115,6 +125,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
   const row = choose && props.layout === "row";
   const { id, cardName, colorIdentity } = props;
   const preferred = props.role === "choose" ? null : props.preferred;
+  const deckScope = props.role !== "choose" && props.scope === "deck";
   const resolvedKey = props.role === "choose" ? null : props.resolvedKey;
   const sourcePrintings = props.printings;
   // A catalog printing becomes a tile through the same entry shape an owned one has, so the grid,
@@ -154,7 +165,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
   // A pick the user no longer owns keeps a tile, greyed and unselectable — a ratified
   // exception to decision 5's "fall back silently" (handoff conflict table row 2).
   const dormantPick: Entry | null = useMemo(() => {
-    if (preferred === null) return null;
+    if (preferred === null || deckScope) return null;
     if (printings.some((p) => matchesPreference(p, preferred))) return null;
     return {
       setCode: preferred.setCode,
@@ -172,7 +183,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
       flavorName: null,
       dormant: true,
     };
-  }, [preferred, printings]);
+  }, [preferred, printings, deckScope]);
 
   const entries: Entry[] = useMemo(() => {
     const owned: Entry[] = printings.map((p) => ({ ...p, dormant: false }));
@@ -295,7 +306,11 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
       return;
     }
     props.onPick(p);
-    props.onAnnounce(copy.announcePicked(p.setName ?? p.setCode, p.collectorNumber));
+    props.onAnnounce(
+      deckScope
+        ? deckCopy.announcePicked(`${p.setName ?? p.setCode} #${p.collectorNumber}`)
+        : copy.announcePicked(p.setName ?? p.setCode, p.collectorNumber),
+    );
   }
 
   function onKeyDown(e: React.KeyboardEvent, index: number) {
@@ -336,9 +351,13 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
     >
       <div className="flex items-start justify-between gap-[12px]">
         <p className="text-[13.5px] m-0" style={{ color: "var(--fg-muted)" }}>
-          {props.role === "choose" ? props.intro : preferred === null ? copy.regionIntro(printings.length) : copy.regionIntroPicked}
+          {props.role === "choose"
+            ? props.intro
+            : deckScope
+              ? preferred === null ? deckCopy.regionIntro(printings.length) : deckCopy.regionIntroPicked
+              : preferred === null ? copy.regionIntro(printings.length) : copy.regionIntroPicked}
         </p>
-        {props.role !== "choose" && preferred !== null && (
+        {props.role !== "choose" && !deckScope && preferred !== null && (
           <button
             type="button"
             // The modal announces this one — the string names the printing that becomes
@@ -351,6 +370,11 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
           </button>
         )}
       </div>
+      {props.role !== "choose" && props.notice ? (
+        <p role="status" className="text-[13px] m-0 mt-[6px]" style={{ color: "var(--fg)" }}>
+          ! {props.notice}
+        </p>
+      ) : null}
 
       {dormantPick !== null && (
         <div

@@ -1278,6 +1278,7 @@ export function BuilderShell({
       // Still a different set from `proxyEligibleIds` above, which answers a different
       // question — passing that one would call a card in-deck because it is proxyable.
       comboDeckOracleIds={comboScope}
+      deckPrintingPicks={deck.printingPicks ?? null}
     >
       <AddOptimisticCardProvider value={deckEdits}>
         <PassMarkProvider value={passMark}>

@@ -32,7 +32,8 @@ import { printedNameOf, resolvedPrinting } from "../../lib/collection/browse";
 import { getCardDetail } from "../../app/card-detail-action";
 import { fetchCardDetail } from "../../lib/cards/fetch-card-detail";
 import { FitsPicker } from "./fits-picker";
-import { CardModal } from "./card-modal";
+import { CardModal, type DeckPrintingScope } from "./card-modal";
+import { setDeckPrinting } from "../../app/decks/printing-actions";
 import { cardCarouselCopy } from "../../lib/copy/card-carousel";
 
 // Edit copies (collection edit R2 §C) is loaded when first pressed: every deck surface mounts this
@@ -407,6 +408,7 @@ export function CardDetailProvider({
   deckPage = false,
   deckOracleIds,
   comboDeckOracleIds,
+  deckPrintingPicks = null,
   collectionEdit = false,
 }: {
   children: ReactNode;
@@ -438,6 +440,12 @@ export function CardDetailProvider({
   deckName?: string | null;
   /** See `CardDetailContextValue.deckOracleIds`. */
   deckOracleIds?: ReadonlySet<string>;
+  /**
+   * Deck printings: the deck's held picks by oracle id (`DeckDetail.printingPicks`). Set, a card
+   * the deck holds opens with the picker in deck scope, picking for this deck; null (the switch
+   * off, or no deck) keeps today's collection-scoped picker.
+   */
+  deckPrintingPicks?: Readonly<Record<string, PreferredPrinting>> | null;
   /**
    * The deck's OWN cards, for the combo block's `in this deck` state.
    *
@@ -1266,6 +1274,18 @@ export function CardDetailProvider({
   const announceAtStart = useCallback(() => announce(cardCarouselCopy.firstCard), []);
   const announceAtEnd = useCallback(() => announce(cardCarouselCopy.lastCard), []);
 
+  // The action refreshes the page itself (`refresh()`), so every row, the art and the prices
+  // move to the new pick together.
+  const saveDeckPrinting = useCallback(
+    async (oracleId: string, p: PreferredPrinting) =>
+      deckId !== null && (await setDeckPrinting(deckId, oracleId, p)).ok,
+    [deckId],
+  );
+  const deckPrintingFor = (oracleId: string): DeckPrintingScope | undefined =>
+    deckId !== null && deckPrintingPicks !== null && (deckOracleIds ?? EMPTY_IDS).has(oracleId)
+      ? { pick: deckPrintingPicks[oracleId] ?? null, save: (p) => saveDeckPrinting(oracleId, p) }
+      : undefined;
+
   return (
     <CardDetailContext.Provider value={value}>
       {children}
@@ -1287,6 +1307,7 @@ export function CardDetailProvider({
           deckPage={deckPage}
           deckName={deckName}
           deckHolds={(deckOracleIds ?? EMPTY_IDS).has(held.card.oracleId)}
+          deckPrinting={deckPrintingFor(held.card.oracleId)}
           openAtPrinting={held.openAt?.oracleId === held.card.oracleId ? held.openAt.printing : null}
           position={heldIndex >= 0 && held.siblings.length > 1 ? heldIndex + 1 : 1}
           total={heldIndex >= 0 && held.siblings.length > 1 ? held.siblings.length : 1}
@@ -1310,6 +1331,7 @@ export function CardDetailProvider({
           deckPage={deckPage}
           deckName={deckName}
           deckHolds={(deckOracleIds ?? EMPTY_IDS).has(card.oracleId)}
+          deckPrinting={deckPrintingFor(card.oracleId)}
           onProxyWrite={() => evict(card.oracleId)}
           openAtPrinting={openAtPrinting}
           onArtChange={(art, settled) => {
@@ -1384,6 +1406,7 @@ export function CardDetailProvider({
           deckPage={deckPage}
           deckName={deckName}
           deckHolds={(deckOracleIds ?? EMPTY_IDS).has(card.oracleId)}
+          deckPrinting={deckPrintingFor(card.oracleId)}
           onProxyWrite={() => evict(card.oracleId)}
           openAtPrinting={openAtPrinting}
           onArtChange={(art, settled) => {

@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { requireUserId } from "../../lib/auth";
@@ -94,6 +95,10 @@ export async function setDeckPrinting(
   });
 
   if (outcome !== "ok") return { ok: false, reason: outcome };
+  // Every surface on the deck page moves with a pick (the rows, the commanders, the prices and
+  // the Money card), and the page is not cached, so a re-render is the one way to move them all
+  // together. The modal keeps its own optimistic pick until the refreshed page arrives.
+  refresh();
   // The answer the deck now shows, read through the same chain every surface reads, so the client
   // patches its row with exactly what a reload would draw.
   const { printings } = await readDeckPrintings(userId, deckId, [oracleId], { usePicks: true });

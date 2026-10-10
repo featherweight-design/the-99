@@ -27,6 +27,8 @@ import {
 } from "./printings";
 import { lockedOracleIds } from "./locks";
 import { neverCutEnabled } from "./never-cut-flag";
+import { deckPrintingsEnabled } from "./printings-flag";
+import type { PreferredPrinting } from "../collection/browse";
 import { proxiedOracleIds, proxyCounts, type ProxyCount } from "./proxies";
 import { classifyRoles } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
@@ -240,6 +242,12 @@ export type DeckDetail = {
    * which this query already has and a `DeckDetailCard` does not carry.
    */
   noteCounts: NoteCounts;
+  /**
+   * Deck printings: the deck's own picks the player still holds, by oracle id, in the card
+   * modal's display form. Null with `DECK_PRINTINGS_ENABLED` off, which keeps the modal's picker
+   * collection-scoped; absent reads the same (a fixture built before the field).
+   */
+  printingPicks?: Record<string, PreferredPrinting> | null;
 };
 
 /** The deck row, or a throw. Used by every deck mutation and by the reads that
@@ -544,6 +552,12 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
       ownedOnly: deck.tuningOwnedOnly ?? false,
     },
     noteCounts: countNoteKinds(cardRows, commanderRows, bracketFlags),
+    printingPicks: deckPrintingsEnabled()
+      ? Object.fromEntries(
+          [...resolved].filter(([, p]) => p.source === "deck")
+            .map(([id, p]) => [id, { setCode: p.setCode, collectorNumber: p.collectorNumber }]),
+        )
+      : null,
     ...deckCounts(detailCards, unresolvedCardCount(unresolvedRows)),
   };
 }
