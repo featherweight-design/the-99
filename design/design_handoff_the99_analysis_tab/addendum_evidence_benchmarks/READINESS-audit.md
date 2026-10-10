@@ -19,7 +19,7 @@ goes to `/copy-review`, and two of them make a claim that is not always true (co
     and mixes (`analysis-fixtures.js:424-545`), plus `hasBench`, `benchDeck` and `benchStale` on
     the mapped-props line (`:553`). Nothing that was there was edited.
   - **Canvases, the block:** one `dc-import` of `Benchmarks Block`, placed under the findings
-    (`Analysis Tab 1300.dc.html:329`, `Analysis Tab 390.dc.html:327`). The ten `b*` states join the
+    (`Analysis Tab 1300.dc.html:327`, `Analysis Tab 390.dc.html:325`). The ten `b*` states join the
     `state` enum, and the default state moves from `rangeAsk` to `bGishath`.
   - **Canvases, Recommended mix moved.** The mix section left the reading body, where the parent
     canvases had it inside `notFetching`, and now sits above the tabs under the commander art
