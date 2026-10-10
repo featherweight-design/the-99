@@ -85,6 +85,9 @@ export function AddCardsSheet({
   const [results, setResults] = useState<CatalogCardResult[]>([]);
   const [searched, setSearched] = useState<string | null>(null);
   const [active, setActive] = useState(0);
+  // A failed search is not an empty one: it must not tell the player the card does not exist.
+  const [searchFailed, setSearchFailed] = useState(false);
+  const [retry, setRetry] = useState(0);
   const ticket = useRef(0);
 
   const choosing = lines.find((l) => l.printing === null) ?? null;
@@ -106,16 +109,18 @@ export function AddCardsSheet({
           if (mine !== ticket.current) return;
           setResults(r);
           setSearched(trimmed);
+          setSearchFailed(false);
           setActive(0);
         })
         .catch(() => {
           if (mine !== ticket.current) return;
           setResults([]);
           setSearched(trimmed);
+          setSearchFailed(true);
         });
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(t);
-  }, [trimmed]);
+  }, [trimmed, retry]);
 
   // After a required step ends, focus returns to the card search (B4a, step 3).
   const wasBlocked = useRef(false);
@@ -247,7 +252,7 @@ export function AddCardsSheet({
 
   function addMore() {
     attempt.current = null;
-    setBaseline((b) => (b ?? 0) + (saved?.copies ?? 0));
+    setBaseline((b) => (b === undefined ? undefined : b + (saved?.copies ?? 0)));
     setLines([]);
     setSaved(null);
     setPhase("editing");
@@ -257,7 +262,8 @@ export function AddCardsSheet({
 
   const stats = useMemo(() => summarize(lines), [lines]);
   const showResults = trimmed !== "" && phase !== "saved";
-  const noResults = showResults && searched === trimmed && results.length === 0;
+  const failed = showResults && searched === trimmed && searchFailed;
+  const noResults = showResults && searched === trimmed && results.length === 0 && !searchFailed;
   const frozen = saving ? "pointer-events-none opacity-60" : "";
 
   const dialog = (
@@ -342,7 +348,14 @@ export function AddCardsSheet({
               </div>
             </div>
           ) : showResults ? (
-            noResults ? (
+            failed ? (
+              <div role="alert" className="flex flex-col items-center gap-[10px] py-[26px] text-center">
+                <span className="max-w-[300px] text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.searchFailed}</span>
+                <button type="button" onClick={() => { setSearched(null); setSearchFailed(false); setRetry((n) => n + 1); }} className="min-h-[44px] cursor-pointer rounded-[8px] border border-solid border-[color:var(--border-strong)] px-[16px] text-[14px] md:min-h-[38px]">
+                  {copy.retry}
+                </button>
+              </div>
+            ) : noResults ? (
               <div role="status" className="flex flex-col items-center gap-[8px] px-[0] py-[26px] text-center">
                 <span aria-hidden className="flex h-[34px] w-[34px] items-center justify-center rounded-full border-[1.5px] border-dashed border-[color:var(--border-dashed)] text-[color:var(--fg-faint)]">?</span>
                 <span className="font-display text-[17px] font-semibold">{copy.noResultsTitle(trimmed)}</span>

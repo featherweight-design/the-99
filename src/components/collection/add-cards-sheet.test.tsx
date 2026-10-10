@@ -281,6 +281,30 @@ describe("AddCardsSheet (add)", () => {
     expect(add.mock.calls[0][1][0].finish).toBe("etched");
   });
 
+  it("says a failed search failed, rather than that no card exists, and retries", async () => {
+    mount();
+    search.mockRejectedValueOnce(new Error("offline"));
+    fireEvent.change(field(), { target: { value: "sol" } });
+    expect(await screen.findByText(copy.searchFailed)).toBeInTheDocument();
+    expect(screen.queryByText(copy.noResultsTitle("sol"))).toBeNull();
+    search.mockResolvedValueOnce([card()]);
+    fireEvent.click(screen.getByRole("button", { name: copy.retry }));
+    expect(await screen.findByRole("option")).toBeInTheDocument();
+  });
+
+  it("keeps an unknown baseline unknown across Add more", async () => {
+    add.mockResolvedValue({ applied: { id: "x" } });
+    mount({ totalCards: undefined });
+    await listOne();
+    fireEvent.click(screen.getByRole("button", { name: copy.save(1) }));
+    await screen.findByText(copy.savedTitle(1));
+    fireEvent.click(screen.getByRole("button", { name: copy.addMore }));
+    await listOne();
+    fireEvent.click(screen.getByRole("button", { name: copy.save(1) }));
+    await screen.findByText(copy.savedTitle(1));
+    expect(screen.queryByText(/\u2192/)).toBeNull();
+  });
+
   it("shows nothing about History, which has no route yet", () => {
     mount();
     expect(screen.queryByText(/history/i)).toBeNull();

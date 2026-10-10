@@ -51,7 +51,7 @@ export function AddLine(props: AddLineProps) {
   if (collapsed && !picking) {
     return (
       <li className="flex items-center gap-[12px] rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--bg)] p-[12px]">
-        <span aria-hidden className="h-[42px] w-[30px] shrink-0 rounded-[4px]" style={thumb(line.imageUri)} />
+        <span aria-hidden className="h-[42px] w-[30px] shrink-0 rounded-[4px]" style={thumb(p?.imageUri ?? line.imageUri)} />
         <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">{line.name}</span>
         {p && <span className="font-mono text-[11px] text-[color:var(--fg-body)]">{printingLabel(p)}</span>}
         <span className="text-[13px] text-[color:var(--fg-muted)]">{"×"}{line.quantity}</span>
@@ -69,7 +69,7 @@ export function AddLine(props: AddLineProps) {
         <span key={pulse} aria-hidden className="anim-line-pulse pointer-events-none absolute inset-0 rounded-[10px]" />
       )}
       <div className="flex items-start gap-[12px]">
-        <span aria-hidden className="h-[42px] w-[30px] shrink-0 rounded-[4px]" style={thumb(line.imageUri)} />
+        <span aria-hidden className="h-[42px] w-[30px] shrink-0 rounded-[4px]" style={thumb(p?.imageUri ?? line.imageUri)} />
         <div className="flex min-w-0 flex-1 flex-col gap-[6px] md:gap-[4px]">
           <span className="text-[14px] font-semibold">{line.name}</span>
           {choosing ? (

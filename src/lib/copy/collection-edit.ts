@@ -28,6 +28,7 @@ export const collectionEditCopy = {
     uploadInstead: "Upload it instead",
     noResultsTitle: (q: string) => `No card is named “${q}”`,
     noResultsBody: "Check the spelling, or try part of the name. Tokens and emblems aren't in the catalog.",
+    searchFailed: "We couldn't search just now. Check your connection and try again.",
     resultAdd: "↵ add",
     listHeading: (k: number) => `On the list · ${n(k)}`,
     newestFirst: "newest first",
