@@ -1,5 +1,5 @@
 import { overviewV2Enabled } from "./overview-v2";
-import { loadNearComboFacts } from "./near-combos";
+import { loadComboFacts } from "./combo-facts";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "../../db";
@@ -229,7 +229,7 @@ async function freshReading(deckId: string, userId: string, deps?: StoredProfile
 /** Exported for the eval harness, which must run this exact input builder rather than a copy. */
 export async function factsFor(
   profile: Parameters<typeof buildSynopsisFacts>[0],
-  /** Read the combos one card short (a second query). Off unless the v2 method is on. */
+  /** Read the combos of any size, assembled or one card short (one query). Off unless the v2 method is on. */
   v2: boolean = overviewV2Enabled(),
 ): Promise<SynopsisFacts> {
   const ids = profile.cards.map((c) => c.oracleId);
@@ -237,8 +237,8 @@ export async function factsFor(
     .select({ oracleId: cards.oracleId, oracleText: cards.oracleText })
     .from(cards)
     .where(inArray(cards.oracleId, ids));
-  const near = v2 ? await loadNearComboFacts(profile) : [];
-  return buildSynopsisFacts(profile, new Map(texts.map((t) => [t.oracleId, t.oracleText])), await loadUniversalStaples(), near);
+  const anySize = v2 ? await loadComboFacts(profile) : null;
+  return buildSynopsisFacts(profile, new Map(texts.map((t) => [t.oracleId, t.oracleText])), await loadUniversalStaples(), anySize);
 }
 
 /** The catalog cards Weaknesses names that the deck does not hold. Exported for the eval harness,

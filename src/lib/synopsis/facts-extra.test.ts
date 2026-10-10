@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { fitsIdentity, comboFacts, deckStatsFact, expectedCastTurn, interactionCounts, nearComboFacts } from "./facts-extra";
+import { fitsIdentity, comboFacts, deckStatsFact, expectedCastTurn, interactionCounts } from "./facts-extra";
 import { overviewV2Enabled } from "./overview-v2";
 
 const card = (over: Partial<Parameters<typeof interactionCounts>[0][number]>) => ({
@@ -66,21 +66,6 @@ describe("comboFacts", () => {
   });
   it("is empty for a deck with no assembled combo, which the prompt then leaves unmentioned", () => {
     expect(comboFacts({ brackets: { twoCardCombos: [] } } as never)).toEqual([]);
-  });
-});
-
-describe("nearComboFacts", () => {
-  it("keeps infinite or game-ending only, one per variant, at most three", () => {
-    const rows = [
-      { variantId: "1", produces: ["Infinite turns"], have: "A", missing: "B" },
-      { variantId: "1", produces: ["Infinite turns"], have: "A", missing: "B" },
-      { variantId: "2", produces: ["Gain 2 life"], have: "C", missing: "D" },
-      { variantId: "3", produces: ["Win the game"], have: "E", missing: "F" },
-      { variantId: "4", produces: ["Infinite mana"], have: "G", missing: "H" },
-      { variantId: "5", produces: ["Infinite damage"], have: "I", missing: "J" },
-    ];
-    const out = nearComboFacts(rows);
-    expect(out.map((r) => r.have)).toEqual(["A", "E", "G"]);
   });
 });
 

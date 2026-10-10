@@ -49,7 +49,6 @@ export type InteractionCounts = {
 };
 
 export const MAX_COMBO_FACTS = 6;
-export const MAX_NEAR_COMBO_FACTS = 3;
 export const CHEAP_MANA_VALUE = 2;
 
 /**
@@ -96,7 +95,7 @@ export function interactionCounts(
   return out;
 }
 
-/** The combos the profile says the deck assembles, free ones first, capped. */
+/** The two-card combos the profile says the deck assembles, free ones first, capped. The fallback when the any-size read fails. */
 export function comboFacts(profile: Pick<DeckProfile, "brackets">): ComboFact[] {
   return [...profile.brackets.twoCardCombos]
     .sort((a, b) => (a.manaValueNeeded ?? 99) - (b.manaValueNeeded ?? 99) || a.variantId.localeCompare(b.variantId))
@@ -107,21 +106,6 @@ export function comboFacts(profile: Pick<DeckProfile, "brackets">): ComboFact[] 
       usesCommander: c.usesCommander,
       manaNeeded: c.manaValueNeeded,
     }));
-}
-
-/** Near-assembled pairs reduced to what the prompt states: infinite or game-ending only, capped. */
-export function nearComboFacts(
-  rows: readonly { variantId: string; produces: string[]; have: string; missing: string }[],
-): NearComboFact[] {
-  const seen = new Set<string>();
-  const out: NearComboFact[] = [];
-  for (const r of [...rows].sort((a, b) => a.variantId.localeCompare(b.variantId))) {
-    if (!isInfiniteOrGameEnding(r.produces) || seen.has(r.variantId)) continue;
-    seen.add(r.variantId);
-    out.push({ have: r.have, missing: r.missing, produces: r.produces });
-    if (out.length >= MAX_NEAR_COMBO_FACTS) break;
-  }
-  return out;
 }
 
 /** Whether a card's colour identity sits inside the deck's: the rule for being addable at all. */
