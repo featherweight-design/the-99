@@ -34,7 +34,6 @@ export type Velocity = {
  */
 export function velocity(cards: readonly BenchCard[], castRamp: number): Velocity {
   const deck = body(cards);
-  const nonland = deck.filter((c) => !isLand(c));
   const lands = copies(deck.filter(isLand));
   // The average counts the commanders, as the profile's curve does and as the cut points are derived.
   const curve = cards.filter((c) => !isLand(c));
@@ -42,7 +41,9 @@ export function velocity(cards: readonly BenchCard[], castRamp: number): Velocit
   const averageManaValue = curveCopies === 0 ? 0 : curve.reduce((s, c) => s + c.manaValue * c.quantity, 0) / curveCopies;
   const counted: VelocityLine[] = [];
   const notCounted: VelocityLine[] = [];
-  for (const card of nonland) {
+  // Ramp counts from every nonland card, the commander included: it is in the command zone every
+  // game, which makes a ramp commander the most reliable ramp the deck has. Lands stay the 99's.
+  for (const card of curve) {
     const ramp = card.jobs.filter((j) => isRampJob(j, card.oracleText));
     if (ramp.length === 0) continue;
     const only = (kind: string) => ramp.every((j) => j.kind === "ramp" && j.rampKind === kind);

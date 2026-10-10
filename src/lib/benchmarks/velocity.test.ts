@@ -43,6 +43,11 @@ describe("velocity", () => {
     expect(v.commanderTurn).toBe(7);
   });
 
+  it("counts a ramp commander's own ramp: it is in the command zone every game", () => {
+    const v = velocity([card("Selvala", { commander: true, manaValue: 3, jobs: [job({ kind: "ramp" })] })], 0);
+    expect(v.counted.map((l) => [l.card.name, l.points])).toEqual([["Selvala", 0.5]]);
+  });
+
   it("returns no turn without a commander, and a zero index for an empty list", () => {
     expect(velocity([], 0)).toMatchObject({ index: 0, commanderTurn: null });
   });
