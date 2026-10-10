@@ -122,6 +122,12 @@ export type CopySpec<S> = {
   buildAccepted?: (build: BuildRow) => string | null;
   /** The builders' own floors, re-checked on the snapshot. Empty means publish. */
   floors: (snapshot: S) => string[];
+  /**
+   * A refusal that reads the TARGET, run before the dry-run return so a dry run reports it too. A
+   * spec that needs it re-checks the same thing inside `publish`, under the lock, because the target
+   * can move between the two.
+   */
+  targetRefusal?: (target: CopyDb, snapshot: S) => Promise<string | null>;
   /** The writes, inside the target transaction, after the lock and the fingerprint re-check. */
   publish: (tx: CopyTx, snapshot: S) => Promise<void>;
   /** A line for the log: what the snapshot holds. */
@@ -225,6 +231,8 @@ export async function runCopy<S>(spec: CopySpec<S>, log: (line: string) => void 
     if (stepRefusal) throw new CopyRefused(stepRefusal);
     const below = spec.floors(snap.data);
     if (below.length > 0) throw new CopyRefused(`the source is under the builders' floors: ${below.join("; ")}`);
+    const targetRefusal = spec.targetRefusal ? await spec.targetRefusal(target, snap.data) : null;
+    if (targetRefusal) throw new CopyRefused(targetRefusal);
     if (dryRun) {
       log("dry run: every check passed; nothing written");
       return;

@@ -107,3 +107,20 @@ describe("the index copy's label check", () => {
     expect(labelledCards(s).sort()).toEqual(["p", "x", "y"]);
   });
 });
+
+describe("the index copy's label preflight, which a dry run also runs", () => {
+  const target = (rows: unknown[] = []) => ({ execute: vi.fn(async () => ({ rows })) });
+  const snap = (labelFingerprint: string | null) => ({ ...whole(), labelFingerprint });
+
+  it("refuses when the target's labels give different role sets", async () => {
+    const t = target();
+    expect(await indexCopySpec.targetRefusal!(t as never, snap("a".repeat(32)))).toMatch(/different role sets/);
+    expect(t.execute).not.toHaveBeenCalled(); // no listed card, so nothing to read
+  });
+
+  it("reads nothing for a build that wrote no label targets", async () => {
+    const t = target();
+    expect(await indexCopySpec.targetRefusal!(t as never, snap(null))).toBeNull();
+    expect(t.execute).not.toHaveBeenCalled();
+  });
+});

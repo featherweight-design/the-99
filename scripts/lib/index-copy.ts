@@ -59,6 +59,15 @@ export function labelledCards(s: Pick<IndexSnapshot, "support" | "supportCards" 
  * derived from another. A build with no label fingerprint wrote no `label_*`, so there is nothing
  * to check. Pure.
  */
+async function targetLabelRefusal(
+  target: Parameters<typeof readLabelRoleSets>[1],
+  s: IndexSnapshot,
+): Promise<string | null> {
+  if (s.labelFingerprint === null) return null;
+  const listed = labelledCards(s);
+  return labelRefusal(s.labelFingerprint, roleSetFingerprint(listed, await readLabelRoleSets(listed, target)));
+}
+
 export function labelRefusal(built: string | null, target: string): string | null {
   if (built === null) return null;
   return built === target ? null
@@ -153,14 +162,13 @@ export const indexCopySpec: CopySpec<IndexSnapshot> = {
   describe: (s) =>
     `${s.support.length} commanders · ${s.supportCards.length} support cards · ${s.pairs.length} pairs · ` +
     `${s.pairCards.length} pair cards · ${s.staples.length} staples · ${s.composition.length} compositions`,
+  // Before the dry-run return, so `--dry-run` reports a label mismatch the real copy would refuse.
+  targetRefusal: (target, s) => targetLabelRefusal(target, s),
   publish: async (tx, s) => {
-    // 0 · The labels: the target's own must give the role sets the build derived `label_*` from.
-    // Read inside the publish, so a label copy landing meanwhile is either seen here or after.
-    if (s.labelFingerprint !== null) {
-      const listed = labelledCards(s);
-      const refusal = labelRefusal(s.labelFingerprint, roleSetFingerprint(listed, await readLabelRoleSets(listed, tx)));
-      if (refusal) throw new CopyRefused(refusal);
-    }
+    // 0 · The labels again, UNDER the lock: a label copy landing since the preflight is either seen
+    // here or lands after this transaction.
+    const refusal = await targetLabelRefusal(tx, s);
+    if (refusal) throw new CopyRefused(refusal);
 
     // 1 · Scores are scored against the index, so the old ones go in the same transaction.
     await clearPersistedScoresIn(tx);
