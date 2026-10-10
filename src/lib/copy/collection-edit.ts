@@ -46,7 +46,7 @@ export const collectionEditCopy = {
       `Changes you made in the app may be overwritten. Your last upload was ${last}, before the 90 days history keeps, so we can't count them.`,
     /** (new) Never uploaded, so every change made in the app is still on record. */
     choiceOverwriteNoUpload: (k: number) => `${n(k)} ${k === 1 ? "change" : "changes"} you made in the app will be overwritten.`,
-    overlapNote: (pct: number) => `You already own ${pct}% of these cards. Adding the file doubles those copies.`,
+    overlapNote: (pct: number) => `You already own ${pct}% of these cards. Adding the file raises those counts.`,
     continueReplace: "Review the replace →",
     continueAdd: "Review the add →",
     /** (new) The desktop foot's lead-in. */
@@ -54,6 +54,8 @@ export const collectionEditCopy = {
     nextAdd: "Next: a review of every card this add raises.",
     cancel: "Cancel",
     /** (new) The comparison could not be read. */
+    /** (new) A confirm failed and so did the read that would say whether it landed. */
+    unconfirmed: "We couldn't confirm whether that went through. Check your collection, then try again if it did not.",
     prepareFailed: "We couldn't read how this file compares to your collection. Nothing was changed.",
     /** (new) The upload entry's note once the file can be added instead: the count sits between the two. */
     entryNote: { before: "Your file can replace your current ", after: " or be added to them. You’ll see every match before anything changes." },
@@ -61,10 +63,10 @@ export const collectionEditCopy = {
     listAdded: (k: number) => `What gets added · ${n(k)}`,
     /** (new) The Add review's matched banner: the number, then its label. */
     addedFigure: (copies: number) => `+${n(copies)}`,
-    addedLabel: (cards: number) => `${cards === 1 ? "copy" : "copies"} across ${n(cards)} ${cards === 1 ? "card" : "cards"}`,
+    addedLabel: (copies: number, cards: number) => `${copies === 1 ? "copy" : "copies"} across ${n(cards)} ${cards === 1 ? "card" : "cards"}`,
     allOwned: "You already own every card in this file.",
     allOwnedBody: (up: number) =>
-      `Adding it doubles them: ${n(up)} ${up === 1 ? "card goes" : "cards go"} up, none are new. If this is a fresh export of your whole collection, Replace is the one you want.`,
+      `Adding it raises them: ${n(up)} ${up === 1 ? "card goes" : "cards go"} up, none are new. If this is a fresh export of your whole collection, Replace is the one you want.`,
     switchToReplace: "Switch to Replace",
     barAdd: (add: number, skip: number, have: number) =>
       `Adding ${add === 1 ? "1 copy" : `${n(add)} copies`} and skipping ${n(skip)} rows. Your ${n(have)} cards stay.`,

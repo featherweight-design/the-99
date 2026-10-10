@@ -195,8 +195,16 @@ export function ReplaceFlow({
       // A throw is not proof that nothing was written: the write commits before its cache
       // invalidation and its receipt, and either can fail after it. The preview of an upload that
       // is already confirmed answers null, so ask it before claiming the collection is unchanged.
-      if (choosing && (await previewUploadChange(preview.uploadId, picked ?? "replace").then((r) => r === null, () => false))) {
+      // A read that fails too is INDETERMINATE: the write may have landed and the answer been lost,
+      // so it must not claim the collection is unchanged either.
+      const landed = choosing ? await previewUploadChange(preview.uploadId, picked ?? "replace").then((r) => (r === null ? "yes" : "no"), () => "unknown" as const) : "no";
+      if (landed === "yes") {
         nav.go(`/collection/replace/summary/${preview.uploadId}`);
+        return;
+      }
+      if (landed === "unknown") {
+        if (review) setChange({ ...review, failure: { body: collectionEditCopy.upload.unconfirmed } });
+        else setConfirmError(collectionEditCopy.upload.unconfirmed);
         return;
       }
       if (review) {
@@ -302,7 +310,8 @@ export function ReplaceFlow({
       <UploadChoice
         filename={preview.filename}
         rows={preview.rowCount}
-        copiesBefore={datas.replace.detail.copiesBefore}
+        replaceBefore={datas.replace.detail.copiesBefore}
+        addBefore={datas.add.detail.copiesBefore}
         replaceAfter={datas.replace.detail.copiesAfter}
         addAfter={datas.add.detail.copiesAfter}
         facts={datas.replace}

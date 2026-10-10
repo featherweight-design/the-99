@@ -97,8 +97,9 @@ function Card({
 export function UploadChoice({
   filename,
   rows,
-  copiesBefore,
+  replaceBefore,
   replaceAfter,
+  addBefore,
   addAfter,
   facts,
   overlap,
@@ -109,7 +110,9 @@ export function UploadChoice({
 }: {
   filename: string;
   rows: number;
-  copiesBefore: number;
+  /** The collection's copies as each preview read them: the two reads are separate transactions, so each card quotes its own. */
+  replaceBefore: number;
+  addBefore: number;
   /** The file's matched cards: what a Replace leaves. */
   replaceAfter: number;
   /** The collection plus the file: what an Add leaves. */
@@ -145,10 +148,10 @@ export function UploadChoice({
         <p className="m-0 font-mono text-[11px] tracking-[0.06em] text-[color:var(--fg-faint)]">
           {c.step(2, 4)} · {filename} · {rows.toLocaleString("en-US")} rows
         </p>
-        <h2 id={headingId} className="m-0 mt-[12px] mb-[6px] font-display text-[18px] font-semibold md:text-[29px] md:font-bold">
+        <h1 id={headingId} className="m-0 mt-[12px] mb-[6px] font-display text-[18px] font-semibold md:text-[29px] md:font-bold">
           <span className="md:hidden">{c.choiceTitlePhone}</span>
           <span className="hidden md:inline">{c.choiceTitle}</span>
-        </h2>
+        </h1>
         <p className="m-0 mb-[24px] text-[14px] text-[color:var(--fg-muted)]">{c.choiceLede}</p>
         <div role="radiogroup" aria-labelledby={headingId} onKeyDown={move} className="grid gap-[12px] md:grid-cols-2 md:gap-[20px]">
           <Card
@@ -157,7 +160,7 @@ export function UploadChoice({
             tabbable={picked === "replace" || picked === null}
             title={c.replaceTitle}
             body={c.replaceBody}
-            figure={c.after(copiesBefore, replaceAfter)}
+            figure={c.after(replaceBefore, replaceAfter)}
             onPick={() => onPick("replace")}
           >
             <Warning facts={facts} />
@@ -168,7 +171,7 @@ export function UploadChoice({
             tabbable={picked === "add"}
             title={c.addTitle}
             body={c.addBody}
-            figure={c.after(copiesBefore, addAfter)}
+            figure={c.after(addBefore, addAfter)}
             onPick={() => onPick("add")}
           >
             {showOverlap ? (

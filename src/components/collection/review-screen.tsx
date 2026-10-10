@@ -159,7 +159,7 @@ export function ReviewScreen({
               {/* §Matched Count: Label */}
               <div className="text-[11.5px] md:text-[13px] mt-[2px] md:mt-[4px] text-[color:var(--fg-faint)] md:text-[color:var(--fg-muted)]">
                 {addDetail ? (
-                  e.addedLabel(addDetail.distinctCards)
+                  e.addedLabel(addDetail.copiesAfter - addDetail.copiesBefore, addDetail.distinctCards)
                 ) : (
                   <>
                     <span className="md:hidden">cards matched &amp; ready</span>

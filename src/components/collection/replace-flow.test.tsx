@@ -533,6 +533,42 @@ describe("ReplaceFlow · the choice, keyboard and concurrency", () => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
+  it("says it could not confirm, and not that nothing changed, when the confirm threw and the check failed too", async () => {
+    push.mockReset();
+    confirmUpload.mockReset().mockRejectedValueOnce(new Error("offline"));
+    previewChange.mockResolvedValueOnce(d(5)).mockResolvedValueOnce(d(12)).mockRejectedValue(new Error("offline"));
+    await startFlow();
+    fireEvent.click(await screen.findByRole("radio", { name: /Add these cards/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Review the add →" }));
+    await act(async () => fireEvent.click(await screen.findByRole("button", { name: /^Add \d/ })));
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toMatch(/couldn't confirm whether that went through/);
+    expect(alert.textContent).not.toMatch(/Nothing changed/);
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("quotes each card's own before-figure, since the two reads are separate transactions", async () => {
+    const replace = d(5);
+    const add = d(41);
+    add.detail.copiesBefore = 35;
+    previewChange.mockImplementation(async (_id: string, mode: string) => (mode === "add" ? add : replace));
+    await startFlow();
+    await screen.findByRole("radiogroup");
+    expect(screen.getByText("10 → 5 cards")).toBeTruthy();
+    expect(screen.getByText("35 → 41 cards")).toBeTruthy();
+  });
+
+  it("inflects the Add banner by the copies added, not the cards: three copies of one card", async () => {
+    const add = d(13);
+    add.detail.distinctCards = 1;
+    previewChange.mockImplementation(async (_id: string, mode: string) => (mode === "add" ? add : d(5)));
+    await startFlow();
+    fireEvent.click(await screen.findByRole("radio", { name: /Add these cards/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Review the add →" }));
+    expect(await screen.findByText("+3")).toBeTruthy();
+    expect(screen.getByText("copies across 1 card")).toBeTruthy();
+  });
+
   it("arrow keys move focus with the pick, from whichever card has focus", async () => {
     previewChange.mockResolvedValue(d(5));
     await startFlow();
