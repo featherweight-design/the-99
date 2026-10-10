@@ -282,6 +282,34 @@ describe("CardDetailProvider", () => {
       expect(peek().outerHTML).not.toContain("oracle-sol.jpg");
     });
 
+    // Deck printings: on a deck, the modal draws the deck's pick, so its neighbor plate must too.
+    it("draws the deck's picked printing on a deck, not the Collection's", async () => {
+      const sol: BrowseCard = {
+        ...card("o-sol", "Sol Ring"),
+        printings: [
+          { setCode: "CMM", collectorNumber: "676", imageUri: "https://cards.scryfall.io/collection-sol.jpg", quantity: 1, flavorName: null },
+          { setCode: "LTC", collectorNumber: "284", imageUri: "https://cards.scryfall.io/deck-sol.jpg", quantity: 1, flavorName: null },
+        ] as unknown as BrowseCard["printings"],
+        preferredPrinting: { setCode: "CMM", collectorNumber: "676" },
+      };
+      render(
+        <CardDetailProvider
+          fetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)}
+          prefetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)}
+          deckId="d1"
+          deckOracleIds={new Set(["o-signet", "o-sol"])}
+          deckPrintingPicks={{ "o-sol": { setCode: "LTC", collectorNumber: "284" } }}
+        >
+          <CardDetailTrigger oracleId="o-signet" name="Arcane Signet" siblings={["o-signet", "o-sol"]}>
+            Arcane Signet
+          </CardDetailTrigger>
+        </CardDetailProvider>,
+      );
+      await click(screen.getByText("Arcane Signet"));
+      await waitFor(() => expect(peek().outerHTML).toContain("deck-sol.jpg"));
+      expect(peek().outerHTML).not.toContain("collection-sol.jpg");
+    });
+
     it("fills a plate the opener passed no art for", async () => {
       const sol = owned("o-sol", "Sol Ring", "https://cards.scryfall.io/owned-sol.jpg");
       render(
