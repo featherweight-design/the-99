@@ -79,33 +79,48 @@ canvas.
   (`limits.ts:25`) and is written only while `OVERVIEW_V2_ENABLED` is on.
 - **`origin = 'system'` is already allowed** (`model_calls_origin_check`, `schema.ts:1908`).
   `reserveModelCall` hardcodes `origin: "player"` (`allowance.ts:191`), as the plan says.
-- **The read hides the press** when the allowance is paused, the owner's share is used up, or the
-  credits are used up (`read.ts:122-124`). The plan's read-side bypass is therefore needed. It is
+- **Three places refuse a write when the allowance is paused, the owner's share is used up, or
+  the credits are used up.** `wouldSpend` (`read.ts:122-124`) picks the overview's note. `spent`
+  (`synopsis-overview.tsx:127`) disables the press (`disabled={!canWrite || spent}`, `:148`).
+  `pressNote` (`synopsis-note.ts:40-45`) returns `writes: false`, so Re-analyze never chains a write
+  (`builder-shell.tsx:484`). The plan names only the first. All three need the bypass, which is
   build rule 2.
 - **Re-analyze writes its overview through the same action as Write one.** The banner's press reads
   the profile, and when it lands `builder-shell.tsx:490-499` calls `synopsis.write`, which is
   `writeSynopsis` → `writeSynopsisFor`. That is the same server path the notice's button and ruling
-  D's button use. **So Design's preferred 1f (one press) can be split cleanly, and the fallback is
-  not needed** (build rule 1).
+  D's button use. A section retry goes through `retrySynopsisFor`, and both reach the shared
+  `run()` (`generate.ts:456`). **So Design's preferred 1f (one press) can be split cleanly, and the
+  fallback is not needed** (build rules 1 and 2).
 - **Shipped strings Design reuses exist:** `synopsisCopy.writeNew`, `.tryAgain`, `.ready`, `.failed`,
   `.olderThanList`, `.pressNote.*` (`src/lib/copy/synopsis.ts`) and `creditsCopy.first`
   (`credits.ts:70`).
 
 ## Build rules (engineering gaps, resolved)
 
-1. **The decision is made on the server and keyed on eligibility, not on which button was pressed.**
-   `writeSynopsisFor` checks eligibility, and when the deck is eligible it reserves with
-   `origin = 'system'`, skipping the player allowance, and bypasses `reused` at both sites
-   (`generate.ts:~486` and the re-decision under the lock, `~337-386`). The notice's button, ruling
-   D's button and Re-analyze's chained write therefore all take the free path while the deck is
-   eligible. That is how 1f gets one press: the client needs no flag, and a second press cannot
-   be charged.
-2. **The read exposes `methodNotice: null | { attemptsLeft: 2 | 1 | 0 }`.** While `attemptsLeft > 0`,
-   the free press draws even when `wouldSpend` is false because of the allowance, the pause or the
-   owner's share. `wouldSpend` itself is unchanged, and the bypass applies to the notice's press
-   only. In 1e, with no attempts left, the press follows the shipped Write one rules. That means
-   the paused and used-up notes stand in for the button where they apply, which is the README's
-   "the normal rules apply".
+1. **The server decides what a write costs from eligibility, not from which button was pressed.**
+   The check lives in `run()` (`generate.ts:456`), which both `writeSynopsisFor` and
+   `retrySynopsisFor` reach. When the deck is eligible, `run()` reserves with `origin = 'system'`
+   and skips the player allowance. It also bypasses `reused` at both sites: `generate.ts:~486`, and
+   the re-decision under the lock at `~337-386`. The notice's button, ruling D's button,
+   Re-analyze's chained write and a section retry therefore all take the free path while the deck
+   is eligible. A section retry on an eligible contract-7 overview is already rewritten whole at
+   contract 8 (`generate.ts:476-479`), so that write is the free one too and is never charged.
+   Putting the check in `writeSynopsisFor` alone would let the retry charge a credit and end
+   eligibility.
+2. **The read exposes `methodNotice: null | { attemptsLeft: 2 | 1 | 0 }`, and the client's refusal
+   points all read it.** The server cannot reach a write the client never sends, so while
+   `attemptsLeft > 0`:
+   - `pressNote` (`synopsis-note.ts`) returns `writes: true` with `pressNote.free` in place of its
+     paused, owner-share and used-up branches, so Re-analyze chains the free write in 1f
+     (`builder-shell.tsx:484`).
+   - `spent` (`synopsis-overview.tsx:127`) does not disable the notice's press or 1d's **Try
+     again**.
+   - `wouldSpend` stays unchanged, because it means a credit would be spent, and no credit is.
+
+   The illegal-card refusal (`synopsis-note.ts:30`) still wins, under build rule 8. In 1e, with no
+   attempts left, every point reverts to the shipped Write one rules, so the paused and used-up
+   notes stand in for the button where they apply. That is the README's "the normal rules
+   apply".
 3. **Eligibility.** All of these must hold:
    - `OVERVIEW_V2_ENABLED` is on.
    - The deck's shown overview exists and has `contractVersion < 8`. The shown overview is the
