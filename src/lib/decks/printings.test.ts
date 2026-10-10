@@ -186,6 +186,8 @@ describe("resolveDeckOwnedPrintings", () => {
     }];
     const owned = await resolveDeckOwnedPrintings("u", DECK, [OWNED, UNOWNED]);
     expect([...owned.keys()]).toEqual([OWNED]);
+    // And it never asks the catalog, whose answer it would only throw away.
+    expect(state.texts.some((t) => t.includes("from cards c"))).toBe(false);
   });
 
   it("follows the switch for the deck's step", async () => {

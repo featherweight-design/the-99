@@ -28,6 +28,8 @@ const fixture = drizzle(pool);
 const USER = `probe-printings-${Date.now()}`;
 
 let failures = 0;
+// Set only once the branch check passes, so a refused target is never written to, cleanup included.
+let wroteFixtures = false;
 const check = (label: string, actual: unknown, expected: unknown) => {
   const ok = actual === expected;
   if (!ok) failures += 1;
@@ -49,6 +51,7 @@ async function main() {
   if (!branch || branch === "br-noisy-violet-a6vw4ess" || branch === "br-polished-pond-a6e63y0b") {
     throw new Error(`refusing to write fixtures on ${branch}`);
   }
+  wroteFixtures = true;
 
   // From the catalog rather than hard-coded: a non-legendary card with two printings that carry
   // different art, and a legend to lead the deck.
@@ -180,6 +183,11 @@ main()
     console.error(error);
   })
   .finally(async () => {
+    if (!wroteFixtures) {
+      await pool.end();
+      console.log(`\n${failures} check(s) failed`);
+      process.exit(1);
+    }
     // Versions, version cards and picks go with the deck (on delete cascade).
     await fixture.execute(sql`delete from deck_cards where deck_id in (select id from decks where user_id = ${USER})`);
     await fixture.execute(sql`delete from decks where user_id = ${USER}`);

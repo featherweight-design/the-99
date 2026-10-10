@@ -130,7 +130,11 @@ export async function readDeckPrintings(
   userId: string,
   deckId: string,
   oracleIds: string[],
-  opts: { usePicks: boolean },
+  /**
+   * `ownedOnly` skips the catalog step, for a caller that drops unowned cards anyway: the owned-only
+   * helpers below, which would otherwise pay a catalog read only to throw its answer away.
+   */
+  opts: { usePicks: boolean; ownedOnly?: boolean },
 ): Promise<DeckPrintings> {
   const printings = new Map<string, DeckPrinting>();
   const heldPicks = new Map<string, DeckPick>();
@@ -162,7 +166,7 @@ export async function readDeckPrintings(
     });
   }
 
-  const unowned = ids.filter((id) => !printings.has(id));
+  const unowned = opts.ownedOnly ? [] : ids.filter((id) => !printings.has(id));
   if (unowned.length > 0) {
     // The oracle-level printing: `cards.scryfall_id` names one printing of the card, and that
     // printing's art is what `cards.image_uri` draws for a card nobody owns. That id is not always
@@ -220,7 +224,11 @@ export async function resolveDeckPrintings(
   userId: string,
   deckId: string,
   oracleIds: string[],
-  opts: { usePicks: boolean },
+  /**
+   * `ownedOnly` skips the catalog step, for a caller that drops unowned cards anyway: the owned-only
+   * helpers below, which would otherwise pay a catalog read only to throw its answer away.
+   */
+  opts: { usePicks: boolean; ownedOnly?: boolean },
 ): Promise<DeckPrintings> {
   return readDeckPrintings(userId, deckId, oracleIds, opts).catch(() => {
     recordSoftFailure();
@@ -238,7 +246,7 @@ export async function resolveDeckOwnedPrintings(
   deckId: string,
   oracleIds: string[],
 ): Promise<Map<string, DeckPrinting>> {
-  const { printings } = await resolveDeckPrintings(userId, deckId, oracleIds, { usePicks: deckPrintingsEnabled() });
+  const { printings } = await resolveDeckPrintings(userId, deckId, oracleIds, { usePicks: deckPrintingsEnabled(), ownedOnly: true });
   return ownedOnly(printings);
 }
 
@@ -248,7 +256,7 @@ export async function readDeckOwnedPrintings(
   deckId: string,
   oracleIds: string[],
 ): Promise<Map<string, DeckPrinting>> {
-  const { printings } = await readDeckPrintings(userId, deckId, oracleIds, { usePicks: deckPrintingsEnabled() });
+  const { printings } = await readDeckPrintings(userId, deckId, oracleIds, { usePicks: deckPrintingsEnabled(), ownedOnly: true });
   return ownedOnly(printings);
 }
 
