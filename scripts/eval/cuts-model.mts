@@ -251,3 +251,5 @@ console.log(`**${hits} of ${totalK} cuts found** across ${rows.length} answers (
 console.log("| Deck | Trial | Cut (K) | Asked | Kept | Hits | Dropped | Cost | Out tokens |");
 console.log("|---|---|---|---|---|---|---|---|---|");
 for (const r of rows) console.log(`| ${r.deck} | ${r.trial} | ${r.k} | ${r.asked} | ${r.kept} | ${r.answered ? r.hits : "no answer"} | ${r.drops.join(", ") || "none"} | $${r.usd.toFixed(4)} | ${r.outTokens} |`);
+// The Neon pool and the ledger lock outlive the report otherwise.
+process.exit(0);

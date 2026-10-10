@@ -6,7 +6,7 @@ export const deckCutsCopy = {
   rules: {
     onlyListed: "Cut only cards in the list below, spelled as the list spells them.",
     noKeyCards: "Never cut a Key card.",
-    citeFigures: "Every reason must cite a figure from the facts. Add one cites entry for each figure the reason uses.",
+    citeFigures: "Every reason must cite a fact you were given. Add one cites entry for each fact the reason uses.",
     citeExact: "A cited figure must equal the figure given for that card or that deck. A figure that differs is discarded.",
     noBracketClaim: "No reason may name a bracket.",
     noInvention: "Do not state what a card does. Use only the names and figures you were given.",
