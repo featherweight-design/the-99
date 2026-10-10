@@ -504,8 +504,9 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
       // the mismatch the collection reader forbids, and taking the art without the
       // name would have introduced it here.
       printedName: own?.printedName ?? null,
-      printedSetCode: own?.setCode ?? null,
-      printedCollectorNumber: own?.collectorNumber ?? null,
+      // Read by the export's commander line alone, which is main's (no printing) with the switch off.
+      printedSetCode: deckPrintingsEnabled() ? (own?.setCode ?? null) : null,
+      printedCollectorNumber: deckPrintingsEnabled() ? (own?.collectorNumber ?? null) : null,
     };
   };
   const flags = bracketFlags ?? new Map<string, CardBracketFlags>();
