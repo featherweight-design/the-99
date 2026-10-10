@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { INTAKE_MAX_TOKENS, INTAKE_MODEL } from "../intake/limits";
-import { SYNOPSIS_MAX_TOKENS } from "../synopsis/limits";
+import { SYNOPSIS_MAX_TOKENS_V8 } from "../synopsis/limits";
 import { SYNOPSIS_MODEL } from "../synopsis/model";
 import { STUB_MODEL } from "../synopsis/stub";
 import { TUNING_MAX_TOKENS, TUNING_MODEL } from "../tuning/limits";
@@ -55,14 +55,12 @@ describe("FEATURE_CALLS", () => {
     expect(FEATURE_CALLS.tuning).toEqual({ model: TUNING_MODEL, inputCeilingTokens: 12_000, maxTokens: TUNING_MAX_TOKENS, callsPerWrite: 1 });
     // Measured, not provisional: the largest cuts request was 15,266 input tokens.
     expect(FEATURE_CALLS.proposed_cuts).toEqual({ model: TUNING_MODEL, inputCeilingTokens: 20_000, maxTokens: TUNING_MAX_TOKENS, callsPerWrite: 1 });
-    expect(FEATURE_CALLS.synopsis).toEqual({ model: SYNOPSIS_MODEL, inputCeilingTokens: 24_000, maxTokens: SYNOPSIS_MAX_TOKENS, callsPerWrite: 2 });
-    // $0.208 at today's Sonnet 5 and an 8,000-token ceiling; $0.312 for the synopsis, whose one
-    // write can make two calls (the first answer and its repair) at a 3,000-token ceiling each.
+    expect(FEATURE_CALLS.synopsis).toEqual({ model: SYNOPSIS_MODEL, inputCeilingTokens: 24_000, maxTokens: SYNOPSIS_MAX_TOKENS_V8, callsPerWrite: 2 });
+    // $0.208 at today's Sonnet 5 and an 8,000-token ceiling; $0.372 for the synopsis, whose one
+    // write can make two calls (the first answer and its repair) at contract 8's 4,500-token
+    // ceiling each (it was $0.312 at contract 7's 3,000).
     expect(featureWorstCaseMicroUsd("tuning")).toBe(208_000);
-    expect(featureWorstCaseMicroUsd("synopsis")).toBe(312_000);
-    // Contract 8 asks for 4,500 output tokens a call: $0.372, so a v8 write cannot slip under the guards.
-    expect(featureWorstCaseMicroUsd("synopsis", null, { OVERVIEW_V2_ENABLED: "true" })).toBe(372_000);
-    expect(featureWorstCaseMicroUsd("tuning", null, { OVERVIEW_V2_ENABLED: "true" })).toBe(208_000);
+    expect(featureWorstCaseMicroUsd("synopsis")).toBe(372_000);
     // The deeper read: one call at its measured 6,000-token input ceiling and 3,000 out, $0.084.
     expect(FEATURE_CALLS.intake).toEqual({ model: INTAKE_MODEL, inputCeilingTokens: 6_000, maxTokens: INTAKE_MAX_TOKENS, callsPerWrite: 1 });
     expect(featureWorstCaseMicroUsd("intake")).toBe(84_000);

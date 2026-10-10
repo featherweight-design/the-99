@@ -1,7 +1,6 @@
 import { INTAKE_MAX_TOKENS, INTAKE_MODEL } from "../intake/limits";
-import { SYNOPSIS_MAX_TOKENS, SYNOPSIS_MAX_TOKENS_V8 } from "../synopsis/limits";
+import { SYNOPSIS_MAX_TOKENS_V8 } from "../synopsis/limits";
 import { SYNOPSIS_MODEL } from "../synopsis/model";
-import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { STUB_MODEL } from "../synopsis/stub";
 import { TUNING_MAX_TOKENS, TUNING_MODEL } from "../tuning/limits";
 import type { ModelFeature } from "./allowance-rule";
@@ -86,7 +85,10 @@ export const FEATURE_CALLS: Readonly<Record<ModelFeature, {
   callsPerWrite: number;
 }>> = {
   tuning: { model: TUNING_MODEL, inputCeilingTokens: 12_000, maxTokens: TUNING_MAX_TOKENS, callsPerWrite: 1 },
-  synopsis: { model: SYNOPSIS_MODEL, inputCeilingTokens: 24_000, maxTokens: SYNOPSIS_MAX_TOKENS, callsPerWrite: 2 },
+  // Priced at the LARGER of the two contracts' ceilings whatever the switch says: a reservation is
+  // priced from the feature, not from the contract that created it, so a flag turned off or a
+  // rollback while a contract-8 call is in flight would otherwise price it below what it can cost.
+  synopsis: { model: SYNOPSIS_MODEL, inputCeilingTokens: 24_000, maxTokens: SYNOPSIS_MAX_TOKENS_V8, callsPerWrite: 2 },
   intake: { model: INTAKE_MODEL, inputCeilingTokens: 6_000, maxTokens: INTAKE_MAX_TOKENS, callsPerWrite: 1 },
   // MEASURED 2026-10-10 (`pnpm eval:cuts-model --text`, dry run, five staging decks): the largest
   // request with type, mana value and card text was 15,266 input tokens, and the largest reply 4,049
@@ -98,10 +100,7 @@ export const FEATURE_CALLS: Readonly<Record<ModelFeature, {
  * A feature's worst case at `model` (the model its reservation recorded; the feature's own when
  * the row predates the column).
  */
-export function featureWorstCaseMicroUsd(feature: ModelFeature, model: string | null = null, env: Record<string, string | undefined> = process.env): number {
+export function featureWorstCaseMicroUsd(feature: ModelFeature, model: string | null = null): number {
   const call = FEATURE_CALLS[feature];
-  // A contract-8 write asks for a bigger reply (`SYNOPSIS_MAX_TOKENS_V8`), so its reservation is
-  // priced at that ceiling while `OVERVIEW_V2_ENABLED` is on; off, the figure is what it always was.
-  const maxTokens = feature === "synopsis" && overviewV2Enabled(env) ? SYNOPSIS_MAX_TOKENS_V8 : call.maxTokens;
-  return call.callsPerWrite * worstCaseMicroUsd(model ?? call.model, call.inputCeilingTokens, maxTokens);
+  return call.callsPerWrite * worstCaseMicroUsd(model ?? call.model, call.inputCeilingTokens, call.maxTokens);
 }
