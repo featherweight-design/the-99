@@ -61,7 +61,7 @@ and a deck with no sources returns `noSources`. Neither refuses (Ruling 6).
    and the sources it adds.
 
 Never offered: a card already in the deck, a card outside the commander's color identity, the
-commander, a locked card (`card_assignments`, as Suggested changes enforces it, a hard filter and
+commander, a locked card (`deck_locks`, read through `src/lib/decks/locks.ts` as Suggested changes does, a hard filter and
 not a prompt line), and any card `makesNoManaSource` rejects. Candidate colors come through
 `sourceProduces`, so a suggestion cannot claim a color the shared rule does not give the card.
 
