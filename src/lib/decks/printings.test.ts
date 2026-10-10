@@ -131,6 +131,8 @@ describe("readDeckPrintings", () => {
     const read = state.texts.find((t) => t.includes("from cards c"));
     expect(read).toContain("left join lateral");
     expect(read).toContain("pr.oracle_id = c.oracle_id");
+    // The oracle-level printing first, then the first printing with art, and exactly one.
+    expect(read).toMatch(/order by \(pr\.scryfall_id = c\.scryfall_id\) desc, \(pr\.image_uri is null\), pr\.scryfall_id\s+limit 1/);
   });
 
   it("scopes the pick read to the player's decks and to current membership", async () => {

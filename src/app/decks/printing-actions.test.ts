@@ -114,5 +114,7 @@ describe("setDeckPrinting", () => {
     // The ownership check asks for the stored (lowercase) form too.
     const own = state.texts.findIndex((t) => t.includes("collection_items"));
     expect(state.params[own]).toContain("khm");
+    // And it lowers the stored side, which older holdings carry uppercase.
+    expect(state.texts[own]).toContain("lower(ci.set_code) =");
   });
 });

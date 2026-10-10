@@ -73,7 +73,9 @@ export async function setDeckPrinting(
         select 1 from collection_items ci
         where ci.user_id = ${userId}
           and ci.oracle_id = ${oracleId}
-          and ci.set_code = ${setCode}
+          -- lower() on the stored side too: older holdings carry an uppercase set code, and the
+          -- Collection's resolver and setCardArtPreference both accept them.
+          and lower(ci.set_code) = ${setCode}
           and ci.collector_number = ${collectorNumber}
           and ci.quantity > 0
       ) as held
