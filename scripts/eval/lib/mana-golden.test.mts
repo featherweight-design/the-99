@@ -24,13 +24,21 @@ describe("diffGolden", () => {
     const a = golden();
     a.colors.R.lands = ["Forest", "Forest", "Forest"];
     a.colors.W.nonland = [];
-    expect(diffGolden(golden(), a)).toEqual(["W.nonland: expected 1, got 0; missing Sol Ring", "R.lands: expected 2, got 3"]);
+    expect(diffGolden(golden(), a)).toEqual(["W.nonland: expected 1, got 0; missing Sol Ring", "R.lands: expected 2, got 3; extra Forest"]);
   });
 
   it("catches a swapped card at an unchanged count", () => {
     const a = golden();
     a.colors.U.nonland = ["Arcane Signet"];
     expect(diffGolden(golden(), a)).toEqual(["U.nonland: expected 1, got 1; missing Sol Ring; extra Arcane Signet"]);
+  });
+
+  it("names a swap between copies of cards the list already holds, at an unchanged count", () => {
+    const e = golden();
+    e.colors.G.lands = ["Forest", "Forest", "Island"];
+    const a = golden();
+    a.colors.G.lands = ["Forest", "Island", "Island"];
+    expect(diffGolden(e, a)).toEqual(["G.lands: expected 3, got 3; missing Forest; extra Island"]);
   });
 
   it("catches a top-level difference", () => {

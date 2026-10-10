@@ -50,6 +50,19 @@ export function goldenShape(b: ManaBalance, nameOf: (id: string) => string): Gol
 
 const sameNames = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((n, i) => n === b[i]);
 
+/** Names `from` holds more copies of than `than` does, each repeated by how many more. */
+const surplus = (from: readonly string[], than: readonly string[]): string[] => {
+  const left = new Map<string, number>();
+  for (const n of than) left.set(n, (left.get(n) ?? 0) + 1);
+  const out: string[] = [];
+  for (const n of from) {
+    const k = left.get(n) ?? 0;
+    if (k > 0) left.set(n, k - 1);
+    else out.push(n);
+  }
+  return out;
+};
+
 /** One line per difference; empty when the engine matches the expectation. */
 export function diffGolden(expected: GoldenBalance, actual: GoldenBalance): string[] {
   const out: string[] = [];
@@ -63,9 +76,9 @@ export function diffGolden(expected: GoldenBalance, actual: GoldenBalance): stri
     }
     for (const side of ["lands", "nonland"] as const) {
       if (sameNames(e[side], a[side])) continue;
-      const missing = e[side].filter((n) => !a[side].includes(n));
-      const extra = a[side].filter((n) => !e[side].includes(n));
-      out.push(`${c}.${side}: expected ${e[side].length}, got ${a[side].length}${missing.length ? `; missing ${[...new Set(missing)].join(", ")}` : ""}${extra.length ? `; extra ${[...new Set(extra)].join(", ")}` : ""}`);
+      const missing = surplus(e[side], a[side]);
+      const extra = surplus(a[side], e[side]);
+      out.push(`${c}.${side}: expected ${e[side].length}, got ${a[side].length}${missing.length ? `; missing ${missing.join(", ")}` : ""}${extra.length ? `; extra ${extra.join(", ")}` : ""}`);
     }
   }
   return out;
