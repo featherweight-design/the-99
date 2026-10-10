@@ -67,20 +67,30 @@ export async function loadCutTruth(db: Db): Promise<CutTruth[]> {
   return out;
 }
 
-/** The cuts that are a swap: a removed card with an unused add that fills one of its roles. A card
- *  with no classified role pairs with nothing, so it is never counted a swap on that account. */
+/** The cuts that are a swap: the largest set of removed cards that can each take a DIFFERENT added
+ *  card filling one of their roles (maximum bipartite matching, so the count does not depend on the
+ *  order the rows came back in). A card with no classified role pairs with nothing. */
 export function pairedSwaps(
   cut: readonly string[],
   added: readonly string[],
   rolesOf: ReadonlyMap<string, ReadonlySet<string>>,
 ): Set<string> {
-  const free = new Set(added);
-  const paired = new Set<string>();
-  for (const id of cut) {
-    const mine = rolesOf.get(id);
-    if (!mine || mine.size === 0) continue;
-    const mate = [...free].find((a) => [...(rolesOf.get(a) ?? [])].some((r) => mine.has(r)));
-    if (mate) { free.delete(mate); paired.add(id); }
-  }
-  return paired;
+  const cuts = [...cut].sort();
+  const adds = [...added].sort();
+  const fits = (c: string, a: string) => [...(rolesOf.get(a) ?? [])].some((r) => rolesOf.get(c)?.has(r));
+  const owner = new Map<string, string>();
+  const place = (c: string, seen: Set<string>): boolean => {
+    for (const a of adds) {
+      if (seen.has(a) || !fits(c, a)) continue;
+      seen.add(a);
+      const held = owner.get(a);
+      if (held === undefined || place(held, seen)) {
+        owner.set(a, c);
+        return true;
+      }
+    }
+    return false;
+  };
+  for (const c of cuts) if ((rolesOf.get(c)?.size ?? 0) > 0) place(c, new Set());
+  return new Set(owner.values());
 }

@@ -17,6 +17,7 @@ import "../lib/env.mjs";
 import { parseArgs } from "node:util";
 
 const { values: args } = parseArgs({ options: { gishathOver: { type: "string", default: "5" } } });
+if (!/^\d+$/.test(args.gishathOver ?? "")) throw new Error("--gishathOver must be a non-negative integer");
 
 import { connectStaging } from "./lib/staging.mjs";
 import { CUT_DECKS, GISHATH_DECK, loadCutTruth, pairedSwaps, type Head } from "./lib/cuts-truth.mjs";
@@ -57,7 +58,8 @@ async function withLabelRoles(profile: Profile, support: Support): Promise<Profi
   const labels = await readLabels(ids);
   const labelRoles = (id: string) => {
     const jobs = labels.get(id);
-    return jobs ? ROLE_KEYS.filter((r) => jobs.some((j) => j.space === "role" && j.kind === r)) : null;
+    // A counterspell takes a spell away, so it fills removal (`labels/consider.ts` FILLS).
+    return jobs ? ROLE_KEYS.filter((r) => jobs.some((j) => j.space === "role" && (j.kind === r || (r === "removal" && j.kind === "counterspell")))) : null;
   };
   const cards: Record<string, { oracleId: string; name: string }[]> = { ramp: [], draw: [], removal: [], wipes: [], land: [...profile.roles.cards.land] };
   const counts: Record<string, number> = { ramp: 0, draw: 0, removal: 0, wipes: 0, land: profile.roles.counts.land };
@@ -121,7 +123,8 @@ const hitsOf = (c: Case, opts?: Parameters<typeof topK>[1], only?: (id: string) 
 
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
 const totalK = sum(cases.map((c) => c.k));
-const chanceOf = (c: Case, n = c.k) => (n * c.k) / c.profile.cards.length;
+const poolOf = (c: Case) => c.profile.cards.filter((x) => !c.profile.commanderOracleIds.includes(x.oracleId)).length;
+const chanceOf = (c: Case, n = c.k) => (n * c.k) / poolOf(c);
 const totalHit = sum(cases.map((c) => hitsOf(c)));
 const totalHit2k = sum(cases.map((c) => hitsOf(c, { mult: 2 })));
 const chance = sum(cases.map((c) => chanceOf(c)));
@@ -156,7 +159,7 @@ console.log("|---|---|---|---|---|---|");
 for (const c of cases) {
   const r = proposeCuts({ profile: c.profile, locked: new Set(), support: c.support });
   const listed = new Set(r.candidates.map((x) => x.oracleId));
-  console.log(`| ${c.name} | ${c.k} | ${c.profile.cards.length} | ${hitsOf(c)} | ${hitsOf(c, { mult: 2 })} | ${c.cut.filter((id) => !listed.has(id)).length} |`);
+  console.log(`| ${c.name} | ${c.k} | ${poolOf(c)} | ${hitsOf(c)} | ${hitsOf(c, { mult: 2 })} | ${c.cut.filter((id) => !listed.has(id)).length} |`);
 }
 
 console.log("\n## 1. Upgrade swaps against net reductions\n");
@@ -166,7 +169,7 @@ console.log("|---|---|---|---|");
 for (const [label, swap] of [["Swapped for the same role", true], ["Net reduction", false]] as const) {
   const n = sum(cases.map((c) => c.cut.filter((id) => c.paired.has(id) === swap).length));
   const h = sum(cases.map((c) => hitsOf(c, {}, (id) => c.paired.has(id) === swap)));
-  const ch = sum(cases.map((c) => (c.cut.filter((id) => c.paired.has(id) === swap).length * c.k) / c.profile.cards.length));
+  const ch = sum(cases.map((c) => (c.cut.filter((id) => c.paired.has(id) === swap).length * c.k) / poolOf(c)));
   console.log(`| ${label} | ${n} | ${h} (${pct(h, n)}) | ${ch.toFixed(1)} |`);
 }
 
@@ -213,7 +216,7 @@ console.log();
   const padded = { ...profile, counts: { ...profile.counts, total: 100 + over } };
   const r = proposeCuts({ profile: padded, locked: new Set(), support });
   console.log(`## HD - Gishath, asked for ${over} cuts as if ${over} over\n`);
-  console.log(`Missing signals: ${r.missing.join(", ") || "none"}. Support list: ${support ? `${support.listed} cards, ${support.deckCount ?? "?"} decks` : "none"}. Candidates: ${r.candidates.length} of ${profile.cards.length} cards.\n`);
+  console.log(`Missing signals: ${r.missing.join(", ") || "none"}. Support list: ${support ? `${support.listed} cards, ${support.deckCount ?? "?"} decks` : "none"}. Candidates: ${r.candidates.length} of ${profile.cards.length - profile.commanderOracleIds.length} cards.\n`);
   const cmdr = new Set(profile.commanderOracleIds);
   console.log(`Commander proposed: ${r.candidates.some((c) => cmdr.has(c.oracleId)) ? "YES (defect)" : "no"}.`);
   const gc = new Set(profile.brackets.gameChangers.map((c) => c.oracleId));
