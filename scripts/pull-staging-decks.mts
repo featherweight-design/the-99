@@ -153,6 +153,7 @@ let folders: Record<string, unknown>[] = [];
 let cards: Record<string, unknown>[] = [];
 let proxies: Record<string, unknown>[] = [];
 let locks: Record<string, unknown>[] = [];
+let printingPicks: Record<string, unknown>[] = [];
 let releases: Record<string, unknown>[] = [];
 let versions: Record<string, unknown>[] = [];
 let versionCards: Record<string, unknown>[] = [];
@@ -215,6 +216,8 @@ try {
   // to Pull it; a release subtracts a pulled copy from its source's claim), so a snapshot without
   // them measures a different account. Every row of both belongs to this owner's decks.
   locks = await byDeck("deck_locks");
+  // A deck's printing picks (deck printings) change the art and the figure every deck surface draws.
+  printingPicks = await byDeck("deck_printings");
   releases = await rows("select * from pull_releases where user_id = $1", [owner]);
   versions = await byDeck("deck_versions");
   games = await byDeck("deck_games");
@@ -248,7 +251,7 @@ console.log(`From staging, account ${owner.slice(0, 12)}…`);
 for (const [name, rows] of [
   ["decks", decks], ["deck_cards", cards], ["deck_versions", versions],
   ["deck_version_cards", versionCards], ["deck_games", games], ["deck_game_axes", gameAxes],
-  ["deck_proxies", proxies], ["deck_locks", locks], ["pull_releases", releases],
+  ["deck_proxies", proxies], ["deck_locks", locks], ["deck_printings", printingPicks], ["pull_releases", releases],
   ["deck_folders", folders], ["card_assignments", assignments],
   ["fill_passes", fillPasses], ["fill_pass_cards", fillPassCards],
   ["deck_unresolved_rows", unresolved], ["collection_items", collection],
@@ -369,6 +372,7 @@ try {
   // After deck_cards: inserting a card deletes a DORMANT lock row for it (0061's trigger), so a
   // lock written first would be forgotten by its own card arriving.
   await insert("deck_locks", locks);
+  await insert("deck_printings", printingPicks);
   await insert("pull_releases", releases);
   await insert("deck_versions", versions);
   await insert("deck_version_cards", versionCards);

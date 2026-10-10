@@ -16,7 +16,7 @@
  *
  * WHAT MOVES. decks, deck_cards, deck_versions, deck_version_cards, deck_games,
  * deck_game_axes, deck_folders, and the deck-scoped player state: deck_locks, deck_proxies,
- * card_assignments, pull_releases.
+ * deck_printings, card_assignments, pull_releases.
  *
  * WHAT DOES NOT. deck_profiles, deck_synopses, deck_version_synopses, deck_suggestion_runs,
  * deck_suggestion_items, deck_swaps, deck_unresolved_rows, fill_passes, fill_pass_cards,
@@ -36,12 +36,13 @@
  *   - A same-database pair (source === target by `neon.branch_id`) is refused.
  *   - CARD REFERENCES ARE VERIFIED, not assumed. Every `oracle_id` the copied rows touch —
  *     decks' commander/partner/answer-card columns, deck_cards, deck_version_cards,
- *     deck_proxies, deck_locks, card_assignments, pull_releases — is checked against the
+ *     deck_proxies, deck_locks, deck_printings, card_assignments, pull_releases — is checked against the
  *     TARGET's own `cards` table before a write is attempted, and any that do not resolve are
  *     REPORTED, never silently dropped. (There is no `printing_id` anywhere in the copied
- *     tables — every card reference here is by `oracle_id` — so "printing" verification and
- *     "oracle_id" verification are the same check in this domain; the report says so rather
- *     than claiming a check that cannot exist.)
+ *     tables. `deck_printings` and the printing columns on versions name a printing by
+ *     `(set_code, collector_number)` with no foreign key, and are NOT checked against the
+ *     target's catalog: a printing the target lacks reads as a pick the player does not hold,
+ *     and the deck falls back to the Collection's printing exactly as it does on staging.)
  *   - `pull_releases` can name a deck other than the one it is scoped to being asked for
  *     (`asking_deck_id` vs `source_deck_id`), and either could in principle belong to someone
  *     else's deck. Rows where BOTH ends are not among this player's own decks being copied are
@@ -160,6 +161,7 @@ const BY_DECK_TABLES = [
   "deck_cards",
   "deck_proxies",
   "deck_locks",
+  "deck_printings",
   "deck_versions",
   "deck_games",
   "card_assignments",
@@ -236,7 +238,8 @@ for (const row of pullReleasesRaw) {
 /**
  * Every `oracle_id` the copied rows touch, so each one can be checked against the TARGET's own
  * catalog before anything is written. There is no `printing_id` anywhere in this domain (see the
- * module header) — every card reference here is this column, under one of these names.
+ * module header): every card reference here is this column, under one of these names. The
+ * printing a deck picked is a `(set_code, collector_number)` pair and is not checked here.
  */
 function oracleIdsOf(rows: Record<string, unknown>[], ...cols: string[]): string[] {
   const out: string[] = [];
@@ -268,6 +271,7 @@ const referencedOracleIds = new Set([
   ...oracleIdsOf(versionCards, "oracle_id"),
   ...oracleIdsOf(byDeck.deck_proxies ?? [], "oracle_id"),
   ...oracleIdsOf(byDeck.deck_locks ?? [], "oracle_id"),
+  ...oracleIdsOf(byDeck.deck_printings ?? [], "oracle_id"),
   ...oracleIdsOf(byDeck.card_assignments ?? [], "oracle_id"),
   ...oracleIdsOf(pullReleases, "oracle_id"),
 ]);
@@ -448,7 +452,7 @@ try {
   await out.query("set local lock_timeout = '5s'");
   await out.query("set local statement_timeout = '5s'");
   await out.query(
-    "lock table decks, deck_cards, deck_proxies, deck_locks, deck_versions, " +
+    "lock table decks, deck_cards, deck_proxies, deck_locks, deck_printings, deck_versions, " +
       "deck_version_cards, deck_games, deck_game_axes, deck_folders, card_assignments, " +
       "pull_releases in exclusive mode",
   );
@@ -519,6 +523,7 @@ try {
   await insert("deck_cards", byDeck.deck_cards ?? []);
   await insert("deck_proxies", byDeck.deck_proxies ?? []);
   await insert("deck_locks", byDeck.deck_locks ?? []);
+  await insert("deck_printings", byDeck.deck_printings ?? []);
   await insert("deck_versions", byDeck.deck_versions ?? []);
   await insert("deck_version_cards", versionCards);
   await insert("deck_games", byDeck.deck_games ?? []);

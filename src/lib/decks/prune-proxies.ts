@@ -44,6 +44,12 @@ type Runner = Pick<Tx, "execute">;
  * which is the lock `removeCardFromDeck` and `clearAutoCards` already take
  * before they touch a list, so the two serialise on the same row and the
  * validate-insert pair cannot straddle a prune.
+ *
+ * A DECK'S PRINTING PICKS GO WITH IT. `deck_printings` is the same kind of row (one deck's
+ * statement about one slot, outside versioning) and has the same failure: a card re-added later
+ * would arrive silently already picked. Pruned here rather than beside every caller, so the guard
+ * test that holds every `delete(deckCards)` to a prune holds the picks to it too. `setDeckPrinting`
+ * takes the same deck row lock as `setCardProxied`.
  */
 export async function pruneOrphanProxies(tx: Runner, deckId: string): Promise<void> {
   await tx.execute(sql`
@@ -57,6 +63,19 @@ export async function pruneOrphanProxies(tx: Runner, deckId: string): Promise<vo
         select 1 from decks d
         where d.id = p.deck_id
           and (d.commander_oracle_id = p.oracle_id or d.partner_oracle_id = p.oracle_id)
+      )
+  `);
+  await tx.execute(sql`
+    delete from deck_printings dp
+    where dp.deck_id = ${deckId}
+      and not exists (
+        select 1 from deck_cards dc
+        where dc.deck_id = dp.deck_id and dc.oracle_id = dp.oracle_id
+      )
+      and not exists (
+        select 1 from decks d
+        where d.id = dp.deck_id
+          and (d.commander_oracle_id = dp.oracle_id or d.partner_oracle_id = dp.oracle_id)
       )
   `);
 }

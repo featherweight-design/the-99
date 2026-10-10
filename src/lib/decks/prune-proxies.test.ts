@@ -128,3 +128,27 @@ describe("proxy rows are reconciled wherever deck membership shrinks", () => {
     expect(all.sort()).toEqual([...FILES].sort());
   });
 });
+
+describe("pruneOrphanProxies statements", () => {
+  it("prunes the deck's printing picks as well as its proxies, both scoped by current membership", async () => {
+    const { PgDialect } = await import("drizzle-orm/pg-core");
+    const { pruneOrphanProxies } = await import("./prune-proxies");
+    const dialect = new PgDialect();
+    const texts: string[] = [];
+    const runner = {
+      execute: async (q: unknown) => {
+        texts.push(dialect.sqlToQuery(q as Parameters<typeof dialect.sqlToQuery>[0]).sql);
+        return { rows: [] };
+      },
+    } as unknown as Parameters<typeof pruneOrphanProxies>[0];
+    await pruneOrphanProxies(runner, "deck");
+    const picks = texts.find((t) => t.includes("delete from deck_printings"));
+    expect(texts.some((t) => t.includes("delete from deck_proxies"))).toBe(true);
+    expect(picks).toBeDefined();
+    // Both commander columns count as membership, or a commander's pick would be undone by the
+    // next edit to the list below it.
+    expect(picks).toContain("d.commander_oracle_id = dp.oracle_id");
+    expect(picks).toContain("d.partner_oracle_id = dp.oracle_id");
+    expect(picks).toContain("dc.deck_id = dp.deck_id and dc.oracle_id = dp.oracle_id");
+  });
+});
