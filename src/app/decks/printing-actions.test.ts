@@ -10,7 +10,6 @@ const state = vi.hoisted(() => ({
   params: [] as unknown[][],
   /** Rows handed back per statement, matched by a fragment of its text. */
   answers: [] as { match: string; rows: unknown[] }[],
-  resolved: null as unknown,
 }));
 
 const dialect = new PgDialect();
@@ -32,25 +31,13 @@ const refresh = vi.hoisted(() => vi.fn());
 vi.mock("next/cache", () => ({ refresh }));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../lib/decks/read", () => ({ requireDeck: async () => ({ id: DECK }) }));
-vi.mock("../../lib/decks/printings", () => ({
-  readDeckPrintings: async () => ({
-    printings: new Map(state.resolved ? [[CARD, state.resolved]] : []),
-    heldPicks: new Map(),
-  }),
-}));
 
 import { setDeckPrinting } from "./printing-actions";
-
-const PRINTING = {
-  quantity: 2, printedName: null, imageUri: "img", artCropUri: "crop",
-  setCode: "KHM", collectorNumber: "31", source: "deck" as const,
-};
 
 beforeEach(() => {
   state.texts = [];
   state.params = [];
   state.answers = [];
-  state.resolved = PRINTING;
   refresh.mockClear();
   process.env.DECK_PRINTINGS_ENABLED = "true";
 });
@@ -102,22 +89,24 @@ describe("setDeckPrinting", () => {
       { match: "collection_items", rows: [{ held: true }] },
     ];
     expect(await setDeckPrinting(DECK, CARD, { setCode: "PRM", collectorNumber: "a1_2007" }))
-      .toEqual({ ok: true, printing: PRINTING });
+      .toEqual({ ok: true });
   });
 
-  it("upserts the lowercase set code and answers with the resolved printing", async () => {
+  it("upserts the lowercase set code, answers ok and reads nothing back", async () => {
     state.answers = [
       { match: "deck_cards", rows: [{ held: true }] },
       { match: "collection_items", rows: [{ held: true }] },
     ];
     const result = await setDeckPrinting(DECK, CARD, { setCode: "KHM", collectorNumber: "31" });
-    expect(result).toEqual({ ok: true, printing: PRINTING });
+    expect(result).toEqual({ ok: true });
     // The deck page re-renders with the pick: every row, the commanders and the prices at once.
     expect(refresh).toHaveBeenCalledTimes(1);
     const i = state.texts.findIndex((t) => t.includes("insert into deck_printings"));
     expect(i).toBeGreaterThanOrEqual(0);
     expect(state.texts[i]).toContain("on conflict (deck_id, oracle_id) do update");
     expect(state.params[i]).toEqual([DECK, CARD, "khm", "31"]);
+    // Nothing after the write: a read failing there would report a stored pick as refused.
+    expect(state.texts.slice(i + 1)).toEqual([]);
     // The ownership check asks for the stored (lowercase) form too.
     const own = state.texts.findIndex((t) => t.includes("collection_items"));
     expect(state.params[own]).toContain("khm");

@@ -1,6 +1,6 @@
 {
   "feature": "Deck printings: the picker in deck scope (PR 4)",
-  "note": "Run against a server started with DECK_PRINTINGS_ENABLED=true. DP_DECK is a deck the signed-in account owns that holds a card owned in two or more printings (DP_CARD) and one owned in exactly one (DP_SINGLE). On local-dev the probe account's `Card mark probe fixture` (d0000000-0000-4000-8000-00000000cafe) serves, with DP_CARD=Solemn Simulacrum and DP_SINGLE=Etchings of the Chosen; its commander is owned in one printing, so its row shows the plain Set field. The `picked` row WRITES a pick to that deck: run on local-dev or a scratch branch only, and delete the deck_printings row afterwards so the `open` row starts unpicked next time. Not reachable in a browser and held by unit tests instead: a refused save (`card-detail-deck-printings.test.tsx`), and overflow past 12 owned printings (no card in the probe account's decks has that many; `printing-region.test.tsx`).",
+  "note": "Run against a server started with DECK_PRINTINGS_ENABLED=true. READ-ONLY: no step writes. DP_DECK is a deck the signed-in account owns. DP_CARD is a card in it owned in two or more printings with NO deck pick; DP_PICKED is another such card that the deck HAS picked, seeded before the run (on local-dev or a scratch branch only, e.g. one `insert into deck_printings (deck_id, oracle_id, set_code, collector_number)` naming a printing the account holds); DP_SINGLE is a card owned in exactly one printing. On local-dev the probe account's `Card mark probe fixture` (d0000000-0000-4000-8000-00000000cafe) serves, with DP_CARD=Solemn Simulacrum, DP_PICKED=Talisman of Progress and DP_SINGLE=Etchings of the Chosen; its commander is owned in one printing, so its row shows the plain Set field. Not reachable in a browser and held by unit tests instead: a refused save (`card-detail-deck-printings.test.tsx`), and overflow past 12 owned printings (no card in the probe account's decks has that many; `printing-region.test.tsx`).",
   "shares": {
     "module": "src/components/cards/printing-region.tsx",
     "binding": "PrintingRegion",
@@ -84,7 +84,7 @@
     },
     {
       "id": "picked",
-      "label": "/decks/[id]: a printing picked: For this deck, the picked intro, the art and Set moved",
+      "label": "/decks/[id]: a card the deck has picked, opened: For this deck, the picked intro, the art and Set moved",
       "view": "src/components/cards/card-modal.tsx",
       "steps": [
         {
@@ -94,7 +94,7 @@
         },
         {
           "clickRole": "button",
-          "name": "^View details for ${DP_CARD}$",
+          "name": "^View details for ${DP_PICKED}$",
           "wait": "[role=dialog]",
           "settle": 2500
         },
@@ -102,11 +102,6 @@
           "clickRole": "button",
           "name": "printings owned",
           "settle": 1200
-        },
-        {
-          "clickRole": "radio",
-          "name": "^(?!.*(your pick|shown now))",
-          "settle": 4000
         }
       ],
       "widths": [
@@ -115,7 +110,7 @@
     },
     {
       "id": "picked-phone",
-      "label": "/decks/[id]: a printing picked: For this deck, the picked intro, the art and Set moved (phone: the sheet expanded first)",
+      "label": "/decks/[id]: a card the deck has picked, opened: For this deck, the picked intro, the art and Set moved (phone: the sheet expanded first)",
       "view": "src/components/cards/card-modal.tsx",
       "steps": [
         {
@@ -125,7 +120,7 @@
         },
         {
           "clickRole": "button",
-          "name": "^View details for ${DP_CARD}$",
+          "name": "^View details for ${DP_PICKED}$",
           "wait": "[role=dialog]",
           "settle": 2500
         },
@@ -138,11 +133,6 @@
           "clickRole": "button",
           "name": "printings owned",
           "settle": 1200
-        },
-        {
-          "clickRole": "radio",
-          "name": "^(?!.*(your pick|shown now))",
-          "settle": 4000
         }
       ],
       "widths": [
