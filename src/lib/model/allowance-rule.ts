@@ -15,14 +15,14 @@
  * Model runs per player per rolling 24 hours, across every feature, shared by tuning and the
  * synopsis.
  *
- * Owner 10, friends 3: Hugh, via the orchestrator, 2026-09-24. It replaced a flat five (2026-09-23)
+ * Owner 10, friends 5 (3 until 2026-10-09, when Hugh raised it): Hugh, via the orchestrator, 2026-09-24. It replaced a flat five (2026-09-23)
  * when the app-wide spend cap arrived (`spend-rule.ts`): the cap bounds the month's dollars, so
  * the per-player number only has to share the budget fairly, and the owner — who tests every
  * change — gets more presses than a friend. Which account is the owner is `MODEL_OWNER_USER_ID`,
- * read once in `allowance.ts` (`dailyLimitFor`); unset, everyone gets the friend's three.
+ * read once in `allowance.ts` (`dailyLimitFor`); unset, everyone gets the friend's five.
  */
 export const MODEL_OWNER_DAILY_ALLOWANCE = 10;
-export const MODEL_FRIEND_DAILY_ALLOWANCE = 3;
+export const MODEL_FRIEND_DAILY_ALLOWANCE = 5;
 
 export const ALLOWANCE_WINDOW_MS = 24 * 60 * 60 * 1000;
 

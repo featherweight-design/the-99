@@ -52,8 +52,8 @@ export class AllowanceSpentError extends Error {
 
 /**
  * The player's rolling-24-hour limit. THE ONE PLACE `MODEL_OWNER_USER_ID` is read (a Clerk user
- * id): that account gets the owner's ten, everyone else the friend's three. Unset or empty, no
- * account is the owner and everyone gets three — the limit fails closed.
+ * id): that account gets the owner's ten, everyone else the friend's five. Unset or empty, no
+ * account is the owner and everyone gets five — the limit fails closed.
  */
 export function dailyLimitFor(userId: string): number {
   return isOwner(userId) ? MODEL_OWNER_DAILY_ALLOWANCE : MODEL_FRIEND_DAILY_ALLOWANCE;

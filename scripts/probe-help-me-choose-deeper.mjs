@@ -228,8 +228,8 @@ async function run() {
       //    it as in flight, and the panel stays Looking and waits rather than reading DIDN'T FINISH.
       //    The other tab's look answers ITS words, not these, so the wait ends on the offer, and
       //    this press spends nothing.
-      // The fixture holds three credits a month and this run spends four: its own spent units go
-      // first, which are this run's to delete.
+      // The fixture holds the friend's five credits and this run spends four before this press, so
+      // the last one is not guaranteed: its own spent units go first, which are this run's to delete.
       await release();
       const other = await context.newPage();
       other.on("request", (req) => {
