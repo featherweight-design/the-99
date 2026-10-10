@@ -55,7 +55,7 @@ pieces, template-free, infinite or game-ending, every piece held, a must-be-comm
 from the command zone). The scratch scripts were never committed. These are the draft definitions
 the figures were taken with; section "What eng locks" says which parts are fixed.
 
-| Deck | Lands | Avg MV | Velocity pts | Velocity index | Flow pts | Interaction cards | weighted | cheap instant | counterspells (of all interaction) | Graveyard share (one Dependencies row) | Combos | Combo by T8 | Unlabeled |
+| Deck | Lands | Avg MV | Velocity pts | Velocity index | Flow pts | Interaction cards | weighted | cheap instant | counterspells (of all interaction) | Graveyard share (one Dependencies row) | Combos | Combo by T8 | Unlabeled (eng only) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | HD - Avatar Aang | 36 | 2.7 | 8.25 | 4.0 | 22 | 7 | 17 | 3 | 1 | 5% | 2 | 18% | 1 |
 | HD - Brago | 35 | 3.61 | 6 | 2.35 | 16 | 17 | 23 | 2 | 2 | 8% | 12 | 42% | 2 |
@@ -254,10 +254,13 @@ draws, per deck:
 6. **Every grade has a ledger, and every ledger line is a card.** A line carries the card, what
    it contributed, and why (for interaction: "instant, 1 mana"; for velocity: "ramp, 2 mana";
    for win speed: the combo, its pieces and what it produces, plus the tutors that can find a
-   piece). The ledger also states the cards it could not read: unlabeled cards are counted
-   nowhere and are listed by name. That goes past the Jobs card, which draws only their count and a
-  sentence (`deckStatsCopy.jobs.unlabeled`); a grade the reader is asked to trust should say which
-  cards it could not see (0 to 8 per deck on staging).
+   piece). A ledger simply lists its cards.
+   **Players never see the word "label"** (Hugh, 2026-10-10). A card with no fresh label (0 to 8
+   per deck on staging) is read from its rules text, silently, the way the fill already falls
+   back to the classifier: the text reader's roles (ramp, draw, removal, wipes) and the oracle-text
+   rules above. A job the text reader cannot see (a theme job such as `tribal` or `drain`) is
+   simply not counted for that card. No surface says a card was unlabeled, and there is no
+   unlabeled or partial state to draw.
 7. **One reader per figure, shared.** The interaction reading replaces the Overview fact's
    `interactionCounts` (`src/lib/synopsis/facts-extra.ts`), which counts by the text classifier,
    so the Overview prompt and the benchmark can never disagree. The win-speed combo set is
@@ -318,8 +321,7 @@ draws, per deck:
    no-combo deck (the stated "no combo line" state), and how the second avoids reading as a
    failing grade; a deck with no dependency row, one row, and four rows (the staging maximum),
    and how "no dependencies" avoids reading as a clean bill of health.
-5. **The thin and partial states:** a ledger with unlabeled cards; a tiny decklist; a deck whose
-   every benchmark sits in the lowest step.
+5. **The thin states:** a tiny decklist; a deck whose every benchmark sits in the lowest step.
 6. **Whether a benchmark links to the Stats card it builds on** (velocity to Mana colors or Curve,
    card flow and interaction to Jobs). Stats may already link into Analysis (Deck stats PR 8,
    finding links); this is the reverse direction, and optional.
@@ -341,8 +343,8 @@ draws, per deck:
 ## Deliverables
 
 - 1300 and 390 frames for: a populated reading (Gishath is a good fixture: zero cheap instant
-  interaction, a combo line); a no-combo deck (Elves: top velocity, low flow, no combo); a
-  ledger with unlabeled cards (Soldiers, 8); and one deck per Dependencies row and state:
+  interaction, a combo line); a no-combo deck (Elves: top velocity, low flow, no combo); and
+  one deck per Dependencies row and state:
   graveyard heavy (Sultai Arisen, commander-driven), artifacts heavy (Counter Intelligence),
   enchantments heavy (Scrappy Survivors, which also carries the four-row maximum), creatures
   heavy (Thorin), activated abilities heavy (Elves, commander included), combat-only heavy
