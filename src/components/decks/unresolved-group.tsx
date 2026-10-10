@@ -20,11 +20,9 @@ import {
   type DeckDetailCard,
   type DeckUnresolvedRow,
 } from "../../lib/decks/grouping";
-import {
-  computeRoleCounts,
-  type RecommendedMix,
-  type MixRole,
-} from "../../lib/decks/mix";
+import { roleNamedFor } from "../../lib/decks/label-role-counts";
+import { type RecommendedMix, type MixRole } from "../../lib/decks/mix";
+import { useLabelQueried, useLabelRows, useRoleCounter } from "./label-rows-context";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { UnresolvedRow } from "./unresolved-row";
@@ -68,6 +66,9 @@ export function UnresolvedGroup({
     text: string;
   } | null>(null);
   const isDesktop = useIsDesktop();
+  const countRoles = useRoleCounter();
+  const labelRows = useLabelRows();
+  const labelQueried = useLabelQueried();
   const noteRef = useRef<HTMLParagraphElement>(null);
 
   // Resolving or deleting unmounts the row that held focus, and the last one
@@ -128,12 +129,13 @@ export function UnresolvedGroup({
             : 1;
     const built = deckCounts(cards).built + added;
     const remaining = rows.length - 1;
-    const cell = mix.cells[result.role as MixRole] as
+    const roleOfResult = roleNamedFor(result, labelRows, labelQueried);
+    const cell = mix.cells[roleOfResult as MixRole] as
       RecommendedMix["cells"][MixRole] | undefined;
     const role = cell
       ? resolveCopy.roleClause(
           cell.label,
-          computeRoleCounts(cards)[result.role as MixRole] + added,
+          countRoles(cards)[roleOfResult as MixRole] + added,
           cell.target,
         )
       : undefined;

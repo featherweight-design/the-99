@@ -174,6 +174,16 @@ specific non-land parsing rule, re-measure its exact hit rate on staging before 
 floor (the pattern every classifier in this repo with a measured floor already follows —
 `classifierCollapse`, `measure:tutors`).
 
+## Rollout
+
+**`DECK_STATS_ENABLED` is not turned on in production until `LABEL_ROLE_COUNTS_ENABLED` is live
+there** (labels-everywhere plan, `2026-10-10-labels-everywhere.md` §The rule on
+`DECK_STATS_ENABLED`). The Jobs card counts by label and the role strip counts by `card.role` until
+that switch is on, so turning Stats on first puts two different counts of the same deck on one page.
+Staging can run both so the two can be measured. The switch is turned on in production after the
+Commander index copy has installed the `label_*` targets there; the labels-everywhere close-out
+checks this.
+
 ## Tests
 
 - `stats.ts` additions (`typeBreakdown`, trend, `manaSupply`): pure-function unit tests, one

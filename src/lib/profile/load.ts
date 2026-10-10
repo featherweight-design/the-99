@@ -19,8 +19,8 @@ import { cacheForUser } from "../cache/user-lists";
 import { canonicalPair } from "../edhrec/pair";
 import { COMBO_DETECTION, isInfiniteOrGameEnding } from "../spellbook/combo-features";
 import { countCondition, identityCondition } from "../staples/condition";
-import { buildDeckProfile, pickRoleTargets, type ProfileCardRow, type ProfileInput } from "./build";
-import { roleTargetsFrom } from "./role-targets";
+import { buildDeckProfile, pickRoleTargets, type ProfileCardRow, type ProfileInput, type RoleBasis } from "./build";
+import { labelRoleRow, roleTargetsFrom } from "./role-targets";
 import { profileFingerprint } from "./fingerprint";
 import type {
   BracketPopulation,
@@ -235,6 +235,10 @@ type CompositionRow = {
   avgCurve: Record<string, number> | null;
   avgRamp: number | null; avgDraw: number | null;
   avgRemoval: number | null; avgWipes: number | null;
+  /** The same four from `card_labels` (`label_*`). Absent on a row read for the profile path, which
+   *  counts by the classifier and asks for none of them. */
+  labelRamp?: number | null; labelDraw?: number | null;
+  labelRemoval?: number | null; labelWipes?: number | null;
   /** Only `identity_composition` carries these two; the commander and pair rows omit them. */
   thin?: boolean;
   /**
@@ -454,6 +458,8 @@ const COMPOSITION_COLUMNS = {
   avgCurve: commanderSupport.avgCurve,
   avgRamp: commanderSupport.avgRamp, avgDraw: commanderSupport.avgDraw,
   avgRemoval: commanderSupport.avgRemoval, avgWipes: commanderSupport.avgWipes,
+  labelRamp: commanderSupport.labelRamp, labelDraw: commanderSupport.labelDraw,
+  labelRemoval: commanderSupport.labelRemoval, labelWipes: commanderSupport.labelWipes,
 } as const;
 
 async function loadCommanderRow(oracleId: string): Promise<CommanderRow | null> {
@@ -488,6 +494,8 @@ async function loadPairRow(a: string, b: string): Promise<PairRow | null> {
       avgCurve: commanderPairSupport.avgCurve,
       avgRamp: commanderPairSupport.avgRamp, avgDraw: commanderPairSupport.avgDraw,
       avgRemoval: commanderPairSupport.avgRemoval, avgWipes: commanderPairSupport.avgWipes,
+      labelRamp: commanderPairSupport.labelRamp, labelDraw: commanderPairSupport.labelDraw,
+      labelRemoval: commanderPairSupport.labelRemoval, labelWipes: commanderPairSupport.labelWipes,
       deckCount: commanderPairSupport.deckCount,
       bracketCounts: commanderPairSupport.bracketCounts,
     })
@@ -516,6 +524,8 @@ async function loadCompositionRow(condition: string): Promise<CompositionRow | n
       avgCurve: identityComposition.avgCurve,
       avgRamp: identityComposition.avgRamp, avgDraw: identityComposition.avgDraw,
       avgRemoval: identityComposition.avgRemoval, avgWipes: identityComposition.avgWipes,
+      labelRamp: identityComposition.labelRamp, labelDraw: identityComposition.labelDraw,
+      labelRemoval: identityComposition.labelRemoval, labelWipes: identityComposition.labelWipes,
       // SELECTED, because the column exists to be shown. A row published from a below-bar
       // bucket that reaches a reader indistinguishable from a ratified one is the whole thing
       // the column was added to prevent.
@@ -605,6 +615,10 @@ export async function loadSkeletonForCommanders(
    *  two queries on every profile load AND risked the population and the skeleton coming from
    *  different snapshots of the same rows. The CREATE path has no profile and passes nothing. */
   preloaded?: { pairRow: PairRow | null; commanderRow: CommanderRow | null },
+  /** Which count the skeleton's role targets are for. `labels` reads `label_*` and falls to
+   *  `LABEL_ROLE_TARGETS`; the default is the classifier's, exactly as before. `candidates.roles`
+   *  stays the classifier's either way: the profile path counts by it. */
+  options?: { roleBasis?: RoleBasis },
 ): Promise<{
   /** Resolved, for a caller with no profile — the CREATE path. */
   skeleton: ProfileSkeleton;
@@ -636,12 +650,17 @@ export async function loadSkeletonForCommanders(
   //
   // Read only when it can change something: the identity row is absent (already loaded above)
   // or present with no usable roles. A commander whose identity row carries both pays nothing.
+  const roleBasis = options?.roleBasis ?? "classifier";
   const identityRoles = roleTargetsFrom(identityRow ?? undefined);
+  const identityLabelRoles = roleTargetsFrom(labelRoleRow(identityRow));
+  // The bucket is read when EITHER basis's identity rung came up empty: the classifier chain feeds
+  // `candidates`, the label chain feeds the skeleton, and a labels reader asks for no more than it uses.
   const countRowForRoles = countRow
-    ?? (identityRoles === null
+    ?? (identityRoles === null || (roleBasis === "labels" && identityLabelRoles === null)
         ? await loadCompositionRow(countCondition(combinedIdentity.length))
         : undefined);
   const countRoles = roleTargetsFrom(countRowForRoles ?? undefined);
+  const countLabelRoles = roleTargetsFrom(labelRoleRow(countRowForRoles));
 
   // WHICH BUCKET THE CAVEAT DESCRIBES: the one whose ROLE figures were actually taken when a
   // bucket supplied them, and otherwise the one serving the TYPES. A caveat naming a row
@@ -650,8 +669,10 @@ export async function loadSkeletonForCommanders(
   // Written as a choice rather than a `??` chain, which is what got this wrong: `thin` is a
   // BOOLEAN, so `??` happily takes a `false` from a row whose roles were never used and never
   // reaches the row that is actually thin. A thin identity bucket then rendered as non-thin.
-  const roleBucket = identityRoles !== null ? identityRow
-    : countRoles !== null ? countRowForRoles
+  const [rolesOfIdentity, rolesOfCount] = roleBasis === "labels"
+    ? [identityLabelRoles, countLabelRoles] : [identityRoles, countRoles];
+  const roleBucket = rolesOfIdentity !== null ? identityRow
+    : rolesOfCount !== null ? countRowForRoles
     : null;
   const typeBucket = identityRow ?? countRow ?? null;
   const thinCondition = Boolean((roleBucket ?? typeBucket)?.thin);
@@ -679,7 +700,14 @@ export async function loadSkeletonForCommanders(
     identity: identityRoles,
     count: countRoles,
   };
-  const roleTargets = pickRoleTargets(roles);
+  const roleTargets = roleBasis === "labels"
+    ? pickRoleTargets({
+        pair: roleTargetsFrom(labelRoleRow(pairRow ?? undefined)),
+        commander: roleTargetsFrom(labelRoleRow(commanderRow ?? undefined)),
+        identity: identityLabelRoles,
+        count: countLabelRoles,
+      }, "labels")
+    : pickRoleTargets(roles);
 
   const commanderDeckCount = pairRow?.deckCount ?? commanderRow?.deckCount ?? null;
   return {

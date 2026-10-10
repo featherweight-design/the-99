@@ -13,7 +13,8 @@ import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { shelfRoleOf, type DeckSuggestion, type DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
-import { computeRoleCounts, type MixRole, type RecommendedMix } from "../../lib/decks/mix";
+import { type MixRole, type RecommendedMix } from "../../lib/decks/mix";
+import { useRoleCounter } from "./label-rows-context";
 import { preferByTypeGap, tallyTypes, typeDeficits } from "../../lib/decks/fill-shape";
 import type { ProvenanceForm } from "../../lib/decks/price";
 import { SuggestionTile } from "./suggestion-tile";
@@ -44,8 +45,7 @@ type Shelf = {
   coverage: { have: number; target: number } | null;
 };
 
-function buildShelves(suggestions: DeckSuggestionWithFacts[], deckCards: DeckDetailCard[], mix: RecommendedMix): Shelf[] {
-  const counts = computeRoleCounts(deckCards);
+function buildShelves(suggestions: DeckSuggestionWithFacts[], counts: Record<MixRole, number>, mix: RecommendedMix): Shelf[] {
   // A coverage shelf says "you have 2 of 10", which is a claim about cards you
   // can play tonight — so the unowned staples never mix into one.
   const owned = suggestions.filter((s) => s.owned);
@@ -444,15 +444,16 @@ export function ConsiderPanel({
     () => new Set([...deckOracleIds, commanderOracleId]),
     [deckOracleIds, commanderOracleId],
   );
+  const countRoles = useRoleCounter();
   const shelves = useMemo(
-    () => buildShelves(suggestions, deckCards, mix).map((shelf) => ({
+    () => buildShelves(suggestions, countRoles(deckCards), mix).map((shelf) => ({
       ...shelf,
       suggestions: sortWithin(shelf.suggestions, sort, mix, deckCards, shelf.key),
     })),
     // `mix` is a dependency: `buildShelves` counts coverage against its targets, so a
     // refreshed mix with the same suggestions and cards would otherwise leave every shelf
     // reading against the previous commander's figures.
-    [suggestions, deckCards, sort, mix],
+    [suggestions, deckCards, sort, mix, countRoles],
   );
   const { isFolded, toggleFold } = useFoldedShelves(deckId);
 

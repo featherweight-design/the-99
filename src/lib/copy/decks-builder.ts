@@ -114,6 +114,10 @@ export const addPanelCopy = {
         "— three opponents means three threats you did not plan for.",
       land: "— advisory: a cheap curve wants fewer, a heavy one wants more.",
     },
+    // Shown only when the strip counts by label (LABEL_ROLE_COUNTS_ENABLED) and a nonland card has
+    // no fresh label. /copy-review 2026-10-10: KEEP. One sentence, no dash, "label" is the Jobs card's word, and the clause after the comma is the reason the strip reads short.
+    unlabeledLine: (n: number) =>
+      n === 1 ? "1 card has no label yet, so it counts toward no role." : `${n} cards have no label yet, so they count toward no role.`,
   },
 
   // ── Shelf headers ─────────────────────────────────────────────────────

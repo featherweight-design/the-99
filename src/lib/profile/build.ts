@@ -1,6 +1,6 @@
 import { castFaceText, isLandFace, playableAsLand } from "../cards/facet";
 import { manaCurve, type CurveCard } from "../decks/stats";
-import { classifyRoles, ROLE_TARGETS, type Role } from "../recs/roles";
+import { classifyRoles, LABEL_ROLE_TARGETS, ROLE_TARGETS, type Role } from "../recs/roles";
 import type {
   Bracket,
   BracketPopulation,
@@ -62,6 +62,11 @@ export type RoleCandidates = {
 };
 type RoleFour = { ramp: number; draw: number; removal: number; wipes: number };
 
+/** Which count the targets are for: `classifier` (`avg_*`, `classifyRoles`) or `labels` (`label_*`,
+ *  the Jobs card's tally). The candidates a caller hands in are of that basis already; this only
+ *  picks the flat fallback that matches. */
+export type RoleBasis = "classifier" | "labels";
+
 /**
  * THE role-target selector: the chain's first measured hit, pair → commander → identity →
  * count, or the asserted `ROLE_TARGETS` when none was measured.
@@ -78,7 +83,7 @@ type RoleFour = { ramp: number; draw: number; removal: number; wipes: number };
  * Never null: `ROLE_TARGETS` is a real answer rather than an absence, and a reader measured
  * against it is being told something true about what it is measured against.
  */
-export function pickRoleTargets(roles: RoleCandidates): ProfileRoleTargets {
+export function pickRoleTargets(roles: RoleCandidates, basis: RoleBasis = "classifier"): ProfileRoleTargets {
   const roleChain = [
     ["pair", roles.pair],
     ["commander", roles.commander],
@@ -88,7 +93,7 @@ export function pickRoleTargets(roles: RoleCandidates): ProfileRoleTargets {
   const roleHit = roleChain.find(([, value]) => value != null);
   return roleHit
     ? { of: roleHit[0], targets: roleHit[1]! }
-    : { of: "flat", targets: { ...ROLE_TARGETS } };
+    : { of: "flat", targets: { ...(basis === "labels" ? LABEL_ROLE_TARGETS : ROLE_TARGETS) } };
 }
 
 export type ProfileInput = {

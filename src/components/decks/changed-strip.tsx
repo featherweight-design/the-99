@@ -22,7 +22,9 @@ import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { ShapeCard } from "../../lib/decks/draft-state";
 import { cardTypeGroup, groupByCardType, type CardTypeGroup } from "../../lib/decks/grouping";
 import { averageManaValue } from "../../lib/decks/mana-value";
-import { computeRoleCounts, ROLE_ORDER, type RecommendedMix } from "../../lib/decks/mix";
+import { ROLE_ORDER, type RecommendedMix } from "../../lib/decks/mix";
+import type { JobRowsByCard } from "./../../lib/decks/job-tally";
+import { roleCounterFor } from "../../lib/decks/label-role-counts";
 
 const copy = deckVersioningCopy.changed;
 
@@ -39,6 +41,8 @@ type ChangedStripProps = {
   before: ShapeCard[] | null;
   /** The draft — the deck's own `deck_cards`, as the decklist draws them. */
   after: ShapeCard[];
+  /** The label rows for the cards in both lists. Absent or null counts by `role`, as before. */
+  labelRows?: JobRowsByCard | null;
 };
 
 /** A card type whose count moved. */
@@ -133,9 +137,10 @@ function StripCell({
   );
 }
 
-export function ChangedStrip({ before, after, mix }: ChangedStripProps) {
-  const beforeCounts = computeRoleCounts(before ?? []);
-  const afterCounts = computeRoleCounts(after);
+export function ChangedStrip({ before, after, mix, labelRows }: ChangedStripProps) {
+  const countRoles = roleCounterFor(labelRows);
+  const beforeCounts = countRoles(before ?? []);
+  const afterCounts = countRoles(after);
 
   // A brew has no previous shape, so nothing on this surface states a movement:
   // no before figure, no arrow, no curve direction and no type block. What is

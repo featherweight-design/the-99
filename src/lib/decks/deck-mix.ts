@@ -19,12 +19,20 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, decks } from "../../db/schema";
 import { loadSkeletonForCommanders } from "../profile/load";
+import { roleBasisFromEnv } from "./label-counts-flag";
+import type { RoleBasis } from "../profile/build";
 import { recommendedMix, type RecommendedMix } from "./mix";
 
 /** Never throws. A deck whose chain cannot be resolved draws the asserted baseline and says
     so through `measured` — a strip drawing figures beats a strip drawing nothing, as long as
     it does not claim they came from EDHREC. */
-export async function loadDeckMix(deckId: string, userId: string): Promise<RecommendedMix> {
+export async function loadDeckMix(
+  deckId: string,
+  userId: string,
+  /** The basis the targets come from. A caller whose label read failed asks for "classifier", so its
+   *  classifier counts are graded against classifier targets rather than `label_*` ones. */
+  basis: RoleBasis = roleBasisFromEnv(),
+): Promise<RecommendedMix> {
   // HOISTED, because the fallback needs it. `landTarget` subtracts a slot for a partner, so a
   // pair deck whose chain fails mid-read would otherwise fall back to 37 lands where every
   // other pair surface says 36 — a disagreement that appears only on the degraded path, which
@@ -38,7 +46,7 @@ export async function loadDeckMix(deckId: string, userId: string): Promise<Recom
       })
       .from(decks)
       .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
-    if (!deck || !deck.commanderOracleId) return recommendedMix(null, hasPartner);
+    if (!deck || !deck.commanderOracleId) return recommendedMix(null, hasPartner, basis);
     hasPartner = Boolean(deck.partnerOracleId);
 
     const ids = [deck.commanderOracleId, deck.partnerOracleId].filter(
@@ -56,11 +64,13 @@ export async function loadDeckMix(deckId: string, userId: string): Promise<Recom
       deck.commanderOracleId,
       deck.partnerOracleId ?? null,
       [...identity],
+      undefined,
+      { roleBasis: basis },
     );
-    return recommendedMix(skeleton, hasPartner);
+    return recommendedMix(skeleton, hasPartner, basis);
   } catch (err) {
     console.warn("loadDeckMix: no skeleton — the strip quotes the asserted targets", err);
-    return recommendedMix(null, hasPartner);
+    return recommendedMix(null, hasPartner, basis);
   }
 }
 

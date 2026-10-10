@@ -8,6 +8,9 @@ import { pullSourceChoices } from "../../../../lib/decks/draft-shape";
 import { indexGeneration } from "../../../../lib/cache/index-generation";
 import { cacheForUser } from "../../../../lib/cache/user-lists";
 import { loadDeckMix } from "../../../../lib/decks/deck-mix";
+import { settleLabelRead } from "../../../../lib/decks/label-read-settle";
+import { loadJobRows } from "../../../../lib/decks/job-rows";
+import { labelRoleCountsEnabled } from "../../../../lib/decks/label-counts-flag";
 import { deckBodySize } from "../../../../lib/decks/deck-size";
 import {
   changeCount, loadDraftRows, loadDraftShape, loadVersionShape,
@@ -178,9 +181,24 @@ export default async function ChangesPage({
     () => loadDeckMix(id, userId),
   );
 
+  // The strip counts by label when the switch is on, so the label rows cover every card it folds:
+  // both lists and the removed rows a restore puts back. Null (switch off, or the read failed)
+  // counts by role exactly as before.
+  const labelRead = labelRoleCountsEnabled()
+    ? await loadJobRows([
+        ...(before ?? []), ...after,
+        ...rows.out.map((r) => ({ oracleId: r.oracleId, typeLine: r.typeLine })),
+      ].filter((c): c is { oracleId: string; typeLine: string } => c.oracleId !== undefined))
+    : null;
+  // The switch is on but the read failed: counts fall back to the classifier, so the targets do too.
+  const settled = settleLabelRead(labelRoleCountsEnabled(), [labelRead], []);
+  const labelRows = settled.rows;
+  const shownMix = settled.classifierTargets ? await loadDeckMix(id, userId, "classifier") : mix;
+
   return (
     <ReviewChanges
-      mix={mix}
+      mix={shownMix}
+      labelRows={labelRows}
       deckId={id}
       deckName={detail.name}
       rows={rows}

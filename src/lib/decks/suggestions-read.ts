@@ -22,6 +22,7 @@ import { deckBodySize } from "./deck-size";
 import { cardTypeGroup, primaryRole, requireDeck } from "./read";
 import { recommendedMix, type RecommendedMix } from "./mix";
 import { loadSkeletonForCommanders } from "../profile/load";
+import { roleBasisFromEnv } from "./label-counts-flag";
 import { buildSuggestionPayload, suggestDeck, type DeckSuggestion } from "./suggest";
 import { SHELF_CAP } from "./shelf-cap";
 
@@ -157,7 +158,7 @@ export async function loadDeckSuggestions(deckId: string, userId: string): Promi
   const deck = await requireDeck(deckId, userId);
   const [commander] = await db.select().from(cards).where(eq(cards.oracleId, deck.commanderOracleId));
   if (!commander) {
-    return { suggestions: [], degraded: false, shoppingFigures: {}, mix: recommendedMix(null, false) };
+    return { suggestions: [], degraded: false, shoppingFigures: {}, mix: recommendedMix(null, false, roleBasisFromEnv()) };
   }
 
   // The partner is a second commander for every purpose below: the pool it
@@ -221,14 +222,18 @@ export async function loadDeckSuggestions(deckId: string, userId: string): Promi
   // THE SAME MIX THE DECK PAGE DRAWS. The Add panel's shelf headers count against these and
   // its tiles quote them; two sources would disagree by construction on any commander whose
   // measured ramp is not ten.
-  let mix = recommendedMix(null, hasPartner);
+  let mix = recommendedMix(null, hasPartner, roleBasisFromEnv());
   try {
     const { skeleton } = await loadSkeletonForCommanders(
       commander.oracleId,
       partner?.oracleId ?? null,
       [...new Set([...commander.colorIdentity ?? [], ...(partner?.colorIdentity ?? [])])],
+      undefined,
+      // The strip counts by label when the switch is on, so its targets are the label ones. The
+      // switch is per deployment and the deployment is in this payload's cache key.
+      { roleBasis: roleBasisFromEnv() },
     );
-    mix = recommendedMix(skeleton, hasPartner);
+    mix = recommendedMix(skeleton, hasPartner, roleBasisFromEnv());
   } catch (err) {
     console.warn("loadDeckSuggestions: no skeleton — the panel quotes the asserted targets", err);
   }

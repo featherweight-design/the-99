@@ -436,6 +436,10 @@ export async function loadDraftState(deckId: string, userId: string): Promise<Dr
  *  count. `versionCards` returns `oracleId`/`quantity` only, with no role to
  *  tally, which is why this read exists at all. */
 export type ShapeCard = {
+  /** With `name`, what the label count looks the card up by. Optional so a hand-drawn fixture need
+   *  not state them; a card without an id counts as unlabeled. The loaders always supply both. */
+  oracleId?: string;
+  name?: string;
   role: DeckDetailCard["role"];
   quantity: number;
   typeLine: string;
@@ -455,6 +459,8 @@ export type ShapeCard = {
  */
 export async function loadVersionShape(versionId: string): Promise<ShapeCard[]> {
   const rows = await db.select({
+    oracleId: deckVersionCards.oracleId,
+    name: cards.name,
     quantity: deckVersionCards.quantity,
     typeLine: cards.typeLine,
     cmc: cards.cmc,
@@ -464,6 +470,7 @@ export async function loadVersionShape(versionId: string): Promise<ShapeCard[]> 
     .innerJoin(cards, eq(cards.oracleId, deckVersionCards.oracleId))
     .where(eq(deckVersionCards.versionId, versionId));
   return rows.map((r) => ({
+    oracleId: r.oracleId, name: r.name,
     role: primaryRole(r), quantity: r.quantity, typeLine: r.typeLine, cmc: r.cmc,
   }));
 }
@@ -478,6 +485,8 @@ export async function loadVersionShape(versionId: string): Promise<ShapeCard[]> 
  */
 export async function loadDraftShape(deckId: string): Promise<ShapeCard[]> {
   const rows = await db.select({
+    oracleId: deckCards.oracleId,
+    name: cards.name,
     quantity: deckCards.quantity,
     typeLine: cards.typeLine,
     cmc: cards.cmc,
@@ -487,6 +496,7 @@ export async function loadDraftShape(deckId: string): Promise<ShapeCard[]> {
     .innerJoin(cards, eq(cards.oracleId, deckCards.oracleId))
     .where(eq(deckCards.deckId, deckId));
   return rows.map((r) => ({
+    oracleId: r.oracleId, name: r.name,
     role: primaryRole(r), quantity: r.quantity, typeLine: r.typeLine, cmc: r.cmc,
   }));
 }
