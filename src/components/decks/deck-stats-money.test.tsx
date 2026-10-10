@@ -77,4 +77,15 @@ describe("DeckStatsView money card", () => {
     draw(money({ priciest: [{ oracleId: "f", name: "Foily", cents: 940, qualifier: "foil", toBuy: false }] }));
     expect(card()).toHaveTextContent("$9.40 foil");
   });
+
+  it("says how many copies a part-priced group priced, so a part-total never reads as the whole", () => {
+    draw(
+      money({
+        owned: { copies: 5, cents: 1000, pricedCopies: 4 },
+        toBuy: { copies: 12, cents: 900, pricedCopies: 3 },
+      }),
+    );
+    expect(card()).toHaveTextContent("3 of 12 copies priced, after the ones you own");
+    expect(card()).toHaveTextContent("4 of 5 copies priced, plus 12 basics");
+  });
 });

@@ -84,6 +84,9 @@ export const deckStatsCopy = {
     valuePartial: (priced: number, of: number) => `${priced} of ${of} copies priced`,
     owned: "OWNED",
     ownedSub: (n: number, basics: number) => `${n} ${n === 1 ? "copy" : "copies"}, plus ${basics} ${basics === 1 ? "basic" : "basics"}`,
+    // A group with some copies unpriced says so beside its figure, so a part-total never reads as the whole.
+    ownedPartial: (priced: number, n: number, basics: number) => `${priced} of ${n} copies priced, plus ${basics} ${basics === 1 ? "basic" : "basics"}`,
+    toBuyPartial: (priced: number, n: number) => `${priced} of ${n} copies priced, after the ones you own`,
     toBuy: "TO BUY",
     toBuySub: (n: number) => `${n} ${n === 1 ? "copy" : "copies"}, after the ones you own`,
     toBuyNone: "Nothing",

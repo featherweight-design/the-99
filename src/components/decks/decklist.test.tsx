@@ -1544,7 +1544,7 @@ describe("the Stats panel", () => {
     expect(document.querySelector("[data-colors-rows]")).toBeNull();
   });
 
-  it("draws the Money card from the Shopping basket, so its to-buy is the pill's count and an edit moves it", () => {
+  it("draws the Money card from the Shopping basket, so its to-buy is the pill's basket (a longer list draws a larger one)", () => {
     const NOW = new Date("2026-10-05T09:00:00.000Z");
     const p = (cents: number) => ({ cents, foilCents: null, etchedCents: null, asOf: NOW });
     const stats = { statsEnabled: true, filter: "all" as const, newestAsOf: NOW, statsData: { commanders: [] } };

@@ -35,7 +35,13 @@ export function MoneyCard({ money, onShop }: { money: MoneyStats; onShop?: () =>
     ? copy.toBuyNoneSub
     : toBuy.pricedCopies === 0
       ? toBuy.copies === 1 ? copy.noPriceOne : copy.noPriceMany
-      : copy.toBuySub(toBuy.copies);
+      : toBuy.pricedCopies < toBuy.copies
+        ? copy.toBuyPartial(toBuy.pricedCopies, toBuy.copies)
+        : copy.toBuySub(toBuy.copies);
+  const ownedSub =
+    owned.pricedCopies > 0 && owned.pricedCopies < owned.copies
+      ? copy.ownedPartial(owned.pricedCopies, owned.copies, basics)
+      : copy.ownedSub(owned.copies, basics);
 
   const widest = Math.max(1, ...priciest.map((p) => p.cents ?? 0));
 
@@ -43,7 +49,7 @@ export function MoneyCard({ money, onShop }: { money: MoneyStats; onShop?: () =>
     <Shell title={deckStatsCopy.cards.money} id="money" denom={denom} label={`${deckStatsCopy.cards.money}, ${denom}`}>
       <div className="grid grid-cols-3 gap-[12px]">
         <Figure k={copy.value} v={valueFig} sub={valueSub} ink="var(--fg)" />
-        <Figure k={copy.owned} v={ownedFig} sub={copy.ownedSub(owned.copies, basics)} ink="var(--fg)" />
+        <Figure k={copy.owned} v={ownedFig} sub={ownedSub} ink="var(--fg)" />
         <Figure k={copy.toBuy} v={toBuyFig} sub={toBuySub} ink={nothingToBuy ? "var(--fg-body)" : "var(--warning)"} />
       </div>
       {nothingToBuy || !onShop ? null : (

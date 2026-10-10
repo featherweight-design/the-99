@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { commanderAsRow, isShoppingCard } from "./shopping";
 import type { DeckDetailCard } from "./grouping";
 import type { PriceFact } from "./price";
+import { summarisePrices } from "./price";
 import { moneyStats } from "./stats-money";
 
 const NEWEST = new Date("2026-10-05T09:00:00Z");
@@ -90,6 +91,13 @@ describe("moneyStats", () => {
   it("lets a card with no price fill a slot only when the priced ones run out, to buy first", () => {
     const m = stats([row("Zed", { price: null }), row("Ant", { owned: false, price: null }), row("Priced", { price: fact(300) })])!;
     expect(m.priciest.map((p) => p.name)).toEqual(["Priced", "Ant", "Zed"]);
+  });
+
+  it("bills the same figures as the price strip over the same basket", () => {
+    const cards = [row("A", { owned: false, price: fact(300) }), row("B", { owned: false, price: null, quantity: 2 }), row("C", { price: fact(50) })];
+    const strip = summarisePrices(cards.filter(isShoppingCard), NEWEST);
+    const m = stats(cards)!;
+    expect(m.toBuy).toEqual({ copies: strip.totalCopies, cents: strip.totalCents, pricedCopies: strip.pricedCopies });
   });
 
   it("is null for a deck of nothing", () => {
