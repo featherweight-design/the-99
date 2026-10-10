@@ -1,6 +1,11 @@
 import { classifyRoles } from "../recs/roles";
 import type { Job } from "../labels/types";
 
+/** A sentence that draws: `classifyRoles`' own draw pattern, read per sentence. */
+const DRAW_SENTENCE = /[^.\n]*\bdraw (?:a|one|two|three|four|x) cards?\b[^.\n]*/gi;
+/** A drawer other than the controller. */
+const OTHER_DRAWER = /\b(?:opponents?|target player|each player|that player|its (?:controller|owner))\b/i;
+
 /** A clause that counters a spell, up to the next mode or sentence: the one text reading that is
  *  interaction and never removal. */
 const COUNTER_CLAUSE = /\bcounter target\b[^.;\n]*/gi;
@@ -9,8 +14,8 @@ const COUNTER_CLAUSE = /\bcounter target\b[^.;\n]*/gi;
  * The jobs a card's rules text gives, for a card with no fresh label. `classifyRoles` reads roles
  * only, so every field it cannot see is fixed here (brief, "Which label readings can be trusted"):
  *
- * - a draw is a one-shot draw for the controller (its patterns match "draw a card", never "draws",
- *   so an opponent's draw is never read as one);
+ * - a draw is a one-shot draw for the controller, and counts only when a sentence that draws names
+ *   no other player ("Target opponent may draw a card" is the opponent's draw, not the deck's);
  * - ramp carries no `rampKind`, so it is weighed by mana value alone;
  * - "counter target" is a `counterspell`. `classifyRoles` keeps counterspells in removal for its own
  *   callers, deliberately; here a card is removal only when its text still reads as removal with
@@ -26,7 +31,7 @@ export function jobsFromText(card: { typeLine: string; oracleText: string | null
     && (!counters || classifyRoles({ ...card, keywords: [...card.keywords], oracleText: text.replace(COUNTER_CLAUSE, "") }).includes("removal"));
   const jobs: Job[] = [];
   if (roles.includes("ramp")) jobs.push({ ...role("ramp", "self"), rampKind: null });
-  if (roles.includes("draw")) jobs.push(role("draw", "self"));
+  if (roles.includes("draw") && (text.match(DRAW_SENTENCE) ?? []).some((s) => !OTHER_DRAWER.test(s))) jobs.push(role("draw", "self"));
   if (removal) jobs.push(role("removal", "opponents"));
   if (roles.includes("wipes")) jobs.push(role("wipes", "each"));
   if (counters) jobs.push(role("counterspell", "opponents"));

@@ -13,6 +13,9 @@ describe("jobsFromText", () => {
   it("reads no draw for an opponent's draw", () => {
     expect(kinds("Creature", "When this enters, its owner draws a card.")).toEqual([]);
   });
+  it("reads no draw when the sentence that draws names an opponent", () => {
+    expect(kinds("Legendary Creature", "{G}{W}{U}: Target opponent may draw a card.")).toEqual([]);
+  });
   it("reads a controller's draw as a one-time draw for the controller", () => {
     expect(jobsFromText({ typeLine: "Sorcery", oracleText: "Draw two cards.", keywords: [] })).toMatchObject([{ kind: "draw", affects: "self", recurrence: "oneShot" }]);
   });

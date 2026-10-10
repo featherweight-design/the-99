@@ -14,7 +14,7 @@ export type Velocity = {
   points: number;
   lands: number;
   averageManaValue: number;
-  /** The commander's expected turn, by the Overview's own model and input. Null with no mana value. */
+  /** The commander's expected turn, by the Overview's own model and input. Null with no commander. */
   commanderTurn: number | null;
   /** Points above zero, then the cards read and scored 0 ("Read, not counted"). */
   counted: VelocityLine[];

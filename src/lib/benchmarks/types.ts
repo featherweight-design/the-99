@@ -3,9 +3,9 @@ import type { Job } from "../labels/types";
 
 /**
  * One card of a reading's list, as every benchmark reads it (plan
- * `2026-10-10-evidence-benchmarks.md`). Built once per reading by `benchCards`: the stored list's
- * own fields, the cards' text columns, and the card's jobs, which are its fresh label's or, for a
- * card with no fresh label, the ones its rules text gives (`jobsFromText`). No benchmark can tell
+ * `2026-10-10-evidence-benchmarks.md`). Built once per reading by the loader (plan PR 1c): the
+ * stored list's own fields, the cards' text columns, and the card's jobs, which are its fresh
+ * label's or, for a card with no fresh label, the ones its rules text gives (`jobsFromText`). No benchmark can tell
  * the two apart, and no surface says which a card had.
  */
 export type BenchCard = {
