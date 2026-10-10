@@ -5,7 +5,7 @@ export const deckStatsCopy = {
   segment: {
     stats: "Stats",
     aria: "Show the deck as stats",
-    groupAria: "Which cards to show",
+    groupAria: "What the deck panel shows",
     provenance: "drawn from the live list, your collection and logged games",
   },
   cards: {
