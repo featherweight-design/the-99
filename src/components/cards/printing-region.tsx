@@ -370,11 +370,6 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
           </button>
         )}
       </div>
-      {props.role !== "choose" && props.notice ? (
-        <p role="status" className="text-[13px] m-0 mt-[6px]" style={{ color: "var(--fg)" }}>
-          ! {props.notice}
-        </p>
-      ) : null}
 
       {dormantPick !== null && (
         <div
@@ -492,6 +487,14 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
             </div>
         ))}
       </div>
+      {/* A refused deck save, below the tiles it reverted: a warning glyph and body text, never
+          red and with no retry button (deck printings STATES, "Save failed"). */}
+      {props.role !== "choose" && props.notice ? (
+        <p role="status" className="m-0 mt-[12px] flex items-center gap-[8px] text-[12.5px]" style={{ color: "var(--fg-body)" }}>
+          <span aria-hidden className="font-mono font-semibold" style={{ color: "var(--warning)" }}>!</span>
+          {props.notice}
+        </p>
+      ) : null}
     </div>
   );
 }
