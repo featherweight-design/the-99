@@ -60,6 +60,9 @@ describe("FEATURE_CALLS", () => {
     // write can make two calls (the first answer and its repair) at a 3,000-token ceiling each.
     expect(featureWorstCaseMicroUsd("tuning")).toBe(208_000);
     expect(featureWorstCaseMicroUsd("synopsis")).toBe(312_000);
+    // Contract 8 asks for 4,500 output tokens a call: $0.372, so a v8 write cannot slip under the guards.
+    expect(featureWorstCaseMicroUsd("synopsis", null, { OVERVIEW_V2_ENABLED: "true" })).toBe(372_000);
+    expect(featureWorstCaseMicroUsd("tuning", null, { OVERVIEW_V2_ENABLED: "true" })).toBe(208_000);
     // The deeper read: one call at its measured 6,000-token input ceiling and 3,000 out, $0.084.
     expect(FEATURE_CALLS.intake).toEqual({ model: INTAKE_MODEL, inputCeilingTokens: 6_000, maxTokens: INTAKE_MAX_TOKENS, callsPerWrite: 1 });
     expect(featureWorstCaseMicroUsd("intake")).toBe(84_000);
