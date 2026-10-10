@@ -39,10 +39,10 @@ vi.mock("../../lib/decks/cuts-read", () => ({
   readProposedCuts: async () => {
     calls.inputsReads += 1;
     const inputs = calls.inputs as { fingerprint: string } | null;
-    return inputs && calls.fingerprints.length > 0 ? { ...inputs, fingerprint: calls.fingerprints[Math.min(calls.inputsReads - 1, calls.fingerprints.length - 1)] } : inputs;
+    const withKeys = inputs ? { ...inputs, keyCards: calls.keyCards } : inputs;
+    return withKeys && calls.fingerprints.length > 0 ? { ...withKeys, fingerprint: calls.fingerprints[Math.min(calls.inputsReads - 1, calls.fingerprints.length - 1)] } : withKeys;
   },
   readCutsState: async () => calls.state,
-  readKeyCardNames: async () => calls.keyCards,
   reapCutsRuns: async () => { calls.reaped += 1; },
 }));
 vi.mock("../../lib/decks/tuning-read", () => ({ commanderName: async () => "Gishath" }));

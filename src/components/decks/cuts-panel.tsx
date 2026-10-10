@@ -23,8 +23,9 @@ import { MutationError } from "./mutation-error";
 
 /**
  * Proposed cuts (Tuning hub R2, canvas C): the free pass COUNTS and names no card, and Look deeper
- * names the cuts. Mounted on the Analysis tab over a reading, beside Suggested changes, for a deck
- * over 100. It reads its own state on mount and never spends a credit without a press.
+ * names the cuts. Mounted on the Analysis tab after Suggested changes, for a deck over 100. It needs
+ * no reading: a reading is made of a whole deck and this tool is for one that is over, so the two
+ * preconditions exclude each other. It reads its own state on mount and never spends a credit without a press.
  *
  * States, off `CutsPanel` and what the reader just pressed: the count (C1, C5 thin), running (C2),
  * six named (C3), part answered and short (C4), refused (C6, all locked C6c), failed (C7), back to
@@ -401,10 +402,9 @@ function CreditButton({ label, filled, blocked, spent, onPress }: {
 
 function FailMark({ label }: { label: string }) {
   return (
-    <svg role="img" aria-label={label} width="16" height="16" viewBox="0 0 16 16" className="flex-none">
-      <circle cx="8" cy="8" r="8" fill="var(--danger)" />
-      <rect x="7.1" y="3.6" width="1.8" height="5.6" rx="0.9" fill="var(--surface)" />
-      <circle cx="8" cy="11.6" r="1.1" fill="var(--surface)" />
+    <svg role="img" aria-label={label} width="18" height="18" viewBox="0 0 16 16" className="flex-none">
+      {/* A filled disc with the `!` cut out (even-odd), so whatever is behind it shows through. */}
+      <path fill="var(--danger)" fillRule="evenodd" clipRule="evenodd" d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0Zm-.9 3.6a.9.9 0 0 1 1.8 0v5.2a.9.9 0 0 1-1.8 0V3.6ZM8 10.5a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2Z" />
     </svg>
   );
 }
@@ -501,10 +501,12 @@ function CutRow({ item, panel, deps, items, onSettled }: {
   async function answer(kind: "cut" | "undo" | "keep" | "restore") {
     setBusy(kind);
     const result = await deps[kind](item.id).catch((): DeckMutationResult => ({ ok: false, message: copy.refusals.generic }));
-    setBusy(null);
+    // Busy until the follow-up read has replaced this row: a second press in that gap would repeat
+    // the verdict and overwrite the answer with a refusal.
     if (!result.ok) {
       // A refusal means the list is not the one this row was named for: read again.
-      void onSettled("", result.message);
+      await onSettled("", result.message);
+      setBusy(null);
       return;
     }
     await onSettled(
@@ -512,6 +514,7 @@ function CutRow({ item, panel, deps, items, onSettled }: {
         : kind === "undo" ? copy.announce.undone(item.cutName)
           : kind === "keep" ? copy.announce.kept : copy.announce.restored,
     );
+    setBusy(null);
   }
 
   if (item.verdict !== "pending") {

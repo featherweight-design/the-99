@@ -11,7 +11,7 @@ import { creditsCopy } from "../../lib/copy/credits";
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
-import { readCutsState, readKeyCardNames, readProposedCuts, reapCutsRuns } from "../../lib/decks/cuts-read";
+import { readCutsState, readProposedCuts, reapCutsRuns } from "../../lib/decks/cuts-read";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import { deckSurfaces } from "../../lib/decks/revalidate";
@@ -84,16 +84,15 @@ export async function runProposedCuts(
 
   const inputs = await readProposedCuts(deckId, userId);
   if (!inputs) return { ok: false, message: deckCutsCopy.run.refused };
-  const { head, facts, allLocked, fingerprint, readVersion, intent } = inputs;
+  const { head, facts, allLocked, fingerprint, readVersion, intent, keyCards } = inputs;
 
   // Both refusals land BEFORE `startCutsRun` reserves a credit: "No credit is used" is true of the
   // server, not only of a disabled button.
   if (facts.over === 0) return { ok: false, message: deckCutsCopy.run.notOver };
   if (allLocked) return { ok: false, message: lockedCardsCopy.tuning.allLocked(await commanderName(head)) };
 
-  const [name, keyCards, textRows] = await Promise.all([
+  const [name, textRows] = await Promise.all([
     commanderName(head),
-    readKeyCardNames(head),
     // Oracle text for the cards that could come out: the front face only (`castFaceText`), the
     // configuration the recall eval chose. Catalog data, so no `playerText`.
     facts.cards.length === 0 ? [] : db
@@ -195,10 +194,10 @@ export async function readCutsPanel(deckId: string): Promise<CutsPanel | null> {
   const inputs = await readProposedCuts(deckId, userId);
   if (!inputs) return null;
   const { head, facts, locked, allLocked: lockedOut, fingerprint } = inputs;
-  const [state, name, keyCards] = await Promise.all([
+  const keyCards = inputs.keyCards;
+  const [state, name] = await Promise.all([
     readCutsState(deckId, userId),
     commanderName(head),
-    readKeyCardNames(head),
   ]);
   const declared = (head.declaredBracket as 1 | 2 | 3 | 4 | 5 | null) ?? null;
   // Key cards that are still candidates, resolved the way the validator resolves them. A name the

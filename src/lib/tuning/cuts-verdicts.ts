@@ -2,7 +2,7 @@ import { and, eq, sql } from "drizzle-orm";
 
 import { db } from "../../db";
 import { deckCards, deckCutItems, deckProxies, deckSuggestionRuns, decks, type ApplySnapshot } from "../../db/schema";
-import { cutsFingerprint } from "../decks/cuts-read";
+import { cutsFingerprint, readKeyCardNames } from "../decks/cuts-read";
 import { isLiveLocked, liveLockedIds, pruneOrphanLocks } from "../decks/locks";
 import { neverCutEnabled } from "../decks/never-cut-flag";
 import { pruneOrphanProxies } from "../decks/prune-proxies";
@@ -47,7 +47,7 @@ async function deckFingerprint(tx: Tx, deckId: string, userId: string): Promise<
   if (!head) return null;
   const locked = neverCutEnabled() ? [...(await liveLockedIds(tx, deckId))] : [];
   const [d] = await tx.select({ intent: decks.intent }).from(decks).where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
-  return cutsFingerprint(head, locked, d?.intent?.trim() ? d.intent : null);
+  return cutsFingerprint(head, locked, d?.intent?.trim() ? d.intent : null, await readKeyCardNames(head));
 }
 
 async function chainRun(tx: Tx, runId: string, from: string | null, to: string | null): Promise<void> {
@@ -134,6 +134,9 @@ export async function undoCutItem(itemId: string, userId: string): Promise<CutOu
     if (!item || item.verdict !== "accepted" || !snap) return { ok: false, reason: "gone" };
     const { deckId, oracleId } = item;
     const before = await deckFingerprint(tx, deckId, userId);
+    // Only over the deck the cut left: the card's own row is checked below, and the rest of the
+    // inputs (the list, the locks, the intent, the bracket) by the run's fingerprint.
+    if (item.runStatus !== "ok" || before === null || item.fingerprint !== before) return { ok: false, reason: "moved" };
 
     const [row] = await tx.select({ quantity: deckCards.quantity, auto: deckCards.auto })
       .from(deckCards).where(rowOf(deckId, oracleId)).for("update");

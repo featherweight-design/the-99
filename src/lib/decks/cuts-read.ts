@@ -74,10 +74,12 @@ export async function readCutSupport(commander: string, partner: string | null):
   };
 }
 
-/** What a run's inputs were: the list, the locks, the declared bracket and the intent, hashed. */
-export function cutsFingerprint(head: ProfileHead, locked: readonly string[], intent: string | null): string {
+/** What a run's inputs were: the list, the locks, the declared bracket, the intent and the Key cards, hashed. */
+export function cutsFingerprint(head: ProfileHead, locked: readonly string[], intent: string | null, keyCards: readonly string[]): string {
+  // The Key cards are an input too: a same-list overview retry can change which cards the model
+  // may not name, so a result made under one set is not current under another.
   return createHash("sha256")
-    .update(JSON.stringify([listFingerprint(head), [...locked].sort(), head.declaredBracket ?? null, intent]))
+    .update(JSON.stringify([listFingerprint(head), [...locked].sort(), head.declaredBracket ?? null, intent, [...keyCards].sort()]))
     .digest("hex");
 }
 
@@ -94,6 +96,8 @@ export type ProposedCutsInputs = {
   fingerprint: string;
   /** What the player said the deck is for, as stored on the deck; null when they said nothing. */
   intent: string | null;
+  /** The overview's Key cards, which are never cut. Part of the fingerprint. */
+  keyCards: string[];
 };
 
 /**
@@ -133,8 +137,9 @@ export async function readProposedCuts(deckId: string, userId: string): Promise<
   const lockedSet = new Set(locked);
   const body = head.cards.filter((c) => c.oracleId !== head.commanderOracleId && c.oracleId !== head.partnerOracleId);
   const allLocked = body.length > 0 && body.every((c) => lockedSet.has(c.oracleId));
-  const fingerprint = cutsFingerprint(head, locked, intent);
-  return { head, facts, locked, allLocked, readVersion, fingerprint, intent };
+  const keyCards = await readKeyCardNames(head);
+  const fingerprint = cutsFingerprint(head, locked, intent, keyCards);
+  return { head, facts, locked, allLocked, readVersion, fingerprint, intent, keyCards };
 }
 
 /**
