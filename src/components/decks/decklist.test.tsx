@@ -1544,6 +1544,40 @@ describe("the Stats panel", () => {
     expect(document.querySelector("[data-colors-rows]")).toBeNull();
   });
 
+  it("draws the Money card from the Shopping basket, so its to-buy is the pill's basket (a longer list draws a larger one)", () => {
+    const NOW = new Date("2026-10-05T09:00:00.000Z");
+    const p = (cents: number) => ({ cents, foilCents: null, etchedCents: null, asOf: NOW });
+    const stats = { statsEnabled: true, filter: "all" as const, newestAsOf: NOW, statsData: { commanders: [] } };
+    const own = makeCard({ oracleId: "own", name: "Own", owned: true, price: p(1000) } as never);
+    const buy = makeCard({ oracleId: "buy", name: "Buy", owned: false, price: p(2500) } as never);
+    const forest = makeCard({ ...basicLand, quantity: 10, price: p(5) } as never);
+    renderDecklist([own, buy, forest], stats);
+    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    const money = () => document.querySelector('[data-stats-card="money"]')!;
+    expect(money()).toHaveTextContent("$35.00");
+    expect(money()).toHaveTextContent("1 copy, plus 10 basics");
+    expect(money().querySelector('[data-money-figure="TO BUY"]')).toHaveTextContent("$25.00");
+    expect(money().querySelectorAll('[data-money-square="toBuy"]')).toHaveLength(1);
+    expect(money().querySelectorAll('[data-money-square="basic"]')).toHaveLength(10);
+    cleanup();
+
+    const another = makeCard({ oracleId: "buy2", name: "Buy 2", owned: false, price: p(400) } as never);
+    renderDecklist([own, buy, another, forest], stats);
+    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    expect(money().querySelector('[data-money-figure="TO BUY"]')).toHaveTextContent("$29.00");
+    expect(money().querySelectorAll('[data-money-square="toBuy"]')).toHaveLength(2);
+  });
+
+  it("opens Shopping from the Money card's link", () => {
+    const NOW = new Date("2026-10-05T09:00:00.000Z");
+    const buy = makeCard({ oracleId: "buy", name: "Buy", owned: false, price: { cents: 2500, foilCents: null, etchedCents: null, asOf: NOW } } as never);
+    renderDecklist([buy], { statsEnabled: true, filter: "all", newestAsOf: NOW, statsData: { commanders: [] } });
+    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    fireEvent.click(document.querySelector("[data-money-shop]")!);
+    // The control returns to the list body; the filter itself is the page's to hold.
+    expect(document.querySelector("[data-deck-stats]")).toBeNull();
+  });
+
   it("returns to the list when All is pressed from Stats", () => {
     renderDecklist([rampOwned], { filter: "all", statsEnabled: true });
     fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
