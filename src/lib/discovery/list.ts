@@ -1,6 +1,7 @@
 import type { Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
 import { loadCollectionPool } from "../recs/recommend";
+import { loadPoolRoleBasis } from "../recs/pool-role-basis";
 import { buildPoolRollup, rollupFor, type PoolRollup } from "../recs/pool-rollup";
 import { loadCandidates, type CandidateRow } from "./candidates";
 import { readPrices, slotFor, type PriceAggRow, type PriceSlot } from "./price";
@@ -397,8 +398,14 @@ export function discoveryKey(sort: string): string[] {
  * but not the rest of the list's work: a rank derived from a different pool
  * would have the detail page and the row it was reached from disagree.
  */
-export async function loadDiscoveryPool(userId: string) {
+export async function loadDiscoveryPool(
+  userId: string,
+  /** Called the moment the collection resolves, before the availability read: lets a caller start a
+   *  read that needs only the collection (the label read) beside it. */
+  onCollection?: (collection: Awaited<ReturnType<typeof loadCollectionPool>>["collection"]) => void,
+) {
   const { collection } = await loadCollectionPool(userId);
+  onCollection?.(collection);
 
   let availability = new Map<string, Availability>();
   let availOk = true;
@@ -440,7 +447,14 @@ export async function loadDiscoveryWithIds(
   userId: string,
   opts: { sort: "fit" | "new" },
 ): Promise<{ list: DiscoveryList; oracleIds: string[] }> {
-  const { collection, availability, availOk } = await loadDiscoveryPool(userId);
+  // The label read starts the moment the collection resolves, beside the availability read and then
+  // the candidate query: it needs only the collection. `loadPoolRoleBasis` never rejects (a failed
+  // read is the classifier on both sides), so it cannot be left dangling.
+  let basisStarted: ReturnType<typeof loadPoolRoleBasis> | undefined;
+  const { collection, availability, availOk } = await loadDiscoveryPool(userId, (c) => {
+    basisStarted = loadPoolRoleBasis(c);
+  });
+  const basisRead = basisStarted ?? loadPoolRoleBasis(collection);
   // One oracle-id set, so the second support aggregate has nothing to add: the
   // ranked pool and the collection are the same pool.
   const candidates = await loadCandidates(
@@ -448,10 +462,18 @@ export async function loadDiscoveryWithIds(
     collection.map((c) => c.oracleId),
   );
 
-  const [priceRead, playedTags, roleTargets] = await Promise.all([
+  // The labels, then the targets they select: the targets follow the basis the labels come back
+  // under, and the rollup counts the same pool by the same sets, so with the labels readable a row
+  // and its detail page print one role count. A label outage during this compute is the classifier
+  // on both sides, and this payload is cached (an hour at most), so it can disagree with the detail
+  // page until it is rebuilt. The prices and played tags do not wait on either read.
+  const [priceRead, playedTags, { roleSets, roleTargets }] = await Promise.all([
     readPrices(candidates.map((c) => c.oracleId)),
     loadPlayedTags(userId),
-    loadRoleTargetsForCommanders(candidates),
+    basisRead.then(async ({ basis, roleSets }) => ({
+      roleSets,
+      roleTargets: await loadRoleTargetsForCommanders(candidates, basis),
+    })),
   ]);
 
   return assembleDiscoveryWithIds({
@@ -461,7 +483,7 @@ export async function loadDiscoveryWithIds(
     playedTags,
     prices: priceRead.prices,
     priceOk: priceRead.ok,
-    rollup: buildPoolRollup(collection, availability),
+    rollup: buildPoolRollup(collection, availability, roleSets),
     cardsRead: collection.length,
     freePoolSize: collection.length,
     // Ruling 8's gate, applied here rather than at the route: novelty measures

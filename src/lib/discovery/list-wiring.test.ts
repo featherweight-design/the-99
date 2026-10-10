@@ -49,16 +49,23 @@ vi.mock("../decks/availability-query", () => ({
 // answers the flat targets, as one with nothing measured does.
 // Flat by default. `measured` switches every commander to targets of 0, which meet every role,
 // so a case can see the loaded figure reach the score rather than the flat constants.
-const roleTargetMock = vi.hoisted(() => ({ measured: false }));
+const roleTargetMock = vi.hoisted(() => ({ measured: false, basisSeen: [] as string[] }));
 vi.mock("../profile/role-targets", async () => {
   const { ROLE_TARGETS } = await vi.importActual<typeof import("../recs/roles")>("../recs/roles");
   return {
-    loadRoleTargetsForCommanders: async (cs: { oracleId: string }[]) =>
-      new Map(cs.map((c) => [c.oracleId, roleTargetMock.measured
+    loadRoleTargetsForCommanders: async (cs: { oracleId: string }[], basis?: string) =>
+      (roleTargetMock.basisSeen.push(basis ?? "classifier"), new Map(cs.map((c) => [c.oracleId, roleTargetMock.measured
         ? { of: "commander", targets: { ramp: 0, draw: 0, removal: 0, wipes: 0 } }
-        : { of: "flat", targets: { ...ROLE_TARGETS } }])),
+        : { of: "flat", targets: { ...ROLE_TARGETS } }]))),
   };
 });
+// The label read, answered here (PR 7): which basis and sets the loader forwards is under test.
+const basisMock = vi.hoisted(() => ({
+  value: { basis: "classifier", roleSets: undefined, fellBack: false } as {
+    basis: string; roleSets: Map<string, string[]> | undefined; fellBack: boolean;
+  },
+}));
+vi.mock("../recs/pool-role-basis", () => ({ loadPoolRoleBasis: async () => basisMock.value }));
 vi.mock("./candidates", () => ({
   loadCandidates: (...args: unknown[]) =>
     (loadCandidates as unknown as (...a: unknown[]) => unknown)(...args),
@@ -138,6 +145,29 @@ describe("loadDiscovery — wiring", () => {
       expect(roles(measured)).toBeGreaterThan(roles(flat));
     } finally {
       roleTargetMock.measured = false;
+    }
+  });
+
+  // PR 7. The basis must reach the target read, and the SAME sets must reach the rollup: removing
+  // either forwarding leaves every pure test green. Korvold's pool holds only sol-ring (the
+  // other card is white); by text it is no role, and the label below calls it ramp.
+  it("forwards the label basis to the targets and the label sets to the rollup", async () => {
+    roleTargetMock.basisSeen.length = 0;
+    const roles = (l: { items: { fitRoles: number }[] }) => l.items.reduce((a, i) => a + i.fitRoles, 0);
+    const byText = await loadDiscovery("user-1", { sort: "fit" });
+    expect(roleTargetMock.basisSeen).toEqual(["classifier"]);
+
+    roleTargetMock.basisSeen.length = 0;
+    basisMock.value = { basis: "labels", roleSets: new Map([["sol-ring", ["ramp"]]]), fellBack: false };
+    try {
+      const byLabel = await loadDiscovery("user-1", { sort: "fit" });
+      expect(roleTargetMock.basisSeen).toEqual(["labels"]);
+      expect(roles(byLabel)).toBeGreaterThan(roles(byText));
+      // And an UNLABELLED card counts toward no role: an empty map scores below the labelled one.
+      basisMock.value = { basis: "labels", roleSets: new Map(), fellBack: false };
+      expect(roles(await loadDiscovery("user-1", { sort: "fit" }))).toBeLessThan(roles(byLabel));
+    } finally {
+      basisMock.value = { basis: "classifier", roleSets: undefined, fellBack: false };
     }
   });
 
