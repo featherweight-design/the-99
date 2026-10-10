@@ -112,8 +112,9 @@ export function ReplaceFlow({
     } catch (e) {
       setConfirmError(e instanceof Error ? e.message : "Confirm failed");
       // A skipped confirm has no surface of its own to say it failed, so it opens the modal,
-      // whose error slot is where a failed confirm has always been reported.
-      setConfirming(true);
+      // whose error slot is where a failed confirm has always been reported. A press from the
+      // §E warning fails in the warning's own slot instead, with nothing opened over it.
+      if (!warning) setConfirming(true);
     } finally {
       setPending(false);
     }

@@ -221,6 +221,15 @@ describe("ReplaceFlow — §E, decks the replace would leave short", () => {
     expect(tags[0].parentElement?.textContent).toMatch(/Korvold/);
   });
 
+  it("a thrown confirm from the warning reports in the warning and opens nothing over it", async () => {
+    confirmUpload.mockResolvedValueOnce({ wouldShort: [deck("d1", "Atraxa")] }).mockRejectedValueOnce(new Error("Network down"));
+    const replace = await reachConfirm();
+    await act(async () => fireEvent.click(replace));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Replace anyway" })));
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+    expect(within(screen.getByRole("dialog")).getByRole("alert").textContent).toBe("Network down");
+  });
+
   it("names the cards the catalog dropped in the confirm's error slot, and writes nothing", async () => {
     confirmUpload.mockResolvedValueOnce({ missingCard: ["Sol Ring", "Arcane Signet"] });
     const replace = await reachConfirm();

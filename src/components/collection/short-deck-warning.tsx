@@ -103,7 +103,7 @@ export function ShortDeckWarning({
               </>
             );
             return (
-              <li key={row.deckId} className="border-b border-[color:var(--border)] last:border-b-0">
+              <li key={row.deckId} className="border-b border-b-[color:var(--border)] last:border-b-0">
                 {expandable ? (
                   <button
                     type="button"
