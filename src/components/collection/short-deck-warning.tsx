@@ -30,6 +30,7 @@ export function groupShortDecks(decks: ShortDeck[]): DeckRow[] {
 export function ShortDeckWarning({
   variant = "dialog",
   source = "replace",
+  cardName,
   titleId,
   decks,
   pending,
@@ -45,7 +46,9 @@ export function ShortDeckWarning({
    */
   variant?: "dialog" | "embedded";
   /** What the decks would be left short by: it words the title and the confirm. */
-  source?: "replace" | "revert";
+  source?: "replace" | "revert" | "save" | "remove";
+  /** The card a `save` or `remove` is about: the title of a removal and the body name it. */
+  cardName?: string;
   /** The id the host's `aria-labelledby` names. Unused when embedded. */
   titleId?: string;
   decks: ShortDeck[];
@@ -64,6 +67,17 @@ export function ShortDeckWarning({
   const oneCard = useMemo(() => new Set(decks.map((d) => d.oracleId)).size === 1, [decks]);
   const [showAll, setShowAll] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
+  const title =
+    source === "revert" ? c.titleRevert(rows.length)
+    : source === "remove" ? c.titleRemove(cardName ?? "", rows.length)
+    : source === "save" ? c.titleSave(rows.length)
+    : c.titleReplace(rows.length);
+  const confirmLabel =
+    source === "revert" ? c.confirmRevert
+    : source === "remove" ? c.confirmRemove
+    : source === "save" ? c.confirmSave
+    : c.confirmReplace;
+  const body = (source === "remove" || source === "save") && cardName ? c.bodyCard(cardName) : c.body;
   const named = showAll ? rows : rows.slice(0, c.namedCount);
   const hidden = rows.length - c.namedCount;
   const cancelRef = useRef<HTMLButtonElement>(null);
@@ -82,7 +96,7 @@ export function ShortDeckWarning({
     <div className="flex flex-col gap-[14px]">
         {variant === "dialog" ? (
           <h2 id={titleId} className="m-0 flex-none font-display text-[20px] font-bold leading-[1.3] text-[color:var(--fg)]">
-            {source === "revert" ? c.titleRevert(rows.length) : c.titleReplace(rows.length)}
+            {title}
           </h2>
         ) : (
           <h2 className="m-0 font-mono text-[10px] font-normal uppercase tracking-[0.14em] text-[color:var(--danger)]">
@@ -95,7 +109,7 @@ export function ShortDeckWarning({
           </p>
         ) : null}
         {variant === "dialog" ? (
-          <p className={`m-0 flex-none text-[13.5px] leading-[1.55] text-[color:var(--fg-body)] ${showAll ? "max-md:hidden" : ""}`}>{c.body}</p>
+          <p className={`m-0 flex-none text-[13.5px] leading-[1.55] text-[color:var(--fg-body)] ${showAll ? "max-md:hidden" : ""}`}>{body}</p>
         ) : null}
         <ul
           className={`m-0 min-h-0 list-none overflow-y-auto rounded-[10px] border border-[color:var(--border)] bg-[color:var(--bg)] p-0 ${showAll ? "max-h-[320px]" : ""}`}
@@ -182,7 +196,7 @@ export function ShortDeckWarning({
             disabled={pending}
             className="flex h-[44px] items-center justify-center rounded-[8px] border border-[color:var(--border-strong)] bg-[color:var(--elevated)] px-[18px] text-[14px] font-semibold text-[color:var(--fg)] disabled:opacity-60"
           >
-            {pending ? c.saving : source === "revert" ? c.confirmRevert : c.confirmReplace}
+            {pending ? c.saving : confirmLabel}
           </button>
         </div>
         ) : null}

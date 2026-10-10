@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { castFaceText } from "../cards/facet";
 import { db } from "../../db";
 import { searchesOnlyLands } from "../bracket/tutor-targets";
 import { labelIsFresh, PROMPT_SYSTEM_SHA256 } from "./prompt";
@@ -93,7 +94,7 @@ export async function readLabelRoleSets(
   const out = new Map<string, LabelTargetRole[]>();
   for (const r of rows) {
     const j = jobs.get(r.oracle_id);
-    if (j) out.set(r.oracle_id, labelRoleSet(j, r.type_line ?? ""));
+    if (j) out.set(r.oracle_id, labelRoleSet(j, r.type_line ?? "", castFaceText(r.oracle_text, r.layout)));
   }
   return out;
 }

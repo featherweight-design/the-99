@@ -1,4 +1,5 @@
 import type { Allowance } from "../model/allowance-rule";
+import type { ChipContext, CountRow } from "./cuts-count";
 import type { CutCite } from "./cuts-schema";
 import type { CutsReport } from "./cuts-validate";
 
@@ -44,4 +45,33 @@ export type CutsState = {
   modelVersionMoved: boolean;
   /** The reader's shared model allowance, measured against this feature's own call. */
   allowance: Allowance;
+};
+
+/**
+ * What the Proposed cuts PANEL reads: the run state plus the count the model reads, for the deck as
+ * it stands. Serializable, so a Server Action can return it.
+ */
+export type CutsPanel = CutsState & {
+  /** Cards in the deck, commanders included. */
+  total: number;
+  /** The deck's body size: 99, or 98 with a partner. */
+  bodySize: number;
+  /** How many over 100. Zero closes the tool. */
+  over: number;
+  commander: string;
+  /** Every card but the commander(s) is locked or a Key card: a deeper look has nothing to name. */
+  allLocked: boolean;
+  lockedCount: number;
+  keyCount: number;
+  declaredBracket: number | null;
+  /** The EDHREC deck count the inclusion figures came from, null with no list. */
+  edhrecDecks: number | null;
+  thin: boolean;
+  /** "What we counted", for the deck as it stands now. */
+  rows: CountRow[];
+  chips: ChipContext;
+  /** The newest ok run's cuts describe the deck as it stands (only cuts made from them moved it). */
+  resultCurrent: boolean;
+  /** How many of the stored report's asked-for cuts there were (the overage at run time). */
+  asked: number;
 };

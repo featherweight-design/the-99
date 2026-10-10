@@ -17,6 +17,7 @@ import type { DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import { BuilderSpine } from "./builder-spine";
 import { AnalysisPanel } from "./analysis-panel";
 import { HoverPreviewProvider } from "./hover-preview";
+import { CutsPanelView } from "./cuts-panel";
 import { TuningPanel } from "./tuning-panel";
 import { pressNote } from "./synopsis-note";
 import { SynopsisOverview } from "./synopsis-overview";
@@ -236,6 +237,8 @@ interface BuilderShellProps {
    *  no `TuningPanel`, the empty state's description field (asked only to feed a run) and the
    *  credit lines' mention of it are withheld, same as `analysisEnabled` withholds the whole tab. */
   tuningEnabled?: boolean;
+  /** `proposedCutsEnabled()`: whether the Analysis tab draws Proposed cuts after Suggested changes. */
+  proposedCutsEnabled?: boolean;
 }
 
 // The Games tab's default: a deck nobody has logged against. Hoisted so the
@@ -285,6 +288,7 @@ export function BuilderShell({
   neverCut = false,
   deeperLooks = false,
   tuningEnabled = false,
+  proposedCutsEnabled = false,
 }: BuilderShellProps) {
   // UI state
   const [filter, setFilter] = useState<"all" | "shopping">("all");
@@ -443,6 +447,8 @@ export function BuilderShell({
   const visitKey = `${deck.id}:${visit.n}`;
   const [tuningSettled, setTuningSettled] = useState<string | null>(null);
   const onTuningSettled = useCallback(() => setTuningSettled(visitKey), [visitKey]);
+  const [cutsSettledKey, setCutsSettledKey] = useState<string | null>(null);
+  const onCutsSettled = useCallback(() => setCutsSettledKey(visitKey), [visitKey]);
   // Shared by the empty-state field (`AnalysisEmpty`, via `AnalysisPanel`) and the checklist's
   // own "Describing in place" editor (`TuningPanel`, H35 PR 3 review fix) — the two mounts are
   // mutually exclusive, but both write through the same action.
@@ -459,6 +465,7 @@ export function BuilderShell({
     overviewSettled: !analysisEnabled || synopsis.settled,
     hasReading: reading !== null,
     suggestionsSettled: tuningSettled === visitKey,
+    cutsSettled: !proposedCutsEnabled || cutsSettledKey === visitKey,
   });
   const opening = useOpeningGate(useOpenOnce(holding, visitKey, view === "analysis"), deck.id);
   // The credit note beside each press that also writes, and whether it does (`synopsis-note.ts`).
@@ -1609,6 +1616,15 @@ export function BuilderShell({
                       />
                     ) : null
                   }
+                  cuts={proposedCutsEnabled ? (
+                    <CutsPanelView
+                      key={deck.id}
+                      deckId={deck.id}
+                      deeperLooks={deeperLooks}
+                      onSettled={onCutsSettled}
+                      revision={`${listKey}|${deck.intent ?? ""}|${declaration.declared ?? ""}|${[...lockedIds].sort().join(",")}`}
+                    />
+                  ) : undefined}
                   tuning={!tuningEnabled ? undefined : (permits) => (
                     <TuningPanel
                       deckId={deck.id}
@@ -1817,6 +1833,9 @@ export function BuilderShell({
               <Decklist
               statsEnabled={statsEnabled}
               statsData={statsData}
+              games={games}
+              versions={versions}
+              onLogGame={() => setView("games")}
               mix={mix}
                 deckId={deck.id}
                 cards={cards}

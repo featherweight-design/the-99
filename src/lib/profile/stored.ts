@@ -13,6 +13,8 @@ import { cachedDeckProfile, loadDeckProfile, readProfileHead, type ProfileHead }
 import { noticesEnabled } from "../notices/flag";
 import { readingMoved } from "../notices/read";
 import { PROFILE_VERSION } from "./version";
+import { roleBasisFromEnv } from "../decks/label-counts-flag";
+import type { RoleBasis } from "./build";
 import type { Bracket } from "../bracket/types";
 import { isReachablePermits } from "../bracket/verdict-head";
 import type { DeckProfile } from "./types";
@@ -107,6 +109,39 @@ async function readHeadAndRow(tx: Tx, deckId: string, userId: string) {
     .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId)))
     .limit(1);
   return { head, row: row ?? null, editedAt: stamp?.editedAt ?? null };
+}
+
+/**
+ * Whether the deployment counts roles on another basis than the one a stored reading was built
+ * under (`LABEL_ROLE_COUNTS_ENABLED`, labels-everywhere PR 8). `PROFILE_VERSION` deliberately does
+ * not move with the switch, so without this a press on an unchanged list would answer from the
+ * store and the reading would keep its old basis (a flip on, or a rollback) until the list was
+ * edited. Like a moved change log, it makes a PRESS recompute; a commit's pin and a quiet rebuild
+ * keep ruling 5's shortcut.
+ */
+export function storedBasisMoved(
+  profile: Pick<DeckProfile, "skeleton"> | null | undefined,
+  basis: RoleBasis = roleBasisFromEnv(),
+): boolean {
+  return (profile?.skeleton?.roleBasis ?? "classifier") !== basis;
+}
+
+/**
+ * Whether a PRESS on a list whose reading is stored must recompute instead of answering from the
+ * store (ruling 5's shortcut): the role basis moved (`storedBasisMoved`), or, behind the notices
+ * switch, the change log moved under the reading (H1). Only a press; a commit's pin and a quiet
+ * rebuild never recompute for either.
+ */
+export async function pressMustRecompute(args: {
+  isPress: boolean;
+  sameAnswer: boolean;
+  storedProfile: Pick<DeckProfile, "skeleton"> | null | undefined;
+  noticesOn: boolean;
+  logMoved: () => Promise<boolean>;
+}): Promise<boolean> {
+  if (!args.isPress || !args.sameAnswer) return false;
+  if (storedBasisMoved(args.storedProfile)) return true;
+  return args.noticesOn ? args.logMoved() : false;
 }
 
 /**
@@ -319,13 +354,20 @@ export async function computeAndStoreProfile(
       ? { seenSeq: row.seenSeq, rulesVersion: row.rulesVersion, analyzedOracleIds: row.analyzedOracleIds }
       : null);
   // Behind the notices switch (Hugh's release ruling): off, a press keeps ruling 5 unamended.
-  const dataMoved = Boolean(isPress && sameAnswer && row && noticesEnabled() && (await readingMoved({
-    seenSeq: row.seenSeq,
-    rulesVersion: row.rulesVersion,
-    // An empty list is a legacy row (schema note), read as the list this press is guarded to.
-    analyzedOracleIds: row.analyzedOracleIds.length > 0 ? row.analyzedOracleIds : analyzedOracleIds(head),
-    commanderOracleIds: [head.commanderOracleId, ...(head.partnerOracleId ? [head.partnerOracleId] : [])],
-  })));
+  const dataMoved = await pressMustRecompute({
+    isPress,
+    sameAnswer: Boolean(row && sameAnswer),
+    storedProfile: row?.profile,
+    noticesOn: noticesEnabled(),
+    // Read only when nothing cheaper already said yes, and only for a row that exists.
+    logMoved: () => readingMoved({
+      seenSeq: row!.seenSeq,
+      rulesVersion: row!.rulesVersion,
+      // An empty list is a legacy row (schema note), read as the list this press is guarded to.
+      analyzedOracleIds: row!.analyzedOracleIds.length > 0 ? row!.analyzedOracleIds : analyzedOracleIds(head),
+      commanderOracleIds: [head.commanderOracleId, ...(head.partnerOracleId ? [head.partnerOracleId] : [])],
+    }),
+  });
 
   // RULING 5: the same list, under the same code, and the same data (H1), is the same answer. Clear
   // `dirty` (and take the commit's pin) on the row as it stands, guarded on the fingerprint and

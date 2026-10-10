@@ -33,6 +33,9 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 /** A row as stored, keyed and carrying its two non-key columns. */
 type Held = CollectionItemIdentity & HistoryRowState;
 
+/** One holding as an editor drew it: its count and its condition, both of which an edit may rest on. */
+export type SeenHolding = CollectionItemIdentity & { quantity: number; condition?: string | null };
+
 /** A holding the player names by key; `quantity` is the new count, never a delta. */
 export type EditRow = CollectionItemIdentity & {
   quantity: number;
@@ -45,6 +48,12 @@ export type EditRow = CollectionItemIdentity & {
    */
   scryfallId?: string | null;
   condition?: string | null;
+  /**
+   * An EXISTING row keeps its own condition on an edit, except when copies of another condition
+   * were folded into it: then the rows disagree and the stored value is cleared, as every other
+   * aggregation of rows does (`normalizeItems`).
+   */
+  clearCondition?: boolean;
 };
 
 export type CollectionChange =
@@ -55,8 +64,12 @@ export type CollectionChange =
   | { kind: "replace"; items: PendingItem[]; uploadId?: string }
   /** Quantities added: an upload in Add mode (`uploadId`, stamped as above), or the Add cards sheet. */
   | { kind: "add"; items: PendingItem[]; uploadId?: string }
-  /** Per-row new counts: card details, a row removed. */
-  | { kind: "edit"; rows: EditRow[] }
+  /**
+   * Per-row new counts: card details, a row removed. `seen` is every holding of the card the
+   * editor showed: a holding of that card the player has now and the editor never saw (another tab
+   * added a printing) refuses with `stale`, so a removal never leaves an unseen holding behind.
+   */
+  | { kind: "edit"; rows: EditRow[]; seen?: SeenHolding[] }
   /**
    * Reverse entry `entryId` against today's collection. `expected` is the after-count per row
    * the confirmation showed, keyed by `collectionItemKey`; a difference refuses with `stale`.
@@ -226,10 +239,28 @@ export function planEdit(current: Map<string, Held>, rows: EditRow[]): Planned[]
     const c = current.get(keyOf(r)) ?? null;
     const before = c && stateOf(c);
     const attrs = c
-      ? { scryfallId: c.scryfallId, condition: c.condition }
+      ? { scryfallId: c.scryfallId, condition: r.clearCondition ? null : c.condition }
       : { scryfallId: r.scryfallId ?? null, condition: r.condition ?? null };
     return planned(r, before, settle(r.quantity, attrs));
   });
+}
+
+/**
+ * Holdings the editor's picture of the card no longer matches (`seen` is every holding it drew,
+ * with its count): one it never showed (another tab added a printing) or one whose count moved,
+ * touched by this edit or not. So a removal never leaves an unseen holding behind and a toast never
+ * reports a total the card no longer has. No `seen` means no claim.
+ */
+export function unseenHoldings(current: Map<string, Held>, seen: SeenHolding[] | undefined): CollectionItemIdentity[] {
+  if (!seen) return [];
+  const known = new Map(seen.map((s) => [keyOf(s), s]));
+  const moved: CollectionItemIdentity[] = [...current.values()].filter((h) => {
+    const s = known.get(keyOf(h));
+    return !s || s.quantity !== h.quantity || (s.condition ?? null) !== (h.condition ?? null);
+  });
+  // A holding the editor drew that is gone now has no row in `current`, and is stale all the same.
+  const gone = seen.filter((s) => s.quantity > 0 && !current.has(keyOf(s)));
+  return [...moved, ...gone];
 }
 
 /** Rows an edit named with an `expected` that today's count does not match. */
@@ -493,7 +524,7 @@ export async function applyCollectionChange(
         case "replace": plan = planReplace(current, items); break;
         case "add": plan = planAdd(current, items); break;
         case "edit": {
-          const stale = staleEdits(current, change.rows);
+          const stale = [...staleEdits(current, change.rows), ...unseenHoldings(current, change.seen)];
           if (stale.length > 0) throw new Refused({ status: "stale", current: currentOf(current, stale) });
           plan = planEdit(current, change.rows);
           break;

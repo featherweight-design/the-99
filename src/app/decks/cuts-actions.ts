@@ -11,16 +11,21 @@ import { creditsCopy } from "../../lib/copy/credits";
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
-import { readKeyCardNames, readProposedCuts, reapCutsRuns } from "../../lib/decks/cuts-read";
+import { readCutsState, readProposedCuts, reapCutsRuns } from "../../lib/decks/cuts-read";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
+import { deckBodySize } from "../../lib/decks/deck-size";
 import { deckSurfaces } from "../../lib/decks/revalidate";
+import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { commanderName } from "../../lib/decks/tuning-read";
 import { deckNameIndex, normalizeName } from "../../lib/synopsis/facts";
 import { callModel } from "../../lib/model/client";
 import { FEATURE_CALLS } from "../../lib/model/prices";
+import { cutCounts } from "../../lib/tuning/cuts-count";
 import { buildCutsPack, type CutsPack } from "../../lib/tuning/cuts-evidence";
 import { buildCutsPrompt } from "../../lib/tuning/cuts-prompt";
 import { cancelCutsRun, finishCutsRun, persistCutsRun, startCutsRun } from "../../lib/tuning/cuts-run-store";
+import type { CutsPanel } from "../../lib/tuning/cuts-state";
+import { cutItem, setCutKept, undoCutItem, type CutOutcome } from "../../lib/tuning/cuts-verdicts";
 import { cutsResponseSchema } from "../../lib/tuning/cuts-schema";
 import { validateCuts, type CutsReport } from "../../lib/tuning/cuts-validate";
 import { proposedCutsEnabled } from "../../lib/tuning/flag";
@@ -79,16 +84,15 @@ export async function runProposedCuts(
 
   const inputs = await readProposedCuts(deckId, userId);
   if (!inputs) return { ok: false, message: deckCutsCopy.run.refused };
-  const { head, facts, allLocked, fingerprint, readVersion, intent } = inputs;
+  const { head, facts, allLocked, fingerprint, readVersion, intent, keyCards } = inputs;
 
   // Both refusals land BEFORE `startCutsRun` reserves a credit: "No credit is used" is true of the
   // server, not only of a disabled button.
   if (facts.over === 0) return { ok: false, message: deckCutsCopy.run.notOver };
   if (allLocked) return { ok: false, message: lockedCardsCopy.tuning.allLocked(await commanderName(head)) };
 
-  const [name, keyCards, textRows] = await Promise.all([
+  const [name, textRows] = await Promise.all([
     commanderName(head),
-    readKeyCardNames(head),
     // Oracle text for the cards that could come out: the front face only (`castFaceText`), the
     // configuration the recall eval chose. Catalog data, so no `playerText`.
     facts.cards.length === 0 ? [] : db
@@ -103,6 +107,10 @@ export async function runProposedCuts(
   // The intent the player already stored on the deck (the one Suggested changes reads); it goes
   // through `playerText` inside the pack. No notes in this version.
   const pack = buildCutsPack({ facts, commanderName: name, keyCards, intent, texts });
+  // Every card left to cut is a Key card: the validator would drop every answer, so no credit is held.
+  if (pack.cards.length > 0 && pack.cards.every((c) => pack.keyCardIds.includes(c.oracleId))) {
+    return { ok: false, message: deckCutsCopy.panel.allLocked(await commanderName(head)) };
+  }
   const { system, user } = buildCutsPrompt(pack);
   // The reservation prices a request at the feature's input ceiling, so a prompt past it is refused
   // here, before a credit is held, rather than sent at a cost the spend cap never counted. Three
@@ -149,7 +157,9 @@ export async function runProposedCuts(
     // A rejection is stored as busy: the distinction is kept for the overview only, for now.
     if (!outcome.ok) return await fail(outcome.errorClass === "upstream_rejected" ? "upstream_busy" : outcome.errorClass);
 
-    const { kept, report } = validateCuts({ reply: outcome.value, pack, resolveName: packNameResolver(pack) });
+    const checked = validateCuts({ reply: outcome.value, pack, resolveName: packNameResolver(pack) });
+    const { kept } = checked;
+    const report: CutsReport = { ...checked.report, chips: cutCounts(facts, (head.declaredBracket as 1 | 2 | 3 | 4 | 5 | null) ?? null, name).chips };
     // Nothing survived the checks: refunded like every failure, and the report says why.
     if (kept.length === 0) return await fail("ungrounded", report);
 
@@ -167,4 +177,93 @@ export async function cancelProposedCuts(deckId: string, runId: string): Promise
   if (!proposedCutsEnabled() || !isUuid(deckId) || !isUuid(runId)) return { ok: true };
   if (await cancelCutsRun(runId, deckId, userId)) revalidateDeck(deckId);
   return { ok: true };
+}
+
+/**
+ * The panel's one read: the run state, and the count the model reads for the deck as it stands.
+ * Null when the switch is off, the id is not a uuid or the deck is not the reader's.
+ *
+ * `resultCurrent` is the re-offer rule (README open 9, decided in the R2 audit): the newest ok
+ * run's cuts stand while the deck still matches the fingerprint they were made against, and a cut
+ * pressed FROM them moves that fingerprint in its own transaction (`cuts-verdicts.ts`), so only an edit that is not
+ * one of their own cuts retires them and brings the offer back.
+ */
+export async function readCutsPanel(deckId: string): Promise<CutsPanel | null> {
+  const userId = await requireUserId();
+  if (!proposedCutsEnabled() || !isUuid(deckId)) return null;
+  const inputs = await readProposedCuts(deckId, userId);
+  if (!inputs) return null;
+  const { head, facts, locked, allLocked: lockedOut, fingerprint } = inputs;
+  const keyCards = inputs.keyCards;
+  const [state, name] = await Promise.all([
+    readCutsState(deckId, userId),
+    commanderName(head),
+  ]);
+  const declared = (head.declaredBracket as 1 | 2 | 3 | 4 | 5 | null) ?? null;
+  // Key cards that are still candidates, resolved the way the validator resolves them. A name the
+  // deck no longer holds, a duplicate, or a locked card counts for nothing; and when every card
+  // the player has not locked is a Key card, a deeper look has nothing it may name.
+  const byName = deckNameIndex(facts.cards);
+  const liveKey = new Set(keyCards.flatMap((k) => { const hit = byName.get(normalizeName(k)); return hit ? [hit.oracleId] : []; }));
+  const allLocked = lockedOut || (facts.cards.length > 0 && facts.cards.every((c) => liveKey.has(c.oracleId)));
+  const counts = cutCounts(facts, declared, name);
+  return {
+    ...state,
+    total: facts.total,
+    bodySize: deckBodySize(head.partnerOracleId !== null),
+    over: facts.over,
+    commander: name,
+    allLocked,
+    lockedCount: locked.length,
+    keyCount: liveKey.size,
+    declaredBracket: declared,
+    edhrecDecks: facts.support?.deckCount ?? null,
+    thin: facts.missing.includes("inclusion"),
+    rows: counts.rows,
+    // The chips quote the figures the run's cites were checked against; the rows above stay live.
+    chips: state.itemsReport?.chips ?? counts.chips,
+    resultCurrent: state.lastOkFingerprint === fingerprint && !state.modelVersionMoved,
+    asked: state.itemsReport?.over ?? state.items.length,
+  };
+}
+
+const REFUSALS = deckCutsCopy.panel.refusals;
+
+/** A verdict's outcome as the message the panel draws. The run's fingerprint follows a cut inside
+ *  the verdict's own transaction (`cuts-verdicts.ts`), so there is nothing to chain here. */
+async function settleVerdict(outcome: CutOutcome, userId: string, membership: boolean): Promise<DeckMutationResult> {
+  if (!outcome.ok) {
+    return { ok: false, message: outcome.reason === "cutGone" ? REFUSALS.cutGone : outcome.reason === "cutLocked" ? REFUSALS.cutLocked : outcome.reason === "moved" ? REFUSALS.moved : outcome.reason === "stale" ? REFUSALS.stale : REFUSALS.generic };
+  }
+  // A cut or an undo changes deck membership, so it retires every surface a claim reaches (the
+  // collection, commanders, discover, the changes page); Keep and Show it again move no card.
+  if (membership) revalidateClaims(outcome.deckId, userId);
+  else revalidateDeck(outcome.deckId);
+  return { ok: true };
+}
+
+/** Cut: writes to the list straight away, refused when the card is locked or gone. */
+export async function cutProposed(itemId: string): Promise<DeckMutationResult> {
+  const userId = await requireUserId();
+  if (!proposedCutsEnabled() || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
+  return settleVerdict(await cutItem(itemId, userId), userId, true);
+}
+
+export async function undoProposedCut(itemId: string): Promise<DeckMutationResult> {
+  const userId = await requireUserId();
+  if (!proposedCutsEnabled() || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
+  return settleVerdict(await undoCutItem(itemId, userId), userId, true);
+}
+
+/** Keep and Show it again change no card, so they move no fingerprint. */
+export async function keepProposedCut(itemId: string): Promise<DeckMutationResult> {
+  const userId = await requireUserId();
+  if (!proposedCutsEnabled() || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
+  return settleVerdict(await setCutKept(itemId, userId, true), userId, false);
+}
+
+export async function restoreProposedCut(itemId: string): Promise<DeckMutationResult> {
+  const userId = await requireUserId();
+  if (!proposedCutsEnabled() || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
+  return settleVerdict(await setCutKept(itemId, userId, false), userId, false);
 }

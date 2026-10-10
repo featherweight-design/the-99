@@ -1,0 +1,393 @@
+{
+  "feature": "Collection screens PR 7: Edit copies and removal (\u00a7C, \u00a7D) from the card modal on /collection",
+  "note": "Needs COLLECTION_EDIT_ENABLED=true and an account owning Sol Ring in several printings (the audit user on scratch-5c-choice, with C21 #263 and CMM #410 added beside the bare imports). Rows open the sheet and never press Save or Remove. The toast and Undo, \u00a7E and the saving and failed states are walked by hand, since each needs a write. The negative row (a deck's card modal) is in collection-edit-copies-negative.json.",
+  "shares": {
+    "module": "src/components/collection/add-cards-sheet.tsx",
+    "binding": "AddCardsSheet",
+    "note": "The card modal's host mounts the same sheet in edit mode; the place head mounts it in add mode."
+  },
+  "rows": [
+    {
+      "id": "modal-link-desktop",
+      "label": "/collection: the card modal's receipt with Edit copies on its label line (1300)",
+      "view": "src/components/collection/edit-copies-host.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/collection?q=Sol+Ring",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Sol Ring",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "[data-testid='edit-copies-link']",
+          "settle": 300
+        }
+      ]
+    },
+    {
+      "id": "edit-rest-desktop",
+      "label": "Edit copies: at rest, Save disabled, a line per holding (1300)",
+      "view": "src/components/collection/edit-copies-host.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/collection?q=Sol+Ring",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Sol Ring",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-testid='edit-copies-link']",
+          "wait": "[role=dialog]",
+          "settle": 1800
+        }
+      ]
+    },
+    {
+      "id": "edit-lowered-desktop",
+      "label": "Edit copies: one line lowered, the note and the diff beside Save (1300)",
+      "view": "src/components/collection/edit-copies-host.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/collection?q=Sol+Ring",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Sol Ring",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-testid='edit-copies-link']",
+          "wait": "[role=dialog]",
+          "settle": 1800
+        },
+        {
+          "settle": 500,
+          "click": "button[aria-label='Fewer']:not([disabled])"
+        }
+      ]
+    },
+    {
+      "id": "edit-fix-printing-desktop",
+      "label": "Edit copies: a printing chip opened to fix a wrong printing (1300)",
+      "view": "src/components/collection/edit-copies-host.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/collection?q=Sol+Ring",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Sol Ring",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-testid='edit-copies-link']",
+          "wait": "[role=dialog]",
+          "settle": 1800
+        },
+        {
+          "clickRole": "button",
+          "name": "printing C21 \u00b7 #263",
+          "wait": "[role=radiogroup]",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "edit-add-printing-desktop",
+      "label": "Edit copies: Add another printing, in the required step, held printings left out (1300)",
+      "view": "src/components/collection/edit-copies-host.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/collection?q=Sol+Ring",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Sol Ring",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-testid='edit-copies-link']",
+          "wait": "[role=dialog]",
+          "settle": 1800
+        },
+        {
+          "clickRole": "button",
+          "name": "Add another printing",
+          "wait": "[role=radiogroup]",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "edit-remove-desktop",
+      "label": "Edit copies: Remove from collection staged, Save reads Remove N copies, never pressed (1300)",
+      "view": "src/components/collection/edit-copies-host.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/collection?q=Sol+Ring",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Sol Ring",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-testid='edit-copies-link']",
+          "wait": "[role=dialog]",
+          "settle": 1800
+        },
+        {
+          "clickRole": "button",
+          "name": "Remove from collection",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "modal-link-phone",
+      "label": "/collection: the card modal's receipt with Edit copies on its label line (390)",
+      "view": "src/components/collection/edit-copies-host.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/collection?q=Sol+Ring",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Sol Ring",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "All details",
+          "settle": 600
+        },
+        {
+          "scrollTo": "[data-testid='edit-copies-link']",
+          "settle": 300
+        }
+      ]
+    },
+    {
+      "id": "edit-rest-phone",
+      "label": "Edit copies: at rest, Save disabled, a line per holding (390)",
+      "view": "src/components/collection/edit-copies-host.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/collection?q=Sol+Ring",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Sol Ring",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "All details",
+          "settle": 600
+        },
+        {
+          "click": "[data-testid='edit-copies-link']",
+          "wait": "[role=dialog]",
+          "settle": 1800
+        }
+      ]
+    },
+    {
+      "id": "edit-lowered-phone",
+      "label": "Edit copies: one line lowered, the note and the diff beside Save (390)",
+      "view": "src/components/collection/edit-copies-host.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/collection?q=Sol+Ring",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Sol Ring",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "All details",
+          "settle": 600
+        },
+        {
+          "click": "[data-testid='edit-copies-link']",
+          "wait": "[role=dialog]",
+          "settle": 1800
+        },
+        {
+          "settle": 500,
+          "click": "button[aria-label='Fewer']:not([disabled])"
+        }
+      ]
+    },
+    {
+      "id": "edit-fix-printing-phone",
+      "label": "Edit copies: a printing chip opened to fix a wrong printing (390)",
+      "view": "src/components/collection/edit-copies-host.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/collection?q=Sol+Ring",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Sol Ring",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "All details",
+          "settle": 600
+        },
+        {
+          "click": "[data-testid='edit-copies-link']",
+          "wait": "[role=dialog]",
+          "settle": 1800
+        },
+        {
+          "clickRole": "button",
+          "name": "printing C21 \u00b7 #263",
+          "wait": "[role=radiogroup]",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "edit-add-printing-phone",
+      "label": "Edit copies: Add another printing, in the required step, held printings left out (390)",
+      "view": "src/components/collection/edit-copies-host.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/collection?q=Sol+Ring",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Sol Ring",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "All details",
+          "settle": 600
+        },
+        {
+          "click": "[data-testid='edit-copies-link']",
+          "wait": "[role=dialog]",
+          "settle": 1800
+        },
+        {
+          "clickRole": "button",
+          "name": "Add another printing",
+          "wait": "[role=radiogroup]",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "edit-remove-phone",
+      "label": "Edit copies: Remove from collection staged, Save reads Remove N copies, never pressed (390)",
+      "view": "src/components/collection/edit-copies-host.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/collection?q=Sol+Ring",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Sol Ring",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "All details",
+          "settle": 600
+        },
+        {
+          "click": "[data-testid='edit-copies-link']",
+          "wait": "[role=dialog]",
+          "settle": 1800
+        },
+        {
+          "clickRole": "button",
+          "name": "Remove from collection",
+          "settle": 600
+        }
+      ]
+    }
+  ]
+}

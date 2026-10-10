@@ -1,0 +1,1 @@
+ALTER TABLE "deck_cut_items" ADD COLUMN "undo_snapshot" jsonb;

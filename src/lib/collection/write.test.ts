@@ -4,7 +4,7 @@ import type { HistoryRow } from "../../db/schema";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import {
   committedShortfalls, countMoves, newlyShort, normalizeItems, planAdd, planEdit, planReplace,
-  planRevert, staleEdits, staleRevert, warningCovers, type ShortDeck,
+  planRevert, staleEdits, unseenHoldings, staleRevert, warningCovers, type ShortDeck,
 } from "./write";
 import { collectionEditEnabled } from "./edit-flag";
 
@@ -97,6 +97,13 @@ describe("planEdit", () => {
     expect(row.after).toEqual({ quantity: 1, scryfallId: null, condition: null });
   });
 
+  it("clears an existing row's condition only when told the folded copies disagreed", () => {
+    const [kept] = planEdit(coll(held(A, 3)), [{ ...id(A), quantity: 4, expected: 3 }]);
+    expect(kept.after?.condition).toBe("NM");
+    const [cleared] = planEdit(coll(held(A, 3)), [{ ...id(A), quantity: 4, expected: 3, clearCondition: true }]);
+    expect(cleared.after?.condition).toBeNull();
+  });
+
   it("refuses a negative count and a row named twice", () => {
     expect(() => planEdit(coll(), [{ ...id(A), quantity: -1 }])).toThrow();
     expect(() => planEdit(coll(), [{ ...id(A), quantity: 1 }, { ...id(A), quantity: 2 }])).toThrow();
@@ -108,6 +115,19 @@ describe("planEdit", () => {
     expect(staleEdits(current, [{ ...id(A), quantity: 2, expected: 2 }])).toHaveLength(1);
     expect(staleEdits(current, [{ ...id(B), quantity: 1, expected: 0 }])).toEqual([]);
     expect(staleEdits(current, [{ ...id(A), quantity: 1 }])).toEqual([]);
+  });
+
+  it("finds a holding the editor never showed, one whose count moved or that is gone, and claims nothing without `seen`", () => {
+    const current = coll(held(A, 3), { ...held(A, 1), setCode: "lea2" } as never);
+    const seen = (q: number, set = "lea") => ({ ...id(A, set), quantity: q, condition: "NM" });
+    expect(unseenHoldings(current, undefined)).toEqual([]);
+    expect(unseenHoldings(current, [seen(3)])).toHaveLength(1); // lea2 was never shown
+    expect(unseenHoldings(current, [seen(3), seen(1, "lea2")])).toEqual([]);
+    expect(unseenHoldings(current, [seen(2), seen(1, "lea2")])).toHaveLength(1); // untouched holding moved
+    expect(unseenHoldings(current, [seen(3), seen(1, "lea2"), seen(2, "lea3")])).toHaveLength(1); // one drawn, now gone
+    // A condition changed in another tab is a change too (the fixture holds NM).
+    expect(unseenHoldings(current, [seen(3), seen(1, "lea2")])).toEqual([]);
+    expect(unseenHoldings(current, [{ ...seen(3), condition: "LP" }, { ...seen(1, "lea2"), condition: "NM" }])).toHaveLength(1);
   });
 });
 

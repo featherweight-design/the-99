@@ -100,7 +100,7 @@ export function buildEvidencePack(input: {
     for (const card of cards) rolesOf.set(card.oracleId, [...(rolesOf.get(card.oracleId) ?? []), role]);
   }
 
-  const mix = recommendedMix(profile.skeleton, profile.commanderOracleIds.length > 1);
+  const mix = recommendedMix(profile.skeleton, profile.commanderOracleIds.length > 1, profile.skeleton.roleBasis ?? "classifier");
   // Whether the four ROLE cells are measured — the predicate `recommendedMix` applies before it
   // falls back to its flat figures (`rolesUsable`, src/lib/decks/mix.ts). Restated rather than
   // imported because mix.ts does not export it; if the two ever disagree, a cell would be

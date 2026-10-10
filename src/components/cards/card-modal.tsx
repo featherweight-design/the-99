@@ -22,6 +22,7 @@ import { identityGradient } from "../../lib/collection/gradients";
 import { printingPickerCopy } from "../../lib/copy/collection";
 import { availabilityState, type DeckClaim } from "../../lib/decks/availability";
 import { availabilityCopy } from "../../lib/copy/availability";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { allocateClaims } from "../../lib/decks/allocate";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { clearCardArtPreference, setCardArtPreference } from "../../app/collection/actions";
@@ -288,15 +289,71 @@ function OwnedLine({ card, deckPage }: { card: BrowseCard; deckPage: boolean }) 
   );
 }
 
-function AvailabilityDetail({ card, deckPage }: { card: BrowseCard; deckPage: boolean }) {
+/**
+ * The receipt's label line: its heading, and on /collection the link that edits what the reader
+ * owns (collection edit R2 §C1), right-aligned in the modal's accent-underline link style. The
+ * phone's tap area is the 44px row; the negative margin keeps the row from growing the block.
+ */
+function ReceiptHeading({ owned, onEditCopies }: { owned: number; onEditCopies: (() => void) | null }) {
+  const c = availabilityCopy.collection;
+  const heading = (
+    <div
+      className="font-mono text-[10px] tracking-[0.1em] uppercase"
+      style={{ color: "var(--fg-faint)" }}
+    >
+      {c.detailHeading}
+    </div>
+  );
+  // Without the link the heading is exactly what shipped: no wrapper, nothing reserved.
+  if (!onEditCopies) return heading;
+  return (
+    <div className="flex items-center justify-between gap-[12px]">
+      {heading}
+      {onEditCopies ? (
+        <button
+          type="button"
+          data-testid="edit-copies-link"
+          onClick={onEditCopies}
+          className="-my-[16px] flex min-h-[44px] cursor-pointer items-center border-0 bg-transparent p-0 text-[13px] text-[color:var(--accent)] underline underline-offset-2 md:-my-[8px] md:min-h-[32px]"
+        >
+          {owned > 0 ? collectionEditCopy.copies.edit : collectionEditCopy.copies.addToCollection}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function AvailabilityDetail({
+  card, deckPage, onEditCopies = null,
+}: { card: BrowseCard; deckPage: boolean; onEditCopies?: (() => void) | null }) {
   const a = card.availability;
+  const c = availabilityCopy.collection;
+  const state = a ? availabilityState(a) : "free";
+  // From /collection the receipt draws even when it has nothing to report, because the link to
+  // edit copies lives on its label line: a card with no claims would otherwise have nowhere to
+  // put it. Anywhere else a receipt with nothing in it stays absent, as it was.
+  if (onEditCopies && (!a || (state === "free" && a.claims.length === 0))) {
+    const owned = a ? a.owned : card.quantity;
+    return (
+      <div
+        data-testid="owned-receipt"
+        className="rounded-[10px] mt-[16px] md:mt-[22px] p-[14px_16px] md:p-[18px_20px]"
+        style={{ background: "var(--bg)", border: "1px solid var(--border)" }}
+      >
+        <ReceiptHeading owned={owned} onEditCopies={onEditCopies} />
+        {owned > 0 ? (
+          <div className="mt-[8px] flex items-center gap-[8px] text-[13px]" style={{ color: "var(--fg-body)" }}>
+            <span className="font-mono" style={{ color: "var(--accent)" }}>×{owned}</span>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
   if (!a) return null;
-  const state = availabilityState(a);
   // A claim with copies to spare still reads as `free` — that is the state the
   // marker is right to draw — but it is exactly the case #353 was filed about,
   // so the receipt renders on claims, not on state.
   if (state === "free" && a.claims.length === 0) return null;
-  const c = availabilityCopy.collection;
   // Who actually gets each copy, from the one implementation of that arithmetic — the same
   // call the arrivals receipt and the chooser's preview make. A row's verb is this and not
   // `claim.mature`: a committed deck that came second to the only copy owned holds nothing.
@@ -321,12 +378,7 @@ function AvailabilityDetail({ card, deckPage }: { card: BrowseCard; deckPage: bo
       className="rounded-[10px] mt-[16px] md:mt-[22px] p-[14px_16px] md:p-[18px_20px]"
       style={{ background: "var(--bg)", border: "1px solid var(--border)" }}
     >
-      <div
-        className="font-mono text-[10px] tracking-[0.1em] uppercase"
-        style={{ color: "var(--fg-faint)" }}
-      >
-        {c.detailHeading}
-      </div>
+      <ReceiptHeading owned={a.owned} onEditCopies={onEditCopies} />
       <div
         className="mt-[8px] flex items-center gap-[8px] text-[13px]"
         style={{ color: "var(--fg-body)" }}
@@ -621,6 +673,7 @@ export function CardModal({
   phoneBackLabel,
   footer = null,
   onFindDeck = null,
+  onEditCopies = null,
   fitsOpen = false,
   door = null,
   covered = false,
@@ -685,6 +738,13 @@ export function CardModal({
    * and every card whose footer is a sheet's own (a stand-in's Take).
    */
   onFindDeck?: (() => void) | null;
+  /**
+   * Collection edit R2 §C: the receipt's `Edit copies` link (or `Add to collection` for a card the
+   * reader does not own). Passed only by a provider mounted by `/collection`, so decks, Shopping,
+   * search and History keep the receipt read-only. Null draws no link and no receipt that was not
+   * already drawn.
+   */
+  onEditCopies?: (() => void) | null;
   /** The picker the door opened is up, so its close hands focus back to the door. */
   fitsOpen?: boolean;
   /** The deck this card was opened from, which scopes the proxy control. Null
@@ -2356,7 +2416,7 @@ export function CardModal({
                 deckName={deckName}
                 onSelectPartner={onSelectCard}
               />
-              <AvailabilityDetail card={card} deckPage={deckPage} />
+              <AvailabilityDetail card={card} deckPage={deckPage} onEditCopies={onEditCopies} />
               <ProxyDetail card={card} />
 
               {/* Deck-scoped, and absent without a deck: opened from `/collection`

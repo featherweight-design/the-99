@@ -5,7 +5,7 @@ vi.mock("../../db", () => ({ db: {} }));
 
 import type { SynopsisFacts } from "./facts";
 import { validateSynopsisV8 } from "./validate-v8";
-import { chargeFor, failedRunSet, mergeRetry, outcomeOf, refusedSections, shown, sumUsage } from "./generate";
+import { applyRepair, chargeFor, failedRunSet, mergeRetry, outcomeOf, refusedSections, shown, sumUsage } from "./generate";
 import { isRepair } from "./prompt";
 import { stubDelayMs, stubMode, stubReply, synopsisLive } from "./stub";
 import type { CheckedSynopsis, SectionVerdict } from "./types";
@@ -206,5 +206,14 @@ describe("the stub", () => {
     expect(stubDelayMs({ SYNOPSIS_STUB_DELAY_MS: "-5" })).toBe(0);
     expect(stubDelayMs({ SYNOPSIS_STUB_DELAY_MS: "2500" })).toBe(2500);
     expect(stubDelayMs({ SYNOPSIS_STUB_DELAY_MS: "600000" })).toBe(60_000);
+  });
+});
+
+describe("a repair that did not come back", () => {
+  it("leaves the first answer as it was, for the write and for the eval gate alike", async () => {
+    const first = content([ok("overview"), no("primer"), ok("keyCards"), ok("weaknesses")], "first");
+    const after = await applyRepair(first, { ok: false, errorClass: "upstream_busy" }, ["primer"], {} as SynopsisFacts, false);
+    expect(after).toBe(first);
+    expect(refusedSections(after)).toEqual(["primer"]);
   });
 });
