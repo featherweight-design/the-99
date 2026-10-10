@@ -103,7 +103,7 @@ describe("arrival printings (deck printings)", () => {
   });
 
   it("adds no clause for anything it did not write", () => {
-    for (const v of [undefined, "", "12", "12-3-1", "a-b", "0-0", ["1-2", "3-4"], "9".repeat(20) + "-1"]) {
+    for (const v of [undefined, "", "12", "12-3-1", "a-b", "0-0", "01-2", "1-02", ["1-2", "3-4"], "9".repeat(20) + "-1"]) {
       expect(readArrivalPrintings(v as string | string[] | undefined, true)).toBeNull();
     }
   });

@@ -94,5 +94,7 @@ export function readArrivalPrintings(
   const kept = Number(match[1]);
   const notOwned = Number(match[2]);
   if (!Number.isSafeInteger(kept) || !Number.isSafeInteger(notOwned) || kept + notOwned === 0) return null;
+  // Only the exact form `arrivalPrintingsParam` writes: `01-2` is digits, and not ours.
+  if (arrivalPrintingsParam(kept, notOwned) !== value) return null;
   return { kept, notOwned };
 }

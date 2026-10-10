@@ -23,7 +23,9 @@ const MAX_QUANTITY = 10_000;
 const ANNOTATION_RE = /\s+\*([A-Za-z]+)\*$/;
 // The collector number takes any run without whitespace or brackets: the catalog's own forms include
 // `a1_2007` and `123★`, and an export names whatever the catalog holds.
-const SET_CODE_RE = /\s+\(([A-Za-z0-9]{2,6})\)(?:\s+([^\s()]+))?$/;
+// Set codes run 2 to 8 characters, the range a deck pick accepts, so every printing an export
+// names parses back.
+const SET_CODE_RE = /\s+\(([A-Za-z0-9]{2,8})\)(?:\s+([^\s()]+))?$/;
 
 function splitPrinting(text: string): Pick<CollectionRow, "name" | "setCode" | "collectorNumber" | "finish"> {
   let rest = text;

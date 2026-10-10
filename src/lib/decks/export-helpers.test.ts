@@ -78,11 +78,15 @@ describe("buildDecklistText", () => {
     const text = buildDecklistText({
       commanderName: "Atreus, God of War",
       partnerName: null,
-      cards: [{ quantity: 1, name: "Lightning Bolt", setCode: "PRM", collectorNumber: "a1_2007" }],
+      cards: [
+        { quantity: 1, name: "Lightning Bolt", setCode: "PRM", collectorNumber: "a1_2007" },
+        // The longest set code a pick accepts.
+        { quantity: 1, name: "Kratos, God of War", setCode: "ABCDEFGH", collectorNumber: "284" },
+      ],
     });
     const back = buildDeckImport({ text, catalog });
-    expect(back.cards.map((c) => c.oracleId)).toEqual(["oracle-lightning-bolt"]);
-    expect(back.printings.map((p) => [p.setCode, p.collectorNumber])).toEqual([["prm", "a1_2007"]]);
+    expect(back.cards.map((c) => c.oracleId)).toEqual(["oracle-lightning-bolt", "oracle-kratos-god-of-war"]);
+    expect(back.printings.map((p) => [p.setCode, p.collectorNumber])).toEqual([["prm", "a1_2007"], ["abcdefgh", "284"]]);
   });
 
   it("names a commander with no printing by name alone", () => {
