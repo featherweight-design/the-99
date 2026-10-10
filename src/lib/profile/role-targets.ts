@@ -8,7 +8,7 @@ import { inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { commanderSupport, identityComposition } from "../../db/schema";
 import { countCondition, identityCondition } from "../staples/condition";
-import { pickRoleTargets } from "./build";
+import { pickRoleTargets, type RoleBasis } from "./build";
 import type { ProfileRoleTargets } from "./types";
 
 /** The role half of a commander, pair or bucket row. */
@@ -74,6 +74,9 @@ export function roleTargetsFrom(
  */
 export async function loadRoleTargetsForCommanders(
   commanders: readonly { oracleId: string; colorIdentity: readonly string[] }[],
+  /** `labels` walks the same chain over the `label_*` figures and falls to the label flat targets
+   *  (labels-everywhere plan); the default is the classifier's, exactly as before. */
+  basis: RoleBasis = "classifier",
 ): Promise<Map<string, ProfileRoleTargets>> {
   if (commanders.length === 0) return new Map();
   const conditions = new Set<string>();
@@ -87,6 +90,8 @@ export async function loadRoleTargetsForCommanders(
         oracleId: commanderSupport.commanderOracleId,
         avgRamp: commanderSupport.avgRamp, avgDraw: commanderSupport.avgDraw,
         avgRemoval: commanderSupport.avgRemoval, avgWipes: commanderSupport.avgWipes,
+        labelRamp: commanderSupport.labelRamp, labelDraw: commanderSupport.labelDraw,
+        labelRemoval: commanderSupport.labelRemoval, labelWipes: commanderSupport.labelWipes,
       })
       .from(commanderSupport)
       .where(inArray(commanderSupport.commanderOracleId, commanders.map((c) => c.oracleId))),
@@ -95,6 +100,8 @@ export async function loadRoleTargetsForCommanders(
         condition: identityComposition.condition,
         avgRamp: identityComposition.avgRamp, avgDraw: identityComposition.avgDraw,
         avgRemoval: identityComposition.avgRemoval, avgWipes: identityComposition.avgWipes,
+        labelRamp: identityComposition.labelRamp, labelDraw: identityComposition.labelDraw,
+        labelRemoval: identityComposition.labelRemoval, labelWipes: identityComposition.labelWipes,
         withRoles: identityComposition.withRoles,
       })
       .from(identityComposition)
@@ -102,10 +109,14 @@ export async function loadRoleTargetsForCommanders(
   ]);
   const ownBy = new Map(own.map((r) => [r.oracleId, r]));
   const bucketBy = new Map(buckets.map((r) => [r.condition, r]));
+  // The label chain reads the SAME rungs through `labelRoleRow`, so its guard (finite, all-or-nothing)
+  // is the classifier's. A bucket's witness on this basis is nullity: `withRoles` counts `avg_*`.
+  const rung = (row: (RoleRow & NonNullable<Parameters<typeof labelRoleRow>[0]>) | undefined) =>
+    basis === "labels" ? roleTargetsFrom(labelRoleRow(row)) : roleTargetsFrom(row);
   return new Map(commanders.map((c) => [c.oracleId, pickRoleTargets({
     pair: null,
-    commander: roleTargetsFrom(ownBy.get(c.oracleId)),
-    identity: roleTargetsFrom(bucketBy.get(identityCondition([...c.colorIdentity]))),
-    count: roleTargetsFrom(bucketBy.get(countCondition(c.colorIdentity.length))),
-  })]));
+    commander: rung(ownBy.get(c.oracleId)),
+    identity: rung(bucketBy.get(identityCondition([...c.colorIdentity]))),
+    count: rung(bucketBy.get(countCondition(c.colorIdentity.length))),
+  }, basis)]));
 }

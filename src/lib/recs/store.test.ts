@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sql } from "drizzle-orm";
 
 // store.ts imports the db client, which throws at module init without DATABASE_URL.
@@ -25,6 +25,11 @@ vi.mock("../cache/index-generation", () => ({
   },
 }));
 
+// The label re-read inside the write's transaction (`labelCheck`), answered here.
+const labelRead = vi.hoisted(() => ({ sets: new Map<string, string[]>() }));
+vi.mock("../labels/read", () => ({ readLabelRoleSets: async () => labelRead.sets }));
+
+import { roleSetFingerprint } from "../labels/role-sets";
 import {
   findScoredCommander,
   INDEX_UNREADABLE,
@@ -451,6 +456,42 @@ describe("persistScores generation guard", () => {
     expect(fake.trace()).toEqual(["execute", "lock:user", "read:collection"]);
   });
 
+  // A label publish can commit between the compute's label read and this write. The sets the
+  // compute counted by are fingerprinted, and re-read under the lock before any row is stored
+  // (labels-everywhere PR 5).
+  describe("with a label check", () => {
+    const ids = ["a", "b"];
+    const counted = new Map<string, ("ramp" | "draw")[]>([["a", ["ramp"]], ["b", ["draw"]]]);
+    const check = { oracleIds: ids, fingerprint: roleSetFingerprint(ids, counted) };
+
+    it("writes when the labels have not moved", async () => {
+      const at = new Date("2026-07-24T12:00:00Z");
+      const fake = fakeDb(at, at);
+      stub.db.transaction = fake.db.transaction;
+      labelRead.sets = new Map(counted);
+      await persistScores("user_1", [ranked()], gen(at), String(at.getTime()), check);
+      expect(fake.conflictSet()).not.toBeNull();
+    });
+
+    it("drops the write when a label publish moved a card's roles", async () => {
+      const at = new Date("2026-07-24T12:00:00Z");
+      const fake = fakeDb(at, at);
+      stub.db.transaction = fake.db.transaction;
+      labelRead.sets = new Map([["a", ["draw"]], ["b", ["draw"]]]);
+      await persistScores("user_1", [ranked()], gen(at), String(at.getTime()), check);
+      expect(fake.conflictSet()).toBeNull();
+    });
+
+    it("drops the write when a card lost its label", async () => {
+      const at = new Date("2026-07-24T12:00:00Z");
+      const fake = fakeDb(at, at);
+      stub.db.transaction = fake.db.transaction;
+      labelRead.sets = new Map([["b", ["draw"]]]);
+      await persistScores("user_1", [ranked()], gen(at), String(at.getTime()), check);
+      expect(fake.conflictSet()).toBeNull();
+    });
+  });
+
   // Most of a set's rows already exist, so the conflict path is the one that
   // runs. A version left out of it survives the recompute meant to heal it, and
   // `loadScores` condemns the set again on the very next read — a recompute on
@@ -652,6 +693,35 @@ describe("loadScores and the rows a mid-deploy write left behind", () => {
 
   it("names the current writer on every row it writes", () => {
     expect(toScoreRow("user_1", ranked()).writerVersion).toBe(SCORE_WRITER_CURRENT);
+  });
+
+  // The role basis rides in the version (labels-everywhere PR 5): the switch flipping either way
+  // must make the other basis's persisted set a miss, never serve it as current.
+  describe("by role basis", () => {
+    afterEach(() => vi.unstubAllEnvs());
+
+    it("stamps a label-counted row with the negated writer version", () => {
+      vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
+      expect(toScoreRow("user_1", ranked()).writerVersion).toBe(-SCORE_WRITER_CURRENT);
+    });
+
+    it("reads a classifier-counted set as a miss with the switch on", async () => {
+      vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
+      stub.db.select = resolvingSelect([row({ writerVersion: SCORE_WRITER_CURRENT })]);
+      await expect(loadScores("user_1")).resolves.toEqual({ items: [], degradedOracleIds: [] });
+    });
+
+    it("serves a label-counted set with the switch on", async () => {
+      vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
+      stub.db.select = resolvingSelect([row({ writerVersion: -SCORE_WRITER_CURRENT })]);
+      expect((await loadScores("user_1")).items).toHaveLength(1);
+    });
+
+    it("reads a label-counted set as a miss with the switch off, so a rollback restores the classifier", async () => {
+      vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "");
+      stub.db.select = resolvingSelect([row({ writerVersion: -SCORE_WRITER_CURRENT })]);
+      await expect(loadScores("user_1")).resolves.toEqual({ items: [], degradedOracleIds: [] });
+    });
   });
 });
 

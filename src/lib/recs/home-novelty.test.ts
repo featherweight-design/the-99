@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { PgDialect } from "drizzle-orm/pg-core";
 
 const execute = vi.hoisted(() => vi.fn());
@@ -26,7 +26,7 @@ describe("unplayedCountsSql", () => {
   // that set's order would disagree with the list Home is drawing, so it yields no candidates.
   it("condemns a stale score set the way loadScores does", async () => {
     const { SCORE_WRITER_CURRENT } = await import("../../db/schema");
-    expect(sql).toContain("stale.rank_score < 0 or stale.writer_version <");
+    expect(sql).toContain("stale.rank_score < 0 or stale.writer_version <>");
     expect(params).toContain(SCORE_WRITER_CURRENT);
   });
 
@@ -54,5 +54,22 @@ describe("loadUnplayedCounts", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     expect(await loadUnplayedCounts("user_1")).toBeNull();
     spy.mockRestore();
+  });
+});
+
+describe("unplayedCountsSql by role basis", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("refuses any set not written under this basis: <> and the negated version with the switch on", async () => {
+    const { SCORE_WRITER_CURRENT } = await import("../../db/schema");
+    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
+    const on = new PgDialect().sqlToQuery(unplayedCountsSql("user_1"));
+    expect(on.sql).toMatch(/stale\.writer_version <> \$\d+/);
+    expect(on.params).toContain(-SCORE_WRITER_CURRENT);
+    expect(on.params).not.toContain(SCORE_WRITER_CURRENT);
+    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "");
+    const off = new PgDialect().sqlToQuery(unplayedCountsSql("user_1"));
+    expect(off.params).toContain(SCORE_WRITER_CURRENT);
+    expect(off.params).not.toContain(-SCORE_WRITER_CURRENT);
   });
 });

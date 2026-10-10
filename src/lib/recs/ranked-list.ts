@@ -110,7 +110,8 @@ async function assemble(
   // The computed list is already correct; persisting is only an optimisation for
   // the next request, so a transient write failure must not fail this render.
   try {
-    await persistScores(userId, recs.results, generation, indexGen);
+    // A list counted by the classifier only because the label read failed is served, not stored.
+    if (!recs.labelFallback) await persistScores(userId, recs.results, generation, indexGen, recs.labelCheck);
   } catch {
     // not a fallback: the list is already computed and correct; only its store for next time failed.
     // Next load recomputes.

@@ -593,3 +593,27 @@ describe("completeness", () => {
     expect(COMPLETENESS_THRESHOLDS.mid).toBe(75);
   });
 });
+
+describe("scoreCommander by label", () => {
+  const commander = card({ name: "Cmdr", typeLine: "Legendary Creature", colorIdentity: [] });
+  // Text reads as ramp; a label may say otherwise.
+  const rock = card({ name: "Rock", typeLine: "Artifact", oracleText: "{T}: Add {C}." });
+  const bolt = card({ name: "Bolt", typeLine: "Instant", oracleText: "Destroy target creature." });
+  const fresh = card({ name: "Fresh", typeLine: "Artifact", oracleText: "{T}: Add {C}." }); // no label yet
+  const args = { commander, collection: [commander, rock, bolt, fresh], roleTargets: { ...ROLE_TARGETS }, support: null, inclusionByName: null };
+
+  it("counts by the classifier with no label map", () => {
+    const got = scoreCommander(args);
+    expect(got.roleCounts).toMatchObject({ ramp: 2, removal: 1 });
+  });
+
+  it("counts a labeled card by its label and an unlabeled card toward no role", () => {
+    const roleSets = new Map([
+      [rock.oracleId, ["draw" as const]],
+      [bolt.oracleId, ["removal" as const, "wipes" as const]],
+    ]);
+    const got = scoreCommander({ ...args, roleSets });
+    expect(got.roleCounts).toEqual({ ramp: 0, draw: 1, removal: 1, wipes: 1 });
+    expect(got.roleCards.draw.map((c) => c.name)).toEqual(["Rock"]);
+  });
+});

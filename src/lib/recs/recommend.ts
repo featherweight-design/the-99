@@ -8,6 +8,7 @@ import { readEdhrecCache, resolveEdhrecData } from "../edhrec/client";
 import { supportOverlap } from "../edhrec/support-overlap";
 import { loadSupportLists } from "../edhrec/support-read";
 import { loadRoleTargetsForCommanders } from "../profile/role-targets";
+import { loadPoolRoleBasis, type LabelCheck } from "./pool-role-basis";
 import type { ProfileRoleTargets } from "../profile/types";
 import { scoringSynergyState, type SynergyState } from "./synergy-state";
 import { committedSupport, readCommittedDecks, withCommitted } from "../decks/committed";
@@ -122,6 +123,15 @@ export type RecommendResult = {
   degraded: boolean;
   uniqueCardsRead: number;
   candidateCount: number;
+  /**
+   * True when the list was counted by the classifier only because the label read FAILED with the
+   * switch on. It is served, but a writer must not persist it: `commander_scores` records no
+   * basis, so a stored fallback would outlive the outage (labels-everywhere PR 5). Absent on
+   * every other result.
+   */
+  labelFallback?: true;
+  /** What the label sets were read as, handed to `persistScores` so it can drop a write whose labels moved. */
+  labelCheck?: LabelCheck;
 };
 
 /**
@@ -273,10 +283,12 @@ export async function recommendCommanders(
   // The live read still happens, for `inclusionByName` and for `synergyState`:
   // the role chips keep the fresher figures, and an EDHREC outage still has to
   // be describable. What moved to the index is the SCORE — Ruling D.
+  // The labels are read first: the targets follow the basis they come back under.
+  const { basis, roleSets, fellBack, labelCheck } = await loadPoolRoleBasis(collection);
   const [edhrecCache, supportLists, roleTargets] = await Promise.all([
     readEdhrecCache(candidates.map((c) => c.oracleId)),
     loadSupportLists(candidates.map((c) => c.oracleId)),
-    loadRoleTargetsForCommanders(candidates),
+    loadRoleTargetsForCommanders(candidates, basis),
   ]);
 
   // Fetch EDHREC data with bounded concurrency: sequential awaits would make
@@ -293,6 +305,7 @@ export async function recommendCommanders(
         const scored = scoreCommander({
           commander, collection,
           roleTargets: roleTargets.get(commander.oracleId)!.targets,
+          roleSets,
           support,
           inclusionByName: result.data?.inclusionByName ?? null,
         });
@@ -323,7 +336,11 @@ export async function recommendCommanders(
   const degraded = results.some((r) => r.synergyState === "degraded");
 
   const finalized = finalizeRecommendations(results, uniqueCardsRead, candidates.length);
-  return { ...finalized, degraded };
+  return {
+    ...finalized, degraded,
+    ...(fellBack ? { labelFallback: true as const } : {}),
+    ...(labelCheck ? { labelCheck } : {}),
+  };
 }
 
 /**
@@ -359,10 +376,12 @@ export async function scoreOneCommander(
     collection.find((c) => c.oracleId === oracleId) ?? (await loadPoolCard(oracleId));
   if (!commander) return null;
 
+  // The collection's labels, whichever pool is scored: a free pool is a subset of it.
+  const { basis, roleSets } = await loadPoolRoleBasis(collection);
   const [edhrecCache, supportLists, roleTargets] = await Promise.all([
     readEdhrecCache([oracleId]),
     loadSupportLists([oracleId]),
-    loadRoleTargetsForCommanders([commander]),
+    loadRoleTargetsForCommanders([commander], basis),
   ]);
   const support = supportLists.get(oracleId) ?? null;
   const targets = roleTargets.get(oracleId)!;
@@ -373,6 +392,7 @@ export async function scoreOneCommander(
   const scored = scoreCommander({
     commander, collection: pool ?? collection,
     roleTargets: targets.targets,
+    roleSets,
     support,
     inclusionByName: result.data?.inclusionByName ?? null,
   });

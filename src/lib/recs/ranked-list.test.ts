@@ -106,6 +106,23 @@ describe("getRankedList", () => {
     expect(persistScores.mock.calls[0]?.[1]).toHaveLength(2);
   });
 
+  it("serves a list counted by the classifier only because the label read failed, and does not store it", async () => {
+    loadScores.mockResolvedValue({ items: [], degradedOracleIds: [] });
+    recommendCommanders.mockResolvedValue({
+      results: [item("kept", 90)],
+      degraded: false,
+      uniqueCardsRead: 10,
+      candidateCount: 1,
+      labelFallback: true,
+    });
+    loadBuiltCommanderIds.mockResolvedValue(new Set());
+
+    const list = await getRankedList("user_1");
+
+    expect(list.items).toHaveLength(1);
+    expect(persistScores).not.toHaveBeenCalled();
+  });
+
   // Both fingerprints have to REACH the write, and neither is visible in its
   // result: `persistScores` drops a stale write silently, so threading either
   // one wrong looks exactly like nothing being wrong.
