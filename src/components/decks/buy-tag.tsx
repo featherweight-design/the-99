@@ -4,8 +4,10 @@
 // Only the plate differs: the row's tag sits on a solid row, the tile's sits on
 // card art, where a flat wash disappears into a bright frame.
 
+import { useId, type ReactNode } from "react";
 import { CARD_TILE_SLOT_BOX } from "../ui/card-tile-caption";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { gotItCopy } from "../../lib/copy/i-got-it";
 import { priceCopy } from "../../lib/copy/price";
 import {
   formatCents,
@@ -79,18 +81,25 @@ function Tail({
   variant,
   reserveSlot,
   silent,
+  pending = false,
 }: {
-  fact: PriceFact;
+  fact: PriceFact | null;
   state: PriceState;
   variant: BuyTagVariant;
   reserveSlot: boolean | "lg";
   /** True where the tag already speaks the price in its own sentence. */
   silent: boolean;
+  /**
+   * I got it's write is in flight: the slot reads `adding…` in place of the figure, in the
+   * slot `sold out` already sizes, so the tag keeps its width on the Shopping column (A8). Drawn
+   * on a bare `buy` too, which has no slot of its own otherwise.
+   */
+  pending?: boolean;
 }) {
-  if (state === "absent") return null;
+  if (!pending && (state === "absent" || fact === null)) return null;
 
-  const cents = priceOf(fact, state);
-  const qualifier = priceQualifier(fact, state);
+  const cents = fact && !pending ? priceOf(fact, state) : null;
+  const qualifier = fact && !pending ? priceQualifier(fact, state) : null;
 
   return (
     <span aria-hidden={silent ? "true" : undefined}>
@@ -113,13 +122,13 @@ function Tail({
         // every pixel goes to the name, so the figure hugs the word (Hugh, 2026-09-26).
         className={reserveSlot === "lg" ? "lg:inline-block lg:min-w-[46px] lg:text-right" : undefined}
         style={{
-          color: FIGURE_INK[variant],
+          color: pending ? "var(--fg-muted)" : FIGURE_INK[variant],
           ...(reserveSlot === true
             ? { display: "inline-block", minWidth: FIGURE_SLOT, textAlign: "right" as const }
             : null),
         }}
       >
-        {cents === null ? priceCopy.tag.soldOut : formatCents(cents)}
+        {pending ? gotItCopy.row.pending : cents === null ? priceCopy.tag.soldOut : formatCents(cents)}
         {qualifier ? (
           <span style={{ color: "var(--fg-faint)" }}>{` ${qualifier}`}</span>
         ) : null}
@@ -138,6 +147,36 @@ function Tail({
 /** The over-limit ring, from the handoff: 60% of --warning, inset, 1px. */
 export const OVER_LIMIT_RING = "inset 0 0 0 1px color-mix(in oklab, var(--warning) 60%, transparent)";
 
+/**
+ * I got it (R2 call 1): the Shopping row's tag becomes the button that opens the confirm. `open`
+ * holds the hover wash while the confirm is up (A7), `pending` reads `adding…` while the write is
+ * in flight (A8), and `disabled` is another write for this card in flight (A9). Neither of the last
+ * two accepts a press.
+ */
+export type BuyTagPressState = "rest" | "open" | "pending" | "disabled";
+
+export type BuyTagPress = {
+  onPress: () => void;
+  state: BuyTagPressState;
+  /** The card's name, for the accessible name `gotItCopy.row.tagAria` (audit errata 1). */
+  cardName: string;
+  /**
+   * Drawn under the plate below `lg` and inside the button, so the stack is one target (finding 5:
+   * `buy` over `over $X`). From `lg` the row draws `over $X` inline instead.
+   */
+  under?: ReactNode;
+};
+
+/**
+ * Only the wash moves (R2 call 1): 13% at rest, 24% on hover or while the confirm is open, 30%
+ * pressed. The same plate, word, slot and ring as the inert tag, so at rest it is main's tag.
+ */
+const WASH = {
+  rest: "bg-[color-mix(in_oklab,var(--warning)_13%,transparent)] group-hover/buy:bg-[color-mix(in_oklab,var(--warning)_24%,transparent)] group-active/buy:bg-[color-mix(in_oklab,var(--warning)_30%,transparent)]",
+  open: "bg-[color-mix(in_oklab,var(--warning)_24%,transparent)]",
+  idle: "bg-[color-mix(in_oklab,var(--warning)_13%,transparent)]",
+} as const;
+
 export function BuyTag({
   variant,
   label,
@@ -149,6 +188,7 @@ export function BuyTag({
   overLimit = false,
   plate = true,
   corner = "right",
+  press,
 }: {
   variant: BuyTagVariant;
   label?: string;
@@ -188,6 +228,11 @@ export function BuyTag({
   plate?: boolean;
   /** Tile variant only — see TILE_CORNER. */
   corner?: keyof typeof TILE_CORNER;
+  /**
+   * I got it: the row tag renders as a `<button>` ONLY with this, which only Shopping passes, at
+   * `density="full"`, with the feature on. Absent, the tag is the plain span it always was.
+   */
+  press?: BuyTagPress;
 }) {
   const state = priceState(price, newestAsOf);
   const cents = price ? priceOf(price, state) : null;
@@ -222,15 +267,16 @@ export function BuyTag({
       ) : (
         word
       )}
-      {price ? (
+      {price || press?.state === "pending" ? (
         <Tail
-          fact={price}
+          fact={price ?? null}
           state={state}
           variant={variant}
           reserveSlot={reserveSlot}
           // Hidden only where the sentence above already carries the figure.
           // `sold out` is never in that sentence, so it stays readable.
           silent={speaksPrice}
+          pending={press?.state === "pending"}
         />
       ) : null}
     </>
@@ -239,6 +285,10 @@ export function BuyTag({
   // The caption draws its own plate, so the tag drops its scrim and takes the
   // box the availability chip and the proxy mark also take there.
   const captionBox = variant === "tile" && !plate;
+
+  if (press && variant === "row" && density === "full") {
+    return <PressableTag press={press} overLimit={overLimit}>{content}</PressableTag>;
+  }
 
   return (
     <span
@@ -276,5 +326,59 @@ export function BuyTag({
         content
       )}
     </span>
+  );
+}
+
+/**
+ * The row tag as I got it's button. Its own component so the ids it mints are only asked for where
+ * a Shopping row draws it: the inert tag is also drawn by server-rendered figures.
+ */
+function PressableTag({ press, overLimit, children }: { press: BuyTagPress; overLimit: boolean; children: ReactNode }) {
+  const descriptionId = useId();
+  const underId = useId();
+  const { state: pressState, onPress, cardName, under } = press;
+  const live = pressState === "rest" || pressState === "open";
+  return (
+    // The button is the stack: below `lg` an invisible 8px above and below takes the hit area to
+    // 44px (with `over $X` stacked under the plate), and from `lg` it is the plate alone.
+    <button
+      type="button"
+      aria-label={gotItCopy.row.tagAria(cardName)}
+      // The tag's shipped sentence (and `over $X`, which the name now hides) is the description.
+      aria-describedby={under ? `${descriptionId} ${underId}` : descriptionId}
+      aria-haspopup="dialog"
+      aria-expanded={pressState === "open" || pressState === "pending"}
+      aria-busy={pressState === "pending" || undefined}
+      // Not the native attribute: a disabled button drops focus to the body, and pending is drawn
+      // while focus is in the confirm. Neither pending nor disabled accepts a press.
+      aria-disabled={!live || undefined}
+      onClick={(e) => {
+        // The row opens the card's details on a press; this press is the tag's own.
+        e.stopPropagation();
+        if (pressState === "rest") onPress();
+      }}
+      className={`group/buy flex flex-none flex-col items-end gap-[2px] border-0 bg-transparent px-0 py-[8px] -my-[8px] lg:py-0 lg:my-0 font-[inherit] ${
+        live ? "cursor-pointer" : "cursor-default"
+      }`}
+    >
+      <span
+        id={descriptionId}
+        className={`font-mono rounded-[4px] px-[5px] py-[1px] ${PLACEMENT.row} ${
+          pressState === "rest" ? WASH.rest : pressState === "open" ? WASH.open : WASH.idle
+        }`}
+        style={{
+          color: "var(--warning)",
+          ...(overLimit ? { boxShadow: OVER_LIMIT_RING } : {}),
+          ...(pressState === "disabled" ? { opacity: 0.45 } : pressState === "pending" ? { opacity: 0.75 } : {}),
+        }}
+      >
+        {children}
+      </span>
+      {under ? (
+        <span id={underId} className="block lg:hidden font-mono text-[10px] leading-none whitespace-nowrap" style={{ color: "var(--warning)" }}>
+          {under}
+        </span>
+      ) : null}
+    </button>
   );
 }
