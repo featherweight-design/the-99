@@ -63,7 +63,6 @@ export function RoleCounterStrip({
 }: RoleCounterStripProps) {
   const countRoles = roleCounterFor(labelRows);
   const counts = countRoles(cards);
-  const unlabeled = countRoles.unlabeled(cards);
 
   return (
     /*
@@ -146,7 +145,7 @@ export function RoleCounterStrip({
           StripRationale answers the same question about the reader's own deck
           and answers it better. Two explanations of one strip, the permanent
           one weaker than the one behind the disclosure. */}
-      <StripRationale mix={mix} unlabeled={unlabeled} />
+      <StripRationale mix={mix} />
     </section>
   );
 }

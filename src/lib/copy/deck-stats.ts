@@ -42,7 +42,6 @@ export const deckStatsCopy = {
     rows: { ramp: "Ramp", draw: "Card draw", removal: "Removal", wipes: "Board wipes", protection: "Protection", finisher: "Win conditions" },
     overlap: (n: number) => `${n} ${n === 1 ? "card does" : "cards do"} two or more of these jobs, so the rows add up to more than the cards in them.`,
     none: (n: number) => `${n} nonland ${n === 1 ? "card does" : "cards do"} none of these jobs.`,
-    unlabeled: (n: number) => `${n} ${n === 1 ? "card isn’t" : "cards aren’t"} labeled yet. ${n === 1 ? "It joins" : "They join"} a row once ${n === 1 ? "it is" : "they are"}.`,
   },
   curve: {
     title: "The curve, by card type",
@@ -163,8 +162,6 @@ export const deckStatsCopy = {
     diffHigher: (n: string) => `${n} higher`,
     diffLower: (n: string) => `${n} lower`,
     same: "the same",
-    jobsShort: (n: number) =>
-      `${n} ${n === 1 ? "card isn’t" : "cards aren’t"} labeled yet, so the job counts may run short until ${n === 1 ? "it is" : "they are"}.`,
     row: (name: string, you: string, avg: string, diff: string) => `${name}: this deck ${you}, average ${avg}, ${diff}`,
     miniColumn: (label: string, diff: number) =>
       diff === 0 ? `Mana value ${label}: the same as the average` : `Mana value ${label}: ${Math.abs(diff).toFixed(1)} ${diff > 0 ? "more" : "fewer"} than the average`,

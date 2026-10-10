@@ -67,8 +67,6 @@ export type AverageComparison = {
   basis: AverageDeck["basis"];
   groups: { key: AverageGroupKey; rows: AverageRow[] }[];
   mini: { label: number; diff: number; px: number }[] | null;
-  /** Nonland copies with no fresh label: they join no job row, so the job rows may run short. */
-  unlabeled: number;
   /** The body, and the cards in it so far; the note is said when the deck is short of it and a bar is cut off. */
   body: number;
   cards: number;
@@ -121,7 +119,6 @@ export function averageComparison(
     basis: average.basis,
     groups,
     mini,
-    unlabeled: groups.some((g) => g.key === "jobs") ? have.jobs?.unlabeled ?? 0 : 0,
     body: average.body,
     cards: have.cards,
     note: average.basis.of === "baseline" ? "baseline" : have.cards < average.body && anyCut ? "thin" : null,

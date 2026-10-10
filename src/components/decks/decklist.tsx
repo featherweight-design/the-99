@@ -424,7 +424,7 @@ export function Decklist({
     const byCard = statsData.jobs;
     const jobs = byCard
       ? jobTally(
-          cards.filter((c) => !isLandFace(c.typeLine)).map((c) => ({ oracleId: c.oracleId, name: c.name, copies: c.quantity })),
+          cards.filter((c) => !isLandFace(c.typeLine)).map((c) => ({ oracleId: c.oracleId, name: c.name, copies: c.quantity, role: c.role })),
           byCard,
         )
       : null;

@@ -39,7 +39,7 @@ export const deckStatsCopy = {
     rows: { ramp: "Ramp", draw: "Card draw", removal: "Removal", wipes: "Board wipes", protection: "Protection", finisher: "Win conditions" }, // PLACEHOLDER
     overlap: (n: number) => `${n} cards do two or more of these jobs, so the rows add up to more than the cards in them.`, // PLACEHOLDER
     none: (n: number) => `${n} nonland cards do none of these jobs.`, // PLACEHOLDER
-    unlabeled: (n: number) => `${n} cards aren’t labeled yet. They join a row once they are.`, // PLACEHOLDER
+    // `unlabeled` REMOVED: Hugh's ruling, 2026-10-10. The app never mentions labels; a card with no label is read from its text.
   },
   average: {
     title: "Against the average deck", // PLACEHOLDER

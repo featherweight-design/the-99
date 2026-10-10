@@ -238,9 +238,10 @@ staging build, not from this plan's figures.
   panel's coverage shelves (`consider-panel.tsx:48`) and the builder's role toast
   (`builder-shell.tsx:870`). PR 2 finds them by grep for `computeRoleCounts(` rather than by this
   list.
-- A card with no fresh label counts by the classifier (PR 9; PR 2 first counted it as none, the Jobs card's rule). The strip's
-  disclosure says how many of the deck's cards are unlabeled when that number is above zero. The
-  wording goes to `/copy-review`.
+- A card with no fresh label counts by the classifier (PR 9; PR 2 first counted it as none, the Jobs card's rule). Nothing is said about it
+  anywhere (Hugh, 2026-10-10: users do not know what labels are, so the app never mentions them); the
+  strip's disclosure line and the Jobs card's footnote were removed, and the Jobs card reads the same
+  fallback inside `jobTally`, so it and the strip agree exactly.
 - Gated by a server-read switch, `LABEL_ROLE_COUNTS_ENABLED`, read the way `analysisTabEnabled()`
   reads its own. Off renders exactly what ships today. Turning it off is the rollback, and no data
   has to move back.
@@ -327,7 +328,7 @@ No stacked PRs. Each PR lands on `main` on its own, and each is well under 20 fi
 |---|---|---|---|
 | 1 | Label role targets in the build | Migration adding `label_*` to the three tables. `deriveRoleTargets` takes a role lookup. Label pass in `deriveAndWriteRoleTargets` with its floors. `db:build:staples` averages it. `pickRoleTargets` basis argument. Role-set fingerprint in the ledger, and the copy's refusal on a mismatch. Tests: the nonland rule, the counterspell rule, an unlabeled card counting toward nothing, the floor, the fingerprint refusal, including a relabel under an unchanged `input_hash`. No reader changes. | — |
 | — | Staging build and production copy | Dispatch `Commander index` with `build+copy`, `prose=skip` once PR 1 is on production. Confirm `label_*` on every `ok` commander on both sides. Re-run this plan's measurement against the stored figures. | 1 |
-| 2 | The strip counts and compares on labels | `LABEL_ROLE_COUNTS_ENABLED`. The strip, Changed strip, Consider shelves and the builder toast count through `jobTally`. Label targets through `pickRoleTargets`. The unlabeled line in the disclosure (copy through `/copy-review`). The re-stated flat fallback in `roles.ts`. | the build |
+| 2 | The strip counts and compares on labels | `LABEL_ROLE_COUNTS_ENABLED`. The strip, Changed strip, Consider shelves and the builder toast count through `jobTally`. Label targets through `pickRoleTargets`. (The unlabeled disclosure line was removed, Hugh 2026-10-10.) The re-stated flat fallback in `roles.ts`. | the build |
 | 3 | Deck stats PR 4b on labels | **Owned by the Deck stats lane (lane 73), not this line.** `manaSupply()` picks non-land sources by label `rampKind` and colors them from text. Replaces the 4b row in the deck-stats plan. | Deck stats PR 4, the mana addendum |
 
 | 4 | The fill on labels | The fill counts placed and candidate cards by label and fills to `label_*` targets. **A card with no label yet**, such as a new set before the weekly label job, **falls back to the classifier for that card and is never skipped** (Hugh, 2026-10-09). The fill must still place it, and a skipped card would vanish from the deck the fill builds. | 2 |
@@ -349,8 +350,7 @@ not readers of the targets, and moving them is not this line's acceptance condit
 lists any that remain, so their status is recorded before the line closes.
 
 **About entry.** None. The strip and the Jobs card already have entries. This line changes what a
-number on a known surface counts, which is the cosmetic case in AGENTS.md. If the strip's
-disclosure gains the unlabeled line, the existing entry's key line is edited at the next version.
+number on a known surface counts, which is the cosmetic case in AGENTS.md. No unlabeled line is drawn (Hugh, 2026-10-10), so the entry needs no edit.
 
 ## The rule on `DECK_STATS_ENABLED`
 

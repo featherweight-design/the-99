@@ -22,51 +22,47 @@ describe("computeLabelRoleCounts", () => {
   ];
 
   it("counts a card in every role its label names", () => {
-    const { counts } = computeLabelRoleCounts(deck, BY_CARD);
+    const counts = computeLabelRoleCounts(deck, BY_CARD);
     // `mystery` has no label and is the classifier's draw (next test).
     expect(counts).toEqual({ ramp: 2, draw: 2, removal: 2, wipes: 1, land: 3 });
   });
 
-  it("counts a card with no label by the classifier, and says how many", () => {
-    // `mystery` is classified draw and absent from the map: unlabeled, so the classifier's call.
-    const { counts, unlabeled } = computeLabelRoleCounts(deck, BY_CARD);
+  it("counts a card with no label by the classifier", () => {
+    // `mystery` is classified draw and absent from the map, so the classifier's call.
+    const counts = computeLabelRoleCounts(deck, BY_CARD);
     expect(counts.draw).toBe(2); // dork by label, mystery by text
-    expect(unlabeled).toBe(1);
   });
 
   it("counts a labeled card that does none as none, where an unlabeled one would be counted", () => {
     // `vanilla` is labeled-and-doing-nothing; the classifier would call this one ramp.
-    const { counts, unlabeled } = computeLabelRoleCounts([c("vanilla", "ramp")], BY_CARD);
+    const counts = computeLabelRoleCounts([c("vanilla", "ramp")], BY_CARD);
     expect(counts.ramp).toBe(0);
-    expect(unlabeled).toBe(0);
   });
 
   it("gives an unlabeled card with no classifier role to no cell", () => {
-    const { counts } = computeLabelRoleCounts([c("mystery", "other")], BY_CARD);
+    const counts = computeLabelRoleCounts([c("mystery", "other")], BY_CARD);
     expect(counts).toEqual({ ramp: 0, draw: 0, removal: 0, wipes: 0, land: 0 });
   });
 
-  it("is the Jobs card's tally over every LABELED card: the four cells equal jobTally's rows", () => {
-    // An unlabeled card is the one place the two differ: the Jobs card shows it as unlabeled, the strip counts it by text.
+  it("is the Jobs card's tally EXACTLY: the four cells equal jobTally's rows over every nonland card, labeled or not", () => {
     const tally = jobTally(
-      deck.filter((d) => d.role !== "land" && BY_CARD[d.oracleId!]).map((d) => ({ oracleId: d.oracleId!, name: d.name!, copies: d.quantity })),
+      deck.filter((d) => d.role !== "land").map((d) => ({ oracleId: d.oracleId!, name: d.name!, copies: d.quantity, role: d.role })),
       BY_CARD,
     );
-    const { counts } = computeLabelRoleCounts(deck.filter((d) => BY_CARD[d.oracleId!] || d.role === "land"), BY_CARD);
+    const counts = computeLabelRoleCounts(deck, BY_CARD);
     for (const key of ["ramp", "draw", "removal", "wipes"] as const) {
       expect(counts[key]).toBe(tally.rows.find((r) => r.key === key)!.copies);
     }
   });
 
   it("weights by quantity and leaves lands to card.role", () => {
-    const { counts } = computeLabelRoleCounts([c("rock", "ramp", 2), c("forest", "land", 36)], BY_CARD);
+    const counts = computeLabelRoleCounts([c("rock", "ramp", 2), c("forest", "land", 36)], BY_CARD);
     expect(counts.ramp).toBe(2);
     expect(counts.land).toBe(36);
   });
 
-  it("treats a card without an id as unlabeled", () => {
-    const { unlabeled } = computeLabelRoleCounts([{ role: "ramp", quantity: 2 }], BY_CARD);
-    expect(unlabeled).toBe(2);
+  it("reads a card without an id from its text", () => {
+    expect(computeLabelRoleCounts([{ role: "ramp", quantity: 2 }], BY_CARD).ramp).toBe(2);
   });
 });
 
@@ -78,7 +74,6 @@ describe("roleCounterFor", () => {
       const count = roleCounterFor(none);
       expect(count(deck)).toEqual(computeRoleCounts(deck));
       expect(count.byLabel).toBe(false);
-      expect(count.unlabeled(deck)).toBe(0);
     }
   });
 

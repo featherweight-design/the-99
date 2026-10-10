@@ -8,7 +8,7 @@
 | 1 | `deckStatsEnabled()` beside `analysisTabEnabled()`; All · Shopping \| Stats as one segmented control, phone toolbar reflowed (STATES §E) | nothing |
 | 1b | Palette tokens: 8 card-type hues, 6 job hues, fewer/more pair, in all six themes (canvas values are the Low Sun reference, in oklch) | nothing |
 | 2 | Curve + types card (a) | `typeBreakdown()` in `stats.ts` (brief: no new read) |
-| 3 | Jobs card (e) | `readLabels()` tally; unlabeled count |
+| 3 | Jobs card (e) | `readLabels()` tally; a card with no label is read from its text, no count (Hugh, 2026-10-10) |
 | 4 | Results card (f + g) | trend from `listDeckGames()`; new `group by (versionId, result)` |
 | 5 | Money card (c) | per-card price join (deck value, priciest five) |
 | 6 | Average card (d) | `loadSkeletonForCommanders` read; see Q2 |

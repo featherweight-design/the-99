@@ -139,7 +139,7 @@ const JOB_VAR: Record<(typeof JOB_ROWS)[number]["key"], string> = {
 function JobsCard({ tally }: { tally: JobTally }) {
   const copy = deckStatsCopy.jobs;
   const [open, setOpen] = useState<string | null>(null);
-  const cast = tally.labeled + tally.unlabeled;
+  const cast = tally.cast;
   return (
     <Shell title={deckStatsCopy.cards.jobs} id="jobs" denom={copy.denom(cast)} label={`${deckStatsCopy.cards.jobs}, ${copy.denom(cast)}`}>
       <ul className="flex flex-col gap-[10px]">
@@ -186,16 +186,6 @@ function JobsCard({ tally }: { tally: JobTally }) {
           );
         })}
       </ul>
-      {tally.unlabeled > 0 ? (
-        <div className="flex flex-col gap-[6px]" data-job-unlabeled>
-          <span aria-hidden="true" className="flex flex-wrap gap-[3px]">
-            {Array.from({ length: tally.unlabeled }, (_, k) => (
-              <span key={k} className="size-[9px] rounded-[1px] border border-dashed border-[color:var(--fg-muted)] md:size-[11px]" />
-            ))}
-          </span>
-          <p className="font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">{copy.unlabeled(tally.unlabeled)}</p>
-        </div>
-      ) : null}
       {tally.overlap > 0 ? <p className="font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">{copy.overlap(tally.overlap)}</p> : null}
       {tally.none > 0 ? <p className="font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">{copy.none(tally.none)}</p> : null}
     </Shell>
