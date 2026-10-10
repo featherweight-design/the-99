@@ -8,7 +8,7 @@ import { cssUrl } from "../../lib/collection/browse";
 import { availabilityState } from "../../lib/decks/availability";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { bracketShift } from "../../lib/tuning/bracket-shift";
-import type { TuningItem } from "../../lib/tuning/state";
+import type { PairItem as TuningItem } from "../../lib/tuning/state";
 import type { Bracket } from "../../lib/profile/types";
 import { useCardDetail, useCardIntent } from "../cards/card-detail-provider";
 import { AvailabilityMarker } from "../ui/availability-marker";

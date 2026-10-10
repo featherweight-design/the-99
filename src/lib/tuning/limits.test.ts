@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import { ANSWER_TOKENS_WORST_CASE, ASK_SUGGESTIONS, MODEL_TIMEOUT_MS, THINKING_HEADROOM_TOKENS, TUNING_MAX_TOKENS, TUNING_RETRY_FLOOR_MS, intentTooLong } from "./limits";
+import { ANSWER_TOKENS_WORST_CASE, ASK_PER_LIST, MODEL_TIMEOUT_MS, THINKING_HEADROOM_TOKENS, TUNING_MAX_TOKENS, TUNING_RETRY_FLOOR_MS, intentTooLong } from "./limits";
 
 // The deck page's maxDuration bounds the run's Server Action, so the model deadline must fit
 // under it with room for the reads and writes around the call. Read from the page's source:
@@ -31,13 +31,13 @@ describe("TUNING_RETRY_FLOOR_MS", () => {
 
 describe("TUNING_MAX_TOKENS", () => {
   it("holds the schema's worst-case answer and room for adaptive thinking over it", () => {
-    // The schema's caps, per suggestion: add, cut, rationale, short rationale, four citations.
-    const chars = 200 + 200 + 400 + 80 + 4 * 160;
+    // The schema's caps, per line: the card, rationale, short rationale, four citations.
+    const chars = 200 + 400 + 80 + 4 * 160;
     // About four characters a token, and about 60 tokens of JSON keys and punctuation.
-    const perSuggestion = Math.ceil(chars / 4) + 60;
-    // The schema's own ceiling (ASK_SUGGESTIONS, H35 PR 4a), not MAX_SUGGESTIONS (what is kept):
-    // a reply can carry up to eight suggestions before the app slices it down to five.
-    expect(ANSWER_TOKENS_WORST_CASE).toBeGreaterThanOrEqual(perSuggestion * ASK_SUGGESTIONS);
+    const perLine = Math.ceil(chars / 4) + 60;
+    // The schema's own ceiling (ASK_PER_LIST in each of the two lists), not MAX_SUGGESTIONS (what is
+    // kept): a reply can carry up to six a list before the app slices each down to five.
+    expect(ANSWER_TOKENS_WORST_CASE).toBeGreaterThanOrEqual(perLine * ASK_PER_LIST * 2);
     expect(TUNING_MAX_TOKENS).toBeGreaterThanOrEqual(ANSWER_TOKENS_WORST_CASE + THINKING_HEADROOM_TOKENS);
   });
 });

@@ -2072,8 +2072,9 @@ export const deckSuggestionRuns = pgTable("deck_suggestion_runs", {
 export type ApplySnapshot = {
   /** The cut's row before the apply; null when the suggestion had no cut. */
   cut: { quantity: number; auto: boolean; proxied: boolean } | null;
-  /** The add's row before the apply; quantity 0 when the deck did not hold it. */
-  add: { quantity: number; auto: boolean };
+  /** The add's row before the apply; quantity 0 when the deck did not hold it. Null for a CUT
+   *  line (two lists), which adds nothing. */
+  add: { quantity: number; auto: boolean } | null;
 };
 
 export type TuningCitation = {
@@ -2089,7 +2090,11 @@ export const deckSuggestionItems = pgTable("deck_suggestion_items", {
   runId: uuid("run_id").notNull().references(() => deckSuggestionRuns.id, { onDelete: "cascade" }),
   // uuid, matching cards.oracleId: a suggestion for a card the catalog does not hold cannot
   // be stored at all.
-  addOracleId: uuid("add_oracle_id").notNull().references(() => cards.oracleId),
+  // Nullable since the two lists (sub-project 8, migration 0089): an ADDITION carries only its add,
+  // a CUT only its cut, each with its own rationale. A row from before it carries both, the
+  // swap the earlier contract asked for; `deck_suggestion_items_one_card_check` holds that at least
+  // one is set.
+  addOracleId: uuid("add_oracle_id").references(() => cards.oracleId),
   cutOracleId: uuid("cut_oracle_id").references(() => cards.oracleId),
   rationale: text("rationale").notNull(),
   rationaleShort: text("rationale_short").notNull(),
@@ -2107,6 +2112,10 @@ export const deckSuggestionItems = pgTable("deck_suggestion_items", {
   check(
     "deck_suggestion_items_verdict_check",
     sql`${t.verdict} in ('pending', 'accepted', 'dismissed')`,
+  ),
+  check(
+    "deck_suggestion_items_one_card_check",
+    sql`${t.addOracleId} is not null or ${t.cutOracleId} is not null`,
   ),
   index("deck_suggestion_items_run_position_idx").on(t.runId, t.position),
 ]);

@@ -54,7 +54,7 @@ describe("parseReply", () => {
     ({ content: [{ type: "text", text, citations: null }], stop_reason: stop }) as never;
 
   it("parses a valid reply", () => {
-    expect(parseReply(tuningResponseSchema, msg('{"suggestions":[]}'))).toEqual({ ok: true, value: { suggestions: [] } });
+    expect(parseReply(tuningResponseSchema, msg('{"additions":[],"cuts":[]}'))).toEqual({ ok: true, value: { additions: [], cuts: [] } });
   });
 
   it("classes truncated, off-schema and empty replies as malformed", () => {

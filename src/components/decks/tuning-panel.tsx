@@ -22,7 +22,7 @@ import { formatCents } from "../../lib/decks/price";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import type { Bracket } from "../../lib/profile/types";
 import { gateReason } from "../../lib/tuning/gate";
-import type { TuningItem, TuningState } from "../../lib/tuning/state";
+import { isLine, type PairItem, type TuningState } from "../../lib/tuning/state";
 import type { RefusalDetail } from "../../lib/tuning/validate";
 import type { PrintedInSet } from "../../lib/sets/printed-in";
 import { AnalysisBanner } from "./analysis-banner";
@@ -30,6 +30,7 @@ import { FanShuffle } from "./fan-shuffle";
 import { ManifestRows, type ManifestRow } from "./manifest-rows";
 import { MutationError } from "./mutation-error";
 import { SuggestionCard, type CardActions } from "./suggestion-card";
+import { SuggestionLists } from "./suggestion-lists";
 import { TuningLimitsBox } from "./tuning-limits-box";
 import { TuningNotesField } from "./tuning-notes-field";
 
@@ -675,7 +676,11 @@ export function TuningPanel({
     // not be read as one just because it also isn't the `failed` branch. Only an explicit `ok`
     // clears the note.
     if (next.run?.status === "ok") changeNotes("");
-    setAnnounced(failure ? failure.heading : deckTuningCopy.announce.ready(next.items.length));
+    const nextLines = next.items.filter(isLine);
+    setAnnounced(failure ? failure.heading
+      : nextLines.length > 0
+        ? deckTuningCopy.announce.readyLists(nextLines.filter((l) => l.side === "add").length, nextLines.filter((l) => l.side === "cut").length)
+        : deckTuningCopy.announce.ready(next.items.length));
     headingRef.current?.focus();
   }
 
@@ -834,10 +839,16 @@ export function TuningPanel({
     const applied = state.items.filter((i) => i.verdict === "accepted").length;
     const rejected = state.items.filter((i) => i.verdict === "dismissed").length;
     const answered = applied + rejected === total;
+    const lines = state.items.filter(isLine);
+    const pairs = state.items.filter((i) => !isLine(i));
+    const lists = lines.length > 0;
     const dropped = state.run?.status === "ok" ? state.run.droppedCount : 0;
     primary = { label: failure ? deckTuningCopy.failure.retry : copy.again, again: true };
     // The results lead is a desktop line, and the no-games set (D2) draws none at either width.
-    const lead = failure || (state.gameCount === 0 && !answered) ? null : answered
+    const lead = failure || (state.gameCount === 0 && !answered) ? null : lists ? (answered
+      ? deckTuningCopy.lists.allDoneLead(applied, rejected)
+      : dropped > 0 ? deckTuningCopy.lists.fewerLead(cap(numberWord(dropped))) : deckTuningCopy.lists.resultsLead)
+      : answered
       ? total === 1 ? copy.allDoneLeadOne(applied === 1) : copy.allDoneLead(numberWord(total), applied, rejected)
       : dropped > 0
         ? total === 1 ? copy.fewerLeadOne(cap(numberWord(dropped))) : copy.fewerLead(cap(numberWord(total)), cap(numberWord(dropped)))
@@ -847,7 +858,7 @@ export function TuningPanel({
     // moved past the question this caption answers.
     const report = state.run?.validationReport;
     const tooMany = !failure && !answered && report && report.survivedCount > report.keptCount
-      ? deckDescriptionCopy.refusal.tooMany(report.askedCount)
+      ? deckDescriptionCopy.refusal.tooMany
       : null;
     body = (
       <>
@@ -859,22 +870,34 @@ export function TuningPanel({
         ) : lead ? (
           <Lead desktopOnly={!answered} wide>{lead}</Lead>
         ) : null}
-        <ul className={`mt-[14px] flex flex-col ${answered ? "gap-[6px]" : "gap-[12px] md:gap-[8px]"}`}>
-          {state.items.map((item: TuningItem) => (
-            <li key={item.id}>
-              <SuggestionCard
-                item={item}
-                permits={permits}
-                newestPriceAsOf={state.newestPriceAsOf}
-                actions={deps.card}
-                onSettled={settled}
-              />
-            </li>
-          ))}
-        </ul>
+        {pairs.length > 0 ? (
+          <ul className={`mt-[14px] flex flex-col ${answered ? "gap-[6px]" : "gap-[12px] md:gap-[8px]"}`}>
+            {pairs.map((item) => (
+              <li key={item.id}>
+                <SuggestionCard
+                  item={item as PairItem}
+                  permits={permits}
+                  newestPriceAsOf={state.newestPriceAsOf}
+                  actions={deps.card}
+                  onSettled={settled}
+                />
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {lists ? (
+          <SuggestionLists
+            lines={lines}
+            deckSize={facts.cards}
+            permits={permits}
+            newestPriceAsOf={state.newestPriceAsOf}
+            actions={deps.card}
+            onSettled={settled}
+          />
+        ) : null}
       </>
     );
-    if (applied + rejected > 0 && !answered) note = copy.tally(applied, total, rejected);
+    if (applied + rejected > 0 && !answered) note = lists ? deckTuningCopy.lists.tallyOf(applied, total, rejected) : copy.tally(applied, total, rejected);
   } else if (failure) {
     body = refusal ? <AnalysisBanner variant="note" sentence={refusal} /> : <Failure failure={failure} />;
     // No set is on screen, so the press replaces nothing: the first-run note.

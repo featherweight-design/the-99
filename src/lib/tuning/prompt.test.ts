@@ -222,7 +222,33 @@ describe("the prompt Hugh rated (eval round 4, 2026-09-24)", () => {
       `You suggest changes to a Magic: The Gathering Commander deck, for the player who built it.\n${PLAYER_TEXT_SYSTEM_RULE}\n`,
     )
     .replace(RATED_QUOTED_NOTE_RULE, deckTuningCopy.suggestionRules.quotedNote)
-    .replace(RATED_SWAPS_RULE, "Propose up to 8 swaps. Each swap cuts exactly one card from the deck and adds exactly one card.")
+    // PROMPT_VERSION 8 (2026-10-10, Tuning sub-project 8): two lists, one rationale per card. Every
+    // line below is a delta from the swap contract the rated run used; the rest of the prompt is
+    // still that run's, byte for byte.
+    .replace(
+      RATED_SWAPS_RULE,
+      "Propose up to 6 cards to add and up to 6 cards to cut, as two separate lists. Each card stands alone: never pair an addition with a cut, and never refer to a card in the other list.\n"
+        + "Aim for as many cuts as additions, so the deck stays its size, but offer fewer of either when the evidence is thin. Give every card its own rationale and its own citations.",
+    )
+    .replace("Ground every swap in the evidence", "Ground every card in the evidence")
+    // Revision 1 of v8, after the eval's first run: 13 additions across the 24 answers cited a staple's figure as a
+    // `mix` citation, which the validator cannot hold, and lost the addition for it.
+    .replace(
+      'A mix citation names a target and its figure as the targets list writes it: "draw 4 of 10".',
+      'A mix citation names a target and its figure as the targets list writes it: "draw 4 of 10".\n'
+        + "A card from the staples list is cited with a decklist citation, with the figure as the staples list writes it: \"Sol Ring: in 415 of 431 commanders' decks\". Never as a mix citation: a mix citation names a target from the targets list.",
+    )
+    .replace("- The added card must be legal in the commander’s colour identity.", `- ${deckTuningCopy.suggestionRules.colourIdentity}`)
+    .replace("- The cut card must currently be in the deck.", `- ${deckTuningCopy.suggestionRules.cutInDeck}`)
+    .replace("- Every suggestion is exactly one cut and one add: the deck count never changes.", `- ${deckTuningCopy.suggestionRules.oneCard}`)
+    .replace("The app says when a swap moves one.", "The app says when a change moves one.")
+    .replace("not that a swap will win, lose,", "not that a change will win, lose,")
+    .replace("A role that is one short of its target gets one suggestion;", "A role that is one short of its target gets one addition;")
+    .replace(
+      "Prefer swaps grounded in how this deck plays, its strategy and its cards' interactions, over swaps that only move",
+      "Prefer changes grounded in how this deck plays, its strategy and its cards' interactions, over changes that only move",
+    )
+    .replace("what the added card does in this deck and why the cut card can go.", "what an added card does in this deck, or why a cut card can go.")
     // "Make 4 or 5 suggestions..." removed (round 2): it contradicted "Propose up to 8 swaps".
     .replace("Make 4 or 5 suggestions when the deck supports that many.\n", "")
     // "Additional notes" (H35, PR 4b): a sixth citation kind, named in the same two places the
@@ -279,5 +305,15 @@ describe("Locked (never cut) in the prompt", () => {
     expect(locked.user).toMatch(/\[locked/);
     // Everything but the one line is the same prompt.
     expect(locked.system.replace(lockedCardsCopy.tuning.promptRule, "Never suggest cutting a card marked as a commander.")).toBe(plain.system);
+  });
+});
+
+describe("the two lists in the prompt (PROMPT_VERSION 8)", () => {
+  it("asks for two separate lists, one rationale per card, and says so in the rules", () => {
+    const { system } = buildPrompt(pack);
+    expect(system).toContain("Propose up to 6 cards to add and up to 6 cards to cut, as two separate lists.");
+    expect(system).toContain("Give every card its own rationale and its own citations.");
+    expect(system).toContain(deckTuningCopy.suggestionRules.oneCard);
+    expect(system).not.toMatch(/exactly one cut and one add|Each swap/);
   });
 });

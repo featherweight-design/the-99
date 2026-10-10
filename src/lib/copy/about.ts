@@ -940,7 +940,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // draws only while ITS OWN flag is on, never only the tab's.
     switch: 'TUNING_ENABLED',
     caption:
-      'Want a second opinion? “Suggested changes”, at the bottom of the “Analysis” tab, offers up to five swaps: a card out, a card in, and why.\n\nTell it what the deck is for: describe your Meren deck as slow graveyard value for casual tables, cap cards at $5, ask for more removal, and the swaps come back as cheap removal you already own.',
+      'Want a second opinion? “Suggested changes”, at the bottom of the “Analysis” tab, offers up to five cards to add and five to cut, each with its own reason.\n\nTell it what the deck is for: describe your Meren deck as slow graveyard value for casual tables, cap cards at $5, ask for more removal, and the suggestions come back as cheap removal you already own.',
     keys: [
       'Limits set the most a card can cost, which sets adds come from, and whether they come only from your Collection.',
       'Each run uses a credit.',

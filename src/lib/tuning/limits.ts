@@ -8,19 +8,21 @@ import { deckDescriptionCopy } from "../copy/deck-description";
  * in `src/lib/model/allowance-rule.ts`.
  */
 
-/** At most five swaps SHOWN (Hugh, 2026-09-23, as Design drew). Fewer is legitimate; zero that
- *  survive checking is `ungrounded`. The model is asked for more than this (`ASK_SUGGESTIONS`,
- *  H35 PR 4a) so a run with some invalid candidates still has enough survivors to fill five. */
+/** At most five cards SHOWN in EACH list, Additions and Cuts (Hugh, 2026-09-23 for five swaps; the
+ *  two lists of sub-project 8 keep five apiece, as Design's B10 draws them). Fewer is legitimate;
+ *  zero that survive checking in both lists is `ungrounded`. The model is asked for more than this
+ *  (`ASK_PER_LIST`) so a run with some invalid candidates still has enough survivors to fill five. */
 export const MAX_SUGGESTIONS = 5;
 
 /**
- * How many candidates the model is ASKED for (H35, PR 4a, orchestrator via Hugh, 2026-10-03):
- * the schema's own ceiling and the prompt's "Propose up to N swaps" line. `validateSuggestions`
- * drops the invalid ones and `runTuning` keeps the first `MAX_SUGGESTIONS` survivors in whatever
- * order the validator already gives — no second ranking pass, no retry, no second model call.
+ * How many candidates the model is ASKED for in each list (H35, PR 4a set 8 swaps; the two lists
+ * ask six apiece, sub-project 8). One more than are kept is enough buffer for the hard filters,
+ * and eight apiece would double the answer's tokens for a buffer the eval did not need.
+ * `validateSuggestions` drops the invalid ones and `runTuning` keeps the first `MAX_SUGGESTIONS`
+ * survivors of each list in whatever order the validator already gives — no second ranking pass,
+ * no retry, no second model call.
  */
-export const ASK_SUGGESTIONS = 8;
-
+export const ASK_PER_LIST = 6;
 /** The `deck_suggestion_runs.tool` value Suggested changes writes and every one of its readers scopes to,
  *  so a run another tool wrote on the same deck is never read as one of these. */
 export const SUGGESTED_CHANGES_TOOL = "suggested_changes";
@@ -56,13 +58,13 @@ export const MODEL_TIMEOUT_MS = 110_000;
 export const TUNING_MODEL = "claude-sonnet-5";
 
 /**
- * The answer's own worst case, from the response schema's caps rather than guessed. One suggestion
- * at its longest is 200 + 200 + 400 + 80 characters of text plus four 160-character citations:
- * 1,520 characters, about 400 tokens, and about 460 with its JSON keys. `ASK_SUGGESTIONS` (8, H35
- * PR 4a) of those is 3,680 — the schema's own ceiling, not `MAX_SUGGESTIONS` (5, what is kept):
- * a reply sized for the worst case the schema allows, not the worst case the panel shows.
+ * The answer's own worst case, from the response schema's caps rather than guessed. One line at its
+ * longest is 200 + 400 + 80 characters of text plus four 160-character citations: 1,320 characters,
+ * about 350 tokens, and about 400 with its JSON keys. `ASK_PER_LIST` (6) of those in each of the two
+ * lists is 4,800 — the schema's own ceiling, not `MAX_SUGGESTIONS` (5 a list, what is kept): a
+ * reply sized for the worst case the schema allows, not the worst case the panel shows.
  */
-export const ANSWER_TOKENS_WORST_CASE = 3_680;
+export const ANSWER_TOKENS_WORST_CASE = 4_800;
 
 /**
  * The output ceiling, which must hold ADAPTIVE THINKING as well as the answer. `callModel` sends

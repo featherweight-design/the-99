@@ -57,8 +57,10 @@ async function lockDeck(tx: Tx, deckId: string): Promise<void> {
 }
 
 /**
- * Cut one copy, add one, in one transaction, with the verdict and the snapshot undo reads. The swap
- * itself is `draft-swap.ts`, shared with the swap tools' Take (brief ruling 7: one act, not two).
+ * Cut one copy and/or add one, in one transaction, with the verdict and the snapshot undo reads. A
+ * line of the two lists does only its own half (a null side asks nothing); a pair from before them
+ * does both. The change itself is `draft-swap.ts`, shared with the swap tools' Take (brief ruling 7:
+ * one act, not two).
  *
  * Refused when the deck no longer holds the cut, when the add is a non-basic it already holds,
  * or when the add no longer fits the deck's commanders — the deck may have moved since the run.
@@ -68,7 +70,7 @@ async function lockDeck(tx: Tx, deckId: string): Promise<void> {
 export async function applyItem(itemId: string, userId: string): Promise<string | null> {
   return db.transaction(async (tx) => {
     const item = await lockedItem(tx, itemId, userId);
-    if (!item || item.verdict !== "pending" || item.cutOracleId === null) return null;
+    if (!item || item.verdict !== "pending") return null;
     const { deckId, addOracleId, cutOracleId } = item;
 
     const plan = await planSwap(tx, deckId, cutOracleId, addOracleId);
@@ -93,7 +95,7 @@ export async function applyItem(itemId: string, userId: string): Promise<string 
 export async function undoItem(itemId: string, userId: string): Promise<string | null> {
   return db.transaction(async (tx) => {
     const item = await lockedItem(tx, itemId, userId);
-    if (!item || item.verdict !== "accepted" || !item.undoSnapshot || item.cutOracleId === null) return null;
+    if (!item || item.verdict !== "accepted" || !item.undoSnapshot) return null;
     const { deckId, addOracleId, cutOracleId, undoSnapshot: snap } = item;
 
     if (!(await restoreSwap(tx, deckId, cutOracleId, addOracleId, snap))) return null;

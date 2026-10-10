@@ -99,13 +99,13 @@ async function main() {
   }
   console.log(`Usage (${TUNING_MODEL}): ${outcome.usage.inputTokens} input, ${outcome.usage.outputTokens} output tokens.`);
 
-  const names = outcome.value.suggestions.flatMap((s) => [s.add, s.cut]);
-  const resolved = await resolveAll(names);
+  const { additions, cuts } = outcome.value;
+  const resolved = await resolveAll([...additions, ...cuts].map((l) => l.card));
   const { kept, drops } = validateSuggestions({
     response: outcome.value, pack, resolveName: (name) => resolved.get(name) ?? null,
   });
-  console.log(`${outcome.value.suggestions.length} suggested, ${kept.length} kept, dropped: `
-    + (drops.map((d) => `#${d.position} ${d.rule}`).join(", ") || "none"));
+  console.log(`${additions.length} additions and ${cuts.length} cuts suggested, ${kept.length} kept, dropped: `
+    + (drops.map((d) => `${d.side} #${d.position} ${d.rule}`).join(", ") || "none"));
 
   // 2 · Something survives.
   if (kept.length === 0) failures.push("2 · no suggestion survived validation");
@@ -118,19 +118,19 @@ async function main() {
     if (kept.length > 0 && !cites) failures.push(`3 · no survivor cites the axis marked hurting most (${axisLabel(worst.key)})`);
   }
 
-  // 4 · Every PROPOSED add is a real card inside the colour identity.
+  // 4 · Every PROPOSED addition is a real card inside the colour identity.
   const identity = new Set(pack.colorIdentity);
-  outcome.value.suggestions.forEach((s, i) => {
-    const add = resolved.get(s.add);
+  additions.forEach((s, i) => {
+    const add = resolved.get(s.card);
     if (!add || !add.colorIdentity.every((c) => identity.has(c))) {
-      failures.push(`4 · proposal ${i} adds ${s.add}, which is not a card inside ${pack.colorIdentity.join("")}`);
+      failures.push(`4 · addition ${i} is ${s.card}, which is not a card inside ${pack.colorIdentity.join("")}`);
     }
   });
 
   // 5 · Every PROPOSED cut is a card the decklist holds.
   const inDeck = new Set(pack.cards.map((c) => c.name));
-  outcome.value.suggestions.forEach((s, i) => {
-    if (!inDeck.has(s.cut)) failures.push(`5 · proposal ${i} cuts ${s.cut}, which the decklist does not hold`);
+  cuts.forEach((s, i) => {
+    if (!inDeck.has(s.card)) failures.push(`5 · cut ${i} is ${s.card}, which the decklist does not hold`);
   });
 
   if (failures.length > 0) {

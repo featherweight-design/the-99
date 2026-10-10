@@ -29,6 +29,8 @@
 //      and the prompt and validator built from that pack carry and enforce them. The model's
 //      effort and retry floor are `tuning-actions.test.ts`'s and `client.test.ts`'s, and a
 //      failure's refund is case 9's; no model is called here either.
+//  15  The two lists (sub-project 8): an addition and a cut are separate items, applied and undone
+//      on their own half; a cut whose card left no longer applies; the CHECK refuses neither card.
 //  14  Locked (never cut): a cut locked since the run no longer applies, is named, and is refused;
 //      the lock moves the fingerprint and reopens the gate; a `locked_only` run is written and
 //      refunded (the 0062 constraint). The validator's own `neverCut` drop is `validate.test.ts`'s.
@@ -62,6 +64,7 @@ import { cancelRun, finishRun, persistRun, saveIntent, startRun } from "../src/l
 import { applyItem, setDismissed, undoItem } from "../src/lib/tuning/verdicts";
 import type { ValidatedSuggestion } from "../src/lib/tuning/validate";
 import type { TuningResponse } from "../src/lib/tuning/response-schema";
+import type { PairItem } from "../src/lib/tuning/state";
 
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 
@@ -289,7 +292,7 @@ async function run() {
       where deck_id = ${deck}::uuid and oracle_id = ${cut}::uuid`);
     await fixture.execute(sql`insert into deck_proxies (deck_id, oracle_id) values (${deck}::uuid, ${cut}::uuid)`);
     const { itemId } = await answered(u, deck, c);
-    const before = (await readTuningState(deck, u, "fp")).items.find((i) => i.id === itemId);
+    const before = (await readTuningState(deck, u, "fp")).items.find((i): i is PairItem => i.id === itemId && i.side === undefined);
     check("5 · before the apply the add is not in the deck", before?.addInDeck, false);
 
     check("7 · another reader cannot apply the item", await applyItem(itemId, newUser()), null);
@@ -301,7 +304,7 @@ async function run() {
       { verdict: "accepted", snapshot: true });
     // The card reads the add's claim with this deck's own ask subtracted, and marks it self-excluded
     // exactly when the deck holds the add. Before the apply it did not; now it does.
-    const applied = (await readTuningState(deck, u, "fp")).items.find((i) => i.id === itemId);
+    const applied = (await readTuningState(deck, u, "fp")).items.find((i): i is PairItem => i.id === itemId && i.side === undefined);
     check("5 · the panel reads the applied add as in the deck", applied?.addInDeck, true);
 
     check("6 · a second apply is refused", await applyItem(itemId, u), null);
@@ -459,7 +462,7 @@ async function run() {
     check("14 · locking a card moves the fingerprint (D6)", locked!.fingerprint !== unlocked!.fingerprint, true);
     const state = await readTuningState(deck, u, locked!.fingerprint);
     check("14 · and reopens the gate", gateReason(state), null);
-    check("14 · the item no longer applies, and says the cut is locked", state.items.map((i) => [i.applies, i.cutLocked]), [[false, true]]);
+    check("14 · the item no longer applies, and says the cut is locked", state.items.map((i) => [i.applies, i.side === undefined ? i.cutLocked : i.locked]), [[false, true]]);
     check("14 · the apply refuses it", await applyItem(itemId, u), null);
     check("14 · and the locked card is still in the deck", await cardRow(deck, c.body[0]), { quantity: 1, auto: false });
 
@@ -542,7 +545,7 @@ async function run() {
     check("13 · and names the universal staples", universalIds.size > 0 && context.universal.every((u2) => system.includes(u2.name)), true);
 
     const resolved = new Map([[key, c.body[0]], [other, c.body[1]], [add, c.add]]);
-    const response = { suggestions: [{ add, cut: key, rationale: "r", rationaleShort: "r", evidence: [{ kind: "decklist", value: key }] }] } as TuningResponse;
+    const response: TuningResponse = { additions: [], cuts: [{ card: key, rationale: "r", rationaleShort: "r", evidence: [{ kind: "decklist", value: key }] }] };
     const { drops } = validateSuggestions({
       response, pack,
       resolveName: (n) => resolved.has(n)
@@ -550,6 +553,47 @@ async function run() {
         : null,
     });
     check("13 · the validator drops a cut of that Key card", drops.map((d) => d.rule), ["keyCard"]);
+  }
+
+  // 15 · The two lists (sub-project 8): an ADDITION and a CUT are separate items, each applied and
+  // undone on its own half, and the migration's CHECK refuses a row with neither card.
+  {
+    const u = newUser();
+    const deck = await makeDeck(u, c);
+    const cutId = c.body[1];
+    const line = (over: Partial<ValidatedSuggestion>): ValidatedSuggestion => ({ ...suggestion(c), ...over });
+    const started = await startRun(u, deck, "fp-lists", null);
+    if (started.kind !== "started") return fail("case 15 start", started.kind);
+    await persistRun(started, [
+      line({ addOracleId: c.add, cutOracleId: null, position: 0 }),
+      line({ addOracleId: null, cutOracleId: cutId, position: 1 }),
+    ], 0);
+    const state = await readTuningState(deck, u, "fp-lists");
+    check("15 · the run reads back as an addition and a cut",
+      state.items.map((i) => [i.side, i.applies]), [["add", true], ["cut", true]]);
+    const [addItem, cutItem] = state.items;
+
+    check("15 · applying the addition adds one chosen copy and cuts nothing", [await applyItem(addItem.id, u), await cardRow(deck, c.add)], [deck, { quantity: 1, auto: false }]);
+    check("15 · applying the cut takes the card out", [await applyItem(cutItem.id, u), await cardRow(deck, cutId)], [deck, null]);
+    check("15 · a second press of either is refused", [await applyItem(addItem.id, u), await applyItem(cutItem.id, u)], [null, null]);
+    check("15 · the deck is 99 again: one in, one out",
+      (await rows<{ n: number }>(sql`select sum(quantity)::int as n from deck_cards where deck_id = ${deck}::uuid`))[0].n, 99);
+
+    check("15 · undoing the cut puts the card back as it was", [await undoItem(cutItem.id, u), await cardRow(deck, cutId)], [deck, { quantity: 1, auto: false }]);
+    check("15 · undoing the addition takes it out again", [await undoItem(addItem.id, u), await cardRow(deck, c.add)], [deck, null]);
+
+    // A cut whose card has left the deck no longer applies, and an addition already in the deck neither.
+    await fixture.execute(sql`delete from deck_cards where deck_id = ${deck}::uuid and oracle_id = ${cutId}::uuid`);
+    check("15 · a cut whose card left no longer applies, and the apply refuses it",
+      [(await readTuningState(deck, u, "fp-lists")).items.map((i) => i.applies), await applyItem(cutItem.id, u)], [[true, false], null]);
+    let refusedBoth = false;
+    try {
+      await fixture.execute(sql`insert into deck_suggestion_items (run_id, rationale, rationale_short, evidence, position)
+        values (${started.runId}::uuid, 'r', 'r', '[]'::jsonb, 9)`);
+    } catch {
+      refusedBoth = true;
+    }
+    check("15 · a row naming neither card is refused by the CHECK", refusedBoth, true);
   }
 
   // 10 · The intent.

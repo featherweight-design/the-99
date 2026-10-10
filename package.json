@@ -210,6 +210,8 @@
     "eval:cuts-model": "tsx scripts/eval/cuts-model.mts",
     "eval:cuts-blind": "tsx scripts/eval/cuts-blind.mts",
     "eval:cuts-blind-score": "tsx scripts/eval/cuts-blind-score.mts",
+    "eval:tuning-lists": "tsx scripts/eval/tuning-lists.mts",
+    "eval:tuning-lists-report": "tsx scripts/eval/tuning-lists-report.mts",
     "eval:strategy-input": "tsx scripts/eval/strategy-input.mts",
     "eval:tuning-strategy": "tsx scripts/eval/tuning-strategy-metrics.mts",
     "probe:image-timing": "node scripts/probe-image-timing.mjs",
