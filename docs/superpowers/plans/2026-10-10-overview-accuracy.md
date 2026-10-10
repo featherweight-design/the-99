@@ -54,7 +54,7 @@ topics (closed): graveyard_or_zone_hate, artifact_enchantment_removal, interacti
 - **Hate cards are named** for the zone/type the deck depends on (marks, catalog cards allowed as weaknesses already are: refusal reasons list "in Weaknesses: in the catalog").
 - **Rendered weaknesses** are chosen in code, not by the model: `weakness` verdicts ordered critical, moderate, minor, top `SECTION_COUNTS.weaknesses.max`. The tier is a leading word in the existing line ("Critical:"), so **no new slot** (see section 8).
 - **`mana_and_colors` guard (defect 1), deterministic.** For an identity of one color or colorless, a weakness matching color flexibility, fixing, splash or "entirely <basic land type>" is dropped. Pinned test uses the exact Imotekh sentence.
-- Ask for 4 verdicts-as-weaknesses where honest, render 3. Raising the rendered max is a layout question (section 8), not defaulted here.
+- Each `weakness` verdict carries the line's text (`line`, within the 176-character budget). It may yield up to 4 candidates; 3 render. **Minimum:** `SECTION_COUNTS.weaknesses.min` is 1, so a deck whose honest assessment has no weakness would render zero and fail the section. The prompt therefore requires the single least-bad item as `minor`; whether an empty state is better is a question for the light Design round (section 8), and until then the minimum stays 1. Raising the rendered max is a layout question (section 8), not defaulted here.
 
 ### 3.2 Key cards chosen by the commander's own ability
 
@@ -72,6 +72,7 @@ SYSTEM rule: at least one keep line names an engine piece from `Engine candidate
 Each decklist line in the user message gains a deck-local short ref (`c12`), about 3 tokens against about 25 for a UUID. The reply carries `evidence: ["c12","c40"]` on: each strategy step, each mulligan line, each tip (replaces and absorbs `cards`), each key card (the card itself, plus the commander-ability partner), each assessment. The overview paragraph's evidence is its own `[[marks]]`, already resolved today.
 
 - Stored in `deck_synopses.content` (jsonb) as resolved **oracle ids**. No migration: the shape gains optional fields, and an old row reads as having no evidence.
+- `TIP_MIN_CARDS = 2` still applies to tips, on top of the at-least-one rule.
 - **Validated deterministically:** every ref exists in the decklist (or is a commander), at least one per claim, at most `EVIDENCE_MAX` (4). A claim failing it is a dropped line under contract A, with refusal reason `evidence_not_in_deck`.
 - **What "evidence" does and does not mean.** The refs are the cards the claim is *about*. They prove the claim is anchored to real cards in this list, and they give the reader a tap-through. They do **not** prove the claim is true; that is section 4.2's job. The UI must not imply otherwise.
 
@@ -102,8 +103,8 @@ A second, cheap model call **per answer**, not per tip, run only on relational c
 - **Model:** `claude-haiku-4-5` ($1 in, $5 out per million; `RATES` in `pricing.mts`). Fallback if calibration (E2) misses: `claude-sonnet-5` at low effort.
 - **Input:** each claim's text plus the **oracle text of exactly the cards it cites** (refs from 3.4), nothing else. About 2,200 input tokens, 250 output.
 - **Output per claim:** `holds: "yes" | "no" | "unclear"`, and for `no` a `quote` copied from one cited card's oracle text that contradicts the claim.
-- **Drop rule (this is the humility rule):** a claim is dropped on `no` **only if the `quote` is a verbatim substring of a cited card's text** (deterministic check, so a hallucinated rejection cannot delete a true tip), and on `unclear`. A dropped tip can take a list below its minimum; mitigations are asking for the maximum (4 tips) up front, and the existing repair call. Tip survival rate is a reported metric so this cost is visible, not hidden.
-- **Runs inside the one write**, after `validateSynopsis`, before the row is stored; its usage is added to the run's `input_tokens`/`output_tokens` and priced. A verifier failure (upstream error) **keeps the claims unverified-and-dropped for relational tips only** and never fails the write: the player gets an overview with fewer tips rather than none.
+- **Drop rule (this is the humility rule):** a claim is dropped on `no` **only if the `quote` is a verbatim substring of a cited card's text** (deterministic check: it stops a fabricated quotation, but NOT a wrong judgement, since any real sentence from the card passes it), and on `unclear` (the humility rule: a tip the verifier is unsure of is dropped, including true ones). The cost of that is measured as tip survival. A dropped tip can take a list below its minimum; mitigations are asking for the maximum (4 tips) up front, and the existing repair call. Tip survival rate is a reported metric so this cost is visible, not hidden.
+- **Runs inside the one write**, after `validateSynopsis`, before the row is stored; its usage is added to the run's `input_tokens`/`output_tokens` and priced. A verifier failure (upstream error) **drops every relational tip as unverified** and never fails the write: the player gets an overview with fewer tips rather than none.
 
 What this cannot do: it checks a claim against the cited cards' text. A claim that is wrong because of a card **not cited** (a replacement effect in a third card) passes. Stated in the About copy only if Hugh wants it (section 8).
 
@@ -160,7 +161,7 @@ Seed cases, written in PR 1: `imotekh-mummy` and `gishath-hd`. The Imotekh pair 
 
 ### 5.3 Free first: a model-free baseline
 
-`eval:rescore-lines` already re-validates stored answers with no model call (`metrics-overview-contracts.md`). PR 1 adds the corpus scorer and runs the new deterministic validators over the **423 stored answers** plus the two production/staging answers. That costs $0 and answers, before any spend: how often does each check fire on shipped contract-7 output, and does the Shard/Ayara tip appear in the stored set.
+`eval:rescore-lines` already re-validates stored answers with no model call (`metrics-overview-contracts.md`). PR 1 adds the corpus scorer and runs the new deterministic validators over the **423 stored rows** (7 runs across haiku, sonnet-low and sonnet and several prompt variants, so not all shipped contract-7 output) plus the two production/staging answers. That costs $0 and answers, before any spend: how often does each check fire on shipped contract-7 output, and does the Shard/Ayara tip appear in the stored set.
 
 ## 6. Measured cost
 
@@ -187,18 +188,18 @@ Rates (`pricing.mts`): `claude-sonnet-5` $2 in, $10 out; `claude-haiku-4-5` $1 i
 | E2 | Verifier calibration: 80 stratified tips from stored answers + the Shard/Ayara tip + Hugh's false-tip list, 4 per call on Haiku (20 calls), then the same on sonnet-low as a comparison cell | 40 calls | 20 x $0.0035 + 20 x $0.0069 = $0.21, carried as **$0.35** to allow a second calibration pass |
 | E3 | Held-out: 15 held-out + 2 case decks, 3 trials, the chosen variant | 51 | 51 x $0.050 = $2.55 |
 | E3b | A second candidate on the same set, only if E1 does not separate them | 51 | $2.55 |
-| E3c | Contract-7 control on the 2 case decks x 3 trials (the 15 held-out controls already exist and are rescored free) | 6 | 6 x ($0.0277 x 1.5 + $0.0018) = $0.26 |
-| E4 | End-to-end smoke through the real write path on staging, real-time, 6 decks | 6 | 6 x ($0.0634 x 1.5 + $0.0035) = $0.60 |
+| E3c | Contract-7 control on the 2 case decks x 3 trials, no verifier (the 15 held-out controls already exist and are rescored free) | 6 | 6 x ($0.0258 x 1.5) = $0.23, where $0.0258 is half the staging mean $0.0515 |
+| E4 | End-to-end smoke through the real write path on staging, real-time, 6 decks | 6 | 6 x ($0.0634 x 1.5 + $0.0035) = $0.59, carried as $0.60 |
 | E5 | Hugh's bulk pairs, budgeted for 20 new decks x 3 trials; **marginal $0.15 per deck** | 60 | 60 x $0.050 = $3.00 |
-| | **Subtotal** | | **$10.81** |
+| | **Subtotal** | | **$10.78** |
 | | Contingency 25% (output length, batch re-sends, a third E1 round) | | $2.70 |
-| | **Planned ceiling** | | **$13.51** |
+| | **Planned ceiling** | | **$13.48** |
 
-**Fits under $15 with $1.49 to spare.** If output is 3,300 tokens instead of 2,900 the subtotal rises about $0.50 and the ceiling stays under $15; if E1 is forced to real-time (Batch latency), E1 doubles to $3.00 and the ceiling is **$15.0**, which is the limit, so the plan's first fallback is to drop E3b (-$2.55). **E5 is the elastic line: Hugh's corpus size sets it, not the plan.** If he supplies more than 20 pairs, the extra costs $0.15 each from the contingency or he raises the cap.
+**Fits under $15 with $1.52 to spare.** If output is 3,300 tokens instead of 2,900 the subtotal rises about $0.50 and the ceiling stays under $15; if E1 is forced to real-time (Batch latency), E1 becomes 30 x ($0.0634 x 1.5 + $0.0035) = $2.96, the subtotal $12.24 and the 25% ceiling about **$15.3, over the cap**. The first fallback is therefore to drop E3b (-$2.55), giving a ceiling near $12.1. **E5 is the elastic line: Hugh's corpus size sets it, not the plan.** If he supplies more than 20 pairs, the extra costs $0.15 each from the contingency or he raises the cap.
 
-**The existing ledger cannot hold this campaign, and that was not obvious.** `scripts/eval/lib/ledger.mts` has `HARD_CAP_USD = 25` and `ASK_AT_USD = 15`, and the committed `docs/superpowers/eval/ledger.jsonl` sums to **$23.72** by the guard's own `spent()` rule (settled spend plus unsettled worst cases), leaving $1.28. PR 1 therefore makes the ledger path and both limits arguments: this campaign gets its own file `docs/superpowers/eval/ledger-overview-accuracy.jsonl` with `HARD_CAP_USD = 15` and `ASK_AT_USD = 11`, and a run against the old ledger still refuses as before. The guard's per-batch worst case (`worstCaseUsd`) at the proposed 4,500-token ceiling is about $0.083 per request in batch, so a 51-answer batch is checked at about $4.2 before it is sent.
+**The existing ledger cannot hold this campaign, and that was not obvious.** `scripts/eval/lib/ledger.mts` has `HARD_CAP_USD = 25` and `ASK_AT_USD = 15`, and the committed `docs/superpowers/eval/ledger.jsonl` sums to **$23.72** by the guard's own `spent()` rule (settled spend plus unsettled worst cases), leaving $1.28. PR 1 therefore makes the ledger path and both limits arguments: this campaign gets its own file `docs/superpowers/eval/ledger-overview-accuracy.jsonl` with `HARD_CAP_USD = 15` and `ASK_AT_USD = 11`, and a run against the old ledger still refuses as before. The guard's per-batch worst case (`worstCaseUsd`) at the proposed 4,500-token ceiling is 2 x 0.5 x (17.2k x 1.25 x $2 + 4,500 x $10)/1e6 = $0.088 per request in batch, so a 51-answer batch is checked at about $4.49 before it is sent.
 
-**Not in the $15, and system spend:** the free re-runs of section 7.4. Production holds **5 decks with an overview** of 31; staging 10. At the new-method real-time $0.0634 that is **$0.32 on production, $0.63 on staging**, if every owner pressed once. The bound for any deployment is eligible decks x about $0.09 (the staging p90 of $0.0727 scaled by the 1.23 uplift of $0.0634 over $0.0515).
+**Not in the $15, and system spend:** the free re-runs of section 7.4. Production holds **5 decks with an overview** of 31; staging 10. A press goes through the same write as E4 (repair multiplier and verifier included), $0.0634 x 1.5 + $0.0035 = **$0.099**, so **$0.49 on production, $0.99 on staging** if every owner pressed once. The bound for any deployment is eligible decks x about $0.14 (the staging p90 of $0.0727 x 1.23 uplift x 1.5 + $0.0035).
 
 ## 7. PR boundaries, order and the free re-run
 
@@ -226,6 +227,8 @@ No stacked PRs; each is cut from fresh `main`, reviewed once, merged. Line count
 
 **Ledger.** `reserveModelCall` (`allowance.ts`, the `insert` at about line 191) hardcodes `origin: "player"` and checks the player allowance and the spend cap first. It gains an `origin` argument. A `system` call skips the allowance check, is written `origin = 'system'` (the check constraint `model_calls_origin_check` already allows it), and settles `spent` or `refunded` like any other. **Consequence to state plainly:** `monthSpend` and the allowance read `origin = 'player'` only (`allowance.ts:86, 94, 267`), so this spend is invisible to the app-wide monthly cap. The bound is therefore the eligibility rule plus the 2-attempt limit, both in section 6, and PR 4 adds a test that a system call never reaches the player allowance and a second one for the same deck and version is refused.
 
+**The read side.** `read.ts` (`wouldSpend`, lines ~122-124) hides the press when the allowance is paused, the owner share is hit or credits are used up. An eligible free run must bypass those in `read.ts` as well as in `reserveModelCall`, or an out-of-credits player is told the free run is unavailable.
+
 **Who pays and when.** Only on the owner's press (*Write a new overview*, relabelled while eligible, with the credit note saying it is free). Not automatic and not a batch: a dormant deck costs nothing.
 
 **What the press does.** The `reused` early return is bypassed for an eligible deck exactly as `replacing` bypasses it for D11 data movement. It exists at two sites, the pre-check (`generate.ts:~429`) and the re-decision under the reservation lock (`~337`), and both must learn the rule or the lock-side one hands the old overview back. The new overview replaces the old one as the shown row; the old row stays in `deck_synopses` for the eval.
@@ -251,8 +254,10 @@ No stacked PRs; each is cut from fresh `main`, reviewed once, merged. Line count
 - **Tip survival.** A strict verifier will drop true tips. If survival falls under the section minimum often, the fix is the repair call and 4 tips up front, and failing that, relaxing `unclear` to keep-with-hedge, which is a decision to bring to Hugh with the number.
 - **Mandatory-loop detection** may not be recoverable from stored combo data (4.3); the fallback is a hedge, not a claim.
 - **The Gishath gold set is partial** until Hugh supplies the Deckcheck export.
-- **The verifier is a model grading a model.** The verbatim-quote rule bounds the damage a bad verdict can do (it can fail to catch, not wrongly delete), and E2 measures the miss rate on tips Hugh labelled.
+- **The verifier is a model grading a model.** The verbatim-quote rule stops fabricated quotations only. A verifier can wrongly drop a true tip (by `no` with a misread real quote, or by `unclear`) and can wrongly pass a false one; E2 measures both rates on tips Hugh labelled, and tip survival is reported.
 - Nothing in this plan changes tuning, Suggested changes, or the bracket reading.
+
+- **Verifier scope.** It covers tips and key-card jobs only. A false two-card rules claim in a strategy step, mulligan line, weakness or the overview paragraph gets no verifier. E1 counts how often such claims appear before deciding whether to extend it (cost scales with claims).
 
 ## 10. Asks of Hugh
 
