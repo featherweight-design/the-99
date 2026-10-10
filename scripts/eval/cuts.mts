@@ -152,7 +152,7 @@ console.log("# Proposed cuts tier 1: recall against the cuts Hugh made\n");
 console.log(
   `**Answer: ${totalHit * 2 < totalK ? "yes" : "no"}, the free tier ${totalHit * 2 < totalK ? "misses most of" : "finds at least half of"} the cuts Hugh made${lift < 1.5 ? ", and does little better than chance" : ""}.** ` +
   `Its top K holds ${totalHit} of ${totalK} (${pct(totalHit, totalK)}), ${lift.toFixed(1)}x what chance would hold (${chance.toFixed(1)}); the top 2K holds ${totalHit2k} (${pct(totalHit2k, totalK)}). ` +
-  `With roles read from card labels it holds ${labelHit} (${(labelHit / Math.max(chance, 1e-9)).toFixed(1)}x chance); with weights tuned on four decks and scored on the fifth it holds ${looHit} (${(looHit / Math.max(chance, 1e-9)).toFixed(1)}x). Caveats: five decks, one player; a v1 to v2 removal is often a swap for a better card rather than a card the deck was too big for (see the split below).\n`,
+  `With roles read from card labels it holds ${labelHit} (${(labelHit / Math.max(chance, 1e-9)).toFixed(1)}x chance); with weights tuned on four decks and scored on the fifth it holds ${looHit} (${(looHit / Math.max(chance, 1e-9)).toFixed(1)}x). Caveats: five decks, one player; a basic land counts as cut only when v2 holds none of it, so a trimmed basic count is not a cut here; a v1 to v2 removal is often a swap for a better card rather than a card the deck was too big for (see the split below).\n`,
 );
 console.log("| Deck | Cut (K) | Pool | In top K | In top 2K | Not listed at all |");
 console.log("|---|---|---|---|---|---|");
