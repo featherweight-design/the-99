@@ -869,8 +869,12 @@ export const RANK_SCORE_UNWRITTEN = -1;
  * `max(csv_uploads.confirmed_at)`, because a hand edit moves only the first. A previous
  * deployment compares the timestamp alone and could put back scores a ledger write just
  * cleared, so its rows are refused.
+ *
+ * Version 9 is the label role reader's tightening (draw for opponents, land-to-hand and narrow
+ * discounts no longer count). Rows counted by labels under version 8 hold role counts the reader
+ * no longer produces, so they are refused and recomputed.
  */
-export const SCORE_WRITER_CURRENT = 8;
+export const SCORE_WRITER_CURRENT = 9;
 
 export const commanderScores = pgTable("commander_scores", {
   userId: text("user_id").notNull(),
