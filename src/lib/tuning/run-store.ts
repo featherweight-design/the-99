@@ -218,16 +218,25 @@ export async function persistRun(
  * and the reader, so a Stop pressed after that run settled cannot cancel the next one. A Stop is
  * not an answer, so its unit comes back. False when there was nothing pending to stop.
  */
-export async function cancelRun(runId: string, deckId: string, userId: string): Promise<boolean> {
+export const cancellableRun = (runId: string, deckId: string, userId: string, tool: string) => and(
+  eq(deckSuggestionRuns.id, runId),
+  eq(deckSuggestionRuns.deckId, deckId),
+  eq(deckSuggestionRuns.userId, userId),
+  eq(deckSuggestionRuns.tool, tool),
+  eq(deckSuggestionRuns.status, "pending"),
+);
+
+/** `tool` is the tool whose Stop this is: a run id from another tool's run on the deck is not found. */
+export async function cancelRun(
+  runId: string,
+  deckId: string,
+  userId: string,
+  tool: string = SUGGESTED_CHANGES_TOOL,
+): Promise<boolean> {
   const rows = await db.transaction(async (tx) => {
     const cancelled = await tx.update(deckSuggestionRuns)
       .set({ status: "cancelled" })
-      .where(and(
-        eq(deckSuggestionRuns.id, runId),
-        eq(deckSuggestionRuns.deckId, deckId),
-        eq(deckSuggestionRuns.userId, userId),
-        eq(deckSuggestionRuns.status, "pending"),
-      ))
+      .where(cancellableRun(runId, deckId, userId, tool))
       .returning({ callId: deckSuggestionRuns.modelCallId });
     for (const r of cancelled) await settleModelCall(tx, r.callId, "refunded", undefined);
     return cancelled;
