@@ -182,44 +182,48 @@ export async function readCutsState(deckId: string, userId: string, now: Date = 
 
   const runOf = cutsRunsOfDeck(deckId);
   const mine = eq(deckSuggestionRuns.userId, userId);
-  const [[newest], [lastOk], allowance] = await Promise.all([
-    db.select({
-      id: deckSuggestionRuns.id,
-      status: deckSuggestionRuns.status,
-      errorClass: deckSuggestionRuns.errorClass,
-      createdAt: deckSuggestionRuns.createdAt,
-      droppedCount: deckSuggestionRuns.droppedCount,
-    }).from(deckSuggestionRuns).where(and(runOf, mine))
-      .orderBy(desc(deckSuggestionRuns.createdAt)).limit(1),
-    db.select({
-      id: deckSuggestionRuns.id,
-      fingerprint: deckSuggestionRuns.inputFingerprint,
-      createdAt: deckSuggestionRuns.createdAt,
-      promptVersion: deckSuggestionRuns.promptVersion,
-      profileVersion: deckSuggestionRuns.profileVersion,
-      validationReport: deckSuggestionRuns.validationReport,
-    }).from(deckSuggestionRuns).where(and(runOf, mine, eq(deckSuggestionRuns.status, "ok")))
-      .orderBy(desc(deckSuggestionRuns.createdAt)).limit(1),
+  // The newest run, the newest ok run and its cuts are ONE instant: read apart, a run settling
+  // between the statements would show a status that never sat beside those cuts.
+  const [{ newest, lastOk, rows }, allowance] = await Promise.all([
+    db.transaction(async (tx) => {
+      const [newest] = await tx.select({
+        id: deckSuggestionRuns.id,
+        status: deckSuggestionRuns.status,
+        errorClass: deckSuggestionRuns.errorClass,
+        createdAt: deckSuggestionRuns.createdAt,
+        droppedCount: deckSuggestionRuns.droppedCount,
+      }).from(deckSuggestionRuns).where(and(runOf, mine))
+        .orderBy(desc(deckSuggestionRuns.createdAt)).limit(1);
+      const [lastOk] = await tx.select({
+        id: deckSuggestionRuns.id,
+        fingerprint: deckSuggestionRuns.inputFingerprint,
+        createdAt: deckSuggestionRuns.createdAt,
+        promptVersion: deckSuggestionRuns.promptVersion,
+        profileVersion: deckSuggestionRuns.profileVersion,
+        validationReport: deckSuggestionRuns.validationReport,
+      }).from(deckSuggestionRuns).where(and(runOf, mine, eq(deckSuggestionRuns.status, "ok")))
+        .orderBy(desc(deckSuggestionRuns.createdAt)).limit(1);
+      const rows = lastOk
+        ? await tx.select({
+            id: deckCutItems.id,
+            cutOracleId: deckCutItems.cutOracleId,
+            cutName: cards.name,
+            cutTypeLine: cards.typeLine,
+            cutImageUri: cards.imageUri,
+            reason: deckCutItems.reason,
+            evidence: deckCutItems.evidence,
+            position: deckCutItems.position,
+            verdict: deckCutItems.verdict,
+          })
+            .from(deckCutItems)
+            .innerJoin(cards, eq(cards.oracleId, deckCutItems.cutOracleId))
+            .where(eq(deckCutItems.runId, lastOk.id))
+            .orderBy(deckCutItems.position)
+        : [];
+      return { newest, lastOk, rows };
+    }, { isolationLevel: "repeatable read", accessMode: "read only" }),
     readAllowance(userId, now, "proposed_cuts"),
   ]);
-
-  const rows = lastOk
-    ? await db.select({
-        id: deckCutItems.id,
-        cutOracleId: deckCutItems.cutOracleId,
-        cutName: cards.name,
-        cutTypeLine: cards.typeLine,
-        cutImageUri: cards.imageUri,
-        reason: deckCutItems.reason,
-        evidence: deckCutItems.evidence,
-        position: deckCutItems.position,
-        verdict: deckCutItems.verdict,
-      })
-        .from(deckCutItems)
-        .innerJoin(cards, eq(cards.oracleId, deckCutItems.cutOracleId))
-        .where(eq(deckCutItems.runId, lastOk.id))
-        .orderBy(deckCutItems.position)
-    : [];
 
   const run: CutsRun | null = newest ? { ...newest, status: newest.status as CutsRun["status"] } : null;
   return {
