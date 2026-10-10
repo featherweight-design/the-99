@@ -137,4 +137,12 @@ describe("toReply", () => {
     expect(out.primer.tips).toEqual([{ cards: [], text: "T." }]);
     expect(out.weaknesses).toEqual(["Critical: No cheap stack answers.", "Moderate: Leans on the commander.", "Minor: One finisher."]);
   });
+
+  it("folds the checklist's words as the app does, so a Weakness the app would show is scored", () => {
+    const out = toReply({
+      overview: "O.", primer: { strategy: [], mulligan: { keep: [], sendBack: [] }, tips: [] }, keyCards: [],
+      assessment: [{ topic: "win_path", verdict: "Weakness", tier: "Critical", line: "One route.", evidence: [] }],
+    });
+    expect(out.weaknesses).toEqual(["Critical: One route."]);
+  });
 });

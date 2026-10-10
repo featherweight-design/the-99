@@ -150,7 +150,6 @@ describe("the stub", () => {
     expect(run("malformed")).toBe("malformed");
   });
 
-  // Contract B's two outcomes, told apart by the request: a repair's user message names reasons.
   // Contract 8 (OVERVIEW_V2_ENABLED): the same stub, in the new shape, passes the v8 validator.
   it("passes contract 8 on a whole deck, with every line anchored and the checklist read", () => {
     const reply = stubReply(facts, "survived", false, true);
@@ -165,6 +164,7 @@ describe("the stub", () => {
     expect(partial.ok && validateSynopsisV8(partial.value as never, facts, new Map()).verdicts[0]).toMatchObject({ section: "overview", status: "refused" });
   });
 
+  // Contract B's two outcomes, told apart by the request: a repair's user message names reasons.
   it("repairs on the repair call alone, or refuses it again", () => {
     const status = (mode: Parameters<typeof stubReply>[1], repair: boolean) => {
       const reply = stubReply(facts, mode, repair);
