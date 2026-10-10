@@ -100,6 +100,12 @@ describe("helpAddColor: trades and staples", () => {
     expect(help(rows, "G", [], [staple("Signet", ["G", "U"])]).trades).toMatchObject([{ basicOut: "Island", changes: [{ color: "G", before: 10, after: 11 }] }]);
   });
 
+  it("takes the basic from the color with the most cover when several could go", () => {
+    // Island 25 holds 6 above blue's 19; Plains has no pips and no figure, 3 above nothing. Both are safe.
+    const rows = [...deck(), basic("plains", "Plains", 3, "W")];
+    expect(help(rows, "G", [], [staple("Elfhat", ["G"])]).trades).toMatchObject([{ basicOut: "Island", basicOutColor: "U" }]);
+  });
+
   it("puts an owned copy first", () => {
     const h = help(deck(), "G", [], [staple("Popular", ["G"], { free: 0, fact: { kind: "commander", inclusion: 90 } }), staple("Owned", ["G"], { free: 1, fact: { kind: "commander", inclusion: 10 } })]);
     expect(h.staples.map((s) => s.name)).toEqual(["Owned", "Popular"]);

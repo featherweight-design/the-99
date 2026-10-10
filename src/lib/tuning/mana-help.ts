@@ -6,7 +6,7 @@
 // THE GUARD. A move is offered only if the picked color gains a source and no other color is hurt:
 //   - a color whose sources meet Karsten's requirement for its hardest published pattern keeps meeting it;
 //   - a color below that requirement does not lose a source at all;
-//   - a color with no published requirement (no pips, or only a ceiling) is free to lose one.
+//   - a color with no published requirement (no pips, or only a ceiling) has a figure of 0, and so is free to lose one.
 // Karsten ("How Many Sources Do You Need to Consistently Cast Your Spells? A 2022 Update", TCGplayer)
 // is a guard here and never a judgment of the deck.
 
@@ -85,7 +85,7 @@ export function helpAddColor(
   const safe = (after: ManaBalance): boolean => {
     if (total(after, color) <= total(before, color)) return false;
     return BALANCE_COLORS.every((c) => {
-      if (c === color || total(after, c) >= total(before, c) || need[c] === 0) return true;
+      if (c === color || total(after, c) >= total(before, c)) return true;
       return total(before, c) >= need[c] && total(after, c) >= need[c];
     });
   };
