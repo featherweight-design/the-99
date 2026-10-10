@@ -1,0 +1,73 @@
+{
+  "id": "gods",
+  "deck": {
+    "name": "HD - Gods (Kratos and Atreus)",
+    "deckId": "13a6dc28-958c-4591-a2bb-c0297bbe5d92",
+    "source": "staging",
+    "listFingerprint": "c7cf7003858446268111a46545ca5e79a9a7f6ce956e90be9bbef7a108bf75e5"
+  },
+  "gold": {
+    "combos": [],
+    "keyCards": [
+      "All Will Be One",
+      "Akroma's Will",
+      "Ripples of Potential",
+      "Grand Abolisher",
+      "The Locust God",
+      "Iroas",
+      "Otharri"
+    ],
+    "weaknesses": [
+      {
+        "topic": "exile wipes bypass indestructible gods",
+        "names": [
+          "Farewell",
+          "Sunfall",
+          "exile"
+        ]
+      },
+      {
+        "topic": "repeated commander removal before experience builds",
+        "names": [
+          "commander removal",
+          "removal on the commander",
+          "removing the commander",
+          "removed repeatedly"
+        ]
+      },
+      {
+        "topic": "no unrestricted tutors",
+        "names": [
+          "tutor"
+        ]
+      }
+    ],
+    "mulliganPieces": [],
+    "wrong": [],
+    "right": [
+      {
+        "id": "tekuthal-tide",
+        "cards": [
+          "Tekuthal",
+          "Inexorable Tide"
+        ],
+        "note": "the Tekuthal and Inexorable Tide tip"
+      },
+      {
+        "id": "ozolith",
+        "cards": [
+          "Ozolith"
+        ],
+        "note": "The Ozolith tip"
+      },
+      {
+        "id": "oketra-purphoros",
+        "cards": [
+          "Oketra",
+          "Purphoros"
+        ],
+        "note": "Oketra zombies trigger Purphoros"
+      }
+    ]
+  }
+}

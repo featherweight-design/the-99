@@ -1,0 +1,65 @@
+{
+  "id": "eldrazi",
+  "deck": {
+    "name": "HD - Eldrazi (Zhulodok)",
+    "deckId": "0b49cb44-8ae2-4c19-b558-633344a2f4ed",
+    "source": "staging",
+    "listFingerprint": "912188895c0df6c5835210327a1a8d45d634baeca1b248bef5286d72639068bd"
+  },
+  "gold": {
+    "combos": [
+      {
+        "cards": [
+          "Basalt Monolith",
+          "Forsaken Monument"
+        ],
+        "produces": "infinite colorless mana, with Eye of Ugin or Endbringer as sinks",
+        "forced": false
+      }
+    ],
+    "keyCards": [
+      "Basalt Monolith",
+      "Forsaken Monument",
+      "Eye of Ugin",
+      "Endbringer",
+      "All Is Dust",
+      "Ugin"
+    ],
+    "weaknesses": [
+      {
+        "topic": "early artifact removal",
+        "names": [
+          "Vandalblast",
+          "Bane of Progress",
+          "artifact removal"
+        ]
+      },
+      {
+        "topic": "stax such as Rule of Law and Archon of Emeria",
+        "names": [
+          "Rule of Law",
+          "Archon of Emeria",
+          "stax"
+        ]
+      },
+      {
+        "topic": "Blood Moon",
+        "names": [
+          "Blood Moon"
+        ]
+      }
+    ],
+    "mulliganPieces": [],
+    "wrong": [
+      {
+        "id": "zhulodok-turn-6",
+        "cards": [
+          "Zhulodok"
+        ],
+        "pattern": "turn (6|six)",
+        "why": "Zhulodok is cast on turn 4 off rocks with this deck's ramp"
+      }
+    ],
+    "right": []
+  }
+}

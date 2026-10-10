@@ -1,0 +1,94 @@
+{
+  "id": "gishath",
+  "deck": {
+    "name": "HD - Gishath",
+    "deckId": "904fdc61-e190-4ba5-8e34-2b18fa0584f2",
+    "source": "staging",
+    "listFingerprint": "eb283ece8f988c71fe2f6dea4a36b7955720f05775aec728d02164d2aa8cb6ff"
+  },
+  "gold": {
+    "combos": [
+      {
+        "cards": [
+          "Marauding Raptor",
+          "Polyraptor"
+        ],
+        "produces": "a mandatory infinite loop that draws the library without an outlet such as Wrathful Raptors",
+        "forced": true
+      }
+    ],
+    "keyCards": [
+      "Knight of the Stampede",
+      "Akroma's Will",
+      "Boros Charm",
+      "Quartzwood Crasher",
+      "Apex Altisaur",
+      "Gwenna",
+      "Zacama"
+    ],
+    "weaknesses": [
+      {
+        "topic": "no cheap instant-speed interaction against a fast combo",
+        "names": [
+          "instant"
+        ]
+      },
+      {
+        "topic": "a combat-only win path",
+        "names": [
+          "fog",
+          "pillowfort",
+          "Farewell"
+        ]
+      },
+      {
+        "topic": "tapping out for an 8-drop",
+        "names": [
+          "tap out",
+          "tapping out",
+          "tapped out"
+        ]
+      },
+      {
+        "topic": "tapped lands",
+        "names": [
+          "tapped land",
+          "enter tapped",
+          "enters tapped"
+        ]
+      }
+    ],
+    "mulliganPieces": [
+      "Marauding Raptor",
+      "Polyraptor"
+    ],
+    "wrong": [
+      {
+        "id": "gishath-cascade",
+        "cards": [
+          "Gishath"
+        ],
+        "pattern": "cascad",
+        "why": "Gishath has no cascade"
+      }
+    ],
+    "right": [
+      {
+        "id": "trapjaw-wrathful",
+        "cards": [
+          "Trapjaw Tyrant",
+          "Wrathful Raptors"
+        ],
+        "note": "the Trapjaw Tyrant and Wrathful Raptors line"
+      },
+      {
+        "id": "forerunner-gishath",
+        "cards": [
+          "Forerunner of the Empire",
+          "Gishath"
+        ],
+        "note": "Forerunner of the Empire stacking for Gishath"
+      }
+    ]
+  }
+}

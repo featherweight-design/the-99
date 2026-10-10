@@ -1,0 +1,86 @@
+{
+  "id": "counter-intelligence",
+  "deck": {
+    "name": "HD Tune - Counter Intelligence (Kilo)",
+    "deckId": "2829cf41-1e07-4ec7-8353-8b0d9dfd678b",
+    "source": "staging",
+    "listFingerprint": "40f85f9fa24304fd6fa1fa8140251eb9cfd98ed2c40c933ead9ce4bc7f67ddd3"
+  },
+  "gold": {
+    "combos": [
+      {
+        "cards": [
+          "Magistrate's Scepter",
+          "Inspirit"
+        ],
+        "produces": "infinite extra turns",
+        "forced": false
+      },
+      {
+        "cards": [
+          "Flagship Vessel",
+          "Kilo"
+        ],
+        "produces": "infinite extra turns through proliferate, no mana",
+        "forced": false
+      },
+      {
+        "cards": [
+          "Basalt Monolith",
+          "Zirda"
+        ],
+        "produces": "infinite mana, into Walking Ballista",
+        "forced": false
+      }
+    ],
+    "keyCards": [
+      "Magistrate's Scepter",
+      "Inspirit",
+      "Flagship Vessel",
+      "Basalt Monolith",
+      "Zirda",
+      "Walking Ballista",
+      "Whir of Invention",
+      "Fabricate"
+    ],
+    "weaknesses": [
+      {
+        "topic": "Null Rod and Collector Ouphe",
+        "names": [
+          "Null Rod",
+          "Collector Ouphe"
+        ]
+      },
+      {
+        "topic": "Farewell and Vandalblast",
+        "names": [
+          "Farewell",
+          "Vandalblast"
+        ]
+      },
+      {
+        "topic": "removal on Kilo at combat",
+        "names": [
+          "Kilo"
+        ]
+      }
+    ],
+    "mulliganPieces": [
+      "Magistrate's Scepter",
+      "Inspirit",
+      "Basalt Monolith",
+      "Zirda"
+    ],
+    "wrong": [],
+    "right": [
+      {
+        "id": "unctus-saheeli",
+        "cards": [
+          "Unctus",
+          "Saheeli"
+        ],
+        "note": "the Unctus and Saheeli Thopters draw tip"
+      }
+    ]
+  }
+}

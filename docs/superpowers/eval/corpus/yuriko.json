@@ -1,0 +1,49 @@
+{
+  "id": "yuriko",
+  "deck": {
+    "name": "HD - Yuriko",
+    "deckId": "fc97e49c-a2f3-4944-8436-3df8db102bd5",
+    "source": "staging",
+    "listFingerprint": "32094e7ec1b2bd0dc5917406db22ea564dad374e524ea33d44bd2ace07bdeb43"
+  },
+  "gold": {
+    "combos": [],
+    "keyCards": [
+      "Brainstorm",
+      "Lim-D",
+      "Insatiable Avarice",
+      "Shadow of Mortality",
+      "Blinkmoth Infusion",
+      "Temporal Trespass",
+      "Temporal Manipulation",
+      "Time Warp",
+      "Snuff Out",
+      "Swan Song",
+      "Flusterstorm"
+    ],
+    "weaknesses": [
+      {
+        "topic": "activated-ability hate",
+        "names": [
+          "Cursed Totem",
+          "Linvala",
+          "activated abilit"
+        ]
+      },
+      {
+        "topic": "reach or repeatable blockers",
+        "names": [
+          "blocker",
+          "reach"
+        ]
+      }
+    ],
+    "mulliganPieces": [
+      "Brainstorm",
+      "Insatiable Avarice",
+      "Lim-D"
+    ],
+    "wrong": [],
+    "right": []
+  }
+}

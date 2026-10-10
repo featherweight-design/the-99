@@ -1,9 +1,11 @@
+import { join } from "node:path";
+
 import Anthropic from "@anthropic-ai/sdk";
 import { describe, expect, it } from "vitest";
 
 import { retryable } from "./batch.mjs";
 
-import { refusal, spent } from "./ledger.mjs";
+import { DEFAULT_LIMITS, OVERVIEW_ACCURACY_LIMITS, readLedger, refusal, spent } from "./ledger.mjs";
 import { costUsd, worstCaseUsd } from "./pricing.mjs";
 import { DEV_COUNT, OVERLAY_COUNT, splitDecks } from "./split.mjs";
 
@@ -84,5 +86,24 @@ describe("retryable (callModel's split)", () => {
     expect(retryable(new Anthropic.APIUserAbortError())).toBe(false);
     expect(retryable(new Anthropic.BadRequestError(400, {}, "bad", h))).toBe(false);
     expect(retryable(new Anthropic.AuthenticationError(401, {}, "no key", h))).toBe(false);
+  });
+});
+
+describe("refusal with the Overview accuracy limits", () => {
+  const at = (usd: number) => ({ entries: [{ at: "", runId: "r", source: "s", usd, requests: 1 }] });
+  it("stops at $15 and asks at $11, where the original campaign allows $25 and asks at $15", () => {
+    expect(refusal(at(14), 2, 0.9, OVERVIEW_ACCURACY_LIMITS)).toMatch(/cross the \$15 cap/);
+    expect(refusal(at(11), 0, 0.4, OVERVIEW_ACCURACY_LIMITS)).toMatch(/ask/);
+    expect(refusal(at(11), 0, 0.6, OVERVIEW_ACCURACY_LIMITS)).toBeNull();
+  });
+  it("leaves the original ledger's behaviour as it was when no limits are passed", () => {
+    expect(refusal(at(14), 2, 0.9)).toBeNull();
+    expect(refusal(at(14), 2, 0.9, DEFAULT_LIMITS)).toBeNull();
+    expect(refusal(at(24), 2, 0.9)).toMatch(/\$25 cap/);
+  });
+  it("the committed campaign ledger sums to what the spend log held when it was seeded", () => {
+    const l = readLedger(join(process.cwd(), "docs/superpowers/eval/ledger-overview-accuracy.jsonl"));
+    expect(spent(l)).toBeGreaterThanOrEqual(0.1031);
+    expect(spent(l)).toBeLessThan(OVERVIEW_ACCURACY_LIMITS.hardCapUsd);
   });
 });

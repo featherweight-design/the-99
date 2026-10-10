@@ -1,0 +1,76 @@
+{
+  "id": "goblins",
+  "deck": {
+    "name": "HD - Goblins (Krenko)",
+    "deckId": "7284ff0a-6e76-4dc0-8af5-fc630a403b2b",
+    "source": "staging",
+    "listFingerprint": "9a05c11f7060e228e7795438c477371d1433a64cbdf844db7a05d218a88d4d10"
+  },
+  "gold": {
+    "combos": [],
+    "keyCards": [
+      "Skirk Prospector",
+      "Brightstone Ritual",
+      "Goblin War Strike",
+      "Goblin Lookout",
+      "Goblin Assassin"
+    ],
+    "weaknesses": [
+      {
+        "topic": "no card draw",
+        "names": [
+          "card draw"
+        ]
+      },
+      {
+        "topic": "no enchantment removal against Ghostly Prison or Propaganda",
+        "names": [
+          "Ghostly Prison",
+          "Propaganda",
+          "enchantment removal"
+        ]
+      },
+      {
+        "topic": "symmetric Burning Sands",
+        "names": [
+          "Burning Sands"
+        ]
+      }
+    ],
+    "mulliganPieces": [
+      "Skirk Prospector",
+      "Goblin Lookout",
+      "Mogg War Marshal"
+    ],
+    "wrong": [
+      {
+        "id": "chain-reaction-key",
+        "cards": [
+          "Chain Reaction"
+        ],
+        "sections": [
+          "keyCard"
+        ],
+        "why": "Chain Reaction damages every creature by the creature count and wipes this deck's own Goblins"
+      }
+    ],
+    "right": [
+      {
+        "id": "mogg-bombardment",
+        "cards": [
+          "Mogg War Marshal",
+          "Bombardment"
+        ],
+        "note": "Mogg War Marshal and Bombardment"
+      },
+      {
+        "id": "firebolt-guttersnipe",
+        "cards": [
+          "Firebolt",
+          "Guttersnipe"
+        ],
+        "note": "Firebolt flashback with Guttersnipe"
+      }
+    ]
+  }
+}

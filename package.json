@@ -197,6 +197,7 @@
     "eval:rescore": "tsx scripts/eval/rescore.mts",
     "eval:synopsis": "tsx scripts/eval/synopsis.mts",
     "eval:blind": "tsx scripts/eval/blind.mts",
+    "eval:corpus": "tsx scripts/eval/corpus.mts",
     "eval:rescore-lines": "tsx scripts/eval/rescore-lines.mts",
     "eval:repair": "tsx scripts/eval/repair.mts",
     "eval:overview-read": "tsx scripts/eval/overview-read.mts",
