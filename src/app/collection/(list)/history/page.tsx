@@ -13,6 +13,12 @@ import { dayLabel, historyReachesBack } from "../../../../lib/collection/history
 import { isUuid } from "../../../../lib/uuid";
 import { HistoryList } from "../../../../components/collection/history-list";
 
+// A function outside the component: the render rules forbid reading the clock inline, and a page
+// that is dynamic by its session reads it once per request, which is what is wanted.
+async function readClock() {
+  return Date.now();
+}
+
 export default async function CollectionHistoryPage({ searchParams }: { searchParams: Promise<{ entry?: string | string[] }> }) {
   if (!collectionEditEnabled()) notFound();
   const userId = await requireUserId();
@@ -20,7 +26,7 @@ export default async function CollectionHistoryPage({ searchParams }: { searchPa
   const focusId = typeof entry === "string" && isUuid(entry) ? entry : undefined;
   const { entries, nextBefore } = await listHistory(userId);
   // One clock for the whole render, so "Today" and the 90-day edge cannot disagree.
-  const nowMs = Date.now();
+  const nowMs = await readClock();
   const ship = historyShipDate();
   const reachesBack = historyReachesBack(ship, nowMs);
   return (

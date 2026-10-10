@@ -1,6 +1,6 @@
 import type { HistoryRow } from "../../db/schema";
 import { collectionEditCopy } from "../copy/collection-edit";
-import { HISTORY_RETENTION_DAYS } from "./write";
+import { HISTORY_RETENTION_DAYS } from "./retention";
 import type { HistoryListEntry } from "./history";
 
 // What the history list draws, as pure functions over the ledger's entries: the day groups, the
