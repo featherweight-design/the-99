@@ -48,6 +48,16 @@ describe("a combo is not a card allowance", () => {
   });
 });
 
+describe("a flag chip with no declared bracket", () => {
+  it("quotes the deck-level count the facts carry, with no allowance to compare it with", () => {
+    const f = cutFacts({ profile: profile(), locked: new Set(), support: null, declaredBracket: null });
+    const withGc = { ...f, brackets: [{ flag: "gameChanger" as const, cards: [{ oracleId: "a", name: "a" }, { oracleId: "b", name: "b" }] }] };
+    const { chips, rows } = cutCounts(withGc, null, "G");
+    expect(rows.some((r) => r.source === "bracket")).toBe(false);
+    expect(cutChips([{ kind: "flag", flag: "gameChanger" }], "r", chips)[0].text).toBe("Game Changers 2");
+  });
+});
+
 describe("cutChips", () => {
   const ctx = { medianPct: 38, flagCounts: { gameChanger: 4 }, declared: 3 as Bracket };
   it("quotes each cite's own figure, one chip per cite", () => {

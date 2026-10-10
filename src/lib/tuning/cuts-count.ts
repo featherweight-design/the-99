@@ -98,13 +98,15 @@ export function cutCounts(facts: CutFacts, declared: Bracket | null, commander: 
     }
   }
 
+  // Every flag the facts carry has a deck-level count a chip can quote, whatever the declaration: a
+  // card's flag is a fact about the card, and the validator accepts a `flag` cite for it.
   const flagCounts: Partial<Record<BracketFlag, number>> = {};
-  // Only against a DECLARED bracket: with none, no flag is a fact about this deck.
+  for (const b of facts.brackets) flagCounts[b.flag] = b.cards.length;
+  // The ROWS are stricter: only against a DECLARED bracket, and only a flag it does not allow.
   if (declared !== null) {
     for (const b of facts.brackets) {
       const allows = flagAllowance(b.flag, declared);
       if (b.cards.length <= allows) continue;
-      flagCounts[b.flag] = b.cards.length;
       rows.push({
         key: `bracket:${b.flag}`, source: "bracket", label: FLAG_LABEL[b.flag], figure: b.cards.length,
         note: allowanceNote(b.flag, declared, allows),
@@ -151,9 +153,9 @@ export function cutChips(cites: readonly CutCite[], reason: string, ctx: ChipCon
         return { key, kind: "CURVE", text: `${c.have} ${c.cmc >= 7 ? "cost 7 or more" : `cost ${c.cmc}`}` };
       case "flag": {
         const n = ctx.flagCounts[c.flag];
-        const tail = n !== undefined && ctx.declared !== null
-          ? ` ${n} · ${allowanceNote(c.flag, ctx.declared, flagAllowance(c.flag, ctx.declared))}`
-          : "";
+        const tail = n === undefined ? ""
+          : ctx.declared === null ? ` ${n}`
+          : ` ${n} · ${allowanceNote(c.flag, ctx.declared, flagAllowance(c.flag, ctx.declared))}`;
         return { key, kind: "BRACKET", text: `${FLAG_LABEL[c.flag]}${tail}` };
       }
       case "intent": {
