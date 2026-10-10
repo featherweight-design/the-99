@@ -16,7 +16,7 @@ export const ASK_AT_USD = 15;
 
 /**
  * A ledger's two thresholds. The original campaign's file keeps `DEFAULT_LIMITS`; the Overview
- * accuracy line (plan 2026-10-10, Hugh's $15 cap) has its own file and `CAMPAIGN_LIMITS`, because
+ * accuracy line (plan 2026-10-10, Hugh's $15 cap) has its own file and `OVERVIEW_ACCURACY_LIMITS`, because
  * the original holds $23.72 of settled spend and could not carry a second campaign.
  */
 export type Limits = { hardCapUsd: number; askAtUsd: number };

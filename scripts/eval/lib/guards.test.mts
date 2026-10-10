@@ -101,7 +101,7 @@ describe("refusal with the Overview accuracy limits", () => {
     expect(refusal(at(14), 2, 0.9, DEFAULT_LIMITS)).toBeNull();
     expect(refusal(at(24), 2, 0.9)).toMatch(/\$25 cap/);
   });
-  it("the committed campaign ledger sums to what the spend log held when it was seeded", () => {
+  it("the committed campaign ledger parses, holds at least the seeded $0.1031, and is under the cap", () => {
     const l = readLedger(join(process.cwd(), "docs/superpowers/eval/ledger-overview-accuracy.jsonl"));
     expect(spent(l)).toBeGreaterThanOrEqual(0.1031);
     expect(spent(l)).toBeLessThan(OVERVIEW_ACCURACY_LIMITS.hardCapUsd);
