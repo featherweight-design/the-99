@@ -150,8 +150,9 @@ for (const p of prepared) {
   worst += worstCaseUsd(MODEL, tokens.get(h)!, MAX_TOKENS, { batch: !args.realtime });
 }
 const inputTokens = prepared.reduce((n, p) => n + tokens.get(createHash("sha256").update(JSON.stringify(p.sent.params)).digest("hex"))!, 0);
+const perRequest = prepared.map((p) => tokens.get(createHash("sha256").update(JSON.stringify(p.sent.params)).digest("hex"))!);
 const before = spent(readLedger(LEDGER_CUTS));
-console.error(`${prepared.length} requests, ~${inputTokens} input tokens; worst case $${worst.toFixed(2)} (two attempts each, ${args.realtime ? "real-time" : "batch"} prices); spent so far on this ledger $${before.toFixed(2)} of $${CAP_USD}`);
+console.error(`${prepared.length} requests, ~${inputTokens} input tokens (largest request ${Math.max(...perRequest)}); worst case $${worst.toFixed(2)} (two attempts each, ${args.realtime ? "real-time" : "batch"} prices); spent so far on this ledger $${before.toFixed(2)} of $${CAP_USD}`);
 if (!args.send) {
   console.error("DRY: nothing sent. Add --send to spend.");
   process.exit(0);
