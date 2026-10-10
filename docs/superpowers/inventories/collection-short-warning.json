@@ -1,0 +1,52 @@
+{
+  "feature": "Collection screens PR 4: the short-deck warning (\u00a7E) on the upload confirm",
+  "note": "Needs COLLECTION_EDIT_ENABLED=true and an account with a committed (99-card) deck, so a pasted one-card list leaves it short. Nothing is written: the confirm answers with the warning and the row stops there. Edit copies (PR 7) and revert (PR 6) add rows and views for the same component.",
+  "shares": {
+    "module": "src/components/collection/short-deck-warning.tsx",
+    "binding": "ShortDeckWarning",
+    "note": "ReplaceFlow mounts the warning directly, so each row's `view` is replace-flow."
+  },
+  "rows": [
+    {
+      "id": "short-warning",
+      "label": "/collection/replace: the confirm answers with \u00a7E (decks named, rest counted)",
+      "view": "src/components/collection/replace-flow.tsx",
+      "steps": [
+        {
+          "goto": "/collection/replace",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "Paste a list instead",
+          "wait": "textarea",
+          "settle": 300
+        },
+        {
+          "fill": "textarea",
+          "text": "1 Sol Ring",
+          "settle": 300
+        },
+        {
+          "clickRole": "button",
+          "name": "^Preview",
+          "wait": "button",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Continue to replace",
+          "wait": "[role=dialog]",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "^Replace with",
+          "wait": "[role=dialog] h2",
+          "settle": 1500
+        }
+      ]
+    }
+  ]
+}

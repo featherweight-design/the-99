@@ -16,6 +16,7 @@ import { useEffect, useRef } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import type { UploadPreview } from "../../app/collection/actions";
 import { replaceCopy } from "../../lib/copy/replace";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
 
 export function ConfirmModal({
   preview,
@@ -23,12 +24,15 @@ export function ConfirmModal({
   error,
   onClose,
   onConfirm,
+  checking = false,
 }: {
   preview: UploadPreview;
   pending: boolean;
   error: string | null;
   onClose: () => void;
   onConfirm: () => Promise<void> | void;
+  /** The press starts a deck check as well as the write (collection editing on). */
+  checking?: boolean;
 }) {
   const c = replaceCopy.confirm;
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -144,7 +148,7 @@ export function ConfirmModal({
             // §1.14 Replace with N cards — the bone fill, 48 phone / 46 desktop
             className="flex h-[48px] md:h-[46px] w-full md:flex-1 items-center justify-center rounded-[10px] md:rounded-lg font-sans font-semibold text-[15px] md:text-[14px] bg-[color:var(--fg)] text-[color:var(--bg)] cursor-pointer disabled:cursor-wait disabled:opacity-60"
           >
-            {pending ? words.pending : words.confirm}
+            {pending ? (checking ? collectionEditCopy.shortWarning.checking : words.pending) : words.confirm}
           </button>
         </div>
       </div>

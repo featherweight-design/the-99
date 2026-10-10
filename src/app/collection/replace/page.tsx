@@ -4,6 +4,7 @@
 
 import { requireUserId } from "../../../lib/auth";
 import { getCollectionStats } from "../../../lib/home/summary";
+import { collectionEditEnabled } from "../../../lib/collection/edit-flag";
 import { ReplaceFlow } from "../../../components/collection/replace-flow";
 
 // confirmUpload's after() warm scores every commander candidate, which on a cold
@@ -23,7 +24,7 @@ export default async function ReplacePage() {
           rendered here could only be centred to one of them. Pinned left it was 102px out of
           step with the review; centred to the entry's column it would have been 252px out. The
           review draws its own `Review import` title, so nothing is lost by letting it go. */}
-      <ReplaceFlow currentCardCount={stats.totalCards} />
+      <ReplaceFlow currentCardCount={stats.totalCards} deckCheck={collectionEditEnabled()} />
     </section>
   );
 }

@@ -11,6 +11,9 @@ import { UploadEntry } from "./upload-entry";
 import { ReviewScreen } from "./review-screen";
 import { ConfirmModal } from "./confirm-modal";
 import { replaceCopy } from "../../lib/copy/replace";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
+import type { ShortDeck } from "../../lib/collection/write";
+import { ShortDeckWarning } from "./short-deck-warning";
 import { usePendingPush } from "../shell/pending-push";
 
 export function ReplaceFlow({
@@ -19,6 +22,7 @@ export function ReplaceFlow({
   entry,
   onReviewing,
   onAddByHand,
+  deckCheck = false,
 }: {
   currentCardCount: number;
   embedded?: boolean;
@@ -33,6 +37,8 @@ export function ReplaceFlow({
   entry?: React.ComponentProps<typeof UploadEntry>["entry"];
   /** First run's `Add cards by hand`, drawn beside Paste. Absent: no button. */
   onAddByHand?: React.ComponentProps<typeof UploadEntry>["onAddByHand"];
+  /** Collection editing is on: a confirm checks the decks first, and can answer with §E. */
+  deckCheck?: boolean;
 }) {
   const nav = usePendingPush();
   const [preview, setPreview] = useState<UploadPreview | null>(null);
@@ -43,6 +49,9 @@ export function ReplaceFlow({
   // preview or a server refusal (another tab imported, #1097) can report a newer one; the upload
   // step a Cancel returns to must draw that one, or a collection that exists reads as empty.
   const [knownCount, setKnownCount] = useState(currentCardCount);
+  // §E: the decks this replace would leave short, as the server last said. `fresh` marks the
+  // ones the previous answer did not name; `changed` is set when this answer replaced one.
+  const [warning, setWarning] = useState<{ decks: ShortDeck[]; fresh: Set<string>; changed: boolean } | null>(null);
 
   // Keyed on the upload, not on the preview object: a server refusal re-sets the preview with a
   // corrected count (#1097), and that is the same review still open.
@@ -64,7 +73,7 @@ export function ReplaceFlow({
   // modal instead.
   const firstImport = preview?.currentCollectionCount === 0;
 
-  async function onConfirm() {
+  async function onConfirm(confirmShort?: ShortDeck[]) {
     if (!preview || pending) return;
     setPending(true);
     setConfirmError(null);
@@ -72,7 +81,7 @@ export function ReplaceFlow({
       // `firstImport` is read off the preview, which a server refusal corrects before the
       // modal opens, so a confirm from that modal is no longer "first". A retry after a
       // FAILED first import keeps the claim, and with it the server's guard (Copilot, #1097).
-      const outcome = await confirmUpload(preview.uploadId, { firstImport });
+      const outcome = await confirmUpload(preview.uploadId, { firstImport, confirmShort });
       if (outcome && "needsConfirm" in outcome) {
         // The preview was drawn at 0 cards and the modal reads its variant off that figure,
         // so it would ask for IMPORT over a write that replaces a collection. Correct it first.
@@ -81,11 +90,18 @@ export function ReplaceFlow({
         setConfirming(true);
         return;
       }
-      // A ledger refusal (a deck it would leave short, a card the catalog dropped) wrote nothing.
-      // Its own screens arrive with the collection-edit handoff; until then it reads as the
-      // failed confirm it is, in the slot a failed confirm has always used.
-      if (outcome) {
-        setConfirmError("Confirm failed");
+      // A ledger refusal wrote nothing: a deck it would leave short opens §E, and a card the
+      // catalog dropped is named in the confirm's own error slot.
+      if (outcome && "wouldShort" in outcome) {
+        const before = new Set(warning?.decks.map((d) => d.deckId));
+        const fresh = warning ? new Set(outcome.wouldShort.map((d) => d.deckId).filter((id) => !before.has(id))) : new Set<string>();
+        setWarning({ decks: outcome.wouldShort, fresh, changed: warning !== null });
+        setConfirming(false);
+        return;
+      }
+      if (outcome && "missingCard" in outcome) {
+        setWarning(null);
+        setConfirmError(collectionEditCopy.shortWarning.catalogFailure(outcome.missingCard));
         setConfirming(true);
         return;
       }
@@ -168,7 +184,23 @@ export function ReplaceFlow({
             setConfirming(false);
             setConfirmError(null);
           }}
-          onConfirm={onConfirm}
+          onConfirm={() => onConfirm()}
+          checking={deckCheck}
+        />
+      )}
+      {warning && (
+        <ShortDeckWarning
+          decks={warning.decks}
+          pending={pending}
+          error={confirmError}
+          notice={warning.changed}
+          freshDeckIds={warning.fresh}
+          onCancel={() => {
+            // Writes nothing (E7): the review is still here and Replace is one press away.
+            setWarning(null);
+            setConfirmError(null);
+          }}
+          onConfirm={() => onConfirm(warning.decks)}
         />
       )}
     </>

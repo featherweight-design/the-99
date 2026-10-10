@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { UploadPreview } from "../../app/collection/actions";
 
@@ -148,5 +148,86 @@ describe("ReplaceFlow — the first import (prod walk 2026-09-28, item 5a)", () 
     confirmUpload.mockResolvedValueOnce(undefined);
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Import 3 cards" })));
     await waitFor(() => expect(confirmUpload).toHaveBeenLastCalledWith("up_1", { firstImport: true }));
+  });
+});
+
+describe("ReplaceFlow — §E, decks the replace would leave short", () => {
+  const deck = (deckId: string, deckName: string, short = 1) => ({
+    deckId,
+    deckName,
+    oracleId: "o1",
+    cardName: "Sol Ring",
+    short,
+  });
+
+  async function reachConfirm() {
+    previewPaste.mockResolvedValueOnce(preview(10));
+    render(<ReplaceFlow currentCardCount={10} deckCheck />);
+    fireEvent.click(screen.getAllByRole("button", { name: /Paste a list instead/ })[0]);
+    fireEvent.change(screen.getByRole("textbox", { name: "Paste your card list" }), { target: { value: "3 Sol Ring" } });
+    fireEvent.click(screen.getByRole("button", { name: /^Preview/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /^Continue to replace/ }));
+    return screen.getByRole("button", { name: /^Replace with/ });
+  }
+
+  beforeEach(() => {
+    push.mockReset();
+    confirmUpload.mockReset();
+    previewPaste.mockReset();
+  });
+
+  it("reads Checking decks… on the pressed control while the check runs", async () => {
+    confirmUpload.mockReturnValueOnce(new Promise(() => {}));
+    const replace = await reachConfirm();
+    await act(async () => fireEvent.click(replace));
+    expect(screen.getByRole("button", { name: "Checking decks…" })).toBeDisabled();
+  });
+
+  it("swaps the confirm for the warning, and Cancel writes nothing", async () => {
+    confirmUpload.mockResolvedValueOnce({ wouldShort: [deck("d1", "Atraxa")] });
+    const replace = await reachConfirm();
+    await act(async () => fireEvent.click(replace));
+    expect(screen.getByRole("heading", { name: "Replacing leaves a deck short" })).toBeTruthy();
+    expect(screen.getByText("Atraxa")).toBeTruthy();
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(confirmUpload).toHaveBeenCalledTimes(1);
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("confirming resends the SAME decks as confirmShort, then opens the receipt", async () => {
+    const decks = [deck("d1", "Atraxa")];
+    confirmUpload.mockResolvedValueOnce({ wouldShort: decks }).mockResolvedValueOnce(undefined);
+    const replace = await reachConfirm();
+    await act(async () => fireEvent.click(replace));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Replace anyway" })));
+    expect(confirmUpload).toHaveBeenLastCalledWith("up_1", { firstImport: false, confirmShort: decks });
+    expect(push).toHaveBeenCalledWith("/collection/replace/summary/up_1");
+  });
+
+  it("a confirm that comes back changed redraws the same dialog, with a notice and `new` on the added deck", async () => {
+    confirmUpload
+      .mockResolvedValueOnce({ wouldShort: [deck("d1", "Atraxa")] })
+      .mockResolvedValueOnce({ wouldShort: [deck("d1", "Atraxa"), deck("d2", "Korvold")] });
+    const replace = await reachConfirm();
+    await act(async () => fireEvent.click(replace));
+    expect(screen.queryByRole("status")).toBeNull();
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Replace anyway" })));
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+    expect(screen.getByRole("status").textContent).toMatch(/This changed while you were deciding/);
+    expect(screen.getByRole("heading", { name: "Replacing leaves 2 decks short" })).toBeTruthy();
+    const tags = screen.getAllByText("new");
+    expect(tags).toHaveLength(1);
+    expect(tags[0].parentElement?.textContent).toMatch(/Korvold/);
+  });
+
+  it("names the cards the catalog dropped in the confirm's error slot, and writes nothing", async () => {
+    confirmUpload.mockResolvedValueOnce({ missingCard: ["Sol Ring", "Arcane Signet"] });
+    const replace = await reachConfirm();
+    await act(async () => fireEvent.click(replace));
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "Sol Ring, Arcane Signet have been removed from the card catalog since this file was read. Nothing was changed.",
+    );
+    expect(push).not.toHaveBeenCalled();
   });
 });
