@@ -13,8 +13,9 @@ import type { Job } from "./types";
  *   exiles a card already on the battlefield).
  * - A draw job whose `affects` is `opponents` is not the deck's draw (Thought-Knot Seer), unless the
  *   text lets the controller be the target.
- * - A card with no fresh label is ABSENT from the map, and counts toward no role. That is the
- *   Jobs card's rule, and it is what a deck's own count does with the same card.
+ * - A card with no fresh label is ABSENT from the map. The index build counts it toward no role
+ *   (and hashes it as `?`), the Jobs card shows it as unlabeled, and every reader of the targets
+ *   falls back to the classifier for that card (`rolesByLabelElseText`).
  */
 export const LABEL_TARGET_ROLES = ["ramp", "draw", "removal", "wipes"] as const;
 export type LabelTargetRole = (typeof LABEL_TARGET_ROLES)[number];

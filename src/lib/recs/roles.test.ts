@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyRoles, ROLE_TARGETS } from "./roles";
+import { classifyRoles, rolesByLabelElseText, ROLE_TARGETS } from "./roles";
 
 const card = (typeLine: string, oracleText: string, keywords: string[] = []) =>
   ({ typeLine, oracleText, keywords });
@@ -79,5 +79,23 @@ describe("what counts as a land", () => {
   it("lets a land-backed ramp spell be ramp", () => {
     expect(roles("Sorcery // Land", "Search your library for a basic land card, put it onto the battlefield tapped, then shuffle.")).toContain("ramp");
     expect(roles("Sorcery // Land", "Search your library for a basic land card, put it onto the battlefield tapped, then shuffle.")).not.toContain("land");
+  });
+});
+
+describe("rolesByLabelElseText", () => {
+  const rock = { oracleId: "r", ...card("Artifact", "{T}: Add {C}.") };
+  it("is the classifier with no label map", () => {
+    expect(rolesByLabelElseText(rock, undefined)).toEqual(classifyRoles(rock));
+  });
+  it("takes a labeled card's label, including the empty set", () => {
+    expect(rolesByLabelElseText(rock, new Map([["r", ["draw" as const]]]))).toEqual(["draw"]);
+    expect(rolesByLabelElseText(rock, new Map([["r", []]]))).toEqual([]);
+  });
+  it("falls back to the classifier for a card with no label", () => {
+    expect(rolesByLabelElseText(rock, new Map())).toEqual(classifyRoles(rock));
+  });
+  it("keeps a land a land and nothing else on the label basis", () => {
+    const canopy = { oracleId: "c", ...card("Land", "{T}, Pay 1 life: Add {G} or {W}. {1}, {T}, Sacrifice: Draw a card.") };
+    expect(rolesByLabelElseText(canopy, new Map())).toEqual(["land"]);
   });
 });

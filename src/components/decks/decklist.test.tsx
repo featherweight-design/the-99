@@ -226,6 +226,15 @@ describe("Shopping groups by role and heads each group with the gap it closes", 
     expect(byLabel).not.toMatch(/2 · closes/);
   });
 
+  it("counts an unlabeled copy toward its classifier role when a label read is provided", () => {
+    const talisman = makeCard({ oracleId: "talisman", name: "Talisman", role: "ramp", owned: false, auto: true });
+    // Arcane Signet has no entry (unlabeled): the classifier's ramp counts. Talisman is labeled draw: not ramp.
+    renderDecklist([rampOwned, rampUnowned, talisman], {
+      labelRows: { "sol-ring": ["ramp"], talisman: ["draw"] },
+    });
+    expect(document.body.textContent ?? "").toMatch(/1 · closes (\d+)→(\d+)/);
+  });
+
   it("does not render owned cards in the Shopping filter", () => {
     renderDecklist([rampOwned, rampUnowned]);
     expect(screen.queryByText("Sol Ring")).not.toBeInTheDocument();

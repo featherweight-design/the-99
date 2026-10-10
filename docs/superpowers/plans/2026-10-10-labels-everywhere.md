@@ -204,8 +204,8 @@ before. When the last reader has moved, a cleanup migration drops `avg_ramp/draw
 - The label lookup reads `card_labels` through `freshLabels`, the page's own freshness rule, so a
   stale label behaves the same in the build and on the page. Roles are the `role`-space kinds
   ramp, draw, removal and wipes. A land face counts toward none of the four. `counterspell` is not
-  removal. A card with no fresh label counts toward no role, the same as in the deck's own count,
-  so counts and targets share one rule. That is 2.7% of the inclusion mass today, and the build
+  removal. The BUILD counts a card with no fresh label toward no role (PR 9 moved every reader of
+  the targets to the classifier for that card, per card). That is 2.7% of the inclusion mass today, and the build
   report prints the share so it stays visible.
 - The floors stay as they are. `roleTargetsPublishable` applies to the label pass too, for
   commanders and for pairs.
@@ -238,7 +238,7 @@ staging build, not from this plan's figures.
   panel's coverage shelves (`consider-panel.tsx:48`) and the builder's role toast
   (`builder-shell.tsx:870`). PR 2 finds them by grep for `computeRoleCounts(` rather than by this
   list.
-- A card with no fresh label is not counted in a role, which is the Jobs card's rule. The strip's
+- A card with no fresh label counts by the classifier (PR 9; PR 2 first counted it as none, the Jobs card's rule). The strip's
   disclosure says how many of the deck's cards are unlabeled when that number is above zero. The
   wording goes to `/copy-review`.
 - Gated by a server-read switch, `LABEL_ROLE_COUNTS_ENABLED`, read the way `analysisTabEnabled()`
@@ -335,7 +335,7 @@ No stacked PRs. Each PR lands on `main` on its own, and each is well under 20 fi
 | 6 | Role Coverage and the thinnest role on labels | `src/lib/recs/weakest-role.ts` and the commander page's coverage and why sections. | 2 |
 | 7 | Discover's ranking on labels | `src/lib/discovery/list.ts`, `src/lib/recs/recommend.ts`, `free-ranking.ts` and `score.ts`. | 5 |
 | 8 | The tuning evidence on labels | `src/lib/tuning/evidence.ts`. This changes the Suggested changes model's INPUTS, so it shares ONE paid eval re-run with the roadmap's sub-project 8, one run covering both lists. **Hugh's cost OK comes before that run.** | 2, and Hugh's cost OK |
-| 9 | Drop `avg_*` | The cleanup migration closes the line: drop `avg_ramp/draw/removal/wipes` on the three tables, the classifier pass in the build, and the `basis` argument. Only once a grep finds no reader of `avg_*` or of the classifier basis. | 4 to 8 |
+| 9 | Drop `avg_*` | The cleanup migration closes the line: drop `avg_ramp/draw/removal/wipes` on the three tables, the classifier pass in the build, and the `basis` argument. Only once a grep finds no reader of `avg_*` or of the classifier basis. **Status 2026-10-10 (PR 9, step 1 only):** the grep finds live readers, so the migration waits. The classifier basis is the switch-OFF path of `LABEL_ROLE_COUNTS_ENABLED`, still off in production: `profile/load.ts` (the skeleton's `avg_*` selects, 3 tables) and `profile/role-targets.ts` (`roleTargetsFrom`, `pickRoleTargets`' classifier basis); the writers `edhrec/seed-index.ts` (the build's classifier pass) and `scripts/build-staples.ts` (the identity averages); `scripts/lib/index-copy.ts` and `cache/index-generation.ts` (column lists); `db/schema.ts`. The migration lands in the PR that deletes the switch's off path, after the label basis has run on production. PR 9 aligned the unlabeled-card rule instead: every reader of the targets now counts a card with no fresh label by the classifier, per card (the index build still counts it toward no role, which is what its fingerprint hashes). | 4 to 8 |
 
 **Every reader PR from 4 to 8 carries before/after numbers in its PR body**, measured read-only on
 Hugh's 20 staging decks the way this plan's verdict table was (Hugh, 2026-10-09). The fill reports

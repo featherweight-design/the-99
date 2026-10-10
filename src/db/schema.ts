@@ -873,8 +873,12 @@ export const RANK_SCORE_UNWRITTEN = -1;
  * Version 9 is the label role reader's tightening (draw for opponents, land-to-hand and narrow
  * discounts no longer count). Rows counted by labels under version 8 hold role counts the reader
  * no longer produces, so they are refused and recomputed.
+ *
+ * Version 10 is the unlabeled-card rule (labels-everywhere PR 9): a card with no fresh label now
+ * falls back to the classifier for that card, where version 9 counted it toward no role. Rows
+ * counted by labels under version 9 hold role counts the reader no longer produces.
  */
-export const SCORE_WRITER_CURRENT = 9;
+export const SCORE_WRITER_CURRENT = 10;
 
 export const commanderScores = pgTable("commander_scores", {
   userId: text("user_id").notNull(),

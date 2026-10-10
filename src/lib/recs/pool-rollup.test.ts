@@ -90,9 +90,9 @@ describe("pool rollup by label", () => {
   ]);
   const rollup = buildPoolRollup(collection, avail, roleSets);
 
-  it("counts a labeled card by its label and an unlabeled card toward no role", () => {
+  it("counts a labeled card by its label and an unlabeled card by the classifier", () => {
     expect(rollupFor(rollup, { oracleId: "x", colorIdentity: ["W", "U", "B", "R", "G"] }).roleCounts)
-      .toEqual({ ramp: 1, draw: 0, removal: 1, wipes: 1 });
+      .toEqual({ ramp: 2, draw: 0, removal: 1, wipes: 1 }); // c: no label, ramp by text
   });
 
   it("agrees with scoreCommander on the same sets, for every commander", () => {

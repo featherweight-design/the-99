@@ -1,7 +1,7 @@
 import type { Availability } from "./availability";
 import type { DeckDetailCard } from "./grouping";
 import type { PriceFact } from "./price";
-import { classifyRoles } from "../recs/roles";
+import { classifyRoles, rolesByLabelElseText } from "../recs/roles";
 import type { MixRole, RecommendedMix } from "./mix";
 import { deckBodySize } from "./deck-size";
 import type { PoolCard } from "../recs/score";
@@ -184,17 +184,14 @@ export function buildSuggestionPayload(
 }
 
 /** The roles a pool card fills under this basis: the classifier's, or, with `roleSets`, its fresh label's
- *  (no label, no role). A land stays a land either way, so the land slots are untouched; on the label
+ *  (no label: the classifier's, per card). A land stays a land either way, so the land slots are untouched; on the label
  *  basis it is ONLY a land, because the label targets and the strip exclude land faces from the four
  *  roles, and a utility land whose text also reads draw must not close a draw gap. */
 export function rolesForSuggestion(
   card: PoolCard,
   roleSets: ReadonlyMap<string, readonly Exclude<MixRole, "land">[]> | undefined,
 ): ReturnType<typeof classifyRoles> {
-  const byText = classifyRoles(card);
-  if (!roleSets) return byText;
-  if (byText.includes("land")) return ["land"];
-  return [...(roleSets.get(card.oracleId) ?? [])];
+  return rolesByLabelElseText(card, roleSets);
 }
 
 export function suggestDeck(args: {
@@ -209,7 +206,7 @@ export function suggestDeck(args: {
   mix: RecommendedMix;
   /**
    * Fresh-label role sets by oracle id, when the roles are counted by LABEL (`LABEL_ROLE_COUNTS_ENABLED`,
-   * labels-everywhere plan). A card absent from the map has no fresh label and counts toward no role,
+   * labels-everywhere plan). A card absent from the map has no fresh label and falls back to the classifier for that card,
    * the rule the strip beside this shelf counts under; absent altogether is the classifier for every
    * card, exactly as before. A land stays the classifier's call either way.
    */

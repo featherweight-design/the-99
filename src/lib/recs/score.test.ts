@@ -607,13 +607,15 @@ describe("scoreCommander by label", () => {
     expect(got.roleCounts).toMatchObject({ ramp: 2, removal: 1 });
   });
 
-  it("counts a labeled card by its label and an unlabeled card toward no role", () => {
+  it("counts a labeled card by its label and an unlabeled card by the classifier", () => {
     const roleSets = new Map([
       [rock.oracleId, ["draw" as const]],
       [bolt.oracleId, ["removal" as const, "wipes" as const]],
     ]);
     const got = scoreCommander({ ...args, roleSets });
-    expect(got.roleCounts).toEqual({ ramp: 0, draw: 1, removal: 1, wipes: 1 });
+    // Fresh has no label and its text reads ramp.
+    expect(got.roleCounts).toEqual({ ramp: 1, draw: 1, removal: 1, wipes: 1 });
+    expect(got.roleCards.ramp.map((c) => c.name)).toEqual(["Fresh"]);
     expect(got.roleCards.draw.map((c) => c.name)).toEqual(["Rock"]);
   });
 });

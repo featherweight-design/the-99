@@ -23,22 +23,36 @@ describe("computeLabelRoleCounts", () => {
 
   it("counts a card in every role its label names", () => {
     const { counts } = computeLabelRoleCounts(deck, BY_CARD);
-    expect(counts).toEqual({ ramp: 2, draw: 1, removal: 2, wipes: 1, land: 3 });
+    // `mystery` has no label and is the classifier's draw (next test).
+    expect(counts).toEqual({ ramp: 2, draw: 2, removal: 2, wipes: 1, land: 3 });
   });
 
-  it("counts a card with no label toward no role, and says how many", () => {
-    // `mystery` is classified draw, but absent from the map: unlabeled, not a draw.
+  it("counts a card with no label by the classifier, and says how many", () => {
+    // `mystery` is classified draw and absent from the map: unlabeled, so the classifier's call.
     const { counts, unlabeled } = computeLabelRoleCounts(deck, BY_CARD);
-    expect(counts.draw).toBe(1); // dork alone
+    expect(counts.draw).toBe(2); // dork by label, mystery by text
     expect(unlabeled).toBe(1);
   });
 
-  it("is the Jobs card's tally: the four cells equal jobTally's rows over the same cards", () => {
+  it("counts a labeled card that does none as none, where an unlabeled one would be counted", () => {
+    // `vanilla` is labeled-and-doing-nothing; the classifier would call this one ramp.
+    const { counts, unlabeled } = computeLabelRoleCounts([c("vanilla", "ramp")], BY_CARD);
+    expect(counts.ramp).toBe(0);
+    expect(unlabeled).toBe(0);
+  });
+
+  it("gives an unlabeled card with no classifier role to no cell", () => {
+    const { counts } = computeLabelRoleCounts([c("mystery", "other")], BY_CARD);
+    expect(counts).toEqual({ ramp: 0, draw: 0, removal: 0, wipes: 0, land: 0 });
+  });
+
+  it("is the Jobs card's tally over every LABELED card: the four cells equal jobTally's rows", () => {
+    // An unlabeled card is the one place the two differ: the Jobs card shows it as unlabeled, the strip counts it by text.
     const tally = jobTally(
-      deck.filter((d) => d.role !== "land").map((d) => ({ oracleId: d.oracleId!, name: d.name!, copies: d.quantity })),
+      deck.filter((d) => d.role !== "land" && BY_CARD[d.oracleId!]).map((d) => ({ oracleId: d.oracleId!, name: d.name!, copies: d.quantity })),
       BY_CARD,
     );
-    const { counts } = computeLabelRoleCounts(deck, BY_CARD);
+    const { counts } = computeLabelRoleCounts(deck.filter((d) => BY_CARD[d.oracleId!] || d.role === "land"), BY_CARD);
     for (const key of ["ramp", "draw", "removal", "wipes"] as const) {
       expect(counts[key]).toBe(tally.rows.find((r) => r.key === key)!.copies);
     }
@@ -99,8 +113,11 @@ describe("LABEL_ROLE_COUNTS_ENABLED", () => {
 
 describe("roleNamedFor", () => {
   const card = { oracleId: "a", role: "ramp" };
-  it("names nothing for a queried card with no label", () => {
-    expect(roleNamedFor(card, {}, new Set(["a"]))).toBeUndefined();
+  it("names the classifier's role for a queried card with no label", () => {
+    expect(roleNamedFor(card, {}, new Set(["a"]))).toBe("ramp");
+  });
+  it("names nothing for a queried card whose label does none", () => {
+    expect(roleNamedFor(card, { a: [] }, new Set(["a"]))).toBeUndefined();
   });
   it("falls back to the classifier for a card the page never queried", () => {
     expect(roleNamedFor(card, {}, new Set(["b"]))).toBe("ramp");

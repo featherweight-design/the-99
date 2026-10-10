@@ -4,8 +4,9 @@
 // Differences from `computeRoleCounts`, all deliberate and all the Jobs card's rules:
 //   - a card counts in EVERY role its label names (a ramp-and-draw card is one of each), where
 //     `card.role` is the first of the classifier's roles;
-//   - a card with no fresh label counts toward no role (absent from `byCard`), which is a
-//     different state from labeled-and-doing-none;
+//   - a card with no fresh label (absent from `byCard`) falls back to the classifier for that card,
+//     as the fill, the fit score, Discover, the suggestions and the profile do (one rule, 2026-10-10),
+//     which is a different state from labeled-and-doing-none: that card counts toward no role;
 //   - lands still count by `card.role === "land"`, which is `isLandFace`, and never reach the tally.
 
 import { jobTally, type JobRowsByCard } from "./job-tally";
@@ -15,7 +16,7 @@ export type LabelCountCard = RoleCountCard & { oracleId?: string; name?: string 
 
 export type LabelRoleCounts = {
   counts: Record<MixRole, number>;
-  /** Nonland copies with no fresh label: the figure the strip's disclosure names. */
+  /** Nonland copies with no fresh label, counted by the classifier: the figure the strip's disclosure names. */
   unlabeled: number;
 };
 
@@ -29,8 +30,17 @@ export function computeLabelRoleCounts(
     byCard,
   );
   const copies = (key: "ramp" | "draw" | "removal" | "wipes") => tally.rows.find((r) => r.key === key)!.copies;
+  const counts: Record<MixRole, number> = {
+    ramp: copies("ramp"), draw: copies("draw"), removal: copies("removal"), wipes: copies("wipes"), land: lands,
+  };
+  // A card with no fresh label is the classifier's call, by its single `card.role` exactly as the
+  // switch-off strip counts it. A card the classifier gives no role (`other`) adds to no cell.
+  for (const c of cards) {
+    if (c.role === "land" || byCard[c.oracleId ?? ""]) continue;
+    if (c.role in counts) counts[c.role as MixRole] += c.quantity;
+  }
   return {
-    counts: { ramp: copies("ramp"), draw: copies("draw"), removal: copies("removal"), wipes: copies("wipes"), land: lands },
+    counts,
     unlabeled: tally.unlabeled,
   };
 }
@@ -43,10 +53,9 @@ export function labelRolesOf(rows: readonly string[] | undefined): Exclude<MixRo
 }
 
 /**
- * The role a card's toast or resolve clause names. By label that is the first role the label names,
- * and a queried card with no label names none. A land, or a card the page never queried (a search
- * result), takes the classifier's `card.role`: the label map is sparse, so absence from it cannot
- * tell "unlabeled" from "never asked", and `queried` is what can.
+ * The role a card's toast or resolve clause names. By label that is the first role the label names;
+ * a labeled card with no role names none. A land, an unlabeled card (the classifier's call, the
+ * one rule) or a card the page never queried (a search result) takes the classifier's `card.role`.
  */
 export function roleNamedFor(
   card: { oracleId: string; role: string },
@@ -54,7 +63,8 @@ export function roleNamedFor(
   queried: ReadonlySet<string> | null | undefined,
 ): string | undefined {
   if (!byCard || card.role === "land" || !queried?.has(card.oracleId)) return card.role;
-  return labelRolesOf(byCard[card.oracleId])[0];
+  const rows = byCard[card.oracleId];
+  return rows ? labelRolesOf(rows)[0] : card.role;
 }
 
 export type RoleCounter = {

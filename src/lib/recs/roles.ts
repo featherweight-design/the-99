@@ -39,6 +39,25 @@ const REMOVAL_PATTERNS = [
 ];
 const NOT_REMOVAL = /target .{0,30}you control/;
 
+/**
+ * The roles a card fills under a role basis: the classifier's with no `sets`, otherwise the card's
+ * fresh label role set, and a card with NO fresh label falls back to the classifier for that card
+ * (one rule on every reader, 2026-10-10; a new set before the weekly label job must not read as
+ * doing nothing). A land is a land and nothing else on the label basis: labels call 163 lands ramp,
+ * and the label targets and the deck's count exclude land faces from the four roles.
+ */
+export function rolesByLabelElseText(
+  card: RoleInput & { oracleId: string },
+  sets: ReadonlyMap<string, readonly Exclude<Role, "land">[]> | undefined,
+): Role[] {
+  if (!sets) return classifyRoles(card);
+  // `isLandFace` is the classifier's own land test, so this needs no regex pass: the classifier runs
+  // only for a card with no label (scoreCommander calls this per pool card per commander).
+  if (isLandFace(card.typeLine)) return ["land"];
+  const labelled = sets.get(card.oracleId);
+  return labelled ? [...labelled] : classifyRoles(card);
+}
+
 export function classifyRoles(card: RoleInput): Role[] {
   const roles: Role[] = [];
   const text = (card.oracleText ?? "").toLowerCase();
