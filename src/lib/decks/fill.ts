@@ -1,5 +1,6 @@
 import { castFaceText, playableAsLand, isLandFace } from "../cards/facet";
 import type { CompositionTargets, ProfileSkeleton } from "../profile/types";
+import type { LabelTargetRole } from "../labels/role-sets";
 import { classifyRoles, ROLE_TARGETS } from "../recs/roles";
 import { preferByTypeGap, tallyTypes, typeDeficits } from "./fill-shape";
 import { isBasicLand } from "./grouping";
@@ -23,7 +24,11 @@ export type FillRole = "ramp" | "draw" | "removal" | "wipes" | "land" | "other";
  */
 export type HeldCard = Pick<
   FillCandidate, "typeLine" | "oracleText" | "keywords" | "layout" | "manaCost"
-> & { quantity?: number };
+> & {
+  quantity?: number;
+  /** Lets the plan count the card by its label. Absent counts it by text, as before. */
+  oracleId?: string;
+};
 
 export type FillCandidate = {
   oracleId: string; name: string; typeLine: string;
@@ -106,6 +111,12 @@ export type PlanFillArgs = {
    * EVERY role it satisfies (§2.5a), and its type line joins the tie-break's tally.
    */
   held?: readonly HeldCard[];
+  /**
+   * Fresh-label role sets by oracle id (`readLabelRoleSets`), when the plan counts by LABEL
+   * (`LABEL_ROLE_COUNTS_ENABLED`). Absent is the classifier for every card. A card missing from
+   * the map has no fresh label and is classified by text, never skipped.
+   */
+  labelRoles?: ReadonlyMap<string, readonly LabelTargetRole[]>;
   /**
    * The deck's colour identity, for the basics split.
    *
@@ -258,13 +269,34 @@ const TIE_BREAK_WINDOW = 200;
  * off its back — and is then spent on the ramp floor AND counted as a land, which §2.5a names
  * as the double credit. Memoised because the role pass classifies the same card repeatedly.
  */
-const roleCache = new WeakMap<FillCandidate, ReturnType<typeof classifyRoles>>();
-function rolesOfCandidate(c: FillCandidate) {
-  const hit = roleCache.get(c);
-  if (hit) return hit;
-  const roles = classifyRoles({ ...c, oracleText: castFaceText(c.oracleText, c.layout) });
-  roleCache.set(c, roles);
-  return roles;
+/**
+ * The roles one card fills under this plan's basis. WITHOUT `labels` that is the classifier's
+ * answer, exactly as before. WITH them (labels-everywhere plan, PR 4), a card whose label is fresh
+ * is counted by that label, and a card WITH NO LABEL YET falls back to the classifier for that
+ * card: a new set before the weekly label job must still be placeable, and a skipped card would
+ * vanish from the deck the fill builds (Hugh, 2026-10-09). A land stays the classifier's call
+ * either way, so the mana base and the land drops are untouched; a labeled card with no role
+ * (`[]`) fills none, which is the Jobs card's rule.
+ */
+export function rolesWithLabels(
+  card: { oracleId?: string; typeLine: string; oracleText: string | null; keywords: string[]; layout: string; manaCost: string | null },
+  labels: ReadonlyMap<string, readonly LabelTargetRole[]> | undefined,
+): ReturnType<typeof classifyRoles> {
+  const byText = classifyRoles({ ...card, oracleText: castFaceText(card.oracleText, card.layout) });
+  if (!labels || !card.oracleId || byText.includes("land")) return byText;
+  const byLabel = labels.get(card.oracleId);
+  return byLabel ? [...byLabel] : byText;
+}
+
+function makeRolesOf(labels: ReadonlyMap<string, readonly LabelTargetRole[]> | undefined) {
+  const cache = new WeakMap<FillCandidate, ReturnType<typeof classifyRoles>>();
+  return (c: FillCandidate) => {
+    const hit = cache.get(c);
+    if (hit) return hit;
+    const roles = rolesWithLabels(c, labels);
+    cache.set(c, roles);
+    return roles;
+  };
 }
 
 /** The floors this fill builds to, MEASURED where the skeleton has them and asserted where it
@@ -436,6 +468,7 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   } = args;
   const admits = (c: FillCandidate) => gate?.admits(c) ?? true;
   const { floors, measured } = roleFloors(skeleton);
+  const rolesOfCandidate = makeRolesOf(args.labelRoles);
   const landCeiling = landTarget(hasPartner, skeleton);
   const bodySize = deckBodySize(hasPartner);
   const limit = slots ?? bodySize;
@@ -467,9 +500,7 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   // does not exist". A held card is credited to every role it satisfies, the same rule the
   // placement loop applies at :377.
   for (const card of held ?? []) {
-    const roles = classifyRoles({
-      ...card, oracleText: castFaceText(card.oracleText, card.layout),
-    });
+    const roles = rolesWithLabels(card, args.labelRoles);
     for (const role of roles) counts[role] += card.quantity ?? 1;
   }
 

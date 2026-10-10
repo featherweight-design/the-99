@@ -17,6 +17,7 @@ import type { HeldCard } from "./fill";
 export async function placedCardsOf(oracleIds: readonly string[]): Promise<HeldCard[]> {
   if (oracleIds.length === 0) return [];
   return db.select({
+    oracleId: cards.oracleId,
     typeLine: cards.typeLine,
     oracleText: cards.oracleText,
     keywords: cards.keywords,
