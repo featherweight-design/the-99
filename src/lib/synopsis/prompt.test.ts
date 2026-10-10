@@ -260,8 +260,12 @@ describe("buildSynopsisPrompt under contract 8", () => {
     expect(buildSynopsisPrompt(FACTS).system).not.toContain("a strategy step: at most");
   });
 
+  const c8Aim = () => buildSynopsisPrompt(FACTS, undefined, C8).system;
   it("states the worked engine example at the length it claims", () => {
-    expect("Sol Ring into a cheap engine piece starts the plan.".length).toBe(51);
+    const m = buildSynopsisPrompt(FACTS, undefined, C8).system.match(/"\[\[([^"]+)\]\]([^"]*)" \((\d+)\)/g)!.find((x) => x.includes("engine piece"))!;
+    const [, name, rest, n] = m.match(/"\[\[([^\]]+)\]\]([^"]*)" \((\d+)\)/)!;
+    expect((name + rest).length).toBe(Number(n));
+    expect(c8Aim()).toContain("aim for about 115");
   });
 
   const longKeep = "An early unblockable creature with [[Yuriko, the Tiger's Shadow]] still in the command zone is strong.";

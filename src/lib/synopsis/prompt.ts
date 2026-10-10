@@ -118,7 +118,7 @@ const LENGTH_RULES = [
  * the repair in 4.
  */
 const V8_LENGTH_RULES = [
-  `- a strategy step: at most ${CHAR_BUDGETS.strategy}; aim for about ${CHAR_BUDGETS.strategy - 35}. One overlong step refuses the whole Primer.`,
+  `- a strategy step: at most ${CHAR_BUDGETS.strategy}; aim for about ${Math.floor(CHAR_BUDGETS.strategy * 0.8)}. One overlong step refuses the whole Primer.`,
   "A card's name counts toward a limit in full. A mulligan line that names a long card, a commander's name above all, has room for few other words: name a shorter engine piece, or leave the commander out. Open the line with the card or the situation itself, never with filler such as A hand with or Having.",
   "Shorter never means a fragment: every job, line, step and tip is a whole sentence and ends with a period.",
   'A mulligan line that names an engine piece, sized to the budget: "[[Sol Ring]] into a cheap engine piece starts the plan." (51).',
@@ -181,6 +181,7 @@ const textOf = (x: string | { text: string }) => (typeof x === "string" ? x : x.
  * The lines of a first answer, in the sections being rewritten, that run over their character
  * limit: "keep line 1 is 98 characters, limit 80: <text>". Both contracts' reply shapes. Only the
  * sections named in `sections` are read, so a kept section is never second-guessed.
+ * Weaknesses are not read: contract 8 carries them as ranked candidates, none over budget in the 32 stored gate answers.
  */
 export function overLengthLines(reply: SynopsisReply, sections: readonly SectionId[]): string[] {
   const out: string[] = [];
