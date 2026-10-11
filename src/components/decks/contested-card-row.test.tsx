@@ -373,7 +373,7 @@ describe("ContestedCardRow", () => {
         ...base.claimants,
         {
           deckId: "d3", deckName: "Brew Led By It", quantity: 1, commanderCopies: 1, granted: 0,
-          since: null, versionNumber: null, allocated: 0,
+          since: null, versionNumber: null, allocated: 0, brew: true,
         },
       ],
     })} />);
@@ -391,7 +391,7 @@ describe("ContestedCardRow", () => {
         ...base.claimants,
         {
           deckId: "d3", deckName: "Muldrotha Lands", quantity: 1, commanderCopies: 0, granted: 0,
-          since: null, versionNumber: null, allocated: 0,
+          since: null, versionNumber: null, allocated: 0, brew: true,
         },
       ],
     })} />);

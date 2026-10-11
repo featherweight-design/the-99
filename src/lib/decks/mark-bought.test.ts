@@ -29,7 +29,7 @@ describe("receiptFacts", () => {
       .toEqual([{ deckId: "a", deckName: "deck a", copies: 1 }]);
   });
 
-  it("never names a brew for its soft share (a brew has no since)", () => {
+  it("never names a brew for its soft share", () => {
     const brew = { ...claim("brew", 0, 1, false), since: null };
     // Two copies: the source takes one and the brew reads the spare as its soft share.
     const after = snap(2, [brew, claim("source", 2)]);

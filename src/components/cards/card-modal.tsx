@@ -373,7 +373,7 @@ function AvailabilityDetail({
   // does saying who gets it tell the reader anything.
   // Brews are in the allocation (they can be given a copy) but their unmet ask is soft, so it
   // never makes the card contested on its own.
-  const contested = allocation.some((cl) => cl.since !== null && cl.allocated < cl.quantity);
+  const contested = allocation.some((cl) => !cl.brew && cl.allocated < cl.quantity);
   // The brews, which no figure in this block counts. Named where a committed deck is already
   // in play; in the soft state every claimant is one and `detailSoftNote` says so already.
   // A brew holding a copy the player gave it IS counted (in hard), so it is not one of these.

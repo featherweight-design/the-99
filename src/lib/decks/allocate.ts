@@ -31,7 +31,7 @@ export function allocate(
     // SOFTLY: it reads what the committed queue leaves without taking it from another brew,
     // which is how the model's brew branch measures it (each brew against the hard claims
     // alone). Only its granted copies are held, and those came off the top with the others.
-    if (c.since !== null) left -= fromQueue;
+    if (!c.brew) left -= fromQueue;
     return { ...c, allocated: c.granted + fromQueue };
   });
 }
@@ -47,7 +47,7 @@ export function allocate(
  *
  * Brews are included and sort LAST, behind every committed deck: since 2026-10-11 a brew can be
  * given a copy (all-decks cart, Hugh's answer 2), and the player chooses among every deck that
- * wants the card. A brew has no `since`, which is what both the sort and `allocate` read.
+ * wants the card. Each claimant carries `brew`, which both the sort and `allocate` read.
  */
 export function allocateClaims(a: Pick<Availability, "owned" | "claims">): ContestedClaimant[] {
   const claimants = a.claims
@@ -58,17 +58,14 @@ export function allocateClaims(a: Pick<Availability, "owned" | "claims">): Conte
       commanderCopies: c.commanderCopies ?? (c.commander ? 1 : 0),
       granted: c.granted ?? 0,
       since: c.since ?? null,
+      brew: !c.mature,
       versionNumber: c.versionNumber ?? null,
     }))
-    // Commit order, per card; a brew's null `since` sorts last. Two brews tie on Infinity, and
-    // `Infinity - Infinity` is NaN, so the sort reads each side's brewness rather than subtracting.
-    .sort((x, y) => {
-      if (x.since === null || y.since === null) {
-        if (x.since !== y.since) return x.since === null ? 1 : -1;
-      } else if (x.since !== y.since) {
-        return x.since - y.since;
-      }
-      return x.deckId.localeCompare(y.deckId);
-    });
+    // Brews last, then commit order per card. Brewness is the claim's own `mature` flag, never a
+    // null `since`: `since` is optional, and a committed claim without one is still committed.
+    .sort((x, y) =>
+      Number(x.brew) - Number(y.brew)
+      || (x.since ?? Infinity) - (y.since ?? Infinity)
+      || x.deckId.localeCompare(y.deckId));
   return allocate(a.owned, claimants);
 }

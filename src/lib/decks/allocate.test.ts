@@ -33,6 +33,16 @@ describe("allocateClaims — brews (2026-10-11)", () => {
     expect(a.get("b2")).toBe(1);
   });
 
+  it("reads brewness from `mature`, never from a missing `since`", () => {
+    // A committed claim with no `since` is still committed: it takes the queue's copy.
+    const undated = { id: "c", name: "c", quantity: 1, mature: true, granted: 0 } as Availability["claims"][number];
+    const a = byId(1, [undated, brew("b")]);
+    expect(a.get("c")).toBe(1);
+    expect(a.get("b")).toBe(0);
+    expect(allocateClaims({ owned: 1, claims: [brew("b"), undated] }).map((c) => [c.deckId, c.brew]))
+      .toEqual([["c", false], ["b", true]]);
+  });
+
   it("a copy given to a brew comes off the top, ahead of seniority", () => {
     const a = byId(1, [committed("c", 5), brew("b", 1)]);
     expect(a.get("b")).toBe(1);

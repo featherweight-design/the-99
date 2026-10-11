@@ -297,10 +297,10 @@ export function ContestedCardRow({
   };
   // A commander's copy can never be given away, so a row where every copy is a commander's has
   // nothing to choose — and says so rather than drawing a queue nobody can change. Only a
-  // COMMITTED commander holds its copy (`since` set); a brew led by the card claims it softly and
+  // COMMITTED commander holds its copy (not `brew`); a brew led by the card claims it softly and
   // sets no ceiling, exactly as the claim model's `commander_copies_committed` reads it.
   const spare = Math.max(
-    card.owned - card.claimants.reduce((n, c) => n + (c.since !== null ? c.commanderCopies : 0), 0),
+    card.owned - card.claimants.reduce((n, c) => n + (c.brew ? 0 : c.commanderCopies), 0),
     0,
   );
   const nothingToChoose = spare === 0;
@@ -334,7 +334,7 @@ export function ContestedCardRow({
   // the numerator counts every non-commander allocation and the denominator is what can move.
   const givenOut = Math.min(
     // A brew holds only the copy it was given; its soft share of the leftover is not given out.
-    claimants.reduce((n, c) => n + (c.since !== null ? Math.max(c.allocated - c.commanderCopies, 0) : c.granted), 0),
+    claimants.reduce((n, c) => n + (c.brew ? c.granted : Math.max(c.allocated - c.commanderCopies, 0)), 0),
     inPlay,
   );
   // WHICH DECKS HELD A COPY BEFORE THIS IMPORT, per claimant rather than as a fact about the

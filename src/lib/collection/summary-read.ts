@@ -36,6 +36,12 @@ export type ContestedClaimant = {
   /** `deck_version_cards.since`, epoch millis. The order this list is in, and the stamp it draws. */
   since: number | null;
   versionNumber: number | null;
+  /**
+   * A brew (no committed version), which can be given a copy since 2026-10-11 but otherwise
+   * claims softly. Absent or false for a committed deck. Carried rather than read off a null
+   * `since`, because `since` is optional on a claim and its absence is not brewness.
+   */
+  brew?: boolean;
   /** How many copies this deck gets under the allocation as it currently stands. */
   allocated: number;
 };

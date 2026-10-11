@@ -29,7 +29,7 @@ export function receiptFacts(
   // What each deck HOLDS: a committed deck its allocation, a brew only what the player gave it.
   // A brew's soft share is not a copy taken (every brew reads the same leftover), so naming it
   // would tell the player a copy went to several decks at once.
-  const held = (c: ReturnType<typeof allocateClaims>[number]) => (c.since !== null ? c.allocated : c.granted);
+  const held = (c: ReturnType<typeof allocateClaims>[number]) => (c.brew ? c.granted : c.allocated);
   const allocated = (a: Snap) =>
     new Map(a ? allocateClaims(a).map((c) => [c.deckId, c]) : []);
   const was = allocated(before);
