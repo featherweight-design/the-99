@@ -1784,3 +1784,17 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   deeper` and `Cut`/`Keep` 44px tall on a phone, the count rows drawn, the Suggestion tag on every
   line, and that a Cut collapses its row without the offer returning. The same flags must be given
   to the server and the probe (locks are in the fingerprint).
+
+- `pnpm probe:tokens` reproduces the tokens brief's Fixtures
+  (`docs/superpowers/design-briefs/2026-10-11-tokens-for-my-deck.md`) against the real bytes. It builds
+  the token catalog in memory exactly as the printings ingest does, from `CATALOG_FETCH_DIR=<dir>`
+  (a `pnpm catalog:fetch <dir>`), then joins it to one account's decks on STAGING (`PROBE_USER_ID`).
+  READ-ONLY: `connectStaging` refuses a writable connection or any other branch, and nothing is
+  written, so it runs before a single token table exists. It prints the catalog's stats, a per-deck
+  table (tokens, tokens without `Copy`, making cards) and the totals beside the brief's snapshot
+  (21 decks, 121 deck-token pairs, 80 distinct tokens, 61 names). Decks move, so a drift is printed
+  and only `--strict` fails on it (totals, every deck's row of the brief's table, and Aang's four
+  tokens, so offsetting moves between decks cannot hide); a token floor always fails. Measured 2026-10-11 against the bytes
+  fetched that day: all four figures and every per-deck count matched the brief, and the same join
+  run in SQL on a scratch branch of staging after the ingest (migration applied, `seed-printings`
+  run twice) gave the same 121 / 80 / 61 and Aang's Ally, Food, Monk and Soldier.

@@ -358,6 +358,18 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   thing and exists nowhere today. `skippedReversible` in the ingest report is therefore a
   narrow counter now, not a constant ~82.
 
+- **The printings ingest also builds the token catalog** (`tokens`, `token_printings`, `card_tokens`;
+  plan `2026-10-11-tokens-for-my-deck.md`), from the same `default_cards` pass: `src/lib/tokens/catalog.ts`
+  holds the rules, `publish.ts` the transaction. A token is a `token` or `double_faced_token` printing
+  (or a token filed as a `reversible_card`), never an emblem or art-series card; a card makes a token
+  only through an `all_parts` entry with `component: "token"`, resolved through a token printing seen in
+  the same stream. Tokens and their printings are UPSERTED and never deleted (ownership will reference
+  them); `card_tokens` is an exact replace in the same transaction. Not a `cards` column, so the catalog
+  fingerprint does not move and no copy is involved. The run REFUSES under a floor (`TOKEN_FLOORS`, about
+  half of the 2026-10-11 measurement) and exits non-zero with the previous rows standing, and SKIPS
+  cleanly when the tables do not exist yet, because production's migration applies in its next build and
+  a refresh can reach it first. `pnpm check:scryfall` scans for a token printing and a card naming it,
+  which the first-entry read cannot see.
 - **Each ingest stamps `catalog_refreshes`, and every cached list payload is keyed on it**
   (#705). That is how a refresh retires readers' caches: `revalidateUserLists` takes a user
   id and a weekly job has no list of readers, so the generation goes in the key instead and
