@@ -1,50 +1,33 @@
-# All-decks stats (cross-deck comparison)
+# Lineup (all-decks stats)
 
 Design brief, 2026-10-11. The second part of Deck stats. Round 1 drew one deck at a time and named a cross-deck
 comparison as "a separate, later feature" (`2026-10-03-deck-stats.md`, ruling 3, and its out-of-scope list). Hugh
-asked on 2026-10-11 for it to be briefed now so it is not lost; Design picks it up when free.
+asked on 2026-10-11 for it to be briefed so it is not lost, then ruled on its scope the same day. Design picks it
+up when free. The feature is named **Lineup**.
 
-**Hugh has not ruled on scope.** The product questions below are his, and Design should not start until he has
-answered them. Everything after them is the record, what engineering has fixed, and what Design owns once the scope
-is set. The working title in this brief is "all-decks stats"; two name candidates are under Questions for Hugh.
+## Rulings 2026-10-11 (Hugh, closed)
 
-## Questions for Hugh (product scope, open)
+1. **No re-hash of the per-deck Deck stats. Lineup-level insight only:** your decks side by side, and this deck
+   among yours. "Against the field" is not a focus. The charts below are for Design to explore, all from data the
+   app already holds; Hugh wants fun, unique charts in the spirit of Deck stats' Buy chart and the average
+   comparison, and **Design is invited to propose more.**
+   - **Play recency:** last played, decks not played in a while, and never-played decks as their own group.
+   - **Bracket and color spread:** where the lineup is crowded and where it has gaps.
+   - **Shared cards:** Sol Ring in 20 decks against 17 owned, the staples every deck leans on, contested copies at
+     a glance.
+   - **Collection put to work:** collection in decks against idle, value in decks against not, and idle cards your
+     commanders would want.
+2. **All decks count by default, filterable** (finished only, or include brews). Never-played decks are shown as a
+   group, never hidden.
+3. **Totals count once per copy owned.** 17 Sol Rings count 17 times, so value and "put to work" match the real
+   collection. The shared-cards chart is where the 20-against-17 gap is shown.
+4. **Results are raw, with pod sizes shown** (for example "2 of 7 · pods of 3-5"). No adjusted math.
+5. **Named Lineup, on `/decks`, behind its own switch `LINEUP_ENABLED`.** Placement on `/decks` is Design's call.
+   Hugh flags that sharing a row with the shopping cart and the precons lines is tight on phone.
+6. **The round-2 per-deck extras stay out:** version evolution, collection share by version, opening-hand odds
+   and the shareable snapshot.
 
-1. **Which comparisons are in?** Three shapes are possible, separately or together:
-   - (a) **Your decks side by side**: one view on `/decks` that draws a figure for every deck at once (curve, lands,
-     jobs, colors, value, games).
-   - (b) **This deck against your other decks**, on the deck's own Stats view: where this deck sits among yours.
-   - (c) **This deck against the field**: wider than the shipped "Against the average deck" card, which already
-     compares a deck with its own commander's average. What the index stores is AVERAGES: one per commander or
-     pair, one per identity condition (`identity_composition`), and the benchmarks' cut points. It stores no field
-     decks and no distribution, so "against the field" today means against an average (the commander's, the
-     identity's, or a color count's). A rank or range within the field ("more ramp than 80% of Gishath decks")
-     would need the index build to persist distribution aggregates, which is new build output, not a read. Never
-     other accounts' decks (lock 6).
-2. **Which round-2 items ride with this feature, if any?** The round-1 brief named four: deck evolution across
-   versions, collection share across versions, opening-hand odds with a sample hand, and a shareable snapshot. The
-   first two compare a deck with its own past and fit a "comparison" feature; the last two do not compare anything.
-   In this feature, a later one, or not at all?
-3. **Which decks count?** All 21, or committed decks only? The cart included brews (3 of Hugh's 21 have no
-   version). A deck with no games has no results to compare; 15 of 21 have none.
-4. **Which figures?** Every Stats card has a cross-deck reading, but not all are worth a row. Engineering's
-   ranking by how much the data says on staging today: curve and lands, jobs, colors, value, then results (7 games
-   across 6 decks is too thin to compare).
-5. **Value across decks: per deck, or what the decks own together?** Summed per deck, Sol Ring counts 20 times
-   (it is in 20 decks); Hugh owns 17. A per-deck sum is the honest answer to "what is each deck worth" and the
-   wrong answer to "what are my decks worth".
-6. **Results across pod sizes.** Hugh's 7 games are 2 in pods of 3, 4 in pods of 4, 1 in a pod of 5. A raw record
-   reads the same in all three; Playgroup normalizes to a 4-player baseline (prior art). Raw, or adjusted?
-7. **Which switch?** Deck stats ships behind `DECK_STATS_ENABLED`, on for staging and off for production until the
-   labels-everywhere work lands (`docs/superpowers/plans/2026-10-08-deck-stats.md:179`). Does this feature ride that
-   switch, or carry its own so it can trail it?
-
-### Name candidates
-
-- **Across your decks** (as a view name on `/decks`, and a section name on the deck page).
-- **Lineup** (short, reads on a segment control at 390; "your lineup" is how a player talks about decks they own).
-
-"All-decks stats" is engineering's label and is not proposed for the app.
+"All-decks stats" is the brief's file name only and is not used in the app.
 
 ## What exists today
 
@@ -72,7 +55,7 @@ All paths are on `main`; line numbers read 2026-10-11, and they move.
   of a user in a FIXED number of reads (its header: "Home's roll-up over every deck therefore costs the same round
   trips as a single deck page"). `sumPlayRecords` and `sumColourSpreads` (`src/lib/decks/stats.ts:73`, `:142`) add
   them up. It shipped in #524 for a Home roll-up that was never drawn; nothing calls it today. It covers part of
-  the seven groups: the curve without card types, the to-buy cost without the owned value, and the record without
+  round 1's seven card groups: the curve without card types, the to-buy cost without the owned value, and the record without
   trend or versions. Its color figure is the identity spread, not pips against sources. Jobs and the average are
   absent.
 
@@ -86,7 +69,9 @@ All paths are on `main`; line numbers read 2026-10-11, and they move.
 - The deck tile already carries a bracket chip (last analyzed bracket, `src/lib/profile/stored-sql.ts:16`) and the
   To buy figure from the shopping roll-up.
 
-**The field (commander index, staging)**
+**The commander index (staging; "against the field" is not a Lineup focus, ruling 1, but idle cards your
+commanders would want read `commander_support_cards`, and for a partner deck
+`commander_pair_support_cards` (`src/db/schema.ts:1344`), the pair's own list)**
 - `commander_support` (`src/db/schema.ts:1146`): 3,467 ok commanders, all 21 of Hugh's among them.
 - `identity_composition` (`schema.ts:1471`): 19 rows of average land, type and curve per identity condition.
 - `format_staples` (`schema.ts:1423`): 770 rows over 16 conditions (each color pair and mono color, plus `count:3`).
@@ -101,60 +86,59 @@ All paths are on `main`; line numbers read 2026-10-11, and they move.
 
 ## What engineering has locked
 
-Only what is fixed regardless of Hugh's answers. Hugh can override any of it.
+Engineering's reading of the rulings. Hugh can override any of it.
 
-1. **No model calls.** Every figure is computed from stored data: decklists, `cards`, card labels, prices, logged
-   games, versions and the commander index. Drawing it costs nothing and needs no credit.
-2. **One definition per figure.** A deck's number in a cross-deck view is the number its own Stats view draws,
-   from the same pure function (`manaCurve`, `typeCurve`, `jobTally`, `manaSupply`, `averageComparison`,
-   `moneyStats`, `resultsStats`). A cross-deck view never re-derives a figure.
-3. **A fixed number of reads, not one per deck.** The `loadDeckStats` pattern: one decklist read, one label read
-   over every distinct card (1,366 on Hugh's account), one price read, one games read. The basis chain is one call
-   per deck today and must be batched for any shape that shows the field per deck.
-4. **The `/decks` payload stays cached by `cachePageForUser`.** Any new per-user table it reads passes
-   `check:list-cache`; the feature's switch joins `switches()`; catalog-side inputs (labels, prices, the index) must
-   each move the key when they change. Prices and the index do (an ingest or a copy stamps `catalog_refreshes`).
-   Labels do on production, where they arrive by `db:copy:labels` through the copy harness, but NOT on staging,
-   where they are built: `publishWave` (`src/lib/labels/publish.ts`) writes `card_labels` with no stamp, so a cached
-   staging `/decks` payload would keep pre-build job figures. A cross-deck jobs figure on `/decks` therefore needs a
-   label generation in the key, or a stamp from the label build, before it is cached.
-5. **Behind a switch, off means no read**, the `deckStatsEnabled` shape (Question 7 decides which switch).
-6. **The field is the commander index.** Never another account's decks, and no new upstream source.
-7. **Facts, not judgment.** As in round 1: the bracket, findings and what to change stay in Analysis. A position
-   among decks is stated as a position ("the most ramp of your decks"), never as a verdict.
+1. **No model calls.** Every figure is computed from stored data: decklists, the collection, `cards`, card labels,
+   prices, logged games, the claim model and the commander index. Drawing it costs nothing and needs no credit.
+2. **One definition per figure.** Where Lineup shows a per-deck number (a bracket, a last-played date, a record),
+   it is the number the deck's own surfaces show, from the same function (`resultsStats`, `storedPermitsSql`,
+   `listDecksWithStats`). Lineup never re-derives one.
+3. **Per copy owned, from the collection** (ruling 3). "Put to work" splits each owned copy into in a deck or idle
+   by `min(owned, needed by decks)`; a card the decks need more of than the player owns adds its shortfall to the
+   shared-cards gap, never to a total. Which deck holds a contested copy is the claim model's
+   (`claimModel`, `src/lib/decks/availability-query.ts:58`), not Lineup's.
+4. **A fixed number of reads, not one per deck.** The `loadDeckStats` pattern: one decklist read, one collection
+   read, one price read, one games read, one index read for "idle cards your commanders would want".
+5. **The `/decks` payload stays cached by `cachePageForUser`.** Any new per-user table it reads passes
+   `check:list-cache`; `LINEUP_ENABLED` joins `switches()` (`src/lib/cache/page-cache.ts:36`); catalog-side inputs
+   (labels, prices, the index) must each move the key when they change. Prices and the index do (an ingest or a
+   copy stamps `catalog_refreshes`). Labels do on production, where they arrive by `db:copy:labels` through the
+   copy harness, but NOT on staging, where they are built: `publishWave` (`src/lib/labels/publish.ts`) writes
+   `card_labels` with no stamp. Any Lineup figure read from labels therefore needs a label generation in the key,
+   or a stamp from the label build, before it is cached.
+6. **Behind `LINEUP_ENABLED`, off means no read**, the `deckStatsEnabled` shape: server-side, `'true'` only.
+7. **Facts, not judgment.** The bracket, findings and what to change stay in Analysis. A gap or a crowd in the
+   lineup is stated as a count ("no deck at bracket 2"), never as advice or a verdict.
 
 ## What Design owns
 
-- **Placement**, after Hugh answers Question 1: a view on `/decks` (a segment beside the tiles, a section, a route),
-  a block in the deck's Stats view, or both. At 1300 and 390.
-- **Side by side or as a distribution.** 21 decks is too many for 21 full charts and few enough for small
-  multiples or one strip per figure with a dot per deck. Which reads at 390?
-- **Selecting decks.** Whether a reader can select and unselect decks to compare (a folder? brews?), and what an
-  empty selection looks like.
-- **This deck among yours**, on the deck page: how one deck is picked out of the others, and how the field is
-  drawn beside both.
-- **Thin data.** One deck; a deck with no games; a deck never analyzed; a colorless deck; a partner deck.
-- **Sorting and links**: whether a figure sorts the decks, and that every deck in a view links to its own Stats.
+- **Placement on `/decks`** (ruling 5): a segment beside the tiles, a section, a sheet or a route, at 1300 and 390,
+  against Hugh's flag that a row shared with the cart and precons lines is tight on phone.
+- **The charts.** The four families in ruling 1, and any more Design proposes. Each from data listed under
+  Fixtures; anything that needs data the app does not hold comes back as a question, not a drawing.
+- **The filter** (ruling 2): all decks, finished only, include brews. Where it sits, and what each chart does when
+  it narrows the lineup.
+- **This deck among yours.** How one deck is picked out of the lineup (from a tile, or on the deck page), and
+  whether that reaches the deck page at all.
+- **Thin data.** One deck; no games logged; no deck analyzed; a colorless deck; a partner deck.
+- **Links.** Every deck in a chart leads to that deck; every card in the shared-cards chart opens its card.
 - **Copy.** Every string is a placeholder for `/copy-review`. No verdict words; "select" and "unselect", never
   "tick"; the word "labels" never appears.
 - **The About entry** (below).
 
 ## Open questions for Design
 
-1. **One chart per figure, or one card per deck?** A row per figure answers "which deck has the most ramp"; a card
-   per deck answers "what is this deck like". The tile grid already does the second.
-2. **How is a range drawn when the extremes are far apart?** Average mana value runs 2.18 to 4.78; value $41 to
-   $433; ramp 7 to 38. A shared axis flattens the middle; a per-deck scale hides the comparison.
-3. **Colors across decks**: the five-color count (how many decks play each color) or each deck's demand against
-   supply? The first is one figure; the second is 21.
-4. **Where does the field sit?** The field is an average (Question 1c), so it is one value per figure, not a
-   spread: a line behind your decks, a marker per deck (its commander's average), or a
-   separate row. The per-commander average differs for every deck; the identity average is shared by decks of one
-   identity only.
-5. **Results with 7 games.** Draw them, or hold the row until a threshold of games? If held, what says so?
-6. **Version history** (only if Hugh includes Question 2's first two items): Hugh has 23 versions over 21 decks,
-   three decks with none and none with more than two. A history view drawn for ten versions will not be seen on
-   this account.
+1. **One chart per figure, or one card per deck?** A row per figure answers "which deck holds the most shared staples"; a card
+   per deck answers "what is this deck like", and the tile grid already does that.
+2. **Never-played as a group** (ruling 2): 15 of 21 decks have no game. On a recency chart that group is most of
+   the lineup; how is it drawn so it is visible without swamping the 6 that have dates?
+3. **Bracket spread with 7 decks never analyzed.** The analyzed bracket is a set (`[4, 5]`, `[1, 2]`), not one
+   number. How does a deck spanning two brackets sit on the spread, and where do the 7 unanalyzed go?
+4. **The 20-against-17 gap.** Sol Ring is wanted 20 times and owned 17. How is "wanted more than owned" drawn so it
+   reads as a count, not a warning?
+5. **Idle cards your commanders would want.** 144 idle cards appear in at least one of these commanders' index
+   lists at 20% inclusion or more, 67 at 40%. Where is the cut, and does the chart name the commander?
+6. **Results line** (ruling 4): "2 of 7 · pods of 3-5" for the lineup. Per deck as well, or only in total?
 
 ## Fixtures (staging, read-only, 2026-10-11)
 
@@ -188,6 +172,19 @@ deck's printing picks. Lands are cards whose type line contains Land.
 | HD Tune - Scrappy Survivors | WRG | none | 2.97 | 35 | 18 | 12 | 3 | $109.64 | 1 (1) | 1 |
 | HD Tune - Sultai Arisen | UBG | none | 3.29 | 40 | 20 | 10 | 6 | $112.09 | 0 | 1 |
 
+**Lineup figures (per copy owned, nonbasic cards; same approximations as above)**
+- **Collection put to work:** 3,924 owned copies of 2,920 cards. 1,344 copies (1,152 cards) are in a deck;
+  2,580 copies are idle. By cheapest current price: about $2,134 of value in decks, about $934 idle.
+- **Wanted more than owned:** 77 cards are needed by the decks in more copies than the player owns (Sol Ring: 20
+  wanted, 17 owned). No card assignments exist on this account, so every contested copy is placed by seniority.
+- **Idle cards the commanders would want:** 144 idle cards sit in one of these decks' commanders' index lists
+  (`commander_support_cards.inclusion`, a percent) at 20% or more, 67 at 40% or more. Measured over the single
+  lists of 21 distinct commanders plus Atreus; the build reads Gods (Kratos + Atreus) from
+  `commander_pair_support_cards` instead, so its share of the figure will move slightly.
+- **Play recency:** last played, newest first: Scrappy Survivors 2026-10-05, Omnath 2026-09-28, Avatar Aang
+  2026-09-26, Gods 2026-09-25, Tovolar 2026-09-12, Blood Rites 2026-09-12. The other 15 decks have never been
+  played. Pods: 2 games of 3, 4 of 4, 1 of 5.
+
 **The spread, for drawing to real numbers**
 - **Identity:** 1 colorless, 6 mono, 6 two-color, 6 three-color, 1 four-color, 1 five-color. Decks playing each
   color: W 10, U 10, B 6, R 11, G 8. One partner deck (Gods).
@@ -196,7 +193,7 @@ deck's printing picks. Lands are cards whose type line contains Land.
 - **Curve:** average nonland mana value 2.18 to 4.78, median 2.97. Lands 27 to 40, median 36.
 - **Jobs:** ramp 7 to 38, draw 1 to 24, removal 3 to 25. Wipes, protection and finisher rows are small or empty on
   most decks (finisher is empty on 12 of 21).
-- **Value:** $41.35 to $432.67, $3,026 summed per deck (Question 5: that sum counts shared cards once per deck).
+- **Value:** $41.35 to $432.67, $3,026 summed per deck (a per-deck sum counts a shared card once per deck; ruling 3 counts per copy owned instead; see the Lineup figures above).
   The cart's to-buy figure, from the shopping brief, is 7 of 21 decks and $843.99.
 - **Overlap:** 1,366 distinct nonbasic cards across the 21 decks; 157 are in two or more decks and 13 in five or
   more. Most shared: Sol Ring 20, Arcane Signet 18, Command Tower 14, Exotic Orchard 8, Mind Stone 8, Fabled
@@ -221,30 +218,25 @@ as figures.** Comparison elsewhere is two decks at a time, or one deck against a
 - **Moxfield**: no cross-deck stats view found. Its feedback board asks for completion and availability across
   decks (moxfield.nolt.io/2554, snippet).
 - **Archidekt**: no cross-deck view found; a forum request asks for a side-by-side version comparison
-  (archidekt.com/forum/thread/7059508/1, snippet). Relevant to Question 2's version items.
+  (archidekt.com/forum/thread/7059508/1, snippet). Version comparison is out of Lineup (ruling 6).
 - **EDHREC**: the field, per commander ("Average Type Distribution", per draftsim.com/how-to-use-edhrec, snippet)
   and format-wide (card frequencies by type and function, edhrec.com/articles/the-deck-of-many-things-card-
   frequencies-by-type-and-function-across-edh, snippet). This is what `identity_composition` and
   `format_staples` already hold.
 - **Playgroup.gg** (playgroup.gg/commander/precons, snippet): win rates per commander and precon, normalized to a
-  4-player baseline of 25%, with a minimum of 20 games before a deck is ranked. The nearest precedent for Questions
-  6 and Design question 5.
+  4-player baseline of 25%, with a minimum of 20 games before a deck is ranked. Hugh chose raw results with pod
+  sizes shown instead (ruling 4).
 - **Not found:** a product drawing one player's decks as a distribution, a "this deck among yours" marker, or a
   shared-card count across a player's decks.
 
 ## The About entry owed
 
-A cross-deck view is a new capability a reader would not find unaided, so it owes an entry in the round that ships
-it (`AGENTS.md`, "No FEATURE launches without an About entry"), drawn on the per-entry artboard in
-`design/design_handoff_the99_about/`. Two things to know:
-- A switch-gated entry is announced by its switch, not by a bump: `src/proxy.ts` keys the About gate on the entries
-  the deployment's switches draw, so turning a switch on is what shows the entry (the `deck-stats` comment,
-  `about.ts:1130-1138`). The round-1 entry never took a bump for that reason. If this feature rides
-  `DECK_STATS_ENABLED`, Design may draw it as an extension of the `deck-stats` entry, announced when that switch
-  turns on in production. If it ships on its own switch, it is its own entry, announced by that switch; a bump is
-  owed only if it ships with no switch.
-- If Hugh folds in round-2 items (Question 2), this becomes a multi-round line and the entry batches at the end of
-  the line.
+Lineup is a new capability a reader would not find unaided, so it owes its own entry in the round that ships it
+(`AGENTS.md`, "No FEATURE launches without an About entry"), drawn on the per-entry artboard in
+`design/design_handoff_the99_about/`. It ships behind `LINEUP_ENABLED`, so the entry names that switch: `src/proxy.ts`
+keys the About gate on the entries the deployment's switches draw, and turning the switch on is what announces it,
+as `deck-stats` is announced by its own (`src/lib/copy/about.ts:1130-1138`). The plan adds `LINEUP_ENABLED` to the
+`AboutSwitch` union (`about.ts:71`) and names the entry as a task beside the PR boundaries.
 
 ## Paths
 
@@ -259,8 +251,9 @@ it (`AGENTS.md`, "No FEATURE launches without an About entry"), drawn on the per
   `src/lib/benchmarks/cuts.ts`.
 - About: `src/lib/copy/about.ts` (`ABOUT_VERSION` 61, `deck-stats` 1124).
 
-## Deliverable (once Hugh has answered)
+## Deliverable
 
-A handoff in `design/design_handoff_the99_all_decks_stats/`: the chosen shapes at 1300 and 390 on the 21-deck
-fixture above, the thin states (one deck, no games, never analyzed, colorless, partner), the `STATES` rows, a copy
-strings file of placeholders, and the About entry on the per-entry artboard.
+A handoff in `design/design_handoff_the99_lineup/`: Lineup's placement on `/decks` and its charts at 1300 and 390
+on the 21-deck fixture above, the filter in each state, the thin states (one deck, no games, never analyzed,
+colorless, partner), the `STATES` rows, a copy strings file of placeholders, and the About entry on the per-entry
+artboard.
