@@ -10,6 +10,9 @@ import { drawbacks, entersAs, entersTappedSentence, type LandText } from "../swa
  *  unless` wording and the shock land's; this count must not call the others always tapped. */
 const CONDITIONAL_ENTRY = /\bunless\b|\bif you (?:don't|do not|didn't|did not|control|have|haven't)\b|\bif an opponent\b/i;
 
+/** A land named once, with how many copies the deck holds. */
+export type TappedLandName = { name: string; copies: number };
+
 export type TappedLands = {
   /** Copies of lands that themselves enter tapped every time. */
   always: number;
@@ -20,21 +23,29 @@ export type TappedLands = {
   fetch: number;
   /** Copies of land cards, however many enter tapped. */
   lands: number;
+  /** The lands behind `always`, `unless` and `fetch`, one entry per card (so the copies add to the
+   *  count), in deck order. A basic is never tapped, so it is never named. */
+  names: { always: TappedLandName[]; unless: TappedLandName[]; fetch: TappedLandName[] };
 };
 
+export const NO_TAPPED_LANDS: TappedLands = { always: 0, unless: 0, fetch: 0, lands: 0, names: { always: [], unless: [], fetch: [] } };
+
 export function tappedLands(deckLands: readonly (LandText & { quantity: number })[]): TappedLands {
-  const out: TappedLands = { always: 0, unless: 0, fetch: 0, lands: 0 };
+  const out: TappedLands = { always: 0, unless: 0, fetch: 0, lands: 0, names: { always: [], unless: [], fetch: [] } };
+  const tap = (kind: "always" | "unless" | "fetch", land: LandText & { quantity: number }) => {
+    out[kind] += land.quantity;
+    out.names[kind].push({ name: land.name, copies: land.quantity });
+  };
   for (const land of deckLands) {
     if (!isLandFace(land.typeLine)) continue;
     out.lands += land.quantity;
     const own = entersAs(land);
     if (own?.kind === "entersTapped") {
       // The swap reader says "tapped"; the sentence says whether something excuses it.
-      if (CONDITIONAL_ENTRY.test(entersTappedSentence(land) ?? "")) out.unless += land.quantity;
-      else out.always += land.quantity;
-    } else if (own?.kind === "entersTappedUnless") out.unless += land.quantity;
+      tap(CONDITIONAL_ENTRY.test(entersTappedSentence(land) ?? "") ? "unless" : "always", land);
+    } else if (own?.kind === "entersTappedUnless") tap("unless", land);
     // With no entry of its own, an `entersTapped` drawback can only be the fetched land's.
-    else if (drawbacks(land).some((d) => d.kind === "entersTapped")) out.fetch += land.quantity;
+    else if (drawbacks(land).some((d) => d.kind === "entersTapped")) tap("fetch", land);
   }
   return out;
 }

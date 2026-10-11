@@ -40,6 +40,26 @@ export type PatternEvidence = {
   karsten: KarstenSources;
 };
 
+/** What a color's cards ask of its sources: the tightest published Karsten pattern they share. */
+export type NeededEvidence = {
+  /** Karsten's notation, `1CC`. */
+  pattern: string;
+  generic: number;
+  pips: number;
+  /** Karsten's published 99-card requirement for the pattern (a `known` figure; a ceiling or an
+   *  unpublished row never gives a Needed). */
+  requires: number;
+  /** The deck's sources of this color over `requires`. Below 1 means fewer sources than the pattern asks. */
+  ratio: number;
+  /** Copies of nonland cards with the pattern, the commander left out. */
+  copies: number;
+  /** Those cards, by name. */
+  cards: { name: string; copies: number }[];
+  /** `shared`: two or more copies carry the pattern. `single`: no published pattern is shared, so this is the
+   *  worst one a single copy carries (a color is not ranked best only because its tight costs are on one card each). */
+  basis: "shared" | "single";
+};
+
 export type ColorEvidence = {
   color: BalanceColor;
   /** Raw pips of this color, copies counted. A hybrid pip counts once for each half. */
@@ -53,6 +73,19 @@ export type ColorEvidence = {
   /** Karsten's figure for the hardest of ALL this color's patterns that has a published row (not only the
    *  ones shown, and not a ceiling), 0 when none does. */
   karstenHardest: number;
+  /** The tightest pattern two or more nonland copies share (else the worst single-copy one), commander
+   *  excluded. Null when no pattern the deck's nonland cards carry in this color has a published figure. */
+  needed: NeededEvidence | null;
+};
+
+/** One color in the order `Improve my mana` lists them. */
+export type ColorOrderEntry = {
+  color: BalanceColor;
+  /** `ranked`: has a Needed, ordered by its ratio. `noPublished`: has pips but none of its nonland cards carries a pattern with a published figure (a pattern only the
+   *  commander carries leaves it here too), after every
+   *  ranked color. `noPips`: in the commander's identity with no colored pip, last. */
+  kind: "ranked" | "noPublished" | "noPips";
+  needed: NeededEvidence | null;
 };
 
 export type LandEvidence = {
@@ -78,6 +111,13 @@ export type ManaBalance = {
   unattributedNonland: number;
   lands: LandEvidence;
   supply: ManaSupply;
+  /** The commander's (and partner's) colors that this read lists, in W U B R G order. */
+  identity: BalanceColor[];
+  /** The colors of the commander's identity, tightest first, for the `Improve my mana` step: lowest `needed.ratio`
+   *  first, then more pips with the commander, then W U B R G; colors with pips and no published pattern follow in
+   *  W U B R G order; identity colors with no pip come last. Empty for a `colorless` deck (no door). Nothing in it
+   *  is preselected or judged: it is an order. */
+  colorOrder: ColorOrderEntry[];
 };
 
 export type ManaBalanceInput = {
@@ -85,6 +125,8 @@ export type ManaBalanceInput = {
   /** The card's name for a row id, `commander:0` included. */
   nameOf: (id: string) => string;
   tapped: TappedLands;
+  /** The commander's colors (both, with a partner). Colors outside the five (`C`) are ignored. */
+  identity: readonly string[];
 };
 
 /** Mana value of a row: Scryfall's, else the FRONT face's cost (the stored cost joins every face). */
@@ -93,7 +135,7 @@ const rowManaValue = (r: ManaSupplyCardRow) => r.cmc ?? manaValueOf((r.manaCost 
 /** Hardest first: more pips, then less other mana. */
 const byHardness = (a: { generic: number; pips: number }, b: { generic: number; pips: number }) => b.pips - a.pips || a.generic - b.generic;
 
-function patternsFor(color: ManaColor, rows: readonly ManaSupplyCardRow[], nameOf: (id: string) => string): { shown: PatternEvidence[]; karstenHardest: number } {
+function patternsFor(color: ManaColor, rows: readonly ManaSupplyCardRow[], nameOf: (id: string) => string): { shown: PatternEvidence[]; all: PatternEvidence[]; karstenHardest: number } {
   const byPattern = new Map<string, PatternEvidence>();
   for (const r of rows) {
     if (isLandFace(r.typeLine)) continue;
@@ -108,10 +150,27 @@ function patternsFor(color: ManaColor, rows: readonly ManaSupplyCardRow[], nameO
   }
   for (const e of byPattern.values()) e.cards.sort((a, b) => a.name.localeCompare(b.name));
   const all = [...byPattern.values()].sort(byHardness);
-  return { shown: all.slice(0, PATTERNS_SHOWN), karstenHardest: Math.max(0, ...all.map((p) => (p.karsten.kind === "known" ? p.karsten.sources : 0))) };
+  return { shown: all.slice(0, PATTERNS_SHOWN), all, karstenHardest: Math.max(0, ...all.map((p) => (p.karsten.kind === "known" ? p.karsten.sources : 0))) };
 }
 
-export function readManaBalance({ rows, nameOf, tapped }: ManaBalanceInput): ManaBalance {
+/** The Needed pattern for a color with `sources` sources. Only a pattern with a published figure counts, and only
+ *  its nonland copies (the commander is a card the deck must cast, but the figure is about the other 98). Among
+ *  patterns two or more copies share, the lowest ratio wins; with none, the lowest among single-copy ones. A tie
+ *  in ratio goes to the pattern with more pips, then less other mana. */
+function neededFor(all: readonly PatternEvidence[], sources: number): NeededEvidence | null {
+  const candidates = all.flatMap((p) => {
+    if (p.karsten.kind !== "known") return [];
+    const cards = p.cards.filter((c) => !c.commander).map(({ name, copies }) => ({ name, copies }));
+    const copies = cards.reduce((a, c) => a + c.copies, 0);
+    if (copies === 0) return [];
+    const requires = p.karsten.sources;
+    return [{ pattern: p.pattern, generic: p.generic, pips: p.pips, requires, ratio: sources / requires, copies, cards, basis: (copies >= 2 ? "shared" : "single") as "shared" | "single" }];
+  });
+  const worst = (xs: NeededEvidence[]) => xs.reduce<NeededEvidence | null>((best, x) => (best === null || x.ratio < best.ratio || (x.ratio === best.ratio && byHardness(x, best) < 0) ? x : best), null);
+  return worst(candidates.filter((x) => x.basis === "shared")) ?? worst(candidates);
+}
+
+export function readManaBalance({ rows, nameOf, tapped, identity }: ManaBalanceInput): ManaBalance {
   const supply = manaSupply(rows);
   const without = manaSupply(rows.filter((r) => !isCommanderRow(r.id)));
   const total = (c: ManaColor) => supply.supply[c].lands + supply.supply[c].nonland;
@@ -120,7 +179,7 @@ export function readManaBalance({ rows, nameOf, tapped }: ManaBalanceInput): Man
   const share = (n: number, of: number) => (of > 0 ? n / of : 0);
 
   const colors = BALANCE_COLORS.map((color): ColorEvidence => {
-    const { shown, karstenHardest } = patternsFor(color, rows, nameOf);
+    const { shown, all, karstenHardest } = patternsFor(color, rows, nameOf);
     return {
       color,
       pips: { withCommander: supply.demand[color], withoutCommander: without.demand[color] },
@@ -128,19 +187,40 @@ export function readManaBalance({ rows, nameOf, tapped }: ManaBalanceInput): Man
       sources: { lands: supply.supply[color].lands, nonland: supply.supply[color].nonland, total: total(color) },
       patterns: shown,
       karstenHardest,
+      needed: neededFor(all, total(color)),
     };
   });
+  const state = pipsWith === 0 ? "colorless" : BALANCE_COLORS.every((c) => total(c) === 0) ? "noSources" : "ok";
+  const identityColors = BALANCE_COLORS.filter((c) => identity.includes(c));
+  const colorOrder = state === "colorless" ? [] : orderColors(colors.filter((c) => identityColors.includes(c.color)));
 
   // The deck's average mana value is the what-changed strip's (`averageManaValue`), commanders included as cards.
   const averageMv = averageManaValue(rows.map((r) => ({ cmc: rowManaValue(r), quantity: r.quantity, typeLine: r.typeLine }))) ?? 0;
   const cheapRamp = rows.reduce((a, r) => (r.ramp && rowManaValue(r) <= 3 ? a + r.quantity : a), 0);
 
   return {
-    state: pipsWith === 0 ? "colorless" : BALANCE_COLORS.every((c) => total(c) === 0) ? "noSources" : "ok",
+    state,
     colors,
     colorless: { demand: supply.demand.C, supply: total("C") },
     unattributedNonland: supply.unattributedNonland,
     lands: { count: supply.lands, tapped, averageManaValue: averageMv, cheapRamp, karstenLands: karstenLands(averageMv, cheapRamp) },
     supply,
+    identity: identityColors,
+    colorOrder,
   };
+}
+
+/** `colors` arrive in W U B R G order, which is the final tie-break: every sort below is stable. */
+function orderColors(colors: readonly ColorEvidence[]): ColorOrderEntry[] {
+  const entry = (c: ColorEvidence): ColorOrderEntry => ({
+    color: c.color,
+    kind: c.needed ? "ranked" : c.pips.withCommander > 0 ? "noPublished" : "noPips",
+    needed: c.needed,
+  });
+  const ranked = colors.filter((c) => c.needed).sort((a, b) => a.needed!.ratio - b.needed!.ratio || b.pips.withCommander - a.pips.withCommander);
+  return [
+    ...ranked.map(entry),
+    ...colors.filter((c) => !c.needed && c.pips.withCommander > 0).map(entry),
+    ...colors.filter((c) => !c.needed && c.pips.withCommander === 0).map(entry),
+  ];
 }

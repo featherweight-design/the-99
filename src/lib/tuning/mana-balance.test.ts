@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { NO_TAPPED_LANDS } from "../mana/lands-tapped";
 import type { ManaColor, ManaSupplyCardRow } from "../mana/supply";
 import { readManaBalance, PATTERNS_SHOWN } from "./mana-balance";
 
@@ -6,8 +7,8 @@ const land = (id: string, quantity: number, produces: ManaColor[]): ManaSupplyCa
 const spell = (id: string, manaCost: string, quantity = 1): ManaSupplyCardRow => ({ id, typeLine: "Creature", manaCost, quantity });
 const rock = (id: string, manaCost: string, quantity: number, produces: ManaColor[]): ManaSupplyCardRow => ({ id, typeLine: "Artifact", manaCost, quantity, produces, ramp: true });
 const commander = (i: number, manaCost: string): ManaSupplyCardRow => ({ id: `commander:${i}`, typeLine: "Legendary Creature", manaCost, quantity: 1 });
-const tapped = { always: 0, unless: 0, fetch: 0, lands: 0 };
-const read = (rows: ManaSupplyCardRow[], t = tapped) => readManaBalance({ rows, nameOf: (id) => id, tapped: t });
+const tapped = NO_TAPPED_LANDS;
+const read = (rows: ManaSupplyCardRow[], t = tapped, identity: readonly string[] = ["W", "U", "B", "R", "G"]) => readManaBalance({ rows, nameOf: (id) => id, tapped: t, identity });
 const color = (b: ReturnType<typeof read>, c: ManaColor) => b.colors.find((x) => x.color === c)!;
 
 describe("readManaBalance: pips", () => {
@@ -105,7 +106,7 @@ describe("readManaBalance: patterns", () => {
 
 describe("readManaBalance: lands", () => {
   it("reports the land count, the tapped counts, the average mana value and Karsten's figure", () => {
-    const t = { always: 3, unless: 2, fetch: 1, lands: 10 };
+    const t = { always: 3, unless: 2, fetch: 1, lands: 10, names: { always: [{ name: "A", copies: 3 }], unless: [{ name: "B", copies: 2 }], fetch: [{ name: "C", copies: 1 }] } };
     const b = read([spell("a", "{3}{G}", 4), commander(0, "{4}{G}"), rock("sig", "{2}", 2, ["G"]), land("forest", 10, ["G"])], t);
     // (4 + 4 + 4 + 4 + 5 + ...) nonland: 4 x 4 + 5 (commander) + 2 x 2 = 25 over 7 cards.
     expect(b.lands.count).toBe(10);
@@ -156,5 +157,126 @@ describe("readManaBalance: state", () => {
   it("carries no verdict field anywhere", () => {
     const b = read([spell("a", "{G}", 5), land("forest", 5, ["G"])]);
     expect(JSON.stringify(b)).not.toMatch(/short|"gap"|target|"met"/);
+  });
+});
+
+describe("readManaBalance: Needed", () => {
+  const neededOf = (rows: ManaSupplyCardRow[], c: ManaColor) => color(read(rows), c).needed;
+
+  it("is the tightest published pattern two or more nonland copies share, with its cards", () => {
+    // 28 green sources. 1CC x2 asks 28 (ratio 1); 2C x1 asks 18 but is one card; 1C x3 asks 19.
+    const n = neededOf([spell("Archdruid", "{1}{G}{G}"), spell("Armasaur", "{1}{G}{G}"), spell("Bear", "{1}{G}", 3), spell("Lone", "{2}{G}"), land("forest", 28, ["G"])], "G");
+    expect(n).toMatchObject({ pattern: "1CC", requires: 28, copies: 2, basis: "shared", ratio: 1 });
+    expect(n?.cards).toEqual([{ name: "Archdruid", copies: 1 }, { name: "Armasaur", copies: 1 }]);
+  });
+
+  it("does not let a pattern one card carries decide while another is shared", () => {
+    // The single-copy CC (30) is tighter than the shared 1C (19), and does not decide.
+    const n = neededOf([spell("Solo", "{W}{W}"), spell("A", "{1}{W}"), spell("B", "{1}{W}"), land("plains", 24, ["W"])], "W");
+    expect(n).toMatchObject({ pattern: "1C", requires: 19, basis: "shared" });
+  });
+
+  it("falls back to the worst single-copy published pattern when no pattern is shared", () => {
+    const n = neededOf([spell("Solo", "{W}{W}"), spell("Duo", "{2}{W}{W}"), land("plains", 24, ["W"])], "W");
+    expect(n).toMatchObject({ pattern: "CC", requires: 30, copies: 1, basis: "single" });
+  });
+
+  it("leaves the commander out of the count and the cards", () => {
+    // Two copies would share 1CC only with the commander counted.
+    const n = neededOf([commander(0, "{1}{G}{G}"), spell("Armasaur", "{1}{G}{G}"), spell("Bear", "{1}{G}", 2), land("forest", 28, ["G"])], "G");
+    expect(n).toMatchObject({ pattern: "1C", basis: "shared", copies: 2 });
+    expect(neededOf([commander(0, "{1}{G}{G}"), land("forest", 28, ["G"])], "G")).toBeNull();
+  });
+
+  it("counts only a published figure: a ceiling or an unpublished pattern gives none", () => {
+    // {5}{G}{G}{G}{G}{G} has five pips: no row. 6C is a ceiling.
+    expect(neededOf([spell("Big", "{G}{G}{G}{G}{G}", 3), land("forest", 20, ["G"])], "G")).toBeNull();
+    expect(neededOf([spell("Huge", "{6}{G}", 3), land("forest", 20, ["G"])], "G")).toBeNull();
+  });
+
+  it("reads the ratio from the color's total sources, a dual counted for each color", () => {
+    const n = neededOf([spell("A", "{1}{U}{U}"), spell("B", "{1}{U}{U}"), land("dual", 14, ["U", "G"]), land("island", 7, ["U"])], "U");
+    expect(n?.ratio).toBeCloseTo(21 / 28);
+  });
+});
+
+describe("readManaBalance: the order of colors for Improve my mana", () => {
+  const order = (rows: ManaSupplyCardRow[], identity: string[]) => read(rows, tapped, identity).colorOrder.map((e) => `${e.color}:${e.kind}`);
+
+  it("lists the colors tightest first, nothing preselected", () => {
+    // Gishath's shape: G 28 sources against 28, R 27 against 22, W 26 against 15.
+    const rows = [
+      spell("g1", "{1}{G}{G}", 3), land("forest", 28, ["G"]),
+      spell("r1", "{4}{R}{R}", 2), land("mountain", 27, ["R"]),
+      spell("w1", "{4}{W}", 2), land("plains", 26, ["W"]),
+    ];
+    expect(order(rows, ["W", "R", "G"])).toEqual(["G:ranked", "R:ranked", "W:ranked"]);
+  });
+
+  it("breaks a tie on more pips with the commander, then W U B R G (Aang: green before white)", () => {
+    // Both read 22 sources against 19 (1C). Green has 22 pips with the commander, white 20.
+    const rows = [
+      spell("w", "{1}{W}", 18), commander(0, "{1}{W}{W}"), land("plains", 22, ["W"]),
+      spell("g", "{1}{G}", 21), commander(1, "{1}{G}"), land("forest", 22, ["G"]),
+    ];
+    const b = read(rows, tapped, ["W", "G"]);
+    expect(color(b, "W").pips.withCommander).toBe(20);
+    expect(color(b, "G").pips.withCommander).toBe(22);
+    expect(color(b, "W").needed).toMatchObject({ requires: 19, ratio: 22 / 19 });
+    expect(color(b, "G").needed).toMatchObject({ requires: 19, ratio: 22 / 19 });
+    expect(b.colorOrder.map((e) => e.color)).toEqual(["G", "W"]);
+  });
+
+  it("falls to W U B R G when ratio and pips both tie", () => {
+    const rows = [spell("w", "{1}{W}", 2), spell("u", "{1}{U}", 2), land("plains", 19, ["W"]), land("island", 19, ["U"])];
+    expect(read(rows, tapped, ["U", "W"]).colorOrder.map((e) => e.color)).toEqual(["W", "U"]);
+  });
+
+  it("puts a white-light deck's white first (Blood Rites: white 24 against 26, black 30 against 30)", () => {
+    const rows = [
+      spell("kb", "{2}{W}{W}", 3), land("plains", 24, ["W"]),
+      spell("bg", "{B}{B}", 3), land("swamp", 30, ["B"]),
+      spell("march", "{W}{W}"),
+    ];
+    const o = read(rows, tapped, ["W", "B"]).colorOrder;
+    expect(o.map((e) => e.color)).toEqual(["W", "B"]);
+    // March of the Canonized's single CC (30) does not decide white's Needed.
+    expect(o[0].needed).toMatchObject({ pattern: "2CC", requires: 26, basis: "shared" });
+  });
+
+  it("lists a one-color deck's color alone (Wizards)", () => {
+    const rows = [spell("a", "{1}{U}{U}", 3), land("island", 37, ["U"])];
+    expect(order(rows, ["U"])).toEqual(["U:ranked"]);
+  });
+
+  it("has no order for a colorless deck (Eldrazi): no door", () => {
+    const rows = [spell("a", "{4}", 10), land("waste", 38, ["C"])];
+    const b = read(rows, tapped, []);
+    expect(b.state).toBe("colorless");
+    expect(b.colorOrder).toEqual([]);
+    expect(b.identity).toEqual([]);
+  });
+
+  it("puts a color with pips and no published pattern after every ranked color, and a pipless identity color last", () => {
+    const rows = [
+      spell("w", "{1}{W}", 4), land("plains", 20, ["W"]),
+      spell("huge", "{6}{G}", 3), land("forest", 10, ["G"]),
+    ];
+    // U is in the identity with no pip; G has a pip and only a ceiling; W is ranked.
+    expect(order(rows, ["W", "U", "G"])).toEqual(["W:ranked", "G:noPublished", "U:noPips"]);
+  });
+
+  it("does not list a color outside the commander's identity, however many sources it has", () => {
+    const rows = [spell("g", "{1}{G}", 4), land("forest", 20, ["G"]), land("island", 3, ["U"])];
+    const b = read(rows, tapped, ["G"]);
+    expect(b.colorOrder.map((e) => e.color)).toEqual(["G"]);
+    expect(b.identity).toEqual(["G"]);
+  });
+
+  it("orders by pips when no color has a source (every ratio is 0)", () => {
+    const rows = [spell("w", "{1}{W}", 2), spell("u", "{1}{U}", 5)];
+    const b = read(rows, tapped, ["W", "U"]);
+    expect(b.state).toBe("noSources");
+    expect(b.colorOrder.map((e) => e.color)).toEqual(["U", "W"]);
   });
 });
