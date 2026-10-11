@@ -56,14 +56,14 @@ export const synopsisCopy = {
     ownerShare: (month: string) => `Reads the bracket only; you’ve used your testing share for ${month}.`,
     /**
      * The method-change rewrite is free once per deck, so Re-analyze's note says so in place of
-     * every credit form while a free try is left (addendum_method_notice, 1f). Owed to /copy-review.
+     * every credit form while a free try is left (addendum_method_notice, 1f). Reviewed 2026-10-11: kept as drawn.
      */
     free: "Also writes the overview, free this once because we changed how overviews are written.",
   },
 
   /**
    * The method-changed notice (addendum_method_notice, 2026-10-10): the shown overview was written
-   * under the old method. Transcribed from the handoff's `M` block; owed to /copy-review.
+   * under the old method. Transcribed from the handoff's `M` block; reviewed 2026-10-11, all kept.
    * `note` never carries the credits standing, so it reads the same at full credits, at none and
    * while the allowance is paused: the rewrite bypasses all three.
    */
@@ -81,7 +81,7 @@ export const synopsisCopy = {
     /**
      * Line C while no credit can be spent (the allowance is paused, the owner's share or every
      * credit is used): "you can still write one with a credit" is not true this month, and the
-     * paid press beside it says why. OWED to /copy-review (the audit's Copy section).
+     * paid press beside it says why. Reviewed 2026-10-11: kept.
      */
     triesUsedNoCredit: "We couldn’t write the new overview with the free tries.",
     /** 1f: the stale banner leads, and its Re-analyze is the one press. */
@@ -117,7 +117,7 @@ export const synopsisCopy = {
     keep: "Keep",
     sendBack: "Send back",
     /** The label of the line under a claim that lists the cards it is about (Overview accuracy,
-     *  PR 6). Owed to /copy-review. */
+     *  PR 6). Reviewed 2026-10-11: kept. */
     basedOn: "Based on",
     /**
      * The land range, drawn by the app as each box's first line; the model never writes it
