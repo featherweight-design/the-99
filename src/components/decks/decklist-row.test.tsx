@@ -1503,10 +1503,17 @@ describe("DecklistRow with I got it", () => {
   });
 
   it("opens the confirm, not the card's details, and holds the row's hover ground while it is up", async () => {
-    renderRow(<GotItProvider deckId="d1"><DecklistRow deckId="d1" card={priced(300)} shoppingFigure={24} inShopping newestAsOf={asOf} /></GotItProvider>);
+    const fetchCard = vi.fn().mockResolvedValue(null);
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <GotItProvider deckId="d1"><DecklistRow deckId="d1" card={priced(300)} shoppingFigure={24} inShopping newestAsOf={asOf} /></GotItProvider>
+      </CardDetailProvider>,
+    );
     expect(row().className).not.toContain("bg-[color:var(--elevated-hover)] [--row-bg");
     await act(async () => fireEvent.click(screen.getByRole("button", { name: tagName })));
     expect(screen.getByRole("dialog", { name: gotItCopy.confirm.title })).toBeInTheDocument();
+    // The press is the tag's own: the row's details never open under the confirm.
+    expect(fetchCard).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: tagName })).toHaveAttribute("aria-expanded", "true");
     expect(row().className).toContain("bg-[color:var(--elevated-hover)] [--row-bg:var(--elevated-hover)]");
   });

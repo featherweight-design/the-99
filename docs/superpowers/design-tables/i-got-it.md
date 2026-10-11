@@ -25,9 +25,8 @@ Copy wording is out of scope: rows name the copy *key/slot*, not the text (wordi
 | flex-direction | column | column |
 | align-items | flex-end | flex-end |
 | gap (tag → `over $X`) | 2px | 2px |
-| padding (hit-area extension) | 8px 0 (only when live) | — |
-| margin (hit-area extension) | -8px 0 (only when live) | — |
-| hit area height | 44px (invisible 8px above + below, inside 52px row) | — (tag's own box) |
+| hit-area extension | an invisible 44px box centred on the stack (`::before`), in every state; the canvas's 8px padding and -8px margin reach 44px only with `over $X` stacked, so a plain plate would be ~32px | — |
+| hit area height | 44px, whatever the stack's height, moving nothing on the 52px row | — (tag's own box) |
 | hit target | whole stack (`buy` + `over $X`) is one target, ~70×44 | the tag |
 | must not overlap | ⇄'s 44×44 area | ⇄'s area |
 | cursor | pointer when live, default when inert | pointer when live, default when inert |

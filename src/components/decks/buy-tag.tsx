@@ -339,8 +339,9 @@ function PressableTag({ press, overLimit, children }: { press: BuyTagPress; over
   const { state: pressState, onPress, cardName, under } = press;
   const live = pressState === "rest" || pressState === "open";
   return (
-    // The button is the stack: below `lg` an invisible 8px above and below takes the hit area to
-    // 44px (with `over $X` stacked under the plate), and from `lg` it is the plate alone.
+    // The button is the stack: below `lg` an invisible 44px box centred on it is the hit area,
+    // whatever the stack's own height (a plain plate is about 16px, one with `over $X` about 32px),
+    // and it moves nothing on the row. From `lg` the button is the plate alone.
     <button
       type="button"
       aria-label={gotItCopy.row.tagAria(cardName)}
@@ -358,7 +359,7 @@ function PressableTag({ press, overLimit, children }: { press: BuyTagPress; over
         if (pressState === "rest") onPress();
       }}
       // The ring is the plate's, not the button's: below lg the button is the whole 44px stack.
-      className={`group/buy flex flex-none flex-col items-end gap-[2px] border-0 bg-transparent px-0 py-[8px] -my-[8px] lg:py-0 lg:my-0 font-[inherit] focus-visible:outline-none ${
+      className={`group/buy relative flex flex-none flex-col items-end gap-[2px] border-0 bg-transparent p-0 font-[inherit] focus-visible:outline-none before:absolute before:inset-x-0 before:top-1/2 before:h-[44px] before:-translate-y-1/2 before:content-[''] lg:before:hidden ${
         live ? "cursor-pointer" : "cursor-default"
       }`}
     >
