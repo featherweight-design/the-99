@@ -19,4 +19,6 @@ Analysis tab in PR 4, along with the ledger. The About entry is PR 5.
 | 10 | Stale banner line and note have no `text-wrap: pretty` at 1300 | Fixed |
 | - | The banner's button spanned an empty second row when there was no note, raising the line above the button's center | Fixed: the button spans two rows only when the note is drawn |
 
+One state in the table is not built, by decision rather than as a gap: the tiny list (§10, State Coverage "Tiny list (3a)"). A reading needs a whole deck, so a list under the floor never reaches the block, and /copy-review removed its strings.
+
 Verdict: 0 open gaps.

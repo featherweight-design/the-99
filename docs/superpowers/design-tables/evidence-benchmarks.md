@@ -166,7 +166,7 @@ Mobile = the `phone` layout (drawn at 358 content width inside the 390 frame). D
 | Opens on | tap | hover or focus |
 | Tooltip | `role="tooltip"`; `position:absolute; left:-10px; top:calc(100% + 8px); z-index:5; width:260px; padding:9px 11px; border-radius:8px; background:var(--elevated); border:1px solid var(--border-strong); box-shadow:0 10px 28px rgba(0,0,0,0.45)` | Same |
 | Tooltip font | sans 12px / 400, `line-height:1.5`, `var(--fg-body)`, `text-align:left`, `white-space:normal` | Same |
-| Tooltip copy key | `deps.sub` | `deps.sub` |
+| Tooltip copy key | `deps.tip` (the handoff's `deps.sub`, renamed by /copy-review) | `deps.tip` |
 | Component | the Deck stats `InfoTip`, lifted to shared (O2) | Same |
 
 ### 9b. Dependency row
@@ -215,6 +215,8 @@ Mobile = the `phone` layout (drawn at 358 content width inside the 390 frame). D
 | Opener | none | none |
 
 ## 10. Tiny-list state (under the floor)
+
+**Not built.** A reading needs a whole deck, so a list under the floor never has benchmarks to draw; /copy-review removed the strings. The rows below are the drawing's, kept for the record.
 
 | Property | Mobile | Desktop |
 |---|---|---|
@@ -284,7 +286,7 @@ Mobile = the `phone` layout (drawn at 358 content width inside the 390 frame). D
 | Loading / failed / fetching | first read pending or failed | no block |
 | Failed re-read over held | re-read failed | held reading's block, whole, as 1i |
 | Re-analyze in flight | re-read running | block whole; banner button busy in place |
-| Tiny list (3a) | card count < floor | head + caption + tiny panel with five names |
+| Tiny list (3a) | card count < floor | **not built**: unreachable, a reading needs a whole deck (§10) |
 | All lowest (3a) | every grade step 1, no deps | four tiles each with one `STEP_INK[0]` segment; none panel; no warning |
-| Tooltip open (2t) | hover/focus (1300), tap (390) on ring | `deps.sub` bubble |
+| Tooltip open (2t) | hover/focus (1300), tap (390) on ring | `deps.tip` bubble |
 | Switch off | `DECK_BENCHMARKS_ENABLED` unset | nothing |

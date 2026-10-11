@@ -42,7 +42,8 @@ describe("BenchmarksBlock", () => {
 
   it("draws no opener at all without onOpen, so no control does nothing", () => {
     render(<BenchmarksBlock benchmarks={wire({ dependencies: [graveyard] })} analyzedAt="2026-10-01T12:00:00Z" />);
-    expect(screen.queryAllByRole("button", { name: /see the/ })).toHaveLength(0);
+    // The InfoTip's ring is the block's one button without a ledger to open.
+    expect(screen.getAllByRole("button").map((b) => b.getAttribute("aria-label"))).toEqual([copy.deps.tipAria]);
   });
 
   it("opens a grade's cards, counting its ledger entries", () => {
@@ -94,10 +95,17 @@ describe("BenchmarksBlock", () => {
   });
 
   it("draws the phone form at any width for rows, with no md: restyling of its own", () => {
-    const { container } = render(<BenchmarksBlock benchmarks={wire({ dependencies: [graveyard] })} analyzedAt="2026-10-01T12:00:00Z" layout="rows" onOpen={() => {}} />);
-    // The shared InfoTip keeps its own popover placement; everything the block draws is the phone's.
-    for (const el of container.querySelectorAll("[data-grades], [data-dependency], [data-benchmarks] > div:first-child")) {
-      expect(el.outerHTML).not.toMatch(/\bmd:/);
+    for (const dependencies of [[graveyard], []]) {
+      const { container, unmount } = render(<BenchmarksBlock benchmarks={wire({ dependencies })} analyzedAt="2026-10-01T12:00:00Z" layout="rows" onOpen={() => {}} />);
+      // Whole subtrees the block alone draws.
+      for (const el of container.querySelectorAll("[data-grades], [data-dependency], [data-dependencies-none], [data-benchmarks] > div:first-child")) {
+        expect(el.outerHTML).not.toMatch(/\bmd:/);
+      }
+      // The Dependencies box and its head hold the shared InfoTip, which keeps its own placement,
+      // so only their own classes are the block's.
+      const box = container.querySelector("[data-dependencies]")!;
+      for (const el of [box, box.firstElementChild!]) expect(el.className).not.toMatch(/\bmd:/);
+      unmount();
     }
   });
 });

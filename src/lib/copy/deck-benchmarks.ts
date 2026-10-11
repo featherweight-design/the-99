@@ -10,6 +10,9 @@
  * No string mentions labels; a counterspell is interaction; Dependencies is a risk, never a score.
  */
 
+/** A count's noun, singular at 1. */
+const n = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
+
 export const deckBenchmarksCopy = {
   // The block (Analysis tab, last in the reading, under "What is in this deck")
   heading: 'How it plays',
@@ -29,8 +32,8 @@ export const deckBenchmarksCopy = {
   // Tile figure lines: [before, bold run, after]
   figure: {
     velocity: (ramp: string, avgMv: string) => ['Early ramp ', ramp, ` · average spell ${avgMv} mana`],
-    flow: (engines: number, oneShots: number) => ['', String(engines), ` repeating ${engines === 1 ? 'engine' : 'engines'}, ${oneShots} one-time draws`],
-    interaction: (answers: number, cheapInstant: number) => [`${answers} answers · `, `${cheapInstant} cheap and instant`, ''],
+    flow: (engines: number, oneShots: number) => ['', String(engines), ` repeating ${engines === 1 ? 'engine' : 'engines'}, ${n(oneShots, 'one-time draw', 'one-time draws')}`],
+    interaction: (answers: number, cheapInstant: number) => [`${n(answers, 'answer', 'answers')} · `, `${cheapInstant} cheap and instant`, ''],
     win: (lines: number, odds: string) => [`${lines} ${lines === 1 ? 'line' : 'lines'} · `, odds, ' in hand by turn 8'],
   },
   open: (n: number) => (n === 1 ? 'see the card' : `see the ${n} cards`),
@@ -67,11 +70,11 @@ export const deckBenchmarksCopy = {
       combat: 'Fogs, Propaganda, Ghostly Prison',
     },
     figure: {
-      graveyard: (n: number, commander: boolean) => ['', String(n), ` cards use the graveyard${commander ? ', your commander among them' : ''}`],
-      artifacts: (artifacts: number, payoffs: number, activated: number) => ['', String(artifacts), ` artifacts, ${payoffs} cards that pay off on them${activated ? `, ${activated} with abilities` : ''}`],
-      enchantments: (enchantments: number, payoffs: number) => ['', String(enchantments), ` enchantments, ${payoffs} cards that pay off on them`],
-      creatures: (payoffs: number) => ['', String(payoffs), ' cards that pay off on creatures'],
-      activated: (n: number, commander: boolean) => ['', String(n), ` creatures with abilities${commander ? ', your commander among them' : ''}`],
+      graveyard: (count: number, commander: boolean) => ['', String(count), ` ${count === 1 ? 'card uses' : 'cards use'} the graveyard${commander ? ', your commander among them' : ''}`],
+      artifacts: (artifacts: number, payoffs: number, activated: number) => ['', String(artifacts), ` ${artifacts === 1 ? 'artifact' : 'artifacts'}, ${n(payoffs, 'card that pays off', 'cards that pay off')} on them${activated ? `, ${activated} with abilities` : ''}`],
+      enchantments: (enchantments: number, payoffs: number) => ['', String(enchantments), ` ${enchantments === 1 ? 'enchantment' : 'enchantments'}, ${n(payoffs, 'card that pays off', 'cards that pay off')} on them`],
+      creatures: (payoffs: number) => ['', String(payoffs), payoffs === 1 ? ' card that pays off on creatures' : ' cards that pay off on creatures'],
+      activated: (count: number, commander: boolean) => ['', String(count), ` ${count === 1 ? 'creature' : 'creatures'} with abilities${commander ? ', your commander among them' : ''}`],
       combat: (routes: number) => (routes === 0 ? ['', 'No way', ' to win outside combat'] : ['Only ', String(routes), ` ${routes === 1 ? 'way' : 'ways'} to win outside combat`]),
     },
     rowAria: (row: string, strength: string) => `${row}, ${strength} dependency`,
@@ -112,22 +115,22 @@ export const deckBenchmarksCopy = {
       velocity: (lands: number, ramp: string, avgMv: string) =>
         `${lands} lands and ${ramp} points of early ramp, set against an average spell of ${avgMv} mana. Ramp counts in full at 2 mana or less and half at 3, and a one-time burst counts half again.`,
       flow: (pts: number, cards: number) =>
-        `${pts} points from ${cards} cards. A card that draws again and again counts 2, a one-time draw counts 1, and your commander’s own draw counts double. Draws that go to opponents don’t count.`,
+        `${pts} points from ${n(cards, 'card', 'cards')}. A card that draws again and again counts 2, a one-time draw counts 1, and your commander’s own draw counts double. Draws that go to opponents don’t count.`,
       interaction: (answers: number, cheapInstant: number) =>
-        `${answers} answers, ${cheapInstant === 0 ? 'and none is' : `${cheapInstant} of them`} cheap and instant. Each counts 1, plus 1 at instant speed or with flash, plus 1 at 2 mana or less. Counterspells count here; removal is what answers a card already on the battlefield.`,
+        `${n(answers, 'answer', 'answers')}, ${cheapInstant === 0 ? (answers === 1 ? 'and it isn’t' : 'and none is') : answers === 1 ? 'and it is' : `${cheapInstant} of them`} cheap and instant. Each counts 1, plus 1 at instant speed or with flash, plus 1 at 2 mana or less. Counterspells count here; removal is what answers a card already on the battlefield.`,
       win: (odds: string) =>
         `A ${odds} chance that every piece of at least one line is in hand by turn 8: an opening seven, then a card a turn on the play. A tutor in hand stands in for a missing piece it can find. Mana isn’t counted.`,
       winNote: 'Each line is named by what it produces. A loop with no way to end it can draw the game.',
-      graveyard: (n: number, commander: boolean) =>
-        `${n} cards use the graveyard${commander ? ', and your commander is one of them' : ''}. A card counts when it brings cards back, fills your own graveyard, grows with cards there, or has a keyword that plays from it.`,
+      graveyard: (count: number, commander: boolean) =>
+        `${n(count, 'card uses', 'cards use')} the graveyard${commander ? ', and your commander is one of them' : ''}. A card counts when it brings cards back, fills your own graveyard, grows with cards there, or has a keyword that plays from it.`,
       artifacts: (a: number, p: number, act: number) =>
-        `${a} artifacts, ${p} cards that pay off on them, and ${act} artifacts with abilities. Artifact wipes take the artifacts and leave the payoffs with nothing. Null Rod and Collector Ouphe leave the artifacts in play but stop their abilities.`,
+        `${n(a, 'artifact', 'artifacts')}, ${n(p, 'card that pays off', 'cards that pay off')} on them, and ${n(act, 'artifact', 'artifacts')} with abilities. Artifact wipes take the artifacts and leave the payoffs with nothing. Null Rod and Collector Ouphe leave the artifacts in play but stop their abilities.`,
       enchantments: (e: number, p: number) =>
-        `${e} enchantments and ${p} cards that pay off on them. An enchantment wipe takes the enchantments and leaves the payoffs with nothing.`,
+        `${n(e, 'enchantment', 'enchantments')} and ${n(p, 'card that pays off', 'cards that pay off')} on them. An enchantment wipe takes the enchantments and leaves the payoffs with nothing.`,
       creatures: (p: number) =>
-        `${p} cards pay off on your creatures: lords, anthems, and token makers that work again and again. A creature board wipe takes the bodies and the payoffs together.`,
-      activated: (n: number) =>
-        `${n} creatures do their work through an activated ability, such as mana creatures. Cursed Totem turns all of them off at once.`,
+        `${n(p, 'card pays', 'cards pay')} off on your creatures: lords, anthems, and token makers that work again and again. A creature board wipe takes the bodies and the payoffs together.`,
+      activated: (count: number) =>
+        `${count === 1 ? '1 creature does' : `${count} creatures do`} their work through an activated ability, such as mana creatures. Cursed Totem turns all of them off at once.`,
       combat: (routes: number) =>
         `${routes === 1 ? 'One card wins' : `${routes} cards win`} without attacking. Every other route runs through combat. A card counts when it drains, poisons or mills opponents again and again, wins or makes an opponent lose outright, or completes a combo.`,
     },
