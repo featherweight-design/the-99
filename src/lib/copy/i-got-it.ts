@@ -69,7 +69,7 @@ export const gotItCopy = {
      */
     undoneElsewhere: (card: string, q: number) => `Undone. ${card} ×${n(q)} removed from your collection.`,
     undoFailed: "Couldn't undo that.",
-    undoFailedBody: "The copy is still in your collection. You can revert it from History.",
+    undoFailedBody: "What you added is still in your collection. You can revert it from History.",
     openHistory: "Open History",
   },
   /**
