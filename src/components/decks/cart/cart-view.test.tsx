@@ -164,3 +164,53 @@ describe("CartView", () => {
     expect(links[0].textContent).toContain(copy.checkout.part(1, links.length, 1));
   });
 });
+
+describe("CartView by deck (A5)", () => {
+  it("switches to one group per deck, largest first, every group folded", () => {
+    render(<CartView cart={cart()} provenance={provenance} />);
+    fireEvent.click(screen.getByRole("button", { name: copy.view.byDeck }));
+    expect(screen.getByRole("button", { name: copy.view.byDeck }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByText(copy.list.headByDeck(3, 4))).toBeTruthy();
+    const groups = screen.getAllByRole("region", { name: /HD - / });
+    expect(groups.map((g) => g.getAttribute("aria-labelledby") && g.textContent?.match(/HD - [A-Za-z]+/)?.[0])).toEqual(["HD - Gishath", "HD - Omnath", "HD - Kratos"]);
+    expect(screen.queryByText("Sol Ring")).toBeNull();
+  });
+
+  it("opens the ?deck= group on arrival, its cards at that deck's own figure, with the others named", () => {
+    render(<CartView cart={cart()} provenance={provenance} initialView="deck" focusDeckId="gishath" />);
+    expect(screen.getByText("Sol Ring")).toBeTruthy();
+    expect(screen.getByText(copy.list.also(["HD - Kratos"]))).toBeTruthy();
+    expect(screen.getByText("Command Tower")).toBeTruthy();
+    // Kratos's group stays folded.
+    expect(screen.getAllByText("Sol Ring")).toHaveLength(1);
+  });
+
+  it("counts another line deck's copies as elsewhere, from the open deck's vantage", () => {
+    // Kratos holds 3 Rats and buys 2 more; Gishath holds none. All 3 owned are in another deck.
+    const rats = cart();
+    rats.lines[1] = {
+      oracleId: "rats", name: "Relentless Rats", commander: false, owned: 3, heldElsewhere: 0,
+      rows: [
+        { deckId: "gishath", quantity: 1, cents: 50, state: "priced", commander: false, held: 0, finish: null },
+        { deckId: "kratos", quantity: 2, cents: 100, state: "priced", commander: false, held: 3, finish: null },
+      ],
+    };
+    render(<CartView cart={rats} provenance={provenance} initialView="deck" focusDeckId="gishath" />);
+    expect(screen.getByText(copy.list.owned(3))).toBeTruthy();
+  });
+
+  it("folds everything, without an error, when ?deck= names a deck not on the cart (A5-t)", () => {
+    render(<CartView cart={cart()} provenance={provenance} initialView="deck" focusDeckId="00000000-0000-0000-0000-000000000000" />);
+    expect(screen.queryByText("Sol Ring")).toBeNull();
+    expect(screen.getAllByRole("region", { name: /HD - / })).toHaveLength(3);
+  });
+
+  it("keeps an unselected deck's group folded and its toggle off", () => {
+    render(<CartView cart={cart()} provenance={provenance} initialView="deck" focusDeckId="gishath" />);
+    const gishath = screen.getAllByRole("checkbox", { name: copy.selections.aria("HD - Gishath", true) })[0];
+    fireEvent.click(gishath);
+    expect(screen.queryByText("Command Tower")).toBeNull();
+    const toggle = screen.getAllByRole("button", { expanded: false }).find((b) => b.textContent?.includes("HD - Gishath"))!;
+    expect(toggle.hasAttribute("disabled")).toBe(true);
+  });
+});

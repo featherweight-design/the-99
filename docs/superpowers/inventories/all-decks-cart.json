@@ -1,37 +1,105 @@
 {
   "feature": "Shopping for all decks: the /decks/shopping cart (handoff design_handoff_the99_all_decks_cart)",
-  "note": "PR 3 rows: the by-card cart and its selections, checkout and empty states. The by-deck view, ?deck= focus, the back band and the /decks entry line join this inventory in PR 4; the Bought flow in PR 6. Needs a server with ALL_DECKS_CART_ENABLED=true and an account whose decks are missing cards (a pull:staging copy of Hugh's).",
+  "note": "PR 3 rows: the by-card cart and its selections, checkout and empty states. PR 4 adds the by-deck view, ?deck= focus, the /decks entry line and the tile link; the Bought flow and the back band join in PR 6. Needs a server with ALL_DECKS_CART_ENABLED=true and an account whose decks are missing cards (a pull:staging copy of Hugh's).",
   "rows": [
     {
       "id": "cart-a2",
       "label": "/decks/shopping, every deck selected (A2): selections, by-card list, checkout",
       "view": "src/components/decks/cart/cart-view.tsx",
-      "steps": [{ "goto": "/decks/shopping", "wait": "h1", "settle": 2000 }]
+      "steps": [
+        {
+          "goto": "/decks/shopping",
+          "wait": "h1",
+          "settle": 2000
+        }
+      ]
     },
     {
       "id": "cart-sol-ring",
       "label": "/decks/shopping, the Sol Ring line: three brews, full names, the owned fact",
       "view": "src/components/decks/cart/cart-line.tsx",
-      "steps": [{ "goto": "/decks/shopping", "wait": "h1", "settle": 2000, "scrollTo": "li:has-text('Sol Ring')" }]
+      "steps": [
+        {
+          "goto": "/decks/shopping",
+          "wait": "h1",
+          "settle": 2000,
+          "scrollTo": "li:has-text('Sol Ring')"
+        }
+      ]
     },
     {
       "id": "cart-phone-selections",
       "label": "/decks/shopping, the phone's selections unfolded",
       "view": "src/components/decks/cart/deck-select.tsx",
-      "widths": ["phone"],
+      "widths": [
+        "phone"
+      ],
       "steps": [
-        { "goto": "/decks/shopping", "wait": "h1", "settle": 2000 },
-        { "click": "button[aria-expanded]", "settle": 500 }
+        {
+          "goto": "/decks/shopping",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "click": "button[aria-expanded]",
+          "settle": 500
+        }
       ]
     },
     {
       "id": "cart-a4",
       "label": "/decks/shopping, every deck unselected (A4): the way back, no figure, no link",
       "view": "src/components/decks/cart/cart-view.tsx",
-      "widths": ["desktop"],
+      "widths": [
+        "desktop"
+      ],
       "steps": [
-        { "goto": "/decks/shopping", "wait": "h1", "settle": 2000 },
-        { "clickRole": "button", "name": "Unselect all", "settle": 600 }
+        {
+          "goto": "/decks/shopping",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "clickRole": "button",
+          "name": "Unselect all",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "cart-by-deck",
+      "label": "/decks/shopping?view=deck \u2014 one group per deck, largest first, all folded (A5)",
+      "view": "src/components/decks/cart/cart-deck-group.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping?view=deck",
+          "wait": "h1",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "cart-deck-focus",
+      "label": "/decks/shopping?deck=<Gishath> \u2014 the tile's link: Gishath's group open, its cards at its own figure, `also \u2026`",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping?deck=904fdc61-e190-4ba5-8e34-2b18fa0584f2",
+          "wait": "h1",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "decks-entry",
+      "label": "/decks \u2014 the cart's entry line above the shelves (A1)",
+      "view": "src/components/decks/cart/cart-entry.tsx",
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "h1",
+          "settle": 2500
+        }
       ]
     }
   ]

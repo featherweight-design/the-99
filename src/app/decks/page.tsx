@@ -4,6 +4,7 @@ import { perfRoute } from "../../lib/perf/timing";
 import { redirect } from "next/navigation";
 import { requireUserId } from "../../lib/auth";
 import { analysisTabEnabled } from "../../lib/decks/analysis-flag";
+import { allDecksCartEnabled } from "../../lib/decks/all-decks-cart-flag";
 import { listDecksWithStats } from "../../lib/decks/read";
 import { listFolders } from "../../lib/decks/folders";
 import { loadShoppingRollup } from "../../lib/decks/shopping-rollup";
@@ -104,6 +105,7 @@ export default async function DecksPage({
       decks={data.decks}
       folders={data.folders}
       shopping={data.shopping}
+      cartEnabled={allDecksCartEnabled()}
       buildable={data.buildable}
       cards={data.cards}
       // One clock for the whole page, read on the server. Every relative date
