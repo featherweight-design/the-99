@@ -4,7 +4,7 @@
   "rows": [
     {
       "id": "A1-landing-over",
-      "label": "/decks/[id] Analysis, a read deck now over 100: four-tile landing order, Proposed cuts offered with `this deck is N over`",
+      "label": "/decks/[id] Analysis, a read deck now over 100: the landing's tiles in their fixed order (two in this PR: Suggested changes, Proposed cuts), Proposed cuts offered with `this deck is N over`",
       "view": "src/components/decks/tuning-hub.tsx",
       "steps": [
         {

@@ -22,7 +22,7 @@ cuts (`cuts-panel.tsx`, #1362), both mounted directly in the Analysis tab today
 - Tile status reads one server read, `readHubTiles(deckId)`, over `deck_suggestion_runs` and
   the two item tables: per tool the newest run (date, outcome, answered counts) and any pending
   run with its `createdAt`. While a run is pending the landing re-reads every 3s, as both
-  panels already do. Dates in US short form (`Oct 7 · 9:40 PM`).
+  panels already do. Dates in US short form: a tile says `Oct 7` (canvas A1), and History rows carry the time (`Oct 7 · 9:40 PM`).
 - Suggested changes and Proposed cuts mount inside the hub unchanged.
 - Trim line `Proposed cuts →` on `spine-desktop.tsx` and `spine-mobile.tsx`, shown when the
   deck is over (the shipped `built > bodySize`, which is the design table's condition). It

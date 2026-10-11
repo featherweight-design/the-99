@@ -120,17 +120,26 @@ export function TuningHub({
 
   const settledRef = useRef(onSettled);
   useEffect(() => { settledRef.current = onSettled; });
+  // Reads overlap (the mount read, the watch and a return to the tiles), so only the newest one
+  // asked for is applied: an older answer landing late would put a finished run back to running.
+  const latest = useRef(0);
   const read = useCallback(() => {
+    const ask = ++latest.current;
     readTuningHub(deckId)
-      .then((t) => setTiles(t))
+      .then((t) => { if (ask === latest.current) setTiles(t); })
       // A failed read leaves the tiles without a status line; every tool still opens.
       .catch(() => {})
       .finally(() => settledRef.current?.());
   }, [deckId]);
 
-  // On mount, and each time the reader comes back to the tiles: a tool's own run may have settled.
+  // On mount, whether or not a shortcut opened a tool in the first render (the tab's opening
+  // loader waits on this read), and each time the reader comes back to the tiles: a tool's own run
+  // may have settled.
+  const readOnce = useRef(false);
   useEffect(() => {
-    if (openTool === null) read();
+    if (openTool !== null && readOnce.current) return;
+    readOnce.current = true;
+    read();
   }, [openTool, read]);
 
   const running = !!tiles && Object.values(tiles).some((t) => t?.kind === "running");
@@ -150,7 +159,12 @@ export function TuningHub({
   }, [openTool]);
   useEffect(() => {
     if (openTool !== null || leftTool === null) return;
-    sectionRef.current?.querySelector<HTMLElement>(`button[data-tool-tile="${leftTool}"]`)?.focus();
+    // The tile the reader left, or, when that tool went inert while it was open (the last cut
+    // brought the deck to 100), the Tuning heading: focus never falls to the document.
+    const tile = sectionRef.current?.querySelector<HTMLElement>(`button[data-tool-tile="${leftTool}"]`);
+    const heading = sectionRef.current?.querySelector<HTMLElement>("#tuning-hub-heading");
+    if (tile) tile.focus();
+    else heading?.focus();
   }, [openTool, leftTool]);
 
   // A shortcut on Your deck, answered once per nonce and during render rather than in an effect,
@@ -224,7 +238,7 @@ export function TuningHub({
       className={`flex flex-col gap-[12px] pt-[16px] ${opened ? "md:gap-[14px]" : ""}`}
       style={{ borderTop: "1px solid var(--border)", scrollMarginTop: 16 }}
     >
-      <h2 id="tuning-hub-heading" className="font-display text-[17px] font-normal md:text-[19px]" style={{ color: "var(--fg)" }}>
+      <h2 id="tuning-hub-heading" tabIndex={-1} className="outline-none font-display text-[17px] font-normal md:text-[19px]" style={{ color: "var(--fg)" }}>
         {copy.title}
       </h2>
       {opened && openedView ? (
@@ -240,6 +254,8 @@ export function TuningHub({
                   ref={(el) => { if (el) tabRefs.current.set(id ?? "all", el); else tabRefs.current.delete(id ?? "all"); }}
                   type="button"
                   role="tab"
+                  id={`tuning-tab-${id ?? "all"}`}
+                  aria-controls={active ? "tuning-tool-panel" : undefined}
                   aria-selected={active}
                   tabIndex={active ? 0 : -1}
                   disabled={!!view?.inert && !active}
@@ -273,7 +289,9 @@ export function TuningHub({
               {copy.toolOf(tools.findIndex((t) => t.tool === opened.tool) + 1, tools.length)}
             </span>
           </div>
-          <div ref={toolRef} data-tuning-tool={opened.tool}>{opened.panel}</div>
+          <div ref={toolRef} id="tuning-tool-panel" role="tabpanel" aria-labelledby={`tuning-tab-${opened.tool}`} data-tuning-tool={opened.tool}>
+            {opened.panel}
+          </div>
         </>
       ) : (
         <div className="grid grid-cols-1 gap-[8px] md:grid-cols-2 md:gap-[10px]">

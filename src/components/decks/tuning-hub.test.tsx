@@ -170,6 +170,47 @@ describe("TuningHub opening a tool", () => {
     expect(tile("cuts")?.hasAttribute("data-inert")).toBe(true);
   });
 
+  it("still reads and settles the tab's loader when a shortcut opens a tool on the first render", async () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    const settled = vi.fn();
+    render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "cuts", nonce: 1 }} onSettled={settled} />);
+    expect(screen.getByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
+    await waitFor(() => expect(settled).toHaveBeenCalled());
+    expect(read).toHaveBeenCalledTimes(1);
+  });
+
+  it("applies only the newest read when two overlap", async () => {
+    let first!: (t: HubTiles) => void;
+    let second!: (t: HubTiles) => void;
+    read.mockImplementationOnce(() => new Promise((r) => { first = r; }));
+    read.mockImplementationOnce(() => new Promise((r) => { second = r; }));
+    render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} />);
+    // The second read: back to the tiles from a tool.
+    fireEvent.click(tile("suggested"));
+    fireEvent.click(screen.getByRole("tab", { name: copy.allTools }));
+    await act(async () => { second({ suggested_changes: { kind: "ok", at: "2026-10-03T15:00:00Z", total: 5, accepted: 2 }, proposed_cuts: null }); });
+    await act(async () => { first({ suggested_changes: { kind: "running", startedAt: new Date().toISOString() }, proposed_cuts: null }); });
+    expect(tile("suggested").hasAttribute("data-running")).toBe(false);
+    expect(tile("suggested").textContent).toContain(copy.outcome.applied(2, 5));
+  });
+
+  it("labels the open tool as the selected tab's panel", () => {
+    render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} />);
+    fireEvent.click(tile("cuts"));
+    const panel = screen.getByRole("tabpanel");
+    expect(panel.getAttribute("aria-labelledby")).toBe(screen.getByRole("tab", { name: "Proposed cuts" }).id);
+    expect(screen.getByRole("tab", { name: "Proposed cuts" }).getAttribute("aria-controls")).toBe(panel.id);
+  });
+
+  it("puts focus on the Tuning heading when the tool left has gone inert", async () => {
+    const { rerender } = render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(1)]} />);
+    fireEvent.click(tile("cuts"));
+    // The last cut lands: the deck is at 100 and the tool is no longer offered.
+    rerender(<TuningHub deckId="d" drawn tools={[suggested(), cuts(0, 100)]} />);
+    fireEvent.click(screen.getByRole("tab", { name: copy.allTools }));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("heading", { name: copy.title })));
+  });
+
   it("resets to the landing when it mounts again (the Analysis tabpanel unmounts on a tab switch)", () => {
     const { unmount } = render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} />);
     fireEvent.click(tile("cuts"));
