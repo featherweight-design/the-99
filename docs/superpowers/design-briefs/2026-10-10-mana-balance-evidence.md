@@ -22,6 +22,19 @@ These build on the evidence ruling above and do not loosen it: still no verdict 
    color is the one with the lowest ratio of sources to Karsten's requirement, taken over the patterns two
    or more cards share (a pattern only one card carries does not decide the lead). The line never says
    `short`, and it is never drawn in a warning color.
+
+   **Which color, in every state** (engineering's reading of the ruling; Hugh can override):
+   - Only a pattern with a published Karsten number counts. A ceiling (`at most N`) and `no published
+     figure` give no ratio and are skipped.
+   - A color's ratio is its worst one over the patterns two or more cards share. When it has no such
+     pattern, its worst single-card pattern stands in, so a color is not ranked best only because its
+     tight costs are on one card each.
+   - A tie goes to the color with more pips (counted with the commander, as the fixtures are), then to
+     the W, U, B, R, G order.
+   - `colorless`, and a deck where no color has a published pattern, carry no lead line. A one-color deck
+     names its color. Under `noSources` every colored pip has zero sources, so the ratios all read 0 and
+     the tie-break names the color.
+   - The help door's color order (ruling 3) is this same ranking.
 2. **Pattern rows read `You have N · Needs M`**, under a column headed `Needed`. Opening a row (a tap on
    the phone) shows one line: "Frank Karsten's math: sources of this color a 99-card deck needs to cast
    this on curve about 9 times in 10." Karsten is named only in that line and in the citation, nowhere
