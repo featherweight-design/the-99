@@ -52,7 +52,13 @@ export const INTAKE_REAPER_CUTOFF_MS = 5 * 60 * 1000;
  * 5.5 at medium, as the Overview does. The eval (PR 2) measures both and may move either.
  */
 export const READ_SHORTLIST_MODEL = "claude-haiku-5-5";
-export const READ_SHORTLIST_EFFORT = "low" as const;
+/**
+ * MEDIUM, measured (eval 2026-10-11, `scripts/eval/intake-read.mts`): at low, Haiku 5.5 returned no
+ * keys at all inside a mono-black pool and five for an unfiltered Landfall ask, which the judgement
+ * then found nothing in. At medium it shortlisted 16 to 39 every time and the judgement kept 7 to 10,
+ * for about $0.004 more a warm press. Its longest reply was 2,138 tokens and its slowest 9.8s.
+ */
+export const READ_SHORTLIST_EFFORT = "medium" as const;
 /** Room for 40 keys and the thinking that picks them. */
 export const READ_SHORTLIST_MAX_TOKENS = 4_000;
 export const READ_JUDGE_MODEL = "claude-sonnet-5-5";

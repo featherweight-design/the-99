@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { PLAYER_TEXT_OPEN } from "../model/player-text";
 import { READ_REASON_MAX_CHARS, READ_SHORTLIST_SIZE, READ_TOP } from "./limits";
 import {
-  describeFilters, judgeRequest, parseReason, readFingerprint, reorder, shortlistRequest, shortlistSystem,
+  describeFilters, judgeRequest, judgeSchema, parseReason, shortlistSchema, readFingerprint, reorder, shortlistRequest, shortlistSystem,
   validJudgement, validShortlist, type ReadDeck, type ReadFilters,
 } from "./the-read";
 
@@ -22,9 +22,9 @@ describe("the shortlist", () => {
     expect(validShortlist({ keys }, new Set(keys))).toHaveLength(READ_SHORTLIST_SIZE);
   });
 
-  it("caches only what every press shares: the rules and the list, never a filter or the words", () => {
-    expect(shortlistSystem("1|A|W||Tokens")).toBe(shortlistSystem("1|A|W||Tokens"));
-    expect(shortlistSystem("1|A|W||Tokens")).not.toContain("Black");
+  it("puts the rules and the list in the system prompt, and the filters and words in the request", () => {
+    expect(shortlistSystem("1|A|W||Tokens")).toContain("1|A|W||Tokens");
+    expect(shortlistSystem("1|A|W||Tokens")).not.toContain("What the player wrote");
     const req = shortlistRequest({ words: "scary horrors", filters: { ...none, colors: ["B"], match: "exactly" }, cards: [] });
     expect(req).toContain("Color identity: exactly B.");
     expect(req).toContain(PLAYER_TEXT_OPEN);
@@ -34,6 +34,16 @@ describe("the shortlist", () => {
     expect(describeFilters(none)).toEqual(["No filters."]);
     expect(describeFilters({ ...none, themes: ["a", "b"], themeJoin: "any", budgetDollars: 50, bracket: 3, sets: ["mh3"] }))
       .toEqual(["Themes (any of): a, b.", "Printed in any of these sets: mh3.", "Budget: about $50 for cards the player does not own.", "Bracket: 3."]);
+  });
+});
+
+describe("the reply shapes", () => {
+  // The API does not enforce a length bound, so one in the schema would fail a whole reply that a
+  // single over-long reason or an extra pick should only trim.
+  it("accept a reply past every limit, which the validators then trim", () => {
+    const picks = Array.from({ length: READ_TOP + 5 }, (_, i) => ({ key: i + 1, reason: i === 0 ? "x".repeat(500) : "" }));
+    expect(judgeSchema.safeParse({ picks }).success).toBe(true);
+    expect(shortlistSchema.safeParse({ keys: Array.from({ length: READ_SHORTLIST_SIZE * 3 }, (_, i) => i) }).success).toBe(true);
   });
 });
 

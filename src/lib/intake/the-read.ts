@@ -67,7 +67,9 @@ export type ReadCard = { name: string; oracleText: string; runBy: readonly numbe
 // ---- the shortlist ---------------------------------------------------------------------------
 
 export const shortlistSchema = z.object({
-  keys: z.array(z.number().int()).max(READ_SHORTLIST_SIZE * 2),
+  // No length bound here: the API does not enforce one, so a reply past it would fail the whole
+  // shortlist as malformed. `validShortlist` keeps the first `READ_SHORTLIST_SIZE` instead.
+  keys: z.array(z.number().int()),
 });
 export type ShortlistReply = z.infer<typeof shortlistSchema>;
 
@@ -135,7 +137,9 @@ export function validShortlist(reply: ShortlistReply, pool: ReadonlySet<number>)
 // ---- the judgement ---------------------------------------------------------------------------
 
 export const judgeSchema = z.object({
-  picks: z.array(z.object({ key: z.number().int(), reason: z.string().min(1).max(400) })).max(READ_TOP * 2),
+  // Unbounded for the same reason: one long or empty reason, or an eleventh pick, would otherwise
+  // fail the whole reply. `validJudgement` refuses that one pick and keeps the top ten (F4).
+  picks: z.array(z.object({ key: z.number().int(), reason: z.string() })),
 });
 export type JudgeReply = z.infer<typeof judgeSchema>;
 
@@ -145,7 +149,9 @@ export const JUDGE_SYSTEM = [
   `You are given what the player wrote, their own decks, and a shortlist of commanders in full. Choose up to ${READ_TOP} that fit what they wrote, best first, and give each one reason.`,
   "Judge on the rules text, the themes, how much of each commander's deck the player already owns, and how it differs from their decks.",
   "Each reason is one sentence that ties what the commander does, in rules language, to what the player wrote.",
-  `A reason is at most ${READ_REASON_MAX_CHARS} characters. It never contains a digit, a percentage, a score, a rank, or words like strong, great or best. It never names a card other than the commander.`,
+  // The prompt asks for less than the validator allows: replies ran 141 to 160 characters when
+  // asked for 140 (eval, 2026-10-11), and an over-long reason is refused, never cut.
+  `A reason is at most ${READ_REASON_MAX_CHARS - 20} characters. It never contains a digit, a percentage, a score, a rank, or words like strong, great or best. It never names a card other than the commander.`,
   "Name one of the player's decks only when what they wrote asks for something like or unlike what they own, and then only as its token, for instance {D2}. Never write a deck's name or its commander's name yourself.",
   "Leave out a commander that does not fit. If none fits, return no picks.",
 ].join("\n");

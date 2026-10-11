@@ -38,6 +38,8 @@ beforeEach(() => {
   dbRows.rows = [
     { id: "a", name: "Alpha", color_identity: ["B"], type_line: "Creature", oracle_text: "Draw.", tags: [], owned: true, owned_support: 3, support_total: 9 },
     { id: "b", name: "Beta", color_identity: ["B"], type_line: "Creature", oracle_text: "Drain.", tags: [], owned: false, owned_support: 0, support_total: 9 },
+    // Gamma is outside the pool. Its row is here so only the pool check can keep it from the judgement.
+    { id: "c", name: "Gamma", color_identity: ["B"], type_line: "Creature", oracle_text: "Mill.", tags: [], owned: false, owned_support: 0, support_total: 9 },
   ];
 });
 
@@ -84,6 +86,15 @@ describe("runTheRead", () => {
     const d = deps(ok({ keys: [] }), ok({ picks: [] }));
     expect(await runTheRead("u", input, d, inputs())).toEqual({ kind: "read", readId: "old", result, repeat: true });
     expect(d.shortlist).not.toHaveBeenCalled();
+  });
+
+  it("caches the shortlist's prefix only when it is the whole list every press shares", async () => {
+    const whole = deps(ok({ keys: [] }), ok({ picks: [] }));
+    await runTheRead("u", input, whole, inputs());
+    expect(vi.mocked(whole.shortlist).mock.calls[0][0].cache).toBe(true);
+    const filtered = deps(ok({ keys: [] }), ok({ picks: [] }));
+    await runTheRead("u", input, filtered, inputs({ narrowed: true }));
+    expect(vi.mocked(filtered.shortlist).mock.calls[0][0].cache).toBe(false);
   });
 
   it("reserves under the fingerprint and the joined model", async () => {

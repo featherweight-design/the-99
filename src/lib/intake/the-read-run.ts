@@ -37,7 +37,9 @@ export type TheReadOutcome =
   | { kind: "stopped" }
   | { kind: "allowance" | "paused" | "ownerShare" | "in_flight" | "reused" };
 
-type Request = { system: string; user: string; deadlineMs: number };
+/** `cache`: send the system prompt as a cached prefix. Only the whole list, which every unfiltered
+ *  press shares, is worth the write premium; a filtered press's own lines are never read back. */
+type Request = { system: string; user: string; deadlineMs: number; cache?: boolean };
 
 export type TheReadDeps = {
   /** Recorded on the reservation and priced by the feature's steps; the stub records the stub. */
@@ -58,7 +60,7 @@ export function defaultTheReadDeps(): TheReadDeps {
     shortlistModel: READ_SHORTLIST_MODEL,
     judgeModel: READ_JUDGE_MODEL,
     shortlist: (req) => callModel({
-      model: READ_SHORTLIST_MODEL, system: req.system, user: req.user, cacheSystem: true,
+      model: READ_SHORTLIST_MODEL, system: req.system, user: req.user, cacheSystem: req.cache === true,
       maxTokens: READ_SHORTLIST_MAX_TOKENS, effort: READ_SHORTLIST_EFFORT, schema: shortlistSchema,
       deadlineMs: req.deadlineMs, retryFloorMs: Math.min(INTAKE_RETRY_FLOOR_MS, req.deadlineMs / 2),
     }),
@@ -127,7 +129,11 @@ function filtersSet(f: ReadFilters): boolean {
   return f.colors.length > 0 || f.themes.length > 0 || (f.sets?.length ?? 0) > 0 || f.budgetDollars !== null || f.bracket !== null;
 }
 
-/** Step 1's system prompt: the whole list, shared by every press, or the pool's own lines when filtered. */
+/**
+ * Step 1's system prompt: the whole list, shared by every unfiltered press and sent as a cached
+ * prefix, or, with a filter set, the pool's own lines (plan (d)), which are per player and sent
+ * uncached: no other press would read them back, so a cache write would only add its premium.
+ */
 export function shortlistPrefix(inputs: Pick<TheReadInputs, "list" | "pool" | "narrowed">): string {
   if (!inputs.narrowed) return shortlistSystem(inputs.list.text);
   const lines = inputs.list.text.split("\n").filter((line) => inputs.pool.has(Number(line.slice(0, line.indexOf("|")))));
@@ -167,6 +173,7 @@ export async function runTheRead(
   if (facts.pool.size === 0) return nothing();
   const first = await deps.shortlist({
     system: shortlistPrefix(facts),
+    cache: !facts.narrowed,
     user: shortlistRequest({ words: input.words, filters: input.filters, cards: facts.cards }),
     deadlineMs: READ_SHORTLIST_DEADLINE_MS,
   });

@@ -12,7 +12,8 @@ import type { EdhrecTag } from "../edhrec/parse";
  * ONE LIST FOR EVERY PLAYER. The list is the cached prefix of step 1's prompt, and a cache entry is
  * shared only by byte-identical prefixes, so nothing per player may enter it: not the commanders a
  * player has built, not the filters. Those go in the request after the prefix, and the validator
- * drops any pick outside the player's own filtered pool (lock 1), whatever the model chose.
+ * drops any pick outside the player's own filtered pool (lock 1), whatever the model chose. A press with a filter set is shown
+ * only its pool's lines instead, uncached (`shortlistPrefix`): smaller, and no one else's to share.
  *
  * A KEY, NOT AN ID. Each line starts with a short number, its place in the list, and the model picks
  * by that number. An oracle id costs about 25 tokens a line; 3,400 of them would be most of the list.
