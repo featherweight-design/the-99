@@ -212,13 +212,13 @@ export function SynopsisOverview({
   };
   const notice = showNotice && mn ? (
     <MethodNotice
-      line={none ? (state.lastRejected ? synopsisCopy.rejected : state.lastFailed ? synopsisCopy.failed : spent ? method.triesUsedNoCredit : method.triesUsed) : oneLeft ? method.failed : method.line}
+      line={none ? (lastRejected ? synopsisCopy.rejected : lastFailed ? synopsisCopy.failed : spent ? method.triesUsedNoCredit : method.triesUsed) : oneLeft ? method.failed : method.line}
       note={noticeLeads ? method.withStale : none ? retryNote : oneLeft ? method.oneLeft : method.note}
       alert={oneLeft || none}
       // The paid press's own failure (the free tries are spent, so the slot's failure row is not
       // drawn over a held same-list overview): a rejection offers no retry, as everywhere else.
-      cta={noticeLeads || (none && state.lastRejected) ? null : {
-        label: oneLeft || (none && state.lastFailed) ? synopsisCopy.tryAgain : synopsisCopy.writeNew,
+      cta={noticeLeads || (none && lastRejected) ? null : {
+        label: oneLeft || (none && lastFailed) ? synopsisCopy.tryAgain : synopsisCopy.writeNew,
         disabled: !canWrite || (none && spent),
         busy,
         onPress: pressNotice,

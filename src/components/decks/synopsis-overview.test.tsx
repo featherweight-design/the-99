@@ -644,4 +644,10 @@ describe("the method-changed notice", () => {
     expect(within(notice()).getByText(copy.rejected)).toBeTruthy();
     expect(within(notice()).queryByRole("button")).toBeNull();
   });
+
+  it("1e: both free tries failing reads line C, not a paid-write failure", () => {
+    draw(old({ methodNotice: { attemptsLeft: 0 }, lastFree: true, lastFailed: true, lastRejected: true }));
+    expect(within(notice()).getByText(m.triesUsed)).toBeTruthy();
+    expect(within(notice()).getByRole("button", { name: copy.writeNew })).toBeTruthy();
+  });
 });
