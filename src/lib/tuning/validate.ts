@@ -78,6 +78,9 @@ export type Drop = {
    *  spelling (`s.cut`/`s.add`), not a resolved catalog name, since drops the model got wrong
    *  before a card ever resolved (`cardExists`) have none to give. */
   name?: string;
+  /** For a `citation` drop: the citation that failed, so a run whose cuts all dropped can be read back
+   *  without the model's reply (which is not stored). Its kind and the text it carried. */
+  cite?: { kind: string; value: string };
 };
 
 /**
@@ -91,6 +94,9 @@ export type ValidationReport = {
   survivedCount: number;
   keptCount: number;
   refusal?: RefusalDetail;
+  /** "Owned only" was set and nothing the player owns fit this deck, so the adds are cards to buy.
+   *  The panel says so before the lists. Absent for every other run. */
+  ownedNone?: true;
   /** "Additional notes" (H35, PR 4b): whether THIS run carried any, for `ReadFrom`'s "your
    *  notes" line — the field itself is never saved, so only the run record remembers it.
    *  Absent for a run persisted before this column's meaning existed, same as every other
@@ -184,7 +190,22 @@ export function validateSuggestions(args: {
   // part is unquoted) — kept here, by line, since `firstFailure` only reports pass/fail.
   const repairs = new Map<TuningLine, { rationale: string; rationaleShort: string; evidence: TuningCitation[] }>();
 
-  const sides = [["add", response.additions], ["cut", response.cuts]] as const;
+  // A quotation of the run's notes filed as `intent` (or the reverse) is the right words under the
+  // wrong label. With notes in the run the model did this on most lines (Soldiers, 2026-10-11: 9 of 12
+  // dropped as `citation`, each a faithful quote of the notes labelled `intent`), and the dropped
+  // lines were true. The label decides which chip the player sees, so it is corrected to the source
+  // the words are actually from, never accepted as written.
+  const relabel = (line: TuningLine): TuningLine => {
+    let changed = false;
+    const evidence = line.evidence.map((c) => {
+      const other = c.kind === "intent" ? "notes" : c.kind === "notes" ? "intent" : null;
+      if (other === null || citationHolds(c, line) || !citationHolds({ ...c, kind: other }, line)) return c;
+      changed = true;
+      return { ...c, kind: other } as TuningCitation;
+    });
+    return changed ? { ...line, evidence } : line;
+  };
+  const sides = [["add", response.additions.map(relabel)], ["cut", response.cuts.map(relabel)]] as const;
   for (const [side, lines] of sides) {
     lines.forEach((line, position) => {
       const reason = firstFailure(side, line);
@@ -212,7 +233,7 @@ export function validateSuggestions(args: {
   // failed suggestion. Still listed in `drops`, so a run whose every drop is one can say so (F10).
   return { kept, droppedCount: drops.filter((d) => d.rule !== "neverCut").length, drops };
 
-  function firstFailure(side: "add" | "cut", s: TuningLine): { rule: Drop["rule"]; name?: string } | null {
+  function firstFailure(side: "add" | "cut", s: TuningLine): { rule: Drop["rule"]; name?: string; cite?: Drop["cite"] } | null {
     const card = resolveName(s.card);
     if (!card) return { rule: "cardExists" };
     // Two lines naming the same card in one list cannot both be applied.
@@ -249,7 +270,7 @@ export function validateSuggestions(args: {
     }
 
     for (const c of s.evidence) {
-      if (!citationHolds(c, s)) return { rule: "citation" };
+      if (!citationHolds(c, s)) return { rule: "citation", cite: { kind: c.kind, value: c.value } };
     }
 
     const rationaleCheck = presentationFailures(s.rationale, quotable);
@@ -268,7 +289,7 @@ export function validateSuggestions(args: {
     const repairedEvidence = evidenceChecks.map((e) => ({ ...e.c, value: e.check.text }));
     const repaired: TuningLine = { ...s, rationale: rationaleCheck.text, rationaleShort: shortCheck.text, evidence: repairedEvidence };
     for (const c of repairedEvidence) {
-      if (!citationHolds(c, repaired)) return { rule: "citation" };
+      if (!citationHolds(c, repaired)) return { rule: "citation", cite: { kind: c.kind, value: c.value } };
     }
 
     repairs.set(s, {

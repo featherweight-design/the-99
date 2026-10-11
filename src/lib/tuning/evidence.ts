@@ -70,6 +70,16 @@ export type EvidencePack = {
    *  the validator against the model's own resolved cards. Null/empty/false until the player sets
    *  them, same shape as `TuningFacts["limits"]`. */
   limits: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean };
+  /**
+   * The cards the player owns that this deck could take, most played with this commander first
+   * (`loadOwnedCandidates`). Present only for a run whose "owned only" limit is set, and then the
+   * adds must come from it. Absent otherwise: with the limit off ownership reaches the model
+   * nowhere (`suggestionRules.ownershipNotRanking`).
+   */
+  ownedCandidates?: { oracleId: string; name: string; typeLine: string }[];
+  /** "Owned only" was set and nothing the player owns fits: the run falls back to cards to buy, and
+   *  `limits.ownedOnly` is false for it. The panel says so (`ValidationReport.ownedNone`). */
+  ownedNone?: boolean;
 };
 
 export function buildEvidencePack(input: {
@@ -91,6 +101,9 @@ export function buildEvidencePack(input: {
   /** "Kept for this deck" (H35, PR 4a). Optional: a neutral default (no filter) for every
    *  caller that does not carry limits — the eval harness, and older tests. */
   limits?: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean };
+  /** The owned shortlist for an owned-only run, or null/absent. See `EvidencePack.ownedCandidates`. */
+  ownedCandidates?: EvidencePack["ownedCandidates"];
+  ownedNone?: boolean;
 }): EvidencePack {
   const { profile, play, intent, owned } = input;
   const commanderIds = new Set(profile.commanderOracleIds);
@@ -165,6 +178,9 @@ export function buildEvidencePack(input: {
     strategy: input.overview ? strategyOf(input.overview, profile.cards) : null,
     universal: universalOf(input.universal ?? []),
     limits: input.limits ?? { capCents: null, sets: [], ownedOnly: false },
+    // Only when set: a pack without them is the object it was before they existed.
+    ...(input.ownedCandidates ? { ownedCandidates: input.ownedCandidates } : {}),
+    ...(input.ownedNone ? { ownedNone: true } : {}),
   };
 }
 

@@ -88,25 +88,25 @@ describe("validateSuggestions", () => {
   });
 
   it("drops a games citation whose denominator is not the games read", () => {
-    expect(run({ ...good, evidence: [{ kind: "games", value: "Mana: 9 of 12 games" }] }).drops).toEqual([{ side: "add", position: 0, rule: "citation" }]);
-    expect(run({ ...good, evidence: [{ kind: "games", value: "Mana: 6 of 5 games" }] }).drops).toEqual([{ side: "add", position: 0, rule: "citation" }]);
+    expect(run({ ...good, evidence: [{ kind: "games", value: "Mana: 9 of 12 games" }] }).drops).toMatchObject([{ side: "add", position: 0, rule: "citation" }]);
+    expect(run({ ...good, evidence: [{ kind: "games", value: "Mana: 6 of 5 games" }] }).drops).toMatchObject([{ side: "add", position: 0, rule: "citation" }]);
   });
 
   it("drops a games citation whose numerator is no figure the pack stated", () => {
     // Stated: 5 games, lost 5, 3 marked, mana hurt in 3. Nothing was ever 4.
-    expect(run({ ...good, evidence: [{ kind: "games", value: "Mana: 4 of 5 games" }] }).drops).toEqual([{ side: "add", position: 0, rule: "citation" }]);
+    expect(run({ ...good, evidence: [{ kind: "games", value: "Mana: 4 of 5 games" }] }).drops).toMatchObject([{ side: "add", position: 0, rule: "citation" }]);
     expect(run({ ...good, evidence: [{ kind: "games", value: "Lost 5 of 5 games" }] }).droppedCount).toBe(0);
   });
 
   it("drops a games figure the claim it names does not carry, though the pack states it elsewhere", () => {
     // 5 is the count and the losses; mana hurt in 3.
-    expect(run({ ...good, evidence: [{ kind: "games", value: "Mana hurt in 5 of 5 games" }] }).drops).toEqual([{ side: "add", position: 0, rule: "citation" }]);
-    expect(run({ ...good, evidence: [{ kind: "games", value: "5 of 5 games" }] }).drops).toEqual([{ side: "add", position: 0, rule: "citation" }]);
+    expect(run({ ...good, evidence: [{ kind: "games", value: "Mana hurt in 5 of 5 games" }] }).drops).toMatchObject([{ side: "add", position: 0, rule: "citation" }]);
+    expect(run({ ...good, evidence: [{ kind: "games", value: "5 of 5 games" }] }).drops).toMatchObject([{ side: "add", position: 0, rule: "citation" }]);
   });
 
   it("drops a games citation carrying two figures, which could be swapped", () => {
     // Mana hurt in 3 and losses were 5: every figure here is stated, against the wrong claim.
-    expect(run({ ...good, evidence: [{ kind: "games", value: "Mana hurt in 5 of 5 games; lost 3 of 5 games" }] }).drops).toEqual([{ side: "add", position: 0, rule: "citation" }]);
+    expect(run({ ...good, evidence: [{ kind: "games", value: "Mana hurt in 5 of 5 games; lost 3 of 5 games" }] }).drops).toMatchObject([{ side: "add", position: 0, rule: "citation" }]);
     expect(run({ ...good, evidence: [
       { kind: "games", value: "Mana hurt in 3 of 5 games" }, { kind: "games", value: "Lost 5 of 5 games" },
     ] }).droppedCount).toBe(0);
@@ -143,7 +143,7 @@ describe("validateSuggestions", () => {
     const out = validateSuggestions({
       response: { additions: [good], cuts: [] }, pack: { ...pack, play: buildPlayGroup([]) }, resolveName,
     });
-    expect(out.drops).toEqual([{ side: "add", position: 0, rule: "citation" }]);
+    expect(out.drops).toMatchObject([{ side: "add", position: 0, rule: "citation" }]);
   });
 
   it("drops a note citation that quotes nothing the player wrote, and an intent that was never stated", () => {
@@ -161,15 +161,30 @@ describe("validateSuggestions", () => {
   });
 
   // "Additional notes" (H35, PR 4b): the same whole-or-part rule as `intent`, against the run's
-  // own notes text rather than the deck's standing description — its own kind, so a citation of
-  // one is never mistaken for a citation of the other.
-  it("keeps a notes citation only when it cites this run's own notes, never the intent's", () => {
+  // own notes text rather than the deck's standing description — its own kind. A citation naming
+  // words that are in NEITHER is dropped. Words that are the player's, filed under the other kind, are
+  // kept under the kind they belong to (below), which PR 4b's first version dropped: Soldiers lost 9
+  // of 12 lines to that on 2026-10-11, every one a true quote of the run's notes labelled `intent`.
+  it("keeps a notes citation only when it cites words the player wrote, under the kind they belong to", () => {
     const withNotes = { ...pack, intent: "grind it out", notes: "swap out Sol Ring" };
-    const cite = (value: string) => validateSuggestions({
-      response: { additions: [{ ...good, evidence: [{ kind: "notes", value }] }], cuts: [] }, pack: withNotes, resolveName,
+    const cite = (value: string, kind: "notes" | "intent" = "notes") => validateSuggestions({
+      response: { additions: [{ ...good, evidence: [{ kind, value }] }], cuts: [] }, pack: withNotes, resolveName,
     });
     expect(cite('"swap out Sol Ring"').droppedCount).toBe(0);
-    expect(cite('"grind it out"').drops[0].rule).toBe("citation");
+    expect(cite("go wide").drops[0]).toMatchObject({ rule: "citation", cite: { kind: "notes", value: "go wide" } });
+    expect(cite("go wide", "intent").drops[0].rule).toBe("citation");
+  });
+
+  it("corrects a citation's kind to the source its words are from", () => {
+    const withBoth = { ...pack, intent: "grind it out", notes: "swap out Sol Ring" };
+    const kinds = (kind: "notes" | "intent", value: string) => validateSuggestions({
+      response: { additions: [{ ...good, evidence: [{ kind, value }] }], cuts: [] }, pack: withBoth, resolveName,
+    }).kept[0]?.evidence.map((c) => c.kind);
+    expect(kinds("intent", "swap out Sol Ring")).toEqual(["notes"]);
+    expect(kinds("notes", "grind it out")).toEqual(["intent"]);
+    // Already the right kind: untouched.
+    expect(kinds("notes", "swap out Sol Ring")).toEqual(["notes"]);
+    expect(kinds("intent", "grind it out")).toEqual(["intent"]);
   });
 
   it("drops a notes citation when this run carried no notes", () => {
