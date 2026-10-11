@@ -24,7 +24,7 @@ Source: the priorities board, "New features scoped with Hugh 2026-10-11", item 4
 **The description is the deck's `intent`.** `decks.intent` (`src/db/schema.ts:388`, capped at 240 code points by
 `decks_intent_length_check`, `schema.ts:461`) is drawn as the tagline in the deck header, second under the name
 (`DeckIntentLine`, `src/components/decks/deck-intent-line.tsx`, mounted by `spine-desktop.tsx:429` and
-`spine-mobile.tsx:260`). It is edited through the pencil on the deck name, name and description as one editor
+`spine-mobile.tsx:499`). It is edited through the pencil on the deck name, name and description as one editor
 (`use-deck-header-edit.ts`; H35, `design/design_handoff_the99_deck_description/STATES-deck-description.md` §2).
 It sits in the header, above the tabs, so it shows on every tab. A deck with no description draws no row.
 
