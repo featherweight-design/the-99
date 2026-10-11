@@ -363,45 +363,54 @@ function LedgerRow({
         siblings={siblings}
         imageUri={drawn?.imageUri}
         describedBy={said ? describedId : undefined}
+        // The ground and the hover live on the trigger; the row's shell and padding on the span inside
+        // it, because the trigger's inline `padding: 0` would beat a padding class (the walk found the
+        // dot flush with the row's edge).
         className={
-          `${ROW_SHELL} ${ROW_PADDING} w-full min-h-[52px] md:min-h-[34px] text-left bg-[color:var(--surface-rail)] hover:bg-[color:var(--elevated-hover)] `
+          "block w-full rounded-[7px] text-left bg-[color:var(--surface-rail)] hover:bg-[color:var(--elevated-hover)] "
           + "[--row-bg:var(--surface-rail)] hover:[--row-bg:var(--elevated-hover)]"
         }
       >
-        {availability ? <OwnershipDot owned={availability.owned} className="h-[7px] w-[7px] md:h-[8px] md:w-[8px]" /> : null}
-        <span className="flex min-w-0 flex-auto flex-col justify-center gap-[3px] overflow-hidden md:flex-row md:items-baseline md:justify-start md:gap-[9px]">
-          <span className="truncate text-[14px] text-[color:var(--fg)] md:flex-[0_1_auto] md:text-[13.5px]">{name}</span>
-          <span className="flex min-w-0 items-center gap-[8px] md:contents">
-            {row.card.manaCost ? (
-              <span className="flex flex-none md:hidden">
-                <CostPips cost={row.card.manaCost} size={13} />
-              </span>
-            ) : null}
-            {why ? <span data-why className="min-w-0 truncate font-mono text-[10.5px] text-[color:var(--fg-muted)]">{why}</span> : null}
+        <span data-row-shell className={`${ROW_SHELL} ${ROW_PADDING} w-full min-h-[52px] md:min-h-[34px]`}>
+          {/* A card the deck page has no copy of (the commander) keeps the dot's slot, so its name lines
+              up with the rows under it. */}
+          {availability
+            ? <OwnershipDot owned={availability.owned} className="h-[7px] w-[7px] md:h-[8px] md:w-[8px]" />
+            : <span aria-hidden="true" data-dot-slot className="h-[7px] w-[7px] flex-none md:h-[8px] md:w-[8px]" />}
+          <span className="flex min-w-0 flex-auto flex-col justify-center gap-[3px] overflow-hidden md:flex-row md:items-baseline md:justify-start md:gap-[9px]">
+            <span className="truncate text-[14px] text-[color:var(--fg)] md:flex-[0_1_auto] md:text-[13.5px]">{name}</span>
+            <span className="flex min-w-0 items-center gap-[8px] md:contents">
+              {row.card.manaCost ? (
+                <span className="flex flex-none md:hidden">
+                  <CostPips cost={row.card.manaCost} size={13} />
+                </span>
+              ) : null}
+              {why ? <span data-why className="min-w-0 truncate font-mono text-[10.5px] text-[color:var(--fg-muted)]">{why}</span> : null}
+            </span>
           </span>
-        </span>
-        <span className="hidden flex-none md:flex">
-          <CostTrack cost={row.card.manaCost} />
-        </span>
-        {availability?.availability ? (
-          <AvailabilityMarker
-            bareOne
-            availability={availability.availability}
-            seam="var(--row-bg)"
-            selfExcluded
-            nameless
-            className="shrink-0 font-mono text-[11px] md:text-[11.5px]"
-          />
-        ) : null}
-        {points !== null ? (
-          <span
-            data-points
-            className={"w-[40px] flex-none text-right font-mono text-[12px] " + (row.points! > 0 ? "font-semibold text-[color:var(--fg)]" : "font-normal text-[color:var(--fg-faint)]")}
-          >
-            {points}
+          <span className="hidden flex-none md:flex">
+            <CostTrack cost={row.card.manaCost} />
           </span>
-        ) : null}
-        {said ? <span id={describedId} className="sr-only">{said}</span> : null}
+          {availability?.availability ? (
+            <AvailabilityMarker
+              bareOne
+              availability={availability.availability}
+              seam="var(--row-bg)"
+              selfExcluded
+              nameless
+              className="shrink-0 font-mono text-[11px] md:text-[11.5px]"
+            />
+          ) : null}
+          {points !== null ? (
+            <span
+              data-points
+              className={"w-[40px] flex-none text-right font-mono text-[12px] " + (row.points! > 0 ? "font-semibold text-[color:var(--fg)]" : "font-normal text-[color:var(--fg-faint)]")}
+            >
+              {points}
+            </span>
+          ) : null}
+          {said ? <span id={describedId} className="sr-only">{said}</span> : null}
+        </span>
       </CardDetailTrigger>
     </li>
   );

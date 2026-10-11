@@ -225,7 +225,13 @@ describe("BenchmarkLedger, rows and focus", () => {
     mount("velocity", { benchmarks: velocity, availability });
     const rows = Array.from(dialog().querySelectorAll("[data-card-row]"));
     const withDot = rows.filter((r) => r.querySelector("[aria-hidden].rounded-full, span[aria-hidden='true'][class*='rounded-full']"));
-    expect(withDot.map((r) => r.querySelector("span.truncate")!.textContent)).toEqual(["Rampant Growth"]);
+    expect(withDot.map((r) => r.querySelector("span.truncate")!.textContent)).toEqual(["Rampant Growth"]);    // Every other row keeps the dot's slot, so names line up; and the row's padding sits inside the
+    // trigger, whose inline `padding: 0` would otherwise beat it (the walk's two row defects).
+    for (const r of rows) {
+      expect(r.querySelector("[data-dot-slot]") !== null).toBe(!withDot.includes(r));
+      expect(r.querySelector("button")!.className).not.toMatch(/\bpl-/);
+      expect(r.querySelector("[data-row-shell]")!.className).toMatch(/\bpl-\[8px\]/);
+    }
   });
 
   it("returns focus to the opener on close", async () => {
