@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Tailwind reads every file under the project for class candidates. scripts/ draws no UI, but its
+   tests hold class STRINGS as fixtures (border-collision.test.mts quotes `[&[data-x="a"]]:border-r`
+   and its escaped form), and a candidate like that compiles to a rule lightningcss cannot parse, which
+   500s every page under `next dev`. */
+@source not "../../scripts";
+
 /* The desktop rail depends on the input (desktop nav labels handoff, R2): a touch
    screen gets the 88px labelled rail, and a short touch screen (a phone held
    sideways, V1) the compact one. Named once so the rail's classes read as rules
