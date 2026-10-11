@@ -54,21 +54,50 @@ const dialogStack: HTMLElement[] = [];
  * Walking up rather than checking the event's own target alone: the target is usually some
  * inner span or row, not the scrollable element itself.
  *
- * BOTH AXES. It first looked at the vertical axis alone, so a sideways row (printing tiles) inside
- * a dialog whose own content fits was "not scrollable", and its touchmove and wheel were cancelled:
- * the Bought modal's printing row would not scroll. Measured: the same row scrolled once the viewport
- * was short enough for the dialog to overflow vertically, because the walk then found the dialog.
-  */
-function hasScrollableAncestor(target: EventTarget | null): boolean {
+ * BOTH AXES, matched to the gesture's direction. It first looked at the vertical axis alone, so a
+ * sideways row (printing tiles) inside a dialog whose own content fits was "not scrollable", and its
+ * touchmove and wheel were cancelled: the Bought modal's printing row would not scroll. Measured: the
+ * same row scrolled once the viewport was short enough for the dialog to overflow vertically, because
+ * the walk then found the dialog. Direction matters the other way too: a vertical drag over a
+ * sideways-only row has nothing to scroll and must still be held, or the page behind the dialog moves.
+ */
+type Axis = "x" | "y" | "either";
+
+function hasScrollableAncestor(target: EventTarget | null, axis: Axis): boolean {
   let node = target as HTMLElement | null;
   while (node && node !== document.body) {
     const style = getComputedStyle(node);
     const canScrollY = /(auto|scroll)/.test(style.overflowY) && node.scrollHeight > node.clientHeight;
     const canScrollX = /(auto|scroll)/.test(style.overflowX) && node.scrollWidth > node.clientWidth;
-    if (canScrollY || canScrollX) return true;
+    if (axis === "y" ? canScrollY : axis === "x" ? canScrollX : canScrollY || canScrollX) return true;
     node = node.parentElement;
   }
   return false;
+}
+
+/** Where the current touch began, to read its direction from the first moves. */
+let touchStart: { x: number; y: number } | null = null;
+function rememberTouchStart(e: Event) {
+  const t = (e as TouchEvent).touches?.[0];
+  touchStart = t ? { x: t.clientX, y: t.clientY } : null;
+}
+
+/** The axis a wheel or touch moves along. Unknown (no delta yet, or no start) is `either`. */
+function gestureAxis(e: Event): Axis {
+  let dx = 0;
+  let dy = 0;
+  if (e instanceof WheelEvent) {
+    dx = e.deltaX;
+    dy = e.deltaY;
+  } else {
+    const t = (e as TouchEvent).touches?.[0];
+    if (t && touchStart) {
+      dx = t.clientX - touchStart.x;
+      dy = t.clientY - touchStart.y;
+    }
+  }
+  if (dx === 0 && dy === 0) return "either";
+  return Math.abs(dx) > Math.abs(dy) ? "x" : "y";
 }
 
 /**
@@ -85,7 +114,7 @@ function isZoomGesture(e: Event): boolean {
 
 function blockUnlessScrollable(e: Event) {
   if (isZoomGesture(e)) return;
-  if (!hasScrollableAncestor(e.target)) e.preventDefault();
+  if (!hasScrollableAncestor(e.target, gestureAxis(e))) e.preventDefault();
 }
 
 /**
@@ -140,6 +169,7 @@ export function useScrollLock(locked: boolean) {
       overflowBeforeLock = document.body.style.overflow;
       document.body.style.overflow = "hidden";
       window.addEventListener("wheel", blockUnlessScrollable, { passive: false });
+      window.addEventListener("touchstart", rememberTouchStart, { passive: true });
       window.addEventListener("touchmove", blockUnlessScrollable, { passive: false });
     }
     scrollLocks += 1;
@@ -148,6 +178,7 @@ export function useScrollLock(locked: boolean) {
       if (scrollLocks === 0) {
         document.body.style.overflow = overflowBeforeLock;
         window.removeEventListener("wheel", blockUnlessScrollable);
+        window.removeEventListener("touchstart", rememberTouchStart);
         window.removeEventListener("touchmove", blockUnlessScrollable);
       }
     };
