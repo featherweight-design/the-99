@@ -67,8 +67,11 @@ describe("ImproveDoor: the step", () => {
     // A color with sources and no pips is listed last and says so.
     expect(rows.at(-1)!.textContent).toContain(copy.step.noPips(2));
     expect(read).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: copy.door.button })).toBeNull();
+    expect(screen.getByRole("button", { name: copy.needs.toggle })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: copy.step.close }));
     expect(screen.queryByRole("radiogroup")).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: copy.door.button })));
   });
 
   it("skips the step for a one-color deck and reads that color's help at once", async () => {
@@ -103,7 +106,7 @@ describe("ImproveDoor: the result", () => {
     fireEvent.click(within(owned).getByRole("button", { name: "Cinder Glade" }));
     expect(openCard).toHaveBeenCalledWith("s2", ["s1", "s2"], undefined, expect.anything());
     fireEvent.click(screen.getByRole("button", { name: copy.help.howLabel }));
-    expect(screen.getByRole("note").textContent).toContain(copy.help.how("red"));
+    expect(screen.getByRole("tooltip").textContent).toBe(copy.help.how("red"));
     expect(copy.help.how("red")).not.toContain("tightest");
   });
 

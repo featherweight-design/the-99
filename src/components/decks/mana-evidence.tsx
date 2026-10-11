@@ -25,7 +25,7 @@ export function ColorDisc({ c, size }: { c: BalanceColor | "C"; size: number }) 
     <span
       aria-hidden="true"
       className="inline-flex flex-none items-center justify-center rounded-full font-mono font-semibold"
-      style={{ width: size, height: size, fontSize: size >= 18 ? 10 : 8, background: PIP_STYLE[c].bg, color: PIP_STYLE[c].ink }}
+      style={{ width: size, height: size, fontSize: size >= 18 ? 10 : size <= 12 ? 7.5 : 8, background: PIP_STYLE[c].bg, color: PIP_STYLE[c].ink }}
     >
       {c}
     </span>
