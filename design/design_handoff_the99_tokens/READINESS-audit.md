@@ -3,12 +3,12 @@
 Audited against `docs/superpowers/design-briefs/2026-10-11-tokens-for-my-deck.md` (Hugh's four rulings, engineering's
 ten locks, eight open questions, Fixtures) and the code on `origin/main` at `673b657fc`.
 
-## Verdict: YELLOW
+## Verdict: GREEN
 
 The drop covers everything the brief asked Design for, and Hugh approved R2 (LGTM, 2026-10-11). Nothing needs another
-Design round. Before the plan locks, Hugh confirms two product calls (Copy, and whether a token's buy tag can be
-pressed), and engineering has to verify the Mana Pool line format before the link-out PR, because the About entry
-and the sends line both promise it.
+Design round. Hugh closed the two product calls the audit raised on 2026-10-11 (findings 1 and 2). What remains is
+engineering's: verify the Mana Pool line format before the link-out PR (finding 3), because the About entry and the
+sends line both promise it.
 
 ## Which files are current
 
@@ -60,13 +60,12 @@ and the sends line both promise it.
 
 ## Findings
 
-1. **needs-Hugh · Copy is a row (lock 9 overridden).** R2 draws `Copy` as an ordinary token that can be owned, marked,
-   joined and bought (Omnath 14, Thorin 8, Wizards 1). This was one of Hugh's nine R1 notes, so confirming it is a
-   formality, but lock 9 was engineering's and both READINESS and README ask for it.
-2. **needs-Hugh · A token's buy tag (G3).** R2 draws the token Shopping row's tag as not pressable, because R1 had
-   no record a token's "I got it" could write. R2 then added that record (`I have one`, `source: manual`). Engineering
-   recommends the tag press writes the same manual mark, which also takes the token off Shopping. It needs no new
-   drawing (it's the shipped tag pressed), but it changes what the drawn tag does.
+1. **Ruled (Hugh, 2026-10-11) · Copy is a row; lock 9 is overridden.** `Copy` is an ordinary token row that can be
+   owned, marked, joined and bought (Omnath 14, Thorin 8, Wizards 1), exactly as R2 draws it. Lock 9 is overridden.
+2. **Ruled (Hugh, 2026-10-11) · A token's buy tag is pressable (G3 closed).** Pressing the buy tag on a token's
+   Shopping row marks the token owned, the same record `I have one` writes (`source: manual`), and takes it off that
+   deck's Shopping list in the same save. No confirm sheet. This overrides R2's inert tag (design table: `BuyTag row`,
+   **no `press`**). It needs no new drawing, because it's the shipped tag pressed.
 3. **eng-resolvable · Mana Pool format (G6), verify first.** The R2 sends line and About key line 4 both say a token
    is sent with its set and number. That assumes `add-deck` accepts `N Name [SET] number` lines mixed with name-only
    lines in one URL, and that the longer URL still fits. Verify before the link-out PR. If it fails, the sends copy
