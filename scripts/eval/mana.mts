@@ -61,7 +61,14 @@ const evidenceLines = (b: NonNullable<typeof balance>) => {
     const hardest = c.patterns.slice(0, 3).map((p) => `${p.pattern} x${p.copies} (Karsten ${karstenText(p.karsten)})`).join(", ");
     out.push(`  ${c.color}: pips ${c.pips.withCommander} (${c.pips.withoutCommander} without the commander), sources ${c.sources.total} (${c.sources.lands} lands + ${c.sources.nonland}); hardest ${hardest || "none"}`);
   }
+  // The Improve my mana step's order, and each color's Needed (the tightest pattern 2+ cards share, commander out).
+  for (const e of b.colorOrder) {
+    const n = e.needed;
+    out.push(`  order ${e.color}: ${n ? `${n.pattern} needs ${n.requires}, ratio ${n.ratio.toFixed(2)} (${n.basis}, ${n.copies}: ${n.cards.map((c) => c.name).join("; ")})` : e.kind}`);
+  }
   const l = b.lands;
+  const named = (xs: { name: string; copies: number }[]) => xs.map((x) => (x.copies > 1 ? `${x.name} x${x.copies}` : x.name)).join(", ") || "none";
+  out.push(`  tapped lands: ${named(l.tapped.names.always)} | unless: ${named(l.tapped.names.unless)} | fetch: ${named(l.tapped.names.fetch)}`);
   out.push(`  lands ${l.count}, tapped ${l.tapped.always} always (${((100 * l.tapped.always) / Math.max(1, l.count)).toFixed(1)}%) + ${l.tapped.unless} unless a condition + ${l.tapped.fetch} fetch a tapped land; average MV ${l.averageManaValue.toFixed(2)}, cheap ramp ${l.cheapRamp}, Karsten lands ${l.karstenLands.toFixed(1)}`);
   return out;
 };

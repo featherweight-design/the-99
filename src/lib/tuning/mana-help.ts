@@ -11,6 +11,7 @@
 // is a guard here and never a judgment of the deck.
 
 import { isLandFace } from "../cards/facet";
+import { NO_TAPPED_LANDS } from "../mana/lands-tapped";
 import type { ManaSupplyCardRow } from "../mana/supply";
 import { BALANCE_COLORS, readManaBalance, type BalanceColor, type ManaBalance } from "./mana-balance";
 import { rankStaples, type StapleCandidate } from "./mana-staples";
@@ -54,7 +55,6 @@ export type ManaHelp = {
   staples: StapleCandidate[];
 };
 
-const NO_TAPPED = { always: 0, unless: 0, fetch: 0, lands: 0 };
 const BASIC_COLOR: Record<string, BalanceColor> = { Plains: "W", Island: "U", Swamp: "B", Mountain: "R", Forest: "G" };
 
 /** A land row that is a basic of exactly one color, and so can be swapped for another basic. */
@@ -82,7 +82,7 @@ export function helpAddColor(
   color: BalanceColor,
   identity: readonly string[],
 ): ManaHelp {
-  const read = (r: readonly ManaSupplyCardRow[]) => readManaBalance({ rows: r, nameOf, tapped: NO_TAPPED });
+  const read = (r: readonly ManaSupplyCardRow[]) => readManaBalance({ rows: r, nameOf, tapped: NO_TAPPED_LANDS, identity });
   const before = read(rows);
   const need = Object.fromEntries(BALANCE_COLORS.map((c) => [c, requirement(before, c)])) as Record<BalanceColor, number>;
 
