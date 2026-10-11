@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037; --display:'Cinzel',serif;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F; --avail-hard-fg:#D9975C;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46; --c:#9C968A;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843; --display:'Chakra Petch',sans-serif;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --success:#6FA368; --warning:#E0913C; --danger:#C6533F; --avail-hard-fg:#DF8AA7;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46; --c:#9C968A;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'IBM Plex Sans', sans-serif; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" data-screen-label="{{ label }}" style="{{ s.root }}">
+
+  <div style="{{ s.header }}">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ backLabel }}</span>
+    <h1 style="{{ s.h1 }}">{{ title }}</h1>
+    <p style="{{ s.sub }}">{{ sub }}</p>
+  </div>
+
+  <sc-if value="{{ isForm }}" hint-placeholder-val="{{ true }}">
+    <div style="{{ s.panel }}">
+
+      <div style="display:flex;flex-direction:column;gap:9px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Colors</span>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div style="display:flex;gap:8px;">
+            <sc-for list="{{ formPips }}" as="p" hint-placeholder-count="5"><span style="{{ p }}"></span></sc-for>
+          </div>
+          <div style="display:flex;gap:2px;padding:2px;border-radius:8px;border:1px solid var(--border-strong);">
+            <span style="{{ s.segOn }}">Any</span><span style="{{ s.segOff }}">Exactly</span>
+          </div>
+        </div>
+        <span style="font-size:12px;color:var(--fg-faint);">No preference: every identity, five-color included.</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:9px;">
+        <div style="display:flex;align-items:center;gap:10px;min-height:28px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Theme</span>
+          <div style="margin-left:auto;display:flex;gap:2px;padding:2px;border-radius:8px;border:1px solid var(--border);opacity:0.5;">
+            <span style="{{ s.segOn }}">All</span><span style="{{ s.segOff }}">Any</span>
+          </div>
+        </div>
+        <div style="{{ s.field }}"><span style="color:var(--fg-faint);">Add a theme…</span></div>
+        <span style="font-size:12px;line-height:1.5;color:var(--fg-faint);">EDHREC’s theme tags. Pick more than one if you like.</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:9px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Sets</span>
+        <span style="{{ s.setTrigger }}">Set 0<span style="font-size:10px;color:var(--fg-faint);">▾</span></span>
+        <span style="font-size:12px;line-height:1.5;color:var(--fg-faint);">Only commanders printed in one of these. Leave it empty for every set.</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:9px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Cards for the 99</span>
+        <div style="display:flex;gap:6px;">
+          <span style="{{ s.radioOn }}">Any cards</span><span style="{{ s.radioOff }}">Only cards I own</span>
+        </div>
+        <span style="font-size:12px;line-height:1.5;color:var(--fg-faint);">Owned or not. The budget caps what you’d buy.</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:9px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Budget</span>
+        <div style="{{ s.field }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">$</span><span style="font-family:'IBM Plex Mono',monospace;color:var(--fg-faint);">No cap</span></div>
+        <span style="font-size:12px;line-height:1.5;color:var(--fg-faint);">The most you would spend on cards you don’t own. It caps the fill and never ranks.</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:9px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Bracket</span>
+        <div style="display:flex;gap:6px;">
+          <sc-for list="{{ brackets }}" as="b" hint-placeholder-count="6"><span style="{{ b.style }}">{{ b.label }}</span></sc-for>
+        </div>
+        <span style="font-size:12px;color:var(--fg-faint);">No preference: every bracket.</span>
+      </div>
+
+      <div style="height:1px;background:var(--border);"></div>
+
+      <div style="display:flex;flex-direction:column;gap:9px;">
+        <div style="display:flex;align-items:baseline;gap:10px;">
+          <label style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Anything else?</label>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.06em;color:var(--fg-locked);">optional</span>
+        </div>
+        <div style="{{ s.box }}">
+          <sc-if value="{{ box.filled }}" hint-placeholder-val="{{ false }}"><span style="color:var(--fg);">{{ box.text }}</span></sc-if>
+          <sc-if value="{{ box.empty }}" hint-placeholder-val="{{ true }}"><span style="color:var(--fg-faint);">e.g. something scary and a little nasty, or a Landfall deck unlike the ones I’ve built</span></sc-if>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:12px;">
+          <span style="{{ s.boxCaption }}">{{ box.caption }}</span>
+          <sc-if value="{{ box.filled }}" hint-placeholder-val="{{ false }}"><span style="margin-left:auto;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ box.count }}</span></sc-if>
+        </div>
+      </div>
+
+      <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;gap:18px;padding-top:20px;border-top:1px solid var(--border);">
+          <span role="button" aria-label="{{ press.aria }}" style="{{ s.press }}">
+            <sc-if value="{{ press.pill }}" hint-placeholder-val="{{ false }}"><span style="{{ s.pressPill }}">{{ press.pill }}</span></sc-if>
+            <span>Find commanders</span>
+          </span>
+          <sc-if value="{{ press.line }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);max-width:380px;text-wrap:pretty;">{{ press.line }}</span></sc-if>
+        </div>
+      </sc-if>
+    </div>
+
+    <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+      <div style="position:sticky;bottom:0;display:flex;flex-direction:column;gap:8px;padding:10px 16px 14px;border-top:1px solid var(--border);background:var(--bg);">
+        <span role="button" aria-label="{{ press.aria }}" style="{{ s.press }}">
+          <sc-if value="{{ press.pill }}" hint-placeholder-val="{{ false }}"><span style="{{ s.pressPill }}">{{ press.pill }}</span></sc-if>
+          <span>Find commanders</span>
+        </span>
+        <sc-if value="{{ press.line }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.5;color:var(--fg-faint);text-align:center;text-wrap:pretty;">{{ press.line }}</span></sc-if>
+      </div>
+    </sc-if>
+  </sc-if>
+
+  <sc-if value="{{ isResults }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ s.results }}">
+
+      <div style="{{ s.bar }}">
+        <div style="{{ s.barTop }}">
+          <div style="display:flex;flex-direction:column;gap:10px;flex:1;min-width:0;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Your answers</span>
+            <sc-if value="{{ noChips }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:var(--fg-muted);">No answers given: every commander you haven’t built</span></sc-if>
+            <sc-if value="{{ hasChips }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                <sc-for list="{{ chips }}" as="c" hint-placeholder-count="1">
+                  <span style="{{ s.chip }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">{{ c.kind }}</span><span style="font-size:12.5px;color:var(--fg-body);">{{ c.value }}</span></span>
+                </sc-for>
+              </div>
+            </sc-if>
+            <div style="display:flex;flex-direction:column;gap:4px;padding-top:10px;border-top:1px solid var(--border);">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">You wrote</span>
+              <span style="font-size:14px;line-height:1.5;color:var(--fg);text-wrap:pretty;">“{{ wrote }}”</span>
+            </div>
+          </div>
+          <div style="{{ s.againBtns }}">
+            <span role="button" style="{{ s.againPrimary }}">Change answers</span>
+            <span role="button" style="{{ s.againGhost }}">Start over</span>
+          </div>
+        </div>
+
+        <div style="{{ s.panelRead }}">
+          <div style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <span style="{{ s.readTitle }}">{{ rp.title }}</span>
+              <sc-if value="{{ rp.tag }}" hint-placeholder-val="{{ false }}"><span style="{{ rp.tagStyle }}">{{ rp.tag }}</span></sc-if>
+            </div>
+            <span style="{{ s.lead }}">{{ rp.lead }}</span>
+            <sc-if value="{{ rp.steps }}" hint-placeholder-val="{{ false }}">
+              <ol style="margin:4px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px;">
+                <sc-for list="{{ rp.steps }}" as="st" hint-placeholder-count="2">
+                  <li style="display:flex;align-items:center;gap:9px;font-size:12.5px;">
+                    <span style="{{ st.dot }}"></span>
+                    <span style="{{ st.text }}">{{ st.t }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.08em;color:var(--fg-locked);">{{ st.when }}</span>
+                  </li>
+                </sc-for>
+              </ol>
+            </sc-if>
+            <sc-if value="{{ rp.widen }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size:12.5px;line-height:1.5;color:var(--fg-muted);"><span style="color:var(--accent);border-bottom:1px solid color-mix(in oklab, var(--accent) 50%, transparent);">Change answers</span> to let it look wider, for instance with more colors.</span>
+            </sc-if>
+          </div>
+          <div style="{{ s.readAct }}">
+            <sc-if value="{{ rp.button }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span role="button" aria-label="{{ rp.aria }}" style="{{ rp.btnStyle }}"><span style="{{ rp.pillStyle }}">{{ rp.pill }}</span><span>{{ rp.label }}</span></span>
+                <sc-if value="{{ rp.stop }}" hint-placeholder-val="{{ false }}"><span role="button" style="{{ s.stop }}">Stop</span></sc-if>
+              </div>
+            </sc-if>
+            <span style="{{ s.readLine }}">{{ rp.line }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <h2 style="{{ s.h2 }}">{{ head }}</h2>
+        <p style="{{ s.resSub }}">{{ headSub }}</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">Best fits</span>
+        <div style="{{ s.bestGrid }}">
+          <sc-for list="{{ best }}" as="r" hint-placeholder-count="3">
+            <div role="button" style="{{ s.bestCard }}">
+              <div style="{{ r.art }}"><sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}"><span style="{{ s.rank }}">{{ r.rank }}</span></sc-if></div>
+              <div style="{{ s.bestBody }}">
+                <span style="display:flex;align-items:center;gap:8px;min-width:0;">
+                  <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}"><span style="{{ s.rankInline }}">{{ r.rank }}</span></sc-if>
+                  <span style="{{ s.bestName }}">{{ r.name }}</span>
+                  <span style="display:flex;gap:4px;flex:none;"><sc-for list="{{ r.pips }}" as="p" hint-placeholder-count="2"><span style="{{ p }}"></span></sc-for></span>
+                </span>
+                <sc-if value="{{ r.hasReason }}" hint-placeholder-val="{{ false }}">
+                  <span style="{{ s.reason }}"><sc-for list="{{ r.reason }}" as="q" hint-placeholder-count="1"><span style="{{ q.st }}">{{ q.t }}</span></sc-for></span>
+                </sc-if>
+                <span style="display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;color:var(--fg);">{{ r.owned }}</span>
+                  <span style="font-size:12px;color:var(--fg-body);">{{ r.figText }}</span>
+                </span>
+                <span style="height:1px;background:var(--border);"></span>
+                <span style="{{ s.ownLine }}">
+                  <sc-if value="{{ r.free }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;flex:none;"><span style="width:6px;height:6px;border-radius:50%;background:var(--success);"></span><span style="color:var(--fg-body);">owned · free</span></span></sc-if>
+                  <sc-if value="{{ r.held }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;flex:none;"><span style="width:6px;height:6px;transform:rotate(45deg);background:var(--accent);"></span><span style="color:var(--avail-hard-fg);">none free — in {{ r.heldIn }}</span></span></sc-if>
+                  <sc-if value="{{ r.priced }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-size:9.5px;white-space:nowrap;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="color:var(--fg-body);">{{ r.price }}</span></span></sc-if>
+                  <span style="color:var(--border-strong);">·</span><span>{{ r.own }}</span>
+                </span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-top:6px;">More commanders</span>
+      <div style="{{ s.rowList }}">
+        <sc-for list="{{ rows }}" as="r" hint-placeholder-count="4">
+          <div role="button" style="{{ s.row }}">
+            <span style="{{ r.thumb }}"></span>
+            <span style="{{ s.rowMain }}">
+              <span style="display:flex;align-items:center;gap:8px;min-width:0;">
+                <span style="{{ s.rowName }}">{{ r.name }}</span>
+                <span style="display:flex;gap:4px;flex:none;"><sc-for list="{{ r.pips }}" as="p" hint-placeholder-count="2"><span style="{{ p }}"></span></sc-for></span>
+              </span>
+              <sc-if value="{{ r.hasReason }}" hint-placeholder-val="{{ false }}">
+                <span style="{{ s.reason }}"><sc-for list="{{ r.reason }}" as="q" hint-placeholder-count="1"><span style="{{ q.st }}">{{ q.t }}</span></sc-for></span>
+              </sc-if>
+              <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.45;"><span style="font-weight:600;color:var(--fg);">{{ r.owned }}</span> <span style="color:var(--fg-body);">{{ r.figText }}</span></span>
+              </sc-if>
+              <span style="{{ s.ownLine }}">
+                <sc-if value="{{ r.free }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;flex:none;"><span style="width:6px;height:6px;border-radius:50%;background:var(--success);"></span><span style="color:var(--fg-body);">owned · free</span></span></sc-if>
+                <sc-if value="{{ r.held }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;flex:none;"><span style="width:6px;height:6px;transform:rotate(45deg);background:var(--accent);"></span><span style="color:var(--avail-hard-fg);">none free — in {{ r.heldIn }}</span></span></sc-if>
+                <sc-if value="{{ r.priced }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-size:9.5px;white-space:nowrap;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="color:var(--fg-body);">{{ r.price }}</span></span></sc-if>
+                <span style="color:var(--border-strong);">·</span><span>{{ r.own }}</span>
+              </span>
+            </span>
+            <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+              <span style="flex:none;width:250px;display:flex;align-items:baseline;gap:8px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;min-width:34px;text-align:right;color:var(--fg);">{{ r.owned }}</span>
+                <span style="font-size:12.5px;color:var(--fg-body);">{{ r.figText }}</span>
+              </span>
+            </sc-if>
+            <span aria-hidden="true" style="font-size:18px;color:var(--fg-faint);">›</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{ hasTail }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:12px;margin-top:8px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);white-space:nowrap;">The rest of your results</span>
+          <span style="flex:1;height:1px;background:var(--border);"></span>
+          <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">ordered by cards you already have</span></sc-if>
+        </div>
+        <div style="{{ s.rowList }}">
+          <sc-for list="{{ tail }}" as="r" hint-placeholder-count="2">
+            <div role="button" style="{{ s.row }}">
+              <span style="{{ r.thumb }}"></span>
+              <span style="{{ s.rowMain }}">
+                <span style="display:flex;align-items:center;gap:8px;min-width:0;">
+                  <span style="{{ s.rowName }}">{{ r.name }}</span>
+                  <span style="display:flex;gap:4px;flex:none;"><sc-for list="{{ r.pips }}" as="p" hint-placeholder-count="2"><span style="{{ p }}"></span></sc-for></span>
+                </span>
+                <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.45;"><span style="font-weight:600;color:var(--fg);">{{ r.owned }}</span> <span style="color:var(--fg-body);">{{ r.figText }}</span></span>
+                </sc-if>
+                <span style="{{ s.ownLine }}">
+                  <sc-if value="{{ r.priced }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-size:9.5px;white-space:nowrap;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="color:var(--fg-body);">{{ r.price }}</span></span></sc-if>
+                  <span style="color:var(--border-strong);">·</span><span>{{ r.own }}</span>
+                </span>
+              </span>
+              <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+                <span style="flex:none;width:250px;display:flex;align-items:baseline;gap:8px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;min-width:34px;text-align:right;color:var(--fg);">{{ r.owned }}</span>
+                  <span style="font-size:12.5px;color:var(--fg-body);">{{ r.figText }}</span>
+                </span>
+              </sc-if>
+              <span aria-hidden="true" style="font-size:18px;color:var(--fg-faint);">›</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        <span role="button" style="{{ s.more }}">Show 12 more</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">The next 12 count what you own as they load.</span>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:900,&quot;height&quot;:1400},&quot;scene&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;formEmpty&quot;,&quot;formFilled&quot;,&quot;formSpent&quot;,&quot;reading&quot;,&quot;stopped&quot;,&quot;failed&quot;,&quot;unread&quot;,&quot;askA&quot;,&quot;askB&quot;,&quot;black&quot;,&quot;nothing&quot;,&quot;nodecks&quot;],&quot;default&quot;:&quot;askA&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const P = !!this.props.phone;
+    const scene = this.props.scene ?? "askA";
+    const theme = this.props.theme ?? "amonkhet";
+    const mono = "'IBM Plex Mono',monospace";
+    const art = (n) => `url("https://api.scryfall.com/cards/named?exact=${encodeURIComponent(n)}&format=image&version=art_crop")`;
+
+    // [name, identity, owned, total, mark, own of 99, buy $]
+    const C = {
+      lathril: ["Lathril, Blade of the Elves", "BG", 141, 330, "$0.40", 71, 58],
+      kaalia: ["Kaalia of the Vast", "WBR", 128, 322, "$2.90", 66, 104],
+      urdragon: ["The Ur-Dragon", "WUBRG", 124, 341, "$11.80", 63, 211],
+      atraxa: ["Atraxa, Praetors' Voice", "WUBG", 119, 318, "$4.60", 61, 176],
+      yshtola: ["Y'shtola, Night's Blessed", "WUB", 112, 304, "$1.90", 58, 133],
+      azula: ["Fire Lord Azula", "UBR", 108, 297, "$0.80", 56, 97],
+      valH: ["Valgavoth, Harrower of Souls", "BR", 61, 312, "$3.20", 44, 96],
+      umbris: ["Umbris, Fear Manifest", "UB", 48, 290, "$1.10", 39, 88],
+      valT: ["Valgavoth, Terror Eater", "B", 70, 305, "$14.50", 47, 121],
+      tergrid: ["Tergrid, God of Fright", "B", 82, 318, "free", 52, 74],
+      nekusar: ["Nekusar, the Mindrazer", "UBR", 77, 301, "$2.40", 50, 69],
+      massacre: ["Massacre Girl", "B", 66, 296, "held:HD - Zombies", 49, 63],
+      yawg: ["Yawgmoth, Thran Physician", "B", 88, 320, "$9.80", 55, 142],
+      sauron: ["Sauron, the Dark Lord", "UBR", 59, 308, "$0.90", 41, 83],
+      kefka: ["Kefka, Court Mage", "UBR", 54, 287, "$0.60", 38, 77],
+      winter: ["Winter, Misanthropic Guide", "BRG", 51, 279, "$0.50", 40, 71],
+      sheoldred: ["Sheoldred, the Apocalypse", "B", 79, 315, "$71.20", 51, 118],
+      krrik: ["K'rrik, Son of Yawgmoth", "B", 73, 309, "$1.30", 48, 90],
+      gix: ["Gix, Yawgmoth Praetor", "B", 84, 322, "$3.80", 53, 101],
+      horobi: ["Horobi, Death's Wail", "B", 31, 248, "$0.70", 27, 66],
+      ayara: ["Ayara, First of Locthwain", "B", 76, 311, "$0.90", 50, 72],
+      erebos: ["Erebos, God of the Dead", "B", 68, 300, "$1.60", 46, 81],
+      vilis: ["Vilis, Broker of Blood", "B", 96, 321, "$5.10", 60, 99],
+      shirei: ["Shirei, Shizo's Caretaker", "B", 92, 288, "$0.30", 59, 61],
+      moraug: ["Moraug, Fury of Akoum", "R", 57, 301, "$1.40", 43, 79],
+      phylath: ["Phylath, World Sculptor", "RG", 74, 296, "$0.30", 50, 58],
+      aesi: ["Aesi, Tyrant of Gyre Strait", "GU", 92, 330, "$2.10", 59, 96],
+      titania: ["Titania, Protector of Argoth", "G", 88, 318, "free", 57, 84],
+      mina: ["Mina and Denn, Wildborn", "RG", 81, 312, "$0.40", 54, 69],
+      kodama: ["Kodama of the West Tree", "G", 70, 299, "$0.80", 48, 77],
+      tatyova: ["Tatyova, Benthic Agronomist", "GU", 95, 327, "held:HD Tune - Sultai Arisen", 60, 62],
+      windgrace: ["Lord Windgrace", "BRG", 86, 315, "$3.40", 56, 102],
+      obuun: ["Obuun, Mul Daya Ancestor", "RGW", 83, 310, "$0.60", 55, 74],
+      lumra: ["Lumra, Bellow of the Woods", "G", 77, 306, "$2.70", 51, 88],
+      karn: ["Karn, Legacy Reforged", "", 58, 281, "$0.90", 42, 154],
+      liberator: ["Liberator, Urza's Battlethopter", "", 51, 270, "$1.20", 40, 110],
+      kozilek: ["Kozilek, the Great Distortion", "", 34, 262, "$6.40", 30, 188],
+      ulamog: ["Ulamog, the Ceaseless Hunger", "", 29, 240, "$9.20", 27, 231],
+      emrakul: ["Emrakul, the Promised End", "", 27, 236, "$4.10", 25, 209],
+    };
+
+    const WHY_A = {
+      valH: "A demon that feeds on your opponents losing life, and charges them life just to aim anything at it.",
+      umbris: "A Nightmare Horror that grows with every card your opponents lose to exile. The horrors are the plan, not a garnish.",
+      valT: "Anything of theirs that would hit the graveyard is exiled, and you can play it by paying life. Grim, and it takes their things.",
+      tergrid: "Takes every permanent your opponents sacrifice or discard and puts it on your side.",
+      nekusar: "Every card your opponents draw costs them life. Slow, spiteful and hard to stop.",
+      massacre: "Can wipe the board one creature at a time as she enters. About as nasty as a commander gets.",
+      yawg: "Pays life to shrink their creatures and draws off the bodies. A plague doctor in all but name.",
+      sauron: "Each spell an opponent casts adds to your Orc army. A dark lord that grows on their turns.",
+      kefka: "Makes every player discard, then profits from what they lose. Chaotic and cruel.",
+      winter: "Hands everyone cards, then shrinks the room they have to keep them. Mean in a quiet way.",
+      sheoldred: "Every card they draw costs them life, and every card you draw gains you some.",
+      krrik: "Pays life for its black mana and grows each time. A horror that feeds on you to win.",
+      gix: "Your creatures trade life for cards as they hit. A Phyrexian praetor at its cruelest.",
+      horobi: "Any creature that becomes a target dies. Spiteful, and hard to play against.",
+      ayara: "Drains each opponent as black creatures enter. A court run on cruelty.",
+      erebos: "Stops your opponents gaining life, and lets you pay life to draw. A god of the dead.",
+    };
+    const WHY_B = {
+      moraug: "Each land you play on your turn is an extra combat. An attacking deck, where your **Omnath** and **Teval** decks build up.",
+      phylath: "Landfall that fills the board with Plant tokens to grow. A go-wide deck, unlike your **Omnath** deck’s ramp.",
+      aesi: "Plays extra lands and draws off each one. A card-draw engine with no graveyard plan, unlike your **Teval** deck.",
+      titania: "Lands you sacrifice come back as 5/3 Elementals. A creature deck, where your **Omnath** deck plays big spells.",
+      mina: "Plays two lands a turn and bounces them to play again. A tempo take on Landfall that neither of your lands decks has.",
+      kodama: "Its creatures fetch a land whenever they hit. Landfall through combat, not the ramp your **Omnath** deck leans on.",
+      tatyova: "Gains life and draws with every land. Shares colors with your **Teval** deck, but not its graveyard plan.",
+      windgrace: "Brings lands back from the graveyard to destroy permanents. Nearer your **Teval** deck than most here, but it attacks the board.",
+      obuun: "Turns a land into a creature every combat. The closest to your **Omnath** deck’s colors, played as an attack deck.",
+      lumra: "Mills lands and returns them, growing as they enter. The nearest to your **Teval** deck here, since both mill.",
+    };
+    const WHY_B0 = {
+      moraug: "Each land you play on your turn is an extra combat. Landfall built to attack.",
+      phylath: "Landfall that fills the board with Plant tokens to grow.",
+      aesi: "Plays extra lands and draws a card off each one.",
+      titania: "Lands you sacrifice come back as 5/3 Elementals.",
+      mina: "Plays two lands a turn and bounces them to play again.",
+      kodama: "Its creatures fetch a land whenever they hit.",
+      tatyova: "Gains life and draws a card with every land.",
+      windgrace: "Brings lands back from the graveyard to destroy permanents.",
+      obuun: "Turns a land into a creature every combat.",
+      lumra: "Mills lands and returns them, growing as they enter.",
+    };
+
+    const parse = (t) => t.split("**").map((x, i) => ({ t: x, st: i % 2 ? { color: "var(--fg)", fontWeight: 600 } : {} }));
+    const PIPC = { W: "var(--w)", U: "var(--u)", B: "var(--b)", R: "var(--r)", G: "var(--g)" };
+    const pipsOf = (ci) => (ci ? ci.split("") : ["C"]).map((c) => ({ display: "block", width: P ? 9 : 11, height: P ? 9 : 11, borderRadius: "50%", background: PIPC[c] || "var(--c)", boxShadow: "inset 0 0 0 1px rgba(0,0,0,.4)" }));
+
+    const ACCT = { hugh: { scale: 1 }, fresh: { scale: 0 } };
+    const mk = (key, why, fresh) => {
+      const [name, ci, o, total, mark, o99, buy] = C[key];
+      const owned = fresh ? Math.round(o * 0.4) : o;
+      const own99 = fresh ? Math.round(o99 * 0.45) : o99;
+      const buyD = fresh ? Math.round(buy * 1.7) : buy;
+      let m = fresh && mark !== "free" && !mark.startsWith("held") ? mark : fresh ? "$1.20" : mark;
+      return {
+        name, pips: pipsOf(ci), owned: String(owned), figText: `of the ${total} cards its decks run are yours`,
+        free: m === "free", held: m.startsWith("held:"), heldIn: m.startsWith("held:") ? m.slice(5) : "", priced: m.startsWith("$"), price: m,
+        own: `you own ${own99} of its 99 · about $${buyD} to buy`,
+        hasReason: !!why, reason: why ? parse(why) : [],
+        art: art(name),
+      };
+    };
+
+    const ASK_A = "a horrors deck that’s scary and a little nasty";
+    const ASK_B = "a Landfall deck unlike other decks I own";
+    const FREE = ["lathril", "kaalia", "urdragon", "atraxa", "yshtola", "azula"];
+    const READ_A = ["valH", "umbris", "valT", "tergrid", "nekusar", "massacre", "yawg", "sauron", "kefka", "winter"];
+    const READ_K = ["valT", "tergrid", "massacre", "yawg", "sheoldred", "krrik", "gix", "horobi", "ayara", "erebos"];
+    const READ_B = ["moraug", "phylath", "aesi", "titania", "mina", "kodama", "tatyova", "windgrace", "obuun", "lumra"];
+    const COLORLESS = ["karn", "liberator", "kozilek", "ulamog", "emrakul"];
+
+    const S9 = "9 of 10 left · reset at 2:01 AM";
+    const FREE_SUB = "What you wrote isn’t in this order. These are commanders your answers allow, owned or not, whose decks run the most cards you already have.";
+    const READ_SUB = "The first ten are the read’s picks, closest first, each with why. After them come the rest of your results, ordered by cards you already have.";
+
+    const SC = {
+      formEmpty: { form: true, text: "" },
+      formFilled: { form: true, text: ASK_A, credit: "live" },
+      formSpent: { form: true, text: ASK_A, credit: "spent" },
+      reading: { wrote: ASK_A, panel: "reading", list: FREE, dim: true },
+      stopped: { wrote: ASK_A, panel: "stopped", list: FREE },
+      failed: { wrote: ASK_A, panel: "failed", list: FREE },
+      unread: { wrote: ASK_A, panel: "unread", list: FREE },
+      askA: { wrote: ASK_A, panel: "done", read: READ_A, why: WHY_A, tail: ["lathril", "kaalia"], pool: "3,445", short: 36 },
+      askB: { wrote: ASK_B, panel: "done", read: READ_B, why: WHY_B, tail: ["lathril", "kaalia"], pool: "3,445", short: 38 },
+      black: { wrote: ASK_A, chips: [{ kind: "exactly", value: "Black" }], panel: "done", read: READ_K, why: WHY_A, tail: ["vilis", "shirei"], pool: "268", short: 34, held: "Your colors held: nothing outside black was read." },
+      nothing: { wrote: ASK_B, chips: [{ kind: "colors", value: "Colorless" }], panel: "nothing", list: COLORLESS },
+      nodecks: { wrote: ASK_B, panel: "done", read: READ_B, why: WHY_B0, tail: ["lathril", "kaalia"], pool: "3,467", short: 37, fresh: true, nodecks: true },
+    };
+    const sc = SC[scene] ?? SC.askA;
+    const fresh = !!sc.fresh;
+
+    // ── Form ──
+    const filled = !!sc.text;
+    const spentForm = sc.credit === "spent";
+    const box = {
+      filled, empty: !filled, text: sc.text, count: `${(sc.text || "").length} / 800`,
+      caption: !filled
+        ? "Describe the deck in your own words: how it should feel, or how it should differ from decks you’ve built. Leave it empty and the answers above search on their own, for free."
+        : spentForm
+          ? "Kept here for when a credit comes back."
+          : "Read against every commander your answers allow, and your decks’ commanders and themes. It uses a credit when you press Find commanders.",
+    };
+    const press = filled && !spentForm
+      ? { pill: "1 credit", line: `Uses a credit. ${S9}.`, aria: "1 credit. Find commanders and read what you wrote." }
+      : filled && spentForm
+        ? { pill: null, line: "Won’t be read: 0 of 10 left · reset at 2:01 AM.", aria: "Find commanders" }
+        : { pill: null, line: null, aria: "Find commanders" };
+
+    // ── Read panel ──
+    const tagStyle = (tone) => ({ borderRadius: 999, padding: "2px 8px", fontFamily: mono, fontSize: 9.5, letterSpacing: "0.12em", textTransform: "uppercase", color: `var(--${tone})`, background: `color-mix(in oklab, var(--${tone}) 12%, transparent)` });
+    const btnH = P ? 44 : 38, pillH = P ? 30 : 26;
+    const btnBase = { display: "inline-flex", alignItems: "center", justifyContent: P ? "center" : "flex-start", gap: 9, height: btnH, padding: "0 14px 0 6px", borderRadius: 999, fontSize: 13.5, fontWeight: 600, whiteSpace: "nowrap", flex: P ? "1 1 auto" : "none" };
+    const pillBase = { display: "inline-flex", alignItems: "center", height: pillH, padding: "0 10px", borderRadius: 999, fontFamily: mono, fontSize: 10.5 };
+    const live = { btnStyle: { ...btnBase, background: "var(--accent)", color: "var(--bg)" }, pillStyle: { ...pillBase, fontWeight: 600, background: "color-mix(in oklab, var(--bg) 22%, transparent)", color: "var(--bg)" } };
+    const hair = { btnStyle: { ...btnBase, background: "transparent", border: "1px solid var(--border-strong)", color: "var(--fg-muted)" }, pillStyle: { ...pillBase, fontWeight: 500, background: "var(--surface)", color: "var(--fg-muted)" } };
+    const off = { btnStyle: { ...btnBase, background: "transparent", border: "1px solid var(--border-strong)", color: "var(--fg-disabled)" }, pillStyle: { ...pillBase, fontWeight: 500, background: "var(--surface)", color: "var(--fg-disabled)" } };
+    const dot = (on) => ({ width: 7, height: 7, borderRadius: "50%", flex: "none", background: on ? "var(--accent)" : "transparent", border: on ? "none" : "1px solid var(--border-dashed)" });
+
+    const PANELS = {
+      reading: { title: "Reading what you wrote…", lead: "These results stay until it’s done. It usually takes under a minute.", steps: [
+        { t: "Scanning the 3,445 commanders your answers allow", when: "now", dot: dot(true), text: { color: "var(--fg)" } },
+        { t: "Weighing the closest few in full", when: "next", dot: dot(false), text: { color: "var(--fg-faint)" } },
+      ], button: true, ...hair, pill: "1 credit", label: "Reading…", stop: true, line: "Stopping gives the credit back.", aria: "1 credit. Reading." },
+      stopped: { title: "Read what you wrote", tag: "stopped", tagStyle: tagStyle("fg-muted"), lead: "Nothing was read, and no credit was used. These are the results for your answers alone.", button: true, ...live, pill: "1 credit", label: "Try again", line: `Uses a credit. ${S9}.`, aria: "1 credit. Try again." },
+      failed: { title: "Read what you wrote", tag: "didn’t finish", tagStyle: tagStyle("danger"), lead: "The read didn’t finish, so your credit came back. These are the results for your answers alone.", button: true, ...live, pill: "1 credit", label: "Try again", line: `Uses a credit. ${S9}.`, aria: "1 credit. Try again." },
+      unread: { title: "What you wrote wasn’t read", lead: "No credits were left, so these results use your answers alone. Your words are kept.", button: true, ...off, pill: "0 left", label: "Read it", line: "0 of 10 left · reset at 2:01 AM", aria: "0 left. Read it." },
+      nothing: { title: "Nothing fits what you wrote", lead: "It read all 58 commanders your answers allow, and none of them makes a Landfall deck. Your answers hold, so it didn’t look outside them.", widen: true, line: `No credit used · ${S9}` },
+      done: {
+        title: "Read what you wrote", tag: "done", tagStyle: tagStyle("accent"),
+        lead: `It read the ${sc.pool} commanders your answers allow and weighed the closest ${sc.short} in full. The ten that fit best come first, each with a line on why.${sc.held ? " " + sc.held : ""}${sc.nodecks ? " You have no decks yet, so the lines speak to Landfall alone." : ""}`,
+        line: fresh ? "1 credit used · 4 of 5 left · reset at 6:40 PM" : "1 credit used · 8 of 10 left · reset at 2:01 AM",
+      },
+    };
+    const rp = { tag: null, steps: null, widen: false, button: false, stop: false, pill: "", label: "", aria: "", btnStyle: {}, pillStyle: {}, tagStyle: {}, ...(PANELS[sc.panel] || PANELS.done) };
+
+    // ── Lists ──
+    const isRead = !!sc.read;
+    const keys = isRead ? sc.read : sc.list || [];
+    const all = keys.map((k) => mk(k, isRead ? sc.why[k] : null, fresh));
+    const thumbOf = (r) => ({ width: 40, height: 40, flex: "none", borderRadius: 6, backgroundColor: "var(--elevated)", backgroundImage: r.art, backgroundSize: "cover", backgroundPosition: "center", border: "1px solid var(--border)" });
+    const best = all.slice(0, 3).map((r, i) => ({ ...r, rank: i + 1, art: { position: "relative", flex: "none", width: P ? 88 : "100%", aspectRatio: P ? "auto" : "626 / 457", alignSelf: P ? "stretch" : "auto", backgroundColor: "var(--elevated)", backgroundImage: r.art, backgroundSize: "cover", backgroundPosition: "center", borderRight: P ? "1px solid var(--border)" : "none", borderBottom: P ? "none" : "1px solid var(--border)" } }));
+    const rows = all.slice(3).map((r) => ({ ...r, thumb: thumbOf(r) }));
+    const tail = (sc.tail || []).map((k) => { const r = mk(k, null, fresh); return { ...r, thumb: thumbOf(r) }; });
+    const dim = sc.dim ? 0.45 : 1;
+
+    const head = isRead ? "Ordered by what you wrote" : "Ordered by cards you already have";
+    const headSub = isRead ? READ_SUB : sc.panel === "reading" ? "What you wrote isn’t in this order yet. These are your answers’ results, and they stay until the read is done." : FREE_SUB;
+
+    const label = `${scene} · ${P ? 390 : 900}`;
+    const W = P ? 390 : 900;
+    const s = {
+      root: { width: W, minHeight: P ? 844 : 640, background: "var(--bg)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", flexDirection: "column" },
+      header: { display: "flex", flexDirection: "column", gap: 6, padding: P ? "16px 18px 6px" : "24px 32px 10px", maxWidth: P ? "none" : (sc.form ? 680 + 64 : "none"), width: "100%", margin: sc.form && !P ? "0 auto" : 0 },
+      h1: { margin: 0, fontFamily: "var(--display)", fontWeight: 700, fontSize: P ? 22 : 28, color: "var(--fg)" },
+      sub: { margin: 0, fontSize: P ? 13 : 14, lineHeight: 1.55, color: "var(--fg-muted)", textWrap: "pretty" },
+      panel: P
+        ? { display: "flex", flexDirection: "column", gap: 20, padding: 18 }
+        : { display: "flex", flexDirection: "column", gap: 22, width: 680, margin: "14px auto 40px", padding: "24px 26px", borderRadius: 12, border: "1px solid var(--border)", background: "var(--surface-rail)" },
+      segOn: { display: "inline-flex", alignItems: "center", height: P ? 36 : 26, padding: "0 10px", borderRadius: 6, fontSize: 12.5, fontWeight: 600, background: "var(--elevated)", color: "var(--fg)" },
+      segOff: { display: "inline-flex", alignItems: "center", height: P ? 36 : 26, padding: "0 10px", borderRadius: 6, fontSize: 12.5, color: "var(--fg-muted)" },
+      field: { display: "flex", alignItems: "center", gap: 6, minHeight: P ? 44 : 40, padding: "6px 10px", borderRadius: 9, border: "1px solid var(--border-strong)", background: "var(--surface-sunken)", fontSize: P ? 16 : 14 },
+      setTrigger: { alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 8, height: P ? 44 : 34, padding: "0 12px", borderRadius: 8, border: "1px solid var(--border-strong)", background: "var(--surface-sunken)", fontSize: 13, color: "var(--fg-body)" },
+      radioOn: { flex: "1 1 0", display: "flex", alignItems: "center", justifyContent: "center", height: P ? 44 : 34, borderRadius: 7, border: "1px solid var(--accent)", background: "var(--elevated)", fontSize: 13, fontWeight: 600, color: "var(--fg)" },
+      radioOff: { flex: "1 1 0", display: "flex", alignItems: "center", justifyContent: "center", height: P ? 44 : 34, borderRadius: 7, border: "1px solid var(--border)", background: "var(--surface-sunken)", fontSize: 13, color: "var(--fg-muted)" },
+      box: { minHeight: P ? 96 : 84, padding: P ? "12px 13px" : "12px 14px", borderRadius: 9, border: `1px solid ${filled && !spentForm ? "var(--accent)" : "var(--border-strong)"}`, background: "var(--surface-sunken)", fontSize: P ? 16 : 14, lineHeight: 1.55 },
+      boxCaption: { fontSize: 12, lineHeight: 1.5, color: spentForm ? "var(--fg-muted)" : "var(--fg-faint)", textWrap: "pretty" },
+      press: { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, height: P ? 48 : 44, padding: press.pill ? "0 24px 0 8px" : "0 24px", borderRadius: 10, background: "var(--accent)", color: "var(--bg)", fontSize: 15, fontWeight: 600, whiteSpace: "nowrap", width: P ? "100%" : "auto" },
+      pressPill: { display: "inline-flex", alignItems: "center", height: P ? 32 : 30, padding: "0 10px", borderRadius: 7, fontFamily: mono, fontSize: 11, fontWeight: 600, background: "color-mix(in oklab, var(--bg) 22%, transparent)", color: "var(--bg)" },
+      results: { display: "flex", flexDirection: "column", gap: 16, padding: P ? "8px 14px 28px" : "12px 32px 40px" },
+      bar: { display: "flex", flexDirection: "column", gap: 14, padding: P ? 14 : "16px 18px", borderRadius: 12, border: "1px solid var(--border)", background: "var(--surface-rail)" },
+      barTop: { display: "flex", flexDirection: P ? "column" : "row", alignItems: P ? "stretch" : "flex-start", gap: P ? 12 : 24 },
+      chip: { display: "inline-flex", alignItems: "center", gap: 6, height: P ? 32 : 28, padding: "0 8px 0 9px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "var(--surface)", whiteSpace: "nowrap" },
+      againBtns: { display: "flex", gap: 8, flex: "none" },
+      againPrimary: { flex: P ? "1 1 0" : "none", display: "inline-flex", alignItems: "center", justifyContent: "center", height: P ? 44 : 36, padding: "0 16px", borderRadius: 8, border: "1px solid var(--accent)", fontSize: 13.5, fontWeight: 600, color: "var(--accent)", whiteSpace: "nowrap" },
+      againGhost: { flex: P ? "1 1 0" : "none", display: "inline-flex", alignItems: "center", justifyContent: "center", height: P ? 44 : 36, padding: "0 14px", borderRadius: 8, border: "1px solid var(--border-strong)", fontSize: 13.5, color: "var(--fg-body)", whiteSpace: "nowrap" },
+      panelRead: { display: "flex", flexDirection: P ? "column" : "row", alignItems: P ? "stretch" : "center", gap: P ? 12 : 24, padding: P ? "13px 14px" : "14px 16px", borderRadius: 10, border: "1px solid color-mix(in oklab, var(--accent) 28%, var(--border))", background: "color-mix(in oklab, var(--accent) 6%, var(--surface-sunken))" },
+      readTitle: { fontFamily: "var(--display)", fontWeight: 600, fontSize: P ? 14.5 : 15.5, color: "var(--fg)" },
+      lead: { fontSize: P ? 12.5 : 13, lineHeight: 1.55, color: "var(--fg-body)", maxWidth: 520, textWrap: "pretty" },
+      readAct: { display: "flex", flexDirection: "column", gap: 6, alignItems: P ? "stretch" : "flex-end", flex: "none", maxWidth: P ? "none" : 300 },
+      readLine: { fontFamily: mono, fontSize: P ? 10 : 10.5, lineHeight: 1.5, color: "var(--fg-faint)", textAlign: P ? "center" : "right", textWrap: "pretty" },
+      stop: { display: "inline-flex", alignItems: "center", height: P ? 44 : 36, padding: "0 12px", borderRadius: 8, border: "1px solid var(--border-strong)", fontSize: 13, color: "var(--fg-muted)" },
+      h2: { margin: 0, fontFamily: "var(--display)", fontWeight: 600, fontSize: P ? 16 : 18, color: "var(--fg)" },
+      resSub: { margin: 0, fontSize: P ? 12.5 : 13, lineHeight: 1.55, color: "var(--fg-muted)", maxWidth: 640, textWrap: "pretty" },
+      bestGrid: { display: "grid", gridTemplateColumns: P ? "1fr" : "repeat(3, minmax(0,1fr))", gap: 10, opacity: dim },
+      bestCard: { display: "flex", flexDirection: P ? "row" : "column", overflow: "hidden", borderRadius: 12, border: "1px solid color-mix(in oklab, var(--accent) 30%, var(--border))", background: "var(--surface-rail)" },
+      rankInline: { flex: "none", display: "flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: "50%", fontFamily: mono, fontSize: 10.5, fontWeight: 600, color: "var(--accent)", border: "1px solid color-mix(in oklab, var(--accent) 50%, transparent)" },
+      rank: { position: "absolute", left: 10, top: 10, display: "flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: "50%", fontFamily: mono, fontSize: 12, fontWeight: 600, color: "var(--accent)", background: "var(--bg)", border: "1px solid color-mix(in oklab, var(--accent) 50%, transparent)" },
+      bestBody: { display: "flex", flexDirection: "column", gap: 9, minWidth: 0, flex: 1, padding: P ? "11px 12px" : "13px 15px 15px" },
+      bestName: { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontFamily: "var(--display)", fontWeight: 600, fontSize: P ? 14.5 : 16, color: "var(--fg)", textDecoration: "underline dotted var(--accent)", textUnderlineOffset: 3 },
+      reason: { fontSize: P ? 12.5 : 13, lineHeight: 1.5, color: "var(--fg-body)", textWrap: "pretty" },
+      ownLine: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: "3px 6px", fontFamily: mono, fontSize: P ? 10 : 11, color: "var(--fg-muted)" },
+      rowList: { display: "flex", flexDirection: "column", gap: 10, opacity: dim },
+      row: { display: "flex", alignItems: "center", gap: P ? 11 : 16, padding: P ? "10px 12px" : "12px 15px", borderRadius: P ? 10 : 11, border: "1px solid var(--border)", background: "var(--surface-rail)" },
+      rowMain: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: P ? 5 : 6 },
+      rowName: { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontFamily: "var(--display)", fontWeight: 600, fontSize: P ? 14 : 15.5, color: "var(--fg)", textDecoration: "underline dotted var(--accent)", textUnderlineOffset: 3 },
+      more: { display: "inline-flex", alignItems: "center", height: P ? 44 : 36, padding: "0 16px", borderRadius: 8, border: "1px solid var(--border-strong)", fontSize: 13.5, color: "var(--fg-body)" },
+    };
+
+    const brackets = ["Any", "1", "2", "3", "4", "5"].map((l, i) => ({ label: l, style: { flex: i ? "1 1 0" : "1.6 1 0", display: "flex", alignItems: "center", justifyContent: "center", height: P ? 44 : 34, borderRadius: 7, fontSize: 13, fontFamily: i ? mono : "inherit", border: `1px solid ${i ? "var(--border)" : "var(--accent)"}`, background: i ? "var(--surface-sunken)" : "var(--elevated)", color: i ? "var(--fg-muted)" : "var(--fg)", fontWeight: i ? 400 : 600 } }));
+    const formPips = ["W", "U", "B", "R", "G"].map((c) => ({ display: "block", width: P ? 36 : 28, height: P ? 36 : 28, borderRadius: "50%", background: PIPC[c], opacity: 0.35, boxShadow: "inset 0 0 0 1px rgba(0,0,0,.4)" }));
+
+    const chips = sc.chips || [];
+    return {
+      theme, phone: P, desktop: !P, label, s,
+      isForm: !!sc.form, isResults: !sc.form,
+      backLabel: sc.form ? "‹ New deck" : "‹ Your answers",
+      title: sc.form ? "Help me choose" : "Commanders for you",
+      sub: sc.form ? (P ? "Every answer is optional." : "Say as much or as little as you like. Every answer is optional, and the more you give, the closer the fit.") : (P ? "From your answers." : "Suggested from your answers, best fit first."),
+      formPips, brackets, box, press,
+      chips, hasChips: chips.length > 0, noChips: chips.length === 0, wrote: sc.wrote,
+      rp, head, headSub, best, rows, tail, hasTail: tail.length > 0,
+    };
+  }
+}
+</script>
+</body>
+</html>
