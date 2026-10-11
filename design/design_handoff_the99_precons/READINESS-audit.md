@@ -5,12 +5,29 @@ engineering's nine locks, six open questions, Fixtures) and the tree at `origin/
 **Build from R2**: `The 99 - Precons (R2).dc.html` (canvas) and `Precons R2.dc.html` (frame). R1's two
 files (`The 99 - Precons (R1).dc.html`, `Precons.dc.html`) are kept for history, as the README says.
 
-## Verdict: YELLOW
+## Verdict: GREEN
 
 Every ruling, lock and open question is drawn or answered, and nothing drawn needs data the feed or the
-engine cannot supply. Two product calls are still open with Hugh (both raised by Design itself, findings 1
-and 2). With those answered the handoff is GREEN; every other finding is engineering's to resolve in the
-plan, and none needs a Design round.
+engine cannot supply. The first pass was YELLOW on two product calls (findings 1 and 2); Hugh answered both
+on 2026-10-11, approving R2 as drawn. Every remaining finding is engineering's to resolve in the plan, and
+none needs a Design round. R2 is current.
+
+### Hugh's answers, 2026-10-11
+
+1. **Ruling 3:** yes, a `Commander precons` line on /decks that opens its own page, `/decks/precons`. No tab
+   bar.
+2. **The cart line:** yes, it shares the row with the precon line: half width at 900, and at 390 one row of
+   two cells, the cart reading `Shop all decks · 307 · $843.99`.
+
+### Amendment to the cart design
+
+Answer 2 **amends `design/design_handoff_the99_all_decks_cart/`** (#1438). Its `CartEntry` is no longer a
+full-width line on both widths: on /decks it is the first cell of the head row this handoff draws (P1, P2,
+and the `R2 change: /decks head on a phone` and `Change: /decks head` sections of
+`design-tables/precons.md`). At 390 its title is `Shop all decks` (new key `entry.titlePhone`) with the meta
+`307 · $843.99` (`entry.figurePhone`); at 900 the approved `Shopping for all decks` line and figure stay, in
+a half-width cell. With the precons switch off (P4), or no precon line, the cart line takes its approved
+full width. Whichever of the two features ships first builds the row; the second fills its cell.
 
 ## Coverage
 
@@ -66,15 +83,15 @@ plan, and none needs a Design round.
 
 ## Findings
 
-1. **needs-Hugh · Ruling 3, "tab" drawn as a route (G11).** /decks gets a `Commander precons` line beside the
+1. **resolved (Hugh, 2026-10-11) · Ruling 3, "tab" drawn as a route (G11).** /decks gets a `Commander precons` line beside the
    cart's line, opening `/decks/precons`. Design recommends against a literal tab: /decks has no tab bar, and
    one would put the shelves under a tab of their own. The reading fits how the cart already shares the page.
-   Hugh to confirm.
-2. **needs-Hugh · The cart line changes shape (R2 change 3, P1).** The approved cart handoff draws its /decks
+   Hugh confirmed the route.
+2. **resolved (Hugh, 2026-10-11) · The cart line changes shape (R2 change 3, P1).** The approved cart handoff draws its /decks
    line full width at 900 and 390. Here it becomes a half-width cell at 900, and at 390 a half cell titled
    `Shop all decks` with meta `307 · $843.99` (the approved meta also says `to buy` and `7 decks`). That buys
-   the phone fold back (+68px instead of +123px). Hugh to OK the label and the cart's new geometry together,
-   since the cart round was approved without them.
+   the phone fold back (+68px instead of +123px). Hugh approved the label and the geometry; recorded above
+   as an amendment to the cart design.
 3. **eng-resolvable · Arrival strip shape and lifetime (G12).** The design table draws a rounded box (radius
    10, `--border-strong`) living "until dismissed or the first commit". The shipped `ArrivalStrip` is a
    full-width band under the spine (`--surface-rail`, `border-bottom`), shown on the one navigation that
@@ -138,7 +155,4 @@ plan, and none needs a Design round.
 
 ## Questions for Hugh
 
-1. Ruling 3 said "tab". Is a `Commander precons` line on /decks that opens its own page, beside the cart's
-   line, what you meant? (Design recommends it over a tab bar.)
-2. On a phone the two /decks lines share one row, so the cart's line reads `Shop all decks · 307 · $843.99`
-   instead of the full approved line, and at 900 it shares the width with the precon line. OK?
+None open. Both were answered on 2026-10-11 (above).
