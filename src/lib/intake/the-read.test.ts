@@ -63,6 +63,15 @@ describe("a reason line", () => {
     expect(parseReason("Unlike your {D0} deck.", decks)).toBeNull();
   });
 
+  it("refuses a deck's commander written out rather than as its token (F5)", () => {
+    expect(parseReason("Unlike your Omnath deck.", decks)).toBeNull();
+    expect(parseReason("Unlike Teval, the Balanced Scale.", decks)).toBeNull();
+    // A reason may name its own commander, even when a deck's commander shares the short name,
+    // but never the deck's commander in full.
+    expect(parseReason("Omnath makes an Elemental on each land.", decks, "Omnath, Locus of Rage")).not.toBeNull();
+    expect(parseReason("Unlike Omnath, Locus of Creation.", decks, "Omnath, Locus of Rage")).toBeNull();
+  });
+
   it("refuses a digit, a percent sign, a score word, or a stray brace (F3)", () => {
     for (const bad of ["Makes 5/3 Elementals on each land.", "Wins most games.%", "The best landfall commander.", "A strong fit for horrors.", "Unlike your {deck} deck."]) {
       expect(parseReason(bad, decks)).toBeNull();

@@ -1982,8 +1982,8 @@ export const intakeReads = pgTable("intake_reads", {
   chips: jsonb("chips"),
   /**
    * The read (rework plan, F2): which of its two calls a pending read is in, so the waiting panel
-   * can move from the shortlist to the judgement. Null before the first call starts; meaningful only
-   * while the read is pending (a Stop or the reaper settles it without clearing the phase).
+   * can move from the shortlist to the judgement. Null before the first call starts and once the read
+   * is settled, however it settled: an outcome, a Stop or the reaper.
    */
   phase: text("phase"),
   /** The read's settled answer (F9e): the picks and their reasons. Null on a row from the retired

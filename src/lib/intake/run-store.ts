@@ -178,7 +178,7 @@ export function reapCutoff(now: Date): Date {
  */
 export async function reapReads(tx: Tx, userId: string, now: Date = new Date()): Promise<number> {
   const reaped = await tx.update(intakeReads)
-    .set({ status: "failed", errorClass: "interrupted" })
+    .set({ status: "failed", errorClass: "interrupted", phase: null })
     .where(and(
       eq(intakeReads.userId, userId),
       eq(intakeReads.status, "pending"),
@@ -298,15 +298,22 @@ export async function setReadPhase({ readId, userId }: { readId: string; userId:
  */
 export async function settleTheRead(
   { readId, callId, userId }: ReadHandle & { userId: string },
-  outcome: { kind: "read"; result: TheReadResult } | { kind: "failed"; errorClass: Exclude<ModelErrorClass, "upstream_rejected"> },
+  outcome: { kind: "read"; result: TheReadResult } | { kind: "failed"; errorClass: Exclude<ModelErrorClass, "upstream_rejected"> | "interrupted" },
   billed: readonly Billed[],
+  /**
+   * A fingerprint to store in place of the one the read started under: the runner passes one no
+   * press can ask when an input the fingerprint covers moved while the calls ran, so the answer is
+   * the player's but is never handed to a repeat of an ask it no longer answers.
+   */
+  opts: { rehash?: string } = {},
 ): Promise<boolean> {
   const useful = outcome.kind === "read" && outcome.result.picks.length > 0;
+  const hash = opts.rehash ? { wordsHash: opts.rehash } : {};
   const set = outcome.kind === "failed"
     ? { status: "failed", errorClass: outcome.errorClass, phase: null }
     : useful
-      ? { status: "ok", result: outcome.result, phase: null }
-      : { status: "failed", errorClass: "nothing_valid" as const, result: outcome.result, phase: null };
+      ? { status: "ok", result: outcome.result, phase: null, ...hash }
+      : { status: "failed", errorClass: "nothing_valid" as const, result: outcome.result, phase: null, ...hash };
   return db.transaction(async (tx) => {
     await lockAsks(tx, userId);
     const rows = await tx.update(intakeReads)
@@ -348,7 +355,7 @@ export async function cancelRead(readId: string, userId: string): Promise<boolea
     // inserting waits for that insert and then finds the read pending, rather than finding nothing.
     await lockAsks(tx, userId);
     const rows = await tx.update(intakeReads)
-      .set({ status: "cancelled" })
+      .set({ status: "cancelled", phase: null })
       .where(and(eq(intakeReads.id, readId), eq(intakeReads.userId, userId), eq(intakeReads.status, "pending")))
       .returning({ callId: intakeReads.modelCallId });
     for (const r of rows) await settleModelCall(tx, r.callId, "refunded", undefined);

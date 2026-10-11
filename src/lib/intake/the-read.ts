@@ -219,7 +219,7 @@ export function shortName(name: string): string {
  * deck shown, a figure or score word anywhere, or a drawn length over the limit. Measured with each
  * deck token drawn as its commander's short name, which is what the reader sees.
  */
-export function parseReason(raw: string, decks: readonly ReadDeck[]): ReasonPart[] | null {
+export function parseReason(raw: string, decks: readonly ReadDeck[], ownCommander?: string): ReasonPart[] | null {
   const text = raw.trim().replace(/\s+/g, " ");
   const parts: ReasonPart[] = [];
   let drawn = "";
@@ -239,8 +239,29 @@ export function parseReason(raw: string, decks: readonly ReadDeck[]): ReasonPart
   // The figure test runs on the model's own words, never on a drawn deck name, which may hold one.
   const own = parts.map((p) => ("text" in p ? p.text : " ")).join("");
   if (/[{}]/.test(own) || FIGURES.test(own) || SCORE_WORDS.test(own)) return null;
+  if (namesADeck(own, decks, ownCommander)) return null;
   if (drawn.length === 0 || drawn.length > READ_REASON_MAX_CHARS) return null;
   return parts;
+}
+
+/**
+ * Whether the model wrote a deck's commander or partner by name instead of its token (F5): only a
+ * token is checked against the decks shown. Matched on the short name as a whole word, except where
+ * it is the pick's own short name, which a reason may use for the commander it is about.
+ */
+function namesADeck(text: string, decks: readonly ReadDeck[], ownCommander?: string): boolean {
+  const said = wordForm(text);
+  const own = ownCommander ? wordForm(shortName(ownCommander)) : null;
+  return decks.some((d) => [d.commander, d.partner].some((name) => {
+    if (!name) return false;
+    const short = wordForm(shortName(name));
+    return said.includes(wordForm(name)) || (short !== own && said.includes(short));
+  }));
+}
+
+/** Text as space-padded lower-case words, so `includes` matches whole words only. */
+function wordForm(text: string): string {
+  return ` ${text.toLowerCase().replace(/[^\p{L}\p{N}']+/gu, " ").trim()} `;
 }
 
 /**
@@ -252,6 +273,8 @@ export function validJudgement(args: {
   shortlist: readonly number[];
   idOf: ReadonlyMap<number, string>;
   decks: readonly ReadDeck[];
+  /** Each key's commander name, so a reason may name its own commander though it shares a deck's. */
+  nameOf?: ReadonlyMap<number, string>;
 }): ReadPicks {
   const allowed = new Set(args.shortlist);
   const seen = new Set<number>();
@@ -260,7 +283,7 @@ export function validJudgement(args: {
     if (picks.length === READ_TOP) break;
     if (!allowed.has(p.key) || seen.has(p.key)) continue;
     const oracleId = args.idOf.get(p.key);
-    const reason = parseReason(p.reason, args.decks);
+    const reason = parseReason(p.reason, args.decks, args.nameOf?.get(p.key));
     if (!oracleId || !reason) continue;
     seen.add(p.key);
     picks.push({ oracleId, reason });

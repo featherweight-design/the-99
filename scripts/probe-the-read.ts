@@ -85,7 +85,7 @@ async function main() {
     // list names two real-shaped ids the probe never asks the database about, and the judgement
     // reads none. `loadJudgeCandidates` is exercised by the eval against staging.
     const list = formatPoolList([commander(randomUUID(), "Alpha"), commander(randomUUID(), "Beta")], "probe");
-    const inputs = (fingerprint: string) => ({ list, pool: new Set([1, 2]), narrowed: false, decks: [], cards: [], fingerprint });
+    const inputs = (fingerprint: string) => ({ list, pool: new Set([1, 2]), narrowed: false, decks: [], cards: [], collection: "", fingerprint });
     const filters = { colors: [], match: "contains" as const, themes: [], budgetDollars: null, bracket: null };
     let phaseSeen: string | null = null;
     const deps = (judge: () => Promise<ModelOutcome<JudgeReply>>, onShortlist?: (readId: string) => Promise<void>) => ({
@@ -138,7 +138,7 @@ async function main() {
     const stopped = await press("fp-stop", deps(async () => { judged = true; return pick(); }, async (readId) => { await store.cancelRead(readId, USER); }));
     const stopRow = await readRow(current);
     check("the outcome is stopped, and the judgement never ran", [stopped.kind, judged], ["stopped", false]);
-    check("the read is cancelled, its unit refunded", [stopRow.status, stopRow.unit], ["cancelled", "refunded"]);
+    check("the read is cancelled, its unit refunded, its phase cleared", [stopRow.status, stopRow.unit, stopRow.phase], ["cancelled", "refunded", null]);
     check("the shortlist's late bill landed", (stopRow.cost ?? 0) > 0, true);
   } finally {
     await fixture.execute(sql`delete from intake_read_stops where user_id = ${USER}`);

@@ -102,6 +102,8 @@ export type TheReadInputs = {
   narrowed: boolean;
   decks: ReadDeck[];
   cards: ReadCard[];
+  /** The collection digest the fingerprint was built from, re-checked before the answer is stored. */
+  collection: string;
   fingerprint: string;
 };
 
@@ -120,7 +122,7 @@ export async function loadTheReadInputs(userId: string, words: string, filters: 
   const cards = await loadReadCards(words, catalog.index, list, pool);
   const narrowed = filtersSet(filters);
   return {
-    list, pool, narrowed, decks, cards,
+    list, pool, narrowed, decks, cards, collection,
     fingerprint: readFingerprint({ words, filters, listGeneration: list.generation, pool: poolIds, collection, decks }),
   };
 }
@@ -157,6 +159,7 @@ export async function runTheRead(
   }
   if (started.kind !== "started") return { kind: started.kind };
   const handle = { ...started, userId };
+  const readId = started.readId;
   const billed: Billed[] = [];
   const bill = (model: string, o: ModelOutcome<unknown>) => { if (o.usage) billed.push({ model, usage: o.usage }); };
   const failed = async (o: { errorClass: string }): Promise<TheReadOutcome> => {
@@ -165,45 +168,61 @@ export async function runTheRead(
   };
   const nothing = async (weighed: number): Promise<TheReadOutcome> => {
     const result = { picks: [], pool: facts.pool.size, weighed };
-    return (await settleTheRead(handle, { kind: "read", result }, billed))
-      ? { kind: "nothing", readId: started.readId, result, repeat: false }
+    return (await settleTheRead(handle, { kind: "read", result }, billed, await rehash()))
+      ? { kind: "nothing", readId, result, repeat: false }
       : { kind: "stopped" };
   };
+  // The judgement reads ownership after the calls begin, so a collection that changed meanwhile
+  // gave an answer the fingerprint does not describe: it is the player's, and is never a repeat's.
+  const rehash = async () => ((await collectionDigest(userId)) === facts.collection ? {} : { rehash: `${facts.fingerprint}:moved:${readId}` });
 
-  // Step 1, the shortlist.
-  if (!(await setReadPhase(handle, "shortlist"))) return { kind: "stopped" };
-  if (facts.pool.size === 0) return nothing(0);
-  const first = await deps.shortlist({
-    system: shortlistPrefix(facts),
-    cache: !facts.narrowed,
-    user: shortlistRequest({ words: input.words, filters: input.filters, cards: facts.cards }),
-    deadlineMs: READ_SHORTLIST_DEADLINE_MS,
-  });
-  bill(deps.shortlistModel, first);
-  if (!first.ok) return failed(first);
-  const shortlist = validShortlist(first.value, facts.pool);
-  if (shortlist.length === 0) return nothing(0);
-
-  // Step 2, the judgement, in whatever is left of the whole deadline.
-  if (!(await setReadPhase(handle, "judge"))) {
-    // Stopped or reaped between the calls: this settles nothing, since the read is no longer
-    // pending, and only lands the shortlist's bill.
-    await settleTheRead(handle, { kind: "failed", errorClass: "upstream_busy" }, billed);
-    return { kind: "stopped" };
+  // Everything after the reservation settles the read, whatever throws: a read left pending would
+  // hold the player's credit and their one slot until the reaper.
+  try {
+    return await calls();
+  } catch (err) {
+    console.error(`[the-read] ${readId} failed after its reservation`, err);
+    await settleTheRead(handle, { kind: "failed", errorClass: "interrupted" }, billed).catch(() => undefined);
+    return { kind: "failed", errorClass: "interrupted" };
   }
-  const candidates = await loadJudgeCandidates(userId, shortlist, facts.list);
-  const second = await deps.judge({
-    system: JUDGE_SYSTEM,
-    user: judgeRequest({ words: input.words, filters: input.filters, decks: facts.decks, cards: facts.cards, candidates }),
-    deadlineMs: Math.max(1, READ_TOTAL_DEADLINE_MS - (deps.now() - started0)),
-  });
-  bill(deps.judgeModel, second);
-  if (!second.ok) return failed(second);
-  const result = { ...validJudgement({ reply: second.value, shortlist, idOf: facts.list.idOf, decks: facts.decks }), pool: facts.pool.size, weighed: candidates.length };
-  if (result.picks.length === 0) return nothing(candidates.length);
-  return (await settleTheRead(handle, { kind: "read", result }, billed))
-    ? { kind: "read", readId: started.readId, result, repeat: false }
-    : { kind: "stopped" };
+
+  async function calls(): Promise<TheReadOutcome> {
+    // Step 1, the shortlist.
+    if (!(await setReadPhase(handle, "shortlist"))) return { kind: "stopped" };
+    if (facts.pool.size === 0) return nothing(0);
+    const first = await deps.shortlist({
+      system: shortlistPrefix(facts),
+      cache: !facts.narrowed,
+      user: shortlistRequest({ words: input.words, filters: input.filters, cards: facts.cards }),
+      deadlineMs: READ_SHORTLIST_DEADLINE_MS,
+    });
+    bill(deps.shortlistModel, first);
+    if (!first.ok) return failed(first);
+    const shortlist = validShortlist(first.value, facts.pool);
+    if (shortlist.length === 0) return nothing(0);
+
+    // Step 2, the judgement, in whatever is left of the whole deadline.
+    if (!(await setReadPhase(handle, "judge"))) {
+      // Stopped or reaped between the calls: this settles nothing, since the read is no longer
+      // pending, and only lands the shortlist's bill.
+      await settleTheRead(handle, { kind: "failed", errorClass: "upstream_busy" }, billed);
+      return { kind: "stopped" };
+    }
+    const candidates = await loadJudgeCandidates(userId, shortlist, facts.list);
+    const second = await deps.judge({
+      system: JUDGE_SYSTEM,
+      user: judgeRequest({ words: input.words, filters: input.filters, decks: facts.decks, cards: facts.cards, candidates }),
+      deadlineMs: Math.max(1, READ_TOTAL_DEADLINE_MS - (deps.now() - started0)),
+    });
+    bill(deps.judgeModel, second);
+    if (!second.ok) return failed(second);
+    const nameOf = new Map(candidates.map((c) => [c.key, c.name]));
+    const result = { ...validJudgement({ reply: second.value, shortlist, idOf: facts.list.idOf, decks: facts.decks, nameOf }), pool: facts.pool.size, weighed: candidates.length };
+    if (result.picks.length === 0) return nothing(candidates.length);
+    return (await settleTheRead(handle, { kind: "read", result }, billed, await rehash()))
+      ? { kind: "read", readId, result, repeat: false }
+      : { kind: "stopped" };
+  }
 }
 
 /**

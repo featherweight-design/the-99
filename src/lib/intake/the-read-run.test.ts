@@ -7,7 +7,8 @@ const store = vi.hoisted(() => ({
 }));
 vi.mock("./run-store", () => store);
 vi.mock("./search", () => ({ loadIntakeCatalog: vi.fn(), loadSearchFacts: vi.fn() }));
-vi.mock("./the-read-load", () => ({ collectionDigest: vi.fn(), loadReadCards: vi.fn(), loadReadDecks: vi.fn() }));
+const load = vi.hoisted(() => ({ collectionDigest: vi.fn(), loadReadCards: vi.fn(), loadReadDecks: vi.fn() }));
+vi.mock("./the-read-load", () => load);
 const dbRows = vi.hoisted(() => ({ rows: [] as unknown[] }));
 vi.mock("../../db", () => ({ db: { execute: vi.fn(async () => ({ rows: dbRows.rows })) } }));
 
@@ -20,7 +21,7 @@ const usage = { inputTokens: 100, outputTokens: 10, cacheReadTokens: 0, cacheWri
 const commander = (id: string, name: string) => ({ oracleId: id, name, colorIdentity: ["B"], typeLine: "Legendary Creature — Horror", tags: [] });
 const list = formatPoolList([commander("a", "Alpha"), commander("b", "Beta"), commander("c", "Gamma")], "g");
 const inputs = (over: Partial<TheReadInputs> = {}): TheReadInputs => ({
-  list, pool: new Set([1, 2]), narrowed: false, decks: [], cards: [], fingerprint: "fp", ...over,
+  list, pool: new Set([1, 2]), narrowed: false, decks: [], cards: [], collection: "c", fingerprint: "fp", ...over,
 });
 const ok = <T>(value: T): ModelOutcome<T> => ({ ok: true, value, usage });
 const deps = (shortlist: ModelOutcome<ShortlistReply>, judge: ModelOutcome<JudgeReply>): TheReadDeps => ({
@@ -35,6 +36,7 @@ beforeEach(() => {
   store.startRead.mockReset().mockResolvedValue({ kind: "started", readId: "r", callId: "c" });
   store.setReadPhase.mockReset().mockResolvedValue(true);
   store.settleTheRead.mockReset().mockResolvedValue(true);
+  load.collectionDigest.mockReset().mockResolvedValue("c");
   dbRows.rows = [
     { id: "a", name: "Alpha", color_identity: ["B"], type_line: "Creature", oracle_text: "Draw.", tags: [], owned: true, owned_support: 3, support_total: 9 },
     { id: "b", name: "Beta", color_identity: ["B"], type_line: "Creature", oracle_text: "Drain.", tags: [], owned: false, owned_support: 0, support_total: 9 },
@@ -96,6 +98,24 @@ describe("runTheRead", () => {
     const filtered = deps(ok({ keys: [] }), ok({ picks: [] }));
     await runTheRead("u", input, filtered, inputs({ narrowed: true }));
     expect(vi.mocked(filtered.shortlist).mock.calls[0][0].cache).toBe(false);
+  });
+
+  it("stores the answer under its fingerprint, or under one no ask can match when the collection moved meanwhile", async () => {
+    const d = () => deps(ok({ keys: [1] }), ok({ picks: [{ key: 1, reason: "Draws cards." }] }));
+    await runTheRead("u", input, d(), inputs());
+    expect(store.settleTheRead.mock.calls[0][3]).toEqual({});
+    load.collectionDigest.mockResolvedValue("c2");
+    await runTheRead("u", input, d(), inputs());
+    expect(store.settleTheRead.mock.calls[1][3]).toEqual({ rehash: "fp:moved:r" });
+  });
+
+  it("settles the read as interrupted when anything after the reservation throws, so no credit is held", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const d = deps(ok({ keys: [1] }), ok({ picks: [] }));
+    vi.mocked(d.judge).mockRejectedValue(new Error("boom"));
+    expect(await runTheRead("u", input, d, inputs())).toEqual({ kind: "failed", errorClass: "interrupted" });
+    expect(store.settleTheRead.mock.calls[0][1]).toEqual({ kind: "failed", errorClass: "interrupted" });
+    expect(store.settleTheRead.mock.calls[0][2]).toEqual([{ model: "s", usage }]);
   });
 
   it("reserves under the fingerprint and the joined model", async () => {
