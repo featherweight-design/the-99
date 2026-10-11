@@ -12,11 +12,11 @@ DECK_BENCHMARKS_ENABLED=true pnpm eval:corpus run --prompt v8 --plan-done 0.5 --
 ```
 
 The default `--cap 0.6` stops the first call, because the reservation is a worst case. `imotekh` is
-on production, which this harness never reads, so both arms hold 7 answers.
+on production, which this harness never reads, so both arms hold 8 answers (the other eight corpus decks).
 
 ## Verdict
 
-**Safe to switch on, as far as the Overview goes.** Every one of the 14 answers rendered all four
+**Safe to switch on, as far as the Overview goes.** Every one of the 16 answers rendered all four
 sections on the first write; no repair was called in either arm. The switch changes what the
 interaction line says, and nothing else in the checks moves beyond what a second sample of the same
 prompt moves.
@@ -25,9 +25,9 @@ prompt moves.
 
 | arm | answers | spend |
 |---|---|---|
-| on | 7 | $0.4026 |
-| off | 7 | $0.3834 |
-| both | 14 | $0.7860 |
+| on | 8 | $0.4026 |
+| off | 8 | $0.3834 |
+| both | 16 | $0.7860 |
 
 Ledger `ledger-overview-accuracy.jsonl`: campaign $10.20 before and $10.99 after these two runs (the
 $11 stop was not crossed by this check); $11.04 once another lane's $0.05 on main is counted, under the $15 cap. The brief estimated $0.51 for the ON arm alone, which came in at $0.40; the OFF arm is
@@ -61,7 +61,7 @@ way cannot say whether the switch has anything to do with it. Unchanged in both 
 ## Interaction lines, before and after
 
 With the switch on, the Overview's interaction facts quote the shared reading (PR 1b, contracts 9 and
-10). Four decks quote an interaction-speed figure in both arms, and the figures differ where the classifier and
+10). Five decks differ in what they say about interaction speed; two quote a figure in both arms, and the figures differ where the classifier and
 the shared reading count differently:
 
 | deck | off (classifier) | on (shared reading) |
@@ -78,11 +78,13 @@ Reading it:
   interaction is at instant speed and the ON line counts one; the two readings disagree, which is the
   difference #1401 introduced.
 - The ON answers use the same sentence shape ("Only N of M interaction pieces are instant speed"),
-  and none was refused by contract 9 or 10: all 14 first writes were accepted.
+  and none was refused by contract 9 or 10: all 16 first writes were accepted.
 - On aang and counter-intelligence the model dropped the count line altogether in the ON sample. That
   is one sample, and the Weaknesses section still names removal risks; if it recurs on a second
   sample, it is a prompt question for the Overview line, not a blocker for the switch.
-- goblins, gods, wizards and yuriko quote no interaction figure in either arm.
+- gods: no sentence in either arm, but the structured assessment of `interaction_speed` moves from
+  `unknown` (off) to `weakness`, minor (on).
+- goblins, wizards and yuriko quote no interaction figure in either arm.
 
 ## Not covered
 
