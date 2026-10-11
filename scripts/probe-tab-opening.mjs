@@ -132,7 +132,7 @@ async function openAndRecord(page, deckId) {
         chip,
         // Each mark's painted opacity, while the loader is drawn.
         ops: loader?.getAttribute("data-opening-loader") === "drawn"
-          ? [...loader.querySelectorAll(".at-wave-rest")].map((m) => Number(getComputedStyle(m).opacity))
+          ? [...loader.querySelectorAll("[data-testid=opening-ring] .anim-at-wave")].map((m) => Number(getComputedStyle(m).opacity))
           : null,
       });
     };
@@ -175,11 +175,11 @@ async function run() {
       if (req.method() === "POST" && req.headers()["next-action"]) await new Promise((r) => setTimeout(r, delay));
       await route.continue();
     });
-    // Reduced motion: the marks hold still at half ink (the ring's own still rule is full ink).
+    // Reduced motion: the loader is the ring, so its marks hold still at full ink like the reading ring's.
     {
       await page.emulateMedia({ reducedMotion: "reduce" });
       const still = (await openAndRecord(page, analyzed)).filter((e) => e.ops).flatMap((e) => e.ops);
-      report("reduced motion: the loader's marks hold at 0.5", still.length > 0 && still.every((o) => Math.abs(o - 0.5) < 0.01), still.length ? `${[...new Set(still)].join(", ")}` : "never drawn");
+      report("reduced motion: the loader's marks hold at full ink", still.length > 0 && still.every((o) => Math.abs(o - 1) < 0.01), still.length ? `${[...new Set(still)].join(", ")}` : "never drawn");
       await page.emulateMedia({ reducedMotion: "no-preference" });
     }
     for (const width of WIDTHS) {
@@ -195,9 +195,9 @@ async function run() {
       report(`${tag} analyzed: not before the 150ms delay`, firstDrawn !== null && firstDrawn >= 140, `first drawn at ${Math.round(firstDrawn ?? -1)}ms`);
       report(`${tag} analyzed: nothing else drawn beside it`, !log.some((e) => e.loader && e.extra), `${log.filter((e) => e.loader && e.extra).length} frames with more`);
       report(`${tag} analyzed: the tabpanel is aria-busy while it loads`, log.some((e) => e.loader && e.busy) && !log.some((e) => e.loader === "drawn" && !e.busy), "busy with the loader");
-      // The fifth mark waits 0.64s for its wave: it must wait FAINT, not at full ink.
+      // The loader is the reading ring: five marks, each on the wave.
       const firstOps = log.find((e) => e.ops)?.ops ?? [];
-      report(`${tag} analyzed: a mark waiting for its wave rests faint`, firstOps.length === 5 && firstOps[4] <= 0.3, `mark 5 at ${firstOps[4]}`);
+      report(`${tag} analyzed: the loader draws the ring's five waving marks`, firstOps.length === 5, `${firstOps.length} marks`);
       report(`${tag} analyzed: the header chip stays drawn`, log.every((e) => e.chip), log.every((e) => e.chip) ? "drawn throughout" : "dropped");
 
       // The hold, on a fetch that answers soon after the loader appears.

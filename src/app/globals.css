@@ -790,9 +790,6 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   35%, 60% { opacity: 1; }
 }
 .anim-at-wave { animation: at-wave 1.6s ease-in-out infinite; }
-/* The opening loader's marks (§8, 8a) rest at the wave's low ink, so a staggered mark does not sit
-   at full ink until its delay ends, and a browser that runs no animation draws them faint. */
-.at-wave-rest { opacity: 0.22; }
 
 /* There is no exit animation. The layer unmounts on close — see the note at
    `closeZoom` in `cards/card-modal.tsx` for why the 160ms fade was dropped. */
@@ -923,9 +920,6 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 
   /* Reading, still: the ring holds at full ink, and only the heading says it is reading. */
   .anim-at-wave { animation: none; opacity: 1; }
-  /* Opening, still (§8, 8a): the loader's row rests at half ink, so it never reads as the ring's
-     answered marks, and only the word says it is loading. */
-  .anim-at-wave.at-wave-rest { opacity: 0.5; }
 
   /* The pending marks keep their 120ms delay and lose their motion (parent correction 5): an
      `animation: none` would drop the delay too and flash a mark on a 95ms navigation. The pip is

@@ -346,11 +346,13 @@ describe("AnalysisPanel", () => {
       expect(screen.getByTestId("analysis-empty")).not.toBeVisible();
     });
 
-    it("draws the five marks and the word, and nothing else", () => {
+    it("draws the reading ring and the word, and nothing else", () => {
       const { container } = opening("loader");
       const loader = container.querySelector("[data-opening-loader]")!;
       expect(loader).toHaveAttribute("role", "status");
-      expect(loader.querySelectorAll(".anim-at-wave.at-wave-rest")).toHaveLength(5);
+      // The same ring the empty state waves while it reads: five marks, each on the wave.
+      const ring = within(loader as HTMLElement).getByTestId("opening-ring");
+      expect(ring.querySelectorAll(".anim-at-wave")).toHaveLength(5);
       expect(loader).toHaveTextContent(copy.opening);
       expect(screen.getByTestId("analysis-empty")).not.toBeVisible();
       expect(screen.getByTestId("analysis-ring")).not.toBeVisible();

@@ -8,7 +8,7 @@ import { synopsisCopy } from "../../lib/copy/synopsis";
 import { shownReading, type ProfileState } from "./use-deck-profile";
 import { AnalysisBanner } from "./analysis-banner";
 import { AnalysisEmpty } from "./analysis-empty";
-import { BracketMark } from "./bracket-mark";
+import { AnalysisRing } from "./analysis-ring";
 import { BracketClimb } from "./bracket-climb";
 import type { DeclarationControl } from "./declaration";
 import { FindingsBlock } from "./findings-block";
@@ -327,10 +327,10 @@ function Verdict({
 const EMPTY_ART: FindingArt = new Map();
 
 /**
- * The opening loader (§8, 8a): the five chip marks in a ROW at 22px under the `at-wave` light, and
- * `Loading…`. A row rather than the ring, since the ring belongs to the empty state and to a real
- * analysis, and showing it here would be the not-analyzed flash this state removes. It holds a
- * 320 / 420px block from the first frame, so the tab does not jump, and is empty until drawn.
+ * The opening loader (§8, 8a): the same ring the empty state draws while it reads, waving, and
+ * `Loading…` under it (Hugh, 2026-10-11: one loading picture across the tab, not a second row of
+ * marks). It holds a 320 / 420px block from the first frame, so the tab does not jump, and is
+ * empty until drawn.
  */
 function OpeningLoader({ drawn }: { drawn: boolean }) {
   return (
@@ -341,13 +341,7 @@ function OpeningLoader({ drawn }: { drawn: boolean }) {
     >
       {drawn ? (
         <>
-          <span aria-hidden className="flex items-center gap-[10px]">
-            {([1, 2, 3, 4, 5] as const).map((bracket, i) => (
-              <span key={bracket} className="anim-at-wave at-wave-rest" style={{ animationDelay: `${i * 0.16}s` }}>
-                <BracketMark bracket={bracket} px={22} />
-              </span>
-            ))}
-          </span>
+          <AnalysisRing busy testId="opening-ring" />
           <span className="font-mono text-[10.5px] tracking-[0.06em] text-[color:var(--fg-faint)] md:text-[11px]">
             {deckAnalysisCopy.panel.opening}
           </span>
