@@ -114,6 +114,18 @@ describe("CartView", () => {
     expect(screen.getByText(priceCopy.strip.pricedClause(3, 4))).toBeTruthy();
   });
 
+  it("never calls a line sold out while a copy on it is live at $0.00, and draws no $0.00", () => {
+    const zero = cart();
+    zero.lines[1].rows = [
+      { deckId: "gishath", quantity: 1, cents: 0, state: "priced", commander: false, held: 0, finish: null },
+      { deckId: "kratos", quantity: 1, cents: null, state: "soldOut", commander: false, held: 0, finish: null },
+    ];
+    render(<CartView cart={zero} provenance={provenance} />);
+    const sol = list().getAllByRole("listitem").find((li) => li.textContent?.includes("Sol Ring"))!;
+    expect(sol.textContent).not.toMatch(/sold out/i);
+    expect(sol.textContent).not.toContain("$0.00");
+  });
+
   it("tags a line whose every priced copy is foil-only as a foil figure, as the deck's own row does", () => {
     const foil = cart();
     foil.lines[2].rows = [{ deckId: "gishath", quantity: 1, cents: 90, state: "foilOnly", commander: false, held: 0, finish: "foil" }];
