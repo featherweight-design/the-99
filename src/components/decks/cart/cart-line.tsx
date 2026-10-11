@@ -1,0 +1,65 @@
+// CartLine — one card on the cart, by card (handoff S0): its name, the decks that need it with
+// their copies (`3 · HD - Gishath, HD - Kratos, HD -Thorin`, full names, wrapped, never truncated),
+// the owned fact when the player owns it, and the buy tag at the line's total.
+
+import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
+import type { PriceFact } from "../../../lib/decks/price";
+import type { SelectedLine } from "../../../lib/decks/cart";
+import { BuyTag } from "../buy-tag";
+
+/**
+ * The line's figure as one fact for the shared tag: the priced copies' sum (audit finding 9), each
+ * at its own deck's pick. With nothing priced, a sold-out copy reads `sold out` (an `as_of` older
+ * than the feed's newest) and anything else reads bare. Null on a failed read (T2): bare `buy`.
+ */
+export function lineFact(line: SelectedLine, newestAsOf: Date | null): PriceFact | null {
+  if (!newestAsOf) return null;
+  if (line.pricedCopies > 0) {
+    return { cents: line.cents, foilCents: null, etchedCents: null, asOf: newestAsOf };
+  }
+  if (line.selectedRows.some((r) => r.state === "soldOut")) {
+    return { cents: null, foilCents: null, etchedCents: null, asOf: new Date(0) };
+  }
+  return null;
+}
+
+export function CartLine({
+  line,
+  deckNames,
+  newestAsOf,
+}: {
+  line: SelectedLine;
+  deckNames: Map<string, string>;
+  newestAsOf: Date | null;
+}) {
+  const names = line.selectedRows.map((r) => deckNames.get(r.deckId) ?? "");
+  return (
+    <li className="flex items-start gap-[12px] border-t border-[color:var(--border)] py-[11px]">
+      <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
+        <div className="flex flex-wrap items-baseline gap-x-[8px] gap-y-[2px]">
+          <span className="text-[14px] leading-[1.4] text-[color:var(--fg)] [text-wrap:pretty]">{line.name}</span>
+          {line.commander ? (
+            <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)]">
+              {copy.list.commander}
+            </span>
+          ) : null}
+        </div>
+        <span className="font-mono text-[11px] leading-[1.5] text-[color:var(--fg-muted)] [text-wrap:pretty]">
+          {copy.list.decks(line.copies, names)}
+        </span>
+        {/* Why a card the player owns is on a buy list, said without a verdict or a warning colour
+            (lock 4): the other decks hold the copies. */}
+        {line.owned > 0 ? (
+          <span className="font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">
+            {line.heldElsewhere === line.owned
+              ? copy.list.owned(line.owned)
+              : copy.list.ownedSome(line.owned, line.heldElsewhere)}
+          </span>
+        ) : null}
+      </div>
+      <span className="mt-[3px] flex-none">
+        <BuyTag variant="row" reserveSlot price={lineFact(line, newestAsOf)} newestAsOf={newestAsOf} />
+      </span>
+    </li>
+  );
+}

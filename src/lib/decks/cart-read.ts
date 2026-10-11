@@ -1,5 +1,6 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
+import { recordSoftFailure } from "../cache/soft-failure";
 import { cards, decks } from "../../db/schema";
 import { allocateClaims } from "./allocate";
 import { loadAvailability, loadDeckBuyRows, type DeckBuyRow } from "./availability-query";
@@ -22,8 +23,11 @@ import { readBuyRowPrices, rollupBuyRows } from "./shopping-rollup";
  * and quantities only. The roll-up reads both in one call and fails whole.
  */
 export async function loadCart(userId: string): Promise<CartPayload> {
-  const rows = await loadDeckBuyRows(userId);
-  if (rows.length === 0) return { decks: [], lines: [], priced: true, newestAsOf: null };
+  const [rows, [{ total }]] = await Promise.all([
+    loadDeckBuyRows(userId),
+    db.select({ total: sql<number>`count(*)::int` }).from(decks).where(eq(decks.userId, userId)),
+  ]);
+  if (rows.length === 0) return { totalDecks: total, decks: [], lines: [], priced: true, newestAsOf: null };
 
   const deckIds = [...new Set(rows.map((r) => r.deckId))];
   const oracleIds = [...new Set(rows.map((r) => r.oracleId))];
@@ -31,6 +35,8 @@ export async function loadCart(userId: string): Promise<CartPayload> {
   // its rows (T2), while a failure in any other read is the page's own error.
   const [read, deckRows, cardRows, availability] = await Promise.all([
     readBuyRowPrices(userId, rows).catch((err): PriceRead | null => {
+      // A fallback, so a cached page never stores it: the next visit reads the prices again.
+      recordSoftFailure();
       console.error("[cart] price read failed; drawing rows without figures", err);
       return null;
     }),
@@ -50,7 +56,10 @@ export async function loadCart(userId: string): Promise<CartPayload> {
     ownership.set(oracleId, { owned: a.owned, heldByDeck });
   }
 
-  return buildCart(rows, read, deckRows, new Map(cardRows.map((c) => [c.oracleId, c.name])), ownership);
+  return {
+    ...buildCart(rows, read, deckRows, new Map(cardRows.map((c) => [c.oracleId, c.name])), ownership),
+    totalDecks: total,
+  };
 }
 
 /** Per card: copies owned, and how many each deck holds. Absent for a card owned in no copies. */
@@ -89,7 +98,7 @@ export function buildCart(
   deckRows: DeckRow[],
   cardNames: Map<string, string>,
   ownership: Map<string, Ownership> = new Map(),
-): CartPayload {
+): Omit<CartPayload, "totalDecks"> {
   const rollup = read ? rollupBuyRows(rows, read) : null;
   const deckById = new Map(deckRows.map((d) => [d.id, d]));
 

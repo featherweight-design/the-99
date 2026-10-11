@@ -60,6 +60,7 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   { path: "/decks/new", dynamic: false },
   // Help me choose ranks and badges commanders by what the player owns.
   { path: "/decks/new/choose", dynamic: false },
+  { path: "/decks/shopping", dynamic: false },
   { path: "/discover", dynamic: false },
 ];
 

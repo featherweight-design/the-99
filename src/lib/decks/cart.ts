@@ -62,6 +62,8 @@ export type CartDeck = {
 };
 
 export type CartPayload = {
+  /** Every deck the player owns, for `7 of 21 decks are missing cards`. */
+  totalDecks: number;
   decks: CartDeck[];
   lines: CartLine[];
   /** False when the price read failed (T2): rows still load, and no figure is drawn. */

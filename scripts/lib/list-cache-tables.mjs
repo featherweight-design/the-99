@@ -15,7 +15,7 @@
 import { readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 
-export const CACHED_PAGES = ["src/app/page.tsx", "src/app/decks/page.tsx"];
+export const CACHED_PAGES = ["src/app/page.tsx", "src/app/decks/page.tsx", "src/app/decks/shopping/page.tsx"];
 const OWNER_COLUMNS = ["user_id", "deck_id", "version_id"];
 export const STAMP_TABLE = "user_data_stamps";
 
