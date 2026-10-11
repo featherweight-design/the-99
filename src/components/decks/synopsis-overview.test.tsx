@@ -633,4 +633,15 @@ describe("the method-changed notice", () => {
     expect(inert(press)).toBe(false);
     expect(screen.queryByText(/Uses a credit/)).toBeNull();
   });
+
+  // Copilot r6: the paid fallback's own failure must show, and a rejection offers no retry.
+  it("1e: a failed paid press says so with Try again, and a rejected one offers no press", () => {
+    draw(old({ methodNotice: { attemptsLeft: 0 }, lastFree: false, lastFailed: true }));
+    expect(within(notice()).getByText(copy.failed)).toBeTruthy();
+    expect(within(notice()).getByRole("button", { name: copy.tryAgain })).toBeTruthy();
+    cleanup();
+    draw(old({ methodNotice: { attemptsLeft: 0 }, lastFree: false, lastFailed: true, lastRejected: true }));
+    expect(within(notice()).getByText(copy.rejected)).toBeTruthy();
+    expect(within(notice()).queryByRole("button")).toBeNull();
+  });
 });

@@ -117,7 +117,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   credit (even with every credit spent), two tries are the cap and a third falls to the player's
   allowance, a free success ends the notice, reuse is bypassed at both sites, and a section retry
   over an eligible overview is the free write. Refuses any database that is not `local-dev` by
-  `neon.branch_id`. `PROBE_USER_ID=<clerk id> ... --seed` leaves seven `mn-` decks for
+  `neon.branch_id`. `PROBE_USER_ID=<clerk id> ... --seed` leaves seven `mn-probe-fixture-` decks for
   `docs/superpowers/inventories/method-notice.json`'s contact sheet and prints the ids it reads;
   `--unseed` removes them, and touches only those decks and the calls their overviews hold.
 - `pnpm probe:synopsis` proves the deck synopsis's writes and reads against a real Postgres

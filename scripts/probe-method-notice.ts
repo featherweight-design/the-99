@@ -41,7 +41,7 @@ requireEnv(["DATABASE_URL"]);
 const SEED = process.argv.includes("--seed");
 const UNSEED = process.argv.includes("--unseed");
 const USER = SEED || UNSEED ? requireEnv(["PROBE_USER_ID"]).PROBE_USER_ID : `probe-method-notice-${Date.now()}`;
-const SEED_PREFIX = "mn-";
+const SEED_PREFIX = "mn-probe-fixture-";
 
 let failures = 0;
 const check = (label: string, actual: unknown, expected: unknown) => {
