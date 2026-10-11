@@ -1176,12 +1176,15 @@ export const aboutEntries: readonly AboutEntry[] = [
       'A run that comes back empty-handed, or that you stop, gives the credit back.',
       'Next to each button that uses a credit, you’ll see how many you have left and when the next one comes back.',
       'If we change how overviews are written, rewriting one written the old way is free, once per deck.',
+      'An Overview settles the deck’s main plan first, with any backups, then writes around it. In the full Overview, “Based on” under a claim lists the cards it’s about, and each one opens like any card.',
     ],
     // 2026-10-10 (overview accuracy, PR 5): an ORDINARY EDIT to this entry, no bump (plan 7.4, 8): the
     // free rewrite is not a new capability. It follows `OVERVIEW_V2_ENABLED`, the switch that
-    // makes the notice exist. Owed to /copy-review.
+    // makes the notice exist. Reviewed 2026-10-11 (copy-review, prose-pass): the plan-first and
+    // "Based on" key is a second ordinary edit to this entry, no bump (Hugh's ruling), same switch.
     keySwitches: {
       'If we change how overviews are written, rewriting one written the old way is free, once per deck.': 'OVERVIEW_V2_ENABLED',
+      'An Overview settles the deck’s main plan first, with any backups, then writes around it. In the full Overview, “Based on” under a claim lists the cards it’s about, and each one opens like any card.': 'OVERVIEW_V2_ENABLED',
     },
     marksPending: true,
     since: 11,
