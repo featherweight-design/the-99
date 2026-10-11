@@ -70,7 +70,8 @@ All paths are on `main`; line numbers read 2026-10-11, and they move.
   To buy figure from the shopping roll-up.
 
 **The commander index (staging; "against the field" is not a Lineup focus, ruling 1, but idle cards your
-commanders would want read `commander_support_cards`)**
+commanders would want read `commander_support_cards`, and for a partner deck
+`commander_pair_support_cards` (`src/db/schema.ts:1344`), the pair's own list)**
 - `commander_support` (`src/db/schema.ts:1146`): 3,467 ok commanders, all 21 of Hugh's among them.
 - `identity_composition` (`schema.ts:1471`): 19 rows of average land, type and curve per identity condition.
 - `format_staples` (`schema.ts:1423`): 770 rows over 16 conditions (each color pair and mono color, plus `count:3`).
@@ -176,8 +177,10 @@ deck's printing picks. Lands are cards whose type line contains Land.
   2,580 copies are idle. By cheapest current price: about $2,134 of value in decks, about $934 idle.
 - **Wanted more than owned:** 77 cards are needed by the decks in more copies than the player owns (Sol Ring: 20
   wanted, 17 owned). No card assignments exist on this account, so every contested copy is placed by seniority.
-- **Idle cards the commanders would want:** 144 idle cards sit in one of these decks' commanders' index lists (21 distinct commanders, plus Atreus as Gods' partner)
-  (`commander_support_cards.inclusion`, a percent) at 20% or more, 67 at 40% or more.
+- **Idle cards the commanders would want:** 144 idle cards sit in one of these decks' commanders' index lists
+  (`commander_support_cards.inclusion`, a percent) at 20% or more, 67 at 40% or more. Measured over the single
+  lists of 21 distinct commanders plus Atreus; the build reads Gods (Kratos + Atreus) from
+  `commander_pair_support_cards` instead, so its share of the figure will move slightly.
 - **Play recency:** last played, newest first: Scrappy Survivors 2026-10-05, Omnath 2026-09-28, Avatar Aang
   2026-09-26, Gods 2026-09-25, Tovolar 2026-09-12, Blood Rites 2026-09-12. The other 15 decks have never been
   played. Pods: 2 games of 3, 4 of 4, 1 of 5.
