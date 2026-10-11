@@ -35,11 +35,13 @@ export function methodNoticeOf(input: {
 }): MethodNotice | null {
   const { v2, shown, runs } = input;
   if (!v2 || !shown || runs.succeeded) return null;
-  if (shown.contractVersion >= SYNOPSIS_CONTRACT_VERSION_V2) {
-    // A new-method row stands for an old-method overview only when a free run of ours wrote it and
-    // its Overview was refused (a free run exists, so a legacy overview did). A deck first analyzed
-    // after the switch, whose own partial row is the shown one, never had one.
-    if (shown.overviewOk !== false || runs.attempts === 0) return null;
+  if (shown.overviewOk === false) {
+    // A partial row (another section passed, the Overview was refused) is no old-method OVERVIEW.
+    // The one exception is a new-method row a free run of ours wrote: it stands in for the legacy
+    // overview that run was started over, which exists because the free run does.
+    if (shown.contractVersion < SYNOPSIS_CONTRACT_VERSION_V2 || runs.attempts === 0) return null;
+  } else if (shown.contractVersion >= SYNOPSIS_CONTRACT_VERSION_V2) {
+    return null;
   }
   return { attemptsLeft: Math.max(0, FREE_ATTEMPTS - runs.attempts) };
 }

@@ -38,6 +38,8 @@ describe("methodNoticeOf", () => {
   it("stays owed over a partial new-method row whose Overview was refused", () => {
     expect(methodNoticeOf({ v2: true, shown: { contractVersion: 8, overviewOk: false }, runs: { attempts: 1, succeeded: false } })).toEqual({ attemptsLeft: 1 });
     expect(methodNoticeOf({ v2: true, shown: { contractVersion: 8, overviewOk: true }, runs: none })).toBeNull();
+    // An old-contract row whose Overview was refused is no old-method overview either.
+    expect(methodNoticeOf({ v2: true, shown: { contractVersion: 7, overviewOk: false }, runs: none })).toBeNull();
     // A deck first analyzed after the switch: its partial row is its own, with no free run behind it.
     expect(methodNoticeOf({ v2: true, shown: { contractVersion: 8, overviewOk: false }, runs: none })).toBeNull();
   });
