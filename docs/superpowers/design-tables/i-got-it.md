@@ -638,7 +638,7 @@ Copy wording is out of scope: rows name the `gotItCopy.*` key (proposed `src/lib
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | key (clean, claimed, claimedMany, partial, checking, undoing) | `receipt.added(card, q)` | same |
-| key (undone) | `receipt.undoneElsewhere(card)`, every done undo (the canvas's `receipt.undone`, "back on the list", is not built; see the PR's Settled) | same |
+| key (undone) | `receipt.undoneElsewhere(card, q)` (`Undone. <card> ×N removed from your collection.`, N the copies this write added), every done undo (the canvas's `receipt.undone`, "back on the list", is not built; see the PR's Settled) | same |
 | key (failed) | `receipt.undoFailed` | same |
 | font-size | 13.5px | 13.5px |
 | line-height | 1.35 | 1.35 |
@@ -946,7 +946,7 @@ Copy wording is out of scope: rows name the `gotItCopy.*` key (proposed `src/lib
 | C4 Undo checking | Undo pressed | Toast: Undo → `receipt.checking`, aria-busy, muted .8; History hidden; row tag disabled; timer held | check excludes source deck; Undo not pressable |
 | C5 Undo raises §E | a committed deck other than the source would go short | ShortDeckWarning `titleUndo` / `confirmUndo`: sheet (phone, scrim .62) or 480px dialog (desktop); Cancel focused | deck list excludes the source deck; Undo anyway not destructive-styled; Cancel → copy stays, toast leaves its pending state |
 | C6 Undo in flight | no deck would go short, or Undo anyway pressed | Toast: Undo → `receipt.undoing`, aria-busy, History hidden; slot still held | timer held |
-| C7 Undo done | revert applied, or answered `alreadyReverted` | Toast: L1 `receipt.undoneElsewhere`, every case, no L2/L3, no actions; the held slot steps aside once a list billing the card arrives, and the row fades back in place (150ms), derived at render; counts/total return | no held slot left behind; toast goes after 8s |
+| C7 Undo done | revert applied, or answered `alreadyReverted` | Toast: L1 `receipt.undoneElsewhere(card, q)`, every case, no L2/L3, no actions; the held slot steps aside once a list billing the card arrives, and the row fades back in place (150ms), derived at render; counts/total return | no held slot left behind; toast goes after 8s |
 | C8 Undo failed | revert errors, or answered `notFound` | Toast role=alert: L1 `receipt.undoFailed`, L3 `receipt.undoFailedBody`, `receipt.openHistory` link (a `Link` to the entry in History); Undo withdrawn | nothing changes: copy still owned, slot still held; no retry offered |
 | C9 Leave transition | write answers for a row that leaves | live row → held slot, 150ms ease-out opacity fade; reduced motion: one-frame swap | no height animation; neighbours do not move; slot holds until the next read and survives revalidation |
 | — Commander receipt | (requested in scope) | **not designed**: no distinct form in the handoff; a commander row's receipt follows C1/C2/C3 by outcome | — |
