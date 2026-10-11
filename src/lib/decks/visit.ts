@@ -36,7 +36,9 @@ export function noteDeckRoute(path: string | null): void {
     visit = null;
     return;
   }
-  if (visit?.deckId !== id) visit = { deckId: id, baselines: {} };
+  // Lowercase, as Postgres returns a uuid: an uppercase URL and the deck's own id name one deck.
+  const deckId = id.toLowerCase();
+  if (visit?.deckId !== deckId) visit = { deckId, baselines: {} };
 }
 
 /** A stored ok result's identity: its `lastOkAt` as epoch-ms, or null with none. */
@@ -48,7 +50,8 @@ export function okKeyOf(lastOkAt: Date | string | null | undefined): string | nu
 
 /** This visit's baseline for one tool: `seen` the first time it is asked in the visit, the
  *  recorded one thereafter. Starts a visit for `deckId` when none is open for it. */
-export function visitBaseline(deckId: string, tool: DeckTool, seen: ToolBaseline): ToolBaseline {
+export function visitBaseline(anyCaseId: string, tool: DeckTool, seen: ToolBaseline): ToolBaseline {
+  const deckId = anyCaseId.toLowerCase();
   if (visit?.deckId !== deckId) visit = { deckId, baselines: {} };
   const recorded = visit.baselines[tool];
   if (recorded) return recorded;

@@ -18,6 +18,15 @@ function after(paths: (string | null)[], tool: "suggested" | "cuts" = "suggested
 }
 
 describe("the deck visit", () => {
+  it("an uppercase deck URL and the deck's own lowercase id are one visit", () => {
+    const C = "abcdef12-3456-4abc-8def-abcdef123456";
+    noteDeckRoute(`/decks/${C.toUpperCase()}`);
+    visitBaseline(C, "suggested", first);
+    noteDeckRoute(`/decks/${C}/changes`);
+    noteDeckRoute(`/decks/${C.toUpperCase()}`);
+    expect(visitBaseline(C.toUpperCase(), "suggested", later)).toEqual(first);
+  });
+
   it("a tab switch keeps the visit: the baseline asked twice is the first one", () => {
     expect(after([`/decks/${A}`])).toEqual(first);
   });
