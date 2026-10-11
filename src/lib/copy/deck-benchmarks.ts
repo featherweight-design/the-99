@@ -113,9 +113,9 @@ export const deckBenchmarksCopy = {
     },
     readings: {
       velocity: (lands: number, ramp: string, avgMv: string) =>
-        `${lands} lands and ${ramp} points of early ramp, set against an average spell of ${avgMv} mana. Ramp counts in full at 2 mana or less and half at 3, and a one-time burst counts half again.`,
+        `${n(lands, 'land', 'lands')} and ${ramp} ${ramp === '1' ? 'point' : 'points'} of early ramp, set against an average spell of ${avgMv} mana. Ramp counts in full at 2 mana or less and half at 3, and a one-time burst counts half again.`,
       flow: (pts: number, cards: number) =>
-        `${pts} points from ${n(cards, 'card', 'cards')}. A card that draws again and again counts 2, a one-time draw counts 1, and your commander’s own draw counts double. Draws that go to opponents don’t count.`,
+        `${n(pts, 'point', 'points')} from ${n(cards, 'card', 'cards')}. A card that draws again and again counts 2, a one-time draw counts 1, and your commander’s own draw counts double. Draws that go to opponents don’t count.`,
       interaction: (answers: number, cheapInstant: number) =>
         `${n(answers, 'answer', 'answers')}, ${cheapInstant === 0 ? (answers === 1 ? 'and it isn’t' : 'and none is') : answers === 1 ? 'and it is' : `${cheapInstant} of them`} cheap and instant. Each counts 1, plus 1 at instant speed or with flash, plus 1 at 2 mana or less. Counterspells count here; removal is what answers a card already on the battlefield.`,
       win: (odds: string) =>
