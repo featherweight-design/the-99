@@ -50,6 +50,7 @@ const applied = (kind: string) => ({
   status: "applied",
   entry: { id: "e", seq: 1, kind, raised: 1, lowered: 0, rows: [] },
   owned: { before: { [A]: 5 }, after: { [A]: 6 } },
+  short: [] as typeof deck[],
 });
 
 beforeEach(() => {
@@ -89,6 +90,13 @@ describe("confirmUpload", () => {
     expect(stub.replace).not.toHaveBeenCalled();
     expect(stub.invalidate).toHaveBeenCalledWith("user_1");
     expect(stub.receipt.mock.calls[0][0]).toMatchObject({ ownedBefore: { [A]: 5 }, ownedAfter: { [A]: 6 } });
+  });
+
+  it("hands the receipt the decks the write left short, as ids and counts only", async () => {
+    stub.ledger = true;
+    stub.apply.mockResolvedValue({ ...applied("upload_replace"), short: [deck] });
+    await confirmUpload(UPLOAD, { confirmShort: [deck] });
+    expect(stub.receipt.mock.calls[0][0].nowShort).toEqual([{ deckId: "d", oracleId: A, short: 1 }]);
   });
 
   it("gives an Add's receipt the counts the write read under its lock, not the earlier snapshot", async () => {

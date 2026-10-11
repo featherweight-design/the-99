@@ -38,6 +38,19 @@ function SectionHead({ label, note }: { label: string; note: string }) {
   );
 }
 
+/**
+ * The committed decks this upload left short, named, most short first (the warning's order). A
+ * version-2 receipt carries none. A deck whose name was not frozen is left out rather than drawn
+ * blank.
+ */
+export function nowShortDecks(summary: ArrivalsSummary | null, deckNames: Record<string, string>): string[] {
+  const byDeck = new Map<string, number>();
+  for (const r of summary?.nowShort ?? []) byDeck.set(r.deckId, (byDeck.get(r.deckId) ?? 0) + r.short);
+  return [...byDeck]
+    .sort((a, b) => b[1] - a[1])
+    .flatMap(([deckId]) => (deckNames[deckId] ? [deckNames[deckId]] : []));
+}
+
 /** One money row: the card, the deck, and — on a still-owed row — why it is still owed. */
 export function ReceiptRow({
   cardName,
@@ -125,9 +138,10 @@ export function ArrivalsSummary({
   // when the shortage resolves. Reading the live list here makes a receipt whose only
   // consequence was a contested arrival announce that nothing your decks care about moved —
   // about an import that moved something. The live list still controls which rows are DRAWN.
-  const nothingToReport =
-    cleared.length === 0 && still.length === 0 && (summary?.contested.length ?? 0) === 0;
   const names = summary?.names ?? { cards: {}, decks: {} };
+  const nowShort = nowShortDecks(summary, names.decks);
+  const nothingToReport = cleared.length === 0 && still.length === 0
+    && (summary?.contested.length ?? 0) === 0 && nowShort.length === 0;
 
   const unmatched = summary?.issues.unmatched ?? 0;
   const parseErrors = summary?.issues.parseErrors ?? 0;
@@ -166,6 +180,7 @@ export function ArrivalsSummary({
             : still.length > 0
               ? copy.summary.ledeOwing(summary?.totalBefore ?? 0, summary?.arrived ?? 0, summary?.left ?? 0)
               : copy.summary.ledeNoContention(summary?.totalBefore ?? 0, summary?.arrived ?? 0, summary?.left ?? 0)}
+        {nowShort.length > 0 ? ` ${copy.summary.nowShort(nowShort)}` : ""}
       </p>
       <p className="font-mono text-[10.5px] mt-[8px] mb-0" style={{ color: "var(--fg-faint)" }}>
         {copy.summary.fileStamp(stampDate, filename)}

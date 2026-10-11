@@ -13,6 +13,7 @@ function input(over: Partial<ArrivalsInput> = {}): ArrivalsInput {
     buyBefore: [],
     buyAfter: [],
     claims: {},
+    nowShort: [],
     unmatched: [],
     parseErrorCount: 0,
     cardNames: { [CARD]: "Brushland", [OTHER]: "Birds of Paradise" },
@@ -314,5 +315,24 @@ describe("withoutUndecided", () => {
     expect(s.cleared.map((r) => r.oracleId)).toContain(CARD);
     expect(s.cleared.map((r) => r.oracleId)).not.toContain(OTHER);
     expect(s.still.map((r) => r.oracleId)).toContain(CARD);
+  });
+});
+
+describe("arrivals — decks left short", () => {
+  it("freezes the write's short decks and their names into a version-3 receipt", () => {
+    const s = buildArrivalsSummary(input({
+      ownedBefore: { [CARD]: 2 },
+      ownedAfter: {},
+      nowShort: [{ deckId: DECK_A, oracleId: CARD, short: 2 }],
+    }));
+    expect(s.version).toBe(3);
+    expect(s.nowShort).toEqual([{ deckId: DECK_A, oracleId: CARD, short: 2 }]);
+    expect(s.names.decks[DECK_A]).toBe("HD Avatar Aang");
+    expect(s.names.cards[CARD]).toBe("Brushland");
+  });
+
+  it("is not an empty receipt when it left a deck short", () => {
+    const s = buildArrivalsSummary(input({ nowShort: [{ deckId: DECK_A, oracleId: CARD, short: 1 }] }));
+    expect(summaryIsEmpty(s)).toBe(false);
   });
 });

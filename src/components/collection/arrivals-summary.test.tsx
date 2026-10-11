@@ -159,3 +159,41 @@ describe("ArrivalsSummary", () => {
     expect(screen.queryByText(/nothing here needs saving/)).toBeNull();
   });
 });
+
+describe("ArrivalsSummary — decks left short", () => {
+  const decks = { d1: "Gishath", d2: "Brago", d3: "Tovolar", d4: "Gods" };
+  const withShort = (rows: { deckId: string; short: number }[]) => summary({
+    version: 3,
+    arrived: 0,
+    left: 40,
+    nowShort: rows.map((r) => ({ ...r, oracleId: CARD })),
+    names: { cards: { [CARD]: "Brushland" }, decks },
+  });
+
+  it("names the decks the upload left short, most short first, after the lede", () => {
+    render(view(withShort([{ deckId: "d2", short: 1 }, { deckId: "d1", short: 3 }])));
+    expect(screen.getByText(/Replacing left 2 decks short: Gishath and Brago\./)).toBeTruthy();
+    expect(screen.queryByText(copy.summary.ledeNothingToReport)).toBeNull();
+  });
+
+  it("counts past three names", () => {
+    render(view(withShort([
+      { deckId: "d1", short: 4 }, { deckId: "d2", short: 3 }, { deckId: "d3", short: 2 }, { deckId: "d4", short: 1 },
+    ])));
+    expect(screen.getByText(/Replacing left 4 decks short: Gishath, Brago, Tovolar and 1 more\./)).toBeTruthy();
+  });
+
+  it("says nothing about short decks on a version-2 receipt", () => {
+    render(view(summary({ left: 40 })));
+    expect(screen.queryByText(/Replacing left/)).toBeNull();
+  });
+});
+
+describe("copy.summary.nowShort", () => {
+  it("names one deck without a count", () => {
+    expect(copy.summary.nowShort(["Gishath"])).toBe("Replacing left Gishath short.");
+  });
+  it("joins three with and", () => {
+    expect(copy.summary.nowShort(["A", "B", "C"])).toBe("Replacing left 3 decks short: A, B and C.");
+  });
+});
