@@ -50,9 +50,12 @@ written at commit time. It is a commit message. Deck notes are a standing list o
 
 **Card search and card details exist and are reused.**
 - `searchCards(query, colorIdentity, ownedOnly, deckId?)` (`src/app/decks/[id]/search-action.ts:78`) is the Add
-  panel's name search. Called with `colorIdentity: null` and `ownedOnly: false` it answers "any card" (the unresolved
-  row picker calls it that way, per its comment), returning `oracleId`, `name`, type line, owned state and art.
-  The deck's own cards need no search: the page already holds the list.
+  panel's name search. With `colorIdentity: null` and `ownedOnly: false` it drops the colour and ownership filters,
+  but it still keeps only commander-legal game cards (`cards.commanderLegal` and `isGameCardWhere()`,
+  `search-action.ts:121-124`), so used unchanged it would not find a banned card. The note picker needs the same
+  name matching without the legality filter (see "What engineering has locked" 2 and open question 8). It returns
+  `oracleId`, `name`, type line, owned state and art. The deck's own cards need no search: the page already holds
+  the list.
 - `useCardDetail()` (`src/components/cards/card-detail-provider.tsx:225`) gives `open(oracleId, ...)`
   (`card-detail-provider.tsx:82`); the deck page mounts a provider that carries the deck id and the ids the deck
   holds. A tag opens details through this, as a card row does.
@@ -91,10 +94,13 @@ is intended; the version's own `note` already records why that commit was made.
    `created_at`, `updated_at` (null until edited). Actions: add, edit, set done or open, delete. Ownership is
    checked the way `logGame` checks it. No ordering column, no reminders, no due date, no sharing field, no
    attachment, no history of edits.
-2. **A tag is stored as an oracle id the player picked, never a name matched later.** Typing `[[` opens a
-   picker over the deck's cards and then any card (`searchCards`); picking one writes the card's id into the note.
-   A name typed by hand that matches nothing stays plain text. The note draws the card's *current* catalog name.
-   A card removed from the deck keeps its tag; a card the catalog no longer holds draws as plain text.
+2. **A tag is stored as an oracle id the player picked, with the name it had then, never a name matched later.**
+   Typing `[[` opens a picker over the deck's cards and then any card; picking one writes the card's id and its
+   name at that moment into the note's text. The note draws the card's *current* catalog name, and falls back to the
+   stored name when the card can no longer be found, drawn as plain text (a tag that cannot resolve). A name typed by
+   hand that matches nothing stays plain text. A card removed from the deck keeps its tag. "Any card" is any game
+   card, not only commander-legal ones, so a note can name a banned card to remember it; that needs a picker mode on
+   the name search, which `searchCards` does not have today.
 3. **Length.** One line, capped, enforced in code and by a check constraint (`char_length`), as the other
    free-text fields are. The cap is open question 2; the precedents are 140 (a game note) and 240 (the
    description).
@@ -126,8 +132,9 @@ is intended; the version's own `note` already records why that commit was made.
 
 ## Open questions
 
-1. **Header or tab?** The tagline lives in the header on every tab; notes live in the `Your deck` tab. Is the
-   notes block in the header's shadow (always visible), or the first block of the tab?
+1. **Where in the tab?** Ruling 5 puts notes in `Your deck`, under the description, which draws in the header
+   above the tabs. Within the tab: the first block, above the decklist, or beside the other panels there? Open or
+   collapsed by default?
 2. **How long is one line?** 140 (the game note's cap, which wraps to three lines at 390) or 240 (the
    description)? A note with two tags is longer than it looks.
 3. **Newest first, or oldest first?** A to-do list reads oldest first; a log reads newest first. And whether
@@ -138,6 +145,9 @@ is intended; the version's own `note` already records why that commit was made.
 6. **A cap on the number of notes per deck?** Not ruled; a cap is one constraint and a refusal state.
 7. **Does a tag in a note also show on the card?** A card carries no mark that notes mention it. Out of scope
    unless Design wants it, since it would put a per-card read on the decklist.
+
+8. **Does "any card" include a card that is not commander-legal?** The default above is yes (a banned card can
+   be tagged). If not, the picker reuses `searchCards` unchanged.
 
 ## Prior art
 
