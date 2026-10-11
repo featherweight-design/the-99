@@ -22,15 +22,22 @@ import { RESERVATION_TTL_MS } from "../model/allowance-rule";
 export const SYNOPSIS_CONTRACT_VERSION = 7;
 // 8: the v2 method (plan 2026-10-10-overview-accuracy.md): a weakness checklist with tiers and
 //    evidence refs on every claim. Written only while `OVERVIEW_V2_ENABLED` is on.
-export const SYNOPSIS_CONTRACT_VERSION_V2 = 8;
+// 11: the v2 method, plans first (Hugh's Avatar Aang and Wizards notes, 2026-10-11): the reply
+//    names its plans before anything else, a listed combo leads only when the deck is built for it,
+//    universal staples stay out of strategy and mulligan, the colors the lands make and each card's
+//    own win condition are facts, and it is written by Sonnet 5.5 at effort medium. A METHOD change,
+//    so every overview at 8 gets the "method changed" notice and its free rewrite.
+export const SYNOPSIS_CONTRACT_VERSION_V2 = 11;
 // 9 and 10: contracts 7 and 8 with the interaction figures read from the evidence benchmarks'
 //    shared reading (plan 2026-10-10-evidence-benchmarks.md, PR 1b). Written only while
 //    `DECK_BENCHMARKS_ENABLED` is on. A section retry across the switch rewrites the whole
 //    document, so one Overview never quotes both readings.
 export const SYNOPSIS_CONTRACT_VERSION_BENCHMARKS = 9;
-export const SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS = 10;
+// 12: contract 11 with the benchmarks' interaction figures, as 10 was to 8. Above 11, so a
+//    benchmarks row never reads as older than the method and shows the notice for ever.
+export const SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS = 12;
 
-/** The contract a write is made under: 8 while the v2 method is on, 7 otherwise; 10 and 9 when
+/** The contract a write is made under: 11 while the v2 method is on, 7 otherwise; 12 and 9 when
  *  the interaction figures are the benchmarks' too. */
 export function synopsisContractVersion(v2: boolean, benchmarks = false): number {
   if (benchmarks) return v2 ? SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS : SYNOPSIS_CONTRACT_VERSION_BENCHMARKS;
@@ -51,7 +58,8 @@ if (SYNOPSIS_REAPER_CUTOFF_MS >= RESERVATION_TTL_MS) {
 /**
  * One budget across the client's two attempts. 110s, as tuning's (#902). It was sized when the
  * synopsis ran adaptive thinking at an 8,000-token ceiling (83-100s with the in-deadline retry);
- * at `effort: "low"` and 3,000 tokens a call runs far shorter, and the budget is kept so the
+ * at Sonnet 5 `low` and 3,000 tokens a call ran far shorter, and Sonnet 5.5 at `medium` measured a
+ * 12s median and 36s at most (2026-10-11); the budget is kept so the
  * repair call (contract B) shares it. The action runs from the deck page, whose `maxDuration`
  * (120s, set by tuning D1) must stay above this or the platform kills the call before it can refund.
  */
@@ -73,9 +81,10 @@ export const SYNOPSIS_REPAIR_MIN_MS = 30_000;
 export const SYNOPSIS_ANSWER_TOKENS_WORST_CASE = 2_000;
 
 /**
- * Room for the model's reasoning at `effort: "low"` (`SYNOPSIS_EFFORT`), which counts inside
- * `max_tokens`. Full Sonnet with adaptive thinking is NOT viable here: at an 8,000-token ceiling
- * it truncated or timed out a third of its answers (eval harness, 2026-09-24).
+ * Room for the model's reasoning at `effort: "low"`, which counts inside `max_tokens`: the
+ * contract-7 ceiling, sized for Sonnet 5 at low (eval harness, 2026-09-24), which contract 7 still
+ * runs (`SYNOPSIS_EFFORT_V7`); the v2 contracts run Sonnet 5.5 at medium under
+ * `SYNOPSIS_MAX_TOKENS_V8` (`synopsisCallSettings`).
  */
 export const SYNOPSIS_REASONING_HEADROOM_TOKENS = 1_000;
 
@@ -104,10 +113,17 @@ export const SYNOPSIS_MAX_TOKENS = 3_000;
  * sample 4 and finished at about 4,600 tokens under the new ceiling. The finished answers are
  * tight (JSON 4.0 to 4.9k characters, about 1,300 tokens), so the spread is reasoning, which counts inside the ceiling
  * and is unbounded by it. Paying for the headroom costs nothing on a call that finishes; it is
- * priced in full only by the spend guard's reservation (`FEATURE_CALLS.synopsis`, +$0.06 per
+ * priced in full only by the spend guard's reservation (`FEATURE_CALLS.synopsis`, then +$0.06 per
  * write) and by a reply that runs away.
+ *
+ * 16,000 from 2026-10-11, with the switch to Sonnet 5.5 at effort `medium` (`model.ts`): thinking
+ * at medium counts inside this ceiling, and the eval arm that was measured ran at 16,000, streamed,
+ * with no reply cut off (stop reason `end_turn` on all 25 answers across its four runs, the largest
+ * 5,082 tokens). The request streams (`generate.ts`), so a ceiling this high carries no HTTP-timeout
+ * risk. The reservation is $0.832 a write, $0.40 above 6,000's, and settles to the actual cost.
+ * Only the v2 contracts use it; contract 7 keeps Sonnet 5 at low under `SYNOPSIS_MAX_TOKENS`.
  */
-export const SYNOPSIS_MAX_TOKENS_V8 = 6_000;
+export const SYNOPSIS_MAX_TOKENS_V8 = 16_000;
 
 /**
  * Counts per section (`SYNOPSIS-modal.md` §4.2). Checked by the validator, never by the schema:

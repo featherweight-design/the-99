@@ -30,12 +30,12 @@ describe("the contract-8 ceiling", () => {
 });
 
 describe("the contract version", () => {
-  it("follows the v2 switch: 8 while it is on, 7 otherwise", () => {
+  it("follows the v2 switch: 11 while it is on, 7 otherwise", () => {
     expect(synopsisContractVersion(false)).toBe(SYNOPSIS_CONTRACT_VERSION);
     expect(synopsisContractVersion(true)).toBe(SYNOPSIS_CONTRACT_VERSION_V2);
     // The benchmarks' interaction reading is its own contract, so a retry never mixes the two.
     expect(new Set([false, true].flatMap((v2) => [false, true].map((b) => synopsisContractVersion(v2, b)))).size).toBe(4);
     expect(SYNOPSIS_CONTRACT_VERSION).toBe(7);
-    expect(SYNOPSIS_CONTRACT_VERSION_V2).toBe(8);
+    expect(SYNOPSIS_CONTRACT_VERSION_V2).toBe(11);
   });
 });

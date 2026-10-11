@@ -31,6 +31,7 @@ import { computeAndStoreProfile, type StoredProfileDeps } from "../src/lib/profi
 import type { ModelOutcome } from "../src/lib/model/client";
 import { readAllowance } from "../src/lib/model/allowance";
 import { retrySynopsisFor, writeSynopsisFor, type GenerateDeps } from "../src/lib/synopsis/generate";
+import { SYNOPSIS_CONTRACT_VERSION_V2 } from "../src/lib/synopsis/limits";
 import { readSynopsisState } from "../src/lib/synopsis/read";
 import type { SynopsisReply } from "../src/lib/synopsis/response-schema";
 import { STUB_MODEL, stubReply, type StubMode } from "../src/lib/synopsis/stub";
@@ -180,7 +181,7 @@ async function scenarios() {
   calls = 0;
   await failFree(deck, 1);
   check("a failed free try calls the model once", calls, 1);
-  check("…is written as a system call", (await origins(deck)).slice(-1), [{ origin: "system", status: "refunded", contract_version: 8 }]);
+  check("…is written as a system call", (await origins(deck)).slice(-1), [{ origin: "system", status: "refunded", contract_version: SYNOPSIS_CONTRACT_VERSION_V2 }]);
   check("…and touches no credit", await allowanceUsed(), before);
   s = await state(deck);
   check("…leaving one try, carried by the notice", [s.methodNotice, s.lastFree, s.lastFailed], [{ attemptsLeft: 1 }, true, true]);
@@ -215,16 +216,16 @@ async function scenarios() {
   calls = 0;
   const free = await writeSynopsisFor(ok, USER, deps);
   check("a free rewrite over an overview the list already has is WRITTEN, not reused", [free.kind, calls], ["written", 1]);
-  check("…is a system call, spent", (await origins(ok)).slice(-1), [{ origin: "system", status: "spent", contract_version: 8 }]);
+  check("…is a system call, spent", (await origins(ok)).slice(-1), [{ origin: "system", status: "spent", contract_version: SYNOPSIS_CONTRACT_VERSION_V2 }]);
   check("…costs the player no credit", await allowanceUsed(), used0);
   s = await state(ok);
-  check("…and the shown overview is the new method's: no notice", [s.methodNotice, s.synopsis?.contractVersion], [null, 8]);
+  check("…and the shown overview is the new method's: no notice", [s.methodNotice, s.synopsis?.contractVersion], [null, SYNOPSIS_CONTRACT_VERSION_V2]);
   calls = 0;
   check("a second press reuses it, calling no model", [(await writeSynopsisFor(ok, USER, deps)).kind, calls], ["reused", 0]);
 
   // 7 · A REVERT: the free run's overview belongs to another list now, so the shown row is the old
   // contract-7 one again, and the free rewrite already produced an overview: no second one.
-  await db.execute(sql`update deck_synopses set fingerprint = 'another-list' where deck_id = ${ok}::uuid and contract_version = 8`);
+  await db.execute(sql`update deck_synopses set fingerprint = 'another-list' where deck_id = ${ok}::uuid and contract_version = ${SYNOPSIS_CONTRACT_VERSION_V2}`);
   s = await state(ok);
   check("a revert to the old overview offers no second free rewrite", [s.synopsis?.contractVersion, s.methodNotice], [7, null]);
 

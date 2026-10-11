@@ -65,6 +65,28 @@ export type SynopsisFacts = {
   stats?: DeckStatsFact;
 };
 
+/**
+ * The deck's cards that carry their own win condition, each with that condition as its rules text
+ * states it: the sentence holding "you win the game" (Laboratory Maniac: drawing from an empty
+ * library). Only YOUR win: "loses the game" (a burn finisher, poison) is the opponent's loss and a
+ * different claim, and a hate card ("You can't win the game", "your opponents can't win the game")
+ * never says "you win the game" at all. The condition travels with the
+ * name so the model never says a card simply wins.
+ *
+ * Why it exists: on HD - Wizards, Laboratory Maniac reached the model only as one half of a combo
+ * "one card short", which the prompt says never to call a plan, and every arm called the deck
+ * control (Hugh, 2026-10-11).
+ */
+export function ownWinConditions(cards: readonly Pick<FactCard, "name" | "oracleText">[]): { name: string; condition: string }[] {
+  const out: { name: string; condition: string }[] = [];
+  for (const c of cards) {
+    const sentences = (c.oracleText ?? "").split(/(?<=[.!?])\s+|\n+/);
+    const win = sentences.find((s) => /\byou win the game\b/i.test(s));
+    if (win) out.push({ name: c.name, condition: win.trim() });
+  }
+  return out;
+}
+
 /** The identity's name, for facts built before `identityName` existed as well as after. */
 export function identityNameOf(facts: Pick<SynopsisFacts, "identity" | "identityName">): string {
   return facts.identityName ?? colorLabel(facts.identity);

@@ -72,16 +72,18 @@ vi.mock("../profile/stored", async (orig) => ({
   sameList: () => true,
 }));
 
-import { writeSynopsisFor } from "./generate";
+import { synopsisCallSettings, writeSynopsisFor } from "./generate";
+import { SYNOPSIS_MAX_TOKENS, SYNOPSIS_MAX_TOKENS_V8 } from "./limits";
 
 const deps = {
-  modelName: "stub",
+  modelName: "model-v7",
+  modelNameV2: "model-v2",
   model: async () => ({ ok: false as const, errorClass: "upstream_busy" as const }),
   now: () => new Date("2026-10-11T12:00:00Z"),
 };
 
 /** Runs one write and returns the contract the pending row was stamped with. */
-async function stampedContract(opts: { v2: boolean; benchmarks: boolean; labelsFail?: boolean }) {
+async function stampedRow(opts: { v2: boolean; benchmarks: boolean; labelsFail?: boolean }) {
   vi.stubEnv("OVERVIEW_V2_ENABLED", opts.v2 ? "true" : "false");
   vi.stubEnv("DECK_BENCHMARKS_ENABLED", opts.benchmarks ? "true" : "false");
   state.labels = opts.labelsFail ? async () => { throw new Error("down"); } : async () => new Map();
@@ -99,8 +101,9 @@ async function stampedContract(opts: { v2: boolean; benchmarks: boolean; labelsF
   vi.spyOn(console, "error").mockImplementation(() => undefined);
   await expect(writeSynopsisFor("deck-1", "user-1", deps)).rejects.toBe(STOP);
   expect(state.inserted).toHaveLength(1);
-  return state.inserted[0].contractVersion;
+  return state.inserted[0];
 }
+const stampedContract = async (opts: Parameters<typeof stampedRow>[0]) => (await stampedRow(opts)).contractVersion;
 
 describe("the contract a write stamps on its run", () => {
   beforeEach(() => vi.restoreAllMocks());
@@ -108,15 +111,36 @@ describe("the contract a write stamps on its run", () => {
 
   it.each([
     [false, false, 7],
-    [true, false, 8],
+    [true, false, 11],
     [false, true, 9],
-    [true, true, 10],
+    [true, true, 12],
   ])("v2=%s benchmarks=%s stamps %i", async (v2, benchmarks, contract) => {
     expect(await stampedContract({ v2, benchmarks })).toBe(contract);
   });
 
-  it("stamps 7 or 8, never 9 or 10, when the label read fails and the figures fall back", async () => {
+  it("stamps 7 or 11, never 9 or 12, when the label read fails and the figures fall back", async () => {
     expect(await stampedContract({ v2: false, benchmarks: true, labelsFail: true })).toBe(7);
-    expect(await stampedContract({ v2: true, benchmarks: true, labelsFail: true })).toBe(8);
+    expect(await stampedContract({ v2: true, benchmarks: true, labelsFail: true })).toBe(11);
+  });
+});
+
+// Decided 2026-10-11: the model is tied to the contract. Contract 7 is what production runs while
+// the v2 switch is off, and was never measured on Sonnet 5.5, so merging the switch must not move it.
+describe("the model each contract runs on", () => {
+  beforeEach(() => vi.restoreAllMocks());
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("keeps contract 7 on Sonnet 5 at low, its own ceiling, not streamed", () => {
+    expect(synopsisCallSettings(false)).toEqual({ model: "claude-sonnet-5", effort: "low", maxTokens: SYNOPSIS_MAX_TOKENS, stream: false });
+  });
+
+  it("runs the v2 contracts on Sonnet 5.5 at medium, streamed under the larger ceiling", () => {
+    expect(synopsisCallSettings(true)).toEqual({ model: "claude-sonnet-5-5", effort: "medium", maxTokens: SYNOPSIS_MAX_TOKENS_V8, stream: true });
+    expect(SYNOPSIS_MAX_TOKENS_V8).toBe(16_000);
+  });
+
+  it("records the contract's own model on the run", async () => {
+    expect((await stampedRow({ v2: false, benchmarks: false })).model).toBe("model-v7");
+    expect((await stampedRow({ v2: true, benchmarks: false })).model).toBe("model-v2");
   });
 });

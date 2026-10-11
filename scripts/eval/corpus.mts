@@ -126,21 +126,22 @@ if (command === "run") {
   await connectStaging();
   const { loadProfileHead, loadDeckProfileFromHead } = await import("../../src/lib/profile/load");
   const { listFingerprint } = await import("../../src/lib/profile/fingerprint");
-  const { factsFor, checkReply, refusedSections, repairPrompt, applyRepair } = await import("../../src/lib/synopsis/generate");
+  const { factsFor, checkReply, refusedSections, repairPrompt, applyRepair, synopsisCallSettings } = await import("../../src/lib/synopsis/generate");
   const { buildSynopsisPrompt } = await import("../../src/lib/synopsis/prompt");
   const { callModel } = await import("../../src/lib/model/client");
   const { synopsisResponseSchema, synopsisResponseSchemaV8Wire } = await import("../../src/lib/synopsis/response-schema");
   type SynopsisReply = import("../../src/lib/synopsis/response-schema").SynopsisReply;
-  const { SYNOPSIS_MAX_TOKENS, SYNOPSIS_MAX_TOKENS_V8, SYNOPSIS_DEADLINE_MS, SYNOPSIS_REPAIR_MIN_MS } = await import("../../src/lib/synopsis/limits");
-  const { SYNOPSIS_MODEL, SYNOPSIS_EFFORT } = await import("../../src/lib/synopsis/model");
+  const { SYNOPSIS_DEADLINE_MS, SYNOPSIS_REPAIR_MIN_MS } = await import("../../src/lib/synopsis/limits");
   const { costUsd, worstCaseUsd } = await import("./lib/pricing.mjs");
   const { db } = await import("../../src/db/index");
   const { sql } = await import("drizzle-orm");
 
-  // The arm. Omitted flags are production's own constants, so a run with none is production's.
-  const model = args.model ?? SYNOPSIS_MODEL;
+  // The arm. Omitted flags are production's own settings for the contract the prompt runs under
+  // (v1 and v2 are contract 7, v8 the v2 contracts), so a run with none is production's.
+  const prod = synopsisCallSettings(v8);
+  const model = args.model ?? prod.model;
   if (args.effort !== undefined && !["low", "medium", "high"].includes(args.effort)) throw new Error(`eval:corpus run: --effort must be low, medium or high (got ${args.effort})`);
-  const effort = (args.effort ?? SYNOPSIS_EFFORT) as "low" | "medium" | "high";
+  const effort = (args.effort ?? prod.effort) as "low" | "medium" | "high";
   const positive = (flag: string, v: string | undefined, fallback: number) => {
     if (v === undefined) return fallback;
     const n = Number(v);
@@ -148,7 +149,7 @@ if (command === "run") {
     return n;
   };
   const deadlineMs = positive("deadline-ms", args["deadline-ms"], SYNOPSIS_DEADLINE_MS);
-  const arm = { model, effort, maxTokens: positive("max-tokens", args["max-tokens"], v8 ? SYNOPSIS_MAX_TOKENS_V8 : SYNOPSIS_MAX_TOKENS), deadlineMs, stream: args.stream };
+  const arm = { model, effort, maxTokens: positive("max-tokens", args["max-tokens"], prod.maxTokens), deadlineMs, stream: args.stream || prod.stream };
   console.log(`arm: ${JSON.stringify(arm)}`);
 
   let runSpend = 0;

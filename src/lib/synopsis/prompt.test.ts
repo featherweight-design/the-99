@@ -269,6 +269,18 @@ describe("buildSynopsisPrompt under contract 8", () => {
     expect(buildSynopsisPrompt(FACTS).system).toContain("[[Sol Ring]] with nothing to cast after it stalls out.");
   });
 
+  it("lists a card's own win condition with its condition, under contract 8 only", () => {
+    const lab = { ...FACTS, cards: [...FACTS.cards, { ...FACTS.cards[0]!, oracleId: "id-lab", name: "Laboratory Maniac", oracleText: "If you would draw a card while your library has no cards in it, you win the game instead.", categories: [] }] };
+    const { user, system } = buildSynopsisPrompt(lab, undefined, C8);
+    expect(user).toContain("Cards with their own win condition");
+    expect(user).toContain("- Laboratory Maniac: If you would draw a card while your library has no cards in it, you win the game instead.");
+    expect(buildSynopsisPrompt(lab, undefined, { v2: true }).user).not.toContain("Cards with their own win condition");
+    expect(system).toContain("never a plan called control");
+    expect(system).toContain("only when the deck also holds a way to reach that condition");
+    expect(system).toContain("that sentence names every card of the combo");
+    expect(system).toContain("never dismissed for the combo it lacks");
+  });
+
   it("states the colors the lands make only when they are fewer than the identity, under contract 8", () => {
     const fewer = { ...FACTS, identity: ["W", "U", "B", "R", "G"], identityName: "5-color", landColors: ["W", "U", "R", "G"] };
     expect(buildSynopsisPrompt(fewer, undefined, C8).user).toContain("Colors the lands make: Non-black");
