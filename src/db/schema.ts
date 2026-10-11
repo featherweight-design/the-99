@@ -171,6 +171,58 @@ export const skippedPrintings = pgTable("skipped_printings", {
 });
 
 /**
+ * The tokens Scryfall relates to cards (plan `2026-10-11-tokens-for-my-deck.md`), built by the
+ * printings ingest from the `default_cards` bytes it already reads: no new fetch, no `cards` row,
+ * and NOT part of the catalog fingerprint, which exists for products built once and copied. Each
+ * database builds these from the same bytes, like `printings`.
+ *
+ * A token's identity is its own `oracle_id`, never its name: Scryfall gives distinct tokens of one
+ * name their own ids (six different Goblin tokens), and Hugh's 21 decks make 80 distinct tokens
+ * under 61 names. Emblems and art-series cards are layouts of their own and stay out.
+ *
+ * Upserted and never deleted, like `printings`: a player's ownership will reference these ids, and
+ * a withdrawn token costs one stale row. `card_tokens` is the exception, an exact replace per run.
+ */
+export const tokens = pgTable("tokens", {
+  oracleId: uuid("oracle_id").primaryKey(),
+  name: text("name").notNull(),
+  typeLine: text("type_line").notNull(),
+  colors: text("colors").array().notNull(),
+  // Text, not integer: a token's power can be `*` or `1+*`. Null for a token with none.
+  power: text("power"),
+  toughness: text("toughness"),
+  // `token`, `double_faced_token` or `reversible_card` (a token Scryfall files under that layout).
+  layout: text("layout").notNull(),
+  // Where two tokens of one name, colors and stats can only be told apart (two red 1/1 Goblins).
+  oracleText: text("oracle_text"),
+});
+
+/** Every non-digital printing of a token. Prices and ownership key on these ids. */
+export const tokenPrintings = pgTable("token_printings", {
+  scryfallId: uuid("scryfall_id").primaryKey(),
+  tokenOracleId: uuid("token_oracle_id").notNull().references(() => tokens.oracleId),
+  setCode: text("set_code").notNull(),                   // lowercase
+  collectorNumber: text("collector_number").notNull(),   // TEXT, as on `printings`
+  imageUri: text("image_uri"),
+  imageUriSmall: text("image_uri_small"),
+  artCropUri: text("art_crop_uri"),
+  backImageUri: text("back_image_uri"),
+  finishes: text("finishes").array().notNull(),
+}, (t) => [
+  index("token_printings_token_idx").on(t.tokenOracleId),
+]);
+
+/** Which card makes which token: `all_parts` entries with `component: "token"`, nothing else. */
+export const cardTokens = pgTable("card_tokens", {
+  cardOracleId: uuid("card_oracle_id").notNull().references(() => cards.oracleId, { onDelete: "cascade" }),
+  tokenOracleId: uuid("token_oracle_id").notNull().references(() => tokens.oracleId),
+}, (t) => [
+  primaryKey({ columns: [t.cardOracleId, t.tokenOracleId] }),
+  // The primary key serves "which tokens does this card make"; a deck's tokens read the other way.
+  index("card_tokens_token_idx").on(t.tokenOracleId),
+]);
+
+/**
  * ManaPool's price for each printing. Refreshed weekly by its own workflow —
  * price is the one field that genuinely moves, and tying it to the monthly
  * catalog cadence would make the number wrong more often than right.

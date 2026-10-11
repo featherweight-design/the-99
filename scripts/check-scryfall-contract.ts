@@ -7,6 +7,7 @@
  * into a same-day alert.
  */
 import { fetchBulkIndex, streamBulkEntries, type BulkType } from "../src/lib/scryfall/bulk";
+import { tokenContractFailures } from "../src/lib/tokens/contract";
 
 // Fields the transforms read and cannot work around if they disappear. `layout` is on both
 // lists because both transforms exclude on it — losing it would silently ingest tokens and
@@ -65,6 +66,9 @@ async function run(type: BulkType): Promise<string[]> {
     const name = typeof first.name === "string" ? first.name : "<unnamed>";
     console.log(`${type}: ok (${index.compressedSize} bytes compressed, entry \`${name}\`)`);
   }
+  // The token chain, separately from the first entry: see `tokenContractFailures`. A fresh stream,
+  // because the first-entry read above abandoned its generator.
+  if (type === "default_cards") failures.push(...(await tokenContractFailures(streamBulkEntries(index))));
   return failures;
 }
 

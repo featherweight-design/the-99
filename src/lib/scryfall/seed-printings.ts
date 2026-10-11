@@ -8,10 +8,14 @@ import {
   type PrintingRow,
   type SkippedPrintingRow,
 } from "./transform-printings";
+import { TokenCatalogBuilder } from "../tokens/catalog";
+import { publishTokenCatalog, type TokenPublishReport } from "../tokens/publish";
 
 const BATCH_SIZE = 500;
 
 export type SeedPrintingsResult = {
+  /** What the token step did: published, refused under a floor, or skipped (tables not migrated yet). */
+  tokens: TokenPublishReport;
   upserted: number;
   skippedOrphan: number;
   skippedLayout: number;
@@ -216,6 +220,7 @@ export async function seedPrintings(): Promise<SeedPrintingsResult> {
   }
 
   let upserted = 0, skippedOrphan = 0, skippedLayout = 0, skippedReversible = 0;
+  const tokenBuilder = new TokenCatalogBuilder();
   let batch: PrintingRow[] = [];
   let skippedBatch: SkippedPrintingRow[] = [];
 
@@ -256,6 +261,8 @@ export async function seedPrintings(): Promise<SeedPrintingsResult> {
   };
 
   for await (const value of streamBulkEntries(index)) {
+    // Tokens and the cards that make them come out of the same pass: no second stream, no fetch.
+    tokenBuilder.add(value);
     const result = classifyPrinting(value);
     // NOW A NARROW COUNTER, and a spike in it is a real signal rather than a constant. It
     // used to count every `reversible_card` — ~82 of them, every run — because the layout
@@ -291,8 +298,20 @@ export async function seedPrintings(): Promise<SeedPrintingsResult> {
   // Stamped even when no denominator was published: the printings themselves moved, and a
   // set grid is a checklist of them. A refused publish leaves the old denominators standing
   // (#704), and those are exactly what a reader should stop being served a stale copy of.
-  await stampCatalogRefresh();
+  // The token catalog is built from the same pass and published in its own transaction, BEFORE the
+  // stamp so the stamp covers it. It never touches the printings above: a refusal or a skip changes
+  // nothing already written, and is reported for the CLI to exit on.
+  // The stamp is in a `finally`: the printings above are already committed, so a token publish that
+  // THROWS must still retire the caches keyed on the catalog generation. The old order always
+  // stamped after a successful printings pass.
+  let tokens: TokenPublishReport;
+  try {
+    tokens = await publishTokenCatalog(tokenBuilder.finish(known));
+  } finally {
+    await stampCatalogRefresh();
+  }
   return {
+    tokens,
     upserted, skippedOrphan, skippedLayout, skippedReversible, representatives, baseSetSizes,
   };
 }
