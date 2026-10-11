@@ -9,7 +9,7 @@ import { HoverPreviewProvider } from "./hover-preview";
 import type { FindingArt } from "./receipt-modal";
 import { VersionSynopsisModal } from "./synopsis-body";
 
-type Found = { versionNumber: number; committedAt: Date; content: CheckedSynopsis; art: Record<string, string | null> };
+type Found = { versionNumber: number; committedAt: Date; content: CheckedSynopsis; art: Record<string, string | null>; evidenceNames: Record<string, string> };
 
 /**
  * `Overview for this version →` (SYNOPSIS-modal.md §4, 6e): the entry to a version's overview, in
@@ -71,6 +71,7 @@ export function VersionOverviewLink({ versionId }: { versionId: string }) {
             committedAt={new Date(found.committedAt)}
             content={found.content}
             art={art}
+            evidenceNames={found.evidenceNames}
             onClose={() => setOpen(false)}
           />
         </HoverPreviewProvider>

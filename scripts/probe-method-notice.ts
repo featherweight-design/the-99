@@ -12,7 +12,7 @@
 // runs with `OVERVIEW_V2_ENABLED` on.
 //
 // FIXTURE. Default: one deck under a per-run `user_id`, deleted in a `finally`. With `--seed`
-// (and `PROBE_USER_ID`, the browser account) it leaves seven decks standing in the states the
+// (and `PROBE_USER_ID`, the browser account) it leaves eight decks standing in the states the
 // contact sheet photographs, and prints their ids; `--unseed` removes them. Refuses any database
 // that is not `local-dev` by `neon.branch_id`. NEVER point it anywhere else.
 //
@@ -153,6 +153,13 @@ async function seed() {
     await touchDeck(tx, e);
   });
   await computeAndStoreProfile(e, USER, profileDeps);
+  // Overview accuracy PR 6: a deck whose shown overview is contract 8 (the free rewrite wrote it,
+  // evidence refs and all), for the "Based on" contact sheet. No model call: the stub is injected.
+  const f = await oldDeck(`${SEED_PREFIX}contract-8`, 7);
+  queue = ["survived"];
+  const wrote = await writeSynopsisFor(f, USER, deps);
+  if (wrote.kind !== "written" || wrote.outcome !== "survived") throw new Error(`the contract-8 seed failed: ${JSON.stringify(wrote)}`);
+  console.log(`export MN_CONTRACT_8=${f}`);
   console.log(`export MN_ELIGIBLE=${a} MN_PRESS_PHONE=${pp} MN_PRESS_DESKTOP=${pd} MN_ONE_LEFT=${b} MN_BOTH_USED=${c} MN_WITH_STALE=${d} MN_WITH_OLDER_ROW=${e}`);
 }
 

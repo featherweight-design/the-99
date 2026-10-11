@@ -323,6 +323,7 @@ export function SynopsisOverview({
           stale={stale}
           deckName={deckName}
           art={named}
+          evidenceNames={state.evidenceNames}
           busy={busy}
           // 6d's control: Re-analyze while the reading itself is stale, and ruling D's write once
           // it is current (credits audit, finding 3), with the note the tab draws beside it. The

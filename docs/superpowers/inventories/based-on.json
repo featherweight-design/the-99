@@ -1,0 +1,32 @@
+{
+  "feature": "Overview accuracy PR 6: the claim tap-through, a \"Based on\" line of card names under each claim that cites cards",
+  "note": "Needs a server with ANALYSIS_TAB_ENABLED=true, OVERVIEW_V2_ENABLED=true and the stub model, signed in as the account the decks belong to. Seed with `PROBE_USER_ID=<clerk id> pnpm probe:method-notice --seed` (local-dev only), which prints MN_CONTRACT_8, a deck whose shown overview is contract 8 with its evidence stored; remove with `--unseed`. The stub cites evidence on tips and Key cards only. check:shared does not apply: the one component, the full-overview sheet, is the surface at both widths. The second row presses a listed card to prove it opens the existing card details.",
+  "out": "contact-sheets/based-on",
+  "rows": [
+    {
+      "id": "based-on-sheet",
+      "label": "/decks/[id] Analysis: the full overview, each Key tip with its Based on line (the stub cites only a Key card's own card, which its line leaves out, so no Key card line draws)",
+      "view": "src/components/decks/synopsis-body.tsx",
+      "steps": [
+        { "goto": "/decks/${MN_CONTRACT_8}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "tab", "name": "Analysis", "settle": 600 },
+        { "wait": "[data-testid='synopsis-overview']", "settle": 900 },
+        { "clickRole": "button", "name": "View full overview", "settle": 300 },
+        { "wait": "[data-testid='synopsis-based-on']", "settle": 700, "scrollTo": "[data-testid='synopsis-based-on']" }
+      ]
+    },
+    {
+      "id": "based-on-press",
+      "label": "/decks/[id] Analysis: a listed card pressed, the card details opening over the sheet",
+      "view": "src/components/decks/synopsis-body.tsx",
+      "steps": [
+        { "goto": "/decks/${MN_CONTRACT_8}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "tab", "name": "Analysis", "settle": 600 },
+        { "wait": "[data-testid='synopsis-overview']", "settle": 900 },
+        { "clickRole": "button", "name": "View full overview", "settle": 300 },
+        { "wait": "[data-testid='synopsis-based-on']", "settle": 500 },
+        { "click": "[data-testid='synopsis-based-on'] button", "settle": 900 }
+      ]
+    }
+  ]
+}
