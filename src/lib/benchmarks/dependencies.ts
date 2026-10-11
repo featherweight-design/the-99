@@ -83,7 +83,10 @@ export type DependencyFigures = {
 };
 
 export function dependencyFigures(cards: readonly BenchCard[], lines: number): DependencyFigures {
-  const r = readRows(cards);
+  return figuresOf(readRows(cards), lines);
+}
+
+function figuresOf(r: ReturnType<typeof readRows>, lines: number): DependencyFigures {
   return {
     graveyard: sum(r.graveyard), graveyardCommander: r.graveyardCommander,
     artifacts: sum(r.artifacts), artifactPayoffs: sum(r.artifactPayoffs),
@@ -132,11 +135,28 @@ function readRows(cards: readonly BenchCard[]) {
  * Lands are on neither side of any figure (audit build rule 7); the graveyard row names the lands it
  * left out. The artifacts and enchantments ledgers list a card once, under its first group (rule 11).
  */
+/**
+ * Each row's strength from its raw figures, or none: the ONE place the cuts are applied, so the
+ * rows a reading draws and the draw rates `measure:benchmarks` prints cannot disagree.
+ */
+export function dependencyStrengths(f: DependencyFigures, cuts: DependencyCuts): Partial<Record<DependencyRow, Strength>> {
+  const out: Partial<Record<DependencyRow, Strength>> = {};
+  const set = (row: DependencyRow, s: Strength | null) => { if (s) out[row] = s; };
+  set("graveyard", f.graveyardCommander ? "heavy" : strengthOf(f.graveyard, cuts.graveyard));
+  set("artifacts", stronger(strengthOf(f.artifacts, cuts.artifacts.cards), strengthOf(f.artifactPayoffs, cuts.artifacts.payoffs)));
+  set("enchantments", stronger(strengthOf(f.enchantments, cuts.enchantments.cards), strengthOf(f.enchantmentPayoffs, cuts.enchantments.payoffs)));
+  set("creatures", strengthOf(f.creaturePayoffs, cuts.creatures));
+  set("activated", stronger(strengthOf(f.activated, cuts.activated), f.activatedCommander ? "light" : null));
+  if (f.lines === 0 && f.routes <= cuts.combat.lightMax) set("combat", f.routes === 0 ? "heavy" : "light");
+  return out;
+}
+
 export function dependencies(cards: readonly BenchCard[], lines: number, cuts: DependencyCuts): Dependency[] {
   const r = readRows(cards);
+  const strength = dependencyStrengths(figuresOf(r, lines), cuts);
   const rows: Dependency[] = [];
 
-  const graveyardStrength = r.graveyardCommander ? "heavy" : strengthOf(sum(r.graveyard), cuts.graveyard);
+  const graveyardStrength = strength.graveyard;
   if (graveyardStrength) {
     rows.push({
       row: "graveyard", strength: graveyardStrength, count: sum(r.graveyard), commander: r.graveyardCommander,
@@ -144,7 +164,7 @@ export function dependencies(cards: readonly BenchCard[], lines: number, cuts: D
     });
   }
 
-  const artifactStrength = stronger(strengthOf(sum(r.artifacts), cuts.artifacts.cards), strengthOf(sum(r.artifactPayoffs), cuts.artifacts.payoffs));
+  const artifactStrength = strength.artifacts;
   if (artifactStrength) {
     const listed = new Set(r.artifactPayoffs);
     const abilities = byName(r.artifactAbilities.filter((c) => !listed.has(c)));
@@ -159,7 +179,7 @@ export function dependencies(cards: readonly BenchCard[], lines: number, cuts: D
     });
   }
 
-  const enchantmentStrength = stronger(strengthOf(sum(r.enchantments), cuts.enchantments.cards), strengthOf(sum(r.enchantmentPayoffs), cuts.enchantments.payoffs));
+  const enchantmentStrength = strength.enchantments;
   if (enchantmentStrength) {
     const listed = new Set(r.enchantmentPayoffs);
     rows.push({
@@ -171,20 +191,19 @@ export function dependencies(cards: readonly BenchCard[], lines: number, cuts: D
     });
   }
 
-  const creatureStrength = strengthOf(sum(r.creaturePayoffs), cuts.creatures);
+  const creatureStrength = strength.creatures;
   if (creatureStrength) {
     rows.push({ row: "creatures", strength: creatureStrength, payoffs: sum(r.creaturePayoffs), groups: [{ group: "paysOffCreatures", cards: r.creaturePayoffs }] });
   }
 
-  const activatedStrength = stronger(strengthOf(sum(r.activated), cuts.activated), r.activatedCommander ? "light" : null);
+  const activatedStrength = strength.activated;
   if (activatedStrength) {
     rows.push({ row: "activated", strength: activatedStrength, count: sum(r.activated), commander: r.activatedCommander, groups: [{ group: "activatedCreatures", cards: r.activated }] });
   }
 
-  const routeCount = sum(r.routes);
-  if (lines === 0 && routeCount <= cuts.combat.lightMax) {
-    const heavy = routeCount === 0;
-    rows.push({ row: "combat", strength: heavy ? "heavy" : "light", routes: routeCount, groups: heavy ? [] : [{ group: "winsOutsideCombat", cards: r.routes }] });
+  if (strength.combat) {
+    const heavy = strength.combat === "heavy";
+    rows.push({ row: "combat", strength: strength.combat, routes: sum(r.routes), groups: heavy ? [] : [{ group: "winsOutsideCombat", cards: r.routes }] });
   }
 
   const order = (d: Dependency) => (d.strength === "heavy" ? 0 : 1) * 10 + DEPENDENCY_ROWS.indexOf(d.row);

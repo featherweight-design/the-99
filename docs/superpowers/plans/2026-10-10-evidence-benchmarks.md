@@ -122,6 +122,12 @@ the model rather than restating it, and prints its whole derivation.
 
 - **Population:** every commander in `commander_support` on staging whose `synergy_state` is
   `ok`. Two derivations, because one figure is not linear:
+  - **As built (PR 2): every figure is sampled**, the linear ones too. A sampled figure keeps
+    each commander's deck-to-deck spread, which an expectation averages away, and the app
+    grades one real list rather than an average; it also lets every figure come from the
+    shipped function. Ten samples per commander, the population ordered by commander id, so
+    a fixed seed reproduces a run against the same data. The expectation path below is the
+    plan as first written.
   - **Expectation, for the linear figures** (velocity points, flow points, interaction weight,
     each dependency count): each card in `commander_support_cards` contributes its weight times
     `inclusion / 100` (the column is a percent, as `role-targets.ts` reads it), and the
