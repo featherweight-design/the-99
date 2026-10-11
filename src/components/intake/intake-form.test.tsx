@@ -2,6 +2,7 @@
 // once and on resize instead, and the form renders rather than throwing on mount.
 
 import { fireEvent, render, screen, within } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const push = vi.hoisted(() => vi.fn(async (query: string) => { void query; return { kind: "refused" as const }; }));
@@ -100,6 +101,11 @@ describe("Anything else? (the read addendum, 7a to 7c and 7n)", () => {
     expect(screen.queryByText("1 credit")).toBeNull();
     expect(screen.getAllByText(/^Won’t be read: 0 of 10 left/).length).toBeGreaterThan(0);
     expect(screen.getByText("Kept here for when a credit comes back.")).toBeTruthy();
+  });
+
+  it("leaves the line out of the server's HTML, which cannot know the reader's time zone", () => {
+    const html = renderToString(<IntakeForm themes={[]} initial={{ ...emptyParams(), words: "scary" }} standing={{ ...credit, used: 10 }} />);
+    expect(html).not.toContain("Won’t be read");
   });
 
   it("7n: paused says why, before a spent allowance", () => {

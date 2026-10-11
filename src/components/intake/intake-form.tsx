@@ -21,6 +21,7 @@ import { READ_WORDS_MAX_CHARS, serializeChooseParams, type ChooseParams } from "
 import type { Bracket, Pool } from "../../lib/intake/rank";
 import type { VocabularyTheme } from "../../lib/intake/vocabulary";
 import type { PrintedInSet } from "../../lib/sets/printed-in";
+import { useHydrated } from "../ui/hydrated-art";
 import { SetsField } from "./sets-field";
 import { ThemeJoinControl } from "./theme-join";
 import { ThemePicker } from "./theme-picker";
@@ -126,7 +127,10 @@ export function IntakeForm({
   const written = words.trim().length > 0;
   const closed = standing ? closedBy(standing) : null;
   const paid = written && standing !== null && closed === null;
-  const line = written && standing ? formLine(standing) : null;
+  // The line can name a time in the reader's own zone, which the server cannot know: drawn only
+  // after hydration, so the server's HTML and the first client render agree.
+  const hydrated = useHydrated();
+  const line = written && standing && hydrated ? formLine(standing) : null;
   const caption = !written ? copy.intake.extra.caption : standing && closed !== null ? copy.intake.extra.captionSpent : copy.intake.extra.captionFilled;
 
   const submitClass = `${PRIMARY} inline-flex items-center justify-center gap-[10px] font-sans font-semibold cursor-pointer rounded-[10px] text-[15px] border-0 whitespace-nowrap ${paid ? "pl-[8px] pr-[24px]" : "px-[24px]"}`;

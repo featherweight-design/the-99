@@ -85,7 +85,7 @@ describe("a reason line", () => {
     for (const bad of [
       "Makes 5/3 Elementals on each land.", "Wins most games.%", "The best landfall commander.", "A strong fit for horrors.",
       "A good fit.", "★★★★★", "Unlike your {deck} deck.", "My second choice for horrors.", "The third pick here.",
-      "A runner-up to the others.", "Number two on the list.",
+      "A runner-up to the others.", "Number two on the list.", "My second-choice for horrors.", "A runner\u2011up here.", "The number-two option.", "Top\u2014pick for tokens.",
     ]) {
       expect(parseReason(bad, decks)).toBeNull();
     }
