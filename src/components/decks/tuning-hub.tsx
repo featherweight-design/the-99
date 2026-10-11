@@ -372,7 +372,10 @@ export function TuningHub({
         </>
       ) : (
         <div className="grid grid-cols-1 gap-[8px] md:grid-cols-2 md:gap-[10px]">
-          {views.map((v) => <ToolTile key={v.tool} view={v} onOpen={() => open(v.tool)} />)}
+          {/* A tile can sit below the fold, and the tool opens in its place starting at the tab row:
+              bring the hub's top into view, as a shortcut does (Hugh, 2026-10-11). Instant: the app
+              sets no smooth scrolling, so reduced motion is already honored. */}
+          {views.map((v) => <ToolTile key={v.tool} view={v} onOpen={() => open(v.tool, { focus: true, scroll: true })} />)}
         </div>
       )}
     </section>

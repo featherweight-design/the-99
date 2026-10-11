@@ -22,6 +22,8 @@ function tile(tool: string) {
 }
 
 beforeEach(() => {
+  // jsdom has no scrollIntoView, and a tile press now scrolls the hub into view.
+  Element.prototype.scrollIntoView = vi.fn();
   read.mockReset();
   read.mockResolvedValue(empty);
 });
@@ -221,6 +223,23 @@ describe("TuningHub opening a tool", () => {
     expect(tile("cuts")).not.toBeNull();
     rerender(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "cuts", nonce: 2 }} />);
     expect(screen.getByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
+  });
+
+  it("brings the opened tool into view from a tile, for every tool, and focuses its heading", async () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    const mana: HubToolSpec = { tool: "mana", panel: <h2 id="mana-heading">Mana Balance</h2> };
+    readHistoryPage.mockResolvedValue({ rows: [], nextCursor: null });
+    for (const tool of ["suggested", "mana", "cuts", "history"] as const) {
+      scroll.mockClear();
+      const { unmount } = render(<TuningHub deckId="d" drawn tools={[suggested(), mana, cuts(6), { tool: "history" }]} />);
+      fireEvent.click(tile(tool));
+      await waitFor(() => expect(scroll).toHaveBeenCalledWith({ block: "start" }));
+      expect(scroll.mock.contexts[0]).toBe(document.querySelector("[data-tuning-hub]"));
+      const heading = { suggested: "tuning-heading", mana: "mana-heading", cuts: "cuts-heading", history: "history-heading" }[tool];
+      await waitFor(() => expect(document.activeElement?.id).toBe(heading));
+      unmount();
+    }
   });
 
   it("waits for a hidden tab body to be shown before it scrolls and focuses", async () => {
