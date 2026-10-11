@@ -17,6 +17,8 @@ export type ComboFact = {
   usesCommander: boolean;
   /** Mana to run it once every piece is out. 0 is free, null is unknown. */
   manaNeeded: number | null;
+  /** Spellbook marks the loop mandatory ("Draw the game"): it cannot be stopped by choice. Absent on the profile's two-card fallback. */
+  mandatory?: boolean;
 };
 
 export type NearComboFact = {

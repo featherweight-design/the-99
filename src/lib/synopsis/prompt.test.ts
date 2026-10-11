@@ -209,6 +209,22 @@ describe("buildSynopsisPrompt under contract 8", () => {
     }
   });
 
+  it("states a mandatory loop as a loop that draws the game, never as a combo, and rules it a weakness", () => {
+    const loop = { pieces: ["Marauding Raptor", "Polyraptor"], produces: ["Draw the game", "Infinite creature tokens"], usesCommander: false, manaNeeded: 8, mandatory: true };
+    const may = { pieces: ["Forerunner of the Empire", "Polyraptor"], produces: ["Infinite creature tokens"], usesCommander: false, manaNeeded: 8, mandatory: false };
+    const facts = { ...FACTS, combos: [loop, may], nearCombos: [] };
+    const { user, system } = buildSynopsisPrompt(facts, undefined, C8);
+    expect(user).toContain("- mandatory loop: Marauding Raptor + Polyraptor: Infinite creature tokens (needs 8 mana to run); the game is drawn unless an outlet is available");
+    expect(user).toContain("- Forerunner of the Empire + Polyraptor: Infinite creature tokens (needs 8 mana to run)");
+    expect(user).not.toContain("Draw the game");
+    expect(system).toContain("Never call a mandatory loop a win condition, a plan, a backup or an alternate win");
+    expect(system).toContain('with no outlet in the decklist is a "weakness"');
+    // Contract 7 is the baseline the comparison runs against: it is not taught the fix.
+    const v7 = buildSynopsisPrompt(facts, undefined, { v2: true });
+    expect(v7.user).not.toContain("mandatory loop");
+    expect(v7.system).not.toContain("mandatory loop");
+  });
+
   it("lists the engine candidates in the user message and asks for a weakness when none stands out", () => {
     const facts = { ...FACTS, commanders: ["Kratos"], cards: [
       { oracleId: "k", name: "Kratos", typeLine: "Legendary Creature - God", quantity: 1, categories: [], oracleText: "Whenever a god attacks, create a spirit." },

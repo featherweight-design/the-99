@@ -15,8 +15,19 @@ describe("shapeComboFacts", () => {
   it("assembles a three-card combo and counts the commander as a piece", () => {
     const rows = ["A", "B", "C"].map((n) => piece("v3", n, { card_count: 3 }));
     const out = shapeComboFacts(rows, ["U"], ["id-A"]);
-    expect(out.combos).toEqual([{ pieces: ["A", "B", "C"], produces: ["Infinite mana"], usesCommander: true, manaNeeded: 0 }]);
+    expect(out.combos).toEqual([{ pieces: ["A", "B", "C"], produces: ["Infinite mana"], usesCommander: true, manaNeeded: 0, mandatory: false }]);
     expect(out.nearCombos).toEqual([]);
+  });
+
+  it("marks a combo mandatory only when Spellbook lists \"Draw the game\" among its features", () => {
+    // Variant 2062-3356, Marauding Raptor + Polyraptor: every trigger is mandatory.
+    const loop = ["Marauding Raptor", "Polyraptor"].map((n) => piece("2062-3356", n, { produces: ["Draw the game", "Infinite creature tokens"] }));
+    // Variant 2259-3356, Forerunner of the Empire + Polyraptor: the damage is a "may", so it ends on request.
+    const optional = ["Forerunner of the Empire", "Polyraptor"].map((n) => piece("2259-3356", n, { produces: ["Infinite creature tokens", "Infinite damage to all creatures"] }));
+    const out = shapeComboFacts([...loop, ...optional], ["G"], []);
+    const by = (name: string) => out.combos.find((c) => c.pieces.includes(name));
+    expect(by("Marauding Raptor")?.mandatory).toBe(true);
+    expect(by("Forerunner of the Empire")?.mandatory).toBe(false);
   });
 
   it("ranks fewest pieces first, then free, and caps at six", () => {
