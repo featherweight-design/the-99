@@ -23,7 +23,12 @@ export type GateRow = {
   firstVerdicts?: SectionVerdict[];
   /** The content a reader is shown: the first write with the repair merged in. */
   rendered?: CheckedSynopsis;
+  /** The call's error class, when the write failed and nothing came back to check (an arm run). */
+  failed?: string;
 };
+
+/** The sections every answer is judged on (overview, primer, key cards, weaknesses): `allFour` counts them. */
+const SECTIONS_PER_ANSWER = 4;
 
 /** The scorer's reply, from what the app renders: a refused section is empty, as it is on the page. */
 export function fromChecked(c: CheckedSynopsis): Reply {
@@ -72,6 +77,24 @@ export function armStats(label: string, samples: GateRow[][], cases: CorpusCase[
   };
   samples.forEach((rows, sample) => {
     for (const r of rows) {
+      if (r.failed && !r.rendered) {
+        // A failed call is a result of the arm: an answer that rendered nothing. Its gold counts as
+        // missed and its sections as refused, so a failing arm cannot look better than one that answered.
+        const c = cases.find((x) => x.id === r.id);
+        if (!c) throw new Error(`gate: no corpus case ${r.id}`);
+        if (pinned && c.deck.listFingerprint === null) continue;
+        const empty: Reply = { overview: "", primer: { strategy: [], mulligan: { keep: [], sendBack: [] }, tips: [] }, keyCards: [], weaknesses: [] };
+        const sc = scoreCase(c, empty);
+        s.answers += 1;
+        s.sections += SECTIONS_PER_ANSWER;
+        s.usd += r.usd ?? 0;
+        bump(s.firstBy, `call:${r.failed}`);
+        bump(s.leftBy, `call:${r.failed}`);
+        s.combos.gold += sc.combos.gold; s.keyCards.gold += sc.keyCards.gold; s.weaknesses.gold += sc.weaknesses.gold;
+        if (sc.mulliganTied !== null) s.mulligan.applicable += 1;
+        s.perAnswer.push({ id: r.id, sample: sample + 1, rendered: 0, combos: `0/${sc.combos.gold}`, keyCards: `0/${sc.keyCards.gold}`, weaknesses: `0/${sc.weaknesses.gold}`, mulligan: sc.mulliganTied === null ? "n/a" : "no", wrong: 0 });
+        continue;
+      }
       if (!r.rendered || !r.firstVerdicts) throw new Error(`gate: ${r.id} (sample ${sample + 1}) has no rendered content and first-write verdicts; it was recorded before the repair path existed and cannot be gated`);
       const c = cases.find((x) => x.id === r.id);
       if (!c) throw new Error(`gate: no corpus case ${r.id}`);

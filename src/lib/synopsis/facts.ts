@@ -1,4 +1,5 @@
 import { colorLabel } from "../decks/format";
+import { producibleColors } from "../recs/mana";
 import type { DeckProfile } from "../profile/types";
 import { CATEGORIES, type Category } from "./types";
 import { comboFacts, deckStatsFact, type ComboFact, type DeckStatsFact, type InteractionCounts, type NearComboFact } from "./facts-extra";
@@ -58,6 +59,8 @@ export type SynopsisFacts = {
   combos?: ComboFact[];
   /** v2: combos one card short, named so the model does not claim them. */
   nearCombos?: NearComboFact[];
+  /** The colors the deck's lands can make, within its identity. Absent on facts built before it existed. */
+  landColors?: string[];
   /** v2: ramp, the commander's expected cast turn, interaction by speed and cost. */
   stats?: DeckStatsFact;
 };
@@ -103,6 +106,23 @@ export function categoriesOf(profile: DeckProfile): Map<string, Set<Category>> {
   return out;
 }
 
+/**
+ * An ability whose cost spends mana (`{1}, {T}: Add one mana of any color.`) only FILTERS mana: it
+ * turns mana the deck already makes into another color, so it is not a source of that color. Avatar
+ * Aang's deck reads as five-color through Rumble Arena alone, a colorless land with that filter,
+ * where Hugh's ruling (2026-10-11) is that the deck plays as non-black four-color. `{T}`, `{Q}` and
+ * energy (`{E}`, Aether Hub) are not mana, so an ability paying only those is still a source.
+ */
+const FILTER_ABILITY = /^[^:\n]*\{(?![TQE]\})[^}]+\}[^:\n]*:[^\n]*$/gim;
+
+function landColorsOf(profile: DeckProfile, oracleTexts: ReadonlyMap<string, string | null>): string[] {
+  const made = producibleColors(profile.cards.map((c) => ({
+    typeLine: c.typeLine,
+    oracleText: (oracleTexts.get(c.oracleId) ?? "").replace(FILTER_ABILITY, ""),
+  })));
+  return profile.colours.identity.filter((c) => made.has(c));
+}
+
 export function buildSynopsisFacts(
   profile: DeckProfile,
   oracleTexts: ReadonlyMap<string, string | null>,
@@ -123,6 +143,7 @@ export function buildSynopsisFacts(
   const commanderManaValues = profile.commanderOracleIds
     .map((id) => byId.get(id)?.cmc)
     .filter((n): n is number => typeof n === "number");
+  const landColors = landColorsOf(profile, oracleTexts);
   const factCards: FactCard[] = profile.cards.map((c) => ({
     oracleId: c.oracleId,
     name: c.name,
@@ -138,7 +159,15 @@ export function buildSynopsisFacts(
     commanders: profile.commanderOracleIds.map((id) => byId.get(id)?.name).filter((n): n is string => !!n),
     identity: profile.colours.identity,
     identityName: colorLabel(profile.colours.identity),
-    unproducible: profile.colours.unproducible,
+    // What the lands can ADD, by the recommendations' rule (`producibleColors`: an "any color" land
+    // makes all five, a fetchland makes none), kept to the identity and in WUBRG order. Not the
+    // profile's set, which unions each land's color identity and so drops a color the deck gets
+    // only from Command Tower or City of Brass.
+    landColors,
+    // Kept consistent with `landColors`: a color the lands DO make by what they add (Command Tower,
+    // City of Brass, which the profile's identity-based set misses) is never reported as one no land
+    // produces. This only ever removes a false shortfall; the hybrid grouping is the profile's own.
+    unproducible: profile.colours.unproducible.filter((c) => !landColors.includes(c)),
     lands,
     ramp,
     keep,

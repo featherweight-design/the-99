@@ -24,6 +24,7 @@ describe("synopsisResponseSchema", () => {
 
 describe("synopsisResponseSchemaV8", () => {
   const v8 = {
+    plans: { primary: "Wins in combat.", backups: [] },
     overview: "A deck.",
     primer: { strategy: [], mulligan: { keep: [], sendBack: [] }, tips: [{ text: "T.", evidence: ["c1", "c2"] }] },
     keyCards: [{ card: "X", claims: [], job: "Wins.", evidence: ["c1"] }],
@@ -40,11 +41,16 @@ describe("synopsisResponseSchemaV8", () => {
     expect(synopsisResponseSchemaV8.safeParse({ ...v8, assessment: [{ topic: "win_path", verdict: "weakness" }] }).success).toBe(false);
     expect(synopsisResponseSchemaV8.safeParse({ ...v8, assessment: undefined, weaknesses: ["x"] }).success).toBe(false);
   });
+
+  it("requires the plans, which the model fills before anything else", () => {
+    expect(synopsisResponseSchemaV8.safeParse({ ...v8, plans: undefined }).success).toBe(false);
+    expect(Object.keys(synopsisResponseSchemaV8.shape)[0]).toBe("plans");
+  });
 });
 
 describe("synopsisResponseSchemaV8Wire", () => {
   const reply = (assessment: unknown[]) => ({
-    overview: "O.", primer: { strategy: [], mulligan: { keep: [], sendBack: [] }, tips: [] }, keyCards: [], assessment,
+    plans: { primary: "P.", backups: [] }, overview: "O.", primer: { strategy: [], mulligan: { keep: [], sendBack: [] }, tips: [] }, keyCards: [], assessment,
   });
 
   // The strict schema failed the whole reply (retried and billed twice) on one stray word.

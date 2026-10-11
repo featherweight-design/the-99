@@ -45,6 +45,12 @@ const claimed = z.object({ text, evidence });
 
 function v8Schema<T extends z.ZodType<string>, U extends z.ZodType<string>, W extends z.ZodType<string>>(topic: T, verdict: U, tier: W) {
   return z.object({
+    // FIRST, so the model commits to the deck's plans before it writes about them (plan-first,
+    // Hugh 2026-10-11). Read by the eval's plan check; the app renders nothing from it.
+    plans: z.object({
+      primary: text,
+      backups: z.array(text).max(3),
+    }),
     overview: text,
     primer: z.object({
       strategy: z.array(claimed).max(12),

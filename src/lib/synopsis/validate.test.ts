@@ -358,6 +358,19 @@ describe("validateSynopsis — universal staples and mana letters", () => {
     expect(verdictOf(validateSynopsis(good(), facts, CATALOG), "keyCards")).toMatchObject({ status: "refused", reason: "universal_staple" });
   });
 
+  it("drops a mulligan line that names a universal staple, keeping the others", () => {
+    const facts = { ...FACTS, cards: FACTS.cards.map((c) => (c.name === "Sol Ring" ? { ...c, universalStaple: true } : c)) };
+    const reply = good();
+    reply.primer.mulligan.keep.push("A hand with [[Goblin Bombardment]] has an outlet.");
+    // Contract 8 (the weaknesses-truncating call) drops it.
+    const r = validateSynopsis(reply, facts, CATALOG, {}, true);
+    expect(r.primer!.mulligan.keep).toEqual(["A hand with [[Goblin Bombardment]] has an outlet."]);
+    // Contract 7's prompt still teaches a Sol Ring line, so its replies keep it.
+    expect(validateSynopsis(reply, facts, CATALOG).primer!.mulligan.keep).toHaveLength(2);
+    // Without the mark the same line is kept.
+    expect(validateSynopsis(good(), FACTS, CATALOG, {}, true).primer!.mulligan.keep).toEqual(good().primer.mulligan.keep);
+  });
+
   const IZZET = { ...FACTS, identity: ["U", "R"] };
   it("refuses the overview when it names the deck's colors in mana letters", () => {
     const reply = good();

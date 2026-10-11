@@ -41,6 +41,54 @@ function profile(): DeckProfile {
   } as unknown as DeckProfile;
 }
 
+describe("buildSynopsisFacts — the colors the lands make", () => {
+  const withLands = (identity: string[], lands: [string, string, string][]) => {
+    const p = profile();
+    return {
+      ...p,
+      colours: { ...p.colours, identity },
+      cards: [...p.cards.filter((c) => c.name !== "Mountain"), ...lands.map(([name, typeLine]) => ({
+        oracleId: `id-${name}`, name, typeLine, cmc: 0, quantity: 1, layout: "normal",
+      }))],
+    } as unknown as DeckProfile;
+  };
+
+  it("reads what the lands ADD, so a five-color deck with no black source makes four", () => {
+    const deck = withLands(["W", "U", "B", "R", "G"], [
+      ["Plains", "Basic Land — Plains", ""], ["Island", "Basic Land — Island", ""],
+      ["Mountain", "Basic Land — Mountain", ""], ["Forest", "Basic Land — Forest", ""],
+    ]);
+    expect(buildSynopsisFacts(deck, new Map()).landColors).toEqual(["W", "U", "R", "G"]);
+  });
+
+  it("does not count a land that only filters mana into a color it cannot make", () => {
+    const deck = withLands(["W", "U", "B", "R", "G"], [
+      ["Rumble Arena", "Land", ""], ["Plains", "Basic Land — Plains", ""], ["Island", "Basic Land — Island", ""],
+      ["Mountain", "Basic Land — Mountain", ""], ["Forest", "Basic Land — Forest", ""],
+    ]);
+    const texts = new Map([["id-Rumble Arena", "Vigilance\nWhen this land enters, scry 1.\n{T}: Add {C}.\n{1}, {T}: Add one mana of any color."]]);
+    expect(buildSynopsisFacts(deck, texts).landColors).toEqual(["W", "U", "R", "G"]);
+  });
+
+  it("still counts a land whose any-color ability costs energy, which is not mana", () => {
+    const deck = withLands(["W", "U", "B", "R", "G"], [["Aether Hub", "Land", ""]]);
+    const texts = new Map([["id-Aether Hub", "When this land enters, you get {E}.\n{T}: Add {C}.\n{T}, Pay {E}: Add one mana of any color."]]);
+    expect(buildSynopsisFacts(deck, texts).landColors).toEqual(["W", "U", "B", "R", "G"]);
+  });
+
+  it("never reports a color as one no land produces when the lands make it", () => {
+    const deck = { ...withLands(["W", "U", "B", "R", "G"], [["Command Tower", "Land", ""]]), colours: { identity: ["W", "U", "B", "R", "G"], unproducible: ["B", "G"] } } as unknown as DeckProfile;
+    const texts = new Map([["id-Command Tower", "{T}: Add one mana of any color in your commander's color identity."]]);
+    expect(buildSynopsisFacts(deck, texts).unproducible).toEqual([]);
+  });
+
+  it("counts an any-color land as every color the identity holds", () => {
+    const deck = withLands(["W", "U", "B", "R", "G"], [["Command Tower", "Land", ""], ["Plains", "Basic Land — Plains", ""]]);
+    const texts = new Map([["id-Command Tower", "{T}: Add one mana of any color in your commander's color identity."]]);
+    expect(buildSynopsisFacts(deck, texts).landColors).toEqual(["W", "U", "B", "R", "G"]);
+  });
+});
+
 describe("buildSynopsisFacts", () => {
   // The harness's refusals (2026-09-24): 41 of 56 `uncomputed_figure` Mulligan lines stated the
   // complement of the keepable range, and 23 a turn or a mana total the facts did not hold. Both

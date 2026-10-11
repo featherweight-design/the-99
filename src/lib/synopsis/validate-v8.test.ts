@@ -42,6 +42,7 @@ const assessAll = (over: Partial<Record<(typeof ASSESSMENT_TOPICS)[number], Part
 
 function good(): SynopsisResponseV8 {
   return {
+    plans: { primary: "Kratos turns every spell into damage.", backups: [] },
     overview: "[[Kratos]] turns every spell into damage, and [[Impact Tremors]] finishes the table.",
     primer: {
       strategy: [
@@ -245,7 +246,7 @@ describe("validateSynopsisV8", () => {
 
 describe("normalizeV8: the closed words off the wire", () => {
   const entry = (topic: string, verdict: string, tier?: string) => ({ topic, verdict, ...(tier === undefined ? {} : { tier }), line: "A line.", evidence: [] as string[] });
-  const wire = (assessment: ReturnType<typeof entry>[]) => ({ overview: "", primer: { strategy: [], mulligan: { keep: [], sendBack: [] }, tips: [] }, keyCards: [], assessment });
+  const wire = (assessment: ReturnType<typeof entry>[]) => ({ plans: { primary: "", backups: [] }, overview: "", primer: { strategy: [], mulligan: { keep: [], sendBack: [] }, tips: [] }, keyCards: [], assessment });
 
   it("folds case, spaces and hyphens", () => {
     const [a] = normalizeV8(wire([entry("Win Path", "Not-A-Weakness", "Critical")])).assessment;

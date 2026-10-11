@@ -67,10 +67,11 @@ const SYSTEM = [...SYSTEM_HEAD, ...SYSTEM_OVERVIEW, ...SECTIONS_V7].join("\n");
 const REFS_RULE = `Each decklist line starts with its ref, such as "c12:". "evidence" lists the refs of the cards an item is about (at most ${EVIDENCE_MAX}), copied exactly from the decklist; a ref is never a card name and never a ref the decklist lacks.`;
 
 const SECTIONS_V8 = [
-  `- primer.strategy: ${range(SECTION_COUNTS.strategy)} steps of the deck's plan, in order, each at most ${CHAR_BUDGETS.strategy} characters, as { text, evidence }. A step about particular cards cites their refs.`,
-  `- primer.mulligan.keep and primer.mulligan.sendBack: ${range(SECTION_COUNTS.keep)} lines each, as { text, evidence }, each at most ${CHAR_BUDGETS.mulligan} characters. The app already shows the land range above these lines, so NEVER state a land count, "no lands" or "all spells". Tie the advice to THIS deck: at least one keep line names an engine piece, as [[Name]] (a card of a listed combo, or one of the Engine candidates), and the send-back lines name what the hand lacks for the deck's colors or plan. Never write advice true of every deck, such as "keep Sol Ring" or "send back a hand with no lands". Do not begin a line with "Keep", "Send back" or "Mulligan". The commander starts in the command zone, never in the opening hand. Use only the figures given under "Mulligan figures"; state no other number.`,
-  `- primer.tips: ${range(SECTION_COUNTS.tips)} tips, each an interaction between at least ${TIP_MIN_CARDS} cards in this deck, never general rules advice, as { text, evidence }. "evidence" lists the refs of exactly the cards the tip names (at least ${TIP_MIN_CARDS}), and its text names exactly those cards. Each text at most ${CHAR_BUDGETS.tip} characters. State only what the cards' rules text says: a keyword a card lacks (cascade, flying, haste) is never claimed for it, and a forced sacrifice or a "target player sacrifices" effect is never an enter-the-battlefield or a "dies" trigger for you.`,
-  `- keyCards: ${range(SECTION_COUNTS.keyCards)} different cards from the decklist, never one marked "universal staple", each { card, claims, job, evidence } with "evidence" holding at least the card's own ref. Choose the cards that WIN or RUN the deck: the pieces of the combos listed under the facts (as many as fit, the first combo's first), the Engine candidates and other cards that work with the commander's ability, and the commander's enablers, before any card that is merely good. A Key card whose job names neither the commander's trigger nor its payoff is the exception. Each job at most ${CHAR_BUDGETS.job} characters, on the job it does in this deck. "claims" lists only categories the decklist shows in that card's brackets; leave it empty for a card with none. In a job, never use the words ramp, draw, removal, remove, destroy, wipe, sweeper, tutor, combo or infinite unless that card's brackets list the matching category.`,
+  `- plans: fill this FIRST, before writing anything else, from what MOST of the deck does rather than from any one card. "primary" is one sentence naming the plan the deck is built around. "backups" lists, one sentence each, any alternate win or second plan, and may be empty. A combo listed under the facts is the primary only when the deck is built to assemble it; otherwise it is a backup. When the decklist shows no clear way to win, "primary" is "No clear win condition." and that is a weakness in the checklist, never an invented plan. Everything below follows these plans.`,
+  `- primer.strategy: ${range(SECTION_COUNTS.strategy)} steps of the deck's plan, in order, each at most ${CHAR_BUDGETS.strategy} characters, as { text, evidence }. A step about particular cards cites their refs. The steps lead with the primary plan. A backup gets its own step after them, named as a backup or an alternate win. A card marked "universal staple" is never a step's subject or its evidence: it is in nearly every deck and says nothing about this one.`,
+  `- primer.mulligan.keep and primer.mulligan.sendBack: ${range(SECTION_COUNTS.keep)} lines each, as { text, evidence }, each at most ${CHAR_BUDGETS.mulligan} characters. The app already shows the land range above these lines, so NEVER state a land count, "no lands" or "all spells". Tie the advice to THIS deck: at least one keep line names an engine piece, as [[Name]] (a card of a listed combo, or one of the Engine candidates), and the send-back lines name what the hand lacks for the deck's colors or plan. Never write advice true of every deck, such as "keep Sol Ring" or "send back a hand with no lands", and never name a card marked "universal staple" in a mulligan line. Do not begin a line with "Keep", "Send back" or "Mulligan". The commander starts in the command zone, never in the opening hand. Use only the figures given under "Mulligan figures"; state no other number.`,
+  `- primer.tips: ${range(SECTION_COUNTS.tips)} tips, each an interaction between at least ${TIP_MIN_CARDS} cards in this deck, never general rules advice, as { text, evidence }. "evidence" lists the refs of exactly the cards the tip names (at least ${TIP_MIN_CARDS}), and its text names exactly those cards. Each text at most ${CHAR_BUDGETS.tip} characters. State only what the cards' rules text says: a keyword a card lacks (cascade, flying, haste) is never claimed for it, and a forced sacrifice or a "target player sacrifices" effect is never an enter-the-battlefield or a "dies" trigger for you. Spread the tips across the deck's plans and cards; do not give two tips about the same pair of cards.`,
+  `- keyCards: ${range(SECTION_COUNTS.keyCards)} different cards from the decklist, never one marked "universal staple", each { card, claims, job, evidence } with "evidence" holding at least the card's own ref. Choose the cards that WIN or RUN the deck, in the order of its plans: the primary plan's cards first (the Engine candidates and other cards that work with the commander's ability, and the commander's enablers), then a backup's pieces, including the cards of a listed combo, before any card that is merely good. A Key card whose job names neither the commander's trigger nor its payoff is the exception. Each job at most ${CHAR_BUDGETS.job} characters, on the job it does in this deck. "claims" lists only categories the decklist shows in that card's brackets; leave it empty for a card with none. In a job, never use the words ramp, draw, removal, remove, destroy, wipe, sweeper, tutor, combo or infinite unless that card's brackets list the matching category.`,
   `- assessment: the weakness checklist, replacing any list of weaknesses. Give EXACTLY ONE entry for each of these ${ASSESSMENT_TOPICS.length} topics, no more and none missing: ${ASSESSMENT_TOPICS.join(", ")}.`,
 ];
 
@@ -84,8 +85,8 @@ const CHECKLIST_V8 = [
   "- interaction_speed: use the interaction figures in the facts exactly as given, never your own count. When few of the deck's interaction pieces are cheap or at instant speed, that is the weakness against a fast combo; name what it cannot stop in time.",
   "- commander_dependence: how much of the plan stops if the commander is removed or taxed repeatedly, and what the deck loses without it.",
   "- win_path: a deck that wins mostly through combat or one route: fogs and pillowfort such as [[Propaganda]], [[Ghostly Prison]], and what stops that route.",
-  "- combo_vulnerability: only when the facts list a combo or the plan depends on one piece: the removal or disruption that breaks it at its key window (the commander's combat or enter-the-battlefield trigger, the engine piece), naming the piece. If no combo is listed, answer \"not_a_weakness\" or \"unknown\".",
-  "- mana_and_colors: the deck's own color needs, the basic-land count against its colors, tapped lands, or tapping out for its expensive spells. Judge the colors only against the identity named above; a single-color deck has no color-flexibility weakness.",
+  "- combo_vulnerability: only when the facts list a combo or the plan depends on one piece. A combo that is only a backup is never \"critical\", since the primary plan still wins without it: the removal or disruption that breaks it at its key window (the commander's combat or enter-the-battlefield trigger, the engine piece), naming the piece. If no combo is listed, answer \"not_a_weakness\" or \"unknown\".",
+  "- mana_and_colors: the deck's own color needs, the basic-land count against its colors, tapped lands, or tapping out for its expensive spells. Judge the colors against the colors the lands make when the facts give them, otherwise against the identity named above; a single-color deck has no color-flexibility weakness.",
 ].join("\n");
 
 const MARKS_RULE_V8 = "The double square brackets go around a card name in EVERY text you write, evidence refs excepted: the overview, each strategy step, each mulligan line, each tip, each Key card's job and each weakness line. Text such as \"Gishath leads a deck\" fails; \"[[Gishath, Sun's Avatar]] leads a deck\" passes. Refs (c12) are never written inside brackets.";
@@ -122,7 +123,7 @@ const V8_LENGTH_RULES = [
   `- a strategy step: at most ${CHAR_BUDGETS.strategy}; aim for about ${Math.floor(CHAR_BUDGETS.strategy * 0.8)}. One overlong step refuses the whole Primer.`,
   "A card's name counts toward a limit in full. A mulligan line that names a long card, a commander's name above all, has room for few other words: name a shorter engine piece, or leave the commander out. Open the line with the card or the situation itself, never with filler such as A hand with or Having.",
   "Shorter never means a fragment: every job, line, step and tip is a whole sentence and ends with a period.",
-  'A mulligan line that names an engine piece, sized to the budget: "[[Sol Ring]] into a cheap engine piece starts the plan." (51).',
+  'A mulligan line that names an engine piece, sized to the budget: "[[Talisman of Unity]] into a cheap engine piece starts it." (54).',
 ].join("\n");
 
 /**
@@ -144,6 +145,16 @@ const MULLIGAN_BUDGET_RULES = [
   'Two lines sized to the budget: "[[Sol Ring]] with nothing to cast after it stalls out." (50), and "Early ramp backed by a way to draw more cards." (46).',
 ].join("\n");
 
+/**
+ * Contract 8's copy of the Mulligan budget, whose worked send-back line names no universal staple:
+ * the v8 prompt forbids naming one in a mulligan line, and an example built on [[Sol Ring]] taught
+ * the opposite (Hugh, Avatar Aang, 2026-10-11). Contract 7 keeps its own, byte for byte.
+ */
+const MULLIGAN_BUDGET_RULES_V8 = MULLIGAN_BUDGET_RULES.replace(
+  '"[[Sol Ring]] with nothing to cast after it stalls out." (50)',
+  '"A fixer with nothing to cast after it stalls out." (49)',
+);
+
 /** A word target for the job line, this deck's own mulligan figures, the refused words, and marking every mention. */
 function plusRules(facts: SynopsisFacts): string {
   return [
@@ -160,13 +171,28 @@ function plusRules(facts: SynopsisFacts): string {
  * figure and every combo is the app's own. Corpus evidence: a deterministic combo went unnamed on
  * four of nine decks, a mandatory loop was read as value, and a commander turn was guessed.
  */
-export const V2_FACT_RULES = [
-  "The facts may list combos this deck assembles. When one is listed, the overview and the strategy name the primary win condition by those cards and by what the combo produces (for example: [[Card A]] and [[Card B]] together make infinite mana). Never describe a listed combo as value, a bonus or a side effect.",
+const V2_COMBO_RULE_V7 = "The facts may list combos this deck assembles. When one is listed, the overview and the strategy name the primary win condition by those cards and by what the combo produces (for example: [[Card A]] and [[Card B]] together make infinite mana). Never describe a listed combo as value, a bonus or a side effect.";
+
+/**
+ * Contract 8's combo rule: a listed combo is the primary only when the deck is built to assemble it
+ * (plan-first, Hugh 2026-10-11), and the deck is described by the colors its lands make. Contract 7's
+ * v2 prompt keeps `V2_COMBO_RULE_V7` byte for byte, so the v7-against-v8 comparison is not taught
+ * the fix it measures.
+ */
+const V2_COMBO_RULES_V8 = [
+  "The facts may list combos this deck assembles. Name each listed combo by its cards and by what it produces (for example: [[Card A]] and [[Card B]] together make infinite mana), and never describe it as value, a bonus or a side effect. A listed combo is the primary win condition only when the deck is built to assemble it; otherwise the overview and the strategy name it as a backup or an alternate win, after the primary plan.",
+  "When the facts give \"Colors the lands make\", that name REPLACES the identity name wherever you name the deck's colors (the rule to name them by the identity given applies to it instead): a deck whose lands make fewer colors than its identity plays as the colors they make.",
+].join("\n");
+
+const V2_SHARED_RULES = [
   "Name only the combos listed. If none is listed, do not claim the deck has a combo.",
   "Combos listed as one card short are NOT in the deck. Never call one a win condition or a plan; at most, say the deck wants that piece.",
   "When you give the commander's cast turn, use the turn the facts give, as \"around turn N\". Do not work out another.",
   "Use the interaction counts exactly as given, and do not call the deck short of or full of interaction beyond them.",
 ].join("\n");
+
+export const V2_FACT_RULES = `${V2_COMBO_RULE_V7}\n${V2_SHARED_RULES}`;
+export const V2_FACT_RULES_V8 = `${V2_COMBO_RULES_V8}\n${V2_SHARED_RULES}`;
 
 const REPAIR_LEAD = "Those sections failed checking for these reasons; fix exactly these:";
 
@@ -229,6 +255,15 @@ export function buildSynopsisPrompt(
     // told never to write.
     lines.push(`Colors the spells need that no land produces: ${facts.unproducible.map((c) => colorLabel([c]).toLowerCase()).join(" and ")}`);
   }
+  // Contract 8: the colors the deck PLAYS, when its lands make fewer than its identity. An Avatar
+  // Aang deck is five-color by identity and makes no black mana, and the Overview called it
+  // five-color and judged its mana against black (Hugh, 2026-10-11).
+  // Absent (facts built before the field) says nothing; an EMPTY list is a finding: lands that make
+  // no color, named "Colorless" rather than left out and judged against the identity.
+  const landColors = facts.landColors;
+  if (opts.contract8 && landColors !== undefined && landColors.length < facts.identity.length) {
+    lines.push(`Colors the lands make: ${colorLabel(landColors)}`);
+  }
 
   lines.push("", "Mulligan figures (the only numbers the mulligan lines may state):");
   lines.push(`- Lands, counting land-backed double-faced cards: ${facts.lands}`);
@@ -287,7 +322,7 @@ export function buildSynopsisPrompt(
     return {
       // The Mulligan's budget rules are the measured ones (100% of sections rendered with them, 89%
       // without), and contract 8's engine pieces make its lines longer, so they stay.
-      system: `${system}\n${V8_ARGUMENT_RULES}\n${LENGTH_RULES}\n${V8_LENGTH_RULES}\n${plusRules(facts)}\n${MULLIGAN_BUDGET_RULES}\n${V2_FACT_RULES}`,
+      system: `${system}\n${V8_ARGUMENT_RULES}\n${LENGTH_RULES}\n${V8_LENGTH_RULES}\n${plusRules(facts)}\n${MULLIGAN_BUDGET_RULES_V8}\n${V2_FACT_RULES_V8}`,
       user: lines.join("\n"),
     };
   }

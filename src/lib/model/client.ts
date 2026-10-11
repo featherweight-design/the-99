@@ -67,6 +67,13 @@ export type ModelRequest<T> = {
    *  tokens and keeps the player waiting for a certain failure, so with less than this left the
    *  call fails with the first attempt's class instead. Omitted, a retry takes whatever is left. */
   retryFloorMs?: number;
+  /** Stream the request and read the final message. Needed for a ceiling high enough that a
+   *  non-streaming request would risk the SDK's HTTP timeout, as with thinking at a higher effort.
+   *  Omitted, the request is the plain `create` it always was. */
+  stream?: boolean;
+  /** Called with every response that came back, before it is parsed: what the eval harness records
+   *  per arm (why the model stopped). The outcome itself is unchanged. */
+  onResponse?: (meta: { stopReason: string | null; outputTokens: number }) => void;
 };
 
 /**
@@ -75,7 +82,7 @@ export type ModelRequest<T> = {
  * its usage on the message the throw discards. Calling `create` and parsing here keeps the usage
  * of every reply that came back, malformed or not.
  */
-type Messages = Pick<Anthropic["messages"], "create">;
+type Messages = Pick<Anthropic["messages"], "create" | "stream">;
 
 export type ModelDeps = {
   /** Injected in tests; the real client otherwise. */
@@ -180,16 +187,17 @@ async function tryOnce<T>(
   let response: Anthropic.Message;
   try {
     format = zodOutputFormat(req.schema);
-    response = await messages.create(
-      {
-        model: req.model,
-        max_tokens: req.maxTokens,
-        system: req.system,
-        messages: [{ role: "user", content: req.user }],
-        output_config: req.effort ? { format, effort: req.effort } : { format },
-      },
-      { signal: controller.signal, timeout: remainingMs, maxRetries: 0 },
-    );
+    const params = {
+      model: req.model,
+      max_tokens: req.maxTokens,
+      system: req.system,
+      messages: [{ role: "user" as const, content: req.user }],
+      output_config: req.effort ? { format, effort: req.effort } : { format },
+    };
+    const options = { signal: controller.signal, timeout: remainingMs, maxRetries: 0 };
+    response = req.stream
+      ? await messages.stream(params, options).finalMessage()
+      : await messages.create(params, options);
   } catch (err) {
     return classify(err, controller.signal.aborted, log);
   } finally {
@@ -198,6 +206,12 @@ async function tryOnce<T>(
 
   // The reply is here and billed: every outcome from now on carries its usage.
   const usage = usageOf(response.usage);
+  // A recorder's fault is the recorder's: the reply is billed and in hand, so it is never lost to it.
+  try {
+    req.onResponse?.({ stopReason: response.stop_reason ?? null, outputTokens: usage.outputTokens });
+  } catch (err) {
+    log(`[model] onResponse threw: ${err instanceof Error ? err.message : String(err)}`);
+  }
   // Every text block, joined, as the eval harness reads a reply (`scripts/eval/lib/request.mts`), so
   // the app and the harness judge one reply the same way. No text at all (a refusal, or a reply
   // that was all thinking when it hit max_tokens) is the shape not met.

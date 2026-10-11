@@ -12,6 +12,10 @@ import { acquireRunLock, OVERVIEW_ACCURACY_LIMITS, readLedger, record, refusal, 
  *
  *   pnpm eval:corpus score --answers <file.jsonl> --label <name> [--out <md>]    $0, no database
  *   pnpm eval:corpus run --prompt v1|v2|v8 --out <file.jsonl> [--only id,id] [--cap 0.6] [--plan-done 0..1] [--pin] [--no-repair]
+ *       [--model <id>] [--effort low|medium|high] [--max-tokens N] [--deadline-ms N] [--stream]
+ *     The arm flags override production's model, effort, ceiling and deadline for this run only (an
+ *     arm comparison); omitted, a run is production's. Each answer row records the arm, every
+ *     response's stop reason, the tokens and the latency.
  *   pnpm eval:corpus gate --a <f1,f2> --b <f1,f2> --label-a v7 --label-b v8 [--out <md>]    $0, no database
  *
  * `--plan-done` is the share of the line's run plan already complete (default 0): from $11 of spend the
@@ -35,7 +39,7 @@ import { acquireRunLock, OVERVIEW_ACCURACY_LIMITS, readLedger, record, refusal, 
 const [command, ...rest] = process.argv.slice(2);
 const { values: args } = parseArgs({
   args: rest,
-  options: { answers: { type: "string" }, label: { type: "string" }, out: { type: "string" }, prompt: { type: "string" }, only: { type: "string" }, cap: { type: "string" }, "plan-done": { type: "string" }, pin: { type: "boolean", default: false }, "no-repair": { type: "boolean", default: false }, a: { type: "string" }, b: { type: "string" }, "label-a": { type: "string" }, "label-b": { type: "string" } },
+  options: { answers: { type: "string" }, label: { type: "string" }, out: { type: "string" }, prompt: { type: "string" }, only: { type: "string" }, cap: { type: "string" }, "plan-done": { type: "string" }, pin: { type: "boolean", default: false }, "no-repair": { type: "boolean", default: false }, model: { type: "string" }, effort: { type: "string" }, "max-tokens": { type: "string" }, "deadline-ms": { type: "string" }, stream: { type: "boolean", default: false }, a: { type: "string" }, b: { type: "string" }, "label-a": { type: "string" }, "label-b": { type: "string" } },
 });
 
 const EVAL = new URL("../../docs/superpowers/eval/", import.meta.url);
@@ -51,7 +55,14 @@ if (command === "score") {
   const cases = loadCorpus(CORPUS);
   const rows = readAnswers(args.answers);
   // What renders, when the row records it; the raw reply otherwise (the first baselines, before the repair path).
-  const answers = new Map<string, Reply>(rows.map((a) => [a.id, a.rendered ? fromChecked(a.rendered) : toReply(a.reply)]));
+  // A row whose call failed has nothing to score, and is reported as skipped. The plans never
+  // render, so they are read off the raw reply whichever side the rest comes from.
+  const answered = rows.filter((a) => a.rendered || a.reply);
+  const answers = new Map<string, Reply>(answered.map((a) => {
+    const r = a.rendered ? fromChecked(a.rendered) : toReply(a.reply);
+    const plans = a.reply ? toReply(a.reply).plans : undefined;
+    return [a.id, plans ? { ...r, plans } : r];
+  }));
   // A row that records the list it was written for must match the case's pin; older rows record none.
   for (const a of rows) {
     const pinned = cases.find((c) => c.id === a.id)?.deck.listFingerprint;
@@ -60,7 +71,8 @@ if (command === "score") {
   // A case with no pinned list fingerprint cannot be shown to describe the list the answer was written for.
   const scorable = (c: (typeof cases)[number]) => answers.has(c.id) && c.deck.listFingerprint !== null;
   const scores = cases.filter(scorable).map((c) => scoreCase(c, answers.get(c.id)!));
-  const skipped = cases.filter((c) => !scorable(c)).map((c) => (c.deck.listFingerprint === null ? `${c.id} (list not pinned)` : c.id));
+  const failedCall = new Map(rows.filter((a) => a.failed && !a.rendered && !a.reply).map((a) => [a.id, a.failed!]));
+  const skipped = cases.filter((c) => !scorable(c)).map((c) => (c.deck.listFingerprint === null ? `${c.id} (list not pinned)` : failedCall.has(c.id) ? `${c.id} (the call failed: ${failedCall.get(c.id)})` : c.id));
   const text = renderMetrics(args.label, scores, skipped);
   if (args.out) writeFileSync(args.out, text);
   console.log(text);
@@ -125,10 +137,30 @@ if (command === "run") {
   const { db } = await import("../../src/db/index");
   const { sql } = await import("drizzle-orm");
 
+  // The arm. Omitted flags are production's own constants, so a run with none is production's.
+  const model = args.model ?? SYNOPSIS_MODEL;
+  if (args.effort !== undefined && !["low", "medium", "high"].includes(args.effort)) throw new Error(`eval:corpus run: --effort must be low, medium or high (got ${args.effort})`);
+  const effort = (args.effort ?? SYNOPSIS_EFFORT) as "low" | "medium" | "high";
+  const positive = (flag: string, v: string | undefined, fallback: number) => {
+    if (v === undefined) return fallback;
+    const n = Number(v);
+    if (!Number.isInteger(n) || n <= 0) throw new Error(`eval:corpus run: --${flag} must be a positive integer (got ${v})`);
+    return n;
+  };
+  const deadlineMs = positive("deadline-ms", args["deadline-ms"], SYNOPSIS_DEADLINE_MS);
+  const arm = { model, effort, maxTokens: positive("max-tokens", args["max-tokens"], v8 ? SYNOPSIS_MAX_TOKENS_V8 : SYNOPSIS_MAX_TOKENS), deadlineMs, stream: args.stream };
+  console.log(`arm: ${JSON.stringify(arm)}`);
+
   let runSpend = 0;
   const existing = existsSync(args.out) ? readAnswers(args.out) : [];
   const mixed = existing.filter((a) => a.prompt !== args.prompt);
   if (mixed.length > 0) throw new Error(`eval:corpus run: ${args.out} holds rows from another prompt (${[...new Set(mixed.map((a) => a.prompt ?? "unlabelled"))].join(", ")}); refusing to resume into it`);
+  // The arm is part of a run's identity too: resuming a file written under another model, effort,
+  // ceiling, deadline or streaming setting would append a mixed arm and void the comparison. A row
+  // recorded before the arm was, says nothing about its arm, and is refused for the same reason.
+  const armKey = JSON.stringify(arm);
+  const otherArm = existing.filter((a) => JSON.stringify((a as { arm?: unknown }).arm) !== armKey);
+  if (otherArm.length > 0) throw new Error(`eval:corpus run: ${args.out} holds ${otherArm.length} row(s) from another arm, or recorded before arms were (this run is ${armKey}); refusing to resume into it`);
   const done = new Set(existing.map((a) => a.id));
   for (const c of loadCorpus(CORPUS)) {
     if (only && !only.has(c.id)) continue;
@@ -149,7 +181,8 @@ if (command === "run") {
     }
     const facts = await factsFor(await loadDeckProfileFromHead(head), v2);
     const prompt = buildSynopsisPrompt(facts, undefined, { v2, contract8: v8 });
-    const maxTokens = v8 ? SYNOPSIS_MAX_TOKENS_V8 : SYNOPSIS_MAX_TOKENS;
+    const maxTokens = arm.maxTokens;
+    const stops: { what: string; stopReason: string | null; outputTokens: number }[] = [];
     // One guarded, ledgered call. `worstCaseUsd` already counts the one malformed-reply retry.
     // Characters are only an estimate of input tokens, and rules text with symbols runs denser than
     // prose (a first v8 run reserved $0.133 and settled at $0.144 after a retry), so the estimate
@@ -157,27 +190,36 @@ if (command === "run") {
     // settling keeps the worst case counted. Returns null when the ledger or the run cap says stop.
     const ask = async (p: { system: string; user: string }, what: string, deadlineMs: number, reserve = 1) => {
       const approxIn = Math.ceil((p.system.length + p.user.length) / 3);
-      const worst = worstCaseUsd(SYNOPSIS_MODEL, approxIn, maxTokens, { batch: false });
+      const worst = worstCaseUsd(model, approxIn, maxTokens, { batch: false });
       // The first call reserves its repair too: a ledger that allows the write and then refuses the repair would leave a paid answer with nowhere to go.
       const stop = refusal(readLedger(LEDGER), worst * reserve, planDone, OVERVIEW_ACCURACY_LIMITS) ?? (runSpend + worst * reserve > cap ? `this run's cap of $${cap} would be crossed` : null);
       if (stop) { console.log(`STOP before ${c.id} ${what}: ${stop}`); return null; }
       const pendingId = `${Date.now()}-${c.id}-${what}`;
       record(LEDGER, { at: new Date().toISOString(), runId: pendingId, source: "pending", usd: worst, requests: 1, pending: pendingId, note: `corpus ${args.prompt} ${c.id} ${what}` });
-      const call = { model: SYNOPSIS_MODEL, system: p.system, user: p.user, maxTokens, effort: SYNOPSIS_EFFORT, deadlineMs };
+      const call = {
+        model, system: p.system, user: p.user, maxTokens, effort, deadlineMs, stream: arm.stream,
+        onResponse: (m: { stopReason: string | null; outputTokens: number }) => { stops.push({ what, ...m }); },
+      };
       const out: Awaited<ReturnType<typeof callModel<SynopsisReply>>> = v8
         ? await callModel({ ...call, schema: synopsisResponseSchemaV8Wire })
         : await callModel({ ...call, schema: synopsisResponseSchema });
       const u = out.usage;
-      const usd = u ? costUsd(SYNOPSIS_MODEL, { input_tokens: u.inputTokens, output_tokens: u.outputTokens, cache_read_input_tokens: u.cacheReadTokens, cache_creation_input_tokens: u.cacheWriteTokens }, { batch: false }) : 0;
+      const usd = u ? costUsd(model, { input_tokens: u.inputTokens, output_tokens: u.outputTokens, cache_read_input_tokens: u.cacheReadTokens, cache_creation_input_tokens: u.cacheWriteTokens }, { batch: false }) : 0;
       runSpend += usd;
       record(LEDGER, { at: new Date().toISOString(), runId: `corpus-${args.prompt}-${c.id}-${what}`, source: "realtime:1", usd, requests: 1, settles: pendingId, note: `corpus ${args.prompt} ${c.id} ${what}` });
       console.log(`${c.id} ${what}: ok=${out.ok} $${usd.toFixed(4)} (run $${runSpend.toFixed(4)}, campaign $${spent(readLedger(LEDGER)).toFixed(4)})`);
-      return { out, usd };
+      return { out, usd, usage: u };
     };
     const startedAt = Date.now();
-    const first = await ask(prompt, "write", SYNOPSIS_DEADLINE_MS, args["no-repair"] ? 1 : 2);
+    const first = await ask(prompt, "write", deadlineMs, args["no-repair"] ? 1 : 2);
+    const latencyMs = Date.now() - startedAt;
     if (!first) break;
-    if (!first.out.ok) { console.log(`  ${first.out.errorClass}`); continue; }
+    if (!first.out.ok) {
+      console.log(`  ${first.out.errorClass}`);
+      // A failed answer is a result of the arm, not a gap: recorded so the arm's failure rate shows.
+      appendFileSync(args.out, `${JSON.stringify({ id: c.id, prompt: args.prompt, arm, failed: first.out.errorClass, stops, latencyMs, usd: first.usd, usage: first.usage })}\n`);
+      continue;
+    }
     const checked = await checkReply(first.out.value, facts, v8);
     const show = (v: typeof checked.verdicts) => v.map((x) => `${x.section}:${x.status}${x.status === "refused" ? `(${x.reason} ${x.failed}/${x.total})` : ""}`).join(" ");
     console.log(`  ${show(checked.verdicts)}`);
@@ -185,19 +227,21 @@ if (command === "run") {
     let rendered = checked;
     let repairUsd: number | undefined;
     let repairReply: unknown;
+    let repairUsage: unknown;
     const failing = refusedSections(checked);
     // Production sends the repair only with what is left of the write's ONE budget, and not at all under SYNOPSIS_REPAIR_MIN_MS.
-    const remaining = SYNOPSIS_DEADLINE_MS - (Date.now() - startedAt);
+    const remaining = deadlineMs - (Date.now() - startedAt);
     if (failing.length > 0 && !args["no-repair"] && remaining < SYNOPSIS_REPAIR_MIN_MS) console.log(`  repair skipped: ${remaining}ms of the write's budget left`);
     if (failing.length > 0 && !args["no-repair"] && remaining >= SYNOPSIS_REPAIR_MIN_MS) {
       const repair = await ask(repairPrompt(facts, checked, failing, v8, first.out.value), "repair", remaining);
       if (!repair) break;
       repairUsd = repair.usd;
+      repairUsage = repair.usage;
       if (repair.out.ok) repairReply = repair.out.value;
       rendered = await applyRepair(checked, repair.out, failing, facts, v8);
       console.log(`  repaired: ${show(rendered.verdicts)}`);
     }
-    appendFileSync(args.out, `${JSON.stringify({ id: c.id, prompt: args.prompt, listFingerprint: live, usd: first.usd, repairUsd, repairReply, firstVerdicts: checked.verdicts, rendered, reply: first.out.value })}\n`);
+    appendFileSync(args.out, `${JSON.stringify({ id: c.id, prompt: args.prompt, arm, stops, latencyMs, totalLatencyMs: Date.now() - startedAt, usage: first.usage, repairUsage, listFingerprint: live, usd: first.usd, repairUsd, repairReply, firstVerdicts: checked.verdicts, rendered, reply: first.out.value })}\n`);
   }
   process.exit(0);
 }
