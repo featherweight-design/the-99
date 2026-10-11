@@ -15,8 +15,12 @@ is set. The working title in this brief is "all-decks stats"; two name candidate
      jobs, colors, value, games).
    - (b) **This deck against your other decks**, on the deck's own Stats view: where this deck sits among yours.
    - (c) **This deck against the field**: wider than the shipped "Against the average deck" card, which already
-     compares a deck with its own commander's average. The field could be every deck of the same color identity,
-     or every Commander deck, from the commander index. Never other accounts' decks (lock 6).
+     compares a deck with its own commander's average. What the index stores is AVERAGES: one per commander or
+     pair, one per identity condition (`identity_composition`), and the benchmarks' cut points. It stores no field
+     decks and no distribution, so "against the field" today means against an average (the commander's, the
+     identity's, or a color count's). A rank or range within the field ("more ramp than 80% of Gishath decks")
+     would need the index build to persist distribution aggregates, which is new build output, not a read. Never
+     other accounts' decks (lock 6).
 2. **Which round-2 items ride with this feature, if any?** The round-1 brief named four: deck evolution across
    versions, collection share across versions, opening-hand odds with a sample hand, and a shareable snapshot. The
    first two compare a deck with its own past and fit a "comparison" feature; the last two do not compare anything.
@@ -87,7 +91,9 @@ All paths are on `main`; line numbers read 2026-10-11, and they move.
 - `identity_composition` (`schema.ts:1471`): 19 rows of average land, type and curve per identity condition.
 - `format_staples` (`schema.ts:1423`): 770 rows over 16 conditions (each color pair and mono color, plus `count:3`).
 - Evidence benchmarks ("How it plays", Analysis tab) grade against cut points from 34,670 sampled decks, ten per
-  commander (`src/lib/benchmarks/cuts.ts:4`). That is the one place the app already places a deck in a population.
+  commander (`src/lib/benchmarks/cuts.ts:4`). The samples are synthesized read-only by `pnpm measure:benchmarks`
+  and only the cut points are kept, hand-pasted into that file. That is the one place the app already places a
+  deck in a population.
 
 **The About entry for round 1**
 - `deck-stats` (`src/lib/copy/about.ts:1124`), `since: 11`, follows `DECK_STATS_ENABLED`, and took NO version
@@ -106,8 +112,12 @@ Only what is fixed regardless of Hugh's answers. Hugh can override any of it.
    over every distinct card (1,366 on Hugh's account), one price read, one games read. The basis chain is one call
    per deck today and must be batched for any shape that shows the field per deck.
 4. **The `/decks` payload stays cached by `cachePageForUser`.** Any new per-user table it reads passes
-   `check:list-cache`; the feature's switch joins `switches()`; catalog-side inputs (labels, prices, the index) are
-   covered by the catalog generation in the key, which engineering confirms for each before the build.
+   `check:list-cache`; the feature's switch joins `switches()`; catalog-side inputs (labels, prices, the index) must
+   each move the key when they change. Prices and the index do (an ingest or a copy stamps `catalog_refreshes`).
+   Labels do on production, where they arrive by `db:copy:labels` through the copy harness, but NOT on staging,
+   where they are built: `publishWave` (`src/lib/labels/publish.ts`) writes `card_labels` with no stamp, so a cached
+   staging `/decks` payload would keep pre-build job figures. A cross-deck jobs figure on `/decks` therefore needs a
+   label generation in the key, or a stamp from the label build, before it is cached.
 5. **Behind a switch, off means no read**, the `deckStatsEnabled` shape (Question 7 decides which switch).
 6. **The field is the commander index.** Never another account's decks, and no new upstream source.
 7. **Facts, not judgment.** As in round 1: the bracket, findings and what to change stay in Analysis. A position
@@ -137,7 +147,8 @@ Only what is fixed regardless of Hugh's answers. Hugh can override any of it.
    $433; ramp 7 to 38. A shared axis flattens the middle; a per-deck scale hides the comparison.
 3. **Colors across decks**: the five-color count (how many decks play each color) or each deck's demand against
    supply? The first is one figure; the second is 21.
-4. **Where does the field sit?** A band behind your decks, a marker per deck (its commander's average), or a
+4. **Where does the field sit?** The field is an average (Question 1c), so it is one value per figure, not a
+   spread: a line behind your decks, a marker per deck (its commander's average), or a
    separate row. The per-commander average differs for every deck; the identity average is shared by decks of one
    identity only.
 5. **Results with 7 games.** Draw them, or hold the row until a threshold of games? If held, what says so?
