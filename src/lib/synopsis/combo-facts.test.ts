@@ -33,6 +33,11 @@ describe("shapeComboFacts", () => {
     expect(out.combos[0].pieces).toEqual(["x", "y", "z"]);
   });
 
+  it("never offers a mandatory loop as a near combo: nobody should want the missing piece", () => {
+    const rows = [piece("loop", "Marauding Raptor", { produces: ["Draw the game", "Infinite creature tokens"] }), piece("loop", "Polyraptor", { produces: ["Draw the game", "Infinite creature tokens"], held: false })];
+    expect(shapeComboFacts(rows, ["G"], []).nearCombos).toEqual([]);
+  });
+
   it("ranks fewest pieces first, then free, and caps at six", () => {
     const rows = [
       ...["a", "b", "c"].map((n) => piece("big", n, { card_count: 3 })),

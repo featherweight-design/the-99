@@ -4,6 +4,7 @@ import { db } from "../../db";
 import { cards } from "../../db/schema";
 import { castFaceText, isLandFace } from "../cards/facet";
 import type { DeckProfile } from "../profile/types";
+import { isMandatoryLoop } from "../spellbook/combo-features";
 import { loadComboFacts } from "../synopsis/combo-facts";
 import type { CutsPlan } from "../tuning/cuts-evidence";
 
@@ -60,7 +61,8 @@ export async function readCutsPlan(
     return r && t ? [`${r.name}: ${t.replace(/\s*\n\s*/g, " / ")}`] : [];
   });
   return {
-    combos: combos?.combos ?? null,
+    // A mandatory loop is a risk, never the plan: its pieces are not protected from the cuts.
+    combos: combos?.combos.filter((c) => !isMandatoryLoop(c.produces)) ?? null,
     nearCombos: combos?.nearCombos ?? null,
     commanderText,
     colourNeeds: COLOURS.flatMap((colour) => (counts.has(colour) ? [{ colour, cards: counts.get(colour)! }] : [])).sort((a, b) => b.cards - a.cards),

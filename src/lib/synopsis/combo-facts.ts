@@ -131,7 +131,8 @@ export function shapeComboFacts(
         usesCommander: pieces.some((p) => commanderIds.includes(p.oracle_id)),
         manaNeeded: first.mana_value_needed,
       });
-    } else if (missing.length === 1) {
+    } else if (missing.length === 1 && !isMandatoryLoop(first.produces)) {
+      // A loop that draws the game is never a piece to want: a near-combo only invites completing it.
       const m = missing[0];
       // The missing piece must be a card this deck could add: not command-zone-only, legal, in colour.
       if (m.must_be_commander || !m.commander_legal || !fitsIdentity(identity, m.color_identity)) continue;

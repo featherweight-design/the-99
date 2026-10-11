@@ -44,7 +44,7 @@ describe("readCutsPlan", () => {
 
   it("reads colour needs, basics, commander text and the combo facts from the catalog and the Overview's read", async () => {
     rowsRef.rows = catalog;
-    loadComboFacts.mockResolvedValueOnce({ combos: [{ pieces: ["A", "B"] }], nearCombos: [] });
+    loadComboFacts.mockResolvedValueOnce({ combos: [{ pieces: ["A", "B"], produces: ["Infinite mana"] }, { pieces: ["Marauding Raptor", "Polyraptor"], produces: ["Draw the game", "Infinite creature tokens"] }], nearCombos: [] });
     const plan = await readCutsPlan(prof);
     expect(plan.colourNeeds).toEqual([{ colour: "G", cards: 2 }, { colour: "R", cards: 1 }]);
     expect(plan.basics).toEqual([{ type: "Island", count: 4 }, { type: "Forest", count: 30 }]);
