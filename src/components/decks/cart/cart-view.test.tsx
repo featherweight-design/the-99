@@ -98,6 +98,14 @@ describe("CartView", () => {
     expect(list().getAllByRole("listitem")).toHaveLength(3);
   });
 
+  it("draws a deck priced at $0.00 as the tile does, with no figure", () => {
+    const free = cart();
+    free.decks[0] = { ...free.decks[0], cents: 0, pricedCopies: free.decks[0].copies };
+    render(<CartView cart={free} provenance={provenance} />);
+    expect(screen.getByText(copy.selections.figureNoPrice(free.decks[0].copies))).toBeTruthy();
+    expect(screen.queryByText(copy.selections.figure(free.decks[0].copies, "$0.00"))).toBeNull();
+  });
+
   it("says how many copies a sold-out line leaves unpriced (T1)", () => {
     const soldOut = cart();
     soldOut.lines[2].rows = [{ deckId: "gishath", quantity: 1, cents: null, state: "soldOut", commander: false, held: 0, finish: null }];

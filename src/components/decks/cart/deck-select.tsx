@@ -107,7 +107,7 @@ export function DeckSelect({
                     className="flex-none font-mono text-[11px] leading-[1.6]"
                     style={{ color: isOn ? "var(--fg-body)" : "var(--fg-locked)" }}
                   >
-                    {priced && d.pricedCopies > 0
+                    {priced && d.cents > 0
                       ? copy.selections.figure(d.copies, formatCents(d.cents))
                       : copy.selections.figureNoPrice(d.copies)}
                   </span>
