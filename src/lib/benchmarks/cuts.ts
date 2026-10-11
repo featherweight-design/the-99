@@ -2,7 +2,7 @@ import type { BenchmarkCuts } from "./compute";
 
 /**
  * The benchmarks' cut points, printed by `pnpm measure:benchmarks` against staging on 2026-10-11
- * (3,467 ok commanders, 10,401 sampled decks) and pasted here by hand. The derivation is in that
+ * (3,467 ok commanders, 34,670 sampled decks, ten per commander) and pasted here by hand. The derivation is in that
  * script's header and in the PR that set them; re-run it after an index rebuild moves the population.
  *
  * Grades are weighted quintiles. A dependency row is light at the smallest value whose upper tail is
@@ -12,10 +12,10 @@ import type { BenchmarkCuts } from "./compute";
  */
 export const BENCHMARK_CUTS: BenchmarkCuts = {
   grades: {
-    velocity: [2.73, 3.37, 4.02, 4.88],
+    velocity: [2.75, 3.35, 4, 4.91],
     flow: [13, 17, 20, 24],
-    interaction: [16, 21, 26, 32],
-    win: [0.02, 0.07, 0.13, 0.27],
+    interaction: [17, 21, 25, 31],
+    win: [0.02, 0.06, 0.13, 0.26],
   },
   dependencies: {
     graveyard: { light: 8, heavy: 12 },

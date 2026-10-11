@@ -4,13 +4,15 @@
 // READ-ONLY. Every query runs in a read-only session, and the branch it reads is printed first.
 // Point it at staging, where the index is built:
 //
-//   BENCHMARKS_SOURCE_URL=<staging> pnpm measure:benchmarks [--samples 3] [--user <clerk id>]
+//   BENCHMARKS_SOURCE_URL=<staging> pnpm measure:benchmarks [--samples 10] [--user <clerk id>]
 //
 // THE MODEL IS IMPORTED, NEVER RESTATED. Each commander's typical deck is SAMPLED as a legal list
 // and handed to the app's own readers (`velocity`, `flow`, `interaction`, `winSpeed`,
 // `dependencyFigures`), so a cut is derived over exactly the figure the app grades. The plan named
-// expectations for the linear figures and samples for the rest; sampling all of them is the same
-// population through one path, and it is what lets every figure come from the shipped function.
+// expectations for the linear figures and samples for the rest. Sampling them too is NOT the same
+// population: a sampled figure carries each commander's deck-to-deck spread, which an expectation
+// averages away. That spread is the point: the app grades one real list, never an average, so the
+// cuts are drawn over lists. It also lets every figure come from the shipped function.
 //
 // A sample: the commander in the command zone, `avg_land` basic lands (36 where the row has none),
 // and the rest of a 99-card body drawn from the commander's `commander_support_cards` without
@@ -61,12 +63,20 @@ const arg = (name: string) => {
   const i = process.argv.indexOf(`--${name}`);
   return i > 0 ? process.argv[i + 1] : undefined;
 };
-const SAMPLES = Number(arg("samples") ?? 3);
+// Ten per commander: at three, reordering the population alone moved four grade cuts (the seed's
+// stream lands on different commanders), so three is too few to commit a cut from.
+const SAMPLES = Number(arg("samples") ?? 10);
 const REFERENCE_USER = arg("user") ?? "user_3GkZrrTwOJBdqUpq6GambP0BC8w";
 
 const pool = new Pool({ connectionString: BENCHMARKS_SOURCE_URL });
-const client = await pool.connect();
-await client.query("set default_transaction_read_only = on");
+/** A read-only session. Sampling holds the event loop for minutes at higher `--samples`, long
+ *  enough for an idle socket to close, so the reads after it open a fresh session. */
+const readOnly = async () => {
+  const c = await pool.connect();
+  await c.query("set default_transaction_read_only = on");
+  return c;
+};
+let client = await readOnly();
 const q = async <T,>(sql: string, params: unknown[] = []) => (await client.query(sql, params)).rows as T[];
 
 const [{ branch }] = await q<{ branch: string }>("select current_setting('neon.branch_id', true) as branch");
@@ -75,7 +85,8 @@ console.log(`# measure:benchmarks\n\nRead-only, branch \`${branch}\`, ${SAMPLES}
 // ---- the population ---------------------------------------------------------------------------
 type Header = { commander: string; deckCount: number; avgLand: number | null };
 const headers = (await q<{ commander_oracle_id: string; deck_count: number | null; avg_land: number | null }>(`
-  select commander_oracle_id, deck_count, avg_land from commander_support where synergy_state = 'ok'`))
+  select commander_oracle_id, deck_count, avg_land from commander_support where synergy_state = 'ok'
+   order by commander_oracle_id`))
   .map((h): Header => ({ commander: h.commander_oracle_id, deckCount: h.deck_count ?? 1, avgLand: h.avg_land }));
 
 const support = await q<{ commander_oracle_id: string; oracle_id: string; inclusion: number | null }>(`
@@ -83,7 +94,8 @@ const support = await q<{ commander_oracle_id: string; oracle_id: string; inclus
     from commander_support_cards csc
     join commander_support cs on cs.commander_oracle_id = csc.commander_oracle_id
     join cards c on c.oracle_id = csc.oracle_id
-   where cs.synergy_state = 'ok' and split_part(c.type_line, ' // ', 1) !~* '\\mland\\M'`);
+   where cs.synergy_state = 'ok' and split_part(c.type_line, ' // ', 1) !~* '\\mland\\M'
+   order by csc.commander_oracle_id, csc.oracle_id`);
 const pools = new Map<string, { id: string; weight: number }[]>();
 for (const r of support) {
   if (r.inclusion == null) continue;
@@ -199,6 +211,8 @@ for (const h of headers) {
     samples.push(figuresOf(cards, h.deckCount / SAMPLES));
   }
 }
+client.release(true);
+client = await readOnly();
 console.log(`${headers.length} ok commanders, ${skipped} with no commander row or card list, ${samples.length} sampled decks, ${((Date.now() - started) / 1000).toFixed(0)}s.\n`);
 
 // ---- weighted percentiles ---------------------------------------------------------------------
@@ -252,7 +266,8 @@ describe("velocity index", series((s) => s.velocity), grades.velocity);
 describe("flow points", series((s) => s.flow), grades.flow);
 describe("interaction weight", series((s) => s.interaction), grades.interaction);
 describe("win odds, decks with a line", series((s) => s.win, (s) => s.win !== null), grades.win);
-console.log(`- decks with at least one line: ${(series((s) => s.win, (s) => s.win !== null).length / samples.length * 100).toFixed(1)}%\n`);
+const weightOf = (keep: (s: Figures) => boolean) => samples.filter(keep).reduce((t, s) => t + s.weight, 0);
+console.log(`- decks with at least one line: ${(weightOf((s) => s.win !== null) / weightOf(() => true) * 100).toFixed(1)}% of the weight\n`);
 
 console.log("## Dependencies (light where at most 25% of the weight is at or above, heavy at most 10%)\n");
 const dep = (f: (d: DependencyFigures) => number) => series((s) => f(s.deps));
