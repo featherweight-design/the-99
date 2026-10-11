@@ -162,7 +162,7 @@ export const benchmarksAboutEntry = {
   opens: 'opens the Analysis tab',
   width: 'plate',
   caption:
-    "Under the bracket reading, the Analysis tab grades how a deck plays: how fast its mana comes, how many cards it draws, how quickly and cheaply it answers threats, and how soon a combo could come together. Then it lists what the deck depends on that an opponent could break. Everything is worked out from your list and what we know about each card, with nothing written for you on the spot, so reading it costs nothing.",
+    "Under the bracket reading, the Analysis tab also tells you how the deck plays. It grades how fast your mana comes, how many cards you draw, how quickly and cheaply you can answer a threat, and how soon a combo could come together.\n\nThen it lists what the deck leans on that an opponent could break. It’s all worked out from your list and what we know about each card. Nothing is written on the spot, so reading it costs nothing.",
   keys: [
     'Mana velocity, card flow and interaction each sit on one of five steps, on a scale shared by every Commander deck. There’s no total.',
     'Win speed is graded only when the deck can assemble a combo. Otherwise it says there’s no combo line, which isn’t a low grade.',
